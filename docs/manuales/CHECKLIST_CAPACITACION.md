@@ -24,11 +24,12 @@ la base real de produccion.
 - [ ] Usa categoria **Todos**.
 - [ ] Agrega y quita servicios.
 - [ ] Revisa total antes de emitir.
+- [ ] Entiende que el paciente solo requiere nombre, no ficha pre-registrada.
+- [ ] Entiende que la receta de diálisis se marca en la factura solo con permiso.
 - [ ] Cobra en efectivo.
 - [ ] Cobra con tarjeta o transferencia y registra referencia.
-- [ ] Reconoce cambio.
-- [ ] Reconoce saldo pendiente.
-- [ ] Sabe que pago menor no marca pagado completo.
+- [ ] Reconoce cambio (cambio/vuelto).
+- [ ] Reconoce saldo pendiente y entiende que el pago menor no marca pagado completo (bloqueo si el monto recibido es menor al total).
 - [ ] Imprime recibo institucional.
 - [ ] Reimprime desde historial si tiene permiso.
 - [ ] Cierra caja y revisa diferencia.
@@ -46,6 +47,7 @@ la base real de produccion.
 - [ ] Sabe pedir al cajero el resumen seguro de **Ayuda**.
 - [ ] Autoriza reimpresiones solo con motivo.
 - [ ] Revisa factura, pago y motivo antes de una anulacion.
+- [ ] Sabe validar receta de dialisis si tiene el permiso `patients.mark_dialysis_prescription`.
 - [ ] Revisa facturas pendientes antes de cierre.
 - [ ] Documenta diferencias de caja.
 - [ ] No restaura backups ni borra datos por cuenta propia.
@@ -59,6 +61,8 @@ la base real de produccion.
 - [ ] Revisa metodos de pago.
 - [ ] Identifica parciales y anuladas.
 - [ ] Autoriza anulaciones con motivo.
+- [ ] Revisa quien puede usar `patients.mark_dialysis_prescription`.
+- [ ] Entiende que una factura L.0 por regla autorizada no crea pago artificial L.0.
 - [ ] Crea respaldo manual.
 - [ ] Verifica ultimo respaldo.
 - [ ] Conoce la guia de soporte de primer nivel.

@@ -147,6 +147,25 @@ describe('ReceiptPreview', () => {
     expect(document.body.textContent).toContain('L. 2.00');
     expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-numero|undefined/);
   });
+
+  it('does not present legacy fallback as the final institutional receipt', () => {
+    render(
+      <ReceiptPreview
+        receipt={receiptFixture()}
+        onPrint={vi.fn()}
+        onWidthChange={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('heading', { name: 'COMPROBANTE DE FACTURA' })).toBeInTheDocument();
+    expect(screen.getByText(/comprobante de compatibilidad/i)).toBeInTheDocument();
+    expect(screen.queryByText('RECIBO INSTITUCIONAL')).not.toBeInTheDocument();
+    expect(screen.queryByText('Estado')).not.toBeInTheDocument();
+    expect(screen.queryByText('CAI')).not.toBeInTheDocument();
+    expect(screen.queryByText('Rango')).not.toBeInTheDocument();
+    expect(screen.queryByText('Vence')).not.toBeInTheDocument();
+    expect(screen.queryByText('TEST-CAI')).not.toBeInTheDocument();
+  });
 });
 
 function receiptFixture(): ReceiptData {

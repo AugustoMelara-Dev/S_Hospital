@@ -1227,23 +1227,23 @@ Consecuencia:
 - Roles personalizados deben pedir ese permiso si van a cobrar o revertir facturas fuera de su alcance propio del dia.
 - La exposicion publica de configuracion queda reducida a branding no sensible.
 
-### 2026-05-31 - Facturas sin cobro quedan auditadas como pago cero
+### 2026-05-31 - Facturas sin cobro quedan auditadas sin pago artificial
 
 Decision:
 
 - Las facturas cuyo total calculado es L.0.00 siguen quedando `paid`.
-- Al emitirlas se crea un registro `payments` por L.0.00, metodo `other`, referencia `Factura sin cobro por regla autorizada`, caja abierta, cajero y fecha.
-- El registro tambien guarda `amount_cents = 0` para cumplir el contrato entero usado por reportes y arqueo.
-- No se crea movimiento de efectivo para el pago cero.
+- Al emitirlas no se crea un registro `payments` por L.0.00.
+- La auditoria se registra con `invoice.zero_amount_registered`, incluyendo factura, caja, cajero, saldo y referencia humana.
+- No se crea movimiento de efectivo ni pago artificial para el caso cero.
 
 Motivo:
 
 - La regla de eritropoyetina con receta de dialisis puede producir una factura valida sin cobro.
-- Aun sin dinero recibido, la factura pagada debe quedar trazable a caja, cajero, metodo y fecha.
+- Aun sin dinero recibido, la factura pagada debe quedar trazable a caja, cajero, fecha, snapshots y auditoria.
 
 Consecuencia:
 
-- Recibos muestran un pago L.0.00 para explicar el cierre de la factura.
+- Recibos y reportes deben explicar la regla autorizada desde la factura/auditoria, no desde un pago L.0.00 ficticio.
 - Reportes monetarios no aumentan recaudacion porque el monto es cero.
 - Arqueo de caja no aumenta efectivo esperado por facturas sin cobro.
 
@@ -3407,3 +3407,52 @@ Validacion:
 - npm.cmd run test -- NewInvoiceView InvoiceSuccess PaymentModal ReceiptPreview --run
 - npm.cmd run typecheck
 - npm.cmd run lint
+
+## 2026-06-15 - Actualizacion segura queda como flujo protegido y verificable
+
+Contexto: la auditoria global de release encontro que existian advertencias
+contra `migrate:fresh` y guias de instalacion/restore, pero no un manual
+dedicado ni un preflight especifico para actualizar una instalacion real sin
+perder datos.
+
+Decision: se agrega un manual de actualizacion segura, un checklist operativo y
+`scripts/update_release_preflight.ps1`. El preflight es no destructivo: valida
+Git/manifest cuando existe, proteccion de `.env`, presencia de `storage`,
+manuales y scripts criticos, y escanea scripts operativos para patrones
+destructivos. No ejecuta migraciones, no crea backups, no reinicia servicios y
+solo escribe evidencia Markdown bajo `qa/` si se pide explicitamente.
+
+Motivo: una actualizacion hospitalaria debe forzar backup verificado,
+proteccion de configuracion local, migraciones incrementales y rollback
+documentado antes de tocar el servidor real.
+
+Validacion:
+
+- powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\update_release_preflight.ps1 -ExpectedCurrentCommit 6508418d62ec25f0cea37221bfce7295977b7629 -AllowDirtyGit
+- git diff --check
+
+## 2026-06-15 - Gate RC Windows separa suites criticas y suite completa
+
+Contexto: la auditoria global pudo ejecutar suites focales, typecheck, lint,
+build, Pint y PHPStan, pero el full PHPUnit/Vitest no quedo reproducible en el
+host por timeout/OOM.
+
+Decision: se agrega `scripts/quality_gate_windows.ps1`, documentacion
+`docs/QUALITY_GATES_WINDOWS.md` y scripts frontend seriales
+`test:critical`/`test:full:windows`. El gate `-CriticalOnly` protege caja,
+facturacion, eritropoyetina, recibos institucionales, backups, permisos,
+typecheck, lint, build, Pint y PHPStan. El gate `-Full` agrega PHPUnit completo
+y Vitest completo serial.
+
+Motivo: el release candidate necesita un camino reproducible en Windows modesto
+sin ocultar fallas reales. Si el gate completo sigue fallando por recursos, se
+documenta y se repite en CI o en una maquina con mas memoria.
+
+Validacion:
+
+- npm.cmd run test:critical
+- npm.cmd run typecheck
+- npm.cmd run lint
+- npm.cmd run build
+- powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\quality_gate_windows.ps1 -CriticalOnly
+- git diff --check

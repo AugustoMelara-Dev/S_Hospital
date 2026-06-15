@@ -1,0 +1,380 @@
+{
+  "baseUrl": "http://127.0.0.1:5177",
+  "loginUser": "admin.validacion",
+  "generatedAt": "2026-06-15T05:31:34.039Z",
+  "mutationMode": "read-only-navigation",
+  "captures": [
+    {
+      "name": "login",
+      "route": "/login",
+      "viewport": {
+        "width": 1440,
+        "height": 960
+      },
+      "screenshot": "C:\\tmp\\S_Hospital-hardening\\qa\\screenshots\\global-release-candidate-2026-06-15\\login.png",
+      "snippet": "Hospital San Isidro Acceso en red local Operación hospitalaria local Facturación, cobros, reportes y recibos institucionales para operar dentro del hospital. Funciona dentro de la red local. Sesión protegida para usuarios autorizados. Operación local ACCESO OPERATIVO Hospital San Isidro Inicie sesión con sus credenciales para abrir el panel de caja",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "headings": [
+          "Operación hospitalaria local",
+          "Hospital San Isidro"
+        ],
+        "buttonCount": 2,
+        "linkCount": 0,
+        "mainTextLength": 454,
+        "unnamedControls": []
+      }
+    },
+    {
+      "name": "dashboard",
+      "route": "/dashboard",
+      "viewport": {
+        "width": 1440,
+        "height": 960
+      },
+      "screenshot": "C:\\tmp\\S_Hospital-hardening\\qa\\screenshots\\global-release-candidate-2026-06-15\\dashboard.png",
+      "snippet": "Omitir al contenido principal CAJA LAN Caja hospitalaria Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Recibos Usuarios Ayuda Acerca de Administrador Validacion admin OPERACIÓN LOCAL Inicio Inicio Sin caja abierta 14 jun 2026, 11:30 p. m. Red local A Administrador Validacion OPERACIÓN LOCAL Inicio Lo",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "headings": [
+          "Inicio",
+          "Facturación y cobros",
+          "Cajeros hoy",
+          "Siguiente acción",
+          "Cobros de hoy",
+          "Servicios principales"
+        ],
+        "buttonCount": 5,
+        "linkCount": 13,
+        "mainTextLength": 529,
+        "unnamedControls": []
+      }
+    },
+    {
+      "name": "new-invoice-pos",
+      "route": "/billing/new",
+      "viewport": {
+        "width": 1440,
+        "height": 960
+      },
+      "screenshot": "C:\\tmp\\S_Hospital-hardening\\qa\\screenshots\\global-release-candidate-2026-06-15\\new-invoice-pos.png",
+      "snippet": "Omitir al contenido principal CAJA LAN Caja hospitalaria Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Recibos Usuarios Ayuda Acerca de Administrador Validacion admin OPERACIÓN LOCAL Nueva factura Inicio / Nueva factura Sin caja abierta 14 jun 2026, 11:30 p. m. Red local A Administrador Validacion CA",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "headings": [
+          "Nueva factura"
+        ],
+        "buttonCount": 7,
+        "linkCount": 14,
+        "mainTextLength": 506,
+        "unnamedControls": []
+      }
+    },
+    {
+      "name": "cashbox",
+      "route": "/cashbox",
+      "viewport": {
+        "width": 1440,
+        "height": 960
+      },
+      "screenshot": "C:\\tmp\\S_Hospital-hardening\\qa\\screenshots\\global-release-candidate-2026-06-15\\cashbox.png",
+      "snippet": "Omitir al contenido principal CAJA LAN Caja hospitalaria Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Recibos Usuarios Ayuda Acerca de Administrador Validacion admin OPERACIÓN LOCAL Caja Inicio / Caja Sin caja abierta 14 jun 2026, 11:30 p. m. Red local A Administrador Validacion Operación de caja Ca",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "headings": [
+          "Caja",
+          "Caja cerrada",
+          "Abrir caja"
+        ],
+        "buttonCount": 5,
+        "linkCount": 14,
+        "mainTextLength": 327,
+        "unnamedControls": []
+      }
+    },
+    {
+      "name": "invoice-history",
+      "route": "/invoices",
+      "viewport": {
+        "width": 1440,
+        "height": 960
+      },
+      "screenshot": "C:\\tmp\\S_Hospital-hardening\\qa\\screenshots\\global-release-candidate-2026-06-15\\invoice-history.png",
+      "snippet": "Omitir al contenido principal CAJA LAN Hospital San Isidro Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Recibos Usuarios Ayuda Acerca de Administrador Validacion admin OPERACIÓN LOCAL Historial Inicio / Historial Sin caja abierta 14 jun 2026, 11:30 p. m. Red local A Administrador Validacion Historia",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "headings": [
+          "Historial de facturas",
+          "No hay facturas"
+        ],
+        "buttonCount": 10,
+        "linkCount": 14,
+        "mainTextLength": 258,
+        "unnamedControls": []
+      }
+    },
+    {
+      "name": "reports",
+      "route": "/reports",
+      "viewport": {
+        "width": 1440,
+        "height": 960
+      },
+      "screenshot": "C:\\tmp\\S_Hospital-hardening\\qa\\screenshots\\global-release-candidate-2026-06-15\\reports.png",
+      "snippet": "Omitir al contenido principal CAJA LAN Hospital San Isidro Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Recibos Usuarios Ayuda Acerca de Administrador Validacion admin OPERACIÓN LOCAL Reportes Inicio / Reportes Sin caja abierta 14 jun 2026, 11:30 p. m. Red local A Administrador Validacion OPERACIÓN ",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "headings": [
+          "Reportes",
+          "Resumen del día",
+          "Facturado",
+          "Cobrado",
+          "Pendiente",
+          "Facturas",
+          "Anulado",
+          "Lectura financiera",
+          "Cobros por método",
+          "Estado de Facturas",
+          "Gráfico por método"
+        ],
+        "buttonCount": 12,
+        "linkCount": 14,
+        "mainTextLength": 654,
+        "unnamedControls": []
+      }
+    },
+    {
+      "name": "settings-fiscal",
+      "route": "/settings/fiscal",
+      "viewport": {
+        "width": 1440,
+        "height": 960
+      },
+      "screenshot": "C:\\tmp\\S_Hospital-hardening\\qa\\screenshots\\global-release-candidate-2026-06-15\\settings-fiscal.png",
+      "snippet": "Omitir al contenido principal CAJA LAN Hospital San Isidro Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Recibos Usuarios Ayuda Acerca de Administrador Validacion admin OPERACIÓN LOCAL Configuración Inicio / Configuración Sin caja abierta 14 jun 2026, 11:30 p. m. Red local A Administrador Validacion ",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "headings": [
+          "Configuración",
+          "Configuración completa",
+          "Resumen Fiscal"
+        ],
+        "buttonCount": 7,
+        "linkCount": 14,
+        "mainTextLength": 407,
+        "unnamedControls": []
+      }
+    },
+    {
+      "name": "settings-institutional-receipts",
+      "route": "/settings/institutional-receipts",
+      "viewport": {
+        "width": 1440,
+        "height": 960
+      },
+      "screenshot": "C:\\tmp\\S_Hospital-hardening\\qa\\screenshots\\global-release-candidate-2026-06-15\\settings-institutional-receipts.png",
+      "snippet": "Omitir al contenido principal CAJA LAN Hospital San Isidro Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Recibos Usuarios Ayuda Acerca de Administrador Validacion admin OPERACIÓN LOCAL Recibos institucionales Inicio / Recibos institucionales Sin caja abierta 14 jun 2026, 11:30 p. m. Red local A Admin",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "headings": [
+          "Recibos institucionales",
+          "Datos del recibo"
+        ],
+        "buttonCount": 8,
+        "linkCount": 14,
+        "mainTextLength": 396,
+        "unnamedControls": []
+      }
+    },
+    {
+      "name": "backups",
+      "route": "/backups",
+      "viewport": {
+        "width": 1440,
+        "height": 960
+      },
+      "screenshot": "C:\\tmp\\S_Hospital-hardening\\qa\\screenshots\\global-release-candidate-2026-06-15\\backups.png",
+      "snippet": "Omitir al contenido principal CAJA LAN Hospital San Isidro Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Recibos Usuarios Ayuda Acerca de Administrador Validacion admin OPERACIÓN LOCAL Respaldos Inicio / Respaldos Sin caja abierta 14 jun 2026, 11:30 p. m. Red local A Administrador Validacion OPERACIÓ",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "headings": [
+          "Respaldos",
+          "Respaldos del hospital"
+        ],
+        "buttonCount": 5,
+        "linkCount": 14,
+        "mainTextLength": 403,
+        "unnamedControls": []
+      }
+    },
+    {
+      "name": "users-roles",
+      "route": "/admin/users",
+      "viewport": {
+        "width": 1440,
+        "height": 960
+      },
+      "screenshot": "C:\\tmp\\S_Hospital-hardening\\qa\\screenshots\\global-release-candidate-2026-06-15\\users-roles.png",
+      "snippet": "Omitir al contenido principal CAJA LAN Hospital San Isidro Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Recibos Usuarios Ayuda Acerca de Administrador Validacion admin OPERACIÓN LOCAL Usuarios Inicio / Usuarios Sin caja abierta 14 jun 2026, 11:30 p. m. Red local A Administrador Validacion OPERACIÓN ",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "headings": [
+          "Usuarios"
+        ],
+        "buttonCount": 13,
+        "linkCount": 14,
+        "mainTextLength": 435,
+        "unnamedControls": []
+      }
+    },
+    {
+      "name": "help-manuals",
+      "route": "/help",
+      "viewport": {
+        "width": 1440,
+        "height": 960
+      },
+      "screenshot": "C:\\tmp\\S_Hospital-hardening\\qa\\screenshots\\global-release-candidate-2026-06-15\\help-manuals.png",
+      "snippet": "Omitir al contenido principal CAJA LAN Caja hospitalaria Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Recibos Usuarios Ayuda Acerca de Administrador Validacion admin OPERACIÓN LOCAL Ayuda Inicio / Ayuda Sin caja abierta 14 jun 2026, 11:30 p. m. Red local A Administrador Validacion OPERACIÓN LOCAL Ay",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "headings": [
+          "Ayuda institucional",
+          "Abrir el sistema",
+          "Iniciar sesión",
+          "Abrir caja",
+          "Nueva factura",
+          "Cobrar",
+          "Imprimir recibo",
+          "Reimprimir",
+          "Reportes",
+          "Respaldos",
+          "Cierre de turno",
+          "Pedir soporte"
+        ],
+        "buttonCount": 5,
+        "linkCount": 14,
+        "mainTextLength": 7238,
+        "unnamedControls": []
+      }
+    },
+    {
+      "name": "about",
+      "route": "/about",
+      "viewport": {
+        "width": 1440,
+        "height": 960
+      },
+      "screenshot": "C:\\tmp\\S_Hospital-hardening\\qa\\screenshots\\global-release-candidate-2026-06-15\\about.png",
+      "snippet": "Omitir al contenido principal CAJA LAN Hospital San Isidro Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Recibos Usuarios Ayuda Acerca de Administrador Validacion admin OPERACIÓN LOCAL Acerca de Inicio / Acerca de Sin caja abierta 14 jun 2026, 11:31 p. m. Red local A Administrador Validacion OPERACIÓ",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "headings": [
+          "Informacion del sistema",
+          "Hospital San Isidro",
+          "Operación local",
+          "Estado local",
+          "Diagnostico administrativo",
+          "Soporte"
+        ],
+        "buttonCount": 4,
+        "linkCount": 14,
+        "mainTextLength": 1467,
+        "unnamedControls": []
+      }
+    },
+    {
+      "name": "server-status",
+      "route": "/about",
+      "viewport": {
+        "width": 1440,
+        "height": 960
+      },
+      "screenshot": "C:\\tmp\\S_Hospital-hardening\\qa\\screenshots\\global-release-candidate-2026-06-15\\server-status.png",
+      "snippet": "Omitir al contenido principal CAJA LAN Hospital San Isidro Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Recibos Usuarios Ayuda Acerca de Administrador Validacion admin OPERACIÓN LOCAL Acerca de Inicio / Acerca de Sin caja abierta 14 jun 2026, 11:31 p. m. Red local A Administrador Validacion OPERACIÓ",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "headings": [
+          "Informacion del sistema",
+          "Hospital San Isidro",
+          "Operación local",
+          "Estado local",
+          "Diagnostico administrativo",
+          "Soporte"
+        ],
+        "buttonCount": 4,
+        "linkCount": 14,
+        "mainTextLength": 1467,
+        "unnamedControls": []
+      }
+    },
+    {
+      "name": "mobile-new-invoice-pos",
+      "route": "/billing/new",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "screenshot": "C:\\tmp\\S_Hospital-hardening\\qa\\screenshots\\global-release-candidate-2026-06-15\\mobile-new-invoice-pos.png",
+      "snippet": "Omitir al contenido principal Nueva factura Inicio / Nueva factura A CAJA HOSPITALARIA Nueva factura Paciente, servicios, cobro y recibo en una sola estacion. Caja cerrada Caja no abierta Debe abrir la caja antes de emitir facturas. Abrir Caja NOMBRE DEL PACIENTE * BUSCAR SERVICIO Categoria Todos SERVICIOS (0) Limpiar Factura en curso No hay servic",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "headings": [
+          "Nueva factura"
+        ],
+        "buttonCount": 8,
+        "linkCount": 2,
+        "mainTextLength": 506,
+        "unnamedControls": []
+      }
+    },
+    {
+      "name": "tablet-dashboard",
+      "route": "/dashboard",
+      "viewport": {
+        "width": 820,
+        "height": 1180
+      },
+      "screenshot": "C:\\tmp\\S_Hospital-hardening\\qa\\screenshots\\global-release-candidate-2026-06-15\\tablet-dashboard.png",
+      "snippet": "Omitir al contenido principal Inicio Inicio Sin caja abierta Red local A OPERACIÓN LOCAL Inicio Lo necesario para operar caja, cobros y facturación sin perderse. CAJA Atención Cerrada Abra caja antes de facturar FACTURADO Listo Facturación del mes COBRADO Listo Cobros del mes FACTURAS Activo Emitidas este mes Facturación y cobros Últimos 7 días. Ac",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "headings": [
+          "Inicio",
+          "Facturación y cobros",
+          "Cajeros hoy",
+          "Siguiente acción",
+          "Cobros de hoy",
+          "Servicios principales"
+        ],
+        "buttonCount": 6,
+        "linkCount": 1,
+        "mainTextLength": 529,
+        "unnamedControls": []
+      }
+    }
+  ],
+  "consoleEntries": [],
+  "findings": [],
+  "summary": {
+    "captureCount": 15,
+    "consoleIssueCount": 0,
+    "warningCount": 0,
+    "blockingFindingCount": 0
+  }
+}

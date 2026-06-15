@@ -266,8 +266,8 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
         open={state.showReceipt && Boolean(state.receipt)}
         onOpenChange={onReceiptOpenChange}
         size="lg"
-        title="Vista previa del recibo"
-        description="Vista previa institucional lista para imprimir."
+        title="Comprobante de factura"
+        description="Formato de compatibilidad para facturas antiguas o cuando el PDF institucional no esta disponible."
       >
         {state.receipt ? (
           <ReceiptPreview

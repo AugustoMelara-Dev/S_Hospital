@@ -149,6 +149,29 @@ Despues de instalar:
 11. Cerrar caja.
 12. Reiniciar Windows y repetir login desde servidor y cliente LAN.
 
+## Actualizacion De Una Instalacion Existente
+
+Use el manual dedicado `MANUAL_ACTUALIZACION_SEGURA.md` y el checklist
+`CHECKLIST_ACTUALIZACION_SEGURA.md` antes de copiar un paquete nuevo.
+
+El preflight seguro de actualizacion es:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\update_release_preflight.ps1 -ExpectedCurrentCommit <commit-instalado>
+```
+
+Ese comando no ejecuta migraciones, no crea respaldos, no reinicia servicios y
+no modifica datos. Si reporta bloqueantes, no actualice hasta corregirlos.
+
+Durante una actualizacion real preserve `.env`, `backend\.env`,
+`backend\storage`, respaldos, logos/configuracion local y recibos historicos.
+La unica migracion permitida contra el servidor real es incremental:
+`php artisan migrate --force`.
+
+Nunca use `php artisan migrate:fresh`, `php artisan db:wipe`, rollback/reset de
+migraciones, `DROP DATABASE`, borrado de volumenes Docker ni borrado de
+`backend\storage` contra el servidor real del hospital.
+
 ## Cierre Final Antes De Operar
 
 No declare la instalacion lista para produccion hasta completar cuatro
