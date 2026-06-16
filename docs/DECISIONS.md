@@ -3586,3 +3586,13 @@ Decision: la descarga de backup se entrega como `application/octet-stream` con `
 Motivo: evitar sniffing/confusion de contenido, errores 500 por metadata alterada y cualquier riesgo de header/path injection desde registros de base de datos.
 
 Validacion: `vendor\bin\phpunit --filter=BackupWorkflowTest`, `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\restore_hospital_windows.ps1 -SelfTest`, `scripts\run_backup_worker.cmd --check` y `scripts\run_scheduled_backup.cmd --check`. Restore real sobre MariaDB descartable sigue siendo evidencia fisica/operativa, no ejecutada en este pase.
+
+# 2026-06-16 - Frontend evita acciones duplicadas y consultas sin permiso
+
+Contexto: la auditoria de UX encontro riesgos de doble confirmacion en factura, llamadas innecesarias a respaldos desde `Acerca de` para usuarios sin permiso y menu movil que podia quedar abierto al navegar.
+
+Decision: `NewInvoiceView` agrega un guard in-memory contra doble submit y `InvoiceConfirmation` deja que el boton maneje Enter de forma nativa. `useBackups` soporta `enabled` para desactivar la query sin romper reglas de hooks, y `AboutView` lo usa cuando falta `backups.view`. `AppShell` cierra el sidebar movil al cambiar la ruta.
+
+Motivo: reducir POST duplicados, evitar 403 visibles/ruidosos para cajeros y mejorar operacion tactil/movil sin cambiar contratos de backend.
+
+Validacion: `npm.cmd run test -- AboutView useBackups InvoiceConfirmation AppShell --run`, `npm.cmd run test -- NewInvoiceView InvoiceConfirmation --run` y `npm.cmd run typecheck`.

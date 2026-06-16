@@ -8,6 +8,7 @@ export interface BackupsFilters {
   page?: number;
   perPage?: number;
   status?: 'pending' | 'success' | 'failed' | 'all';
+  enabled?: boolean;
 }
 
 const PENDING_POLL_INTERVAL_MS = 5_000;
@@ -15,9 +16,11 @@ const STALE_TIME_MS = 30_000;
 const HEALTH_POLL_INTERVAL_MS = 60_000;
 
 export function useBackups(filters: BackupsFilters = {}) {
+  const { enabled = true, ...apiFilters } = filters;
   const query = useQuery({
-    queryKey: queryKeys.backups.list(filters),
-    queryFn: () => apiClient.getBackups(filters),
+    queryKey: queryKeys.backups.list(apiFilters),
+    queryFn: () => apiClient.getBackups(apiFilters),
+    enabled,
     placeholderData: keepPreviousData,
     staleTime: STALE_TIME_MS,
     refetchInterval: (currentQuery) => {

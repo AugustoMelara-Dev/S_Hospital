@@ -112,17 +112,6 @@ export function InvoiceConfirmation({
             type="button"
             className="flex-1"
             onClick={onConfirm}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && (e.ctrlKey || e.metaKey || e.altKey)) {
-                e.preventDefault();
-                return;
-              }
-
-              if (e.key === 'Enter' && !submitting) {
-                e.preventDefault();
-                onConfirm();
-              }
-            }}
             disabled={submitting}
           >
             {submitting ? 'Emitiendo...' : willOpenPayment ? 'Emitir y abrir cobro' : 'Confirmar emisión'}

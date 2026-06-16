@@ -25,9 +25,10 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
   const { checking, isOnline, lastCheck, summary } = useServerStatus();
   const hospitalName = displayHospitalName(fiscal?.hospital_name);
   const canViewAdminDiagnostics = user.roles.includes('admin');
-  const backupsQuery = useBackups({ page: 1, perPage: 1 });
+  const canViewBackups = user.permissions.includes('backups.view');
+  const backupsQuery = useBackups({ page: 1, perPage: 1, enabled: canViewBackups });
   const systemStatusQuery = useSystemStatusSnapshot(canViewAdminDiagnostics);
-  const backupCount = backupsQuery.isError ? 'Sin dato' : (backupsQuery.data?.meta.total ?? '...');
+  const backupCount = !canViewBackups ? 'Sin permiso' : backupsQuery.isError ? 'Sin dato' : (backupsQuery.data?.meta.total ?? '...');
   const systemStatus = canViewAdminDiagnostics ? (systemStatusQuery.data ?? null) : null;
   const systemStatusError = systemStatusQuery.isError
     ? userSafeErrorMessage(systemStatusQuery.error, 'No se pudo cargar el diagnóstico administrativo.')

@@ -80,7 +80,8 @@ describe('AboutView', () => {
 
     expect(screen.getAllByText('Todo bien')).toHaveLength(2);
     expect(screen.getByText(/base de datos y respaldos responden/i)).toBeInTheDocument();
-    await waitFor(() => expect(useBackups).toHaveBeenCalled());
+    await waitFor(() => expect(useBackups).toHaveBeenCalledWith({ page: 1, perPage: 1, enabled: false }));
+    expect(screen.getByText('Sin permiso')).toBeInTheDocument();
     expect(useSystemStatusSnapshot).toHaveBeenCalledWith(false);
   });
 
@@ -102,7 +103,7 @@ describe('AboutView', () => {
     expect(screen.getAllByText('Requiere revision')).toHaveLength(2);
     expect(screen.getByText(/pida soporte/i)).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/queue:work|App\\\\|DB_PASSWORD|\.env|C:\\\\/i);
-    await waitFor(() => expect(useBackups).toHaveBeenCalled());
+    await waitFor(() => expect(useBackups).toHaveBeenCalledWith({ page: 1, perPage: 1, enabled: false }));
   });
 
   it('shows protected administrative diagnostics with human-safe labels for admin users', async () => {
@@ -131,6 +132,7 @@ describe('AboutView', () => {
     expect(screen.getByText(/America\/Tegucigalpa/i)).toBeInTheDocument();
     expect(screen.getByText(/1\.0\.0-rc\.3/i)).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/queue:work|APP_KEY|DB_PASSWORD|\.env|C:\\\\/i);
+    expect(useBackups).toHaveBeenCalledWith({ page: 1, perPage: 1, enabled: true });
     expect(useSystemStatusSnapshot).toHaveBeenCalledWith(true);
   });
 });

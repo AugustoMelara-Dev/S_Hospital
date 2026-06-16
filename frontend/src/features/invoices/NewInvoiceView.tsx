@@ -42,6 +42,7 @@ export function NewInvoiceView({
   const patientInputRef = useRef<HTMLInputElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const scannerInputRef = useRef<HTMLInputElement | null>(null);
+  const submitInvoiceInFlightRef = useRef(false);
 
   useEffect(() => {
     void loadPointOfSaleData();
@@ -341,6 +342,11 @@ export function NewInvoiceView({
   }
 
   async function submitInvoice() {
+    if (submitInvoiceInFlightRef.current) {
+      return;
+    }
+
+    submitInvoiceInFlightRef.current = true;
     dispatch({ type: 'SET_SUBMITTING', payload: true });
     dispatch({ type: 'SET_SHOW_CONFIRMATION', payload: false });
     dispatch({ type: 'SET_ALERT_MESSAGE', payload: null });
@@ -382,6 +388,7 @@ export function NewInvoiceView({
       dispatch({ type: 'SET_ALERT_MESSAGE', payload: message });
       onStatus(message);
     } finally {
+      submitInvoiceInFlightRef.current = false;
       dispatch({ type: 'SET_SUBMITTING', payload: false });
     }
   }
