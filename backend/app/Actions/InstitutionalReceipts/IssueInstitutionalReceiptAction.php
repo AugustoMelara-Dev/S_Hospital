@@ -52,7 +52,8 @@ class IssueInstitutionalReceiptAction
 
             $selectedPayment = $this->selectedPayment($invoice, $payload);
             $cashSession = $this->cashSession($invoice, $selectedPayment, $payload);
-            $this->assertCashSessionCanBeUsed($cashSession, $user);
+            $this->assertCashSessionCanBeUsed($cashSession, $user, $selectedPayment);
+            $postCloseIssue = $cashSession->status === CashRegisterSession::STATUS_CLOSED;
 
             $profile = $this->resolveProfile($payload, $user, $cashSession);
             $reservation = $this->reserveNumber->execute();
@@ -104,6 +105,7 @@ class IssueInstitutionalReceiptAction
                     'amount' => $receipt->amount,
                     'cash_session_id' => $cashSession->id,
                     'payment_id' => $selectedPayment?->id,
+                    'post_close_issue' => $postCloseIssue,
                 ],
             ]);
 
@@ -213,17 +215,27 @@ class IssueInstitutionalReceiptAction
             ->firstOrFail();
     }
 
-    private function assertCashSessionCanBeUsed(CashRegisterSession $cashSession, User $user): void
+    private function assertCashSessionCanBeUsed(CashRegisterSession $cashSession, User $user, ?Payment $selectedPayment): void
     {
         if ($cashSession->user_id !== $user->id && ! $user->can('invoices.operate_any')) {
             throw new AuthorizationException('No puede emitir recibos desde la caja de otro usuario.');
         }
 
-        if ($cashSession->status !== CashRegisterSession::STATUS_OPEN) {
-            throw ValidationException::withMessages([
-                'cash_session_id' => 'La caja seleccionada esta cerrada.',
-            ]);
+        if ($cashSession->status === CashRegisterSession::STATUS_OPEN) {
+            return;
         }
+
+        if (
+            $cashSession->status === CashRegisterSession::STATUS_CLOSED
+            && $selectedPayment instanceof Payment
+            && (int) $selectedPayment->cash_session_id === (int) $cashSession->id
+        ) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'cash_session_id' => 'La caja seleccionada esta cerrada.',
+        ]);
     }
 
     /**

@@ -33,13 +33,6 @@ class RegisterPaymentAction
     public function execute(Invoice $invoice, array $payload, User $user, InvoiceAccess $invoiceAccess, ?Request $request = null): Payment
     {
         return DB::transaction(function () use ($invoice, $payload, $user, $invoiceAccess, $request): Payment {
-            $lockedInvoice = Invoice::query()
-                ->whereKey($invoice->id)
-                ->lockForUpdate()
-                ->firstOrFail();
-
-            $invoiceAccess->authorizeOperationalAccess($user, $lockedInvoice);
-
             $cashSession = CashRegisterSession::query()
                 ->whereKey($payload['cash_session_id'])
                 ->lockForUpdate()
@@ -54,6 +47,13 @@ class RegisterPaymentAction
                     'cash_session_id' => 'La caja seleccionada esta cerrada.',
                 ]);
             }
+
+            $lockedInvoice = Invoice::query()
+                ->whereKey($invoice->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $invoiceAccess->authorizeOperationalAccess($user, $lockedInvoice);
 
             if ($lockedInvoice->status === Invoice::STATUS_VOID) {
                 throw ValidationException::withMessages([

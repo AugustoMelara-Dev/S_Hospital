@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\AuditLog;
+use App\Models\CashMovement;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
@@ -289,7 +291,53 @@ class InstitutionalReceiptPaymentIntegrationTest extends TestCase
         $this->assertDatabaseCount('institutional_receipt_print_events', 2);
     }
 
-    private function seedBillingBase(bool $partialPayments = false): void
+    public function test_paid_receipt_can_be_issued_after_cash_session_closed_when_payment_was_already_posted(): void
+    {
+        $this->seedBillingBase(createSeries: false);
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+
+        $paymentId = $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_CASH,
+                'amount' => '17.25',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.invoice.status', 'paid')
+            ->assertJsonPath('data.institutional_receipt', null)
+            ->assertJsonPath('data.institutional_receipt_error', 'No hay una serie activa para recibos institucionales.')
+            ->json('data.payment.id');
+
+        $this->createReceiptSeries();
+        CashRegisterSession::query()->whereKey($sessionId)->update([
+            'status' => CashRegisterSession::STATUS_CLOSED,
+            'closed_at' => now(),
+        ]);
+
+        $receiptId = $this->actingAs($cashier)
+            ->postJson('/api/institutional-receipts', [
+                'invoice_id' => $invoiceId,
+                'payment_id' => $paymentId,
+                'cash_session_id' => $sessionId,
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.cash_session_id', $sessionId)
+            ->assertJsonPath('data.payment_id', $paymentId)
+            ->json('data.id');
+
+        $this->assertSame(1, CashMovement::query()->where('cash_session_id', $sessionId)->count());
+
+        $audit = AuditLog::query()
+            ->where('action', 'institutional_receipt.issued')
+            ->where('entity_id', $receiptId)
+            ->firstOrFail();
+
+        $this->assertTrue($audit->new_values['post_close_issue'] ?? false);
+    }
+
+    private function seedBillingBase(bool $partialPayments = false, bool $createSeries = true): void
     {
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class, ReceiptPrintProfileSeeder::class]);
 
@@ -317,6 +365,13 @@ class InstitutionalReceiptPaymentIntegrationTest extends TestCase
             'active' => true,
         ]);
 
+        if ($createSeries) {
+            $this->createReceiptSeries();
+        }
+    }
+
+    private function createReceiptSeries(): void
+    {
         InstitutionalReceiptSeries::query()->create([
             'document_type' => InstitutionalReceiptSeries::DOCUMENT_TYPE,
             'series' => 'REC-A',

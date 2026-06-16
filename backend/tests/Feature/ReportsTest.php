@@ -12,6 +12,7 @@ use App\Models\CashRegisterSession;
 use App\Models\Category;
 use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
+use App\Models\InstitutionalReceiptPrintEvent;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Service;
@@ -1253,6 +1254,14 @@ class ReportsTest extends TestCase
             'created_at' => now(),
         ]);
 
+        InstitutionalReceiptPrintEvent::query()->create([
+            'institutional_receipt_id' => null,
+            'event_type' => InstitutionalReceiptPrintEvent::TYPE_REPRINT,
+            'reason' => 'Copia institucional solicitada',
+            'user_id' => $admin->id,
+            'created_at' => now()->addMinute(),
+        ]);
+
         AuditLog::query()->create([
             'user_id' => $admin->id,
             'action' => 'payment.voided',
@@ -1283,12 +1292,13 @@ class ReportsTest extends TestCase
             ->getJson('/api/reports/operations?date_from='.now()->toDateString().'&date_to='.now()->toDateString())
             ->assertOk()
             ->assertJsonPath('data.summary.void_count', 1)
-            ->assertJsonPath('data.summary.reprint_count', 1)
+            ->assertJsonPath('data.summary.reprint_count', 2)
             ->assertJsonPath('data.summary.backup_count', 1)
-            ->assertJsonPath('data.summary.audit_event_count', 2)
+            ->assertJsonPath('data.summary.audit_event_count', 3)
             ->assertJsonPath('data.summary.cashier_count', 0)
             ->assertJsonPath('data.voids.0.reason', 'Error de captura')
-            ->assertJsonPath('data.reprints.0.reason', 'Paciente solicita copia')
+            ->assertJsonPath('data.reprints.0.reason', 'Copia institucional solicitada')
+            ->assertJsonPath('data.reprints.0.source', 'institutional_receipt')
             ->assertJsonPath('data.backups.0.filename', 'hospital-backup-test.sql')
             ->assertJsonMissingPath('data.voids.0.invoice_id')
             ->assertJsonMissingPath('data.reprints.0.invoice_id')

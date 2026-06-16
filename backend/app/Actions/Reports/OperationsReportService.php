@@ -6,6 +6,7 @@ use App\Models\Area;
 use App\Models\AuditLog;
 use App\Models\BackupLog;
 use App\Models\Category;
+use App\Models\InstitutionalReceiptPrintEvent;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Service;
@@ -136,8 +137,8 @@ class OperationsReportService
                 });
             });
 
-        $reprintCount = (clone $reprintQuery)->count();
-        $reprints = (clone $reprintQuery)
+        $legacyReprintCount = (clone $reprintQuery)->count();
+        $legacyReprints = (clone $reprintQuery)
             ->latest('created_at')
             ->limit(25)
             ->get()
@@ -145,6 +146,7 @@ class OperationsReportService
                 $values = $audit->new_values ?? [];
 
                 return [
+                    'source' => 'legacy_invoice',
                     'invoice_number' => $values['invoice_number'] ?? null,
                     'width' => $values['width'] ?? null,
                     'reason' => $values['reason'] ?? null,
@@ -152,6 +154,38 @@ class OperationsReportService
                     'user' => $audit->user?->name,
                 ];
             })
+            ->values()
+            ->all();
+
+        $institutionalReprintQuery = InstitutionalReceiptPrintEvent::query()
+            ->with('user:id,name,username', 'receipt:id,receipt_number_full,invoice_id,invoice_snapshot,print_profile_code')
+            ->where('event_type', InstitutionalReceiptPrintEvent::TYPE_REPRINT)
+            ->whereBetween('created_at', [$start, $end])
+            ->when(! empty($filters['user_id']), function ($query) use ($filters): void {
+                $query->where('user_id', $filters['user_id']);
+            });
+
+        $institutionalReprintCount = (clone $institutionalReprintQuery)->count();
+        $institutionalReprints = (clone $institutionalReprintQuery)
+            ->latest('created_at')
+            ->limit(25)
+            ->get()
+            ->map(fn (InstitutionalReceiptPrintEvent $event): array => [
+                'source' => 'institutional_receipt',
+                'invoice_number' => $event->receipt?->invoice_snapshot['invoice_number'] ?? null,
+                'receipt_number_full' => $event->receipt?->receipt_number_full,
+                'width' => $event->receipt?->print_profile_code,
+                'reason' => $event->reason,
+                'created_at' => $event->created_at?->toISOString(),
+                'user' => $event->user?->name,
+            ])
+            ->values()
+            ->all();
+
+        $reprintCount = $legacyReprintCount + $institutionalReprintCount;
+        $reprints = collect([...$legacyReprints, ...$institutionalReprints])
+            ->sortByDesc('created_at')
+            ->take(25)
             ->values()
             ->all();
 

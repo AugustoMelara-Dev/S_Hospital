@@ -3566,3 +3566,13 @@ Decision: la migracion se alinea con el esquema y modelos actuales: `payments.st
 Motivo: SQLite no ejecutaba esa migracion, asi que la prueba previa daba falsa confianza. La defensa de datos debe ser compatible con el motor real de produccion local: MySQL/MariaDB.
 
 Validacion: `vendor\bin\phpunit --filter=OfflineCheckConstraintsMigrationSqlGuardTest` y `vendor\bin\phpunit --filter=OfflineCheckConstraintsMigrationTest`. La validacion fresh MariaDB/MySQL queda como gate obligatorio cuando haya contenedor de base de datos disponible.
+
+# 2026-06-16 - Caja y recibos usan orden de locks y auditoria post-cierre
+
+Contexto: el flujo de cobros podia bloquear primero la factura y luego la caja, mientras el cierre de caja bloquea caja y despues facturas/pagos. Ademas, las reimpresiones institucionales no alimentaban el reporte operativo y una configuracion tardia de recibos dejaba sin salida institucional a facturas ya pagadas en una caja cerrada.
+
+Decision: `RegisterPaymentAction` bloquea primero la caja y despues la factura para mantener el mismo orden que cierre de caja. El reporte operativo suma reimpresiones legadas e institucionales, marcando la fuente. La emision manual de recibo institucional permite caja cerrada solo cuando se referencia explicitamente un pago posteado de esa misma caja; no crea movimientos de caja y audita `post_close_issue`.
+
+Motivo: reducir riesgo de deadlocks, cerrar brechas de auditoria y permitir recuperacion operativa despues de corregir configuracion de recibos sin reabrir caja ni modificar cobros.
+
+Validacion: `vendor\bin\phpunit --filter=PaymentLockOrderGuardTest`, `vendor\bin\phpunit --filter=test_operations_report_lists_voids_reprints_and_backups`, `vendor\bin\phpunit --filter=CashPaymentsReceiptTest` y `vendor\bin\phpunit --filter=InstitutionalReceiptPaymentIntegrationTest`.
