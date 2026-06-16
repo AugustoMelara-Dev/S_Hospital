@@ -1059,6 +1059,12 @@ class CashPaymentsReceiptTest extends TestCase
             ->postJson('/api/cash-sessions/open', ['opening_amount' => '0.00'])
             ->assertCreated()
             ->assertJsonPath('data.opening_amount', '0.00');
+
+        $this->assertDatabaseMissing('cash_movements', [
+            'user_id' => $cashier->id,
+            'type' => CashMovement::TYPE_OPENING,
+            'amount' => '0.00',
+        ]);
     }
 
     public function test_receipt_defaults_to_configured_width_and_uses_payment_cashier(): void

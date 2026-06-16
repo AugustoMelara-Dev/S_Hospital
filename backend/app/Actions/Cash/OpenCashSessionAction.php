@@ -7,6 +7,7 @@ use App\Models\CashMovement;
 use App\Models\CashRegisterSession;
 use App\Models\User;
 use App\Support\AuditLogger;
+use App\Support\Money;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -46,15 +47,17 @@ class OpenCashSessionAction
                     'opened_at' => now(),
                 ]);
 
-                CashMovement::query()->create([
-                    'cash_session_id' => $session->id,
-                    'user_id' => $user->id,
-                    'type' => CashMovement::TYPE_OPENING,
-                    'method' => CashMovement::TYPE_OPENING,
-                    'amount' => $payload['opening_amount'],
-                    'notes' => $payload['notes'] ?? null,
-                    'occurred_at' => now(),
-                ]);
+                if (Money::parseCents($payload['opening_amount'], 'opening_amount') > 0) {
+                    CashMovement::query()->create([
+                        'cash_session_id' => $session->id,
+                        'user_id' => $user->id,
+                        'type' => CashMovement::TYPE_OPENING,
+                        'method' => CashMovement::TYPE_OPENING,
+                        'amount' => $payload['opening_amount'],
+                        'notes' => $payload['notes'] ?? null,
+                        'occurred_at' => now(),
+                    ]);
+                }
 
                 $this->auditLogger->log(
                     action: 'cash_session.opened',

@@ -9,9 +9,12 @@ const realBaseUrl = baseUrl?.replace(/\/$/, '');
 const allowMutations = process.env.E2E_REAL_ALLOW_MUTATIONS === '1';
 const serviceQuery = process.env.E2E_REAL_SERVICE_QUERY ?? 'Glucosa';
 const reportPath = resolve(process.env.E2E_REAL_REPORT_PATH ?? 'test-results/real-smoke-report.json');
+const storageStatePath = resolve('test-results/real-smoke-auth-state.json');
 const smokeResults: Array<Record<string, unknown>> = [];
 
-test.beforeAll(() => {
+test.use({ storageState: storageStatePath });
+
+test.beforeAll(async ({ browser }) => {
   const missing = [
     ['E2E_REAL_BASE_URL', baseUrl],
     ['E2E_REAL_LOGIN', login],
@@ -22,6 +25,16 @@ test.beforeAll(() => {
 
   if (missing.length > 0) {
     throw new Error(`Real smoke requires ${missing.join(', ')}.`);
+  }
+
+  mkdirSync(dirname(storageStatePath), { recursive: true });
+  const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
+  const page = await context.newPage();
+  try {
+    await loginToRealApp(page);
+    await context.storageState({ path: storageStatePath });
+  } finally {
+    await context.close();
   }
 });
 
@@ -106,7 +119,7 @@ test('real cashier can issue and collect an invoice against Laravel DB', async (
   }
   await expect(openSessionHeading).toBeVisible();
 
-  await page.getByRole('link', { name: /nueva factura/i }).click();
+  await page.getByRole('link', { name: /nueva factura/i }).first().click();
   await expect(page.getByRole('heading', { name: /nueva factura/i })).toBeVisible();
   await page.getByLabel(/buscar por nombre/i).fill(serviceQuery);
   await page.getByRole('button', { name: new RegExp(serviceQuery, 'i') }).first().click();
@@ -122,16 +135,18 @@ test('real cashier can issue and collect an invoice against Laravel DB', async (
   await page.getByLabel(/monto recibido/i).fill('17.25');
   await expect(page.getByText(/ingrese el monto recibido/i)).toBeHidden();
   await page.getByRole('button', { name: /confirmar cobro/i }).click();
-  await expect(page.getByRole('heading', { name: /vista previa del recibo/i })).toBeVisible();
-  await expect(page.getByText(patientName)).toBeVisible();
-  await page.getByRole('button', { name: /cerrar modal/i }).click();
+  await expect(page.getByText(/pdf institucional/i).first()).toBeVisible();
+  const successDialog = page.getByRole('dialog', { name: /factura emitida exitosamente/i });
+  await expect(successDialog).toBeVisible();
+  await expect(successDialog.getByText(patientName)).toBeVisible();
 
-  await page.getByRole('link', { name: /ver factura/i }).click();
+  await successDialog.getByRole('link', { name: /ver factura/i }).click();
   await expect(page.getByText(patientName)).toBeVisible();
 
   await page.getByRole('link', { name: /reportes/i }).click();
-  await expect(page.getByRole('heading', { name: /reporte diario/i })).toBeVisible();
-  await expect(page.getByText(/total cobrado/i)).toBeVisible();
+  await expect(page.getByRole('heading', { name: /reportes/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /resumen del d/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /cobrado/i })).toBeVisible();
 
   await expect.poll(() => consoleIssues, {
     message: consoleIssues.join('\n') || 'No console issues captured.',
@@ -173,14 +188,49 @@ function captureConsoleIssues(page: Page, consoleIssues: string[]) {
 }
 
 async function loginToRealApp(page: Page) {
-  await page.goto(`${realBaseUrl}/login`);
-  if (await page.getByRole('link', { name: /dashboard|inicio|nueva factura|caja/i }).first().isVisible().catch(() => false)) {
+  const sessionResponse = await page.request.get(`${realBaseUrl}/api/auth/session`);
+  const sessionBody = await sessionResponse.json().catch(() => null) as { data?: unknown } | null;
+
+  if (sessionResponse.ok() && sessionBody?.data) {
+    await page.goto(`${realBaseUrl}/dashboard`);
+    await expect(page.getByRole('link', { name: /inicio|nueva factura|caja|reportes|respaldos/i }).first()).toBeVisible();
     return;
   }
-  await page.getByLabel(/usuario|email/i).fill(login ?? '');
-  await page.getByRole('textbox', { name: /contrase(?:ñ|n)a|password/i }).fill(password ?? '');
-  await page.getByRole('button', { name: /entrar|iniciar/i }).click();
-  await expect(page.getByRole('link', { name: /nueva factura|reportes|respaldos/i }).first()).toBeVisible();
+
+  await page.goto(`${realBaseUrl}/login`);
+  const authenticatedLink = page.getByRole('link', { name: /dashboard|inicio|nueva factura|caja|reportes|respaldos/i }).first();
+  if (await authenticatedLink.isVisible().catch(() => false)) {
+    return;
+  }
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    if (await authenticatedLink.isVisible().catch(() => false)) {
+      return;
+    }
+
+    await page.getByRole('textbox', { name: /usuario|correo|email/i }).fill(login ?? '');
+    await page.getByRole('textbox', { name: /contrase(?:ñ|n)a|password/i }).fill(password ?? '');
+    await page.getByRole('button', { name: /entrar|iniciar/i }).click();
+
+    await page.waitForTimeout(1_000);
+    const lockoutMessage = page.getByText(/demasiados intentos|bloqueado/i).first();
+    if (attempt < 2 && await lockoutMessage.isVisible().catch(() => false)) {
+      await page.waitForTimeout(70_000);
+      continue;
+    }
+
+    const appLink = page.getByRole('link', { name: /inicio|nueva factura|reportes|respaldos/i }).first();
+    if (await appLink.isVisible({ timeout: 7_500 }).catch(() => false)) {
+      return;
+    }
+
+    if (attempt < 2 && await lockoutMessage.isVisible().catch(() => false)) {
+      await page.waitForTimeout(70_000);
+      continue;
+    }
+
+    await expect(appLink).toBeVisible();
+  }
 }
 
 async function expectFirstAssetLoadsAsJavaScript(page: Page) {
