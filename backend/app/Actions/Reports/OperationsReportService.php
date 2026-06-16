@@ -6,6 +6,7 @@ use App\Models\Area;
 use App\Models\AuditLog;
 use App\Models\BackupLog;
 use App\Models\Category;
+use App\Models\InstitutionalReceipt;
 use App\Models\InstitutionalReceiptPrintEvent;
 use App\Models\Invoice;
 use App\Models\Payment;
@@ -170,21 +171,28 @@ class OperationsReportService
             ->latest('created_at')
             ->limit(25)
             ->get()
-            ->map(fn (InstitutionalReceiptPrintEvent $event): array => [
-                'source' => 'institutional_receipt',
-                'invoice_number' => $event->receipt?->invoice_snapshot['invoice_number'] ?? null,
-                'receipt_number_full' => $event->receipt?->receipt_number_full,
-                'width' => $event->receipt?->print_profile_code,
-                'reason' => $event->reason,
-                'created_at' => $event->created_at?->toISOString(),
-                'user' => $event->user?->name,
-            ])
+            ->map(function (InstitutionalReceiptPrintEvent $event): array {
+                /** @var InstitutionalReceipt|null $receipt */
+                $receipt = $event->receipt;
+
+                return [
+                    'source' => 'institutional_receipt',
+                    'invoice_number' => $receipt?->invoice_snapshot['invoice_number'] ?? null,
+                    'receipt_number_full' => $receipt?->receipt_number_full,
+                    'width' => $receipt?->print_profile_code,
+                    'reason' => $event->reason,
+                    'created_at' => $event->created_at?->toISOString(),
+                    'user' => $event->user?->name,
+                ];
+            })
             ->values()
             ->all();
 
         $reprintCount = $legacyReprintCount + $institutionalReprintCount;
-        $reprints = collect([...$legacyReprints, ...$institutionalReprints])
-            ->sortByDesc('created_at')
+        /** @var list<array<string, mixed>> $reprintRows */
+        $reprintRows = array_merge($legacyReprints, $institutionalReprints);
+        $reprints = collect($reprintRows)
+            ->sortByDesc(fn (array $row): string => (string) ($row['created_at'] ?? ''))
             ->take(25)
             ->values()
             ->all();

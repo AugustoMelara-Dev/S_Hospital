@@ -32,7 +32,7 @@ return new class extends Migration
                 'cash_register_sessions_status_valid' => "status IN ('open','closed')",
             ],
             'cash_movements' => [
-                'cash_movements_amount_nonzero' => '(amount <> 0)',
+                'cash_movements_amount_nonzero' => "(amount <> 0 OR type = 'opening')",
                 'cash_movements_type_valid' => "type IN ('opening','payment','payment_void','closing')",
             ],
             'audit_logs' => [
