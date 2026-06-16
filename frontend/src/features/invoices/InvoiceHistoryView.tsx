@@ -253,8 +253,13 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       setSelectedInvoice(invoice);
       const institutionalReceipt = issuedInstitutionalReceipt(invoice);
       if (institutionalReceipt) {
-        const reason = reprintReason.trim() || 'Reimpresión solicitada desde historial.';
-        await apiClient.registerInstitutionalReceiptPrintEvent(institutionalReceipt.id, reason);
+        const reason = reprintReason.trim();
+        if (reason.length < 5) {
+          onStatus('Ingrese un motivo de reimpresión de al menos 5 caracteres.');
+
+          return;
+        }
+
         await openInstitutionalReceiptPdf(institutionalReceipt, reason);
         queryClient.invalidateQueries({ queryKey: ['audit'] });
         onStatus(`PDF institucional ${institutionalReceipt.receipt_number_full} abierto.`);
@@ -291,9 +296,11 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
 
   async function openInstitutionalReceiptPdf(
     receipt: NonNullable<Invoice['institutional_receipt']>,
-    _reason?: string,
+    reason?: string,
   ) {
-    const blob = await apiClient.getInstitutionalReceiptPdf(receipt.id);
+    const blob = reason?.trim()
+      ? await apiClient.getInstitutionalReceiptPdf(receipt.id, reason)
+      : await apiClient.getInstitutionalReceiptPdf(receipt.id);
     openBlobInNewTab(blob, `recibo-institucional-${receipt.receipt_number_full}.pdf`);
   }
 
@@ -656,7 +663,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
             Esta acción queda auditada. Cambiar el tamaño en la vista previa no registra reimpresión; este botón sí.
           </p>
           <div className="space-y-2">
-            <Label htmlFor="reprintReason">Motivo opcional</Label>
+            <Label htmlFor="reprintReason">Motivo de reimpresión</Label>
             <Textarea
               id="reprintReason"
               value={reprintReason}

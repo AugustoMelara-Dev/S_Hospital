@@ -3537,6 +3537,16 @@ hospital necesita descifrar backups previos.
 Criterio de verificacion: pruebas focales de backend/frontend agregadas en este
 pase, `composer audit` en CI, preflight con `-EnvFile`, y comandos de quality
 gate documentados en checklist.
+# 2026-06-16 - Recibo institucional PDF autoriza y registra dentro del lock
+
+Contexto: el flujo de PDF institucional leia si existian impresiones antes de bloquear el recibo. El frontend tambien registraba un evento de impresion antes de descargar el PDF, convirtiendo la primera descarga en una reimpresion para el backend.
+
+Decision: la descarga PDF y el registro de eventos quedan unificados por el backend. `InstitutionalReceiptPdfService` bloquea el recibo, decide primera impresion vs reimpresion, autoriza, valida motivo cuando corresponde, genera el PDF y registra exactamente un evento dentro de la misma ruta critica. El frontend deja de llamar `print-events` antes del PDF; para reimpresion pasa el motivo al GET del PDF.
+
+Motivo: evitar dobles eventos, bloqueos falsos de primera impresion y carreras donde una segunda descarga se convierte en reimpresion sin permiso o sin motivo.
+
+Validacion: `vendor\bin\phpunit --filter=InstitutionalReceiptPdfTest` y `npm.cmd run test -- NewInvoiceView InvoiceHistoryView --run`.
+
 # 2026-06-16 - Constraints offline compatibles con MySQL/MariaDB real
 
 Contexto: la auditoria read-only encontro que `2026_06_15_000004_add_offline_check_constraints` podia fallar en MariaDB/MySQL por referencias a columnas inexistentes, estados que no coinciden con los modelos y un indice parcial no soportado por MySQL/MariaDB.

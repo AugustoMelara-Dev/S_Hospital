@@ -124,7 +124,14 @@ export const institutionalReceipts = {
     return response.data.receipt;
   },
 
-  async pdf(id: number): Promise<Blob> {
-    return apiClient.download(`/api/institutional-receipts/${id}/pdf`);
+  async pdf(id: number, reason?: string | null): Promise<Blob> {
+    const params = new URLSearchParams();
+    if (reason?.trim()) {
+      params.set('reason', reason.trim());
+    }
+
+    const query = params.toString();
+
+    return apiClient.download(`/api/institutional-receipts/${id}/pdf${query ? `?${query}` : ''}`);
   },
 };

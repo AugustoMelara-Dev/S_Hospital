@@ -473,6 +473,11 @@ describe('NewInvoiceView', () => {
         'recibo-institucional-REC-A-00000001.pdf',
       );
     });
+    expect(
+      (globalThis.fetch as unknown as { mock: { calls: Array<[unknown, RequestInit | undefined]> } }).mock.calls
+        .filter(([url, init]) => String(url).includes('/api/institutional-receipts/90/print-events')
+          && init?.method === 'POST'),
+    ).toHaveLength(0);
     expect(screen.queryByLabelText(/vista previa del recibo/i)).not.toBeInTheDocument();
     expect(await screen.findByText(/REC-A-00000001/i)).toBeInTheDocument();
   });

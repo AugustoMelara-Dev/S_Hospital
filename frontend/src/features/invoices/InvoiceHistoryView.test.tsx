@@ -182,13 +182,13 @@ describe('InvoiceHistoryView', () => {
 
     await waitFor(() => expect(screen.getByText('Paciente Reimpresion Institucional')).toBeInTheDocument());
     fireEvent.click(screen.getByRole('button', { name: /reimprimir/i }));
-    fireEvent.change(screen.getByLabelText(/motivo opcional/i), {
+    fireEvent.change(screen.getByLabelText(/motivo de reimpresi/i), {
       target: { value: 'Copia solicitada por el paciente' },
     });
     fireEvent.click(screen.getByRole('button', { name: /registrar reimpresi/i }));
 
-    await waitFor(() => expect(registerPrint).toHaveBeenCalledWith(91, 'Copia solicitada por el paciente'));
-    expect(getPdf).toHaveBeenCalledWith(91);
+    await waitFor(() => expect(getPdf).toHaveBeenCalledWith(91, 'Copia solicitada por el paciente'));
+    expect(registerPrint).not.toHaveBeenCalled();
     expect(openBlobInNewTab).toHaveBeenCalledWith(
       expect.any(Blob),
       'recibo-institucional-REC-A-00000091.pdf',

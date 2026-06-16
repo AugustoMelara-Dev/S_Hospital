@@ -20,6 +20,7 @@ use Database\Seeders\ReceiptPrintProfileSeeder;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 class InstitutionalReceiptPdfTest extends TestCase
@@ -234,6 +235,20 @@ class InstitutionalReceiptPdfTest extends TestCase
             'reason' => 'Reposicion solicitada',
             'user_id' => $user->id,
         ]);
+    }
+
+    public function test_locked_print_event_path_requires_reason_when_receipt_already_has_print_event(): void
+    {
+        $context = $this->createIssuedReceiptContext();
+        $user = $context['user'];
+        $receipt = $context['receipt'];
+        $service = app(InstitutionalReceiptPdfService::class);
+
+        $service->recordReceiptPrintEvent($receipt, $user);
+
+        $this->expectException(ValidationException::class);
+
+        $service->recordReceiptPrintEvent($receipt->fresh(), $user);
     }
 
     public function test_test_print_endpoint_streams_draft_pdf_records_test_event_and_keeps_series_number(): void

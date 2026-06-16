@@ -387,8 +387,8 @@ export const apiClient = {
     return institutionalReceipts.registerPrintEvent(id, reason);
   },
 
-  async getInstitutionalReceiptPdf(id: number): Promise<Blob> {
-    return institutionalReceipts.pdf(id);
+  async getInstitutionalReceiptPdf(id: number, reason?: string | null): Promise<Blob> {
+    return institutionalReceipts.pdf(id, reason);
   },
 
   async login(login: string, password: string): Promise<AuthUser> {
