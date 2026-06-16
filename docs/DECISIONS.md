@@ -3576,3 +3576,13 @@ Decision: `RegisterPaymentAction` bloquea primero la caja y despues la factura p
 Motivo: reducir riesgo de deadlocks, cerrar brechas de auditoria y permitir recuperacion operativa despues de corregir configuracion de recibos sin reabrir caja ni modificar cobros.
 
 Validacion: `vendor\bin\phpunit --filter=PaymentLockOrderGuardTest`, `vendor\bin\phpunit --filter=test_operations_report_lists_voids_reprints_and_backups`, `vendor\bin\phpunit --filter=CashPaymentsReceiptTest` y `vendor\bin\phpunit --filter=InstitutionalReceiptPaymentIntegrationTest`.
+
+# 2026-06-16 - Descarga de backups usa MIME binario y nombre saneado
+
+Contexto: los backups generados por el sistema se publican como `.sql.enc`, pero la descarga HTTP declaraba `application/sql` y usaba directamente `backup_logs.filename` para `Content-Disposition`.
+
+Decision: la descarga de backup se entrega como `application/octet-stream` con `X-Content-Type-Options: nosniff`. El nombre de descarga se valida con una lista estricta de caracteres y extension `.sql`/`.sql.enc`; si la metadata fue manipulada o contiene separadores/control, se usa `hospital-backup-download.sql.enc`.
+
+Motivo: evitar sniffing/confusion de contenido, errores 500 por metadata alterada y cualquier riesgo de header/path injection desde registros de base de datos.
+
+Validacion: `vendor\bin\phpunit --filter=BackupWorkflowTest`, `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\restore_hospital_windows.ps1 -SelfTest`, `scripts\run_backup_worker.cmd --check` y `scripts\run_scheduled_backup.cmd --check`. Restore real sobre MariaDB descartable sigue siendo evidencia fisica/operativa, no ejecutada en este pase.

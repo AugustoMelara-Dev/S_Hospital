@@ -74,8 +74,8 @@ class BackupController extends Controller
             'created_at' => now(),
         ]);
 
-        return response()->download($absolutePath, $backupLog->filename, [
-            'Content-Type' => 'application/sql',
+        return response()->download($absolutePath, $this->safeDownloadFilename($backupLog->filename), [
+            'Content-Type' => 'application/octet-stream',
             'X-Content-Type-Options' => 'nosniff',
         ]);
     }
@@ -98,6 +98,22 @@ class BackupController extends Controller
         }
 
         return str_starts_with($realPath, rtrim($realRoot, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR);
+    }
+
+    private function safeDownloadFilename(string $filename): string
+    {
+        $safeFallback = 'hospital-backup-download.sql.enc';
+        $normalized = str_replace('\\', '/', $filename);
+
+        if (basename($normalized) !== $filename) {
+            return $safeFallback;
+        }
+
+        if (! preg_match('/\A[A-Za-z0-9][A-Za-z0-9._-]{0,160}\.sql(\.enc)?\z/', $filename)) {
+            return $safeFallback;
+        }
+
+        return $filename;
     }
 
     /**

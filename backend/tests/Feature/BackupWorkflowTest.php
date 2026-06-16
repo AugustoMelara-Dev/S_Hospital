@@ -410,6 +410,7 @@ class BackupWorkflowTest extends TestCase
         $this->actingAs($admin)
             ->get("/api/backups/{$backup->id}/download")
             ->assertOk()
+            ->assertHeader('Content-Type', 'application/octet-stream')
             ->assertHeader('X-Content-Type-Options', 'nosniff');
 
         $this->assertDatabaseHas('audit_logs', [
@@ -453,6 +454,20 @@ class BackupWorkflowTest extends TestCase
 
         $this->actingAs($admin)->get("/api/backups/{$unsafe->id}/download")->assertNotFound();
         $this->actingAs($admin)->get("/api/backups/{$failed->id}/download")->assertNotFound();
+    }
+
+    public function test_download_uses_safe_attachment_name_when_log_filename_is_tampered(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->admin();
+        $backup = $this->successfulBackupLog($admin, filename: "../bad\r\nname.sql.enc");
+
+        $response = $this->actingAs($admin)
+            ->get("/api/backups/{$backup->id}/download")
+            ->assertOk();
+
+        $this->assertStringContainsString('filename=hospital-backup-download.sql.enc', $response->headers->get('Content-Disposition'));
+        $this->assertStringNotContainsString('bad', $response->headers->get('Content-Disposition'));
     }
 
     public function test_artisan_backup_command_registers_success_log(): void
