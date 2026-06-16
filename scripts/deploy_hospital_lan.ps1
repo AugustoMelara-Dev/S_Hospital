@@ -1101,6 +1101,7 @@ try {
             $rootVars = @{
                 "SERVER_IP"         = $serverIp
                 "APP_PORT"          = "$appPort"
+                "APP_SCHEME"        = "http"
                 "APP_KEY"           = $currAppKey
                 "DB_PORT"           = "$dbPort"
                 "DB_DATABASE"       = "hospital_billing"
@@ -1112,6 +1113,9 @@ try {
                 "PUSHER_APP_SECRET"  = $currPusherAppSecret
                 "PUSHER_APP_CLUSTER" = "mt1"
                 "SOKETI_PORT"        = "6001"
+                "SOKETI_BIND_IP"     = "0.0.0.0"
+                "PUSHER_CLIENT_SCHEME" = "http"
+                "SESSION_SECURE_COOKIE" = "false"
                 "CACHE_STORE"        = "database"
                 "DB_CACHE_TABLE"     = "cache"
                 "DB_CACHE_LOCK_TABLE" = "cache_locks"
@@ -1268,6 +1272,7 @@ try {
                 "APP_DEBUG"                  = "false"
                 "APP_KEY"                    = $currAppKey
                 "APP_URL"                    = "http://${serverIp}:${appPort}"
+                "SESSION_SECURE_COOKIE"      = "false"
                 "DB_CONNECTION"              = "mysql"
                 "DB_HOST"                    = $dbHost
                 "DB_PORT"                    = $dbPortInput
@@ -1431,8 +1436,10 @@ try {
         # ==============================================================
         try {
             & netsh advfirewall firewall delete rule name="S_Hospital Server LAN Port $appPort" 2>$null
-            & netsh advfirewall firewall add rule name="S_Hospital Server LAN Port $appPort" dir=in action=allow protocol=TCP localport=$appPort | Out-Null
-            Write-Host "[OK] Regla de firewall para puerto $appPort habilitada." -ForegroundColor Green
+            & netsh advfirewall firewall add rule name="S_Hospital Server LAN Port $appPort" dir=in action=allow protocol=TCP localport=$appPort profile=private remoteip=localsubnet | Out-Null
+            & netsh advfirewall firewall delete rule name="S_Hospital Soketi LAN Port 6001" 2>$null
+            & netsh advfirewall firewall add rule name="S_Hospital Soketi LAN Port 6001" dir=in action=allow protocol=TCP localport=6001 profile=private remoteip=localsubnet | Out-Null
+            Write-Host "[OK] Reglas de firewall LAN para puertos $appPort y 6001 habilitadas solo en red privada/local." -ForegroundColor Green
         }
         catch {
             [void]$warnings.Add("No se pudo crear la regla de firewall. Habilitela manualmente.")

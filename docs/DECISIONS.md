@@ -3537,6 +3537,16 @@ hospital necesita descifrar backups previos.
 Criterio de verificacion: pruebas focales de backend/frontend agregadas en este
 pase, `composer audit` en CI, preflight con `-EnvFile`, y comandos de quality
 gate documentados en checklist.
+# 2026-06-16 - Deploy LAN restringe firewall y publica WebSocket de forma explicita
+
+Contexto: la auditoria detecto que el compose productivo entregaba a los clientes `SERVER_IP:6001` para WebSocket, pero Soketi estaba publicado solo en `127.0.0.1`. Tambien el instalador Windows abria el puerto de la app sin limitar perfil privado ni subnet local.
+
+Decision: `docker-compose.prod.yml` centraliza `APP_SCHEME`, expone `SESSION_SECURE_COOKIE`, y publica Soketi mediante `SOKETI_BIND_IP`/`SOKETI_PORT` en lugar de forzarlo a localhost. Los scripts Windows de despliegue y refresco de IP recrean reglas de firewall para la app y Soketi con perfil privado y `LocalSubnet`.
+
+Motivo: los clientes LAN necesitan alcanzar el canal realtime, pero la apertura de puertos debe quedar limitada a la red local del hospital.
+
+Validacion: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\test_lan_deploy_hardening.ps1`, `scripts\test_operational_url_safety.ps1`, `scripts\test_validate_lan_client_safety.ps1` y `docker compose -f docker-compose.prod.yml config`.
+
 # 2026-06-16 - Recibo institucional PDF autoriza y registra dentro del lock
 
 Contexto: el flujo de PDF institucional leia si existian impresiones antes de bloquear el recibo. El frontend tambien registraba un evento de impresion antes de descargar el PDF, convirtiendo la primera descarga en una reimpresion para el backend.

@@ -138,6 +138,9 @@ if ($PSCmdlet.ShouldProcess($backendEnv, "Set LAN env vars")) {
     Update-EnvKey -Path $backendEnv -Key "SANCTUM_STATEFUL_DOMAINS" -Value ($statefulUpdated -join ",")
     Update-EnvKey -Path $backendEnv -Key "CORS_ALLOWED_ORIGINS" -Value ($corsUpdated -join ",")
     Update-EnvKey -Path $backendEnv -Key "APP_URL" -Value "http://$ServerIp`:$AppPort"
+    Update-EnvKey -Path $backendEnv -Key "PUSHER_CLIENT_HOST" -Value $ServerIp
+    Update-EnvKey -Path $backendEnv -Key "PUSHER_CLIENT_PORT" -Value "6001"
+    Update-EnvKey -Path $backendEnv -Key "PUSHER_CLIENT_SCHEME" -Value "http"
     Write-Host "  updated $backendEnv (SERVER_IP, APP_PORT, SANCTUM_STATEFUL_DOMAINS, CORS_ALLOWED_ORIGINS, APP_URL)"
 }
 
@@ -152,8 +155,22 @@ if ($PSCmdlet.ShouldProcess("Windows Firewall", "Allow inbound TCP $AppPort on P
         -Protocol TCP `
         -LocalPort $AppPort `
         -Profile Private `
+        -RemoteAddress LocalSubnet `
         -ErrorAction SilentlyContinue | Out-Null
     Write-Host "  firewall rule: $ruleName"
+
+    $soketiRuleName = "Sistema Caja Hospitalaria - Soketi LAN TCP 6001"
+    Remove-NetFirewallRule -DisplayName $soketiRuleName -ErrorAction SilentlyContinue
+    New-NetFirewallRule `
+        -DisplayName $soketiRuleName `
+        -Direction Inbound `
+        -Action Allow `
+        -Protocol TCP `
+        -LocalPort 6001 `
+        -Profile Private `
+        -RemoteAddress LocalSubnet `
+        -ErrorAction SilentlyContinue | Out-Null
+    Write-Host "  firewall rule: $soketiRuleName"
 }
 
 # 4. Restart docker stack
