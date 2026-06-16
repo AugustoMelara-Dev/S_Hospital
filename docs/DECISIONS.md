@@ -3537,3 +3537,12 @@ hospital necesita descifrar backups previos.
 Criterio de verificacion: pruebas focales de backend/frontend agregadas en este
 pase, `composer audit` en CI, preflight con `-EnvFile`, y comandos de quality
 gate documentados en checklist.
+# 2026-06-16 - Constraints offline compatibles con MySQL/MariaDB real
+
+Contexto: la auditoria read-only encontro que `2026_06_15_000004_add_offline_check_constraints` podia fallar en MariaDB/MySQL por referencias a columnas inexistentes, estados que no coinciden con los modelos y un indice parcial no soportado por MySQL/MariaDB.
+
+Decision: la migracion se alinea con el esquema y modelos actuales: `payments.status` usa `posted/void`, `cash_movements.type` usa `opening/payment/payment_void/closing`, historiales de precio usan `old_price/new_price` y movimientos de caja usan `amount`. El guard de un unico perfil de recibo global deja de usar indice parcial `WHERE` y usa una columna generada nullable `global_default_unique_key` con indice unico; si ya existen multiples perfiles globales, la migracion falla con un error explicito en vez de omitir el hardening. El rollback de constraints ahora indica la tabla al ejecutar `DROP CONSTRAINT`.
+
+Motivo: SQLite no ejecutaba esa migracion, asi que la prueba previa daba falsa confianza. La defensa de datos debe ser compatible con el motor real de produccion local: MySQL/MariaDB.
+
+Validacion: `vendor\bin\phpunit --filter=OfflineCheckConstraintsMigrationSqlGuardTest` y `vendor\bin\phpunit --filter=OfflineCheckConstraintsMigrationTest`. La validacion fresh MariaDB/MySQL queda como gate obligatorio cuando haya contenedor de base de datos disponible.
