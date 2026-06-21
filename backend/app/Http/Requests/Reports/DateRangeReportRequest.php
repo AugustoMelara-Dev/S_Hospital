@@ -96,17 +96,17 @@ class DateRangeReportRequest extends FormRequest
         $rawDateFrom = $this->input('date_from');
 
         if (! is_string($rawDateFrom) || ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $rawDateFrom)) {
-            return '9999-12-31';
+            return Carbon::now()->addDays(self::MAX_RANGE_DAYS - 1)->toDateString();
         }
 
         try {
             $dateFrom = Carbon::createFromFormat('Y-m-d', $rawDateFrom);
         } catch (Throwable) {
-            return '9999-12-31';
+            return Carbon::now()->addDays(self::MAX_RANGE_DAYS - 1)->toDateString();
         }
 
         if ($dateFrom->format('Y-m-d') !== $rawDateFrom) {
-            return '9999-12-31';
+            return Carbon::now()->addDays(self::MAX_RANGE_DAYS - 1)->toDateString();
         }
 
         return $dateFrom->copy()->addDays(self::MAX_RANGE_DAYS - 1)->toDateString();

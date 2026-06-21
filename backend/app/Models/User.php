@@ -9,6 +9,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
 use Laravel\Sanctum\HasApiTokens;
+use Spatie\Permission\Exceptions\PermissionDoesNotExist;
 use Spatie\Permission\Traits\HasRoles;
 
 /**
@@ -27,8 +28,12 @@ use Spatie\Permission\Traits\HasRoles;
  */
 class User extends Authenticatable
 {
+    public const EXACT_ACCESS_MARKER_PERMISSION = 'system.exact_user_permissions';
+
     /** @use HasFactory<UserFactory> */
-    use HasApiTokens, HasFactory, HasRoles, Notifiable;
+    use HasApiTokens, HasFactory, HasRoles, Notifiable {
+        HasRoles::hasPermissionTo as protected spatieHasPermissionTo;
+    }
 
     /**
      * The attributes that are mass assignable.
@@ -76,5 +81,32 @@ class User extends Authenticatable
     public function serviceArea()
     {
         return $this->belongsTo(ServiceArea::class, 'service_area_id');
+    }
+
+    public function hasPermissionTo($permission, $guardName = null): bool
+    {
+        if ($this->usesExactDirectPermissionMap()) {
+            $permission = $this->filterPermission($permission, $guardName);
+
+            return $this->hasDirectPermission($permission);
+        }
+
+        return $this->spatieHasPermissionTo($permission, $guardName);
+    }
+
+    public function checkPermissionTo($permission, $guardName = null): bool
+    {
+        try {
+            return $this->hasPermissionTo($permission, $guardName);
+        } catch (PermissionDoesNotExist) {
+            return false;
+        }
+    }
+
+    public function usesExactDirectPermissionMap(): bool
+    {
+        return $this->loadMissing('permissions')
+            ->permissions
+            ->contains('name', self::EXACT_ACCESS_MARKER_PERMISSION);
     }
 }

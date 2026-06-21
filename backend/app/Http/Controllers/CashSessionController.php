@@ -11,6 +11,7 @@ use App\Http\Requests\Cash\IndexCashSessionRequest;
 use App\Http\Requests\Cash\OpenCashSessionRequest;
 use App\Models\CashRegisterSession;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Gate;
 
 class CashSessionController extends Controller
 {
@@ -70,6 +71,8 @@ class CashSessionController extends Controller
         CashRegisterSession $cashSession,
         CloseCashSessionAction $closeCashSession,
     ): JsonResponse {
+        Gate::authorize('close', $cashSession);
+
         $session = $closeCashSession->execute($cashSession, $request->validated(), $request->user(), $request);
 
         return response()->json(['data' => $session]);

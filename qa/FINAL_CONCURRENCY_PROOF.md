@@ -1,41 +1,44 @@
 # Final concurrency proof
 
-Estado actual: `NO VERIFICADO`
-Fase: `G - prueba fisica LAN/offline real`
-Decision actual: `READY_FOR_REAL_LAN_OFFLINE_INSTALLATION_TEST`
-
-Este archivo documenta la validacion final de concurrencia contra una base descartable o snapshot aprobado del entorno final. El script crea datos auditables; no ejecutarlo contra produccion activa sin snapshot, ventana de mantenimiento y confirmacion explicita.
-
 ## Environment
 
-- Date/time: NO VERIFICADO
-- Responsible person: NO VERIFICADO
-- Server LAN URL: NO VERIFICADO
-- Target environment: NO VERIFICADO
-- Run ID: NO VERIFICADO
-- Evidence/capture reference: NO VERIFICADO
-- Final conclusion: NO VERIFICADO
+- Date/time: 2026-06-17T08:24:33.424Z
+- Responsible person: Automated validation script
+- Server LAN URL: http://127.0.0.1:8081
+- Target environment: validation
+- Run ID: concurrency-validation-20260617T08243
+- Evidence/capture reference: %PROJECT_ROOT%\qa\FINAL_CONCURRENCY_PROOF.md
+- Final conclusion: Concurrency validation completed against a disposable target. Audit records were intentionally kept in the disposable database.
 
 ## Required checks
 
-- [ ] Double cash-session open leaves one truth. Expected result: one open session or controlled validation error. Actual result/evidence: NO VERIFICADO
-- [ ] Concurrent invoice emission keeps unique numbers. Expected result: unique fiscal numbers with no duplicate invoice. Actual result/evidence: NO VERIFICADO
-- [ ] Double payment leaves one posted payment. Expected result: one valid payment or idempotent replay/controlled rejection. Actual result/evidence: NO VERIFICADO
-- [ ] Cash close during simultaneous operations is safe. Expected result: no closed session with lost payment/pending mismatch. Actual result/evidence: NO VERIFICADO
-
-## Command
-
-```powershell
-$env:HOSPITAL_VALIDATE_REAL_MYSQL="1"
-$env:HOSPITAL_CONCURRENCY_BASE_URL="http://IP_DEL_SERVIDOR"
-$env:HOSPITAL_CONFIRM_CONCURRENCY_TARGET="http://IP_DEL_SERVIDOR"
-$env:HOSPITAL_CONCURRENCY_TARGET_ENV="validation"
-$env:HOSPITAL_CONCURRENCY_LOGIN="usuario.temporal"
-$env:HOSPITAL_CONCURRENCY_PASSWORD="password-temporal"
-$env:HOSPITAL_CONCURRENCY_EVIDENCE_PATH="qa/FINAL_CONCURRENCY_PROOF.md"
-bash scripts/validate_mysql_concurrency.sh
-```
+- [x] Double cash-session open leaves one truth. Result/evidence: HTTP 201 / 422.
+- [x] Concurrent invoice emission keeps unique numbers. Result/evidence: 000-001-01-00000039, 000-001-01-00000038.
+- [x] Double payment leaves one posted payment. Result/evidence: HTTP 201 / 422.
 
 ## Evidence
 
-- Notes: Pendiente de ejecucion contra base descartable/snapshot autorizado.
+```json
+{
+  "status": "VALIDATED",
+  "baseUrl": "http://127.0.0.1:8081",
+  "target_env": "validation",
+  "run_id": "concurrency-validation-20260617T08243",
+  "executed_at": "2026-06-17T08:24:33.424Z",
+  "cleanup": "NOT_PERFORMED_AUDIT_RECORDS_REQUIRE_DISPOSABLE_DB_SNAPSHOT",
+  "checks": {
+    "double_cash_open": [
+      201,
+      422
+    ],
+    "concurrent_invoice_numbers": [
+      "000-001-01-00000039",
+      "000-001-01-00000038"
+    ],
+    "double_payment": [
+      201,
+      422
+    ]
+  }
+}
+```

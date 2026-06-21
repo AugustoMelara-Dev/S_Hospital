@@ -3,7 +3,7 @@ import { Button } from '../../../components/ui/button';
 import { Checkbox } from '../../../components/ui/checkbox';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
-import { formatLempirasFromCents, parseCents } from '../../../lib/moneyCents';
+import { formatLempirasUIFromCents, parseCents } from '../../../lib/moneyCents';
 
 export type CartItem = {
   service: import('../../../lib/api').Service;
@@ -228,7 +228,7 @@ function actionLabelForBlockReason(reason: string, emptyActionLabel: string): st
 }
 
 function moneyLabel(value: string | number | null | undefined): string {
-  return formatLempirasFromCents(parseCents(value));
+  return formatLempirasUIFromCents(parseCents(value));
 }
 
 function parseQuantityUnits(value: string): number {

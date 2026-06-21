@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
-  <title id="title">Caja hospitalaria</title>
-  <desc id="desc">Icono instalable para caja hospitalaria</desc>
+  <title id="title">Sistema de Caja Hospitalaria</title>
+  <desc id="desc">Icono instalable del sistema institucional</desc>
   <rect width="512" height="512" fill="#0f172a"/>
   <rect x="128" y="88" width="256" height="336" rx="32" fill="#f8fafc"/>
   <path d="M256 144h38v74h74v38h-74v74h-38v-74h-74v-38h74z" fill="#0f766e"/>

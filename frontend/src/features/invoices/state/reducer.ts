@@ -46,6 +46,8 @@ export function newInvoiceReducer(state: NewInvoiceState, action: NewInvoiceActi
       return { ...state, receipt: action.payload };
     case 'SET_INSTITUTIONAL_RECEIPT':
       return { ...state, institutionalReceipt: action.payload };
+    case 'SET_POINT_OF_SALE_LOAD_ERROR':
+      return { ...state, pointOfSaleLoadError: action.payload };
     case 'SET_ALERT_MESSAGE':
       return { ...state, alertMessage: action.payload };
     case 'SET_WARNING_MESSAGE':
@@ -66,6 +68,8 @@ export function newInvoiceReducer(state: NewInvoiceState, action: NewInvoiceActi
       return { ...state, showClearConfirm: action.payload };
     case 'SET_LOADING_SERVICES':
       return { ...state, loadingServices: action.payload };
+    case 'SET_SCANNING_CODE':
+      return { ...state, scanningCode: action.payload };
     case 'SET_SUBMITTING':
       return { ...state, submitting: action.payload };
     case 'SET_PAYING':
@@ -77,6 +81,7 @@ export function newInvoiceReducer(state: NewInvoiceState, action: NewInvoiceActi
         categories: action.payload.categories,
         serviceAreas: action.payload.serviceAreas,
         services: action.payload.services,
+        pointOfSaleLoadError: null,
       };
     case 'SEARCH_SERVICES_SUCCESS':
       return { ...state, services: action.payload };
@@ -118,6 +123,7 @@ export function newInvoiceReducer(state: NewInvoiceState, action: NewInvoiceActi
         alertMessage: null,
         warningMessage: null,
         successMessage: null,
+        pointOfSaleLoadError: null,
         search: '',
         scanCode: '',
         selectedAreaId: undefined,

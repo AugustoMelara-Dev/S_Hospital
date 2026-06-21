@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Billing;
 
+use App\Models\AuditLog;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
@@ -24,7 +25,7 @@ class InvoiceDialysisPrescriptionTest extends TestCase
         $issuer = $this->issuerWithDialysisPermission();
         $erythropoietin = Service::query()->where('name', 'Eritropoyetina')->firstOrFail();
 
-        $this->actingAs($issuer)
+        $response = $this->actingAs($issuer)
             ->postJson('/api/invoices', [
                 'patient_name' => 'Maria Lopez',
                 'dialysis_prescription' => true,
@@ -38,6 +39,20 @@ class InvoiceDialysisPrescriptionTest extends TestCase
             ->assertJsonPath('data.total', '0.00')
             ->assertJsonPath('data.balance_due', '0.00')
             ->assertJsonPath('data.status', Invoice::STATUS_PAID);
+
+        $invoiceId = $response->json('data.id');
+        $audit = AuditLog::query()
+            ->where('action', 'invoice.dialysis_prescription_applied')
+            ->where('entity_type', Invoice::class)
+            ->where('entity_id', $invoiceId)
+            ->firstOrFail();
+
+        $this->assertSame('success', $audit->result);
+        $this->assertSame($issuer->id, $audit->user_id);
+        $this->assertSame('000-001-01-00000001', $audit->new_values['invoice_number'] ?? null);
+        $this->assertSame('Maria Lopez', $audit->new_values['patient_name'] ?? null);
+        $this->assertSame(Service::ERYTHROPOIETIN_RULE, $audit->new_values['applied_items'][0]['special_rule_code'] ?? null);
+        $this->assertSame('Eritropoyetina', $audit->new_values['applied_items'][0]['service_name'] ?? null);
     }
 
     public function test_erythropoietin_is_charged_when_dialysis_flag_absent(): void
@@ -76,6 +91,19 @@ class InvoiceDialysisPrescriptionTest extends TestCase
             ])
             ->assertStatus(422)
             ->assertJsonValidationErrors('dialysis_prescription');
+
+        $audit = AuditLog::query()
+            ->where('action', 'invoice.dialysis_prescription_denied')
+            ->where('entity_type', User::class)
+            ->where('entity_id', $cashier->id)
+            ->firstOrFail();
+
+        $this->assertSame('failed', $audit->result);
+        $this->assertSame($cashier->id, $audit->user_id);
+        $this->assertTrue($audit->new_values['requested'] ?? false);
+        $this->assertSame('missing_permission', $audit->new_values['reason'] ?? null);
+        $this->assertSame('Maria Lopez', $audit->new_values['patient_name'] ?? null);
+        $this->assertSame(0, Invoice::query()->count());
     }
 
     public function test_dialysis_flag_does_not_zero_other_services(): void
@@ -84,7 +112,7 @@ class InvoiceDialysisPrescriptionTest extends TestCase
         $issuer = $this->issuerWithDialysisPermission();
         $glucose = Service::query()->where('name', 'Glucosa')->firstOrFail();
 
-        $this->actingAs($issuer)
+        $response = $this->actingAs($issuer)
             ->postJson('/api/invoices', [
                 'patient_name' => 'Maria Lopez',
                 'dialysis_prescription' => true,
@@ -96,6 +124,12 @@ class InvoiceDialysisPrescriptionTest extends TestCase
             ->assertJsonPath('data.items.0.unit_price', '15.00')
             ->assertJsonPath('data.items.0.special_rule_applied', false)
             ->assertJsonPath('data.total', '17.25');
+
+        $this->assertDatabaseMissing('audit_logs', [
+            'action' => 'invoice.dialysis_prescription_applied',
+            'entity_type' => Invoice::class,
+            'entity_id' => $response->json('data.id'),
+        ]);
     }
 
     public function test_dialysis_flag_false_keeps_erythropoietin_at_full_price(): void

@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { apiClient, type CashSession, type InstitutionalReceipt, type ReceiptData, type Service, userSafeErrorMessage } from '../../lib/api';
 import { institutionalReceiptPaperSize } from '../../lib/institutionalReceiptPaper';
 import { invoiceSchema } from '../../schemas/invoice.schema';
-import { useFiscalSettings } from '../../hooks/useFiscalSettings';
+import { useOperationalSettings } from '../../hooks/useFiscalSettings';
 import { newInvoiceReducer } from './state/reducer';
 import { getInitialNewInvoiceState } from './state/types';
 import { computeSimpleEstimate, isZeroMoney, parseLocalCents } from './state/posMath';
@@ -17,6 +17,7 @@ const POS_SERVICE_PAGE_SIZE = 24;
 type NewInvoiceViewProps = {
   cashSession: CashSession | null;
   canCreatePayments?: boolean;
+  canOpenCash?: boolean;
   canViewCatalog?: boolean;
   canViewReceipts?: boolean;
   canMarkDialysisPrescription?: boolean;
@@ -28,6 +29,7 @@ type NewInvoiceViewProps = {
 export function NewInvoiceView({
   cashSession,
   canCreatePayments = true,
+  canOpenCash = true,
   canViewCatalog = true,
   canViewReceipts = true,
   canMarkDialysisPrescription = false,
@@ -36,12 +38,15 @@ export function NewInvoiceView({
   onStatus,
 }: NewInvoiceViewProps) {
   const [state, dispatch] = useReducer(newInvoiceReducer, cashSession, getInitialNewInvoiceState);
-  const { data: fiscalSettings } = useFiscalSettings();
+  const { data: operationalSettings } = useOperationalSettings();
   const queryClient = useQueryClient();
 
   const patientInputRef = useRef<HTMLInputElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const scannerInputRef = useRef<HTMLInputElement | null>(null);
+  const submitInvoiceInFlightRef = useRef(false);
+  const submitPaymentInFlightRef = useRef(false);
+  const scanCodeInFlightRef = useRef(false);
 
   useEffect(() => {
     void loadPointOfSaleData();
@@ -88,16 +93,16 @@ export function NewInvoiceView({
   }, [cashSession]);
 
   useEffect(() => {
-    if (!fiscalSettings) {
+    if (!operationalSettings) {
       return;
     }
-    dispatch({ type: 'SET_SCANNER_ENABLED', payload: fiscalSettings.scanner_enabled === true });
-    dispatch({ type: 'SET_PARTIAL_PAYMENTS_ENABLED', payload: fiscalSettings.partial_payments_enabled === true });
+    dispatch({ type: 'SET_SCANNER_ENABLED', payload: operationalSettings.scanner_enabled === true });
+    dispatch({ type: 'SET_PARTIAL_PAYMENTS_ENABLED', payload: operationalSettings.partial_payments_enabled === true });
     dispatch({
       type: 'SET_RECEIPT_WIDTH',
-      payload: institutionalReceiptPaperSize(fiscalSettings.receipt_paper_size),
+      payload: institutionalReceiptPaperSize(operationalSettings.receipt_paper_size),
     });
-  }, [fiscalSettings]);
+  }, [operationalSettings]);
 
   const handleClearCart = useCallback(() => {
     dispatch({ type: 'CLEAR_CART_COMPLETELY' });
@@ -164,8 +169,8 @@ export function NewInvoiceView({
     const sanitizedItems = canMarkDialysisPrescription
       ? state.cartItems
       : state.cartItems.map(item => ({ ...item, dialysisPrescription: false }));
-    return computeSimpleEstimate(sanitizedItems, fiscalSettings?.default_tax_rate);
-  }, [state.cartItems, fiscalSettings?.default_tax_rate, canMarkDialysisPrescription]);
+    return computeSimpleEstimate(sanitizedItems, operationalSettings?.default_tax_rate);
+  }, [state.cartItems, operationalSettings?.default_tax_rate, canMarkDialysisPrescription]);
 
   async function loadPointOfSaleData() {
     if (!canViewCatalog) {
@@ -174,6 +179,7 @@ export function NewInvoiceView({
       return;
     }
     dispatch({ type: 'SET_LOADING_SERVICES', payload: true });
+    dispatch({ type: 'SET_POINT_OF_SALE_LOAD_ERROR', payload: null });
     try {
       const [currentCashSession, nextCategories, nextServiceAreas, nextServices] = await Promise.all([
         apiClient.getCurrentCashSession(),
@@ -192,7 +198,10 @@ export function NewInvoiceView({
       });
       onCashSessionChange?.(currentCashSession);
     } catch (error) {
-      onStatus(userSafeErrorMessage(error, 'No se pudo cargar servicios activos.'));
+      const message = userSafeErrorMessage(error, 'No se pudo cargar servicios y caja desde el servidor LAN.');
+      dispatch({ type: 'SET_POINT_OF_SALE_LOAD_ERROR', payload: message });
+      dispatch({ type: 'SET_ALERT_MESSAGE', payload: message });
+      onStatus(message);
     } finally {
       dispatch({ type: 'SET_LOADING_SERVICES', payload: false });
     }
@@ -210,8 +219,13 @@ export function NewInvoiceView({
         perPage: POS_SERVICE_PAGE_SIZE,
       });
       dispatch({ type: 'SEARCH_SERVICES_SUCCESS', payload: Array.isArray(nextServices) ? nextServices : [] });
+      dispatch({ type: 'SET_ALERT_MESSAGE', payload: null });
     } catch (error) {
-      onStatus(userSafeErrorMessage(error, 'No se pudo buscar servicios activos.'));
+      const message = userSafeErrorMessage(error, 'No se pudo buscar servicios activos.');
+      dispatch({ type: 'SEARCH_SERVICES_SUCCESS', payload: [] });
+      dispatch({ type: 'SET_ALERT_MESSAGE', payload: message });
+      onStatus(message);
+      window.setTimeout(() => searchInputRef.current?.focus(), 0);
     } finally {
       dispatch({ type: 'SET_LOADING_SERVICES', payload: false });
     }
@@ -230,6 +244,8 @@ export function NewInvoiceView({
   }
 
   async function addByScanCode() {
+    if (scanCodeInFlightRef.current) return;
+
     const code = state.scanCode.trim();
     const refocusScanner = () => window.setTimeout(() => scannerInputRef.current?.focus(), 0);
     if (code === '') {
@@ -239,6 +255,8 @@ export function NewInvoiceView({
       refocusScanner();
       return;
     }
+    scanCodeInFlightRef.current = true;
+    dispatch({ type: 'SET_SCANNING_CODE', payload: true });
     try {
       const [service] = await apiClient.getServices({ code, active: true, billing: true, perPage: 1 });
       if (!service) {
@@ -265,6 +283,9 @@ export function NewInvoiceView({
       dispatch({ type: 'SET_ALERT_MESSAGE', payload: message });
       onStatus(message);
       refocusScanner();
+    } finally {
+      scanCodeInFlightRef.current = false;
+      dispatch({ type: 'SET_SCANNING_CODE', payload: false });
     }
   }
 
@@ -341,6 +362,11 @@ export function NewInvoiceView({
   }
 
   async function submitInvoice() {
+    if (submitInvoiceInFlightRef.current) {
+      return;
+    }
+
+    submitInvoiceInFlightRef.current = true;
     dispatch({ type: 'SET_SUBMITTING', payload: true });
     dispatch({ type: 'SET_SHOW_CONFIRMATION', payload: false });
     dispatch({ type: 'SET_ALERT_MESSAGE', payload: null });
@@ -382,6 +408,7 @@ export function NewInvoiceView({
       dispatch({ type: 'SET_ALERT_MESSAGE', payload: message });
       onStatus(message);
     } finally {
+      submitInvoiceInFlightRef.current = false;
       dispatch({ type: 'SET_SUBMITTING', payload: false });
     }
   }
@@ -404,14 +431,17 @@ export function NewInvoiceView({
   }
 
   async function submitPayment(appliedAmount = state.paymentAmount) {
+    if (submitPaymentInFlightRef.current) {
+      return;
+    }
     if (!state.issuedInvoice || !state.loadedCashSession) {
       dispatch({ type: 'SET_SHOW_PAYMENT', payload: false });
       return;
     }
+    submitPaymentInFlightRef.current = true;
     const invoiceToPay = state.issuedInvoice;
     const sessionToUse = state.loadedCashSession;
     dispatch({ type: 'SET_PAYING', payload: true });
-    dispatch({ type: 'SET_SHOW_PAYMENT', payload: false });
     try {
       const result = await apiClient.registerPayment(invoiceToPay.id, {
         cash_session_id: sessionToUse.id,
@@ -430,6 +460,22 @@ export function NewInvoiceView({
         dispatch({ type: 'SET_SHOW_RECEIPT', payload: false });
         dispatch({ type: 'SET_ALERT_MESSAGE', payload: null });
         dispatch({ type: 'SET_WARNING_MESSAGE', payload: null });
+
+        if (state.previewBeforePrint) {
+          try {
+            await openInstitutionalReceiptPdf(result.institutional_receipt);
+            dispatch({ type: 'SET_SHOW_PAYMENT', payload: false });
+            dispatch({ type: 'SET_SHOW_SUCCESS', payload: true });
+            onStatus(`Pago registrado. PDF institucional ${result.institutional_receipt.receipt_number_full} abierto para revisar.`);
+          } catch (error) {
+            dispatch({ type: 'SET_SHOW_PAYMENT', payload: false });
+            dispatch({ type: 'SET_SHOW_SUCCESS', payload: true });
+            onStatus(userSafeErrorMessage(error, `Pago registrado. Recibo institucional ${result.institutional_receipt.receipt_number_full} emitido; abra el PDF desde Ver recibo.`));
+          }
+          return;
+        }
+
+        dispatch({ type: 'SET_SHOW_PAYMENT', payload: false });
         dispatch({ type: 'SET_SHOW_SUCCESS', payload: true });
         try {
           await openInstitutionalReceiptPdf(result.institutional_receipt);
@@ -450,6 +496,7 @@ export function NewInvoiceView({
       dispatch({ type: 'SET_INSTITUTIONAL_RECEIPT', payload: null });
       dispatch({ type: 'SET_RECEIPT_WIDTH', payload: nextReceipt.width });
       dispatch({ type: 'SET_AUTO_PRINT_RECEIPT', payload: !state.previewBeforePrint });
+      dispatch({ type: 'SET_SHOW_PAYMENT', payload: false });
       dispatch({ type: 'SET_SHOW_RECEIPT', payload: true });
       dispatch({ type: 'SET_ALERT_MESSAGE', payload: null });
       dispatch({ type: 'SET_WARNING_MESSAGE', payload: null });
@@ -461,8 +508,10 @@ export function NewInvoiceView({
     } catch (error) {
       const message = userSafeErrorMessage(error, 'No se pudo registrar el pago.');
       dispatch({ type: 'SET_ALERT_MESSAGE', payload: message });
+      dispatch({ type: 'SET_SHOW_PAYMENT', payload: false });
       onStatus(message);
     } finally {
+      submitPaymentInFlightRef.current = false;
       dispatch({ type: 'SET_PAYING', payload: false });
     }
   }
@@ -480,8 +529,7 @@ export function NewInvoiceView({
   }
 
   async function openInstitutionalReceiptPdf(receipt: InstitutionalReceipt, reason?: string) {
-    await apiClient.registerInstitutionalReceiptPrintEvent(receipt.id, reason);
-    const blob = await apiClient.getInstitutionalReceiptPdf(receipt.id);
+    const blob = await apiClient.getInstitutionalReceiptPdf(receipt.id, reason);
     openBlobInNewTab(blob, `recibo-institucional-${receipt.receipt_number_full}.pdf`);
   }
 
@@ -505,6 +553,9 @@ export function NewInvoiceView({
   }
 
   function handlePaymentOpenChange(nextOpen: boolean) {
+    if (state.paying) {
+      return;
+    }
     dispatch({ type: 'SET_SHOW_PAYMENT', payload: nextOpen });
     if (!nextOpen && state.issuedInvoice && (state.issuedInvoice.status === 'issued' || state.issuedInvoice.status === 'partial')) {
       dispatch({ type: 'SET_SHOW_SUCCESS', payload: true });
@@ -531,6 +582,7 @@ export function NewInvoiceView({
       emitBlockReasons={emitBlockReasons}
       canEmit={canEmit}
       canCreatePayments={canCreatePayments}
+      canOpenCash={canOpenCash}
       canViewReceipts={canViewReceipts}
       canMarkDialysisPrescription={canMarkDialysisPrescription}
       onOpenCash={onOpenCash}
@@ -553,6 +605,7 @@ export function NewInvoiceView({
       onPreviewBeforePrintChange={(val) => dispatch({ type: 'SET_PREVIEW_BEFORE_PRINT', payload: val })}
       onSubmitInvoice={() => void submitInvoice()}
       onCobrar={handleCobrarClick}
+      onRetryLoad={loadPointOfSaleData}
       onPaymentOpenChange={handlePaymentOpenChange}
       onSubmitPayment={(appliedAmount) => void submitPayment(appliedAmount)}
       onLoadReceipt={loadReceipt}

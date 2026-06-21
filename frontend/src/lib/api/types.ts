@@ -6,8 +6,29 @@ export type AuthUser = {
   active: boolean;
   roles: string[];
   permissions: string[];
+  direct_permissions?: string[];
+  uses_exact_permission_map?: boolean;
   service_area_id?: number | null;
   must_change_password: boolean;
+};
+
+export type RolePermission = {
+  name: string;
+  module: string;
+  label: string;
+};
+
+export type RoleDefinition = {
+  id: number;
+  name: string;
+  protected: boolean;
+  permissions: RolePermission[];
+};
+
+export type PermissionCatalogGroup = {
+  module: string;
+  label: string;
+  permissions: RolePermission[];
 };
 
 export type FiscalSettings = {
@@ -31,6 +52,11 @@ export type FiscalSettings = {
 export type PublicBranding = Pick<
   FiscalSettings,
   'hospital_name' | 'primary_color' | 'slogan' | 'government_line' | 'secretariat_line' | 'receipt_location'
+>;
+
+export type OperationalSettings = Pick<
+  FiscalSettings,
+  'default_tax_rate' | 'scanner_enabled' | 'partial_payments_enabled' | 'receipt_paper_size'
 >;
 
 export type FiscalSequence = {
@@ -169,7 +195,10 @@ export type Invoice = {
 export type InvoiceInstitutionalReceipt = Pick<
   InstitutionalReceipt,
   'id' | 'receipt_number_full' | 'status' | 'issued_at' | 'reprint_count'
->;
+> & {
+  print_events_count?: number;
+  has_print_events?: boolean;
+};
 
 export type CashSession = {
   id: number;
@@ -447,7 +476,6 @@ export type OperationsReport = {
   };
   voids: Array<{
     invoice_number: string;
-    patient_name: string;
     total: string;
     reason: string | null;
     voided_at: string | null;
@@ -462,7 +490,6 @@ export type OperationsReport = {
   }>;
   payment_voids?: Array<{
     invoice_number: string | null;
-    patient_name: string | null;
     method: Payment['method'];
     amount: string;
     reason: string | null;
@@ -502,7 +529,6 @@ export type OperationsReport = {
   }>;
   cashiers: Array<{
     name: string;
-    username: string;
     payment_count: number;
     cash_session_count: number;
     invoice_count: number;
@@ -745,6 +771,196 @@ export type ReportFilters = {
 };
 
 export type PdfReportFilters = ReportFilters & { date?: string };
+
+export type TodayReport = {
+  date: string;
+  timezone: string;
+  server_time: string;
+  cash_session_open: boolean;
+  cash_session_id: number | null;
+  cash_session_opened_at: string | null;
+  cash_session_opening_amount: string | null;
+  issued_count: number;
+  collected_count: number;
+  billed: string;
+  collected: string;
+  pending: string;
+  voided_count: number;
+  voided_amount: string;
+  reversal_count: number;
+  pending_invoice_count: number;
+  pending_invoice_amount: string;
+  payments_by_method: MoneyByMethod;
+  payments_count_by_method: {
+    cash: number;
+    transfer: number;
+    card: number;
+    other: number;
+  };
+  backup_pending: boolean;
+  backup_pending_age_hours: number | null;
+};
+
+export type ExecutiveReportFilters = {
+  date_from: string;
+  date_to: string;
+  cash_session_id?: number;
+  user_id?: number;
+  category_id?: number;
+  area_id?: number;
+  method?: 'cash' | 'transfer' | 'card' | 'other';
+  status?: 'issued' | 'partial' | 'paid' | 'void';
+};
+
+export type ExecutiveReport = {
+  period: {
+    from: string;
+    to: string;
+    timezone: string;
+    days: number;
+  };
+  filters: {
+    cash_session_id: number | null;
+    user_id: number | null;
+    category_id: number | null;
+    area_id: number | null;
+    method: string | null;
+    status: string | null;
+  };
+  comparison: {
+    billed: {
+      current: string;
+      previous: string;
+      delta_cents: number;
+      delta_percentage: number | null;
+    };
+    collected: {
+      current: string;
+      previous: string;
+      delta_cents: number;
+      delta_percentage: number | null;
+    };
+    previous_period: { from: string; to: string };
+  };
+  summary: {
+    billed_total: string;
+    collected_total: string;
+    collected_total_cents: number;
+    pending_total: string;
+    voided_total: string;
+    reversed_total: string;
+    invoice_count: number;
+    receipt_count: number;
+    paid_count: number;
+    partial_count: number;
+    pending_count: number;
+    voided_count: number;
+    average_ticket: string;
+  };
+  payment_methods: Array<{
+    method: 'cash' | 'transfer' | 'card' | 'other';
+    label: string;
+    amount: string;
+    count: number;
+    percentage: number;
+  }>;
+  daily_trend: Array<{
+    date: string;
+    billed: string;
+    collected: string;
+    pending: string;
+    voided_count: number;
+    invoice_count: number;
+  }>;
+  services: {
+    top_by_amount: Array<{
+      service: string;
+      category: string;
+      item_count: number;
+      quantity: string;
+      total: string;
+      collected: string;
+    }>;
+    top_by_quantity: Array<{
+      service: string;
+      category: string;
+      item_count: number;
+      quantity: string;
+      total: string;
+    }>;
+    by_category: Array<{
+      category: string;
+      quantity: string;
+      total: string;
+      collected: string;
+      item_count: number;
+    }>;
+    by_area: Array<{
+      area_id: number | null;
+      area: string;
+      item_count: number;
+      quantity: string;
+      total: string;
+    }>;
+  };
+  cashiers: Array<{
+    user_id: number;
+    name: string;
+    username: string;
+    invoice_count: number;
+    payment_count: number;
+    collected: string;
+    cash: string;
+    transfer: string;
+    card: string;
+    other: string;
+    voided_count: number;
+    difference_total: string;
+  }>;
+  cash_sessions: Array<{
+    id: number;
+    cashier: string;
+    opened_at: string | null;
+    closed_at: string | null;
+    opening_amount: string;
+    expected_cash: string;
+    counted_cash: string | null;
+    difference: string | null;
+    status: string;
+    closure_note: string | null;
+  }>;
+  pending_aging: {
+    '0_7_days': { count: number; amount: string };
+    '8_30_days': { count: number; amount: string };
+    '31_plus_days': { count: number; amount: string };
+    items: Array<{
+      invoice_number: string;
+      patient: string;
+      total: string;
+      balance_due: string;
+      issued_at: string;
+      age_days: number;
+      bucket: '0_7_days' | '8_30_days' | '31_plus_days';
+    }>;
+  };
+  voids_and_reversals: Array<{
+    kind: 'void' | 'reversal';
+    invoice_number: string;
+    patient: string | null;
+    amount: string;
+    reason: string | null;
+    user: string | null;
+    authorized_by: string | null;
+    created_at: string | null;
+  }>;
+  audit_summary: {
+    critical_events: number;
+    reprints: number;
+    fiscal_changes: number;
+    cash_differences: number;
+    backup_events: number;
+  };
+};
 
 export type DashboardReport = {
   last_7_days: Array<{

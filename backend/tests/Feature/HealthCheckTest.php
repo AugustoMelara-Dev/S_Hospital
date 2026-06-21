@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Session\Middleware\StartSession;
+use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 use Tests\TestCase;
 
 class HealthCheckTest extends TestCase
@@ -86,5 +88,17 @@ class HealthCheckTest extends TestCase
         $this->assertNotNull($upRoute, 'api/health route must exist');
         $this->assertContains('throttle:120,1', $healthRoute->middleware(), 'api/system/health must be rate limited without blocking normal operator polling');
         $this->assertContains('throttle:120,1', $upRoute->middleware(), 'api/health must be rate limited without blocking startup checks');
+    }
+
+    public function test_public_operational_routes_do_not_start_sessions(): void
+    {
+        foreach (['api/health', 'api/system/health', 'api/system/echo-config', 'api/system/csp-report'] as $uri) {
+            $route = collect(app('router')->getRoutes())
+                ->first(fn ($candidate): bool => $candidate->uri() === $uri);
+
+            $this->assertNotNull($route, "{$uri} route must exist");
+            $this->assertNotContains(EnsureFrontendRequestsAreStateful::class, $route->gatherMiddleware(), "{$uri} must not rotate SPA session cookies.");
+            $this->assertNotContains(StartSession::class, $route->gatherMiddleware(), "{$uri} must not start session storage.");
+        }
     }
 }

@@ -20,7 +20,6 @@ describe('AuditoriaTab', () => {
       voids: [
         {
           invoice_number: '000-001-01-00000001',
-          patient_name: 'Paciente Anulado',
           total: 'monto-danado',
           reason: 'Correccion',
           voided_at: '2026-06-01T10:00:00.000000Z',
@@ -31,7 +30,6 @@ describe('AuditoriaTab', () => {
       payment_voids: [
         {
           invoice_number: '000-001-01-00000002',
-          patient_name: 'Paciente Reverso',
           method: 'card',
           amount: 'NaN',
           reason: 'Pago duplicado',
@@ -44,7 +42,6 @@ describe('AuditoriaTab', () => {
       cashiers: [
         {
           name: 'Caja Principal',
-          username: 'caja.principal',
           payment_count: 2,
           cash_session_count: 1,
           invoice_count: 2,
@@ -67,10 +64,11 @@ describe('AuditoriaTab', () => {
       />,
     );
 
-    expect(screen.getByText('Paciente Anulado')).toBeInTheDocument();
-    expect(screen.getByText('Paciente Reverso')).toBeInTheDocument();
-    expect(screen.getByText('caja.principal')).toBeInTheDocument();
-    expect(document.body.textContent).toContain('L. 0.00');
+    expect(screen.getByText('Caja Principal')).toBeInTheDocument();
+    expect(screen.queryByText('Paciente Anulado')).not.toBeInTheDocument();
+    expect(screen.queryByText('Paciente Reverso')).not.toBeInTheDocument();
+    expect(screen.queryByText('caja.principal')).not.toBeInTheDocument();
+    expect(document.body.textContent).toContain('L 0.00');
     expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-numero|undefined/);
   });
 
@@ -132,7 +130,7 @@ describe('AuditoriaTab', () => {
     expect(screen.getByText('Glucosa')).toBeInTheDocument();
     expect(screen.getByText('Precio actualizado')).toBeInTheDocument();
     expect(screen.getByText('Ajuste aprobado por administracion')).toBeInTheDocument();
-    expect(screen.getAllByText(/L\. 15\.00|L\. 18\.00/).length).toBe(2);
+    expect(screen.getAllByText(/L 15\.00|L 18\.00/).length).toBe(2);
     expect(document.body.textContent).toContain('Eritropoyetina con receta de diálisis');
     expect(document.body.textContent).not.toMatch(/service\.price_updated|category_id|ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION/);
   });

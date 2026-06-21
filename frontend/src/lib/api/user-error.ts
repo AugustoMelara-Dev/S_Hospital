@@ -22,6 +22,9 @@ const ERROR_PREFIXES = [
   'Inválido',
   'Invalida',
   'Inválida',
+  'Ingrese',
+  'Debe',
+  'Falta',
   'Vencida',
   'Vencido',
 ];

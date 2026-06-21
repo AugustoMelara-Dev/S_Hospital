@@ -70,7 +70,7 @@ describe('DashboardView financial labels', () => {
     expect(screen.getByText(/sin servicios facturados este mes/i)).toBeInTheDocument();
 
     await waitFor(() => {
-      expect(document.body.textContent).toMatch(/L\. 275[,.]50/);
+      expect(document.body.textContent).toMatch(/L 275[,.]50/);
     });
     expect(document.body.textContent).not.toMatch(/ventas|ingresos cobrados|flujo/i);
   });
@@ -164,7 +164,7 @@ describe('DashboardView financial labels', () => {
 
     expect(await screen.findByText(/servicio con dato danado/i)).toBeInTheDocument();
     expect(screen.getByText(/0 unds/i)).toBeInTheDocument();
-    expect(screen.getAllByText('L. 0.00').length).toBeGreaterThanOrEqual(3);
+    expect(screen.getAllByText('L 0.00').length).toBeGreaterThanOrEqual(3);
     expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|cantidad-danada|no-numero/);
   });
 });

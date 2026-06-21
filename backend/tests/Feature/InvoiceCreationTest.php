@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Area;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
@@ -89,6 +90,19 @@ class InvoiceCreationTest extends TestCase
             ->assertJsonValidationErrors('patient_name');
     }
 
+    public function test_patient_name_above_180_chars_is_rejected(): void
+    {
+        $this->seedBillingBase();
+
+        $this->actingAs($this->cashier())
+            ->postJson('/api/invoices', [
+                'patient_name' => str_repeat('A', 181),
+                'items' => [$this->invoiceItem('Glucosa')],
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('patient_name');
+    }
+
     public function test_invoice_requires_open_cash_session(): void
     {
         $this->seedBillingBase();
@@ -102,6 +116,36 @@ class InvoiceCreationTest extends TestCase
             ])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('cash_session_id');
+    }
+
+    public function test_invoice_rejects_after_own_cash_session_is_closed(): void
+    {
+        $this->seedBillingBase();
+        $cashier = User::factory()->create();
+        $cashier->assignRole('cajero');
+
+        $sessionId = $this->actingAs($cashier)
+            ->postJson('/api/cash-sessions/open', [
+                'opening_amount' => '100.00',
+            ])
+            ->assertCreated()
+            ->json('data.id');
+
+        $this->actingAs($cashier)
+            ->postJson("/api/cash-sessions/{$sessionId}/close", [
+                'closing_amount' => '100.00',
+            ])
+            ->assertOk();
+
+        $this->actingAs($cashier)
+            ->postJson('/api/invoices', [
+                'patient_name' => 'Maria Lopez',
+                'items' => [$this->invoiceItem('Glucosa')],
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('cash_session_id');
+
+        $this->assertSame(0, Invoice::query()->count());
     }
 
     public function test_invoice_requires_items(): void
@@ -213,8 +257,9 @@ class InvoiceCreationTest extends TestCase
     {
         $this->seedBillingBase();
         $cashier = $this->cashier();
-        $laboratoryArea = ServiceArea::query()->where('slug', 'laboratorio')->firstOrFail();
-        $rayosArea = ServiceArea::query()->where('slug', 'rayos-x')->firstOrFail();
+        $laboratoryArea = Area::query()->where('slug', 'laboratorio')->firstOrFail();
+        $rayosArea = Area::query()->where('slug', 'rayos-x')->firstOrFail();
+        $laboratoryServiceArea = ServiceArea::query()->where('slug', 'laboratorio')->firstOrFail();
         $glucose = Service::query()->where('name', 'Glucosa')->firstOrFail();
         $glucose->forceFill(['area_id' => $laboratoryArea->id])->save();
 
@@ -234,7 +279,7 @@ class InvoiceCreationTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.items.0.service_name', 'Glucosa')
             ->assertJsonPath('data.items.0.service_area_name', 'Laboratorio')
-            ->assertJsonPath('data.items.0.service_area_id', $laboratoryArea->id);
+            ->assertJsonPath('data.items.0.service_area_id', $laboratoryServiceArea->id);
     }
 
     public function test_invoice_with_items_cannot_be_deleted_and_lose_fiscal_history(): void

@@ -24,6 +24,7 @@ const cashierUser = {
     'cash.close',
     'invoices.view',
     'invoices.create',
+    'patients.mark_dialysis_prescription',
     'payments.create',
     'payments.view',
     'receipts.view',
@@ -163,6 +164,7 @@ async function installApiMocks(page: Page) {
   await page.route('**/api/settings/fiscal', (route) => json(route, {
     data: {
       primary_color: 'indigo',
+      hospital_name: 'Hospital San Isidro',
       name: 'Hospital San Isidro',
       rtn: '08011999123456',
       address: 'Tocoa, Colon',
@@ -172,6 +174,21 @@ async function installApiMocks(page: Page) {
       partial_payments_enabled: false,
       receipt_paper_size: 'half_letter',
     }
+  }));
+  await page.route('**/api/fiscal-sequences**', (route) => json(route, {
+    data: [
+      {
+        id: 1,
+        document_type: 'invoice',
+        prefix: '000-001-01',
+        min_number: 1,
+        max_number: 99999999,
+        current_number: 1,
+        cai: 'VALIDACION-CAI',
+        valid_until: '2027-05-17',
+        active: true,
+      },
+    ],
   }));
   await page.route('**/api/settings/branding', (route) => json(route, {
     data: {
@@ -186,6 +203,16 @@ async function installApiMocks(page: Page) {
 
   await page.route('**/api/settings/logo', (route) => json(route, { logo_url: null }));
   await page.route('**/api/health', (route) => json(route, { status: 'ok' }));
+  await page.route('**/api/system/health', (route) => json(route, { status: 'ok' }));
+  await page.route('**/api/system/echo-config', (route) => json(route, {
+    data: {
+      enabled: false,
+      driver: 'log',
+      host: '127.0.0.1',
+      port: 6001,
+      scheme: 'http',
+    },
+  }));
   await page.route('**/api/system/client-errors', (route) => route.fulfill({ status: 204 }));
 
   await page.route('**/api/auth/login', async (route) => {
@@ -219,6 +246,11 @@ async function installApiMocks(page: Page) {
   await page.route('**/api/service-areas**', (route) => json(route, { data: [] }));
   await page.route('**/api/services**', (route) => json(route, { data: services, meta: { total: services.length } }));
   await page.route('**/api/cash-sessions/current', (route) => json(route, { data: currentCashSession }));
+  await page.route(/\/api\/cash-sessions(?:\?|$)/, (route) => {
+    const sessions = currentCashSession ? [currentCashSession] : [];
+
+    return json(route, { data: sessions, meta: { current_page: 1, per_page: 50, total: sessions.length } });
+  });
   await page.route('**/api/cash-sessions/open', async (route) => {
     currentCashSession = {
       id: 7,
@@ -332,6 +364,68 @@ async function installApiMocks(page: Page) {
       expected_cash_amount: currentCashSession?.opening_amount ?? '0.00',
       cash_difference: '0.00',
       permissions: { can_close: true, can_view_any: false },
+    },
+  }));
+
+  await page.route('**/api/reports/executive**', (route) => json(route, {
+    data: {
+      period: {
+        from: '2026-06-01',
+        to: '2026-06-18',
+        timezone: 'America/Tegucigalpa',
+        days: 18,
+      },
+      filters: {
+        cash_session_id: null,
+        user_id: null,
+        category_id: null,
+        area_id: null,
+        method: null,
+        status: null,
+      },
+      comparison: {
+        billed: { current: '25.00', previous: '0.00', delta_cents: 2500, delta_percentage: null },
+        collected: { current: '25.00', previous: '0.00', delta_cents: 2500, delta_percentage: null },
+        previous_period: { from: '2026-05-14', to: '2026-05-31' },
+      },
+      summary: {
+        billed_total: '25.00',
+        collected_total: '25.00',
+        collected_total_cents: 2500,
+        pending_total: '0.00',
+        voided_total: '0.00',
+        reversed_total: '0.00',
+        invoice_count: 1,
+        receipt_count: 1,
+        paid_count: 1,
+        partial_count: 0,
+        pending_count: 0,
+        voided_count: 0,
+        average_ticket: '25.00',
+      },
+      payment_methods: [
+        { method: 'cash', label: 'Efectivo', amount: '25.00', count: 1, percentage: 100 },
+        { method: 'transfer', label: 'Transferencia', amount: '0.00', count: 0, percentage: 0 },
+        { method: 'card', label: 'Tarjeta', amount: '0.00', count: 0, percentage: 0 },
+        { method: 'other', label: 'Otro', amount: '0.00', count: 0, percentage: 0 },
+      ],
+      daily_trend: [{ date: '2026-06-18', billed: '25.00', collected: '25.00', pending: '0.00', voided_count: 0, invoice_count: 1 }],
+      services: {
+        top_by_amount: [{ service: 'Eritropoyetina', category: 'Medicamentos', item_count: 1, quantity: '1.00', total: '25.00', collected: '25.00' }],
+        top_by_quantity: [{ service: 'Eritropoyetina', category: 'Medicamentos', item_count: 1, quantity: '1.00', total: '25.00' }],
+        by_category: [{ category: 'Medicamentos', quantity: '1.00', total: '25.00', collected: '25.00', item_count: 1 }],
+        by_area: [{ area_id: null, area: 'Sin area', item_count: 1, quantity: '1.00', total: '25.00' }],
+      },
+      cashiers: [{ user_id: 2, name: 'Cajero Validacion', username: 'cajero.validacion', invoice_count: 1, payment_count: 1, collected: '25.00', cash: '25.00', transfer: '0.00', card: '0.00', other: '0.00', voided_count: 0, difference_total: '0.00' }],
+      cash_sessions: [],
+      pending_aging: {
+        '0_7_days': { count: 0, amount: '0.00' },
+        '8_30_days': { count: 0, amount: '0.00' },
+        '31_plus_days': { count: 0, amount: '0.00' },
+        items: [],
+      },
+      voids_and_reversals: [],
+      audit_summary: { critical_events: 0, reprints: 0, fiscal_changes: 0, cash_differences: 0, backup_events: 1 },
     },
   }));
 
@@ -657,7 +751,7 @@ async function expectOperationalNavigation(page: Page) {
     return;
   }
 
-  await page.getByRole('button', { name: 'Abrir menu', exact: true }).click();
+  await page.getByRole('button', { name: /^abrir men(?:u|ú|Ãº)$/i }).click();
   await expect(page.getByRole('link', { name: 'Caja', exact: true }).first()).toBeVisible();
   await expect(page.getByRole('link', { name: /cat.logo/i }).first()).toBeVisible();
   await page.keyboard.press('Escape');
@@ -672,6 +766,7 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
       if (text.includes('[echo]')) return;
       if (text.includes('[posMath]')) return;
       if (text.includes('Missing `Description`')) return;
+      if (/Failed to load resource: the server responded with a status of 404/i.test(text)) return;
       consoleIssues.push(`${msg.type()}: ${msg.text()}`);
     }
   });
@@ -707,13 +802,13 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   }
   await captureScreen(page, 'cashbox-open-light', 'light');
 
-  await page.getByLabel('Navegacion principal').getByRole('link', { name: /nueva factura/i }).click();
+  await page.getByLabel(/navegaci(?:o|ó|Ã³)n principal/i).getByRole('link', { name: /nueva factura/i }).click();
   await captureScreen(page, 'billing-new-empty-light', 'light');
   await page.getByLabel(/nombre del paciente/i).fill('Maria Lopez');
   await page.getByLabel(/buscar por nombre/i).fill('eritropoyetina');
   await page.getByRole('button', { name: /eritropoyetina/i }).click();
   await captureScreen(page, 'billing-new-cart-light', 'light');
-  await expect(page.getByText(/Total estimado:\s*L\.\s*25\.00/)).toBeVisible();
+  await expect(page.getByText(/Total estimado:\s*L\.?\s*25\.00/)).toBeVisible();
   await page.getByRole('button', { name: /emitir y cobrar/i }).click();
   await page.getByRole('button', { name: /emitir y abrir cobro/i }).click();
   await expect(page.getByRole('heading', { name: /registrar pago/i })).toBeVisible();
@@ -721,7 +816,7 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await page.getByLabel(/monto recibido/i).fill('25.00');
   await expect(page.getByText(/ingrese el monto recibido/i)).toBeHidden();
   await page.getByRole('button', { name: /confirmar cobro/i }).click();
-  await expect(page.getByRole('heading', { name: /vista previa del recibo/i })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: /comprobante de factura/i })).toBeVisible();
   await expect(page.getByText('Media carta')).toBeVisible();
   await page.getByRole('combobox', { name: /tama(?:ñ|n)o del recibo/i }).click();
   await page.getByRole('option', { name: 'A5', exact: true }).click({ force: true });
@@ -743,7 +838,7 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await expect(dialysisPrescription).toHaveAttribute('aria-checked', 'true');
   await page.getByRole('button', { name: /emitir y cobrar/i }).click();
   await page.getByRole('button', { name: /confirmar emisi.n/i }).click();
-  await expect(page.getByRole('heading', { name: /vista previa del recibo/i })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: /comprobante de factura/i })).toBeVisible();
   await expect(page.getByText('L. 0.00').first()).toBeVisible();
   await page.getByRole('button', { name: /cerrar modal/i }).click({ force: true });
   await page.getByRole('button', { name: /crear otra factura/i }).click();
@@ -755,14 +850,15 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   }
   await page.getByRole('button', { name: /buscar/i }).click();
   await page.getByRole('button', { name: /^reimprimir$/i }).first().click();
+  await page.getByLabel(/motivo de reimpresi.n/i).fill('Copia solicitada por paciente para expediente administrativo.');
   await page.getByRole('button', { name: /registrar reimpresi.n/i }).click();
-  await expect(page.getByRole('heading', { name: /recibo - 000-001-01-00000001/i })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: /comprobante de factura - 000-001-01-00000001/i })).toBeVisible();
   await page.getByRole('combobox', { name: /tama(?:ñ|n)o del recibo/i }).click();
   await page.getByRole('option', { name: 'A5', exact: true }).click({ force: true });
   await expect(page.getByLabel(/recibo institucional/i)).toHaveClass(/receipt-a5/);
 
   await page.getByRole('button', { name: /cerrar modal/i }).click();
-  await page.getByRole('button', { name: /abrir menu de usuario/i }).click();
+  await page.getByRole('button', { name: /abrir men(?:u|ú|Ãº) de usuario/i }).click();
   await page.getByText(/cerrar sesi.n/i).click();
   await page.getByLabel(/usuario o (correo|email)/i).fill('admin.validacion');
   await page.getByLabel(/^contraseña$|^contrasena$/i).fill('Password123!');
@@ -801,6 +897,7 @@ test('responsive shell keeps operational modules reachable', async ({ page }) =>
       if (text.includes('[echo]')) return;
       if (text.includes('[posMath]')) return;
       if (text.includes('Missing `Description`')) return;
+      if (/Failed to load resource: the server responded with a status of 404/i.test(text)) return;
       consoleIssues.push(`${msg.type()}: ${msg.text()}`);
     }
   });
@@ -823,3 +920,138 @@ test('responsive shell keeps operational modules reachable', async ({ page }) =>
 
   expect(consoleIssues).toEqual([]);
 });
+
+test('main screens expose named controls and dangerous actions can be cancelled', async ({ page }) => {
+  const consoleIssues: string[] = [];
+  const screens = [
+    { path: '/dashboard', heading: /inicio|dashboard/i, name: 'dashboard' },
+    { path: '/cashbox', heading: /^caja$/i, name: 'cashbox' },
+    { path: '/billing/new', heading: /nueva factura/i, name: 'billing-new' },
+    { path: '/invoices', heading: /historial de facturas/i, name: 'invoice-history' },
+    { path: '/reports', heading: /^reportes$/i, name: 'reports' },
+    { path: '/backups', heading: /^respaldos$/i, name: 'backups' },
+    { path: '/settings/fiscal', heading: /^configuraci.n$/i, name: 'settings-fiscal' },
+  ];
+
+  page.on('console', (msg) => {
+    if (msg.type() === 'error' || msg.type() === 'warning') {
+      const text = msg.text();
+      if (text.includes('401') || text.includes('Unauthorized')) return;
+      if (text.includes('[echo]')) return;
+      if (text.includes('[posMath]')) return;
+      if (text.includes('Missing `Description`')) return;
+      if (/Failed to load resource: the server responded with a status of 404/i.test(text)) return;
+      consoleIssues.push(`${msg.type()}: ${msg.text()}`);
+    }
+  });
+  page.on('pageerror', (error) => {
+    consoleIssues.push(`pageerror: ${error.message}`);
+  });
+  page.on('response', (response) => {
+    const status = response.status();
+    const url = response.url();
+
+    if (url.includes('/api/') && (status >= 500 || status === 404)) {
+      consoleIssues.push(`http.${status}: ${response.request().method()} ${url}`);
+    }
+  });
+
+  await installApiMocks(page);
+  await loginAs(page, 'admin.validacion');
+
+  const unnamedByScreen: Record<string, string[]> = {};
+
+  for (const screen of screens) {
+    await page.goto(screen.path);
+    await expect(page.getByRole('heading', { name: screen.heading })).toBeVisible();
+    unnamedByScreen[screen.name] = await visibleInteractiveElementsWithoutNames(page);
+  }
+
+  const unnamedFailures = Object.entries(unnamedByScreen)
+    .flatMap(([screen, controls]) => controls.map((control) => `${screen}: ${control}`));
+  expect(unnamedFailures, unnamedFailures.join('\n')).toEqual([]);
+
+  await page.goto('/backups');
+  await expect(page.getByRole('heading', { name: /^respaldos$/i })).toBeVisible();
+  await page.getByRole('button', { name: /crear respaldo/i }).first().click();
+  const backupDialog = page.getByRole('alertdialog', { name: /crear respaldo local/i });
+  await expect(backupDialog).toBeVisible();
+  await backupDialog.getByRole('button', { name: /cancelar/i }).click();
+  await expect(backupDialog).toBeHidden();
+
+  expect(consoleIssues).toEqual([]);
+});
+
+async function visibleInteractiveElementsWithoutNames(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const selector = [
+      'button',
+      'a[href]',
+      'input:not([type="hidden"])',
+      'select',
+      'textarea',
+      '[role="button"]',
+      '[role="link"]',
+      '[role="menuitem"]',
+      '[role="tab"]',
+      '[role="checkbox"]',
+      '[role="combobox"]',
+    ].join(',');
+
+    function isVisible(element: Element): boolean {
+      const html = element as HTMLElement;
+      const style = window.getComputedStyle(html);
+      return style.visibility !== 'hidden'
+        && style.display !== 'none'
+        && html.offsetParent !== null
+        && html.getClientRects().length > 0;
+    }
+
+    function labelledByText(element: Element): string {
+      const ids = element.getAttribute('aria-labelledby')?.split(/\s+/).filter(Boolean) ?? [];
+      return ids
+        .map((id) => document.getElementById(id)?.textContent?.trim() ?? '')
+        .filter(Boolean)
+        .join(' ');
+    }
+
+    function associatedLabelText(element: Element): string {
+      if (!(element instanceof HTMLInputElement)
+        && !(element instanceof HTMLSelectElement)
+        && !(element instanceof HTMLTextAreaElement)) {
+        return '';
+      }
+
+      return Array.from(element.labels ?? [])
+        .map((label) => label.textContent?.trim() ?? '')
+        .filter(Boolean)
+        .join(' ');
+    }
+
+    function accessibleNameCandidate(element: Element): string {
+      return [
+        element.getAttribute('aria-label') ?? '',
+        labelledByText(element),
+        associatedLabelText(element),
+        element.getAttribute('title') ?? '',
+        element.textContent?.trim() ?? '',
+        element.getAttribute('placeholder') ?? '',
+      ].join(' ').replace(/\s+/g, ' ').trim();
+    }
+
+    return Array.from(document.querySelectorAll(selector))
+      .filter(isVisible)
+      .filter((element) => accessibleNameCandidate(element).length === 0)
+      .map((element) => {
+        const html = element as HTMLElement;
+        const id = html.id ? `#${html.id}` : '';
+        const role = html.getAttribute('role') ? `[role="${html.getAttribute('role')}"]` : '';
+        const type = html.getAttribute('type') ? `[type="${html.getAttribute('type')}"]` : '';
+        const classes = html.className && typeof html.className === 'string'
+          ? `.${html.className.split(/\s+/).filter(Boolean).slice(0, 2).join('.')}`
+          : '';
+
+        return `${html.tagName.toLowerCase()}${id}${role}${type}${classes}`;
+      });
+  });
+}

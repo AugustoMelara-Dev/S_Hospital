@@ -1,0 +1,127 @@
+<?php
+
+namespace App\Http\Requests\Reports;
+
+use App\Models\CashRegisterSession;
+use App\Models\User;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Carbon;
+use Illuminate\Validation\Rule;
+
+class ExecutivePdfExportRequest extends FormRequest
+{
+    public const MAX_RANGE_DAYS = 92;
+
+    public function authorize(): bool
+    {
+        $user = $this->user();
+
+        if (! $user instanceof User || ! $user->can('reports.export')) {
+            return false;
+        }
+
+        if ($user->can('reports.managerial.view')) {
+            return true;
+        }
+
+        if ($user->can('reports.view')) {
+            return true;
+        }
+
+        return $this->filled('cash_session_id')
+            && $user->can('reports.cash_session.view');
+    }
+
+    public function rules(): array
+    {
+        return [
+            'date_from' => ['required', 'date_format:Y-m-d'],
+            'date_to' => [
+                'required',
+                'date_format:Y-m-d',
+                'after_or_equal:date_from',
+                'before_or_equal:'.$this->maxDateTo(),
+            ],
+            'cash_session_id' => ['sometimes', 'integer', 'exists:cash_register_sessions,id'],
+            'user_id' => ['sometimes', 'integer', 'exists:users,id'],
+            'category_id' => ['sometimes', 'integer', 'exists:categories,id'],
+            'area_id' => ['sometimes', 'integer', 'exists:areas,id'],
+            'method' => ['sometimes', Rule::in([
+                'cash',
+                'transfer',
+                'card',
+                'other',
+            ])],
+            'status' => ['sometimes', Rule::in([
+                'issued',
+                'partial',
+                'paid',
+                'void',
+            ])],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'date_to.before_or_equal' => 'El rango maximo permitido para el reporte ejecutivo es de '.self::MAX_RANGE_DAYS.' dias.',
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function authorizedFilters(): array
+    {
+        $filters = $this->validated();
+
+        if ($this->user()?->can('cash.close_any') === true) {
+            return $filters;
+        }
+
+        if (
+            ! empty($filters['cash_session_id'])
+            && CashRegisterSession::query()
+                ->whereKey($filters['cash_session_id'])
+                ->where('user_id', $this->user()?->id)
+                ->doesntExist()
+        ) {
+            abort(403);
+        }
+
+        $filters['user_id'] = $this->user()?->id;
+
+        return $filters;
+    }
+
+    public function dateFrom(): string
+    {
+        return (string) $this->input('date_from');
+    }
+
+    public function dateTo(): string
+    {
+        return (string) $this->input('date_to');
+    }
+
+    private function maxDateTo(): string
+    {
+        $rawDateFrom = $this->input('date_from');
+
+        if (! is_string($rawDateFrom) || ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $rawDateFrom)) {
+            return Carbon::now()->addDays(self::MAX_RANGE_DAYS - 1)->toDateString();
+        }
+
+        try {
+            $dateFrom = Carbon::createFromFormat('Y-m-d', $rawDateFrom);
+        } catch (\Throwable) {
+            return Carbon::now()->addDays(self::MAX_RANGE_DAYS - 1)->toDateString();
+        }
+
+        if ($dateFrom->format('Y-m-d') !== $rawDateFrom) {
+            return Carbon::now()->addDays(self::MAX_RANGE_DAYS - 1)->toDateString();
+        }
+
+        return $dateFrom->copy()->addDays(self::MAX_RANGE_DAYS - 1)->toDateString();
+    }
+}

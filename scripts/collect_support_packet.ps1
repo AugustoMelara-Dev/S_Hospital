@@ -28,6 +28,9 @@ function Protect-SupportText([string] $value) {
         $protected = $protected -replace [regex]::Escape(($env:USERPROFILE -replace "\\", "/")), "%USERPROFILE%"
     }
 
+    $protected = $protected -replace "(?i)\b(https?://)(?:[^\s/@]+@)([^\s]+)", '$1$2'
+    $protected = $protected -replace "(?i)\bhospital_app@(?:\d{1,3}\.){3}\d{1,3}\b", "[db-user-host]"
+    $protected = $protected -replace "(?i)'hospital_app'@'(?:\d{1,3}\.){3}\d{1,3}'", "[db-user-host]"
     $protected = $protected -replace "(?i)(APP_KEY|DB_PASSWORD|PASSWORD|TOKEN|SECRET|MAIL_PASSWORD)\s*[:=]\s*[^,\s\]\)]+", '$1=[redacted]'
     $protected = $protected -replace "(?i)[A-Z]:\\[^\s`"']+", "[ruta-local]"
     $protected = $protected -replace "(?i)/(var|home|srv|opt|tmp|usr|mnt)/[^\s`"']+", "[ruta-local]"

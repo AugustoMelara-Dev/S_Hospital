@@ -6,6 +6,10 @@ param(
 
     [string] $PhpPath = "php",
 
+    [string] $EnvFile = "",
+
+    [string] $ComposeProjectName = "",
+
     [string] $ReportPath = "",
 
     [switch] $InitializeProofFiles,
@@ -35,11 +39,14 @@ $qaDir = Join-Path $ProjectRoot "qa"
 $preflightScript = Join-Path $scriptsDir "production_readiness_preflight.ps1"
 $proofInitScript = Join-Path $scriptsDir "init_production_proofs.ps1"
 $backupTasksScript = Join-Path $scriptsDir "install_backup_tasks_windows.ps1"
+$backupStartupScript = Join-Path $scriptsDir "install_backup_startup_current_user.ps1"
 $releaseGuardScript = Join-Path $scriptsDir "assert_offline_release_clean.ps1"
 $lanProofPath = Join-Path $qaDir "LAN_CLIENT_VALIDATION_PROOF.md"
 $printerProofPath = Join-Path $qaDir "INSTITUTIONAL_RECEIPT_PRINT_PROOF.md"
 $restoreProofPath = Join-Path $qaDir "FINAL_RESTORE_PROOF.md"
 $concurrencyProofPath = Join-Path $qaDir "FINAL_CONCURRENCY_PROOF.md"
+$concurrencyUnderLoadProofPath = Join-Path $qaDir "FINAL_CONCURRENCY_UNDER_LOAD_PROOF_LAN_8081.md"
+$realSmokeProofPath = Join-Path $qaDir "FINAL_REAL_SMOKE_LAN_8081.md"
 
 if ($ReportPath -eq "") {
     $ReportPath = Join-Path $qaDir "FINAL_PRODUCTION_HANDOFF_RESULT.md"
@@ -151,6 +158,37 @@ function Test-ProofLooksCompleted([string] $path) {
     return $true
 }
 
+function Test-LanProofLooksCompleted([string] $path) {
+    if (-not (Test-ProofLooksCompleted $path)) {
+        return $false
+    }
+
+    $content = Get-Content -LiteralPath $path -Raw
+    $historicalPattern = '(?i)(VALIDADO_HISTORICO_REQUIERE_REPETIR_IP_FINAL|REQUIERE_REPETIR|requiere repetirse|requiere repeticion|historica contra|historico contra|evidencia historica)'
+    if ($content -match $historicalPattern) {
+        return $false
+    }
+
+    foreach ($requiredPattern in @(
+        '/api/system/echo-config',
+        'WebSocket',
+        'Soketi',
+        'TCP connect OK'
+    )) {
+        if ($content -notmatch [regex]::Escape($requiredPattern)) {
+            return $false
+        }
+    }
+
+    $expectedBaseUrl = $BaseUrl.TrimEnd("/")
+    $serverLanUrl = Get-ProofFieldValue $content "Server LAN URL"
+    if ($null -eq $serverLanUrl -or $serverLanUrl.TrimEnd("/") -ne $expectedBaseUrl) {
+        return $false
+    }
+
+    return $true
+}
+
 function Assert-ScriptExists([string] $path) {
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
         throw "Missing required script: $path"
@@ -180,13 +218,35 @@ function Protect-HandoffText([string] $value) {
     return $protected
 }
 
+function Get-BackupTaskInstallCommand {
+    $command = "powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1"
+
+    if (-not [string]::IsNullOrWhiteSpace($EnvFile) -or -not [string]::IsNullOrWhiteSpace($ComposeProjectName)) {
+        $command += " -Mode Docker"
+        if (-not [string]::IsNullOrWhiteSpace($EnvFile)) {
+            $command += " -EnvFile $(Protect-HandoffText $EnvFile)"
+        }
+        if (-not [string]::IsNullOrWhiteSpace($ComposeProjectName)) {
+            $command += " -ComposeProjectName $(Protect-HandoffText $ComposeProjectName)"
+        }
+        $command += " -UpdateExisting -LaunchElevated"
+
+        return $command
+    }
+
+    return "$command -UpdateExisting -LaunchElevated -PhpPath $(Protect-HandoffText $PhpPath)"
+}
+
 function Write-HandoffReport(
     [string] $path,
     [bool] $lanProofCompleted,
     [bool] $printerProofCompleted,
     [bool] $restoreProofCompleted,
     [bool] $concurrencyProofCompleted,
+    [bool] $concurrencyUnderLoadProofCompleted,
+    [bool] $realSmokeProofCompleted,
     [string[]] $backupStatusOutput,
+    [string[]] $backupFallbackStatusOutput,
     [string[]] $releaseGuardOutput,
     [int] $releaseGuardExit,
     [string[]] $preflightOutput,
@@ -195,8 +255,8 @@ function Write-HandoffReport(
 ) {
     $now = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $lines = New-Object System.Collections.Generic.List[string]
-    $allProofsCompleted = $lanProofCompleted -and $printerProofCompleted -and $restoreProofCompleted -and $concurrencyProofCompleted
-    $decision = if ($allProofsCompleted -and $releaseGuardExit -eq 0 -and -not $preflightSkipped -and $preflightExit -eq 0) { "PRODUCTION_READY" } else { "PRODUCTION_CANDIDATE" }
+    $allProofsCompleted = $lanProofCompleted -and $printerProofCompleted -and $restoreProofCompleted -and $concurrencyProofCompleted -and $concurrencyUnderLoadProofCompleted -and $realSmokeProofCompleted
+    $decision = if ($allProofsCompleted -and $releaseGuardExit -eq 0 -and -not $preflightSkipped -and $preflightExit -eq 0) { "PRODUCTION_READY" } else { "READY_FOR_REAL_LAN_INSTALLATION_TEST" }
 
     Add-ReportLine $lines "# Final production handoff result"
     Add-ReportLine $lines ""
@@ -208,6 +268,8 @@ function Write-HandoffReport(
     Add-ReportLine $lines "- Institutional receipt print proof present without obvious placeholders: $printerProofCompleted"
     Add-ReportLine $lines "- Final restore proof present without obvious placeholders: $restoreProofCompleted"
     Add-ReportLine $lines "- Final concurrency proof present without obvious placeholders: $concurrencyProofCompleted"
+    Add-ReportLine $lines "- Final concurrency under load proof present without obvious placeholders: $concurrencyUnderLoadProofCompleted"
+    Add-ReportLine $lines "- Real LAN smoke proof present without obvious placeholders: $realSmokeProofCompleted"
     Add-ReportLine $lines "- Offline release artifact guard exit code: $releaseGuardExit"
     Add-ReportLine $lines "- Preflight skipped: $preflightSkipped"
     Add-ReportLine $lines "- Preflight exit code: $preflightExit"
@@ -218,14 +280,14 @@ function Write-HandoffReport(
     if ($decision -eq "PRODUCTION_READY") {
         Add-ReportLine $lines "The preflight passed without bypass flags. Keep this report with the completed physical evidence files."
     } else {
-        Add-ReportLine $lines "Do not declare PRODUCTION_READY. Keep the system as PRODUCTION_CANDIDATE until every blocker below is closed with real field evidence."
+        Add-ReportLine $lines "Do not declare PRODUCTION_READY. Keep the system as READY_FOR_REAL_LAN_INSTALLATION_TEST only if the offline release guard is clean and the remaining blockers are field/admin-task evidence."
     }
     Add-ReportLine $lines ""
 
     Add-ReportLine $lines "## Blocking items"
     Add-ReportLine $lines ""
     if (-not $lanProofCompleted) {
-        Add-ReportLine $lines "- Missing or incomplete qa/LAN_CLIENT_VALIDATION_PROOF.md from a real second LAN client."
+        Add-ReportLine $lines "- Missing or incomplete qa/LAN_CLIENT_VALIDATION_PROOF.md from a real second LAN client, including /api/system/echo-config and WebSocket/Soketi TCP evidence."
     }
     if (-not $printerProofCompleted) {
         Add-ReportLine $lines "- Missing or incomplete qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md from the real cashier printer."
@@ -236,6 +298,12 @@ function Write-HandoffReport(
     if (-not $concurrencyProofCompleted) {
         Add-ReportLine $lines "- Missing or incomplete qa/FINAL_CONCURRENCY_PROOF.md from a disposable concurrency target."
     }
+    if (-not $concurrencyUnderLoadProofCompleted) {
+        Add-ReportLine $lines "- Missing or incomplete qa/FINAL_CONCURRENCY_UNDER_LOAD_PROOF_LAN_8081.md proving cash/invoice/payment races while API load is running."
+    }
+    if (-not $realSmokeProofCompleted) {
+        Add-ReportLine $lines "- Missing or incomplete qa/FINAL_REAL_SMOKE_LAN_8081.md proving real login/navigation/invoice/payment/receipt/history smoke."
+    }
     if ($preflightSkipped) {
         Add-ReportLine $lines "- Preflight was skipped in this handoff run."
     } elseif ($preflightExit -ne 0) {
@@ -244,7 +312,7 @@ function Write-HandoffReport(
     if ($releaseGuardExit -ne 0) {
         Add-ReportLine $lines "- Offline release artifact is missing, stale, or contains forbidden files."
     }
-    if ($lanProofCompleted -and $printerProofCompleted -and $restoreProofCompleted -and $concurrencyProofCompleted -and $releaseGuardExit -eq 0 -and -not $preflightSkipped -and $preflightExit -eq 0) {
+    if ($allProofsCompleted -and $releaseGuardExit -eq 0 -and -not $preflightSkipped -and $preflightExit -eq 0) {
         Add-ReportLine $lines "- None reported by the handoff script."
     }
     Add-ReportLine $lines ""
@@ -252,13 +320,27 @@ function Write-HandoffReport(
     Add-ReportLine $lines "## Next commands"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```powershell'
-    Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 -BaseUrl $($BaseUrl.TrimEnd('/')) -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md"
-    Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -UpdateExisting -PhpPath $(Protect-HandoffText $PhpPath)"
+    Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 -BaseUrl $($BaseUrl.TrimEnd('/')) -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md -Force"
+    Add-ReportLine $lines "# The LAN proof must include /api/system/echo-config and WebSocket/Soketi TCP connect OK from the second PC."
+    Add-ReportLine $lines (Get-BackupTaskInstallCommand)
+    Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_startup_current_user.ps1 -Status"
+    Add-ReportLine $lines "# Run frontend real smoke with E2E_REAL_* environment variables set outside this report."
+    Add-ReportLine $lines "cd frontend; npm.cmd run smoke:real"
     Add-ReportLine $lines "Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker"
     Add-ReportLine $lines 'bash -lc "HOSPITAL_VALIDATE_RESTORE_MYSQL=1 RESTORE_TEST_DATABASE=hospital_restore_validation_test HOSPITAL_CONFIRM_RESTORE_DATABASE=hospital_restore_validation_test scripts/validate_restore_mysql.sh"'
     Add-ReportLine $lines "# Set HOSPITAL_CONCURRENCY_LOGIN and HOSPITAL_CONCURRENCY_PASSWORD for a temporary validation account outside this report."
     Add-ReportLine $lines "bash -lc `"HOSPITAL_VALIDATE_REAL_MYSQL=1 HOSPITAL_CONFIRM_CONCURRENCY_TARGET=$($BaseUrl.TrimEnd('/')) HOSPITAL_CONCURRENCY_BASE_URL=$($BaseUrl.TrimEnd('/')) HOSPITAL_CONCURRENCY_TARGET_ENV=validation HOSPITAL_CONCURRENCY_EVIDENCE_PATH=qa/FINAL_CONCURRENCY_PROOF.md scripts/validate_mysql_concurrency.sh`""
+    Add-ReportLine $lines "node scripts\validate_mysql_concurrency_under_load.mjs"
     Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps1 -BaseUrl $($BaseUrl.TrimEnd('/')) -PhpPath $(Protect-HandoffText $PhpPath)"
+    Add-ReportLine $lines '```'
+    Add-ReportLine $lines ""
+
+    Add-ReportLine $lines "## Backup current-user fallback status output"
+    Add-ReportLine $lines ""
+    Add-ReportLine $lines '```text'
+    foreach ($line in $backupFallbackStatusOutput) {
+        Add-ReportLine $lines (Protect-HandoffText $line)
+    }
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
@@ -300,35 +382,46 @@ function Write-HandoffReport(
 Assert-ScriptExists $preflightScript
 Assert-ScriptExists $proofInitScript
 Assert-ScriptExists $backupTasksScript
+Assert-ScriptExists $backupStartupScript
 Assert-ScriptExists $releaseGuardScript
 
 Write-Host "Sistema de Caja Hospitalaria final production handoff"
 Write-Host "ProjectRoot: $(Protect-HandoffText $ProjectRoot)"
 Write-Host "BaseUrl: $($BaseUrl.TrimEnd('/'))"
 Write-Host "PhpPath: $(Protect-HandoffText $PhpPath)"
+if (-not [string]::IsNullOrWhiteSpace($EnvFile)) {
+    Write-Host "EnvFile: $(Protect-HandoffText $EnvFile)"
+}
+if (-not [string]::IsNullOrWhiteSpace($ComposeProjectName)) {
+    Write-Host "ComposeProjectName: [compose-proyecto]"
+}
 
 Write-Section "Proof files"
 if ($InitializeProofFiles) {
     & powershell.exe -ExecutionPolicy Bypass -File $proofInitScript -ProjectRoot $ProjectRoot
 }
 
-$lanProofCompleted = Test-ProofLooksCompleted $lanProofPath
+$lanProofCompleted = Test-LanProofLooksCompleted $lanProofPath
 $printerProofCompleted = Test-ProofLooksCompleted $printerProofPath
 $restoreProofCompleted = Test-ProofLooksCompleted $restoreProofPath
 $concurrencyProofCompleted = Test-ProofLooksCompleted $concurrencyProofPath
-$allHandoffProofsCompleted = $lanProofCompleted -and $printerProofCompleted -and $restoreProofCompleted -and $concurrencyProofCompleted
+$concurrencyUnderLoadProofCompleted = Test-ProofLooksCompleted $concurrencyUnderLoadProofPath
+$realSmokeProofCompleted = Test-ProofLooksCompleted $realSmokeProofPath
+$allHandoffProofsCompleted = $lanProofCompleted -and $printerProofCompleted -and $restoreProofCompleted -and $concurrencyProofCompleted -and $concurrencyUnderLoadProofCompleted -and $realSmokeProofCompleted
 Write-Result $lanProofCompleted "Second-client LAN proof file looks present; preflight performs strict validation."
 Write-Result $printerProofCompleted "Physical printer proof file looks present; preflight performs strict validation."
 Write-Result $restoreProofCompleted "Final restore proof file looks present; preflight performs strict validation."
 Write-Result $concurrencyProofCompleted "Final concurrency proof file looks present; preflight performs strict validation."
+Write-Result $concurrencyUnderLoadProofCompleted "Final concurrency under load proof file looks present; preflight performs strict validation."
+Write-Result $realSmokeProofCompleted "Real LAN smoke proof file looks present."
 
 if (-not $lanProofCompleted) {
     Write-Host "Run from the second LAN client:"
-    Write-Host "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 -BaseUrl $($BaseUrl.TrimEnd('/')) -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md"
+    Write-Host "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 -BaseUrl $($BaseUrl.TrimEnd('/')) -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md -Force"
 }
 
 if (-not $printerProofCompleted) {
-    Write-Host "Print real media carta/carta/A5/80mm/58mm samples, then complete qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md with physical evidence."
+    Write-Host "Print the real institutional receipt on media carta/carta/A5 paper, then complete qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md with physical evidence. Validate 80mm/58mm only if the hospital configured a secondary thermal printer."
 }
 
 if (-not $restoreProofCompleted) {
@@ -339,11 +432,30 @@ if (-not $concurrencyProofCompleted) {
     Write-Host "Run concurrency validation against a disposable target, then complete qa\FINAL_CONCURRENCY_PROOF.md."
 }
 
+if (-not $concurrencyUnderLoadProofCompleted) {
+    Write-Host "Run concurrency-under-load validation against a disposable target, then complete qa\FINAL_CONCURRENCY_UNDER_LOAD_PROOF_LAN_8081.md."
+}
+
+if (-not $realSmokeProofCompleted) {
+    Write-Host "Run frontend real smoke against the LAN server, then complete qa\FINAL_REAL_SMOKE_LAN_8081.md."
+}
+
 Write-Section "Backup automation"
-$backupStatusOutput = @(& powershell.exe -ExecutionPolicy Bypass -File $backupTasksScript -ProjectRoot $ProjectRoot -PhpPath $PhpPath -Status 2>&1 | ForEach-Object { $_.ToString() })
+$backupTaskStatusArgs = @("-ExecutionPolicy", "Bypass", "-File", $backupTasksScript, "-ProjectRoot", $ProjectRoot, "-PhpPath", $PhpPath, "-Status")
+if (-not [string]::IsNullOrWhiteSpace($EnvFile)) {
+    $backupTaskStatusArgs += @("-EnvFile", $EnvFile)
+}
+if (-not [string]::IsNullOrWhiteSpace($ComposeProjectName)) {
+    $backupTaskStatusArgs += @("-ComposeProjectName", $ComposeProjectName)
+}
+$backupStatusOutput = @(& powershell.exe @backupTaskStatusArgs 2>&1 | ForEach-Object { $_.ToString() })
 $backupStatusOutput | ForEach-Object { Write-Host (Protect-HandoffText $_) }
+Write-Host ""
+Write-Host "Current-user fallback:"
+$backupFallbackStatusOutput = @(& powershell.exe -ExecutionPolicy Bypass -File $backupStartupScript -ProjectRoot $ProjectRoot -Status 2>&1 | ForEach-Object { $_.ToString() })
+$backupFallbackStatusOutput | ForEach-Object { Write-Host (Protect-HandoffText $_) }
 Write-Host "If tasks are missing or stale, run elevated PowerShell:"
-Write-Host "powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -UpdateExisting -PhpPath $(Protect-HandoffText $PhpPath)"
+Write-Host (Get-BackupTaskInstallCommand)
 Write-Host "Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker"
 Write-Host "powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Status -PhpPath $(Protect-HandoffText $PhpPath)"
 
@@ -361,7 +473,10 @@ if ($SkipPreflight) {
         -printerProofCompleted $printerProofCompleted `
         -restoreProofCompleted $restoreProofCompleted `
         -concurrencyProofCompleted $concurrencyProofCompleted `
+        -concurrencyUnderLoadProofCompleted $concurrencyUnderLoadProofCompleted `
+        -realSmokeProofCompleted $realSmokeProofCompleted `
         -backupStatusOutput $backupStatusOutput `
+        -backupFallbackStatusOutput $backupFallbackStatusOutput `
         -releaseGuardOutput $releaseGuardOutput `
         -releaseGuardExit $releaseGuardExit `
         -preflightOutput @("Preflight skipped by -SkipPreflight.") `
@@ -371,7 +486,14 @@ if ($SkipPreflight) {
 }
 
 Write-Section "Production preflight"
-$preflightOutput = @(& powershell.exe -ExecutionPolicy Bypass -File $preflightScript -ProjectRoot $ProjectRoot -BaseUrl $BaseUrl 2>&1 | ForEach-Object { $_.ToString() })
+$preflightArgs = @("-ExecutionPolicy", "Bypass", "-File", $preflightScript, "-ProjectRoot", $ProjectRoot, "-BaseUrl", $BaseUrl)
+if (-not [string]::IsNullOrWhiteSpace($EnvFile)) {
+    $preflightArgs += @("-EnvFile", $EnvFile)
+}
+if (-not [string]::IsNullOrWhiteSpace($ComposeProjectName)) {
+    $preflightArgs += @("-ComposeProjectName", $ComposeProjectName)
+}
+$preflightOutput = @(& powershell.exe @preflightArgs 2>&1 | ForEach-Object { $_.ToString() })
 $preflightExit = $LASTEXITCODE
 $preflightOutput | ForEach-Object { Write-Host (Protect-HandoffText $_) }
 
@@ -381,7 +503,10 @@ Write-HandoffReport `
     -printerProofCompleted $printerProofCompleted `
     -restoreProofCompleted $restoreProofCompleted `
     -concurrencyProofCompleted $concurrencyProofCompleted `
+    -concurrencyUnderLoadProofCompleted $concurrencyUnderLoadProofCompleted `
+    -realSmokeProofCompleted $realSmokeProofCompleted `
     -backupStatusOutput $backupStatusOutput `
+    -backupFallbackStatusOutput $backupFallbackStatusOutput `
     -releaseGuardOutput $releaseGuardOutput `
     -releaseGuardExit $releaseGuardExit `
     -preflightOutput $preflightOutput `
@@ -395,7 +520,7 @@ if ($preflightExit -eq 0 -and $releaseGuardExit -eq 0 -and $allHandoffProofsComp
 }
 
 Write-Host ""
-Write-Host "PRODUCTION_READY remains blocked. Keep status as PRODUCTION_CANDIDATE and close the missing evidence above." -ForegroundColor Yellow
+Write-Host "PRODUCTION_READY remains blocked. Keep status as READY_FOR_REAL_LAN_INSTALLATION_TEST only while the remaining blockers are field/admin-task evidence." -ForegroundColor Yellow
 if ($preflightExit -eq 0) {
     exit 1
 }

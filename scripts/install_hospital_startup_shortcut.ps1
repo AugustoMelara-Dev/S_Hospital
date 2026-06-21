@@ -39,6 +39,8 @@ trap {
     exit 1
 }
 
+$ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot).Path
+
 $shortcutName = 'Abrir Sistema de Caja Hospitalaria.lnk'
 $desktop = [Environment]::GetFolderPath('Desktop')
 $shortcutPath = Join-Path $desktop $shortcutName
@@ -47,7 +49,7 @@ $openScript = Join-Path $ProjectRoot 'scripts\open_hospital_system.ps1'
 $Url = Test-HospitalOperationalUrlInput $Url
 
 if (-not (Test-Path -LiteralPath $ProjectRoot -PathType Container)) {
-    throw 'No se encontro la carpeta instalada del sistema. Ejecute este script desde la carpeta de S_Hospital.'
+    throw 'No se encontro la carpeta instalada del sistema. Ejecute este script desde la carpeta del Sistema de Caja Hospitalaria.'
 }
 
 if (-not (Test-Path -LiteralPath $openScript -PathType Leaf)) {

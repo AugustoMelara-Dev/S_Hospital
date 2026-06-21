@@ -25,7 +25,9 @@ exact labels and the checked items below.
 - [ ] `/up` responds from the client computer. Result/evidence:
 - [ ] `/login` loads from the client computer using the server IP or LAN name. Result/evidence:
 - [ ] `/verify-email` loads the expected SPA route or documented response. Result/evidence:
+- [ ] `/api/system/echo-config` exposes LAN realtime config. Result/evidence:
 - [ ] `/assets/*.js` loads as JavaScript. Result/evidence:
+- [ ] WebSocket/Soketi TCP port is reachable from the client computer. Result/evidence:
 - [ ] Login completes without 419 or session-expired state. Result/evidence:
 - [ ] Cashbox opens. Result/evidence:
 - [ ] Invoice is created with patient name. Result/evidence:

@@ -2,6 +2,7 @@ import { forwardRef } from 'react';
 import { User } from 'lucide-react';
 import { Label } from '../../../components/ui/label';
 import { Input } from '../../../components/ui/input';
+import { PATIENT_NAME_MAX_LENGTH } from '../../../schemas/invoice.schema';
 
 type PatientStepProps = {
   patientName: string;
@@ -15,6 +16,9 @@ export const PatientStep = forwardRef<HTMLInputElement, PatientStepProps>(functi
   ref,
 ) {
   const errorId = error ? 'patient-name-error' : undefined;
+  const helpId = 'patient-name-help';
+  const remainingCharacters = PATIENT_NAME_MAX_LENGTH - patientName.length;
+  const isNearLimit = remainingCharacters <= 20;
 
   return (
     <div className="space-y-3">
@@ -40,9 +44,16 @@ export const PatientStep = forwardRef<HTMLInputElement, PatientStepProps>(functi
             autoComplete="off"
             className={`min-h-14 pl-12 text-lg font-semibold ${error ? 'border-destructive ring-destructive' : ''}`}
             aria-invalid={error ? 'true' : 'false'}
-            aria-describedby={errorId}
+            aria-describedby={errorId ? `${helpId} ${errorId}` : helpId}
+            maxLength={PATIENT_NAME_MAX_LENGTH}
           />
         </div>
+        <p
+          id={helpId}
+          className={`mt-1.5 text-xs ${isNearLimit ? 'font-medium text-warning' : 'text-muted-foreground'}`}
+        >
+          {patientName.length}/{PATIENT_NAME_MAX_LENGTH} caracteres
+        </p>
         {error && <p id={errorId} className="mt-1.5 text-sm text-destructive" role="alert">{error}</p>}
       </div>
       {patientName && (

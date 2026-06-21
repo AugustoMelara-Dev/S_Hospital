@@ -54,7 +54,7 @@ class BackupRestoreRoundtripTest extends TestCase
         $this->assertStringNotContainsString('CREATE TABLE', $encryptedDump);
         $this->assertStringNotContainsString('Maria Lopez', $encryptedDump);
 
-        $dump = Crypt::decryptString($encryptedDump);
+        $dump = $this->decryptBackupDump($encryptedDump);
         $this->assertStringContainsString('CREATE TABLE', $dump);
         $this->assertStringContainsString('BEGIN TRANSACTION', $dump);
         $this->assertStringContainsString('COMMIT', $dump);
@@ -80,7 +80,7 @@ class BackupRestoreRoundtripTest extends TestCase
         $this->assertStringNotContainsString('APP_KEY=', $encryptedDump);
         $this->assertStringNotContainsString('DB_PASSWORD=', $encryptedDump);
 
-        $dump = Crypt::decryptString($encryptedDump);
+        $dump = $this->decryptBackupDump($encryptedDump);
         $this->assertStringNotContainsString('sqlite-no-password', $dump);
         $this->assertStringNotContainsString('APP_KEY=', $dump);
         $this->assertStringNotContainsString('DB_PASSWORD=', $dump);
@@ -177,6 +177,27 @@ class BackupRestoreRoundtripTest extends TestCase
             'valid_until' => now()->addYear()->toDateString(),
             'active' => true,
         ]);
+    }
+
+    private function decryptBackupDump(string $encryptedDump): string
+    {
+        $lines = preg_split('/\R/', $encryptedDump);
+        $this->assertIsArray($lines);
+
+        if (($lines[0] ?? '') !== EncryptBackupFileAction::CHUNK_MARKER) {
+            return Crypt::decryptString($encryptedDump);
+        }
+
+        $dump = '';
+        foreach (array_slice($lines, 1) as $encryptedChunk) {
+            if ($encryptedChunk === '') {
+                continue;
+            }
+
+            $dump .= Crypt::decryptString($encryptedChunk);
+        }
+
+        return $dump;
     }
 
     private function seedCriticalData(): void

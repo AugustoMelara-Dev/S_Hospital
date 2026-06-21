@@ -9,11 +9,16 @@ import { FormField } from '../../components/ui/form-field';
 import { Input } from '../../components/ui/input';
 
 export const passwordChangeSchema = z.object({
-  current_password: z.string().min(1, 'La contraseña actual es requerida'),
-  password: z.string().min(8, 'La nueva contraseña debe tener al menos 8 caracteres'),
-  password_confirmation: z.string().min(1, 'Confirme la nueva contraseña'),
+  current_password: z.string().min(1, 'La contrasena actual es requerida'),
+  password: z.string()
+    .min(12, 'La nueva contrasena debe tener al menos 12 caracteres')
+    .regex(/\p{Ll}/u, 'La nueva contrasena debe incluir minuscula')
+    .regex(/\p{Lu}/u, 'La nueva contrasena debe incluir mayuscula')
+    .regex(/\d/, 'La nueva contrasena debe incluir numero')
+    .regex(/[^\p{L}\p{N}]/u, 'La nueva contrasena debe incluir simbolo'),
+  password_confirmation: z.string().min(1, 'Confirme la nueva contrasena'),
 }).refine((data) => data.password === data.password_confirmation, {
-  message: 'Las contraseñas no coinciden',
+  message: 'Las contrasenas no coinciden',
   path: ['password_confirmation'],
 });
 
@@ -92,7 +97,7 @@ export function PasswordChangeView({ onSubmit, submitting = false, status }: Pas
             <FormField
               id="password"
               label="Nueva contraseña"
-              hint="Use al menos 8 caracteres."
+              hint="Use al menos 12 caracteres, con mayúscula, minúscula, número y símbolo."
               error={errors.password?.message}
               required
             >

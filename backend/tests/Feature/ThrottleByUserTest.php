@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Http\Middleware\LoginLockout;
+use App\Http\Middleware\ThrottleByUser;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -21,8 +23,8 @@ class ThrottleByUserTest extends TestCase
         parent::setUp();
         $this->seed(RolesAndPermissionsSeeder::class);
 
-        Route::middleware(['web', 'auth:web', 'throttle.user:2,1'])
-            ->get('/_test/throttle-by-user', fn () => response()->json(['ok' => true]));
+        Route::middleware(['web', 'auth:web', ThrottleByUser::class.':2,1'])
+            ->get('/api/_test/throttle-by-user', fn () => response()->json(['ok' => true]));
     }
 
     public function test_per_user_throttle_returns_429_with_safe_message(): void
@@ -40,10 +42,10 @@ class ThrottleByUserTest extends TestCase
         $this->actingAs($user, 'web');
 
         for ($i = 0; $i < 2; $i++) {
-            $this->getJson('/_test/throttle-by-user')->assertOk();
+            $this->getJson('/api/_test/throttle-by-user')->assertOk();
         }
 
-        $response = $this->getJson('/_test/throttle-by-user');
+        $response = $this->getJson('/api/_test/throttle-by-user');
 
         $response->assertStatus(429)
             ->assertJsonStructure(['message', 'retry_after'])
@@ -70,12 +72,12 @@ class ThrottleByUserTest extends TestCase
         ]);
 
         $this->actingAs($first, 'web');
-        $this->getJson('/_test/throttle-by-user')->assertOk();
-        $this->getJson('/_test/throttle-by-user')->assertOk();
-        $this->getJson('/_test/throttle-by-user')->assertStatus(429);
+        $this->getJson('/api/_test/throttle-by-user')->assertOk();
+        $this->getJson('/api/_test/throttle-by-user')->assertOk();
+        $this->getJson('/api/_test/throttle-by-user')->assertStatus(429);
 
         $this->actingAs($second, 'web');
-        $this->getJson('/_test/throttle-by-user')->assertOk();
+        $this->getJson('/api/_test/throttle-by-user')->assertOk();
     }
 
     public function test_invoice_write_routes_use_per_user_throttle(): void
@@ -85,6 +87,14 @@ class ThrottleByUserTest extends TestCase
 
         $this->assertContains('throttle.user:60,1', $invoiceStore->gatherMiddleware());
         $this->assertContains('throttle.user:30,1', $invoiceVoid->gatherMiddleware());
+    }
+
+    public function test_login_route_keeps_lan_safe_ip_throttle_with_failed_attempt_lockout(): void
+    {
+        $route = Route::getRoutes()->match(Request::create('/api/auth/login', 'POST'));
+
+        $this->assertContains('throttle:30,1', $route->gatherMiddleware());
+        $this->assertContains(LoginLockout::class, $route->gatherMiddleware());
     }
 
     public function test_operational_read_routes_use_per_user_lan_safe_throttle(): void

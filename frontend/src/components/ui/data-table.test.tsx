@@ -18,6 +18,23 @@ describe('DataTable', () => {
     expect(screen.getByRole('cell', { name: 'María López' })).toBeInTheDocument();
   });
 
+
+  it('makes horizontally scrollable tables reachable by keyboard', () => {
+    render(
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Factura</TableHead>
+          </TableRow>
+        </TableHeader>
+      </Table>,
+    );
+
+    const tableRegion = screen.getByRole('region', { name: 'Tabla de datos' });
+    expect(tableRegion).toHaveClass('table-wrap');
+    expect(tableRegion).toHaveAttribute('tabindex', '0');
+    expect(within(tableRegion).getByRole('table')).toBeInTheDocument();
+  });
   it('allows overriding header scope when a table needs row headers', () => {
     render(
       <Table>

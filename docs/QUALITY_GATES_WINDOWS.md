@@ -26,6 +26,10 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\quality_gate_win
 Incluye:
 
 - `git diff --check`
+- seguridad de instalador, scripts de respaldo y handoff offline
+  (`scripts\validate_installer_safety.ps1`);
+- seguridad del runner MySQL rapido con golden database
+  (`scripts\test_golden_db_runner_safety.ps1`);
 - backend focal de eritropoyetina/permisos;
 - backend focal de caja/pagos/recibos;
 - backend focal de recibos institucionales;
@@ -74,6 +78,24 @@ php -d memory_limit=512M artisan test --colors=never --filter=AuthorizationStrat
 vendor\bin\pint --test
 vendor\bin\phpstan analyse --memory-limit=1G --no-progress
 ```
+
+Runner rapido MySQL/MariaDB con golden database descartable:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\test_golden_db_runner_safety.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\run_backend_tests_fast_mysql.ps1 -DbHost 127.0.0.1 -DbPort 3307 -DbUsername root -DbPassword test_password -Filter=UserManagementTest
+```
+
+El primer comando es estatico y no crea bases. El segundo requiere un servidor
+MySQL/MariaDB de pruebas publicado al host; clona una base `s_hospital_golden_*`
+segun hash de migraciones/seeders y ejecuta PHPUnit sobre una base
+`s_hospital_test_*` descartable, con `HOSPITAL_TEST_DB_ALREADY_MIGRATED=1` para
+evitar `migrate:fresh` repetido por test.
+
+Por seguridad, el runner solo acepta hosts locales (`localhost`, `127.0.0.1` o
+`::1`) sin confirmacion extra. Si se usa un servidor remoto de pruebas
+descartable, defina `HOSPITAL_CONFIRM_EXTERNAL_TEST_DB_HOST` con el host exacto;
+no use el servidor MariaDB real del hospital para este runner.
 
 Frontend:
 

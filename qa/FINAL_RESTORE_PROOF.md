@@ -1,6 +1,6 @@
 # Final restore proof
 
-**Estado global:** PENDING_FINAL_RESTORE_VALIDATION.
+**Estado global:** LOCAL_DOCKER_MARIADB_RESTORE_VALIDATED_2026_06_17.
 **Fase:** G - prueba fisica LAN/offline real.
 **Decision actual:** READY_FOR_REAL_LAN_OFFLINE_INSTALLATION_TEST, no PRODUCTION_READY.
 **Estado staging local (controlado):** **FIELD-DEP-02 STAGING PASS** (MariaDB 10.4 local,
@@ -10,6 +10,274 @@ Este archivo documenta la restauracion final contra una base descartable en el
 servidor final o hardware equivalente aprobado. La evidencia local historica de
 Fase 11 no sustituye esta prueba si cambian servidor, rutas, Docker, dump tool,
 credenciales o base de datos.
+
+## LAN stack 8081 Docker MariaDB PASS current code - 2026-06-17 08:20 UTC
+
+Esta seccion documenta una repeticion de restore real en esta PC despues de
+reconstruir las imagenes Docker con el codigo actual. La base activa
+`hospital_offlinetest` no se destruyo; el restore se ejecuto sobre una base
+descartable nueva.
+
+### Environment
+
+- Date/time: 2026-06-17T08:20:20Z
+- Responsible person: Automated validation on local LAN Docker stack
+- Source database: hospital_offlinetest
+- Disposable restore database: hospital_restore_validation_20260617_current
+- Backup file: C:\tmp\hospital-backup-20260617-021902-zyzzdlyu.sql.enc
+- Backup SHA256: d91be55f9bb9b98fcfdcd9903f4096f06ac13e539b90d4a2b0d10a045e5cc065
+- Backup size bytes: 1711276
+- Restore command: `scripts\restore_hospital_windows.ps1 -Mode Docker -ProjectRoot C:\Projects\S_Hospital -EnvFile C:\tmp\s_hospital_offlinetest.env -ComposeProjectName shospital_offlinetest -BackupFile C:\tmp\hospital-backup-20260617-021902-zyzzdlyu.sql.enc -ExpectedSha256 d91be55f9bb9b98fcfdcd9903f4096f06ac13e539b90d4a2b0d10a045e5cc065 -TargetDatabase hospital_restore_validation_20260617_current`
+- Evidence/capture reference: qa/FINAL_RESTORE_PROOF.md
+- Final conclusion: LAN STACK DOCKER MARIADB RESTORE PASS ON CURRENT CODE
+
+### Required checks
+
+- [x] Disposable restore database is not the active database. Result/evidence: `hospital_restore_validation_20260617_current` != `hospital_offlinetest`.
+- [x] Backup file exists and SHA256 was verified before restore. Result/evidence: `d91be55f9bb9b98fcfdcd9903f4096f06ac13e539b90d4a2b0d10a045e5cc065`.
+- [x] Restore imports without SQL error. Result/evidence: `scripts\restore_hospital_windows.ps1` completed with exit code 0.
+- [x] Migration/table restore has rows. Result/evidence: restore validation reported 39 tables.
+- [x] Services table has rows. Result/evidence: `services=122`.
+- [x] Core counts captured. Result/evidence: `users=16`, `services=122`, `invoices=35`, `payments=26`, `backup_logs=24`.
+
+## LAN stack 8081 Docker MariaDB PASS final check - 2026-06-17 05:45 UTC
+
+Esta seccion documenta una repeticion de restore real en esta PC contra el stack
+LAN final local (`http://192.168.1.3:8081`) usando MariaDB Docker. La base activa
+no se destruyo; el restore se hizo sobre una base descartable nueva.
+
+### Environment
+
+- Date/time: 2026-06-17T05:45:00Z
+- Responsible person: Automated validation on local LAN Docker stack
+- Source database: hospital_offlinetest
+- Disposable restore database: hospital_restore_validation_20260617_finalcheck
+- Backup file: C:\tmp\hospital-backup-20260616-162125-97itigrc.sql.enc
+- Backup SHA256: aa0f7b439e78cf0791cef55c47e547dca44c9dc2f4105ebf9a9049b468ede2c6
+- Backup size bytes: 1057396
+- Restore command: `scripts\restore_hospital_windows.ps1 -Mode Docker -ProjectRoot C:\Projects\S_Hospital -EnvFile C:\tmp\s_hospital_lanvalidation.env -ComposeProjectName shospital_offlinetest -TargetDatabase hospital_restore_validation_20260617_finalcheck`
+- Final conclusion: LAN STACK DOCKER MARIADB RESTORE PASS FINAL CHECK
+
+### Required checks
+
+- [x] Disposable restore database is not the active database. Result/evidence: `hospital_restore_validation_20260617_finalcheck` != `hospital_offlinetest`.
+- [x] Backup file exists and SHA256 was verified before restore. Result/evidence: `aa0f7b439e78cf0791cef55c47e547dca44c9dc2f4105ebf9a9049b468ede2c6`.
+- [x] Restore imports without SQL error. Result/evidence: `scripts\restore_hospital_windows.ps1` completed with exit code 0.
+- [x] Migration/table restore has rows. Result/evidence: restore validation reported 39 tables.
+- [x] Services table has rows. Result/evidence: `services=122`.
+- [x] Core counts captured. Result/evidence: `users=7`, `services=122`, `invoices=17`, `payments=13`, `backup_logs=13`.
+
+## LAN stack 8081 Docker MariaDB PASS post-hardening - 2026-06-17 04:14 UTC
+
+Esta seccion documenta la validacion ejecutada despues de cambiar el cifrado de
+backups a chunks y mantener compatibilidad con descifrado de backups historicos.
+La base activa no se destruyo; el restore se hizo sobre una base descartable.
+
+### Environment
+
+- Date/time: 2026-06-17T04:14:05Z
+- Responsible person: Automated validation on local LAN Docker stack
+- Source database: hospital_offlinetest
+- Disposable restore database: hospital_restore_validation_after_hardening
+- Backup file: hospital-backup-20260616-221345-jvcxbsfl.sql.enc
+- Backup SHA256: c1bd956e5f0bdfe2e55780b480c7c79c6b95e243166e3773eceb54d7754ed794
+- Backup size bytes: 1370452
+- Evidence/capture reference: qa/FINAL_RESTORE_PROOF_AFTER_HARDENING.md
+- Final conclusion: LAN STACK DOCKER MARIADB RESTORE PASS AFTER BACKUP CHUNK ENCRYPTION HARDENING
+
+### Required checks
+
+- [x] Disposable restore database is not the active database. Result/evidence: `hospital_restore_validation_after_hardening` != `hospital_offlinetest`.
+- [x] Backup file exists and SHA256 was verified before restore. Result/evidence: `c1bd956e5f0bdfe2e55780b480c7c79c6b95e243166e3773eceb54d7754ed794`.
+- [x] Restore imports without SQL error. Result/evidence: `hospital:backup` -> `hospital:decrypt-backup` -> MariaDB import completed.
+- [x] Migration table has rows. Result/evidence: `migrations=68`.
+- [x] Services table has rows. Result/evidence: `services=122`.
+- [x] Core counts captured. Result/evidence: `users=13`, `services=122`, `invoices=29`, `payments=21`, `backup_logs=20`.
+
+## LAN stack 8081 Docker MariaDB PASS - 2026-06-16 22:21 UTC
+
+Esta seccion documenta la validacion ejecutada en esta PC contra el stack final
+levantado por IP LAN (`http://192.168.1.3:8081`) despues de reconstruir las
+imagenes Docker finales.
+
+### Environment
+
+- Date/time: 2026-06-16T22:21:25Z
+- Responsible person: Automated validation on local LAN Docker stack
+- Source database: hospital_offlinetest
+- Disposable restore database: hospital_offlinetest_restore_validation_20260616_lanfinal
+- Backup file: C:\tmp\hospital-backup-20260616-162125-97itigrc.sql.enc
+- Backup SHA256: aa0f7b439e78cf0791cef55c47e547dca44c9dc2f4105ebf9a9049b468ede2c6
+- Backup size bytes: 1057396
+- Evidence/capture reference: qa/FINAL_RESTORE_PROOF.md
+- Final conclusion: LAN STACK DOCKER MARIADB RESTORE PASS
+
+### Required checks
+
+- [x] Disposable restore database is not the active database. Result/evidence: `hospital_offlinetest_restore_validation_20260616_lanfinal` != `hospital_offlinetest`.
+- [x] Backup file exists and SHA256 was verified before restore. Result/evidence: `aa0f7b439e78cf0791cef55c47e547dca44c9dc2f4105ebf9a9049b468ede2c6`.
+- [x] Restore imports without SQL error. Result/evidence: `scripts\restore_hospital_windows.ps1` completed with exit code 0.
+- [x] Migration/table restore has rows. Result/evidence: restore validation reported 39 tables.
+- [x] Services table has rows. Result/evidence: `services=122`.
+- [x] Core counts captured. Result/evidence: `users=7`, `services=122`, `invoices=17`, `payments=13`, `backup_logs=13`.
+
+## Offline stack 8081 Docker MariaDB PASS - 2026-06-16 21:35 UTC
+
+Esta seccion documenta la ultima validacion ejecutada despues de reconstruir las
+imagenes Docker finales en esta PC.
+
+### Environment
+
+- Date/time: 2026-06-16T21:35:00Z
+- Responsible person: Automated validation on local offline Docker stack
+- Source database: hospital_offlinetest
+- Disposable restore database: hospital_offlinetest_restore_validation_20260616e
+- Backup file: C:\tmp\hospital-offlinetest-restore-source.sql.enc
+- Backup SHA256: 3050943bb45b0280467a4498b7244aa1bc0308dde9eab6ca931cb8f4c6fb12e2
+- Backup size bytes: 871368
+- Evidence/capture reference: qa/FINAL_RESTORE_PROOF.md
+- Final conclusion: OFFLINE STACK DOCKER MARIADB RESTORE PASS
+
+- **Compose project:** `shospital_offlinetest`
+- **URL:** `http://127.0.0.1:8081`
+- **MariaDB image:** `mariadb:11.4.3`
+- **Disposable restore database:** `hospital_offlinetest_restore_validation_20260616e`
+- **Backup file:** `C:\tmp\hospital-offlinetest-restore-source.sql.enc`
+- **Backup SHA256:** `3050943bb45b0280467a4498b7244aa1bc0308dde9eab6ca931cb8f4c6fb12e2`
+- **Restore method:** `scripts\restore_hospital_windows.ps1 -Mode Docker -EnvFile C:\tmp\s_hospital_offlinetest.env -ComposeProjectName shospital_offlinetest`
+- **Final conclusion:** **OFFLINE STACK DOCKER MARIADB RESTORE PASS.**
+
+### Required checks
+
+- [x] Disposable restore database is not the active database. Result/evidence: `hospital_offlinetest_restore_validation_20260616e` != `hospital_offlinetest`.
+- [x] Backup file exists and SHA256 was verified before restore. Result/evidence: `3050943bb45b0280467a4498b7244aa1bc0308dde9eab6ca931cb8f4c6fb12e2`.
+- [x] Restore imports without SQL error. Result/evidence: `scripts\restore_hospital_windows.ps1` completed with exit code 0.
+- [x] Migration table has rows. Result/evidence: restore validation reported 39 tables.
+- [x] Services table has rows. Result/evidence: `services=122`.
+- [x] Core counts captured. Result/evidence: `users=3`, `services=122`, `invoices=1`, `payments=1`, `backup_logs=3`.
+
+## Local Docker MariaDB PASS - 2026-06-16
+
+Esta seccion documenta la validacion ejecutada en esta PC contra el stack Docker
+local actual (`backend` + `mariadb:11`). La base activa no se destruyo; el restore
+se hizo sobre una base descartable.
+
+## Production-like Docker MariaDB PASS - 2026-06-16 13:12 CST
+
+Esta seccion documenta la validacion ejecutada en esta PC contra el stack
+productivo aislado de Docker Compose:
+
+- **Compose project:** `shospital_prodtest`
+- **URL:** `http://127.0.0.1:8080`
+- **MariaDB image:** `mariadb:11.4.3`
+- **Source database activa:** `hospital_prodtest`
+- **Disposable restore database:** `hospital_prodtest_restore_validation_20260616_1320`
+- **Backup file:** `storage/app/private/backups/hospital-backup-20260616-131245-1yrayznz.sql.enc`
+- **Backup SHA256:** `fcd91f66e43dbe3801a151c3c94bb723de9373d5a3989e513724e4c2e90e10f4`
+- **Backup size bytes:** `871368`
+- **Restore method:** `php artisan hospital:decrypt-backup` dentro del contenedor backend, import con `mariadb` hacia una base descartable.
+- **Final conclusion:** **PRODUCTION-LIKE DOCKER MARIADB RESTORE PASS.**
+
+### Required checks
+
+- [x] Disposable restore database is not the active database. Result/evidence: `hospital_prodtest_restore_validation_20260616_1320` != `hospital_prodtest`.
+- [x] Backup file exists and has SHA256. Result/evidence: `fcd91f66e43dbe3801a151c3c94bb723de9373d5a3989e513724e4c2e90e10f4`, `871368` bytes.
+- [x] Restore imports without SQL error. Result/evidence: import completed with exit code 0.
+- [x] Migration table has rows. Result/evidence: `migrations=68`.
+- [x] Services table has rows. Result/evidence: `services=122`.
+- [x] Core counts captured. Result/evidence: source at backup time matched restore for migrations/users/roles/permissions/services/invoices/payments/cash sessions/cash movements. `backup_logs` differs by one because the scheduler created a new backup after the manual backup was taken.
+
+### Evidence
+
+```json
+{
+  "status": "VALIDATED",
+  "compose_project": "shospital_prodtest",
+  "source_database": "hospital_prodtest",
+  "restore_database": "hospital_prodtest_restore_validation_20260616_1320",
+  "backup_file": "storage/app/private/backups/hospital-backup-20260616-131245-1yrayznz.sql.enc",
+  "backup_sha256": "fcd91f66e43dbe3801a151c3c94bb723de9373d5a3989e513724e4c2e90e10f4",
+  "backup_size_bytes": 871368,
+  "source_counts_after_scheduler": {
+    "migrations": 68,
+    "users": 4,
+    "roles": 5,
+    "permissions": 38,
+    "services": 122,
+    "invoices": 13,
+    "payments": 7,
+    "cash_sessions": 2,
+    "cash_movements": 8,
+    "backup_logs": 10
+  },
+  "restore_counts": {
+    "migrations": 68,
+    "users": 4,
+    "roles": 5,
+    "permissions": 38,
+    "services": 122,
+    "invoices": 13,
+    "payments": 7,
+    "cash_sessions": 2,
+    "cash_movements": 8,
+    "backup_logs": 9
+  },
+  "post_backup_scheduler_evidence": {
+    "id": 10,
+    "filename": "hospital-backup-20260616-131532-h8d9oq1y.sql.enc",
+    "status": "success",
+    "type": "scheduled"
+  }
+}
+```
+
+### Production-like blocker found and corrected
+
+- **Finding:** `backup_data` volume was created as `root:root`, so backups failed with `Permission denied`.
+- **Impact:** manual and scheduled backups did not create files before the fix.
+- **Correction applied:** production entrypoint now prepares `storage/app/private/backups` and chowns storage/cache/shared public paths before starting services. FPM remains root master and workers run as `www-data`; queue/scheduler run as `www-data`.
+- **Verification:** manual backup `id=9` succeeded and scheduler backup `id=10` succeeded.
+
+### Environment
+
+- **Date/time:** 2026-06-16
+- **Source database activa:** `hospital_billing`
+- **Disposable restore database:** `hospital_billing_restore_validation_20260616`
+- **Backup file:** `storage/app/private/backups/hospital-backup-20260616-110640-cv0whz0p.sql.enc`
+- **Backup SHA256:** `b761f5d96d10a242a5c4f99d4739200e460090a3f07bbb7747e64f5a29a2facc`
+- **Backup size bytes:** `1462868`
+- **Restore method:** `php artisan hospital:decrypt-backup` a SQL temporal dentro del contenedor backend, `mysql` contra el servicio `mysql`, import a base descartable.
+- **Final conclusion:** **LOCAL DOCKER MARIADB RESTORE PASS.** El backup cifrado se descifro e importo sin error SQL; las tablas criticas tienen datos.
+
+### Required checks
+
+- [x] Disposable restore database is not the active database. Result/evidence: `hospital_billing_restore_validation_20260616` != `hospital_billing`.
+- [x] Backup file exists and has SHA256. Result/evidence: `b761f5d96d10a242a5c4f99d4739200e460090a3f07bbb7747e64f5a29a2facc`.
+- [x] Restore imports without SQL error. Result/evidence: import completed into `hospital_billing_restore_validation_20260616`.
+- [x] Migration table has rows. Result/evidence: `migrations=70`.
+- [x] Services table has rows. Result/evidence: `services=145`.
+- [x] Core counts captured. Result/evidence: `users=8, invoices=49, payments=48, backup_logs=10`.
+
+### Evidence
+
+```json
+{
+  "status": "VALIDATED",
+  "source_database": "hospital_billing",
+  "restore_database": "hospital_billing_restore_validation_20260616",
+  "backup_file": "storage/app/private/backups/hospital-backup-20260616-110640-cv0whz0p.sql.enc",
+  "backup_sha256": "b761f5d96d10a242a5c4f99d4739200e460090a3f07bbb7747e64f5a29a2facc",
+  "backup_size_bytes": 1462868,
+  "counts": {
+    "migrations": 70,
+    "users": 8,
+    "services": 145,
+    "invoices": 49,
+    "payments": 48,
+    "backup_logs": 10
+  }
+}
+```
 
 ## Bloqueantes actuales (para el hospital)
 
@@ -305,10 +573,11 @@ servidor final o hardware equivalente aprobado.
 ### Conclusion
 
 - **Staging (este documento):** **FIELD-DEP-02 STAGING PASS.**
-- **Produccion (hospital):** **PENDING_FINAL_RESTORE_VALIDATION.** Repetir
-  este procedimiento contra la MariaDB 11 del hospital con la ruta de backup
-  del server final, sobre una BD disposable nombrada segun la guia del
-  hospital, y firmar `qa/FINAL_RESTORE_PROOF.md` con el responsable in-situ.
+- **Produccion (hospital):** la validacion local LAN Docker/MariaDB del
+  2026-06-16 en esta PC queda registrada como PASS arriba. Si cambia la PC
+  servidor, la ruta de backup, las credenciales, el motor MariaDB/MySQL o la
+  base activa, repetir este procedimiento contra una BD disposable nombrada
+  segun la guia del hospital y firmar este archivo con el responsable in-situ.
 - **Aclaracion:** esto valida restore en entorno controlado. **NO** declara
   PRODUCTION_READY. Los otros FIELD-PILOT-DEPENDENCY (impresion fisica y LAN
   segunda PC) siguen pendientes.

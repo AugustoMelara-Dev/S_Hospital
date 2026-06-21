@@ -60,19 +60,25 @@ function Invoke-Api {
     param(
         [string] $Method,
         [string] $Path,
-        [hashtable] $Body = @{}
+        [hashtable] $RequestBody = @{}
     )
     $uri = [Uri]"$BaseUrl$Path"
     $request = [System.Net.HttpWebRequest]::Create($uri)
     $request.Method = $Method
     $request.CookieContainer = $script:cookieJar
     $request.Timeout = 15000
-    $request.UserAgent = "S_Hospital smoke/1.0"
+    $request.UserAgent = "SistemaCajaHospitalaria smoke/1.0"
+    $request.Accept = "application/json"
     $request.AllowAutoRedirect = $false
 
     if ($Method -in @('POST', 'PUT', 'PATCH', 'DELETE')) {
         $request.ContentType = 'application/json'
-        $bodyJson = $Body | ConvertTo-Json -Compress
+        $xsrfCookie = $script:cookieJar.GetCookies([Uri] $BaseUrl)["XSRF-TOKEN"]
+        if ($null -ne $xsrfCookie -and -not [string]::IsNullOrWhiteSpace($xsrfCookie.Value)) {
+            $request.Headers.Add("X-XSRF-TOKEN", [System.Uri]::UnescapeDataString($xsrfCookie.Value))
+        }
+
+        $bodyJson = $RequestBody | ConvertTo-Json -Compress
         $bytes = [System.Text.Encoding]::UTF8.GetBytes($bodyJson)
         $request.ContentLength = $bytes.Length
         $stream = $request.GetRequestStream()
@@ -83,28 +89,28 @@ function Invoke-Api {
     try {
         $response = $request.GetResponse()
         $status = [int]$response.StatusCode
-        $body = $null
+        $responseBody = $null
         $stream = $response.GetResponseStream()
         if ($stream) {
             $reader = New-Object System.IO.StreamReader($stream)
-            $body = $reader.ReadToEnd()
+            $responseBody = $reader.ReadToEnd()
             $reader.Close()
         }
         $response.Close()
-        return [pscustomobject]@{ Status = $status; Body = $body }
+        return [pscustomobject]@{ Status = $status; Body = $responseBody }
     } catch [System.Net.WebException] {
         $ex = $_.Exception
         $status = if ($ex.Response) { [int]$ex.Response.StatusCode } else { 0 }
-        $body = if ($ex.Response) {
+        $responseBody = if ($ex.Response) {
             $stream = $ex.Response.GetResponseStream()
             if ($stream) {
                 $reader = New-Object System.IO.StreamReader($stream)
-                $b = $reader.ReadToEnd()
+                $errorBody = $reader.ReadToEnd()
                 $reader.Close()
-                $b
+                $errorBody
             } else { $null }
         } else { $null }
-        return [pscustomobject]@{ Status = $status; Body = $body }
+        return [pscustomobject]@{ Status = $status; Body = $responseBody }
     }
 }
 
@@ -151,8 +157,16 @@ if (-not $SkipAuth) {
         )
     }
 
+    $csrf = Invoke-Api -Method GET -Path "/sanctum/csrf-cookie"
+    Assert-Status "GET /sanctum/csrf-cookie" 204 $csrf.Status $csrf.Body
+    if ($csrf.Status -ne 204) {
+        Write-Host ""
+        Write-Host "CSRF setup failed; auth-required tests were not executed." -ForegroundColor Yellow
+        exit 1
+    }
+
     # 4. Login
-    $login = Invoke-Api -Method POST -Path "/api/auth/login" -Body @{
+    $login = Invoke-Api -Method POST -Path "/api/auth/login" -RequestBody @{
         login = $Username
         password = $Password
     }
@@ -160,7 +174,10 @@ if (-not $SkipAuth) {
 
     if ($login.Status -ne 200) {
         Write-Host ""
-        Write-Host "Login failed; subsequent auth-required tests will likely fail too." -ForegroundColor Yellow
+        Write-Host "Login failed; auth-required tests were not executed." -ForegroundColor Yellow
+        Write-Host "$($script:failures.Count) failure(s):" -ForegroundColor Red
+        $script:failures | ForEach-Object { Write-Host "  - $_" -ForegroundColor Red }
+        exit 1
     }
 
     # 5. Me

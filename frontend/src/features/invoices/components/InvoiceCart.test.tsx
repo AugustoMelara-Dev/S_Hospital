@@ -18,7 +18,7 @@ describe('InvoiceCart', () => {
     );
 
     expect(screen.getByText('Hemograma')).toBeInTheDocument();
-    expect(document.body.textContent).toContain('L. 0.00');
+    expect(document.body.textContent).toContain('L 0.00');
     expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-numero|undefined/);
   });
 

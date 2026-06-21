@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import { Button } from '../../../components/ui/button';
 import { Dialog } from '../../../components/ui/dialog';
 import { SuccessCheckmark } from '../../../components/ui/animations';
-import { formatLempirasFromCents, parseCents } from '../../../lib/moneyCents';
+import { formatLempirasUIFromCents, parseCents } from '../../../lib/moneyCents';
 
 type InvoiceStatus = 'issued' | 'paid' | 'partial' | 'void';
 
@@ -112,5 +112,5 @@ export function InvoiceSuccess({
 }
 
 function moneyLabel(value: string | number | null | undefined): string {
-  return formatLempirasFromCents(parseCents(value));
+  return formatLempirasUIFromCents(parseCents(value));
 }

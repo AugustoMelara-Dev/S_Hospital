@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { EmptyState } from '../../../components/ui/states';
 import { KPICard } from './KPICard';
 import type { OperationsReport } from '../../../lib/api/types';
-import { formatLempirasFromCents, parseCents } from '../../../lib/moneyCents';
+import { formatLempirasUIFromCents, parseCents } from '../../../lib/moneyCents';
 import { formatLocalizedDateTime } from '../../../lib/format/formatDate';
 
 interface AuditoriaTabProps {
@@ -16,6 +16,7 @@ interface AuditoriaTabProps {
   operations: OperationsReport | null;
   dateFrom: string;
   dateTo: string;
+  exporting?: boolean;
   onDateFromChange: (value: string) => void;
   onDateToChange: (value: string) => void;
   onExport: () => void;
@@ -28,6 +29,7 @@ export function AuditoriaTab({
   operations,
   dateFrom,
   dateTo,
+  exporting = false,
   onDateFromChange,
   onDateToChange,
   onExport,
@@ -108,7 +110,6 @@ export function AuditoriaTab({
                   <TableHeader>
                     <TableRow>
                       <TableHead>Factura</TableHead>
-                      <TableHead>Paciente</TableHead>
                       <TableHead className="text-right">Total</TableHead>
                       <TableHead>Motivo</TableHead>
                       <TableHead>Usuario</TableHead>
@@ -119,7 +120,6 @@ export function AuditoriaTab({
                     {operations.voids.map((voidedInvoice, index) => (
                       <TableRow key={`void-${voidedInvoice.invoice_number ?? index}-${voidedInvoice.voided_at ?? 'sin-fecha'}`}>
                         <TableCell className="font-medium">{voidedInvoice.invoice_number}</TableCell>
-                        <TableCell>{voidedInvoice.patient_name}</TableCell>
                         <TableCell className="text-right">{moneyLabel(voidedInvoice.total)}</TableCell>
                         <TableCell className="max-w-[200px] truncate">{voidedInvoice.reason ?? 'Sin motivo'}</TableCell>
                         <TableCell>{voidedInvoice.user ?? 'Sin usuario'}</TableCell>
@@ -176,7 +176,6 @@ export function AuditoriaTab({
                   <TableHeader>
                     <TableRow>
                       <TableHead>Factura</TableHead>
-                      <TableHead>Paciente</TableHead>
                       <TableHead>Método</TableHead>
                       <TableHead className="text-right">Monto</TableHead>
                       <TableHead>Motivo</TableHead>
@@ -188,7 +187,6 @@ export function AuditoriaTab({
                     {operations.payment_voids?.map((paymentVoid, index) => (
                       <TableRow key={`${paymentVoid.invoice_number ?? 'sin-factura'}-${index}`}>
                         <TableCell className="font-medium">{paymentVoid.invoice_number ?? '-'}</TableCell>
-                        <TableCell>{paymentVoid.patient_name ?? '-'}</TableCell>
                         <TableCell>{paymentMethodLabel(paymentVoid.method)}</TableCell>
                         <TableCell className="text-right">{moneyLabel(paymentVoid.amount)}</TableCell>
                         <TableCell className="max-w-[200px] truncate">{paymentVoid.reason ?? 'Sin motivo'}</TableCell>
@@ -322,7 +320,6 @@ export function AuditoriaTab({
                   <TableHeader>
                     <TableRow>
                       <TableHead>Nombre</TableHead>
-                      <TableHead>Usuario</TableHead>
                       <TableHead className="text-right">Pagos</TableHead>
                       <TableHead className="text-right">Cajas</TableHead>
                       <TableHead className="text-right">Facturas</TableHead>
@@ -331,9 +328,8 @@ export function AuditoriaTab({
                   </TableHeader>
                   <TableBody>
                     {operations.cashiers.map((cashier, index) => (
-                      <TableRow key={`cashier-${cashier.username || cashier.name || index}`}>
+                      <TableRow key={`cashier-${cashier.name || index}`}>
                         <TableCell className="font-medium">{cashier.name}</TableCell>
-                        <TableCell>{cashier.username}</TableCell>
                         <TableCell className="text-right">{cashier.payment_count}</TableCell>
                         <TableCell className="text-right">{cashier.cash_session_count}</TableCell>
                         <TableCell className="text-right">{cashier.invoice_count}</TableCell>
@@ -355,13 +351,13 @@ export function AuditoriaTab({
 
           {canExport ? (
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={onExport}>
+              <Button type="button" variant="outline" onClick={onExport} disabled={exporting}>
                 <Download className="mr-2 h-4 w-4" />
-                Exportar Excel
+                {exporting ? 'Exportando...' : 'Exportar Excel'}
               </Button>
-              <Button type="button" variant="outline" onClick={onExportPdf}>
+              <Button type="button" variant="outline" onClick={onExportPdf} disabled={exporting}>
                 <Download className="mr-2 h-4 w-4" />
-                Exportar PDF
+                {exporting ? 'Exportando...' : 'Exportar PDF'}
               </Button>
             </div>
           ) : (
@@ -409,7 +405,7 @@ function auditResultLabel(result: string | null | undefined): string {
 }
 
 function moneyLabel(value: string | number | null | undefined): string {
-  return formatLempirasFromCents(parseCents(value));
+  return formatLempirasUIFromCents(parseCents(value));
 }
 
 function formatBytes(size: number | null): string {

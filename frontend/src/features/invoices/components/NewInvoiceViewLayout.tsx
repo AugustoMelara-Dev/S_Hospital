@@ -22,6 +22,7 @@ export type NewInvoiceLayoutProps = {
   emitBlockReasons: string[];
   canEmit: boolean;
   canCreatePayments: boolean;
+  canOpenCash: boolean;
   canViewReceipts: boolean;
   canMarkDialysisPrescription?: boolean;
   onOpenCash?: () => void;
@@ -44,6 +45,7 @@ export type NewInvoiceLayoutProps = {
   onPreviewBeforePrintChange: (val: boolean) => void;
   onSubmitInvoice: () => void;
   onCobrar: () => void;
+  onRetryLoad: () => void;
   onPaymentOpenChange: (val: boolean) => void;
   onSubmitPayment: (appliedAmount: string) => void;
   onLoadReceipt: (width: ReceiptData['width']) => void;
@@ -66,6 +68,7 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
     emitBlockReasons,
     canEmit,
     canCreatePayments,
+    canOpenCash,
     canViewReceipts,
     onOpenCash,
     onPatientNameChange,
@@ -87,6 +90,7 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
     onPreviewBeforePrintChange,
     onSubmitInvoice,
     onCobrar,
+    onRetryLoad,
     onPaymentOpenChange,
     onSubmitPayment,
     onLoadReceipt,
@@ -106,7 +110,7 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
     <section id="nueva-factura" className="flex h-full flex-col gap-4">
       <header className="flex flex-col gap-3 border-b border-border pb-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="flex flex-col gap-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-secondary">Caja hospitalaria</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-secondary">Sistema institucional</p>
           <h1 className="text-2xl font-semibold leading-tight text-foreground md:text-3xl">Nueva factura</h1>
           <p className="text-sm text-muted-foreground">Paciente, servicios, cobro y recibo en una sola estacion.</p>
         </div>
@@ -123,24 +127,40 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
         </div>
       </header>
 
-      {!state.loadedCashSession && (
+      {state.pointOfSaleLoadError && (
+        <Alert variant="destructive" title="No se pudo cargar el punto de venta">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <span className="flex-1">{state.pointOfSaleLoadError}</span>
+            <Button type="button" variant="secondary" size="sm" onClick={onRetryLoad} disabled={state.loadingServices}>
+              {state.loadingServices ? 'Reintentando...' : 'Reintentar'}
+            </Button>
+          </div>
+        </Alert>
+      )}
+
+      {!state.loadedCashSession && !state.pointOfSaleLoadError && (
         <Alert variant="warning" title="Caja no abierta">
           <div className="flex flex-col sm:flex-row sm:items-center gap-3">
             <span className="flex-1">Debe abrir la caja antes de emitir facturas.</span>
-            {onOpenCash ? (
+            {canOpenCash && onOpenCash ? (
               <Button type="button" variant="secondary" size="sm" onClick={onOpenCash}>
                 Abrir Caja
               </Button>
             ) : (
-              <Button asChild variant="secondary" size="sm">
-                <Link to="/cashbox">Ir a caja</Link>
-              </Button>
+              <div className="flex flex-col gap-1 sm:items-end">
+                <Button asChild variant="secondary" size="sm">
+                  <Link to="/cashbox">Ir a caja</Link>
+                </Button>
+                {!canOpenCash ? (
+                  <span className="text-xs text-muted-foreground">Solicite apertura a un usuario autorizado.</span>
+                ) : null}
+              </div>
             )}
           </div>
         </Alert>
       )}
 
-      {state.alertMessage && (
+      {state.alertMessage && state.alertMessage !== state.pointOfSaleLoadError && (
         <Alert variant="destructive" title="Revise antes de continuar">
           {state.alertMessage}
         </Alert>
@@ -191,6 +211,7 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
                 searchInputRef={searchInputRef}
                 scannerInputRef={scannerInputRef}
                 loading={state.loadingServices}
+                scanningCode={state.scanningCode}
                 scannerEnabled={state.scannerEnabled}
               />
             </CardContent>

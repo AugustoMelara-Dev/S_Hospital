@@ -34,6 +34,20 @@ class FiscalSettingsController extends Controller
         ]);
     }
 
+    public function operational(): JsonResponse
+    {
+        $setting = FiscalSetting::query()->first();
+
+        return response()->json([
+            'data' => $setting ? [
+                'default_tax_rate' => $setting->default_tax_rate,
+                'scanner_enabled' => $setting->scanner_enabled,
+                'partial_payments_enabled' => $setting->partial_payments_enabled,
+                'receipt_paper_size' => $setting->receipt_paper_size,
+            ] : null,
+        ]);
+    }
+
     public function update(UpdateFiscalSettingsRequest $request, AuditLogger $auditLogger): JsonResponse
     {
         $setting = DB::transaction(function () use ($request, $auditLogger): FiscalSetting {

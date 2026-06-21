@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type CashSession, apiClient, userSafeErrorMessage } from '@/lib/api';
-import { formatLempiras, parseCents, toFloat } from '@/lib/money';
+import { formatLempirasUI, parseCents, toFloat } from '@/lib/money';
 import { invalidateBillingQueries } from '@/lib/queryInvalidation';
 import { queryKeys } from '@/lib/queryKeys';
 import { SessionStatusCard } from './components/SessionStatusCard';
@@ -142,7 +142,7 @@ export function CashBoxView({
       return;
     }
     if (hasPendingBalance) {
-      setFormAlert(`No se puede cerrar caja con ${pendingInvoiceCount} factura(s) pendientes o parciales por ${formatLempiras(pendingAmount)}.`);
+      setFormAlert(`No se puede cerrar caja con ${pendingInvoiceCount} factura(s) pendientes o parciales por ${formatLempirasUI(pendingAmount)}.`);
       return;
     }
     if (closingAmount.trim() === '') {
@@ -244,19 +244,19 @@ export function CashBoxView({
                   <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                     <div className="flex flex-col">
                       <span className="text-sm text-muted-foreground">Efectivo</span>
-                      <span className="text-xl font-bold">{formatLempiras(activeSession.payments_by_method.cash)}</span>
+                      <span className="text-xl font-bold">{formatLempirasUI(activeSession.payments_by_method.cash)}</span>
                     </div>
                     <div className="flex flex-col">
                       <span className="text-sm text-muted-foreground">Transferencia</span>
-                      <span className="text-xl font-bold">{formatLempiras(activeSession.payments_by_method.transfer)}</span>
+                      <span className="text-xl font-bold">{formatLempirasUI(activeSession.payments_by_method.transfer)}</span>
                     </div>
                     <div className="flex flex-col">
                       <span className="text-sm text-muted-foreground">Tarjeta</span>
-                      <span className="text-xl font-bold">{formatLempiras(activeSession.payments_by_method.card)}</span>
+                      <span className="text-xl font-bold">{formatLempirasUI(activeSession.payments_by_method.card)}</span>
                     </div>
                     <div className="flex flex-col">
                       <span className="text-sm text-muted-foreground">Otros</span>
-                      <span className="text-xl font-bold">{formatLempiras(activeSession.payments_by_method.other)}</span>
+                      <span className="text-xl font-bold">{formatLempirasUI(activeSession.payments_by_method.other)}</span>
                     </div>
                     <div className="flex flex-col">
                       <span className="text-sm text-muted-foreground">Pagos registrados</span>
@@ -264,7 +264,7 @@ export function CashBoxView({
                     </div>
                     <div className="flex flex-col">
                       <span className="text-sm text-muted-foreground">Saldo pendiente</span>
-                      <span className="text-xl font-bold">{formatLempiras(activeSession.pending_amount)}</span>
+                      <span className="text-xl font-bold">{formatLempirasUI(activeSession.pending_amount)}</span>
                     </div>
                   </div>
                 </CardContent>
@@ -314,7 +314,7 @@ export function CashBoxView({
                     <Alert variant="warning">
                       <AlertTriangle className="h-4 w-4" />
                       <div>
-                        Hay una diferencia de <strong>{formatLempiras(difference)}</strong>. Se requerirá una nota explicativa al cerrar.
+                        Hay una diferencia de <strong>{formatLempirasUI(difference)}</strong>. Se requerirá una nota explicativa al cerrar.
                       </div>
                     </Alert>
                   )}
@@ -324,7 +324,7 @@ export function CashBoxView({
                       <AlertTriangle className="h-4 w-4" />
                       <div>
                         Hay <strong>{pendingInvoiceCount}</strong> factura(s) pendientes o parciales por{' '}
-                        <strong>{formatLempiras(pendingAmount)}</strong>. Revise los cobros antes de cerrar.
+                        <strong>{formatLempirasUI(pendingAmount)}</strong>. Revise los cobros antes de cerrar.
                       </div>
                     </Alert>
                   )}

@@ -12,7 +12,6 @@ use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 use Tests\TestCase;
@@ -151,6 +150,18 @@ class BackupWorkflowTest extends TestCase
         }
     }
 
+    public function test_backup_download_requires_view_and_download_permissions(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $backup = $this->successfulBackupLog();
+        $misconfiguredUser = User::factory()->create();
+        $misconfiguredUser->givePermissionTo('backups.download');
+
+        $this->actingAs($misconfiguredUser)
+            ->get("/api/backups/{$backup->id}/download")
+            ->assertForbidden();
+    }
+
     public function test_manual_backup_endpoint_queues_local_backup(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
@@ -179,6 +190,27 @@ class BackupWorkflowTest extends TestCase
         }
     }
 
+    public function test_manual_backup_endpoint_replays_duplicate_submit_with_idempotency_key(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->admin();
+
+        $first = $this->actingAs($admin)
+            ->withHeaders(['Idempotency-Key' => 'manual-backup-double-click'])
+            ->postJson('/api/backups')
+            ->assertAccepted()
+            ->assertHeaderMissing('Idempotent-Replay');
+
+        $second = $this->actingAs($admin)
+            ->withHeaders(['Idempotency-Key' => 'manual-backup-double-click'])
+            ->postJson('/api/backups')
+            ->assertAccepted()
+            ->assertHeader('Idempotent-Replay', 'true');
+
+        $this->assertSame($first->json('data.id'), $second->json('data.id'));
+        $this->assertSame(1, BackupLog::query()->where('type', BackupLog::TYPE_MANUAL)->count());
+    }
+
     public function test_backup_runner_creates_success_log_checksum_and_audit_entry(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
@@ -197,7 +229,13 @@ class BackupWorkflowTest extends TestCase
         $encrypted = Storage::disk('local')->get((string) $backup->path);
         $this->assertStringNotContainsString('CREATE TABLE', $encrypted);
         $this->assertStringNotContainsString('INSERT INTO', $encrypted);
-        $this->assertNotEmpty(Crypt::decryptString($encrypted));
+        $decryptedPath = storage_path('framework/testing/decrypted-backup.sql');
+        @unlink($decryptedPath);
+        $this->artisan('hospital:decrypt-backup', [
+            'input' => Storage::disk('local')->path((string) $backup->path),
+            'output' => $decryptedPath,
+        ])->assertExitCode(0);
+        $this->assertNotEmpty(file_get_contents($decryptedPath));
 
         $this->assertDatabaseHas('audit_logs', [
             'user_id' => $admin->id,
@@ -395,6 +433,46 @@ class BackupWorkflowTest extends TestCase
         ]);
     }
 
+    public function test_backup_runner_refuses_corrupt_pending_paths_before_dumping(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->admin();
+
+        $backup = BackupLog::query()->create([
+            'filename' => 'unsafe.sql.enc',
+            'path' => 'backups/../unsafe.sql.enc',
+            'disk' => 'local',
+            'status' => BackupLog::STATUS_PENDING,
+            'type' => BackupLog::TYPE_MANUAL,
+            'created_by' => $admin->id,
+        ]);
+
+        $writer = new class extends DatabaseDumpWriter
+        {
+            public bool $called = false;
+
+            public function dumpTo(string $absolutePath): void
+            {
+                $this->called = true;
+                file_put_contents($absolutePath, 'should-not-run');
+            }
+        };
+
+        $result = (new CreateBackupAction($writer, app(EncryptBackupFileAction::class), app(PruneBackupsAction::class)))
+            ->run($backup);
+
+        $this->assertFalse($writer->called);
+        $this->assertSame(BackupLog::STATUS_FAILED, $result->status);
+        $this->assertSame('Registro de respaldo local invalido.', $result->error_message);
+        $this->assertFalse(Storage::disk('local')->exists('backups/unsafe.sql.enc'));
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $admin->id,
+            'action' => 'backup.failed',
+            'entity_type' => BackupLog::class,
+            'entity_id' => $backup->id,
+        ]);
+    }
+
     public function test_download_only_serves_registered_existing_backup_files_and_audits_downloads(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
@@ -410,6 +488,7 @@ class BackupWorkflowTest extends TestCase
         $this->actingAs($admin)
             ->get("/api/backups/{$backup->id}/download")
             ->assertOk()
+            ->assertHeader('Content-Type', 'application/octet-stream')
             ->assertHeader('X-Content-Type-Options', 'nosniff');
 
         $this->assertDatabaseHas('audit_logs', [
@@ -453,6 +532,33 @@ class BackupWorkflowTest extends TestCase
 
         $this->actingAs($admin)->get("/api/backups/{$unsafe->id}/download")->assertNotFound();
         $this->actingAs($admin)->get("/api/backups/{$failed->id}/download")->assertNotFound();
+
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $admin->id,
+            'action' => 'backup.download_denied',
+            'entity_type' => BackupLog::class,
+            'entity_id' => $unsafe->id,
+        ]);
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $admin->id,
+            'action' => 'backup.download_denied',
+            'entity_type' => BackupLog::class,
+            'entity_id' => $failed->id,
+        ]);
+    }
+
+    public function test_download_uses_safe_attachment_name_when_log_filename_is_tampered(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->admin();
+        $backup = $this->successfulBackupLog($admin, filename: "../bad\r\nname.sql.enc");
+
+        $response = $this->actingAs($admin)
+            ->get("/api/backups/{$backup->id}/download")
+            ->assertOk();
+
+        $this->assertStringContainsString('filename=hospital-backup-download.sql.enc', $response->headers->get('Content-Disposition'));
+        $this->assertStringNotContainsString('bad', $response->headers->get('Content-Disposition'));
     }
 
     public function test_artisan_backup_command_registers_success_log(): void

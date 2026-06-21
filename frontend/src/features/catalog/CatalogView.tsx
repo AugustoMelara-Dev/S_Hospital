@@ -33,7 +33,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { formatLempirasFromCents, parseCents } from '../../lib/moneyCents';
+import { formatLempirasUIFromCents, parseCents } from '../../lib/moneyCents';
 import { getServiceBillingSummary } from '../../lib/serviceBilling';
 import { invalidateCatalogQueries } from '@/lib/queryInvalidation';
 
@@ -85,7 +85,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
     setIsLoading(true);
     setLoadError('');
     try {
-      const [nextCategories, nextAreas, nextServices, fiscalSettings] = await Promise.all([
+      const [nextCategories, nextAreas, nextServices, operationalSettings] = await Promise.all([
         apiClient.getCategories(),
         apiClient.getAreas(true),
         apiClient.getServicesPage({
@@ -95,12 +95,12 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
           page,
           perPage,
         }),
-        apiClient.getFiscalSettings().catch(() => null),
+        apiClient.getOperationalSettings().catch(() => null),
       ]);
       setCategories(nextCategories);
       setAreas(nextAreas);
       setServicesData(nextServices);
-      setScannerEnabled(fiscalSettings?.scanner_enabled === true);
+      setScannerEnabled(operationalSettings?.scanner_enabled === true);
     } catch (error) {
       const message = userSafeErrorMessage(error, 'No se pudo cargar el catálogo.');
       setLoadError(message);
@@ -458,7 +458,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
               Mostrando {services.length} de {meta.total} servicios
             </span>
             <Select value={String(perPage)} onValueChange={(v: string) => handlePerPageChange(Number(v))}>
-              <SelectTrigger className="w-[100px]">
+              <SelectTrigger className="w-[100px]" aria-label="Servicios por pagina">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -502,5 +502,5 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
 }
 
 function moneyLabel(value: string | number | null | undefined): string {
-  return formatLempirasFromCents(parseCents(value));
+  return formatLempirasUIFromCents(parseCents(value));
 }

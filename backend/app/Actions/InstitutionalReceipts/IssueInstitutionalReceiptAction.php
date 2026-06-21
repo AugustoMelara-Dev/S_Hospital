@@ -35,6 +35,17 @@ class IssueInstitutionalReceiptAction
     public function execute(array $payload, User $user, InvoiceAccess $invoiceAccess): InstitutionalReceipt
     {
         return DB::transaction(function () use ($payload, $user, $invoiceAccess): InstitutionalReceipt {
+            $invoiceSnapshot = Invoice::query()
+                ->with('payments')
+                ->whereKey($payload['invoice_id'])
+                ->firstOrFail();
+            $selectedPaymentSnapshot = $this->selectedPaymentSnapshot($invoiceSnapshot, $payload);
+            $cashSessionId = $this->resolveCashSessionId($invoiceSnapshot, $selectedPaymentSnapshot, $payload);
+            $cashSession = CashRegisterSession::query()
+                ->whereKey($cashSessionId)
+                ->lockForUpdate()
+                ->firstOrFail();
+
             $invoice = Invoice::query()
                 ->with('items', 'payments.user:id,name,username')
                 ->whereKey($payload['invoice_id'])
@@ -51,8 +62,13 @@ class IssueInstitutionalReceiptAction
             }
 
             $selectedPayment = $this->selectedPayment($invoice, $payload);
-            $cashSession = $this->cashSession($invoice, $selectedPayment, $payload);
-            $this->assertCashSessionCanBeUsed($cashSession, $user);
+            if ($selectedPayment instanceof Payment && (int) $selectedPayment->cash_session_id !== (int) $cashSession->id) {
+                throw ValidationException::withMessages([
+                    'cash_session_id' => 'La caja seleccionada no coincide con la caja asociada al cobro de esta factura.',
+                ]);
+            }
+            $this->assertCashSessionCanBeUsed($cashSession, $user, $selectedPayment);
+            $postCloseIssue = $cashSession->status === CashRegisterSession::STATUS_CLOSED;
 
             $profile = $this->resolveProfile($payload, $user, $cashSession);
             $reservation = $this->reserveNumber->execute();
@@ -104,6 +120,7 @@ class IssueInstitutionalReceiptAction
                     'amount' => $receipt->amount,
                     'cash_session_id' => $cashSession->id,
                     'payment_id' => $selectedPayment?->id,
+                    'post_close_issue' => $postCloseIssue,
                 ],
             ]);
 
@@ -138,6 +155,28 @@ class IssueInstitutionalReceiptAction
     /**
      * @param  array<string, mixed>  $payload
      */
+    private function selectedPaymentSnapshot(Invoice $invoice, array $payload): ?Payment
+    {
+        if (empty($payload['payment_id'])) {
+            return null;
+        }
+
+        $payment = Payment::query()
+            ->whereKey($payload['payment_id'])
+            ->firstOrFail();
+
+        if ($payment->invoice_id !== $invoice->id) {
+            throw ValidationException::withMessages([
+                'payment_id' => 'El pago seleccionado no pertenece a esta factura.',
+            ]);
+        }
+
+        return $payment;
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
     private function selectedPayment(Invoice $invoice, array $payload): ?Payment
     {
         if (empty($payload['payment_id'])) {
@@ -167,7 +206,7 @@ class IssueInstitutionalReceiptAction
     /**
      * @param  array<string, mixed>  $payload
      */
-    private function cashSession(Invoice $invoice, ?Payment $selectedPayment, array $payload): CashRegisterSession
+    private function resolveCashSessionId(Invoice $invoice, ?Payment $selectedPayment, array $payload): int
     {
         $requestedCashSessionId = $payload['cash_session_id'] ?? null;
         $cashSessionId = null;
@@ -207,23 +246,30 @@ class IssueInstitutionalReceiptAction
             ]);
         }
 
-        return CashRegisterSession::query()
-            ->whereKey($cashSessionId)
-            ->lockForUpdate()
-            ->firstOrFail();
+        return (int) $cashSessionId;
     }
 
-    private function assertCashSessionCanBeUsed(CashRegisterSession $cashSession, User $user): void
+    private function assertCashSessionCanBeUsed(CashRegisterSession $cashSession, User $user, ?Payment $selectedPayment): void
     {
         if ($cashSession->user_id !== $user->id && ! $user->can('invoices.operate_any')) {
             throw new AuthorizationException('No puede emitir recibos desde la caja de otro usuario.');
         }
 
-        if ($cashSession->status !== CashRegisterSession::STATUS_OPEN) {
-            throw ValidationException::withMessages([
-                'cash_session_id' => 'La caja seleccionada esta cerrada.',
-            ]);
+        if ($cashSession->status === CashRegisterSession::STATUS_OPEN) {
+            return;
         }
+
+        if (
+            $cashSession->status === CashRegisterSession::STATUS_CLOSED
+            && $selectedPayment instanceof Payment
+            && (int) $selectedPayment->cash_session_id === (int) $cashSession->id
+        ) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'cash_session_id' => 'La caja seleccionada esta cerrada.',
+        ]);
     }
 
     /**

@@ -143,6 +143,37 @@ class SystemStatusTest extends TestCase
         $this->assertIsString($response->json('data.backups.oldest_pending_at'));
     }
 
+    public function test_recent_successful_backup_with_clean_queue_marks_worker_active(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        Config::set('queue.default', 'database');
+        Cache::put('hospital:scheduler:last_tick', now()->subSeconds(30)->toIso8601String(), 60);
+        Cache::put('hospital:scheduler:last_result', 'ok', 60);
+        $admin = $this->admin();
+
+        BackupLog::query()->create([
+            'filename' => 'hospital-backup-recent.sql.enc',
+            'path' => 'backups/hospital-backup-recent.sql.enc',
+            'disk' => 'local',
+            'status' => BackupLog::STATUS_SUCCESS,
+            'type' => BackupLog::TYPE_MANUAL,
+            'created_by' => $admin->id,
+            'size_bytes' => 100,
+            'checksum_sha256' => str_repeat('b', 64),
+            'completed_at' => now(),
+        ]);
+
+        $this->actingAs($admin)
+            ->getJson('/api/system/status')
+            ->assertOk()
+            ->assertJsonPath('data.backups.pending_count', 0)
+            ->assertJsonPath('data.backups.queue.failed_jobs_count', 0)
+            ->assertJsonPath('data.backups.queue.pending_backup_jobs', 0)
+            ->assertJsonPath('data.backups.worker_recently_active', true)
+            ->assertJsonPath('data.preflight.production_checks.8.code', 'BACKUP_WORKER_CONTINUOUS')
+            ->assertJsonPath('data.preflight.production_checks.8.status', 'validated');
+    }
+
     public function test_database_queue_retry_after_exceeds_backup_worker_timeout(): void
     {
         $job = new RunBackupJob(1);
@@ -236,6 +267,33 @@ class SystemStatusTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.preflight.physical_proofs.1.status', 'partial')
             ->assertJsonPath('data.preflight.physical_proofs.1.detail', 'La evidencia local referenciada no existe: qa/evidence/printer-2026-05-19');
+    }
+
+    public function test_status_rejects_lan_proof_without_realtime_websocket_evidence(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $proofRoot = storage_path('framework/testing-production-proofs-lan-websocket');
+
+        File::deleteDirectory($proofRoot);
+        File::ensureDirectoryExists($proofRoot.'/qa');
+        File::ensureDirectoryExists($proofRoot.'/qa/evidence/lan-client-2026-05-19');
+        Config::set('hospital.project_root', $proofRoot);
+
+        $proofWithoutWebSocket = str_replace(
+            [
+                "- [x] `/api/system/echo-config` exposes LAN realtime config. Result/evidence: driver pusher host 192.168.1.7 port 6001.\n",
+                "- [x] WebSocket/Soketi TCP port is reachable from the client computer. Result/evidence: TCP connect OK to 192.168.1.7:6001.\n",
+            ],
+            '',
+            $this->completedLanProof(),
+        );
+        File::put($proofRoot.'/qa/LAN_CLIENT_VALIDATION_PROOF.md', $proofWithoutWebSocket);
+
+        $this->actingAs($this->admin())
+            ->getJson('/api/system/status')
+            ->assertOk()
+            ->assertJsonPath('data.preflight.physical_proofs.0.status', 'partial')
+            ->assertJsonPath('data.preflight.physical_proofs.0.detail', 'Faltan checks con evidencia: /api/system/echo-config, WebSocket, Soketi');
     }
 
     public function test_status_marks_template_physical_proof_files_as_partial(): void
@@ -352,7 +410,9 @@ class SystemStatusTest extends TestCase
 - [x] `/up` responds from the client computer. Result/evidence: HTTP 200 registrado en captura 01.
 - [x] `/login` loads from the client computer using the server IP or LAN name. Result/evidence: pantalla de login visible en captura 02.
 - [x] `/verify-email` loads the expected SPA route or documented response. Result/evidence: ruta SPA responde sin error 500.
+- [x] `/api/system/echo-config` exposes LAN realtime config. Result/evidence: driver pusher host 192.168.1.7 port 6001.
 - [x] `/assets/*.js` loads as JavaScript. Result/evidence: asset principal con content-type JavaScript.
+- [x] WebSocket/Soketi TCP port is reachable from the client computer. Result/evidence: TCP connect OK to 192.168.1.7:6001.
 - [x] Login completes without 419 or session-expired state. Result/evidence: dashboard abre con usuario de caja.
 - [x] Cashbox opens. Result/evidence: caja abierta con monto inicial registrado.
 - [x] Invoice is created with patient name. Result/evidence: factura generada para Paciente LAN.

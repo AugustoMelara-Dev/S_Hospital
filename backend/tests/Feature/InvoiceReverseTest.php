@@ -105,6 +105,50 @@ class InvoiceReverseTest extends TestCase
             ->count());
     }
 
+    public function test_reverse_paid_invoice_after_cash_session_close_is_rejected_without_mutating_closed_cash(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $supervisor = $this->supervisor();
+        $sessionId = $this->openSession($cashier);
+        $invoiceId = $this->createInvoice($cashier, 'Paciente cierre', 'Glucosa');
+
+        $paymentId = $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_CASH,
+                'amount' => '17.25',
+            ])->assertCreated()->json('data.payment.id');
+
+        $this->actingAs($cashier)
+            ->postJson("/api/cash-sessions/{$sessionId}/close", [
+                'closing_amount' => '517.25',
+            ])
+            ->assertOk();
+
+        $this->actingAs($supervisor)
+            ->postJson("/api/invoices/{$invoiceId}/reverse", [
+                'reason' => 'Correccion administrativa posterior al cierre',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('cash_session');
+
+        $this->assertDatabaseHas('payments', [
+            'id' => $paymentId,
+            'status' => Payment::STATUS_POSTED,
+        ]);
+
+        $this->assertSame(0, CashMovement::query()
+            ->where('type', CashMovement::TYPE_PAYMENT_VOID)
+            ->where('payment_id', $paymentId)
+            ->count());
+
+        $this->assertDatabaseHas('invoices', [
+            'id' => $invoiceId,
+            'status' => Invoice::STATUS_PAID,
+        ]);
+    }
+
     public function test_reverse_unpaid_invoice_works_without_payments_to_void(): void
     {
         $this->seedBillingBase();

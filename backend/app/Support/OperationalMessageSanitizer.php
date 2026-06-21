@@ -29,6 +29,8 @@ class OperationalMessageSanitizer
         }
 
         $message = preg_replace('/\b(https?:\/\/)(?:[^\s\/@]+@)([^\s]+)/i', '$1$2', $message) ?? $message;
+        $message = preg_replace('/(?i)\bhospital_app@(?:\d{1,3}\.){3}\d{1,3}\b/', '[db-user-host]', $message) ?? $message;
+        $message = preg_replace("/(?i)'hospital_app'@'(?:\d{1,3}\.){3}\d{1,3}'/", '[db-user-host]', $message) ?? $message;
         $message = preg_replace('/(?i)(APP_KEY|DB_PASSWORD|PASSWORD|TOKEN|SECRET|MAIL_PASSWORD)\s*[:=]\s*[^,\s\]\)]+/', '$1=[redacted]', $message) ?? $message;
         $message = preg_replace('/(?i)[A-Z]:\\\\[^\s`"\']+/', '[ruta-local]', $message) ?? $message;
         $message = preg_replace('#/(var|home|srv|opt|tmp|usr|mnt)/[^\s`"\']+#i', '[ruta-local]', $message) ?? $message;

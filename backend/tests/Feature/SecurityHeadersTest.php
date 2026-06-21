@@ -24,6 +24,19 @@ class SecurityHeadersTest extends TestCase
         }
     }
 
+    public function test_cross_origin_opener_policy_is_not_sent_on_plain_http_lan_ip(): void
+    {
+        $this
+            ->get('http://192.168.1.3:8081/login')
+            ->assertOk()
+            ->assertHeaderMissing('Cross-Origin-Opener-Policy');
+
+        $this
+            ->get('http://127.0.0.1:8081/login')
+            ->assertOk()
+            ->assertHeader('Cross-Origin-Opener-Policy', 'same-origin');
+    }
+
     public function test_csp_blocks_object_embeds_and_unwanted_frames(): void
     {
         $response = $this->get('/up');

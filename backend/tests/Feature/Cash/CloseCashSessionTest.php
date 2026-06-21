@@ -3,6 +3,7 @@
 namespace Tests\Feature\Cash;
 
 use App\Jobs\RunBackupJob;
+use App\Models\CashMovement;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
@@ -70,6 +71,30 @@ class CloseCashSessionTest extends TestCase
         Bus::assertNotDispatched(RunBackupJob::class);
     }
 
+    public function test_empty_zero_cash_session_can_close_with_audited_closing_movement(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashierWithOpenSession('0.00');
+        $sessionId = $this->currentOpenSessionIdFor($cashier);
+
+        $this->actingAs($cashier)
+            ->postJson("/api/cash-sessions/{$sessionId}/close", [
+                'closing_amount' => '0.00',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.status', CashRegisterSession::STATUS_CLOSED)
+            ->assertJsonPath('data.closing_amount', '0.00')
+            ->assertJsonPath('data.difference_amount', '0.00');
+
+        $this->assertDatabaseHas('cash_movements', [
+            'cash_session_id' => $sessionId,
+            'user_id' => $cashier->id,
+            'type' => CashMovement::TYPE_CLOSING,
+            'method' => CashMovement::TYPE_CLOSING,
+            'amount' => '0.00',
+        ]);
+    }
+
     private function seedBillingBase(): void
     {
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
@@ -92,14 +117,14 @@ class CloseCashSessionTest extends TestCase
         ]);
     }
 
-    private function cashierWithOpenSession(): User
+    private function cashierWithOpenSession(string $openingAmount = '500.00'): User
     {
         $cashier = User::factory()->create();
         $cashier->assignRole('cajero');
         CashRegisterSession::query()->create([
             'user_id' => $cashier->id,
             'open_user_id' => $cashier->id,
-            'opening_amount' => '500.00',
+            'opening_amount' => $openingAmount,
             'status' => CashRegisterSession::STATUS_OPEN,
             'opened_at' => now(),
         ]);

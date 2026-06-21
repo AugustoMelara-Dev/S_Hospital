@@ -106,17 +106,19 @@ export interface InvoiceEstimate {
 export function computeSimpleEstimate(items: CartItem[], taxRate?: string): InvoiceEstimate {
   const rateBasisPoints = parseTaxRateBasisPoints(taxRate);
   let subtotal = 0;
-  let tax = 0;
+  let taxableSubtotal = 0;
 
   for (const item of items) {
     const quantity = parseQuantityUnits(item.quantity);
-    const lineSubtotal = Math.trunc((effectiveUnitPriceCents(item) * quantity) / 100);
+    const lineSubtotal = Math.trunc(((effectiveUnitPriceCents(item) * quantity) + 50) / 100);
     subtotal += lineSubtotal;
 
     if (item.service.taxable && rateBasisPoints > 0) {
-      tax += Math.round((lineSubtotal * rateBasisPoints) / 10_000);
+      taxableSubtotal += lineSubtotal;
     }
   }
+
+  const tax = Math.trunc(((taxableSubtotal * rateBasisPoints) + 5000) / 10_000);
 
   return {
     subtotal: formatCentsFromMoneyCents(subtotal),

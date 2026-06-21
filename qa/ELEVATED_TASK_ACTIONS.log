@@ -1,0 +1,13 @@
+﻿=== 2026-06-17T22:45:57 ===
+--- SistemaCajaHospitalaria-BackupWorker ---
+State=Ready User=SYSTEM LogonType=ServiceAccount RunLevel=Limited
+LastRun=06/17/2026 22:42:59 LastResult=1 NextRun=
+Action Execute=cmd.exe Arguments=/c "C:\Projects\S_Hospital\scripts\run_backup_worker.cmd" "--mode=docker" "php" "--env-file" "C:\tmp\s_hospital_offlinetest.env" "--project-name" "shospital_offlinetest" WorkingDirectory=C:\Projects\S_Hospital
+--- SistemaCajaHospitalaria-DailyBackup ---
+State=Ready User=SYSTEM LogonType=ServiceAccount RunLevel=Limited
+LastRun=06/17/2026 22:43:04 LastResult=1 NextRun=06/18/2026 02:00:00
+Action Execute=cmd.exe Arguments=/c "C:\Projects\S_Hospital\scripts\run_scheduled_backup.cmd" "--mode=docker" "php" "--env-file" "C:\tmp\s_hospital_offlinetest.env" "--project-name" "shospital_offlinetest" WorkingDirectory=C:\Projects\S_Hospital
+--- HospitalBillingOS-BackupWorker ---
+NOT FOUND
+--- HospitalBillingOS-DailyBackup ---
+NOT FOUND

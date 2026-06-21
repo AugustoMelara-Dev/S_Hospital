@@ -462,7 +462,14 @@ async function main() {
       await previewCheckbox.click();
     }
     await page.getByRole('button', { name: /registrar cobro y ver preview|confirmar cobro|registrar cobro e imprimir/i }).click();
-    await page.getByRole('dialog', { name: /vista previa del recibo/i }).waitFor({ state: 'visible', timeout: 15000 });
+    const receiptPreviewDialog = page
+      .getByRole('dialog', { name: /vista previa del recibo|comprobante de factura|recibo institucional/i })
+      .first();
+    await receiptPreviewDialog.waitFor({ state: 'visible', timeout: 15000 });
+    const receiptPreviewText = await receiptPreviewDialog.innerText();
+    if (!/pdf institucional|recibo institucional|comprobante de factura|paciente/i.test(receiptPreviewText)) {
+      findings.push('receipt-preview: el comprobante no muestra texto institucional suficiente despues del cobro.');
+    }
     await screenshot(page, 'receipt-preview');
     await closeOperationalDialogIfPresent(page);
 
@@ -497,10 +504,20 @@ async function main() {
       await invoiceRow.getByRole('button', { name: /ver acciones de factura/i }).click();
       await page.getByRole('button', { name: /reimprimir/i }).click();
     }
-    await page.getByLabel(/motivo opcional/i).fill('Copia solicitada por paciente').catch(() => {});
+    await page.getByLabel(/motivo de reimpresi.n/i).fill('Copia solicitada por paciente para validacion visual');
+    const reprintPopup = page.waitForEvent('popup', { timeout: 15000 }).catch(() => null);
     await page.getByRole('button', { name: /registrar reimpresi.n/i }).click();
+    const openedPdfPage = await reprintPopup;
+    await openedPdfPage?.close().catch(() => {});
     await waitSettled(page);
-    await page.getByLabel(/vista previa del recibo|recibo institucional/i).first().waitFor({ state: 'visible', timeout: 30000 });
+    await page
+      .getByText(/PDF institucional .* abierto|Recibo .* listo para imprimir/i)
+      .first()
+      .waitFor({ state: 'visible', timeout: 30000 })
+      .catch(() => {
+        findings.push('invoices-history: la reimpresion no mostro confirmacion visible de PDF institucional abierto.');
+      });
+    await page.getByRole('dialog', { name: /reimprimir/i }).waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
     await closeOperationalDialogIfPresent(page);
 
     await navigate(page, routeScreens.catalog, 'catalog');

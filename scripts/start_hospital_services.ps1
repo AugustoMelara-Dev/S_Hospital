@@ -38,7 +38,7 @@ Write-Host 'Iniciando servicios locales del Sistema de Caja Hospitalaria...'
 Write-Host "Carpeta del sistema: %PROJECT_ROOT%"
 
 if (-not (Test-Path -LiteralPath $ProjectRoot -PathType Container)) {
-    throw 'No se encontro la carpeta del sistema. Abra PowerShell desde la carpeta instalada de S_Hospital.'
+    throw 'No se encontro la carpeta del sistema. Abra PowerShell desde la carpeta instalada del Sistema de Caja Hospitalaria.'
 }
 
 Set-Location $ProjectRoot
@@ -97,6 +97,18 @@ if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
 
 $upArgs = @($dockerRuntime.ComposeArgs + @('up', '-d') + $dockerRuntime.Services)
 & docker @upArgs
+if ($LASTEXITCODE -ne 0) {
+    throw 'Docker no pudo iniciar todos los servicios. No borre datos ni volumenes; ejecute scripts\repair_hospital_system.ps1.'
+}
+
+if ($dockerRuntime.Mode -eq 'offline-docker' -and ($dockerRuntime.Services -contains 'nginx')) {
+    Write-Host 'Refrescando proxy web local para evitar rutas 502 despues de cambios de backend...'
+    $restartArgs = @($dockerRuntime.ComposeArgs + @('restart', 'nginx'))
+    & docker @restartArgs
+    if ($LASTEXITCODE -ne 0) {
+        throw 'Docker inicio los servicios, pero no pudo refrescar nginx. Revise Docker y ejecute scripts\repair_hospital_system.ps1.'
+    }
+}
 
 Write-Host "Servicios solicitados en modo $($dockerRuntime.Mode): $($dockerRuntime.Services -join ', ')."
 Write-Host 'Puede abrir el sistema con scripts\open_hospital_system.ps1.'

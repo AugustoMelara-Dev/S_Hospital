@@ -33,12 +33,22 @@ export function LoginView({
   const [showPassword, setShowPassword] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const hospitalName = displayHospitalName(fiscal?.hospital_name);
+  const normalizedStatus = status.toLocaleLowerCase('es-HN');
+  const isLockoutStatus =
+    normalizedStatus.includes('demasiados intentos') ||
+    normalizedStatus.includes('bloqueado temporalmente') ||
+    normalizedStatus.includes('cuenta bloqueada');
 
   useEffect(() => {
-    if (status.includes('Demasiados intentos') || status.includes('bloqueado temporalmente')) {
+    if (normalizedStatus.includes('cuenta bloqueada')) {
+      setCountdown(15 * 60);
+    } else if (
+      normalizedStatus.includes('demasiados intentos') ||
+      normalizedStatus.includes('bloqueado temporalmente')
+    ) {
       setCountdown(60);
     }
-  }, [status]);
+  }, [normalizedStatus]);
 
   useEffect(() => {
     if (countdown <= 0) {
@@ -53,6 +63,7 @@ export function LoginView({
   }, [countdown]);
 
   const statusVariant =
+    isLockoutStatus ||
     status.includes('error') ||
     status.includes('No se pudo') ||
     status.includes('incorrecta') ||
@@ -61,6 +72,15 @@ export function LoginView({
     status.includes('Demasiados')
       ? 'destructive'
       : 'success';
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    if (countdown > 0) {
+      event.preventDefault();
+      return;
+    }
+
+    onSubmit(event);
+  }
 
   return (
     <main className="flex min-h-[100dvh] items-center justify-center bg-background p-4 text-foreground sm:p-6">
@@ -128,7 +148,7 @@ export function LoginView({
             </CardHeader>
 
             <CardContent className="px-0 pb-0">
-              <form onSubmit={onSubmit} className="flex flex-col gap-5">
+              <form onSubmit={handleSubmit} className="flex flex-col gap-5">
                 <FormField id="login-input" label="Usuario o correo" required>
                   {({ describedBy, id, invalid }) => (
                     <div className="relative">

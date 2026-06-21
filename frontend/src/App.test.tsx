@@ -543,7 +543,7 @@ describe('App', () => {
             data: {
               id: 5,
               name: 'Soporte Tecnico',
-              email: 'soporte@hospital-billing.local',
+              email: 'soporte@hospital.local',
               username: 'soporte',
               active: true,
               roles: ['soporte_tecnico'],
@@ -592,7 +592,7 @@ describe('App', () => {
             data: {
               id: 6,
               name: 'Cajero Turno',
-              email: 'cajero.turno@hospital-billing.local',
+              email: 'cajero.turno@hospital.local',
               username: 'cajero.turno',
               active: true,
               roles: ['cajero'],
@@ -948,10 +948,10 @@ describe('App', () => {
       target: { value: 'Password123!' },
     });
     fireEvent.change(screen.getByLabelText(/^nueva contrase[nñ]a$/i), {
-      target: { value: 'NewPassword123' },
+      target: { value: 'NewPassword123!' },
     });
     fireEvent.change(screen.getByLabelText(/confirmar nueva contrase[nñ]a/i), {
-      target: { value: 'NewPassword123' },
+      target: { value: 'NewPassword123!' },
     });
     fireEvent.click(screen.getByRole('button', { name: /actualizar contrase[nñ]a/i }));
 
@@ -1008,10 +1008,10 @@ describe('App', () => {
       target: { value: 'wrong-password' },
     });
     fireEvent.change(screen.getByLabelText(/^nueva/i), {
-      target: { value: 'NewPassword123' },
+      target: { value: 'NewPassword123!' },
     });
     fireEvent.change(screen.getByLabelText(/confirmar/i), {
-      target: { value: 'NewPassword123' },
+      target: { value: 'NewPassword123!' },
     });
     fireEvent.click(screen.getByRole('button', { name: /actualizar/i }));
 
@@ -1057,10 +1057,10 @@ describe('App', () => {
       target: { value: 'Password123!' },
     });
     fireEvent.change(screen.getByLabelText(/^nueva/i), {
-      target: { value: 'NewPassword123' },
+      target: { value: 'NewPassword123!' },
     });
     fireEvent.change(screen.getByLabelText(/confirmar/i), {
-      target: { value: 'NewPassword123' },
+      target: { value: 'NewPassword123!' },
     });
 
     const submit = screen.getByRole('button', { name: /actualizar/i });
@@ -1112,6 +1112,7 @@ describe('App', () => {
     render(<App />);
 
     expect(await screen.findByText(/ruta no encontrada/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /ir al inicio/i })).toHaveAttribute('href', '/dashboard');
     expect(screen.queryByRole('heading', { name: /^reportes$/i })).not.toBeInTheDocument();
   });
 
@@ -1136,6 +1137,8 @@ describe('App', () => {
                 'catalog.view',
                 'invoices.create',
                 'invoices.view',
+                'payments.create',
+                'receipts.view',
                 'reports.view',
                 'reports.managerial.view',
                 'reports.export',

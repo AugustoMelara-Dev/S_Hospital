@@ -31,8 +31,14 @@ Artisan::command('auth:create-initial-admin
         return 1;
     }
 
-    if (strlen($password) < 10 || ! preg_match('/[A-Za-z]/', $password) || ! preg_match('/\d/', $password)) {
-        $this->error('La contrasena temporal debe tener al menos 10 caracteres, con letras y numeros.');
+    if (
+        strlen($password) < 12
+        || ! preg_match('/[a-z]/', $password)
+        || ! preg_match('/[A-Z]/', $password)
+        || ! preg_match('/\d/', $password)
+        || ! preg_match('/[^A-Za-z0-9]/', $password)
+    ) {
+        $this->error('La contrasena temporal debe tener al menos 12 caracteres, con mayuscula, minuscula, numero y simbolo.');
 
         return 1;
     }

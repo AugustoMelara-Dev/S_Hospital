@@ -19,48 +19,59 @@ use App\Http\Controllers\LogoController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ReceiptController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\RoleController;
 use App\Http\Controllers\ServiceAreaController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\SystemStatusController;
 use App\Http\Controllers\UserController;
 use App\Http\Middleware\LoginLockout;
 use Illuminate\Support\Facades\Route;
+use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 
 Route::get('/health', function () {
     return response()->json([
         'status' => 'ok',
         'service' => 'Sistema de Caja Hospitalaria',
     ]);
-})->middleware('throttle:120,1');
+})
+    ->withoutMiddleware(EnsureFrontendRequestsAreStateful::class)
+    ->middleware('throttle:120,1');
 
 Route::post('/system/csp-report', [CspReportController::class, 'store'])
+    ->withoutMiddleware(EnsureFrontendRequestsAreStateful::class)
     ->middleware('throttle:30,1');
 
 Route::get('/system/health', [HealthController::class, 'show'])
+    ->withoutMiddleware(EnsureFrontendRequestsAreStateful::class)
     ->middleware('throttle:120,1');
 
 Route::get('/system/echo-config', [EchoConfigController::class, 'show'])
+    ->withoutMiddleware(EnsureFrontendRequestsAreStateful::class)
     ->middleware('throttle:120,1');
 
 Route::get('/system/openapi', function () {
     $document = app(OpenApiExporter::class)->document(app('router'));
 
     return response()->json($document);
-})->middleware('auth:sanctum');
+})->middleware(['web', 'auth:web', 'user.active', 'password.changed', 'throttle.user:30,1']);
 
 Route::get('/system/setup-status', [SystemStatusController::class, 'setupStatus'])
-    ->middleware('web');
+    ->withoutMiddleware(EnsureFrontendRequestsAreStateful::class)
+    ->middleware('throttle:120,1');
 
 Route::get('/settings/logo', [LogoController::class, 'show'])
-    ->middleware('web');
+    ->withoutMiddleware(EnsureFrontendRequestsAreStateful::class)
+    ->middleware('throttle:120,1');
 Route::get('/settings/logo/file', [LogoController::class, 'file'])
-    ->middleware('web');
+    ->withoutMiddleware(EnsureFrontendRequestsAreStateful::class)
+    ->middleware('throttle:120,1');
 
 Route::get('/settings/branding', [FiscalSettingsController::class, 'publicBranding'])
-    ->middleware('web');
+    ->withoutMiddleware(EnsureFrontendRequestsAreStateful::class)
+    ->middleware('throttle:120,1');
 
 Route::post('/auth/login', [AuthController::class, 'login'])
-    ->middleware(['web', LoginLockout::class, 'throttle:5,1']);
+    ->middleware(['web', LoginLockout::class, 'throttle:30,1']);
 Route::get('/auth/session', [AuthController::class, 'session'])
     ->middleware(['web', 'throttle.user:30,1']);
 
@@ -72,6 +83,8 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle.user:240,1'])->gr
         ->middleware('throttle.user:60,1');
 
     Route::middleware('password.changed')->group(function () {
+        Route::get('/settings/operational', [FiscalSettingsController::class, 'operational']);
+
         Route::get('/settings/fiscal', [FiscalSettingsController::class, 'show']);
         Route::put('/settings/fiscal', [FiscalSettingsController::class, 'update'])
             ->middleware('throttle.user:30,1');
@@ -105,6 +118,8 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle.user:240,1'])->gr
             ->middleware(['throttle.user:60,1', 'idempotency']);
         Route::get('/institutional-receipts/{receipt}/pdf', [InstitutionalReceiptController::class, 'pdf'])
             ->middleware('throttle.user:60,1');
+        Route::post('/institutional-receipts/{receipt}/pdf', [InstitutionalReceiptController::class, 'pdf'])
+            ->middleware(['throttle.user:60,1', 'idempotency']);
         Route::post('/institutional-receipts/{receipt}/print-events', [InstitutionalReceiptController::class, 'printEvent'])
             ->middleware(['throttle.user:30,1', 'idempotency']);
 
@@ -130,9 +145,9 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle.user:240,1'])->gr
             ->middleware(['throttle.user:60,1', 'idempotency']);
         Route::get('/invoices/{invoice}', [InvoiceController::class, 'show']);
         Route::post('/invoices/{invoice}/void', [InvoiceController::class, 'void'])
-            ->middleware('throttle.user:30,1');
+            ->middleware(['throttle.user:30,1', 'idempotency']);
         Route::post('/invoices/{invoice}/reverse', [InvoiceController::class, 'reverse'])
-            ->middleware('throttle.user:10,1');
+            ->middleware(['throttle.user:10,1', 'idempotency']);
 
         Route::get('/cash-sessions/current', [CashSessionController::class, 'current']);
         Route::post('/cash-sessions/open', [CashSessionController::class, 'open'])
@@ -145,14 +160,20 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle.user:240,1'])->gr
             ->middleware(['throttle.user:60,1', 'idempotency']);
         Route::get('/invoices/{invoice}/payments', [PaymentController::class, 'index']);
         Route::post('/invoices/{invoice}/payments/{payment}/void', [PaymentController::class, 'void'])
-            ->middleware('throttle.user:30,1');
+            ->middleware(['throttle.user:30,1', 'idempotency']);
         Route::post('/payments/{payment}/void', [PaymentController::class, 'voidByPayment'])
-            ->middleware('throttle.user:30,1');
+            ->middleware(['throttle.user:30,1', 'idempotency']);
         Route::get('/invoices/{invoice}/receipt', [ReceiptController::class, 'show']);
         Route::post('/invoices/{invoice}/reprint', [ReceiptController::class, 'reprint'])
-            ->middleware('throttle.user:30,1');
+            ->middleware(['throttle.user:30,1', 'idempotency']);
 
         Route::get('/reports/dashboard', [ReportController::class, 'dashboard']);
+        Route::get('/reports/today', [ReportController::class, 'today']);
+        Route::get('/reports/executive', [ReportController::class, 'executive']);
+        Route::get('/reports/executive/pdf', [ReportController::class, 'executivePdf'])
+            ->middleware('throttle.user:20,1');
+        Route::get('/reports/executive/excel', [ReportController::class, 'executiveExcel'])
+            ->middleware('throttle.user:20,1');
         Route::get('/reports/daily', [ReportController::class, 'daily']);
         Route::get('/reports/monthly', [ReportController::class, 'monthly']);
         Route::get('/reports/income', [ReportController::class, 'income']);
@@ -168,7 +189,7 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle.user:240,1'])->gr
 
         Route::get('/backups', [BackupController::class, 'index']);
         Route::post('/backups', [BackupController::class, 'store'])
-            ->middleware('throttle.user:20,1');
+            ->middleware(['throttle.user:20,1', 'idempotency']);
         Route::get('/backups/{backupLog}/download', [BackupController::class, 'download'])
             ->middleware('throttle.user:10,1');
 
@@ -186,5 +207,10 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle.user:240,1'])->gr
             ->middleware('throttle.user:30,1');
         Route::post('/admin/users/{user}/reset-password', [UserController::class, 'resetPassword'])
             ->middleware('throttle.user:20,1');
+        Route::get('/admin/roles', [RoleController::class, 'index']);
+        Route::post('/admin/roles', [RoleController::class, 'store'])
+            ->middleware('throttle.user:30,1');
+        Route::patch('/admin/roles/{role}', [RoleController::class, 'update'])
+            ->middleware('throttle.user:30,1');
     });
 });

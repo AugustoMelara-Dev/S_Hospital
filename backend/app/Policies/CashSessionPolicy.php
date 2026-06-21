@@ -24,12 +24,12 @@ class CashSessionPolicy
             return false;
         }
 
-        // Cajero can only close their own open session.
+        // Cajero can only close their own session; the Action validates state.
         if (! $user->can('cash.close_any') && $session->user_id !== $user->id) {
             return false;
         }
 
-        return $session->status === CashRegisterSession::STATUS_OPEN;
+        return true;
     }
 
     public function view(User $user, CashRegisterSession $session): bool

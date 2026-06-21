@@ -359,7 +359,8 @@ class ExcelReportService
         $row = 6;
         foreach ($operations['cashiers'] as $cashier) {
             $sheet4->setCellValue('B'.$row, ExcelSafe::value($cashier['name']));
-            $sheet4->setCellValue('C'.$row, ExcelSafe::value('@'.$cashier['username']));
+            $username = (string) ($cashier['username'] ?? '');
+            $sheet4->setCellValue('C'.$row, ExcelSafe::value($username === '' ? '' : '@'.$username));
             $sheet4->setCellValue('D'.$row, (int) $cashier['payment_count']);
             $sheet4->setCellValue('E'.$row, $this->moneyFloat($cashier['total_collected']));
 

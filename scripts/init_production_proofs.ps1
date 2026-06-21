@@ -51,6 +51,16 @@ $proofs = @(
         Source = Join-Path $qaDir "FINAL_CONCURRENCY_PROOF.example.md"
         Target = Join-Path $qaDir "FINAL_CONCURRENCY_PROOF.md"
         Name = "final concurrency proof"
+    },
+    @{
+        Source = Join-Path $qaDir "FINAL_CONCURRENCY_UNDER_LOAD_PROOF_LAN_8081.example.md"
+        Target = Join-Path $qaDir "FINAL_CONCURRENCY_UNDER_LOAD_PROOF_LAN_8081.md"
+        Name = "final concurrency under load proof"
+    },
+    @{
+        Source = Join-Path $qaDir "FINAL_REAL_SMOKE_LAN_8081.example.md"
+        Target = Join-Path $qaDir "FINAL_REAL_SMOKE_LAN_8081.md"
+        Name = "final real LAN smoke proof"
     }
 )
 
@@ -81,8 +91,10 @@ foreach ($proof in $proofs) {
 
 Write-Host ""
 Write-Host "Next steps:"
-Write-Host "1. Fill qa\LAN_CLIENT_VALIDATION_PROOF.md from a real second LAN client."
+Write-Host "1. Fill qa\LAN_CLIENT_VALIDATION_PROOF.md from a real second LAN client, including /api/system/echo-config and WebSocket/Soketi TCP."
 Write-Host "2. Fill qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md from the real cashier printer, including media carta/carta/A5/80mm/58mm."
 Write-Host "3. Run restore validation into a disposable DB and fill qa\FINAL_RESTORE_PROOF.md."
 Write-Host "4. Run concurrency validation against a disposable target and fill qa\FINAL_CONCURRENCY_PROOF.md."
-Write-Host "5. Run scripts\production_readiness_preflight.ps1 without -AllowMissingPhysicalProof."
+Write-Host "5. Run concurrency-under-load validation and fill qa\FINAL_CONCURRENCY_UNDER_LOAD_PROOF_LAN_8081.md."
+Write-Host "6. Run frontend real smoke against the LAN server and fill qa\FINAL_REAL_SMOKE_LAN_8081.md."
+Write-Host "7. Run scripts\production_readiness_preflight.ps1 without -AllowMissingPhysicalProof."

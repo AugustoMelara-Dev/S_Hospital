@@ -20,7 +20,7 @@ describe('SessionSummary', () => {
     );
 
     expect(screen.getByText('Monto Apertura')).toBeInTheDocument();
-    expect(document.body.textContent).toContain('L. 0.00');
+    expect(document.body.textContent).toContain('L 0.00');
     expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-numero|undefined/);
   });
 
@@ -33,7 +33,7 @@ describe('SessionSummary', () => {
       />,
     );
 
-    expect(screen.getByText('L. +25.00')).toBeInTheDocument();
+    expect(screen.getByText('L +25.00')).toBeInTheDocument();
   });
 });
 

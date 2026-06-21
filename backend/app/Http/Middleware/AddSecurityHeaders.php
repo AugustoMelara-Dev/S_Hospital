@@ -21,7 +21,9 @@ class AddSecurityHeaders
         $response->headers->set('X-Frame-Options', 'DENY');
         $response->headers->set('Referrer-Policy', 'same-origin');
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
-        $response->headers->set('Cross-Origin-Opener-Policy', 'same-origin');
+        if ($this->canUseCrossOriginOpenerPolicy($request)) {
+            $response->headers->set('Cross-Origin-Opener-Policy', 'same-origin');
+        }
 
         if ($this->isProductionLike() && $request->isSecure()) {
             $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
@@ -67,13 +69,25 @@ class AddSecurityHeaders
             || in_array($configuredEnv, ['production', 'prod'], true);
     }
 
-    private function isApiResponse(Request $request, Response $response): bool
+    private function canUseCrossOriginOpenerPolicy(Request $request): bool
     {
-        if ($response->headers->has('Cache-Control') && ! str_contains((string) $response->headers->get('Content-Type', ''), 'application/json')) {
-            return false;
+        if ($request->isSecure()) {
+            return true;
         }
 
+        $host = strtolower((string) $request->getHost());
+
+        return in_array($host, ['localhost', '127.0.0.1', '::1'], true);
+    }
+
+    private function isApiResponse(Request $request, Response $response): bool
+    {
         if ($request->is('api/*')) {
+            $cacheControl = strtolower((string) $response->headers->get('Cache-Control', ''));
+            if (str_contains($cacheControl, 'public')) {
+                return false;
+            }
+
             return true;
         }
 

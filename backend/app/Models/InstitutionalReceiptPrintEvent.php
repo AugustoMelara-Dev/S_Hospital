@@ -15,6 +15,8 @@ use Illuminate\Support\Carbon;
  * @property string|null $reason
  * @property int|null $user_id
  * @property Carbon|null $created_at
+ * @property-read InstitutionalReceipt|null $receipt
+ * @property-read User|null $user
  */
 class InstitutionalReceiptPrintEvent extends Model
 {

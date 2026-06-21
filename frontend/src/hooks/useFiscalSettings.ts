@@ -12,6 +12,14 @@ export function useFiscalSettings() {
   });
 }
 
+export function useOperationalSettings() {
+  return useQuery({
+    queryKey: queryKeys.settings.operational(),
+    queryFn: () => apiClient.getOperationalSettings(),
+    staleTime: 60_000,
+  });
+}
+
 export function usePublicBranding() {
   return useQuery({
     queryKey: queryKeys.settings.branding(),

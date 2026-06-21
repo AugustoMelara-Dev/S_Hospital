@@ -49,7 +49,7 @@ class OpenApiExporterTest extends TestCase
 
     public function test_openapi_endpoint_returns_the_document(): void
     {
-        $user = new User(['id' => 1]);
+        $user = new User(['id' => 1, 'active' => true, 'must_change_password' => false]);
         $response = $this->actingAs($user)->getJson('/api/system/openapi');
 
         $response->assertOk()
@@ -62,6 +62,32 @@ class OpenApiExporterTest extends TestCase
                 'components',
                 'paths',
             ]);
+    }
+
+    public function test_openapi_endpoint_requires_authentication(): void
+    {
+        $this->getJson('/api/system/openapi')
+            ->assertUnauthorized();
+    }
+
+    public function test_openapi_endpoint_rejects_inactive_users(): void
+    {
+        $user = new User(['id' => 1, 'active' => false, 'must_change_password' => false]);
+
+        $this->actingAs($user)
+            ->getJson('/api/system/openapi')
+            ->assertForbidden()
+            ->assertJsonPath('message', 'User inactive.');
+    }
+
+    public function test_openapi_endpoint_requires_changed_password(): void
+    {
+        $user = new User(['id' => 1, 'active' => true, 'must_change_password' => true]);
+
+        $this->actingAs($user)
+            ->getJson('/api/system/openapi')
+            ->assertForbidden()
+            ->assertJsonPath('must_change_password', true);
     }
 
     public function test_tag_list_covers_every_cashier_module(): void

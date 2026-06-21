@@ -24,8 +24,9 @@ del hospital.
 
 1. Abra la carpeta del sistema en el servidor.
 2. Confirme que ya existe `frontend\dist\index.html`. Produccion offline no debe descargar dependencias al arrancar.
-3. Ejecute `setup.bat` si administracion tecnica lo autorizo.
-4. Si se usa el asistente PowerShell, ejecute `scripts\install_hospital_os.ps1` y seleccione migraciones seguras.
+3. Ejecute `setup.bat` como Administrador si administracion tecnica lo autorizo.
+4. Si soporte necesita invocar PowerShell directamente, use solamente `scripts\deploy_hospital_lan.ps1`.
+   No use `scripts\install_hospital_os.ps1`; ese asistente es legacy y aborta por seguridad salvo una bandera explicita de soporte.
 5. No use herramientas de reset ni bases de demostracion en el servidor real.
 6. Espere a que los servicios levanten.
 7. Verifique que exista el acceso directo **Abrir Sistema de Caja Hospitalaria** o el acceso directo definido para el hospital.
@@ -101,6 +102,12 @@ administrador:
 Si el instalador no pudo registrar tareas por permisos, el tecnico puede hacerlo
 despues con:
 
+En Docker/offline, `setup.bat` intenta elevar el registro de tareas. Si UAC o la
+politica local lo bloquea, instala automaticamente el fallback Startup/HKCU del
+usuario actual para que existan backups mientras ese usuario inicie sesion. Ese
+fallback no autoriza entrega final: antes de declarar produccion deben quedar
+instaladas las tareas elevadas o un servicio equivalente.
+
 ```powershell
 powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -WhatIfOnly
 ```
@@ -174,7 +181,7 @@ migraciones, `DROP DATABASE`, borrado de volumenes Docker ni borrado de
 
 ## Cierre Final Antes De Operar
 
-No declare la instalacion lista para produccion hasta completar cuatro
+No declare la instalacion lista para produccion hasta completar seis
 evidencias reales:
 
 - `qa\LAN_CLIENT_VALIDATION_PROOF.md`: una segunda computadora abre el sistema
@@ -185,6 +192,11 @@ evidencias reales:
   descartable, nunca sobre la base activa.
 - `qa\FINAL_CONCURRENCY_PROOF.md`: las pruebas de doble accion contra entorno
   descartable no duplican caja, factura ni pago.
+- `qa\FINAL_CONCURRENCY_UNDER_LOAD_PROOF_LAN_8081.md`: las mismas rutas
+  criticas sobreviven mientras hay carga autenticada contra el API.
+- `qa\FINAL_REAL_SMOKE_LAN_8081.md`: login, navegacion, caja, factura, pago,
+  recibo, historial, reportes y limpieza de usuarios temporales pasaron en la
+  URL LAN real.
 
 La prueba de concurrencia es intencionalmente mutante: crea caja, facturas y
 pagos de validacion. Solo debe ejecutarse contra una base descartable o snapshot
@@ -201,7 +213,7 @@ powershell.exe -ExecutionPolicy Bypass -File scripts\init_production_proofs.ps1 
 ```
 
 El comando de cierre debe seguir reportando `PRODUCTION_CANDIDATE` hasta que
-esas cuatro evidencias existan y el preflight pase sin omisiones:
+esas seis evidencias existan y el preflight pase sin omisiones:
 
 ```powershell
 powershell.exe -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps1 -BaseUrl http://IP-DEL-SERVIDOR:8000

@@ -2,7 +2,9 @@ import { expect, test, type Page, type Route } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 
-const SCREEN_DIR = path.resolve(process.cwd(), '..', 'qa', 'screenshots');
+const SCREEN_DIR = path.resolve(
+  process.env.E2E_CAPTURE_SCREENS_DIR ?? path.join(process.cwd(), 'test-results', 'rc1-screens'),
+);
 const PREFIX = 'rc-e2e-2026-06-09';
 const CAPTURE_PATH = (name: string) => path.join(SCREEN_DIR, `${PREFIX}-${name}.png`);
 

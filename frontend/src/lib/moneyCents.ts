@@ -1,13 +1,19 @@
 /**
  * Money helpers that round-trip between decimal strings (e.g. "15.00"),
- * integer cents (e.g. 1500) and formatted lempiras (e.g. "L. 15.00").
+ * integer cents (e.g. 1500) and formatted lempiras.
+ *
+ * Display policy (locked in DECISIONS.md):
+ *  - UI:    "L 1,234.50" → formatLempirasUIFromCents
+ *  - Receipt (institutional): "L. 1,234.50" → formatLempirasFromCents
  *
  * The backend is the source of truth for fiscal math. These helpers exist
  * so the UI can preview values consistently with the backend rounding
  * (HALF_AWAY_FROM_ZERO) and reject malformed input before sending it.
  */
 
-import { finiteNumber, formatLempiras } from './money';
+import { finiteNumber, formatLempirasReceipt, formatLempirasUI } from './money';
+
+export { formatLempirasReceipt, formatLempirasUI, finiteNumber } from './money';
 
 const CENTS_REGEX = /^\d+(\.\d{1,2})?$/;
 
@@ -54,15 +60,29 @@ export function formatCents(cents: number | null | undefined): string {
 
   const safe = Math.trunc(cents);
 
-  return formatLempiras(safe / 100).replace(/^L\.\s*/, '');
+  return formatLempirasUI(safe / 100).replace(/^L\s*/, '');
 }
 
+/**
+ * Receipt / PDF format. "L. 1,234.50" with period and space.
+ */
 export function formatLempirasFromCents(cents: number | null | undefined): string {
   if (cents === null || cents === undefined) {
     return 'L. 0.00';
   }
 
-  return formatLempiras(Math.trunc(cents) / 100);
+  return formatLempirasReceipt(Math.trunc(cents) / 100);
+}
+
+/**
+ * UI format. "L 1,234.50" without period.
+ */
+export function formatLempirasUIFromCents(cents: number | null | undefined): string {
+  if (cents === null || cents === undefined) {
+    return 'L 0.00';
+  }
+
+  return formatLempirasUI(Math.trunc(cents) / 100);
 }
 
 export function parseQuantityUnits(value: string | number | null | undefined): number | null {

@@ -4,7 +4,9 @@ use App\Http\Middleware\AddSecurityHeaders;
 use App\Http\Middleware\EnsurePasswordIsChanged;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\IdempotencyKey;
+use App\Http\Middleware\StripApiReadSessionCookies;
 use App\Http\Middleware\ThrottleByUser;
+use App\Support\OperationalMessageSanitizer;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -26,6 +28,10 @@ return Application::configure(basePath: dirname(__DIR__))
     ])
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->statefulApi();
+        $middleware->validateCsrfTokens(except: [
+            'api/system/csp-report',
+        ]);
+        $middleware->prepend(StripApiReadSessionCookies::class);
         $middleware->append(AddSecurityHeaders::class);
         $middleware->alias([
             'user.active' => EnsureUserIsActive::class,
@@ -55,6 +61,14 @@ return Application::configure(basePath: dirname(__DIR__))
                     'message' => 'No se puede eliminar el registro porque está en uso o tiene datos relacionados.',
                     'code' => 'CONFLICT',
                 ], 409);
+            }
+
+            if ($status >= 500 && ! (bool) config('app.debug')) {
+                return response()->json([
+                    'message' => OperationalMessageSanitizer::message($exception->getMessage())
+                        ?? 'Error tecnico registrado. Revise el paquete de soporte.',
+                    'code' => 'SERVER_ERROR',
+                ], $status);
             }
 
             return null;

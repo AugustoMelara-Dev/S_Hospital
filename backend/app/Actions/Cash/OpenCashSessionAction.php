@@ -7,6 +7,7 @@ use App\Models\CashMovement;
 use App\Models\CashRegisterSession;
 use App\Models\User;
 use App\Support\AuditLogger;
+use App\Support\Money;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -46,15 +47,17 @@ class OpenCashSessionAction
                     'opened_at' => now(),
                 ]);
 
-                CashMovement::query()->create([
-                    'cash_session_id' => $session->id,
-                    'user_id' => $user->id,
-                    'type' => CashMovement::TYPE_OPENING,
-                    'method' => CashMovement::TYPE_OPENING,
-                    'amount' => $payload['opening_amount'],
-                    'notes' => $payload['notes'] ?? null,
-                    'occurred_at' => now(),
-                ]);
+                if (Money::parseCents($payload['opening_amount'], 'opening_amount') > 0) {
+                    CashMovement::query()->create([
+                        'cash_session_id' => $session->id,
+                        'user_id' => $user->id,
+                        'type' => CashMovement::TYPE_OPENING,
+                        'method' => CashMovement::TYPE_OPENING,
+                        'amount' => $payload['opening_amount'],
+                        'notes' => $payload['notes'] ?? null,
+                        'occurred_at' => now(),
+                    ]);
+                }
 
                 $this->auditLogger->log(
                     action: 'cash_session.opened',
@@ -74,7 +77,7 @@ class OpenCashSessionAction
                 return $session->load('user:id,name,username');
             });
         } catch (QueryException $exception) {
-            if ($this->isOpenSessionUniqueViolation($exception)) {
+            if ($this->userHasOpenSession($user) || $this->isOpenSessionConcurrencyViolation($exception)) {
                 throw ValidationException::withMessages([
                     'cash_session' => 'El cajero ya tiene una caja abierta.',
                 ]);
@@ -84,8 +87,26 @@ class OpenCashSessionAction
         }
     }
 
-    private function isOpenSessionUniqueViolation(QueryException $exception): bool
+    private function userHasOpenSession(User $user): bool
     {
-        return str_contains($exception->getMessage(), 'cash_register_sessions_open_user_id_unique');
+        return CashRegisterSession::query()
+            ->where('user_id', $user->id)
+            ->where('status', CashRegisterSession::STATUS_OPEN)
+            ->exists();
+    }
+
+    private function isOpenSessionConcurrencyViolation(QueryException $exception): bool
+    {
+        $message = $exception->getMessage();
+        $sqlState = (string) ($exception->errorInfo[0] ?? '');
+        $driverCode = (string) ($exception->errorInfo[1] ?? '');
+
+        if ($sqlState === '23000' || $driverCode === '1062') {
+            return str_contains($message, 'cash_register_sessions')
+                || str_contains($message, 'open_user_id')
+                || str_contains($message, 'Duplicate entry');
+        }
+
+        return in_array($driverCode, ['1205', '1213'], true);
     }
 }

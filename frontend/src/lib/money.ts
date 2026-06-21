@@ -4,8 +4,12 @@
  * source of truth for fiscal totals (see InvoiceResource). The frontend
  * uses these helpers to:
  *  - parse user-typed amounts from the cashier UI without float drift
- *  - format integer cents into a display string with the "L." prefix
+ *  - format integer cents into a display string with the right prefix
  *  - hand cents to/from the backend without losing precision
+ *
+ * Display policy (locked in DECISIONS.md):
+ *  - UI:    "L 1,234.50"  → formatLempirasUI / formatLempirasUIFromCents
+ *  - Receipt (institutional): "L. 1,234.50" → formatLempirasReceipt
  *
  * Half-up rounding is used for `parseCents` to keep totals consistent
  * with the server-side PHP rounding (HALF_AWAY_FROM_ZERO).
@@ -17,19 +21,52 @@ export function finiteNumber(value: number | string | null | undefined): number 
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-export function formatLempiras(value: number | string | null | undefined, fractionDigits = 2): string {
+/**
+ * Format money for the official institutional receipt / PDF.
+ * Uses "L. 1,234.50" (period and space) — the only place where this
+ * variant is allowed. Keep the receipt sober and official.
+ */
+export function formatLempirasReceipt(value: number | string | null | undefined, fractionDigits = 2): string {
   const num = finiteNumber(value);
   const formatted = Math.abs(num).toLocaleString('en-US', {
     minimumFractionDigits: fractionDigits,
     maximumFractionDigits: fractionDigits,
   });
-  
+
   if (num < 0) {
     return `- L. ${formatted}`;
   }
-  
+
   return `L. ${formatted}`;
 }
+
+/**
+ * Format money for the cashier UI. Uses "L 1,234.50" (no period).
+ * Default display function in screens, tables, KPIs, dashboards.
+ */
+export function formatLempirasUI(value: number | string | null | undefined, fractionDigits = 2): string {
+  const num = finiteNumber(value);
+  const formatted = Math.abs(num).toLocaleString('en-US', {
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+  });
+
+  if (num < 0) {
+    return `- L ${formatted}`;
+  }
+
+  return `L ${formatted}`;
+}
+
+/**
+ * Backwards-compatible alias. Older callers still reference
+ * `formatLempiras`; treat it as the receipt format to keep the
+ * preview / institutional surfaces intact.
+ *
+ * @deprecated prefer formatLempirasUI for UI or formatLempirasReceipt
+ *             for the official receipt.
+ */
+export const formatLempiras = formatLempirasReceipt;
 
 const CENTS_REGEX = /^-?\d+(\.\d+)?$/;
 
@@ -58,7 +95,7 @@ export function formatCents(cents: number, locale: string = 'es-HN'): string {
 
   const safe = Math.trunc(cents);
   const value = Math.abs(safe) / 100;
-  
+
   let formatted = '';
   try {
     formatted = value.toLocaleString(locale, {
@@ -71,11 +108,11 @@ export function formatCents(cents: number, locale: string = 'es-HN'): string {
       maximumFractionDigits: 2,
     });
   }
-  
+
   if (safe < 0) {
     return `- L. ${formatted}`;
   }
-  
+
   return `L. ${formatted}`;
 }
 

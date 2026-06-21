@@ -26,8 +26,14 @@ class VoidPaymentAction
      *
      * @throws AuthorizationException
      */
-    public function execute(Invoice $invoice, Payment $payment, array $payload, User $user, InvoiceAccess $invoiceAccess): Payment
-    {
+    public function execute(
+        Invoice $invoice,
+        Payment $payment,
+        array $payload,
+        User $user,
+        InvoiceAccess $invoiceAccess,
+        bool $allowClosedCashSession = false,
+    ): Payment {
         $reason = trim($payload['reason'] ?? '');
         if (empty($reason)) {
             throw ValidationException::withMessages([
@@ -35,7 +41,23 @@ class VoidPaymentAction
             ]);
         }
 
-        return DB::transaction(function () use ($invoice, $payment, $user, $invoiceAccess, $reason): Payment {
+        return DB::transaction(function () use ($invoice, $payment, $user, $invoiceAccess, $reason, $allowClosedCashSession): Payment {
+            $paymentSnapshot = Payment::query()
+                ->select(['id', 'invoice_id', 'cash_session_id'])
+                ->whereKey($payment->id)
+                ->firstOrFail();
+
+            if ((int) $paymentSnapshot->invoice_id !== (int) $invoice->id) {
+                throw ValidationException::withMessages([
+                    'payment' => 'El pago no pertenece a esta factura.',
+                ]);
+            }
+
+            $cashSession = CashRegisterSession::query()
+                ->whereKey($paymentSnapshot->cash_session_id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
             $lockedInvoice = Invoice::query()
                 ->whereKey($invoice->id)
                 ->lockForUpdate()
@@ -61,12 +83,13 @@ class VoidPaymentAction
                 ]);
             }
 
-            $cashSession = CashRegisterSession::query()
-                ->whereKey($lockedPayment->cash_session_id)
-                ->lockForUpdate()
-                ->firstOrFail();
+            if ((int) $lockedPayment->cash_session_id !== (int) $cashSession->id) {
+                throw ValidationException::withMessages([
+                    'cash_session' => 'La caja del pago cambio durante la operacion. Intente nuevamente.',
+                ]);
+            }
 
-            if ($cashSession->status === CashRegisterSession::STATUS_CLOSED) {
+            if ($cashSession->status === CashRegisterSession::STATUS_CLOSED && ! $allowClosedCashSession) {
                 throw ValidationException::withMessages([
                     'cash_session' => 'No se puede anular un pago de una caja cerrada. Use ajuste posterior autorizado.',
                 ]);
@@ -85,16 +108,18 @@ class VoidPaymentAction
                 'void_reason' => $reason,
             ])->save();
 
-            CashMovement::query()->create([
-                'cash_session_id' => $lockedPayment->cash_session_id,
-                'payment_id' => $lockedPayment->id,
-                'user_id' => $user->id,
-                'type' => CashMovement::TYPE_PAYMENT_VOID,
-                'method' => $lockedPayment->method,
-                'amount' => Money::formatCents(-((int) $lockedPayment->amount_cents)),
-                'notes' => substr($lockedInvoice->invoice_number.' - '.$lockedPayment->void_reason, 0, 255),
-                'occurred_at' => now(),
-            ]);
+            if ($cashSession->status !== CashRegisterSession::STATUS_CLOSED) {
+                CashMovement::query()->create([
+                    'cash_session_id' => $lockedPayment->cash_session_id,
+                    'payment_id' => $lockedPayment->id,
+                    'user_id' => $user->id,
+                    'type' => CashMovement::TYPE_PAYMENT_VOID,
+                    'method' => $lockedPayment->method,
+                    'amount' => Money::formatCents(-((int) $lockedPayment->amount_cents)),
+                    'notes' => substr($lockedInvoice->invoice_number.' - '.$lockedPayment->void_reason, 0, 255),
+                    'occurred_at' => now(),
+                ]);
+            }
 
             $postedPaidCents = (int) Payment::query()
                 ->where('invoice_id', $lockedInvoice->id)
@@ -134,6 +159,8 @@ class VoidPaymentAction
                     'invoice_status' => $lockedInvoice->status,
                     'paid_amount' => $lockedInvoice->paid_amount,
                     'balance_due' => $lockedInvoice->balance_due,
+                    'cash_session_status' => $cashSession->status,
+                    'cash_movement_created' => $cashSession->status !== CashRegisterSession::STATUS_CLOSED,
                     'voided_institutional_receipt_ids' => $voidedReceipts->pluck('id')->all(),
                 ],
                 'reason' => $reason,

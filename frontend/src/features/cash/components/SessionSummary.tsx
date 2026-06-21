@@ -1,6 +1,6 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { finiteNumber, formatLempiras } from '@/lib/money';
+import { finiteNumber, formatLempirasUI } from '@/lib/money';
 import { cn } from '@/lib/utils';
 import type { CashSession } from '@/lib/api';
 
@@ -27,14 +27,14 @@ export function SessionSummary({
       <Card>
         <CardContent className="pt-6">
           <Label className="text-muted-foreground">Monto Apertura</Label>
-          <p className="text-2xl font-bold">{formatLempiras(openingAmount)}</p>
+          <p className="text-2xl font-bold">{formatLempirasUI(openingAmount)}</p>
         </CardContent>
       </Card>
 
       <Card>
         <CardContent className="pt-6">
           <Label className="text-muted-foreground">Efectivo esperado</Label>
-          <p className="text-2xl font-bold">{formatLempiras(expectedAmount)}</p>
+          <p className="text-2xl font-bold">{formatLempirasUI(expectedAmount)}</p>
           <p className="mt-1 text-xs text-muted-foreground">
             Apertura + pagos en efectivo. Tarjeta y transferencia no aumentan este monto.
           </p>
@@ -44,7 +44,7 @@ export function SessionSummary({
       <Card>
         <CardContent className="pt-6">
           <Label className="text-muted-foreground">Cobros en efectivo</Label>
-          <p className="text-2xl font-bold">{formatLempiras(cashPayments)}</p>
+          <p className="text-2xl font-bold">{formatLempirasUI(cashPayments)}</p>
           <p className="mt-1 text-xs text-muted-foreground">
             Solo pagos posteados con método efectivo.
           </p>
@@ -55,7 +55,7 @@ export function SessionSummary({
         <CardContent className="pt-6">
           <Label className="text-muted-foreground">Contado y diferencia</Label>
           <p className="text-2xl font-bold">
-            {hasCountedAmount ? formatLempiras(closingAmount) : 'Pendiente'}
+            {hasCountedAmount ? formatLempirasUI(closingAmount) : 'Pendiente'}
           </p>
           <p
             className={cn(
@@ -75,7 +75,7 @@ export function SessionSummary({
       <Card className={cn(pendingAmount > 0 ? 'border-warning/35 bg-warning/10' : '')}>
         <CardContent className="pt-6">
           <Label className="text-muted-foreground">Saldo pendiente</Label>
-          <p className="text-2xl font-bold">{formatLempiras(pendingAmount)}</p>
+          <p className="text-2xl font-bold">{formatLempirasUI(pendingAmount)}</p>
           <p className="mt-1 text-xs text-muted-foreground">
             {pendingCount === 0
               ? 'Sin facturas pendientes en esta caja.'
@@ -91,9 +91,9 @@ function formatSignedLempiras(value: number | null | undefined): string {
   const safeValue = finiteNumber(value);
 
   if (safeValue === 0) {
-    return 'L. 0.00';
+    return 'L 0.00';
   }
 
   const sign = safeValue > 0 ? '+' : '-';
-  return formatLempiras(Math.abs(safeValue)).replace('L. ', `L. ${sign}`);
+  return formatLempirasUI(Math.abs(safeValue)).replace('L ', `L ${sign}`);
 }

@@ -80,9 +80,9 @@ jobs:
         shell: pwsh
         run: |
           if (Get-Command pwsh -ErrorAction SilentlyContinue) {
-            powershell -ExecutionPolicy Bypass -File backend/tests/PowerShell/pre-commit-guard.tests.ps1
-            powershell -ExecutionPolicy Bypass -File backend/tests/PowerShell/cors-helpers.tests.ps1
-            powershell -ExecutionPolicy Bypass -File backend/tests/PowerShell/env-helpers.tests.ps1
+            pwsh -NoProfile -ExecutionPolicy Bypass -File backend/tests/PowerShell/pre-commit-guard.tests.ps1
+            pwsh -NoProfile -ExecutionPolicy Bypass -File backend/tests/PowerShell/cors-helpers.tests.ps1
+            pwsh -NoProfile -ExecutionPolicy Bypass -File backend/tests/PowerShell/env-helpers.tests.ps1
           } else {
             echo "pwsh not available on ubuntu runner; skipping PowerShell tests"
           }
@@ -92,16 +92,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      CI_MARIADB_ROOT_PASSWORD: ${{ secrets.CI_MARIADB_ROOT_PASSWORD || vars.CI_MARIADB_ROOT_PASSWORD || 'ci-root-db-only-change-in-repo-settings' }}
-      CI_MARIADB_PASSWORD: ${{ secrets.CI_MARIADB_PASSWORD || vars.CI_MARIADB_PASSWORD || 'ci-db-only-change-in-repo-settings' }}
+      CI_MARIADB_ROOT_PASSWORD: ${{ secrets.CI_MARIADB_ROOT_PASSWORD || vars.CI_MARIADB_ROOT_PASSWORD || format('ci-root-db-{0}', github.run_id) }}
+      CI_MARIADB_PASSWORD: ${{ secrets.CI_MARIADB_PASSWORD || vars.CI_MARIADB_PASSWORD || format('ci-db-{0}', github.run_id) }}
     services:
       mariadb:
         image: mariadb:11.4
         env:
-          MARIADB_ROOT_PASSWORD: ${{ secrets.CI_MARIADB_ROOT_PASSWORD || vars.CI_MARIADB_ROOT_PASSWORD || 'ci-root-db-only-change-in-repo-settings' }}
+          MARIADB_ROOT_PASSWORD: ${{ secrets.CI_MARIADB_ROOT_PASSWORD || vars.CI_MARIADB_ROOT_PASSWORD || format('ci-root-db-{0}', github.run_id) }}
           MARIADB_DATABASE: hospital_billing
           MARIADB_USER: hospital
-          MARIADB_PASSWORD: ${{ secrets.CI_MARIADB_PASSWORD || vars.CI_MARIADB_PASSWORD || 'ci-db-only-change-in-repo-settings' }}
+          MARIADB_PASSWORD: ${{ secrets.CI_MARIADB_PASSWORD || vars.CI_MARIADB_PASSWORD || format('ci-db-{0}', github.run_id) }}
         ports: ['3306:3306']
         options: >-
           --health-cmd="healthcheck.sh --connect --innodb_initialized"
@@ -176,6 +176,23 @@ jobs:
           DB_USERNAME: hospital
           DB_PASSWORD: ${{ env.CI_MARIADB_PASSWORD }}
         run: vendor/bin/phpunit --testdox
+
+  windows-ops-scripts:
+    name: Windows ops scripts
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Validate installer and backup-task hardening
+        shell: pwsh
+        run: .\scripts\validate_installer_safety.ps1
+
+      - name: Validate golden DB test runner safety
+        shell: pwsh
+        run: .\scripts\test_golden_db_runner_safety.ps1
 
   frontend:
     name: Frontend (Vitest + lint + build)

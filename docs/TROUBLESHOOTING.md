@@ -34,7 +34,7 @@ message so we never leak a stack trace into the UI.
 **Symptom:** Topbar shows *"Sesión vencida. Redirigiendo al
 login..."*. The cashier is sent to the login page.
 
-**Cause:** The Sanctum session cookie has expired (default 120
+**Cause:** The Sanctum session cookie has expired (default 60
 minutes of inactivity per `SESSION_LIFETIME`) or the cashier
 opened a new tab on a second PC and the cookie did not sync.
 Cross-tab broadcast is not implemented; only one tab at a time
@@ -163,11 +163,16 @@ the LAN profile.
 
 1. `Windows Firewall with Advanced Security → Inbound Rules →
    New Rule → Port → TCP 8000 → Allow → Private profile`.
-2. Confirm the server has a static IP (`ipconfig`) and that
-   `SERVER_IP` in `backend/.env` matches it. Restart the docker
-   compose stack after the change so the `CORS_*` and
-   `SANCTUM_STATEFUL_DOMAINS` env vars are re-read.
-3. The operator's `docs/OFFLINE_LAN_INSTALL.md` has the exact
+2. Confirm the server has a static IP (`ipconfig`) and that the
+   production env file has the same `SERVER_IP`, `APP_URL`,
+   `SANCTUM_STATEFUL_DOMAINS`, `CORS_ALLOWED_ORIGINS` and
+   `PUSHER_CLIENT_HOST`.
+3. If the IP changed, run the LAN refresh script with the same
+   env file and Compose project used by the production stack:
+   `powershell.exe -ExecutionPolicy Bypass -File scripts\refresh_lan_ip.ps1 -ServerIp 192.168.1.10 -AppPort 8081 -EnvFile .\.env -ComposeProjectName hospital_prod`.
+   Use `-WhatIf` first if support only needs to preview the
+   update.
+4. The operator's `docs/OFFLINE_LAN_INSTALL.md` has the exact
    PowerShell commands.
 
 ## "Mi PC no recibe facturas de otra PC en tiempo real"

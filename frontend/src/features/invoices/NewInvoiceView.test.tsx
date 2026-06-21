@@ -1,12 +1,15 @@
 /// <reference types="node" />
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter } from 'react-router-dom';
 import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../../App';
+import { NewInvoiceView } from './NewInvoiceView';
 import { PaymentModal } from '../../features/invoices/components/PaymentModal';
 import { localDateString } from '../../features/invoices/InvoiceHistoryView';
 import { ReceiptPreview } from '../../features/receipts/ReceiptPreview';
-import { apiClient, type ReceiptData } from '../../lib/api';
+import { apiClient, type CashSession, type Category, type OperationalSettings, type ReceiptData, type Service, type ServiceArea } from '../../lib/api';
 import { queryClient } from '../../lib/query-client';
 import { resetRequestChain } from '../../lib/api/base';
 import { openBlobInNewTab } from '../../lib/download';
@@ -32,6 +35,71 @@ describe('NewInvoiceView', () => {
     queryClient.clear();
   });
 
+  it('shows a retryable LAN load error instead of presenting the POS as only cash-closed', async () => {
+    window.history.pushState({}, '', '/billing/new');
+
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 2,
+              name: 'Cajero Validacion',
+              email: 'cajero.validacion@hospital.local',
+              username: 'cajero.validacion',
+              active: true,
+              roles: ['cajero'],
+              permissions: ['catalog.view', 'cash.view', 'invoices.create', 'payments.create', 'receipts.view'],
+              must_change_password: false,
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/cash-sessions/current')) {
+        return {
+          ok: false,
+          status: 500,
+          json: async () => ({ message: 'Servidor LAN no disponible' }),
+          text: async () => JSON.stringify({ message: 'Servidor LAN no disponible' }),
+        } as Response;
+      }
+
+      if (url.includes('/api/settings/operational')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: { scanner_enabled: false, partial_payments_enabled: false, receipt_paper_size: 'half_letter', default_tax_rate: '15.00' },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/categories')) {
+        return { ok: true, json: async () => ({ data: [] }) } as Response;
+      }
+
+      if (url.includes('/api/service-areas')) {
+        return { ok: true, json: async () => ({ data: [] }) } as Response;
+      }
+
+      if (url.includes('/api/services')) {
+        return { ok: true, json: async () => ({ data: [] }) } as Response;
+      }
+
+      return { ok: true, json: async () => ({}) } as Response;
+    });
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: /nueva factura/i })).toBeInTheDocument();
+    expect(await screen.findByText(/no se pudo cargar el punto de venta/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /reintentar/i })).toBeInTheDocument();
+    expect(screen.queryByText(/debe abrir la caja antes de emitir facturas/i)).not.toBeInTheDocument();
+  });
+
   it('filters billable services by administrative area in the POS', async () => {
     window.history.pushState({}, '', '/billing/new');
     const requestedServiceUrls: string[] = [];
@@ -45,9 +113,9 @@ describe('NewInvoiceView', () => {
           json: async () => ({
             data: {
               id: 2,
-              name: 'Cajero Demo',
-              email: 'cajero.demo@hospital-billing.local',
-              username: 'cajero.demo',
+              name: 'Cajero Validacion',
+              email: 'cajero.validacion@hospital.local',
+              username: 'cajero.validacion',
               active: true,
               roles: ['cajero'],
               permissions: ['catalog.view', 'cash.view', 'invoices.create', 'payments.create', 'receipts.view'],
@@ -145,6 +213,66 @@ describe('NewInvoiceView', () => {
     expect(await screen.findByRole('button', { name: /radiografia de abdomen/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /glucosa/i })).not.toBeInTheDocument();
     expect(requestedServiceUrls.some((url) => url.includes('area_id=2'))).toBe(true);
+  });
+
+  it('clears stale POS service results and shows an inline error when service search fails', async () => {
+    const onStatus = vi.fn();
+    const glucosa = {
+      id: 11,
+      category_id: 1,
+      area_id: 1,
+      name: 'Glucosa',
+      slug: 'glucosa',
+      price: '15.00',
+      scan_code: null,
+      barcode: null,
+      qr_code: null,
+      taxable: true,
+      active: true,
+      visible_in_billing: true,
+      is_billable: true,
+      special_rule_code: null,
+      category: { id: 1, name: 'General', slug: 'general', active: true, sort_order: 1 },
+      area: { id: 1, name: 'Laboratorio', slug: 'laboratorio', active: true, sort_order: 1 },
+    };
+
+    vi.spyOn(apiClient, 'getCurrentCashSession').mockResolvedValue(null);
+    vi.spyOn(apiClient, 'getCategories').mockResolvedValue([{ id: 1, name: 'General', slug: 'general', active: true, sort_order: 1 }]);
+    vi.spyOn(apiClient, 'getServiceAreas').mockResolvedValue([{ id: 1, name: 'Laboratorio', slug: 'laboratorio', active: true }]);
+    vi.spyOn(apiClient, 'getOperationalSettings').mockResolvedValue({
+      scanner_enabled: false,
+      partial_payments_enabled: false,
+      receipt_paper_size: 'half_letter',
+      default_tax_rate: '15.00',
+    });
+    vi.spyOn(apiClient, 'getServices').mockImplementation(async (filters = {}) => {
+      if (filters.search === 'fallo') {
+        throw new Error('Servidor LAN caido');
+      }
+
+      return [glucosa];
+    });
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <NewInvoiceView cashSession={null} onStatus={onStatus} />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    const searchInput = await screen.findByLabelText(/buscar por nombre/i);
+    fireEvent.change(searchInput, { target: { value: 'glu' } });
+    expect(await screen.findByRole('button', { name: /glucosa/i })).toBeInTheDocument();
+
+    fireEvent.change(searchInput, { target: { value: 'fallo' } });
+
+    expect(await screen.findByText(/servidor lan caido/i)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: /glucosa/i })).not.toBeInTheDocument();
+    });
+    expect(onStatus).toHaveBeenCalledWith('Servidor LAN caido');
+    expect(searchInput).toHaveFocus();
   });
 
   it('renders payment form after issuing an invoice without adding reports', async () => {
@@ -269,7 +397,9 @@ describe('NewInvoiceView', () => {
       target: { value: 'Maria Lopez' },
     });
     expect(screen.getByRole('button', { name: /emitir y cobrar/i })).toBeDisabled();
-    expect(screen.getAllByRole('button', { name: /abrir caja/i }).length).toBeGreaterThan(0);
+    expect(screen.queryByRole('button', { name: /abrir caja/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /ir a caja/i })).toHaveAttribute('href', '/cashbox');
+    expect(screen.getByText(/solicite apertura a un usuario autorizado/i)).toBeInTheDocument();
     expect(screen.queryByRole('dialog', { name: /confirmar factura/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /registrar pago/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /reportes/i })).not.toBeInTheDocument();
@@ -354,7 +484,7 @@ describe('NewInvoiceView', () => {
         } as Response;
       }
 
-      if (url.includes('/api/settings/fiscal')) {
+      if (url.includes('/api/settings/operational')) {
         return {
           ok: true,
           json: async () => ({
@@ -458,14 +588,15 @@ describe('NewInvoiceView', () => {
     });
     fireEvent.click(await screen.findByRole('button', { name: /glucosa/i }));
     await waitFor(() => expect(screen.getByRole('button', { name: /emitir y cobrar/i })).toBeEnabled());
-    await waitFor(() => expect(screen.getAllByText(/L\. 17\.25/i).length).toBeGreaterThan(0));
+    await waitFor(() => expect(screen.getAllByText(/L 17\.25/i).length).toBeGreaterThan(0));
     fireEvent.click(screen.getByRole('button', { name: /emitir y cobrar/i }));
     expect(await screen.findByRole('button', { name: /emitir y abrir cobro/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /emitir y abrir cobro/i }));
     expect(await screen.findByRole('heading', { name: /registrar pago/i })).toBeInTheDocument();
     expect(screen.getByText(/ingrese el monto recibido/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText(/ver preview antes de imprimir/i));
     fireEvent.change(screen.getByLabelText(/monto recibido/i), { target: { value: '17.25' } });
-    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro/i }));
+    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro y ver preview/i }));
 
     await waitFor(() => {
       expect(openBlobInNewTab).toHaveBeenCalledWith(
@@ -473,6 +604,15 @@ describe('NewInvoiceView', () => {
         'recibo-institucional-REC-A-00000001.pdf',
       );
     });
+    expect(
+      (globalThis.fetch as unknown as { mock: { calls: Array<[unknown, RequestInit | undefined]> } }).mock.calls
+        .filter(([url, init]) => String(url).includes('/api/institutional-receipts/90/print-events')
+          && init?.method === 'POST'),
+    ).toHaveLength(0);
+    expect(
+      (globalThis.fetch as unknown as { mock: { calls: Array<[unknown, RequestInit | undefined]> } }).mock.calls
+        .filter(([url]) => String(url).includes('/api/invoices/100/receipt')),
+    ).toHaveLength(0);
     expect(screen.queryByLabelText(/vista previa del recibo/i)).not.toBeInTheDocument();
     expect(await screen.findByText(/REC-A-00000001/i)).toBeInTheDocument();
   });
@@ -482,7 +622,7 @@ describe('NewInvoiceView', () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
       const url = String(input);
 
-      if (url.includes('/api/settings/fiscal')) {
+      if (url.includes('/api/settings/operational')) {
         return {
           ok: true,
           json: async () => ({ data: { scanner_enabled: true, partial_payments_enabled: false, receipt_paper_size: 'half_letter' } }),
@@ -611,7 +751,7 @@ describe('NewInvoiceView', () => {
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
       const url = String(input);
 
-      if (url.includes('/api/settings/fiscal')) {
+      if (url.includes('/api/settings/operational')) {
         return {
           ok: true,
           json: async () => ({ data: { scanner_enabled: true, partial_payments_enabled: false, receipt_paper_size: 'half_letter' } }),
@@ -708,7 +848,7 @@ describe('NewInvoiceView', () => {
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
       const url = String(input);
 
-      if (url.includes('/api/settings/fiscal')) {
+      if (url.includes('/api/settings/operational')) {
         return {
           ok: true,
           json: async () => ({ data: { scanner_enabled: true, partial_payments_enabled: false, receipt_paper_size: 'half_letter' } }),
@@ -778,6 +918,87 @@ describe('NewInvoiceView', () => {
     });
   });
 
+  it('submits scanner lookup only once while the lookup is pending', async () => {
+    const onStatus = vi.fn();
+    const cashSession: CashSession = {
+      id: 7,
+      user_id: 2,
+      opening_amount: '500.00',
+      closing_amount: null,
+      expected_amount: null,
+      difference_amount: null,
+      status: 'open',
+      opening_notes: null,
+      closing_notes: null,
+      opened_at: '2026-05-17T08:00:00-06:00',
+      closed_at: null,
+    };
+    const category: Category = { id: 1, name: 'Laboratorio', slug: 'laboratorio', active: true, sort_order: 1 };
+    const area: ServiceArea = { id: 1, name: 'Laboratorio', slug: 'laboratorio', active: true };
+    const service: Service = {
+      id: 41,
+      category_id: 1,
+      area_id: 1,
+      name: 'Glucosa Scanner',
+      slug: 'glucosa-scanner',
+      price: '15.00',
+      scan_code: 'LAB-ONCE-001',
+      barcode: null,
+      qr_code: null,
+      taxable: true,
+      active: true,
+      visible_in_billing: true,
+      is_billable: true,
+      special_rule_code: null,
+      category,
+      area,
+    };
+    const operationalSettings: OperationalSettings = {
+      scanner_enabled: true,
+      partial_payments_enabled: false,
+      receipt_paper_size: 'half_letter',
+      default_tax_rate: '15.00',
+    };
+    let resolveScan!: (services: Service[]) => void;
+    const getServices = vi.spyOn(apiClient, 'getServices').mockImplementation((filters = {}) => {
+      if (filters.code === 'LAB-ONCE-001') {
+        return new Promise((resolve) => { resolveScan = resolve; });
+      }
+
+      return Promise.resolve([]);
+    });
+
+    vi.spyOn(apiClient, 'getCurrentCashSession').mockResolvedValue(cashSession);
+    vi.spyOn(apiClient, 'getCategories').mockResolvedValue([category]);
+    vi.spyOn(apiClient, 'getServiceAreas').mockResolvedValue([area]);
+    vi.spyOn(apiClient, 'getOperationalSettings').mockResolvedValue(operationalSettings);
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <NewInvoiceView cashSession={cashSession} onStatus={onStatus} />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    const scannerInput = await screen.findByLabelText(/scanner usb o código manual/i);
+    fireEvent.change(scannerInput, { target: { value: 'LAB-ONCE-001' } });
+    const scanButton = screen.getByRole('button', { name: /escanear/i });
+
+    fireEvent.click(scanButton);
+    fireEvent.click(scanButton);
+    fireEvent.keyDown(scannerInput, { key: 'Enter', code: 'Enter' });
+
+    expect(getServices.mock.calls.filter(([filters]) => filters?.code === 'LAB-ONCE-001')).toHaveLength(1);
+    await waitFor(() => expect(screen.getByRole('button', { name: /buscando/i })).toBeDisabled());
+    expect(scannerInput).toBeDisabled();
+
+    await act(async () => {
+      resolveScan([service]);
+    });
+
+    await waitFor(() => expect(onStatus).toHaveBeenCalledWith('Servicio agregado por código: Glucosa Scanner.'));
+  });
   it('renders invoice history filters and reprint button based on permissions', async () => {
     window.history.pushState({}, '', '/invoices?invoice_number=00000001');
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
@@ -958,12 +1179,15 @@ describe('NewInvoiceView', () => {
     expect(await screen.findByRole('button', { name: /reimprimir/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /anular factura/i })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /reimprimir/i }));
+    fireEvent.change(await screen.findByLabelText(/motivo de reimpresi/i), {
+      target: { value: 'Copia solicitada por caja' },
+    });
     fireEvent.click(await screen.findByRole('button', { name: /registrar reimpresi/i }));
     expect(await screen.findByLabelText(/vista previa del recibo/i)).toBeInTheDocument();
     await waitFor(() => {
       const receiptEl = screen.getByLabelText(/recibo institucional/i);
       expect(receiptEl).toBeInTheDocument();
-      expect(receiptEl).toHaveClass('receipt-half_letter');
+      expect(receiptEl).toHaveClass('receipt-half-letter');
     });
     expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/reprint'))).toHaveLength(1);
 
@@ -999,7 +1223,7 @@ describe('NewInvoiceView', () => {
       />,
     );
 
-    expect(screen.getAllByText('L. 17.25').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('L 17.25').length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole('button', { name: /confirmar cobro/i }));
     expect(confirmSpy).toHaveBeenCalledWith('17.25');
   });
@@ -1022,7 +1246,7 @@ describe('NewInvoiceView', () => {
     );
 
     expect(screen.getByText('Maria Lopez')).toBeInTheDocument();
-    expect(document.body.textContent).toContain('L. 0.00');
+    expect(document.body.textContent).toContain('L 0.00');
     expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|undefined/);
   });
 
@@ -1045,7 +1269,7 @@ describe('NewInvoiceView', () => {
       />,
     );
 
-    expect(screen.getAllByText('L. 0.20').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('L 0.20').length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole('button', { name: /confirmar cobro/i }));
     expect(confirmSpy).toHaveBeenCalledWith('0.20');
   });
@@ -1073,7 +1297,7 @@ describe('NewInvoiceView', () => {
     );
 
     expect(screen.getAllByText(/saldo pendiente/i).length).toBeGreaterThan(0);
-    expect(screen.getByText('L. 7.25')).toBeInTheDocument();
+    expect(screen.getByText('L 7.25')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /confirmar cobro/i }));
     expect(confirmSpy).toHaveBeenCalledWith('10.00');
   });
@@ -1418,7 +1642,7 @@ describe('NewInvoiceView', () => {
       fireEvent.click(checkbox);
 
       // Verify that the preview estimate handles the free prescription
-      expect(screen.getAllByText('L. 0.00').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('L 0.00').length).toBeGreaterThan(0);
 
       // Fill required fields to submit
       fireEvent.change(screen.getByLabelText(/nombre del paciente/i), { target: { value: 'Juan Perez' } });
@@ -1505,7 +1729,7 @@ describe('NewInvoiceView', () => {
       expect(checkbox).toBeDisabled();
 
       // Ensure price is estimated normally, not as 0.00
-      expect(screen.getAllByText('L. 25.00').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('L 25.00').length).toBeGreaterThan(0);
 
       // Submit
       fireEvent.change(screen.getByLabelText(/nombre del paciente/i), { target: { value: 'Juan Perez' } });

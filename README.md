@@ -38,10 +38,10 @@ docker compose up -d
 docker compose exec backend php artisan migrate --seed
 ```
 
-Para instalacion operativa en Windows, use `setup.bat`. El instalador levanta los servicios, aplica migraciones seguras y crea el acceso directo:
+Para instalacion operativa en Windows del hospital, use el paquete final `offline-release\setup.bat`, no el `setup.bat` de la raiz del repositorio. El `setup.bat` raiz queda reservado para preparacion tecnica/desarrollo; el instalador del paquete offline levanta los servicios productivos, aplica migraciones seguras y crea el acceso directo:
 
 ```powershell
-.\setup.bat
+.\offline-release\setup.bat
 ```
 
 Despues de instalar, configure un usuario administrador real y valide:

@@ -125,9 +125,11 @@ old printed handouts still resolve.
 Under `qa/`:
 
 - **[qa/FINAL_PRODUCTION_HANDOFF_RESULT.md](../qa/FINAL_PRODUCTION_HANDOFF_RESULT.md)** -
-  the final handoff doc. Current expected state is `PRODUCTION_READY=NO`
-  until final LAN client, printer, restore, concurrency, backup-worker,
-  production-env and offline-package evidence is complete.
+  the final handoff doc. Current expected state is
+  `Decision: READY_FOR_REAL_LAN_INSTALLATION_TEST` until final LAN
+  client, printer, restore, concurrency, concurrency-under-load,
+  real LAN smoke, backup-worker, production-env and offline-package
+  evidence is complete.
 - **[qa/FINAL_RESTORE_PROOF.md](../qa/FINAL_RESTORE_PROOF.md)** -
   restore evidence (PENDING until physical hardware).
 - **[qa/FINAL_CONCURRENCY_PROOF.md](../qa/FINAL_CONCURRENCY_PROOF.md)** -
@@ -136,10 +138,14 @@ Under `qa/`:
   LAN validation evidence (PENDING).
 - **[qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md](../qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md)** -
   printer evidence (PENDING).
+- **[qa/FINAL_CONCURRENCY_UNDER_LOAD_PROOF_LAN_8081.md](../qa/FINAL_CONCURRENCY_UNDER_LOAD_PROOF_LAN_8081.md)** -
+  concurrency-under-load evidence (PENDING).
+- **[qa/FINAL_REAL_SMOKE_LAN_8081.md](../qa/FINAL_REAL_SMOKE_LAN_8081.md)** -
+  real LAN smoke evidence (PENDING).
 
 The preflight script in `scripts/production_readiness_preflight.ps1`
-fails the release if any of the four PROOF files is still
-PENDING.
+fails the release if any of the six final evidence files is missing
+or still contains placeholder evidence.
 
 ## Script inventory
 

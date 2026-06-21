@@ -28,7 +28,7 @@ class BackupLogPolicy
 
     public function download(User $user, BackupLog $backupLog): bool
     {
-        return $user->can('backups.download');
+        return $user->can('backups.view') && $user->can('backups.download');
     }
 
     public function restore(User $user, BackupLog $backupLog): bool

@@ -3,6 +3,21 @@ set -eu
 
 cd /var/www/html
 
+if [ "$(id -u)" = "0" ]; then
+  mkdir -p storage/app/private/backups storage/framework/views storage/framework/cache storage/framework/sessions bootstrap/cache /shared_public
+  chown www-data:www-data \
+    storage \
+    storage/app \
+    storage/app/private \
+    storage/app/private/backups \
+    storage/framework \
+    storage/framework/views \
+    storage/framework/cache \
+    storage/framework/sessions \
+    bootstrap/cache \
+    /shared_public
+fi
+
 DB_READY_TIMEOUT="${DB_READY_TIMEOUT:-120}"
 WAIT_INTERVAL=2
 elapsed=0
@@ -52,7 +67,7 @@ if [ -f .env ]; then
   fi
 fi
 
-if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
+if [ "${RUN_MIGRATIONS:-false}" = "true" ]; then
   echo "[entrypoint] Ejecutando migraciones pendientes..."
   php artisan migrate --force --no-interaction
 else
@@ -66,4 +81,12 @@ if [ -d /var/www/frontend/dist ]; then
 fi
 
 echo "[entrypoint] Listo. Iniciando proceso principal: $*"
+if [ "$(id -u)" = "0" ] && printf '%s\n' "$*" | grep -q 'php-fpm'; then
+  exec "$@"
+fi
+
+if [ "$(id -u)" = "0" ] && command -v su-exec >/dev/null 2>&1; then
+  exec su-exec www-data "$@"
+fi
+
 exec "$@"

@@ -7,7 +7,9 @@ use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Storage;
+use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 use Tests\TestCase;
 
 class FiscalSettingsTest extends TestCase
@@ -138,6 +140,18 @@ class FiscalSettingsTest extends TestCase
             ->assertJsonMissingPath('data.partial_payments_enabled');
     }
 
+    public function test_public_branding_and_logo_routes_do_not_start_sessions(): void
+    {
+        foreach (['api/settings/branding', 'api/settings/logo', 'api/settings/logo/file'] as $uri) {
+            $route = collect(app('router')->getRoutes())
+                ->first(fn ($candidate): bool => $candidate->uri() === $uri && in_array('GET', $candidate->methods(), true));
+
+            $this->assertNotNull($route, "{$uri} route must exist");
+            $this->assertNotContains(EnsureFrontendRequestsAreStateful::class, $route->gatherMiddleware(), "{$uri} must stay stateless before login.");
+            $this->assertNotContains(StartSession::class, $route->gatherMiddleware(), "{$uri} must not mutate auth cookies before login.");
+        }
+    }
+
     public function test_cashier_cannot_view_full_fiscal_settings(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
@@ -155,6 +169,34 @@ class FiscalSettingsTest extends TestCase
         $this->actingAs($cashier)
             ->getJson('/api/settings/fiscal')
             ->assertForbidden();
+    }
+
+    public function test_cashier_can_view_minimal_operational_settings_without_full_fiscal_data(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        FiscalSetting::query()->create([
+            'receipt_template_mode' => 'thermal',
+            ...$this->validPayload(),
+            'scanner_enabled' => true,
+            'partial_payments_enabled' => true,
+        ]);
+
+        $cashier = User::factory()->create();
+        $cashier->assignRole('cajero');
+
+        $this->getJson('/api/settings/operational')
+            ->assertUnauthorized();
+
+        $this->actingAs($cashier)
+            ->getJson('/api/settings/operational')
+            ->assertOk()
+            ->assertJsonPath('data.default_tax_rate', '15.00')
+            ->assertJsonPath('data.scanner_enabled', true)
+            ->assertJsonPath('data.partial_payments_enabled', true)
+            ->assertJsonPath('data.receipt_paper_size', 'half_letter')
+            ->assertJsonMissingPath('data.rtn')
+            ->assertJsonMissingPath('data.address');
     }
 
     public function test_supervisor_can_view_but_not_update_fiscal_settings(): void

@@ -47,14 +47,14 @@ class BuildInstitutionalReceiptSnapshotAction
                 'category_name' => $item->category_name,
                 'area_name' => $item->area_name,
                 'quantity' => (string) $item->quantity,
-                'unit_price' => (string) $item->unit_price,
+                'unit_price' => $this->moneyFromCents($item->unit_price_cents, $item->unit_price),
                 'unit_price_cents' => (int) $item->unit_price_cents,
                 'tax_rate' => (string) $item->tax_rate,
-                'tax_amount' => (string) $item->tax_amount,
+                'tax_amount' => $this->moneyFromCents($item->tax_amount_cents, $item->tax_amount),
                 'tax_amount_cents' => (int) $item->tax_amount_cents,
-                'line_subtotal' => (string) $item->line_subtotal,
+                'line_subtotal' => $this->moneyFromCents($item->line_subtotal_cents, $item->line_subtotal),
                 'line_subtotal_cents' => (int) $item->line_subtotal_cents,
-                'line_total' => (string) $item->line_total,
+                'line_total' => $this->moneyFromCents($item->line_total_cents, $item->line_total),
                 'line_total_cents' => (int) $item->line_total_cents,
                 'notes' => $item->notes,
             ])
@@ -109,17 +109,17 @@ class BuildInstitutionalReceiptSnapshotAction
                 'issued_at' => $invoice->issued_at?->toIso8601String(),
                 'tax_label' => $invoice->tax_label,
                 'tax_rate_snapshot' => (string) $invoice->tax_rate_snapshot,
-                'subtotal' => (string) $invoice->subtotal,
+                'subtotal' => $this->moneyFromCents($invoice->subtotal_cents, $invoice->subtotal),
                 'subtotal_cents' => (int) $invoice->subtotal_cents,
-                'tax_amount' => (string) $invoice->tax_amount,
+                'tax_amount' => $this->moneyFromCents($invoice->tax_amount_cents, $invoice->tax_amount),
                 'tax_amount_cents' => (int) $invoice->tax_amount_cents,
-                'discount_amount' => (string) $invoice->discount_amount,
+                'discount_amount' => $this->moneyFromCents($invoice->discount_amount_cents, $invoice->discount_amount),
                 'discount_amount_cents' => (int) $invoice->discount_amount_cents,
-                'total' => (string) $invoice->total,
+                'total' => $this->moneyFromCents($invoice->total_cents, $invoice->total),
                 'total_cents' => (int) $invoice->total_cents,
-                'paid_amount' => (string) $invoice->paid_amount,
+                'paid_amount' => $this->moneyFromCents($invoice->paid_amount_cents, $invoice->paid_amount),
                 'paid_amount_cents' => (int) $invoice->paid_amount_cents,
-                'balance_due' => (string) $invoice->balance_due,
+                'balance_due' => $this->moneyFromCents($invoice->balance_due_cents, $invoice->balance_due),
                 'balance_due_cents' => (int) $invoice->balance_due_cents,
             ],
             'payment_snapshot' => [
@@ -189,11 +189,20 @@ class BuildInstitutionalReceiptSnapshotAction
     {
         return [
             'method' => $payment->method,
-            'amount' => (string) $payment->amount,
+            'amount' => $this->moneyFromCents($payment->amount_cents, $payment->amount),
             'amount_cents' => (int) $payment->amount_cents,
             'reference' => $payment->reference,
             'paid_at' => $payment->paid_at?->toIso8601String(),
             'cashier_name' => $payment->user?->name,
         ];
+    }
+
+    private function moneyFromCents(?int $cents, string|int|float|null $fallback): string
+    {
+        if ($cents !== null) {
+            return number_format($cents / 100, 2, '.', '');
+        }
+
+        return number_format((float) $fallback, 2, '.', '');
     }
 }

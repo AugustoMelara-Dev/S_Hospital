@@ -5,7 +5,7 @@ import { cn } from '../../lib/utils';
 export const Tabs = TabsPrimitive.Root;
 
 export const TabsList = ({ className, children, ...props }: TabsPrimitive.TabsListProps & { className?: string; children: ReactNode }) => (
-  <TabsPrimitive.List className={cn('inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground', className)} {...props}>
+  <TabsPrimitive.List className={cn('flex h-10 max-w-full items-center justify-start overflow-x-auto rounded-md bg-muted p-1 text-muted-foreground [scrollbar-width:thin]', className)} {...props}>
     {children}
   </TabsPrimitive.List>
 );

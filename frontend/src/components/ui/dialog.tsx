@@ -44,11 +44,9 @@ export function Dialog({
               <DialogPrimitive.Title className="truncate text-lg font-semibold">
                 {title}
               </DialogPrimitive.Title>
-              {description ? (
-                <DialogPrimitive.Description className="mt-1 text-sm text-muted-foreground">
-                  {description}
-                </DialogPrimitive.Description>
-              ) : null}
+              <DialogPrimitive.Description className={description ? 'mt-1 text-sm text-muted-foreground' : 'sr-only'}>
+                {description ?? `Ventana de dialogo: ${title}`}
+              </DialogPrimitive.Description>
             </div>
             <DialogPrimitive.Close asChild>
               <Button type="button" variant="ghost" size="sm" aria-label="Cerrar modal">

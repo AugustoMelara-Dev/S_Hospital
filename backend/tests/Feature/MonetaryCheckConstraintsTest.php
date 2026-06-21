@@ -12,6 +12,10 @@ class MonetaryCheckConstraintsTest extends TestCase
 
     public function test_check_constraints_migration_is_idempotent_against_partial_application(): void
     {
+        if (getenv('HOSPITAL_TEST_DB_ALREADY_MIGRATED') === '1') {
+            $this->markTestSkipped('El runner golden DB no ejecuta migrate:fresh sobre la base clonada.');
+        }
+
         $driver = DB::connection()->getDriverName();
         if (! in_array($driver, ['mysql', 'mariadb'], true)) {
             $this->markTestSkipped('Solo aplicable a MariaDB/MySQL.');

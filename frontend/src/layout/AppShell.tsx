@@ -44,6 +44,10 @@ export function AppShell({
     }
   }, []);
 
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
+
   const visibleNavigation = getVisibleNavigation(user.permissions);
   const activeItem = getActiveNavigationItem(location.pathname);
   const crumbs = getBreadcrumbs(location.pathname);

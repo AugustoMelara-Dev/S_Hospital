@@ -184,8 +184,16 @@ BACKUP_EVIDENCE_PATH="storage/app/private/backups/${BACKUP_FILE_NAME}"
 
 echo "WARNING: disposable database ${RESTORE_TEST_DATABASE_VALUE} will be dropped and recreated."
 echo "Restoring backup into disposable database ${RESTORE_TEST_DATABASE_VALUE}."
+RESTORE_SQL_FILE="$BACKUP_ABSOLUTE"
+RESTORE_SQL_TEMP=""
 MYSQL_DEFAULTS_FILE="$(mktemp)"
-trap 'rm -f "$MYSQL_DEFAULTS_FILE"' EXIT
+cleanup_restore_validation() {
+  rm -f "$MYSQL_DEFAULTS_FILE"
+  if [ -n "${RESTORE_SQL_TEMP:-}" ]; then
+    rm -f "$RESTORE_SQL_TEMP"
+  fi
+}
+trap cleanup_restore_validation EXIT
 chmod 600 "$MYSQL_DEFAULTS_FILE"
 {
   printf '[client]\n'
@@ -194,9 +202,19 @@ chmod 600 "$MYSQL_DEFAULTS_FILE"
   printf 'user=%s\n' "$DB_USERNAME_VALUE"
   printf 'password=%s\n' "$DB_PASSWORD_VALUE"
 } > "$MYSQL_DEFAULTS_FILE"
+
+case "$BACKUP_ABSOLUTE" in
+  *.sql.enc)
+    RESTORE_SQL_TEMP="$(mktemp "${TMPDIR:-/tmp}/s-hospital-restore-XXXXXX.sql")"
+    chmod 600 "$RESTORE_SQL_TEMP"
+    (cd "$BACKEND_DIR" && php artisan hospital:decrypt-backup "$BACKUP_ABSOLUTE" "$RESTORE_SQL_TEMP")
+    RESTORE_SQL_FILE="$RESTORE_SQL_TEMP"
+    ;;
+esac
+
 mysql --defaults-extra-file="$MYSQL_DEFAULTS_FILE" \
   -e "DROP DATABASE IF EXISTS \`${RESTORE_TEST_DATABASE_VALUE}\`; CREATE DATABASE \`${RESTORE_TEST_DATABASE_VALUE}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-mysql --defaults-extra-file="$MYSQL_DEFAULTS_FILE" "$RESTORE_TEST_DATABASE_VALUE" < "$BACKUP_ABSOLUTE"
+mysql --defaults-extra-file="$MYSQL_DEFAULTS_FILE" "$RESTORE_TEST_DATABASE_VALUE" < "$RESTORE_SQL_FILE"
 
 BACKUP_SHA256="$(php -r 'echo hash_file("sha256", $argv[1]);' "$BACKUP_ABSOLUTE")"
 BACKUP_BYTES="$(php -r 'echo filesize($argv[1]);' "$BACKUP_ABSOLUTE")"

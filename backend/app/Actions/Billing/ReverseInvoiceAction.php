@@ -5,6 +5,7 @@ namespace App\Actions\Billing;
 use App\Actions\Payments\VoidPaymentAction;
 use App\Events\InvoiceChanged;
 use App\Models\AuditLog;
+use App\Models\CashRegisterSession;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\User;
@@ -48,6 +49,32 @@ class ReverseInvoiceAction
 
         /** @var Invoice $result */
         $result = DB::transaction(function () use ($invoice, $user, $reason): Invoice {
+            $postedPaymentSnapshots = Payment::query()
+                ->select(['id', 'cash_session_id'])
+                ->where('invoice_id', $invoice->id)
+                ->where('status', Payment::STATUS_POSTED)
+                ->orderBy('cash_session_id')
+                ->orderBy('id')
+                ->get();
+
+            if ($postedPaymentSnapshots->isNotEmpty()) {
+                $cashSessions = CashRegisterSession::query()
+                    ->whereIn('id', $postedPaymentSnapshots->pluck('cash_session_id')->unique()->values())
+                    ->orderBy('id')
+                    ->lockForUpdate()
+                    ->get()
+                    ->keyBy('id');
+
+                foreach ($postedPaymentSnapshots as $paymentSnapshot) {
+                    $cashSession = $cashSessions->get($paymentSnapshot->cash_session_id);
+                    if ($cashSession?->status === CashRegisterSession::STATUS_CLOSED) {
+                        throw ValidationException::withMessages([
+                            'cash_session' => 'No se puede reversar una factura con pagos en caja cerrada. Registre un ajuste autorizado.',
+                        ]);
+                    }
+                }
+            }
+
             $lockedInvoice = Invoice::query()
                 ->with(['payments' => fn ($query) => $query
                     ->where('status', Payment::STATUS_POSTED)

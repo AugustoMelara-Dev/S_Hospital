@@ -19,7 +19,7 @@ describe('es-HN dictionary', () => {
 
   it('builds cashbox pending message with count and amount', () => {
     expect(STRINGS.cashbox.pendingInvoices(3, '150.00')).toBe(
-      'No se puede cerrar la caja con 3 factura(s) pendientes o parciales por L. 150.00. Revise los cobros antes de cerrar.',
+      'No se puede cerrar la caja con 3 factura(s) pendientes o parciales por L 150.00. Revise los cobros antes de cerrar.',
     );
   });
 

@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/data-table';
-import { finiteNumber, formatLempiras } from '../../../lib/money';
+import { finiteNumber, formatLempirasUI } from '../../../lib/money';
 import { KPICard } from './KPICard';
 import type { DailyReport } from '../../../lib/api/types';
 
@@ -16,6 +16,7 @@ interface DailyReportTabProps {
   daily: DailyReport | null;
   dailyDate: string;
   error: string;
+  exporting?: boolean;
   loading: boolean;
   onDateChange: (value: string) => void;
   onExport: () => void;
@@ -23,7 +24,7 @@ interface DailyReportTabProps {
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }
 
-export function DailyReportTab({ canExport, daily, dailyDate, error, loading, onDateChange,
+export function DailyReportTab({ canExport, daily, dailyDate, error, exporting = false, loading, onDateChange,
   onExport, onExportPdf, onSubmit }: DailyReportTabProps) {
 
   const paymentsByMethod = daily?.payments_by_method || {
@@ -80,17 +81,17 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, loading, on
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
             <KPICard
               title="Facturado"
-              value={formatLempiras(daily.total_billed)}
+              value={formatLempirasUI(daily.total_billed)}
               icon={<DollarSign className="h-4 w-4" />}
             />
             <KPICard
               title="Cobrado"
-              value={formatLempiras(daily.total_collected)}
+              value={formatLempirasUI(daily.total_collected)}
               icon={<Banknote className="h-4 w-4" />}
             />
             <KPICard
               title="Pendiente"
-              value={formatLempiras(daily.total_pending)}
+              value={formatLempirasUI(daily.total_pending)}
               description="Facturas emitidas o parciales"
               icon={<DollarSign className="h-4 w-4" />}
             />
@@ -102,7 +103,7 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, loading, on
             />
             <KPICard
               title="Anulado"
-              value={formatLempiras(daily.total_voided)}
+              value={formatLempirasUI(daily.total_voided)}
               description={`${invoicesByStatus.void?.count ?? 0} facturas anuladas`}
               icon={<CircleSlash className="h-4 w-4" />}
             />
@@ -127,11 +128,11 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, loading, on
                   </TableRow>
                   <TableRow>
                     <TableCell className="font-medium">Facturas parciales</TableCell>
-                    <TableCell className="text-right">{formatLempiras(daily.total_partial)}</TableCell>
+                    <TableCell className="text-right">{formatLempirasUI(daily.total_partial)}</TableCell>
                   </TableRow>
                   <TableRow>
                     <TableCell className="font-medium">Saldo pendiente</TableCell>
-                    <TableCell className="text-right">{formatLempiras(daily.total_pending)}</TableCell>
+                    <TableCell className="text-right">{formatLempirasUI(daily.total_pending)}</TableCell>
                   </TableRow>
                 </TableBody>
               </Table>
@@ -154,7 +155,7 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, loading, on
                   {Object.entries(paymentsByMethod).map(([method, amount]) => (
                     <TableRow key={method}>
                       <TableCell className="font-medium">{methodLabel(method)}</TableCell>
-                      <TableCell className="text-right">{formatLempiras(amount)}</TableCell>
+                      <TableCell className="text-right">{formatLempirasUI(amount)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -180,7 +181,7 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, loading, on
                     <TableRow key={status}>
                       <TableCell className="font-medium">{statusLabel(status)}</TableCell>
                       <TableCell className="text-right">{(data as { count: number; total: string })?.count ?? 0}</TableCell>
-                      <TableCell className="text-right">{formatLempiras((data as { count: number; total: string })?.total)}</TableCell>
+                      <TableCell className="text-right">{formatLempirasUI((data as { count: number; total: string })?.total)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -194,12 +195,12 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, loading, on
                 <CardTitle>Gráfico por método</CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={200}>
+                <ResponsiveContainer width="100%" height={200} minWidth={1} minHeight={1}>
                   <BarChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                     <XAxis dataKey="method" tickLine={false} />
                     <YAxis tickLine={false} width={64} />
-                    <Tooltip formatter={(value) => [formatLempiras(value as number), 'Monto']} />
+                    <Tooltip formatter={(value) => [formatLempirasUI(value as number), 'Monto']} />
                     <Bar dataKey="amount" fill="var(--color-primary)" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -210,13 +211,13 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, loading, on
           <div className="flex justify-end gap-2">
             {canExport ? (
               <>
-                <Button type="button" variant="outline" onClick={onExport}>
+                <Button type="button" variant="outline" onClick={onExport} disabled={exporting}>
                   <Download className="h-4 w-4 mr-2" />
-                  Exportar Excel
+                  {exporting ? 'Exportando...' : 'Exportar Excel'}
                 </Button>
-                <Button type="button" variant="outline" onClick={onExportPdf}>
+                <Button type="button" variant="outline" onClick={onExportPdf} disabled={exporting}>
                   <Download className="h-4 w-4 mr-2" />
-                  Exportar PDF
+                  {exporting ? 'Exportando...' : 'Exportar PDF'}
                 </Button>
               </>
             ) : (

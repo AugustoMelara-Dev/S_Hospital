@@ -64,6 +64,20 @@ if (typeof HTMLCanvasElement !== 'undefined') {
   });
 }
 
+if (typeof HTMLFormElement !== 'undefined') {
+  Object.defineProperty(HTMLFormElement.prototype, 'requestSubmit', {
+    configurable: true,
+    value(this: HTMLFormElement, submitter?: HTMLElement) {
+      const event = new SubmitEvent('submit', {
+        bubbles: true,
+        cancelable: true,
+        submitter: submitter instanceof HTMLElement ? submitter : null,
+      });
+      this.dispatchEvent(event);
+    },
+  });
+}
+
 beforeEach(() => {
   document.body.innerHTML = '';
   // Reset the module-level queryClient so each test starts with a

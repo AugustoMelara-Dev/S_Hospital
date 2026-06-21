@@ -239,10 +239,26 @@ if (Test-Path -LiteralPath $composePath -PathType Leaf) {
             Add-Failure "docker-compose.prod.yml is missing service $required"
         }
     }
+
+    if ($compose.Contains("nc -z 127.0.0.1 9000")) {
+        Add-Pass "backend healthcheck waits for PHP-FPM port 9000"
+    } else {
+        Add-Failure "backend healthcheck must wait for PHP-FPM port 9000, not only database access."
+    }
 }
 
 Test-UploadLimitAlignment
 Test-NginxSpaNonceServing
+
+$entrypointPath = Join-Path $ProjectRoot "backend\docker\entrypoint.sh"
+if (Test-Path -LiteralPath $entrypointPath -PathType Leaf) {
+    $entrypoint = Get-Content -LiteralPath $entrypointPath -Raw
+    if ($entrypoint -match "chown\s+-R\s+www-data:www-data\s+storage") {
+        Add-Failure "backend/docker/entrypoint.sh must not recursively chown storage on every start; backup volumes can make startup look down."
+    } else {
+        Add-Pass "entrypoint avoids recursive storage chown on every startup"
+    }
+}
 
 if ($failures.Count -gt 0) {
     Write-Host ""

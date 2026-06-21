@@ -8,8 +8,10 @@ use App\Models\AuditLog;
 use App\Models\LoginAttempt;
 use App\Models\User;
 use App\Support\AuditLogger;
+use App\Support\VisiblePermissions;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
@@ -29,6 +31,34 @@ class AuthController extends Controller
             'success' => false,
             'attempted_at' => now(),
         ]);
+
+        if (
+            $attemptedUser instanceof User
+            && ! $attemptedUser->active
+            && Hash::check($credentials['password'], $attemptedUser->password)
+        ) {
+            $auditLogger->log(
+                action: 'auth.login_failed',
+                entity: $attemptedUser,
+                user: $attemptedUser,
+                request: $request,
+                newValues: [
+                    'login' => $credentials['login'],
+                    'login_field' => $loginField,
+                    'active' => false,
+                ],
+                reason: 'Usuario inactivo.',
+                result: 'failed',
+            );
+
+            $this->auditAuth($request, 'auth.login_blocked', $attemptedUser, [
+                'reason' => 'inactive_user',
+            ]);
+
+            throw ValidationException::withMessages([
+                'login' => ['El usuario esta inactivo.'],
+            ]);
+        }
 
         if (! Auth::attempt([$loginField => $credentials['login'], 'password' => $credentials['password']])) {
             $this->auditAuth($request, 'auth.login_failed', null, [
@@ -169,9 +199,23 @@ class AuthController extends Controller
             'username' => $user->username,
             'active' => $user->active,
             'roles' => $user->getRoleNames()->values(),
-            'permissions' => $user->getAllPermissions()->pluck('name')->values(),
+            'permissions' => $this->visiblePermissionNames($user),
+            'uses_exact_permission_map' => $user->usesExactDirectPermissionMap(),
             'must_change_password' => $user->must_change_password,
         ];
+    }
+
+    private function visiblePermissionNames(User $user): Collection
+    {
+        $permissions = $user->usesExactDirectPermissionMap()
+            ? $user->getDirectPermissions()
+            : $user->getAllPermissions();
+
+        return $permissions
+            ->pluck('name')
+            ->pipe(fn (Collection $permissions): Collection => VisiblePermissions::rejectHidden($permissions))
+            ->sort()
+            ->values();
     }
 
     /**

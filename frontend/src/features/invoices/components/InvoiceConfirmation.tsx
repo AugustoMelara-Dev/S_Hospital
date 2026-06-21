@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Button } from '../../../components/ui/button';
 import { Dialog } from '../../../components/ui/dialog';
-import { formatLempirasFromCents, parseCents } from '../../../lib/moneyCents';
+import { formatLempirasUIFromCents, parseCents } from '../../../lib/moneyCents';
 
 type CartItem = {
   service: import('../../../lib/api').Service;
@@ -112,17 +112,6 @@ export function InvoiceConfirmation({
             type="button"
             className="flex-1"
             onClick={onConfirm}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && (e.ctrlKey || e.metaKey || e.altKey)) {
-                e.preventDefault();
-                return;
-              }
-
-              if (e.key === 'Enter' && !submitting) {
-                e.preventDefault();
-                onConfirm();
-              }
-            }}
             disabled={submitting}
           >
             {submitting ? 'Emitiendo...' : willOpenPayment ? 'Emitir y abrir cobro' : 'Confirmar emisión'}
@@ -134,5 +123,5 @@ export function InvoiceConfirmation({
 }
 
 function moneyLabel(value: string | number | null | undefined): string {
-  return formatLempirasFromCents(parseCents(value));
+  return formatLempirasUIFromCents(parseCents(value));
 }

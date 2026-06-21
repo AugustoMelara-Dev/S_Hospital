@@ -36,7 +36,7 @@ import { DateRangePicker } from '../../components/ui/date-range-picker';
 import { FilterBar } from '../../components/ui/filter-bar';
 import { INSTITUTIONAL_RECEIPT_PAPER_OPTIONS, institutionalReceiptPaperSize } from '../../lib/institutionalReceiptPaper';
 import { openBlobInNewTab } from '../../lib/download';
-import { formatLempirasFromCents, parseCents } from '../../lib/moneyCents';
+import { formatLempirasUIFromCents, parseCents } from '../../lib/moneyCents';
 import { formatLocalizedDateTime } from '../../lib/format/formatDate';
 import { invalidateBillingQueries } from '@/lib/queryInvalidation';
 import {
@@ -63,11 +63,21 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   const [voidReason, setVoidReason] = useState('');
   const [reverseReason, setReverseReason] = useState('');
   const [reprintReason, setReprintReason] = useState('');
+  const [voidReasonError, setVoidReasonError] = useState('');
+  const [reverseReasonError, setReverseReasonError] = useState('');
+  const [reprintReasonError, setReprintReasonError] = useState('');
   const [confirmingVoid, setConfirmingVoid] = useState(false);
   const [confirmingReverse, setConfirmingReverse] = useState(false);
   const [reprintTarget, setReprintTarget] = useState<Invoice | null>(null);
   const [receiptModalOpen, setReceiptModalOpen] = useState(false);
   const [loadingActionInvoiceId, setLoadingActionInvoiceId] = useState<number | null>(null);
+  const [voidingInvoice, setVoidingInvoice] = useState(false);
+  const [reversingInvoice, setReversingInvoice] = useState(false);
+  const [registeringReprint, setRegisteringReprint] = useState(false);
+  const voidingInvoiceRef = useRef(false);
+  const reversingInvoiceRef = useRef(false);
+  const registeringReprintRef = useRef(false);
+  const generatingInstitutionalReceiptRef = useRef(false);
   const actionRequestRef = useRef(0);
 
   const canReprint = user.permissions.includes('receipts.reprint');
@@ -151,6 +161,14 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       setSelectedInvoice(invoice);
       const institutionalReceipt = issuedInstitutionalReceipt(invoice);
       if (institutionalReceipt) {
+        if (hasInstitutionalPrintEvents(institutionalReceipt)) {
+          setReprintTarget(invoice);
+          setReprintReason('');
+          onStatus('Ingrese un motivo de reimpresión para abrir nuevamente el PDF institucional.');
+
+          return;
+        }
+
         await openInstitutionalReceiptPdf(institutionalReceipt);
         onStatus(`PDF institucional ${institutionalReceipt.receipt_number_full} abierto.`);
 
@@ -190,12 +208,14 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   }
 
   async function generateInstitutionalReceipt(invoiceId: number) {
+    if (generatingInstitutionalReceiptRef.current) return;
+
     setLoadingActionInvoiceId(invoiceId);
     try {
       const receipt = await institutionalReceipts.store({ invoice_id: invoiceId });
       queryClient.invalidateQueries({ queryKey: ['audit'] });
       await invalidateBillingQueries(queryClient);
-      
+
       const invoice = await apiClient.getInvoice(invoiceId);
       setSelectedInvoice(invoice);
       await openInstitutionalReceiptPdf(receipt, 'Emisión manual de recibo faltante.');
@@ -203,66 +223,103 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     } catch (error) {
       onStatus(userSafeErrorMessage(error, 'No se pudo generar el recibo institucional.'));
     } finally {
+      generatingInstitutionalReceiptRef.current = false;
       setLoadingActionInvoiceId(null);
     }
   }
 
   async function voidSelectedInvoice() {
+    if (voidingInvoiceRef.current) return;
+
     if (!selectedInvoice || voidReason.trim().length < 5) {
-      onStatus('Ingrese un motivo de anulación de al menos 5 caracteres.');
+      const message = 'Ingrese un motivo de anulación de al menos 5 caracteres.';
+      setVoidReasonError(message);
+      onStatus(message);
 
       return;
     }
 
     try {
+      voidingInvoiceRef.current = true;
+      setVoidingInvoice(true);
+      setVoidReasonError('');
       const voided = await apiClient.voidInvoice(selectedInvoice.id, voidReason.trim());
       await invalidateBillingQueries(queryClient);
       setSelectedInvoice(voided);
       setReceipt(null);
       setVoidReason('');
+      setConfirmingVoid(false);
       onStatus(`Factura ${voided.invoice_number} anulada.`);
     } catch (error) {
       onStatus(userSafeErrorMessage(error, 'No se pudo anular la factura.'));
+    } finally {
+      voidingInvoiceRef.current = false;
+      setVoidingInvoice(false);
     }
   }
 
   async function reverseSelectedInvoice() {
+    if (reversingInvoiceRef.current) return;
+
     if (!selectedInvoice || reverseReason.trim().length < 5) {
-      onStatus('Ingrese un motivo de reversa de al menos 5 caracteres.');
+      const message = 'Ingrese un motivo de reversa de al menos 5 caracteres.';
+      setReverseReasonError(message);
+      onStatus(message);
 
       return;
     }
 
     try {
+      reversingInvoiceRef.current = true;
+      setReversingInvoice(true);
+      setReverseReasonError('');
       const reversed = await apiClient.reverseInvoice(selectedInvoice.id, reverseReason.trim());
       await invalidateBillingQueries(queryClient);
       setSelectedInvoice(reversed);
       setReceipt(null);
       setReverseReason('');
+      setConfirmingReverse(false);
       onStatus(`Factura ${reversed.invoice_number} reversada.`);
     } catch (error) {
       onStatus(userSafeErrorMessage(error, 'No se pudo reversar la factura.'));
+    } finally {
+      reversingInvoiceRef.current = false;
+      setReversingInvoice(false);
     }
   }
 
   async function confirmReprintInvoice() {
+    if (registeringReprintRef.current) return;
     if (!reprintTarget) return;
 
     try {
+      registeringReprintRef.current = true;
+      setRegisteringReprint(true);
       const invoice = await apiClient.getInvoice(reprintTarget.id);
       setSelectedInvoice(invoice);
       const institutionalReceipt = issuedInstitutionalReceipt(invoice);
       if (institutionalReceipt) {
-        const reason = reprintReason.trim() || 'Reimpresión solicitada desde historial.';
-        await apiClient.registerInstitutionalReceiptPrintEvent(institutionalReceipt.id, reason);
+        const reason = reprintReason.trim();
+        if (reason.length < 5) {
+          const message = 'Ingrese un motivo de reimpresión de al menos 5 caracteres.';
+          setReprintReasonError(message);
+          onStatus(message);
+
+          return;
+        }
+
+        setReprintReasonError('');
         await openInstitutionalReceiptPdf(institutionalReceipt, reason);
         queryClient.invalidateQueries({ queryKey: ['audit'] });
         onStatus(`PDF institucional ${institutionalReceipt.receipt_number_full} abierto.`);
+        setReprintTarget(null);
+        setReprintReason('');
 
         return;
       }
 
       const requestedWidth = institutionalReceiptPaperSize(receiptWidth);
+      setReprintReasonError('');
       const nextReceipt = await apiClient.reprintInvoice(reprintTarget.id, {
         width: requestedWidth,
         reason: reprintReason.trim() || 'Reimpresión solicitada desde historial.',
@@ -274,12 +331,14 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       setReceiptWidth(normalizedWidth);
       setReceipt({ ...nextReceipt, width: normalizedWidth });
       setReceiptModalOpen(true);
+      setReprintTarget(null);
+      setReprintReason('');
       onStatus(`Recibo ${invoice.invoice_number} listo para imprimir.`);
     } catch (error) {
       onStatus(userSafeErrorMessage(error, 'No se pudo reimprimir el recibo.'));
     } finally {
-      setReprintTarget(null);
-      setReprintReason('');
+      registeringReprintRef.current = false;
+      setRegisteringReprint(false);
     }
   }
 
@@ -291,9 +350,11 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
 
   async function openInstitutionalReceiptPdf(
     receipt: NonNullable<Invoice['institutional_receipt']>,
-    _reason?: string,
+    reason?: string,
   ) {
-    const blob = await apiClient.getInstitutionalReceiptPdf(receipt.id);
+    const blob = reason?.trim()
+      ? await apiClient.getInstitutionalReceiptPdf(receipt.id, reason)
+      : await apiClient.getInstitutionalReceiptPdf(receipt.id);
     openBlobInNewTab(blob, `recibo-institucional-${receipt.receipt_number_full}.pdf`);
   }
 
@@ -568,16 +629,16 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       </Dialog>
 
       <ConfirmDialog
-        confirmLabel="Anular Factura"
+        confirmLabel={voidingInvoice ? 'Anulando...' : 'Anular Factura'}
         danger
         onCancel={() => {
           setConfirmingVoid(false);
           setVoidReason('');
+          setVoidReasonError('');
         }}
-        onConfirm={() => {
-          setConfirmingVoid(false);
-          void voidSelectedInvoice();
-        }}
+        cancelDisabled={voidingInvoice}
+        confirmDisabled={voidingInvoice || voidReason.trim().length < 5}
+        onConfirm={() => void voidSelectedInvoice()}
         open={confirmingVoid}
         title={`¿Anular factura ${selectedInvoice?.invoice_number}?`}
       >
@@ -589,32 +650,43 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
             <Label htmlFor="voidReason">Motivo de anulación *</Label>
             <Textarea
               id="voidReason"
-              aria-describedby="voidReason-help"
-              aria-invalid={voidReason.length > 0 && voidReason.trim().length < 5}
+              aria-describedby={voidReasonError ? 'voidReason-help voidReason-error' : 'voidReason-help'}
+              aria-invalid={Boolean(voidReasonError)}
               aria-label="Motivo de anulación"
               value={voidReason}
-              onChange={(e) => setVoidReason(e.target.value)}
+              disabled={voidingInvoice}
+              onChange={(e) => {
+                setVoidReason(e.target.value);
+                if (voidReasonError && e.target.value.trim().length >= 5) {
+                  setVoidReasonError('');
+                }
+              }}
               placeholder="Explique el motivo de la anulación (mínimo 5 caracteres)..."
               rows={3}
             />
             <p id="voidReason-help" className="text-xs text-muted-foreground">
               Esta acción no se puede deshacer. La factura será marcada como anulada.
             </p>
+            {voidReasonError ? (
+              <p id="voidReason-error" role="alert" className="text-xs font-medium text-destructive">
+                {voidReasonError}
+              </p>
+            ) : null}
           </div>
         </div>
       </ConfirmDialog>
 
       <ConfirmDialog
-        confirmLabel="Reversar Factura"
+        confirmLabel={reversingInvoice ? 'Reversando...' : 'Reversar Factura'}
         danger
         onCancel={() => {
           setConfirmingReverse(false);
           setReverseReason('');
+          setReverseReasonError('');
         }}
-        onConfirm={() => {
-          setConfirmingReverse(false);
-          void reverseSelectedInvoice();
-        }}
+        cancelDisabled={reversingInvoice}
+        confirmDisabled={reversingInvoice || reverseReason.trim().length < 5}
+        onConfirm={() => void reverseSelectedInvoice()}
         open={confirmingReverse}
         title={`¿Reversar factura ${selectedInvoice?.invoice_number}?`}
       >
@@ -626,17 +698,28 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
             <Label htmlFor="reverseReason">Motivo de reversa *</Label>
             <Textarea
               id="reverseReason"
-              aria-describedby="reverseReason-help"
-              aria-invalid={reverseReason.length > 0 && reverseReason.trim().length < 5}
+              aria-describedby={reverseReasonError ? 'reverseReason-help reverseReason-error' : 'reverseReason-help'}
+              aria-invalid={Boolean(reverseReasonError)}
               aria-label="Motivo de reversa"
               value={reverseReason}
-              onChange={(e) => setReverseReason(e.target.value)}
+              disabled={reversingInvoice}
+              onChange={(e) => {
+                setReverseReason(e.target.value);
+                if (reverseReasonError && e.target.value.trim().length >= 5) {
+                  setReverseReasonError('');
+                }
+              }}
               placeholder="Explique por qué se reversan los pagos y la factura..."
               rows={3}
             />
             <p id="reverseReason-help" className="text-xs text-muted-foreground">
               Reversa los pagos registrados, crea movimientos compensatorios y deja auditoría.
             </p>
+            {reverseReasonError ? (
+              <p id="reverseReason-error" role="alert" className="text-xs font-medium text-destructive">
+                {reverseReasonError}
+              </p>
+            ) : null}
           </div>
         </div>
       </ConfirmDialog>
@@ -646,7 +729,10 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
         onCancel={() => {
           setReprintTarget(null);
           setReprintReason('');
+          setReprintReasonError('');
         }}
+        cancelDisabled={registeringReprint}
+        confirmDisabled={registeringReprint || reprintReason.trim().length < 5}
         onConfirm={() => void confirmReprintInvoice()}
         open={Boolean(reprintTarget)}
         title={`¿Reimprimir ${reprintTarget?.invoice_number ?? 'recibo'}?`}
@@ -656,14 +742,30 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
             Esta acción queda auditada. Cambiar el tamaño en la vista previa no registra reimpresión; este botón sí.
           </p>
           <div className="space-y-2">
-            <Label htmlFor="reprintReason">Motivo opcional</Label>
+            <Label htmlFor="reprintReason">Motivo de reimpresión</Label>
             <Textarea
               id="reprintReason"
+              aria-describedby={reprintReasonError ? 'reprintReason-help reprintReason-error' : 'reprintReason-help'}
+              aria-invalid={Boolean(reprintReasonError)}
               value={reprintReason}
-              onChange={(event) => setReprintReason(event.target.value)}
+              disabled={registeringReprint}
+              onChange={(event) => {
+                setReprintReason(event.target.value);
+                if (reprintReasonError && event.target.value.trim().length >= 5) {
+                  setReprintReasonError('');
+                }
+              }}
               placeholder="Ejemplo: copia solicitada por paciente"
               rows={2}
             />
+            <p id="reprintReason-help" className="text-xs text-muted-foreground">
+              Registre un motivo claro para conservar la trazabilidad de reimpresiones.
+            </p>
+            {reprintReasonError ? (
+              <p id="reprintReason-error" role="alert" className="text-xs font-medium text-destructive">
+                {reprintReasonError}
+              </p>
+            ) : null}
           </div>
         </div>
       </ConfirmDialog>
@@ -673,6 +775,10 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
 
 function issuedInstitutionalReceipt(invoice: Invoice): NonNullable<Invoice['institutional_receipt']> | null {
   return invoice.institutional_receipt?.status === 'issued' ? invoice.institutional_receipt : null;
+}
+
+function hasInstitutionalPrintEvents(receipt: NonNullable<Invoice['institutional_receipt']>): boolean {
+  return receipt.has_print_events === true || (receipt.print_events_count ?? 0) > 0;
 }
 
 const statusConfig = {
@@ -697,7 +803,7 @@ function formatDate(value: string): string {
 }
 
 function moneyLabel(value: string | number | null | undefined): string {
-  return formatLempirasFromCents(parseCents(value));
+  return formatLempirasUIFromCents(parseCents(value));
 }
 
 export function localDateString(date = new Date()): string {

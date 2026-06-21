@@ -1,0 +1,166 @@
+{
+  "generated_at": "2026-06-19T18:48:22.071Z",
+  "mode": "mocked-non-mutating-playwright",
+  "results": [
+    {
+      "name": "screen controls and axe smoke",
+      "viewport": "desktop",
+      "path": "/dashboard",
+      "status": "passed"
+    },
+    {
+      "name": "screen controls and axe smoke",
+      "viewport": "desktop",
+      "path": "/billing/new",
+      "status": "passed"
+    },
+    {
+      "name": "screen controls and axe smoke",
+      "viewport": "desktop",
+      "path": "/cashbox",
+      "status": "passed"
+    },
+    {
+      "name": "screen controls and axe smoke",
+      "viewport": "desktop",
+      "path": "/catalog",
+      "status": "passed"
+    },
+    {
+      "name": "screen controls and axe smoke",
+      "viewport": "desktop",
+      "path": "/invoices",
+      "status": "passed"
+    },
+    {
+      "name": "screen controls and axe smoke",
+      "viewport": "desktop",
+      "path": "/reports",
+      "status": "passed"
+    },
+    {
+      "name": "screen controls and axe smoke",
+      "viewport": "desktop",
+      "path": "/backups",
+      "status": "passed"
+    },
+    {
+      "name": "screen controls and axe smoke",
+      "viewport": "desktop",
+      "path": "/settings/fiscal",
+      "status": "passed"
+    },
+    {
+      "name": "screen controls and axe smoke",
+      "viewport": "desktop",
+      "path": "/settings/institutional-receipts",
+      "status": "passed"
+    },
+    {
+      "name": "screen controls and axe smoke",
+      "viewport": "desktop",
+      "path": "/admin/users",
+      "status": "passed"
+    },
+    {
+      "name": "screen controls and axe smoke",
+      "viewport": "desktop",
+      "path": "/help",
+      "status": "passed"
+    },
+    {
+      "name": "screen controls and axe smoke",
+      "viewport": "desktop",
+      "path": "/about",
+      "status": "passed"
+    },
+    {
+      "name": "screen controls and axe smoke",
+      "viewport": "desktop",
+      "path": "/does-not-exist",
+      "status": "passed"
+    },
+    {
+      "name": "screen controls and axe smoke",
+      "viewport": "mobile",
+      "path": "/dashboard",
+      "status": "passed"
+    },
+    {
+      "name": "screen controls and axe smoke",
+      "viewport": "mobile",
+      "path": "/billing/new",
+      "status": "passed"
+    },
+    {
+      "name": "screen controls and axe smoke",
+      "viewport": "mobile",
+      "path": "/cashbox",
+      "status": "passed"
+    },
+    {
+      "name": "screen controls and axe smoke",
+      "viewport": "mobile",
+      "path": "/catalog",
+      "status": "passed"
+    },
+    {
+      "name": "screen controls and axe smoke",
+      "viewport": "mobile",
+      "path": "/invoices",
+      "status": "passed"
+    },
+    {
+      "name": "screen controls and axe smoke",
+      "viewport": "mobile",
+      "path": "/reports",
+      "status": "passed"
+    },
+    {
+      "name": "screen controls and axe smoke",
+      "viewport": "mobile",
+      "path": "/backups",
+      "status": "passed"
+    },
+    {
+      "name": "screen controls and axe smoke",
+      "viewport": "mobile",
+      "path": "/settings/fiscal",
+      "status": "passed"
+    },
+    {
+      "name": "screen controls and axe smoke",
+      "viewport": "mobile",
+      "path": "/settings/institutional-receipts",
+      "status": "passed"
+    },
+    {
+      "name": "screen controls and axe smoke",
+      "viewport": "mobile",
+      "path": "/admin/users",
+      "status": "passed"
+    },
+    {
+      "name": "screen controls and axe smoke",
+      "viewport": "mobile",
+      "path": "/help",
+      "status": "passed"
+    },
+    {
+      "name": "screen controls and axe smoke",
+      "viewport": "mobile",
+      "path": "/about",
+      "status": "passed"
+    },
+    {
+      "name": "screen controls and axe smoke",
+      "viewport": "mobile",
+      "path": "/does-not-exist",
+      "status": "passed"
+    },
+    {
+      "name": "history reverse cancel path",
+      "status": "passed"
+    }
+  ]
+}

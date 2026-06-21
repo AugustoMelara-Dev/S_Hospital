@@ -7,8 +7,11 @@ namespace App\Observers;
 use App\Models\AuditLog;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Throwable;
 
 /**
  * Records permission and role administration changes without exposing secrets.
@@ -134,9 +137,26 @@ class PermissionAuditObserver
                 'new_values' => $newValues,
                 'created_at' => now(),
             ]);
-        } catch (\Throwable) {
-            // Audit logging must never break the business flow.
+        } catch (Throwable $exception) {
+            $this->reportAuditFailure($action, $entityType, $entityId, $exception);
         }
+    }
+
+    private function reportAuditFailure(string $action, string $entityType, mixed $entityId, Throwable $exception): void
+    {
+        $context = [
+            'action' => $action,
+            'entity_type' => $entityType,
+            'entity_id' => $entityId,
+            'exception' => $exception::class,
+        ];
+
+        Log::warning('Permission audit write failed', $context);
+
+        Cache::put('permission_audit_observer:last_failure', [
+            ...$context,
+            'failed_at' => now()->toIso8601String(),
+        ], now()->addDay());
     }
 
     private function currentUserId(): ?int
@@ -145,7 +165,7 @@ class PermissionAuditObserver
             $user = auth()->user();
 
             return $user !== null ? (int) $user->getAuthIdentifier() : null;
-        } catch (\Throwable) {
+        } catch (Throwable) {
             return null;
         }
     }

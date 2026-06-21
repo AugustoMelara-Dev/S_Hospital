@@ -29,6 +29,7 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
   const autoPrintedReceiptRef = useRef<string | null>(null);
   const [printError, setPrintError] = useState('');
   const receiptWidth = institutionalReceiptPaperSize(receipt.width);
+  const receiptWidthClass = receiptWidth.replace('_', '-');
 
   const handlePrint = useReactToPrint({
     contentRef: receiptRef,
@@ -108,7 +109,12 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
       ) : null}
 
       <div className="receipt-preview-container">
-        <div ref={receiptRef} className={`institutional-receipt receipt-${receiptWidth}`} aria-label="Recibo institucional">
+        <div
+          ref={receiptRef}
+          className={`institutional-receipt receipt-${receiptWidthClass}`}
+          aria-label="Recibo institucional"
+          data-receipt-print-root
+        >
           <header className="receipt-header">
             <span>{receipt.institutional?.government_line ?? 'Gobierno de Honduras'}</span>
             <span>{receipt.institutional?.secretariat_line ?? 'Secretaría de Salud Pública'}</span>

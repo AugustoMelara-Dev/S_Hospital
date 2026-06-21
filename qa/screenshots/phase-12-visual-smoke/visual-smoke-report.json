@@ -1,6 +1,6 @@
 {
-  "url": "http://127.0.0.1:8000",
-  "user": "admin.validacion",
+  "url": "http://192.168.1.3:8081",
+  "user": "admin.offline",
   "role": "admin",
   "environment": "local-real",
   "mutationMode": "explicit-authorized",
@@ -61,7 +61,7 @@
       "path": "C:\\Projects\\S_Hospital\\qa\\screenshots\\phase-12-visual-smoke\\fiscal-settings.png"
     }
   ],
-  "lastInvoiceNumber": "000-001-01-00000002",
+  "lastInvoiceNumber": "000-001-01-00000033",
   "consoleByScreen": {
     "login": [],
     "dashboard": [],

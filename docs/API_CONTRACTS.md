@@ -242,7 +242,8 @@ Payload pago:
 | Metodo | Ruta | Permiso | Payload | Respuesta | Notas |
 |---|---|---|---|---|---|
 | POST | `/api/institutional-receipts` | `receipts.view` + `payments.create` | `{ "invoice_id": 10, "payment_id": 50, "profile_code": "media_carta_horizontal" }` | Recibo institucional emitido | Reserva correlativo con bloqueo, guarda snapshot y rechaza duplicados/rango agotado. |
-| GET | `/api/institutional-receipts/{receipt}/pdf` | `receipts.view`; reimpresion requiere `receipts.reprint` + `reason` | Query opcional `reason` para reimpresion | PDF institucional clasico | Usa tamano real del perfil guardado. Primera descarga registra impresion; descargas posteriores son reimpresion auditada. |
+| GET | `/api/institutional-receipts/{receipt}/pdf` | `receipts.view`; reimpresion requiere `receipts.reprint` + motivo por POST | Sin payload | PDF institucional clasico | Usa tamano real del perfil guardado. Primera descarga registra impresion. No acepta motivos por query string. |
+| POST | `/api/institutional-receipts/{receipt}/pdf` | `receipts.view`; reimpresion requiere `receipts.reprint` + `reason` | `{ "reason": "Reposicion solicitada" }` | PDF institucional clasico | Descargas posteriores son reimpresion auditada. El motivo viaja en cuerpo JSON, no en URL. |
 | POST | `/api/settings/institutional-receipts/test-print` | `receipts.print_test` | Datos de prueba/perfil | PDF con marca `PRUEBA - SIN VALIDEZ` | No reserva correlativo real. |
 | GET | `/api/invoices/{invoice}/receipt` | `receipts.view` | Query: `width=half_letter|letter|a5|80mm|58mm` | Datos renderizables de recibo | Usa snapshots. |
 | POST | `/api/invoices/{invoice}/reprint` | `receipts.reprint` | `{ "width": "half_letter", "reason": "copia solicitada por paciente" }` | Datos recibo + audit log | Auditar reimpresion. Acepta media carta, carta, A5, 80mm y 58mm. |

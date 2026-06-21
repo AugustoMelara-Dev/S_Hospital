@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { FiscalStatusCard } from './components/FiscalStatusCard';
 import { FiscalSummary } from './components/FiscalSummary';
 import { useTheme, COLOR_THEMES, type ColorTheme } from '@/hooks/useTheme';
@@ -73,6 +74,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [confirmingSequenceSave, setConfirmingSequenceSave] = useState(false);
 
   const [hospitalForm, setHospitalForm] = useState<SettingsFormData>({
     hospital_name: '',
@@ -220,11 +222,12 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
   }
 
   async function handleSaveColorTheme(newColor: ColorTheme) {
+    if (!canEdit || saving) return;
     setColorTheme(newColor);
     setHospitalForm(prev => ({ ...prev, primary_color: newColor }));
-    
+
     if (!settings) return;
-    
+
     try {
       onStatus('Guardando color de marca en el servidor...');
       const updated = await apiClient.updateFiscalSettings({
@@ -250,6 +253,15 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
     }
   }
 
+  function requestSaveSequence() {
+    if (!sequenceForm.prefix.trim() || !sequenceForm.cai.trim()) {
+      onStatus('El prefijo y CAI son requeridos.');
+      return;
+    }
+
+    setConfirmingSequenceSave(true);
+  }
+
   async function handleSaveSequence() {
     if (!sequenceForm.prefix.trim() || !sequenceForm.cai.trim()) {
       onStatus('El prefijo y CAI son requeridos.');
@@ -272,6 +284,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
         active: true,
       });
       setSequence(saved);
+      setConfirmingSequenceSave(false);
       onStatus('Secuencia fiscal guardada.');
     } catch (err) {
       const message = userSafeErrorMessage(err, 'No se pudo guardar la secuencia fiscal.');
@@ -547,7 +560,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
               </div>
 
               <div className="flex justify-end">
-                <Button onClick={handleSaveSequence} disabled={saving || !canEdit}>
+                <Button onClick={requestSaveSequence} disabled={saving || !canEdit}>
                   {saving ? 'Guardando...' : 'Guardar numeración'}
                 </Button>
               </div>
@@ -629,13 +642,14 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                   {(Object.keys(COLOR_THEMES) as ColorTheme[]).map((themeKey) => {
                     const themeObj = COLOR_THEMES[themeKey];
                     const active = colorTheme === themeKey;
-                    
+
                     return (
                       <Button
                         key={themeKey}
                         type="button"
                         variant={active ? 'secondary' : 'outline'}
                         onClick={() => handleSaveColorTheme(themeKey)}
+                        disabled={!canEdit || saving}
                         className="h-auto justify-between p-3.5 text-left"
                       >
                         <div className="flex items-center gap-3">
@@ -664,6 +678,39 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
           </div>
         </TabsContent>
       </Tabs>
+
+      <ConfirmDialog
+        open={confirmingSequenceSave}
+        title="Confirmar numeración fiscal"
+        confirmLabel={saving ? 'Guardando...' : 'Guardar numeración'}
+        cancelLabel="Revisar datos"
+        confirmDisabled={saving}
+        cancelDisabled={saving}
+        danger
+        onCancel={() => setConfirmingSequenceSave(false)}
+        onConfirm={() => { void handleSaveSequence(); }}
+      >
+        <div className="space-y-2">
+          <p>
+            Esta acción cambia el CAI, prefijo y rango autorizado usado para emitir facturas.
+            Revise los datos antes de continuar.
+          </p>
+          <dl className="grid gap-1 text-foreground">
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted-foreground">Prefijo</dt>
+              <dd className="font-medium">{sequenceForm.prefix || 'Sin prefijo'}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted-foreground">Rango</dt>
+              <dd className="font-medium">{sequenceForm.min_number} - {sequenceForm.max_number}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted-foreground">Válido hasta</dt>
+              <dd className="font-medium">{sequenceForm.valid_until || 'Sin fecha'}</dd>
+            </div>
+          </dl>
+        </div>
+      </ConfirmDialog>
     </>
   );
 }

@@ -116,6 +116,7 @@ describe('resolveApiBaseUrl', () => {
     vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('failed to fetch DB_PASSWORD=secret'));
 
     await expect(apiClient.request('/api/health')).rejects.toThrow(/servidor LAN/i);
+    await expect(apiClient.request('/api/health')).rejects.not.toThrow(/failed to fetch|DB_PASSWORD|secret/i);
 
     const stored = JSON.parse(window.localStorage.getItem('hospital_client_issue_log') ?? '[]') as Array<{
       action: string;
@@ -255,6 +256,27 @@ describe('resolveApiBaseUrl', () => {
       .filter((url) => url.includes('/sanctum/csrf-cookie'));
 
     expect(csrfCalls).toHaveLength(1);
+  });
+
+  it('expires the cached CSRF cookie request after ten minutes', async () => {
+    vi.useFakeTimers();
+    try {
+      resetCsrfCache();
+      const csrf = vi.spyOn(apiClient, 'fetchCsrfCookie').mockResolvedValue(undefined);
+
+      vi.setSystemTime(new Date('2026-06-18T08:00:00-06:00'));
+      await apiClient.csrf();
+
+      vi.setSystemTime(new Date('2026-06-18T08:09:59-06:00'));
+      await apiClient.csrf();
+      expect(csrf).toHaveBeenCalledTimes(1);
+
+      vi.setSystemTime(new Date('2026-06-18T08:10:00-06:00'));
+      await apiClient.csrf();
+      expect(csrf).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('refreshes the CSRF cookie when a mutating request receives 419', async () => {
@@ -526,9 +548,9 @@ describe('resolveApiBaseUrl', () => {
           }),
         );
 
-        const pending = apiClient.download('/api/reports/pdf?date=2026-06-15');
+        const pending = apiClient.download('/api/reports/pdf?date=2026-06-15', { timeout: 50 });
         const assertion = expect(pending).rejects.toBeInstanceOf(ApiError);
-        await vi.advanceTimersByTimeAsync(10_000);
+        await vi.advanceTimersByTimeAsync(50);
 
         await assertion;
       } finally {

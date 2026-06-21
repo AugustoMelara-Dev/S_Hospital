@@ -4,7 +4,7 @@
 
 ## Alcance de Fase 8
 
-El sistema permite crear y descargar backups locales desde admin y con `php artisan hospital:backup`. No existe restore por UI ni endpoint destructivo de restore en esta fase.
+El sistema permite crear y descargar backups locales desde admin y con `php artisan hospital:backup`. No existe restore por UI ni endpoint destructivo de restore en esta fase. El permiso interno `backups.restore` queda sembrado y reservado para policies/procedimientos administrativos controlados; no habilita por si solo un boton de restauracion web.
 
 ## Crear backup manual
 
@@ -116,6 +116,25 @@ powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_window
 powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Status
 ```
 
+En modo Docker offline, usar el mismo `.env` final que se entrega a
+`docker compose`:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Mode Docker -EnvFile .\.env -WhatIfOnly
+powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Mode Docker -EnvFile .\.env -UpdateExisting
+```
+
+Si el sistema fue levantado con un nombre explicito de Docker Compose
+(`docker compose -p nombre ...`), agregar `-ComposeProjectName nombre` al
+instalador y `--project-name nombre` a los wrappers.
+
+Si la consola no esta elevada, el helper fallara sin cambiar tareas. El tecnico
+puede relanzar con UAC de forma explicita:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Mode Docker -EnvFile .\.env -UpdateExisting -LaunchElevated
+```
+
 El helper crea una tarea de worker al iniciar Windows y una tarea diaria de
 backup programado. Primero ejecutar `-WhatIfOnly` para confirmar rutas y el
 runtime real: `PHP local` o `Docker Compose`.
@@ -125,8 +144,8 @@ soporte sin exponer carpetas del servidor. Las tareas reales conservan las rutas
 necesarias internamente para poder ejecutarse.
 Si `-PhpPath` apunta a una ruta inexistente en modo PHP local, el helper se
 detiene antes de registrar tareas para evitar respaldos automaticos rotos. En
-modo Docker, el helper exige `docker`, `docker compose`, `.env` y compose
-productivo validos antes de registrar tareas.
+modo Docker, el helper exige `docker`, `docker compose`, `.env` o `-EnvFile`, y
+compose productivo validos antes de registrar tareas.
 Si las tareas ya existen, el helper falla sin sobrescribirlas; usar
 `-UpdateExisting` para reemplazarlas explicitamente. Para desinstalarlas, usar
 `-Uninstall`. La instalacion, actualizacion y desinstalacion requieren abrir
@@ -144,7 +163,9 @@ scripts\start_backup_automation.cmd
 En modo PHP local, por defecto usan `C:\xampp\php\php.exe`. Si PHP esta en otra
 ruta, definir `HOSPITAL_PHP_PATH` antes de ejecutarlos o al crear la tarea
 programada. En modo Docker offline no requieren PHP host; usan
-`docker-compose.prod.yml` y `.env`.
+`docker-compose.prod.yml` y, por defecto, `.env`. Si el `.env` final esta en
+otra ruta durante una validacion controlada, pasar `--env-file C:\ruta\.env` al
+wrapper o usar `-EnvFile` en el instalador de tareas.
 Antes de dejarlos activos, soporte puede validarlos sin iniciar workers ni crear
 respaldos:
 
@@ -152,6 +173,10 @@ respaldos:
 scripts\run_backup_worker.cmd --check
 scripts\run_scheduled_backup.cmd --check
 scripts\start_backup_automation.cmd --check
+scripts\run_backup_worker.cmd --mode=docker --env-file .\.env --check
+scripts\run_scheduled_backup.cmd --mode=docker --env-file .\.env --check
+scripts\run_backup_worker.cmd --mode=docker --env-file .\.env --project-name nombre --check
+scripts\run_scheduled_backup.cmd --mode=docker --env-file .\.env --project-name nombre --check
 ```
 
 Si la validacion falla, el mensaje debe indicar una accion simple: revisar PHP o
@@ -169,13 +194,22 @@ powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_startup_curr
 scripts\start_backup_automation.cmd
 ```
 
-Esta alternativa arranca el worker y un scheduler local al iniciar sesion del usuario Windows. No sustituye una tarea de sistema para produccion final, pero deja backup diario automatico sin permisos de administrador mientras ese usuario permanezca iniciado.
+En instalacion Docker offline use el mismo `.env` y, si aplica, el mismo nombre
+de proyecto Compose usado por `docker compose`:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_startup_current_user.ps1 -Mode Docker -EnvFile .\.env -ComposeProjectName hospital_prod -DailyBackupTime 02:00
+powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_startup_current_user.ps1 -Status
+```
+
+Esta alternativa arranca el worker y un scheduler local al iniciar sesion del usuario Windows. No sustituye una tarea de sistema para produccion final, pero deja backup diario automatico sin permisos de administrador mientras ese usuario permanezca iniciado. El preflight la trata como condicion bloqueante para `PRODUCTION_READY`; antes de operar en hospital real se deben instalar tareas Windows elevadas o un servicio equivalente que arranque sin sesion interactiva.
 El instalador registra tanto un archivo en la carpeta Startup como una entrada `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` para tolerar politicas locales donde uno de los dos mecanismos este restringido.
-Primero use `-WhatIfOnly`: valida hora y PHP sin crear archivo Startup, sin
-cambiar registro y sin iniciar el worker. El modo `-Status` no imprime el
+Primero use `-WhatIfOnly`: valida hora y runtime PHP/Docker sin crear archivo Startup,
+sin cambiar registro y sin iniciar el worker. El modo `-Status` no imprime el
 contenido crudo del archivo Startup; muestra solo estado y rutas protegidas para
 evitar exponer carpetas locales en capturas de soporte.
-El log operativo queda en `backend/storage/logs/backup-automation.log`.
+El log operativo queda en `backend/storage/logs/backup-automation.log` para PHP
+local o `install-logs\backup-automation.log` para Docker.
 
 Despues de cada backup diario, copiar el archivo mas reciente a una unidad USB o disco externo del hospital. No usar servicios cloud como requisito operativo.
 

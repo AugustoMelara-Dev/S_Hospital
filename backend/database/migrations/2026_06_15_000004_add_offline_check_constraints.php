@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -24,28 +25,25 @@ return new class extends Migration
                 'invoices_balance_due_nonneg' => '(balance_due >= 0)',
             ],
             'payments' => [
-                'payments_status_valid' => "status IN ('active','void')",
+                'payments_status_valid' => "status IN ('posted','void')",
                 'payments_amount_nonneg' => '(amount_cents >= 0)',
             ],
             'cash_register_sessions' => [
                 'cash_register_sessions_status_valid' => "status IN ('open','closed')",
             ],
             'cash_movements' => [
-                'cash_movements_amount_nonzero' => '(amount_cents <> 0)',
-                'cash_movements_type_valid' => "type IN ('opening','sale','withdrawal','adjustment','void')",
+                'cash_movements_amount_nonzero' => "(amount <> 0 OR type IN ('opening','closing'))",
+                'cash_movements_type_valid' => "type IN ('opening','payment','payment_void','closing')",
             ],
             'audit_logs' => [
                 'audit_logs_result_valid' => "result IN ('success','failed')",
             ],
             'service_price_histories' => [
-                'service_price_history_old_nonneg' => '(old_price_cents IS NULL OR old_price_cents >= 0)',
-                'service_price_history_new_nonneg' => '(new_price_cents >= 0)',
+                'service_price_history_old_nonneg' => '(old_price >= 0)',
+                'service_price_history_new_nonneg' => '(new_price >= 0)',
             ],
             'fiscal_sequences' => [
                 'fiscal_sequences_range_valid' => '(max_number IS NULL OR current_number <= max_number)',
-            ],
-            'services' => [
-                'services_price_or_special' => '(price_cents > 0 OR special_rule_code IS NOT NULL)',
             ],
         ];
 
@@ -74,20 +72,30 @@ return new class extends Migration
             );
             $hasDuplicates = ($dupes[0]->c ?? 0) > 1;
 
-            if (! $hasDuplicates) {
-                $idxExists = collect(DB::select(
-                    'SELECT INDEX_NAME FROM information_schema.STATISTICS '.
-                    'WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?',
-                    ['receipt_print_profiles', 'uniq_receipt_print_profiles_global_default']
-                ))->isNotEmpty();
+            if ($hasDuplicates) {
+                throw new RuntimeException(
+                    'No se puede crear el guard de perfil global: existen multiples receipt_print_profiles con is_global_default=1.'
+                );
+            }
 
-                if (! $idxExists) {
+            $idxExists = collect(DB::select(
+                'SELECT INDEX_NAME FROM information_schema.STATISTICS '.
+                'WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?',
+                ['receipt_print_profiles', 'uniq_receipt_print_profiles_global_default']
+            ))->isNotEmpty();
+
+            if (! $idxExists) {
+                if (! Schema::hasColumn('receipt_print_profiles', 'global_default_unique_key')) {
                     DB::statement(
-                        'CREATE UNIQUE INDEX uniq_receipt_print_profiles_global_default '.
-                        'ON receipt_print_profiles (is_global_default) '.
-                        'WHERE is_global_default = 1'
+                        'ALTER TABLE receipt_print_profiles ADD COLUMN global_default_unique_key TINYINT '.
+                        'GENERATED ALWAYS AS (CASE WHEN is_global_default = 1 THEN 1 ELSE NULL END) STORED'
                     );
                 }
+
+                DB::statement(
+                    'CREATE UNIQUE INDEX uniq_receipt_print_profiles_global_default '.
+                    'ON receipt_print_profiles (global_default_unique_key)'
+                );
             }
         }
     }
@@ -100,33 +108,36 @@ return new class extends Migration
             return;
         }
 
-        $names = [
-            'institutional_receipts_amount_cents_nonneg',
-            'invoices_status_valid',
-            'invoices_paid_amount_nonneg',
-            'invoices_balance_due_nonneg',
-            'payments_status_valid',
-            'payments_amount_nonneg',
-            'cash_register_sessions_status_valid',
-            'cash_movements_amount_nonzero',
-            'cash_movements_type_valid',
-            'audit_logs_result_valid',
-            'service_price_history_old_nonneg',
-            'service_price_history_new_nonneg',
-            'fiscal_sequences_range_valid',
-            'services_price_or_special',
+        $constraints = [
+            'institutional_receipts' => ['institutional_receipts_amount_cents_nonneg'],
+            'invoices' => ['invoices_status_valid', 'invoices_paid_amount_nonneg', 'invoices_balance_due_nonneg'],
+            'payments' => ['payments_status_valid', 'payments_amount_nonneg'],
+            'cash_register_sessions' => ['cash_register_sessions_status_valid'],
+            'cash_movements' => ['cash_movements_amount_nonzero', 'cash_movements_type_valid'],
+            'audit_logs' => ['audit_logs_result_valid'],
+            'service_price_histories' => ['service_price_history_old_nonneg', 'service_price_history_new_nonneg'],
+            'fiscal_sequences' => ['fiscal_sequences_range_valid'],
         ];
 
-        foreach ($names as $name) {
-            try {
-                DB::statement("ALTER TABLE DROP CHECK `{$name}`");
-            } catch (Throwable) {
+        foreach ($constraints as $table => $names) {
+            foreach ($names as $name) {
+                try {
+                    DB::statement("ALTER TABLE `{$table}` DROP CONSTRAINT `{$name}`");
+                } catch (QueryException) {
+                }
             }
         }
 
         try {
             DB::statement('DROP INDEX uniq_receipt_print_profiles_global_default ON receipt_print_profiles');
-        } catch (Throwable) {
+        } catch (QueryException) {
+        }
+
+        if (Schema::hasTable('receipt_print_profiles') && Schema::hasColumn('receipt_print_profiles', 'global_default_unique_key')) {
+            try {
+                DB::statement('ALTER TABLE receipt_print_profiles DROP COLUMN global_default_unique_key');
+            } catch (QueryException) {
+            }
         }
     }
 };

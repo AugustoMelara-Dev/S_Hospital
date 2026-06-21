@@ -10,6 +10,8 @@ param(
     [string] $ResponsiblePerson = "",
     [string] $UserRole = "",
 
+    [int] $WebSocketPort = 0,
+
     [switch] $Force,
     [switch] $WhatIfOnly
 )
@@ -111,6 +113,59 @@ function New-CheckResult([string] $Label, [string] $Url, [int[]] $AllowedStatusC
     }
 }
 
+function New-TcpCheckResult([string] $Label, [string] $HostName, [int] $Port) {
+    $client = $null
+    try {
+        $client = [System.Net.Sockets.TcpClient]::new()
+        $async = $client.BeginConnect($HostName, $Port, $null, $null)
+        $connected = $async.AsyncWaitHandle.WaitOne([TimeSpan]::FromSeconds(8))
+        if (-not $connected) {
+            return [ordered] @{
+                Label = $Label
+                Url = "tcp://${HostName}:${Port}"
+                StatusCode = $null
+                ContentType = ""
+                Passed = $false
+                Detail = "TCP timeout"
+            }
+        }
+
+        $client.EndConnect($async)
+        return [ordered] @{
+            Label = $Label
+            Url = "tcp://${HostName}:${Port}"
+            StatusCode = 0
+            ContentType = "tcp"
+            Passed = $true
+            Detail = "TCP connect OK"
+        }
+    } catch {
+        return [ordered] @{
+            Label = $Label
+            Url = "tcp://${HostName}:${Port}"
+            StatusCode = $null
+            ContentType = ""
+            Passed = $false
+            Detail = $_.Exception.Message
+        }
+    } finally {
+        if ($null -ne $client) {
+            $client.Close()
+            $client.Dispose()
+        }
+    }
+}
+
+function Get-EchoConfig([string] $BaseUrl) {
+    try {
+        $response = Invoke-WebRequest -Uri "$($BaseUrl.TrimEnd('/'))/api/system/echo-config" -UseBasicParsing -TimeoutSec 20
+        $payload = $response.Content | ConvertFrom-Json
+        return $payload.data
+    } catch {
+        return $null
+    }
+}
+
 function Get-FirstAssetPath([string] $BaseUrl) {
     try {
         $loginResponse = Invoke-WebRequest -Uri "$($BaseUrl.TrimEnd('/'))/login" -UseBasicParsing -TimeoutSec 20
@@ -148,10 +203,12 @@ if ($base -match "localhost|127\.0\.0\.1|::1") {
 }
 
 $assetPath = Get-FirstAssetPath $base
+$echoConfig = Get-EchoConfig $base
 $checks = New-Object System.Collections.Generic.List[object]
 $checks.Add((New-CheckResult "/up" "$base/up")) | Out-Null
 $checks.Add((New-CheckResult "/login" "$base/login")) | Out-Null
 $checks.Add((New-CheckResult "/verify-email" "$base/verify-email" @(200, 302))) | Out-Null
+$checks.Add((New-CheckResult "/api/system/echo-config" "$base/api/system/echo-config" @(200) "json")) | Out-Null
 
 if ($assetPath) {
     $checks.Add((New-CheckResult "/assets/*.js" "$base$assetPath" @(200) "javascript")) | Out-Null
@@ -164,6 +221,48 @@ if ($assetPath) {
         Passed = $false
         Detail = "Could not discover a JS asset from /login"
     }) | Out-Null
+}
+
+$resolvedWebSocketPort = $WebSocketPort
+if ($resolvedWebSocketPort -le 0 -and $null -ne $echoConfig -and $null -ne $echoConfig.port) {
+    $resolvedWebSocketPort = [int] $echoConfig.port
+}
+
+if ($null -eq $echoConfig) {
+    $checks.Add([ordered] @{
+        Label = "WebSocket config"
+        Url = "$base/api/system/echo-config"
+        StatusCode = $null
+        ContentType = ""
+        Passed = $false
+        Detail = "Could not read Echo/Soketi client config"
+    }) | Out-Null
+} elseif ($echoConfig.enabled -ne $true) {
+    $checks.Add([ordered] @{
+        Label = "WebSocket config"
+        Url = "$base/api/system/echo-config"
+        StatusCode = 200
+        ContentType = "application/json"
+        Passed = $false
+        Detail = "Realtime is disabled; multi-PC cashier sync requires Soketi/Pusher enabled"
+    }) | Out-Null
+} elseif ($resolvedWebSocketPort -lt 1 -or $resolvedWebSocketPort -gt 65535) {
+    $checks.Add([ordered] @{
+        Label = "WebSocket TCP"
+        Url = "tcp://$($baseUri.Host):$resolvedWebSocketPort"
+        StatusCode = $null
+        ContentType = ""
+        Passed = $false
+        Detail = "Invalid WebSocket port"
+    }) | Out-Null
+} else {
+    $webSocketHost = if (-not [string]::IsNullOrWhiteSpace([string] $echoConfig.host)) {
+        [string] $echoConfig.host
+    } else {
+        $baseUri.Host
+    }
+
+    $checks.Add((New-TcpCheckResult "WebSocket TCP" $webSocketHost $resolvedWebSocketPort)) | Out-Null
 }
 
 Write-Host "LAN client validation for $base"
@@ -204,6 +303,9 @@ if ($EvidencePath -ne "") {
         $mark = if ($check.Passed) { "x" } else { " " }
         $label = switch ($check.Label) {
             "/assets/*.js" { "/assets/*.js loads as JavaScript" }
+            "/api/system/echo-config" { "/api/system/echo-config exposes LAN realtime config" }
+            "WebSocket config" { "Realtime/Soketi is enabled for multi-PC cashier sync" }
+            "WebSocket TCP" { "WebSocket/Soketi TCP port is reachable from the client computer" }
             default { "$($check.Label) responds from the client computer" }
         }
         $lines.Add("- [$mark] $label. Result/evidence: $($check.StatusCode) $($check.ContentType) $($check.Detail)") | Out-Null
