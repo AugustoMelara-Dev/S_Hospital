@@ -8,12 +8,13 @@ Worktree: `C:\Projects\S_Hospital-integration-rc`
 
 Estado: BLOQUEADO PARA MAIN
 
-La rama RC integra hardening, pila UI y CashBox, y los gates automatizados
-ejecutados pasan. No se fusiona a `main` porque el plan de release exige
-evidencia fisica/operativa que no puede completarse en este entorno: segunda PC
-LAN, impresora real, restore final MySQL/MariaDB descartable del servidor final,
-concurrencia final/bajo carga real, smoke LAN real y validacion visual completa
-por ruta/dispositivo.
+La rama RC integra hardening, pila UI y CashBox. Los gates automatizados locales
+ejecutados pasan, incluyendo backend, frontend, release E2E, smoke a11y mockeado
+y readiness/responsive mockeado con capturas. No se fusiona a `main` porque el
+plan de release exige evidencia fisica/operativa que no puede completarse en
+este entorno: segunda PC LAN, impresora real, restore final MySQL/MariaDB
+descartable del servidor final, concurrencia final/bajo carga real, smoke LAN
+real y validacion visual completa contra entorno real.
 
 ## SHAs integrados
 
@@ -22,7 +23,9 @@ por ruta/dispositivo.
 - Hardening: `add73a642aa3cabb0dbdbe0c9e040593bcd84e20`
 - Tip UI elegido: `origin/codex/ui-cashbox`
 - Tip UI SHA: `c28eeae42efccecc6e007e9c629192ea00fdbe8b`
-- Release candidate SHA: `d65abe3cbfcd695d451b8d8664865059ebf1471a`
+- Commit de estabilizacion inicial RC: `d65abe3cbfcd695d451b8d8664865059ebf1471a`
+- Commit reporte QA inicial: `f2b095fdff5c7884db3fc8e8b46ccc208bf4b0f2`
+- Commit harness readiness/a11y: `ae2063899caf2b9455c10d4aa5446a3637c2dccc`
 
 ## Ancestria UI
 
@@ -51,6 +54,10 @@ No hubo conflictos Git en:
   errores de consola ni page errors.
 - Pint detecto un estilo en `ManageFinalValidationUserCommand.php`; se corrigio
   con Pint.
+- `frontend/e2e/production-readiness.spec.ts` dejaba escapar endpoints nuevos al
+  proxy de Vite (`/api/settings/operational`, `/api/system/setup-status` y
+  `/api/reports/dashboard`). Se agregaron mocks de primera parte para evitar
+  falsos 502 y mantener el spec enfocado en UX/readiness.
 
 ## Warnings pendientes
 
@@ -78,11 +85,20 @@ Backend:
 - `vendor/bin/pint --test`: PASS, 404 files.
 - `vendor/bin/phpstan analyse --memory-limit=1G --no-progress`: PASS.
 
-E2E:
+E2E y UX local:
 
 - `npm run test:e2e`: PASS, 2/2 Playwright release tests.
-- Cobertura: flujo cajero emite factura, cobra, muestra recibo y reportes; RBAC de
-  usuario catalog-only.
+- `npx playwright test e2e/all-buttons-smoke.spec.ts --output C:\tmp\s_hospital_button_smoke_artifacts`: PASS, 2/2.
+  - Reporte: `C:\tmp\s_hospital_button_smoke_report.json`.
+  - Cobertura: 13 rutas en desktop y mobile, controles interactivos con nombre
+    accesible y axe sin violaciones critical/serious; ruta de cancelacion de
+    accion peligrosa en historial.
+- `npx playwright test e2e/production-readiness.spec.ts --output C:\tmp\s_hospital_production_readiness_artifacts`: PASS, 3/3.
+  - Reporte: `C:\tmp\s_hospital_rc_mocked_screens\rc-e2e-mocked-report.json`.
+  - Capturas generadas: dashboard light/dark, caja abierta, nueva factura vacia,
+    carrito de facturacion, recibo A5, recibo light/dark, reportes admin y
+    respaldos pendientes.
+  - Nota: es mockeado y no sustituye LAN, MySQL/MariaDB real ni impresora fisica.
 
 Migraciones:
 
@@ -101,9 +117,18 @@ Migraciones:
 
 ## Accesibilidad, responsive y visual
 
-Evidencia automatizada indirecta: tests de componentes/AppShell y E2E release.
-Pendiente antes de `main`: auditoria completa por rutas y viewports indicados en
-el plan, idealmente con Playwright/axe si el stack disponible lo permite.
+Evidencia automatizada local completada:
+
+- Smoke a11y no mutante: desktop/mobile para dashboard, nueva factura, caja,
+  catalogo, historial, reportes, respaldos, configuracion fiscal, recibos
+  institucionales, usuarios, ayuda, informacion y 404.
+- Readiness/responsive mockeado: flujo cajero/admin, EPO con receta de dialisis a
+  L. 0.00, recibo A5, tema claro/oscuro, navegacion responsive y cancelacion de
+  acciones peligrosas.
+
+Pendiente antes de `main`: validacion visual completa contra servidor real/LAN y
+viewports/dispositivos del plan, idealmente con evidencia firmada o capturas del
+entorno final.
 
 ## PDF e impresion
 
@@ -122,4 +147,4 @@ evidencia de campo.
 
 Mantener la rama `codex/integration-release-candidate` como RC remoto. No hacer
 merge a `main` hasta completar los gates externos de campo y la auditoria visual/
-accesibilidad completa.
+operativa completa contra entorno real.
