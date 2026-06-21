@@ -62,7 +62,19 @@ No hubo conflictos Git en:
 ## Warnings pendientes
 
 - `npm ci` reporta warning transitorio de dependencia:
-  `whatwg-encoding@3.1.1` deprecado. `npm audit` reporta 0 vulnerabilidades.
+  `whatwg-encoding@3.1.1` deprecado. `npm ls whatwg-encoding` confirma que es
+  transitivo de `jsdom@25.0.1`, no dependencia directa de produccion.
+- `npm audit --audit-level=moderate`: PASS, 0 vulnerabilidades.
+- `npm outdated`: hay actualizaciones disponibles. Se clasifican como pendientes
+  upstream/compatibles fuera de este RC porque incluyen upgrades mayores
+  (`eslint@10`, `typescript@6`, `jsdom@29`, `@vitejs/plugin-react@6`) y parches
+  menores que requieren una ronda dedicada de upgrade/regresion.
+- `composer audit --no-interaction`: PASS, sin advisories.
+- `composer outdated --direct`: hay upgrades menores/parches disponibles
+  (`laravel/pint`, `laravel/sail`, `phpoffice/phpspreadsheet`) y upgrades mayores
+  posibles (`laravel/framework@13`, `phpunit@12`, `spatie/laravel-permission@8`,
+  `laravel/tinker@3`). No se actualizan en este RC para no mezclar un cambio de
+  dependencias amplio con la convergencia funcional.
 - PHPUnit omite 11 tests dependientes de driver/entorno, incluyendo cobertura sin
   pcov/xdebug y algunos caminos MySQL-only. No son fallos funcionales del RC, pero
   deben cubrirse en entorno final/CI apropiado.
