@@ -52,6 +52,13 @@ function statusForSeverity(severity: PublicSystemStatusSummary['summary']['sever
   return 'pending';
 }
 
+function statusLabelForSeverity(severity: PublicSystemStatusSummary['summary']['severity'] | 'loading') {
+  if (severity === 'ok') return 'Correcto';
+  if (severity === 'error') return 'Error';
+  if (severity === 'warning') return 'Atencion';
+  return 'Cargando';
+}
+
 export function OperationalStatusSummary({ loading, summary, status, canViewAdvanced, onRefresh }: Props) {
   const severity = summary?.summary.severity ?? 'loading';
   const Icon = iconForSeverity(severity);
@@ -90,7 +97,7 @@ export function OperationalStatusSummary({ loading, summary, status, canViewAdva
                 </p>
               </div>
             </div>
-            <StatusBadge status={statusForSeverity(severity)}>{summary?.summary.label ?? 'Cargando'}</StatusBadge>
+            <StatusBadge status={statusForSeverity(severity)}>{statusLabelForSeverity(severity)}</StatusBadge>
           </div>
 
           {summary ? (
