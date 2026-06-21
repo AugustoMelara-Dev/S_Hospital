@@ -252,6 +252,20 @@ class UserManagementTest extends TestCase
         $this->assertTrue($created->hasDirectPermission('invoices.create'));
         $this->assertTrue($created->hasRole('cajero'));
         $this->assertSame($created->id, $response->json('data.id'));
+
+        $audit = AuditLog::query()
+            ->where('action', 'user.created')
+            ->where('entity_type', User::class)
+            ->where('entity_id', $created->id)
+            ->firstOrFail();
+
+        $this->assertSame($admin->id, $audit->user_id);
+        $this->assertSame('success', $audit->result);
+        $this->assertSame(['cajero'], $audit->new_values['roles'] ?? null);
+        $this->assertSame(['catalog.view', 'invoices.create'], $audit->new_values['direct_permissions'] ?? null);
+        $this->assertSame(['catalog.view', 'invoices.create'], $audit->new_values['effective_permissions'] ?? null);
+        $this->assertArrayNotHasKey('password', $audit->new_values ?? []);
+        $this->assertArrayNotHasKey('password', $audit->old_values ?? []);
     }
 
     public function test_admin_cannot_create_active_user_with_empty_direct_module_permissions(): void

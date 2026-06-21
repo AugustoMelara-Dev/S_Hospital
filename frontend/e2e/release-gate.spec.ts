@@ -67,8 +67,8 @@ test('release gate cashier can issue, collect, show receipt and surface reports'
   await page.getByLabel(/ver preview antes de imprimir/i).check();
   await page.getByLabel(/monto recibido/i).fill('17.25');
   await page.getByRole('button', { name: /confirmar cobro y ver preview|registrar cobro y ver preview/i }).click();
-  await expect(page.getByRole('heading', { name: /comprobante de factura/i })).toBeVisible();
-  await expect(page.getByRole('heading', { name: /recibo institucional/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /factura emitida exitosamente/i })).toBeVisible();
+  await expect(page.getByRole('status').filter({ hasText: /pdf institucional/i }).first()).toBeVisible();
   await expect(page.getByText(patientName)).toBeVisible();
 
   const persisted = await page.evaluate(async (patient) => {

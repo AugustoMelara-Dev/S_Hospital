@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { randomUUID } from 'node:crypto';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, isAbsolute, relative, resolve } from 'node:path';
 
@@ -79,6 +80,10 @@ class Session {
       headers.set('Content-Type', 'application/json');
     }
     if (options.method && !['GET', 'HEAD'].includes(options.method.toUpperCase())) {
+      if (!headers.has('Idempotency-Key')) {
+        headers.set('Idempotency-Key', `concurrency-${runId}-${randomUUID()}`);
+      }
+
       const xsrfToken = this.cookies.get('XSRF-TOKEN');
       if (xsrfToken && !headers.has('X-XSRF-TOKEN')) {
         headers.set('X-XSRF-TOKEN', decodeURIComponent(xsrfToken));
@@ -193,7 +198,7 @@ async function main() {
   ]);
   const openStatuses = openResults.map((result) => result.status).sort();
   if (openStatuses[0] !== 201 || ![409, 422].includes(openStatuses[1])) {
-    throw new Error(`double cash open expected one success and one validation failure, got ${openStatuses.join(', ')}`);
+    throw new Error(`double cash open expected one success and one validation failure, got ${openStatuses.join(', ')}: ${safeJson(openResults.map((result) => result.body))}`);
   }
   const cashSession = openResults.find((result) => result.status === 201)?.body?.data;
 

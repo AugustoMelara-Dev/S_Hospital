@@ -2,8 +2,11 @@
 
 Copy this file to `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` on the final cashier computer,
 delete this instruction block, and fill every required field below. Do not mark
-`PRODUCTION_READY` until media carta, carta, A5, 80mm and 58mm output are validated on the
-physical printer or exact printer configuration used by the hospital.
+`PRODUCTION_READY` until at least one institutional paper format (media carta,
+carta or A5) is validated on the physical printer or exact printer
+configuration used by the hospital. 80mm/58mm are secondary compatibility
+formats and may be marked as not configured if the hospital does not use a
+thermal printer for the institutional receipt.
 
 Do not rename required field labels. The production preflight validates these
 exact labels.

@@ -48,6 +48,7 @@ function Test-PathOrFail([string] $Path, [string] $Label) {
 $backendDir = Join-Path $ProjectRoot "backend"
 $frontendDir = Join-Path $ProjectRoot "frontend"
 $installerSafetyScript = Join-Path $ProjectRoot "scripts\validate_installer_safety.ps1"
+$releaseE2eGoldenSqliteSafetyScript = Join-Path $ProjectRoot "scripts\test_release_e2e_golden_sqlite_safety.ps1"
 $goldenDbRunnerSafetyScript = Join-Path $ProjectRoot "scripts\test_golden_db_runner_safety.ps1"
 
 Write-Host "Windows quality gate"
@@ -60,6 +61,11 @@ if (-not $SkipOps) {
     Test-PathOrFail $installerSafetyScript "Installer safety script"
     Invoke-GateStep "ops scripts safety" $ProjectRoot {
         & $installerSafetyScript -Root $ProjectRoot
+    }
+
+    Test-PathOrFail $releaseE2eGoldenSqliteSafetyScript "Release E2E golden SQLite safety script"
+    Invoke-GateStep "release e2e golden sqlite safety" $ProjectRoot {
+        & $releaseE2eGoldenSqliteSafetyScript -Root $ProjectRoot
     }
 }
 
@@ -78,6 +84,8 @@ if (-not $SkipBackend) {
         "InstitutionalReceiptPaymentIntegrationTest",
         "InstitutionalReceiptPdfTest",
         "BackupWorkflowTest",
+        "RoleManagementTest",
+        "UserManagementTest",
         "AuthorizationStrategyTest"
     )
 

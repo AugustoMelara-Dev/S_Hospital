@@ -7,12 +7,15 @@ use App\Http\Middleware\IdempotencyKey;
 use App\Http\Middleware\StripApiReadSessionCookies;
 use App\Http\Middleware\ThrottleByUser;
 use App\Support\OperationalMessageSanitizer;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
@@ -47,6 +50,12 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->render(function (Throwable $exception, Request $request) {
             if (! $request->is('api/*')) {
+                return null;
+            }
+
+            if ($exception instanceof ValidationException
+                || $exception instanceof AuthorizationException
+                || $exception instanceof AuthenticationException) {
                 return null;
             }
 
