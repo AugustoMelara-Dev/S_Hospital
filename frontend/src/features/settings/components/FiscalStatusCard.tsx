@@ -1,5 +1,6 @@
 import { AlertCircle, CheckCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { StatusBadge } from '@/components/ui/status-badge';
 import type { FiscalSequence, FiscalSettings } from '@/lib/api';
 import { INSTITUTIONAL_RECEIPT_PAPER_OPTIONS } from '@/lib/institutionalReceiptPaper';
 
@@ -50,15 +51,20 @@ export function FiscalStatusCard({ settings, sequence }: FiscalStatusCardProps) 
         <div className="flex items-center gap-4">
           <div className={`p-3 rounded-full ${isConfigured ? 'bg-success/10' : 'bg-warning/10'}`}>
             {isConfigured ? (
-              <CheckCircle className="h-6 w-6 text-success" />
+              <CheckCircle aria-hidden="true" className="h-6 w-6 text-success" />
             ) : (
-              <AlertCircle className="h-6 w-6 text-warning" />
+              <AlertCircle aria-hidden="true" className="h-6 w-6 text-warning" />
             )}
           </div>
-          <div>
-            <h3 className="font-semibold">
-              {isConfigured ? 'Configuración completa' : 'Configuración pendiente'}
-            </h3>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="font-semibold">
+                {isConfigured ? 'Configuración completa' : 'Configuración pendiente'}
+              </h3>
+              <StatusBadge status={isConfigured ? 'success' : 'pending'}>
+                {isConfigured ? 'Lista' : 'Requiere revisión'}
+              </StatusBadge>
+            </div>
             <p className="text-sm text-muted-foreground">
               {isConfigured
                 ? 'El sistema esta listo para emitir facturas.'

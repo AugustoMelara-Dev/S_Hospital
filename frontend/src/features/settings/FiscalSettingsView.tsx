@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   type FiscalSequence,
   type FiscalSettings,
@@ -6,21 +6,26 @@ import {
   userSafeErrorMessage,
 } from '@/lib/api';
 import { Alert } from '@/components/ui/alert';
+import { ActionBar } from '@/components/ui/action-bar';
 import { PageHeader } from '@/components/ui/page-header';
-import { LoadingState } from '@/components/ui/states';
+import { ErrorState, LoadingState } from '@/components/ui/states';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { FieldGroup, FormSection } from '@/components/ui/form-section';
+import { FormField } from '@/components/ui/form-field';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { FiscalStatusCard } from './components/FiscalStatusCard';
 import { FiscalSummary } from './components/FiscalSummary';
 import { useTheme, COLOR_THEMES, type ColorTheme } from '@/hooks/useTheme';
 import { INSTITUTIONAL_RECEIPT_PAPER_OPTIONS, type InstitutionalReceiptPaperOption, institutionalReceiptPaperSize } from '@/lib/institutionalReceiptPaper';
 import { Palette, UploadCloud, Check, Sparkles, Building2 } from 'lucide-react';
+import { safeClientMessage } from '@/lib/support/clientIssueLog';
 
 type FiscalSettingsViewProps = {
   canEdit: boolean;
@@ -64,10 +69,25 @@ function institutionalPaperSize(value: FiscalSettings['receipt_paper_size']): In
   return institutionalReceiptPaperSize(value);
 }
 
+function safeFiscalErrorMessage(error: unknown, fallback: string): string {
+  const message = safeClientMessage(userSafeErrorMessage(error, fallback));
+
+  return message.includes('[redacted]') || message.includes('[ruta-local]') || message.includes('[detalle-tecnico]')
+    ? fallback
+    : message || fallback;
+}
+
+function formatSequenceNumber(value: number | null | undefined): string {
+  if (value == null) return '-';
+
+  return String(value).padStart(8, '0');
+}
+
 export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProps) {
   const { colorTheme, setColorTheme } = useTheme();
   const [settings, setSettings] = useState<FiscalSettings | null>(null);
   const [sequence, setSequence] = useState<FiscalSequence | null>(null);
+  const [sequences, setSequences] = useState<FiscalSequence[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -75,6 +95,9 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [confirmingSequenceSave, setConfirmingSequenceSave] = useState(false);
+  const savingHospitalRef = useRef(false);
+  const savingSequenceRef = useRef(false);
+  const uploadingLogoRef = useRef(false);
 
   const [hospitalForm, setHospitalForm] = useState<SettingsFormData>({
     hospital_name: '',
@@ -116,6 +139,8 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
 
   async function handleUploadLogo() {
     if (!logoFile) return;
+    if (uploadingLogoRef.current) return;
+    uploadingLogoRef.current = true;
     setUploadingLogo(true);
     onStatus('Subiendo logo institucional...');
     try {
@@ -124,10 +149,11 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
       onStatus('Logo institucional actualizado con éxito.');
       setLogoFile(null);
     } catch (err) {
-      const msg = userSafeErrorMessage(err, 'No se pudo subir el logo.');
+      const msg = safeFiscalErrorMessage(err, 'No se pudo subir el logo.');
       onStatus(msg);
       setError(msg);
     } finally {
+      uploadingLogoRef.current = false;
       setUploadingLogo(false);
     }
   }
@@ -143,6 +169,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
       ]);
 
       setSettings(settingsData);
+      setSequences(sequenceData);
       setSequence(sequenceData[0] ?? null);
 
       if (settingsData) {
@@ -176,7 +203,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
         });
       }
     } catch (err) {
-      const message = userSafeErrorMessage(err, 'No se pudo cargar la configuración fiscal.');
+      const message = safeFiscalErrorMessage(err, 'No se pudo cargar la configuración fiscal.');
       setError(message);
       onStatus(message);
     } finally {
@@ -185,11 +212,13 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
   }
 
   async function handleSaveHospital() {
+    if (savingHospitalRef.current) return;
     if (!hospitalForm.hospital_name.trim()) {
       onStatus('El nombre del hospital es requerido.');
       return;
     }
 
+    savingHospitalRef.current = true;
     setSaving(true);
     onStatus('Guardando información del hospital...');
 
@@ -213,10 +242,11 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
       setSettings(updated);
       onStatus('Información del hospital guardada.');
     } catch (err) {
-      const message = userSafeErrorMessage(err, 'No se pudo guardar la información.');
+      const message = safeFiscalErrorMessage(err, 'No se pudo guardar la información.');
       setError(message);
       onStatus(message);
     } finally {
+      savingHospitalRef.current = false;
       setSaving(false);
     }
   }
@@ -263,11 +293,13 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
   }
 
   async function handleSaveSequence() {
+    if (savingSequenceRef.current) return;
     if (!sequenceForm.prefix.trim() || !sequenceForm.cai.trim()) {
       onStatus('El prefijo y CAI son requeridos.');
       return;
     }
 
+    savingSequenceRef.current = true;
     setSaving(true);
     onStatus('Guardando secuencia fiscal...');
 
@@ -284,13 +316,21 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
         active: true,
       });
       setSequence(saved);
+      setSequences((current) => {
+        const exists = current.some((item) => item.id === saved.id);
+
+        return exists
+          ? current.map((item) => (item.id === saved.id ? saved : item))
+          : [saved, ...current];
+      });
       setConfirmingSequenceSave(false);
       onStatus('Secuencia fiscal guardada.');
     } catch (err) {
-      const message = userSafeErrorMessage(err, 'No se pudo guardar la secuencia fiscal.');
+      const message = safeFiscalErrorMessage(err, 'No se pudo guardar la secuencia fiscal.');
       setError(message);
       onStatus(message);
     } finally {
+      savingSequenceRef.current = false;
       setSaving(false);
     }
   }
@@ -304,12 +344,25 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
       <PageHeader
         title="Configuración"
         description="Datos del hospital, numeración, recibos y apariencia."
+        actions={(
+          <ActionBar align="end">
+            <StatusBadge status={canEdit ? 'success' : 'info'}>
+              {canEdit ? 'Edición habilitada' : 'Solo lectura'}
+            </StatusBadge>
+          </ActionBar>
+        )}
       />
 
       {error ? (
-        <Alert variant="destructive" title="Error">
-          {error}
-        </Alert>
+        <ErrorState
+          title="No se pudo completar la operación fiscal"
+          message={error}
+          onRetry={() => {
+            void loadFiscalConfiguration();
+            void loadLogo();
+          }}
+          retryLabel="Reintentar"
+        />
       ) : null}
 
       <Tabs defaultValue="resumen" className="space-y-6">
@@ -326,22 +379,20 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
         </TabsContent>
 
         <TabsContent value="hospital" className="mt-0">
-          <Card>
-            <CardHeader>
-              <CardTitle>Hospital y recibo</CardTitle>
-              <CardDescription>
-                Estos datos aparecen en recibos, facturas impresas y pantalla de ingreso.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <FormSection
+            title="Hospital y recibo"
+            description="Estos datos aparecen en recibos, facturas impresas y pantalla de ingreso."
+            aria-busy={saving}
+          >
+            <div className="space-y-4">
               {!canEdit && (
                 <Alert variant="warning" title="Modo solo lectura">
                   Solo supervisor o administrador puede modificar la configuración fiscal.
                 </Alert>
               )}
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FieldGroup>
                 <div className="space-y-2">
-                  <Label htmlFor="hospital_name">Nombre del hospital *</Label>
+                  <label htmlFor="hospital_name" className="text-sm font-semibold">Nombre del hospital *</label>
                   <Input
                     id="hospital_name"
                     value={hospitalForm.hospital_name}
@@ -352,7 +403,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="rtn">RTN</Label>
+                  <label htmlFor="rtn" className="text-sm font-semibold">RTN</label>
                   <Input
                     id="rtn"
                     value={hospitalForm.rtn}
@@ -361,11 +412,11 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                     disabled={!canEdit}
                   />
                 </div>
-              </div>
+              </FieldGroup>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FieldGroup>
                 <div className="space-y-2">
-                  <Label htmlFor="address">Dirección del hospital</Label>
+                  <label htmlFor="address" className="text-sm font-semibold">Dirección del hospital</label>
                   <Input
                     id="address"
                     value={hospitalForm.address}
@@ -376,7 +427,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="slogan">Frase institucional</Label>
+                  <label htmlFor="slogan" className="text-sm font-semibold">Frase institucional</label>
                   <Input
                     id="slogan"
                     value={hospitalForm.slogan}
@@ -385,10 +436,10 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                     disabled={!canEdit}
                   />
                 </div>
-              </div>
+              </FieldGroup>
 
               <div className="space-y-2">
-                <Label htmlFor="receipt_paper_size">Tamaño del recibo institucional</Label>
+                <label htmlFor="receipt_paper_size" className="text-sm font-semibold">Tamaño del recibo institucional</label>
                 <Select
                   value={hospitalForm.receipt_paper_size}
                   onValueChange={(v: string) => setHospitalForm(prev => ({ ...prev, receipt_paper_size: v as SettingsFormData['receipt_paper_size'] }))}
@@ -405,9 +456,9 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                 </Select>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FieldGroup>
                 <div className="space-y-2">
-                  <Label htmlFor="government_line">Encabezado de gobierno</Label>
+                  <label htmlFor="government_line" className="text-sm font-semibold">Encabezado de gobierno</label>
                   <Input
                     id="government_line"
                     value={hospitalForm.government_line}
@@ -417,7 +468,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="secretariat_line">Secretaría o dependencia</Label>
+                  <label htmlFor="secretariat_line" className="text-sm font-semibold">Secretaría o dependencia</label>
                   <Input
                     id="secretariat_line"
                     value={hospitalForm.secretariat_line}
@@ -427,7 +478,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="receipt_location">Lugar del recibo</Label>
+                  <label htmlFor="receipt_location" className="text-sm font-semibold">Lugar del recibo</label>
                   <Input
                     id="receipt_location"
                     value={hospitalForm.receipt_location}
@@ -438,7 +489,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="receipt_footer_text">Texto al pie del recibo</Label>
+                  <label htmlFor="receipt_footer_text" className="text-sm font-semibold">Texto al pie del recibo</label>
                   <Input
                     id="receipt_footer_text"
                     value={hospitalForm.receipt_footer_text}
@@ -447,7 +498,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                     disabled={!canEdit}
                   />
                 </div>
-              </div>
+              </FieldGroup>
 
               <div className="grid gap-3 rounded-md border border-border bg-muted/30 p-3">
                 <div className="flex items-start gap-3 text-sm">
@@ -457,10 +508,10 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                     onCheckedChange={(checked) => setHospitalForm(prev => ({ ...prev, scanner_enabled: checked === true }))}
                     disabled={!canEdit}
                   />
-                  <Label htmlFor="scanner_enabled" className="cursor-pointer">
+                  <label htmlFor="scanner_enabled" className="cursor-pointer">
                     <span className="block font-medium">Habilitar scanner/códigos en caja</span>
                     <span className="block text-muted-foreground font-normal mt-1">Si está apagado, la pantalla de nueva factura oculta controles de scanner y códigos internos.</span>
-                  </Label>
+                  </label>
                 </div>
                 <div className="flex items-start gap-3 text-sm">
                   <Checkbox
@@ -469,103 +520,172 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                     onCheckedChange={(checked) => setHospitalForm(prev => ({ ...prev, partial_payments_enabled: checked === true }))}
                     disabled={!canEdit}
                   />
-                  <Label htmlFor="partial_payments_enabled" className="cursor-pointer">
+                  <label htmlFor="partial_payments_enabled" className="cursor-pointer">
                     <span className="block font-medium">Permitir abonos parciales</span>
                     <span className="block text-muted-foreground font-normal mt-1">Si está apagado, un monto menor al total no se registra como pago completo.</span>
-                  </Label>
+                  </label>
                 </div>
               </div>
 
               <div className="flex justify-end">
-                <Button onClick={handleSaveHospital} disabled={saving || !canEdit}>
+                <Button type="button" onClick={handleSaveHospital} disabled={saving || !canEdit}>
                   {saving ? 'Guardando...' : 'Guardar hospital y recibo'}
                 </Button>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </FormSection>
         </TabsContent>
 
         <TabsContent value="secuencia" className="mt-0">
-          <Card>
-            <CardHeader>
-              <CardTitle>Numeración de facturas</CardTitle>
-              <CardDescription>
-                Configure el rango autorizado para emitir facturas.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <FormSection
+            title="Numeración de facturas"
+            description="Configure el rango autorizado para emitir facturas."
+            aria-busy={saving}
+          >
+            <div className="space-y-5">
               {!canEdit && (
                 <Alert variant="warning" title="Modo solo lectura">
                   Solo supervisor o administrador puede modificar la secuencia fiscal.
                 </Alert>
               )}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="prefix">Prefijo *</Label>
+              <FieldGroup>
+                <FormField
+                  id="prefix"
+                  label="Prefijo"
+                  required
+                  hint="Se conserva tal como lo autoriza administración fiscal."
+                >
+                  {({ id, describedBy }) => (
                   <Input
-                    id="prefix"
+                    id={id}
                     value={sequenceForm.prefix}
                     onChange={(e) => setSequenceForm(prev => ({ ...prev, prefix: e.target.value.toUpperCase() }))}
                     placeholder="A"
-                    className="uppercase"
+                    className="font-mono uppercase"
+                    aria-describedby={describedBy}
                     disabled={!canEdit}
                   />
-                </div>
+                  )}
+                </FormField>
 
-                <div className="space-y-2">
-                  <Label htmlFor="cai">CAI *</Label>
+                <FormField
+                  id="cai"
+                  label="CAI"
+                  required
+                  hint="No use valores temporales para operación final."
+                >
+                  {({ id, describedBy }) => (
                   <Input
-                    id="cai"
+                    id={id}
                     value={sequenceForm.cai}
                     onChange={(e) => setSequenceForm(prev => ({ ...prev, cai: e.target.value }))}
                     placeholder="CAI-XXXXX-XXXXX-XXXXX"
+                    className="font-mono"
+                    aria-describedby={describedBy}
                     disabled={!canEdit}
                   />
-                </div>
+                  )}
+                </FormField>
 
-                <div className="space-y-2">
-                  <Label htmlFor="min_number">Desde el número *</Label>
+                <FormField id="min_number" label="Desde el número" required>
+                  {({ id, describedBy }) => (
                   <Input
-                    id="min_number"
+                    id={id}
                     type="number"
                     value={sequenceForm.min_number}
                     onChange={(e) => setSequenceForm(prev => ({ ...prev, min_number: parseInt(e.target.value) || 1 }))}
                     placeholder="1"
+                    className="tabular-nums"
+                    aria-describedby={describedBy}
                     disabled={!canEdit}
                   />
-                </div>
+                  )}
+                </FormField>
 
-                <div className="space-y-2">
-                  <Label htmlFor="max_number">Hasta el número *</Label>
+                <FormField id="max_number" label="Hasta el número" required>
+                  {({ id, describedBy }) => (
                   <Input
-                    id="max_number"
+                    id={id}
                     type="number"
                     value={sequenceForm.max_number}
                     onChange={(e) => setSequenceForm(prev => ({ ...prev, max_number: parseInt(e.target.value) || 99999999 }))}
                     placeholder="10000"
+                    className="tabular-nums"
+                    aria-describedby={describedBy}
                     disabled={!canEdit}
                   />
-                </div>
+                  )}
+                </FormField>
 
-                <div className="space-y-2">
-                  <Label htmlFor="valid_until">Válido hasta</Label>
+                <FormField id="valid_until" label="Válido hasta">
+                  {({ id, describedBy }) => (
                   <Input
-                    id="valid_until"
+                    id={id}
                     type="date"
                     value={sequenceForm.valid_until}
                     onChange={(e) => setSequenceForm(prev => ({ ...prev, valid_until: e.target.value }))}
+                    aria-describedby={describedBy}
                     disabled={!canEdit}
                   />
+                  )}
+                </FormField>
+
+                <div className="rounded-md border border-border bg-muted/30 p-3">
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">Correlativo actual</p>
+                  <p className="mt-1 font-mono text-lg font-semibold tabular-nums">
+                    {sequence?.prefix && sequence?.current_number != null
+                      ? `${sequence.prefix}-${formatSequenceNumber(sequence.current_number)}`
+                      : '-'}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Este valor lo incrementa el backend al emitir facturas; no se reinicia desde esta pantalla.
+                  </p>
                 </div>
-              </div>
+              </FieldGroup>
 
               <div className="flex justify-end">
-                <Button onClick={requestSaveSequence} disabled={saving || !canEdit}>
+                <Button type="button" onClick={requestSaveSequence} disabled={saving || !canEdit}>
                   {saving ? 'Guardando...' : 'Guardar numeración'}
                 </Button>
               </div>
-            </CardContent>
-          </Card>
+
+              {sequences.length > 0 ? (
+                <Table containerLabel="Secuencias fiscales registradas" className="min-w-[760px]">
+                  <TableCaption>
+                    Secuencias fiscales reales devueltas por el servidor. Las acciones de activar o editar usan el formulario autorizado.
+                  </TableCaption>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Estado</TableHead>
+                      <TableHead>Documento</TableHead>
+                      <TableHead>Prefijo</TableHead>
+                      <TableHead>Rango</TableHead>
+                      <TableHead>Correlativo</TableHead>
+                      <TableHead>Válido hasta</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {sequences.map((item) => (
+                      <TableRow key={item.id ?? `${item.document_type}-${item.prefix}-${item.cai}`}>
+                        <TableCell>
+                          <StatusBadge status={item.active ? 'success' : 'pending'}>
+                            {item.active ? 'Activa' : 'Inactiva'}
+                          </StatusBadge>
+                        </TableCell>
+                        <TableCell className="capitalize">{item.document_type}</TableCell>
+                        <TableCell className="font-mono">{item.prefix}</TableCell>
+                        <TableCell className="font-mono tabular-nums">
+                          {formatSequenceNumber(item.min_number)} - {formatSequenceNumber(item.max_number)}
+                        </TableCell>
+                        <TableCell className="font-mono tabular-nums">{formatSequenceNumber(item.current_number)}</TableCell>
+                        <TableCell className="whitespace-nowrap">{item.valid_until || '-'}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : null}
+            </div>
+          </FormSection>
         </TabsContent>
 
         <TabsContent value="branding" className="mt-0">
@@ -573,7 +693,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Building2 className="size-5 text-secondary" />
+                  <Building2 aria-hidden="true" className="size-5 text-secondary" />
                   Logo institucional
                 </CardTitle>
                 <CardDescription>
@@ -581,6 +701,11 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                {!canEdit ? (
+                  <Alert variant="warning" title="Modo solo lectura">
+                    La carga de logo requiere permiso para actualizar configuración fiscal.
+                  </Alert>
+                ) : null}
                 <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-border rounded-lg bg-muted/40">
                   {logoUrl ? (
                     <div className="relative group flex flex-col items-center">
@@ -593,7 +718,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                     </div>
                   ) : (
                     <div className="flex flex-col items-center text-muted-foreground">
-                      <UploadCloud className="size-10 mb-2 text-muted-foreground" />
+                      <UploadCloud aria-hidden="true" className="size-10 mb-2 text-muted-foreground" />
                       <span className="text-xs">Sin logo cargado. Se usará el ícono del sistema.</span>
                     </div>
                   )}
@@ -602,11 +727,14 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                 {canEdit && (
                   <div className="space-y-4">
                     <div className="space-y-1.5">
-                      <Label htmlFor="logo-input">Seleccionar logo (.png, .jpg, .jpeg - max. 2MB)</Label>
+                      <label htmlFor="logo-input" className="text-sm font-semibold">
+                        Seleccionar logo (.png, .jpg, .jpeg - max. 2MB)
+                      </label>
                       <Input
                         id="logo-input"
                         type="file"
                         accept="image/png, image/jpeg, image/jpg"
+                        disabled={uploadingLogo}
                         onChange={(e) => {
                           const file = e.target.files?.[0];
                           if (file) setLogoFile(file);
@@ -615,6 +743,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                     </div>
                     {logoFile && (
                       <Button
+                        type="button"
                         onClick={handleUploadLogo}
                         disabled={uploadingLogo}
                         className="w-full gap-2"
@@ -630,7 +759,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Palette className="size-5 text-secondary" />
+                  <Palette aria-hidden="true" className="size-5 text-secondary" />
                   Color de marca
                 </CardTitle>
                 <CardDescription>
@@ -654,13 +783,14 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                       >
                         <div className="flex items-center gap-3">
                           <span
+                            aria-hidden="true"
                             className="size-5 rounded-full border border-black/10"
                             style={{ backgroundColor: themeObj.light.secondary }}
                           />
                           <span className="text-sm text-foreground">{themeObj.name}</span>
                         </div>
                         {active && (
-                          <Check className="size-4 text-secondary shrink-0" />
+                          <Check aria-hidden="true" className="size-4 text-secondary shrink-0" />
                         )}
                       </Button>
                     );
@@ -668,7 +798,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                 </div>
 
                 <div className="rounded-lg border border-info/30 bg-info/10 p-3.5 flex gap-2">
-                  <Sparkles className="size-4 text-info shrink-0 mt-0.5" />
+                  <Sparkles aria-hidden="true" className="size-4 text-info shrink-0 mt-0.5" />
                   <p className="text-xs text-info">
                     <strong>Vista inmediata:</strong> al elegir un color, la pantalla se actualiza al momento.
                   </p>
