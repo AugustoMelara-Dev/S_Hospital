@@ -39,12 +39,19 @@ class InstitutionalReceiptPdfTest extends TestCase
             'La Esperanza',
             'Recibo No.',
             'Serie',
-            'Monto',
-            'Fecha',
-            'El',
-            'Que',
+            'Factura',
+            'Estado',
+            'Fecha recibo',
+            'Paciente / enterante',
+            'Detalle de servicios',
+            'Consulta general',
+            'Subtotal',
+            'ISV 15.00%',
+            'Total',
+            'Pagado',
+            'Saldo',
+            'Monto en letras',
             'Suscribe. CERTIFICA haber enterado en esta oficina la suma de',
-            'Por',
             'Firma del enterante',
             'ORIGINAL',
             'PRIMERA COPIA',
@@ -59,11 +66,115 @@ class InstitutionalReceiptPdfTest extends TestCase
             'user_id',
             'barcode',
             'qr_code',
-            'Estado',
             '<img',
             'fake seal',
         ] as $forbidden) {
             $this->assertStringNotContainsString($forbidden, $html);
+        }
+
+        $this->assertStringContainsString('thead', $html);
+        $this->assertStringContainsString('page-break-inside: avoid', $html);
+    }
+
+    public function test_receipt_html_escapes_patient_services_notes_and_reference_without_raw_snapshot_data(): void
+    {
+        $context = $this->createIssuedReceiptContext();
+        $receipt = $context['receipt'];
+
+        $receipt->forceFill([
+            'payer_name' => '<script>alert("patient")</script>',
+            'concept' => '<img src=x onerror=alert(1)>',
+            'items_snapshot' => [[
+                'service_name' => '<script>alert("service")</script>',
+                'category_name' => '<b>Categoria</b>',
+                'area_name' => 'Caja',
+                'quantity' => '1.00',
+                'unit_price' => '25.00',
+                'unit_price_cents' => 2500,
+                'tax_rate' => '0.00',
+                'tax_amount' => '0.00',
+                'tax_amount_cents' => 0,
+                'line_subtotal' => '25.00',
+                'line_subtotal_cents' => 2500,
+                'line_total' => '25.00',
+                'line_total_cents' => 2500,
+                'notes' => '<script>alert("notes")</script>',
+            ]],
+            'payment_snapshot' => [
+                ...$receipt->payment_snapshot,
+                'selected_payment' => [
+                    'method' => 'transfer',
+                    'amount' => '25.00',
+                    'amount_cents' => 2500,
+                    'reference' => '<script>alert("reference")</script>',
+                    'paid_at' => now()->toIso8601String(),
+                    'cashier_name' => 'Cajera Uno',
+                ],
+            ],
+        ])->save();
+
+        $html = app(InstitutionalReceiptPdfService::class)->htmlForReceipt($receipt->fresh());
+
+        $this->assertStringContainsString('&lt;script&gt;alert(&quot;patient&quot;)&lt;/script&gt;', $html);
+        $this->assertStringContainsString('&lt;script&gt;alert(&quot;service&quot;)&lt;/script&gt;', $html);
+        $this->assertStringContainsString('&lt;script&gt;alert(&quot;notes&quot;)&lt;/script&gt;', $html);
+        $this->assertStringContainsString('&lt;script&gt;alert(&quot;reference&quot;)&lt;/script&gt;', $html);
+        $this->assertStringNotContainsString('<script>', $html);
+        $this->assertStringNotContainsString('items_snapshot', $html);
+        $this->assertStringNotContainsString('payment_snapshot', $html);
+    }
+
+    public function test_receipt_html_supports_many_items_and_all_print_profiles_without_barcode_or_qr(): void
+    {
+        $context = $this->createIssuedReceiptContext();
+        $receipt = $context['receipt'];
+        $items = collect(range(1, 100))
+            ->map(fn (int $index): array => [
+                'service_name' => "Servicio hospitalario extendido {$index}",
+                'category_name' => 'Categoria de prueba',
+                'area_name' => 'Area administrativa',
+                'quantity' => '1.00',
+                'unit_price' => '1.00',
+                'unit_price_cents' => 100,
+                'tax_rate' => '0.00',
+                'tax_amount' => '0.00',
+                'tax_amount_cents' => 0,
+                'line_subtotal' => '1.00',
+                'line_subtotal_cents' => 100,
+                'line_total' => '1.00',
+                'line_total_cents' => 100,
+                'notes' => str_repeat('Descripcion larga ', 6),
+            ])
+            ->all();
+
+        $receipt->forceFill(['items_snapshot' => $items])->save();
+
+        foreach ([
+            ReceiptPrintProfile::CODE_HALF_LETTER => 'half_letter_landscape',
+            ReceiptPrintProfile::CODE_LETTER => 'letter_landscape',
+            ReceiptPrintProfile::CODE_A5 => 'a5_landscape',
+            ReceiptPrintProfile::CODE_THERMAL_80 => 'thermal_80mm',
+            ReceiptPrintProfile::CODE_THERMAL_58 => 'thermal_58mm',
+        ] as $code => $paperKind) {
+            $profile = ReceiptPrintProfile::query()->where('code', $code)->firstOrFail();
+            $html = app(InstitutionalReceiptPdfService::class)->htmlForReceipt($receipt->forceFill([
+                'print_profile_code' => $code,
+                'profile_snapshot' => [
+                    ...$receipt->profile_snapshot,
+                    'code' => $code,
+                    'name' => $profile->name,
+                    'paper_kind' => $paperKind,
+                    'width_mm' => (string) $profile->width_mm,
+                    'height_mm' => (string) $profile->height_mm,
+                    'font_scale' => (string) $profile->font_scale,
+                ],
+            ]));
+
+            $this->assertStringContainsString('Servicio hospitalario extendido 100', $html);
+            $this->assertStringContainsString('thead', $html);
+            $this->assertStringContainsString('page-break-inside: avoid', $html);
+            $this->assertStringNotContainsString('barcode', $html);
+            $this->assertStringNotContainsString('qr_code', $html);
         }
     }
 
