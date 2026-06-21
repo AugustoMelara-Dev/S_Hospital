@@ -6,8 +6,8 @@ import { Info, Wallet } from 'lucide-react';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { parseCents } from '@/lib/moneyCents';
 
 const openSessionSchema = z.object({
@@ -40,7 +40,7 @@ export function OpenSessionForm({ isSubmitting, onSubmit }: OpenSessionFormProps
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Wallet className="h-5 w-5" />
+          <Wallet data-icon aria-hidden="true" />
           Abrir caja
         </CardTitle>
         <CardDescription>
@@ -48,30 +48,32 @@ export function OpenSessionForm({ isSubmitting, onSubmit }: OpenSessionFormProps
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="opening_amount">Monto inicial (L.) *</Label>
-            <Input
-              id="opening_amount"
-              type="text"
-              inputMode="decimal"
-              placeholder="0.00"
-              className="text-lg"
-              aria-invalid={errors.opening_amount ? 'true' : 'false'}
-              aria-describedby={errors.opening_amount ? 'opening-amount-error' : undefined}
-              {...openingAmountRegistration}
-              ref={(element) => {
-                openingAmountRegistration.ref(element);
-                openingAmountRef.current = element;
-              }}
-            />
-            {errors.opening_amount && (
-              <p id="opening-amount-error" className="text-sm text-destructive" role="alert">{errors.opening_amount.message}</p>
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" aria-busy={isSubmitting}>
+          <FormField
+            id="opening_amount"
+            label="Monto inicial (L.)"
+            required
+            error={errors.opening_amount?.message}
+          >
+            {({ id, describedBy, invalid }) => (
+              <Input
+                id={id}
+                type="text"
+                inputMode="decimal"
+                placeholder="0.00"
+                className="font-mono text-lg tabular-nums"
+                aria-invalid={invalid}
+                aria-describedby={describedBy}
+                {...openingAmountRegistration}
+                ref={(element) => {
+                  openingAmountRegistration.ref(element);
+                  openingAmountRef.current = element;
+                }}
+              />
             )}
-          </div>
+          </FormField>
 
-          <Alert variant="default">
-            <Info className="h-4 w-4" />
+          <Alert variant="default" icon={<Info data-icon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />}>
             <p>
               El monto inicial debe registrar el efectivo disponible en la caja al abrir.
             </p>

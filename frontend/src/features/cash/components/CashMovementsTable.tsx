@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/data-table';
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { formatLempirasUI } from '@/lib/money';
 import { cn } from '@/lib/utils';
@@ -27,43 +27,47 @@ export function CashMovementsTable({ movements }: CashMovementsTableProps) {
         <CardTitle>Movimientos de caja</CardTitle>
       </CardHeader>
       <CardContent>
-        <Table>
+        <Table containerLabel="Movimientos de caja" className="min-w-[640px]">
+          <TableCaption>
+            Movimientos registrados para la sesión de caja actual.
+          </TableCaption>
           <TableHeader>
             <TableRow>
               <TableHead>Hora</TableHead>
               <TableHead>Tipo</TableHead>
               <TableHead>Método</TableHead>
-              <TableHead className="text-right">Monto</TableHead>
+              <TableHead data-numeric="true">Monto</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {movements.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={4} className="py-8 text-center text-muted-foreground">
                   No hay movimientos en esta sesión
                 </TableCell>
               </TableRow>
             ) : (
-              movements.map((m) => {
-                const direction = movementDirection(m.type);
+              movements.map((movement) => {
+                const direction = movementDirection(movement.type);
                 const sign = direction === 'positive' ? '+' : direction === 'negative' ? '-' : '';
 
                 return (
-                  <TableRow key={m.id}>
-                    <TableCell>{formatMovementTime(m.occurred_at)}</TableCell>
+                  <TableRow key={movement.id}>
+                    <TableCell className="whitespace-nowrap">{formatMovementTime(movement.occurred_at)}</TableCell>
                     <TableCell>
-                      <Badge variant="outline">{m.type}</Badge>
+                      <Badge variant="outline">{movement.type}</Badge>
                     </TableCell>
-                    <TableCell>{m.method || '-'}</TableCell>
+                    <TableCell>{movement.method || '-'}</TableCell>
                     <TableCell
+                      data-numeric="true"
                       className={cn(
-                        'text-right font-medium',
+                        'font-medium',
                         direction === 'positive' && 'text-success-foreground',
                         direction === 'negative' && 'text-destructive',
                         direction === 'neutral' && 'text-muted-foreground',
                       )}
                     >
-                      {sign ? `${sign} ` : ''}{formatLempirasUI(m.amount)}
+                      {sign ? `${sign} ` : ''}{formatLempirasUI(movement.amount)}
                     </TableCell>
                   </TableRow>
                 );
