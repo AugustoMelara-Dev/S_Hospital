@@ -3431,6 +3431,24 @@ Decision: `npm run e2e` y `npm run test:e2e` ejecutan el mismo runner controlado
 
 Alcance: SQLite se usa solo para el gate automatizado E2E local y no cambia la arquitectura productiva LAN, que sigue siendo MySQL/MariaDB. El comando se niega a preparar datos si `APP_ENV=production`.
 
+## 2026-06-20 - Gate E2E release cubre RBAC configurable por administradora
+
+Contexto: los tests unitarios y feature ya validaban roles/permisos, pero faltaba una prueba E2E real del flujo administrativo: crear usuario desde `/admin/users`, definir modulos exactos, forzar cambio de clave y comprobar navegacion permitida/prohibida con ese usuario.
+
+Decision: se agrega `frontend/e2e/release-rbac.spec.ts` al `playwright.release.config.ts`. El release gate corre con `workers: 1` porque comparte una SQLite efimera preparada por el runner, y valida en serie:
+
+- Flujo caja/facturacion/recibo/reporte existente.
+- Administradora crea un usuario con acceso exacto solo a `catalog.view`.
+- El usuario nuevo cambia su clave obligatoria.
+- La navegacion muestra Catalogo y oculta Nueva factura, Reportes y Usuarios.
+- La ruta directa `/reports` muestra el estado de acceso denegado por permisos.
+
+Validacion:
+
+- `cd frontend; npm.cmd run e2e` -> 2 specs Playwright passed.
+- `UserManagementTest` ahora valida que `user.created` audite roles, permisos directos, permisos efectivos y no guarde contrasenas en `new_values`/`old_values`.
+- `scripts/quality_gate_windows.ps1 -CriticalOnly` incluye `UserManagementTest` junto a `RoleManagementTest`.
+
 ## 2026-06-15 - Recibo institucional formal usa entidad propia y PDF por perfil
 
 Contexto: el hospital indico que el ticket termico 80mm no es el formato principal. El recibo operativo debe parecerse al talonario institucional fisico, operar en impresora normal, soportar media carta/A5/carta/personalizado y conservar trazabilidad fiscal sin hardcodear textos ni rangos.
@@ -3626,3 +3644,33 @@ Decision: `scripts\refresh_lan_ip.ps1` acepta `-EnvFile` y `-ComposeProjectName`
 Motivo: produccion offline puede usar env fuera del repositorio y proyecto Compose nombrado. El procedimiento de recuperacion de IP debe reparar la configuracion que realmente consume el stack final, no solo `.env`/`backend\.env` del workspace.
 
 Validacion: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\test_lan_deploy_hardening.ps1`, `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\test_backup_task_envfile_hardening.ps1`, `scripts\refresh_lan_ip.ps1 -ServerIp 192.168.1.10 -AppPort 8081 -EnvFile C:\tmp\s_hospital_offlinetest.env -ComposeProjectName shospital_offlinetest -WhatIf` y preflight contra `http://192.168.1.10:8081`.
+
+# 2026-06-20 - Release E2E usa SQLite dorada y reporte consolidado
+
+Contexto: los E2E de release no deben migrar desde cero en cada corrida. Ademas, despues de agregar el spec RBAC configurable, `frontend\test-results\release-e2e-report.json` solo mostraba el flujo cashier aunque Playwright ejecutaba dos specs.
+
+Decision: `frontend\scripts\run-release-e2e.mjs` calcula hash de migraciones/seeders, reutiliza `e2e-golden-<hash>.sqlite`, clona una base disposable `e2e-release-<hash>-<pid>.sqlite` por corrida y consolida `release-e2e-playwright.json` dentro del reporte humano. `scripts\test_release_e2e_golden_sqlite_safety.ps1` valida este contrato y `scripts\quality_gate_windows.ps1` lo ejecuta como paso explicito. `scripts\assert_offline_release_clean.ps1` exige que el paquete offline incluya el test porque el quality gate del release lo llama.
+
+Motivo: mantener E2E rapidos, repetibles y no destructivos, y evitar evidencia parcial donde el resumen humano oculte specs criticos como RBAC por modulo.
+
+Validacion: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\test_release_e2e_golden_sqlite_safety.ps1`, `node --check frontend\scripts\run-release-e2e.mjs`, `npm.cmd run e2e`, `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\quality_gate_windows.ps1 -CriticalOnly -SkipBackend -SkipFrontend`, `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\validate_installer_safety.ps1 -Root C:\Projects\S_Hospital` y `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\assert_offline_release_clean.ps1`.
+
+# 2026-06-20 - Handoff distingue status no elevado de prueba SYSTEM elevada
+
+Contexto: `install_backup_tasks_windows.ps1 -Status` puede mostrar `SistemaCajaHospitalaria-BackupWorker: no instalada` desde una PowerShell no elevada aunque el proceso Administrador haya creado las tareas como `SYSTEM`. El preflight ya aceptaba `qa\WINDOWS_BACKUP_TASK_ELEVATED_INSTALL.log`, pero el handoff mezclaba ambas evidencias y podia leerse como contradiccion.
+
+Decision: `final_production_handoff.ps1` agrega `Get-ElevatedBackupTaskProofSummary` y una seccion `Elevated backup task proof` en el reporte. Esa seccion resume el ultimo intento elevado, exige `Scheduled tasks registered successfully`, ambas tareas `state=Ready` y `user=SYSTEM`, y advierte que el status no elevado puede no ver tareas SYSTEM.
+
+Motivo: hacer defendible la entrega offline en Windows: el operador ve claramente que el status no elevado es diagnostico local, mientras la evidencia elevada es la prueba aceptada por el preflight.
+
+Validacion: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\test_backup_task_envfile_hardening.ps1`, `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\quality_gate_windows.ps1 -CriticalOnly -SkipBackend -SkipFrontend`, `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\assert_offline_release_clean.ps1` y `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps1 -BaseUrl http://192.168.1.2:8081 -EnvFile C:\tmp\s_hospital_offlinetest.env -ComposeProjectName shospital_offlinetest`.
+
+# 2026-06-20 - Evidencia final debe coincidir con la BaseUrl vigente
+
+Contexto: habia evidencias finales completas (`FINAL_CONCURRENCY_PROOF.md`, `FINAL_CONCURRENCY_UNDER_LOAD_PROOF_LAN_8081.md`, `FINAL_REAL_SMOKE_LAN_8081.md`) tomadas contra IPs anteriores o localhost. El preflight las aceptaba por formato, aunque la entrega actual se valida contra `http://192.168.1.2:8081`.
+
+Decision: `production_readiness_preflight.ps1` agrega `Test-ProofMatchesBaseUrl` y exige coincidencia exacta de `Server LAN URL`/`URL LAN` con la BaseUrl final. `final_production_handoff.ps1` usa `Test-ProofUrlMatchesBaseUrl` para que el resumen inicial marque esas evidencias como incompletas si pertenecen a otra IP.
+
+Motivo: una prueba real contra una IP anterior no prueba el servidor final actual. Produccion local puede cambiar por DHCP o refresh LAN; por eso la evidencia final debe estar ligada a la URL vigente.
+
+Validacion: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\test_backup_task_envfile_hardening.ps1`, `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 -BaseUrl http://192.168.1.2:8081 -EnvFile C:\tmp\s_hospital_offlinetest.env -ComposeProjectName shospital_offlinetest`, `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\validate_installer_safety.ps1 -Root C:\Projects\S_Hospital`, `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\assert_offline_release_clean.ps1` y `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps1 -BaseUrl http://192.168.1.2:8081 -EnvFile C:\tmp\s_hospital_offlinetest.env -ComposeProjectName shospital_offlinetest`.

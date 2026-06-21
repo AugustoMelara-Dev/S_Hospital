@@ -6,7 +6,7 @@ Decision actual: `LAN_CLIENT_VALIDATED_FOR_192_168_1_7_ONLY`
 
 Este archivo documenta evidencia real tomada desde una segunda computadora fisica en la LAN. No usa `localhost`, mocks ni Vite.
 
-Nota de vigencia 2026-06-19: esta evidencia es historica contra `http://192.168.1.7:8081`. No cierra el preflight final actual, porque la BaseUrl final vigente es `http://192.168.1.37:8081`; debe repetirse desde la segunda PC contra esa IP final.
+Nota de vigencia 2026-06-19: esta evidencia es historica contra `http://192.168.1.7:8081`. No cierra el preflight final actual, porque la BaseUrl final vigente es `http://192.168.1.2:8081`; debe repetirse desde la segunda PC contra esa IP final.
 
 ## Environment
 
@@ -18,7 +18,7 @@ Nota de vigencia 2026-06-19: esta evidencia es historica contra `http://192.168.
 - Client browser/version: Microsoft Edge en Windows, evidencia visual adjunta
 - User/role used: admin.hospital / Administrador Hospital
 - Evidence/capture reference: qa/evidence/lan-client-2026-06-17
-- Final conclusion: Segunda PC validada por IP LAN con sesion estable, caja abierta, factura pagada, recibo, historial, reportes, configuracion, usuarios y respaldo manual completado para `192.168.1.7:8081`. Requiere repeticion contra `192.168.1.37:8081` para cerrar entrega final.
+- Final conclusion: Segunda PC validada por IP LAN con sesion estable, caja abierta, factura pagada, recibo, historial, reportes, configuracion, usuarios y respaldo manual completado para `192.168.1.7:8081`. Requiere repeticion contra `192.168.1.2:8081` para cerrar entrega final.
 
 ## Required checks
 
