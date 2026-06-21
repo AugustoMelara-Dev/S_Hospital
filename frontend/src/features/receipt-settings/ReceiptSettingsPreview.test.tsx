@@ -61,10 +61,12 @@ describe('ReceiptSettingsPreview', () => {
     expect(screen.getByText('Hospital San Isidro')).toBeInTheDocument();
     expect(screen.getByText('PRUEBA - SIN VALIDEZ')).toBeInTheDocument();
     expect(screen.getByText(/Recibo No./)).toBeInTheDocument();
-    expect(screen.getByText('El')).toBeInTheDocument();
-    expect(screen.getByText('Que')).toBeInTheDocument();
+    expect(screen.getByText('Paciente')).toBeInTheDocument();
+    expect(screen.getByText('Monto en letras')).toBeInTheDocument();
     expect(document.body.textContent).toContain('Texto legal VEINTICINCO LEMPIRAS CON 00/100 CENTAVOS');
-    expect(screen.getByText('Por')).toBeInTheDocument();
+    expect(screen.getByRole('table', { name: /detalle sintético/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /descripción/i })).toBeInTheDocument();
+    expect(screen.getByText('Servicios hospitalarios de prueba')).toBeInTheDocument();
     expect(document.body.textContent).toContain('ORIGINAL');
     expect(document.body.textContent).not.toMatch(/CAI|barcode|qr_code|user_id|Estado/);
   });

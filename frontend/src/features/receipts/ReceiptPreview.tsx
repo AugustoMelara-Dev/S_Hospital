@@ -116,8 +116,8 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
           data-receipt-print-root
         >
           <header className="receipt-header">
-            <span>{receipt.institutional?.government_line ?? 'Gobierno de Honduras'}</span>
-            <span>{receipt.institutional?.secretariat_line ?? 'Secretaría de Salud Pública'}</span>
+            {receipt.institutional?.government_line ? <span>{receipt.institutional.government_line}</span> : null}
+            {receipt.institutional?.secretariat_line ? <span>{receipt.institutional.secretariat_line}</span> : null}
             <strong className="hospital-name">{receipt.hospital.name}</strong>
             {location ? <span>{location}</span> : null}
             {receipt.hospital.rtn ? <span>RTN: {receipt.hospital.rtn}</span> : null}
@@ -131,46 +131,83 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
             <span>{receipt.institutional?.copy_label ?? 'Original'}</span>
           </div>
 
-          <div className="receipt-meta">
-            <Row label="Serie / No." value={receipt.invoice.invoice_number} />
-            <Row label="Fecha" value={formatDate(receipt.invoice.issued_at)} />
-            <Row label="Paciente / enterante" value={receipt.invoice.patient_name} />
-            {receipt.invoice.cashier ? <Row label="Cajero" value={receipt.invoice.cashier} /> : null}
-            <Row label="Estado" value={statusLabel(receipt.invoice.status)} />
-            <Row label="CAI" value={receipt.fiscal.cai ?? 'Configuración pendiente'} />
-            <Row label="Rango" value={receipt.fiscal.authorized_range ?? 'Configuración pendiente'} />
-            <Row label="Vence" value={receipt.fiscal.valid_until ? formatDate(receipt.fiscal.valid_until) : 'Configuración pendiente'} />
-          </div>
+          <table className="receipt-meta-table">
+            <tbody>
+              <tr>
+                <th scope="row">Serie / No.</th>
+                <td>{receipt.invoice.invoice_number}</td>
+                <th scope="row">Fecha</th>
+                <td>{formatDate(receipt.invoice.issued_at)}</td>
+              </tr>
+              <tr>
+                <th scope="row">Paciente / enterante</th>
+                <td>{receipt.invoice.patient_name}</td>
+                <th scope="row">Estado</th>
+                <td>{statusLabel(receipt.invoice.status)}</td>
+              </tr>
+              {receipt.invoice.cashier ? (
+                <tr>
+                  <th scope="row">Cajero</th>
+                  <td colSpan={3}>{receipt.invoice.cashier}</td>
+                </tr>
+              ) : null}
+              <tr>
+                <th scope="row">CAI</th>
+                <td>{receipt.fiscal.cai ?? 'Configuración pendiente'}</td>
+                <th scope="row">Vence</th>
+                <td>{receipt.fiscal.valid_until ? formatDate(receipt.fiscal.valid_until) : 'Configuración pendiente'}</td>
+              </tr>
+              <tr>
+                <th scope="row">Rango</th>
+                <td colSpan={3}>{receipt.fiscal.authorized_range ?? 'Configuración pendiente'}</td>
+              </tr>
+            </tbody>
+          </table>
 
           <div className="receipt-rule" aria-hidden="true" />
 
-          <div className="receipt-table-head">
-            <span>Concepto / servicio</span>
-            <span>Valor</span>
-          </div>
-
-          <div className="receipt-items">
-            {receipt.items.map((item, index) => (
-              <Row key={index}>
-                <ItemName item={item} />
-                <ItemPrice item={item} />
-              </Row>
-            ))}
-          </div>
+          <table className="receipt-items-table">
+            <caption>Detalle de servicios</caption>
+            <thead>
+              <tr>
+                <th scope="col">Concepto / servicio</th>
+                <th scope="col" data-numeric="true">Cant.</th>
+                <th scope="col" data-numeric="true">Precio</th>
+                <th scope="col" data-numeric="true">{taxLabel}</th>
+                <th scope="col" data-numeric="true">Importe</th>
+              </tr>
+            </thead>
+            <tbody>
+              {receipt.items.map((item, index) => (
+                <tr key={index}>
+                  <td><ItemName item={item} /></td>
+                  <td data-numeric="true">{item.quantity}</td>
+                  <td data-numeric="true">{moneyLabel(item.unit_price)}</td>
+                  <td data-numeric="true">{moneyLabel(item.tax_amount)}</td>
+                  <td data-numeric="true"><ItemPrice item={item} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
 
           <div className="receipt-rule" aria-hidden="true" />
 
-          <div className="receipt-totals">
-            <Row label="Subtotal" value={moneyLabel(receipt.invoice.subtotal)} />
-            <Row label={taxLabel} value={moneyLabel(receipt.invoice.tax_amount)} />
-            <Row label="TOTAL" value={moneyLabel(receipt.invoice.total)} strong />
-            {(parseCents(receipt.invoice.paid_amount) ?? 0) > 0 ? (
-              <Row label="Pagado" value={moneyLabel(receipt.invoice.paid_amount)} />
-            ) : null}
-            {(parseCents(receipt.invoice.balance_due) ?? 0) > 0 ? (
-              <Row label="Saldo" value={moneyLabel(receipt.invoice.balance_due)} />
-            ) : null}
-          </div>
+          <table className="receipt-totals-table">
+            <tbody>
+              <ReceiptTotalRow label="Subtotal" value={moneyLabel(receipt.invoice.subtotal)} />
+              {(parseCents(receipt.invoice.discount_amount) ?? 0) > 0 ? (
+                <ReceiptTotalRow label="Descuento" value={moneyLabel(receipt.invoice.discount_amount)} />
+              ) : null}
+              <ReceiptTotalRow label={taxLabel} value={moneyLabel(receipt.invoice.tax_amount)} />
+              <ReceiptTotalRow label="TOTAL" value={moneyLabel(receipt.invoice.total)} strong />
+              {(parseCents(receipt.invoice.paid_amount) ?? 0) > 0 ? (
+                <ReceiptTotalRow label="Pagado" value={moneyLabel(receipt.invoice.paid_amount)} />
+              ) : null}
+              {(parseCents(receipt.invoice.balance_due) ?? 0) > 0 ? (
+                <ReceiptTotalRow label="Saldo" value={moneyLabel(receipt.invoice.balance_due)} />
+              ) : null}
+            </tbody>
+          </table>
 
           {receipt.payments.length > 0 ? (
             <>
@@ -241,6 +278,15 @@ function ItemName({ item }: { item: ReceiptData['items'][number] }) {
 
 function ItemPrice({ item }: { item: ReceiptData['items'][number] }) {
   return <strong className="item-price">{moneyLabel(item.line_total)}</strong>;
+}
+
+function ReceiptTotalRow({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
+  return (
+    <tr className={strong ? 'strong' : undefined}>
+      <th scope="row">{label}</th>
+      <td data-numeric="true">{value}</td>
+    </tr>
+  );
 }
 
 function moneyLabel(value: string | number | null | undefined): string {
