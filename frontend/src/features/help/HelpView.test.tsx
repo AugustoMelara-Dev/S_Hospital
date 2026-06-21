@@ -27,6 +27,7 @@ describe('HelpView', () => {
     render(<HelpView />);
 
     expect(screen.getByRole('heading', { name: /ayuda institucional/i })).toBeInTheDocument();
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
     expect(screen.getByRole('heading', { name: /abrir el sistema/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /iniciar sesión/i })).toBeInTheDocument();
     expect(screen.getByText(/use el acceso institucional del escritorio/i)).toBeInTheDocument();
@@ -64,11 +65,16 @@ describe('HelpView', () => {
     expect(screen.getAllByText(/no use la base de producción/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/evidencia local para soporte/i)).toBeInTheDocument();
     expect(screen.getByText(/incidentes guardados/i)).toBeInTheDocument();
+    const evidenceButton = screen.getByRole('button', { name: /ver evidencia/i });
+    expect(evidenceButton).toHaveAttribute('aria-expanded', 'false');
+    expect(evidenceButton).toHaveAttribute('aria-controls', 'support-evidence-details');
     fireEvent.click(screen.getByRole('button', { name: /preparar resumen/i }));
     expect((await screen.findByLabelText(/resumen seguro para soporte/i) as HTMLTextAreaElement).value).toContain('Resumen seguro para soporte');
     await waitFor(() => expect(writeText).toHaveBeenCalledWith(expect.stringContaining('No se pudo conectar con el servidor LAN.')));
-    expect(screen.getByText(/resumen copiado/i)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /ver evidencia/i }));
+    expect(screen.getByRole('status')).toHaveTextContent(/resumen copiado/i);
+    fireEvent.click(evidenceButton);
+    expect(evidenceButton).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getAllByText(/no se pudo conectar con el servidor lan/i).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/system\.status\.view|backups\.view|\/admin|\/settings/i)).not.toBeInTheDocument();
   });
 });

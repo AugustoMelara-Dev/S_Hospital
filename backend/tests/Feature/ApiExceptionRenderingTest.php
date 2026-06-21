@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Validation\ValidationException;
 use RuntimeException;
 use Tests\TestCase;
 
@@ -32,5 +33,21 @@ class ApiExceptionRenderingTest extends TestCase
         $this->assertStringContainsString('[redacted]', $json);
         $this->assertStringContainsString('[db-user-host]', $json);
         $this->assertStringContainsString('[ruta-local]', $json);
+    }
+
+    public function test_api_validation_exception_is_not_masked_as_server_error_when_debug_is_disabled(): void
+    {
+        Config::set('app.debug', false);
+
+        Route::post('/api/_test/validation-exception', function (): void {
+            throw ValidationException::withMessages([
+                'cash_session' => 'El cajero ya tiene una caja abierta.',
+            ]);
+        });
+
+        $this->postJson('/api/_test/validation-exception')
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('cash_session')
+            ->assertJsonMissingPath('code');
     }
 }

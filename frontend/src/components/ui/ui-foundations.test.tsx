@@ -11,6 +11,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from './alert-dialog';
+import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage } from './breadcrumb';
 import { Button, buttonSizes, buttonVariants } from './button';
 import {
   Card,
@@ -26,7 +27,10 @@ import { Dialog } from './dialog';
 import { Input } from './input';
 import { Label } from './label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select';
+import { Separator } from './separator';
 import { ErrorState, LoadingState, Skeleton } from './states';
+import { ScrollArea } from './scroll-area';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './tooltip';
 
 describe('UI foundations compatibility', () => {
   it('keeps Button variants, sizes, asChild and disabled behavior', () => {
@@ -158,5 +162,32 @@ describe('UI foundations compatibility', () => {
 
     rerender(<Skeleton data-testid="skeleton" aria-hidden={false} />);
     expect(screen.getByTestId('skeleton')).toHaveAttribute('aria-hidden', 'false');
+  });
+
+  it('keeps shell primitives shadcn-compatible and className-friendly', () => {
+    render(
+      <TooltipProvider>
+        <Breadcrumb className="custom-breadcrumb">
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbPage>Actual</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+        <Separator className="custom-separator" />
+        <ScrollArea className="custom-scroll-area">
+          <p>Contenido desplazable</p>
+        </ScrollArea>
+        <Tooltip>
+          <TooltipTrigger>Estado</TooltipTrigger>
+          <TooltipContent className="custom-tooltip">Servidor local disponible</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>,
+    );
+
+    expect(screen.getByRole('navigation', { name: /ruta actual/i })).toHaveClass('custom-breadcrumb');
+    expect(screen.getByText('Actual')).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByText('Contenido desplazable').closest('[data-slot="scroll-area"]')).toHaveClass('custom-scroll-area');
+    expect(document.querySelector('[data-slot="separator"]')).toHaveClass('custom-separator');
   });
 });

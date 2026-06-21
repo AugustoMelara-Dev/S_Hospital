@@ -1,5 +1,5 @@
-import { Card, CardContent } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
+import { Banknote, ClipboardCheck, HandCoins, ReceiptText, Scale } from 'lucide-react';
+import { MetricCard } from '@/components/ui/metric-card';
 import { finiteNumber, formatLempirasUI } from '@/lib/money';
 import { cn } from '@/lib/utils';
 import type { CashSession } from '@/lib/api';
@@ -23,67 +23,54 @@ export function SessionSummary({
   const hasCountedAmount = closingAmount !== null;
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
-      <Card>
-        <CardContent className="pt-6">
-          <Label className="text-muted-foreground">Monto Apertura</Label>
-          <p className="text-2xl font-bold">{formatLempirasUI(openingAmount)}</p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="pt-6">
-          <Label className="text-muted-foreground">Efectivo esperado</Label>
-          <p className="text-2xl font-bold">{formatLempirasUI(expectedAmount)}</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Apertura + pagos en efectivo. Tarjeta y transferencia no aumentan este monto.
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="pt-6">
-          <Label className="text-muted-foreground">Cobros en efectivo</Label>
-          <p className="text-2xl font-bold">{formatLempirasUI(cashPayments)}</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Solo pagos posteados con método efectivo.
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card className={cn(hasCountedAmount && difference !== 0 ? 'border-warning/35 bg-warning/10' : '')}>
-        <CardContent className="pt-6">
-          <Label className="text-muted-foreground">Contado y diferencia</Label>
-          <p className="text-2xl font-bold">
-            {hasCountedAmount ? formatLempirasUI(closingAmount) : 'Pendiente'}
-          </p>
-          <p
-            className={cn(
-              'mt-1 text-sm font-semibold',
-              difference && difference > 0 ? 'text-success-foreground' : difference && difference < 0 ? 'text-destructive' : 'text-muted-foreground',
-            )}
-          >
-            {!hasCountedAmount
-              ? 'Ingrese monto contado para calcular diferencia.'
-              : difference === null || difference === 0
-              ? 'L. 0.00'
-              : formatSignedLempiras(difference)}
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card className={cn(pendingAmount > 0 ? 'border-warning/35 bg-warning/10' : '')}>
-        <CardContent className="pt-6">
-          <Label className="text-muted-foreground">Saldo pendiente</Label>
-          <p className="text-2xl font-bold">{formatLempirasUI(pendingAmount)}</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {pendingCount === 0
-              ? 'Sin facturas pendientes en esta caja.'
-              : `${pendingCount} factura(s) emitidas o parciales.`}
-          </p>
-        </CardContent>
-      </Card>
-    </div>
+    <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5" aria-label="Resumen de caja actual">
+      <MetricCard
+        icon={<Banknote />}
+        label="Monto Apertura"
+        value={formatLempirasUI(openingAmount)}
+        helper="Efectivo inicial registrado"
+      />
+      <MetricCard
+        icon={<Scale />}
+        label="Efectivo esperado"
+        value={formatLempirasUI(expectedAmount)}
+        helper="Apertura + pagos en efectivo"
+        variant="info"
+      />
+      <MetricCard
+        icon={<HandCoins />}
+        label="Cobros en efectivo"
+        value={formatLempirasUI(cashPayments)}
+        helper="Solo pagos posteados con método efectivo"
+        variant="success"
+      />
+      <MetricCard
+        className={cn(hasCountedAmount && difference !== 0 ? 'border-warning/35 bg-warning/10' : '')}
+        icon={<ClipboardCheck />}
+        label="Contado y diferencia"
+        value={hasCountedAmount ? formatLempirasUI(closingAmount) : 'Pendiente'}
+        helper={!hasCountedAmount
+          ? 'Ingrese monto contado para calcular diferencia.'
+          : difference === null || difference === 0
+            ? 'L. 0.00'
+            : formatSignedLempiras(difference)}
+        trend={hasCountedAmount && difference !== null && difference !== 0 ? {
+          label: difference > 0 ? 'Sobrante registrado' : 'Faltante registrado',
+          tone: difference > 0 ? 'positive' : 'negative',
+        } : undefined}
+        variant={hasCountedAmount && difference !== 0 ? 'warning' : 'neutral'}
+      />
+      <MetricCard
+        className={cn(pendingAmount > 0 ? 'border-warning/35 bg-warning/10' : '')}
+        icon={<ReceiptText />}
+        label="Saldo pendiente"
+        value={formatLempirasUI(pendingAmount)}
+        helper={pendingCount === 0
+          ? 'Sin facturas pendientes en esta caja.'
+          : `${pendingCount} factura(s) emitidas o parciales.`}
+        variant={pendingAmount > 0 ? 'warning' : 'neutral'}
+      />
+    </section>
   );
 }
 

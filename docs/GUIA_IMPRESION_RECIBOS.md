@@ -34,4 +34,26 @@ La impresora fisica, papel final, margenes y calidad de impresion deben validars
 6. Tomar foto clara del papel impreso o levantar acta local con responsable, fecha, impresora, papel y resultado.
 7. Completar `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` con resultado real para media carta/carta/A5 y referencia de la evidencia.
 
+## Generar acta de evidencia
+
+Despues de imprimir en papel fisico real, el tecnico puede generar el archivo de evidencia con:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File scripts\register_physical_receipt_print_proof.ps1 `
+  -PrimaryPaperSize "media carta" `
+  -ResponsiblePerson "NOMBRE_RESPONSABLE" `
+  -PrinterBrandModel "MARCA_MODELO_IMPRESORA_REAL" `
+  -PrinterDriver "NOMBRE_DRIVER_WINDOWS" `
+  -ConnectionType "USB/LAN/Compartida" `
+  -BrowserVersion "Microsoft Edge VERSION" `
+  -InvoiceUsed "FACTURA/RECIBO USADO" `
+  -EvidenceReference "qa/evidence/printer-final/foto-media-carta.jpg" `
+  -ReprintEvidence "Reimpresion desde historial con motivo auditado y misma informacion historica" `
+  -MarginsEvidence "Escala 100%, margenes minimos, contenido centrado y legible" `
+  -HeadersFootersEvidence "Encabezados y pies del navegador desactivados" `
+  -HistoricalSnapshotEvidence "Servicios, paciente, monto y numero coinciden con la factura historica"
+```
+
+El script rechaza impresoras virtuales como PDF/OneNote/XPS. Si el hospital usa carta o A5 como papel final, cambie `-PrimaryPaperSize` a `"carta"` o `"A5"`.
+
 Sin papel fisico validado, el estado correcto es `PDF_RECEIPT_VALIDATED_PHYSICAL_PRINT_PENDING`, no `PRODUCTION_READY`.

@@ -26,6 +26,11 @@ class OpenCashSessionAction
     {
         try {
             return DB::transaction(function () use ($payload, $user, $request): CashRegisterSession {
+                User::query()
+                    ->whereKey($user->id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
                 $alreadyOpen = CashRegisterSession::query()
                     ->where('user_id', $user->id)
                     ->where('status', CashRegisterSession::STATUS_OPEN)
@@ -101,12 +106,16 @@ class OpenCashSessionAction
         $sqlState = (string) ($exception->errorInfo[0] ?? '');
         $driverCode = (string) ($exception->errorInfo[1] ?? '');
 
-        if ($sqlState === '23000' || $driverCode === '1062') {
+        if (in_array($driverCode, ['1062', '1205', '1213'], true)) {
+            return true;
+        }
+
+        if ($sqlState === '23000') {
             return str_contains($message, 'cash_register_sessions')
                 || str_contains($message, 'open_user_id')
                 || str_contains($message, 'Duplicate entry');
         }
 
-        return in_array($driverCode, ['1205', '1213'], true);
+        return false;
     }
 }

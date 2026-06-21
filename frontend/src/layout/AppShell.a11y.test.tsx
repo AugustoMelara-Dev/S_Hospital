@@ -55,13 +55,15 @@ const adminUser = {
     'reports.view',
     'backups.view',
     'settings.fiscal.view',
+    'receipt_settings.view',
+    'users.view',
   ],
   must_change_password: false,
 };
 
 function renderShell() {
   return render(
-    <MemoryRouter initialEntries={['/dashboard']}>
+    <MemoryRouter initialEntries={['/settings/institutional-receipts']}>
       <AppShell
         cashSession={null}
         onLogout={vi.fn()}
@@ -99,11 +101,19 @@ describe('AppShell accessibility', () => {
     expect(within(navigation).getByRole('link', { name: /caja/i })).toBeInTheDocument();
   });
 
+  it('announces the current breadcrumb semantically', () => {
+    renderShell();
+
+    const breadcrumbs = screen.getByRole('navigation', { name: /ruta actual/i });
+    expect(within(breadcrumbs).getByText(/recibos institucionales/i)).toHaveAttribute('aria-current', 'page');
+    expect(within(breadcrumbs).getByRole('link', { name: /inicio/i })).toHaveAttribute('href', '/dashboard');
+  });
+
   it('keeps operational status available to assistive technologies', () => {
     renderShell();
 
     expect(screen.getByRole('status')).toHaveTextContent('Servidor local disponible');
+    expect(screen.getByLabelText(/red local disponible/i)).toBeInTheDocument();
   });
 });
-
 

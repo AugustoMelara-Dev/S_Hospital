@@ -37,6 +37,97 @@ describe('BackupsView', () => {
     vi.restoreAllMocks();
   });
 
+  it('renders the backups heading and keeps the existing guidance without restore or delete actions', async () => {
+    render(<BackupsView user={adminUser} onStatus={() => undefined} />);
+
+    expect(await screen.findByRole('heading', { level: 1, name: /respaldos/i })).toBeInTheDocument();
+    expect(screen.getByText(/respaldos del hospital/i)).toBeInTheDocument();
+    expect(screen.getByText(/no hay restauracion directa aqui/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /restaurar/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /eliminar|borrar/i })).not.toBeInTheDocument();
+  });
+
+  it('renders an accessible loading state while backups are loading', async () => {
+    vi.mocked(apiClient.getBackups).mockReturnValue(new Promise<never>(() => undefined));
+
+    render(<BackupsView user={adminUser} onStatus={() => undefined} />);
+
+    const status = await screen.findByRole('status');
+    expect(status).toHaveTextContent(/cargando respaldos locales/i);
+  });
+
+  it('renders the table with caption, numeric size column and text status descriptions', async () => {
+    vi.mocked(apiClient.getBackups).mockResolvedValue({
+      data: [
+        backupFixture({ id: 1, status: 'pending', filename: 'hospital-backup-pending.sql.enc', checksum_sha256: null, completed_at: null }),
+        backupFixture({ id: 2, status: 'success', filename: 'hospital-backup-success.sql.enc' }),
+        backupFixture({ id: 3, status: 'failed', filename: 'hospital-backup-failed.sql.enc', error_message: 'SQLSTATE secret path' }),
+      ],
+      meta: { current_page: 1, per_page: 15, total: 3 },
+    });
+
+    render(<BackupsView user={adminUser} onStatus={() => undefined} />);
+
+    expect(await screen.findByRole('table', { name: /historial de respaldos locales/i })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: /historial de respaldos locales/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /tamaño/i })).toHaveAttribute('data-numeric', 'true');
+    expect(screen.getAllByRole('cell').some((cell) => cell.getAttribute('data-numeric') === 'true')).toBe(true);
+    expect(screen.getByText(/pendiente del worker de respaldos/i)).toBeInTheDocument();
+    expect(screen.getByText(/archivo creado con huella sha256/i)).toBeInTheDocument();
+    expect(screen.getByText(/no se pudo completar\. revise con soporte/i)).toBeInTheDocument();
+    expect(screen.queryByText(/sqlstate|secret|path/i)).not.toBeInTheDocument();
+  });
+
+  it('renders a sanitized error and retries without exposing local secrets', async () => {
+    const getBackups = vi.mocked(apiClient.getBackups);
+    getBackups
+      .mockRejectedValueOnce(new Error('DB_PASSWORD=secret C:\\Users\\admin\\hospital\\.env'))
+      .mockResolvedValueOnce({
+        data: [backupFixture()],
+        meta: { current_page: 1, per_page: 15, total: 1 },
+      });
+
+    render(<BackupsView user={adminUser} onStatus={() => undefined} />);
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent(/no se pudieron cargar los respaldos/i);
+    expect(alert).not.toHaveTextContent(/db_password|secret|users|\.env/i);
+
+    fireEvent.click(screen.getByRole('button', { name: /reintentar carga/i }));
+
+    await screen.findByText(/hospital-backup-20260618-120000-test\.sql\.enc/i);
+    expect(getBackups).toHaveBeenLastCalledWith({ page: 1, status: 'all' });
+  });
+
+  it('preserves permission gating for create and download actions', async () => {
+    const readonlyUser = {
+      ...adminUser,
+      permissions: ['backups.view'],
+    };
+    vi.spyOn(apiClient, 'downloadBackup').mockResolvedValue(new Blob(['backup-data']));
+
+    render(<BackupsView user={readonlyUser} onStatus={() => undefined} />);
+
+    await screen.findByText(/hospital-backup-20260618-120000-test\.sql\.enc/i);
+    expect(screen.queryByRole('button', { name: /^crear respaldo$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /descargar respaldo/i })).not.toBeInTheDocument();
+    expect(apiClient.downloadBackup).not.toHaveBeenCalled();
+  });
+
+  it('keeps status filters controlled by the view without changing query params', async () => {
+    const getBackups = vi.mocked(apiClient.getBackups);
+
+    render(<BackupsView user={adminUser} onStatus={() => undefined} />);
+
+    await screen.findByText(/hospital-backup-20260618-120000-test\.sql\.enc/i);
+    fireEvent.click(screen.getByRole('button', { name: /completados/i }));
+
+    await waitFor(() => {
+      expect(getBackups).toHaveBeenLastCalledWith({ page: 1, status: 'success' });
+    });
+    expect(screen.getByRole('button', { name: /completados/i })).toHaveAttribute('aria-pressed', 'true');
+  });
+
   it('prevents duplicate manual backup creation while the request is pending', async () => {
     let resolveCreate!: (backup: BackupLog) => void;
     const pendingCreate = new Promise<BackupLog>((resolve) => {
@@ -58,7 +149,7 @@ describe('BackupsView', () => {
     });
 
     await act(async () => {
-      resolveCreate({ ...backupFixture(), id: 2, filename: 'hospital-backup-new.sql.enc' });
+      resolveCreate(backupFixture({ id: 2, filename: 'hospital-backup-new.sql.enc' }));
       await pendingCreate;
     });
 
@@ -107,7 +198,7 @@ describe('BackupsView', () => {
   });
 });
 
-function backupFixture(): BackupLog {
+function backupFixture(overrides: Partial<BackupLog> = {}): BackupLog {
   return {
     id: 1,
     filename: 'hospital-backup-20260618-120000-test.sql.enc',
@@ -121,6 +212,7 @@ function backupFixture(): BackupLog {
     updated_at: '2026-06-18T12:01:00.000Z',
     error_message: null,
     creator: { id: 1, name: 'Administradora Hospital', username: 'admin.hospital' },
+    ...overrides,
   };
 }
 

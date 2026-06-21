@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ReceiptPreview } from './ReceiptPreview';
 import type { ReceiptData } from '../../lib/api';
@@ -162,6 +162,28 @@ describe('ReceiptPreview', () => {
     expect(screen.getByText('Vence')).toBeInTheDocument();
     expect(screen.getByText('TEST-CAI')).toBeInTheDocument();
     expect(document.querySelector('[data-receipt-print-root]')).toBeInTheDocument();
+  });
+
+  it('renders semantic receipt tables while keeping controls outside the printable document', () => {
+    render(
+      <ReceiptPreview
+        receipt={receiptFixture()}
+        onPrint={vi.fn()}
+        onWidthChange={vi.fn()}
+      />,
+    );
+
+    const printRoot = document.querySelector('[data-receipt-print-root]');
+    expect(printRoot).toBeInTheDocument();
+
+    const printable = within(printRoot as HTMLElement);
+    expect(printable.getByRole('table', { name: /detalle de servicios/i })).toBeInTheDocument();
+    expect(printable.getByRole('columnheader', { name: /concepto \/ servicio/i })).toBeInTheDocument();
+    expect(printable.getByRole('columnheader', { name: /importe/i })).toBeInTheDocument();
+    expect(printable.getByRole('rowheader', { name: /^total$/i })).toBeInTheDocument();
+    expect(printable.queryByRole('button', { name: /imprimir/i })).not.toBeInTheDocument();
+    expect(printable.queryByLabelText(/tamaÃ±o del recibo/i)).not.toBeInTheDocument();
+    expect(printRoot?.textContent).not.toMatch(/qr|barcode|codigo interno|código interno/i);
   });
 
   it('keeps long service names printable without exposing QR or barcode artifacts', () => {

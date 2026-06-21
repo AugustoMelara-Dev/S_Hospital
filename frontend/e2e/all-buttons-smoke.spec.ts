@@ -241,6 +241,15 @@ const routeExpectations = [
   { path: '/does-not-exist', heading: /pagina no encontrada|no encontrada/i },
 ];
 
+const smokeViewports = [
+  { name: '320x640', width: 320, height: 640 },
+  { name: '375x667', width: 375, height: 667 },
+  { name: '768x1024', width: 768, height: 1024 },
+  { name: '1024x768', width: 1024, height: 768 },
+  { name: '1366x768', width: 1366, height: 768 },
+  { name: '1920x1080', width: 1920, height: 1080 },
+];
+
 test.afterAll(() => {
   mkdirSync(dirname(reportPath), { recursive: true });
   writeFileSync(reportPath, `${JSON.stringify({
@@ -250,17 +259,14 @@ test.afterAll(() => {
   }, null, 2)}\n`);
 });
 
-test('main screens expose named controls and have no serious axe issues on desktop and mobile', async ({ page }) => {
-  const consoleIssues: string[] = [];
-  captureConsoleIssues(page, consoleIssues);
-  await installApiMocks(page);
-  await login(page);
-
-  for (const viewport of [
-    { name: 'desktop', width: 1366, height: 900 },
-    { name: 'mobile', width: 390, height: 844 },
-  ]) {
+for (const viewport of smokeViewports) {
+  test(`main screens expose named controls and have no serious axe issues at ${viewport.name}`, async ({ page }) => {
+    const consoleIssues: string[] = [];
+    captureConsoleIssues(page, consoleIssues);
+    await installApiMocks(page);
+    await login(page);
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
+
     for (const route of routeExpectations) {
       await page.goto(route.path);
       await waitForScreen(page, route.heading);
@@ -277,10 +283,10 @@ test('main screens expose named controls and have no serious axe issues on deskt
         status: 'passed',
       });
     }
-  }
 
-  expect(consoleIssues, consoleIssues.join('\n')).toEqual([]);
-});
+    expect(consoleIssues, consoleIssues.join('\n')).toEqual([]);
+  });
+}
 
 test('dangerous history actions open a confirmation path that can be cancelled', async ({ page }) => {
   const consoleIssues: string[] = [];

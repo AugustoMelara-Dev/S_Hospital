@@ -43,6 +43,8 @@ const adminUser = {
   permissions: [
     'settings.fiscal.view',
     'settings.fiscal.update',
+    'receipt_settings.view',
+    'receipt_settings.update',
     'catalog.view',
     'catalog.manage',
     'cash.view',
@@ -64,6 +66,11 @@ const adminUser = {
     'backups.view',
     'backups.create',
     'backups.download',
+    'users.view',
+    'users.create',
+    'users.update',
+    'users.disable',
+    'users.assign_admin_role',
   ],
   must_change_password: false,
 };
@@ -157,23 +164,27 @@ async function installApiMocks(page: Page) {
   let invoiceCounter = 1;
   const invoices: Record<number, Record<string, unknown>> = {};
   const backupLogs: Record<string, unknown>[] = [];
+  const fiscalSettings = {
+    primary_color: 'indigo',
+    hospital_name: 'Hospital San Isidro',
+    name: 'Hospital San Isidro',
+    rtn: '08011999123456',
+    address: 'Tocoa, Colon',
+    phone: '2222-2222',
+    email: 'contacto@hospital-san-isidro.local',
+    scanner_enabled: false,
+    partial_payments_enabled: false,
+    receipt_paper_size: 'half_letter',
+  };
 
   await page.route('**/favicon.ico', (route) => route.fulfill({ status: 204 }));
   await page.route('**/sanctum/csrf-cookie', (route) => route.fulfill({ status: 204 }));
 
   await page.route('**/api/settings/fiscal', (route) => json(route, {
-    data: {
-      primary_color: 'indigo',
-      hospital_name: 'Hospital San Isidro',
-      name: 'Hospital San Isidro',
-      rtn: '08011999123456',
-      address: 'Tocoa, Colon',
-      phone: '2222-2222',
-      email: 'contacto@hospital-san-isidro.local',
-      scanner_enabled: false,
-      partial_payments_enabled: false,
-      receipt_paper_size: 'half_letter',
-    }
+    data: fiscalSettings,
+  }));
+  await page.route('**/api/settings/operational', (route) => json(route, {
+    data: fiscalSettings,
   }));
   await page.route('**/api/fiscal-sequences**', (route) => json(route, {
     data: [
@@ -202,8 +213,17 @@ async function installApiMocks(page: Page) {
   }));
 
   await page.route('**/api/settings/logo', (route) => json(route, { logo_url: null }));
+  await page.route('**/api/settings/institutional-receipts', (route) => json(route, {
+    data: institutionalReceiptSettings(),
+  }));
+  await page.route('**/api/settings/institutional-receipts/**', (route) => json(route, {
+    data: institutionalReceiptSettings().resolved_profile,
+  }));
   await page.route('**/api/health', (route) => json(route, { status: 'ok' }));
   await page.route('**/api/system/health', (route) => json(route, { status: 'ok' }));
+  await page.route('**/api/system/setup-status', (route) => json(route, {
+    data: { setup_required: false, default_admin_present: true },
+  }));
   await page.route('**/api/system/echo-config', (route) => json(route, {
     data: {
       enabled: false,
@@ -429,6 +449,28 @@ async function installApiMocks(page: Page) {
     },
   }));
 
+
+  await page.route('**/api/reports/dashboard**', (route) => json(route, {
+    data: {
+      current_month: {
+        total_billed: '25.00',
+        total_collected: '25.00',
+        invoice_count: Object.keys(invoices).length,
+        payment_count: Object.keys(invoices).length,
+      },
+      last_7_days: [{
+        date: operationalDate,
+        total_billed: '25.00',
+        total_collected: '25.00',
+        invoice_count: Object.keys(invoices).length,
+        payment_count: Object.keys(invoices).length,
+      }],
+      payments_by_method: { cash: '25.00', transfer: '0.00', card: '0.00', other: '0.00' },
+      top_services: [{ service_name: 'Eritropoyetina', category_name: 'Medicamentos', quantity: '1.00', total: '25.00' }],
+      cashiers_summary: [{ user_id: currentUser.id, name: currentUser.name, username: currentUser.username, payment_count: Object.keys(invoices).length, total_collected: '25.00' }],
+    },
+  }));
+
   await page.route('**/api/reports/daily**', (route) => json(route, {
     data: {
       date: '2026-05-17',
@@ -514,6 +556,15 @@ async function installApiMocks(page: Page) {
       summary: { voided_count: 0, reprint_count: 0, backup_count: 0 },
     },
   }));
+  await page.route('**/api/admin/users', (route) => json(route, {
+    data: [adminUser, cashierUser],
+  }));
+  await page.route('**/api/admin/roles', (route) => json(route, {
+    data: userRoles(),
+    permission_catalog: permissionCatalog(),
+  }));
+  await page.route('**/api/admin/users/**', (route) => json(route, { data: adminUser }));
+  await page.route('**/api/admin/roles/**', (route) => json(route, { data: userRoles()[1] }));
   await page.route(/\/api\/backups(?:\?|$)/, async (route) => {
     if (route.request().method() === 'POST') {
       const backup = {
@@ -719,6 +770,133 @@ function receiptFor(invoice: Record<string, unknown>, width: string) {
   };
 }
 
+function institutionalReceiptSettings() {
+  const baseProfile = {
+    id: 1,
+    code: 'media_carta_horizontal',
+    name: 'Media carta horizontal',
+    width_mm: '215.90',
+    height_mm: '139.70',
+    margin_top_mm: '6.00',
+    margin_right_mm: '6.00',
+    margin_bottom_mm: '6.00',
+    margin_left_mm: '6.00',
+    font_family: 'Arial, sans-serif',
+    font_scale: '1.00',
+    template_code: 'institutional_classic',
+    copies_mode: 'original_only',
+    show_copy_legend: true,
+    show_physical_seal_space: true,
+    use_logo: false,
+    active: true,
+    is_global_default: true,
+  };
+  const series = {
+    id: 1,
+    series: 'REC-A',
+    prefix: 'RA',
+    number_format: '{series}-{number:08}',
+    min_number: 1,
+    max_number: 99999999,
+    current_number: 90,
+    range_authorization: 'Autorizado para pruebas',
+    legal_text: 'Documento de recaudacion institucional.',
+    receipt_number_color: '#b91c1c',
+    active: true,
+    reprint_behavior: 'audit_only',
+    void_behavior: 'permission_reason_audit',
+  };
+  const print_profiles = [
+    baseProfile,
+    { ...baseProfile, id: 2, code: 'a5_horizontal', name: 'A5 horizontal', width_mm: '210.00', height_mm: '148.00', is_global_default: false },
+    { ...baseProfile, id: 3, code: 'carta_horizontal', name: 'Carta horizontal', width_mm: '279.40', height_mm: '215.90', is_global_default: false },
+    { ...baseProfile, id: 4, code: 'recibo_pequeno_personalizado', name: 'Recibo pequeno personalizado', width_mm: '140.00', height_mm: '90.00', is_global_default: false },
+  ];
+
+  return {
+    institution: {
+      hospital_name: 'Hospital San Isidro',
+      rtn: '08011999123456',
+      address: 'Tocoa, Colon',
+      slogan: 'Sistema de Caja Hospitalaria',
+      government_line: 'Gobierno de Honduras',
+      secretariat_line: 'Secretaria de Salud Publica',
+      receipt_location: 'Tocoa, Colon',
+      receipt_footer_text: 'Copia digital guardada en sistema',
+      receipt_template_mode: 'institutional',
+    },
+    series: [series],
+    active_series: series,
+    print_profiles,
+    resolved_profile: baseProfile,
+    assignments: [],
+  };
+}
+
+function userRoles() {
+  const permissions = permissionCatalog().flatMap((group) => group.permissions.map((permission) => ({
+    ...permission,
+    module: group.module,
+  })));
+
+  return [
+    { id: 1, name: 'admin', label: 'Admin', protected: true, permissions },
+    {
+      id: 2,
+      name: 'cajero',
+      label: 'Cajero',
+      protected: false,
+      permissions: permissions.filter((permission) => [
+        'catalog.view',
+        'cash.view',
+        'invoices.create',
+        'payments.create',
+        'receipts.view',
+      ].includes(permission.name)),
+    },
+  ];
+}
+
+function permissionCatalog() {
+  return [
+    {
+      module: 'Facturacion',
+      label: 'Facturacion',
+      permissions: [
+        { name: 'invoices.create', label: 'Crear facturas' },
+        { name: 'invoices.view', label: 'Ver historial' },
+      ],
+    },
+    {
+      module: 'Caja',
+      label: 'Caja',
+      permissions: [
+        { name: 'cash.view', label: 'Ver caja' },
+        { name: 'payments.create', label: 'Registrar pagos' },
+      ],
+    },
+    {
+      module: 'Usuarios',
+      label: 'Usuarios',
+      permissions: [
+        { name: 'users.view', label: 'Ver usuarios' },
+        { name: 'users.create', label: 'Crear usuarios' },
+        { name: 'users.update', label: 'Editar usuarios' },
+        { name: 'users.disable', label: 'Activar o desactivar usuarios' },
+        { name: 'users.assign_admin_role', label: 'Gestionar administradores' },
+      ],
+    },
+    {
+      module: 'Recibos',
+      label: 'Recibos',
+      permissions: [
+        { name: 'receipt_settings.view', label: 'Ver recibos institucionales' },
+        { name: 'receipt_settings.update', label: 'Editar recibos institucionales' },
+      ],
+    },
+  ];
+}
+
 async function loginAs(page: Page, username: string) {
   await page.goto('/login');
   const loginInput = page.getByLabel(/usuario o (correo|email)/i);
@@ -871,6 +1049,30 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await expect(page.getByRole('heading', { name: /^reportes$/i })).toBeVisible();
   await expect(page.getByRole('heading', { name: /cobrado/i })).toBeVisible();
   await captureScreen(page, 'reports-admin-light', 'light');
+  await setVisualTheme(page, 'dark');
+  await captureScreen(page, 'reports-admin-dark', 'dark');
+  await setVisualTheme(page, 'light');
+
+  await page.goto('/settings/institutional-receipts');
+  await expect(page.getByRole('heading', { name: /recibos institucionales/i })).toBeVisible();
+  await captureScreen(page, 'receipt-settings-light', 'light');
+  await page.getByRole('tab', { name: /vista previa/i }).click();
+  await expect(page.getByTestId('receipt-settings-preview')).toBeVisible();
+  await captureScreen(page, 'receipt-settings-preview-light', 'light');
+  await setVisualTheme(page, 'dark');
+  await captureScreen(page, 'receipt-settings-preview-dark', 'dark');
+  await setVisualTheme(page, 'light');
+
+  await page.goto('/admin/users');
+  await expect(page.getByRole('heading', { name: /^usuarios$/i })).toBeVisible();
+  await captureScreen(page, 'admin-users-light', 'light');
+  await setVisualTheme(page, 'dark');
+  await page.goto('/admin/users');
+  await expect(page.getByRole('heading', { name: /^usuarios$/i })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(150);
+  await captureScreen(page, 'admin-users-dark', 'dark');
+  await setVisualTheme(page, 'light');
 
   await page.getByRole('link', { name: /respaldos/i }).click();
   await expect(page.getByRole('heading', { name: /^respaldos$/i })).toBeVisible();
@@ -878,6 +1080,37 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await page.getByRole('button', { name: /^crear respaldo$/i }).click();
   await expect(page.getByRole('table').getByText('Pendiente', { exact: true })).toBeVisible();
   await captureScreen(page, 'backups-pending-light', 'light');
+  await writeCaptureReport(consoleIssues);
+  expect(consoleIssues).toEqual([]);
+});
+
+test('supporting shell states expose visual fallbacks', async ({ page }) => {
+  const consoleIssues: string[] = [];
+  page.on('console', (msg) => {
+    if (msg.type() === 'error' || msg.type() === 'warning') {
+      const text = msg.text();
+      if (text.includes('401') || text.includes('Unauthorized')) return;
+      if (text.includes('[echo]')) return;
+      if (/Failed to load resource: the server responded with a status of 404/i.test(text)) return;
+      consoleIssues.push(`${msg.type()}: ${msg.text()}`);
+    }
+  });
+  page.on('pageerror', (error) => {
+    consoleIssues.push(`pageerror: ${error.message}`);
+  });
+
+  await installApiMocks(page);
+  await loginAs(page, 'cajero.validacion');
+  await setVisualTheme(page, 'light');
+
+  await page.goto('/reports');
+  await expect(page.getByText(/^Sin permisos$/i)).toBeVisible();
+  await captureScreen(page, 'access-denied-reports-light', 'light');
+
+  await page.goto('/does-not-exist');
+  await expect(page.getByText(/ruta no encontrada/i)).toBeVisible();
+  await captureScreen(page, 'not-found-light', 'light');
+
   await writeCaptureReport(consoleIssues);
   expect(consoleIssues).toEqual([]);
 });

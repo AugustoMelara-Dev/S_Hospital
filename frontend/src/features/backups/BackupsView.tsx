@@ -1,17 +1,21 @@
 import { Download, RefreshCw, Archive, CheckCircle, Clock, XCircle, HardDrive, Server, ShieldAlert } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { ActionBar } from '../../components/ui/action-bar';
 import { Button } from '../../components/ui/button';
 import { Alert } from '../../components/ui/alert';
 import { ConfirmDialog } from '../../components/ui/confirm-dialog';
 import { PaginationControls } from '../../components/ui/pagination';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/data-table';
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/data-table';
 import { PageHeader } from '../../components/ui/page-header';
 import { Card, CardContent } from '../../components/ui/card';
+import { ErrorState, LoadingState } from '../../components/ui/states';
+import { StatusBadge } from '../../components/ui/status-badge';
 import { BackupStatusBadge, getStatusDescription } from './components/BackupStatusBadge';
 import { BackupExplanationCard, BackupEmptyState } from './components/BackupExplanationCard';
 import { type AuthUser, type BackupLog, type PaginatedMeta, type SystemStatus, apiClient, userSafeErrorMessage } from '../../lib/api';
 import { formatLocalizedDateTime } from '../../lib/format/formatDate';
 import { downloadBlob } from '../../lib/download';
+import { safeClientMessage } from '../../lib/support/clientIssueLog';
 
 type BackupsViewProps = {
   user: AuthUser;
@@ -184,6 +188,20 @@ function operationalSummary(status: SystemStatus): { level: OperationalStatus; l
   };
 }
 
+function operationalStatusBadge(level: OperationalStatus): 'success' | 'pending' | 'failed' {
+  if (level === 'ok') return 'success';
+  if (level === 'error') return 'failed';
+  return 'pending';
+}
+
+function safeBackupsErrorMessage(error: unknown, fallback: string): string {
+  const message = safeClientMessage(userSafeErrorMessage(error, fallback));
+
+  return message.includes('[redacted]') || message.includes('[ruta-local]') || message.includes('[detalle-tecnico]')
+    ? fallback
+    : message || fallback;
+}
+
 export function BackupsView({ user, onStatus }: BackupsViewProps) {
   const [backupsState, setBackups] = useState<BackupLog[]>([]);
   const backups = Array.isArray(backupsState) ? backupsState : [];
@@ -215,6 +233,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
   const operationalStatus = systemStatus ? operationalSummary(systemStatus) : null;
   const stalePendingCount = systemStatus?.backups.stale_pending_count ?? 0;
   const stalePendingThresholdMinutes = systemStatus?.backups.stale_pending_threshold_minutes ?? 15;
+  const advancedStatusId = 'backups-advanced-status';
 
   useEffect(() => {
     void loadBackups(page);
@@ -253,7 +272,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
         onStatus('Respaldos locales cargados.');
       }
     } catch (error) {
-      const message = userSafeErrorMessage(error, 'No se pudieron cargar los respaldos.');
+      const message = safeBackupsErrorMessage(error, 'No se pudieron cargar los respaldos.');
       setError(message);
       onStatus(message);
     } finally {
@@ -267,7 +286,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
     try {
       setSystemStatus(await apiClient.getSystemStatus());
     } catch (error) {
-      const message = userSafeErrorMessage(error, 'No se pudo cargar el estado operativo del servidor.');
+      const message = safeBackupsErrorMessage(error, 'No se pudo cargar el estado operativo del servidor.');
       setSystemStatusError(message);
     }
   }
@@ -298,7 +317,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
           : 'Respaldo registrado. Revise su estado en la lista.',
       );
     } catch (error) {
-      const message = userSafeErrorMessage(error, 'No se pudo crear el respaldo.');
+      const message = safeBackupsErrorMessage(error, 'No se pudo crear el respaldo.');
       setError(message);
       onStatus(message);
     } finally {
@@ -323,7 +342,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
       downloadBlob(blob, backup.filename);
       onStatus(`Respaldo ${backup.filename} descargado.`);
     } catch (error) {
-      const message = userSafeErrorMessage(error, 'No se pudo descargar el respaldo.');
+      const message = safeBackupsErrorMessage(error, 'No se pudo descargar el respaldo.');
       setError(message);
       onStatus(message);
     } finally {
@@ -341,23 +360,14 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
         description="Copias de seguridad de facturación, caja y reportes"
         actions={
           canCreate ? (
-            <div className="flex items-center gap-2">
+            <ActionBar align="end" fullWidthOnMobile>
               {systemStatus && (
-                <span
-                  className={`hidden md:inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${
-                    systemStatus.backups.worker_recently_active
-                      ? 'bg-success/10 text-success'
-                      : 'bg-warning/10 text-warning'
-                  }`}
-                  aria-label={systemStatus.backups.worker_recently_active ? 'Worker de respaldos activo' : 'Worker de respaldos inactivo'}
+                <StatusBadge
+                  className="hidden md:inline-flex"
+                  status={systemStatus.backups.worker_recently_active ? 'success' : 'pending'}
                 >
-                  <span
-                    className={`inline-block size-1.5 rounded-full ${
-                      systemStatus.backups.worker_recently_active ? 'bg-success' : 'bg-warning'
-                    }`}
-                  />
                   Worker {systemStatus.backups.worker_recently_active ? 'activo' : 'inactivo'}
-                </span>
+                </StatusBadge>
               )}
               <Button
                 type="button"
@@ -365,15 +375,22 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                 size="sm"
                 onClick={refreshOperationalStatus}
                 disabled={loading}
+                aria-label="Actualizar respaldos y estado operativo"
               >
-                <RefreshCw className="h-4 w-4 mr-2" />
+                <RefreshCw aria-hidden="true" className="h-4 w-4 mr-2" />
                 Actualizar
               </Button>
-              <Button type="button" size="sm" onClick={() => setConfirmCreateOpen(true)} disabled={loading || creatingBackup}>
-                <Archive className="h-4 w-4 mr-2" />
+              <Button
+                type="button"
+                size="sm"
+                aria-busy={creatingBackup}
+                onClick={() => setConfirmCreateOpen(true)}
+                disabled={loading || creatingBackup}
+              >
+                <Archive aria-hidden="true" className="h-4 w-4 mr-2" />
                 {creatingBackup ? 'Creando...' : 'Crear respaldo'}
               </Button>
-            </div>
+            </ActionBar>
           ) : undefined
         }
       />
@@ -390,15 +407,22 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
         {operationalStatus ? (
           <Card className={operationalStatus.className}>
             <CardContent className="flex flex-col gap-3 pt-6 md:flex-row md:items-center md:justify-between">
-              <div>
+              <div className="min-w-0">
                 <p className="text-xs font-semibold uppercase tracking-normal">Estado operativo</p>
-                <h3 className="mt-1 text-xl font-semibold">{operationalStatus.label}</h3>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <h3 className="text-xl font-semibold">{operationalStatus.label}</h3>
+                  <StatusBadge status={operationalStatusBadge(operationalStatus.level)}>
+                    {operationalStatus.level === 'ok' ? 'Correcto' : operationalStatus.level === 'error' ? 'Error' : 'Atencion'}
+                  </StatusBadge>
+                </div>
                 <p className="mt-1 max-w-3xl text-sm leading-6">{operationalStatus.description}</p>
               </div>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
+                aria-controls={advancedStatusId}
+                aria-expanded={showAdvancedStatus}
                 onClick={() => setShowAdvancedStatus((current) => !current)}
               >
                 {showAdvancedStatus ? 'Ocultar detalle avanzado' : 'Ver detalle avanzado'}
@@ -414,12 +438,12 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
         ) : null}
 
         {systemStatus && showAdvancedStatus ? (
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-4">
+          <div id={advancedStatusId} className="grid grid-cols-1 gap-4 xl:grid-cols-4">
             <Card className={systemStatus.database.connected && systemStatus.frontend.dist_index_exists && systemStatus.frontend.assets_present && systemStatus.network.lan_ready ? 'status-success' : 'status-warning'}>
               <CardContent className="pt-6">
                 <div className="flex items-start gap-3">
                   <div className="rounded-lg bg-background/80 p-2.5">
-                    <Server className="h-5 w-5 text-muted-foreground" />
+                    <Server aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
                   </div>
                   <div className="min-w-0 space-y-1">
                     <p className="text-sm font-semibold">Servidor, datos y red local</p>
@@ -444,7 +468,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
               <CardContent className="pt-6">
                 <div className="flex items-start gap-3">
                   <div className="rounded-lg bg-background/80 p-2.5">
-                    <HardDrive className="h-5 w-5 text-muted-foreground" />
+                    <HardDrive aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
                   </div>
                   <div className="min-w-0 space-y-1">
                     <p className="text-sm font-semibold">Preparación de respaldos</p>
@@ -470,7 +494,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
               <CardContent className="pt-6">
                 <div className="flex items-start gap-3">
                   <div className="rounded-lg bg-background/80 p-2.5">
-                    <Server className="h-5 w-5 text-muted-foreground" />
+                    <Server aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
                   </div>
                   <div className="min-w-0 space-y-1">
                     <p className="text-sm font-semibold">Proceso de respaldo</p>
@@ -492,7 +516,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
               <CardContent className="pt-6">
                 <div className="flex items-start gap-3">
                   <div className="rounded-lg bg-background/80 p-2.5">
-                    <ShieldAlert className="h-5 w-5 text-muted-foreground" />
+                    <ShieldAlert aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
                   </div>
                   <div className="min-w-0 space-y-1">
                     <p className="text-sm font-semibold">Estado general</p>
@@ -522,6 +546,10 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
           <Alert title="Pendientes antes de operar">
             {systemStatus.readiness.blockers.map((blocker) => friendlyReadinessBlocker(blocker.code, blocker.label)).join(' - ')}
           </Alert>
+        ) : null}
+
+        {loading && backupsList.length === 0 ? (
+          <LoadingState label="Cargando respaldos locales..." />
         ) : null}
 
         {systemStatus && showAdvancedStatus ? (
@@ -658,9 +686,12 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
         ) : null}
 
         {error ? (
-          <Alert variant="destructive" title="Error al cargar respaldos">
-            {error}
-          </Alert>
+          <ErrorState
+            title="Error al cargar respaldos"
+            message={error}
+            onRetry={() => void loadBackups(page)}
+            retryLabel="Reintentar carga"
+          />
         ) : null}
 
         {!isEmpty && (
@@ -669,7 +700,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
               <CardContent className="pt-6">
                 <div className="flex items-center gap-3">
                   <div className={`p-2.5 rounded-lg ${pendingCount > 0 ? 'bg-warning/10' : 'bg-muted'}`}>
-                    <Clock className={`h-5 w-5 ${pendingCount > 0 ? 'text-warning' : 'text-muted-foreground'}`} />
+                    <Clock aria-hidden="true" className={`h-5 w-5 ${pendingCount > 0 ? 'text-warning' : 'text-muted-foreground'}`} />
                   </div>
                   <div>
                     <p className="text-sm font-medium">
@@ -687,7 +718,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
               <CardContent className="pt-6">
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 rounded-lg bg-success/10">
-                    <CheckCircle className="h-5 w-5 text-success" />
+                    <CheckCircle aria-hidden="true" className="h-5 w-5 text-success" />
                   </div>
                   <div>
                     <p className="text-sm font-medium">
@@ -707,7 +738,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
               <CardContent className="pt-6">
                 <div className="flex items-center gap-3">
                   <div className={`p-2.5 rounded-lg ${failedCount > 0 ? 'bg-destructive/10' : 'bg-muted'}`}>
-                    <XCircle className={`h-5 w-5 ${failedCount > 0 ? 'text-destructive' : 'text-muted-foreground'}`} />
+                    <XCircle aria-hidden="true" className={`h-5 w-5 ${failedCount > 0 ? 'text-destructive' : 'text-muted-foreground'}`} />
                   </div>
                   <div>
                     <p className="text-sm font-medium">
@@ -729,7 +760,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
 
         {!isEmpty && !loading && (
           <div className="space-y-4">
-            <div className="flex items-center gap-2">
+            <div role="group" aria-label="Filtros de estado de respaldos" className="flex flex-wrap items-center gap-2">
               <span className="text-sm text-muted-foreground">Filtrar:</span>
               {(['all', 'pending', 'success', 'failed'] as StatusFilter[]).map((filter) => (
                 <Button
@@ -737,6 +768,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                   type="button"
                   variant={statusFilter === filter ? 'secondary' : 'outline'}
                   size="sm"
+                  aria-pressed={statusFilter === filter}
                   onClick={() => {
                     setStatusFilter(filter);
                     setPage(1);
@@ -748,12 +780,15 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
               ))}
             </div>
 
-            <Table className="min-w-[960px]">
+            <Table className="min-w-[960px]" containerLabel="Historial de respaldos locales">
+              <TableCaption>
+                Historial de respaldos locales con fecha, archivo, tamano, estado, usuario y acciones disponibles.
+              </TableCaption>
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-40 whitespace-nowrap px-4 py-3">Fecha</TableHead>
                   <TableHead className="min-w-72 px-4 py-3">Nombre</TableHead>
-                  <TableHead className="w-24 whitespace-nowrap px-4 py-3">Tamaño</TableHead>
+                  <TableHead data-numeric="true" className="w-24 whitespace-nowrap px-4 py-3">Tamaño</TableHead>
                   <TableHead className="px-4 py-3">Estado</TableHead>
                   <TableHead className="w-44 whitespace-nowrap px-4 py-3">Usuario</TableHead>
                   <TableHead className="px-4 py-3 text-right">Acciones</TableHead>
@@ -778,7 +813,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                         </span>
                       ) : null}
                     </TableCell>
-                    <TableCell className="whitespace-nowrap px-4 py-3">{formatBytes(backup.size_bytes)}</TableCell>
+                    <TableCell data-numeric="true" className="whitespace-nowrap px-4 py-3">{formatBytes(backup.size_bytes)}</TableCell>
                     <TableCell className="px-4 py-3">
                       <div className="flex flex-col gap-1">
                         <BackupStatusBadge status={backup.status as 'pending' | 'success' | 'failed'} />
@@ -803,7 +838,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                           disabled={downloadingBackupId !== null}
                           onClick={() => setDownloadTarget(backup)}
                         >
-                          <Download className="h-4 w-4" />
+                          <Download aria-hidden="true" className="h-4 w-4" />
                         </Button>
                       ) : (
                         <span className="text-sm text-muted-foreground">—</span>

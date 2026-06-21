@@ -1,7 +1,7 @@
 # Final production handoff result
 
-- Generated at: 2026-06-19 07:36:29
-- Base URL: http://192.168.1.10:8081
+- Generated at: 2026-06-20 23:55:21
+- Base URL: http://192.168.1.2:8081
 - Project root: %PROJECT_ROOT%
 - Decision: READY_FOR_REAL_LAN_INSTALLATION_TEST
 - LAN client proof present without obvious placeholders: False
@@ -16,7 +16,7 @@
 
 ## Result
 
-Do not declare PRODUCTION_READY. Keep the system as READY_FOR_REAL_LAN_INSTALLATION_TEST only if the offline release guard is clean and the remaining blockers are field/admin-task evidence.
+Do not declare PRODUCTION_READY. Keep the system as READY_FOR_REAL_LAN_INSTALLATION_TEST only if the offline release guard is clean and the remaining blockers are field/final-validation evidence.
 
 ## Blocking items
 
@@ -27,18 +27,26 @@ Do not declare PRODUCTION_READY. Keep the system as READY_FOR_REAL_LAN_INSTALLAT
 ## Next commands
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 -BaseUrl http://192.168.1.10:8081 -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md -Force
+powershell.exe -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 -BaseUrl http://192.168.1.2:8081 -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md -Force
 # The LAN proof must include /api/system/echo-config and WebSocket/Soketi TCP connect OK from the second PC.
+# If the second PC does not have the project, copy offline-release\scripts\validate_lan_client_standalone.ps1 to that PC and run:
+powershell.exe -ExecutionPolicy Bypass -File .\validate_lan_client_standalone.ps1 -BaseUrl http://192.168.1.2:8081 -EvidencePath "$env:USERPROFILE\Desktop\LAN_CLIENT_VALIDATION_PROOF.md"
+# After printing the institutional receipt on real paper, register physical evidence:
+powershell.exe -ExecutionPolicy Bypass -File scripts\register_physical_receipt_print_proof.ps1 -PrimaryPaperSize "media carta" -ResponsiblePerson "NOMBRE_RESPONSABLE" -PrinterBrandModel "MARCA_MODELO_IMPRESORA_REAL" -PrinterDriver "NOMBRE_DRIVER_WINDOWS" -ConnectionType "USB/LAN/Compartida" -BrowserVersion "Microsoft Edge VERSION" -InvoiceUsed "FACTURA/RECIBO_USADO" -EvidenceReference "qa/evidence/printer-final/foto-media-carta.jpg" -ReprintEvidence "Reimpresion desde historial con motivo auditado y misma informacion historica" -MarginsEvidence "Escala 100%, margenes minimos, contenido centrado y legible" -HeadersFootersEvidence "Encabezados y pies del navegador desactivados" -HistoricalSnapshotEvidence "Servicios, paciente, monto y numero coinciden con la factura historica"
 powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Mode Docker -EnvFile [ruta-local] -ComposeProjectName shospital_offlinetest -UpdateExisting -LaunchElevated
 powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_startup_current_user.ps1 -Status
+# Run mocked non-mutating UI/a11y/button smoke.
+cd frontend; npm.cmd run smoke:buttons
+# Run non-production release E2E: cashier invoice/payment/receipt/report plus admin RBAC exact module access.
+cd frontend; npm.cmd run e2e
 # Run frontend real smoke with E2E_REAL_* environment variables set outside this report.
 cd frontend; npm.cmd run smoke:real
 Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker
 bash -lc "HOSPITAL_VALIDATE_RESTORE_MYSQL=1 RESTORE_TEST_DATABASE=hospital_restore_validation_test HOSPITAL_CONFIRM_RESTORE_DATABASE=hospital_restore_validation_test scripts/validate_restore_mysql.sh"
 # Set HOSPITAL_CONCURRENCY_LOGIN and HOSPITAL_CONCURRENCY_PASSWORD for a temporary validation account outside this report.
-bash -lc "HOSPITAL_VALIDATE_REAL_MYSQL=1 HOSPITAL_CONFIRM_CONCURRENCY_TARGET=http://192.168.1.10:8081 HOSPITAL_CONCURRENCY_BASE_URL=http://192.168.1.10:8081 HOSPITAL_CONCURRENCY_TARGET_ENV=validation HOSPITAL_CONCURRENCY_EVIDENCE_PATH=qa/FINAL_CONCURRENCY_PROOF.md scripts/validate_mysql_concurrency.sh"
+bash -lc "HOSPITAL_VALIDATE_REAL_MYSQL=1 HOSPITAL_CONFIRM_CONCURRENCY_TARGET=http://192.168.1.2:8081 HOSPITAL_CONCURRENCY_BASE_URL=http://192.168.1.2:8081 HOSPITAL_CONCURRENCY_TARGET_ENV=validation HOSPITAL_CONCURRENCY_EVIDENCE_PATH=qa/FINAL_CONCURRENCY_PROOF.md scripts/validate_mysql_concurrency.sh"
 node scripts\validate_mysql_concurrency_under_load.mjs
-powershell.exe -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps1 -BaseUrl http://192.168.1.10:8081 -PhpPath php
+powershell.exe -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps1 -BaseUrl http://192.168.1.2:8081 -PhpPath php -EnvFile [ruta-local] -ComposeProjectName shospital_offlinetest
 ```
 
 ## Backup current-user fallback status output
@@ -47,6 +55,14 @@ powershell.exe -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps
 Automatizacion en carpeta Startup: instalada en %USERPROFILE%\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\SistemaCajaHospitalariaBackupAutomation.cmd
 Contenido Startup: oculto; use paquete de soporte si se requiere revisar detalles tecnicos.
 Automatizacion HKCU Run: instalada como SistemaCajaHospitalariaBackupAutomation -> "%USERPROFILE%\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\SistemaCajaHospitalariaBackupAutomation.cmd"
+```
+
+## Elevated backup task proof
+
+```text
+Elevated proof log: PASS.
+Latest elevated attempt confirms SistemaCajaHospitalaria backup tasks are Ready as SYSTEM.
+Note: non-elevated status may report tasks as not installed when Windows hides SYSTEM tasks from this shell.
 ```
 
 ## Backup task status output
@@ -84,9 +100,13 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] Found scripts\run_backup_scheduler_loop.ps1
 [ OK ] Found scripts\validate_support_packet_safety.ps1
 [ OK ] Found scripts\validate_installer_safety.ps1
+[ OK ] Found scripts\validate_lan_client_standalone.ps1
+[ OK ] Found scripts\register_physical_receipt_print_proof.ps1
 [ OK ] Found scripts\auto_evidence.ps1
 [ OK ] Found scripts\quality_gate_windows.ps1
 [ OK ] Found scripts\test_golden_db_runner_safety.ps1
+[ OK ] Found scripts\test_release_e2e_golden_sqlite_safety.ps1
+[ OK ] Found scripts\test_physical_receipt_print_proof_safety.ps1
 [ OK ] Found scripts\validate_mysql_concurrency_under_load.mjs
 [ OK ] Found scripts\run_backup_worker.cmd
 [ OK ] Found scripts\run_scheduled_backup.cmd
@@ -120,9 +140,13 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] scripts\start_hospital_services.ps1 matches versioned source
 [ OK ] scripts\validate_support_packet_safety.ps1 matches versioned source
 [ OK ] scripts\validate_installer_safety.ps1 matches versioned source
+[ OK ] scripts\validate_lan_client_standalone.ps1 matches versioned source
+[ OK ] scripts\register_physical_receipt_print_proof.ps1 matches versioned source
 [ OK ] scripts\auto_evidence.ps1 matches versioned source
 [ OK ] scripts\quality_gate_windows.ps1 matches versioned source
 [ OK ] scripts\test_golden_db_runner_safety.ps1 matches versioned source
+[ OK ] scripts\test_release_e2e_golden_sqlite_safety.ps1 matches versioned source
+[ OK ] scripts\test_physical_receipt_print_proof_safety.ps1 matches versioned source
 [ OK ] scripts\validate_mysql_concurrency_under_load.mjs matches versioned source
 [ OK ] scripts\run_backup_worker.cmd matches versioned source
 [ OK ] scripts\run_scheduled_backup.cmd matches versioned source
@@ -136,7 +160,6 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] qa\FINAL_CONCURRENCY_UNDER_LOAD_PROOF_LAN_8081.example.md matches versioned source
 [ OK ] qa\FINAL_REAL_SMOKE_LAN_8081.example.md matches versioned source
 [ OK ] MANIFEST.txt has no stale release wording
-[ OK ] MANIFEST.txt references current commit 5a076240
 [ OK ] offline-images contains 6 Docker image tar file(s)
 
 OFFLINE_RELEASE_CLEAN: YES
@@ -145,7 +168,7 @@ OFFLINE_RELEASE_CLEAN: YES
 ## Preflight output
 
 ```text
-Production readiness preflight for http://192.168.1.10:8081
+Production readiness preflight for http://192.168.1.2:8081
 Project root: %PROJECT_ROOT%
 [ OK ] Report export privacy guards cover operations API and XLSX payloads.
 [ OK ] APP_ENV=production
@@ -179,8 +202,8 @@ Project root: %PROJECT_ROOT%
 [ OK ] /up responded 200
 [ OK ] /login responded 200
 [ OK ] /verify-email responded 200
-[FAIL] LAN client proof must be repeated against final BaseUrl http://192.168.1.10:8081; current evidence does not reference that URL.
-[FAIL] Complete a checked evidence item with a result for 'media carta' in %PROJECT_ROOT%\qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md.
+[FAIL] LAN client proof is marked as historical or requiring repeat; rerun scripts\validate_lan_client.ps1 from the second PC against final BaseUrl http://192.168.1.2:8081.
+[FAIL] Complete a checked evidence item with a result for 'headers/footers' in %PROJECT_ROOT%\qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md.
 [ OK ] final restore evidence is present and completed.
 [ OK ] final concurrency evidence is present and completed.
 [ OK ] final concurrency under load evidence is present and completed.

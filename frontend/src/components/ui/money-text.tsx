@@ -4,8 +4,10 @@ import { formatLempirasUIFromCents } from '../../lib/moneyCents';
 
 type MoneyTextProps = {
   amountCents?: number | null;
+  ariaLabel?: string;
   children?: ReactNode;
   className?: string;
+  emphasis?: 'normal' | 'strong';
   tone?: 'default' | 'success' | 'warning' | 'danger' | 'muted';
 };
 
@@ -19,12 +21,18 @@ const tones = {
 
 export function MoneyText({
   amountCents,
+  ariaLabel,
   children,
   className,
+  emphasis = 'normal',
   tone = 'default',
 }: MoneyTextProps) {
   return (
-    <span className={cn('tabular-nums', tones[tone], className)} translate="no">
+    <span
+      aria-label={ariaLabel}
+      className={cn('tabular-nums', emphasis === 'strong' && 'font-semibold', tones[tone], className)}
+      translate="no"
+    >
       {children ?? formatLempirasUIFromCents(amountCents ?? 0)}
     </span>
   );

@@ -576,7 +576,7 @@ function Test-ProofHasCompletedCheckedItem([string] $content, [string] $labelPat
     return -not (Test-ProofValueIsIncomplete $resultMatch.Groups["value"].Value)
 }
 
-function Test-ProofFile([string] $path, [string] $proofName, [string[]] $requiredFields, [string[]] $requiredChecks) {
+function Test-ProofFile([string] $path, [string] $proofName, [string[]] $requiredFields, [string[]] $requiredChecks, [switch] $NoPassMessage) {
     if (-not (Test-Path -LiteralPath $path)) {
         Add-Failure "Missing $path with real $proofName evidence."
         return
@@ -630,7 +630,90 @@ function Test-ProofFile([string] $path, [string] $proofName, [string[]] $require
         return
     }
 
-    Add-Pass "$proofName evidence is present and completed."
+    if (-not $NoPassMessage) {
+        Add-Pass "$proofName evidence is present and completed."
+    }
+}
+
+function Get-CompletedCheckedItemLine([string] $content, [string] $labelPattern) {
+    $escaped = [regex]::Escape($labelPattern)
+    $linePattern = "(?im)^\s*-\s*\[[xX]\]\s*.*$escaped.*$"
+    $lineMatch = [regex]::Match($content, $linePattern)
+
+    if (-not $lineMatch.Success) {
+        return $null
+    }
+
+    $line = $lineMatch.Value
+    $resultMatch = [regex]::Match($line, ":[ \t]*(?<value>[^\r\n]*)$")
+    if (-not $resultMatch.Success -or (Test-ProofValueIsIncomplete $resultMatch.Groups["value"].Value)) {
+        return $null
+    }
+
+    return $line
+}
+
+function Test-InstitutionalPrinterProofFile([string] $path) {
+    $failureCountBefore = $failures.Count
+
+    Test-ProofFile `
+        -path $path `
+        -proofName "physical institutional printer" `
+        -requiredFields @(
+            "Date/time",
+            "Responsible person",
+            "Printer brand/model",
+            "Printer driver",
+            "Connection type",
+            "Browser/version",
+            "Cashier computer",
+            "Invoice used",
+            "Media carta result",
+            "Carta result",
+            "A5 result",
+            "80mm result",
+            "58mm result",
+            "Reprint result",
+            "Margins result",
+            "Browser headers/footers result",
+            "Problems found",
+            "Evidence/photo reference",
+            "Final conclusion"
+        ) `
+        -requiredChecks @(
+            "80mm",
+            "58mm",
+            "white background",
+            "Reprint",
+            "headers/footers",
+            "historical"
+        ) `
+        -NoPassMessage
+
+    if ($failures.Count -gt $failureCountBefore) {
+        return
+    }
+
+    $content = Get-Content -LiteralPath $path -Raw
+    $primaryPaperLines = @(
+        Get-CompletedCheckedItemLine $content "media carta"
+        Get-CompletedCheckedItemLine $content "carta"
+        Get-CompletedCheckedItemLine $content "A5"
+    ) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+
+    if ($primaryPaperLines.Count -lt 1) {
+        Add-Failure "Complete at least one checked physical institutional paper item (media carta, carta, or A5) with a real result in $path."
+        return
+    }
+
+    $physicalEvidencePattern = '(?i)(fisic|physical|papel|paper|foto|photo|acta|muestra impresa|printed sample|impresora real)'
+    $hasPhysicalEvidenceLine = @($primaryPaperLines | Where-Object { $_ -match $physicalEvidencePattern }).Count -gt 0
+    if (-not $hasPhysicalEvidenceLine) {
+        Add-Failure "At least one checked media carta/carta/A5 evidence line in $path must reference physical paper evidence such as a photo, signed note, printed sample, or real printer."
+        return
+    }
+
+    Add-Pass "physical institutional printer evidence is present and completed."
 }
 
 function Test-LanProofMatchesBaseUrl([string] $path, [string] $expectedBaseUrl) {
@@ -649,6 +732,23 @@ function Test-LanProofMatchesBaseUrl([string] $path, [string] $expectedBaseUrl) 
     $serverLanUrl = Get-ProofFieldValue $content "Server LAN URL"
     if ((Test-ProofValueIsIncomplete $serverLanUrl) -or $serverLanUrl.TrimEnd("/") -ne $expected) {
         Add-Failure "LAN client proof Server LAN URL must be exactly $expected; current value is '$serverLanUrl'."
+        return $false
+    }
+
+    return $true
+}
+
+function Test-ProofMatchesBaseUrl([string] $path, [string] $proofName, [string] $fieldLabel, [string] $expectedBaseUrl) {
+    if (-not (Test-Path -LiteralPath $path)) {
+        return $true
+    }
+
+    $content = Get-Content -LiteralPath $path -Raw
+    $expected = $expectedBaseUrl.TrimEnd("/")
+    $actual = Get-ProofFieldValue $content $fieldLabel
+
+    if ((Test-ProofValueIsIncomplete $actual) -or $actual.TrimEnd("/") -ne $expected) {
+        Add-Failure "$proofName proof $fieldLabel must be exactly $expected; current value is '$actual'."
         return $false
     }
 
@@ -1094,41 +1194,8 @@ if ($AllowMissingPhysicalProof) {
         -path (Join-Path $ProjectRoot "qa\LAN_CLIENT_VALIDATION_PROOF.md") `
         -expectedBaseUrl $BaseUrl
 
-    Test-ProofFile `
-        -path (Join-Path $ProjectRoot "qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md") `
-        -proofName "physical institutional printer" `
-        -requiredFields @(
-            "Date/time",
-            "Responsible person",
-            "Printer brand/model",
-            "Printer driver",
-            "Connection type",
-            "Browser/version",
-            "Cashier computer",
-            "Invoice used",
-            "Media carta result",
-            "Carta result",
-            "A5 result",
-            "80mm result",
-            "58mm result",
-            "Reprint result",
-            "Margins result",
-            "Browser headers/footers result",
-            "Problems found",
-            "Evidence/photo reference",
-            "Final conclusion"
-        ) `
-        -requiredChecks @(
-            "media carta",
-            "carta",
-            "A5",
-            "80mm",
-            "58mm",
-            "white background",
-            "Reprint",
-            "headers/footers",
-            "historical"
-        )
+    Test-InstitutionalPrinterProofFile `
+        -path (Join-Path $ProjectRoot "qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md")
 
     Test-ProofFile `
         -path (Join-Path $ProjectRoot "qa\FINAL_RESTORE_PROOF.md") `
@@ -1153,66 +1220,94 @@ if ($AllowMissingPhysicalProof) {
             "Core counts"
         )
 
-    Test-ProofFile `
-        -path (Join-Path $ProjectRoot "qa\FINAL_CONCURRENCY_PROOF.md") `
+    $finalConcurrencyProofPath = Join-Path $ProjectRoot "qa\FINAL_CONCURRENCY_PROOF.md"
+    $finalConcurrencyUnderLoadProofPath = Join-Path $ProjectRoot "qa\FINAL_CONCURRENCY_UNDER_LOAD_PROOF_LAN_8081.md"
+    $finalRealSmokeProofPath = Join-Path $ProjectRoot "qa\FINAL_REAL_SMOKE_LAN_8081.md"
+
+    $finalConcurrencyMatchesBaseUrl = Test-ProofMatchesBaseUrl `
+        -path $finalConcurrencyProofPath `
         -proofName "final concurrency" `
-        -requiredFields @(
-            "Date/time",
-            "Responsible person",
-            "Server LAN URL",
-            "Target environment",
-            "Run ID",
-            "Evidence/capture reference",
-            "Final conclusion"
-        ) `
-        -requiredChecks @(
-            "Double cash-session open",
-            "Concurrent invoice emission",
-            "Double payment"
-        )
+        -fieldLabel "Server LAN URL" `
+        -expectedBaseUrl $BaseUrl
 
-    Test-ProofFile `
-        -path (Join-Path $ProjectRoot "qa\FINAL_CONCURRENCY_UNDER_LOAD_PROOF_LAN_8081.md") `
+    if ($finalConcurrencyMatchesBaseUrl) {
+        Test-ProofFile `
+            -path $finalConcurrencyProofPath `
+            -proofName "final concurrency" `
+            -requiredFields @(
+                "Date/time",
+                "Responsible person",
+                "Server LAN URL",
+                "Target environment",
+                "Run ID",
+                "Evidence/capture reference",
+                "Final conclusion"
+            ) `
+            -requiredChecks @(
+                "Double cash-session open",
+                "Concurrent invoice emission",
+                "Double payment"
+            )
+    }
+
+    $finalConcurrencyUnderLoadMatchesBaseUrl = Test-ProofMatchesBaseUrl `
+        -path $finalConcurrencyUnderLoadProofPath `
         -proofName "final concurrency under load" `
-        -requiredFields @(
-            "Date/time",
-            "Responsible person",
-            "Server LAN URL",
-            "Target environment",
-            "Run ID",
-            "Load user",
-            "Mutation user",
-            "Load requests/concurrency",
-            "Final conclusion"
-        ) `
-        -requiredChecks @(
-            "Authenticated load",
-            "Double cash-session open",
-            "Concurrent invoice emission",
-            "Double payment"
-        )
+        -fieldLabel "Server LAN URL" `
+        -expectedBaseUrl $BaseUrl
 
-    Test-ProofFile `
-        -path (Join-Path $ProjectRoot "qa\FINAL_REAL_SMOKE_LAN_8081.md") `
+    if ($finalConcurrencyUnderLoadMatchesBaseUrl) {
+        Test-ProofFile `
+            -path $finalConcurrencyUnderLoadProofPath `
+            -proofName "final concurrency under load" `
+            -requiredFields @(
+                "Date/time",
+                "Responsible person",
+                "Server LAN URL",
+                "Target environment",
+                "Run ID",
+                "Load user",
+                "Mutation user",
+                "Load requests/concurrency",
+                "Final conclusion"
+            ) `
+            -requiredChecks @(
+                "Authenticated load",
+                "Double cash-session open",
+                "Concurrent invoice emission",
+                "Double payment"
+            )
+    }
+
+    $finalRealSmokeMatchesBaseUrl = Test-ProofMatchesBaseUrl `
+        -path $finalRealSmokeProofPath `
         -proofName "final real LAN smoke" `
-        -requiredFields @(
-            "Estado",
-            "Fecha",
-            "URL LAN",
-            "Mutaciones reales",
-            "Login navegacion",
-            "Login mutacional",
-            "Resultado",
-            "Evidence/capture reference",
-            "Limpieza"
-        ) `
-        -requiredChecks @(
-            "/up",
-            "Login",
-            "Cashier",
-            "History",
-            "Temporary validation users"
-        )
+        -fieldLabel "URL LAN" `
+        -expectedBaseUrl $BaseUrl
+
+    if ($finalRealSmokeMatchesBaseUrl) {
+        Test-ProofFile `
+            -path $finalRealSmokeProofPath `
+            -proofName "final real LAN smoke" `
+            -requiredFields @(
+                "Estado",
+                "Fecha",
+                "URL LAN",
+                "Mutaciones reales",
+                "Login navegacion",
+                "Login mutacional",
+                "Resultado",
+                "Evidence/capture reference",
+                "Limpieza"
+            ) `
+            -requiredChecks @(
+                "/up",
+                "Login",
+                "Cashier",
+                "History",
+                "Temporary validation users"
+            )
+    }
 }
 
 if ($failures.Count -gt 0 -or $blockingWarnings.Count -gt 0) {

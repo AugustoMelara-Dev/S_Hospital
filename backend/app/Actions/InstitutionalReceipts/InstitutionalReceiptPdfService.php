@@ -13,6 +13,7 @@ use App\Support\PaperSize;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 class InstitutionalReceiptPdfService
 {
@@ -128,7 +129,7 @@ class InstitutionalReceiptPdfService
         abort_unless($user->can('receipts.view'), 403);
 
         if ($receipt->status !== InstitutionalReceipt::STATUS_ISSUED) {
-            throw ValidationException::withMessages([
+            throw $this->validationException([
                 'receipt' => 'Solo se puede generar PDF para recibos institucionales emitidos.',
             ]);
         }
@@ -200,9 +201,33 @@ class InstitutionalReceiptPdfService
         $length = mb_strlen($reason);
 
         if ($length < 5 || $length > 500) {
-            throw ValidationException::withMessages([
+            throw $this->validationException([
                 'reason' => 'El motivo de reimpresion es obligatorio y debe tener entre 5 y 500 caracteres.',
             ]);
         }
+    }
+
+    /**
+     * @param  array<string, string>  $messages
+     */
+    private function validationException(array $messages): ValidationException
+    {
+        return ReceiptPdfValidationException::withMessages($messages);
+    }
+}
+
+final class ReceiptPdfValidationException extends ValidationException implements HttpExceptionInterface
+{
+    public function getStatusCode(): int
+    {
+        return $this->status;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function getHeaders(): array
+    {
+        return [];
     }
 }

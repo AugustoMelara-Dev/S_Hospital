@@ -26,6 +26,84 @@ describe('InvoiceHistoryView', () => {
     vi.restoreAllMocks();
   });
 
+  it('renders the history screen with an accessible heading, filters, semantic table and balance column', async () => {
+    const invoice = invoiceFixture({
+      id: 10,
+      invoice_number: '000-001-01-00000010',
+      patient_name: 'Paciente Accesible',
+      total: '120.00',
+      paid_amount: '40.00',
+      balance_due: '80.00',
+      status: 'partial',
+    });
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [invoice],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
+
+    expect(screen.getByRole('heading', { level: 1, name: /historial de facturas/i })).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: /estado de factura/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/paciente/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/n.mero de factura/i)).toBeInTheDocument();
+
+    await waitFor(() => expect(screen.getByText('Paciente Accesible')).toBeInTheDocument());
+
+    expect(screen.getByRole('region', { name: /listado de facturas/i })).toBeInTheDocument();
+    expect(screen.getByRole('table', { name: /facturas filtradas/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /saldo/i })).toHaveAttribute('data-numeric', 'true');
+    expect(screen.getByRole('cell', { name: 'L 80.00' })).toHaveAttribute('data-numeric', 'true');
+  });
+
+  it('keeps invoice filters controlled and preserves the same query contract', async () => {
+    const getInvoices = vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [],
+      meta: { current_page: 1, per_page: 10, total: 0 },
+    });
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByRole('button', { name: /buscar/i })).toBeEnabled());
+
+    fireEvent.change(screen.getByLabelText(/paciente/i), { target: { value: 'Maria Lopez' } });
+    fireEvent.change(screen.getByLabelText(/n.mero de factura/i), { target: { value: '00000022' } });
+
+    await waitFor(() => expect(getInvoices).toHaveBeenLastCalledWith(expect.objectContaining({
+      patient: 'Maria Lopez',
+      invoice_number: '00000022',
+      page: 1,
+      per_page: 10,
+    })));
+  });
+
+  it('does not expose restricted history actions or invented payment actions without permissions', async () => {
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [
+        invoiceFixture({
+          id: 11,
+          invoice_number: '000-001-01-00000011',
+          patient_name: 'Paciente Sin Permisos',
+          status: 'paid',
+          paid_amount: '17.25',
+          balance_due: '0.00',
+        }),
+      ],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+
+    renderWithQueryClient(<InvoiceHistoryView user={limitedUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente Sin Permisos')).toBeInTheDocument());
+
+    expect(screen.queryByRole('button', { name: /ver recibo/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /reimprimir/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /reversar/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /anular/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /cobrar|registrar pago/i })).not.toBeInTheDocument();
+  });
+
   it('renders malformed invoice history amounts as safe financial values', async () => {
     vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
       data: [
@@ -567,5 +645,13 @@ function adminUser(): AuthUser {
     roles: ['admin'],
     permissions: ['receipts.view', 'receipts.reprint', 'receipts.reprint_any', 'invoices.void', 'invoices.reverse'],
     must_change_password: false,
+  };
+}
+
+function limitedUser(): AuthUser {
+  return {
+    ...adminUser(),
+    roles: ['cashier'],
+    permissions: ['invoices.view'],
   };
 }

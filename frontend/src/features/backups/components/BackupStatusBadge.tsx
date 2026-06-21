@@ -40,7 +40,7 @@ export function BackupStatusBadge({ status, className }: BackupStatusBadgeProps)
         className,
       )}
     >
-      <Icon className="h-3.5 w-3.5" />
+      <Icon aria-hidden="true" className="h-3.5 w-3.5" />
       {config.label}
     </Badge>
   );

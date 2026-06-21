@@ -1,5 +1,6 @@
-import { Search } from 'lucide-react';
+import { Barcode, Search } from 'lucide-react';
 import { type KeyboardEvent, type RefObject, useEffect, useState, useCallback } from 'react';
+import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
@@ -126,127 +127,134 @@ export function ServiceSearch({
 
   return (
     <div className="flex flex-col gap-4 lg:h-full lg:overflow-hidden">
-      <div className="flex flex-col gap-3 lg:shrink-0">
-        <div className={scannerEnabled ? 'grid gap-3 sm:grid-cols-[1fr_auto]' : 'grid gap-3'}>
+      <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted/20 p-4 lg:shrink-0">
+        <div className={scannerEnabled ? 'grid gap-3 sm:grid-cols-[1fr_minmax(14rem,18rem)]' : 'grid gap-3'}>
           <div className="flex min-w-0 flex-col gap-2">
             <Label htmlFor="service-search" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
               Buscar por nombre, categoría o código
             </Label>
             <div className="relative">
-            <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-secondary" aria-hidden="true" />
-            <Input
-              ref={searchInputRef}
-              id="service-search"
-              name="service_search"
-              aria-label="Buscar por nombre, categoría o código"
-              placeholder="Glucosa, hemograma, eritropoyetina…"
-              value={search}
-              onChange={(e) => onSearchChange(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  if (e.ctrlKey || e.metaKey || e.altKey) return;
-                  e.preventDefault();
-                  if (firstVisibleService) {
-                    handleAddService(firstVisibleService);
-                    return;
+              <Search className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-secondary" aria-hidden="true" />
+              <Input
+                ref={searchInputRef}
+                id="service-search"
+                name="service_search"
+                aria-label="Buscar por nombre, categoría o código"
+                placeholder="Glucosa, hemograma, eritropoyetina..."
+                value={search}
+                onChange={(e) => onSearchChange(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    if (e.ctrlKey || e.metaKey || e.altKey) return;
+                    e.preventDefault();
+                    if (firstVisibleService) {
+                      handleAddService(firstVisibleService);
+                      return;
+                    }
+                    if (loading || search.trim()) {
+                      setAddFirstWhenReady(true);
+                    }
                   }
-                  if (loading || search.trim()) {
-                    setAddFirstWhenReady(true);
-                  }
-                }
-              }}
-              autoComplete="off"
-              className="min-h-14 pl-12 text-base font-semibold"
-            />
+                }}
+                autoComplete="off"
+                className="min-h-14 pl-12 text-base font-semibold"
+              />
             </div>
           </div>
+
           {scannerEnabled ? (
-            <div className="flex items-end gap-2">
-              <div className="relative w-40">
-                <Label htmlFor="scanner-code" className="mb-2 block text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                  Scanner USB o código manual
-                </Label>
-                <Input
-                  ref={scannerInputRef}
-                  id="scanner-code"
-                  name="scanner_code"
-                  aria-label="Scanner USB o código manual"
-                  placeholder="Codigo…"
-                  value={scanCode}
-                  onChange={(e) => onScanCodeChange(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      if (e.ctrlKey || e.metaKey || e.altKey) return;
-                      e.preventDefault();
-                      if (!scanningCode) onAddByScanCode();
-                    }
-                  }}
-                  autoComplete="off"
-                  disabled={scanningCode}
-                />
+            <div className="flex min-w-0 flex-col gap-2">
+              <Label htmlFor="scanner-code" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                Scanner USB o código manual
+              </Label>
+              <div className="flex items-center gap-2">
+                <div className="relative min-w-0 flex-1">
+                  <Barcode className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-secondary" aria-hidden="true" />
+                  <Input
+                    ref={scannerInputRef}
+                    id="scanner-code"
+                    name="scanner_code"
+                    aria-label="Scanner USB o código manual"
+                    placeholder="Código..."
+                    value={scanCode}
+                    onChange={(e) => onScanCodeChange(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        if (e.ctrlKey || e.metaKey || e.altKey) return;
+                        e.preventDefault();
+                        if (!scanningCode) onAddByScanCode();
+                      }
+                    }}
+                    autoComplete="off"
+                    disabled={scanningCode}
+                    className="pl-9"
+                  />
+                </div>
+                <Button type="button" variant="secondary" size="sm" className="min-h-10 shrink-0" disabled={scanningCode} onClick={() => onAddByScanCode()}>
+                  {scanningCode ? 'Buscando...' : 'Escanear'}
+                </Button>
               </div>
-              <Button type="button" variant="secondary" size="sm" className="min-h-10" disabled={scanningCode} onClick={() => onAddByScanCode()}>
-                {scanningCode ? 'Buscando...' : 'Escanear'}
-              </Button>
             </div>
           ) : null}
         </div>
 
-        {serviceAreas.length > 0 && (
-          <div>
-            <Label className="mb-2 block" id="service-area-label">Area</Label>
+        <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+          {serviceAreas.length > 0 && (
+            <div className="min-w-0">
+              <Label className="mb-2 block" id="service-area-label">Area</Label>
+              <div
+                aria-labelledby="service-area-label"
+                className="grid max-h-28 grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3 xl:grid-cols-2 2xl:grid-cols-3"
+                onKeyDown={(event) => handleRadioGroupKeyDown(event, areaOptions, selectedAreaId, onAreaChange)}
+                role="radiogroup"
+                tabIndex={-1}
+              >
+                <CategoryButton
+                  active={selectedAreaId === undefined || selectedAreaId === 'all'}
+                  label="Todas"
+                  onClick={() => onAreaChange('all')}
+                />
+                {serviceAreas.map((area) => (
+                  <CategoryButton
+                    key={area.id}
+                    active={selectedAreaId === area.id}
+                    label={area.name}
+                    onClick={() => onAreaChange(area.id)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="min-w-0">
+            <Label className="mb-2 block" id="service-category-label">Categoría</Label>
             <div
-              aria-labelledby="service-area-label"
-              className="grid max-h-28 grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3 xl:grid-cols-4"
-              onKeyDown={(event) => handleRadioGroupKeyDown(event, areaOptions, selectedAreaId, onAreaChange)}
+              aria-labelledby="service-category-label"
+              className="grid max-h-32 grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3 xl:grid-cols-3"
+              onKeyDown={(event) => handleRadioGroupKeyDown(event, categoryOptions, selectedCategoryId, onCategoryChange)}
               role="radiogroup"
               tabIndex={-1}
             >
               <CategoryButton
-                active={selectedAreaId === undefined || selectedAreaId === 'all'}
-                label="Todas"
-                onClick={() => onAreaChange('all')}
+                active={selectedCategoryId === undefined || selectedCategoryId === 'all'}
+                label="Todos"
+                onClick={() => onCategoryChange('all')}
               />
-              {serviceAreas.map((area) => (
+              {categories.map((cat) => (
                 <CategoryButton
-                  key={area.id}
-                  active={selectedAreaId === area.id}
-                  label={area.name}
-                  onClick={() => onAreaChange(area.id)}
+                  key={cat.id}
+                  active={selectedCategoryId === cat.id}
+                  label={cat.name}
+                  onClick={() => onCategoryChange(cat.id)}
                 />
               ))}
             </div>
-          </div>
-        )}
-
-        <div>
-          <Label className="mb-2 block" id="service-category-label">Categoria</Label>
-          <div
-            aria-labelledby="service-category-label"
-            className="grid max-h-32 grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3 xl:grid-cols-4"
-            onKeyDown={(event) => handleRadioGroupKeyDown(event, categoryOptions, selectedCategoryId, onCategoryChange)}
-            role="radiogroup"
-            tabIndex={-1}
-          >
-            <CategoryButton
-              active={selectedCategoryId === undefined || selectedCategoryId === 'all'}
-              label="Todos"
-              onClick={() => onCategoryChange('all')}
-            />
-            {categories.map((cat) => (
-              <CategoryButton
-                key={cat.id}
-                active={selectedCategoryId === cat.id}
-                label={cat.name}
-                onClick={() => onCategoryChange(cat.id)}
-              />
-            ))}
           </div>
         </div>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto pr-1">
-        <div className="flex items-center justify-between mb-2" aria-live="polite">
+        <div className="mb-2 flex items-center justify-between gap-3" aria-live="polite">
           <Label className="font-mono text-xs uppercase tracking-[0.14em] text-muted-foreground">
             Servicios ({hasIntent ? filteredServices.length : 0})
           </Label>
@@ -284,46 +292,51 @@ export function ServiceSearch({
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {visibleServices.map((service) => {
-              const isErythropoietin = service.special_rule_code === ERYTHROPOIETIN_RULE;
-              return (
-                <Button
-                  key={service.id}
-                  type="button"
-                  variant="outline"
-                  aria-label={`Agregar ${service.name} por ${moneyLabel(service.price)}`}
-                  className="group relative h-auto min-h-24 items-center justify-start gap-3 overflow-hidden p-3 text-left font-normal transition-[background-color,border-color,box-shadow,transform] duration-150 hover:border-secondary/45 hover:bg-accent/50 hover:shadow-sm active:translate-y-px active:scale-[0.99]"
-                  onClick={() => handleAddService(service)}
-                >
-                  <div className="flex min-w-0 flex-1 flex-col gap-1">
-                    <p className="pr-20 text-sm font-semibold leading-tight text-foreground">{service.name}</p>
-                    <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="inline-flex items-center rounded-sm bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
-                        {service.category?.name ?? 'Sin categoría'}
-                      </span>
-                      {scannerEnabled && (service.scan_code || service.barcode || service.qr_code) && (
-                        <span className="text-[10px] text-muted-foreground">
-                          Disponible para lector
-                        </span>
-                      )}
-                    </div>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2" role="list" aria-label="Servicios facturables disponibles">
+              {visibleServices.map((service) => {
+                const isErythropoietin = service.special_rule_code === ERYTHROPOIETIN_RULE;
+
+                return (
+                  <div key={service.id} role="listitem">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      aria-label={`Agregar ${service.name} por ${moneyLabel(service.price)}`}
+                      className="group h-full min-h-28 w-full items-stretch justify-start gap-3 p-3 text-left font-normal transition-[background-color,border-color,box-shadow,transform] duration-150 hover:border-secondary/45 hover:bg-accent/50 active:translate-y-px active:scale-[0.99]"
+                      onClick={() => handleAddService(service)}
+                    >
+                      <div className="flex min-w-0 flex-1 flex-col gap-2">
+                        <div className="flex min-w-0 items-start justify-between gap-3">
+                          <p className="min-w-0 break-words text-sm font-semibold leading-tight text-foreground">{service.name}</p>
+                          <span className="shrink-0 rounded-sm bg-secondary/12 px-2 py-1 font-mono text-sm font-semibold tabular-nums text-secondary">
+                            {moneyLabel(service.price)}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <Badge variant="info" className="rounded-sm px-1.5 py-0.5 text-[10px]">
+                            {service.category?.name ?? 'Sin categoría'}
+                          </Badge>
+                          {service.area?.name ? (
+                            <Badge variant="outline" className="rounded-sm px-1.5 py-0.5 text-[10px]">
+                              {service.area.name}
+                            </Badge>
+                          ) : null}
+                          {scannerEnabled && (service.scan_code || service.barcode || service.qr_code) && (
+                            <span className="text-[10px] text-muted-foreground">
+                              Disponible para lector
+                            </span>
+                          )}
+                        </div>
+                        {isErythropoietin && (
+                          <p className="rounded-sm bg-muted px-1.5 py-1 text-[10px] text-muted-foreground">
+                            Con receta diálisis = gratis
+                          </p>
+                        )}
+                      </div>
+                    </Button>
                   </div>
-                  <div className="absolute right-3 top-3">
-                    <span className="inline-flex items-center rounded-sm bg-secondary/12 px-2 py-1 font-mono text-sm font-semibold tabular-nums text-secondary">
-                      {moneyLabel(service.price)}
-                    </span>
-                  </div>
-                  {isErythropoietin && (
-                    <div className="absolute bottom-1 right-3">
-                      <span className="rounded-sm bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                        Con receta diálisis = gratis
-                      </span>
-                    </div>
-                  )}
-                </Button>
-              );
-            })}
+                );
+              })}
             </div>
             {hiddenCount > 0 && (
               <p className="mt-3 rounded-md border border-border bg-muted px-3 py-2 text-sm text-muted-foreground">
