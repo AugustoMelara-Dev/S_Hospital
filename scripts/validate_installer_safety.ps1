@@ -111,4 +111,23 @@ if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 
+& $powerShellHost -NoProfile -ExecutionPolicy Bypass -File (Join-Path $Root 'scripts\test_lan_deploy_hardening.ps1')
+if ($LASTEXITCODE -ne 0) {
+    exit $LASTEXITCODE
+}
+
+& $powerShellHost -NoProfile -ExecutionPolicy Bypass -File (Join-Path $Root 'scripts\test_physical_receipt_print_proof_safety.ps1') -Root $Root
+if ($LASTEXITCODE -ne 0) {
+    exit $LASTEXITCODE
+}
+
+if (Test-Path -LiteralPath (Join-Path $Root 'frontend\scripts\run-release-e2e.mjs') -PathType Leaf) {
+    & $powerShellHost -NoProfile -ExecutionPolicy Bypass -File (Join-Path $Root 'scripts\test_release_e2e_golden_sqlite_safety.ps1') -Root $Root
+    if ($LASTEXITCODE -ne 0) {
+        exit $LASTEXITCODE
+    }
+} else {
+    Write-Host '[OK] Release E2E golden SQLite safety skipped: frontend source runner is not included in this package.'
+}
+
 Write-Host 'Validacion de instalador completada sin hallazgos.'
