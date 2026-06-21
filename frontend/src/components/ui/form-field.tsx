@@ -35,8 +35,8 @@ export function FormField({
   const describedBy = [hint ? hintId : undefined, error ? errorId : undefined].filter(Boolean).join(' ') || undefined;
 
   return (
-    <div className={cn('flex min-w-0 flex-col gap-2', className)}>
-      <div className="flex items-center gap-1">
+    <div data-slot="form-field" className={cn('flex min-w-0 flex-col gap-2', className)}>
+      <div data-slot="form-field-label-row" className="flex items-center gap-1">
         <Label htmlFor={fieldId} className="text-sm font-semibold text-foreground">
           {label}
         </Label>
@@ -44,12 +44,12 @@ export function FormField({
       </div>
       {children({ describedBy, errorId, hintId, id: fieldId, invalid })}
       {hint ? (
-        <p id={hintId} className="text-xs leading-relaxed text-muted-foreground">
+        <p id={hintId} data-slot="form-field-hint" className="text-xs leading-relaxed text-muted-foreground">
           {hint}
         </p>
       ) : null}
       {error ? (
-        <p id={errorId} className="text-sm font-semibold text-destructive" role="alert">
+        <p id={errorId} data-slot="form-field-error" className="text-sm font-semibold text-destructive" role="alert">
           {error}
         </p>
       ) : null}

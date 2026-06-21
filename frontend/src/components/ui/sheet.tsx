@@ -16,29 +16,28 @@ export function Sheet({ children, description, onOpenChange, open, title }: Shee
   return (
     <SheetPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <SheetPrimitive.Portal>
-        <SheetPrimitive.Overlay data-sheet-overlay className="fixed inset-0 z-50 bg-foreground/55" />
+        <SheetPrimitive.Overlay data-slot="sheet-overlay" data-sheet-overlay className="fixed inset-0 z-50 bg-foreground/55" />
         <SheetPrimitive.Content
+          data-slot="sheet-content"
           data-sheet-content
           className="fixed right-0 top-0 z-50 flex h-full w-[calc(100vw-1.5rem)] max-w-lg flex-col overflow-hidden rounded-l-lg border-l border-border bg-card text-card-foreground shadow-xl"
         >
-          <header className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
+          <header data-slot="sheet-header" className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
             <div className="min-w-0">
-              <SheetPrimitive.Title className="truncate text-lg font-semibold">
+              <SheetPrimitive.Title data-slot="sheet-title" className="truncate text-lg font-semibold">
                 {title}
               </SheetPrimitive.Title>
-              {description ? (
-                <SheetPrimitive.Description className="mt-1 text-sm text-muted-foreground">
-                  {description}
-                </SheetPrimitive.Description>
-              ) : null}
+              <SheetPrimitive.Description data-slot="sheet-description" className={description ? 'mt-1 text-sm text-muted-foreground' : 'sr-only'}>
+                {description ?? `Panel lateral: ${title}`}
+              </SheetPrimitive.Description>
             </div>
             <SheetPrimitive.Close asChild>
               <Button type="button" variant="ghost" size="sm" aria-label="Cerrar panel">
-                <X aria-hidden="true" />
+                <X data-icon aria-hidden="true" />
               </Button>
             </SheetPrimitive.Close>
           </header>
-          <div className="overflow-y-auto p-5">{children}</div>
+          <div data-slot="sheet-body" className="overflow-y-auto p-5">{children}</div>
         </SheetPrimitive.Content>
       </SheetPrimitive.Portal>
     </SheetPrimitive.Root>
@@ -46,13 +45,13 @@ export function Sheet({ children, description, onOpenChange, open, title }: Shee
 }
 
 Sheet.Header = function SheetHeader({ className, ...props }: { className?: string } & React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('flex flex-col gap-1.5', className)} {...props} />;
+  return <div data-slot="sheet-header" className={cn('flex flex-col gap-1.5', className)} {...props} />;
 };
 
 Sheet.Title = function SheetTitle({ className, children, ...props }: { className?: string; children?: ReactNode } & React.HTMLAttributes<HTMLHeadingElement>) {
-  return <h2 className={cn('text-lg font-semibold leading-none', className)} {...props}>{children}</h2>;
+  return <h2 data-slot="sheet-title" className={cn('text-lg font-semibold leading-none', className)} {...props}>{children}</h2>;
 };
 
 Sheet.Description = function SheetDescription({ className, ...props }: { className?: string } & React.HTMLAttributes<HTMLParagraphElement>) {
-  return <p className={cn('text-sm text-muted-foreground', className)} {...props} />;
+  return <p data-slot="sheet-description" className={cn('text-sm text-muted-foreground', className)} {...props} />;
 };

@@ -3,40 +3,40 @@
 @theme {
   /* Sistema de diseno institucional sobrio - Hospital San Isidro */
 
-  /* Background & Foreground */
+  /* Base */
   --color-background: #fafaf7;
   --color-foreground: #0f172a;
-
-  /* Card */
-  --color-card: #ffffff;
-  --color-card-foreground: #0f172a;
-
-  /* Primary - neutral ink for minimal hospital operations */
   --color-primary: #0f172a;
   --color-primary-foreground: #ffffff;
-
-  /* Secondary - restrained clinical accent */
   --color-secondary: #0d9488;
   --color-secondary-foreground: #ffffff;
-
-  /* Muted */
   --color-muted: #f1f5f9;
   --color-muted-foreground: #475569;
-
-  /* Accent */
   --color-accent: #ecfeff;
   --color-accent-foreground: #0f766e;
 
-  /* Destructive */
-  --color-destructive: #b91c1c;
-  --color-destructive-foreground: #ffffff;
-
-  /* Border & Input */
+  /* Surface */
+  --color-card: #ffffff;
+  --color-card-foreground: #0f172a;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #0f172a;
   --color-border: #e2e8f0;
   --color-input: #cbd5e1;
+
+  /* Interaction */
   --color-ring: #0d9488;
 
-  /* Sidebar - light institutional shell */
+  /* State */
+  --color-destructive: #b91c1c;
+  --color-destructive-foreground: #ffffff;
+  --color-success: #047857;
+  --color-success-foreground: #064e3b;
+  --color-warning: #b45309;
+  --color-warning-foreground: #78350f;
+  --color-info: #0369a1;
+  --color-info-foreground: #0c4a6e;
+
+  /* Navigation */
   --color-sidebar: #ffffff;
   --color-sidebar-foreground: #0f172a;
   --color-sidebar-primary: #0d9488;
@@ -45,14 +45,6 @@
   --color-sidebar-accent-foreground: #0f172a;
   --color-sidebar-border: #e2e8f0;
   --color-sidebar-ring: #0d9488;
-
-  /* Status Colors */
-  --color-success: #047857;
-  --color-success-foreground: #064e3b;
-  --color-warning: #b45309;
-  --color-warning-foreground: #78350f;
-  --color-info: #0369a1;
-  --color-info-foreground: #0c4a6e;
 
   /* Typography */
   --font-sans: "Geist", "Aptos", "Segoe UI Variable", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
@@ -80,6 +72,8 @@ html.dark {
   --color-foreground: #e2e8f0;
   --color-card: #111827;
   --color-card-foreground: #e2e8f0;
+  --color-popover: #111827;
+  --color-popover-foreground: #e2e8f0;
   --color-primary: #e2e8f0;
   --color-primary-foreground: #0a0f1a;
   --color-secondary: #14b8a6;
@@ -154,6 +148,10 @@ html.dark {
 
   :where([data-icon]) {
     stroke-width: 1.75;
+  }
+
+  :where(.tabular-nums, [data-numeric="true"]) {
+    font-variant-numeric: tabular-nums;
   }
 
   .table-wrap {

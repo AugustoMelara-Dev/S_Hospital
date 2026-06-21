@@ -8,7 +8,7 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   size?: 'default' | 'sm' | 'lg' | 'icon';
 };
 
-const variants = {
+export const buttonVariants = {
   default: 'border border-primary bg-primary text-primary-foreground shadow-sm hover:bg-primary/92 hover:shadow-md',
   secondary: 'border border-border bg-card text-foreground shadow-sm hover:border-input hover:bg-muted/70',
   ghost: 'bg-transparent text-foreground hover:bg-muted/70',
@@ -16,7 +16,7 @@ const variants = {
   outline: 'border border-input bg-background/80 text-foreground hover:border-primary/35 hover:bg-muted/70',
 };
 
-const sizes = {
+export const buttonSizes = {
   default: 'min-h-10 px-4 py-2',
   sm: 'min-h-9 px-3 py-1.5 text-sm',
   lg: 'min-h-12 px-6 py-3 text-base',
@@ -35,16 +35,20 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   return (
     <Comp
       ref={ref}
+      data-slot="button"
       className={cn(
         'inline-flex items-center justify-center gap-2 rounded font-semibold',
         'transition-colors duration-150 ease-out',
         'disabled:pointer-events-none disabled:opacity-60',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-        variants[variant],
-        sizes[size],
+        '[&_[data-icon]]:shrink-0 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-4',
+        buttonVariants[variant],
+        buttonSizes[size],
         className,
       )}
       {...props}
     />
   );
 });
+
+Button.displayName = 'Button';
