@@ -54,8 +54,8 @@ powershell.exe -ExecutionPolicy Bypass -File scripts\production_readiness_prefli
 
 ## Capacitacion sin datos reales
 
-1. Preferir un entorno local/demo o una base descartable para entrenamiento.
+1. Preferir un entorno local de capacitacion o una base descartable para entrenamiento.
 2. No crear pacientes, facturas ni pagos de practica en la base real.
-3. No ejecutar seeders demo ni resets destructivos en el servidor real.
+3. No ejecutar seeders de desarrollo ni resets destructivos en el servidor real.
 4. Antes de cualquier simulacro autorizado en servidor final, crear respaldo manual y confirmar que quede completado.
 5. Documentar fecha, responsable y usuarios usados durante la capacitacion.

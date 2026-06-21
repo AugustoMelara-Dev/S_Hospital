@@ -4,7 +4,7 @@ import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { PageHeader } from '../../components/ui/page-header';
 import { useBackups } from '../../hooks/useBackups';
-import { useFiscalSettings } from '../../hooks/useFiscalSettings';
+import { usePublicBranding } from '../../hooks/useFiscalSettings';
 import { useServerStatus, useSystemStatusSnapshot } from '../../hooks/useServerStatus';
 import { type AuthUser, type SystemStatus, userSafeErrorMessage } from '../../lib/api';
 import { displayHospitalName } from '../../lib/hospital-name';
@@ -21,7 +21,7 @@ type AdminDiagnosticItem = {
 };
 
 export function AboutView({ user, onStatus }: AboutViewProps) {
-  const { data: fiscal } = useFiscalSettings();
+  const { data: fiscal } = usePublicBranding();
   const { checking, isOnline, lastCheck, summary } = useServerStatus();
   const hospitalName = displayHospitalName(fiscal?.hospital_name);
   const canViewAdminDiagnostics = user.roles.includes('admin');

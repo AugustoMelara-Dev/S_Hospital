@@ -1,9 +1,9 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { UsersView } from './UsersView';
-import { ApiError, apiClient, type AuthUser } from '@/lib/api';
+import { ApiError, apiClient, type AuthUser, type RoleDefinition } from '@/lib/api';
 
-const passwordPolicyMessage = /contraseña debe tener al menos 10 caracteres e incluir letras y números/i;
+const passwordPolicyMessage = /contraseña debe tener al menos 12 caracteres e incluir mayúscula, minúscula, número y símbolo/i;
 
 const adminUser: AuthUser = {
   id: 1,
@@ -16,9 +16,55 @@ const adminUser: AuthUser = {
   must_change_password: false,
 };
 
+const inactiveExactAccessUser: AuthUser = {
+  ...adminUser,
+  id: 9,
+  name: 'Pendiente Modulos',
+  email: 'pendiente-modulos@hospital.test',
+  username: 'pendiente-modulos',
+  active: false,
+  roles: ['cajero'],
+  permissions: [],
+  direct_permissions: [],
+  uses_exact_permission_map: true,
+};
+
+const roleCatalog = {
+  roles: [
+    { id: 1, name: 'admin', protected: true, permissions: [] },
+    { id: 2, name: 'cajero', protected: false, permissions: [] },
+    { id: 3, name: 'auditor', protected: false, permissions: [] },
+    {
+      id: 4,
+      name: 'catalog_manager',
+      protected: false,
+      permissions: [{ name: 'catalog.view', module: 'catalog', label: 'Catalog view' }],
+    },
+  ] satisfies RoleDefinition[],
+  permissionCatalog: [
+    {
+      module: 'catalog',
+      label: 'Catalogo',
+      permissions: [
+        { name: 'catalog.view', module: 'catalog', label: 'Catalog view' },
+        { name: 'catalog.manage', module: 'catalog', label: 'Catalog manage' },
+      ],
+    },
+    {
+      module: 'reports',
+      label: 'Reportes',
+      permissions: [
+        { name: 'reports.view', module: 'reports', label: 'Reports view' },
+      ],
+    },
+  ],
+};
+
 describe('UsersView', () => {
   beforeEach(() => {
+    Element.prototype.scrollIntoView = vi.fn();
     vi.spyOn(apiClient, 'getUsers').mockResolvedValue([adminUser]);
+    vi.spyOn(apiClient, 'getRoles').mockResolvedValue(roleCatalog);
   });
 
   afterEach(() => {
@@ -27,14 +73,39 @@ describe('UsersView', () => {
   });
 
   it('hides the create action when the user lacks users.create', async () => {
-    render(<UsersView onStatus={vi.fn()} canCreateUsers={false} />);
+    render(<UsersView onStatus={vi.fn()} canCreateUsers={false} canManageRoles={false} />);
 
     expect(await screen.findByText('Admin Hospital')).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: /buscar usuarios/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /editar usuario admin hospital/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /restablecer clave de admin hospital/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /desactivar usuario admin hospital/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /crear usuario/i })).not.toBeInTheDocument();
+  });
+
+  it('hides user mutation actions when the operator only has users.view', async () => {
+    render(<UsersView onStatus={vi.fn()} canCreateUsers={false} canManageRoles={false} />);
+
+    expect(await screen.findByText('Admin Hospital')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /editar usuario admin hospital/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /restablecer clave de admin hospital/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /desactivar usuario admin hospital/i })).not.toBeInTheDocument();
+    expect(screen.getByText(/solo lectura/i)).toBeInTheDocument();
+  });
+
+  it('shows exact user actions only for matching permissions', async () => {
+    render(<UsersView onStatus={vi.fn()} canCreateUsers={false} canUpdateUsers canManageRoles={false} />);
+
+    expect(await screen.findByRole('button', { name: /editar usuario admin hospital/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /restablecer clave de admin hospital/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /desactivar usuario admin hospital/i })).not.toBeInTheDocument();
+
+    cleanup();
+    vi.mocked(apiClient.getUsers).mockResolvedValue([adminUser]);
+    vi.mocked(apiClient.getRoles).mockResolvedValue(roleCatalog);
+
+    render(<UsersView onStatus={vi.fn()} canCreateUsers={false} canDisableUsers canManageRoles={false} />);
+
+    expect(await screen.findByRole('button', { name: /desactivar usuario admin hospital/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /editar usuario admin hospital/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /restablecer clave de admin hospital/i })).not.toBeInTheDocument();
   });
 
   it('shows a recoverable load error instead of leaving users in loading', async () => {
@@ -44,7 +115,7 @@ describe('UsersView', () => {
       .mockResolvedValueOnce([adminUser]);
     const onStatus = vi.fn();
 
-    render(<UsersView onStatus={onStatus} canCreateUsers={false} />);
+    render(<UsersView onStatus={onStatus} canCreateUsers={false} canManageRoles={false} />);
 
     expect(await screen.findByRole('heading', { name: /no se pudieron cargar los usuarios/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /reintentar/i })).toBeInTheDocument();
@@ -67,7 +138,7 @@ describe('UsersView', () => {
       must_change_password: true,
     });
 
-    render(<UsersView onStatus={vi.fn()} canCreateUsers={true} />);
+    render(<UsersView onStatus={vi.fn()} canCreateUsers={true} canManageRoles={false} />);
 
     fireEvent.click(await screen.findByRole('button', { name: /crear usuario/i }));
     const dialog = screen.getByRole('dialog', { name: /crear usuario/i });
@@ -83,12 +154,298 @@ describe('UsersView', () => {
     });
     expect(createUser).not.toHaveBeenCalled();
 
-    fireEvent.change(within(dialog).getByLabelText(/contraseña inicial/i), { target: { value: 'Password123' } });
+    fireEvent.change(within(dialog).getByLabelText(/contraseña inicial/i), { target: { value: 'Password123!' } });
     fireEvent.click(within(dialog).getByRole('button', { name: /crear usuario/i }));
 
     await waitFor(() => expect(createUser).toHaveBeenCalledWith(expect.objectContaining({
-      password: 'Password123',
+      password: 'Password123!',
     })));
+  });
+
+  it('loads operational roles from the API instead of hardcoding only default roles', async () => {
+    render(<UsersView onStatus={vi.fn()} canCreateUsers={true} canManageRoles={false} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /crear usuario/i }));
+    const dialog = screen.getByRole('dialog', { name: /crear usuario/i });
+
+    fireEvent.click(within(dialog).getByRole('combobox', { name: /rol operativo/i }));
+
+    expect(await screen.findByRole('option', { name: /Auditor/i })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /Catalog manager/i })).toBeInTheDocument();
+  });
+
+  it('does not send direct permissions when the operator cannot manage roles', async () => {
+    const createUser = vi.spyOn(apiClient, 'createUser').mockResolvedValue({
+      ...adminUser,
+      id: 8,
+      name: 'Caja Rol',
+      email: 'caja-rol@hospital.test',
+      username: 'caja-rol',
+      roles: ['cajero'],
+      direct_permissions: [],
+      must_change_password: true,
+    });
+
+    render(<UsersView onStatus={vi.fn()} canCreateUsers={true} canManageRoles={false} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /crear usuario/i }));
+    const dialog = screen.getByRole('dialog', { name: /crear usuario/i });
+
+    expect(within(dialog).queryByRole('checkbox', { name: /Reports view/i })).not.toBeInTheDocument();
+    expect(within(dialog).getByText(/heredara los modulos del rol seleccionado/i)).toBeInTheDocument();
+
+    fireEvent.change(within(dialog).getByLabelText(/nombre completo/i), { target: { value: 'Caja Rol' } });
+    fireEvent.change(within(dialog).getByLabelText(/correo electr/i), { target: { value: 'caja-rol@hospital.test' } });
+    fireEvent.change(within(dialog).getByLabelText(/nombre de usuario/i), { target: { value: 'caja-rol' } });
+    fireEvent.change(within(dialog).getByLabelText(/contrase/i), { target: { value: 'Password123!' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: /crear usuario/i }));
+
+    await waitFor(() => expect(createUser).toHaveBeenCalledWith(expect.not.objectContaining({
+      permissions: expect.any(Array),
+    })));
+  });
+
+  it('sends selected module permissions when creating an operational user', async () => {
+    const createUser = vi.spyOn(apiClient, 'createUser').mockResolvedValue({
+      ...adminUser,
+      id: 6,
+      name: 'Reportes Turno',
+      email: 'reportes-turno@hospital.test',
+      username: 'reportes-turno',
+      roles: ['auditor'],
+      direct_permissions: ['reports.view'],
+      must_change_password: true,
+    });
+
+    render(<UsersView onStatus={vi.fn()} canCreateUsers={true} canUpdateUsers canManageRoles={true} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /crear usuario/i }));
+    const dialog = screen.getByRole('dialog', { name: /crear usuario/i });
+
+    fireEvent.change(within(dialog).getByLabelText(/nombre completo/i), { target: { value: 'Reportes Turno' } });
+    fireEvent.change(within(dialog).getByLabelText(/correo electr/i), { target: { value: 'reportes-turno@hospital.test' } });
+    fireEvent.change(within(dialog).getByLabelText(/nombre de usuario/i), { target: { value: 'reportes-turno' } });
+    fireEvent.change(within(dialog).getByLabelText(/contrase/i), { target: { value: 'Password123!' } });
+    fireEvent.click(within(dialog).getByRole('checkbox', { name: /Reports view/i }));
+    fireEvent.click(within(dialog).getByRole('button', { name: /crear usuario/i }));
+
+    await waitFor(() => expect(createUser).toHaveBeenCalledWith(expect.objectContaining({
+      role: 'cajero',
+      permissions: ['reports.view'],
+    })));
+  });
+
+  it('lets an administrator remove a permission inherited from the selected role template', async () => {
+    vi.mocked(apiClient.getRoles).mockResolvedValueOnce({
+      roles: [
+        {
+          id: 2,
+          name: 'cajero',
+          protected: false,
+          permissions: [
+            { name: 'cash.open', module: 'cash', label: 'Cash open' },
+            { name: 'cash.view', module: 'cash', label: 'Cash view' },
+          ],
+        },
+      ],
+      permissionCatalog: [
+        {
+          module: 'cash',
+          label: 'Caja',
+          permissions: [
+            { name: 'cash.open', module: 'cash', label: 'Cash open' },
+            { name: 'cash.view', module: 'cash', label: 'Cash view' },
+          ],
+        },
+      ],
+    });
+    const createUser = vi.spyOn(apiClient, 'createUser').mockResolvedValue({
+      ...adminUser,
+      id: 7,
+      name: 'Caja Solo Lectura',
+      email: 'caja-solo-lectura@hospital.test',
+      username: 'caja-solo-lectura',
+      roles: ['cajero'],
+      direct_permissions: ['cash.view'],
+      permissions: ['cash.view'],
+      must_change_password: true,
+    });
+
+    render(<UsersView onStatus={vi.fn()} canCreateUsers={true} canDisableUsers canManageRoles={true} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /crear usuario/i }));
+    const dialog = screen.getByRole('dialog', { name: /crear usuario/i });
+    const cashOpen = within(dialog).getByRole('checkbox', { name: /Cash open/i });
+
+    expect(cashOpen).toBeChecked();
+    fireEvent.click(cashOpen);
+
+    fireEvent.change(within(dialog).getByLabelText(/nombre completo/i), { target: { value: 'Caja Solo Lectura' } });
+    fireEvent.change(within(dialog).getByLabelText(/correo electr/i), { target: { value: 'caja-solo-lectura@hospital.test' } });
+    fireEvent.change(within(dialog).getByLabelText(/nombre de usuario/i), { target: { value: 'caja-solo-lectura' } });
+    fireEvent.change(within(dialog).getByLabelText(/contrase/i), { target: { value: 'Password123!' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: /crear usuario/i }));
+
+    await waitFor(() => expect(createUser).toHaveBeenCalledWith(expect.objectContaining({
+      role: 'cajero',
+      permissions: ['cash.view'],
+    })));
+  });
+
+  it('blocks creating an active exact-access user with no module permissions', async () => {
+    vi.mocked(apiClient.getRoles).mockResolvedValueOnce({
+      roles: [
+        {
+          id: 2,
+          name: 'cajero',
+          protected: false,
+          permissions: [{ name: 'cash.view', module: 'cash', label: 'Cash view' }],
+        },
+      ],
+      permissionCatalog: [
+        {
+          module: 'cash',
+          label: 'Caja',
+          permissions: [{ name: 'cash.view', module: 'cash', label: 'Cash view' }],
+        },
+      ],
+    });
+    const createUser = vi.spyOn(apiClient, 'createUser');
+    const onStatus = vi.fn();
+
+    render(<UsersView onStatus={onStatus} canCreateUsers={true} canManageRoles={true} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /crear usuario/i }));
+    const dialog = screen.getByRole('dialog', { name: /crear usuario/i });
+    const cashView = within(dialog).getByRole('checkbox', { name: /Cash view/i });
+
+    expect(cashView).toBeChecked();
+    fireEvent.click(cashView);
+
+    fireEvent.change(within(dialog).getByLabelText(/nombre completo/i), { target: { value: 'Usuario Sin Acceso' } });
+    fireEvent.change(within(dialog).getByLabelText(/correo electr/i), { target: { value: 'sin-acceso@hospital.test' } });
+    fireEvent.change(within(dialog).getByLabelText(/nombre de usuario/i), { target: { value: 'sin-acceso' } });
+    fireEvent.change(within(dialog).getByLabelText(/contrase/i), { target: { value: 'Password123!' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: /crear usuario/i }));
+
+    await waitFor(() => {
+      expect(within(dialog).getByText(/seleccione al menos un modulo/i)).toBeInTheDocument();
+    });
+    expect(onStatus).toHaveBeenCalledWith(expect.stringMatching(/seleccione al menos un modulo/i));
+    expect(createUser).not.toHaveBeenCalled();
+  });
+
+  it('keeps exact-access empty users empty when opening the edit form', async () => {
+    vi.mocked(apiClient.getUsers).mockResolvedValueOnce([inactiveExactAccessUser]);
+    vi.mocked(apiClient.getRoles).mockResolvedValueOnce({
+      roles: [
+        {
+          id: 2,
+          name: 'cajero',
+          protected: false,
+          permissions: [{ name: 'cash.view', module: 'cash', label: 'Cash view' }],
+        },
+      ],
+      permissionCatalog: [
+        {
+          module: 'cash',
+          label: 'Caja',
+          permissions: [{ name: 'cash.view', module: 'cash', label: 'Cash view' }],
+        },
+      ],
+    });
+
+    render(<UsersView onStatus={vi.fn()} canCreateUsers={false} canUpdateUsers canManageRoles={true} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /editar usuario pendiente modulos/i }));
+    const dialog = screen.getByRole('dialog', { name: /editar usuario/i });
+
+    expect(within(dialog).getByRole('checkbox', { name: /Cash view/i })).not.toBeChecked();
+  });
+
+  it('lets an authorized administrator create a role with module permissions', async () => {
+    const createRole = vi.spyOn(apiClient, 'createRole').mockResolvedValue({
+      id: 5,
+      name: 'report_viewer',
+      protected: false,
+      permissions: [{ name: 'reports.view', module: 'reports', label: 'Reports view' }],
+    });
+
+    render(<UsersView onStatus={vi.fn()} canCreateUsers={true} canUpdateUsers canManageRoles={true} />);
+
+    await screen.findByText('Admin Hospital');
+    fireEvent.click(screen.getByRole('button', { name: /nuevo rol/i }));
+
+    const dialog = screen.getByRole('dialog', { name: /nuevo rol/i });
+    fireEvent.change(within(dialog).getByLabelText(/nombre del rol/i), { target: { value: 'report_viewer' } });
+    fireEvent.click(within(dialog).getByRole('checkbox', { name: /Reports view/i }));
+    fireEvent.click(within(dialog).getByRole('button', { name: /crear rol/i }));
+
+    await waitFor(() => expect(createRole).toHaveBeenCalledWith({
+      name: 'report_viewer',
+      permissions: ['reports.view'],
+    }));
+    expect(await screen.findByText(/Report viewer/i)).toBeInTheDocument();
+  });
+
+  it('prevents duplicated role submissions while the request is pending', async () => {
+    let resolveRole!: (role: RoleDefinition) => void;
+    const createRole = vi.spyOn(apiClient, 'createRole').mockReturnValue(new Promise<RoleDefinition>((resolve) => {
+      resolveRole = resolve;
+    }));
+
+    render(<UsersView onStatus={vi.fn()} canCreateUsers={true} canUpdateUsers canManageRoles={true} />);
+
+    await screen.findByText('Admin Hospital');
+    fireEvent.click(screen.getByRole('button', { name: /nuevo rol/i }));
+
+    const dialog = screen.getByRole('dialog', { name: /nuevo rol/i });
+    fireEvent.change(within(dialog).getByLabelText(/nombre del rol/i), { target: { value: 'report_viewer' } });
+    fireEvent.click(within(dialog).getByRole('checkbox', { name: /Reports view/i }));
+
+    const submit = within(dialog).getByRole('button', { name: /crear rol/i });
+    fireEvent.click(submit);
+    fireEvent.click(submit);
+
+    await waitFor(() => {
+      expect(createRole).toHaveBeenCalledTimes(1);
+    });
+    await waitFor(() => expect(within(dialog).getByRole('button', { name: /guardando/i })).toBeDisabled());
+
+    resolveRole({
+      id: 5,
+      name: 'report_viewer',
+      protected: false,
+      permissions: [{ name: 'reports.view', module: 'reports', label: 'Reports view' }],
+    });
+
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: /nuevo rol/i })).not.toBeInTheDocument());
+  });
+
+  it('lets an authorized administrator edit permissions for a custom role', async () => {
+    const updateRole = vi.spyOn(apiClient, 'updateRole').mockResolvedValue({
+      id: 4,
+      name: 'catalog_manager',
+      protected: false,
+      permissions: [
+        { name: 'catalog.view', module: 'catalog', label: 'Catalog view' },
+        { name: 'catalog.manage', module: 'catalog', label: 'Catalog manage' },
+      ],
+    });
+
+    render(<UsersView onStatus={vi.fn()} canCreateUsers={true} canDisableUsers canManageRoles={true} />);
+
+    await screen.findByText(/Catalog manager/i);
+    fireEvent.click(screen.getByRole('button', { name: /editar permisos de catalog manager/i }));
+
+    const dialog = screen.getByRole('dialog', { name: /editar rol/i });
+    fireEvent.click(within(dialog).getByRole('checkbox', { name: /Catalog manage/i }));
+    fireEvent.click(within(dialog).getByRole('button', { name: /guardar rol/i }));
+
+    await waitFor(() => expect(updateRole).toHaveBeenCalledWith(4, {
+      name: 'catalog_manager',
+      permissions: ['catalog.manage', 'catalog.view'],
+    }));
   });
 
   it('prevents duplicated create user submissions while the request is pending', async () => {
@@ -97,7 +454,7 @@ describe('UsersView', () => {
       resolveCreate = resolve;
     }));
 
-    render(<UsersView onStatus={vi.fn()} canCreateUsers={true} />);
+    render(<UsersView onStatus={vi.fn()} canCreateUsers={true} canManageRoles={false} />);
 
     fireEvent.click(await screen.findByRole('button', { name: /crear usuario/i }));
     const dialog = screen.getByRole('dialog', { name: /crear usuario/i });
@@ -105,7 +462,7 @@ describe('UsersView', () => {
     fireEvent.change(within(dialog).getByLabelText(/nombre completo/i), { target: { value: 'Caja Principal' } });
     fireEvent.change(within(dialog).getByLabelText(/correo electr/i), { target: { value: 'caja@hospital.test' } });
     fireEvent.change(within(dialog).getByLabelText(/nombre de usuario/i), { target: { value: 'caja' } });
-    fireEvent.change(within(dialog).getByLabelText(/contrase/i), { target: { value: 'Password123' } });
+    fireEvent.change(within(dialog).getByLabelText(/contrase/i), { target: { value: 'Password123!' } });
 
     const submit = within(dialog).getByRole('button', { name: /crear usuario/i });
     fireEvent.click(submit);
@@ -135,7 +492,7 @@ describe('UsersView', () => {
       must_change_password: true,
     });
 
-    render(<UsersView onStatus={vi.fn()} canCreateUsers={true} />);
+    render(<UsersView onStatus={vi.fn()} canCreateUsers={true} canUpdateUsers canManageRoles={true} />);
 
     fireEvent.click(await screen.findByTitle('Restablecer clave'));
     const dialog = screen.getByRole('dialog', { name: /restablecer clave/i });
@@ -148,10 +505,10 @@ describe('UsersView', () => {
     });
     expect(resetPassword).not.toHaveBeenCalled();
 
-    fireEvent.change(within(dialog).getByLabelText(/nueva contraseña temporal/i), { target: { value: 'Password123' } });
+    fireEvent.change(within(dialog).getByLabelText(/nueva contraseña temporal/i), { target: { value: 'Password123!' } });
     fireEvent.click(within(dialog).getByRole('button', { name: /restablecer clave/i }));
 
-    await waitFor(() => expect(resetPassword).toHaveBeenCalledWith(adminUser.id, 'Password123'));
+    await waitFor(() => expect(resetPassword).toHaveBeenCalledWith(adminUser.id, 'Password123!'));
   });
 
   it('keeps the status confirmation locked while the request is pending', async () => {
@@ -160,7 +517,7 @@ describe('UsersView', () => {
       resolveToggle = resolve;
     }));
 
-    render(<UsersView onStatus={vi.fn()} canCreateUsers={true} />);
+    render(<UsersView onStatus={vi.fn()} canCreateUsers={true} canDisableUsers canManageRoles={true} />);
 
     fireEvent.click(await screen.findByTitle('Desactivar usuario'));
     const dialog = screen.getByRole('alertdialog', { name: /desactivar usuario/i });

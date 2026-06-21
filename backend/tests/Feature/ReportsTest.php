@@ -256,6 +256,11 @@ class ReportsTest extends TestCase
             ->getJson('/api/reports/income?date_from=fecha-mala&date_to='.now()->toDateString())
             ->assertUnprocessable()
             ->assertJsonValidationErrors('date_from');
+
+        $this->actingAs($this->admin())
+            ->getJson('/api/reports/income?date_from=fecha-mala&date_to='.now()->addYear()->toDateString())
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['date_from', 'date_to']);
     }
 
     public function test_income_report_uses_payment_amount_cents_as_financial_source(): void
@@ -511,7 +516,8 @@ class ReportsTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.filters.area_id', (string) $glucose->area_id)
             ->assertJsonPath('data.summary.cashier_count', 1)
-            ->assertJsonPath('data.cashiers.0.username', $cashier->username)
+            ->assertJsonPath('data.cashiers.0.name', $cashier->name)
+            ->assertJsonMissingPath('data.cashiers.0.username')
             ->assertJsonPath('data.cashiers.0.total_collected', '17.25');
 
         $this->actingAs($this->admin())
@@ -537,7 +543,8 @@ class ReportsTest extends TestCase
         $this->actingAs($this->admin())
             ->getJson('/api/reports/operations?date_from='.now()->toDateString().'&date_to='.now()->toDateString())
             ->assertOk()
-            ->assertJsonPath('data.cashiers.0.username', $cashier->username)
+            ->assertJsonPath('data.cashiers.0.name', $cashier->name)
+            ->assertJsonMissingPath('data.cashiers.0.username')
             ->assertJsonPath('data.cashiers.0.total_collected', '17.25');
     }
 
@@ -683,7 +690,8 @@ class ReportsTest extends TestCase
             ->getJson("/api/reports/operations?{$filters}")
             ->assertOk()
             ->assertJsonPath('data.summary.cashier_count', 1)
-            ->assertJsonPath('data.cashiers.0.username', $cashier->username)
+            ->assertJsonPath('data.cashiers.0.name', $cashier->name)
+            ->assertJsonMissingPath('data.cashiers.0.username')
             ->assertJsonPath('data.cashiers.0.total_collected', '17.25');
 
         $this->actingAs($this->admin())
@@ -807,10 +815,7 @@ class ReportsTest extends TestCase
 
         $this->actingAs($viewer)
             ->getJson("/api/reports/operations?{$query}")
-            ->assertOk()
-            ->assertJsonPath('data.summary.cashier_count', 1)
-            ->assertJsonPath('data.cashiers.0.username', $viewer->username)
-            ->assertJsonPath('data.cashiers.0.total_collected', '17.25');
+            ->assertForbidden();
 
         $this->actingAs($viewer)
             ->getJson("/api/reports/income?{$query}&cash_session_id={$otherSessionId}")
@@ -885,6 +890,10 @@ class ReportsTest extends TestCase
             ->get($url)
             ->assertOk()
             ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+
+        $this->assertStringContainsString('no-store', (string) $response->headers->get('Cache-Control'));
+        $this->assertSame('no-cache', $response->headers->get('Pragma'));
+        $this->assertSame('0', $response->headers->get('Expires'));
 
         $xlsx = $response->streamedContent();
 
@@ -1169,7 +1178,7 @@ class ReportsTest extends TestCase
     {
         $this->seedBillingBase();
         $viewer = User::factory()->create();
-        $this->grantPermissions($viewer, 'reports.view', 'reports.managerial.view', 'reports.export');
+        $this->grantPermissions($viewer, 'reports.view', 'reports.managerial.view', 'reports.export', 'audit.view');
 
         BackupLog::query()->create([
             'filename' => 'hospital-backup-sensitive.sql',
@@ -1301,6 +1310,7 @@ class ReportsTest extends TestCase
             ->assertJsonPath('data.reprints.0.source', 'institutional_receipt')
             ->assertJsonPath('data.backups.0.filename', 'hospital-backup-test.sql')
             ->assertJsonMissingPath('data.voids.0.invoice_id')
+            ->assertJsonMissingPath('data.voids.0.patient_name')
             ->assertJsonMissingPath('data.reprints.0.invoice_id')
             ->assertJsonMissingPath('data.backups.0.id')
             ->assertJsonMissingPath('data.backups.0.checksum_sha256')
@@ -1369,7 +1379,8 @@ class ReportsTest extends TestCase
             ->assertJsonPath('data.payment_voids.0.method', Payment::METHOD_CASH)
             ->assertJsonPath('data.payment_voids.0.amount', '17.25')
             ->assertJsonPath('data.payment_voids.0.reason', 'Cobro registrado por error')
-            ->assertJsonPath('data.payment_voids.0.voided_by', $supervisor->name);
+            ->assertJsonPath('data.payment_voids.0.voided_by', $supervisor->name)
+            ->assertJsonMissingPath('data.payment_voids.0.patient_name');
 
         $xlsx = $this->actingAs($this->admin())
             ->get('/api/reports/export?date_from='.now()->toDateString().'&date_to='.now()->toDateString())
@@ -1942,6 +1953,11 @@ class ReportsTest extends TestCase
             ->assertJsonValidationErrors('date_from');
 
         $this->actingAs($admin)
+            ->getJson('/api/reports/pdf?date_from=fecha-mala&date_to='.now()->addYear()->toDateString())
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['date_from', 'date_to']);
+
+        $this->actingAs($admin)
             ->getJson('/api/reports/pdf?date_from='.now()->toDateString().'&date_to='.now()->toDateString().'&method=cheque')
             ->assertUnprocessable()
             ->assertJsonValidationErrors('method');
@@ -1997,7 +2013,7 @@ class ReportsTest extends TestCase
         $this->assertStringContainsString('Estado de factura', $capturedHtml);
         $this->assertStringContainsString('Pagada', $capturedHtml);
         $this->assertStringContainsString('Cajero', $capturedHtml);
-        $this->assertStringContainsString($cashier->name, $capturedHtml);
+        $this->assertStringContainsString(htmlspecialchars($cashier->name, ENT_QUOTES | ENT_HTML5, 'UTF-8'), $capturedHtml);
         $this->assertStringContainsString('Caja', $capturedHtml);
         $this->assertStringContainsString(now()->format('d/m/Y'), $capturedHtml);
         $this->assertStringContainsString('Abierta', $capturedHtml);

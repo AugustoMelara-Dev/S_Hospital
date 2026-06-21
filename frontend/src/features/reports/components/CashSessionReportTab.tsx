@@ -8,7 +8,7 @@ import { Label } from '../../../components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/data-table';
 import { KPICard } from './KPICard';
 import type { CashSessionReport } from '../../../lib/api/types';
-import { formatLempirasFromCents, parseCents } from '../../../lib/moneyCents';
+import { formatLempirasUIFromCents, parseCents } from '../../../lib/moneyCents';
 import { formatLocalizedDateTime } from '../../../lib/format/formatDate';
 
 interface CashSessionReportTabProps {
@@ -16,6 +16,7 @@ interface CashSessionReportTabProps {
   cashSession: CashSessionReport | null;
   cashReportId: string;
   loading: boolean;
+  exporting?: boolean;
   error: string;
   onCashReportIdChange: (value: string) => void;
   onExport: () => void;
@@ -27,6 +28,7 @@ export function CashSessionReportTab({
   cashSession,
   cashReportId,
   loading,
+  exporting = false,
   error,
   onCashReportIdChange,
   onExport,
@@ -206,9 +208,9 @@ export function CashSessionReportTab({
 
           <div className="flex justify-end">
             {canExport ? (
-              <Button type="button" variant="outline" onClick={onExport}>
+              <Button type="button" variant="outline" onClick={onExport} disabled={exporting}>
                 <Download className="h-4 w-4 mr-2" />
-                Exportar Excel
+                {exporting ? 'Exportando...' : 'Exportar Excel'}
               </Button>
             ) : (
               <p className="text-sm text-muted-foreground">
@@ -245,16 +247,16 @@ function movementMethodLabel(method: string | null): string {
 }
 
 function moneyLabel(value: string | number | null | undefined): string {
-  return formatLempirasFromCents(parseCents(value));
+  return formatLempirasUIFromCents(parseCents(value));
 }
 
 function signedMoneyLabel(value: string | number | null | undefined): string {
   const cents = parseSignedCents(value);
   if (cents === null || cents >= 0) {
-    return formatLempirasFromCents(cents);
+    return formatLempirasUIFromCents(cents);
   }
 
-  return formatLempirasFromCents(Math.abs(cents)).replace('L. ', 'L. -');
+  return `- ${formatLempirasUIFromCents(Math.abs(cents))}`;
 }
 
 function parseSignedCents(value: string | number | null | undefined): number | null {

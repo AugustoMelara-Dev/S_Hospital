@@ -21,13 +21,13 @@ export function DateRangePicker({
   className,
   ...props
 }: DateRangePickerProps) {
-  
+
   const setQuickRange = (days: number) => {
     const today = new Date();
     const end = new Date();
     const start = new Date();
     start.setDate(today.getDate() - days);
-    
+
     onStartDateChange(formatDate(start));
     onEndDateChange(formatDate(end));
   };
@@ -74,7 +74,7 @@ export function DateRangePicker({
           />
         </div>
       </div>
-      
+
       {showShortcuts && (
         <div className="flex flex-wrap gap-1.5 pb-0.5 mt-2 sm:mt-0">
           <Button

@@ -61,12 +61,12 @@ class GenerateReceiptDataAction
                 'issued_at' => $invoice->issued_at?->toISOString(),
                 'cashier' => $cashierName,
                 'patient_name' => $invoice->patient_name,
-                'subtotal' => $invoice->subtotal,
-                'tax_amount' => $invoice->tax_amount,
-                'discount_amount' => $invoice->discount_amount,
-                'total' => $invoice->total,
-                'paid_amount' => $invoice->paid_amount,
-                'balance_due' => $invoice->balance_due,
+                'subtotal' => $this->moneyFromCents($invoice->subtotal_cents, $invoice->subtotal),
+                'tax_amount' => $this->moneyFromCents($invoice->tax_amount_cents, $invoice->tax_amount),
+                'discount_amount' => $this->moneyFromCents($invoice->discount_amount_cents, $invoice->discount_amount),
+                'total' => $this->moneyFromCents($invoice->total_cents, $invoice->total),
+                'paid_amount' => $this->moneyFromCents($invoice->paid_amount_cents, $invoice->paid_amount),
+                'balance_due' => $this->moneyFromCents($invoice->balance_due_cents, $invoice->balance_due),
                 'status' => $invoice->status,
                 'tax_label' => $invoice->tax_label ?? 'ISV',
                 'tax_rate' => $invoice->tax_rate_snapshot,
@@ -75,9 +75,9 @@ class GenerateReceiptDataAction
                 'service_name' => $item->service_name,
                 'category_name' => $item->category_name,
                 'quantity' => $item->quantity,
-                'unit_price' => $item->unit_price,
-                'tax_amount' => $item->tax_amount,
-                'line_total' => $item->line_total,
+                'unit_price' => $this->moneyFromCents($item->unit_price_cents, $item->unit_price),
+                'tax_amount' => $this->moneyFromCents($item->tax_amount_cents, $item->tax_amount),
+                'line_total' => $this->moneyFromCents($item->line_total_cents, $item->line_total),
                 'special_rule_code' => $item->special_rule_code,
                 'special_rule_applied' => $item->special_rule_applied,
                 'notes' => $item->notes,
@@ -85,7 +85,7 @@ class GenerateReceiptDataAction
             'payments' => $postedPayments->map(fn ($payment): array => [
                 'id' => $payment->id,
                 'method' => $payment->method,
-                'amount' => $payment->amount,
+                'amount' => $this->moneyFromCents($payment->amount_cents, $payment->amount),
                 'reference' => $payment->reference,
                 'paid_at' => $payment->paid_at?->toISOString(),
                 'cashier' => $payment->user?->name,
@@ -107,5 +107,14 @@ class GenerateReceiptDataAction
             'configuracion-pendiente',
             'configuración-pendiente',
         ], true) ? null : $trimmed;
+    }
+
+    private function moneyFromCents(?int $cents, string|int|float|null $fallback): string
+    {
+        if ($cents !== null) {
+            return number_format($cents / 100, 2, '.', '');
+        }
+
+        return number_format((float) $fallback, 2, '.', '');
     }
 }

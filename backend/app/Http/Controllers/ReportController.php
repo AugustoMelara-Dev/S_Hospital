@@ -7,19 +7,26 @@ use App\Actions\Reports\CashSessionReportService;
 use App\Actions\Reports\CategoryReportService;
 use App\Actions\Reports\DailyReportService;
 use App\Actions\Reports\DashboardReportService;
+use App\Actions\Reports\ExecutiveExcelExportService;
+use App\Actions\Reports\ExecutivePdfExportService;
+use App\Actions\Reports\ExecutiveReportService;
 use App\Actions\Reports\IncomeReportService;
 use App\Actions\Reports\MonthlyReportService;
 use App\Actions\Reports\OperationsReportService;
 use App\Actions\Reports\PdfExportService;
 use App\Actions\Reports\PremiumExcelExportService;
 use App\Actions\Reports\ServiceSalesReportService;
+use App\Actions\Reports\TodayReportService;
 use App\Http\Requests\Reports\DailyReportRequest;
 use App\Http\Requests\Reports\DashboardReportRequest;
 use App\Http\Requests\Reports\DateRangeReportRequest;
+use App\Http\Requests\Reports\ExecutivePdfExportRequest;
+use App\Http\Requests\Reports\ExecutiveReportRequest;
 use App\Http\Requests\Reports\ExportReportRequest;
 use App\Http\Requests\Reports\MonthlyReportRequest;
 use App\Http\Requests\Reports\PdfExportRequest;
 use App\Http\Requests\Reports\ShowCashSessionReportRequest;
+use App\Http\Requests\Reports\TodayReportRequest;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSetting;
 use Illuminate\Http\JsonResponse;
@@ -33,6 +40,20 @@ class ReportController extends Controller
     {
         return response()->json([
             'data' => $reports->report(),
+        ]);
+    }
+
+    public function today(TodayReportRequest $request, TodayReportService $reports): JsonResponse
+    {
+        return response()->json([
+            'data' => $reports->report(user: $request->user()),
+        ]);
+    }
+
+    public function executive(ExecutiveReportRequest $request, ExecutiveReportService $reports): JsonResponse
+    {
+        return response()->json([
+            'data' => $reports->report($request->authorizedFilters(), $request->user()),
         ]);
     }
 
@@ -80,6 +101,8 @@ class ReportController extends Controller
 
     public function operations(DateRangeReportRequest $request, OperationsReportService $reports): JsonResponse
     {
+        abort_unless($request->user()?->can('audit.view') === true, 403);
+
         return response()->json([
             'data' => $reports->report($request->authorizedFilters(), $request->user()->can('backups.view')),
         ]);
@@ -186,6 +209,75 @@ class ReportController extends Controller
     ): JsonResponse {
         return response()->json([
             'data' => $reports->report($cashSession),
+        ]);
+    }
+
+    public function executivePdf(
+        ExecutivePdfExportRequest $request,
+        ExecutiveReportService $reports,
+        ExecutivePdfExportService $pdfService,
+    ) {
+        $report = $reports->report($request->authorizedFilters(), $request->user());
+
+        $fiscal = FiscalSetting::first() ?? new FiscalSetting([
+            'hospital_name' => 'Hospital San Isidro',
+            'rtn' => 'N/A',
+            'address' => '',
+        ]);
+
+        $pdf = $pdfService->generate(
+            $report,
+            $fiscal->toArray(),
+            $request->user()?->name,
+            Carbon::now('America/Tegucigalpa'),
+        );
+
+        $filename = sprintf(
+            'reporte-ejecutivo-%s-a-%s.pdf',
+            $request->dateFrom(),
+            $request->dateTo(),
+        );
+
+        return response($pdf, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+        ]);
+    }
+
+    public function executiveExcel(
+        ExecutivePdfExportRequest $request,
+        ExecutiveReportService $reports,
+        ExecutiveExcelExportService $excelService,
+    ) {
+        $report = $reports->report($request->authorizedFilters(), $request->user());
+
+        $fiscal = FiscalSetting::first() ?? new FiscalSetting([
+            'hospital_name' => 'Hospital San Isidro',
+            'rtn' => 'N/A',
+            'address' => '',
+        ]);
+
+        $spreadsheet = $excelService->generate(
+            $report,
+            $fiscal->toArray(),
+            Carbon::createFromFormat('Y-m-d', $request->dateFrom()),
+            Carbon::createFromFormat('Y-m-d', $request->dateTo()),
+            $request->user()?->name,
+        );
+
+        $writer = new Xlsx($spreadsheet);
+        $writer->setIncludeCharts(false);
+        $filename = sprintf(
+            'reporte-ejecutivo-%s-a-%s.xlsx',
+            $request->dateFrom(),
+            $request->dateTo(),
+        );
+
+        return response()->streamDownload(function () use ($writer): void {
+            $writer->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Cache-Control' => 'max-age=0',
         ]);
     }
 }

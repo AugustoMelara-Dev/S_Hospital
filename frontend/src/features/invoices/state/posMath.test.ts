@@ -89,6 +89,30 @@ describe('posMath', () => {
     warnSpy.mockRestore();
   });
 
+  it('rounds fractional line subtotals half up like the backend', () => {
+    const estimate = computeSimpleEstimate([
+      buildCartItem({
+        quantity: '1.50',
+        service: { ...buildCartItem().service, price: '0.01', taxable: false },
+      }),
+    ], '15.00');
+
+    expect(estimate.subtotal).toBe('0.02');
+    expect(estimate.tax).toBe('0.00');
+    expect(estimate.total).toBe('0.02');
+  });
+
+  it('rounds tax on the aggregated taxable subtotal like the backend', () => {
+    const estimate = computeSimpleEstimate([
+      buildCartItem({ service: { ...buildCartItem().service, id: 1, price: '0.03', taxable: true } }),
+      buildCartItem({ service: { ...buildCartItem().service, id: 2, price: '0.03', taxable: true } }),
+    ], '15.00');
+
+    expect(estimate.subtotal).toBe('0.06');
+    expect(estimate.tax).toBe('0.01');
+    expect(estimate.total).toBe('0.07');
+  });
+
   it('zeros the tax line for non-taxable services', () => {
     const estimate = computeSimpleEstimate([
       buildCartItem({ quantity: '1.00', service: { ...buildCartItem().service, taxable: false } }),

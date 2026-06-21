@@ -12,8 +12,17 @@ $forbidden = @(
     ($billingWord + '-os'),
     ($billingWord + 'os'),
     'S_Hospital OS',
-    'Caja hospitalaria',
     'Hospital Demo'
+)
+
+$visibleGenericBrandForbidden = @(
+    'content="Caja hospitalaria"',
+    '<title>Caja hospitalaria</title>',
+    '"name": "Caja hospitalaria"',
+    '<title id="title">Caja hospitalaria</title>',
+    '>Caja hospitalaria<',
+    'Caja hospitalaria rapida y clara',
+    'Caja hospitalaria rápida y clara'
 )
 
 $scopedForbidden = @(
@@ -75,34 +84,41 @@ function Invoke-ForbiddenSearch {
             $useRg = $false
         }
     }
-    if ($useRg -and ($pattern -notmatch '[|]')) {
-        $rgArgs = @('-n', '-i', $pattern) + $Paths + @(
-            '--glob', '!**/.git/**',
-            '--glob', '!**/node_modules/**',
-            '--glob', '!**/vendor/**',
-            '--glob', '!**/storage/logs/**',
-            '--glob', '!**/storage/app/private/backups/**',
-            '--glob', '!**/storage/framework/**',
-            '--glob', '!**/bootstrap/cache/**',
-            '--glob', '!**/dist/**',
-            '--glob', '!**/build/**',
-            '--glob', '!**/offline-images/**',
-            '--glob', '!**/offline-release/**',
-            '--glob', '!**/install-logs/**',
-            '--glob', '!**/.agent/skills/**',
-            '--glob', '!**/.agents/skills/**',
-            '--glob', '!**/backend/vendor/**',
-            '--glob', '!**/backend/storage/**',
-            '--glob', '!**/backend/build/**',
-            '--glob', '!**/backend/tests/**',
-            '--glob', '!**/frontend/dist/**',
-            '--glob', '!**/frontend/node_modules/**'
-        )
-        $raw = rg @rgArgs 2>$null
-        if ($LASTEXITCODE -le 1 -and $raw) {
-            foreach ($line in @($raw)) {
-                if ($line) { $localMatches += [string]$line }
+    if ($useRg) {
+        $patternFile = [System.IO.Path]::GetTempFileName()
+        try {
+            $rgPatterns = $Patterns | ForEach-Object { ([regex]::Escape($_) -replace '\\ ', ' ') }
+            [System.IO.File]::WriteAllLines($patternFile, [string[]]$rgPatterns)
+            $rgArgs = @('-n', '-i', '-f', $patternFile) + @(
+                '--glob', '!**/.git/**',
+                '--glob', '!**/node_modules/**',
+                '--glob', '!**/vendor/**',
+                '--glob', '!**/storage/logs/**',
+                '--glob', '!**/storage/app/private/backups/**',
+                '--glob', '!**/storage/framework/**',
+                '--glob', '!**/bootstrap/cache/**',
+                '--glob', '!**/dist/**',
+                '--glob', '!**/build/**',
+                '--glob', '!**/offline-images/**',
+                '--glob', '!**/offline-release/**',
+                '--glob', '!**/install-logs/**',
+                '--glob', '!**/.agent/skills/**',
+                '--glob', '!**/.agents/skills/**',
+                '--glob', '!**/backend/vendor/**',
+                '--glob', '!**/backend/storage/**',
+                '--glob', '!**/backend/build/**',
+                '--glob', '!**/backend/tests/**',
+                '--glob', '!**/frontend/dist/**',
+                '--glob', '!**/frontend/node_modules/**'
+            ) + @('--') + $Paths
+            $raw = rg @rgArgs 2>$null
+            if ($LASTEXITCODE -le 1 -and $raw) {
+                foreach ($line in @($raw)) {
+                    if ($line) { $localMatches += [string]$line }
+                }
             }
+        } finally {
+            Remove-Item -LiteralPath $patternFile -Force -ErrorAction SilentlyContinue
         }
     } else {
         # Fallback Select-String. En PowerShell 5.1 usar += con array es seguro.
@@ -168,7 +184,23 @@ try {
         -Patterns $forbidden `
         -Paths @('.') `
         -AllowedLinePatterns @(
-            ('"' + $billingWord + 'Os"\s*:\s*false')
+            ('"' + $billingWord + 'Os"\s*:\s*false'),
+            'scripts\\check-branding\.ps1:\d+:',
+            'qa\\HOSPITAL_SAN_ISIDRO_HARDENING_FIELD_2026-05-31\.md:\d+:',
+            'qa\\visual-smoke\\field-qa-current-screenshots\.mjs:\d+:'
+        )
+
+    Invoke-ForbiddenSearch `
+        -Label 'Marca generica visible encontrada en superficies de producto:' `
+        -Patterns $visibleGenericBrandForbidden `
+        -Paths @(
+            'frontend/index.html',
+            'frontend/public/manifest.webmanifest',
+            'frontend/public/icons',
+            'frontend/src'
+        ) `
+        -AllowedLinePatterns @(
+            'frontend\\src\\App\.test\.tsx:\d+:'
         )
 
     Invoke-ForbiddenSearch `
@@ -187,7 +219,11 @@ try {
         ) `
         -AllowedLinePatterns @(
             'qa\\visual-smoke\\field-qa-current-screenshots\.mjs:\d+:\s*\[''hospitalDemo'',\s*/Hospital Demo/i\]',
-            'qa\\visual-smoke\\field-qa-current-screenshots\.mjs:\d+:\s*\[''demoCai'',\s*/DEMO-CAI/i\]'
+            'qa\\visual-smoke\\field-qa-current-screenshots\.mjs:\d+:\s*\[''demoCai'',\s*/DEMO-CAI/i\]',
+            'qa\\HOSPITAL_SAN_ISIDRO_PHASE_2_COMMIT_REVIEW_2026-05-29\.md:\d+:',
+            'qa\\HOSPITAL_SAN_ISIDRO_FINAL_RC_GATE_2026-05-29\.md:\d+:',
+            'qa\\HOSPITAL_SAN_ISIDRO_FINAL_RC_COMMIT_REVIEW_2026-05-29\.md:\d+:',
+            'qa\\HOSPITAL_SAN_ISIDRO_PHASE_2_RECEIPTS_2026-05-29\.md:\d+:'
         )
 
     Invoke-ForbiddenSearch `

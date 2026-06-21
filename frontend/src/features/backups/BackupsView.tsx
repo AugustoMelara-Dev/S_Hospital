@@ -1,5 +1,5 @@
 import { Download, RefreshCw, Archive, CheckCircle, Clock, XCircle, HardDrive, Server, ShieldAlert } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '../../components/ui/button';
 import { Alert } from '../../components/ui/alert';
 import { ConfirmDialog } from '../../components/ui/confirm-dialog';
@@ -197,6 +197,10 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [confirmCreateOpen, setConfirmCreateOpen] = useState(false);
   const [downloadTarget, setDownloadTarget] = useState<BackupLog | null>(null);
+  const [creatingBackup, setCreatingBackup] = useState(false);
+  const [downloadingBackupId, setDownloadingBackupId] = useState<number | null>(null);
+  const creatingBackupRef = useRef(false);
+  const downloadingBackupRef = useRef<number | null>(null);
   const canCreate = user.permissions.includes('backups.create');
   const canDownload = user.permissions.includes('backups.download');
 
@@ -274,6 +278,13 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
   }
 
   async function handleCreateBackup() {
+    if (creatingBackupRef.current) {
+      onStatus('Espere a que termine el respaldo en curso.');
+      return;
+    }
+
+    creatingBackupRef.current = true;
+    setCreatingBackup(true);
     setLoading(true);
     setError('');
     onStatus('Creando respaldo local...');
@@ -291,11 +302,22 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
       setError(message);
       onStatus(message);
     } finally {
+      creatingBackupRef.current = false;
+      setCreatingBackup(false);
       setLoading(false);
     }
   }
 
   async function handleDownloadBackup(backup: BackupLog) {
+    if (downloadingBackupRef.current !== null) {
+      onStatus('Espere a que termine la descarga actual.');
+      return;
+    }
+
+    downloadingBackupRef.current = backup.id;
+    setDownloadingBackupId(backup.id);
+    setError('');
+
     try {
       const blob = await apiClient.downloadBackup(backup.id);
       downloadBlob(blob, backup.filename);
@@ -304,6 +326,9 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
       const message = userSafeErrorMessage(error, 'No se pudo descargar el respaldo.');
       setError(message);
       onStatus(message);
+    } finally {
+      downloadingBackupRef.current = null;
+      setDownloadingBackupId(null);
     }
   }
 
@@ -344,9 +369,9 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Actualizar
               </Button>
-              <Button type="button" size="sm" onClick={() => setConfirmCreateOpen(true)} disabled={loading}>
+              <Button type="button" size="sm" onClick={() => setConfirmCreateOpen(true)} disabled={loading || creatingBackup}>
                 <Archive className="h-4 w-4 mr-2" />
-                Crear respaldo
+                {creatingBackup ? 'Creando...' : 'Crear respaldo'}
               </Button>
             </div>
           ) : undefined
@@ -775,6 +800,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                           variant="ghost"
                           size="icon"
                           aria-label={`Descargar respaldo ${backup.filename}`}
+                          disabled={downloadingBackupId !== null}
                           onClick={() => setDownloadTarget(backup)}
                         >
                           <Download className="h-4 w-4" />
@@ -799,7 +825,9 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
         )}
       </div>
       <ConfirmDialog
-        confirmLabel="Crear respaldo"
+        confirmDisabled={creatingBackup}
+        cancelDisabled={creatingBackup}
+        confirmLabel={creatingBackup ? 'Creando...' : 'Crear respaldo'}
         onCancel={() => setConfirmCreateOpen(false)}
         onConfirm={() => {
           setConfirmCreateOpen(false);
@@ -811,7 +839,9 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
         Se creará una copia de seguridad local. Confirme que aparezca como protegida antes de cerrar esta pantalla.
       </ConfirmDialog>
       <ConfirmDialog
-        confirmLabel="Descargar"
+        confirmDisabled={downloadTarget ? downloadingBackupId === downloadTarget.id : false}
+        cancelDisabled={downloadTarget ? downloadingBackupId === downloadTarget.id : false}
+        confirmLabel={downloadTarget && downloadingBackupId === downloadTarget.id ? 'Descargando...' : 'Descargar'}
         onCancel={() => setDownloadTarget(null)}
         onConfirm={() => {
           const target = downloadTarget;

@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Support\VisiblePermissions;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateUserRequest extends FormRequest
 {
@@ -22,7 +24,9 @@ class UpdateUserRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', "unique:users,email,{$userId}"],
             'username' => ['required', 'string', 'max:255', 'alpha_dash', "unique:users,username,{$userId}"],
-            'role' => ['required', 'string', 'exists:roles,name'],
+            'role' => ['required', 'string', Rule::exists('roles', 'name')->where('guard_name', 'web')],
+            'permissions' => ['sometimes', 'array'],
+            'permissions.*' => ['required', 'string', 'distinct', Rule::notIn(VisiblePermissions::hiddenPermissionNames()), Rule::exists('permissions', 'name')->where('guard_name', 'web')],
         ];
     }
 }

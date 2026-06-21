@@ -59,6 +59,7 @@ export function Toaster() {
     <HotToaster
       position="top-right"
       containerClassName="hospital-toaster"
+      containerStyle={{ pointerEvents: 'none' }}
       gutter={8}
       toastOptions={{
         duration: 4000,
@@ -77,6 +78,7 @@ export function Toaster() {
           fontWeight: 500,
           boxShadow: 'var(--shadow-lg)',
           maxWidth: 'min(420px, calc(100vw - 24px))',
+          pointerEvents: 'none',
         },
         success: {
           iconTheme: {

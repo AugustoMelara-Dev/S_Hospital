@@ -6,9 +6,9 @@ use App\Models\User;
 
 /**
  * Authorization for the admin user-management endpoints. The
- * controller is currently protected by `users.view` / `users.manage`
- * in `UserController`; this policy makes those checks introspectable
- * via `Gate::authorize('update', $user)`.
+ * Form Requests are protected by the seeded user-management permissions;
+ * this policy keeps those checks introspectable via Gates without relying
+ * on legacy or unseeded permission names.
  */
 class UserPolicy
 {
@@ -24,17 +24,17 @@ class UserPolicy
 
     public function create(User $actor): bool
     {
-        return $actor->can('users.manage');
+        return $actor->can('users.create');
     }
 
     public function update(User $actor, User $user): bool
     {
-        return $actor->can('users.update') || $actor->can('users.manage');
+        return $actor->can('users.update');
     }
 
     public function toggleActive(User $actor, User $user): bool
     {
-        if (! $actor->can('users.disable') && ! $actor->can('users.manage')) {
+        if (! $actor->can('users.disable')) {
             return false;
         }
 
@@ -45,6 +45,6 @@ class UserPolicy
 
     public function resetPassword(User $actor, User $user): bool
     {
-        return $actor->can('users.reset_password') || $actor->can('users.manage');
+        return $actor->can('users.update') && $actor->id !== $user->id;
     }
 }

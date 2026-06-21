@@ -117,7 +117,7 @@ class InvoiceHistoryReprintVoidTest extends TestCase
             ->assertJsonPath('meta.total', 1);
     }
 
-    public function test_invoice_detail_includes_snapshots_payments_cash_session_status_and_fiscal_data(): void
+    public function test_invoice_detail_includes_snapshots_payments_cash_session_status_without_fiscal_sequence_relation(): void
     {
         $this->seedBillingBase();
         $cashier = $this->cashier();
@@ -139,7 +139,8 @@ class InvoiceHistoryReprintVoidTest extends TestCase
             ->assertJsonPath('data.payments.0.amount', '17.25')
             ->assertJsonPath('data.cash_session.id', $sessionId)
             ->assertJsonPath('data.status', Invoice::STATUS_PAID)
-            ->assertJsonPath('data.fiscal_sequence.cai', 'REAL-CAI-2026');
+            ->assertJsonPath('data.fiscal_cai', 'REAL-CAI-2026')
+            ->assertJsonMissingPath('data.fiscal_sequence');
     }
 
     public function test_reprint_uses_snapshots_and_writes_audit_log(): void

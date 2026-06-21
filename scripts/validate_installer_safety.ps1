@@ -4,6 +4,22 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+function Get-PowerShellHostCommand {
+    if (Get-Command pwsh -ErrorAction SilentlyContinue) {
+        return (Get-Command pwsh).Source
+    }
+
+    if (Get-Command powershell.exe -ErrorAction SilentlyContinue) {
+        return (Get-Command powershell.exe).Source
+    }
+
+    if (Get-Command powershell -ErrorAction SilentlyContinue) {
+        return (Get-Command powershell).Source
+    }
+
+    throw 'No se encontro un host PowerShell para ejecutar pruebas de hardening.'
+}
+
 $billingWord = 'bill' + 'ing'
 $legacyProjectName = 'S' + '_Hospital'
 $demoWord = 'Demo'
@@ -32,11 +48,17 @@ $destructiveCommands = @(
 $targets = @()
 $targetFiles = @(
     'setup.bat',
+    'scripts\release_setup.bat',
+    'scripts\deploy_hospital_lan.ps1',
     'scripts\install_hospital_os.ps1',
+    'scripts\install_backup_tasks_windows.ps1',
     'scripts\install_hospital_startup_shortcut.ps1',
     'scripts\start_hospital_services.ps1',
     'scripts\open_hospital_system.ps1',
-    'scripts\repair_hospital_system.ps1'
+    'scripts\repair_hospital_system.ps1',
+    'scripts\refresh_lan_ip.ps1',
+    'scripts\run_backup_worker.cmd',
+    'scripts\run_scheduled_backup.cmd'
 )
 
 foreach ($relative in $targetFiles) {
@@ -81,6 +103,12 @@ if ($findings.Count -gt 0) {
     Write-Host 'Instalador no apto para entrega:'
     $findings | Format-Table -AutoSize | Out-String | Write-Host
     exit 1
+}
+
+$powerShellHost = Get-PowerShellHostCommand
+& $powerShellHost -NoProfile -ExecutionPolicy Bypass -File (Join-Path $Root 'scripts\test_backup_task_envfile_hardening.ps1')
+if ($LASTEXITCODE -ne 0) {
+    exit $LASTEXITCODE
 }
 
 Write-Host 'Validacion de instalador completada sin hallazgos.'

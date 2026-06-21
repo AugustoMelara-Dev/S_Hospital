@@ -30,7 +30,8 @@ RUN apk add --no-cache \
     libjpeg-turbo-dev \
     libpng-dev \
     mariadb-client \
-    shadow
+    shadow \
+    su-exec
 
 # Configure and install PHP extensions
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
@@ -80,7 +81,6 @@ COPY backend/docker/entrypoint.sh /usr/local/bin/s-hospital-entrypoint.sh
 RUN chmod +x /usr/local/bin/s-hospital-entrypoint.sh
 
 RUN mkdir -p /shared_public && chown -R www-data:www-data /shared_public
-USER www-data
 
 EXPOSE 9000
 ENTRYPOINT ["/usr/local/bin/s-hospital-entrypoint.sh"]

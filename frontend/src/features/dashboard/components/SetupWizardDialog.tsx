@@ -160,7 +160,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
   function parseCSV(text: string): Array<{ category: string; area: string; service: string; price: string; taxable: boolean }> {
     const lines = text.split('\n');
     const result: Array<{ category: string; area: string; service: string; price: string; taxable: boolean }> = [];
-    
+
     // Skip header line if it looks like one
     const startIdx = lines[0].toLowerCase().includes('categor') ? 1 : 0;
 

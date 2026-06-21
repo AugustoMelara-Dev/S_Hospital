@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   formatCents,
   formatLempirasFromCents,
+  formatLempirasUIFromCents,
   formatQuantity,
   parseCents,
   parsePositiveCents,
@@ -49,10 +50,16 @@ describe('moneyCents helpers', () => {
     expect(formatCents(undefined)).toBe('0.00');
   });
 
-  it('formatLempirasFromCents produces prefixed strings', () => {
+  it('formatLempirasFromCents produces receipt strings with period', () => {
     expect(formatLempirasFromCents(0)).toBe('L. 0.00');
     expect(formatLempirasFromCents(1234)).toBe('L. 12.34');
     expect(formatLempirasFromCents(-5000)).toBe('- L. 50.00');
+  });
+
+  it('formatLempirasUIFromCents produces UI strings without period', () => {
+    expect(formatLempirasUIFromCents(0)).toBe('L 0.00');
+    expect(formatLempirasUIFromCents(1234)).toBe('L 12.34');
+    expect(formatLempirasUIFromCents(-5000)).toBe('- L 50.00');
   });
 
   it('parseQuantityUnits rejects non-positive and parses two decimals', () => {

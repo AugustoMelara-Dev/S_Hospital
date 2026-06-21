@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { ServiceSearch } from './ServiceSearch';
 import type { Service } from '../../../lib/api';
@@ -20,9 +20,41 @@ describe('ServiceSearch', () => {
       />,
     );
 
-    expect(screen.getByRole('button', { name: /agregar glucosa por l\. 0\.00/i })).toBeInTheDocument();
-    expect(document.body.textContent).toContain('L. 0.00');
+    expect(screen.getByRole('button', { name: /agregar glucosa por l 0\.00/i })).toBeInTheDocument();
+    expect(document.body.textContent).toContain('L 0.00');
     expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|undefined/);
+  });
+
+  it('supports keyboard navigation in category radio groups', async () => {
+    const onCategoryChange = vi.fn();
+    render(
+      <ServiceSearch
+        categories={[
+          { id: 1, name: 'Laboratorio', slug: 'laboratorio', active: true, sort_order: 1 },
+          { id: 2, name: 'Imagenes', slug: 'imagenes', active: true, sort_order: 2 },
+        ]}
+        services={[]}
+        selectedCategoryId="all"
+        onCategoryChange={onCategoryChange}
+        search=""
+        onSearchChange={vi.fn()}
+        scanCode=""
+        onScanCodeChange={vi.fn()}
+        onAddService={vi.fn()}
+        onAddByScanCode={vi.fn()}
+      />,
+    );
+
+    const categoryGroup = screen.getByRole('radiogroup', { name: /categoria/i });
+    fireEvent.keyDown(categoryGroup, { key: 'ArrowRight' });
+
+    expect(onCategoryChange).toHaveBeenCalledWith(1);
+    await waitFor(() => expect(screen.getByRole('radio', { name: 'Laboratorio' })).toHaveFocus());
+
+    fireEvent.keyDown(categoryGroup, { key: 'End' });
+
+    expect(onCategoryChange).toHaveBeenLastCalledWith(2);
+    await waitFor(() => expect(screen.getByRole('radio', { name: 'Imagenes' })).toHaveFocus());
   });
 });
 

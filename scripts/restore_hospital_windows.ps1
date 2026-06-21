@@ -19,6 +19,21 @@
 .PARAMETER UseExistingEnv
     Usa la configuracion de backend\.env existente para conexion
 
+.PARAMETER KeepExistingTargetDatabase
+    En bases descartables, conserva objetos existentes e importa encima. Por defecto, el restore recrea limpio la base descartable.
+
+.PARAMETER ProjectRoot
+    Carpeta del sistema. En el paquete offline apunta a offline-release.
+
+.PARAMETER Mode
+    Auto detecta PHP local o Docker offline. Docker no requiere backend\artisan ni mysql.exe en el host.
+
+.PARAMETER EnvFile
+    Archivo .env productivo para modo Docker. Si se omite usa .env en ProjectRoot.
+
+.PARAMETER ComposeProjectName
+    Nombre del proyecto Docker Compose cuando la instalacion usa un nombre explicito.
+
 .EXAMPLE
     .\restore_hospital_windows.ps1 -BackupFile "C:\backups\hospital_2026-06-01.sql.enc" -ExpectedSha256 "<sha256>"
 #>
@@ -43,14 +58,40 @@ param(
     [switch]$UseExistingEnv,
 
     [Parameter(Mandatory=$false)]
-    [switch]$ForceProductionRestore
+    [switch]$ForceProductionRestore,
+
+    [Parameter(Mandatory=$false)]
+    [switch]$KeepExistingTargetDatabase,
+
+    [Parameter(Mandatory=$false)]
+    [string]$ProjectRoot = "",
+
+    [Parameter(Mandatory=$false)]
+    [ValidateSet("Auto", "Docker", "Php")]
+    [string]$Mode = "Auto",
+
+    [Parameter(Mandatory=$false)]
+    [string]$EnvFile = "",
+
+    [Parameter(Mandatory=$false)]
+    [string]$ComposeProjectName = ""
 )
 
 $ErrorActionPreference = "Stop"
 $script:ExitCode = 0
 $script:DecryptedSqlPath = ""
-$projectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
+    $ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+}
+
+$projectRoot = (Resolve-Path -LiteralPath $ProjectRoot).Path
 $backendEnvPath = Join-Path $projectRoot "backend\.env"
+$rootEnvPath = if ([string]::IsNullOrWhiteSpace($EnvFile)) {
+    Join-Path $projectRoot ".env"
+} else {
+    (Resolve-Path -LiteralPath $EnvFile).Path
+}
+$composeProdPath = Join-Path $projectRoot "docker-compose.prod.yml"
 
 function Write-Step {
     param([string]$Message)
@@ -178,6 +219,235 @@ function Get-DatabaseConfig {
     }
 }
 
+function Resolve-RestoreMode {
+    if ($Mode -eq "Docker") {
+        return "Docker"
+    }
+
+    if ($Mode -eq "Php") {
+        return "Php"
+    }
+
+    $hasBackendArtisan = Test-Path -LiteralPath (Join-Path $projectRoot "backend\artisan") -PathType Leaf
+    $hasCompose = Test-Path -LiteralPath $composeProdPath -PathType Leaf
+    $hasRootEnv = Test-Path -LiteralPath $rootEnvPath -PathType Leaf
+
+    if ($hasCompose -and $hasRootEnv -and -not $hasBackendArtisan) {
+        return "Docker"
+    }
+
+    return "Php"
+}
+
+function Get-DockerComposeArgs {
+    if (-not (Test-Path -LiteralPath $composeProdPath -PathType Leaf)) {
+        Write-Error "Modo Docker solicitado, pero no se encontro docker-compose.prod.yml."
+        exit 1
+    }
+
+    if (-not (Test-Path -LiteralPath $rootEnvPath -PathType Leaf)) {
+        Write-Error "Modo Docker solicitado, pero no se encontro .env productivo en la raiz del paquete."
+        exit 1
+    }
+
+    if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
+        Write-Error "Modo Docker solicitado, pero docker no esta disponible en PATH."
+        exit 1
+    }
+
+    $args = @("compose", "--env-file", $rootEnvPath)
+    if (-not [string]::IsNullOrWhiteSpace($ComposeProjectName)) {
+        if ($ComposeProjectName -notmatch '^[A-Za-z0-9_-]+$') {
+            Write-Error "ComposeProjectName contiene caracteres no permitidos."
+            exit 1
+        }
+        $args += @("-p", $ComposeProjectName)
+    }
+    $args += @("-f", $composeProdPath)
+
+    return $args
+}
+
+function Invoke-DockerComposeChecked {
+    param(
+        [string[]]$Arguments,
+        [string]$FailureMessage
+    )
+
+    & docker @Arguments
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error $FailureMessage
+        exit 1
+    }
+}
+
+function Invoke-DockerMariaDbScalar {
+    param(
+        [string[]]$ComposeArgs,
+        [string]$Sql
+    )
+
+    $encodedSql = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($Sql))
+    $shell = "printf '%s' '$encodedSql' | base64 -d | MYSQL_PWD=`"`$MARIADB_ROOT_PASSWORD`" mariadb -uroot --batch --skip-column-names"
+    $output = & docker @($ComposeArgs + @("exec", "-T", "mysql", "sh", "-lc", $shell)) 2>&1
+    $exitCode = $LASTEXITCODE
+    $firstLine = [string]($output | Select-Object -First 1)
+
+    return [pscustomobject]@{
+        Success = ($exitCode -eq 0)
+        Output = $firstLine.Trim()
+        Raw = ($output -join "`n")
+    }
+}
+
+function Get-DockerContainerId {
+    param([string]$Service)
+
+    $composeArgs = Get-DockerComposeArgs
+    $output = & docker @($composeArgs + @("ps", "-q", $Service)) 2>&1
+    $exitCode = $LASTEXITCODE
+    $containerId = $output | Select-Object -First 1
+    if ($exitCode -ne 0 -or [string]::IsNullOrWhiteSpace($containerId)) {
+        Write-Error "No se encontro contenedor Docker activo para el servicio '$Service'."
+        exit 1
+    }
+
+    return [string]$containerId
+}
+
+function Copy-ToDockerContainer {
+    param(
+        [string]$SourcePath,
+        [string]$Service,
+        [string]$DestinationPath
+    )
+
+    $containerId = Get-DockerContainerId -Service $Service
+    & docker cp $SourcePath "${containerId}:$DestinationPath"
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "No se pudo copiar '$SourcePath' al contenedor '$Service'."
+        exit 1
+    }
+}
+
+function Copy-FromDockerContainer {
+    param(
+        [string]$Service,
+        [string]$SourcePath,
+        [string]$DestinationPath
+    )
+
+    $containerId = Get-DockerContainerId -Service $Service
+    & docker cp "${containerId}:$SourcePath" $DestinationPath
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "No se pudo copiar '$SourcePath' desde el contenedor '$Service'."
+        exit 1
+    }
+}
+
+function Invoke-DockerDecryptBackup {
+    param(
+        [string]$EncryptedBackupFile,
+        [string]$OutputSqlFile
+    )
+
+    $composeArgs = Get-DockerComposeArgs
+    $token = [Guid]::NewGuid().ToString("N")
+    $containerRestoreDir = "/var/www/html/storage/app/private/restore-tmp"
+    $containerInput = "$containerRestoreDir/hospital_restore_$token.sql.enc"
+    $containerOutput = "$containerRestoreDir/hospital_restore_$token.sql"
+
+    try {
+        Invoke-DockerComposeChecked -Arguments ($composeArgs + @("exec", "-T", "backend", "sh", "-lc", "mkdir -p '$containerRestoreDir'")) -FailureMessage "No se pudo preparar el directorio temporal de restore en backend."
+
+        Write-Step "Copiando backup cifrado al contenedor backend..."
+        Copy-ToDockerContainer -SourcePath $EncryptedBackupFile -Service "backend" -DestinationPath $containerInput
+
+        Write-Step "Descifrando backup cifrado dentro del contenedor backend..."
+        Invoke-DockerComposeChecked -Arguments ($composeArgs + @("exec", "-T", "backend", "php", "artisan", "hospital:decrypt-backup", $containerInput, $containerOutput)) -FailureMessage "No se pudo descifrar el backup cifrado dentro del contenedor backend."
+
+        Write-Step "Copiando SQL descifrado temporal al host para importacion controlada..."
+        Copy-FromDockerContainer -Service "backend" -SourcePath $containerOutput -DestinationPath $OutputSqlFile
+    } finally {
+        & docker @($composeArgs + @("exec", "-T", "backend", "sh", "-lc", "rm -f '$containerInput' '$containerOutput'")) | Out-Null
+    }
+}
+
+function Invoke-DockerRestore {
+    param(
+        [string]$SqlFile,
+        [hashtable]$DbConfig
+    )
+
+    $composeArgs = Get-DockerComposeArgs
+    $dbName = [string]$DbConfig.Database
+    $token = [Guid]::NewGuid().ToString("N")
+    $containerSql = "/tmp/hospital_restore_$token.sql"
+
+    if ($SqlFile -and -not (Test-Path -LiteralPath $SqlFile -PathType Leaf)) {
+        Write-Error "Archivo SQL no encontrado para restore Docker: $SqlFile"
+        exit 1
+    }
+
+    if ($BackupFile -and -not $ForceProductionRestore -and -not $KeepExistingTargetDatabase) {
+        Write-Step "Recreando base descartable '$dbName' en MariaDB Docker antes de importar..."
+        $createDbCmd = "DROP DATABASE IF EXISTS ``$dbName``; CREATE DATABASE ``$dbName`` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+    } else {
+        Write-Step "Creando base de datos '$dbName' en MariaDB Docker si no existe..."
+        $createDbCmd = "CREATE DATABASE IF NOT EXISTS ``$dbName`` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+    }
+
+    $createShell = "printf '%s\n' '$createDbCmd' | MYSQL_PWD=`"`$MARIADB_ROOT_PASSWORD`" mariadb -uroot --default-character-set=utf8mb4"
+    Invoke-DockerComposeChecked -Arguments ($composeArgs + @("exec", "-T", "mysql", "sh", "-lc", $createShell)) -FailureMessage "Error al preparar base de datos destino en Docker."
+    Write-Success "Base de datos Docker lista"
+
+    try {
+        if ($SqlFile) {
+            Write-Step "Copiando SQL temporal al contenedor MariaDB..."
+            Copy-ToDockerContainer -SourcePath $SqlFile -Service "mysql" -DestinationPath $containerSql
+
+            Write-Step "Restaurando backup en MariaDB Docker..."
+            Write-Host "Esto puede tomar varios minutos..." -ForegroundColor Yellow
+            $importShell = "MYSQL_PWD=`"`$MARIADB_ROOT_PASSWORD`" mariadb -uroot --default-character-set=utf8mb4 '$dbName' < '$containerSql'"
+            Invoke-DockerComposeChecked -Arguments ($composeArgs + @("exec", "-T", "mysql", "sh", "-lc", $importShell)) -FailureMessage "Error al restaurar backup en Docker."
+            Write-Success "Backup restaurado exitosamente en Docker"
+        } else {
+            Write-Step "Restauracion manual requerida."
+            Write-Host "Ejecute el restore con -BackupFile y -ExpectedSha256 para importar automaticamente." -ForegroundColor Yellow
+        }
+
+        Write-Step "Verificando datos restaurados en Docker..."
+        $tableCountResult = Invoke-DockerMariaDbScalar -ComposeArgs $composeArgs -Sql "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '$dbName';"
+        $tableCount = $tableCountResult.Output -as [int]
+        if ($tableCountResult.Success -and $tableCount -gt 0) {
+            Write-Success "Base de datos restaurada con $tableCount tablas"
+        } else {
+            Write-Warning "No se pudo verificar el conteo de tablas"
+        }
+
+        Write-Step "Verificando tablas criticas en Docker..."
+        $criticalTables = @("users", "services", "invoices", "payments", "backup_logs")
+        foreach ($table in $criticalTables) {
+            $countResult = Invoke-DockerMariaDbScalar -ComposeArgs $composeArgs -Sql "SELECT COUNT(*) FROM $dbName.$table;"
+            $count = $countResult.Output -as [int]
+            if ($countResult.Success -and $count -ge 0) {
+                Write-Success "  $table : $count registros"
+            } else {
+                Write-Warning "  $table : no verificado"
+            }
+        }
+
+        Write-Host ""
+        Write-Success "RESTAURACION COMPLETADA"
+        Write-Host ""
+        Write-Host "Base de datos: $dbName" -ForegroundColor Green
+        Write-Host "Modo: Docker offline" -ForegroundColor Green
+        Write-Host ""
+    } finally {
+        & docker @($composeArgs + @("exec", "-T", "mysql", "sh", "-lc", "rm -f '$containerSql'")) | Out-Null
+    }
+}
+
 function Test-DisposableDatabaseName {
     param(
         [string]$Database,
@@ -189,11 +459,11 @@ function Test-DisposableDatabaseName {
     }
 
     $lower = $Database.ToLowerInvariant()
-    
+
     if ($lower -in @('hospital_billing', 'hospital_billing_production')) {
         return [bool]$ForceProduction
     }
-    
+
     if ($lower -in @('mysql', 'information_schema', 'performance_schema', 'sys')) {
         return $false
     }
@@ -336,17 +606,19 @@ if ($BackupFile) {
     Write-Success "SHA256 verificado antes del restore"
 }
 
-Write-Step "Buscando cliente MySQL/MariaDB..."
-$mysqlExe = Get-MySqlClient
-if (-not $mysqlExe) {
-    Write-Error "No se encontro mysql.exe. Instale XAMPP, MariaDB o MySQL."
-    Write-Error "O agregue mysql.exe al PATH del sistema."
-    exit 1
-}
-Write-Success "Cliente encontrado: $mysqlExe"
-
+$restoreMode = Resolve-RestoreMode
+Write-Step "Modo de restore detectado: $restoreMode"
 $dbConfig = $null
-if ($UseExistingEnv) {
+if ($restoreMode -eq "Docker") {
+    Write-Step "Leyendo configuracion de .env productivo del paquete Docker..."
+    $dbConfig = Get-DatabaseConfig -EnvPath $rootEnvPath
+    if (-not $dbConfig) {
+        Write-Error "No se pudo leer .env productivo para Docker."
+        exit 1
+    }
+    $dbConfig.Database = $TargetDatabase
+    Write-Success "Configuracion Docker leida"
+} elseif ($UseExistingEnv) {
     Write-Step "Leyendo configuracion de backend\.env..."
     $dbConfig = Get-DatabaseConfig
     if (-not $dbConfig) {
@@ -382,6 +654,17 @@ Assert-SafeConnectionConfig -Config $dbConfig -ForceProduction:$ForceProductionR
 if ($BackupFile -and $WhatIf) {
     Write-Warning "WhatIf activo: SHA256 verificado, cliente/config validada y restore omitido antes de crear, descifrar o modificar la base."
     exit 0
+}
+
+if ($restoreMode -eq "Php") {
+    Write-Step "Buscando cliente MySQL/MariaDB..."
+    $mysqlExe = Get-MySqlClient
+    if (-not $mysqlExe) {
+        Write-Error "No se encontro mysql.exe. Instale XAMPP, MariaDB o MySQL."
+        Write-Error "O agregue mysql.exe al PATH del sistema."
+        exit 1
+    }
+    Write-Success "Cliente encontrado: $mysqlExe"
 }
 
 if ($BackupFile -and $BackupFile -match '\.tar\.gz$') {
@@ -423,31 +706,51 @@ if ($BackupFile -and $BackupFile -match '\.tar\.gz$') {
 
 if ($BackupFile -and $BackupFile -match '\.sql\.enc$') {
     Write-Step "Descifrando backup cifrado a SQL temporal..."
-    $artisan = Join-Path $projectRoot "backend\artisan"
-    if (-not (Test-Path -LiteralPath $artisan)) {
-        Write-Error "No se encontro backend\artisan para descifrar el backup con APP_KEY local."
-        exit 1
-    }
-
     $decryptedSql = Join-Path $env:TEMP "hospital_restore_$(Get-Date -Format 'yyyyMMddHHmmss')_$([Guid]::NewGuid().ToString('N')).sql"
-    & php $artisan hospital:decrypt-backup $BackupFile $decryptedSql
-    if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $decryptedSql)) {
-        Write-Error "No se pudo descifrar el backup cifrado."
-        exit 1
+    if ($restoreMode -eq "Docker") {
+        Invoke-DockerDecryptBackup -EncryptedBackupFile $BackupFile -OutputSqlFile $decryptedSql
+    } else {
+        $artisan = Join-Path $projectRoot "backend\artisan"
+        if (-not (Test-Path -LiteralPath $artisan)) {
+            Write-Error "No se encontro backend\artisan para descifrar el backup con APP_KEY local."
+            exit 1
+        }
+
+        & php $artisan hospital:decrypt-backup $BackupFile $decryptedSql
+        if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $decryptedSql)) {
+            Write-Error "No se pudo descifrar el backup cifrado."
+            exit 1
+        }
     }
     $script:DecryptedSqlPath = $decryptedSql
     $BackupFile = $decryptedSql
     Write-Success "Backup descifrado temporalmente para importacion controlada"
 }
 
-Write-Step "Creando base de datos '$($dbConfig.Database)' si no existe..."
-$createDbCmd = "CREATE DATABASE IF NOT EXISTS ``$($dbConfig.Database)`` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+if ($restoreMode -eq "Docker") {
+    try {
+        Invoke-DockerRestore -SqlFile $BackupFile -DbConfig $dbConfig
+    } finally {
+        if ($script:DecryptedSqlPath -and (Test-Path -LiteralPath $script:DecryptedSqlPath)) {
+            Remove-Item -LiteralPath $script:DecryptedSqlPath -Force -ErrorAction SilentlyContinue
+        }
+    }
+    exit $script:ExitCode
+}
+
+if ($BackupFile -and -not $ForceProductionRestore -and -not $KeepExistingTargetDatabase) {
+    Write-Step "Recreando base descartable '$($dbConfig.Database)' antes de importar..."
+    $createDbCmd = "DROP DATABASE IF EXISTS ``$($dbConfig.Database)``; CREATE DATABASE ``$($dbConfig.Database)`` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+} else {
+    Write-Step "Creando base de datos '$($dbConfig.Database)' si no existe..."
+    $createDbCmd = "CREATE DATABASE IF NOT EXISTS ``$($dbConfig.Database)`` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+}
 $mysqlDefaultsFile = New-MySqlDefaultsFile $dbConfig
 
 try {
     & $mysqlExe --defaults-extra-file=$mysqlDefaultsFile -e $createDbCmd 2>&1 | Out-Null
     if ($LASTEXITCODE -ne 0) {
-        Write-Error "Error al crear base de datos"
+        Write-Error "Error al preparar base de datos destino"
         exit 1
     }
     Write-Success "Base de datos lista"

@@ -1,4 +1,4 @@
-import { ApiError, apiClient } from './base';
+import { apiClient } from './base';
 import type {
   InstitutionalReceipt,
   InstitutionalReceiptSeries,
@@ -11,36 +11,8 @@ import type {
   ReceiptTestPrintPayload,
 } from './types';
 
-function cookieValue(name: string): string | null {
-  const prefix = `${name}=`;
-  const cookie = document.cookie
-    .split(';')
-    .map((value) => value.trim())
-    .find((value) => value.startsWith(prefix));
-
-  return cookie ? decodeURIComponent(cookie.slice(prefix.length)) : null;
-}
-
 async function pdfPost(path: string, payload: Record<string, unknown>): Promise<Blob> {
-  await apiClient.csrf();
-
-  const response = await fetch(apiClient.url(path), {
-    method: 'POST',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/pdf, application/json',
-      'Content-Type': 'application/json',
-      ...(cookieValue('XSRF-TOKEN') ? { 'X-XSRF-TOKEN': cookieValue('XSRF-TOKEN') ?? '' } : {}),
-    },
-    body: JSON.stringify(payload),
-  });
-
-  if (!response.ok) {
-    const error = (await response.json().catch(() => null)) as { message?: string; errors?: Record<string, string[]> } | null;
-    throw new ApiError(error?.message ?? `HTTP ${response.status}`, response.status, error?.errors);
-  }
-
-  return response.blob();
+  return apiClient.postDownload(path, payload);
 }
 
 export const institutionalReceipts = {
@@ -125,13 +97,11 @@ export const institutionalReceipts = {
   },
 
   async pdf(id: number, reason?: string | null): Promise<Blob> {
-    const params = new URLSearchParams();
-    if (reason?.trim()) {
-      params.set('reason', reason.trim());
+    const trimmedReason = reason?.trim();
+    if (trimmedReason) {
+      return pdfPost(`/api/institutional-receipts/${id}/pdf`, { reason: trimmedReason });
     }
 
-    const query = params.toString();
-
-    return apiClient.download(`/api/institutional-receipts/${id}/pdf${query ? `?${query}` : ''}`);
+    return apiClient.download(`/api/institutional-receipts/${id}/pdf`);
   },
 };

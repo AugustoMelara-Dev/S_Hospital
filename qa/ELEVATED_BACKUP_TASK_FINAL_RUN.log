@@ -1,0 +1,31 @@
+﻿=== 2026-06-17T22:57:04 ===
+Starting SistemaCajaHospitalaria-BackupWorker
+Task=SistemaCajaHospitalaria-BackupWorker State=Ready LastRun=06/17/2026 22:57:05 LastResult=0 NextRun= User=SYSTEM
+Starting SistemaCajaHospitalaria-DailyBackup
+Task=SistemaCajaHospitalaria-DailyBackup State=Ready LastRun=06/17/2026 22:57:44 LastResult=0 NextRun=06/18/2026 02:00:00 User=SYSTEM
+--- worker launch log tail ---
+Worker Docker de respaldos activo.
+Worker Docker de respaldos activo.
+--- scheduled launch log tail ---
+Respaldo programado completado.
+Respaldo programado completado.
+--- scheduled log tail ---
+WARNING: Error loading config file: open C:\Users\melar\.docker\config.json: Access is denied.
+WARNING: Error loading config file: open C:\Users\melar\.docker\config.json: Access is denied.
+error while interpolating services.backend.environment.PUSHER_APP_ID: required variable PUSHER_APP_ID is missing a value: PUSHER_APP_ID is required
+WARNING: Error loading config file: open C:\Users\melar\.docker\config.json: Access is denied.
+WARNING: Error loading config file: open C:\Users\melar\.docker\config.json: Access is denied.
+WARNING: Error loading config file: open C:\Users\melar\.docker\config.json: Access is denied.
+WARNING: Error loading config file: open C:\Users\melar\.docker\config.json: Access is denied.
+WARNING: Error loading config file: open C:\Users\melar\.docker\config.json: Access is denied.
+WARNING: Error loading config file: open C:\Users\melar\.docker\config.json: Access is denied.
+WARNING: Error loading config file: open C:\Users\melar\.docker\config.json: Access is denied.
+WARNING: Error loading config file: open C:\Users\melar\.docker\config.json: Access is denied.
+WARNING: Error loading config file: open C:\Users\melar\.docker\config.json: Access is denied.
+WARNING: Error loading config file: open C:\Users\melar\.docker\config.json: Access is denied.
+[16/06/2026 17:06:25,08] Iniciando respaldo programado en contenedor backend. 
+service "backend" is not running
+[mi‚ 17/06/2026 22:53:20.92] Iniciando respaldo programado en contenedor backend. 
+Respaldo local creado: hospital-backup-20260617-225323-ypktwdmd.sql.enc
+[mi‚ 17/06/2026 22:57:45.84] Iniciando respaldo programado en contenedor backend. 
+Respaldo local creado: hospital-backup-20260617-225746-oaetsh88.sql.enc

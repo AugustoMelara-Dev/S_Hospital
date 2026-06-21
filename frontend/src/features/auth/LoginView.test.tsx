@@ -73,6 +73,25 @@ describe('LoginView', () => {
     expect(button).toBeDisabled();
   });
 
+  it('treats backend 423 account lockout as destructive and blocks form submit', () => {
+    const onSubmit = vi.fn();
+    render(
+      <LoginView
+        {...defaultProps}
+        status="Cuenta bloqueada por intentos fallidos. Espere 15 minutos o pida a un supervisor que reactive su usuario."
+        onSubmit={onSubmit}
+      />,
+      { wrapper: Wrapper },
+    );
+
+    expect(screen.getByRole('alert')).toHaveTextContent(/cuenta bloqueada/i);
+    expect(screen.getByRole('button', { name: /bloqueado/i })).toBeDisabled();
+
+    fireEvent.submit(screen.getByRole('button', { name: /bloqueado/i }).closest('form')!);
+
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
   it('shows password visibility toggle', () => {
     render(<LoginView {...defaultProps} />, { wrapper: Wrapper });
 

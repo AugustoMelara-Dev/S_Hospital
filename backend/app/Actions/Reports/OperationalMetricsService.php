@@ -30,6 +30,7 @@ class OperationalMetricsService
             'queue' => $this->queue(),
             'backups' => $this->backups(),
             'storage' => $this->storage(),
+            'audit' => $this->audit(),
             'recent_errors' => $this->recentErrors(),
         ];
     }
@@ -136,6 +137,20 @@ class OperationalMetricsService
     }
 
     /**
+     * @return array<string, mixed>
+     */
+    private function audit(): array
+    {
+        $lastPermissionAuditFailure = Cache::get('permission_audit_observer:last_failure');
+
+        return [
+            'permission_audit_observer' => [
+                'last_failure' => is_array($lastPermissionAuditFailure) ? $lastPermissionAuditFailure : null,
+            ],
+        ];
+    }
+
+    /**
      * @return array<int, array<string, mixed>>
      */
     private function recentErrors(): array
@@ -216,6 +231,10 @@ class OperationalMetricsService
 
         if (($snapshot['backups']['failed_last_24h'] ?? 0) > 0) {
             $issues[] = 'backup_failures_in_24h';
+        }
+
+        if (($snapshot['audit']['permission_audit_observer']['last_failure'] ?? null) !== null) {
+            $issues[] = 'permission_audit_observer_failed';
         }
 
         return [

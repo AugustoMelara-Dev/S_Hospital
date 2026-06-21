@@ -18,7 +18,7 @@ class InitialAdminCommandTest extends TestCase
         $this->artisan('auth:create-initial-admin', [
             '--username' => 'admin.local',
             '--email' => 'admin.local@hospital.test',
-            '--password' => 'Temporary123',
+            '--password' => 'Temporary123!',
         ])->assertSuccessful();
 
         $admin = User::query()->where('username', 'admin.local')->firstOrFail();
@@ -38,7 +38,7 @@ class InitialAdminCommandTest extends TestCase
         $this->artisan('auth:create-initial-admin', [
             '--username' => 'admin.local',
             '--email' => 'admin.local@hospital.test',
-            '--password' => 'Temporary123',
+            '--password' => 'Temporary123!',
         ])->assertFailed();
     }
 
@@ -47,7 +47,7 @@ class InitialAdminCommandTest extends TestCase
         $this->seed(RolesAndPermissionsSeeder::class);
 
         $previousPassword = getenv('HOSPITAL_INITIAL_ADMIN_PASSWORD');
-        putenv('HOSPITAL_INITIAL_ADMIN_PASSWORD=Temporary123');
+        putenv('HOSPITAL_INITIAL_ADMIN_PASSWORD=Temporary123!');
 
         try {
             $this->artisan('auth:create-initial-admin', [

@@ -6,7 +6,7 @@ import { Dialog } from '../../../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { Checkbox } from '../../../components/ui/checkbox';
 import type { Payment } from '../../../lib/api';
-import { formatLempirasFromCents, parseCents as parseCentsNullable } from '../../../lib/moneyCents';
+import { formatLempirasUIFromCents, parseCents as parseCentsNullable } from '../../../lib/moneyCents';
 import { parseCents } from '../../../lib/money';
 
 type PaymentModalProps = {
@@ -54,7 +54,8 @@ export function PaymentModal({
 
   const balanceCents = parseMoneyCents(balanceDue);
   const paymentCents = parseMoneyCents(paymentAmount);
-  const overpaymentCents = paymentCents !== null && balanceCents !== null && paymentCents > balanceCents
+  const cashCanReturnChange = paymentMethod === 'cash';
+  const overpaymentCents = cashCanReturnChange && paymentCents !== null && balanceCents !== null && paymentCents > balanceCents
     ? paymentCents - balanceCents
     : null;
   const changeCents = overpaymentCents;
@@ -65,7 +66,7 @@ export function PaymentModal({
     ? balanceCents
     : paymentCents;
   const needsAmount = paymentCents === null || paymentCents <= 0;
-  const exceedsPending = paymentCents !== null && balanceCents !== null && paymentCents > balanceCents;
+  const exceedsPending = !cashCanReturnChange && paymentCents !== null && balanceCents !== null && paymentCents > balanceCents;
   const pendingAmountLabel = balanceCents !== null ? formatMoneyCents(balanceCents) : '0.00';
 
   useEffect(() => {
@@ -78,19 +79,20 @@ export function PaymentModal({
 
   function handleAmountChange(value: string) {
     setError(null);
-    if (value === '') {
+    const normalizedValue = value.replace(',', '.');
+    if (normalizedValue === '') {
       setCapNotice(null);
       onPaymentAmountChange('');
       return;
     }
 
-    if (!/^\d*(\.\d{0,2})?$/.test(value)) {
+    if (!/^\d*(\.\d{0,2})?$/.test(normalizedValue)) {
       return;
     }
 
-    const cents = parseCents(value);
+    const cents = parseCents(normalizedValue);
     const cap = balanceCents;
-    if (cap !== null && cents > cap) {
+    if (!cashCanReturnChange && cap !== null && cents > cap) {
       const capped = formatMoneyCents(cap);
       setCapNotice(`El pago no puede superar el saldo pendiente (L. ${pendingAmountLabel}).`);
       onPaymentAmountChange(capped);
@@ -98,7 +100,7 @@ export function PaymentModal({
     }
 
     setCapNotice(null);
-    onPaymentAmountChange(value);
+    onPaymentAmountChange(normalizedValue);
   }
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -109,7 +111,7 @@ export function PaymentModal({
       amountInputRef.current?.focus();
       return;
     }
-    if (balanceCents !== null && amountCents > balanceCents) {
+    if (!cashCanReturnChange && balanceCents !== null && amountCents > balanceCents) {
       setError('El pago no puede superar el saldo pendiente.');
       amountInputRef.current?.focus();
       return;
@@ -126,7 +128,11 @@ export function PaymentModal({
   return (
     <Dialog
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={(nextOpen) => {
+        if (!submitting) {
+          onOpenChange(nextOpen);
+        }
+      }}
       title="Registrar pago"
       description={`Factura ${invoiceNumber} ya fue emitida. Si sale de este paso quedara pendiente de cobro.`}
     >
@@ -178,6 +184,12 @@ export function PaymentModal({
           {needsAmount && !error ? (
             <div className="rounded-md border border-warning/35 bg-warning/10 px-3 py-2 text-sm text-warning-foreground" role="alert">
               Ingrese el monto recibido para registrar el cobro.
+            </div>
+          ) : null}
+
+          {submitting ? (
+            <div className="rounded-md border border-primary/30 bg-primary/10 px-3 py-2 text-sm font-semibold text-primary" role="status" aria-live="polite">
+              Registrando cobro, no repita la operacion.
             </div>
           ) : null}
 
@@ -261,7 +273,7 @@ export function PaymentModal({
         </div>
 
         <div className="flex gap-3 pt-2">
-          <Button type="button" variant="secondary" className="flex-1" onClick={() => onOpenChange(false)}>
+          <Button type="button" variant="secondary" className="flex-1" onClick={() => onOpenChange(false)} disabled={submitting}>
             Dejar pendiente
           </Button>
           <Button
@@ -299,12 +311,12 @@ function formatMoneyCents(cents: number): string {
 
 function moneyLabel(value: string | number | null | undefined): string {
   if (value === null || value === undefined) {
-    return formatLempirasFromCents(0);
+    return formatLempirasUIFromCents(0);
   }
 
-  return formatLempirasFromCents(parseCentsNullable(value));
+  return formatLempirasUIFromCents(parseCentsNullable(value));
 }
 
 function moneyLabelFromCents(cents: number): string {
-  return formatLempirasFromCents(cents);
+  return formatLempirasUIFromCents(cents);
 }

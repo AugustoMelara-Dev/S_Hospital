@@ -8,7 +8,7 @@ import {
   ComposedChart,
   Area,
 } from 'recharts';
-import { finiteNumber, formatLempiras } from '../../lib/money';
+import { finiteNumber, formatLempirasUI } from '../../lib/money';
 import { useElementWidth } from './useElementWidth';
 
 type DailyTrendData = {
@@ -69,14 +69,41 @@ export function RevenueBarChart({ data }: RevenueBarChartProps) {
   }
 
   return (
-    <div ref={ref} className="h-[300px] w-full min-w-px" style={{ minHeight: 300 }}>
-      {width > 0 ? (
-        <ComposedChart
-          data={chartData}
-          width={width}
-          height={300}
-          margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
-        >
+    <figure>
+      <div className="sr-only">
+        <table>
+          <caption>Tendencia de facturación y cobros de los últimos días</caption>
+          <thead>
+            <tr>
+              <th scope="col">Día</th>
+              <th scope="col">Facturado</th>
+              <th scope="col">Cobrado</th>
+              <th scope="col">Facturas</th>
+              <th scope="col">Pagos</th>
+            </tr>
+          </thead>
+          <tbody>
+            {chartData.map((day) => (
+              <tr key={day.name}>
+                <td>{day.name}</td>
+                <td>{formatLempirasUI(day.Billed)}</td>
+                <td>{formatLempirasUI(day.Collected)}</td>
+                <td>{day.invoices}</td>
+                <td>{day.payments}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div ref={ref} className="h-[300px] w-full min-w-px" style={{ minHeight: 300 }}>
+        {width > 0 ? (
+          <ComposedChart
+            accessibilityLayer={false}
+            data={chartData}
+            width={width}
+            height={300}
+            margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
+          >
           <defs>
             <linearGradient id="colorBilled" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.2} />
@@ -112,7 +139,7 @@ export function RevenueBarChart({ data }: RevenueBarChartProps) {
               boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
             }}
             formatter={(value: TooltipValue, name: TooltipName) => [
-              formatLempiras(numericTooltipValue(value)),
+              formatLempirasUI(numericTooltipValue(value)),
               name === 'Billed' ? 'Facturado' : 'Cobrado',
             ]}
             labelStyle={{ fontWeight: 'bold', marginBottom: '4px' }}
@@ -144,8 +171,9 @@ export function RevenueBarChart({ data }: RevenueBarChartProps) {
             strokeWidth={1.5}
             radius={[4, 4, 0, 0]}
           />
-        </ComposedChart>
-      ) : null}
-    </div>
+          </ComposedChart>
+        ) : null}
+      </div>
+    </figure>
   );
 }

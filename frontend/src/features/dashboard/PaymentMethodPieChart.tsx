@@ -1,6 +1,6 @@
 import { Cell, Legend, Pie, PieChart, Tooltip } from 'recharts';
 import { type MoneyByMethod } from '../../lib/api';
-import { finiteNumber, formatLempiras } from '../../lib/money';
+import { finiteNumber, formatLempirasUI } from '../../lib/money';
 import { useElementWidth } from './useElementWidth';
 
 type PaymentMethodPieChartProps = {
@@ -55,9 +55,31 @@ export function PaymentMethodPieChart({ data }: PaymentMethodPieChartProps) {
   }
 
   return (
-    <div ref={ref} className="h-[240px] w-full min-w-px" style={{ minHeight: 240 }}>
-      {width > 0 ? (
-        <PieChart width={width} height={240}>
+    <figure>
+      <div className="sr-only">
+        <table>
+          <caption>Cobros por método de pago</caption>
+          <thead>
+            <tr>
+              <th scope="col">Método</th>
+              <th scope="col">Monto</th>
+              <th scope="col">Porcentaje</th>
+            </tr>
+          </thead>
+          <tbody>
+            {chartData.map((item) => (
+              <tr key={item.key}>
+                <td>{item.name}</td>
+                <td>{formatLempirasUI(item.value)}</td>
+                <td>{((item.value / total) * 100).toFixed(1)}%</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div ref={ref} className="h-[240px] w-full min-w-px" style={{ minHeight: 240 }}>
+        {width > 0 ? (
+          <PieChart width={width} height={240} accessibilityLayer={false}>
           <Pie
             data={chartData}
             cx="50%"
@@ -87,7 +109,7 @@ export function PaymentMethodPieChart({ data }: PaymentMethodPieChartProps) {
               const numericValue = numericTooltipValue(value);
 
               return [
-                `${formatLempiras(numericValue)} (${((numericValue / total) * 100).toFixed(1)}%)`,
+                `${formatLempirasUI(numericValue)} (${((numericValue / total) * 100).toFixed(1)}%)`,
                 'Total',
               ];
             }}
@@ -102,8 +124,9 @@ export function PaymentMethodPieChart({ data }: PaymentMethodPieChartProps) {
               return <span className="text-xs text-muted-foreground">{value}{amountStr}</span>;
             }}
           />
-        </PieChart>
-      ) : null}
-    </div>
+          </PieChart>
+        ) : null}
+      </div>
+    </figure>
   );
 }

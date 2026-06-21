@@ -11,6 +11,7 @@ let csrfCache: { fetchedAt: number; promise: Promise<void> } | null = null;
 
 const DEFAULT_GET_TIMEOUT_MS = 10_000;
 const DEFAULT_MUTATION_TIMEOUT_MS = 30_000;
+const DEFAULT_DOWNLOAD_TIMEOUT_MS = 60_000;
 
 type ApiRequestInit = RequestInit & {
   timeout?: number;
@@ -70,12 +71,14 @@ function notifySessionExpired(): void {
 export class ApiError extends Error {
   readonly status: number;
   readonly validationErrors?: Record<string, string[]>;
+  readonly supportMessage?: string;
 
-  constructor(message: string, status: number, validationErrors?: Record<string, string[]>) {
+  constructor(message: string, status: number, validationErrors?: Record<string, string[]>, supportMessage?: string) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.validationErrors = validationErrors;
+    this.supportMessage = supportMessage;
   }
 }
 
@@ -247,9 +250,9 @@ function networkError(error?: unknown): ApiError {
   const baseMessage = 'No se pudo conectar con el servidor LAN. Revise que el servidor local este encendido y vuelva a intentar.';
   const rawDetail = error instanceof Error ? error.message : error === undefined ? '' : String(error);
   const safeDetail = safeClientMessage(rawDetail);
-  const message = safeDetail ? `${baseMessage} Detalle seguro del navegador: ${safeDetail}` : baseMessage;
+  const supportMessage = safeDetail ? `${baseMessage} Detalle seguro del navegador: ${safeDetail}` : baseMessage;
 
-  return new ApiError(message, 0);
+  return new ApiError(baseMessage, 0, undefined, supportMessage);
 }
 
 function recordApiIssue(error: ApiError, action: string): never {
@@ -304,7 +307,7 @@ export const apiClient = {
   // Called by useHospitalSession on logout (and after a 401/419) to
   // wipe the cached CSRF cookie promise. The next login gets a fresh
   // token from /sanctum/csrf-cookie instead of reusing the previous
-  // user's token from the 30-minute cache window.
+  // user's token from the cached cookie promise.
   invalidateSession(): void {
     resetCsrfCache();
   },
@@ -535,10 +538,92 @@ export const apiClient = {
     return (await response.json()) as T;
   },
 
-  async download(path: string): Promise<Blob> {
+  async postDownload(path: string, payload: Record<string, unknown>, options: ApiRequestInit = {}): Promise<Blob> {
+    const idempotencyKey = options.idempotencyKey ?? createClientIdempotencyKey();
+
+    return enqueueRequest(async () => {
+      await this.csrf();
+
+      const timeoutMs =
+        Number.isFinite(options.timeout) && Number(options.timeout) > 0
+          ? Number(options.timeout)
+          : DEFAULT_MUTATION_TIMEOUT_MS;
+      const send = async (): Promise<Response> => {
+        const controller = new AbortController();
+        const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+        const xsrfToken = cookieValue('XSRF-TOKEN');
+
+        try {
+          return await fetch(this.url(path), {
+            method: 'POST',
+            credentials: 'include',
+            signal: controller.signal,
+            headers: {
+              Accept: 'application/pdf, application/json',
+              'Content-Type': 'application/json',
+              ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
+              'Idempotency-Key': idempotencyKey,
+              ...options.headers,
+            },
+            body: JSON.stringify(payload),
+          });
+        } catch (err) {
+          if (err instanceof DOMException && err.name === 'AbortError') {
+            recordApiIssue(
+              new ApiError(`La descarga '${path}' excedio ${timeoutMs / 1000}s sin respuesta del servidor local. Revise la red.`, 0),
+              `POST_DOWNLOAD ${path}_timeout`,
+            );
+          }
+          recordApiIssue(networkError(err), `POST_DOWNLOAD ${path}`);
+        } finally {
+          window.clearTimeout(timeoutId);
+        }
+      };
+
+      let response = await send();
+
+      if (response.status === 419) {
+        resetCsrfCache();
+        await this.csrf();
+        response = await send();
+      }
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          void invalidateCsrfCookie();
+          notifySessionExpired();
+          recordApiIssue(new ApiError('Sesión vencida. Vuelva a iniciar sesión para continuar.', response.status), `POST_DOWNLOAD ${path}`);
+        }
+
+        if (response.status === 403) {
+          recordApiIssue(new ApiError(PERMISSION_DENIED_MESSAGE, response.status), `POST_DOWNLOAD ${path}`);
+        }
+
+        if (response.status === 419) {
+          notifySessionExpired();
+          recordApiIssue(new ApiError('La sesión expiró. Actualice la pantalla e intente de nuevo.', response.status), `POST_DOWNLOAD ${path}`);
+        }
+
+        if (response.status === 423) {
+          recordApiIssue(
+            new ApiError('Cuenta bloqueada por intentos fallidos. Espere 15 minutos o pida a un supervisor que reactive su usuario.', response.status),
+            `POST_DOWNLOAD ${path}`,
+          );
+        }
+
+        const error = (await response.json().catch(() => null)) as { errors?: Record<string, string[]>; message?: string } | null;
+        recordApiIssue(new ApiError(error?.message ?? `HTTP ${response.status}`, response.status, error?.errors), `POST_DOWNLOAD ${path}`);
+      }
+
+      return response.blob();
+    });
+  },
+
+  async download(path: string, options: ApiRequestInit = {}): Promise<Blob> {
     let response: Response;
     const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), DEFAULT_GET_TIMEOUT_MS);
+    const timeoutMs = options.timeout ?? DEFAULT_DOWNLOAD_TIMEOUT_MS;
+    const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
 
     try {
       response = await fetch(this.url(path), {
@@ -552,7 +637,7 @@ export const apiClient = {
       if (err instanceof DOMException && err.name === 'AbortError') {
         recordApiIssue(
           new ApiError(
-            `La descarga '${path}' excedio ${DEFAULT_GET_TIMEOUT_MS / 1000}s sin respuesta del servidor local. Revise la red.`,
+            `La descarga '${path}' excedio ${timeoutMs / 1000}s sin respuesta del servidor local. Revise la red.`,
             0,
           ),
           `DOWNLOAD ${path}_timeout`,

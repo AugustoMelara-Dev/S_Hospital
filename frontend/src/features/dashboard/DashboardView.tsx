@@ -18,7 +18,7 @@ import { MetricCard } from '../../components/ui/metric-card';
 import { PageHeader } from '../../components/ui/page-header';
 import { Skeleton } from '../../components/ui/states';
 import { type CashSession, type DashboardReport, apiClient, userSafeErrorMessage } from '../../lib/api';
-import { formatLempiras } from '../../lib/money';
+import { formatLempirasUI } from '../../lib/money';
 import { CashierList } from './CashierList';
 import { PaymentMethodPieChart } from './PaymentMethodPieChart';
 import { RevenueBarChart } from './RevenueBarChart';
@@ -182,14 +182,14 @@ export function DashboardView({
           <MetricCard
             icon={<TrendingUp className="size-4 text-primary" />}
             label="Facturado"
-            value={loadingDashboard ? <Skeleton className="h-7 w-24" /> : formatLempiras(dashboardData?.current_month.total_billed)}
+            value={loadingDashboard ? <Skeleton className="h-7 w-24" /> : formatLempirasUI(dashboardData?.current_month.total_billed)}
             helper={dashboardData ? `${dashboardData.current_month.invoice_count} facturas este mes` : 'Facturación del mes'}
           />
 
           <MetricCard
             icon={<CreditCard className="size-4 text-success" />}
             label="Cobrado"
-            value={loadingDashboard ? <Skeleton className="h-7 w-24" /> : formatLempiras(dashboardData?.current_month.total_collected)}
+            value={loadingDashboard ? <Skeleton className="h-7 w-24" /> : formatLempirasUI(dashboardData?.current_month.total_collected)}
             helper={dashboardData ? `${dashboardData.current_month.payment_count} pagos recibidos` : 'Cobros del mes'}
           />
 
@@ -221,7 +221,7 @@ export function DashboardView({
                 {!canViewManagerialReports ? (
                   <PermissionLockedState />
                 ) : loadingDashboard ? (
-                  <div className="flex h-[300px] items-center justify-center">
+                  <div className="flex h-[300px] items-center justify-center" role="status" aria-busy="true" aria-label="Cargando facturacion y cobros">
                     <Skeleton className="h-[280px] w-full" />
                   </div>
                 ) : dashboardError ? (
@@ -243,7 +243,7 @@ export function DashboardView({
                 {!canViewManagerialReports ? (
                   <PermissionLockedState />
                 ) : loadingDashboard ? (
-                  <div className="space-y-4">
+                  <div className="space-y-4" role="status" aria-busy="true" aria-label="Cargando cajeros de hoy">
                     <Skeleton className="h-10 w-full" />
                     <Skeleton className="h-10 w-full" />
                   </div>
@@ -300,7 +300,7 @@ export function DashboardView({
                 {!canViewManagerialReports ? (
                   <PermissionLockedState />
                 ) : loadingDashboard ? (
-                  <div className="flex h-[240px] items-center justify-center">
+                  <div className="flex h-[240px] items-center justify-center" role="status" aria-busy="true" aria-label="Cargando cobros de hoy">
                     <Skeleton className="size-40 rounded-full" />
                   </div>
                 ) : dashboardError ? (
@@ -320,7 +320,7 @@ export function DashboardView({
                 {!canViewManagerialReports ? (
                   <PermissionLockedState />
                 ) : loadingDashboard ? (
-                  <div className="space-y-4">
+                  <div className="space-y-4" role="status" aria-busy="true" aria-label="Cargando servicios principales">
                     <Skeleton className="h-8 w-full" />
                     <Skeleton className="h-8 w-full" />
                     <Skeleton className="h-8 w-full" />
@@ -370,7 +370,7 @@ function SetupStepCheck({ label, done, helper }: { label: string; done: boolean;
 
 function PermissionLockedState() {
   return (
-    <div className="flex flex-col items-center justify-center px-4 py-10 text-center">
+    <div className="flex flex-col items-center justify-center px-4 py-10 text-center" role="alert">
       <div className="mb-3 flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
         <Activity className="size-6" />
       </div>
@@ -400,7 +400,7 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
 
 function EmptyPanel({ message, compact = false }: { message: string; compact?: boolean }) {
   return (
-    <div className={`flex items-center justify-center rounded-md border border-dashed border-border bg-muted/20 px-4 text-center text-sm text-muted-foreground ${compact ? 'min-h-20' : 'h-[300px]'}`}>
+    <div className={`flex items-center justify-center rounded-md border border-dashed border-border bg-muted/20 px-4 text-center text-sm text-muted-foreground ${compact ? 'min-h-20' : 'h-[300px]'}`} role="status" aria-live="polite">
       {message}
     </div>
   );

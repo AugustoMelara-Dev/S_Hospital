@@ -48,11 +48,11 @@ describe('CashSessionReportTab', () => {
     );
 
     expect(document.body.textContent).toContain('Esperado');
-    expect(document.body.textContent).toContain('L. 517.25');
+    expect(document.body.textContent).toContain('L 517.25');
     expect(document.body.textContent).toContain('Pendiente');
     expect(document.body.textContent).toContain('1 factura');
-    expect(document.body.textContent).toContain('L. 23.75');
-    expect(document.body.textContent).not.toMatch(/L\. 0\.00(?:\s*)Contado/);
+    expect(document.body.textContent).toContain('L 23.75');
+    expect(document.body.textContent).not.toMatch(/L 0\.00(?:\s*)Contado/);
   });
 
   it('renders cash movement types and methods as human financial labels', () => {
@@ -139,7 +139,7 @@ describe('CashSessionReportTab', () => {
     expect(document.body.textContent).toContain('Reverso de pago');
     expect(document.body.textContent).toContain('Cierre de caja');
     expect(document.body.textContent).toContain('Efectivo');
-    expect(document.body.textContent).toContain('L. -10.00');
+    expect(document.body.textContent).toContain('- L 10.00');
     expect(document.body.textContent).not.toMatch(/payment_void|closing|opening/);
   });
 
@@ -221,8 +221,8 @@ describe('CashSessionReportTab', () => {
     );
 
     expect(screen.getAllByText('Caja Principal').length).toBeGreaterThan(0);
-    expect(document.body.textContent).toContain('L. 1.25');
-    expect(document.body.textContent).toContain('L. 0.00');
+    expect(document.body.textContent).toContain('L 1.25');
+    expect(document.body.textContent).toContain('L 0.00');
     expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-numero|undefined/);
   });
 });

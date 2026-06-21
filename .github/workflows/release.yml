@@ -41,17 +41,23 @@ jobs:
           echo "Release notes found: $NOTES"
           head -20 "$NOTES"
 
-      - name: Verify physical evidence
+      - name: Verify final production evidence
         run: |
           for f in qa/LAN_CLIENT_VALIDATION_PROOF.md \
                    qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md \
                    qa/FINAL_RESTORE_PROOF.md \
-                   qa/FINAL_CONCURRENCY_PROOF.md; do
-            if grep -q "PENDING" "$f"; then
-              echo "::error::$f is still PENDING. Refusing to release."
+                   qa/FINAL_CONCURRENCY_PROOF.md \
+                   qa/FINAL_CONCURRENCY_UNDER_LOAD_PROOF_LAN_8081.md \
+                   qa/FINAL_REAL_SMOKE_LAN_8081.md; do
+            if [ ! -f "$f" ]; then
+              echo "::error::$f is missing. Refusing to release."
               exit 1
             fi
-            echo "OK: $f is past PENDING"
+            if grep -Eqi '\bTODO\b|\bPENDING(_[A-Z_]+)?\b|\bREPLACE\b|\bTBD\b|\[ \]|example|template|use this file' "$f"; then
+              echo "::error::$f still contains placeholder evidence. Refusing to release."
+              exit 1
+            fi
+            echo "OK: $f is complete enough for handoff gate"
           done
 
       - name: Verify final handoff
@@ -60,11 +66,11 @@ jobs:
             echo "::error::qa/FINAL_PRODUCTION_HANDOFF_RESULT.md missing"
             exit 1
           fi
-          if ! grep -q "PRODUCTION_READY=YES" qa/FINAL_PRODUCTION_HANDOFF_RESULT.md; then
-            echo "::error::qa/FINAL_PRODUCTION_HANDOFF_RESULT.md does not declare PRODUCTION_READY=YES"
+          if ! grep -q "Decision: PRODUCTION_READY" qa/FINAL_PRODUCTION_HANDOFF_RESULT.md; then
+            echo "::error::qa/FINAL_PRODUCTION_HANDOFF_RESULT.md does not declare Decision: PRODUCTION_READY"
             exit 1
           fi
-          echo "OK: PRODUCTION_READY=YES"
+          echo "OK: Decision: PRODUCTION_READY"
 
   github-release:
     name: GitHub Release

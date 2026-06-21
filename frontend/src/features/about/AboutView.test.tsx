@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AboutView } from './AboutView';
 import { useBackups } from '../../hooks/useBackups';
-import { useFiscalSettings } from '../../hooks/useFiscalSettings';
+import { usePublicBranding } from '../../hooks/useFiscalSettings';
 import { useServerStatus, useSystemStatusSnapshot } from '../../hooks/useServerStatus';
 import type { SystemStatus } from '../../lib/api';
 
@@ -11,7 +11,7 @@ vi.mock('../../hooks/useBackups', () => ({
 }));
 
 vi.mock('../../hooks/useFiscalSettings', () => ({
-  useFiscalSettings: vi.fn(),
+  usePublicBranding: vi.fn(),
 }));
 
 vi.mock('../../hooks/useServerStatus', () => ({
@@ -40,9 +40,9 @@ describe('AboutView', () => {
   };
 
   beforeEach(() => {
-    vi.mocked(useFiscalSettings).mockReturnValue({
+    vi.mocked(usePublicBranding).mockReturnValue({
       data: { hospital_name: 'Hospital San Isidro' },
-    } as ReturnType<typeof useFiscalSettings>);
+    } as ReturnType<typeof usePublicBranding>);
     vi.mocked(useBackups).mockReturnValue({
       hasPending: false,
       pollIntervalMs: false,

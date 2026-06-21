@@ -84,6 +84,7 @@ en PowerShell como Administrador.
 | Desactivar mantenimiento | `php artisan hospital:maintenance off` |
 | Generar CA local (HTTPS) | `scripts\generate_local_ca.ps1 -ServerIp <ip>` |
 | Validar LAN cliente | `powershell.exe -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 -BaseUrl http://IP-SERVIDOR -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md` |
+| Confirmar sincronizacion multi-PC | En la salida de Validar LAN cliente deben quedar OK `/api/system/echo-config` y `WebSocket TCP`; si faltan, no declarar produccion lista. |
 | Reparar tras reboot | `scripts\open_hospital_system.ps1` |
 | Diagnosticar problema | `scripts\repair_hospital_system.ps1` |
 | Recolectar soporte | `scripts\collect_support_packet.ps1` |

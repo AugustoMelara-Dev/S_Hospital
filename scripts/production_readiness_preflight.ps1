@@ -7,6 +7,8 @@ param(
 
     [string] $ProjectRoot = "",
 
+    [string] $ComposeProjectName = "",
+
     [switch] $AllowMissingPhysicalProof
 )
 
@@ -32,6 +34,7 @@ if ($BaseUrl -ne "") {
 
 $failures = New-Object System.Collections.Generic.List[string]
 $warnings = New-Object System.Collections.Generic.List[string]
+$blockingWarnings = New-Object System.Collections.Generic.List[string]
 
 function Protect-PreflightText([string] $value) {
     if ([string]::IsNullOrWhiteSpace($value)) {
@@ -68,8 +71,10 @@ function Add-Pass([string] $message) {
 }
 
 function Add-Strong-Warning([string] $message) {
-    $warnings.Add($message) | Out-Null
-    Write-Host "[WARN] $message" -ForegroundColor Yellow
+    $safeMessage = Protect-PreflightText $message
+    $warnings.Add($safeMessage) | Out-Null
+    $blockingWarnings.Add($safeMessage) | Out-Null
+    Write-Host "[WARN] $safeMessage" -ForegroundColor Yellow
     Write-Host "[WARN] PRODUCTION_READY remains forbidden while this warning is present." -ForegroundColor Yellow
 }
 
@@ -159,11 +164,53 @@ function Test-BackupWrapperCheck([string] $scriptPath, [string] $label) {
         return
     }
 
-    & cmd.exe /c "`"$scriptPath`" --check" *> $null
+    $modeArg = if ($script:PreflightBackupMode -eq "docker") { " --mode=docker" } else { "" }
+    $envArg = if ($script:PreflightEnvPath -and (Test-Path -LiteralPath $script:PreflightEnvPath)) {
+        " --env-file `"$script:PreflightEnvPath`""
+    } else {
+        ""
+    }
+    $projectArg = if (-not [string]::IsNullOrWhiteSpace($script:PreflightComposeProjectName)) {
+        " --project-name `"$script:PreflightComposeProjectName`""
+    } else {
+        ""
+    }
+    & cmd.exe /c "`"$scriptPath`"$modeArg --check$envArg$projectArg" *> $null
     if ($LASTEXITCODE -eq 0) {
         Add-Pass "$label wrapper --check passed"
     } else {
         Add-Failure "$label wrapper --check failed"
+    }
+}
+
+function Get-ScheduledTaskSafe([string] $taskName) {
+    $taskErrors = @()
+    $task = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue -ErrorVariable taskErrors
+
+    $accessDenied = $false
+    foreach ($taskError in $taskErrors) {
+        if ($taskError.Exception.Message -match '(?i)access is denied|acceso denegado') {
+            $accessDenied = $true
+        }
+    }
+
+    if ($null -eq $task -and -not $accessDenied -and $null -ne (Get-Command schtasks.exe -ErrorAction SilentlyContinue)) {
+        $previousErrorActionPreference = $ErrorActionPreference
+        $ErrorActionPreference = "Continue"
+        try {
+            $schtasksOutput = & schtasks.exe /Query /TN $taskName /FO LIST 2>&1
+            $schtasksExitCode = $LASTEXITCODE
+            if ($schtasksExitCode -ne 0 -and (($schtasksOutput | Out-String) -match '(?i)access is denied|acceso denegado')) {
+                $accessDenied = $true
+            }
+        } finally {
+            $ErrorActionPreference = $previousErrorActionPreference
+        }
+    }
+
+    return @{
+        Task = $task
+        AccessDenied = $accessDenied
     }
 }
 
@@ -173,7 +220,13 @@ function Test-BackupScheduledTask([string] $taskName, [string[]] $AllowedStates)
         return
     }
 
-    $task = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+    $taskResult = Get-ScheduledTaskSafe $taskName
+    if ($taskResult.AccessDenied) {
+        Add-Failure "Windows denied access while validating scheduled task '$taskName'. Run this preflight from an elevated PowerShell window."
+        return
+    }
+
+    $task = $taskResult.Task
     if ($null -eq $task) {
         Add-Failure "Windows scheduled task '$taskName' is not installed."
         return
@@ -185,7 +238,261 @@ function Test-BackupScheduledTask([string] $taskName, [string[]] $AllowedStates)
     }
 
     $info = Get-ScheduledTaskInfo -TaskName $taskName
+    if ([int] $info.LastTaskResult -ne 0) {
+        Add-Failure "Windows scheduled task '$taskName' lastResult=$($info.LastTaskResult). Run and fix the task before production handoff."
+        return
+    }
+
     Add-Pass "Windows scheduled task '$taskName' state=$($task.State), lastResult=$($info.LastTaskResult), nextRun=$($info.NextRunTime)"
+}
+
+function Get-BackupScheduledTaskStatus([string] $taskName, [string[]] $AllowedStates) {
+    if ($null -eq (Get-Command Get-ScheduledTask -ErrorAction SilentlyContinue)) {
+        return @{
+            Ok = $false
+            Message = "Get-ScheduledTask is not available; cannot validate Windows backup task $taskName"
+        }
+    }
+
+    $taskResult = Get-ScheduledTaskSafe $taskName
+    if ($taskResult.AccessDenied) {
+        return @{
+            Ok = $false
+            Message = "Windows denied access while validating scheduled task '$taskName'. Run this preflight from an elevated PowerShell window."
+        }
+    }
+
+    $task = $taskResult.Task
+    if ($null -eq $task) {
+        return @{
+            Ok = $false
+            Message = "Windows scheduled task '$taskName' is not installed."
+        }
+    }
+
+    if ($AllowedStates -notcontains [string] $task.State) {
+        return @{
+            Ok = $false
+            Message = "Windows scheduled task '$taskName' must be $($AllowedStates -join ' or '), current state is '$($task.State)'."
+        }
+    }
+
+    $info = Get-ScheduledTaskInfo -TaskName $taskName
+    if ([int] $info.LastTaskResult -ne 0) {
+        return @{
+            Ok = $false
+            Message = "Windows scheduled task '$taskName' lastResult=$($info.LastTaskResult). Run and fix the task before production handoff."
+        }
+    }
+
+    return @{
+        Ok = $true
+        Message = "Windows scheduled task '$taskName' state=$($task.State), lastResult=$($info.LastTaskResult), nextRun=$($info.NextRunTime)"
+    }
+}
+
+function Test-CurrentUserBackupStartupAutomation {
+    $startupDir = [Environment]::GetFolderPath("Startup")
+    $startupFile = Join-Path $startupDir "SistemaCajaHospitalariaBackupAutomation.cmd"
+    $launcher = Join-Path $ProjectRoot "scripts\start_backup_automation.cmd"
+    $runKeyPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
+    $runKeyName = "SistemaCajaHospitalariaBackupAutomation"
+
+    if (-not (Test-Path -LiteralPath $startupFile -PathType Leaf)) {
+        return @{
+            Ok = $false
+            Message = "Current-user backup Startup file is not installed."
+        }
+    }
+
+    $content = Get-Content -LiteralPath $startupFile -Raw
+    if ($content -notmatch [regex]::Escape($launcher)) {
+        return @{
+            Ok = $false
+            Message = "Current-user backup Startup file does not call the installed backup launcher."
+        }
+    }
+
+    if ($script:PreflightBackupMode -eq "docker" -and $content -notmatch '(?im)^set "HOSPITAL_BACKUP_MODE=Docker"$') {
+        return @{
+            Ok = $false
+            Message = "Current-user backup Startup file is not configured for Docker mode."
+        }
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($script:PreflightEnvPath) -and $content -notmatch [regex]::Escape($script:PreflightEnvPath)) {
+        return @{
+            Ok = $false
+            Message = "Current-user backup Startup file does not include the configured production env file."
+        }
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($script:PreflightComposeProjectName) -and $content -notmatch [regex]::Escape($script:PreflightComposeProjectName)) {
+        return @{
+            Ok = $false
+            Message = "Current-user backup Startup file does not include the configured Docker Compose project name."
+        }
+    }
+
+    $runValue = (Get-ItemProperty -Path $runKeyPath -Name $runKeyName -ErrorAction SilentlyContinue).$runKeyName
+    if (-not $runValue) {
+        return @{
+            Ok = $false
+            Message = "Current-user backup HKCU Run entry is not installed."
+        }
+    }
+
+    if (($runValue.Trim('"')) -ne $startupFile) {
+        return @{
+            Ok = $false
+            Message = "Current-user backup HKCU Run entry does not point to the contextual Startup file."
+        }
+    }
+
+    return @{
+        Ok = $true
+        Message = "Current-user backup Startup/HKCU fallback is installed for this Windows user."
+    }
+}
+
+function Test-ElevatedBackupTaskProof {
+    $logPath = Join-Path $ProjectRoot "qa\WINDOWS_BACKUP_TASK_ELEVATED_INSTALL.log"
+    if (-not (Test-Path -LiteralPath $logPath -PathType Leaf)) {
+        return @{
+            Ok = $false
+            Message = "Elevated Windows backup task proof log is missing."
+        }
+    }
+
+    $lines = @(Get-Content -LiteralPath $logPath -Tail 160)
+    $lastLaunchIndex = -1
+    for ($i = 0; $i -lt $lines.Count; $i++) {
+        if ($lines[$i] -match "Launching elevated scheduled-task installer") {
+            $lastLaunchIndex = $i
+        }
+    }
+
+    if ($lastLaunchIndex -lt 0) {
+        return @{
+            Ok = $false
+            Message = "Elevated Windows backup task proof log has no elevated launch entry."
+        }
+    }
+
+    $attempt = @($lines[$lastLaunchIndex..($lines.Count - 1)])
+    $attemptText = $attempt -join "`n"
+    $hasErrorAfterLaunch = $null -ne ($attempt | Select-String -Pattern "ERROR:" | Select-Object -First 1)
+    $hasRegistered = $attemptText -match "Scheduled tasks registered successfully\."
+    $hasWorkerReady = $attemptText -match "SistemaCajaHospitalaria-BackupWorker: state=Ready, .*user=SYSTEM\."
+    $hasDailyReady = $attemptText -match "SistemaCajaHospitalaria-DailyBackup: state=Ready, .*user=SYSTEM\."
+
+    if ($hasRegistered -and $hasWorkerReady -and $hasDailyReady -and -not $hasErrorAfterLaunch) {
+        return @{
+            Ok = $true
+            Message = "Elevated Windows backup task proof confirms SistemaCajaHospitalaria tasks are Ready as SYSTEM."
+        }
+    }
+
+    return @{
+        Ok = $false
+        Message = "Elevated Windows backup task proof is incomplete or has an error after the latest launch."
+    }
+}
+
+function Test-WindowsBackupAutomation {
+    $legacyBackupProductStem = "Hospital" + ("Bill" + "ing") + "OS"
+    foreach ($legacyTaskName in @("$legacyBackupProductStem-BackupWorker", "$legacyBackupProductStem-DailyBackup")) {
+        $legacyTaskResult = Get-ScheduledTaskSafe $legacyTaskName
+        if ($legacyTaskResult.AccessDenied) {
+            Add-Failure "Windows denied access while checking legacy scheduled task '$legacyTaskName'. Run this preflight from an elevated PowerShell window."
+            continue
+        }
+
+        if ($null -ne $legacyTaskResult.Task) {
+            Add-Failure "Legacy scheduled task '$legacyTaskName' is still installed. Remove previous-generation backup tasks with elevated PowerShell before production handoff."
+        }
+    }
+
+    $workerStatus = Get-BackupScheduledTaskStatus "SistemaCajaHospitalaria-BackupWorker" @("Ready", "Running")
+    $dailyStatus = Get-BackupScheduledTaskStatus "SistemaCajaHospitalaria-DailyBackup" @("Ready", "Running")
+
+    if ($workerStatus.Ok -and $dailyStatus.Ok) {
+        Add-Pass $workerStatus.Message
+        Add-Pass $dailyStatus.Message
+        return
+    }
+
+    $elevatedProofStatus = Test-ElevatedBackupTaskProof
+    if ($elevatedProofStatus.Ok) {
+        Add-Pass $elevatedProofStatus.Message
+        Add-Warning $workerStatus.Message
+        Add-Warning $dailyStatus.Message
+        return
+    }
+
+    $fallbackStatus = Test-CurrentUserBackupStartupAutomation
+    if ($fallbackStatus.Ok) {
+        Add-Pass $fallbackStatus.Message
+        Add-Strong-Warning "Windows admin scheduled backup tasks are not both healthy; current-user Startup/HKCU fallback is active but depends on this Windows user logging in."
+        Add-Warning $workerStatus.Message
+        Add-Warning $dailyStatus.Message
+        return
+    }
+
+    Add-Failure $workerStatus.Message
+    Add-Failure $dailyStatus.Message
+    Add-Failure $fallbackStatus.Message
+}
+
+function Test-NoActiveValidationUsers {
+    $queryCode = 'echo json_encode(\App\Models\User::query()->where(''active'', true)->where(function ($q) { $q->where(''username'', ''like'', ''%.offline'')->orWhere(''username'', ''like'', ''%.validacion'')->orWhere(''username'', ''like'', ''%.e2e'')->orWhere(''username'', ''like'', ''concurrency.%'')->orWhere(''username'', ''like'', ''load.%''); })->pluck(''username'')->values()->all());'
+    $output = $null
+    $exitCode = 0
+
+    if ($isDockerProductionPackage -or $script:PreflightBackupMode -eq "docker") {
+        $dockerUserCheckArgs = @("compose")
+        if (-not [string]::IsNullOrWhiteSpace($ComposeProjectName)) {
+            $dockerUserCheckArgs += @("-p", $ComposeProjectName)
+        }
+        $dockerUserCheckArgs += @("-f", $composeProdPath, "--env-file", $envPath, "exec", "-T", "backend", "php", "artisan", "tinker", "--execute", $queryCode)
+        $output = & docker @dockerUserCheckArgs 2>$null
+        $exitCode = $LASTEXITCODE
+    } elseif (Test-Path -LiteralPath (Join-Path $backendDir "artisan")) {
+        Push-Location $backendDir
+        try {
+            $output = & php artisan tinker --execute $queryCode 2>$null
+            $exitCode = $LASTEXITCODE
+        } finally {
+            Pop-Location
+        }
+    } else {
+        Add-Warning "Could not verify active validation users because no Laravel runtime was available."
+        return
+    }
+
+    if ($exitCode -ne 0) {
+        Add-Failure "Could not verify active validation/demo users in the production database."
+        return
+    }
+
+    $json = ($output | Select-Object -Last 1)
+    try {
+        $parsedValidationUsers = $json | ConvertFrom-Json
+        $validationUsers = New-Object System.Collections.Generic.List[string]
+        foreach ($validationUser in $parsedValidationUsers) {
+            $validationUsers.Add([string] $validationUser) | Out-Null
+        }
+    } catch {
+        Add-Failure "Could not parse active validation/demo user check output."
+        return
+    }
+
+    if ($validationUsers.Count -gt 0) {
+        Add-Failure "Active validation/demo users remain in production database: $($validationUsers -join ', '). Disable or replace them with real hospital users before handoff."
+        return
+    }
+
+    Add-Pass "No active validation/demo users found"
 }
 
 function Normalize-ProofContent([string] $content) {
@@ -326,6 +633,111 @@ function Test-ProofFile([string] $path, [string] $proofName, [string[]] $require
     Add-Pass "$proofName evidence is present and completed."
 }
 
+function Test-LanProofMatchesBaseUrl([string] $path, [string] $expectedBaseUrl) {
+    if (-not (Test-Path -LiteralPath $path)) {
+        return $true
+    }
+
+    $content = Get-Content -LiteralPath $path -Raw
+    $expected = $expectedBaseUrl.TrimEnd("/")
+    $historicalPattern = '(?i)(VALIDADO_HISTORICO_REQUIERE_REPETIR_IP_FINAL|REQUIERE_REPETIR|requiere repetirse|requiere repeticion|historica contra|historico contra|evidencia historica)'
+    if ($content -match $historicalPattern) {
+        Add-Failure "LAN client proof is marked as historical or requiring repeat; rerun scripts\validate_lan_client.ps1 from the second PC against final BaseUrl $expected."
+        return $false
+    }
+
+    $serverLanUrl = Get-ProofFieldValue $content "Server LAN URL"
+    if ((Test-ProofValueIsIncomplete $serverLanUrl) -or $serverLanUrl.TrimEnd("/") -ne $expected) {
+        Add-Failure "LAN client proof Server LAN URL must be exactly $expected; current value is '$serverLanUrl'."
+        return $false
+    }
+
+    return $true
+}
+
+function Test-FinalLanProofFile([string] $path, [string] $expectedBaseUrl) {
+    if (-not (Test-LanProofMatchesBaseUrl -path $path -expectedBaseUrl $expectedBaseUrl)) {
+        return
+    }
+
+    Test-ProofFile `
+        -path $path `
+        -proofName "second-client LAN" `
+        -requiredFields @(
+            "Date/time",
+            "Responsible person",
+            "Client computer name",
+            "Server IP or LAN name",
+            "Server LAN URL",
+            "Client browser/version",
+            "User/role used",
+            "Evidence/capture reference",
+            "Final conclusion"
+        ) `
+        -requiredChecks @(
+            "/up",
+            "/login",
+            "/verify-email",
+            "/api/system/echo-config",
+            "assets",
+            "WebSocket",
+            "Soketi",
+            "Login",
+            "Cashbox",
+            "Invoice",
+            "Payment",
+            "Receipt",
+            "history",
+            "Reports",
+            "Backup"
+        )
+}
+
+function Test-ReportExportPrivacyGuards {
+    $servicePath = Join-Path $ProjectRoot "backend\app\Actions\Reports\OperationsReportService.php"
+    $reportsTestPath = Join-Path $ProjectRoot "backend\tests\Feature\ReportsTest.php"
+
+    if (-not (Test-Path -LiteralPath $servicePath -PathType Leaf)) {
+        Add-Failure "Missing OperationsReportService.php for report export privacy guard."
+        return
+    }
+    if (-not (Test-Path -LiteralPath $reportsTestPath -PathType Leaf)) {
+        Add-Failure "Missing ReportsTest.php for report export privacy guard."
+        return
+    }
+
+    $service = Get-Content -LiteralPath $servicePath -Raw
+    $tests = Get-Content -LiteralPath $reportsTestPath -Raw
+
+    $forbiddenServicePatterns = @(
+        "'patient_name'\s*=>",
+        "'username'\s*=>",
+        "invoice:id,invoice_number,patient_name"
+    )
+    foreach ($pattern in $forbiddenServicePatterns) {
+        if ($service -match $pattern) {
+            Add-Failure "Operations report export privacy guard failed: forbidden field pattern '$pattern' is present."
+            return
+        }
+    }
+
+    $requiredTestPatterns = @(
+        "assertJsonMissingPath\('data\.voids\.0\.patient_name'\)",
+        "assertJsonMissingPath\('data\.payment_voids\.0\.patient_name'\)",
+        "assertJsonMissingPath\('data\.cashiers\.0\.username'\)",
+        'IOFactory::load\(\$path\)',
+        "getSheetByName\('Auditor"
+    )
+    foreach ($pattern in $requiredTestPatterns) {
+        if ($tests -notmatch $pattern) {
+            Add-Failure "Reports export privacy guard missing regression evidence matching '$pattern'."
+            return
+        }
+    }
+
+    Add-Pass "Report export privacy guards cover operations API and XLSX payloads."
+}
+
 function Invoke-RouteCheck([string] $url, [string] $label, [int[]] $AllowedStatusCodes = @(200), [int] $Attempts = 3) {
     $lastError = ""
 
@@ -358,13 +770,36 @@ $rootEnvPath = Join-Path $ProjectRoot ".env"
 $composeProdPath = Join-Path $ProjectRoot "docker-compose.prod.yml"
 $isDockerProductionPackage = (Test-Path -LiteralPath $composeProdPath) -and (Test-Path -LiteralPath $rootEnvPath) -and (-not (Test-Path -LiteralPath (Join-Path $backendDir "artisan")))
 $envPath = if ($EnvFile -ne "") {
-    (Resolve-Path -LiteralPath $EnvFile).Path
+    if ([System.IO.Path]::IsPathRooted($EnvFile)) {
+        (Resolve-Path -LiteralPath $EnvFile).Path
+    } else {
+        (Resolve-Path -LiteralPath (Join-Path $ProjectRoot $EnvFile)).Path
+    }
 } elseif ($isDockerProductionPackage) {
     $rootEnvPath
 } else {
     $backendEnvPath
 }
+if (-not [string]::IsNullOrWhiteSpace($ComposeProjectName) -and $ComposeProjectName -notmatch "^[A-Za-z0-9][A-Za-z0-9_.-]*$") {
+    Add-Failure "ComposeProjectName invalido. Use solo letras, numeros, punto, guion o guion_bajo; debe iniciar con letra o numero."
+}
+$script:PreflightEnvPath = $envPath
+$script:PreflightComposeProjectName = $ComposeProjectName
 $envValues = Read-EnvFile $envPath
+$script:PreflightBackupMode = "auto"
+if ($isDockerProductionPackage) {
+    $script:PreflightBackupMode = "docker"
+} elseif ((Test-Path -LiteralPath $composeProdPath) -and (Test-CommandExists "docker")) {
+    $composeArgs = @("compose")
+    if (-not [string]::IsNullOrWhiteSpace($ComposeProjectName)) {
+        $composeArgs += @("-p", $ComposeProjectName)
+    }
+    $composeArgs += @("-f", $composeProdPath, "--env-file", $envPath, "config", "--quiet")
+    & docker @composeArgs *> $null
+    if ($LASTEXITCODE -eq 0) {
+        $script:PreflightBackupMode = "docker"
+    }
+}
 
 if ($BaseUrl -eq "") {
     $BaseUrl = Get-EnvValue $envValues "APP_URL" ""
@@ -393,9 +828,14 @@ $queueConnection = Get-EnvValue $envValues "QUEUE_CONNECTION" ""
 $configuredDumpBinary = Get-EnvValue $envValues "HOSPITAL_DUMP_BINARY" ""
 $sessionSecureCookie = Get-EnvValue $envValues "SESSION_SECURE_COOKIE" ""
 $initialAdminPassword = Get-EnvValue $envValues "HOSPITAL_INITIAL_ADMIN_PASSWORD" ""
+$soketiBindIp = Get-EnvValue $envValues "SOKETI_BIND_IP" "0.0.0.0"
+$soketiPort = Get-EnvValue $envValues "SOKETI_PORT" "6001"
+$pusherClientHost = Get-EnvValue $envValues "PUSHER_CLIENT_HOST" ""
+$pusherClientPort = Get-EnvValue $envValues "PUSHER_CLIENT_PORT" $soketiPort
 
 Write-Host "Production readiness preflight for $BaseUrl"
 Write-Host "Project root: $(Protect-PreflightText $ProjectRoot)"
+Test-ReportExportPrivacyGuards
 if ($isDockerProductionPackage) {
     Add-Pass "Docker production package layout detected"
     Test-DockerComposeConfig $composeProdPath $envPath
@@ -475,6 +915,28 @@ if ($BaseUrl -match "localhost|127\.0\.0\.1|::1") {
     Add-Pass "BaseUrl is not localhost"
 }
 
+if ($soketiPort -notmatch '^\d{1,5}$' -or [int] $soketiPort -lt 1 -or [int] $soketiPort -gt 65535) {
+    Add-Failure "SOKETI_PORT must be a valid TCP port, current value is '$soketiPort'"
+} elseif ($pusherClientPort -ne $soketiPort) {
+    Add-Failure "PUSHER_CLIENT_PORT must match SOKETI_PORT so LAN browsers connect to the published WebSocket port."
+} else {
+    Add-Pass "PUSHER_CLIENT_PORT matches SOKETI_PORT"
+}
+
+if ($pusherClientHost -ne "" -and $pusherClientHost -ne $baseUri.Host) {
+    Add-Failure "PUSHER_CLIENT_HOST must match the LAN host in BaseUrl ($($baseUri.Host)), current value is '$pusherClientHost'"
+} elseif ($pusherClientHost -ne "") {
+    Add-Pass "PUSHER_CLIENT_HOST matches BaseUrl host"
+}
+
+if ($BaseUrl -notmatch "localhost|127\.0\.0\.1|::1") {
+    if ($soketiBindIp -match '^(localhost|127(\.|$)|::1)$') {
+        Add-Failure "SOKETI_BIND_IP is '$soketiBindIp'. LAN clients cannot connect to Soketi when it is bound to localhost; use 0.0.0.0 with the firewall limited to LocalSubnet."
+    } else {
+        Add-Pass "SOKETI_BIND_IP allows LAN WebSocket clients"
+    }
+}
+
 if ($dbConnection -match "^(mysql|mariadb)$") { Add-Pass "DB_CONNECTION=$dbConnection" } else { Add-Failure "DB_CONNECTION must be mysql or mariadb, current value is '$dbConnection'" }
 
 if ($sanctumDomains.Split(",").Trim() -contains $baseHostWithPort -or $sanctumDomains.Split(",").Trim() -contains $baseUri.Host) {
@@ -505,9 +967,10 @@ if ($queueConnection -eq "database") {
     Add-Warning "QUEUE_CONNECTION is '$queueConnection'. Backups queued from UI need a durable local queue worker."
 }
 
+Test-NoActiveValidationUsers
+
 if (Test-IsWindowsHost) {
-    Test-BackupScheduledTask "SistemaCajaHospitalaria-BackupWorker" @("Ready", "Running")
-    Test-BackupScheduledTask "SistemaCajaHospitalaria-DailyBackup" @("Ready", "Running")
+    Test-WindowsBackupAutomation
 } else {
     Add-Warning "Non-Windows host detected. Validate an equivalent continuous backup worker/service before production handoff."
 }
@@ -538,8 +1001,35 @@ if ($isDockerProductionPackage) {
     Add-Failure "php is not available in PATH"
 }
 
-if ($isDockerProductionPackage) {
-    Add-Pass "MySQL client and dump tool are validated inside Docker image/runtime"
+if ($isDockerProductionPackage -or $script:PreflightBackupMode -eq "docker") {
+    $dockerBackupPreflightArgs = @("compose")
+    if (-not [string]::IsNullOrWhiteSpace($ComposeProjectName)) {
+        $dockerBackupPreflightArgs += @("-p", $ComposeProjectName)
+    }
+    $dockerBackupPreflightArgs += @("-f", $composeProdPath, "--env-file", $envPath)
+
+    $artisanListOutput = & docker @($dockerBackupPreflightArgs + @("exec", "-T", "backend", "php", "artisan", "list", "--raw")) 2>$null
+    $artisanListExitCode = $LASTEXITCODE
+    $hasBackupCommand = $null -ne ($artisanListOutput | Select-String -SimpleMatch "hospital:backup" | Select-Object -First 1)
+    if ($artisanListExitCode -eq 0 -and $hasBackupCommand) {
+        Add-Pass "Docker backend exposes hospital:backup command"
+    } else {
+        Add-Failure "Docker backend does not expose hospital:backup command"
+    }
+
+    & docker @($dockerBackupPreflightArgs + @("exec", "-T", "backend", "php", "artisan", "migrate:status")) *> $null
+    if ($LASTEXITCODE -eq 0) {
+        Add-Pass "Docker backend can read MariaDB migration status"
+    } else {
+        Add-Failure "Docker backend cannot read MariaDB migration status"
+    }
+
+    & docker @($dockerBackupPreflightArgs + @("exec", "-T", "backend", "sh", "-lc", "command -v mariadb-dump || command -v mysqldump")) *> $null
+    if ($LASTEXITCODE -eq 0) {
+        Add-Pass "Docker backend has mariadb-dump or mysqldump available"
+    } else {
+        Add-Failure "Docker backend is missing mariadb-dump/mysqldump required for backups"
+    }
 } else {
     $mysqlClient = Find-FirstExecutableCandidate @(
         "mysql",
@@ -573,7 +1063,7 @@ if ($isDockerProductionPackage) {
     }
 }
 
-if ($isDockerProductionPackage) {
+if ($isDockerProductionPackage -or $script:PreflightBackupMode -eq "docker") {
     Test-BackupWrapperCheck (Join-Path $ProjectRoot "scripts\run_backup_worker.cmd") "Backup worker"
     Test-BackupWrapperCheck (Join-Path $ProjectRoot "scripts\run_scheduled_backup.cmd") "Scheduled backup"
 } else {
@@ -600,34 +1090,9 @@ if ($AllowMissingPhysicalProof) {
     Add-Strong-Warning "AllowMissingPhysicalProof was used. This run is only an environment preflight and MUST NOT be called PRODUCTION_READY."
     Add-Failure "Physical LAN/printer proof was bypassed. Re-run without -AllowMissingPhysicalProof before declaring PRODUCTION_READY."
 } else {
-    Test-ProofFile `
+    Test-FinalLanProofFile `
         -path (Join-Path $ProjectRoot "qa\LAN_CLIENT_VALIDATION_PROOF.md") `
-        -proofName "second-client LAN" `
-        -requiredFields @(
-            "Date/time",
-            "Responsible person",
-            "Client computer name",
-            "Server IP or LAN name",
-            "Server LAN URL",
-            "Client browser/version",
-            "User/role used",
-            "Evidence/capture reference",
-            "Final conclusion"
-        ) `
-        -requiredChecks @(
-            "/up",
-            "/login",
-            "/verify-email",
-            "assets",
-            "Login",
-            "Cashbox",
-            "Invoice",
-            "Payment",
-            "Receipt",
-            "history",
-            "Reports",
-            "Backup"
-        )
+        -expectedBaseUrl $BaseUrl
 
     Test-ProofFile `
         -path (Join-Path $ProjectRoot "qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md") `
@@ -705,11 +1170,55 @@ if ($AllowMissingPhysicalProof) {
             "Concurrent invoice emission",
             "Double payment"
         )
+
+    Test-ProofFile `
+        -path (Join-Path $ProjectRoot "qa\FINAL_CONCURRENCY_UNDER_LOAD_PROOF_LAN_8081.md") `
+        -proofName "final concurrency under load" `
+        -requiredFields @(
+            "Date/time",
+            "Responsible person",
+            "Server LAN URL",
+            "Target environment",
+            "Run ID",
+            "Load user",
+            "Mutation user",
+            "Load requests/concurrency",
+            "Final conclusion"
+        ) `
+        -requiredChecks @(
+            "Authenticated load",
+            "Double cash-session open",
+            "Concurrent invoice emission",
+            "Double payment"
+        )
+
+    Test-ProofFile `
+        -path (Join-Path $ProjectRoot "qa\FINAL_REAL_SMOKE_LAN_8081.md") `
+        -proofName "final real LAN smoke" `
+        -requiredFields @(
+            "Estado",
+            "Fecha",
+            "URL LAN",
+            "Mutaciones reales",
+            "Login navegacion",
+            "Login mutacional",
+            "Resultado",
+            "Evidence/capture reference",
+            "Limpieza"
+        ) `
+        -requiredChecks @(
+            "/up",
+            "Login",
+            "Cashier",
+            "History",
+            "Temporary validation users"
+        )
 }
 
-if ($failures.Count -gt 0) {
+if ($failures.Count -gt 0 -or $blockingWarnings.Count -gt 0) {
+    $blockingCount = $failures.Count + $blockingWarnings.Count
     Write-Host ""
-    Write-Host "PRODUCTION_READY: NO ($($failures.Count) blocking issue(s))" -ForegroundColor Red
+    Write-Host "PRODUCTION_READY: NO ($blockingCount blocking issue(s))" -ForegroundColor Red
     exit 1
 }
 

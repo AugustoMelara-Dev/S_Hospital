@@ -36,6 +36,7 @@ class OfflineCheckConstraintsMigrationSqlGuardTest extends TestCase
 
         $this->assertStringContainsString("type IN ('{$expectedTypes}')", $this->migrationSql);
         $this->assertStringNotContainsString("type IN ('opening','sale','withdrawal','adjustment','void')", $this->migrationSql);
+        $this->assertStringContainsString("amount <> 0 OR type IN ('opening','closing')", $this->migrationSql);
     }
 
     public function test_constraints_do_not_reference_columns_missing_from_current_schema(): void

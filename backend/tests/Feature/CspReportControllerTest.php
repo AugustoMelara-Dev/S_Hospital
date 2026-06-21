@@ -38,6 +38,8 @@ class CspReportControllerTest extends TestCase
 
     public function test_csp_report_endpoint_accepts_payload_and_returns_204(): void
     {
+        config(['session.domain' => null]);
+
         $payload = json_encode([
             'csp-report' => [
                 'document-uri' => 'http://127.0.0.1:8000/login',
@@ -55,6 +57,31 @@ class CspReportControllerTest extends TestCase
             ['CONTENT_TYPE' => 'application/csp-report'],
             $payload ?: '{}',
         );
+
+        $response->assertNoContent();
+    }
+
+    public function test_csp_report_endpoint_is_exempt_from_csrf_for_browser_reports(): void
+    {
+        config(['session.domain' => null]);
+
+        $response = $this
+            ->withCookie('XSRF-TOKEN', 'browser-has-cookie-but-no-report-header')
+            ->withHeader('Origin', 'http://localhost')
+            ->call(
+                'POST',
+                '/api/system/csp-report',
+                [],
+                [],
+                [],
+                ['CONTENT_TYPE' => 'application/csp-report'],
+                json_encode([
+                    'csp-report' => [
+                        'document-uri' => 'http://localhost/login',
+                        'violated-directive' => 'script-src',
+                    ],
+                ]) ?: '{}',
+            );
 
         $response->assertNoContent();
     }

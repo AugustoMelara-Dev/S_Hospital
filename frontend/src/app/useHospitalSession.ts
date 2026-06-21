@@ -42,6 +42,9 @@ export function useHospitalSession() {
   const canViewSystemStatus = permissions.has('system.status.view');
   const canViewUsers = permissions.has('users.view');
   const canCreateUsers = permissions.has('users.create');
+  const canUpdateUsers = permissions.has('users.update');
+  const canDisableUsers = permissions.has('users.disable');
+  const canManageRoles = permissions.has('users.assign_admin_role');
   const canMarkDialysisPrescription = permissions.has('patients.mark_dialysis_prescription');
 
   useEffect(() => {
@@ -239,6 +242,9 @@ export function useHospitalSession() {
     canViewBackups,
     canViewUsers,
     canCreateUsers,
+    canUpdateUsers,
+    canDisableUsers,
+    canManageRoles,
     canMarkDialysisPrescription,
     hasAnyOperationalPermission:
       canViewFiscalSettings ||

@@ -1,12 +1,12 @@
-﻿import { Search } from 'lucide-react';
-import { type RefObject, useEffect, useState, useCallback } from 'react';
+import { Search } from 'lucide-react';
+import { type KeyboardEvent, type RefObject, useEffect, useState, useCallback } from 'react';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
 import { Skeleton } from '../../../components/ui/states';
 import type { Category, Service, ServiceArea } from '../../../lib/api';
 import { cn } from '../../../lib/utils';
-import { formatLempirasFromCents, parseCents } from '../../../lib/moneyCents';
+import { formatLempirasUIFromCents, parseCents } from '../../../lib/moneyCents';
 
 const ERYTHROPOIETIN_RULE = 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION';
 const SERVICE_RESULT_LIMIT = 24;
@@ -28,6 +28,7 @@ type ServiceSearchProps = {
   searchInputRef?: RefObject<HTMLInputElement | null>;
   scannerInputRef?: RefObject<HTMLInputElement | null>;
   loading?: boolean;
+  scanningCode?: boolean;
   scannerEnabled?: boolean;
 };
 
@@ -48,6 +49,7 @@ export function ServiceSearch({
   searchInputRef,
   scannerInputRef,
   loading,
+  scanningCode = false,
   scannerEnabled = false,
 }: ServiceSearchProps) {
   const [addFirstWhenReady, setAddFirstWhenReady] = useState(false);
@@ -67,12 +69,45 @@ export function ServiceSearch({
   const visibleServices = hasIntent ? filteredServices.slice(0, SERVICE_RESULT_LIMIT) : [];
   const hiddenCount = Math.max(0, filteredServices.length - visibleServices.length);
   const firstVisibleService = visibleServices[0];
+  const areaOptions = ['all', ...serviceAreas.map((area) => area.id)] as Array<number | 'all'>;
+  const categoryOptions = ['all', ...categories.map((category) => category.id)] as Array<number | 'all'>;
 
   const handleAddService = useCallback((service: Service) => {
     setAddFirstWhenReady(false);
     onAddService(service);
     window.setTimeout(() => searchInputRef?.current?.focus(), 0);
   }, [onAddService, searchInputRef]);
+
+  const handleRadioGroupKeyDown = useCallback((
+    event: KeyboardEvent<HTMLDivElement>,
+    options: Array<number | 'all'>,
+    selectedValue: number | 'all' | undefined,
+    onChange: (id: number | 'all' | undefined) => void,
+  ) => {
+    const keyOffsets: Record<string, number> = {
+      ArrowRight: 1,
+      ArrowDown: 1,
+      ArrowLeft: -1,
+      ArrowUp: -1,
+    };
+    const currentIndex = Math.max(0, options.findIndex((option) => option === (selectedValue ?? 'all')));
+    let nextIndex = currentIndex;
+
+    if (event.key === 'Home') {
+      nextIndex = 0;
+    } else if (event.key === 'End') {
+      nextIndex = options.length - 1;
+    } else if (event.key in keyOffsets) {
+      nextIndex = (currentIndex + keyOffsets[event.key] + options.length) % options.length;
+    } else {
+      return;
+    }
+
+    event.preventDefault();
+    onChange(options[nextIndex]);
+    const radios = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="radio"]'));
+    window.setTimeout(() => radios[nextIndex]?.focus(), 0);
+  }, []);
 
   useEffect(() => {
     if (!addFirstWhenReady || loading || !firstVisibleService) return;
@@ -95,7 +130,7 @@ export function ServiceSearch({
         <div className={scannerEnabled ? 'grid gap-3 sm:grid-cols-[1fr_auto]' : 'grid gap-3'}>
           <div className="flex min-w-0 flex-col gap-2">
             <Label htmlFor="service-search" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-              Buscar servicio
+              Buscar por nombre, categoría o código
             </Label>
             <div className="relative">
             <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-secondary" aria-hidden="true" />
@@ -129,7 +164,7 @@ export function ServiceSearch({
             <div className="flex items-end gap-2">
               <div className="relative w-40">
                 <Label htmlFor="scanner-code" className="mb-2 block text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                  Scanner
+                  Scanner USB o código manual
                 </Label>
                 <Input
                   ref={scannerInputRef}
@@ -143,14 +178,15 @@ export function ServiceSearch({
                     if (e.key === 'Enter') {
                       if (e.ctrlKey || e.metaKey || e.altKey) return;
                       e.preventDefault();
-                      onAddByScanCode();
+                      if (!scanningCode) onAddByScanCode();
                     }
                   }}
                   autoComplete="off"
+                  disabled={scanningCode}
                 />
               </div>
-              <Button type="button" variant="secondary" size="sm" className="min-h-10" onClick={() => onAddByScanCode()}>
-                Escanear
+              <Button type="button" variant="secondary" size="sm" className="min-h-10" disabled={scanningCode} onClick={() => onAddByScanCode()}>
+                {scanningCode ? 'Buscando...' : 'Escanear'}
               </Button>
             </div>
           ) : null}
@@ -162,7 +198,9 @@ export function ServiceSearch({
             <div
               aria-labelledby="service-area-label"
               className="grid max-h-28 grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3 xl:grid-cols-4"
+              onKeyDown={(event) => handleRadioGroupKeyDown(event, areaOptions, selectedAreaId, onAreaChange)}
               role="radiogroup"
+              tabIndex={-1}
             >
               <CategoryButton
                 active={selectedAreaId === undefined || selectedAreaId === 'all'}
@@ -186,7 +224,9 @@ export function ServiceSearch({
           <div
             aria-labelledby="service-category-label"
             className="grid max-h-32 grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3 xl:grid-cols-4"
+            onKeyDown={(event) => handleRadioGroupKeyDown(event, categoryOptions, selectedCategoryId, onCategoryChange)}
             role="radiogroup"
+            tabIndex={-1}
           >
             <CategoryButton
               active={selectedCategoryId === undefined || selectedCategoryId === 'all'}
@@ -225,20 +265,20 @@ export function ServiceSearch({
         </div>
 
         {loading ? (
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2" aria-label="Cargando servicios">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2" role="status" aria-busy="true" aria-label="Cargando servicios">
             {Array.from({ length: 6 }).map((_, index) => (
               <Skeleton key={index} className="h-24 rounded-lg" />
             ))}
           </div>
         ) : !hasIntent ? (
-          <div className="flex flex-col items-center justify-center gap-2 rounded-md border border-dashed border-border bg-muted/35 px-4 py-10 text-center text-muted-foreground">
+          <div className="flex flex-col items-center justify-center gap-2 rounded-md border border-dashed border-border bg-muted/35 px-4 py-10 text-center text-muted-foreground" role="status" aria-live="polite">
             <span className="font-medium text-foreground">Busque o elija una categoría</span>
             <span className="max-w-sm text-sm">
               Escriba el nombre del servicio, escanee un código o toque una categoría para ver opciones facturables.
             </span>
           </div>
         ) : filteredServices.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-2 rounded-md border border-dashed border-border bg-muted/35 px-4 py-10 text-center text-muted-foreground">
+          <div className="flex flex-col items-center justify-center gap-2 rounded-md border border-dashed border-border bg-muted/35 px-4 py-10 text-center text-muted-foreground" role="status" aria-live="polite">
             <span className="font-medium text-foreground">Sin servicios encontrados</span>
             <span className="max-w-sm text-sm">Revise la búsqueda o quite filtros para consultar todo el catálogo activo.</span>
           </div>
@@ -298,7 +338,7 @@ export function ServiceSearch({
 }
 
 function moneyLabel(value: string | number | null | undefined): string {
-  return formatLempirasFromCents(parseCents(value));
+  return formatLempirasUIFromCents(parseCents(value));
 }
 
 function CategoryButton({
@@ -321,6 +361,7 @@ function CategoryButton({
       )}
       onClick={onClick}
       role="radio"
+      tabIndex={active ? 0 : -1}
       type="button"
     >
       <span className="line-clamp-2 leading-tight">{label}</span>

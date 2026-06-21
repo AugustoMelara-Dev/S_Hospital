@@ -28,7 +28,7 @@ class OperationsReportService
         $end = Carbon::createFromFormat('Y-m-d', $filters['date_to'])->endOfDay();
 
         $voidQuery = Invoice::query()
-            ->with('voidedBy:id,name,username')
+            ->with('voidedBy:id,name')
             ->where('status', Invoice::STATUS_VOID)
             ->whereBetween('voided_at', [$start, $end])
             ->when(! empty($filters['status']) && $filters['status'] !== Invoice::STATUS_VOID, function ($query): void {
@@ -77,7 +77,6 @@ class OperationsReportService
             ->get()
             ->map(fn (Invoice $invoice): array => [
                 'invoice_number' => $invoice->invoice_number,
-                'patient_name' => $invoice->patient_name,
                 'total' => (string) $invoice->total,
                 'reason' => $invoice->void_reason,
                 'voided_at' => $invoice->voided_at?->toISOString(),
@@ -87,7 +86,7 @@ class OperationsReportService
             ->all();
 
         $reprintQuery = AuditLog::query()
-            ->with('user:id,name,username')
+            ->with('user:id,name')
             ->where('action', 'invoice.reprinted')
             ->where('entity_type', Invoice::class)
             ->whereBetween('created_at', [$start, $end])
@@ -159,11 +158,40 @@ class OperationsReportService
             ->all();
 
         $institutionalReprintQuery = InstitutionalReceiptPrintEvent::query()
-            ->with('user:id,name,username', 'receipt:id,receipt_number_full,invoice_id,invoice_snapshot,print_profile_code')
+            ->with('user:id,name', 'receipt:id,receipt_number_full,invoice_id,invoice_snapshot,print_profile_code')
             ->where('event_type', InstitutionalReceiptPrintEvent::TYPE_REPRINT)
             ->whereBetween('created_at', [$start, $end])
             ->when(! empty($filters['user_id']), function ($query) use ($filters): void {
                 $query->where('user_id', $filters['user_id']);
+            })
+            ->when($this->hasInvoiceFilters($filters), function ($query) use ($filters, $start, $end): void {
+                $query->whereHas('receipt.invoice', function ($invoiceQuery) use ($filters, $start, $end): void {
+                    $invoiceQuery
+                        ->when(! empty($filters['status']), function ($query) use ($filters): void {
+                            $query->where('status', $filters['status']);
+                        })
+                        ->when(! empty($filters['cash_session_id']), function ($query) use ($filters): void {
+                            $query->where('cash_session_id', $filters['cash_session_id']);
+                        })
+                        ->when(! empty($filters['category_id']), function ($query) use ($filters): void {
+                            $query->whereHas('items', function ($itemQuery) use ($filters): void {
+                                $itemQuery->where('category_id', $filters['category_id']);
+                            });
+                        })
+                        ->when(! empty($filters['area_id']), function ($query) use ($filters): void {
+                            $query->whereHas('items', function ($itemQuery) use ($filters): void {
+                                $itemQuery->where('area_id', $filters['area_id']);
+                            });
+                        })
+                        ->when(! empty($filters['method']), function ($query) use ($filters, $start, $end): void {
+                            $query->whereHas('payments', function ($paymentQuery) use ($filters, $start, $end): void {
+                                $paymentQuery
+                                    ->where('status', Payment::STATUS_POSTED)
+                                    ->where('method', $filters['method'])
+                                    ->whereBetween('paid_at', [$start, $end]);
+                            });
+                        });
+                });
             });
 
         $institutionalReprintCount = (clone $institutionalReprintQuery)->count();
@@ -198,7 +226,7 @@ class OperationsReportService
             ->all();
 
         $serviceChangeQuery = AuditLog::query()
-            ->with('user:id,name,username')
+            ->with('user:id,name')
             ->where('entity_type', Service::class)
             ->where('action', 'like', 'service.%')
             ->whereBetween('created_at', [$start, $end])
@@ -226,7 +254,7 @@ class OperationsReportService
             ->all();
 
         $paymentVoidQuery = Payment::query()
-            ->with(['invoice:id,invoice_number,patient_name', 'voidedBy:id,name,username', 'user:id,name,username'])
+            ->with(['invoice:id,invoice_number', 'voidedBy:id,name', 'user:id,name'])
             ->where('payments.status', Payment::STATUS_VOID)
             ->whereBetween('payments.voided_at', [$start, $end])
             ->when(! empty($filters['user_id']), function ($query) use ($filters): void {
@@ -264,7 +292,6 @@ class OperationsReportService
             ->get()
             ->map(fn (Payment $payment): array => [
                 'invoice_number' => $payment->invoice?->invoice_number,
-                'patient_name' => $payment->invoice?->patient_name,
                 'method' => $payment->method,
                 'amount' => $this->centsToMoney((int) $payment->amount_cents),
                 'reason' => $payment->void_reason,
@@ -281,7 +308,7 @@ class OperationsReportService
 
         if ($includeBackups) {
             $backupQuery = BackupLog::query()
-                ->with('creator:id,name,username')
+                ->with('creator:id,name')
                 ->whereBetween('created_at', [$start, $end])
                 ->when(! empty($filters['user_id']), function ($query) use ($filters): void {
                     $query->where('created_by', $filters['user_id']);
@@ -355,7 +382,6 @@ class OperationsReportService
                 $grouped[$userId] = [
                     'user_id' => $userId,
                     'name' => $payment->user?->name ?? 'Desconocido',
-                    'username' => $payment->user?->username ?? '',
                     'payment_count' => 0,
                     'cash_sessions' => [],
                     'invoices' => [],
@@ -402,7 +428,6 @@ class OperationsReportService
         foreach ($grouped as $userId => $data) {
             $cashiers[] = [
                 'name' => $data['name'],
-                'username' => $data['username'],
                 'payment_count' => $data['payment_count'],
                 'cash_session_count' => count(array_unique($data['cash_sessions'])),
                 'invoice_count' => count(array_unique($data['invoices'])),

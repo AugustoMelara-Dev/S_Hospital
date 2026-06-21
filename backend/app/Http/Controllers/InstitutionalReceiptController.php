@@ -79,6 +79,10 @@ class InstitutionalReceiptController extends Controller
 
     private function reprintReason(Request $request): ?string
     {
+        if ($request->isMethod('GET')) {
+            return null;
+        }
+
         $reason = trim((string) $request->input('reason'));
 
         return $reason === '' ? null : $reason;

@@ -17,6 +17,7 @@ use App\Support\InvoiceAccess;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Gate;
 
 class InvoiceController extends Controller
 {
@@ -33,6 +34,7 @@ class InvoiceController extends Controller
                 'cashSession:id,user_id,status,opened_at,closed_at',
                 'cashSession.user:id,name,username',
                 'issuedInstitutionalReceipts:id,invoice_id,receipt_number_full,status,reprint_count,issued_at',
+                'issuedInstitutionalReceipts.printEvents:id,institutional_receipt_id',
             ])
             ->when(
                 ! $this->canAccessHistoricalInvoices($user),
@@ -103,8 +105,8 @@ class InvoiceController extends Controller
                 'cashSession.user:id,name,username',
                 'issuer:id,name,username',
                 'voidedBy:id,name,username',
-                'fiscalSequence',
                 'issuedInstitutionalReceipts:id,invoice_id,receipt_number_full,status,reprint_count,issued_at',
+                'issuedInstitutionalReceipts.printEvents:id,institutional_receipt_id',
             ])),
         ]);
     }
@@ -114,6 +116,8 @@ class InvoiceController extends Controller
         Invoice $invoice,
         VoidInvoiceAction $voidInvoice,
     ): JsonResponse {
+        Gate::authorize('void', $invoice);
+
         return response()->json([
             'data' => $this->withInstitutionalReceiptSummary(
                 $voidInvoice->execute($invoice, $request->user(), $request->reason())
@@ -126,6 +130,8 @@ class InvoiceController extends Controller
         Invoice $invoice,
         ReverseInvoiceAction $reverseInvoice,
     ): JsonResponse {
+        Gate::authorize('reverse', $invoice);
+
         return response()->json([
             'data' => $this->withInstitutionalReceiptSummary(
                 $reverseInvoice->execute($invoice, $request->user(), $request->reason())
@@ -152,8 +158,13 @@ class InvoiceController extends Controller
 
     private function attachInstitutionalReceiptSummary(Invoice $invoice): Invoice
     {
+        $invoice->unsetRelation('fiscalSequence');
+
         if (! $invoice->relationLoaded('issuedInstitutionalReceipts')) {
-            $invoice->load('issuedInstitutionalReceipts:id,invoice_id,receipt_number_full,status,reprint_count,issued_at');
+            $invoice->load([
+                'issuedInstitutionalReceipts:id,invoice_id,receipt_number_full,status,reprint_count,issued_at',
+                'issuedInstitutionalReceipts.printEvents:id,institutional_receipt_id',
+            ]);
         }
 
         $receipt = $invoice->getRelation('issuedInstitutionalReceipts')->first();
@@ -163,6 +174,8 @@ class InvoiceController extends Controller
             'receipt_number_full' => $receipt->receipt_number_full,
             'status' => $receipt->status,
             'reprint_count' => $receipt->reprint_count,
+            'print_events_count' => $receipt->relationLoaded('printEvents') ? $receipt->printEvents->count() : 0,
+            'has_print_events' => $receipt->relationLoaded('printEvents') && $receipt->printEvents->isNotEmpty(),
             'issued_at' => $receipt->issued_at?->toISOString(),
         ] : null);
 

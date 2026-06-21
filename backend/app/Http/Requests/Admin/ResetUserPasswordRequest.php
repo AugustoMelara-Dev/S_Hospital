@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Password;
 
@@ -9,7 +10,9 @@ class ResetUserPasswordRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('users.update') === true;
+        $target = $this->route('user');
+
+        return $target instanceof User && $this->user()?->can('resetPassword', $target) === true;
     }
 
     /**
@@ -18,7 +21,7 @@ class ResetUserPasswordRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'password' => ['required', 'string', Password::min(10)->letters()->numbers()],
+            'password' => ['required', 'string', Password::min(12)->mixedCase()->numbers()->symbols()],
         ];
     }
 }

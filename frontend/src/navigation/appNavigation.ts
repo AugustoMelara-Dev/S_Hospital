@@ -21,6 +21,7 @@ export type AppNavigationItem = {
   path: string;
   icon: LucideIcon;
   navigationPermissions?: string[];
+  navigationPermissionMode?: PermissionMode;
 };
 
 export type AppBreadcrumb = {
@@ -36,6 +37,7 @@ export type AppRouteDefinition = {
   breadcrumbs: AppBreadcrumb[];
   navigation: boolean;
   navigationPermissions?: string[];
+  navigationPermissionMode?: PermissionMode;
   requiredPermissions?: string[];
   permissionMode?: PermissionMode;
   deniedReason?: string;
@@ -60,7 +62,8 @@ export const appRoutes = {
       { label: 'Nueva factura', path: '/billing/new' },
     ],
     navigation: true,
-    navigationPermissions: ['invoices.create'],
+    navigationPermissions: ['invoices.create', 'catalog.view', 'cash.view', 'payments.create', 'receipts.view'],
+    navigationPermissionMode: 'all',
     requiredPermissions: ['invoices.create', 'catalog.view', 'cash.view', 'payments.create', 'receipts.view'],
     permissionMode: 'all',
     deniedReason: 'Requiere permisos de facturación, catálogo, caja, pagos y recibos. Solicite el rol Cajero completo.',
@@ -118,7 +121,7 @@ export const appRoutes = {
     ],
     navigation: true,
     navigationPermissions: ['reports.view', 'reports.managerial.view', 'reports.cash_session.view'],
-    requiredPermissions: ['reports.view', 'reports.cash_session.view'],
+    requiredPermissions: ['reports.view', 'reports.managerial.view', 'reports.cash_session.view'],
     permissionMode: 'any',
     deniedReason: 'Requiere permiso para consultar reportes operativos o reportes de caja.',
   },
@@ -159,7 +162,7 @@ export const appRoutes = {
       { label: 'Inicio', path: '/dashboard' },
       { label: 'Recibos institucionales', path: '/settings/institutional-receipts' },
     ],
-    navigation: false,
+    navigation: true,
     navigationPermissions: ['receipt_settings.view'],
     requiredPermissions: ['receipt_settings.view'],
     deniedReason: 'Requiere permiso para consultar configuracion de recibos institucionales.',
@@ -222,6 +225,7 @@ function toNavigationItem(route: AppRouteDefinition): AppNavigationItem {
   path: route.path,
   icon: route.icon,
   navigationPermissions: route.navigationPermissions,
+  navigationPermissionMode: route.navigationPermissionMode,
   };
 }
 
@@ -234,6 +238,7 @@ export const primaryNavigation: AppNavigationItem[] = [
   appRoutes.reports,
   appRoutes.backups,
   appRoutes.fiscalSettings,
+  appRoutes.receiptSettings,
   appRoutes.users,
   appRoutes.help,
 ].map(toNavigationItem);
@@ -255,7 +260,7 @@ export function hasPermissions(
 }
 
 export function canViewNavigationItem(item: AppNavigationItem, grantedPermissions: readonly string[]) {
-  return hasPermissions(grantedPermissions, item.navigationPermissions, 'any');
+  return hasPermissions(grantedPermissions, item.navigationPermissions, item.navigationPermissionMode ?? 'any');
 }
 
 export function canAccessRoute(route: AppRouteDefinition, grantedPermissions: readonly string[]) {

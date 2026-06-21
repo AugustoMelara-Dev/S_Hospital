@@ -19,7 +19,6 @@ Legend: **A** = authenticated, **U** = unauthenticated allowed,
 | GET | `/api/system/health` | 120/min IP | security headers | OperationalMetricsService snapshot, no secrets |
 | ANY | `/api/system/csp-report` | 30/min IP | security headers | scrubs app_key/db_password/token/secret |
 | GET | `/api/system/echo-config` | 30/min IP | security headers | returns enabled/key/host/port/cluster |
-| GET | `/api/system/openapi` | none (was) | security headers | **route still public** (SEC-API-001) |
 | GET | `/api/system/setup-status` | none | security headers | boolean only |
 | GET | `/api/settings/logo` | none | security headers | public logo URL |
 | GET | `/api/settings/branding` | none | security headers | hospital name, slogan, lines |
@@ -40,6 +39,7 @@ Legend: **A** = authenticated, **U** = unauthenticated allowed,
 
 | Method | Route | Perms | Notes |
 |---|---|---|---|
+| GET | `/api/system/openapi` | authenticated active user | throttled 30/min user; rejects temporary-password users |
 | GET | `/api/settings/fiscal` | `settings.fiscal.view` | full settings incl. CAI/RTN |
 | PUT | `/api/settings/fiscal` | `settings.fiscal.update` | admin only |
 | POST | `/api/settings/logo` | `settings.fiscal.update` | multipart, image/* only |
@@ -112,6 +112,7 @@ Legend: **A** = authenticated, **U** = unauthenticated allowed,
 | Report export | 30/min IP | `routes/api.php:115` |
 | `/api/csp-report` | 30/min IP | `routes/api.php:33` |
 | `/api/system/echo-config` | 30/min IP | `routes/api.php:39` |
+| `/api/system/openapi` | 30/min user | `routes/api.php` |
 | `/api/system/health` | 120/min IP | `routes/api.php:36` |
 | `/api/health` | 120/min IP | `routes/api.php:30` |
 
@@ -142,7 +143,7 @@ Verified by the full backend PHPUnit suite (432 passed, 0 failed):
 
 | ID | Severity | Title | Status |
 |---|---|---|---|
-| SEC-API-001 | MEDIUM | `/api/system/openapi` was public and unthrottled | route still public; new test asserts requires-auth (`SecurityAuditTrailTest` smoke) |
+| SEC-API-001 | MEDIUM | `/api/system/openapi` was public and unthrottled | FIXED (auth:web + user.active + password.changed + throttle.user:30,1) |
 | SEC-API-005 | LOW | `/api/backups` POST shares the IP-bucket group throttle | OPEN |
 | SEC-API-006 | LOW | `/api/backups/{id}/download` no per-route throttle | OPEN |
 | SEC-API-007 | LOW | `/api/admin/*` share the IP throttle | OPEN |
@@ -150,10 +151,10 @@ Verified by the full backend PHPUnit suite (432 passed, 0 failed):
 | SEC-API-009 | LOW | `/api/invoices/{id}/reprint` no per-route throttle | OPEN |
 | SEC-API-010 | MEDIUM | Broadcast channels authorize by permission, not resource ownership | OPEN (intentional) |
 | SEC-API-013 | LOW | `backups.download` does not require `backups.view` | OPEN (intentional) |
-| SEC-API-014 | MEDIUM | `PdfExportRequest::maxDateTo` returned `9999-12-31` on malformed input | FIXED (now returns now()+31d) |
+| SEC-API-014 | MEDIUM | Report request `maxDateTo` returned `9999-12-31` on malformed input | FIXED (classic and executive report requests fall back to today + allowed range) |
 | SEC-API-015 | MEDIUM | Stored XSS via patient_name/notes/void_reason (no HTML strip) | OPEN (intentional; React escapes on render) |
 | SEC-API-018 | LOW | nginx CSP report-only used `'unsafe-inline'` | FIXED (matches enforced with nonce) |
-| SEC-API-019 | MEDIUM | `.env.example` ships `APP_DEBUG=true` | DOCUMENTED (intentional for dev template) |
+| SEC-API-019 | MEDIUM | `.env.example` shipped `APP_DEBUG=true` | FIXED (templates and production Compose use `APP_DEBUG=false`) |
 | SEC-API-022 | LOW | `/api/auth/session` unauthenticated path keys on IP | OPEN (10/min) |
 | SEC-API-025 | MEDIUM | Group `throttle:60,1` is IP-keyed; NAT'd cashiers share the bucket | OPEN (mitigated by per-user throttle on writes) |
 
@@ -176,8 +177,8 @@ No IDOR / BOLA bypass was discovered.
   `invoices.void` permission — rejected by `InvoiceAccess` (own + today scope)
 - `POST /api/cash-sessions/{foreign_id}/close` while logged in as cajero B —
   rejected by `user_id` scope + `cash.close + own` policy
-- `GET /api/system/openapi` while logged in as cajero — currently **200** (route
-  is public; should be 401 — tracked as `SEC-API-001`)
+- `GET /api/system/openapi` without login — rejected with 401; inactive users
+  and temporary-password users are rejected with 403. SAFE.
 - `POST /api/auth/login` after 5 wrong passwords with rotating usernames
   (per-IP probe) — currently **200** (per-IP bucket removed; tracked as
   `SEC-AUTH-019` already fixed; global `throttle:5,1` would still throttle
@@ -202,8 +203,8 @@ The cashier/day isolation chain is enforced through `InvoiceAccess`
 (action layer) — three independent layers, each verified by
 PHPUnit tests.
 
-**0 routes accessible without auth that should require it.** The
-only exception is `/api/system/openapi` (tracked `SEC-API-001`,
-MEDIUM, deferred to v1.1).
+**0 routes accessible without auth that should require it.**
+`/api/system/openapi` is protected by `auth:web`, `user.active`,
+`password.changed` and `throttle.user:30,1`.
 
 **0 unauthenticated 500s.** 0 unauthenticated CSRF bypasses.

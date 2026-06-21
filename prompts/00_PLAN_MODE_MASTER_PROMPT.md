@@ -428,7 +428,7 @@ Preparar al personal para usar el sistema sin depender del desarrollador todo el
 
 **Responsabilidades:**
 - Crear guÃƒÂ­a rÃƒÂ¡pida por rol.
-- Crear usuarios demo.
+- Crear usuarios de capacitacion.
 - Crear flujo de capacitaciÃƒÂ³n.
 - Crear prueba de aceptaciÃƒÂ³n.
 - Crear acta de entrega tÃƒÂ©cnica.
@@ -441,7 +441,7 @@ Preparar al personal para usar el sistema sin depender del desarrollador todo el
 - GuÃƒÂ­a para mÃƒÂ©dico.
 - Guia para caja, supervision y administracion.
 - GuÃƒÂ­a para farmacia/lab/facturaciÃƒÂ³n si aplica.
-- Usuarios demo.
+- Usuarios de capacitacion.
 - Ejercicios de prÃƒÂ¡ctica.
 - Acta de capacitaciÃƒÂ³n.
 - Acta de entrega.

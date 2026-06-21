@@ -64,6 +64,8 @@ class CreateBackupAction
             ])->save();
 
             Storage::disk('local')->makeDirectory('backups');
+            $this->assertSafeBackupTarget($backupLog);
+
             $absolutePath = Storage::disk('local')->path((string) $backupLog->path);
             $temporaryDumpPath = $absolutePath.'.dump.tmp';
             $temporaryEncryptedPath = $absolutePath.'.tmp';
@@ -101,9 +103,9 @@ class CreateBackupAction
                 report($pruneException);
             }
         } catch (\Throwable $exception) {
-            $this->removePartialFile((string) $backupLog->path);
-            $this->removePartialFile((string) $backupLog->path.'.tmp');
-            $this->removePartialFile((string) $backupLog->path.'.dump.tmp');
+            $this->removePartialFileIfSafe((string) $backupLog->path);
+            $this->removePartialFileIfSafe((string) $backupLog->path.'.tmp');
+            $this->removePartialFileIfSafe((string) $backupLog->path.'.dump.tmp');
 
             $backupLog = $this->markFailed($backupLog, $this->safeErrorMessage($exception));
         } finally {
@@ -117,6 +119,34 @@ class CreateBackupAction
         );
 
         return $backupLog->fresh(['creator:id,name,username']) ?? $backupLog;
+    }
+
+    private function assertSafeBackupTarget(BackupLog $backupLog): void
+    {
+        $path = (string) $backupLog->path;
+
+        if (
+            $backupLog->disk !== 'local' ||
+            ! $this->isSafeStoragePath($path) ||
+            ! preg_match('/\Abackups\/[A-Za-z0-9][A-Za-z0-9._-]{0,160}\.sql\.enc\z/', $path)
+        ) {
+            throw new RuntimeException('Registro de respaldo local invalido.');
+        }
+    }
+
+    private function isSafeStoragePath(string $path): bool
+    {
+        return str_starts_with($path, 'backups/')
+            && ! str_contains($path, '..')
+            && ! str_contains($path, '\\')
+            && ! str_starts_with($path, '/');
+    }
+
+    private function removePartialFileIfSafe(string $path): void
+    {
+        if ($this->isSafeStoragePath($path)) {
+            $this->removePartialFile($path);
+        }
     }
 
     private function removePartialFile(string $path): void

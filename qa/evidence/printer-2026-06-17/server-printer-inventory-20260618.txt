@@ -1,0 +1,8 @@
+﻿Printer inventory on server - 06/17/2026 23:56:29  
+Name                   PrinterStatus Default PortName    DriverName                         
+----                   ------------- ------- --------    ----------                         
+OneNote (Desktop)             Normal         nul:        Send to Microsoft OneNote 16 Driver
+Microsoft Print to PDF        Normal         PORTPROMPT: Microsoft Print To PDF             
+
+
+

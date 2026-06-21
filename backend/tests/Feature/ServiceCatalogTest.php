@@ -162,6 +162,19 @@ class ServiceCatalogTest extends TestCase
             ->assertJsonFragment(['name' => 'Rayos X']);
     }
 
+    public function test_authenticated_catalog_reads_do_not_rotate_session_cookie(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $cashier = $this->cashier();
+
+        $response = $this->actingAs($cashier)
+            ->withCookie((string) config('session.cookie'), 'existing-session')
+            ->getJson('/api/services?active=1&billing=1&visible_in_billing=1&is_billable=1&per_page=24');
+
+        $response->assertOk();
+        $this->assertFalse($response->headers->has('Set-Cookie'));
+    }
+
     public function test_category_index_requires_catalog_view_and_validates_active_filter(): void
     {
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);

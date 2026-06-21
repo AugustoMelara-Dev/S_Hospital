@@ -129,4 +129,7 @@ Route::withoutMiddleware($statelessWebMiddleware)->group(function () use ($front
             'X-Content-Type-Options' => 'nosniff',
         ]);
     })->where('path', '.*');
+
+    Route::get('/{path}', $frontendResponse)
+        ->where('path', '^(?!api(?:/|$)|sanctum(?:/|$)|assets(?:/|$)|icons(?:/|$)|manifest\.webmanifest$|up$)(?!.*\.[A-Za-z0-9]{1,8}$).*$');
 });

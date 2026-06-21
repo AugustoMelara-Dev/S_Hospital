@@ -59,7 +59,7 @@ export function useTheme() {
   // Apply theme & color theme values to document element
   useEffect(() => {
     const root = document.documentElement;
-    
+
     // 1. Apply dark class
     root.classList.toggle('dark', isDark);
 

@@ -17,7 +17,9 @@
 - [x] `/up` responds from the client computer. Result/evidence: HTTP 200 registrado en captura 01.
 - [x] `/login` loads from the client computer using the server IP or LAN name. Result/evidence: pantalla de login visible en captura 02.
 - [x] `/verify-email` loads the expected SPA route or documented response. Result/evidence: ruta SPA responde sin error 500.
+- [x] `/api/system/echo-config` exposes LAN realtime config. Result/evidence: driver pusher host 192.168.1.7 port 6001.
 - [x] `/assets/*.js` loads as JavaScript. Result/evidence: asset principal con content-type JavaScript.
+- [x] WebSocket/Soketi TCP port is reachable from the client computer. Result/evidence: TCP connect OK to 192.168.1.7:6001.
 - [x] Login completes without 419 or session-expired state. Result/evidence: dashboard abre con usuario de caja.
 - [x] Cashbox opens. Result/evidence: caja abierta con monto inicial registrado.
 - [x] Invoice is created with patient name. Result/evidence: factura generada para Paciente LAN.

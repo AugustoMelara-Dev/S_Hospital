@@ -1,8 +1,8 @@
 # Fase G - Prueba fisica LAN/offline real
 
 Estado inicial: `READY_FOR_REAL_LAN_OFFLINE_INSTALLATION_TEST`  
-Estado permitido si todo pasa: `PRODUCTION_READY=YES` en `qa/FINAL_PRODUCTION_HANDOFF_RESULT.md`  
-Estado actual hasta ejecutar hardware real: `PRODUCTION_READY=NO`
+Estado permitido si todo pasa: `Decision: PRODUCTION_READY` en `qa/FINAL_PRODUCTION_HANDOFF_RESULT.md`
+Estado actual hasta ejecutar hardware real: `Decision: READY_FOR_REAL_LAN_INSTALLATION_TEST`
 
 No usar esta guia para declarar produccion lista con pruebas locales. La validacion debe ocurrir en el servidor final o PC final, con una segunda PC cliente en la misma LAN y la impresora real o configuracion exacta aprobada por el hospital.
 
@@ -87,6 +87,15 @@ powershell.exe -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 `
   -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md
 ```
 
+Si ya existe una evidencia historica contra otra IP y el responsable tecnico autoriza reemplazarla, repetir el comando con `-Force`. Para el cierre actual contra la IP final validada:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 `
+  -BaseUrl http://192.168.1.10:8081 `
+  -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md `
+  -Force
+```
+
 Completar manualmente en `qa/LAN_CLIENT_VALIDATION_PROOF.md`:
 
 - Login.
@@ -103,7 +112,7 @@ Completar manualmente en `qa/LAN_CLIENT_VALIDATION_PROOF.md`:
 
 Completar `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` desde la PC de caja real.
 
-Validar solo los tamanos configurados/aprobados:
+Validar el formato institucional principal configurado/aprobado:
 
 - Carta.
 - Media carta o A5 si aplica.
@@ -172,7 +181,14 @@ Documentar:
 
 ## 8. Handoff final
 
-Cuando los cuatro proofs fisicos/restauracion/concurrencia esten completos:
+Cuando las seis evidencias finales esten completas:
+
+- `qa/LAN_CLIENT_VALIDATION_PROOF.md`
+- `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md`
+- `qa/FINAL_RESTORE_PROOF.md`
+- `qa/FINAL_CONCURRENCY_PROOF.md`
+- `qa/FINAL_CONCURRENCY_UNDER_LOAD_PROOF_LAN_8081.md`
+- `qa/FINAL_REAL_SMOKE_LAN_8081.md`
 
 ```powershell
 powershell.exe -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 `
@@ -186,12 +202,11 @@ powershell.exe -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps
 Si algo falta o falla, `qa/FINAL_PRODUCTION_HANDOFF_RESULT.md` debe mantener:
 
 ```text
-PRODUCTION_READY=NO
-RELEASE_STATE=READY_FOR_REAL_LAN_OFFLINE_INSTALLATION_TEST
+Decision: READY_FOR_REAL_LAN_INSTALLATION_TEST
 ```
 
 Solo con evidencia fisica completa y preflight exitoso puede cambiarse a:
 
 ```text
-PRODUCTION_READY=YES
+Decision: PRODUCTION_READY
 ```

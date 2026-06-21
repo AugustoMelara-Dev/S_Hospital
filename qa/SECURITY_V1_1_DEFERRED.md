@@ -13,13 +13,13 @@
 
 | ID | Severidad original | Estado real | Decisión documentada |
 |---|---|---|---|
-| SEC-AUD-001 | BLOCKER | PARTIAL | RECLASIFICADO A HIGH v1.1 |
-| SEC-AUD-004 | BLOCKER | PARTIAL | RECLASIFICADO A HIGH v1.1 |
-| SEC-AUTH-012 | HIGH | PRE-FIXED | PILOT_SAFE / deferred v1.1 |
-| SEC-AUTH-013 | HIGH | PRE-FIXED | PILOT_SAFE / deferred v1.1 |
-| SEC-AUTH-034 | HIGH | PRE-FIXED | PILOT_SAFE / deferred v1.1 |
-| SEC-AUD-005 | HIGH | OPEN | DEFERRED v1.1 |
-| SEC-AUD-006 | HIGH | OPEN | DEFERRED v1.1 |
+| SEC-AUD-001 | BLOCKER | FIXED | Cerrado en working tree: `AuthController` escribe `auth.login`, `auth.login_failed`, `auth.logout`, `auth.password_changed` y `auth.session_revoked`; `AuthTest` cubre el ciclo forense |
+| SEC-AUD-004 | BLOCKER | FIXED | Cerrado en working tree: `UserController` audita crear, actualizar, activar/desactivar y resetear contrasena; `InternalControlAuditTest` y `UserManagementTest` cubren deltas y redaccion de password |
+| SEC-AUTH-012 | HIGH | FIXED | Cerrado en working tree: `CashSessionController::close` invoca `Gate::authorize('close', $cashSession)` y conserva validaciones transaccionales en `CloseCashSessionAction` |
+| SEC-AUTH-013 | HIGH | FIXED | Cerrado en working tree: `InvoiceController::void/reverse` invoca `Gate::authorize('void'/'reverse', $invoice)` y conserva validaciones transaccionales en las Actions |
+| SEC-AUTH-034 | HIGH | FIXED/DESIGN-CONFIRMED | Logout queda permitido por contrato para usuarios con cambio obligatorio; rutas operativas siguen 403 y `auth.logout` se audita |
+| SEC-AUD-005 | HIGH | FIXED | Cerrado en working tree: `ReceiptController::show` audita `receipt.viewed` sin mutar factura ni aumentar `invoice.reprinted`; `CashPaymentsReceiptTest` cubre el contrato |
+| SEC-AUD-006 | HIGH | FIXED | Cerrado en working tree: `CreateInvoiceAction` audita apply/deny de receta de diálisis |
 
 > **Por qué la discrepancia:** El reconciliador (commit `223d0e8f`)
 > reclasificó SEC-AUD-001 y SEC-AUD-004 de BLOCKER a HIGH (porque
@@ -272,12 +272,13 @@
     contraseña" antes del dashboard.
   - En producción con un solo admin, este flujo es de
     un solo actor y trivial de coordinar.
-- **Criterio de cierre en v1.1:** O bien (a) dejar el
-  comportamiento como está y documentarlo como decisión
-  de diseño (logout siempre permitido), o bien (b) forzar
-  un flag `?force_password_change_in_query` para que
-  logout no borre la sesión si el flag está activo.
-  Test: `PasswordChangedMiddlewareTest::test_logout_bypasses_password_change_required_by_design`.
+- **Cierre aplicado en working tree:** Se conserva la
+  decisión de diseño segura: logout siempre permitido para
+  evitar encerrar al usuario con contraseña temporal, pero
+  las rutas operativas siguen bloqueadas con
+  `must_change_password=true` y el logout queda auditado en
+  `audit_logs`. Test:
+  `AuthTest::test_must_change_password_is_reported_and_blocks_protected_operations`.
 
 ### SEC-AUD-005
 
@@ -373,12 +374,14 @@
   - Supervisión visual: la línea de eritropoyetina aparece
     con precio 0.00 en el recibo, y el supervisor valida
     manualmente.
-- **Criterio de cierre en v1.1:** Añadir
-  `AuditLog::query()->create([...])` en el path de éxito
-  y de rechazo de `resolveDialysisPrescription` con
-  `action='invoice.dialysis_prescription_applied'` o
-  `'_denied'`. Test:
-  `DialysisPrescriptionAuditTest::test_audit_log_on_apply_and_deny`.
+- **Cierre aplicado en working tree:** `CreateInvoiceAction`
+  escribe `invoice.dialysis_prescription_applied` cuando la
+  regla de Eritropoyetina se aplica realmente a una factura
+  creada, y `invoice.dialysis_prescription_denied` fuera de
+  la transacción revertida cuando un usuario sin permiso
+  intenta activar el toggle. Test:
+  `InvoiceDialysisPrescriptionTest` cubre apply, deny y
+  no-falso-positivo con servicios no Eritropoyetina.
 
 ---
 
@@ -427,7 +430,7 @@
   `Route::middleware(['web', 'auth:web', 'user.active', 'throttle:60,1'])` + `password.changed`.
 - Las rutas públicas (líneas 14-26) son intencionales:
   `/health`, `/system/csp-report`, `/system/health`,
-  `/system/echo-config`, `/system/openapi`,
+  `/system/echo-config`,
   `/system/setup-status`, `/settings/logo`,
   `/settings/branding`, `/auth/login`, `/auth/session`.
 - Test E2E: 82 tests críticos pasan
@@ -466,7 +469,7 @@
 | SEC-AUTH-013 (invoice void policy) | NO | mitigated | NO | NO | NO |
 | SEC-AUTH-034 (logout + pwd) | NO | NO | NO | NO | NO |
 | SEC-AUD-005 (receipt.viewed no audit) | NO | mitigated | mitigated | NO | NO |
-| SEC-AUD-006 (dialysis no audit) | NO | mitigated | NO | NO | NO |
+| SEC-AUD-006 (dialysis no audit) | NO | FIXED | NO | NO | NO |
 
 **Leyenda:** NO = no relacionado; mitigated = cubierto por
 otro mecanismo (audit de mutación, FormRequest authorize,
@@ -517,7 +520,7 @@ de caja se audita vía `cash.closed` action.
 3. Activar policy facade en controllers (SEC-AUTH-012,
    SEC-AUTH-013).
 4. Añadir audit en receipt.viewed (SEC-AUD-005).
-5. Añadir audit en dialysis_prescription apply/deny
-   (SEC-AUD-006).
+5. Audit en dialysis_prescription apply/deny ya cerrado en
+   working tree (SEC-AUD-006).
 6. Cerrar MEDIUM: password policy 12+ chars con símbolos,
    session idle-timeout, disabled user pre-active-check.

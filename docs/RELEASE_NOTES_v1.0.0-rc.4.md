@@ -119,8 +119,8 @@ final con hardware real:
 4. `qa/FINAL_CONCURRENCY_PROOF.md` - doble apertura de caja,
    doble facturación, doble pago concurrente.
 
-`qa/FINAL_PRODUCTION_HANDOFF_RESULT.md` debe contener
-`PRODUCTION_READY=YES` para que el release se publique.
+El gate de release actual exige que `qa/FINAL_PRODUCTION_HANDOFF_RESULT.md`
+contenga `Decision: PRODUCTION_READY` para que el release se publique.
 
 ## Upgrade path desde v1.0.0-rc.3
 

@@ -27,120 +27,130 @@ class CreateInvoiceAction
      */
     public function execute(array $payload, User $issuer, ?Request $request = null): Invoice
     {
-        return DB::transaction(function () use ($payload, $issuer, $request): Invoice {
-            $cashSession = CashRegisterSession::query()
-                ->where('user_id', $issuer->id)
-                ->where('status', CashRegisterSession::STATUS_OPEN)
-                ->lockForUpdate()
-                ->first();
+        try {
+            return DB::transaction(function () use ($payload, $issuer, $request): Invoice {
+                $cashSession = CashRegisterSession::query()
+                    ->where('user_id', $issuer->id)
+                    ->where('status', CashRegisterSession::STATUS_OPEN)
+                    ->lockForUpdate()
+                    ->first();
 
-            if ($cashSession === null) {
-                throw ValidationException::withMessages([
-                    'cash_session_id' => 'Abra caja antes de emitir y cobrar una factura.',
+                if ($cashSession === null) {
+                    throw ValidationException::withMessages([
+                        'cash_session_id' => 'Abra caja antes de emitir y cobrar una factura.',
+                    ]);
+                }
+
+                $dialysisPrescription = $this->resolveDialysisPrescription($payload, $issuer);
+                $preparedItems = $this->prepareItems($payload['items']);
+                $settings = FiscalSetting::query()->first();
+                $taxRate = $settings?->default_tax_rate ?? '15.00';
+                $totals = $this->calculateInvoiceTotals->execute($preparedItems, (string) $taxRate, $dialysisPrescription);
+                $fiscal = $this->generateFiscalNumber->execute();
+                $sequence = $fiscal['sequence'];
+                $isZeroTotal = $this->isZeroAmount($totals['total']);
+
+                $sumItems = array_reduce($totals['items'], fn (int $carry, array $item) => $carry + $item['line_total_cents'], 0);
+                if ($sumItems !== $totals['total_cents']) {
+                    throw new \RuntimeException('Invariante fallido: la suma de las lineas no coincide con el total de la factura.');
+                }
+
+                $invoice = Invoice::query()->create([
+                    'invoice_number' => $fiscal['invoice_number'],
+                    'fiscal_sequence_id' => $sequence->id,
+                    'fiscal_cai' => $sequence->cai,
+                    'fiscal_range_from' => $sequence->prefix.'-'.str_pad((string) $sequence->min_number, 8, '0', STR_PAD_LEFT),
+                    'fiscal_range_to' => $sequence->prefix.'-'.str_pad((string) $sequence->max_number, 8, '0', STR_PAD_LEFT),
+                    'fiscal_valid_until' => $sequence->valid_until,
+                    'fiscal_prefix' => $sequence->prefix,
+                    'hospital_name' => $settings?->hospital_name,
+                    'hospital_rtn' => $settings?->rtn,
+                    'hospital_address' => $settings?->address,
+                    'hospital_slogan' => $settings?->slogan,
+                    'receipt_template_mode' => $settings?->receipt_template_mode ?? 'institutional',
+                    'receipt_paper_size' => ReceiptPaperSize::normalize($settings?->receipt_paper_size),
+                    'receipt_government_line' => $settings?->government_line,
+                    'receipt_secretariat_line' => $settings?->secretariat_line,
+                    'receipt_location' => $settings?->receipt_location ?? $settings?->address,
+                    'receipt_footer_text' => $settings?->receipt_footer_text,
+                    'tax_label' => 'ISV',
+                    'tax_rate_snapshot' => $taxRate,
+                    'patient_name' => trim($payload['patient_name']),
+                    'subtotal' => $totals['subtotal'],
+                    'subtotal_cents' => $totals['subtotal_cents'],
+                    'tax_amount' => $totals['tax_amount'],
+                    'tax_amount_cents' => $totals['tax_amount_cents'],
+                    'discount_amount' => $totals['discount_amount'],
+                    'discount_amount_cents' => $totals['discount_amount_cents'],
+                    'total' => $totals['total'],
+                    'total_cents' => $totals['total_cents'],
+                    'paid_amount' => $isZeroTotal ? $totals['total'] : '0.00',
+                    'paid_amount_cents' => $isZeroTotal ? $totals['total_cents'] : 0,
+                    'balance_due' => $isZeroTotal ? '0.00' : $totals['total'],
+                    'balance_due_cents' => $isZeroTotal ? 0 : $totals['total_cents'],
+                    'status' => $isZeroTotal ? Invoice::STATUS_PAID : Invoice::STATUS_ISSUED,
+                    'cash_session_id' => $cashSession->id,
+                    'issued_by' => $issuer->id,
+                    'issued_at' => now(),
                 ]);
-            }
 
-            $dialysisPrescription = $this->resolveDialysisPrescription($payload, $issuer);
-            $preparedItems = $this->prepareItems($payload['items']);
-            $settings = FiscalSetting::query()->first();
-            $taxRate = $settings?->default_tax_rate ?? '15.00';
-            $totals = $this->calculateInvoiceTotals->execute($preparedItems, (string) $taxRate, $dialysisPrescription);
-            $fiscal = $this->generateFiscalNumber->execute();
-            $sequence = $fiscal['sequence'];
-            $isZeroTotal = $this->isZeroAmount($totals['total']);
+                foreach ($totals['items'] as $item) {
+                    $invoice->items()->create($item);
+                }
 
-            $sumItems = array_reduce($totals['items'], fn (int $carry, array $item) => $carry + $item['line_total_cents'], 0);
-            if ($sumItems !== $totals['total_cents']) {
-                throw new \RuntimeException('Invariante fallido: la suma de las lineas no coincide con el total de la factura.');
-            }
+                $this->auditDialysisPrescriptionAppliedIfNeeded($totals['items'], $invoice, $issuer, $request);
 
-            $invoice = Invoice::query()->create([
-                'invoice_number' => $fiscal['invoice_number'],
-                'fiscal_sequence_id' => $sequence->id,
-                'fiscal_cai' => $sequence->cai,
-                'fiscal_range_from' => $sequence->prefix.'-'.str_pad((string) $sequence->min_number, 8, '0', STR_PAD_LEFT),
-                'fiscal_range_to' => $sequence->prefix.'-'.str_pad((string) $sequence->max_number, 8, '0', STR_PAD_LEFT),
-                'fiscal_valid_until' => $sequence->valid_until,
-                'fiscal_prefix' => $sequence->prefix,
-                'hospital_name' => $settings?->hospital_name,
-                'hospital_rtn' => $settings?->rtn,
-                'hospital_address' => $settings?->address,
-                'hospital_slogan' => $settings?->slogan,
-                'receipt_template_mode' => $settings?->receipt_template_mode ?? 'institutional',
-                'receipt_paper_size' => ReceiptPaperSize::normalize($settings?->receipt_paper_size),
-                'receipt_government_line' => $settings?->government_line,
-                'receipt_secretariat_line' => $settings?->secretariat_line,
-                'receipt_location' => $settings?->receipt_location ?? $settings?->address,
-                'receipt_footer_text' => $settings?->receipt_footer_text,
-                'tax_label' => 'ISV',
-                'tax_rate_snapshot' => $taxRate,
-                'patient_name' => trim($payload['patient_name']),
-                'subtotal' => $totals['subtotal'],
-                'subtotal_cents' => $totals['subtotal_cents'],
-                'tax_amount' => $totals['tax_amount'],
-                'tax_amount_cents' => $totals['tax_amount_cents'],
-                'discount_amount' => $totals['discount_amount'],
-                'discount_amount_cents' => $totals['discount_amount_cents'],
-                'total' => $totals['total'],
-                'total_cents' => $totals['total_cents'],
-                'paid_amount' => $isZeroTotal ? $totals['total'] : '0.00',
-                'paid_amount_cents' => $isZeroTotal ? $totals['total_cents'] : 0,
-                'balance_due' => $isZeroTotal ? '0.00' : $totals['total'],
-                'balance_due_cents' => $isZeroTotal ? 0 : $totals['total_cents'],
-                'status' => $isZeroTotal ? Invoice::STATUS_PAID : Invoice::STATUS_ISSUED,
-                'cash_session_id' => $cashSession->id,
-                'issued_by' => $issuer->id,
-                'issued_at' => now(),
-            ]);
+                if ($isZeroTotal) {
+                    AuditLog::query()->create([
+                        'user_id' => $issuer->id,
+                        'action' => 'invoice.zero_amount_registered',
+                        'entity_type' => Invoice::class,
+                        'entity_id' => $invoice->id,
+                        'new_values' => [
+                            'invoice_number' => $invoice->invoice_number,
+                            'reference' => 'Factura sin cobro por regla autorizada',
+                            'balance_due' => $invoice->balance_due,
+                        ],
+                    ]);
+                }
 
-            foreach ($totals['items'] as $item) {
-                $invoice->items()->create($item);
-            }
-
-            if ($isZeroTotal) {
                 AuditLog::query()->create([
                     'user_id' => $issuer->id,
-                    'action' => 'invoice.zero_amount_registered',
+                    'action' => 'invoice.issued',
+                    'result' => 'success',
                     'entity_type' => Invoice::class,
                     'entity_id' => $invoice->id,
+                    'old_values' => null,
                     'new_values' => [
                         'invoice_number' => $invoice->invoice_number,
-                        'reference' => 'Factura sin cobro por regla autorizada',
-                        'balance_due' => $invoice->balance_due,
+                        'patient_name' => $invoice->patient_name,
+                        'total' => $invoice->total,
+                        'status' => $invoice->status,
+                        'cash_session_id' => $cashSession->id,
                     ],
+                    'ip_address' => $request?->ip(),
+                    'ip' => $request?->ip(),
+                    'user_agent' => $request?->userAgent(),
+                    'url' => $request?->fullUrl(),
+                    'http_method' => $request?->method(),
                 ]);
+
+                // Broadcast after-commit so the websocket event only fires
+                // if the DB transaction actually committed. Listeners
+                // (other cashier PCs) get a fresh invoice they can refetch.
+                DB::afterCommit(function () use ($invoice) {
+                    InvoiceChanged::dispatch($invoice->fresh(), 'created');
+                });
+
+                return $invoice->load('items', 'issuer:id,name,username');
+            });
+        } catch (ValidationException $exception) {
+            if ($this->isDialysisPrescriptionDeniedValidation($payload, $issuer, $exception)) {
+                $this->auditDialysisPrescriptionDenied($payload, $issuer, $request);
             }
 
-            AuditLog::query()->create([
-                'user_id' => $issuer->id,
-                'action' => 'invoice.issued',
-                'result' => 'success',
-                'entity_type' => Invoice::class,
-                'entity_id' => $invoice->id,
-                'old_values' => null,
-                'new_values' => [
-                    'invoice_number' => $invoice->invoice_number,
-                    'patient_name' => $invoice->patient_name,
-                    'total' => $invoice->total,
-                    'status' => $invoice->status,
-                    'cash_session_id' => $cashSession->id,
-                ],
-                'ip_address' => $request?->ip(),
-                'ip' => $request?->ip(),
-                'user_agent' => $request?->userAgent(),
-                'url' => $request?->fullUrl(),
-                'http_method' => $request?->method(),
-            ]);
-
-            // Broadcast after-commit so the websocket event only fires
-            // if the DB transaction actually committed. Listeners
-            // (other cashier PCs) get a fresh invoice they can refetch.
-            DB::afterCommit(function () use ($invoice) {
-                InvoiceChanged::dispatch($invoice->fresh(), 'created');
-            });
-
-            return $invoice->load('items', 'issuer:id,name,username');
-        });
+            throw $exception;
+        }
     }
 
     /**
@@ -170,6 +180,87 @@ class CreateInvoiceAction
     }
 
     /**
+     * @param  array{patient_name: string, items: list<array{service_id: int, quantity: string, notes?: ?string}>, dialysis_prescription?: bool}  $payload
+     */
+    private function isDialysisPrescriptionDeniedValidation(array $payload, User $issuer, ValidationException $exception): bool
+    {
+        return (bool) ($payload['dialysis_prescription'] ?? false)
+            && ! $issuer->can('patients.mark_dialysis_prescription')
+            && array_key_exists('dialysis_prescription', $exception->errors());
+    }
+
+    /**
+     * @param  array{patient_name: string, items: list<array{service_id: int, quantity: string, notes?: ?string}>, dialysis_prescription?: bool}  $payload
+     */
+    private function auditDialysisPrescriptionDenied(array $payload, User $issuer, ?Request $request = null): void
+    {
+        AuditLog::query()->create([
+            'user_id' => $issuer->id,
+            'action' => 'invoice.dialysis_prescription_denied',
+            'result' => 'failed',
+            'entity_type' => User::class,
+            'entity_id' => $issuer->id,
+            'old_values' => null,
+            'new_values' => [
+                'requested' => true,
+                'patient_name' => trim($payload['patient_name']),
+                'item_count' => count($payload['items']),
+                'reason' => 'missing_permission',
+            ],
+            'reason' => 'No tiene permiso para marcar pacientes con receta de dialisis.',
+            'ip_address' => $request?->ip(),
+            'ip' => $request?->ip(),
+            'user_agent' => $request?->userAgent(),
+            'url' => $request?->fullUrl(),
+            'http_method' => $request?->method(),
+        ]);
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $items
+     */
+    private function auditDialysisPrescriptionAppliedIfNeeded(array $items, Invoice $invoice, User $issuer, ?Request $request = null): void
+    {
+        $appliedItems = collect($items)
+            ->filter(fn (array $item): bool => ($item['special_rule_code'] ?? null) === Service::ERYTHROPOIETIN_RULE
+                && ($item['special_rule_applied'] ?? false) === true)
+            ->map(fn (array $item): array => [
+                'service_id' => $item['service_id'] ?? null,
+                'service_name' => $item['service_name'] ?? null,
+                'quantity' => $item['quantity'] ?? null,
+                'unit_price' => $item['unit_price'] ?? null,
+                'line_total' => $item['line_total'] ?? null,
+                'special_rule_code' => Service::ERYTHROPOIETIN_RULE,
+            ])
+            ->values()
+            ->all();
+
+        if ($appliedItems === []) {
+            return;
+        }
+
+        AuditLog::query()->create([
+            'user_id' => $issuer->id,
+            'action' => 'invoice.dialysis_prescription_applied',
+            'result' => 'success',
+            'entity_type' => Invoice::class,
+            'entity_id' => $invoice->id,
+            'old_values' => null,
+            'new_values' => [
+                'invoice_number' => $invoice->invoice_number,
+                'patient_name' => $invoice->patient_name,
+                'cash_session_id' => $invoice->cash_session_id,
+                'applied_items' => $appliedItems,
+            ],
+            'ip_address' => $request?->ip(),
+            'ip' => $request?->ip(),
+            'user_agent' => $request?->userAgent(),
+            'url' => $request?->fullUrl(),
+            'http_method' => $request?->method(),
+        ]);
+    }
+
+    /**
      * @param  list<array{service_id: int, quantity: string, notes?: ?string}>  $items
      * @return list<array{service: Service, quantity: string, notes: ?string}>
      */
@@ -177,7 +268,7 @@ class CreateInvoiceAction
     {
         $serviceIds = collect($items)->pluck('service_id')->unique()->values();
         $services = Service::query()
-            ->with(['category:id,name', 'area:id,name'])
+            ->with(['category:id,name', 'area:id,name,slug'])
             ->whereIn('id', $serviceIds)
             ->get()
             ->keyBy('id');

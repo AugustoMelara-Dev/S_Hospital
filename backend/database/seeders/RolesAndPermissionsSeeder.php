@@ -45,9 +45,11 @@ class RolesAndPermissionsSeeder extends Seeder
         'backups.view',
         'backups.create',
         'backups.download',
+        'backups.restore',
         'system.status.view',
         'audit.view',
         'patients.mark_dialysis_prescription',
+        'system.exact_user_permissions',
     ];
 
     public function run(): void
@@ -68,7 +70,6 @@ class RolesAndPermissionsSeeder extends Seeder
         Role::findOrCreate('supervisor', 'web')->syncPermissions($permissions->whereIn('name', [
             'settings.fiscal.view',
             'catalog.view',
-            'catalog.manage',
             'invoices.view',
             'invoices.create',
             'invoices.operate_any',

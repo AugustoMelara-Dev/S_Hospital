@@ -64,7 +64,7 @@ export const STRINGS = {
     closingAmount: 'Monto contado',
     notes: 'Notas',
     needDifferenceNote: 'Explique la diferencia de caja antes de cerrar.',
-    pendingInvoices: (count: number, amount: string) => `No se puede cerrar la caja con ${count} factura(s) pendientes o parciales por L. ${amount}. Revise los cobros antes de cerrar.`,
+    pendingInvoices: (count: number, amount: string) => `No se puede cerrar la caja con ${count} factura(s) pendientes o parciales por L ${amount}. Revise los cobros antes de cerrar.`,
   },
   invoices: {
     title: 'Historial de facturas',
@@ -80,7 +80,7 @@ export const STRINGS = {
     locked: 'Cuenta bloqueada por intentos fallidos. Espere 15 minutos o pida a un supervisor que reactive su usuario.',
   },
   units: {
-    lempiras: 'L.',
+    lempiras: 'L',
     invoice: 'Factura',
     invoices: 'Facturas',
     payment: 'Pago',

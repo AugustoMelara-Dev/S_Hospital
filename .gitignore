@@ -8,6 +8,12 @@ offline-release.rar
 Sistema-Caja-Hospitalaria-RC*.zip
 nginx/ssl/
 qa/support-packets/
+qa/financial-data-audit/screenshots/
+qa/screenshots/**/*.png
+qa/screenshots/**/*.jpg
+qa/screenshots/**/*.jpeg
+qa/screenshots/**/*.webp
+qa/screenshots/**/*.json
 
 backend/.env
 backend/build/

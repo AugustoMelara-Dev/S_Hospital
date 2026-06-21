@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Resilience audit finding R-01: optional `Idempotency-Key` header that
+ * Resilience audit finding R-01: required `Idempotency-Key` header that
  * turns retried POSTs into deterministic replays for cash-critical
  * routes. The cashier's browser may drop the response after the server
  * commits; a plain browser retry would otherwise create a duplicate
@@ -18,7 +18,7 @@ use Symfony\Component\HttpFoundation\Response;
  * the original response is replayed byte-for-byte.
  *
  * Behavior:
- *   - Header missing → middleware is a pass-through.
+ *   - Header missing -> request is rejected with 428 before any mutation.
  *   - Header present, first hit → insert a row, run the request, store
  *     status + body keyed by (user_id, route_signature, key). Subsequent
  *     hits with the same fingerprint replay the stored response.
@@ -42,7 +42,12 @@ class IdempotencyKey
 
         $key = $this->extractKey($request);
         if ($key === null) {
-            return $next($request);
+            return new JsonResponse([
+                'message' => 'Esta operacion requiere Idempotency-Key para evitar duplicados.',
+                'errors' => [
+                    'idempotency_key' => ['Incluya una clave unica por intento de operacion.'],
+                ],
+            ], 428);
         }
 
         $userId = $request->user()?->id;
@@ -173,11 +178,19 @@ class IdempotencyKey
         return hash('sha256', $method.'|'.$route.'|'.$body);
     }
 
-    private function replayResponse(IdempotencyKeyModel $reservation): JsonResponse
+    private function replayResponse(IdempotencyKeyModel $reservation): Response
     {
         $plain = $reservation->response_body_plain;
-        $payload = is_string($plain) ? json_decode($plain, true) : null;
         $status = (int) ($reservation->response_status ?? 200);
+
+        if (is_string($plain) && str_starts_with($plain, '%PDF')) {
+            return new Response($plain, $status, [
+                'Content-Type' => 'application/pdf',
+                'Idempotent-Replay' => 'true',
+            ]);
+        }
+
+        $payload = is_string($plain) ? json_decode($plain, true) : null;
         if (! is_array($payload)) {
             $payload = ['data' => null];
         }

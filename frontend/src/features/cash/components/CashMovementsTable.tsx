@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/data-table';
 import { Badge } from '@/components/ui/badge';
-import { formatLempiras } from '@/lib/money';
+import { formatLempirasUI } from '@/lib/money';
 import { cn } from '@/lib/utils';
 
 export type CashMovement = {
@@ -44,29 +44,48 @@ export function CashMovementsTable({ movements }: CashMovementsTableProps) {
                 </TableCell>
               </TableRow>
             ) : (
-              movements.map((m) => (
-                <TableRow key={m.id}>
-                  <TableCell>{formatMovementTime(m.occurred_at)}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{m.type}</Badge>
-                  </TableCell>
-                  <TableCell>{m.method || '-'}</TableCell>
-                  <TableCell
-                    className={cn(
-                      'text-right font-medium',
-                      m.type === 'income' ? 'text-success-foreground' : 'text-muted-foreground',
-                    )}
-                  >
-                    {m.type === 'income' ? '+' : '-'} {formatLempiras(m.amount)}
-                  </TableCell>
-                </TableRow>
-              ))
+              movements.map((m) => {
+                const direction = movementDirection(m.type);
+                const sign = direction === 'positive' ? '+' : direction === 'negative' ? '-' : '';
+
+                return (
+                  <TableRow key={m.id}>
+                    <TableCell>{formatMovementTime(m.occurred_at)}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{m.type}</Badge>
+                    </TableCell>
+                    <TableCell>{m.method || '-'}</TableCell>
+                    <TableCell
+                      className={cn(
+                        'text-right font-medium',
+                        direction === 'positive' && 'text-success-foreground',
+                        direction === 'negative' && 'text-destructive',
+                        direction === 'neutral' && 'text-muted-foreground',
+                      )}
+                    >
+                      {sign ? `${sign} ` : ''}{formatLempirasUI(m.amount)}
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>
       </CardContent>
     </Card>
   );
+}
+
+function movementDirection(type: string): 'positive' | 'negative' | 'neutral' {
+  if (['income', 'opening', 'payment', 'cash_in'].includes(type)) {
+    return 'positive';
+  }
+
+  if (['expense', 'payment_void', 'cash_out', 'refund', 'void'].includes(type)) {
+    return 'negative';
+  }
+
+  return 'neutral';
 }
 
 function formatMovementTime(value: string): string {

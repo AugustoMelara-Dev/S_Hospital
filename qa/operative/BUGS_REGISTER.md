@@ -77,6 +77,8 @@ El Subagente 6 clasificó 3 hallazgos como ALTA basándose en lint warnings. Tra
 
 **Conclusión A11Y:** Ninguno de los 9 hallazgos a11y impacta un flujo crítico del piloto. Los 8 falsos positivos pueden corregirse en una pasada de refactor (`<label htmlFor>`) en ~10 minutos si se desea limpiar los warnings. El único real (A11Y-04) está en sub-menú de historial, fuera de POS. El piloto opera con mouse + touch, no depende de navegación por teclado completa en sub-menús secundarios.
 
+**Actualización 2026-06-18:** A11Y-04 ya no aplica al código actual. `InvoiceHistoryView.tsx` renderiza acciones de fila como botones nativos visibles (`Ver recibo`, `Generar PDF`, `Reimprimir`, `Reversar`, `Anular`) y no contiene `openActionsId`, `role="button"`, `tabIndex` manual ni overlay `div` con `onClick`. Verificación: `npm.cmd run lint` PASS sin warnings; `rg '<div[^>]*onClick' frontend/src/features frontend/src/components` sin resultados.
+
 ---
 
 ## FIELD-PILOT-DEPENDENCY (3)

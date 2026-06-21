@@ -122,6 +122,32 @@ class ProductionSpaRouteTest extends TestCase
         $this->get('/assets/%2e%2e/index.html')->assertNotFound();
     }
 
+    public function test_unknown_frontend_route_serves_spa_without_catching_api_or_assets(): void
+    {
+        $distPath = base_path('../frontend/dist');
+        $indexPath = $distPath.'/index.html';
+        $originalIndex = File::exists($indexPath) ? File::get($indexPath) : null;
+
+        File::ensureDirectoryExists($distPath);
+        File::put($indexPath, '<!doctype html><html><body><div id="root">Sistema de Caja Hospitalaria</div></body></html>');
+
+        try {
+            $this->get('/ruta-inexistente-visual-smoke')
+                ->assertOk()
+                ->assertSee('Sistema de Caja Hospitalaria', false)
+                ->assertHeader('X-Content-Type-Options', 'nosniff');
+
+            $this->get('/api/ruta-inexistente-visual-smoke')->assertNotFound();
+            $this->get('/missing-file.js')->assertNotFound();
+        } finally {
+            if ($originalIndex === null) {
+                File::delete($indexPath);
+            } else {
+                File::put($indexPath, $originalIndex);
+            }
+        }
+    }
+
     public function test_health_route_remains_available(): void
     {
         $this->get('/up')->assertOk();
@@ -185,7 +211,7 @@ class ProductionSpaRouteTest extends TestCase
         $this->assertStringContainsString('rel="manifest" href="/manifest.webmanifest"', $index);
         $this->assertStringContainsString('rel="icon" href="/icons/icon.svg"', $index);
 
-        $this->assertSame('Caja hospitalaria', $manifest['name']);
+        $this->assertSame('Sistema de Caja Hospitalaria', $manifest['name']);
         $this->assertSame('/login', $manifest['start_url']);
         $this->assertSame('standalone', $manifest['display']);
         $this->assertStringContainsString('Disallow: /', $robots);

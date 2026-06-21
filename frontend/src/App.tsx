@@ -127,6 +127,9 @@ function HospitalApp() {
           canExportReports={session.canExportReports}
           canViewUsers={session.canViewUsers}
           canCreateUsers={session.canCreateUsers}
+          canUpdateUsers={session.canUpdateUsers}
+          canDisableUsers={session.canDisableUsers}
+          canManageRoles={session.canManageRoles}
           canMarkDialysisPrescription={session.canMarkDialysisPrescription}
           cashSession={session.cashSession}
           defaultAuthenticatedRoute={session.defaultAuthenticatedRoute}

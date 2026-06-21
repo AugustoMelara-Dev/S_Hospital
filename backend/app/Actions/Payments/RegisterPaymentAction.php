@@ -131,6 +131,7 @@ class RegisterPaymentAction
                     'cash_session_id' => $cashSession->id,
                     'method' => $payment->method,
                     'amount' => $payment->amount,
+                    'reference' => $payment->reference,
                     'invoice_status' => $lockedInvoice->status,
                     'balance_due' => $lockedInvoice->balance_due,
                 ],

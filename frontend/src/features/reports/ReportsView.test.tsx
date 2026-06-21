@@ -1,13 +1,13 @@
 /// <reference types="node" />
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../../App';
 import { ReportsView } from './ReportsView';
 import { AuditoriaTab } from './components/AuditoriaTab';
-import { apiClient } from '../../lib/api';
+import { ApiError, apiClient } from '../../lib/api';
 import { queryClient } from '../../lib/query-client';
 import { resetRequestChain } from '../../lib/api/base';
-import type { OperationsReport } from '../../lib/api/types';
+import type { ExecutiveReport, OperationsReport } from '../../lib/api/types';
 
 describe('ReportsView', () => {
   function activateTab(name: RegExp) {
@@ -110,9 +110,9 @@ describe('ReportsView', () => {
     expect(screen.getByLabelText(/^fecha$/i)).toBeInTheDocument();
     expect(await screen.findByRole('heading', { name: /^resumen del día$/i })).toBeInTheDocument();
     expect(screen.getByText(/^cobrado$/i)).toBeInTheDocument();
-    expect(screen.getAllByText('L. 17.25').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('L 17.25').length).toBeGreaterThan(0);
     expect(screen.getByText(/^pendiente$/i)).toBeInTheDocument();
-    expect(screen.getAllByText('L. 11.50').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('L 11.50').length).toBeGreaterThan(0);
     expect(document.body.textContent).not.toMatch(/undefined|\bNaN\b/);
     activateTab(/rango/i);
     expect(await screen.findByLabelText(/desde/i)).toBeInTheDocument();
@@ -232,11 +232,11 @@ describe('ReportsView', () => {
     fireEvent.click(screen.getByRole('button', { name: /ver mes/i }));
 
     expect((await screen.findAllByText(/^facturado$/i)).length).toBeGreaterThan(0);
-    expect(screen.getAllByText('L. 57.50').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('L 57.50').length).toBeGreaterThan(0);
     expect(screen.getAllByText(/^cobrado$/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText('L. 22.25').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('L 22.25').length).toBeGreaterThan(0);
     expect(screen.getAllByText(/^pendiente$/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText('L. 35.25').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('L 35.25').length).toBeGreaterThan(0);
     expect(screen.getByRole('heading', { name: /cobros por m.todo/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /estados de factura/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /evoluci.n por fecha/i })).toBeInTheDocument();
@@ -344,7 +344,7 @@ describe('ReportsView', () => {
 
     expect((await screen.findAllByRole('heading', { name: /^reportes$/i })).length).toBeGreaterThan(0);
     await waitFor(() => {
-      expect(screen.getAllByText('L. 0.00').length).toBeGreaterThanOrEqual(5);
+      expect(screen.getAllByText('L 0.00').length).toBeGreaterThanOrEqual(5);
     });
     expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-numero/);
 
@@ -354,7 +354,7 @@ describe('ReportsView', () => {
 
     expect(await screen.findByText('2026-05-04')).toBeInTheDocument();
     await waitFor(() => {
-      expect(screen.getAllByText('L. 0.00').length).toBeGreaterThanOrEqual(10);
+      expect(screen.getAllByText('L 0.00').length).toBeGreaterThanOrEqual(10);
     });
     expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-numero/);
   });
@@ -370,9 +370,9 @@ describe('ReportsView', () => {
           json: async () => ({
             data: {
               id: 1,
-              name: 'Admin Demo',
-              email: 'admin.demo@hospital-billing.local',
-              username: 'admin.demo',
+              name: 'Admin Validacion',
+              email: 'admin.validacion@hospital.local',
+              username: 'admin.validacion',
               active: true,
               roles: ['admin'],
               permissions: ['reports.view', 'reports.managerial.view', 'reports.export', 'reports.cash_session.view'],
@@ -505,7 +505,7 @@ describe('ReportsView', () => {
     });
 
     expect(await screen.findByText('Laboratorio')).toBeInTheDocument();
-    expect(screen.getAllByText('L. 17.25').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('L 17.25').length).toBeGreaterThan(0);
   });
 
   it('exports reports through the protected backend Excel endpoint', async () => {
@@ -599,6 +599,250 @@ describe('ReportsView', () => {
     expect(fetchMock.mock.calls.some(([url]) => String(url).includes('date_from=') && String(url).includes('date_to='))).toBe(true);
     expect(createObjectUrl).toHaveBeenCalled();
     expect(revokeObjectUrl).toHaveBeenCalledWith('blob:report');
+  });
+
+  it('exports executive PDF and Excel through the protected api client', async () => {
+    vi.spyOn(apiClient, 'getExecutiveReport').mockResolvedValue(createExecutiveReportFixture());
+    vi.spyOn(apiClient, 'getDailyReport').mockResolvedValue({
+      date: '2026-06-16',
+      total_billed: '0.00',
+      total_collected: '0.00',
+      total_pending: '0.00',
+      total_partial: '0.00',
+      total_voided: '0.00',
+      invoice_count: 0,
+      payment_count: 0,
+      payments_by_method: { cash: '0.00', transfer: '0.00', card: '0.00', other: '0.00' },
+      invoices_by_status: {
+        issued: { count: 0, total: '0.00' },
+        partial: { count: 0, total: '0.00' },
+        paid: { count: 0, total: '0.00' },
+        void: { count: 0, total: '0.00' },
+      },
+    });
+    vi.spyOn(apiClient, 'getCategories').mockResolvedValue([]);
+    vi.spyOn(apiClient, 'getAreas').mockResolvedValue([]);
+    vi.spyOn(apiClient, 'getCashSessions').mockResolvedValue({ data: [], meta: { current_page: 1, per_page: 50, total: 0 } });
+    const downloadExecutivePdf = vi.spyOn(apiClient, 'downloadExecutivePdf').mockResolvedValue(
+      new Blob(['pdf-data'], { type: 'application/pdf' }),
+    );
+    const downloadExecutiveExcel = vi.spyOn(apiClient, 'downloadExecutiveExcel').mockResolvedValue(
+      new Blob(['excel-data'], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
+    );
+    Object.defineProperty(URL, 'createObjectURL', {
+      configurable: true,
+      value: vi.fn(() => 'blob:executive-report'),
+    });
+    Object.defineProperty(URL, 'revokeObjectURL', {
+      configurable: true,
+      value: vi.fn(),
+    });
+    const openSpy = vi.spyOn(window, 'open').mockReturnValue({} as Window);
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+
+    render(
+      <ReportsView
+        canExport
+        canViewCashSessionReport
+        canViewManagerial
+        onStatus={() => undefined}
+      />,
+    );
+
+    activateTab(/exportaciones/i);
+    expect(await screen.findByText(/PDF ejecutivo y Excel contable/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /exportar pdf ejecutivo/i }));
+
+    await waitFor(() => {
+      expect(downloadExecutivePdf).toHaveBeenCalledWith(expect.objectContaining({
+        date_from: expect.any(String),
+        date_to: expect.any(String),
+      }));
+    });
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /exportar excel ejecutivo/i })).toBeEnabled();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /exportar excel ejecutivo/i }));
+
+    await waitFor(() => {
+      expect(downloadExecutiveExcel).toHaveBeenCalledWith(expect.objectContaining({
+        date_from: expect.any(String),
+        date_to: expect.any(String),
+      }));
+    });
+    expect(openSpy).toHaveBeenCalledWith('blob:executive-report', '_blank', 'noopener,noreferrer');
+  });
+
+  it('blocks duplicate executive export submissions while a download is pending', async () => {
+    vi.spyOn(apiClient, 'getExecutiveReport').mockResolvedValue(createExecutiveReportFixture());
+    vi.spyOn(apiClient, 'getDailyReport').mockResolvedValue({
+      date: '2026-06-16',
+      total_billed: '0.00',
+      total_collected: '0.00',
+      total_pending: '0.00',
+      total_partial: '0.00',
+      total_voided: '0.00',
+      invoice_count: 0,
+      payment_count: 0,
+      payments_by_method: { cash: '0.00', transfer: '0.00', card: '0.00', other: '0.00' },
+      invoices_by_status: {
+        issued: { count: 0, total: '0.00' },
+        partial: { count: 0, total: '0.00' },
+        paid: { count: 0, total: '0.00' },
+        void: { count: 0, total: '0.00' },
+      },
+    });
+    vi.spyOn(apiClient, 'getCategories').mockResolvedValue([]);
+    vi.spyOn(apiClient, 'getAreas').mockResolvedValue([]);
+    vi.spyOn(apiClient, 'getCashSessions').mockResolvedValue({ data: [], meta: { current_page: 1, per_page: 50, total: 0 } });
+    let resolvePdf: (blob: Blob) => void = () => undefined;
+    const pendingPdf = new Promise<Blob>((resolve) => {
+      resolvePdf = resolve;
+    });
+    const downloadExecutivePdf = vi.spyOn(apiClient, 'downloadExecutivePdf').mockReturnValue(pendingPdf);
+    Object.defineProperty(URL, 'createObjectURL', {
+      configurable: true,
+      value: vi.fn(() => 'blob:executive-report'),
+    });
+    Object.defineProperty(URL, 'revokeObjectURL', {
+      configurable: true,
+      value: vi.fn(),
+    });
+    vi.spyOn(window, 'open').mockReturnValue({} as Window);
+
+    render(
+      <ReportsView
+        canExport
+        canViewCashSessionReport
+        canViewManagerial
+        onStatus={() => undefined}
+      />,
+    );
+
+    activateTab(/exportaciones/i);
+    expect(await screen.findByText(/PDF ejecutivo y Excel contable/i)).toBeInTheDocument();
+    const exportButton = screen.getByRole('button', { name: /exportar pdf ejecutivo/i });
+    fireEvent.click(exportButton);
+    fireEvent.click(exportButton);
+
+    expect(downloadExecutivePdf).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /exportando pdf/i })).toBeDisabled();
+    });
+
+    await act(async () => {
+      resolvePdf(new Blob(['pdf-data'], { type: 'application/pdf' }));
+      await pendingPdf;
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /exportar pdf ejecutivo/i })).toBeEnabled();
+    });
+  });
+
+  it('does not fetch or export executive reports when the date range is invalid', async () => {
+    const getExecutiveReport = vi.spyOn(apiClient, 'getExecutiveReport').mockResolvedValue(createExecutiveReportFixture());
+    vi.spyOn(apiClient, 'getDailyReport').mockResolvedValue({
+      date: '2026-06-16',
+      total_billed: '0.00',
+      total_collected: '0.00',
+      total_pending: '0.00',
+      total_partial: '0.00',
+      total_voided: '0.00',
+      invoice_count: 0,
+      payment_count: 0,
+      payments_by_method: { cash: '0.00', transfer: '0.00', card: '0.00', other: '0.00' },
+      invoices_by_status: {
+        issued: { count: 0, total: '0.00' },
+        partial: { count: 0, total: '0.00' },
+        paid: { count: 0, total: '0.00' },
+        void: { count: 0, total: '0.00' },
+      },
+    });
+    vi.spyOn(apiClient, 'getCategories').mockResolvedValue([]);
+    vi.spyOn(apiClient, 'getAreas').mockResolvedValue([]);
+    vi.spyOn(apiClient, 'getCashSessions').mockResolvedValue({ data: [], meta: { current_page: 1, per_page: 50, total: 0 } });
+    const downloadExecutivePdf = vi.spyOn(apiClient, 'downloadExecutivePdf').mockResolvedValue(
+      new Blob(['pdf-data'], { type: 'application/pdf' }),
+    );
+
+    render(
+      <ReportsView
+        canExport
+        canViewCashSessionReport
+        canViewManagerial
+        onStatus={() => undefined}
+      />,
+    );
+
+    expect(await screen.findByLabelText(/inicio ejecutivo/i)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(getExecutiveReport).toHaveBeenCalledTimes(1);
+    });
+    getExecutiveReport.mockClear();
+
+    fireEvent.change(screen.getByLabelText(/inicio ejecutivo/i), { target: { value: '2026-06-20' } });
+    fireEvent.change(screen.getByLabelText(/fin ejecutivo/i), { target: { value: '2026-06-01' } });
+
+    expect(await screen.findAllByText(/la fecha de inicio debe ser anterior o igual/i)).toHaveLength(2);
+    expect(screen.getByRole('button', { name: /refrescar ejecutivo/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /^pdf ejecutivo$/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /^excel ejecutivo$/i })).toBeDisabled();
+
+    activateTab(/exportaciones/i);
+    const exportButton = screen.getByRole('button', { name: /exportar pdf ejecutivo/i });
+    expect(exportButton).toBeDisabled();
+    fireEvent.click(exportButton);
+
+    await waitFor(() => {
+      expect(getExecutiveReport).not.toHaveBeenCalled();
+    });
+    expect(downloadExecutivePdf).not.toHaveBeenCalled();
+  });
+
+  it('clears a stale executive report error after a successful refresh', async () => {
+    const getExecutiveReport = vi.spyOn(apiClient, 'getExecutiveReport')
+      .mockRejectedValueOnce(new ApiError('Fallo temporal del reporte ejecutivo', 403))
+      .mockResolvedValue(createExecutiveReportFixture());
+    vi.spyOn(apiClient, 'getDailyReport').mockResolvedValue({
+      date: '2026-06-16',
+      total_billed: '0.00',
+      total_collected: '0.00',
+      total_pending: '0.00',
+      total_partial: '0.00',
+      total_voided: '0.00',
+      invoice_count: 0,
+      payment_count: 0,
+      payments_by_method: { cash: '0.00', transfer: '0.00', card: '0.00', other: '0.00' },
+      invoices_by_status: {
+        issued: { count: 0, total: '0.00' },
+        partial: { count: 0, total: '0.00' },
+        paid: { count: 0, total: '0.00' },
+        void: { count: 0, total: '0.00' },
+      },
+    });
+    vi.spyOn(apiClient, 'getCategories').mockResolvedValue([]);
+    vi.spyOn(apiClient, 'getAreas').mockResolvedValue([]);
+    vi.spyOn(apiClient, 'getCashSessions').mockResolvedValue({ data: [], meta: { current_page: 1, per_page: 50, total: 0 } });
+
+    render(
+      <ReportsView
+        canExport
+        canViewCashSessionReport
+        canViewManagerial
+        onStatus={() => undefined}
+      />,
+    );
+
+    expect(await screen.findByText(/permiso|no tiene permiso/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /refrescar ejecutivo/i }));
+
+    await waitFor(() => {
+      expect(getExecutiveReport).toHaveBeenCalledTimes(2);
+      expect(screen.queryByText(/permiso|no tiene permiso/i)).not.toBeInTheDocument();
+    });
+    expect(await screen.findByText(/resumen ejecutivo/i)).toBeInTheDocument();
   });
 
   it('hides local report excel export without reports export permission', async () => {
@@ -789,9 +1033,7 @@ describe('ReportsView', () => {
         cashier_count: 1,
       },
       voids: [{
-        invoice_id: 918273,
         invoice_number: '000-001-01-00000001',
-        patient_name: 'Maria Lopez',
         total: '17.25',
         reason: 'Error de captura',
         voided_at: '2026-06-01T08:00:00.000Z',
@@ -807,7 +1049,6 @@ describe('ReportsView', () => {
       }],
       payment_voids: [],
       backups: [{
-        id: 938475,
         filename: 'hospital-backup-2026-06-01.sql',
         status: 'success',
         type: 'manual',
@@ -818,9 +1059,7 @@ describe('ReportsView', () => {
         creator: 'Admin Hospital',
       }],
       cashiers: [{
-        user_id: 948576,
         name: 'Cajero Validacion',
-        username: 'cajero.validacion',
         payment_count: 2,
         cash_session_count: 1,
         invoice_count: 2,
@@ -844,7 +1083,9 @@ describe('ReportsView', () => {
 
     expect(screen.getByText('000-001-01-00000001')).toBeInTheDocument();
     expect(screen.getByText('hospital-backup-2026-06-01.sql')).toBeInTheDocument();
-    expect(screen.getByText('cajero.validacion')).toBeInTheDocument();
+    expect(screen.getAllByText('Cajero Validacion').length).toBeGreaterThan(0);
+    expect(screen.queryByText('Maria Lopez')).not.toBeInTheDocument();
+    expect(screen.queryByText('cajero.validacion')).not.toBeInTheDocument();
     expect(screen.queryByText('918273')).not.toBeInTheDocument();
     expect(screen.queryByText('938475')).not.toBeInTheDocument();
     expect(screen.queryByText('948576')).not.toBeInTheDocument();
@@ -853,8 +1094,10 @@ describe('ReportsView', () => {
 
   it('allows cash-session-only report users to open the cash report tab without managerial reports', async () => {
     window.history.pushState({}, '', '/reports');
+    const requestedUrls: string[] = [];
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
       const url = String(input);
+      requestedUrls.push(url);
       if (url.includes('/api/auth/session')) {
         return {
           ok: true,
@@ -872,6 +1115,9 @@ describe('ReportsView', () => {
           }),
         } as Response;
       }
+      if (url.includes('/api/reports/executive')) {
+        return { ok: false, status: 403, json: async () => ({ message: 'Forbidden' }) } as Response;
+      }
       return { ok: true, json: async () => ({ data: null }) } as Response;
     });
 
@@ -881,6 +1127,8 @@ describe('ReportsView', () => {
     expect(screen.getByRole('tab', { name: /^caja$/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/n.mero de caja/i)).toBeInTheDocument();
     expect(screen.queryByRole('tab', { name: /diario/i })).not.toBeInTheDocument();
+    expect(requestedUrls.some((url) => url.includes('/api/reports/executive'))).toBe(false);
+    expect(screen.queryByText(/reporte ejecutivo/i)).not.toBeInTheDocument();
   });
 
   it('exports the loaded cash session using its own opened and closed dates', async () => {
@@ -1179,7 +1427,7 @@ describe('ReportsView', () => {
                   entity_id: 7,
                   reason: 'Reversion validada por supervisor',
                   created_at: '2026-05-17T10:30:00.000000Z',
-                  user: 'Supervisor Demo',
+                  user: 'Supervisor Validacion',
                   ip_address: '127.0.0.1',
                   user_agent: 'Caja-LAN/1.0',
                   details: {},
@@ -1215,7 +1463,7 @@ describe('ReportsView', () => {
     expect(await screen.findByText(/^cobrado$/i)).toBeInTheDocument();
     expect(await screen.findByRole('heading', { name: /por area/i })).toBeInTheDocument();
     expect(screen.getByText('Radiologia')).toBeInTheDocument();
-    expect(screen.getByText('L. 51.75')).toBeInTheDocument();
+    expect(screen.getByText('L 51.75')).toBeInTheDocument();
     await waitFor(() => {
       expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/api/reports/areas?'))).toBe(true);
     });
@@ -1232,3 +1480,80 @@ describe('ReportsView', () => {
     expect(await screen.findByText(/Reversion validada por supervisor/i)).toBeInTheDocument();
   });
 });
+
+function createExecutiveReportFixture(): ExecutiveReport {
+  return {
+    period: {
+      from: '2026-06-01',
+      to: '2026-06-16',
+      timezone: 'America/Tegucigalpa',
+      days: 16,
+    },
+    filters: {
+      cash_session_id: null,
+      user_id: null,
+      category_id: null,
+      area_id: null,
+      method: null,
+      status: null,
+    },
+    comparison: {
+      billed: { current: '17.25', previous: '0.00', delta_cents: 1725, delta_percentage: null },
+      collected: { current: '17.25', previous: '0.00', delta_cents: 1725, delta_percentage: null },
+      previous_period: { from: '2026-05-16', to: '2026-05-31' },
+    },
+    summary: {
+      billed_total: '17.25',
+      collected_total: '17.25',
+      collected_total_cents: 1725,
+      pending_total: '0.00',
+      voided_total: '0.00',
+      reversed_total: '0.00',
+      invoice_count: 1,
+      receipt_count: 1,
+      paid_count: 1,
+      partial_count: 0,
+      pending_count: 0,
+      voided_count: 0,
+      average_ticket: '17.25',
+    },
+    payment_methods: [
+      { method: 'cash', label: 'Efectivo', amount: '17.25', count: 1, percentage: 100 },
+      { method: 'transfer', label: 'Transferencia', amount: '0.00', count: 0, percentage: 0 },
+      { method: 'card', label: 'Tarjeta', amount: '0.00', count: 0, percentage: 0 },
+      { method: 'other', label: 'Otro', amount: '0.00', count: 0, percentage: 0 },
+    ],
+    daily_trend: [
+      {
+        date: '2026-06-16',
+        billed: '17.25',
+        collected: '17.25',
+        pending: '0.00',
+        voided_count: 0,
+        invoice_count: 1,
+      },
+    ],
+    services: {
+      top_by_amount: [],
+      top_by_quantity: [],
+      by_category: [],
+      by_area: [],
+    },
+    cashiers: [],
+    cash_sessions: [],
+    pending_aging: {
+      '0_7_days': { count: 0, amount: '0.00' },
+      '8_30_days': { count: 0, amount: '0.00' },
+      '31_plus_days': { count: 0, amount: '0.00' },
+      items: [],
+    },
+    voids_and_reversals: [],
+    audit_summary: {
+      critical_events: 0,
+      reprints: 0,
+      fiscal_changes: 0,
+      cash_differences: 0,
+      backup_events: 0,
+    },
+  };
+}

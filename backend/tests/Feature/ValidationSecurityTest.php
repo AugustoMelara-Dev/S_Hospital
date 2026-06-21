@@ -35,14 +35,14 @@ class ValidationSecurityTest extends TestCase
     {
         $response = $this->postJson('/api/auth/change-password', [
             'current_password' => '',
-            'password' => 'NewPassword123',
-            'password_confirmation' => 'NewPassword123',
+            'password' => 'NewPassword123!',
+            'password_confirmation' => 'NewPassword123!',
         ]);
 
         $response->assertStatus(401);
 
         $body = json_encode($response->json());
-        $this->assertStringNotContainsString('NewPassword123', $body);
+        $this->assertStringNotContainsString('NewPassword123!', $body);
     }
 
     public function test_invoice_creation_validation_does_not_echo_optional_payload(): void

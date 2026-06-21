@@ -51,14 +51,27 @@ class BackupController extends Controller
 
     public function download(DownloadBackupRequest $request, BackupLog $backupLog): BinaryFileResponse
     {
-        abort_unless($backupLog->status === BackupLog::STATUS_SUCCESS, 404);
-        abort_unless($backupLog->disk === 'local', 404);
-        abort_unless($backupLog->path !== null && $this->isSafeRelativeBackupPath($backupLog->path), 404);
-        abort_unless(Storage::disk('local')->exists($backupLog->path), 404);
+        if ($backupLog->status !== BackupLog::STATUS_SUCCESS) {
+            $this->denyDownload($request, $backupLog, 'status_not_success');
+        }
+
+        if ($backupLog->disk !== 'local') {
+            $this->denyDownload($request, $backupLog, 'unsupported_disk');
+        }
+
+        if ($backupLog->path === null || ! $this->isSafeRelativeBackupPath($backupLog->path)) {
+            $this->denyDownload($request, $backupLog, 'unsafe_path');
+        }
+
+        if (! Storage::disk('local')->exists($backupLog->path)) {
+            $this->denyDownload($request, $backupLog, 'missing_file');
+        }
 
         $absolutePath = Storage::disk('local')->path($backupLog->path);
         $backupRoot = Storage::disk('local')->path('backups');
-        abort_unless($this->isInsideBackupRoot($absolutePath, $backupRoot), 404);
+        if (! $this->isInsideBackupRoot($absolutePath, $backupRoot)) {
+            $this->denyDownload($request, $backupLog, 'outside_backup_root');
+        }
 
         AuditLog::query()->create([
             'user_id' => $request->user()->id,
@@ -78,6 +91,26 @@ class BackupController extends Controller
             'Content-Type' => 'application/octet-stream',
             'X-Content-Type-Options' => 'nosniff',
         ]);
+    }
+
+    private function denyDownload(DownloadBackupRequest $request, BackupLog $backupLog, string $reason): never
+    {
+        AuditLog::query()->create([
+            'user_id' => $request->user()->id,
+            'action' => 'backup.download_denied',
+            'entity_type' => BackupLog::class,
+            'entity_id' => $backupLog->id,
+            'old_values' => null,
+            'new_values' => [
+                'reason' => $reason,
+                'status' => $backupLog->status,
+                'disk' => $backupLog->disk,
+                'has_path' => $backupLog->path !== null,
+            ],
+            'created_at' => now(),
+        ]);
+
+        abort(404);
     }
 
     private function isSafeRelativeBackupPath(string $path): bool

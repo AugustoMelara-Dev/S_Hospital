@@ -45,7 +45,10 @@ class SystemStatusController extends Controller
                 '/up',
                 '/login',
                 '/verify-email',
+                '/api/system/echo-config',
                 'assets',
+                'WebSocket',
+                'Soketi',
                 'Login',
                 'Cashbox',
                 'Invoice',
@@ -297,10 +300,28 @@ class SystemStatusController extends Controller
             ->where('created_at', '<=', $staleBefore)
             ->count();
         $operationalMetrics = app(OperationalMetricsService::class)->snapshot();
+        $queueStatus = $this->queueStatus();
+        $workerRecentlyActive = (bool) ($operationalMetrics['backups']['worker_recently_active'] ?? false);
+        $lastFailureIsUnresolved = $lastFailure !== null
+            && (
+                $lastSuccess === null
+                || $lastFailure->created_at->greaterThan($lastSuccess->created_at)
+            );
+        if (! $workerRecentlyActive && $lastSuccess?->completed_at !== null) {
+            $schedulerHeartbeat = (string) ($queueStatus['scheduler_heartbeat']['status'] ?? 'never_run');
+            $workerRecentlyActive =
+                $lastSuccess->completed_at->greaterThanOrEqualTo(now()->subDay())
+                && $pendingCount === 0
+                && $stalePendingCount === 0
+                && ! $lastFailureIsUnresolved
+                && (int) ($queueStatus['pending_backup_jobs'] ?? 0) === 0
+                && (int) ($queueStatus['failed_jobs_count'] ?? 0) === 0
+                && in_array($schedulerHeartbeat, ['ok', 'stale'], true);
+        }
 
         return [
             'pending_count' => $pendingCount,
-            'worker_recently_active' => (bool) ($operationalMetrics['backups']['worker_recently_active'] ?? false),
+            'worker_recently_active' => $workerRecentlyActive,
             'oldest_pending_at' => $oldestPending?->created_at?->toJSON(),
             'stale_pending_count' => $stalePendingCount,
             'stale_pending_threshold_minutes' => $staleThresholdMinutes,
@@ -310,7 +331,7 @@ class SystemStatusController extends Controller
             'last_failure_message' => OperationalMessageSanitizer::message($lastFailure?->error_message),
             'dump_binary' => $this->dumpBinaryStatus(),
             'storage' => $this->backupStorageStatus(),
-            'queue' => $this->queueStatus(),
+            'queue' => $queueStatus,
         ];
     }
 
@@ -337,7 +358,7 @@ class SystemStatusController extends Controller
         }
 
         return [
-            'logs_writable' => is_dir($logsPath) && is_writable($logsPath),
+            'logs_writable' => $this->directoryIsWritable($logsPath),
             'cache_writable' => is_dir($cachePath) && is_writable($cachePath),
             'laravel_log' => $this->fileStatus(storage_path('logs/laravel.log')),
             'backup_automation_log' => $this->fileStatus(base_path('scripts/backup-automation.log')),
@@ -348,6 +369,28 @@ class SystemStatusController extends Controller
             'pending_migration_count' => count($pendingMigrations),
             'pending_migrations' => array_slice($pendingMigrations, 0, 5),
         ];
+    }
+
+    private function directoryIsWritable(string $path): bool
+    {
+        if (! is_dir($path) && ! @mkdir($path, 0775, true) && ! is_dir($path)) {
+            return false;
+        }
+
+        $probe = rtrim($path, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.'.write-test-'.bin2hex(random_bytes(4));
+        try {
+            if (@file_put_contents($probe, 'ok') === false) {
+                return false;
+            }
+
+            @unlink($probe);
+
+            return true;
+        } catch (Throwable) {
+            @unlink($probe);
+
+            return false;
+        }
     }
 
     /**
@@ -682,8 +725,10 @@ class SystemStatusController extends Controller
                 [
                     'code' => 'BACKUP_WORKER_CONTINUOUS',
                     'label' => 'Worker de backups como tarea/servicio',
-                    'status' => 'manual_required',
-                    'detail' => 'Debe estar activo para completar respaldos automaticos.',
+                    'status' => $backups['worker_recently_active'] ? 'validated' : 'manual_required',
+                    'detail' => $backups['worker_recently_active']
+                        ? 'Worker activo; respaldos automaticos completan desde la cola.'
+                        : 'Debe estar activo para completar respaldos automaticos.',
                 ],
                 [
                     'code' => 'SERVER_LOGS_WRITABLE',

@@ -20,4 +20,18 @@ class OperationalMessageSanitizerTest extends TestCase
         $this->assertStringNotContainsString('soporte', (string) $message);
         $this->assertStringNotContainsString('clave-secreta', (string) $message);
     }
+
+    public function test_message_redacts_legacy_database_user_host_trace(): void
+    {
+        $message = OperationalMessageSanitizer::message(
+            "Access denied for user 'hospital_app'@'172.18.0.1' during login"
+        );
+
+        $this->assertSame(
+            'Access denied for user [db-user-host] during login',
+            $message,
+        );
+        $this->assertStringNotContainsString('hospital_app', (string) $message);
+        $this->assertStringNotContainsString('172.18.0.1', (string) $message);
+    }
 }

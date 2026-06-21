@@ -1,5 +1,5 @@
 import { apiClient } from './base';
-import type { AuthUser } from './types';
+import type { AuthUser, PermissionCatalogGroup, RoleDefinition } from './types';
 
 export type UserPayload = {
   name: string;
@@ -7,7 +7,13 @@ export type UserPayload = {
   username: string;
   password?: string;
   role: string;
+  permissions?: string[];
   active?: boolean;
+};
+
+export type RolePayload = {
+  name: string;
+  permissions: string[];
 };
 
 export const users = {
@@ -43,6 +49,30 @@ export const users = {
     const res = await apiClient.request<{ data: AuthUser }>(`/api/admin/users/${id}/reset-password`, {
       method: 'POST',
       body: JSON.stringify({ password }),
+    });
+    return res.data;
+  },
+
+  async getRoles(): Promise<{ roles: RoleDefinition[]; permissionCatalog: PermissionCatalogGroup[] }> {
+    const res = await apiClient.request<{ data: RoleDefinition[]; permission_catalog: PermissionCatalogGroup[] }>('/api/admin/roles');
+    return {
+      roles: res.data,
+      permissionCatalog: res.permission_catalog,
+    };
+  },
+
+  async createRole(payload: RolePayload): Promise<RoleDefinition> {
+    const res = await apiClient.request<{ data: RoleDefinition }>('/api/admin/roles', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    return res.data;
+  },
+
+  async updateRole(id: number, payload: RolePayload): Promise<RoleDefinition> {
+    const res = await apiClient.request<{ data: RoleDefinition }>(`/api/admin/roles/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
     });
     return res.data;
   },

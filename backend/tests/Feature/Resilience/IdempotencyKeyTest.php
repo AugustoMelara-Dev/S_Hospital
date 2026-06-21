@@ -9,9 +9,12 @@ use App\Models\CashRegisterSession;
 use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
 use App\Models\IdempotencyKey;
+use App\Models\InstitutionalReceiptSeries;
+use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Service;
 use App\Models\User;
+use Database\Seeders\ReceiptPrintProfileSeeder;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -28,6 +31,66 @@ use Tests\TestCase;
 class IdempotencyKeyTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_cash_critical_routes_reject_missing_idempotency_key(): void
+    {
+        $this->seedBillingBase();
+        $this->togglePartial(true);
+
+        $cashier = $this->cashierWithOpenSession();
+        $sessionId = $this->openSessionFor($cashier, '500.00');
+        $glucose = Service::query()->where('name', 'Glucosa')->firstOrFail();
+
+        $invoiceId = $this->actingAs($cashier)
+            ->postJson('/api/invoices', [
+                'patient_name' => 'Paciente con clave automatica',
+                'items' => [['service_id' => $glucose->id, 'quantity' => '1.00']],
+            ])
+            ->assertCreated()
+            ->json('data.id');
+        $invoiceTotal = Invoice::query()->findOrFail($invoiceId)->total;
+
+        $paymentResponse = $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_CASH,
+                'amount' => $invoiceTotal,
+            ])
+            ->assertCreated();
+        $paymentId = $paymentResponse->json('data.payment.id');
+        $receiptId = $paymentResponse->json('data.institutional_receipt.id');
+
+        $this->withoutAutomaticIdempotencyKeyForTests();
+
+        $requests = [
+            ['/api/invoices', [
+                'patient_name' => 'Sin clave',
+                'items' => [['service_id' => $glucose->id, 'quantity' => '1.00']],
+            ]],
+            ['/api/cash-sessions/open', ['opening_amount' => '0.00']],
+            ["/api/cash-sessions/{$sessionId}/close", ['closing_amount' => '500.00']],
+            ["/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_CASH,
+                'amount' => '5.00',
+            ]],
+            ["/api/invoices/{$invoiceId}/void", ['reason' => 'Prueba sin clave']],
+            ["/api/invoices/{$invoiceId}/reverse", ['reason' => 'Prueba sin clave']],
+            ["/api/invoices/{$invoiceId}/payments/{$paymentId}/void", ['reason' => 'Prueba sin clave']],
+            ["/api/payments/{$paymentId}/void", ['reason' => 'Prueba sin clave']],
+            ["/api/invoices/{$invoiceId}/reprint", ['reason' => 'Prueba sin clave']],
+            ['/api/institutional-receipts', ['invoice_id' => $invoiceId]],
+            ["/api/institutional-receipts/{$receiptId}/pdf", ['reason' => 'Prueba sin clave']],
+        ];
+
+        foreach ($requests as [$uri, $payload]) {
+            $this->actingAs($cashier)
+                ->postJson($uri, $payload)
+                ->assertStatus(428)
+                ->assertJsonValidationErrors('idempotency_key')
+                ->assertJsonPath('message', 'Esta operacion requiere Idempotency-Key para evitar duplicados.');
+        }
+    }
 
     public function test_repeated_payment_with_same_idempotency_key_replays_original_response(): void
     {
@@ -407,13 +470,17 @@ class IdempotencyKeyTest extends TestCase
 
     private function seedBillingBase(): void
     {
-        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class, ReceiptPrintProfileSeeder::class]);
         FiscalSetting::query()->create([
-            'receipt_template_mode' => 'thermal',
+            'receipt_template_mode' => 'institutional',
             'hospital_name' => 'Hospital San Isidro',
             'rtn' => '08011999123456',
             'default_tax_rate' => '15.00',
             'receipt_paper_size' => 'half_letter',
+            'government_line' => 'Gobierno de Honduras',
+            'secretariat_line' => 'Secretaria de Salud',
+            'receipt_location' => 'Tocoa, Colon',
+            'receipt_footer_text' => 'Original: Oficina Recaudadora',
         ]);
         FiscalSequence::query()->create([
             'document_type' => 'invoice',
@@ -423,6 +490,19 @@ class IdempotencyKeyTest extends TestCase
             'current_number' => 0,
             'cai' => 'TEST-CAI',
             'valid_until' => now()->addYear()->toDateString(),
+            'active' => true,
+        ]);
+        InstitutionalReceiptSeries::query()->create([
+            'document_type' => InstitutionalReceiptSeries::DOCUMENT_TYPE,
+            'series' => 'REC-A',
+            'prefix' => 'RA',
+            'number_format' => '{series}-{number:08}',
+            'min_number' => 1,
+            'max_number' => 100,
+            'current_number' => 0,
+            'range_authorization' => 'AUT-REC',
+            'legal_text' => 'Suscribe. CERTIFICA haber enterado en esta oficina la suma de',
+            'receipt_number_color' => '#b91c1c',
             'active' => true,
         ]);
     }

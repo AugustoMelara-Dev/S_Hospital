@@ -2,7 +2,7 @@
 
 Estado actual: PENDING_HARDWARE_VALIDATION hasta probar en impresora fisica los perfiles aprobados por el hospital.
 
-El formato principal ya no es ticket termico. El flujo principal emite un PDF de recibo institucional clasico desde la entidad `institutional_receipts`, con snapshot historico, numero/serie propio y tamano real segun perfil. Los formatos termicos 80mm/58mm quedan como compatibilidad secundaria.
+El formato principal es un PDF de recibo institucional clasico desde la entidad `institutional_receipts`, con snapshot historico, numero/serie propio y tamano real segun perfil. Los formatos compactos 80mm/58mm quedan como compatibilidad secundaria.
 
 No se debe imprimir sello ni firma oficial digital por defecto. El recibo deja espacio para sello fisico y firma manual, salvo que una autoridad del hospital cargue un recurso autorizado en configuracion.
 

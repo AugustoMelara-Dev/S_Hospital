@@ -60,6 +60,68 @@ function Copy-RequiredDirectory([string] $relativePath) {
     Copy-Item -LiteralPath $source -Destination $target -Recurse -Force
 }
 
+function Copy-ReleaseDocumentation {
+    $docsTarget = Join-Path $ReleaseRoot "docs"
+    New-Item -ItemType Directory -Force -Path $docsTarget | Out-Null
+
+    $docsToCopy = @(
+        "ACTA_ENTREGA_TECNICA.md",
+        "ALCANCE_FINAL_FACTURACION_OFFLINE.md",
+        "BACKUP_RESTORE.md",
+        "DISASTER_RECOVERY.md",
+        "ENTREGA_TECNICA_OFFLINE.md",
+        "GUIA_BACKUP_RESTORE.md",
+        "GUIA_IMPRESION_RECIBOS.md",
+        "GUIA_LAN_CLIENTE.md",
+        "GUIA_OPERACION_CAJA.md",
+        "GUIA_REPORTES.md",
+        "HTTPS_OPTIONAL.md",
+        "INSTALL_SUMMARY.md",
+        "INSTITUTIONAL_RECEIPT_PRINT_VALIDATION.md",
+        "Manual_Usuario.html",
+        "Manual_Usuario.md",
+        "MODULOS_FUERA_DE_ALCANCE.md",
+        "MODULOS_IMPLEMENTADOS.md",
+        "OFFLINE_CHECKLIST_FINAL.md",
+        "OFFLINE_DICTAMEN_FINAL.md",
+        "OFFLINE_LAN_INSTALL.md",
+        "PENDIENTES_VALIDACION_CAMPO.md",
+        "PERMISSIONS_MATRIX.md",
+        "PHASE_G_LAN_OFFLINE_VALIDATION_GUIDE.md",
+        "QUALITY_GATES_WINDOWS.md",
+        "RELEASE_CHECKLIST.md",
+        "SECRETS.md",
+        "TROUBLESHOOTING.md"
+    )
+
+    foreach ($docName in $docsToCopy) {
+        $source = Join-Path $ProjectRoot "docs\$docName"
+        if (-not (Test-Path -LiteralPath $source -PathType Leaf)) {
+            Write-Fail "Falta documento operativo requerido: docs\$docName"
+        }
+
+        Copy-Item -LiteralPath $source -Destination (Join-Path $docsTarget $docName) -Force
+    }
+
+    Copy-RequiredDirectory "docs\manuales"
+}
+
+function Copy-ReleaseEvidenceTemplates {
+    $qaTarget = Join-Path $ReleaseRoot "qa"
+    New-Item -ItemType Directory -Force -Path $qaTarget | Out-Null
+
+    foreach ($templateName in @(
+        "LAN_CLIENT_VALIDATION_PROOF.example.md",
+        "INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md",
+        "FINAL_RESTORE_PROOF.example.md",
+        "FINAL_CONCURRENCY_PROOF.example.md",
+        "FINAL_CONCURRENCY_UNDER_LOAD_PROOF_LAN_8081.example.md",
+        "FINAL_REAL_SMOKE_LAN_8081.example.md"
+    )) {
+        Copy-RequiredFile "qa\$templateName"
+    }
+}
+
 function Get-GitValue([string[]] $arguments, [string] $fallback) {
     try {
         $value = (& git -C $ProjectRoot @arguments 2>$null).Trim()
@@ -123,7 +185,8 @@ if (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot "scripts\release_setup.
     Write-Fail "Falta scripts\release_setup.bat versionado."
 }
 Copy-RequiredDirectory "scripts"
-Copy-RequiredDirectory "docs"
+Copy-ReleaseDocumentation
+Copy-ReleaseEvidenceTemplates
 Copy-Item -LiteralPath (Join-Path $ProjectRoot "scripts\release_setup.bat") -Destination (Join-Path $ReleaseRoot "setup.bat") -Force
 Remove-Item -LiteralPath (Join-Path $ReleaseRoot "scripts\release_setup.bat") -Force
 

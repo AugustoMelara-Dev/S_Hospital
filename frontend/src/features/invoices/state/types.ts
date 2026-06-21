@@ -23,6 +23,7 @@ export interface NewInvoiceState {
   partialPaymentsEnabled: boolean;
   receipt: ReceiptData | null;
   institutionalReceipt: InstitutionalReceipt | null;
+  pointOfSaleLoadError: string | null;
   alertMessage: string | null;
   warningMessage: string | null;
   successMessage: string | null;
@@ -33,6 +34,7 @@ export interface NewInvoiceState {
   showReceipt: boolean;
   showClearConfirm: boolean;
   loadingServices: boolean;
+  scanningCode: boolean;
   submitting: boolean;
   paying: boolean;
 }
@@ -59,6 +61,7 @@ export type NewInvoiceAction =
   | { type: 'SET_PARTIAL_PAYMENTS_ENABLED'; payload: boolean }
   | { type: 'SET_RECEIPT'; payload: ReceiptData | null }
   | { type: 'SET_INSTITUTIONAL_RECEIPT'; payload: InstitutionalReceipt | null }
+  | { type: 'SET_POINT_OF_SALE_LOAD_ERROR'; payload: string | null }
   | { type: 'SET_ALERT_MESSAGE'; payload: string | null }
   | { type: 'SET_WARNING_MESSAGE'; payload: string | null }
   | { type: 'SET_SUCCESS_MESSAGE'; payload: string | null }
@@ -69,6 +72,7 @@ export type NewInvoiceAction =
   | { type: 'SET_SHOW_RECEIPT'; payload: boolean }
   | { type: 'SET_SHOW_CLEAR_CONFIRM'; payload: boolean }
   | { type: 'SET_LOADING_SERVICES'; payload: boolean }
+  | { type: 'SET_SCANNING_CODE'; payload: boolean }
   | { type: 'SET_SUBMITTING'; payload: boolean }
   | { type: 'SET_PAYING'; payload: boolean }
   | { type: 'RESET_FORM'; payload: { loadedCashSession: CashSession | null } }
@@ -104,6 +108,7 @@ export function getInitialNewInvoiceState(cashSession: CashSession | null): NewI
     partialPaymentsEnabled: false,
     receipt: null,
     institutionalReceipt: null,
+    pointOfSaleLoadError: null,
     alertMessage: null,
     warningMessage: null,
     successMessage: null,
@@ -114,6 +119,7 @@ export function getInitialNewInvoiceState(cashSession: CashSession | null): NewI
     showReceipt: false,
     showClearConfirm: false,
     loadingServices: true,
+    scanningCode: false,
     submitting: false,
     paying: false,
   };

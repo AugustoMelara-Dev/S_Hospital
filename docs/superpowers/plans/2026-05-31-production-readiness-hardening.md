@@ -43,7 +43,7 @@ This does not declare full backend gate health or `PRODUCTION_READY`; it only re
 Recent phase commits on `codex/production-readiness-hardening`:
 
 - `78375e5 docs(ops): require thermal printer proof` - aligned docs/help/proof templates so institutional receipt validation includes media carta, carta, A5, 80mm and 58mm.
-- `004167e fix(admin): align password policy hints` - aligned frontend admin password validation with Laravel `Password::min(10)->letters()->numbers()`.
+- `004167e fix(admin): align password policy hints` - aligned frontend admin password validation with Laravel password rules; current policy is `Password::min(12)->mixedCase()->numbers()->symbols()`.
 - `69ef1dd fix(ops): enforce thermal printer proof` - made production preflight require the 80mm and 58mm institutional receipt fields/checks.
 - `18df1ac refactor(admin): move password reset validation` - moved admin password reset validation/authorization into a Form Request and added Feature coverage.
 - `b7ed50d refactor(backups): move list validation to request` - moved backup list authorization/status validation into a Form Request while preserving pagination clamp behavior.

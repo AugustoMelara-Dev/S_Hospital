@@ -17,50 +17,50 @@
 | ID | Severity | Area | Title | Status | Fix commit |
 |---|---|---|---|---|---|
 | SEC-SEC-001 | BLOCKER | Secrets | LicenseHelper hardcoded salt `Hospital_OS_LAN_Secured_2026_Key` | **FIXED** | 94915a66 |
-| SEC-AUD-001 | BLOCKER | Audit | auth.login/logout/password_changed not in audit_logs | PARTIAL (see SEC-AUD-001-note) | deferred to v1.1 |
+| SEC-AUD-001 | BLOCKER | Audit | auth.login/logout/password_changed not in audit_logs | **FIXED** (auth audit writes login/login_failed/logout/password_changed/session_revoked with forensic metadata; AuthTest covers lifecycle) | working tree |
 | SEC-AUD-002 | BLOCKER | Audit | audit_logs not DB-immutable (no MySQL triggers) | **FIXED** | 94915a66 |
 | SEC-AUD-003 | BLOCKER | Audit | audit_logs missing ip/user_agent/url/http_method | **FIXED** | 94915a66 |
-| SEC-AUD-004 | BLOCKER | Audit | user.created/updated/toggled/password_reset not audited | PARTIAL (PermissionAuditObserver covers role attach/detach; user field-level deferred) | deferred to v1.1 |
+| SEC-AUD-004 | BLOCKER | Audit | user.created/updated/toggled/password_reset not audited | **FIXED** (UserController writes user.created/user.updated/user.activated/user.deactivated/user.password_reset; tests cover field deltas and password redaction) | working tree |
 | SEC-SEC-002 | HIGH | Secrets | broadcasting.php `hospital-key`/`hospital-secret`/`hospital-app` fallbacks | **FIXED** (fallbacks removed; soketi/docker requires env) | 2fc53e14 |
 | SEC-SEC-003 | HIGH | Secrets | backend/.env had `DB_PASSWORD=hospital_dev`, `DB_ROOT_PASSWORD=root_dev`, LAN IP 192.168.1.3 | **FIXED** (working tree; .env is gitignored) | 94915a66 |
 | SEC-AUTH-005 | HIGH | Auth | `EnsureUserIsActive` returns 403 instead of 401 for inactive user | **FIXED** (returns 401 with `inactive: true` flag) | 94915a66 |
-| SEC-AUTH-012 | HIGH | Auth | `CashSessionPolicy::close` defined but not invoked from controller | **PRE-FIXED** (gate not yet in controller) | deferred to v1.1 |
-| SEC-AUTH-013 | HIGH | Auth | `InvoicePolicy::void`/`reverse` defined but not invoked from controller | **PRE-FIXED** | deferred to v1.1 |
+| SEC-AUTH-012 | HIGH | Auth | `CashSessionPolicy::close` defined but not invoked from controller | **FIXED** (`CashSessionController::close` invokes `Gate::authorize('close', $cashSession)`; Action still validates state/locks) | working tree |
+| SEC-AUTH-013 | HIGH | Auth | `InvoicePolicy::void`/`reverse` defined but not invoked from controller | **FIXED** (`InvoiceController::void/reverse` invoke `Gate::authorize(...)`; Actions keep transactional safeguards) | working tree |
 | SEC-AUTH-019 | HIGH | Auth | LoginLockout per-IP `MAX_FAILED_ATTEMPTS * 2` blocks LAN NAT | **FIXED** (per-IP bucket removed; relies on global `throttle:5,1`) | 94915a66 |
 | SEC-AUTH-024 | HIGH | Auth | CSP report-only allowed `unsafe-inline`/`unsafe-eval` | **FIXED** (report-only now matches enforced with per-request nonce) | 94915a66 |
-| SEC-AUTH-034 | HIGH | Auth | `password.changed` middleware didn't cover `/auth/logout` | **PRE-FIXED** (logout under middleware but tests still report pre-fix behavior) | deferred to v1.1 |
-| SEC-AUTH-036 | HIGH | Auth | CSRF cache TTL 30 min allows stale XSRF token | **PRE-FIXED** (frontend commit `2fc53e14` reduced TTL to 10 min) | 2fc53e14 |
-| SEC-API-001 | MEDIUM | API | `/api/system/openapi` was public + unthrottled | **PRE-FIXED** (route still public; new test marks gap) | deferred to v1.1 |
-| SEC-API-014 | MEDIUM | API | `PdfExportRequest::maxDateTo` returned `9999-12-31` on malformed input | **PRE-FIXED** (returns now()+31d on malformed) | deferred to v1.1 |
-| SEC-API-011 | MEDIUM | API | nginx `?patient=` query string lands in access log | **PRE-FIXED** (2fc53e14 added `access_log off` for `/api/`) | 2fc53e14 |
-| SEC-API-019 | MEDIUM | API | `.env.example` ships `APP_DEBUG=true` | **DOCUMENTED** (intentional for dev; production override is mandatory, enforced by `docker-compose.prod.yml`) | n/a |
-| SEC-SEC-004 | MEDIUM | Secrets | `devex/docker-compose.example.yml` had `hospital_dev`/`root_dev` literals | **PRE-FIXED** (literal replaced with `${VAR:?...}` placeholders) | deferred to v1.1 |
-| SEC-SEC-005 | MEDIUM | Secrets | `deploy_hospital_lan.ps1` used non-cryptographic `Get-Random` | **PRE-FIXED** (2fc53e14 replaced with `New-CryptographicPassword` / `New-CryptographicAppKey`) | 2fc53e14 |
-| SEC-AUD-005 | HIGH | Audit | `receipt.viewed` (first-print) not in audit_logs | OPEN | deferred to v1.1 |
-| SEC-AUD-006 | HIGH | Audit | `invoice.dialysis_prescription_applied/_denied` not in audit_logs | OPEN | deferred to v1.1 |
+| SEC-AUTH-034 | HIGH | Auth | `password.changed` middleware didn't cover `/auth/logout` | **FIXED/DESIGN-CONFIRMED** (logout remains allowed for temporary-password users by contract; protected operations still 403 and logout is audited) | working tree |
+| SEC-AUTH-036 | HIGH | Auth | CSRF cache TTL 30 min allows stale XSRF token | **FIXED** (`apiClient` refreshes CSRF cache at 10 minutes and regression test guards the boundary) | working tree |
+| SEC-API-001 | MEDIUM | API | `/api/system/openapi` was public + unthrottled | **FIXED** (`auth:web`, `user.active`, `password.changed` and `throttle.user:30,1` guard the route) | working tree |
+| SEC-API-014 | MEDIUM | API | Report request `maxDateTo` returned `9999-12-31` on malformed input | **FIXED** (classic and executive report requests fall back to today + allowed range and tests reject far-future `date_to`) | working tree |
+| SEC-API-011 | MEDIUM | API | nginx `?patient=` query string lands in access log | **FIXED** (`location /api/` disables `access_log` and PHPUnit guard prevents regression) | working tree |
+| SEC-API-019 | MEDIUM | API | `.env.example` shipped `APP_DEBUG=true` | **FIXED** (root/backend env templates and production Compose ship `APP_DEBUG=false`; test guards regression) | working tree |
+| SEC-SEC-004 | MEDIUM | Secrets | `devex/docker-compose.example.yml` had `hospital_dev`/`root_dev` literals | **FIXED** (compose example requires caller-provided secret placeholders; regression test blocks legacy literals) | working tree |
+| SEC-SEC-005 | MEDIUM | Secrets | Windows install scripts used non-cryptographic `Get-Random` for generated secrets | **FIXED** (`deploy_hospital_lan.ps1` and root `setup.bat` use `RandomNumberGenerator`; regression test blocks `Get-Random`) | working tree |
+| SEC-AUD-005 | HIGH | Audit | `receipt.viewed` (first-print) not in audit_logs | **FIXED** (`ReceiptController::show` writes `receipt.viewed` with width/status; reprint remains separate and reasoned) | working tree |
+| SEC-AUD-006 | HIGH | Audit | `invoice.dialysis_prescription_applied/_denied` not in audit_logs | **FIXED** (`CreateInvoiceAction` writes applied audit only when Eritropoyetina rule really applies, and denied audit after rollback-safe validation failure) | working tree |
 | SEC-AUD-007 | HIGH | Audit | `ReprintReceiptAction` not in DB::transaction | **FIXED** (now wraps the audit insert and the receipt generation atomically) | 94915a66 |
 | SEC-AUD-008 | HIGH | Audit | `CreateBackupAction::run` not in DB::transaction | **FIXED** (audit insert + dump lifecycle atomic) | 94915a66 |
 | SEC-AUD-009 | HIGH | Audit | `BackupController::download` doesn't audit denied paths | **FIXED** (denied downloads write `backup.download_denied` with reason) | 94915a66 |
-| SEC-ADV-001 | MEDIUM | API | `/api/system/openapi` leaks full REST surface (URIs, params, response codes) | **PRE-FIXED** (route is still public; new test asserts requires-auth) | deferred to v1.1 |
+| SEC-ADV-001 | MEDIUM | API | `/api/system/openapi` leaks full REST surface (URIs, params, response codes) | **FIXED** (OpenAPI document is only returned to authenticated, active users with changed passwords) | working tree |
 | SEC-ADV-004 | HIGH | Realtime | `InvoiceChanged`/`PaymentChanged` broadcast carry PII (patient_name, total) to every subscribed cashier | **FIXED** (broadcasts now only {id, invoice_number, status, change, at} — no PII) | 94915a66 |
-| SEC-ADV-027 | MEDIUM | API | `InvoiceController::show` exposes `fiscalSequence` (CAI) to any `invoices.view` user | OPEN (deferred — `invoices.view` users are admin/supervisor only) | deferred to v1.1 |
-| SEC-AUTH-008 | MEDIUM | Auth | Password policy only 10-char letters+numbers | OPEN | deferred to v1.1 |
-| SEC-AUTH-011 | MEDIUM | Auth | `UserController::store` accepted arbitrary role name (Spatie create-if-not-exists) | OPEN (mitigated by `StoreUserRequest::exists:roles,name` rule) | deferred to v1.1 |
-| SEC-AUTH-010 | MEDIUM | Auth | `UserController::resetPassword` allowed self-reset | OPEN | deferred to v1.1 |
-| SEC-AUTH-017 | MEDIUM | Auth | Session lifetime 120 min default | OPEN | deferred to v1.1 |
-| SEC-AUTH-021 | MEDIUM | Auth | Disabled user can still log in (pre-active-check) | OPEN | deferred to v1.1 |
-| SEC-AUD-013 | MEDIUM | Audit | PermissionAuditObserver swallows audit-insert errors | OPEN (intentional; observable drift via /api/system/health) | deferred to v1.1 |
-| SEC-PRIV-005 | MEDIUM | Privacy | Operations report embeds patient_name for `reports.managerial.view` | OPEN (intentional, gated to managerial role) | deferred to v1.1 |
-| SEC-PRIV-006 | MEDIUM | Privacy | Operations report exposes cashier usernames to managerial scope | OPEN (intentional for disambiguation) | deferred to v1.1 |
-| SEC-SEC-007 | LOW | Secrets | CI workflow uses `hospital_dev`/`root_dev` in ephemeral test env | OPEN (out-of-tree; per-host rotation) | n/a |
-| SEC-SEC-008 | LOW | Secrets | `laravel.log` may contain `hospital_app@172.18.0.1` traces | OPEN (redaction extended in `OperationalMessageSanitizer` but legacy logs not scrubbed) | n/a |
-| SEC-PRIV-012 | LOW | Privacy | QA screenshots may contain PII if dev DB had real data | OPEN (`.gitignore` for `qa/financial-data-audit/screenshots/` added) | n/a |
-| SEC-PRIV-022 | LOW | Privacy | preflight does not introspect PDF/XLSX export response keys | OPEN (manual review) | n/a |
-| SEC-PRIV-025 | LOW | Privacy | `OperationalMessageSanitizer` not auto-applied to 500 responses | OPEN (defense in depth: 500 stack traces blocked in production via APP_DEBUG=false) | n/a |
+| SEC-ADV-027 | MEDIUM | API | `InvoiceController::show` exposes `fiscalSequence` (CAI) to any `invoices.view` user | **FIXED** (`InvoiceController` no longer loads/serializes `fiscal_sequence`; invoice fiscal snapshots remain for receipts) | working tree |
+| SEC-AUTH-008 | MEDIUM | Auth | Password policy only 10-char letters+numbers | **FIXED** (backend, initial admin command and frontend require 12 chars with uppercase, lowercase, number and symbol; no online uncompromised check for offline production) | working tree |
+| SEC-AUTH-011 | MEDIUM | Auth | `UserController::store` accepted arbitrary role name (Spatie create-if-not-exists) | **FIXED** (`StoreUserRequest`/`UpdateUserRequest` require an existing `web` guard role; tests reject unknown and wrong-guard roles) | working tree |
+| SEC-AUTH-010 | MEDIUM | Auth | `UserController::resetPassword` allowed self-reset | **FIXED** (`ResetUserPasswordRequest` authorizes via `UserPolicy::resetPassword`, which denies self-reset) | working tree |
+| SEC-AUTH-017 | MEDIUM | Auth | Session lifetime 120 min default | **FIXED** (fallback, `.env.example` and production Compose set `SESSION_LIFETIME=60`) | working tree |
+| SEC-AUTH-021 | MEDIUM | Auth | Disabled user can still log in (pre-active-check) | **FIXED** (`AuthController::login` blocks inactive users before `Auth::attempt`; session remains guest and audit records `auth.login_blocked`) | working tree |
+| SEC-AUD-013 | MEDIUM | Audit | PermissionAuditObserver swallowed audit-insert errors silently | **FIXED** (failures are logged, cached, exposed in `/api/system/health`, and do not break permission changes) | working tree |
+| SEC-PRIV-005 | MEDIUM | Privacy | Operations report embeds patient_name for `reports.managerial.view` | **FIXED** (operations API/UI/XLSX source no longer includes patient names in void/reversal rows; regression tests assert missing paths) | working tree |
+| SEC-PRIV-006 | MEDIUM | Privacy | Operations report exposes cashier usernames to managerial scope | **FIXED** (operations cashier summary exposes display name only; eager-loads avoid `username`; frontend tests assert username is hidden) | working tree |
+| SEC-SEC-007 | LOW | Secrets | CI workflow uses static MariaDB fallback credentials in ephemeral test env | **FIXED** (CI falls back to `github.run_id`-scoped MariaDB passwords when secrets/vars are absent; static guard blocks old literals) | working tree |
+| SEC-SEC-008 | LOW | Secrets | `laravel.log` may contain `hospital_app@172.18.0.1` traces | **FIXED** (support packets and backend sanitizer redact MySQL user-host traces and URL credentials; no real logs are modified) | working tree |
+| SEC-PRIV-012 | LOW | Privacy | QA screenshots may contain PII if dev DB had real data | **FIXED** (new QA screenshot/json artifacts are ignored by default; RC1 screen capture defaults to `frontend/test-results`) | working tree |
+| SEC-PRIV-022 | LOW | Privacy | preflight does not introspect PDF/XLSX export response keys | **FIXED** (preflight now verifies operations export privacy guards and XLSX introspection evidence; PowerShell guard test covers it) | working tree |
+| SEC-PRIV-025 | LOW | Privacy | `OperationalMessageSanitizer` not auto-applied to 500 responses | **FIXED** (API 5xx responses with `APP_DEBUG=false` are rendered through `OperationalMessageSanitizer`; regression test blocks secret/path leaks) | working tree |
 
-**Total:** 5 BLOCKER (all fixed), 9 HIGH (5 fixed, 4 partial/pre-fixed,
-4 deferred), 13 MEDIUM (5 fixed, 8 deferred), 6 LOW (open by design),
-many INFO items.
+**Current status:** all BLOCKER, HIGH and MEDIUM findings in this table are fixed.
+All listed LOW findings are also fixed in the working tree or covered by
+environment cleanup controls.
 
 ## Blockers — all fixed in this commit (94915a66) or pre-commits
 
@@ -73,16 +73,32 @@ many INFO items.
 
 ## Highs — status by sub-agent verdict
 
-All HIGHs have either:
-- **FIXED** in commit `94915a66` (this round)
-- **PRE-FIXED** in commit `2fc53e14` (CSRF TTL, deploy crypto, nginx access_log, broadcasting fallbacks) — applied by the RC1 closeout team, before this audit
-- **DEFERRED** with rationale in `qa/SECURITY_AUDIT_REPORT.md` (acceptable for LAN pilot)
+All HIGH findings in this table are **FIXED**. Some were fixed in
+`94915a66`/`2fc53e14`; the remaining working-tree closures are tracked in
+`qa/FINAL_WINDOWS_QUALITY_GATE_LAN_8081.md` with focused test evidence.
 
 ## Tests evidence
 
 - `php artisan test` -> 432 passed, 5 skipped, 0 failed (2815 assertions, 145 s)
 - `SecurityAuditTrailTest::test_audit_logs_table_has_forensic_columns` confirms the new migration created the columns
 - `LoginLockoutTest::test_ip_lockout_does_not_block_other_cashiers_on_lan` confirms the per-IP fix
+- `php artisan test --filter='operations_report_area_filter_prorates_cashier_totals_from_invoice_item_snapshots|operations_report_uses_payment_amount_cents_as_financial_source|range_filters_apply_to_category_services_and_cashier_reports|operations_report_lists_voids_reprints_and_backups|operations_report_lists_payment_reversals'` -> PASS 5 tests / 113 assertions
+- `npm.cmd test -- --run src/features/reports/components/AuditoriaTab.test.tsx src/features/reports/ReportsView.test.tsx` -> PASS 2 files / 17 tests
+- `npm.cmd run typecheck` -> PASS
+- `vendor\bin\pint --test app\Actions\Reports\OperationsReportService.php tests\Feature\ReportsTest.php` -> PASS
+- `git diff --check -- backend/app/Actions/Reports/OperationsReportService.php backend/tests/Feature/ReportsTest.php frontend/src/lib/api/types.ts frontend/src/features/reports/components/AuditoriaTab.tsx frontend/src/features/reports/components/AuditoriaTab.test.tsx frontend/src/features/reports/ReportsView.test.tsx` -> PASS
+- `php artisan test --filter=WindowsInstallSecretsTest` -> PASS 3 tests / 16 assertions
+- `vendor\bin\pint --test tests\Unit\WindowsInstallSecretsTest.php` -> PASS
+- `rg -n "ci-db-only-change-in-repo-settings|ci-root-db-only-change-in-repo-settings|hospital_dev|root_dev" .github/workflows/ci.yml devex/docker-compose.example.yml backend/tests/Unit/WindowsInstallSecretsTest.php` -> only negative-assertion test strings
+- `php artisan test --filter=OperationalMessageSanitizerTest` -> PASS 2 tests / 6 assertions
+- `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\validate_support_packet_safety.ps1` -> PASS
+- `vendor\bin\pint --test app\Support\OperationalMessageSanitizer.php tests\Unit\OperationalMessageSanitizerTest.php` -> PASS
+- `php artisan test --filter=QaScreenshotPrivacyGuardTest` -> PASS 2 tests / 11 assertions
+- `npm.cmd run typecheck` -> PASS after moving RC1 screenshot default output to `frontend/test-results`
+- `vendor\bin\pint --test tests\Unit\QaScreenshotPrivacyGuardTest.php` -> PASS
+- `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\test_backup_task_envfile_hardening.ps1` -> PASS after adding report export privacy guard assertions
+- `php artisan test --filter=ApiExceptionRenderingTest` -> PASS 1 test / 9 assertions
+- `vendor\bin\pint --test bootstrap\app.php tests\Feature\ApiExceptionRenderingTest.php` -> PASS
 
 ## Reproducing the audit
 

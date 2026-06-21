@@ -64,11 +64,17 @@ function safeStoredIssue(issue: StoredClientIssue): StoredClientIssue {
 export function logClientIssue(error: unknown, context: ClientIssueContext = {}): void {
   try {
     const existing = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? '[]') as StoredClientIssue[];
+    const supportMessage = typeof error === 'object'
+      && error !== null
+      && 'supportMessage' in error
+      && typeof (error as { supportMessage?: unknown }).supportMessage === 'string'
+      ? (error as { supportMessage: string }).supportMessage
+      : undefined;
     const issue = safeStoredIssue({
       action: context.action,
       module: context.module,
       route: context.route ?? window.location.pathname,
-      safe_message: safeClientMessage(error instanceof Error ? error.message : 'Error de interfaz'),
+      safe_message: safeClientMessage(supportMessage ?? (error instanceof Error ? error.message : 'Error de interfaz')),
       technical_code: error instanceof Error ? error.name : 'CLIENT_ERROR',
       occurred_at: new Date().toISOString(),
     });

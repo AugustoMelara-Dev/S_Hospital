@@ -75,7 +75,7 @@ describe('IncomeReportTab', () => {
       />,
     );
 
-    expect(document.body.textContent).toContain('L. 0.00');
+    expect(document.body.textContent).toContain('L 0.00');
     expect(document.body.textContent).toContain('Cobrado asignado proporcionalmente');
     expect(document.body.textContent).toContain('Pagos publicados filtrados');
     expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-numero|undefined/);

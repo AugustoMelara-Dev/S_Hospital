@@ -6,9 +6,8 @@ describe('MoneyText', () => {
   it('formats cent amounts as Lempiras with tabular numbers', () => {
     render(<MoneyText amountCents={123456} />);
 
-    const amount = screen.getByText('L. 1,234.56');
+    const amount = screen.getByText('L 1,234.56');
     expect(amount).toHaveClass('tabular-nums');
     expect(amount).toHaveAttribute('translate', 'no');
   });
 });
-

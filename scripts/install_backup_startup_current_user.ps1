@@ -1,6 +1,10 @@
 param(
     [string] $ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path,
     [string] $PhpPath = "C:\xampp\php\php.exe",
+    [ValidateSet("Auto", "Docker", "Php")]
+    [string] $Mode = "Auto",
+    [string] $EnvFile = "",
+    [string] $ComposeProjectName = "",
     [string] $DailyBackupTime = "02:00",
     [switch] $Uninstall,
     [switch] $Status,
@@ -66,9 +70,19 @@ function Get-ValidatedPhpSource([string] $value) {
 $startupDir = [Environment]::GetFolderPath("Startup")
 $startupFile = Join-Path $startupDir "SistemaCajaHospitalariaBackupAutomation.cmd"
 $launcher = Join-Path $ProjectRoot "scripts\start_backup_automation.cmd"
+$envFile = if ([string]::IsNullOrWhiteSpace($EnvFile)) {
+    ""
+} elseif ([System.IO.Path]::IsPathRooted($EnvFile)) {
+    (Resolve-Path -LiteralPath $EnvFile).Path
+} else {
+    (Resolve-Path -LiteralPath (Join-Path $ProjectRoot $EnvFile)).Path
+}
+if (-not [string]::IsNullOrWhiteSpace($ComposeProjectName) -and $ComposeProjectName -notmatch "^[A-Za-z0-9][A-Za-z0-9_.-]*$") {
+    throw "ComposeProjectName invalido. Use solo letras, numeros, punto, guion o guion_bajo; debe iniciar con letra o numero."
+}
 $runKeyPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
 $runKeyName = "SistemaCajaHospitalariaBackupAutomation"
-$runKeyValue = "`"$launcher`""
+$runKeyValue = "`"$startupFile`""
 
 if (-not (Test-Path -LiteralPath $launcher)) {
     throw "No se encontro el lanzador de automatizacion de backups: $(Protect-StartupText $launcher)"
@@ -81,11 +95,41 @@ $dailyBackupAt = if ($Status -or $Uninstall) {
 }
 $phpSource = if ($Status -or $Uninstall) {
     "no requerido para esta accion"
+} elseif ($Mode -eq "Docker") {
+    "no requerido en modo Docker"
 } else {
     Get-ValidatedPhpSource $PhpPath
 }
 
 if ($WhatIfOnly) {
+    $loopScript = Join-Path $ProjectRoot "scripts\run_backup_scheduler_loop.ps1"
+    $loopArgs = @(
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        $loopScript,
+        "-ProjectRoot",
+        $ProjectRoot,
+        "-PhpPath",
+        $PhpPath,
+        "-Mode",
+        $Mode,
+        "-DailyBackupTime",
+        $DailyBackupTime,
+        "-WhatIfOnly"
+    )
+    if (-not [string]::IsNullOrWhiteSpace($envFile)) {
+        $loopArgs += @("-EnvFile", $envFile)
+    }
+    if (-not [string]::IsNullOrWhiteSpace($ComposeProjectName)) {
+        $loopArgs += @("-ComposeProjectName", $ComposeProjectName)
+    }
+    & powershell.exe @loopArgs
+    if ($LASTEXITCODE -ne 0) {
+        exit $LASTEXITCODE
+    }
+
     Write-Host "Validacion de arranque de backups completada."
     Write-Host "Modo WhatIf: no se crea archivo de inicio, no se cambia el registro y no se inicia el worker."
     Write-Host "Hora diaria validada: $DailyBackupTime"
@@ -130,6 +174,9 @@ New-Item -ItemType Directory -Force -Path $startupDir | Out-Null
 $content = @"
 @echo off
 set "HOSPITAL_PHP_PATH=$PhpPath"
+set "HOSPITAL_BACKUP_MODE=$Mode"
+$(if (-not [string]::IsNullOrWhiteSpace($envFile)) { "set `"HOSPITAL_ENV_FILE=$envFile`"" } else { "set `"HOSPITAL_ENV_FILE=`"" })
+$(if (-not [string]::IsNullOrWhiteSpace($ComposeProjectName)) { "set `"HOSPITAL_COMPOSE_PROJECT_NAME=$ComposeProjectName`"" } else { "set `"HOSPITAL_COMPOSE_PROJECT_NAME=`"" })
 set "HOSPITAL_DAILY_BACKUP_TIME=$DailyBackupTime"
 call "$launcher"
 "@
@@ -152,6 +199,17 @@ Write-Host "Cuando este usuario inicie sesion, se iniciara el worker de respaldo
 
 if ($StartNow) {
     $env:HOSPITAL_PHP_PATH = $PhpPath
+    $env:HOSPITAL_BACKUP_MODE = $Mode
+    if (-not [string]::IsNullOrWhiteSpace($envFile)) {
+        $env:HOSPITAL_ENV_FILE = $envFile
+    } else {
+        Remove-Item Env:HOSPITAL_ENV_FILE -ErrorAction SilentlyContinue
+    }
+    if (-not [string]::IsNullOrWhiteSpace($ComposeProjectName)) {
+        $env:HOSPITAL_COMPOSE_PROJECT_NAME = $ComposeProjectName
+    } else {
+        Remove-Item Env:HOSPITAL_COMPOSE_PROJECT_NAME -ErrorAction SilentlyContinue
+    }
     $env:HOSPITAL_DAILY_BACKUP_TIME = $DailyBackupTime
     & $launcher
     Write-Host "Automatizacion de respaldos iniciada para esta sesion."

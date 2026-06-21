@@ -1,6 +1,6 @@
 import { type ReactNode } from 'react';
 import { cn } from '../../lib/utils';
-import { formatLempirasFromCents } from '../../lib/moneyCents';
+import { formatLempirasUIFromCents } from '../../lib/moneyCents';
 
 type MoneyTextProps = {
   amountCents?: number | null;
@@ -25,7 +25,7 @@ export function MoneyText({
 }: MoneyTextProps) {
   return (
     <span className={cn('tabular-nums', tones[tone], className)} translate="no">
-      {children ?? formatLempirasFromCents(amountCents ?? 0)}
+      {children ?? formatLempirasUIFromCents(amountCents ?? 0)}
     </span>
   );
 }

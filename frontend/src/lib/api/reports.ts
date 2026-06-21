@@ -88,9 +88,32 @@ export const reports = {
     return response.data;
   },
 
+  async getTodayReport(): Promise<import('./types').TodayReport> {
+    const response = await apiClient.request<{ data: import('./types').TodayReport }>(`/api/reports/today`);
+    return response.data;
+  },
+
+  async getExecutiveReport(filters: import('./types').ExecutiveReportFilters): Promise<import('./types').ExecutiveReport> {
+    const params = buildReportParams(filters);
+    const response = await apiClient.request<{ data: import('./types').ExecutiveReport }>(
+      `/api/reports/executive?${params.toString()}`,
+    );
+    return response.data;
+  },
+
   exportUrl(filters: ReportFilters): string {
     const params = buildReportParams(filters);
     return apiClient.url(`/api/reports/export?${params.toString()}`);
+  },
+
+  executivePdfUrl(filters: import('./types').ExecutiveReportFilters): string {
+    const params = buildReportParams(filters);
+    return apiClient.url(`/api/reports/executive/pdf?${params.toString()}`);
+  },
+
+  executiveExcelUrl(filters: import('./types').ExecutiveReportFilters): string {
+    const params = buildReportParams(filters);
+    return apiClient.url(`/api/reports/executive/excel?${params.toString()}`);
   },
 
   async downloadExport(filters: ReportFilters): Promise<Blob> {
@@ -104,5 +127,15 @@ export const reports = {
       params.set('date', filters.date);
     }
     return apiClient.download(`/api/reports/pdf?${params.toString()}`);
+  },
+
+  async downloadExecutivePdf(filters: import('./types').ExecutiveReportFilters): Promise<Blob> {
+    const params = buildReportParams(filters);
+    return apiClient.download(`/api/reports/executive/pdf?${params.toString()}`);
+  },
+
+  async downloadExecutiveExcel(filters: import('./types').ExecutiveReportFilters): Promise<Blob> {
+    const params = buildReportParams(filters);
+    return apiClient.download(`/api/reports/executive/excel?${params.toString()}`);
   },
 };

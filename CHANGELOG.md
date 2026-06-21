@@ -654,8 +654,8 @@ ampliadas y puertas de calidad nuevas.
 
 ### Mejoras adicionales durante la auditoría
 
-- Script `auto_evidence.ps1` que pre-rellena las 5 plantillas
-  `qa/*.md` con datos del `.env` para FASE 1-6
+- Script `auto_evidence.ps1` que pre-rellena y valida los archivos
+  `qa/*.md` de evidencias finales y handoff con datos del `.env`
 - `RELEASE_NOTES_v1.0.0-rc.3.md` con métricas delta y comandos
   útiles
 - Tests adicionales de cobertura (storage, recent_errors en
@@ -680,8 +680,9 @@ y `docs/OFFLINE_LAN_INSTALL.md`.
 
 ### Cómo retomar
 
-1. Cerrar las 6 fases físicas con `auto_evidence.ps1 -Force` para
-   pre-rellenar las plantillas y luego `final_production_handoff.ps1`
+1. Cerrar las evidencias finales con `auto_evidence.ps1 -Force` para
+   pre-rellenar borradores, validar con `auto_evidence.ps1 -Mode check`
+   y luego ejecutar `final_production_handoff.ps1`
 2. Si phpstan se mantiene limpio al corregir la baseline, subir
    el nivel a 5
 3. Aplicar el patrón `LoginView.a11y.test.tsx` a las demás vistas

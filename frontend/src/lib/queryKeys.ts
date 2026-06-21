@@ -1,4 +1,4 @@
-import type { InvoiceFilters, ServiceFilters } from '@/lib/api';
+import type { ExecutiveReportFilters, InvoiceFilters, ServiceFilters } from '@/lib/api';
 
 type BackupListFilters = {
   page?: number;
@@ -29,6 +29,7 @@ export const queryKeys = {
   settings: {
     all: ['settings'] as const,
     fiscal: () => ['settings', 'fiscal'] as const,
+    operational: () => ['settings', 'operational'] as const,
     branding: () => ['settings', 'branding'] as const,
     institutionalReceipts: () => ['settings', 'institutional-receipts'] as const,
   },
@@ -39,6 +40,8 @@ export const queryKeys = {
   reports: {
     all: ['reports'] as const,
     dashboard: () => ['reports', 'dashboard'] as const,
+    today: () => ['reports', 'today'] as const,
+    executive: (filters: ExecutiveReportFilters) => ['reports', 'executive', filters] as const,
     cashSession: (id: string | number | undefined) => ['reports', 'cash-sessions', id ?? 'unknown'] as const,
   },
   backups: {

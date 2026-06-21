@@ -1,6 +1,10 @@
 param(
     [string] $ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path,
     [string] $PhpPath = "C:\xampp\php\php.exe",
+    [ValidateSet("Auto", "Docker", "Php")]
+    [string] $Mode = "Auto",
+    [string] $EnvFile = "",
+    [string] $ComposeProjectName = "",
     [string] $DailyBackupTime = "02:00",
     [switch] $WhatIfOnly
 )
@@ -18,13 +22,54 @@ try {
 $backendDir = Join-Path $ProjectRoot "backend"
 $artisanPath = Join-Path $backendDir "artisan"
 $composeFile = Join-Path $ProjectRoot "docker-compose.prod.yml"
-$envFile = Join-Path $ProjectRoot ".env"
-$isPhpMode = Test-Path -LiteralPath $artisanPath
-$isDockerMode = (-not $isPhpMode) -and (Test-Path -LiteralPath $composeFile)
+$envFile = if ([string]::IsNullOrWhiteSpace($EnvFile)) {
+    Join-Path $ProjectRoot ".env"
+} elseif ([System.IO.Path]::IsPathRooted($EnvFile)) {
+    (Resolve-Path -LiteralPath $EnvFile).Path
+} else {
+    (Resolve-Path -LiteralPath (Join-Path $ProjectRoot $EnvFile)).Path
+}
+if (-not [string]::IsNullOrWhiteSpace($ComposeProjectName) -and $ComposeProjectName -notmatch "^[A-Za-z0-9][A-Za-z0-9_.-]*$") {
+    throw "ComposeProjectName invalido. Use solo letras, numeros, punto, guion o guion_bajo; debe iniciar con letra o numero."
+}
+$hasPhpMode = Test-Path -LiteralPath $artisanPath
+$hasDockerMode = Test-Path -LiteralPath $composeFile
+switch ($Mode) {
+    "Docker" {
+        $isDockerMode = $true
+        $isPhpMode = $false
+    }
+    "Php" {
+        $isDockerMode = $false
+        $isPhpMode = $true
+    }
+    default {
+        $isPhpMode = $hasPhpMode
+        $isDockerMode = (-not $isPhpMode) -and $hasDockerMode
+    }
+}
 
 if (-not $isPhpMode -and -not $isDockerMode) {
     Write-Host "No se encontro backend\artisan ni docker-compose.prod.yml. Revise que esta carpeta sea una instalacion completa."
     exit 1
+}
+
+if ($isPhpMode -and -not $hasPhpMode) {
+    Write-Host "Modo PHP solicitado, pero no se encontro backend\artisan."
+    exit 1
+}
+
+if ($isDockerMode -and -not $hasDockerMode) {
+    Write-Host "Modo Docker solicitado, pero no se encontro docker-compose.prod.yml."
+    exit 1
+}
+
+$dockerComposeArgs = @("compose")
+if ($isDockerMode -and -not [string]::IsNullOrWhiteSpace($ComposeProjectName)) {
+    $dockerComposeArgs += @("-p", $ComposeProjectName)
+}
+if ($isDockerMode) {
+    $dockerComposeArgs += @("-f", $composeFile, "--env-file", $envFile)
 }
 
 $stateDir = if ($isPhpMode) {
@@ -77,8 +122,7 @@ function Test-DockerBackupRuntime {
         throw "No se encontro Docker. El paquete offline productivo requiere Docker Desktop o Docker Engine."
     }
 
-    $configCommand = 'docker compose -f "' + $composeFile + '" --env-file "' + $envFile + '" config --quiet >nul 2>nul'
-    & cmd.exe /c $configCommand
+    & docker @($dockerComposeArgs + @("config", "--quiet")) *> $null
     if ($LASTEXITCODE -ne 0) {
         throw "docker-compose.prod.yml o .env no son validos para respaldos."
     }
@@ -125,6 +169,9 @@ if ($WhatIfOnly) {
     Write-Host "Verificacion completada. No se inicio worker, no se ejecuto respaldo y no se escribieron archivos."
     Write-Host "Modo de respaldos: $runtimeSource"
     Write-Host "Hora diaria validada: $DailyBackupTime"
+    if ($isDockerMode) {
+        Write-Host "Proyecto Docker: $(if ([string]::IsNullOrWhiteSpace($ComposeProjectName)) { 'default' } else { '[compose-proyecto]' })"
+    }
     exit 0
 }
 
@@ -156,7 +203,7 @@ function Start-PhpBackupWorker {
 }
 
 function Ensure-DockerBackupWorker {
-    $output = & docker compose -f $composeFile --env-file $envFile up -d queue-worker 2>&1
+    $output = & docker @($dockerComposeArgs + @("up", "-d", "queue-worker")) 2>&1
     $exitCode = $LASTEXITCODE
     foreach ($line in $output) {
         Write-AutomationLog "queue-worker: $line"
@@ -208,9 +255,14 @@ while ($true) {
         if ($now -ge $targetToday -and $lastRunDate -ne $now.ToString("yyyy-MM-dd")) {
             Write-AutomationLog "Running scheduled backup for $($now.ToString("yyyy-MM-dd"))."
             if ($isDockerMode) {
-                $backupOutput = & docker compose -f $composeFile --env-file $envFile exec -T backend php artisan hospital:backup --type=scheduled 2>&1
+                $backupOutput = & docker @($dockerComposeArgs + @("exec", "-T", "backend", "php", "artisan", "hospital:backup", "--type=scheduled")) 2>&1
             } else {
-                $backupOutput = & $PhpPath artisan hospital:backup --type=scheduled 2>&1
+                Push-Location $backendDir
+                try {
+                    $backupOutput = & $PhpPath artisan hospital:backup --type=scheduled 2>&1
+                } finally {
+                    Pop-Location
+                }
             }
             $exitCode = $LASTEXITCODE
             foreach ($line in $backupOutput) {

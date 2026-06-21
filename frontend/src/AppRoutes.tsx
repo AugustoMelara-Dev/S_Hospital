@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Link, Navigate, Route, Routes } from 'react-router-dom';
 import { PermissionGate } from './components/PermissionGate';
+import { Button } from './components/ui/button';
 import { EmptyState, LoadingState } from './components/ui/states';
 import { CashBoxView } from './features/cash/CashBoxView';
 import { NewInvoiceView } from './features/invoices/NewInvoiceView';
@@ -37,6 +38,9 @@ type AppRoutesProps = {
   canExportReports: boolean;
   canViewUsers: boolean;
   canCreateUsers: boolean;
+  canUpdateUsers: boolean;
+  canDisableUsers: boolean;
+  canManageRoles: boolean;
   canMarkDialysisPrescription: boolean;
   cashSession: CashSession | null;
   defaultAuthenticatedRoute: string;
@@ -65,6 +69,9 @@ export function AppRoutes({
   canExportReports,
   canViewUsers: _canViewUsers,
   canCreateUsers,
+  canUpdateUsers,
+  canDisableUsers,
+  canManageRoles,
   canMarkDialysisPrescription,
   cashSession,
   defaultAuthenticatedRoute,
@@ -109,11 +116,12 @@ export function AppRoutes({
             <NewInvoiceView
               cashSession={cashSession}
               canCreatePayments={canCreatePayments}
+              canOpenCash={canOpenCash}
               canViewCatalog={canViewCatalog}
               canViewReceipts={canViewReceipts}
               canMarkDialysisPrescription={canMarkDialysisPrescription}
               onCashSessionChange={onCashSessionChange}
-              onOpenCash={onQuickCash}
+              onOpenCash={canOpenCash ? onQuickCash : undefined}
               onStatus={onStatus}
             />
           </PermissionGate>
@@ -211,7 +219,13 @@ export function AppRoutes({
         element={
           <PermissionGate allowed={canAccessRoute(appRoutes.users, user.permissions)} reason={appRoutes.users.deniedReason}>
             <Suspense fallback={<LoadingState label="Cargando usuarios..." />}>
-              <UsersView onStatus={onStatus} canCreateUsers={canCreateUsers} />
+              <UsersView
+                onStatus={onStatus}
+                canCreateUsers={canCreateUsers}
+                canUpdateUsers={canUpdateUsers}
+                canDisableUsers={canDisableUsers}
+                canManageRoles={canManageRoles}
+              />
             </Suspense>
           </PermissionGate>
         }
@@ -250,6 +264,11 @@ function NotFoundView() {
     <EmptyState
       title="Ruta no encontrada"
       description="La pantalla solicitada no existe dentro de la navegacion principal."
+      action={(
+        <Button asChild>
+          <Link to={appRoutes.dashboard.path}>Ir al inicio</Link>
+        </Button>
+      )}
     />
   );
 }

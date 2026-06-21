@@ -2,6 +2,7 @@ param(
     [string] $ProjectRoot = "",
     [switch] $CriticalOnly,
     [switch] $Full,
+    [switch] $SkipOps,
     [switch] $SkipBackend,
     [switch] $SkipFrontend
 )
@@ -46,6 +47,8 @@ function Test-PathOrFail([string] $Path, [string] $Label) {
 
 $backendDir = Join-Path $ProjectRoot "backend"
 $frontendDir = Join-Path $ProjectRoot "frontend"
+$installerSafetyScript = Join-Path $ProjectRoot "scripts\validate_installer_safety.ps1"
+$goldenDbRunnerSafetyScript = Join-Path $ProjectRoot "scripts\test_golden_db_runner_safety.ps1"
 
 Write-Host "Windows quality gate"
 Write-Host "Project root: $ProjectRoot"
@@ -53,7 +56,19 @@ Write-Host "Mode: $(if ($Full) { 'Full' } else { 'CriticalOnly' })"
 
 Invoke-GateStep "git diff check" $ProjectRoot { git diff --check }
 
+if (-not $SkipOps) {
+    Test-PathOrFail $installerSafetyScript "Installer safety script"
+    Invoke-GateStep "ops scripts safety" $ProjectRoot {
+        & $installerSafetyScript -Root $ProjectRoot
+    }
+}
+
 if (-not $SkipBackend) {
+    Test-PathOrFail $goldenDbRunnerSafetyScript "Golden DB runner safety script"
+    Invoke-GateStep "golden db runner safety" $ProjectRoot {
+        & $goldenDbRunnerSafetyScript -Root $ProjectRoot
+    }
+
     Test-PathOrFail (Join-Path $backendDir "artisan") "Laravel artisan"
     Test-PathOrFail (Join-Path $backendDir "vendor\autoload.php") "Composer autoload"
 

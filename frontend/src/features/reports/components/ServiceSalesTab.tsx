@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { EmptyState } from '../../../components/ui/states';
 import { KPICard } from './KPICard';
 import type { ServiceSalesReport, CategoryReport } from '../../../lib/api/types';
-import { formatCents, formatLempirasFromCents, formatQuantity, parseCents, parseQuantityUnits } from '../../../lib/moneyCents';
+import { formatCents, formatLempirasUIFromCents, formatQuantity, parseCents, parseQuantityUnits } from '../../../lib/moneyCents';
 
 interface ServiceSalesTabProps {
   canExport: boolean;
@@ -16,6 +16,7 @@ interface ServiceSalesTabProps {
   dateTo: string;
   categories: CategoryReport | null;
   serviceSales: ServiceSalesReport | null;
+  exporting?: boolean;
   onDateFromChange: (value: string) => void;
   onDateToChange: (value: string) => void;
   onExport: () => void;
@@ -23,7 +24,7 @@ interface ServiceSalesTabProps {
   onSubmit: () => void;
 }
 
-export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, serviceSales, onDateFromChange, onDateToChange,
+export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, serviceSales, exporting = false, onDateFromChange, onDateToChange,
   onExport, onExportPdf, onSubmit }: ServiceSalesTabProps) {
 
   const totalQuantity = serviceSales?.services.reduce((acc, service) => acc + (parseQuantityUnits(service.quantity) ?? 0), 0) ?? 0;
@@ -169,7 +170,7 @@ export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, servi
                 <CardTitle>Top 10 Servicios por {serviceAmountLabel}</CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={260}>
+                <ResponsiveContainer width="100%" height={260} minWidth={1} minHeight={1}>
                   <BarChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                     <XAxis dataKey="service" tickLine={false} interval={0} height={70} angle={-20} textAnchor="end" />
@@ -184,13 +185,13 @@ export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, servi
 
           {canExport ? (
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={onExport}>
+              <Button type="button" variant="outline" onClick={onExport} disabled={exporting}>
                 <Download className="h-4 w-4 mr-2" />
-                Exportar Excel
+                {exporting ? 'Exportando...' : 'Exportar Excel'}
               </Button>
-              <Button type="button" variant="outline" onClick={onExportPdf}>
+              <Button type="button" variant="outline" onClick={onExportPdf} disabled={exporting}>
                 <Download className="h-4 w-4 mr-2" />
-                Exportar PDF
+                {exporting ? 'Exportando...' : 'Exportar PDF'}
               </Button>
             </div>
           ) : (
@@ -212,7 +213,7 @@ export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, servi
 }
 
 function moneyLabel(value: string | number | null | undefined): string {
-  return formatLempirasFromCents(parseCents(value));
+  return formatLempirasUIFromCents(parseCents(value));
 }
 
 function quantityLabel(value: string | number | null | undefined): string {

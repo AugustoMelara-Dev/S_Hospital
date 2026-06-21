@@ -1,10 +1,11 @@
 # Release checklist - validacion operativa y produccion real
 
-> v1.1 (2026-06-15): dictamen escalado a `Estado 2.5` (hardening tecnico listo). Faltan 4 PENDING fisicos para `Estado 3` (despliegue local controlado): LAN desde segunda PC, impresion fisica, formato de captura manual, acta firmada.
+> v1.1 (2026-06-15): dictamen escalado a `Estado 2.5` (hardening tecnico listo). El cierre `PRODUCTION_READY` exige seis evidencias finales completas: LAN desde segunda PC, impresion fisica, restore en base descartable, concurrencia, concurrencia bajo carga y smoke real LAN.
 
 Estado actual documentado: `PRODUCTION_CANDIDATE`. No declarar
 `PRODUCTION_READY` hasta cerrar validacion fisica de cliente LAN, hardware de
-impresora institucional y configuracion final del servidor real.
+impresora institucional, restore, concurrencia, smoke LAN y configuracion final
+del servidor real.
 
 ## Quality gate seguro
 
@@ -325,7 +326,9 @@ Para removerlas: `powershell.exe -ExecutionPolicy Bypass -File scripts\install_b
 - Crear `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` usando `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md`.
 - Crear `qa/FINAL_RESTORE_PROOF.md` usando `qa/FINAL_RESTORE_PROOF.example.md`.
 - Crear `qa/FINAL_CONCURRENCY_PROOF.md` usando `qa/FINAL_CONCURRENCY_PROOF.example.md`.
-- Para preparar ambos archivos sin escribir evidencia falsa:
+- Crear `qa/FINAL_CONCURRENCY_UNDER_LOAD_PROOF_LAN_8081.md` usando `qa/FINAL_CONCURRENCY_UNDER_LOAD_PROOF_LAN_8081.example.md`.
+- Crear `qa/FINAL_REAL_SMOKE_LAN_8081.md` usando `qa/FINAL_REAL_SMOKE_LAN_8081.example.md`.
+- Para preparar los borradores sin escribir evidencia falsa:
 
 ```powershell
 cd C:\Projects\S_Hospital
@@ -351,6 +354,8 @@ evidencia.
 Luego completar manualmente en ese mismo archivo login, caja, factura, pago,
 recibo, historial, reportes y backup `pending` -> `success`.
 - Validar concurrencia real con MySQL/MariaDB.
+- Validar concurrencia bajo carga contra un entorno descartable y guardar `qa/FINAL_CONCURRENCY_UNDER_LOAD_PROOF_LAN_8081.md`.
+- Validar smoke real LAN de login, navegacion, factura, pago, recibo, historial y reportes, y guardar `qa/FINAL_REAL_SMOKE_LAN_8081.md`.
 - Crear admin inicial real con password temporal, cambio obligatorio y contrasena entregada por entrada oculta/`HOSPITAL_INITIAL_ADMIN_PASSWORD`, no por argumento CLI.
 - Remover o no ejecutar seeders de validacion local fuera de `local`/`testing`.
 - Ejecutar gates finales: `composer validate`, `php artisan test --colors=never`,

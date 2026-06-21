@@ -51,8 +51,9 @@ concurrencia) deben completarse en el servidor final con hardware real.
   el backend pueda leerlo.
 - **Hook `useBackupWorkerHealth`** que consume
   `/api/system/health` y proyecta la sección de backups.
-- **Script `auto_evidence.ps1`** que auto-rellena las 5 plantillas
-  `qa/*.md` con la IP, URL y datos del sistema del `.env`.
+- **Script `auto_evidence.ps1`** que auto-rellena y valida los archivos
+  `qa/*.md` de evidencias finales y handoff con la IP, URL y datos
+  del sistema del `.env`.
 
 ### Refactors
 

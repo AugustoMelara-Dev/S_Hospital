@@ -39,8 +39,6 @@ describe('lib/money (integer-cents helpers)', () => {
 
   it('formats integer cents to a localized "L." string with two decimals', () => {
     const formatted = formatCents(123456);
-    // es-HN uses "." as thousands separator, "," as decimal, but the
-    // exact output is locale-dependent; assert the structural shape.
     expect(formatted).toMatch(/^L\.\s/);
     expect(formatted).toMatch(/1[,.\s]?234[.,]56$/);
   });

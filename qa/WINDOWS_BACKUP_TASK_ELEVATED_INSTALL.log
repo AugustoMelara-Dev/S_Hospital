@@ -1,0 +1,73 @@
+﻿[2026-06-17 22:23:55] Prepared scheduled-task installer. Mode=Docker, DockerMode=True, PhpMode=False, Status=False, Uninstall=False, UpdateExisting=True.
+[2026-06-17 22:23:55] Launching elevated scheduled-task installer.
+[2026-06-17 22:24:03] Prepared scheduled-task installer. Mode=Docker, DockerMode=True, PhpMode=False, Status=False, Uninstall=False, UpdateExisting=True.
+[2026-06-17 22:24:18] UpdateExisting active. Replacing existing scheduled tasks if present.
+[2026-06-17 22:24:26] Removed existing scheduled task before update: SistemaCajaHospitalaria-BackupWorker.
+[2026-06-17 22:24:35] Removed existing scheduled task before update: SistemaCajaHospitalaria-DailyBackup.
+[2026-06-17 22:24:35] Registering worker scheduled task as SYSTEM.
+[2026-06-17 22:24:37] Registering daily scheduled backup task as SYSTEM.
+[2026-06-17 22:24:37] Scheduled tasks registered successfully.
+[2026-06-17 22:24:38] Elevated process exited. Verifying scheduled tasks.
+[2026-06-17 22:25:11] ERROR: La ejecucion elevada termino, pero las tareas programadas no quedaron instaladas. Apruebe UAC y ejecute de nuevo desde PowerShell como Administrador si persiste.
+[2026-06-17 22:35:27] Prepared scheduled-task installer. Mode=Docker, DockerMode=True, PhpMode=False, Status=False, Uninstall=False, UpdateExisting=True.
+[2026-06-17 22:35:27] Launching elevated scheduled-task installer.
+[2026-06-17 22:35:33] Prepared scheduled-task installer. Mode=Docker, DockerMode=True, PhpMode=False, Status=False, Uninstall=False, UpdateExisting=True.
+[2026-06-17 22:35:41] UpdateExisting active. Replacing existing scheduled tasks if present.
+[2026-06-17 22:35:48] Removed existing scheduled task before update: SistemaCajaHospitalaria-BackupWorker.
+[2026-06-17 22:35:55] Removed existing scheduled task before update: SistemaCajaHospitalaria-DailyBackup.
+[2026-06-17 22:36:02] Removed existing scheduled task before update: HospitalBillingOS-BackupWorker.
+[2026-06-17 22:36:09] Removed existing scheduled task before update: HospitalBillingOS-DailyBackup.
+[2026-06-17 22:36:09] Registering worker scheduled task as SYSTEM.
+[2026-06-17 22:36:10] Registering daily scheduled backup task as SYSTEM.
+[2026-06-17 22:36:10] Scheduled tasks registered successfully.
+[2026-06-17 22:36:10] Elevated process exited. Verifying scheduled tasks.
+[2026-06-17 22:36:46] ERROR: La ejecucion elevada termino, pero las tareas programadas no quedaron instaladas. Apruebe UAC y ejecute de nuevo desde PowerShell como Administrador si persiste.
+[2026-06-17 22:38:35] Prepared scheduled-task installer. Mode=Docker, DockerMode=True, PhpMode=False, Status=False, Uninstall=False, UpdateExisting=True.
+[2026-06-17 22:38:35] Launching elevated scheduled-task installer.
+[2026-06-17 22:38:42] Prepared scheduled-task installer. Mode=Docker, DockerMode=True, PhpMode=False, Status=False, Uninstall=False, UpdateExisting=True.
+[2026-06-17 22:38:51] UpdateExisting active. Replacing existing scheduled tasks if present.
+[2026-06-17 22:38:58] Removed existing scheduled task before update: SistemaCajaHospitalaria-BackupWorker.
+[2026-06-17 22:39:05] Removed existing scheduled task before update: SistemaCajaHospitalaria-DailyBackup.
+[2026-06-17 22:39:14] Registering worker scheduled task as SYSTEM.
+[2026-06-17 22:39:14] Registering daily scheduled backup task as SYSTEM.
+[2026-06-17 22:39:15] Scheduled tasks registered successfully.
+[2026-06-17 22:39:18] SistemaCajaHospitalaria-BackupWorker: state=Ready, lastRun=11/30/1999 00:00:00, lastResult=267011, nextRun=, user=SYSTEM.
+[2026-06-17 22:39:22] SistemaCajaHospitalaria-DailyBackup: state=Ready, lastRun=11/30/1999 00:00:00, lastResult=267011, nextRun=06/18/2026 02:00:00, user=SYSTEM.
+[2026-06-17 22:39:22] Elevated process exited. Verifying scheduled tasks.
+[2026-06-17 22:39:58] ERROR: La ejecucion elevada termino, pero las tareas programadas no quedaron instaladas. Apruebe UAC y ejecute de nuevo desde PowerShell como Administrador si persiste.
+[2026-06-17 22:51:00] Prepared scheduled-task installer. Mode=Docker, DockerMode=True, PhpMode=False, Status=False, Uninstall=False, UpdateExisting=True.
+[2026-06-17 22:51:00] Launching elevated scheduled-task installer.
+[2026-06-17 22:51:05] Prepared scheduled-task installer. Mode=Docker, DockerMode=True, PhpMode=False, Status=False, Uninstall=False, UpdateExisting=True.
+[2026-06-17 22:51:12] UpdateExisting active. Replacing existing scheduled tasks if present.
+[2026-06-17 22:51:19] Removed existing scheduled task before update: SistemaCajaHospitalaria-BackupWorker.
+[2026-06-17 22:51:25] Removed existing scheduled task before update: SistemaCajaHospitalaria-DailyBackup.
+[2026-06-17 22:51:31] Registering worker scheduled task as SYSTEM.
+[2026-06-17 22:51:32] Registering daily scheduled backup task as SYSTEM.
+[2026-06-17 22:51:32] Scheduled tasks registered successfully.
+[2026-06-17 22:51:35] SistemaCajaHospitalaria-BackupWorker: state=Ready, lastRun=11/30/1999 00:00:00, lastResult=267011, nextRun=, user=SYSTEM.
+[2026-06-17 22:51:39] SistemaCajaHospitalaria-DailyBackup: state=Ready, lastRun=11/30/1999 00:00:00, lastResult=267011, nextRun=06/18/2026 02:00:00, user=SYSTEM.
+[2026-06-17 22:51:39] Elevated process exited. Verifying scheduled tasks.
+[2026-06-17 22:52:14] ERROR: La ejecucion elevada termino, pero las tareas programadas no quedaron instaladas. Apruebe UAC y ejecute de nuevo desde PowerShell como Administrador si persiste.
+[2026-06-17 22:55:35] Prepared scheduled-task installer. Mode=Docker, DockerMode=True, PhpMode=False, Status=False, Uninstall=False, UpdateExisting=True.
+[2026-06-17 22:55:35] Launching elevated scheduled-task installer.
+[2026-06-17 22:55:39] Prepared scheduled-task installer. Mode=Docker, DockerMode=True, PhpMode=False, Status=False, Uninstall=False, UpdateExisting=True.
+[2026-06-17 22:55:46] UpdateExisting active. Replacing existing scheduled tasks if present.
+[2026-06-17 22:55:53] Removed existing scheduled task before update: SistemaCajaHospitalaria-BackupWorker.
+[2026-06-17 22:55:59] Removed existing scheduled task before update: SistemaCajaHospitalaria-DailyBackup.
+[2026-06-17 22:56:05] Registering worker scheduled task as SYSTEM.
+[2026-06-17 22:56:05] Registering daily scheduled backup task as SYSTEM.
+[2026-06-17 22:56:05] Scheduled tasks registered successfully.
+[2026-06-17 22:56:09] SistemaCajaHospitalaria-BackupWorker: state=Ready, lastRun=11/30/1999 00:00:00, lastResult=267011, nextRun=, user=SYSTEM.
+[2026-06-17 22:56:12] SistemaCajaHospitalaria-DailyBackup: state=Ready, lastRun=11/30/1999 00:00:00, lastResult=267011, nextRun=06/18/2026 02:00:00, user=SYSTEM.
+[2026-06-17 22:56:13] Elevated process exited. Verifying scheduled tasks.
+[2026-06-19 05:13:43] Launching elevated scheduled-task installer.
+[2026-06-19 05:14:52] Prepared scheduled-task installer. Mode=Docker, DockerMode=True, PhpMode=False, Status=False, Uninstall=False, UpdateExisting=True.
+[2026-06-19 05:14:56] UpdateExisting active. Replacing existing scheduled tasks if present.
+[2026-06-19 05:14:58] Removed existing scheduled task before update: SistemaCajaHospitalaria-BackupWorker.
+[2026-06-19 05:15:01] Removed existing scheduled task before update: SistemaCajaHospitalaria-DailyBackup.
+[2026-06-19 05:15:04] Registering worker scheduled task as SYSTEM.
+[2026-06-19 05:15:05] Registering daily scheduled backup task as SYSTEM.
+[2026-06-19 05:15:05] Scheduled tasks registered successfully.
+[2026-06-19 05:15:07] SistemaCajaHospitalaria-BackupWorker: state=Ready, lastRun=11/30/1999 00:00:00, lastResult=267011, nextRun=, user=SYSTEM.
+[2026-06-19 05:15:08] SistemaCajaHospitalaria-DailyBackup: state=Ready, lastRun=11/30/1999 00:00:00, lastResult=267011, nextRun=06/20/2026 02:00:00, user=SYSTEM.
+[2026-06-19 05:15:09] Elevated process exited. Verifying scheduled tasks.

@@ -8,10 +8,11 @@ import { backups } from './api/backups';
 import { fiscal } from './api/fiscal';
 import { institutionalReceipts } from './api/institutionalReceipts';
 import { system } from './api/system';
-import { users, type UserPayload } from './api/users';
+import { users, type RolePayload, type UserPayload } from './api/users';
 import type {
   AuthUser,
   FiscalSettings,
+  OperationalSettings,
   PublicBranding,
   FiscalSequence,
   Category,
@@ -49,6 +50,9 @@ import type {
   ReportFilters,
   PdfReportFilters,
   DashboardReport,
+  TodayReport,
+  ExecutiveReport,
+  ExecutiveReportFilters,
   InstitutionalReceiptSettings,
   InstitutionalReceipt,
   InstitutionalReceiptSeries,
@@ -58,6 +62,8 @@ import type {
   ReceiptProfileAssignment,
   ReceiptSeriesPayload,
   ReceiptTestPrintPayload,
+  RoleDefinition,
+  PermissionCatalogGroup,
 } from './api/types';
 
 export {
@@ -78,6 +84,7 @@ export {
 export type {
   AuthUser,
   FiscalSettings,
+  OperationalSettings,
   PublicBranding,
   FiscalSequence,
   Category,
@@ -124,7 +131,13 @@ export type {
   ReceiptProfileAssignment,
   ReceiptSeriesPayload,
   ReceiptTestPrintPayload,
+  RoleDefinition,
+  PermissionCatalogGroup,
   UserPayload,
+  RolePayload,
+  TodayReport,
+  ExecutiveReport,
+  ExecutiveReportFilters,
 };
 
 
@@ -150,6 +163,18 @@ export const apiClient = {
 
   async resetUserPassword(id: number, password: string): Promise<AuthUser> {
     return users.resetPassword(id, password);
+  },
+
+  async getRoles(): Promise<{ roles: RoleDefinition[]; permissionCatalog: PermissionCatalogGroup[] }> {
+    return users.getRoles();
+  },
+
+  async createRole(payload: RolePayload): Promise<RoleDefinition> {
+    return users.createRole(payload);
+  },
+
+  async updateRole(id: number, payload: RolePayload): Promise<RoleDefinition> {
+    return users.updateRole(id, payload);
   },
 
   async getCategories(active?: boolean): Promise<Category[]> {
@@ -249,6 +274,14 @@ export const apiClient = {
     return reports.getDashboardReport();
   },
 
+  async getTodayReport(): Promise<TodayReport> {
+    return reports.getTodayReport();
+  },
+
+  async getExecutiveReport(filters: ExecutiveReportFilters): Promise<ExecutiveReport> {
+    return reports.getExecutiveReport(filters);
+  },
+
   async getDailyReport(date?: string): Promise<DailyReport> {
     return reports.getDailyReport(date);
   },
@@ -285,12 +318,28 @@ export const apiClient = {
     return reports.exportUrl(filters);
   },
 
+  executivePdfUrl(filters: ExecutiveReportFilters): string {
+    return reports.executivePdfUrl(filters);
+  },
+
+  executiveExcelUrl(filters: ExecutiveReportFilters): string {
+    return reports.executiveExcelUrl(filters);
+  },
+
   async downloadReportExport(filters: ReportFilters): Promise<Blob> {
     return reports.downloadExport(filters);
   },
 
   async downloadReportPdf(filters: PdfReportFilters): Promise<Blob> {
     return reports.downloadPdf(filters);
+  },
+
+  async downloadExecutivePdf(filters: ExecutiveReportFilters): Promise<Blob> {
+    return reports.downloadExecutivePdf(filters);
+  },
+
+  async downloadExecutiveExcel(filters: ExecutiveReportFilters): Promise<Blob> {
+    return reports.downloadExecutiveExcel(filters);
   },
 
   async getBackups(filters: { page?: number; perPage?: number; status?: BackupLog['status'] | 'all' } = {}): Promise<{ data: BackupLog[]; meta: PaginatedMeta }> {
@@ -323,6 +372,10 @@ export const apiClient = {
 
   async getFiscalSettings(): Promise<FiscalSettings | null> {
     return fiscal.getFiscalSettings();
+  },
+
+  async getOperationalSettings(): Promise<OperationalSettings | null> {
+    return fiscal.getOperationalSettings();
   },
 
   async getPublicBranding(): Promise<PublicBranding | null> {

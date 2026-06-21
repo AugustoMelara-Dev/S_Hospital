@@ -1,5 +1,5 @@
 import { Badge } from '../../components/ui/badge';
-import { finiteNumber, formatLempiras } from '../../lib/money';
+import { finiteNumber, formatLempirasUI } from '../../lib/money';
 
 type TopServiceData = {
   service_name: string;
@@ -48,11 +48,11 @@ export function TopServicesChart({ services }: TopServicesChartProps) {
               </div>
               <div className="text-right shrink-0">
                 <span className="font-bold text-foreground">
-                  {formatLempiras(service.total)}
+                  {formatLempirasUI(service.total)}
                 </span>
               </div>
             </div>
-            
+
             {/* Custom Premium progress bar */}
             <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
               <div

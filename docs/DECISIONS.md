@@ -599,7 +599,7 @@ Decision:
 
 - Se agregan `scripts\init_production_proofs.ps1` y `scripts\validate_lan_client.ps1`.
 - `init_production_proofs.ps1` crea los archivos reales de evidencia desde las plantillas sin marcarlos como completos.
-- `validate_lan_client.ps1` se ejecuta desde una segunda PC cliente y verifica `/up`, `/login`, `/verify-email` y el primer asset JS del build, con opcion de escribir un borrador de `qa\LAN_CLIENT_VALIDATION_PROOF.md`.
+- `validate_lan_client.ps1` se ejecuta desde una segunda PC cliente y verifica `/up`, `/login`, `/verify-email`, `/api/system/echo-config`, el primer asset JS del build y conexion TCP al puerto Soketi/WebSocket, con opcion de escribir un borrador de `qa\LAN_CLIENT_VALIDATION_PROOF.md`.
 - La evidencia de login, caja, factura, pago, recibo, reportes, backup e impresora sigue siendo manual/fisica y debe completarse antes del preflight final.
 
 Motivo:
@@ -758,7 +758,7 @@ Motivo:
 
 Consecuencia:
 
-- `PRODUCTION_READY` queda bloqueado por cuatro evidencias: segunda PC LAN, impresora fisica, restore final y concurrencia final.
+- `PRODUCTION_READY` queda bloqueado por seis evidencias: segunda PC LAN, impresora fisica, restore final, concurrencia final, concurrencia bajo carga y smoke real LAN.
 - Backups, restore y concurrencia ahora pueden dejar artefactos verificables en `qa/`.
 - Cajeros con permiso de reporte de caja pueden exportar solo su caja si tambien reciben `reports.export`.
 
@@ -1747,17 +1747,17 @@ Consecuencia:
 
 Decision:
 
-- La pantalla de usuarios valida contrasenas temporales con la misma regla publica que Laravel: minimo 10 caracteres, con letras y numeros.
+- La pantalla de usuarios valida contrasenas temporales con la misma regla publica que Laravel: minimo 12 caracteres, con mayuscula, minuscula, numero y simbolo.
 - La regla aplica tanto al alta de usuarios como al restablecimiento administrativo de clave.
 
 Motivo:
 
-- El backend ya rechaza claves que no cumplen `Password::min(10)->letters()->numbers()`.
+- El backend ya rechaza claves que no cumplen `Password::min(12)->mixedCase()->numbers()->symbols()`.
 - La UI no debe prometer "minimo 6 caracteres", porque eso genera errores tardios y confusos para administracion.
 
 Consecuencia:
 
-- Las pruebas de `UsersView` fallan si el frontend vuelve a aceptar contrasenas sin numero o con menos de 10 caracteres.
+- Las pruebas de `UsersView` fallan si el frontend vuelve a aceptar contrasenas sin mayuscula, minuscula, numero, simbolo o con menos de 12 caracteres.
 - Laravel sigue siendo la fuente final de seguridad; el frontend solo anticipa el rechazo con un mensaje claro.
 
 ### 2026-06-01 - Retencion de backups conserva registros inseguros
@@ -1800,7 +1800,7 @@ Decision:
 
 - El comando `auth:create-initial-admin` acepta la contrasena temporal desde `HOSPITAL_INITIAL_ADMIN_PASSWORD`.
 - El instalador LAN captura la contrasena con entrada oculta, la pasa por entorno temporal al comando y limpia la variable al terminar.
-- La contrasena temporal inicial debe cumplir el minimo institucional: 10 caracteres, con letras y numeros.
+- La contrasena temporal inicial debe cumplir el minimo institucional: 12 caracteres, con mayuscula, minuscula, numero y simbolo.
 - `--password` queda disponible solo como compatibilidad tecnica, pero el instalador no lo usa.
 
 Motivo:
@@ -3596,3 +3596,33 @@ Decision: `NewInvoiceView` agrega un guard in-memory contra doble submit y `Invo
 Motivo: reducir POST duplicados, evitar 403 visibles/ruidosos para cajeros y mejorar operacion tactil/movil sin cambiar contratos de backend.
 
 Validacion: `npm.cmd run test -- AboutView useBackups InvoiceConfirmation AppShell --run`, `npm.cmd run test -- NewInvoiceView InvoiceConfirmation --run` y `npm.cmd run typecheck`.
+
+# 2026-06-18 - Administracion de usuarios permite permisos directos por modulo
+
+Contexto: la administradora necesita definir que modulos puede usar cada usuario, no depender solo de roles predefinidos. Los roles siguen siendo plantillas utiles, pero no bastan para auditar excepciones operativas.
+
+Decision: el backend acepta `permissions[]` en crear/editar usuario, sincroniza permisos directos de Spatie, devuelve permisos efectivos y directos, audita el mapa de acceso y bloquea permisos administrativos protegidos si el actor no tiene `users.assign_admin_role`. Cuando un usuario tiene permisos directos configurados, ese mapa se trata como acceso exacto y no como union con el rol; el rol queda como plantilla operativa/etiqueta. Tambien se impide cambiar los propios permisos desde el editor de usuarios. El frontend muestra el catalogo agrupado por modulo dentro del modal de usuario, precarga la plantilla del rol y permite quitar permisos antes de guardar.
+
+Motivo: hacer que el acceso por modulo sea una decision explicita de administracion hospitalaria, manteniendo roles como plantilla y conservando defensas contra auto-bloqueo o escalamiento accidental.
+
+Validacion: `php artisan test --filter=UserManagementTest`, `php artisan test --filter=RoleManagementTest`, `npm run test -- UsersView.test.tsx`, `npm run typecheck`, `npm run lint`, `npm run test:critical` y `npm run build`.
+
+# 2026-06-18 - Permisos directos requieren administracion de roles y golden DB incluye catalogo
+
+Contexto: la auditoria de cierre encontro que `users.create`/`users.update` podia enviar `permissions[]` sin `users.assign_admin_role`, permitiendo que un gestor de usuarios asignara permisos directos sensibles. Tambien encontro que la base golden de tests se invalidaba por migraciones/seeders, pero no por cambios al CSV inicial del catalogo.
+
+Decision: crear o editar permisos directos de usuario ahora requiere `users.assign_admin_role`; quien solo crea usuarios asigna un rol operativo y el usuario hereda los modulos del rol. La UI oculta el editor de modulos directos cuando el actor no tiene ese permiso y no envia `permissions[]`. Los roles reservados `admin/root` no se pueden crear ni usar como nuevo nombre de roles editables. La validacion de usuarios restringe roles a `guard_name=web`. La huella golden incluye `database/seeders/data/catalogo_servicios_inicial.csv` y la clonacion reactiva `FOREIGN_KEY_CHECKS` aunque falle antes de copiar datos.
+
+Motivo: separar alta de usuarios de administracion de privilegios, evitar escalacion lateral por permisos directos y asegurar que los tests rapidos contra MariaDB se regeneren cuando cambia el catalogo base.
+
+Validacion: `php artisan test --filter=UserManagementTest`, `php artisan test --filter=RoleManagementTest`, `php artisan test --filter=MigrationHashTest`, `php artisan test --filter=GoldenDatabaseCommandTest`, `npm run test -- UsersView.test.tsx`, `npm run typecheck` y hardening scripts focales.
+
+# 2026-06-19 - Refresh LAN soporta env externo de produccion Docker
+
+Contexto: el servidor Docker seguia sano y respondia en `192.168.1.10:8081`, pero el env productivo externo usado por `docker compose --env-file C:\tmp\s_hospital_offlinetest.env` todavia apuntaba a `192.168.1.7`. Eso dejaba `APP_URL`, Sanctum, CORS y `PUSHER_CLIENT_HOST` desalineados despues de un cambio DHCP/IP.
+
+Decision: `scripts\refresh_lan_ip.ps1` acepta `-EnvFile` y `-ComposeProjectName`, sincroniza las variables LAN tambien en el env externo efectivo y recrea contenedores con ese mismo env y proyecto Compose. El script mantiene `-WhatIf` para previsualizar cambios y no borra volumenes ni base de datos.
+
+Motivo: produccion offline puede usar env fuera del repositorio y proyecto Compose nombrado. El procedimiento de recuperacion de IP debe reparar la configuracion que realmente consume el stack final, no solo `.env`/`backend\.env` del workspace.
+
+Validacion: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\test_lan_deploy_hardening.ps1`, `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\test_backup_task_envfile_hardening.ps1`, `scripts\refresh_lan_ip.ps1 -ServerIp 192.168.1.10 -AppPort 8081 -EnvFile C:\tmp\s_hospital_offlinetest.env -ComposeProjectName shospital_offlinetest -WhatIf` y preflight contra `http://192.168.1.10:8081`.

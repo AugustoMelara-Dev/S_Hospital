@@ -82,11 +82,15 @@ function Get-RelativeReleasePath([System.IO.FileSystemInfo] $item) {
 }
 
 function Test-IsForbiddenEnvFile([string] $name) {
-    if ($name -notmatch '(?i)^\.env(\.|$)') {
+    if ($name -notmatch '(?i)(^\.env(\.|$)|\.env$)') {
         return $false
     }
 
-    return $name -notmatch '(?i)(^\.env\.example$|^\.env\..*\.example$|^\.env\.sample$|^\.env\.dist$)'
+    return $name -notmatch '(?i)(^\.env\.example$|^\.env\..*\.example$|^\.env\.sample$|^\.env\.dist$|\.env\.(example|sample|dist)$)'
+}
+
+function Test-IsAllowedQaTemplate([string] $relativePath) {
+    return $relativePath -match '^qa/[A-Za-z0-9_-]+\.example\.md$'
 }
 
 function Test-ReleaseFileMatchesSource([string] $relativePath) {
@@ -179,9 +183,31 @@ Test-RequiredPath "scripts\deploy_hospital_lan.ps1" "file"
 Test-RequiredPath "scripts\load_offline_images.ps1" "file"
 Test-RequiredPath "scripts\install_hospital_startup_shortcut.ps1" "file"
 Test-RequiredPath "scripts\install_backup_tasks_windows.ps1" "file"
+Test-RequiredPath "scripts\install_backup_startup_current_user.ps1" "file"
+Test-RequiredPath "scripts\start_backup_automation.cmd" "file"
+Test-RequiredPath "scripts\run_backup_scheduler_loop.ps1" "file"
 Test-RequiredPath "scripts\validate_support_packet_safety.ps1" "file"
+Test-RequiredPath "scripts\validate_installer_safety.ps1" "file"
+Test-RequiredPath "scripts\auto_evidence.ps1" "file"
+Test-RequiredPath "scripts\quality_gate_windows.ps1" "file"
+Test-RequiredPath "scripts\test_golden_db_runner_safety.ps1" "file"
+Test-RequiredPath "scripts\validate_mysql_concurrency_under_load.mjs" "file"
 Test-RequiredPath "scripts\run_backup_worker.cmd" "file"
 Test-RequiredPath "scripts\run_scheduled_backup.cmd" "file"
+Test-RequiredPath "docs\OFFLINE_LAN_INSTALL.md" "file"
+Test-RequiredPath "docs\BACKUP_RESTORE.md" "file"
+Test-RequiredPath "docs\DISASTER_RECOVERY.md" "file"
+Test-RequiredPath "docs\PENDIENTES_VALIDACION_CAMPO.md" "file"
+Test-RequiredPath "docs\GUIA_LAN_CLIENTE.md" "file"
+Test-RequiredPath "docs\GUIA_IMPRESION_RECIBOS.md" "file"
+Test-RequiredPath "docs\Manual_Usuario.md" "file"
+Test-RequiredPath "docs\manuales\INDICE_OPERADOR.md" "file"
+Test-RequiredPath "qa\LAN_CLIENT_VALIDATION_PROOF.example.md" "file"
+Test-RequiredPath "qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md" "file"
+Test-RequiredPath "qa\FINAL_RESTORE_PROOF.example.md" "file"
+Test-RequiredPath "qa\FINAL_CONCURRENCY_PROOF.example.md" "file"
+Test-RequiredPath "qa\FINAL_CONCURRENCY_UNDER_LOAD_PROOF_LAN_8081.example.md" "file"
+Test-RequiredPath "qa\FINAL_REAL_SMOKE_LAN_8081.example.md" "file"
 
 Test-ReleaseFileMatchesSource "docker-compose.prod.yml"
 Test-ReleaseFileMatchesSource "backend\Dockerfile.prod"
@@ -190,27 +216,48 @@ Test-ReleaseFileMatchesSource "scripts\collect_support_packet.ps1"
 Test-ReleaseFileMatchesSource "scripts\deploy_hospital_lan.ps1"
 Test-ReleaseFileMatchesSource "scripts\install_hospital_startup_shortcut.ps1"
 Test-ReleaseFileMatchesSource "scripts\install_backup_tasks_windows.ps1"
+Test-ReleaseFileMatchesSource "scripts\install_backup_startup_current_user.ps1"
+Test-ReleaseFileMatchesSource "scripts\start_backup_automation.cmd"
+Test-ReleaseFileMatchesSource "scripts\run_backup_scheduler_loop.ps1"
 Test-ReleaseFileMatchesSource "scripts\lib\operational_url_safety.ps1"
 Test-ReleaseFileMatchesSource "scripts\open_hospital_system.ps1"
 Test-ReleaseFileMatchesSource "scripts\repair_hospital_system.ps1"
 Test-ReleaseFileMatchesSource "scripts\start_hospital_services.ps1"
 Test-ReleaseFileMatchesSource "scripts\validate_support_packet_safety.ps1"
+Test-ReleaseFileMatchesSource "scripts\validate_installer_safety.ps1"
+Test-ReleaseFileMatchesSource "scripts\auto_evidence.ps1"
+Test-ReleaseFileMatchesSource "scripts\quality_gate_windows.ps1"
+Test-ReleaseFileMatchesSource "scripts\test_golden_db_runner_safety.ps1"
+Test-ReleaseFileMatchesSource "scripts\validate_mysql_concurrency_under_load.mjs"
 Test-ReleaseFileMatchesSource "scripts\run_backup_worker.cmd"
 Test-ReleaseFileMatchesSource "scripts\run_scheduled_backup.cmd"
+Test-ReleaseFileMatchesSource "scripts\init_production_proofs.ps1"
+Test-ReleaseFileMatchesSource "scripts\production_readiness_preflight.ps1"
+Test-ReleaseFileMatchesSource "scripts\test_backup_task_envfile_hardening.ps1"
+Test-ReleaseFileMatchesSource "qa\LAN_CLIENT_VALIDATION_PROOF.example.md"
+Test-ReleaseFileMatchesSource "qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md"
+Test-ReleaseFileMatchesSource "qa\FINAL_RESTORE_PROOF.example.md"
+Test-ReleaseFileMatchesSource "qa\FINAL_CONCURRENCY_PROOF.example.md"
+Test-ReleaseFileMatchesSource "qa\FINAL_CONCURRENCY_UNDER_LOAD_PROOF_LAN_8081.example.md"
+Test-ReleaseFileMatchesSource "qa\FINAL_REAL_SMOKE_LAN_8081.example.md"
 
 $forbiddenItems = Get-ChildItem -LiteralPath $ReleaseRoot -Recurse -Force | Where-Object {
     $relative = Get-RelativeReleasePath $_
     $name = $_.Name
 
     if ($_.PSIsContainer) {
-        return $relative -match '(^|/)(node_modules|install-logs|playwright-report|test-results|\.git|qa)(/|$)' -or
+        return $relative -match '(^|/)(node_modules|install-logs|playwright-report|test-results|\.git)(/|$)' -or
+            $relative -match '(^|/)docs/superpowers(/|$)' -or
             $relative -match '(^|/)storage/(app/private/backups|logs)(/|$)'
     }
 
     return (Test-IsForbiddenEnvFile $name) -or
-        $relative -match '(^|/)(install-logs|qa|test-results|playwright-report)/' -or
+        $relative -match '(^|/)(install-logs|test-results|playwright-report)/' -or
+        ($relative -match '^qa/' -and -not (Test-IsAllowedQaTemplate $relative)) -or
+        $relative -match '(^|/)docs/00_' -or
         $relative -match '(^|/)storage/(app/private/backups|logs)/' -or
-        $relative -match '\.(sql|sql\.gz|dump|bak|log|sqlite|sqlite3|db)$'
+        $relative -match '(?i)(Billing[_ -]?OS|Hospital[_ -]?Billing[_ -]?OS)' -or
+        $relative -match '\.(sql|sql\.gz|dump|bak|log|sqlite|sqlite3|db|docx)$'
 }
 
 foreach ($item in $forbiddenItems) {

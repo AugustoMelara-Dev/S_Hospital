@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AuditLog;
 use App\Models\CashMovement;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSequence;
@@ -91,6 +92,52 @@ class CashPaymentsReceiptTest extends TestCase
             ->postJson('/api/cash-sessions/open', ['opening_amount' => '200.00'])
             ->assertCreated()
             ->assertJsonPath('data.open_user_id', $cashier->id);
+    }
+
+    public function test_cannot_close_an_already_closed_cash_session(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier, '500.00');
+
+        $this->actingAs($cashier)
+            ->postJson("/api/cash-sessions/{$sessionId}/close", ['closing_amount' => '500.00'])
+            ->assertOk()
+            ->assertJsonPath('data.status', CashRegisterSession::STATUS_CLOSED);
+
+        $this->actingAs($cashier)
+            ->postJson("/api/cash-sessions/{$sessionId}/close", ['closing_amount' => '500.00'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('cash_session')
+            ->assertJsonPath('errors.cash_session.0', 'La caja ya esta cerrada.');
+
+        $this->assertSame(1, CashMovement::query()
+            ->where('cash_session_id', $sessionId)
+            ->where('type', CashMovement::TYPE_CLOSING)
+            ->count());
+    }
+
+    public function test_cashier_cannot_close_other_cashiers_session(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $otherCashier = $this->cashier();
+        $otherSessionId = $this->openSession($otherCashier, '100.00');
+
+        $this->actingAs($cashier)
+            ->postJson("/api/cash-sessions/{$otherSessionId}/close", ['closing_amount' => '100.00'])
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('cash_register_sessions', [
+            'id' => $otherSessionId,
+            'user_id' => $otherCashier->id,
+            'status' => CashRegisterSession::STATUS_OPEN,
+            'open_user_id' => $otherCashier->id,
+        ]);
+        $this->assertDatabaseMissing('cash_movements', [
+            'cash_session_id' => $otherSessionId,
+            'type' => CashMovement::TYPE_CLOSING,
+        ]);
     }
 
     public function test_closing_cash_session_calculates_expected_and_difference(): void
@@ -446,7 +493,7 @@ class CashPaymentsReceiptTest extends TestCase
             'amount' => '10.00',
         ]);
 
-        $this->actingAs($cashier)
+        $transferPaymentId = $this->actingAs($cashier)
             ->postJson("/api/invoices/{$invoiceId}/payments", [
                 'cash_session_id' => $sessionId,
                 'method' => Payment::METHOD_TRANSFER,
@@ -456,7 +503,8 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertCreated()
             ->assertJsonPath('data.invoice.status', Invoice::STATUS_PAID)
             ->assertJsonPath('data.invoice.paid_amount', '17.25')
-            ->assertJsonPath('data.invoice.balance_due', '0.00');
+            ->assertJsonPath('data.invoice.balance_due', '0.00')
+            ->json('data.payment.id');
 
         $this->assertDatabaseHas('payments', [
             'invoice_id' => $invoiceId,
@@ -471,10 +519,48 @@ class CashPaymentsReceiptTest extends TestCase
             'action' => 'payment.registered',
             'entity_type' => Payment::class,
         ]);
+        $audit = AuditLog::query()
+            ->where('action', 'payment.registered')
+            ->where('entity_type', Payment::class)
+            ->where('entity_id', $transferPaymentId)
+            ->firstOrFail();
+        $this->assertSame('TRX-1', $audit->new_values['reference'] ?? null);
+        $this->assertSame(Payment::METHOD_TRANSFER, $audit->new_values['method'] ?? null);
         $this->assertDatabaseHas('invoices', [
             'id' => $invoiceId,
             'paid_amount_cents' => 1725,
             'balance_due_cents' => 0,
+        ]);
+    }
+
+    public function test_partial_payment_rejected_when_partial_payments_disabled(): void
+    {
+        $this->seedBillingBase();
+        FiscalSetting::query()->update(['partial_payments_enabled' => false]);
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier, '500.00');
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+
+        $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_CASH,
+                'amount' => '10.00',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('amount')
+            ->assertJsonPath('errors.amount.0', 'El monto recibido es menor al total.');
+
+        $this->assertDatabaseMissing('payments', [
+            'invoice_id' => $invoiceId,
+            'cash_session_id' => $sessionId,
+            'amount' => '10.00',
+        ]);
+        $this->assertDatabaseHas('invoices', [
+            'id' => $invoiceId,
+            'status' => Invoice::STATUS_ISSUED,
+            'paid_amount' => '0.00',
+            'balance_due' => '17.25',
         ]);
     }
 
@@ -794,6 +880,52 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertJsonPath('data.payments.0.reference', 'TRX-REC-1');
     }
 
+    public function test_receipt_view_writes_audit_without_mutating_invoice_or_reprint_count(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier, '500.00');
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+
+        $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_CASH,
+                'amount' => '17.25',
+            ])
+            ->assertCreated();
+
+        $this->actingAs($cashier)
+            ->getJson("/api/invoices/{$invoiceId}/receipt?width=half_letter")
+            ->assertOk()
+            ->assertJsonPath('data.width', 'half_letter')
+            ->assertJsonPath('data.invoice.status', Invoice::STATUS_PAID)
+            ->assertJsonPath('data.invoice.paid_amount', '17.25')
+            ->assertJsonPath('data.invoice.balance_due', '0.00');
+
+        $audit = AuditLog::query()
+            ->where('action', 'receipt.viewed')
+            ->where('entity_type', Invoice::class)
+            ->where('entity_id', $invoiceId)
+            ->firstOrFail();
+
+        $this->assertSame($cashier->id, $audit->user_id);
+        $this->assertSame('success', $audit->result);
+        $this->assertSame('half_letter', $audit->new_values['width'] ?? null);
+        $this->assertSame('paid', $audit->new_values['invoice_status'] ?? null);
+        $this->assertSame(0, AuditLog::query()
+            ->where('entity_type', Invoice::class)
+            ->where('entity_id', $invoiceId)
+            ->where('action', 'invoice.reprinted')
+            ->count());
+        $this->assertDatabaseHas('invoices', [
+            'id' => $invoiceId,
+            'status' => Invoice::STATUS_PAID,
+            'paid_amount' => '17.25',
+            'balance_due' => '0.00',
+        ]);
+    }
+
     public function test_payment_reversal_cash_movement_uses_amount_cents_as_financial_source(): void
     {
         $this->seedBillingBase();
@@ -835,6 +967,42 @@ class CashPaymentsReceiptTest extends TestCase
             'method' => Payment::METHOD_CASH,
             'amount' => '-17.25',
         ]);
+    }
+
+    public function test_legacy_receipt_uses_cents_as_financial_source_when_decimal_columns_drift(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier, '500.00');
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+
+        $paymentId = $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_CASH,
+                'amount' => '17.25',
+            ])
+            ->assertCreated()
+            ->json('data.payment.id');
+
+        Payment::query()
+            ->whereKey($paymentId)
+            ->update(['amount' => '99.99']);
+        Invoice::query()
+            ->whereKey($invoiceId)
+            ->update([
+                'total' => '99.99',
+                'paid_amount' => '99.99',
+                'balance_due' => '99.99',
+            ]);
+
+        $this->actingAs($cashier)
+            ->getJson("/api/invoices/{$invoiceId}/receipt?width=half_letter")
+            ->assertOk()
+            ->assertJsonPath('data.invoice.total', '17.25')
+            ->assertJsonPath('data.invoice.paid_amount', '17.25')
+            ->assertJsonPath('data.invoice.balance_due', '0.00')
+            ->assertJsonPath('data.payments.0.amount', '17.25');
     }
 
     public function test_voiding_payment_from_closed_cash_session_is_rejected_without_changing_report_snapshot(): void

@@ -10,6 +10,7 @@ use App\Models\FiscalSetting;
 use App\Models\InstitutionalReceipt;
 use App\Models\InstitutionalReceiptPrintEvent;
 use App\Models\InstitutionalReceiptSeries;
+use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Service;
 use App\Models\User;
@@ -98,6 +99,52 @@ class InstitutionalReceiptPaymentIntegrationTest extends TestCase
         $this->assertDatabaseCount('institutional_receipts', 1);
     }
 
+    public function test_institutional_receipt_snapshot_uses_cents_as_financial_source_when_decimal_columns_drift(): void
+    {
+        $this->seedBillingBase(createSeries: false);
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+
+        $paymentId = $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_CASH,
+                'amount' => '17.25',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.invoice.status', Invoice::STATUS_PAID)
+            ->json('data.payment.id');
+
+        Payment::query()
+            ->whereKey($paymentId)
+            ->update(['amount' => '99.99']);
+        Invoice::query()
+            ->whereKey($invoiceId)
+            ->update([
+                'total' => '99.99',
+                'paid_amount' => '99.99',
+                'balance_due' => '99.99',
+            ]);
+
+        $this->createReceiptSeries();
+
+        $receiptId = $this->actingAs($cashier)
+            ->postJson('/api/institutional-receipts', ['invoice_id' => $invoiceId])
+            ->assertCreated()
+            ->json('data.id');
+
+        $receipt = InstitutionalReceipt::query()->findOrFail($receiptId);
+
+        $this->assertSame('17.25', $receipt->invoice_snapshot['total']);
+        $this->assertSame(1725, $receipt->invoice_snapshot['total_cents']);
+        $this->assertSame('17.25', $receipt->invoice_snapshot['paid_amount']);
+        $this->assertSame('0.00', $receipt->invoice_snapshot['balance_due']);
+        $this->assertNull($receipt->payment_snapshot['selected_payment']);
+        $this->assertSame('17.25', $receipt->payment_snapshot['posted_payments'][0]['amount']);
+        $this->assertSame(1725, $receipt->payment_snapshot['posted_payments'][0]['amount_cents']);
+    }
+
     public function test_voiding_paid_payment_voids_issued_institutional_receipt_with_audit(): void
     {
         $this->seedBillingBase();
@@ -174,8 +221,12 @@ class InstitutionalReceiptPaymentIntegrationTest extends TestCase
                 'receipt_number_full',
                 'status',
                 'reprint_count',
+                'print_events_count',
+                'has_print_events',
                 'issued_at',
             ], array_keys($receiptSummary));
+            $this->assertSame(0, $receiptSummary['print_events_count']);
+            $this->assertFalse($receiptSummary['has_print_events']);
             $this->assertArrayNotHasKey('institution_snapshot', $receiptSummary);
             $this->assertArrayNotHasKey('series_snapshot', $receiptSummary);
             $this->assertArrayNotHasKey('profile_snapshot', $receiptSummary);
@@ -213,6 +264,18 @@ class InstitutionalReceiptPaymentIntegrationTest extends TestCase
             'event_type' => InstitutionalReceiptPrintEvent::TYPE_ISSUED_PRINT,
             'user_id' => $cashier->id,
         ]);
+
+        $this->actingAs($cashier)
+            ->getJson("/api/invoices/{$invoiceId}")
+            ->assertOk()
+            ->assertJsonPath('data.institutional_receipt.print_events_count', 1)
+            ->assertJsonPath('data.institutional_receipt.has_print_events', true);
+
+        $this->actingAs($cashier)
+            ->getJson('/api/invoices')
+            ->assertOk()
+            ->assertJsonPath('data.0.institutional_receipt.print_events_count', 1)
+            ->assertJsonPath('data.0.institutional_receipt.has_print_events', true);
     }
 
     public function test_explicit_print_event_records_first_print_and_idempotent_replay(): void

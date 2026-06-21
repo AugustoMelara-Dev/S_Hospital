@@ -1,5 +1,5 @@
 import { apiClient } from './base';
-import type { FiscalSettings, FiscalSequence, PublicBranding } from './types';
+import type { FiscalSettings, FiscalSequence, OperationalSettings, PublicBranding } from './types';
 
 export const fiscal = {
   async getPublicBranding(): Promise<PublicBranding | null> {
@@ -9,6 +9,11 @@ export const fiscal = {
 
   async getFiscalSettings(): Promise<FiscalSettings | null> {
     const response = await apiClient.request<{ data: FiscalSettings | null }>('/api/settings/fiscal');
+    return response?.data ?? null;
+  },
+
+  async getOperationalSettings(): Promise<OperationalSettings | null> {
+    const response = await apiClient.request<{ data: OperationalSettings | null }>('/api/settings/operational');
     return response?.data ?? null;
   },
 

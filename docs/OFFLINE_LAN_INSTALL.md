@@ -9,12 +9,12 @@ Este documento separa el entorno Docker de desarrollo de una instalacion de prod
 - Una PC servidor ejecuta Laravel API, frontend compilado, MySQL/MariaDB y backups.
 - Clientes usan navegador en la red local.
 - Los clientes no deben usar `localhost` para entrar al sistema, porque `localhost` apunta a la computadora cliente.
-- Usar IP fija o nombre local del servidor, por ejemplo `http://192.168.1.10`.
-- El despliegue recomendado para produccion es same-origin: frontend compilado y API publicados bajo el mismo host/puerto o dominio LAN.
+- Usar IP fija o reservada del servidor, por ejemplo `http://192.168.1.10`.
+- El despliegue recomendado para produccion es same-origin: frontend compilado y API publicados bajo la misma IP/puerto LAN.
 
 ## Desarrollo con Docker
 
-Docker Compose en este repositorio es solo para desarrollo:
+El Compose base de desarrollo sirve para trabajo tecnico local y puede descargar/instalar dependencias durante preparacion:
 
 ```bash
 docker compose config
@@ -24,11 +24,13 @@ docker compose up -d
 Servicios:
 
 - `backend`: Laravel en `http://localhost:8000` durante desarrollo local.
-- El frontend compilado debe llamar a `/api` y `/sanctum` en el mismo host que sirve la aplicacion. No compilar el build LAN con `VITE_API_BASE_URL=http://localhost:8000`, porque los clientes entran por IP o nombre local del servidor.
+- El frontend compilado debe llamar a `/api` y `/sanctum` en el mismo host que sirve la aplicacion. No compilar el build LAN con `VITE_API_BASE_URL=http://localhost:8000`, porque los clientes entran por IP LAN fija del servidor.
 - `frontend`: Vite React en `http://localhost:5173`.
 - `mysql`: MariaDB local para desarrollo.
 
 El servicio frontend puede ejecutar `npm install` y el backend puede ejecutar `composer install` al iniciar en desarrollo. Esa estrategia no es aceptable como requisito de produccion offline.
+
+El paquete productivo offline usa `docker-compose.prod.yml` dentro de `offline-release` con imagenes Docker precargadas (`offline-images/*.tar`), checksums y frontend ya compilado. Ese Compose productivo no debe confundirse con el Compose de desarrollo.
 
 ### Variables de entorno Docker
 
@@ -41,6 +43,8 @@ El servicio frontend puede ejecutar `npm install` y el backend puede ejecutar `c
 
 ## Produccion offline LAN
 
+Camino recomendado para instalacion hospitalaria: entregar y ejecutar solamente `offline-release\setup.bat` del paquete final validado. No usar el `setup.bat` de la raiz del repositorio en campo.
+
 Antes de instalar en el hospital:
 
 1. Preparar artefactos con internet en una maquina de build controlada.
@@ -49,12 +53,12 @@ Antes de instalar en el hospital:
 4. Copiar backend, `vendor/`, frontend compilado y configuracion al servidor.
 5. Instalar MySQL/MariaDB local en el servidor.
 6. Configurar `.env` real fuera del repositorio con secretos locales, `APP_ENV=production` y `APP_DEBUG=false`.
-7. Configurar `APP_URL`, `SANCTUM_STATEFUL_DOMAINS` y CORS con la IP fija o dominio LAN final, por ejemplo `192.168.1.10`.
+7. Configurar `APP_URL`, `SANCTUM_STATEFUL_DOMAINS` y CORS con la IP fija LAN final, por ejemplo `192.168.1.10`.
 8. Generar `APP_KEY` en el servidor con `php artisan key:generate`.
 9. Ejecutar migraciones aprobadas sin `migrate:fresh`.
 10. Crear admin real con el instalador o con `php artisan auth:create-initial-admin` usando `HOSPITAL_INITIAL_ADMIN_PASSWORD`; no ejecutar seeders de desarrollo.
 11. Ejecutar `php artisan config:cache`.
-12. Publicar por IP fija LAN o nombre local.
+12. Publicar por IP fija LAN.
 13. Levantar worker local de backups: en Docker offline queda como servicio `queue-worker`; en bare-metal queda como tarea/servicio PHP con `php artisan queue:work --queue=backups --tries=1 --timeout=600`.
 14. Validar `/up`, `/login` y `/verify-email`.
 
@@ -77,7 +81,7 @@ No entregar un servidor LAN real con `APP_ENV=local`. Produccion debe operar con
 
 - Preferir `scripts\deploy_hospital_lan.ps1`, que captura la contrasena temporal de forma oculta.
 - Si soporte crea el admin manualmente, no debe escribir la contrasena como `--password=...` en consola.
-- El comando acepta la contrasena desde `HOSPITAL_INITIAL_ADMIN_PASSWORD` y exige minimo 10 caracteres con letras y numeros.
+- El comando acepta la contrasena desde `HOSPITAL_INITIAL_ADMIN_PASSWORD` y exige minimo 12 caracteres con mayuscula, minuscula, numero y simbolo.
 - Limpiar `HOSPITAL_INITIAL_ADMIN_PASSWORD` despues de crear el admin.
 
 ## Red local
@@ -116,16 +120,38 @@ ping 192.168.1.1
 - Permitir HTTP/HTTPS en firewall local.
 - No abrir el sistema a internet salvo decision explicita posterior.
 - Si se configura HTTPS local, instalar certificado confiable para los clientes.
-- Los clientes deben entrar por la IP o nombre LAN del servidor, por ejemplo `http://192.168.1.10`.
+- Los clientes deben entrar por la IP LAN fija del servidor, por ejemplo `http://192.168.1.10`.
 - No usar `localhost` en clientes; en una caja cliente, `localhost` apunta a esa misma caja, no al servidor.
 - Reservar la IP fija en el router o configurar IP estatica en Windows para evitar que cambie despues de reinicios.
+
+### Si cambia la IP LAN del servidor
+
+Si `ipconfig` muestra una IP nueva, pero el sistema todavia anuncia la IP anterior en `/api/system/echo-config`, refresque la configuracion LAN antes de validar clientes:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File scripts\refresh_lan_ip.ps1 -ServerIp 192.168.1.10 -AppPort 8081 -EnvFile .\.env -ComposeProjectName hospital_prod
+```
+
+Use primero `-WhatIf` si solo quiere revisar lo que se cambiaria:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File scripts\refresh_lan_ip.ps1 -ServerIp 192.168.1.10 -AppPort 8081 -EnvFile .\.env -ComposeProjectName hospital_prod -WhatIf
+```
+
+El script sincroniza `APP_URL`, `SERVER_IP`, `SANCTUM_STATEFUL_DOMAINS`, `CORS_ALLOWED_ORIGINS`, `PUSHER_CLIENT_HOST`, puerto de Soketi, firewall LAN y recrea los contenedores necesarios sin borrar volumenes ni base de datos. Si el despliegue usa otro archivo env externo, pase esa ruta en `-EnvFile`.
 
 ## Firewall y puertos
 
 - Permitir solo el puerto publicado para HTTP/HTTPS dentro del perfil de red privada.
+- Permitir tambien el puerto de sincronizacion en tiempo real (Soketi/WebSocket),
+  por defecto `6001` o el valor configurado en `SOKETI_PORT`, solo dentro del
+  perfil de red privada y `LocalSubnet`. Este puerto permite que varias PCs de
+  caja vean cambios de facturas, pagos, caja y backups sin recargar.
 - No exponer MySQL/MariaDB a internet.
 - Si MySQL/MariaDB debe aceptar conexiones solo del backend local, mantenerlo escuchando en `127.0.0.1`.
-- Si se usa un servidor web local, validar que `/up`, `/login` y `/verify-email` respondan desde otra computadora LAN.
+- Si se usa un servidor web local, validar que `/up`, `/login`,
+  `/verify-email`, `/api/system/echo-config` y el puerto WebSocket respondan
+  desde otra computadora LAN.
 
 ## Impresora institucional
 
@@ -138,7 +164,14 @@ ping 192.168.1.1
 
 ## Backups
 
-- Programar backup diario con `scripts\install_backup_tasks_windows.ps1`; el helper detecta Docker offline o PHP local.
+- Programar backup diario con `scripts\install_backup_tasks_windows.ps1`; en Docker offline usar `-Mode Docker -EnvFile .\.env` para que las tareas usen el mismo archivo final que `docker compose`. Si Windows pide permisos, repetir el comando con `-LaunchElevated`.
+- Durante `setup.bat`, el instalador intenta registrar primero las tareas elevadas. Si Windows/UAC no permite crearlas, instala automaticamente el fallback Startup/HKCU del usuario actual para no dejar la instalacion sin backups, pero el preflight mantiene bloqueado `PRODUCTION_READY` hasta instalar tareas elevadas o un servicio equivalente.
+- Si no hay permisos de Administrador para registrar tareas Windows, instalar el fallback del usuario actual:
+  `powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_startup_current_user.ps1 -Mode Docker -EnvFile .\.env -ComposeProjectName hospital_prod -DailyBackupTime 02:00`.
+  Este fallback se valida en el preflight, pero no permite declarar `PRODUCTION_READY`
+  porque depende de que ese usuario Windows inicie sesion. Para entrega final en
+  hospital, instalar las tareas Windows elevadas o un servicio equivalente que
+  arranque sin sesion interactiva.
 - Permitir backup manual desde admin.
 - Mantener un worker local de cola `backups` para ejecutar backups pedidos desde la UI sin bloquear el request HTTP. En `docker-compose.prod.yml` ese worker es el servicio `queue-worker`.
 - Guardar archivos en carpeta local protegida y copiar una version a USB o disco externo.
@@ -148,6 +181,11 @@ ping 192.168.1.1
 ## Variables de entorno y artefactos
 
 - El `.env` real debe vivir solo en el servidor y fuera de Git.
+- No entregar el sistema con usuarios demo/E2E/validacion activos, por ejemplo
+  `admin.offline`, `cajero.offline`, `*.validacion`, `*.e2e` o
+  `concurrency.*`. El preflight productivo falla si detecta esas cuentas
+  activas. Cree usuarios reales del hospital desde el instalador o desde el
+  panel de administracion.
 - Produccion debe usar `APP_ENV=production` y `APP_DEBUG=false`.
 - No commitear credenciales, passwords de DB, `APP_KEY` ni rutas privadas.
 - Produccion debe arrancar con `vendor/` y `frontend/dist` ya preparados.
@@ -178,7 +216,8 @@ ping 192.168.1.1
 - Cajero inicia sesion, abre caja, crea factura de prueba y puede imprimir recibo.
 - Supervisor/admin ve reporte diario.
 - Backup manual queda `pending` y luego `success` cuando el worker corre; si falta herramienta de dump en servidor, queda `failed` con causa operativa sin credenciales.
-- En paquete Docker offline, `scripts\run_scheduled_backup.cmd --check` debe pasar despues de que `setup.bat` cree `.env`; sin `.env` debe fallar antes de registrar tareas.
+- En paquete Docker offline, `scripts\run_scheduled_backup.cmd --mode=docker --env-file .\.env --check` debe pasar despues de que `setup.bat` cree `.env`; sin `.env` valido debe fallar antes de registrar tareas.
+- Si soporte levanto el stack con `docker compose -p nombre`, agregar `--project-name nombre` al validar wrappers y `-ComposeProjectName nombre` al registrar tareas.
 - Restore de prueba documentado antes de operar datos reales.
 
 ## Evidencia Fase 11 local

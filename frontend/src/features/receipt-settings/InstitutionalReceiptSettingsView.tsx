@@ -1,8 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FileText, Printer, Save, Settings2 } from 'lucide-react';
-import type { ReactNode } from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import type { ReactElement, ReactNode } from 'react';
+import { cloneElement, isValidElement, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -253,6 +253,23 @@ export function InstitutionalReceiptSettingsView({ canEdit, onStatus }: Institut
     return <LoadingState label="Cargando ajustes de recibos..." />;
   }
 
+  if (settingsQuery.isError) {
+    return (
+      <>
+        <PageHeader
+          title="Recibos institucionales"
+          description="Configuracion del recibo clasico, serie, papel y copias para impresora normal."
+        />
+        <Alert variant="destructive" title="No se pudieron cargar los ajustes de recibos">
+          {userSafeErrorMessage(settingsQuery.error, 'Revise el servidor local y vuelva a intentar.')}
+        </Alert>
+        <Button type="button" variant="secondary" onClick={() => void settingsQuery.refetch()}>
+          Reintentar
+        </Button>
+      </>
+    );
+  }
+
   const requiredProfiles = settings?.print_profiles.filter((profile) => REQUIRED_PROFILE_CODES.includes(profile.code as (typeof REQUIRED_PROFILE_CODES)[number])) ?? [];
   const institutionValues = institutionForm.watch();
   const seriesValues = seriesForm.watch();
@@ -296,12 +313,14 @@ export function InstitutionalReceiptSettingsView({ canEdit, onStatus }: Institut
       ) : null}
 
       <Tabs defaultValue="institucion" className="space-y-6">
-        <TabsList className="bg-muted/50">
-          <TabsTrigger value="institucion">Institucion</TabsTrigger>
-          <TabsTrigger value="serie">Serie</TabsTrigger>
-          <TabsTrigger value="papel">Papel y copias</TabsTrigger>
-          <TabsTrigger value="vista">Vista previa</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto pb-1">
+          <TabsList className="min-w-max bg-muted/50">
+            <TabsTrigger value="institucion">Institucion</TabsTrigger>
+            <TabsTrigger value="serie">Serie</TabsTrigger>
+            <TabsTrigger value="papel">Papel y copias</TabsTrigger>
+            <TabsTrigger value="vista">Vista previa</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="institucion" className="space-y-6">
           <Card>
@@ -586,11 +605,28 @@ function Field({
   id: string;
   label: string;
 }) {
+  const errorId = `${id}-error`;
+  let control = children;
+
+  if (isValidElement(children)) {
+    const child = children as ReactElement<Record<string, unknown>>;
+    control = cloneElement(child, {
+      'aria-describedby': error
+        ? [child.props['aria-describedby'], errorId].filter(Boolean).join(' ')
+        : child.props['aria-describedby'],
+      'aria-invalid': error ? true : child.props['aria-invalid'],
+    });
+  }
+
   return (
     <div className="space-y-2">
       <Label htmlFor={id}>{label}</Label>
-      {children}
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {control}
+      {error ? (
+        <p id={errorId} role="alert" className="text-sm text-destructive">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }

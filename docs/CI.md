@@ -5,12 +5,13 @@ This repository ships with two GitHub Actions workflows under
 
 ## ci.yml — on every push and pull request
 
-Four jobs run in parallel where possible:
+Five jobs run in parallel where possible:
 
 | Job | What it does | Database | Timeout |
 |---|---|---|---|
 | `backend-sqlite` | PHPUnit + Pint + PHPStan + PowerShell tests + composer audit | SQLite in-memory | 20 min |
 | `backend-mariadb` | Full PHPUnit suite against a real MariaDB 11.4 service container | MariaDB 11.4 | 30 min |
+| `windows-ops-scripts` | Installer, backup-task, golden DB runner and offline handoff script hardening checks | n/a | 10 min |
 | `frontend` | `npm run typecheck`, `npm run lint`, Vitest, Vite build | n/a | 20 min |
 | `e2e-mocked` | Playwright production-readiness spec (route-mocked) | n/a | 25 min |
 
@@ -30,10 +31,11 @@ real `lockForUpdate` semantics, generated columns, JSON columns, and
 Validates the tag is releasable before creating the GitHub Release:
 
 - `docs/RELEASE_NOTES_<tag>.md` must exist.
-- All four physical evidence files under `qa/` must no longer
-  contain the string `PENDING`.
+- All six required final evidence files under `qa/` must no longer
+  contain placeholder evidence such as `PENDING`, `TODO`,
+  `REPLACE`, unchecked boxes, template/example text, or similar.
 - `qa/FINAL_PRODUCTION_HANDOFF_RESULT.md` must contain
-  `PRODUCTION_READY=YES`.
+  `Decision: PRODUCTION_READY`.
 
 If any check fails, the workflow fails and no release is created.
 The release body is the contents of the matching

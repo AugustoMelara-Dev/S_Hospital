@@ -70,6 +70,8 @@ try {
         "SQLSTATE[HY000] error in $fixtureRoot\backend\.env"
         "MAIL_PASSWORD=fixture_mail_password"
         "C:\Hospital\Sistema\.env"
+        "Access denied for user 'hospital_app'@'172.18.0.1'"
+        "No se pudo contactar http://soporte:clave-secreta@192.168.1.10:8000/api/system/status"
         "PDOException in /var/www/html/storage/logs/laravel.log and /var/www/html/.env"
     ) -Encoding ASCII
 
@@ -104,7 +106,10 @@ try {
         "fixture_token",
         "fixture_mail_password",
         "C:\\Hospital\\Sistema",
-        "/var/www/html"
+        "/var/www/html",
+        "hospital_app",
+        "172.18.0.1",
+        "soporte:clave-secreta"
     )
 
     foreach ($pattern in $forbidden) {
@@ -113,7 +118,7 @@ try {
         }
     }
 
-    if ($combined -notmatch "%PROJECT_ROOT%" -or $combined -notmatch "\[redacted\]" -or $combined -notmatch "\[ruta-local\]") {
+    if ($combined -notmatch "%PROJECT_ROOT%" -or $combined -notmatch "\[redacted\]" -or $combined -notmatch "\[ruta-local\]" -or $combined -notmatch "\[db-user-host\]") {
         Write-Fail "El paquete no incluyo los marcadores seguros esperados."
     }
 

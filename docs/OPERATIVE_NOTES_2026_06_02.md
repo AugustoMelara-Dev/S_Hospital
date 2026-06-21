@@ -261,16 +261,22 @@ completar en este entorno de auditoría.
 - **Concurrencia final** - Doble apertura de caja, doble
   facturación, doble pago contra target descartable. Llenar
   `qa/FINAL_CONCURRENCY_PROOF.md`.
+- **Concurrencia final bajo carga** - Repetir carreras criticas con
+  trafico concurrente contra target descartable. Llenar
+  `qa/FINAL_CONCURRENCY_UNDER_LOAD_PROOF_LAN_8081.md`.
+- **Smoke real LAN** - Login, navegacion, caja, factura, pago,
+  recibo, historial y reportes desde la URL LAN final. Llenar
+  `qa/FINAL_REAL_SMOKE_LAN_8081.md`.
 - **Worker continuo de backups** - Tareas Windows
   `SistemaCajaHospitalaria-BackupWorker` y
   `SistemaCajaHospitalaria-DailyBackup` instaladas y activas.
 - **Handoff final** - `scripts/final_production_handoff.ps1`
   ejecutado sin `-AllowMissingPhysicalProof`. Llenar
   `qa/FINAL_PRODUCTION_HANDOFF_RESULT.md` con
-  `PRODUCTION_READY=YES`.
+  `Decision: PRODUCTION_READY`.
 
 `production_readiness_preflight.ps1` falla el release si
-cualquiera de los cuatro PROOF files sigue PENDING.
+cualquiera de las seis evidencias finales falta o sigue con placeholders.
 
 ## Alcance del producto (no se cierra)
 

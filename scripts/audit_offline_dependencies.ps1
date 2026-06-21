@@ -47,6 +47,12 @@ function Test-InternalUrl {
     return $false
 }
 
+function Test-AuditPathExcluded {
+    param([string]$Path)
+
+    return $Path -match '[\\/](vendor|node_modules|storage|bootstrap[\\/]cache|dist|build|coverage|\.git|\.cache)[\\/]'
+}
+
 # 1. package.json: detectar dependencias con URL http/https
 $packageJson = Get-Content -Raw (Join-Path $RepoRoot "frontend/package.json") | ConvertFrom-Json
 foreach ($prop in @('dependencies', 'devDependencies')) {
@@ -83,6 +89,7 @@ $indexHtml | Select-String -Pattern '<(script|link)[^>]+(src|href)="https?://[^"
 $srcDir = Join-Path $RepoRoot "frontend/src"
 if (Test-Path $srcDir) {
     Get-ChildItem -Path $srcDir -Recurse -Include *.ts,*.tsx,*.js,*.jsx -File | ForEach-Object {
+        if (Test-AuditPathExcluded $_.FullName) { return }
         $content = Get-Content -Raw $_.FullName
         $matches = [regex]::Matches($content, '(fetch|axios|http://|https://)\s*[\("''](https?://[^"''\)]+)')
         foreach ($m in $matches) {
@@ -98,7 +105,7 @@ if (Test-Path $srcDir) {
 $backendDir = Join-Path $RepoRoot "backend"
 if (Test-Path $backendDir) {
     Get-ChildItem -Path $backendDir -Recurse -Include *.php -File |
-        Where-Object { $_.FullName -notmatch '[\\/]vendor[\\/]' -and $_.FullName -notmatch '[\\/]node_modules[\\/]' } |
+        Where-Object { -not (Test-AuditPathExcluded $_.FullName) } |
         ForEach-Object {
             $content = Get-Content -Raw $_.FullName
             $matches = [regex]::Matches($content, '(Http::|file_get_contents|curl_init|fsockopen|stream_socket_client)\s*\(\s*[\("''](https?://[^"''\)]+)')
@@ -118,8 +125,8 @@ foreach ($dir in $searchDirs) {
     if (Test-Path $dir) {
         $files = if ((Get-Item $dir).PSIsContainer) {
             Get-ChildItem -Path $dir -Recurse -File |
-                Where-Object { $_.FullName -notmatch '[\\/]vendor[\\/]' -and $_.FullName -notmatch '[\\/]node_modules[\\/]' -and $_.FullName -notmatch '[\\/]dist[\\/]' -and $_.FullName -notmatch '[\\/]build[\\/]' }
-        } else { @($dir) }
+                Where-Object { -not (Test-AuditPathExcluded $_.FullName) }
+        } else { @(Get-Item -LiteralPath $dir) }
         foreach ($f in $files) {
             $content = Get-Content -Raw $f.FullName -ErrorAction SilentlyContinue
             foreach ($pat in $fontPatterns) {
@@ -136,7 +143,7 @@ $licensePatterns = @('license-checker', 'license online', 'verifyLicense\(')
 $apiDir = Join-Path $RepoRoot "backend/app"
 if (Test-Path $apiDir) {
     Get-ChildItem -Path $apiDir -Recurse -Include *.php -File |
-        Where-Object { $_.FullName -notmatch '[\\/]vendor[\\/]' } |
+        Where-Object { -not (Test-AuditPathExcluded $_.FullName) } |
         ForEach-Object {
             $content = Get-Content -Raw $_.FullName
             foreach ($pat in $licensePatterns) {

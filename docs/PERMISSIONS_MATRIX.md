@@ -44,6 +44,7 @@ El backend debe validar todos los permisos con Policies/Gates o middleware equiv
 | Ver backups | `backups.view` | Si | No | No |
 | Crear backup manual | `backups.create` | Si | No | No |
 | Descargar backup | `backups.download` | Si | No | No |
+| Restaurar backup validado | `backups.restore` | Si, reservado | No | No |
 | Ver auditoria | `audit.view` | Si | Si | No |
 | Ver diagnostico tecnico | `system.status.view` | Si | No | No |
 

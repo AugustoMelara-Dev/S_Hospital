@@ -161,6 +161,33 @@ describe('ReceiptPreview', () => {
     expect(screen.getByText('Rango')).toBeInTheDocument();
     expect(screen.getByText('Vence')).toBeInTheDocument();
     expect(screen.getByText('TEST-CAI')).toBeInTheDocument();
+    expect(document.querySelector('[data-receipt-print-root]')).toBeInTheDocument();
+  });
+
+  it('keeps long service names printable without exposing QR or barcode artifacts', () => {
+    const receipt = receiptFixture();
+    const longServiceName =
+      'Ultrasonido abdominal completo con evaluacion hepatobiliar pancreatica renal pelvica y descripcion extendida solicitada por emergencia hospitalaria';
+    receipt.width = 'half_letter';
+    receipt.items[0].service_name = longServiceName;
+    receipt.items[0].category_name = 'Imagenologia y estudios especiales';
+
+    render(
+      <ReceiptPreview
+        receipt={receipt}
+        onPrint={vi.fn()}
+        onWidthChange={vi.fn()}
+      />,
+    );
+
+    const printRoot = document.querySelector('[data-receipt-print-root]');
+    const serviceName = screen.getByText(longServiceName);
+
+    expect(printRoot).toBeInTheDocument();
+    expect(printRoot).toHaveClass('receipt-half-letter');
+    expect(serviceName.closest('.item-name')).toBeInTheDocument();
+    expect(printRoot?.querySelector('svg,img,canvas')).toBeNull();
+    expect(printRoot?.textContent).not.toMatch(/qr|barcode|codigo de barras|scan|codigo interno/i);
   });
 });
 

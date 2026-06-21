@@ -11,7 +11,8 @@
 
 [CmdletBinding()]
 param (
-    [switch]$CliOnly
+    [switch]$CliOnly,
+    [switch]$LegacyUnsupported
 )
 
 # Force TLS 1.2/1.3 for any system calls if they occur, though we operate strictly offline
@@ -26,10 +27,15 @@ Write-Host "====================================================================
 Write-Host "  DEPRECATION NOTICE" -ForegroundColor Yellow
 Write-Host "  install_hospital_os.ps1 is deprecated as of v1.0.0." -ForegroundColor Yellow
 Write-Host "  The supported installer is deploy_hospital_lan.ps1." -ForegroundColor Yellow
-Write-Host "  Continuing for backwards compatibility in this run." -ForegroundColor Yellow
+Write-Host "  This legacy wizard is blocked by default for hospital deployments." -ForegroundColor Yellow
 Write-Host "  See scripts/deploy_hospital_lan.ps1 for the new flow." -ForegroundColor Yellow
 Write-Host "========================================================================" -ForegroundColor Yellow
 Write-Host ""
+
+if (-not $LegacyUnsupported) {
+    Write-Error "Instalador legacy bloqueado. Use scripts\deploy_hospital_lan.ps1 o agregue -LegacyUnsupported solo bajo instruccion tecnica documentada."
+    exit 1
+}
 
 # Determine workspace root
 $scriptPath = $MyInvocation.MyCommand.Path

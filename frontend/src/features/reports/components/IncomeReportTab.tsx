@@ -23,7 +23,7 @@ import type {
   ReportFilters,
   CashSession,
 } from '../../../lib/api/types';
-import { formatCents, formatLempirasFromCents, parseCents } from '../../../lib/moneyCents';
+import { formatCents, formatLempirasUIFromCents, parseCents } from '../../../lib/moneyCents';
 
 interface IncomeReportTabProps {
   canExport: boolean;
@@ -38,6 +38,7 @@ interface IncomeReportTabProps {
   categoryOptions: Category[];
   areaOptions: Area[];
   cashSessionOptions: CashSession[];
+  exporting?: boolean;
   loading: boolean;
   income: IncomeReport | null;
   categories: CategoryReport | null;
@@ -68,6 +69,7 @@ export function IncomeReportTab({
   categoryOptions,
   areaOptions,
   cashSessionOptions,
+  exporting = false,
   loading,
   income,
   categories,
@@ -416,7 +418,7 @@ export function IncomeReportTab({
                 <CardTitle>Gráfico por método</CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={200}>
+                <ResponsiveContainer width="100%" height={200} minWidth={1} minHeight={1}>
                   <BarChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                     <XAxis dataKey="method" tickLine={false} />
@@ -431,13 +433,13 @@ export function IncomeReportTab({
 
           {canExport && (
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={onExport}>
+              <Button type="button" variant="outline" onClick={onExport} disabled={exporting}>
                 <Download className="h-4 w-4 mr-2" />
-                Exportar Excel
+                {exporting ? 'Exportando...' : 'Exportar Excel'}
               </Button>
-              <Button type="button" variant="outline" onClick={onExportPdf}>
+              <Button type="button" variant="outline" onClick={onExportPdf} disabled={exporting}>
                 <Download className="h-4 w-4 mr-2" />
-                Exportar PDF
+                {exporting ? 'Exportando...' : 'Exportar PDF'}
               </Button>
             </div>
           )}
@@ -491,5 +493,5 @@ function cashierLabel(cashier: CashierOption): string {
 }
 
 function moneyLabel(value: string | number | null | undefined): string {
-  return formatLempirasFromCents(parseCents(value));
+  return formatLempirasUIFromCents(parseCents(value));
 }

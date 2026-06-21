@@ -259,7 +259,7 @@ describe('CashBoxView', () => {
     render(<App />);
 
     expect((await screen.findAllByText(/saldo pendiente/i)).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/L\. 23\.75/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/L 23\.75/i).length).toBeGreaterThan(0);
     expect(await screen.findByText(/revise los cobros antes de cerrar/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^cerrar caja$/i })).toBeDisabled();
   });
@@ -328,7 +328,7 @@ describe('CashBoxView', () => {
     render(<App />);
 
     expect((await screen.findAllByText(/efectivo esperado/i)).length).toBeGreaterThan(0);
-    expect(screen.getAllByText('L. 0.00').length).toBeGreaterThanOrEqual(5);
+    expect(screen.getAllByText('L 0.00').length).toBeGreaterThanOrEqual(5);
     expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-numero/);
   });
 });

@@ -20,8 +20,9 @@
   Defaults to the parent of the script directory.
 
 .PARAMETER Mode
-  "write" (default) writes the files; "check" returns 0 when all the
-  evidence files exist and are non-empty, otherwise 1.
+  "write" (default) writes the files; "check" returns 0 only when all
+  evidence files exist and no obvious placeholders, unchecked items or
+  non-ready handoff decisions remain.
 
 .PARAMETER Force
   Overwrite existing evidence files even if they already have
@@ -69,6 +70,8 @@ $lanFile = Join-Path $ProjectRoot "qa\LAN_CLIENT_VALIDATION_PROOF.md"
 $printerFile = Join-Path $ProjectRoot "qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md"
 $restoreFile = Join-Path $ProjectRoot "qa\FINAL_RESTORE_PROOF.md"
 $concurrencyFile = Join-Path $ProjectRoot "qa\FINAL_CONCURRENCY_PROOF.md"
+$concurrencyUnderLoadFile = Join-Path $ProjectRoot "qa\FINAL_CONCURRENCY_UNDER_LOAD_PROOF_LAN_8081.md"
+$realSmokeFile = Join-Path $ProjectRoot "qa\FINAL_REAL_SMOKE_LAN_8081.md"
 $handoffFile = Join-Path $ProjectRoot "qa\FINAL_PRODUCTION_HANDOFF_RESULT.md"
 
 $lanTemplate = @"
@@ -91,13 +94,17 @@ $lanTemplate = @"
 | /up      | 200       | [run from client: curl -o /dev/null -s -w "%{time_total}\n" $appUrl/up] |
 | /login   | 200       | [run from client: curl -o /dev/null -s -w "%{time_total}\n" $appUrl/login] |
 | /verify-email | 200  | [run from client] |
+| /api/system/echo-config | 200 | [run from client: curl $appUrl/api/system/echo-config] |
+| WebSocket/Soketi TCP | open | [run from client: Test-NetConnection $serverIp -Port 6001] |
 
 ## Checklist fisico (operador)
 
 - [ ] /up responded 200 from the second PC: [result]
 - [ ] /login loaded the React bundle without 419 CSRF: [result]
 - [ ] /verify-email served the SPA or the expected route: [result]
+- [ ] /api/system/echo-config returned realtime config from the second PC: [result]
 - [ ] assets/* responded with the right content-type: [result]
+- [ ] WebSocket/Soketi TCP port connected from the second PC: [result]
 - [ ] Login from the second PC completed with the cashier credentials: [result]
 - [ ] Cashbox opened from the second PC: [result]
 - [ ] Invoice issued from the second PC: [result]
@@ -200,6 +207,62 @@ HOSPITAL_VALIDATE_REAL_MYSQL=1 `
 - [ ] Double payment on the same invoice rejected with 409: [result]
 "@
 
+$concurrencyUnderLoadTemplate = @"
+# Final concurrency under load proof
+
+- Date/time: $date
+- Responsible person: $responsible
+- Server LAN URL: $appUrl
+- Target environment: [production / staging / disposable]
+- Run ID: [RUN-YYYYMMDDTHHMMSS]
+- Load user: [load.validation user]
+- Mutation user: [mutation.validation user]
+- Load requests/concurrency: [requests x concurrency]
+- Final conclusion: [VALIDATED / PARTIAL / FAILED with notes]
+
+## Comando sugerido
+
+powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "node scripts/validate_mysql_concurrency_under_load.mjs"
+
+## Required checks
+
+- [ ] Authenticated load had zero failures. Result/evidence: [result]
+- [ ] Double cash-session open leaves one truth under load. Result/evidence: [result]
+- [ ] Concurrent invoice emission keeps unique numbers under load. Result/evidence: [result]
+- [ ] Double payment leaves one posted payment under load. Result/evidence: [result]
+
+## Evidence
+
+- Evidence/capture reference: [qa path or screenshot reference]
+- Notes: [notes]
+"@
+
+$realSmokeTemplate = @"
+# Final real smoke LAN proof
+
+- Estado: [VALIDATED / PARTIAL / FAILED]
+- Fecha: $date
+- URL LAN: $appUrl
+- Mutaciones reales: [yes/no and scope]
+- Login navegacion: [user used, no password]
+- Login mutacional: [user used, no password]
+- Resultado: [VALIDATED / PARTIAL / FAILED with notes]
+- Evidence/capture reference: [qa path or screenshot reference]
+- Limpieza: [temporary users disabled/removed or why none were created]
+
+## Required checks
+
+- [ ] `/up`, `/login`, `/verify-email` and realtime config respond from the LAN URL. Result/evidence: [result]
+- [ ] Login and authenticated navigation complete without console errors. Result/evidence: [result]
+- [ ] Cashier can open cashbox, issue invoice, register payment and open receipt. Result/evidence: [result]
+- [ ] History, reprint entry point and reports load from the LAN server. Result/evidence: [result]
+- [ ] Temporary validation users are disabled or removed after the run. Result/evidence: [result]
+
+## Evidence
+
+- Notes: [notes]
+"@
+
 $handoffTemplate = @"
 # Final production handoff
 
@@ -214,7 +277,9 @@ $handoffTemplate = @"
 - Printer evidence: [filled / pending]
 - Restore evidence: [filled / pending]
 - Concurrency evidence: [filled / pending]
-- Decision: [PRODUCTION_CANDIDATE / PRODUCTION_READY]
+- Concurrency-under-load evidence: [filled / pending]
+- Real LAN smoke evidence: [filled / pending]
+- Decision: [READY_FOR_REAL_LAN_INSTALLATION_TEST / PRODUCTION_READY]
 "@
 
 function Write-Evidence {
@@ -237,28 +302,89 @@ function Write-Evidence {
     }
 }
 
+function Test-EvidenceFileReady {
+    param([string] $Path)
+
+    $issues = New-Object System.Collections.Generic.List[string]
+    if (-not (Test-Path -LiteralPath $Path)) {
+        $issues.Add("missing file") | Out-Null
+        return $issues
+    }
+
+    $content = Get-Content -LiteralPath $Path -Raw
+    if ($content.Trim().Length -lt 300) {
+        $issues.Add("file is too short to contain complete evidence") | Out-Null
+    }
+
+    $placeholderPatterns = @(
+        @{ Pattern = '(?i)\bTODO\b'; Message = 'contains TODO placeholder' },
+        @{ Pattern = '(?-i)\bPENDING(_[A-Z_]+)?\b'; Message = 'contains PENDING placeholder' },
+        @{ Pattern = '(?im)^-\s*(?:[^\r\n:]+result|[^\r\n:]+evidence/reference|[^\r\n:]+evidence|[^\r\n:]+conclusion|.*Result/evidence)[^\r\n]*\bPENDIENTE(S)?\b'; Message = 'contains pending result/evidence field' },
+        @{ Pattern = '(?i)\bREPLACE\b'; Message = 'contains REPLACE placeholder' },
+        @{ Pattern = '(?i)\bTBD\b'; Message = 'contains TBD placeholder' },
+        @{ Pattern = '\[ \]'; Message = 'contains unchecked evidence item' },
+        @{ Pattern = '(?i)\[(?!redacted)[^\]\r\n]*(result|path|password|validated|partial|failed|pending|open from|run:|screenshot|photo|list|filled|ready|running|stopped|recent|stale|user used|yes/no|requests|RUN-|qa path|notes|bytes|sha|invoice number|vendor driver|USB|network|shared)[^\]\r\n]*\]'; Message = 'contains bracketed operator placeholder' }
+    )
+
+    foreach ($entry in $placeholderPatterns) {
+        if ($content -match $entry.Pattern) {
+            $issues.Add($entry.Message) | Out-Null
+        }
+    }
+
+    if ($content -match '## Required checks' -and $content -notmatch '(?m)^-\s+\[x\]\s+') {
+        $issues.Add("has required checks but no completed checked evidence item") | Out-Null
+    }
+
+    if ((Split-Path -Leaf $Path) -eq "FINAL_PRODUCTION_HANDOFF_RESULT.md") {
+        if ($content -notmatch 'Decision:\s*PRODUCTION_READY') {
+            $issues.Add("handoff decision is not PRODUCTION_READY") | Out-Null
+        }
+    }
+
+    if ((Split-Path -Leaf $Path) -eq "LAN_CLIENT_VALIDATION_PROOF.md") {
+        if ($content -notmatch [regex]::Escape($appUrl)) {
+            $issues.Add("LAN client proof does not reference final app URL $appUrl") | Out-Null
+        }
+    }
+
+    return $issues
+}
+
 $files = @(
     @{ Path = $lanFile; Body = $lanTemplate },
     @{ Path = $printerFile; Body = $printerTemplate },
     @{ Path = $restoreFile; Body = $restoreTemplate },
     @{ Path = $concurrencyFile; Body = $concurrencyTemplate },
+    @{ Path = $concurrencyUnderLoadFile; Body = $concurrencyUnderLoadTemplate },
+    @{ Path = $realSmokeFile; Body = $realSmokeTemplate },
     @{ Path = $handoffFile; Body = $handoffTemplate }
 )
 
 if ($Mode -eq "check") {
-    $missing = @()
+    $failed = $false
     foreach ($entry in $files) {
-        if (-not (Test-Path -LiteralPath $entry.Path)) {
-            $missing += $entry.Path
+        $issues = Test-EvidenceFileReady -Path $entry.Path
+        if ($issues.Count -gt 0) {
+            $failed = $true
+            Write-Host "Evidence file is not production-ready: $($entry.Path)" -ForegroundColor Red
+            foreach ($issue in $issues) {
+                Write-Host "  - $issue" -ForegroundColor Red
+            }
+        } else {
+            Write-Host "Evidence file ready: $($entry.Path)" -ForegroundColor Green
         }
     }
-    if ($missing.Count -eq 0) {
-        Write-Host "All evidence files are present." -ForegroundColor Green
-        exit 0
+
+    if ($failed) {
+        Write-Host ""
+        Write-Host "AUTO_EVIDENCE_READY: NO" -ForegroundColor Red
+        exit 1
     }
-    Write-Host "Missing evidence files:" -ForegroundColor Red
-    foreach ($m in $missing) { Write-Host "  $m" }
-    exit 1
+
+    Write-Host ""
+    Write-Host "AUTO_EVIDENCE_READY: YES" -ForegroundColor Green
+    exit 0
 }
 
 Write-Host "Auto-filling the production evidence templates in qa/" -ForegroundColor Cyan

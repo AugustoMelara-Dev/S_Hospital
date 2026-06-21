@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { STRINGS } from './es-HN';
-import { formatLempiras } from '../money';
+import { formatLempirasUI } from '../money';
 import { formatDate, formatDateTime } from '../format/formatDate';
 
 describe('i18n surface for the cashier workflow', () => {
@@ -23,7 +23,7 @@ describe('i18n surface for the cashier workflow', () => {
   });
 
   it('formats lempiras and dates the way the cashier expects', () => {
-    expect(formatLempiras(1500.5)).toBe('L. 1,500.50');
+    expect(formatLempirasUI(1500.5)).toBe('L 1,500.50');
     expect(formatDate('2026-06-02T12:00:00Z')).toBe('02/06/2026');
     expect(formatDateTime('2026-06-02T08:30:00Z')).toMatch(/^02\/06\/2026 \d{2}:\d{2}$/);
   });

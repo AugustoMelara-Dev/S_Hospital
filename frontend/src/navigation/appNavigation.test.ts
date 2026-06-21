@@ -22,6 +22,7 @@ describe('appNavigation', () => {
       'Reportes',
       'Respaldos',
       'Configuración',
+      'Recibos',
       'Usuarios',
       'Ayuda',
     ]);
@@ -47,9 +48,18 @@ describe('appNavigation', () => {
     ]);
   });
 
-  it('distinguishes navigation visibility from route access contracts', () => {
-    expect(getVisibleNavigation(['invoices.create']).map((item) => item.path)).toContain('/billing/new');
+  it('requires complete operational permissions for the new invoice navigation and route', () => {
+    expect(getVisibleNavigation(['invoices.create']).map((item) => item.path)).not.toContain('/billing/new');
     expect(canAccessRoute(appRoutes.newInvoice, ['invoices.create'])).toBe(false);
+    expect(
+      getVisibleNavigation([
+        'invoices.create',
+        'catalog.view',
+        'cash.view',
+        'payments.create',
+        'receipts.view',
+      ]).map((item) => item.path),
+    ).toContain('/billing/new');
     expect(
       canAccessRoute(appRoutes.newInvoice, [
         'invoices.create',
@@ -60,6 +70,7 @@ describe('appNavigation', () => {
       ]),
     ).toBe(true);
     expect(canAccessRoute(appRoutes.reports, ['reports.cash_session.view'])).toBe(true);
+    expect(canAccessRoute(appRoutes.reports, ['reports.managerial.view'])).toBe(true);
     expect(canAccessRoute(appRoutes.receiptSettings, ['receipt_settings.view'])).toBe(true);
   });
 });

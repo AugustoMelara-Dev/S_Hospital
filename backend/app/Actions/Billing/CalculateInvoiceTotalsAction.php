@@ -147,13 +147,15 @@ class CalculateInvoiceTotalsAction
 
     private function legacyServiceAreaId(Service $service): ?int
     {
-        if ($service->area_id === null) {
+        if ($service->area_id === null || $service->area === null) {
             return null;
         }
 
-        return ServiceArea::query()->whereKey($service->area_id)->exists()
-            ? (int) $service->area_id
-            : null;
+        $serviceAreaId = ServiceArea::query()
+            ->where('slug', $service->area->slug)
+            ->value('id');
+
+        return $serviceAreaId === null ? null : (int) $serviceAreaId;
     }
 
     private function parseMoneyCents(string $value): int

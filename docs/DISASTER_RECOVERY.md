@@ -24,7 +24,7 @@ cajero).
    siga el escenario 5 (restore desde backup externo).
 3. Si el disco esta bien, arranque el servidor y espere a que Docker
    levante los 4 servicios (backend, nginx, mysql, queue-worker). Use
-   `docker compose ps` en la carpeta del proyecto.
+   `docker compose -f docker-compose.prod.yml --env-file .env ps` en la carpeta del proyecto.
 4. Cuando `mysql` este `healthy`, los demas arrancan solos. Espere 60-90
    segundos y valide desde otra PC: `http://IP-SERVIDOR:8000/up` debe
    devolver 200 con `status: ok`.
@@ -32,8 +32,8 @@ cajero).
 ## Escenario 2 - La PC servidor enciende pero la base no responde
 
 1. En la PC servidor, abra PowerShell como Administrador.
-2. `docker compose ps`. Si `mysql` esta reiniciando, vea los logs:
-   `docker compose logs --tail=200 mysql`.
+2. `docker compose -f docker-compose.prod.yml --env-file .env ps`. Si `mysql` esta reiniciando, vea los logs:
+   `docker compose -f docker-compose.prod.yml --env-file .env logs --tail=200 mysql`.
 3. Si ve `permission denied` sobre `/var/lib/mysql`, el volumen
    `mysql_prod_data` se corrompio. **No** intente reparar. Vaya al
    escenario 5.
@@ -51,11 +51,18 @@ cajero).
    linea de comandos):
 
    ```powershell
-   $env:HOSPITAL_INITIAL_ADMIN_PASSWORD = Read-Host "Contrasena temporal" -AsSecureString
-   docker compose exec -e HOSPITAL_INITIAL_ADMIN_PASSWORD backend php artisan auth:create-initial-admin --username=nuevoadmin --email=nuevo@hospital.local
+   $secure = Read-Host "Contrasena temporal" -AsSecureString
+   $ptr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
+   try {
+       $env:HOSPITAL_INITIAL_ADMIN_PASSWORD = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($ptr)
+       docker compose -f docker-compose.prod.yml --env-file .env exec -e HOSPITAL_INITIAL_ADMIN_PASSWORD backend php artisan auth:create-initial-admin --username=nuevoadmin --email=nuevo@hospital.local
+   } finally {
+       if ($ptr -ne [IntPtr]::Zero) { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ptr) }
+       Remove-Item Env:HOSPITAL_INITIAL_ADMIN_PASSWORD -ErrorAction SilentlyContinue
+   }
    ```
 
-4. Borre la variable: `Remove-Item Env:HOSPITAL_INITIAL_ADMIN_PASSWORD`.
+4. Confirme desde Usuarios que el admin temporal cambio clave y quedo auditado.
 
 ## Escenario 4 - Se perdio la APP_KEY
 
@@ -67,7 +74,7 @@ cajero).
    clave invalida todos los "remember me" previos; los usuarios deberan
    volver a iniciar sesion.
 4. Despues de generarla, `php artisan config:cache` y reinicie el
-   servicio backend (`docker compose restart backend`).
+   servicio backend (`docker compose -f docker-compose.prod.yml --env-file .env restart backend`).
 
 ## Escenario 5 - Tengo un backup `.sql.enc` y necesito restaurar
 
@@ -109,7 +116,7 @@ cajero).
 2. Para vaciar la cola sin afectar datos:
 
    ```powershell
-   docker compose exec backend php artisan queue:clear
+   docker compose -f docker-compose.prod.yml --env-file .env exec backend php artisan queue:clear
    ```
 
 3. Despues, cree un respaldo manual desde la UI para verificar que la
@@ -140,7 +147,7 @@ cajero).
    existe una copia externa.
 3. `docker system prune -a` para limpiar imagenes y volumenes huerfanos
    (no toca los volumenes `mysql_prod_data` ni `backup_data`).
-4. Reinicie los contenedores: `docker compose restart`.
+4. Reinicie los contenedores: `docker compose -f docker-compose.prod.yml --env-file .env restart`.
 
 ## Escenario 9 - Cierre de caja no se puede hacer
 
@@ -154,7 +161,8 @@ cajero).
 ## Escenario 10 - Restaurar paquete offline desde USB
 
 1. Copie la carpeta `offline-release/` a la PC servidor. La carpeta
-   pesa ~250MB e incluye 4 imagenes Docker precargadas.
+   debe incluir 6 imagenes Docker precargadas; confirme el tamano y la lista
+   exacta en `offline-release/MANIFEST.txt` antes de entregar.
 2. Ejecute `setup.bat` como Administrador.
 3. El instalador detecta las imagenes locales y no intenta descargarlas
    de internet. Si ve errores de pull, valide que los archivos `.tar`

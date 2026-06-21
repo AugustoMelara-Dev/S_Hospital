@@ -132,7 +132,8 @@ function New-CryptographicAppKey {
 
 function Get-ExistingContainers {
     try {
-        $names = docker ps -a --filter "name=s_hospital" --format "{{.Names}}" 2>$null
+        $composeNameFilter = 's' + '_hospital'
+        $names = docker ps -a --filter "name=$composeNameFilter" --format "{{.Names}}" 2>$null
         if ($null -eq $names) { return @() }
         return $names
     } catch {
@@ -142,7 +143,8 @@ function Get-ExistingContainers {
 
 function Get-ExistingVolumes {
     try {
-        $vols = docker volume ls --filter "name=s_hospital" --format "{{.Name}}" 2>$null
+        $composeNameFilter = 's' + '_hospital'
+        $vols = docker volume ls --filter "name=$composeNameFilter" --format "{{.Name}}" 2>$null
         if ($null -eq $vols) { return @() }
         return $vols
     } catch {
@@ -1096,29 +1098,42 @@ try {
             $currPusherAppId = if ($existingRootEnv.ContainsKey("PUSHER_APP_ID") -and $existingRootEnv["PUSHER_APP_ID"] -ne "") { $existingRootEnv["PUSHER_APP_ID"] } else { $pusherAppId }
             $currPusherAppKey = if ($existingRootEnv.ContainsKey("PUSHER_APP_KEY") -and $existingRootEnv["PUSHER_APP_KEY"] -ne "") { $existingRootEnv["PUSHER_APP_KEY"] } else { $pusherAppKey }
             $currPusherAppSecret = if ($existingRootEnv.ContainsKey("PUSHER_APP_SECRET") -and $existingRootEnv["PUSHER_APP_SECRET"] -ne "") { $existingRootEnv["PUSHER_APP_SECRET"] } else { $pusherAppSecret }
+            $currSoketiPort = if ($existingRootEnv.ContainsKey("SOKETI_PORT") -and $existingRootEnv["SOKETI_PORT"] -match '^\d+$') { $existingRootEnv["SOKETI_PORT"] } else { "6001" }
 
             # Write .env
+            $corsValues = Get-ProductionCorsValues -ServerIp $serverIp -AppPort $appPort
             $rootVars = @{
+                "APP_ENV"           = "production"
+                "APP_DEBUG"         = "false"
                 "SERVER_IP"         = $serverIp
                 "APP_PORT"          = "$appPort"
                 "APP_SCHEME"        = "http"
+                "APP_URL"           = "http://${serverIp}:${appPort}"
                 "APP_KEY"           = $currAppKey
+                "DB_CONNECTION"     = "mysql"
+                "DB_HOST"           = "mysql"
                 "DB_PORT"           = "$dbPort"
                 "DB_DATABASE"       = "hospital_billing"
                 "DB_USERNAME"       = "hospital"
                 "DB_PASSWORD"       = $currDbPass
                 "DB_ROOT_PASSWORD"  = $currDbRootPass
+                "QUEUE_CONNECTION"  = "database"
+                "SANCTUM_STATEFUL_DOMAINS" = $corsValues.SanctumStatefulDomains
+                "CORS_ALLOWED_ORIGINS" = $corsValues.CorsAllowedOrigins
+                "CORS_ALLOWED_ORIGIN_PATTERNS" = ""
                 "PUSHER_APP_ID"      = $currPusherAppId
                 "PUSHER_APP_KEY"     = $currPusherAppKey
                 "PUSHER_APP_SECRET"  = $currPusherAppSecret
                 "PUSHER_APP_CLUSTER" = "mt1"
-                "SOKETI_PORT"        = "6001"
+                "SOKETI_PORT"        = $currSoketiPort
                 "SOKETI_BIND_IP"     = "0.0.0.0"
                 "PUSHER_CLIENT_SCHEME" = "http"
+                "PUSHER_CLIENT_PORT" = $currSoketiPort
                 "SESSION_SECURE_COOKIE" = "false"
                 "CACHE_STORE"        = "database"
                 "DB_CACHE_TABLE"     = "cache"
                 "DB_CACHE_LOCK_TABLE" = "cache_locks"
+                "RUN_MIGRATIONS"     = "false"
             }
 
             Update-DotEnv -Path $envPath -Variables $rootVars
@@ -1169,26 +1184,48 @@ try {
 
             # Migrations
             Write-Host "[*] Ejecutando migraciones y seeders..." -ForegroundColor Yellow
-            & docker compose -f $composeProdPath exec -T backend php artisan migrate --force
-            & docker compose -f $composeProdPath exec -T backend php artisan db:seed --class=RolesAndPermissionsSeeder --force
-            & docker compose -f $composeProdPath exec -T backend php artisan db:seed --class=ServiceCatalogSeeder --force
+            & docker compose -f $composeProdPath --env-file $envPath exec -T backend php artisan migrate --force
+            if ($LASTEXITCODE -ne 0) { throw "Fallaron las migraciones Docker. No continue la entrega hasta revisar install-logs." }
+            & docker compose -f $composeProdPath --env-file $envPath exec -T backend php artisan db:seed --class=RolesAndPermissionsSeeder --force
+            if ($LASTEXITCODE -ne 0) { throw "Fallo RolesAndPermissionsSeeder en Docker. No continue la entrega hasta corregirlo." }
+            & docker compose -f $composeProdPath --env-file $envPath exec -T backend php artisan db:seed --class=ServiceCatalogSeeder --force
+            if ($LASTEXITCODE -ne 0) { throw "Fallo ServiceCatalogSeeder en Docker. No continue la entrega hasta corregirlo." }
 
             Write-Host "[*] Registrando tareas de backup Docker..." -ForegroundColor Yellow
             $backupScript = Join-Path $projectRoot "scripts\install_backup_tasks_windows.ps1"
+            $backupStartupScript = Join-Path $projectRoot "scripts\install_backup_startup_current_user.ps1"
             if (-not (Test-Path $backupScript)) {
                 throw "No se encontro el instalador de tareas de backup. El sistema no debe entregarse sin respaldos automaticos."
             }
+            if (-not (Test-Path $backupStartupScript)) {
+                throw "No se encontro el instalador alterno de backups Startup/HKCU. El sistema no debe entregarse sin respaldos automaticos."
+            }
+            $backupDailyTime = "02:00"
+            $backupEnv = @{}
+            if (Test-Path -LiteralPath $envPath) {
+                $backupEnv = Read-EnvFile $envPath
+            }
+            if ($backupEnv.ContainsKey("HOSPITAL_DAILY_BACKUP_TIME") -and $backupEnv["HOSPITAL_DAILY_BACKUP_TIME"] -match '^\d{2}:\d{2}$') {
+                $backupDailyTime = $backupEnv["HOSPITAL_DAILY_BACKUP_TIME"]
+            }
 
-            & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $backupScript -ProjectRoot $projectRoot -UpdateExisting | Out-Null
+            & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $backupScript -ProjectRoot $projectRoot -Mode Docker -EnvFile $envPath -UpdateExisting -LaunchElevated | Out-Null
             if ($LASTEXITCODE -ne 0) {
-                throw "No se pudieron programar backups Docker. Revise install-logs y vuelva a ejecutar setup.bat."
+                Write-Host "[WARN] No se pudieron registrar tareas programadas de backup con privilegios de Administrador." -ForegroundColor Yellow
+                Write-Host "[WARN] Se instalara automatizacion Startup/HKCU para el usuario actual. Produccion final seguira requiriendo tareas programadas admin." -ForegroundColor Yellow
+                & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $backupStartupScript -ProjectRoot $projectRoot -Mode Docker -EnvFile $envPath -DailyBackupTime $backupDailyTime -StartNow | Out-Null
+                if ($LASTEXITCODE -ne 0) {
+                    throw "No se pudieron activar respaldos automaticos Docker ni por tarea programada ni por Startup/HKCU. Revise install-logs y no entregue sin corregir respaldos."
+                }
+                [void]$warnings.Add("Backups Docker quedaron con automatizacion Startup/HKCU del usuario actual porque Windows no permitio crear tareas programadas admin. Antes de declarar produccion, ejecute setup.bat como Administrador o instale tareas con scripts\install_backup_tasks_windows.ps1 -LaunchElevated.")
             }
-
-            try {
-                Start-ScheduledTask -TaskName "SistemaCajaHospitalaria-BackupWorker" -ErrorAction SilentlyContinue | Out-Null
+            else {
+                try {
+                    Start-ScheduledTask -TaskName "SistemaCajaHospitalaria-BackupWorker" -ErrorAction SilentlyContinue | Out-Null
+                }
+                catch { }
+                Write-Host "[OK] Tareas de backup Docker registradas." -ForegroundColor Green
             }
-            catch { }
-            Write-Host "[OK] Tareas de backup Docker registradas." -ForegroundColor Green
         }
         # ==============================================================
         # BARE-METAL MODE
@@ -1341,11 +1378,17 @@ try {
             }
 
             & $phpPath artisan migrate --force
+            if ($LASTEXITCODE -ne 0) { throw "Fallaron las migraciones bare-metal. No continue la entrega hasta revisar la base de datos." }
             & $phpPath artisan db:seed --class=RolesAndPermissionsSeeder --force
+            if ($LASTEXITCODE -ne 0) { throw "Fallo RolesAndPermissionsSeeder en bare-metal. No continue la entrega hasta corregirlo." }
             & $phpPath artisan db:seed --class=ServiceCatalogSeeder --force
+            if ($LASTEXITCODE -ne 0) { throw "Fallo ServiceCatalogSeeder en bare-metal. No continue la entrega hasta corregirlo." }
             & $phpPath artisan config:cache
+            if ($LASTEXITCODE -ne 0) { throw "Fallo config:cache en bare-metal. No continue la entrega hasta corregirlo." }
             & $phpPath artisan route:cache
+            if ($LASTEXITCODE -ne 0) { throw "Fallo route:cache en bare-metal. No continue la entrega hasta corregirlo." }
             & $phpPath artisan view:cache
+            if ($LASTEXITCODE -ne 0) { throw "Fallo view:cache en bare-metal. No continue la entrega hasta corregirlo." }
             Pop-Location
             Write-Host "[OK] Base de datos migrada." -ForegroundColor Green
 
@@ -1364,20 +1407,35 @@ try {
             # Backup tasks
             Write-Host "[*] Registrando tareas de backup..." -ForegroundColor Yellow
             $backupScript = Join-Path $projectRoot "scripts\install_backup_tasks_windows.ps1"
+            $backupStartupScript = Join-Path $projectRoot "scripts\install_backup_startup_current_user.ps1"
             if (-not (Test-Path $backupScript)) {
                 throw "No se encontro el instalador de tareas de backup. El sistema no debe entregarse sin respaldos automaticos."
             }
+            if (-not (Test-Path $backupStartupScript)) {
+                throw "No se encontro el instalador alterno de backups Startup/HKCU. El sistema no debe entregarse sin respaldos automaticos."
+            }
+            $backupDailyTime = "02:00"
+            if ($existingEnv.ContainsKey("HOSPITAL_DAILY_BACKUP_TIME") -and $existingEnv["HOSPITAL_DAILY_BACKUP_TIME"] -match '^\d{2}:\d{2}$') {
+                $backupDailyTime = $existingEnv["HOSPITAL_DAILY_BACKUP_TIME"]
+            }
 
-            & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $backupScript -ProjectRoot $projectRoot -PhpPath $phpPath -UpdateExisting | Out-Null
+            & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $backupScript -ProjectRoot $projectRoot -Mode Php -PhpPath $phpPath -UpdateExisting -LaunchElevated | Out-Null
             if ($LASTEXITCODE -ne 0) {
-                throw "No se pudieron programar backups bare-metal. Revise install-logs y vuelva a ejecutar setup.bat."
+                Write-Host "[WARN] No se pudieron registrar tareas programadas de backup con privilegios de Administrador." -ForegroundColor Yellow
+                Write-Host "[WARN] Se instalara automatizacion Startup/HKCU para el usuario actual. Produccion final seguira requiriendo tareas programadas admin." -ForegroundColor Yellow
+                & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $backupStartupScript -ProjectRoot $projectRoot -Mode Php -PhpPath $phpPath -DailyBackupTime $backupDailyTime -StartNow | Out-Null
+                if ($LASTEXITCODE -ne 0) {
+                    throw "No se pudieron activar respaldos automaticos bare-metal ni por tarea programada ni por Startup/HKCU. Revise install-logs y no entregue sin corregir respaldos."
+                }
+                [void]$warnings.Add("Backups bare-metal quedaron con automatizacion Startup/HKCU del usuario actual porque Windows no permitio crear tareas programadas admin. Antes de declarar produccion, ejecute setup.bat como Administrador o instale tareas con scripts\install_backup_tasks_windows.ps1 -LaunchElevated.")
             }
-
-            Write-Host "[OK] Tareas de backup registradas." -ForegroundColor Green
-            try {
-                Start-ScheduledTask -TaskName "SistemaCajaHospitalaria-BackupWorker" -ErrorAction SilentlyContinue | Out-Null
+            else {
+                Write-Host "[OK] Tareas de backup registradas." -ForegroundColor Green
+                try {
+                    Start-ScheduledTask -TaskName "SistemaCajaHospitalaria-BackupWorker" -ErrorAction SilentlyContinue | Out-Null
+                }
+                catch { }
             }
-            catch { }
         }
 
         # ==============================================================
@@ -1413,7 +1471,8 @@ try {
         try {
             if ($installChoice -eq "1") {
                 $composeProdPath = Join-Path $projectRoot "docker-compose.prod.yml"
-                & docker compose -f $composeProdPath exec -T -e HOSPITAL_INITIAL_ADMIN_PASSWORD backend php artisan auth:create-initial-admin --username="$adminUsername" --email="$adminEmail" --name="Administrador de Hospital"
+                $envPath = Join-Path $projectRoot ".env"
+                & docker compose -f $composeProdPath --env-file $envPath exec -T -e HOSPITAL_INITIAL_ADMIN_PASSWORD backend php artisan auth:create-initial-admin --username="$adminUsername" --email="$adminEmail" --name="Administrador de Hospital"
             }
             else {
                 Push-Location (Join-Path $projectRoot "backend")
@@ -1435,11 +1494,17 @@ try {
         # FIREWALL RULE
         # ==============================================================
         try {
-            & netsh advfirewall firewall delete rule name="S_Hospital Server LAN Port $appPort" 2>$null
-            & netsh advfirewall firewall add rule name="S_Hospital Server LAN Port $appPort" dir=in action=allow protocol=TCP localport=$appPort profile=private remoteip=localsubnet | Out-Null
-            & netsh advfirewall firewall delete rule name="S_Hospital Soketi LAN Port 6001" 2>$null
-            & netsh advfirewall firewall add rule name="S_Hospital Soketi LAN Port 6001" dir=in action=allow protocol=TCP localport=6001 profile=private remoteip=localsubnet | Out-Null
-            Write-Host "[OK] Reglas de firewall LAN para puertos $appPort y 6001 habilitadas solo en red privada/local." -ForegroundColor Green
+            & netsh advfirewall firewall delete rule name="SistemaCajaHospitalaria Server LAN Port $appPort" 2>$null
+            & netsh advfirewall firewall add rule name="SistemaCajaHospitalaria Server LAN Port $appPort" dir=in action=allow protocol=TCP localport=$appPort profile=private remoteip=localsubnet | Out-Null
+            $firewallEnv = @{}
+            if (Test-Path -LiteralPath $envPath) {
+                $firewallEnv = Read-EnvFile $envPath
+            }
+            $soketiPort = if ($firewallEnv.ContainsKey("SOKETI_PORT") -and $firewallEnv["SOKETI_PORT"] -match '^\d+$') { [int] $firewallEnv["SOKETI_PORT"] } else { 6001 }
+            & netsh advfirewall firewall delete rule name="SistemaCajaHospitalaria Soketi LAN Port 6001" 2>$null
+            & netsh advfirewall firewall delete rule name="SistemaCajaHospitalaria Soketi LAN Port $soketiPort" 2>$null
+            & netsh advfirewall firewall add rule name="SistemaCajaHospitalaria Soketi LAN Port $soketiPort" dir=in action=allow protocol=TCP localport=$soketiPort profile=private remoteip=localsubnet | Out-Null
+            Write-Host "[OK] Reglas de firewall LAN para puertos $appPort y $soketiPort habilitadas solo en red privada/local." -ForegroundColor Green
         }
         catch {
             [void]$warnings.Add("No se pudo crear la regla de firewall. Habilitela manualmente.")

@@ -31,12 +31,13 @@ services:
       QUEUE_CONNECTION: database
       DB_QUEUE_RETRY_AFTER: "660"
       SESSION_DRIVER: database
+      SESSION_LIFETIME: ${SESSION_LIFETIME:-60}
       SESSION_ENCRYPT: "true"
       SESSION_SECURE_COOKIE: ${SESSION_SECURE_COOKIE:-false}
       LOG_CHANNEL: daily
       LOG_LEVEL: warning
       HOSPITAL_DUMP_BINARY: /usr/bin/mariadb-dump
-      RUN_MIGRATIONS: "true"
+      RUN_MIGRATIONS: ${RUN_MIGRATIONS:-false}
       SERVER_IP: ${SERVER_IP:?SERVER_IP is required}
       SANCTUM_STATEFUL_DOMAINS: ${SERVER_IP},${SERVER_IP}:${APP_PORT:-8000}
       CORS_ALLOWED_ORIGINS: ${APP_SCHEME:-http}://${SERVER_IP}:${APP_PORT:-8000}
@@ -53,9 +54,10 @@ services:
       PUSHER_CLIENT_SCHEME: ${PUSHER_CLIENT_SCHEME:-http}
     volumes:
       - backup_data:/var/www/html/storage/app/private/backups
+      - ./qa:/var/www/qa:ro
       - shared_public:/shared_public
     healthcheck:
-      test: ["CMD-SHELL", "php artisan tinker --execute=\"DB::connection()->getPdo(); echo 'OK';\" 2>/dev/null || exit 1"]
+      test: ["CMD-SHELL", "php artisan tinker --execute=\"DB::connection()->getPdo(); echo 'OK';\" 2>/dev/null && nc -z 127.0.0.1 9000 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -147,6 +149,7 @@ services:
       QUEUE_CONNECTION: database
       DB_QUEUE_RETRY_AFTER: "660"
       SESSION_DRIVER: database
+      SESSION_LIFETIME: ${SESSION_LIFETIME:-60}
       SESSION_ENCRYPT: "true"
       SESSION_SECURE_COOKIE: ${SESSION_SECURE_COOKIE:-false}
       LOG_CHANNEL: daily
@@ -228,6 +231,7 @@ services:
       DB_CACHE_LOCK_TABLE: cache_locks
       QUEUE_CONNECTION: database
       SESSION_DRIVER: database
+      SESSION_LIFETIME: ${SESSION_LIFETIME:-60}
       SESSION_ENCRYPT: "true"
       SESSION_SECURE_COOKIE: ${SESSION_SECURE_COOKIE:-false}
       LOG_CHANNEL: daily

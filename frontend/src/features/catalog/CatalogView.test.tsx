@@ -16,7 +16,7 @@ describe('CatalogView', () => {
   it('renders malformed service prices as safe financial values', async () => {
     vi.spyOn(apiClient, 'getCategories').mockResolvedValue([]);
     vi.spyOn(apiClient, 'getAreas').mockResolvedValue([]);
-    vi.spyOn(apiClient, 'getFiscalSettings').mockResolvedValue(null);
+    vi.spyOn(apiClient, 'getOperationalSettings').mockResolvedValue(null);
     vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({
       data: [serviceFixture({ price: 'monto-danado' })],
       meta: { current_page: 1, per_page: 15, total: 1 },
@@ -26,14 +26,14 @@ describe('CatalogView', () => {
 
     await waitFor(() => expect(screen.getByText('Glucosa')).toBeInTheDocument());
 
-    expect(document.body.textContent).toContain('L. 0.00');
+    expect(document.body.textContent).toContain('L 0.00');
     expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|undefined/);
   });
 
   it('renders inside a QueryClientProvider without crashing', async () => {
     vi.spyOn(apiClient, 'getCategories').mockResolvedValue([]);
     vi.spyOn(apiClient, 'getAreas').mockResolvedValue([]);
-    vi.spyOn(apiClient, 'getFiscalSettings').mockResolvedValue(null);
+    vi.spyOn(apiClient, 'getOperationalSettings').mockResolvedValue(null);
     vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({
       data: [],
       meta: { current_page: 1, per_page: 15, total: 0 },
@@ -47,7 +47,7 @@ describe('CatalogView', () => {
   it('shows billing visibility, billable state and tariff warnings', async () => {
     vi.spyOn(apiClient, 'getCategories').mockResolvedValue([]);
     vi.spyOn(apiClient, 'getAreas').mockResolvedValue([]);
-    vi.spyOn(apiClient, 'getFiscalSettings').mockResolvedValue(null);
+    vi.spyOn(apiClient, 'getOperationalSettings').mockResolvedValue(null);
     vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({
       data: [
         serviceFixture({

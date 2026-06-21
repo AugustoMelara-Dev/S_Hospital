@@ -214,6 +214,13 @@ class InstitutionalReceiptPdfTest extends TestCase
 
         $this->actingAs($user)
             ->get("/api/institutional-receipts/{$receipt->id}/pdf?reason=Reposicion%20solicitada")
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('reason');
+
+        $this->actingAs($user)
+            ->postJson("/api/institutional-receipts/{$receipt->id}/pdf", [
+                'reason' => 'Reposicion solicitada',
+            ])
             ->assertOk();
 
         $this->actingAs($user)
@@ -235,6 +242,47 @@ class InstitutionalReceiptPdfTest extends TestCase
             'reason' => 'Reposicion solicitada',
             'user_id' => $user->id,
         ]);
+    }
+
+    public function test_reprint_pdf_post_with_idempotency_header_still_streams_pdf_not_json_replay(): void
+    {
+        $context = $this->createIssuedReceiptContext();
+        $user = $context['user'];
+        $receipt = $context['receipt'];
+
+        Pdf::shouldReceive('loadHTML')
+            ->times(2)
+            ->andReturn(tap(\Mockery::mock(DomPdfWrapper::class), function ($pdf): void {
+                $pdf->shouldReceive('setPaper')
+                    ->times(2)
+                    ->with([0, 0, 612, 396])
+                    ->andReturnSelf();
+                $pdf->shouldReceive('output')
+                    ->times(2)
+                    ->andReturn('%PDF-issued');
+            }));
+
+        $this->actingAs($user)
+            ->get("/api/institutional-receipts/{$receipt->id}/pdf")
+            ->assertOk();
+
+        $payload = ['reason' => 'Reposicion solicitada'];
+        $this->actingAs($user)
+            ->withHeaders(['Idempotency-Key' => 'receipt-pdf-download'])
+            ->postJson("/api/institutional-receipts/{$receipt->id}/pdf", $payload)
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf')
+            ->assertSee('%PDF-issued', false);
+
+        $this->actingAs($user)
+            ->withHeaders(['Idempotency-Key' => 'receipt-pdf-download'])
+            ->postJson("/api/institutional-receipts/{$receipt->id}/pdf", $payload)
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf')
+            ->assertHeader('Idempotent-Replay', 'true')
+            ->assertSee('%PDF-issued', false);
+
+        $this->assertSame(1, $receipt->fresh()->reprint_count);
     }
 
     public function test_locked_print_event_path_requires_reason_when_receipt_already_has_print_event(): void

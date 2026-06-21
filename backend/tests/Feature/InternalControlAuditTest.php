@@ -52,7 +52,7 @@ class InternalControlAuditTest extends TestCase
         $this->seed(RolesAndPermissionsSeeder::class);
         $user = User::factory()->create([
             'username' => 'cajero1',
-            'password' => bcrypt('Password123'),
+            'password' => bcrypt('Password123!'),
         ]);
         $user->assignRole('cajero');
 
@@ -66,7 +66,7 @@ class InternalControlAuditTest extends TestCase
         $this->withHeader('User-Agent', 'Caja-LAN/1.0')
             ->postJson('/api/auth/login', [
                 'login' => 'cajero1',
-                'password' => 'Password123',
+                'password' => 'Password123!',
             ])
             ->assertOk();
 
@@ -98,8 +98,8 @@ class InternalControlAuditTest extends TestCase
                 'name' => 'Auditor Interno',
                 'email' => 'auditor@example.test',
                 'username' => 'auditor',
-                'password' => 'Password123',
-                'password_confirmation' => 'Password123',
+                'password' => 'Password123!',
+                'password_confirmation' => 'Password123!',
                 'role' => 'auditor',
                 'active' => true,
             ])

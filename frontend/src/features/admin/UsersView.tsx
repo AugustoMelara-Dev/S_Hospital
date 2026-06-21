@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { type FormEvent, useEffect, useRef, useState, useCallback } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import {
   type AuthUser,
+  type PermissionCatalogGroup,
+  type RoleDefinition,
   type UserPayload,
   apiClient,
   userSafeErrorMessage,
@@ -18,6 +20,7 @@ import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Dialog } from '@/components/ui/dialog';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Table,
@@ -37,18 +40,27 @@ import {
   Mail,
   User,
   Lock,
+  ShieldCheck,
+  PlusCircle,
 } from 'lucide-react';
 
 type UsersViewProps = {
   onStatus: (message: string) => void;
   canCreateUsers: boolean;
+  canUpdateUsers?: boolean;
+  canDisableUsers?: boolean;
+  canManageRoles: boolean;
 };
 
-const PASSWORD_POLICY_HINT = 'Mínimo 10 caracteres, con letras y números';
-const PASSWORD_POLICY_ERROR = 'La contraseña debe tener al menos 10 caracteres e incluir letras y números.';
+const PASSWORD_POLICY_HINT = 'Mínimo 12 caracteres, con mayúscula, minúscula, número y símbolo';
+const PASSWORD_POLICY_ERROR = 'La contraseña debe tener al menos 12 caracteres e incluir mayúscula, minúscula, número y símbolo.';
 
 function isPasswordPolicyCompliant(password: string) {
-  return password.length >= 10 && /\p{L}/u.test(password) && /\p{N}/u.test(password);
+  return password.length >= 12
+    && /\p{Ll}/u.test(password)
+    && /\p{Lu}/u.test(password)
+    && /\p{N}/u.test(password)
+    && /[^\p{L}\p{N}]/u.test(password);
 }
 
 const baseUserSchema = z.object({
@@ -80,16 +92,32 @@ const resetPasswordSchema = z.object({
 
 type ResetPasswordForm = z.infer<typeof resetPasswordSchema>;
 
-export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
+export function UsersView({
+  onStatus,
+  canCreateUsers,
+  canUpdateUsers = false,
+  canDisableUsers = false,
+  canManageRoles,
+}: UsersViewProps) {
   const [users, setUsers] = useState<AuthUser[]>([]);
+  const [roles, setRoles] = useState<RoleDefinition[]>([]);
+  const [permissionCatalog, setPermissionCatalog] = useState<PermissionCatalogGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  
+
   // User Modal (Create/Edit)
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<AuthUser | null>(null);
   const [formGlobalError, setFormGlobalError] = useState('');
+  const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
+  const [editingRole, setEditingRole] = useState<RoleDefinition | null>(null);
+  const [roleName, setRoleName] = useState('');
+  const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
+  const [selectedUserPermissions, setSelectedUserPermissions] = useState<string[]>([]);
+  const [roleGlobalError, setRoleGlobalError] = useState('');
+  const [isSavingRole, setIsSavingRole] = useState(false);
+  const saveRoleInFlightRef = useRef(false);
 
   const {
     register: registerUser,
@@ -107,7 +135,7 @@ export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
       role: 'cajero',
     },
   });
-  
+
   // Reset Password Modal
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [targetResetUser, setTargetResetUser] = useState<AuthUser | null>(null);
@@ -131,12 +159,39 @@ export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
   const [isTogglingUser, setIsTogglingUser] = useState(false);
   const toggleUserInFlightRef = useRef(false);
 
+  const roleLabel = useCallback((role: string) => {
+    return role
+      .split('_')
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
+  }, []);
+
+  const defaultRoleName = useCallback(() => {
+    return roles.find((role) => role.name === 'cajero')?.name
+      ?? roles.find((role) => !role.protected)?.name
+      ?? roles[0]?.name
+      ?? 'cajero';
+  }, [roles]);
+
+  const permissionsForRole = useCallback((roleNameValue: string) => {
+    return roles
+      .find((role) => role.name === roleNameValue)
+      ?.permissions
+      .map((permission) => permission.name)
+      .sort() ?? [];
+  }, [roles]);
+
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     setLoadError('');
     try {
-      const data = await apiClient.getUsers();
+      const [data, roleData] = await Promise.all([
+        apiClient.getUsers(),
+        apiClient.getRoles(),
+      ]);
       setUsers(data);
+      setRoles(roleData.roles);
+      setPermissionCatalog(roleData.permissionCatalog);
     } catch (err) {
       const msg = userSafeErrorMessage(err, 'No se pudieron cargar los usuarios.');
       setLoadError(msg);
@@ -161,16 +216,98 @@ export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
   });
 
   const handleOpenCreateModal = () => {
+    const role = defaultRoleName();
     setEditingUser(null);
     resetUserForm({
       name: '',
       email: '',
       username: '',
       password: '',
-      role: 'cajero',
+      role,
     });
+    setSelectedUserPermissions(canManageRoles ? permissionsForRole(role) : []);
     setFormGlobalError('');
     setIsUserModalOpen(true);
+  };
+
+  const handleOpenCreateRole = () => {
+    setEditingRole(null);
+    setRoleName('');
+    setSelectedPermissions([]);
+    setRoleGlobalError('');
+    setIsRoleModalOpen(true);
+  };
+
+  const handleOpenEditRole = (role: RoleDefinition) => {
+    setEditingRole(role);
+    setRoleName(role.name);
+    setSelectedPermissions(role.permissions.map((permission) => permission.name));
+    setRoleGlobalError('');
+    setIsRoleModalOpen(true);
+  };
+
+  const togglePermission = (permissionName: string, checked: boolean) => {
+    setSelectedPermissions((current) => {
+      if (checked) {
+        return current.includes(permissionName) ? current : [...current, permissionName].sort();
+      }
+
+      return current.filter((name) => name !== permissionName);
+    });
+  };
+
+  const toggleUserPermission = (permissionName: string, checked: boolean) => {
+    setSelectedUserPermissions((current) => {
+      if (checked) {
+        return current.includes(permissionName) ? current : [...current, permissionName].sort();
+      }
+
+      return current.filter((name) => name !== permissionName);
+    });
+  };
+
+  const handleRoleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setRoleGlobalError('');
+
+    const normalizedName = roleName.trim();
+
+    if (!/^[A-Za-z0-9_-]{3,80}$/.test(normalizedName)) {
+      setRoleGlobalError('Use un nombre de rol entre 3 y 80 caracteres, solo letras, numeros, _ o -.');
+      return;
+    }
+
+    if (selectedPermissions.length === 0) {
+      setRoleGlobalError('Seleccione al menos un permiso para el rol.');
+      return;
+    }
+
+    if (saveRoleInFlightRef.current) return;
+
+    saveRoleInFlightRef.current = true;
+    setIsSavingRole(true);
+    onStatus(editingRole ? 'Actualizando rol...' : 'Creando rol...');
+
+    try {
+      const saved = editingRole
+        ? await apiClient.updateRole(editingRole.id, { name: normalizedName, permissions: selectedPermissions })
+        : await apiClient.createRole({ name: normalizedName, permissions: selectedPermissions });
+
+      setRoles((current) => {
+        const exists = current.some((role) => role.id === saved.id);
+        return (exists ? current.map((role) => (role.id === saved.id ? saved : role)) : [...current, saved])
+          .sort((a, b) => a.name.localeCompare(b.name));
+      });
+      setIsRoleModalOpen(false);
+      onStatus(`Rol ${saved.name} ${editingRole ? 'actualizado' : 'creado'} correctamente.`);
+    } catch (err) {
+      const msg = userSafeErrorMessage(err, 'No se pudo guardar el rol.');
+      setRoleGlobalError(msg);
+      onStatus(msg);
+    } finally {
+      saveRoleInFlightRef.current = false;
+      setIsSavingRole(false);
+    }
   };
 
   const handleOpenEditModal = (user: AuthUser) => {
@@ -180,14 +317,27 @@ export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
       email: user.email,
       username: user.username,
       password: '', // Password is not modified via edit details modal
-      role: user.roles[0] || 'cajero',
+      role: user.roles[0] || defaultRoleName(),
     });
+    setSelectedUserPermissions(canManageRoles
+      ? (user.uses_exact_permission_map
+        ? [...(user.direct_permissions ?? [])].sort()
+        : permissionsForRole(user.roles[0] || defaultRoleName()))
+      : []);
     setFormGlobalError('');
     setIsUserModalOpen(true);
   };
 
   const onUserSubmit = async (data: UserFormData) => {
     setFormGlobalError('');
+
+    if (canManageRoles && selectedUserPermissions.length === 0 && editingUser?.active !== false) {
+      const msg = 'Seleccione al menos un modulo para un usuario activo, o desactive el usuario antes de dejarlo sin acceso.';
+      setFormGlobalError(msg);
+      onStatus(msg);
+      return;
+    }
+
     onStatus('Guardando usuario...');
     try {
       if (editingUser) {
@@ -197,6 +347,9 @@ export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
           username: data.username,
           role: data.role,
         };
+        if (canManageRoles) {
+          payload.permissions = selectedUserPermissions;
+        }
         const updated = await apiClient.updateUser(editingUser.id, payload);
         setUsers(users.map((u) => (u.id === editingUser.id ? updated : u)));
         onStatus(`Usuario ${updated.name} actualizado correctamente.`);
@@ -209,6 +362,9 @@ export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
           role: data.role,
           active: true,
         };
+        if (canManageRoles) {
+          payload.permissions = selectedUserPermissions;
+        }
         const created = await apiClient.createUser(payload);
         setUsers([...users, created]);
         onStatus(`Usuario ${created.name} creado correctamente.`);
@@ -260,7 +416,7 @@ export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
 
   const onResetSubmit = async (data: ResetPasswordForm) => {
     if (!targetResetUser) return;
-    
+
     setResetGlobalError('');
     onStatus('Restableciendo contraseña...');
     try {
@@ -304,6 +460,66 @@ export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
         title="Usuarios"
         description="Administre el personal autorizado para facturar, cobrar y supervisar."
       />
+
+      {canManageRoles && (
+        <Card className="mb-6 border border-border">
+          <CardContent className="space-y-4 p-4">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 flex size-9 items-center justify-center rounded-md bg-primary/10 text-primary">
+                  <ShieldCheck className="size-5" />
+                </div>
+                <div>
+                  <h2 className="text-base font-semibold text-foreground">Roles y modulos</h2>
+                  <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+                    Defina que modulos puede usar cada tipo de usuario. Los roles base protegidos se conservan para no perder acceso administrativo.
+                  </p>
+                </div>
+              </div>
+              <Button type="button" variant="outline" onClick={handleOpenCreateRole}>
+                <PlusCircle className="mr-2 size-4" />
+                Nuevo rol
+              </Button>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {roles.map((role) => (
+                <div key={role.id} className="rounded-md border border-border p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-foreground">{roleLabel(role.name)}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {role.permissions.length} permiso{role.permissions.length === 1 ? '' : 's'}
+                      </p>
+                    </div>
+                    <Badge variant={role.protected ? 'warning' : 'secondary'}>
+                      {role.protected ? 'Base' : 'Editable'}
+                    </Badge>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-1">
+                    {[...new Set(role.permissions.map((permission) => permission.module))].slice(0, 4).map((module) => (
+                      <Badge key={module} variant="outline">
+                        {module}
+                      </Badge>
+                    ))}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="mt-3 w-full"
+                    onClick={() => handleOpenEditRole(role)}
+                    disabled={role.protected}
+                    aria-label={`Editar permisos de ${roleLabel(role.name)}`}
+                  >
+                    Editar permisos
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
         <div className="relative flex-1 max-w-md">
@@ -393,37 +609,46 @@ export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          title="Editar detalles"
-                          aria-label={`Editar usuario ${user.name}`}
-                          onClick={() => handleOpenEditModal(user)}
-                        >
-                          <Edit2 className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          title="Restablecer clave"
-                          aria-label={`Restablecer clave de ${user.name}`}
-                          onClick={() => handleOpenResetModal(user)}
-                        >
-                          <KeyRound className="h-3.5 w-3.5 text-orange-500" />
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          title={user.active ? 'Desactivar usuario' : 'Activar usuario'}
-                          aria-label={user.active ? `Desactivar usuario ${user.name}` : `Activar usuario ${user.name}`}
-                          onClick={() => handleOpenToggleDialog(user)}
-                        >
-                          {user.active ? (
-                            <UserX className="h-3.5 w-3.5 text-rose-500" />
-                          ) : (
-                            <UserCheck className="h-3.5 w-3.5 text-success" />
-                          )}
-                        </Button>
+                        {canUpdateUsers && (
+                          <>
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              title="Editar detalles"
+                              aria-label={`Editar usuario ${user.name}`}
+                              onClick={() => handleOpenEditModal(user)}
+                            >
+                              <Edit2 className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              title="Restablecer clave"
+                              aria-label={`Restablecer clave de ${user.name}`}
+                              onClick={() => handleOpenResetModal(user)}
+                            >
+                              <KeyRound className="h-3.5 w-3.5 text-orange-500" />
+                            </Button>
+                          </>
+                        )}
+                        {canDisableUsers && (
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            title={user.active ? 'Desactivar usuario' : 'Activar usuario'}
+                            aria-label={user.active ? `Desactivar usuario ${user.name}` : `Activar usuario ${user.name}`}
+                            onClick={() => handleOpenToggleDialog(user)}
+                          >
+                            {user.active ? (
+                              <UserX className="h-3.5 w-3.5 text-rose-500" />
+                            ) : (
+                              <UserCheck className="h-3.5 w-3.5 text-success" />
+                            )}
+                          </Button>
+                        )}
+                        {!canUpdateUsers && !canDisableUsers && (
+                          <span className="text-xs text-muted-foreground">Solo lectura</span>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -433,6 +658,73 @@ export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
           </Table>
         </CardContent>
       </Card>
+
+      <Dialog
+        open={isRoleModalOpen}
+        onOpenChange={(open) => {
+          if (!isSavingRole) setIsRoleModalOpen(open);
+        }}
+        size="lg"
+        title={editingRole ? 'Editar rol' : 'Nuevo rol'}
+        description="Seleccione los permisos exactos que tendra este rol operativo."
+      >
+        <form onSubmit={handleRoleSubmit} className="space-y-4">
+          {roleGlobalError && (
+            <div className="rounded border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive" role="alert">
+              {roleGlobalError}
+            </div>
+          )}
+
+          <div className="space-y-1">
+            <Label htmlFor="role-name">Nombre del rol *</Label>
+            <Input
+              id="role-name"
+              value={roleName}
+              onChange={(event) => setRoleName(event.target.value)}
+              placeholder="ejemplo: caja_turno_tarde"
+              disabled={isSavingRole}
+            />
+          </div>
+
+          <div className="max-h-[420px] space-y-3 overflow-y-auto rounded-md border border-border p-3">
+            {permissionCatalog.map((group) => (
+              <fieldset key={group.module} className="rounded-md border border-border p-3">
+                <legend className="px-1 text-sm font-semibold text-foreground">{group.label}</legend>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  {group.permissions.map((permission) => {
+                    const id = `permission-${permission.name.replace(/[^A-Za-z0-9_-]/g, '-')}`;
+                    const checked = selectedPermissions.includes(permission.name);
+
+                    return (
+                      <label key={permission.name} htmlFor={id} className="flex items-start gap-2 rounded-md p-2 text-sm hover:bg-muted/50">
+                        <Checkbox
+                          id={id}
+                          checked={checked}
+                          disabled={isSavingRole}
+                          onCheckedChange={(value) => togglePermission(permission.name, value === true)}
+                        />
+                        <span>
+                          <span className="block font-medium text-foreground">{permission.label}</span>
+                          <span className="block text-xs text-muted-foreground">{permission.name}</span>
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </fieldset>
+            ))}
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="secondary" onClick={() => setIsRoleModalOpen(false)} disabled={isSavingRole}>
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={isSavingRole}>
+              {isSavingRole ? 'Guardando...' : editingRole ? 'Guardar rol' : 'Crear rol'}
+            </Button>
+          </div>
+        </form>
+      </Dialog>
 
       {/* User Create/Edit Dialog */}
       <Dialog
@@ -525,20 +817,72 @@ export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
               name="role"
               control={userControl}
               render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
+                <Select
+                  value={field.value}
+                  onValueChange={(value) => {
+                    field.onChange(value);
+                    setSelectedUserPermissions(canManageRoles ? permissionsForRole(value) : []);
+                  }}
+                >
                   <SelectTrigger id="role">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="cajero">Cajero (POS y cobros diarios)</SelectItem>
-                    <SelectItem value="supervisor">Supervisor (Auditoría, caja general y anulaciones)</SelectItem>
-                    <SelectItem value="admin">Administrador (control completo)</SelectItem>
+                    {roles.map((role) => (
+                      <SelectItem key={role.id} value={role.name}>
+                        {roleLabel(role.name)}
+                        {role.protected ? ' (base protegido)' : ''}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               )}
             />
             {userErrors.role && <p className="text-xs text-destructive">{userErrors.role.message}</p>}
           </div>
+
+          {canManageRoles ? (
+            <div className="space-y-2 rounded-md border border-border p-3">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">Acceso por modulos</h3>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Ajuste los permisos directos de este usuario. El rol funciona como plantilla inicial.
+                </p>
+              </div>
+              <div className="max-h-[320px] space-y-3 overflow-y-auto">
+                {permissionCatalog.map((group) => (
+                  <fieldset key={group.module} className="rounded-md border border-border p-3">
+                    <legend className="px-1 text-sm font-semibold text-foreground">{group.label}</legend>
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                      {group.permissions.map((permission) => {
+                        const id = `user-permission-${permission.name.replace(/[^A-Za-z0-9_-]/g, '-')}`;
+                        const checked = selectedUserPermissions.includes(permission.name);
+
+                        return (
+                          <label key={permission.name} htmlFor={id} className="flex items-start gap-2 rounded-md p-2 text-sm hover:bg-muted/50">
+                            <Checkbox
+                              id={id}
+                              checked={checked}
+                              disabled={isSavingUser}
+                              onCheckedChange={(value) => toggleUserPermission(permission.name, value === true)}
+                            />
+                            <span>
+                              <span className="block font-medium text-foreground">{permission.label}</span>
+                              <span className="block text-xs text-muted-foreground">{permission.name}</span>
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </fieldset>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-md border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
+              Este usuario heredara los modulos del rol seleccionado. Solo una cuenta con permiso para administrar roles puede ajustar permisos directos.
+            </div>
+          )}
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="secondary" onClick={() => setIsUserModalOpen(false)} disabled={isSavingUser}>
