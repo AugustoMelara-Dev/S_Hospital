@@ -3595,6 +3595,16 @@ Motivo: reducir riesgo de deadlocks, cerrar brechas de auditoria y permitir recu
 
 Validacion: `vendor\bin\phpunit --filter=PaymentLockOrderGuardTest`, `vendor\bin\phpunit --filter=test_operations_report_lists_voids_reprints_and_backups`, `vendor\bin\phpunit --filter=CashPaymentsReceiptTest` y `vendor\bin\phpunit --filter=InstitutionalReceiptPaymentIntegrationTest`.
 
+# 2026-06-21 - Visual completion parte de la RC y separa evidencia interna de aceptacion fisica
+
+Contexto: la completitud visual debia continuar desde `origin/codex/integration-release-candidate` (`10d7413daf48f606ef9d913792ed90454a7143d0`) y no desde ramas antiguas ni desde `main`. Existia `origin/codex/ui-institutional-receipt`, una rama posterior acotada a recibos institucionales, PDF, preview y pruebas.
+
+Decision: se creo el checkpoint `checkpoint/pre-visual-completion-20260621-1137`, el worktree `C:\Projects\S_Hospital-visual-completion` y la rama `codex/visual-completion-rc`. La rama de recibos institucionales se integro por merge al estar acotada a la superficie visual solicitada. La evidencia de completitud visual se registra con Playwright mockeado, screenshots versionados y reporte en `docs/qa/VISUAL_COMPLETION_REPORT.md`; la validacion LAN/impresora/restore/concurrencia real queda clasificada como aceptacion externa, no como bloqueo visual interno.
+
+Motivo: conservar la RC como fuente de verdad, reutilizar trabajo valido sin rebase riesgoso y evitar mezclar completitud visual reproducible con pruebas fisicas que dependen del ambiente final.
+
+Validacion: `npm run typecheck`, `npm run lint`, `npm run test`, `npm run build`, `npm run smoke:buttons`, `npx playwright test e2e/production-readiness.spec.ts`, `npm run test:e2e`, `php artisan test --colors=never` en Docker con mounts de release y `git diff --check`.
+
 # 2026-06-16 - Descarga de backups usa MIME binario y nombre saneado
 
 Contexto: los backups generados por el sistema se publican como `.sql.enc`, pero la descarga HTTP declaraba `application/sql` y usaba directamente `backup_logs.filename` para `Content-Disposition`.

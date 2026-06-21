@@ -1,0 +1,116 @@
+{
+  "generated_at": "2026-06-21T18:13:45.350Z",
+  "mode": "mocked-e2e",
+  "note": "Capturas con API mockeada; no sustituyen LAN, MySQL/MariaDB ni impresora fisica.",
+  "screenshots": [
+    {
+      "name": "dashboard-light",
+      "path": "qa/screenshots/visual-completion-2026-06-21/dashboard-light.png",
+      "route": "/dashboard",
+      "theme": "light"
+    },
+    {
+      "name": "dashboard-dark",
+      "path": "qa/screenshots/visual-completion-2026-06-21/dashboard-dark.png",
+      "route": "/dashboard",
+      "theme": "dark"
+    },
+    {
+      "name": "cashbox-open-light",
+      "path": "qa/screenshots/visual-completion-2026-06-21/cashbox-open-light.png",
+      "route": "/cashbox",
+      "theme": "light"
+    },
+    {
+      "name": "billing-new-empty-light",
+      "path": "qa/screenshots/visual-completion-2026-06-21/billing-new-empty-light.png",
+      "route": "/billing/new",
+      "theme": "light"
+    },
+    {
+      "name": "billing-new-cart-light",
+      "path": "qa/screenshots/visual-completion-2026-06-21/billing-new-cart-light.png",
+      "route": "/billing/new",
+      "theme": "light"
+    },
+    {
+      "name": "receipt-preview-a5-light",
+      "path": "qa/screenshots/visual-completion-2026-06-21/receipt-preview-a5-light.png",
+      "route": "/billing/new",
+      "theme": "light"
+    },
+    {
+      "name": "receipt-preview-light",
+      "path": "qa/screenshots/visual-completion-2026-06-21/receipt-preview-light.png",
+      "route": "/billing/new",
+      "theme": "light"
+    },
+    {
+      "name": "receipt-preview-dark",
+      "path": "qa/screenshots/visual-completion-2026-06-21/receipt-preview-dark.png",
+      "route": "/billing/new",
+      "theme": "dark"
+    },
+    {
+      "name": "reports-admin-light",
+      "path": "qa/screenshots/visual-completion-2026-06-21/reports-admin-light.png",
+      "route": "/reports",
+      "theme": "light"
+    },
+    {
+      "name": "reports-admin-dark",
+      "path": "qa/screenshots/visual-completion-2026-06-21/reports-admin-dark.png",
+      "route": "/reports",
+      "theme": "dark"
+    },
+    {
+      "name": "receipt-settings-light",
+      "path": "qa/screenshots/visual-completion-2026-06-21/receipt-settings-light.png",
+      "route": "/settings/institutional-receipts",
+      "theme": "light"
+    },
+    {
+      "name": "receipt-settings-preview-light",
+      "path": "qa/screenshots/visual-completion-2026-06-21/receipt-settings-preview-light.png",
+      "route": "/settings/institutional-receipts",
+      "theme": "light"
+    },
+    {
+      "name": "receipt-settings-preview-dark",
+      "path": "qa/screenshots/visual-completion-2026-06-21/receipt-settings-preview-dark.png",
+      "route": "/settings/institutional-receipts",
+      "theme": "dark"
+    },
+    {
+      "name": "admin-users-light",
+      "path": "qa/screenshots/visual-completion-2026-06-21/admin-users-light.png",
+      "route": "/admin/users",
+      "theme": "light"
+    },
+    {
+      "name": "admin-users-dark",
+      "path": "qa/screenshots/visual-completion-2026-06-21/admin-users-dark.png",
+      "route": "/admin/users",
+      "theme": "dark"
+    },
+    {
+      "name": "backups-pending-light",
+      "path": "qa/screenshots/visual-completion-2026-06-21/backups-pending-light.png",
+      "route": "/backups",
+      "theme": "light"
+    },
+    {
+      "name": "access-denied-reports-light",
+      "path": "qa/screenshots/visual-completion-2026-06-21/access-denied-reports-light.png",
+      "route": "/reports",
+      "theme": "light"
+    },
+    {
+      "name": "not-found-light",
+      "path": "qa/screenshots/visual-completion-2026-06-21/not-found-light.png",
+      "route": "/does-not-exist",
+      "theme": "light"
+    }
+  ],
+  "console_issues": []
+}
