@@ -178,6 +178,65 @@ class InstitutionalReceiptPdfTest extends TestCase
         }
     }
 
+    public function test_receipt_pdf_generation_supports_many_items_and_all_real_print_profiles_without_mutating_snapshots(): void
+    {
+        $context = $this->createIssuedReceiptContext();
+        $receipt = $context['receipt'];
+        $items = collect(range(1, 100))
+            ->map(fn (int $index): array => [
+                'service_name' => "Servicio hospitalario extendido {$index}",
+                'category_name' => 'Categoria de prueba',
+                'area_name' => 'Area administrativa',
+                'quantity' => $index === 1 ? '0.00' : '1.00',
+                'unit_price' => $index === 1 ? '0.00' : '9999.99',
+                'unit_price_cents' => $index === 1 ? 0 : 999999,
+                'tax_rate' => '15.00',
+                'tax_amount' => $index === 1 ? '0.00' : '1500.00',
+                'tax_amount_cents' => $index === 1 ? 0 : 150000,
+                'line_subtotal' => $index === 1 ? '0.00' : '9999.99',
+                'line_subtotal_cents' => $index === 1 ? 0 : 999999,
+                'line_total' => $index === 1 ? '0.00' : '11499.99',
+                'line_total_cents' => $index === 1 ? 0 : 1149999,
+                'notes' => str_repeat('Descripcion larga ', 8),
+            ])
+            ->all();
+        $originalSeriesSnapshot = $receipt->series_snapshot;
+        $originalReceiptNumber = $receipt->receipt_number_full;
+        $originalSeriesCurrentNumber = $context['series']->fresh()->current_number;
+
+        $receipt->forceFill(['items_snapshot' => $items])->save();
+
+        foreach ([
+            ReceiptPrintProfile::CODE_HALF_LETTER => 'half_letter_landscape',
+            ReceiptPrintProfile::CODE_LETTER => 'letter_landscape',
+            ReceiptPrintProfile::CODE_A5 => 'a5_landscape',
+            ReceiptPrintProfile::CODE_THERMAL_80 => 'thermal_80mm',
+            ReceiptPrintProfile::CODE_THERMAL_58 => 'thermal_58mm',
+        ] as $code => $paperKind) {
+            $profile = ReceiptPrintProfile::query()->where('code', $code)->firstOrFail();
+            $receipt->forceFill([
+                'print_profile_code' => $code,
+                'profile_snapshot' => [
+                    ...$receipt->profile_snapshot,
+                    'code' => $code,
+                    'name' => $profile->name,
+                    'paper_kind' => $paperKind,
+                    'width_mm' => (string) $profile->width_mm,
+                    'height_mm' => (string) $profile->height_mm,
+                    'font_scale' => (string) $profile->font_scale,
+                ],
+            ])->save();
+
+            $pdf = app(InstitutionalReceiptPdfService::class)->pdfForReceipt($receipt->fresh());
+
+            $this->assertStringStartsWith('%PDF', $pdf, $code);
+            $this->assertGreaterThan(1000, strlen($pdf), $code);
+            $this->assertSame($originalReceiptNumber, $receipt->fresh()->receipt_number_full);
+            $this->assertSame($originalSeriesSnapshot, $receipt->fresh()->series_snapshot);
+            $this->assertSame($originalSeriesCurrentNumber, $context['series']->fresh()->current_number);
+        }
+    }
+
     public function test_draft_test_print_html_has_watermark_copy_label_and_does_not_reserve_number(): void
     {
         $context = $this->createIssuedReceiptContext(copyMode: 'original_first');
