@@ -246,7 +246,7 @@ class ManageFinalValidationUserCommand extends Command
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * @param  array<string, mixed>  $payload
      */
     private function writeResult(array $payload): void
     {

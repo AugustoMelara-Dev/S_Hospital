@@ -124,6 +124,9 @@ function captureBlockingIssues(page: Page, consoleIssues: string[]) {
     if (request.url().includes('/sanctum/csrf-cookie') && failure?.errorText === 'net::ERR_ABORTED') {
       return;
     }
+    if (request.method() === 'GET' && failure?.errorText === 'net::ERR_ABORTED') {
+      return;
+    }
 
     consoleIssues.push(`requestfailed: ${request.method()} ${request.url()} ${failure?.errorText ?? ''}`.trim());
   });

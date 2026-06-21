@@ -65,6 +65,12 @@ return Application::configure(basePath: dirname(__DIR__))
                 return response()->json(['message' => 'Unauthenticated.'], 401);
             }
 
+            if ($status === 503) {
+                return response()->json([
+                    'message' => 'Sistema en mantenimiento. Vuelva a intentar en unos minutos.',
+                ], 503);
+            }
+
             if ($exception instanceof QueryException && $exception->getCode() === '23000' && str_contains($exception->getMessage(), '1451')) {
                 return response()->json([
                     'message' => 'No se puede eliminar el registro porque está en uso o tiene datos relacionados.',
