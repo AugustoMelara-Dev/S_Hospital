@@ -5,19 +5,19 @@ import { cn } from '../../lib/utils';
 export const Tabs = TabsPrimitive.Root;
 
 export const TabsList = ({ className, children, ...props }: TabsPrimitive.TabsListProps & { className?: string; children: ReactNode }) => (
-  <TabsPrimitive.List className={cn('flex h-10 max-w-full items-center justify-start overflow-x-auto rounded-md bg-muted p-1 text-muted-foreground [scrollbar-width:thin]', className)} {...props}>
+  <TabsPrimitive.List data-slot="tabs-list" className={cn('flex h-10 max-w-full items-center justify-start overflow-x-auto rounded-md bg-muted p-1 text-muted-foreground [scrollbar-width:thin]', className)} {...props}>
     {children}
   </TabsPrimitive.List>
 );
 
 export const TabsTrigger = ({ className, children, ...props }: TabsPrimitive.TabsTriggerProps & { className?: string; children: ReactNode }) => (
-  <TabsPrimitive.Trigger className={cn('inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-[background-color,color,box-shadow,border-color] duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm', className)} {...props}>
+  <TabsPrimitive.Trigger data-slot="tabs-trigger" className={cn('inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-[background-color,color,box-shadow,border-color] duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm', className)} {...props}>
     {children}
   </TabsPrimitive.Trigger>
 );
 
 export const TabsContent = ({ className, children, ...props }: TabsPrimitive.TabsContentProps & { className?: string; children: ReactNode }) => (
-  <TabsPrimitive.Content className={cn('mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2', className)} {...props}>
+  <TabsPrimitive.Content data-slot="tabs-content" className={cn('mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2', className)} {...props}>
     {children}
   </TabsPrimitive.Content>
 );

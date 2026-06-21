@@ -1,18 +1,26 @@
 import { AlertTriangle, SearchX } from 'lucide-react';
-import { type ReactNode } from 'react';
+import { type HTMLAttributes, type ReactNode } from 'react';
+import { cn } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './card';
 
-export function Skeleton({ className }: { className?: string }) {
+export function Skeleton({
+  'aria-hidden': ariaHidden = true,
+  className,
+  ...props
+}: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={`relative overflow-hidden rounded bg-muted before:absolute before:inset-y-0 before:w-1/2 before:animate-[shimmer_1.4s_ease-in-out_infinite] before:bg-gradient-to-r before:from-transparent before:via-card/70 before:to-transparent ${className ?? ''}`}
+      aria-hidden={ariaHidden}
+      data-slot="skeleton"
+      className={cn('rounded-md bg-muted', className)}
+      {...props}
     />
   );
 }
 
 export function LoadingState({ label = 'Cargando...' }: { label?: string }) {
   return (
-    <Card role="status" aria-live="polite" aria-busy="true">
+    <Card role="status" aria-live="polite" aria-busy="true" data-slot="loading-state">
       <CardContent className="flex min-h-32 flex-col gap-4 pt-5 text-muted-foreground">
         <div className="flex items-center justify-between gap-4">
           <span className="text-sm font-semibold">{label}</span>
@@ -38,10 +46,10 @@ export function EmptyState({
   title?: string;
 }) {
   return (
-    <Card>
+    <Card data-slot="empty-state">
       <CardHeader>
         <div className="flex items-center gap-3">
-          <SearchX className="size-5 text-muted-foreground" aria-hidden="true" />
+          <SearchX data-icon className="size-5 text-muted-foreground" aria-hidden="true" />
           <CardTitle>{title}</CardTitle>
         </div>
         {description ? <CardDescription>{description}</CardDescription> : null}
@@ -61,10 +69,10 @@ export function ErrorState({
   title?: string;
 }) {
   return (
-    <Card role="alert">
+    <Card role="alert" data-slot="error-state">
       <CardHeader>
         <div className="flex items-center gap-3">
-          <AlertTriangle className="size-5 text-destructive" aria-hidden="true" />
+          <AlertTriangle data-icon className="size-5 text-destructive" aria-hidden="true" />
           <CardTitle>{title}</CardTitle>
         </div>
         {description ? <CardDescription>{description}</CardDescription> : null}

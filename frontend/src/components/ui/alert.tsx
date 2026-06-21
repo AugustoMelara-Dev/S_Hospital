@@ -4,6 +4,7 @@ import { cn } from '../../lib/utils';
 
 type AlertProps = HTMLAttributes<HTMLDivElement> & {
   children: ReactNode;
+  icon?: ReactNode;
   title?: string;
   variant?: 'default' | 'success' | 'warning' | 'destructive';
 };
@@ -25,6 +26,7 @@ const icons = {
 export function Alert({
   children,
   className,
+  icon,
   title,
   variant = 'default',
   ...props
@@ -33,23 +35,24 @@ export function Alert({
 
   return (
     <div
-      className={cn('flex gap-3 rounded-lg border p-4 text-sm', variants[variant], className)}
+      data-slot="alert"
+      className={cn('flex gap-3 rounded-md border p-4 text-sm', variants[variant], className)}
       role={variant === 'destructive' || variant === 'warning' ? 'alert' : 'status'}
       {...props}
     >
-      <Icon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-      <div className="min-w-0">
-        {title ? <p className="font-semibold leading-tight">{title}</p> : null}
-        <div className="text-current/85">{children}</div>
+      {icon === null ? null : (icon ?? <Icon data-icon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />)}
+      <div data-slot="alert-content" className="min-w-0">
+        {title ? <p data-slot="alert-title" className="font-semibold leading-tight">{title}</p> : null}
+        <div data-slot="alert-description" className="text-current/85">{children}</div>
       </div>
     </div>
   );
 }
 
-export function AlertTitle({ children }: { children: ReactNode }) {
-  return <p className="font-semibold">{children}</p>;
+export function AlertTitle({ children, className }: { children: ReactNode; className?: string }) {
+  return <p data-slot="alert-title" className={cn('font-semibold', className)}>{children}</p>;
 }
 
-export function AlertDescription({ children }: { children: ReactNode }) {
-  return <div className="text-current/85">{children}</div>;
+export function AlertDescription({ children, className }: { children: ReactNode; className?: string }) {
+  return <div data-slot="alert-description" className={cn('text-current/85', className)}>{children}</div>;
 }

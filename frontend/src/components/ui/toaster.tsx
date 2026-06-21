@@ -72,7 +72,7 @@ export function Toaster() {
           background: 'var(--color-card)',
           color: 'var(--color-card-foreground)',
           border: '1px solid var(--color-border)',
-          borderRadius: '0.75rem',
+          borderRadius: 'var(--radius-md)',
           padding: '12px 16px',
           fontSize: '14px',
           fontWeight: 500,
@@ -106,9 +106,9 @@ export const notify = {
   error: (message: string) =>
     showDedupedToast('error', message, (text, id) => toast.error(text, { id })),
   info: (message: string) =>
-    showDedupedToast('info', message, (text, id) => toast(text, { id, icon: 'i' })),
+    showDedupedToast('info', message, (text, id) => toast(text, { id, icon: 'Info' })),
   warning: (message: string) =>
-    showDedupedToast('warning', message, (text, id) => toast(text, { id, icon: '!' })),
+    showDedupedToast('warning', message, (text, id) => toast(text, { id, icon: 'Aviso' })),
   loading: (message: string) => toast.loading(message),
   dismiss: (id?: string) => toast.dismiss(id),
   promise: <T,>(
