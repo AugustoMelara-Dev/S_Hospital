@@ -19,6 +19,22 @@ describe('CashMovementsTable', () => {
     expect(rowFor('closing')).toHaveTextContent('L 134.50');
     expect(rowFor('closing')).not.toHaveTextContent('- L 134.50');
   });
+
+  it('renders a semantic table with accessible caption and no invented actions', () => {
+    render(
+      <CashMovementsTable
+        movements={[
+          movement({ id: 10, type: 'payment', method: 'cash', amount: '10.00' }),
+        ]}
+      />,
+    );
+
+    expect(screen.getByRole('region', { name: /movimientos de caja/i })).toBeInTheDocument();
+    expect(screen.getByRole('table', { name: /movimientos registrados/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /monto/i })).toHaveAttribute('data-numeric', 'true');
+    expect(screen.getByRole('cell', { name: /\+ L 10\.00/i })).toHaveAttribute('data-numeric', 'true');
+    expect(screen.queryByRole('button', { name: /editar|eliminar|revertir/i })).not.toBeInTheDocument();
+  });
 });
 
 function rowFor(type: string): HTMLElement {

@@ -8,7 +8,7 @@ export function BackupExplanationCard() {
       <CardContent className="pt-6">
         <div className="flex items-start gap-4">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-            <Info className="h-5 w-5 text-muted-foreground" />
+            <Info aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
           </div>
           <div>
             <h3 className="mb-1 font-semibold">Respaldos del hospital</h3>
@@ -53,7 +53,7 @@ export function BackupEmptyState({
   return (
     <Card>
       <CardContent className="flex flex-col items-center justify-center py-12">
-        <Archive className="mb-4 h-12 w-12 text-muted-foreground" />
+        <Archive aria-hidden="true" className="mb-4 h-12 w-12 text-muted-foreground" />
         <h3 className="mb-2 text-lg font-semibold">No hay respaldos</h3>
         <p className="mb-4 text-center text-muted-foreground">
           {canCreate
@@ -62,7 +62,7 @@ export function BackupEmptyState({
         </p>
         {canCreate && onCreate && (
           <Button type="button" variant="default" size="sm" onClick={onCreate}>
-            <Archive className="h-4 w-4" />
+            <Archive aria-hidden="true" className="h-4 w-4" />
             Crear respaldo
           </Button>
         )}

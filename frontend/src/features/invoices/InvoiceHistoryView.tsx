@@ -12,39 +12,24 @@ import {
   userSafeErrorMessage,
 } from '../../lib/api';
 import { useInvoices } from '../../hooks/useInvoices';
-import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
 import { ConfirmDialog } from '../../components/ui/confirm-dialog';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { Dialog } from '../../components/ui/dialog';
-import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { PaginationControls } from '../../components/ui/pagination';
-import { NativeSelect, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
-import { ErrorState, LoadingState } from '../../components/ui/states';
+import { NativeSelect } from '../../components/ui/select';
+import { EmptyState, ErrorState, LoadingState } from '../../components/ui/states';
 import { ReceiptPreview } from '../receipts/ReceiptPreview';
 import { Textarea } from '../../components/ui/textarea';
-import { DateRangePicker } from '../../components/ui/date-range-picker';
-import { FilterBar } from '../../components/ui/filter-bar';
 import { INSTITUTIONAL_RECEIPT_PAPER_OPTIONS, institutionalReceiptPaperSize } from '../../lib/institutionalReceiptPaper';
 import { openBlobInNewTab } from '../../lib/download';
 import { formatLempirasUIFromCents, parseCents } from '../../lib/moneyCents';
 import { formatLocalizedDateTime } from '../../lib/format/formatDate';
 import { invalidateBillingQueries } from '@/lib/queryInvalidation';
-import {
-  FileClock,
-  Printer,
-  Receipt,
-  XCircle,
-} from 'lucide-react';
+import { InvoiceHistoryFilters } from './history/InvoiceHistoryFilters';
+import { InvoiceHistoryHeader } from './history/InvoiceHistoryHeader';
+import { InvoiceHistoryTable, issuedInstitutionalReceipt } from './history/InvoiceHistoryTable';
 
 type InvoiceHistoryViewProps = {
   user: AuthUser;
@@ -367,70 +352,16 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   const isEmpty = invoicesList.length === 0;
 
   return (
-    <section id="historial" className="flex flex-col gap-5" aria-labelledby="invoice-history-title">
-      <div>
-        <h1 id="invoice-history-title" className="text-2xl font-bold tracking-tight">
-          Historial de facturas
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Consulte facturas recientes, reimprima recibos y gestione anulaciones autorizadas.
-        </p>
-      </div>
-      <FilterBar
-        onSearch={(e) => void submitFilters(e)}
-        onClear={clearFilters}
-        isLoading={loading}
+    <section id="historial" className="flex flex-col gap-5" aria-label="Historial de facturas">
+      <InvoiceHistoryHeader loading={loading} meta={meta} />
+      <InvoiceHistoryFilters
+        filters={filters}
         hasActiveFilters={hasActiveFilters}
-      >
-        <DateRangePicker
-          startDate={filters.date_from ?? ''}
-          endDate={filters.date_to ?? ''}
-          onStartDateChange={(val) => setFilters({ ...filters, date_from: val })}
-          onEndDateChange={(val) => setFilters({ ...filters, date_to: val })}
-          className="col-span-1 sm:col-span-2"
-        />
-
-        <div className="space-y-1.5">
-          <Label htmlFor="status" className="text-xs font-semibold text-muted-foreground">Estado</Label>
-          <Select
-            value={filters.status ?? 'all'}
-            onValueChange={(v) => setFilters({ ...filters, status: v === 'all' ? '' : v as InvoiceFilters['status'] })}
-          >
-            <SelectTrigger id="status" aria-label="Estado de factura" className="h-10">
-              <SelectValue placeholder="Todos" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="issued">Emitida</SelectItem>
-              <SelectItem value="partial">Parcial</SelectItem>
-              <SelectItem value="paid">Pagada</SelectItem>
-              <SelectItem value="void">Anulada</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-1.5">
-          <Label htmlFor="patient" className="text-xs font-semibold text-muted-foreground">Paciente</Label>
-          <Input
-            id="patient"
-            placeholder="Nombre del paciente..."
-            value={filters.patient ?? ''}
-            onChange={(event) => setFilters({ ...filters, patient: event.target.value })}
-            className="h-10"
-          />
-        </div>
-
-        <div className="space-y-1.5">
-          <Label htmlFor="invoice_number" className="text-xs font-semibold text-muted-foreground">Número de factura</Label>
-          <Input
-            id="invoice_number"
-            placeholder="A-0001..."
-            value={filters.invoice_number ?? ''}
-            onChange={(event) => setFilters({ ...filters, invoice_number: event.target.value })}
-            className="h-10"
-          />
-        </div>
-      </FilterBar>
+        loading={loading}
+        onChange={setFilters}
+        onClear={clearFilters}
+        onSubmit={(event) => void submitFilters(event)}
+      />
 
       {loadError ? (
         <ErrorState
@@ -445,121 +376,38 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       ) : null}
 
       {isEmpty && !loading && !loadError ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <FileClock className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No hay facturas</h3>
-            <p className="text-muted-foreground text-center mb-4">
-              {hasActiveFilters
-                ? 'No se encontraron facturas con los filtros seleccionados.'
-                : 'No hay facturas registradas aún.'}
-            </p>
-            {hasActiveFilters && (
-              <Button variant="outline" onClick={clearFilters}>
-                Limpiar filtros
-              </Button>
-            )}
-          </CardContent>
-        </Card>
+        <EmptyState
+          title="No hay facturas"
+          description={hasActiveFilters
+            ? 'No se encontraron facturas con los filtros seleccionados.'
+            : 'No hay facturas registradas aún.'}
+          action={hasActiveFilters ? (
+            <Button type="button" variant="outline" onClick={clearFilters}>
+              Limpiar filtros
+            </Button>
+          ) : undefined}
+        />
       ) : loading ? (
         <LoadingState label="Cargando facturas..." />
       ) : !loadError ? (
         <Card>
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>No.</TableHead>
-                  <TableHead>Fecha</TableHead>
-                  <TableHead>Paciente</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                  <TableHead className="text-right">Pagado</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {invoicesList.map((invoice) => (
-                  <TableRow key={invoice.id}>
-                    <TableCell className="text-sm font-medium">{invoice.invoice_number}</TableCell>
-                    <TableCell>{formatDate(invoice.issued_at)}</TableCell>
-                    <TableCell className="font-medium">{invoice.patient_name}</TableCell>
-                    <TableCell className="text-right">{moneyLabel(invoice.total)}</TableCell>
-                    <TableCell className="text-right">{moneyLabel(invoice.paid_amount)}</TableCell>
-                    <TableCell>
-                      <StatusBadge status={invoice.status} />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex flex-wrap justify-end gap-2">
-                        {canViewReceipt && (canReprintAny || canVoid || isOwnInvoiceFromToday(invoice)) && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => void openReceiptModal(invoice.id)}
-                          >
-                            <Receipt className="h-4 w-4" aria-hidden="true" />
-                            Ver recibo
-                          </Button>
-                        )}
-                        {canViewReceipt && invoice.status === 'paid' && !issuedInstitutionalReceipt(invoice) && (
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            size="sm"
-                            disabled={loadingActionInvoiceId === invoice.id}
-                            onClick={() => void generateInstitutionalReceipt(invoice.id)}
-                          >
-                            <Receipt className="h-4 w-4" aria-hidden="true" />
-                            Generar PDF
-                          </Button>
-                        )}
-
-                        {canReprint && (canReprintAny || isOwnInvoiceFromToday(invoice)) && (
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => setReprintTarget(invoice)}
-                          >
-                            <Printer className="h-4 w-4" aria-hidden="true" />
-                            Reimprimir
-                          </Button>
-                        )}
-
-                        {canReverse && (invoice.status === 'paid' || invoice.status === 'partial') && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                            disabled={loadingActionInvoiceId === invoice.id}
-                            onClick={() => void prepareInvoiceAction(invoice.id, 'reverse')}
-                          >
-                            <XCircle className="h-4 w-4" aria-hidden="true" />
-                            Reversar
-                          </Button>
-                        )}
-
-                        {canVoid && invoice.status === 'issued' && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                            disabled={loadingActionInvoiceId === invoice.id}
-                            onClick={() => void prepareInvoiceAction(invoice.id, 'void')}
-                          >
-                            <XCircle className="h-4 w-4" aria-hidden="true" />
-                            Anular
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <InvoiceHistoryTable
+              canReprint={canReprint}
+              canReprintAny={canReprintAny}
+              canReverse={canReverse}
+              canViewReceipt={canViewReceipt}
+              canVoid={canVoid}
+              formatDate={formatDate}
+              invoices={invoicesList}
+              isOwnInvoiceFromToday={isOwnInvoiceFromToday}
+              loadingActionInvoiceId={loadingActionInvoiceId}
+              moneyLabel={moneyLabel}
+              onGenerateInstitutionalReceipt={(invoiceId) => void generateInstitutionalReceipt(invoiceId)}
+              onOpenReceipt={(invoiceId) => void openReceiptModal(invoiceId)}
+              onPrepareInvoiceAction={(invoiceId, action) => void prepareInvoiceAction(invoiceId, action)}
+              onReprint={setReprintTarget}
+            />
           </CardContent>
         </Card>
       ) : null}
@@ -773,29 +621,8 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   );
 }
 
-function issuedInstitutionalReceipt(invoice: Invoice): NonNullable<Invoice['institutional_receipt']> | null {
-  return invoice.institutional_receipt?.status === 'issued' ? invoice.institutional_receipt : null;
-}
-
 function hasInstitutionalPrintEvents(receipt: NonNullable<Invoice['institutional_receipt']>): boolean {
   return receipt.has_print_events === true || (receipt.print_events_count ?? 0) > 0;
-}
-
-const statusConfig = {
-  issued: { label: 'Emitida', variant: 'info' },
-  partial: { label: 'Parcial', variant: 'warning' },
-  paid: { label: 'Pagada', variant: 'success' },
-  void: { label: 'Anulada', variant: 'destructive' },
-} as const;
-
-function StatusBadge({ status }: { status: Invoice['status'] }) {
-  const config = statusConfig[status] ?? statusConfig.issued;
-
-  return (
-    <Badge variant={config.variant}>
-      {config.label}
-    </Badge>
-  );
 }
 
 function formatDate(value: string): string {

@@ -1,8 +1,9 @@
 import { Building2, Clock3, HardDrive, HeartHandshake, MonitorCheck, Network, ShieldCheck } from 'lucide-react';
-import { Badge } from '../../components/ui/badge';
+import { ActionBar } from '../../components/ui/action-bar';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { PageHeader } from '../../components/ui/page-header';
+import { StatusBadge } from '../../components/ui/status-badge';
 import { useBackups } from '../../hooks/useBackups';
 import { usePublicBranding } from '../../hooks/useFiscalSettings';
 import { useServerStatus, useSystemStatusSnapshot } from '../../hooks/useServerStatus';
@@ -49,15 +50,15 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
       />
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-        <Card className="md:col-span-2">
+        <Card className="overflow-hidden md:col-span-2">
           <CardHeader className="flex flex-row items-start gap-4 pb-4">
             <div className="flex size-12 items-center justify-center rounded-xl bg-secondary/10 text-secondary">
-              <Building2 className="h-6 w-6" />
+              <Building2 aria-hidden="true" className="h-6 w-6" />
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <CardTitle className="text-xl font-bold">{hospitalName}</CardTitle>
-                <Badge variant="success">Activo</Badge>
+                <StatusBadge status="active">Activo</StatusBadge>
               </div>
               <CardDescription>Sistema de caja y facturacion hospitalaria local.</CardDescription>
             </div>
@@ -76,7 +77,7 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
                   <p className="text-xs text-muted-foreground">Uso local para caja, facturacion, reportes y respaldos.</p>
                 </div>
                 <div className="inline-flex items-center gap-1.5 rounded-full border border-success/20 bg-success/10 px-2.5 py-1 text-xs font-bold text-success">
-                  <ShieldCheck className="h-4 w-4" />
+                  <ShieldCheck aria-hidden="true" className="h-4 w-4" />
                   Activa
                 </div>
               </div>
@@ -84,15 +85,17 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
               <div className="mt-4 border-t border-border pt-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">Resumen operativo</p>
-                  <Badge variant={summaryBadgeVariant(summary.level)}>{summary.label}</Badge>
+                  <StatusBadge status={statusForLevel(summary.level)}>{summary.label}</StatusBadge>
                 </div>
                 <p className="mt-2 text-sm text-foreground">{summary.description}</p>
               </div>
             </div>
 
-            <Button type="button" onClick={triggerDiagnosticTest} variant="secondary" size="sm">
-              Revisar conexion local
-            </Button>
+            <ActionBar align="start" fullWidthOnMobile>
+              <Button type="button" onClick={triggerDiagnosticTest} variant="secondary" size="sm">
+                Revisar conexion local
+              </Button>
+            </ActionBar>
           </CardContent>
         </Card>
 
@@ -104,19 +107,19 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between border-b border-border py-1.5">
               <span className="text-xs font-semibold text-muted-foreground">Servidor local</span>
-              <Badge variant={isOnline ? 'success' : 'destructive'}>
+              <StatusBadge status={isOnline ? 'success' : 'failed'}>
                 {isOnline ? 'Conectado' : 'Desconectado'}
-              </Badge>
+              </StatusBadge>
             </div>
 
             <div className="flex items-center justify-between border-b border-border py-1.5">
               <span className="text-xs font-semibold text-muted-foreground">Diagnostico</span>
-              <Badge variant={summaryBadgeVariant(summary.level)}>{summary.label}</Badge>
+              <StatusBadge status={statusForLevel(summary.level)}>{summary.label}</StatusBadge>
             </div>
 
             <div className="flex items-center justify-between border-b border-border py-1.5">
               <span className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
-                <HardDrive className="h-3.5 w-3.5" /> Respaldos
+                <HardDrive aria-hidden="true" className="h-3.5 w-3.5" /> Respaldos
               </span>
               <span className="text-xs font-bold text-foreground">{backupCount}</span>
             </div>
@@ -132,7 +135,7 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base font-bold">
-              <MonitorCheck className="h-5 w-5 text-secondary" /> Diagnostico administrativo
+              <MonitorCheck aria-hidden="true" className="h-5 w-5 text-secondary" /> Diagnostico administrativo
             </CardTitle>
             <CardDescription>Lectura resumida para soporte local, sin claves ni rutas internas.</CardDescription>
           </CardHeader>
@@ -148,25 +151,25 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
                     <div key={item.label} className="rounded-md border border-border bg-muted/30 p-4">
                       <div className="flex items-center justify-between gap-3">
                         <p className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">{item.label}</p>
-                        <Badge variant={summaryBadgeVariant(item.level)}>{diagnosticLevelLabel(item.level)}</Badge>
+                        <StatusBadge status={statusForLevel(item.level)}>{diagnosticLevelLabel(item.level)}</StatusBadge>
                       </div>
-                      <p className="mt-2 text-sm font-semibold text-foreground">{item.value}</p>
+                      <p className="mt-2 break-words text-sm font-semibold text-foreground">{item.value}</p>
                     </div>
                   ))}
                 </div>
 
                 <div className="grid gap-3 text-sm text-muted-foreground md:grid-cols-3">
                   <div className="flex items-start gap-2 rounded-md border border-border bg-card p-3">
-                    <Clock3 className="mt-0.5 h-4 w-4 text-secondary" />
-                    <span>Hora del servidor: {formatServerTime(systemStatus.environment.server_time, systemStatus.environment.timezone)}</span>
+                    <Clock3 aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-secondary" />
+                    <span className="break-words">Hora del servidor: {formatServerTime(systemStatus.environment.server_time, systemStatus.environment.timezone)}</span>
                   </div>
                   <div className="flex items-start gap-2 rounded-md border border-border bg-card p-3">
-                    <HardDrive className="mt-0.5 h-4 w-4 text-secondary" />
-                    <span>Espacio libre para respaldos: {formatBytes(systemStatus.backups.storage.free_bytes)}</span>
+                    <HardDrive aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-secondary" />
+                    <span className="break-words">Espacio libre para respaldos: {formatBytes(systemStatus.backups.storage.free_bytes)}</span>
                   </div>
                   <div className="flex items-start gap-2 rounded-md border border-border bg-card p-3">
-                    <Network className="mt-0.5 h-4 w-4 text-secondary" />
-                    <span>Acceso LAN: {systemStatus.network.client_url ?? 'pendiente de configurar'}</span>
+                    <Network aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-secondary" />
+                    <span className="break-words">Acceso LAN: {systemStatus.network.client_url ?? 'pendiente de configurar'}</span>
                   </div>
                 </div>
               </>
@@ -182,7 +185,7 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base font-bold">
-            <HeartHandshake className="h-5 w-5 text-secondary" /> Soporte
+            <HeartHandshake aria-hidden="true" className="h-5 w-5 text-secondary" /> Soporte
           </CardTitle>
           <CardDescription>Informacion para continuidad operativa.</CardDescription>
         </CardHeader>
@@ -201,16 +204,16 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
   );
 }
 
-function summaryBadgeVariant(level: 'ok' | 'review' | 'error'): 'success' | 'warning' | 'destructive' {
+function statusForLevel(level: 'ok' | 'review' | 'error'): 'success' | 'pending' | 'failed' {
   if (level === 'ok') {
     return 'success';
   }
 
   if (level === 'review') {
-    return 'warning';
+    return 'pending';
   }
 
-  return 'destructive';
+  return 'failed';
 }
 
 function diagnosticLevelLabel(level: 'ok' | 'review' | 'error'): string {

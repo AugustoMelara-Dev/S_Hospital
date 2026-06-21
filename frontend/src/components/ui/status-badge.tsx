@@ -1,22 +1,27 @@
+import { Circle } from 'lucide-react';
 import { type ReactNode } from 'react';
 import { Badge } from './badge';
 
+type KnownStatus =
+  | 'active'
+  | 'closed'
+  | 'failed'
+  | 'info'
+  | 'open'
+  | 'paid'
+  | 'partial'
+  | 'pending'
+  | 'success'
+  | 'void';
+
 type StatusBadgeProps = {
-  status:
-    | 'active'
-    | 'closed'
-    | 'failed'
-    | 'info'
-    | 'open'
-    | 'paid'
-    | 'partial'
-    | 'pending'
-    | 'success'
-    | 'void';
   children?: ReactNode;
+  className?: string;
+  icon?: ReactNode;
+  status: KnownStatus | (string & {});
 };
 
-const labels: Record<StatusBadgeProps['status'], string> = {
+const labels: Record<KnownStatus, string> = {
   active: 'Activo',
   closed: 'Cerrado',
   failed: 'Requiere atención',
@@ -29,7 +34,7 @@ const labels: Record<StatusBadgeProps['status'], string> = {
   void: 'Anulada',
 };
 
-const variants: Record<StatusBadgeProps['status'], React.ComponentProps<typeof Badge>['variant']> = {
+const variants: Record<KnownStatus, React.ComponentProps<typeof Badge>['variant']> = {
   active: 'success',
   closed: 'secondary',
   failed: 'destructive',
@@ -42,6 +47,17 @@ const variants: Record<StatusBadgeProps['status'], React.ComponentProps<typeof B
   void: 'destructive',
 };
 
-export function StatusBadge({ children, status }: StatusBadgeProps) {
-  return <Badge variant={variants[status]}>{children ?? labels[status]}</Badge>;
+export function StatusBadge({ children, className, icon, status }: StatusBadgeProps) {
+  const knownStatus = isKnownStatus(status) ? status : undefined;
+
+  return (
+    <Badge variant={knownStatus ? variants[knownStatus] : 'secondary'} className={className}>
+      {icon ?? <Circle data-icon aria-hidden="true" className="size-2 fill-current" />}
+      {children ?? (knownStatus ? labels[knownStatus] : 'Estado desconocido')}
+    </Badge>
+  );
+}
+
+function isKnownStatus(status: string): status is KnownStatus {
+  return Object.prototype.hasOwnProperty.call(labels, status);
 }

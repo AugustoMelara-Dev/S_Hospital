@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { PageHeader } from '../../components/ui/page-header';
 import { Alert } from '../../components/ui/alert';
+import { ErrorState } from '../../components/ui/states';
 import { type AuthUser, type SystemStatus, type SystemStatusSummary, apiClient, userSafeErrorMessage } from '../../lib/api';
+import { safeClientMessage } from '../../lib/support/clientIssueLog';
 import { OperationalStatusSummary } from './components/OperationalStatusSummary';
 import { RoleChecklist } from './components/RoleChecklist';
 import { SupportPlaybookList } from './components/SupportPlaybookList';
@@ -34,7 +36,9 @@ export function SupportCenterView({ user, onStatus }: Props) {
 
       onStatus('Diagnostico operativo actualizado.');
     } catch (error) {
-      const message = userSafeErrorMessage(error, 'No se pudo cargar el diagnostico operativo.');
+      const fallback = 'No se pudo cargar el diagnostico operativo.';
+      const safeMessage = safeClientMessage(userSafeErrorMessage(error, fallback));
+      const message = safeMessage.includes('[redacted]') ? fallback : (safeMessage || fallback);
       setError(message);
       onStatus(message);
     } finally {
@@ -54,10 +58,17 @@ export function SupportCenterView({ user, onStatus }: Props) {
       />
 
       {error ? (
-        <Alert variant="destructive" title="Diagnostico no disponible">
-          {error}
-        </Alert>
+        <ErrorState
+          title="Diagnostico no disponible"
+          message={error}
+          onRetry={loadStatus}
+          retryLabel="Reintentar diagnostico"
+        />
       ) : null}
+
+      <Alert variant="default" title="Continuidad operativa">
+        Si una incidencia afecta caja, recibos o red local, registre hora, pantalla y usuario antes de repetir una accion.
+      </Alert>
 
       <OperationalStatusSummary
         canViewAdvanced={canViewAdvanced}

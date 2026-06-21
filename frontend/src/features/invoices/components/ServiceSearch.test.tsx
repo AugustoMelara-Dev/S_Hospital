@@ -1,51 +1,126 @@
+import { createRef, type ComponentProps, type FormEvent } from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { ServiceSearch } from './ServiceSearch';
 import type { Service } from '../../../lib/api';
 
 describe('ServiceSearch', () => {
-  it('renders malformed billing service prices as safe financial values', () => {
-    render(
-      <ServiceSearch
-        categories={[]}
-        services={[serviceFixture({ price: 'NaN' })]}
-        selectedCategoryId="all"
-        onCategoryChange={vi.fn()}
-        search="glu"
-        onSearchChange={vi.fn()}
-        scanCode=""
-        onScanCodeChange={vi.fn()}
-        onAddService={vi.fn()}
-        onAddByScanCode={vi.fn()}
-      />,
-    );
+  it('renders accessible search, controlled value and safe financial values', () => {
+    renderSearch({
+      services: [serviceFixture({ price: 'NaN' })],
+      search: 'glu',
+    });
 
+    const input = screen.getByLabelText(/buscar por nombre/i);
+    expect(input).toHaveValue('glu');
+    expect(input).toHaveAttribute('id', 'service-search');
+    expect(input).toHaveAttribute('name', 'service_search');
     expect(screen.getByRole('button', { name: /agregar glucosa por l 0\.00/i })).toBeInTheDocument();
     expect(document.body.textContent).toContain('L 0.00');
     expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|undefined/);
   });
 
-  it('supports keyboard navigation in category radio groups', async () => {
+  it('keeps search and filter callbacks controlled by the consumer', () => {
+    const onSearchChange = vi.fn();
+    const onAreaChange = vi.fn();
     const onCategoryChange = vi.fn();
+    renderSearch({
+      onSearchChange,
+      onAreaChange,
+      onCategoryChange,
+      serviceAreas: [{ id: 3, name: 'Laboratorio', slug: 'laboratorio', active: true }],
+      categories: [{ id: 2, name: 'Imagenes', slug: 'imagenes', active: true, sort_order: 2 }],
+    });
+
+    fireEvent.change(screen.getByLabelText(/buscar por nombre/i), { target: { value: 'hemograma' } });
+    fireEvent.click(screen.getByRole('radio', { name: 'Laboratorio' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Imagenes' }));
+
+    expect(onSearchChange).toHaveBeenCalledWith('hemograma');
+    expect(onAreaChange).toHaveBeenCalledWith(3);
+    expect(onCategoryChange).toHaveBeenCalledWith(2);
+  });
+
+  it('renders loading, empty intent and no-result states without adding a service', () => {
+    const onAddService = vi.fn();
+    const { unmount } = renderSearch({ loading: true, onAddService });
+
+    expect(screen.getByRole('status', { name: /cargando servicios/i })).toBeInTheDocument();
+
+    unmount();
+    const emptyRender = renderSearch({ services: [], search: '', selectedCategoryId: undefined, selectedAreaId: undefined, onAddService });
+    expect(screen.getByRole('status')).toHaveTextContent(/busque o elija una categoría/i);
+
+    emptyRender.rerender(defaultRender({ services: [], search: 'no existe', onAddService }));
+    expect(screen.getByRole('status')).toHaveTextContent(/sin servicios encontrados/i);
+    expect(onAddService).not.toHaveBeenCalled();
+  });
+
+  it('adds the first visible result with Enter and does not submit the parent form', () => {
+    const onAddService = vi.fn();
+    const onSubmit = vi.fn((event: FormEvent<HTMLFormElement>) => event.preventDefault());
     render(
-      <ServiceSearch
-        categories={[
-          { id: 1, name: 'Laboratorio', slug: 'laboratorio', active: true, sort_order: 1 },
-          { id: 2, name: 'Imagenes', slug: 'imagenes', active: true, sort_order: 2 },
-        ]}
-        services={[]}
-        selectedCategoryId="all"
-        onCategoryChange={onCategoryChange}
-        search=""
-        onSearchChange={vi.fn()}
-        scanCode=""
-        onScanCodeChange={vi.fn()}
-        onAddService={vi.fn()}
-        onAddByScanCode={vi.fn()}
-      />,
+      <form onSubmit={onSubmit}>
+        {defaultRender({
+          services: [serviceFixture({ id: 1, name: 'Glucosa' }), serviceFixture({ id: 2, name: 'Hemograma' })],
+          search: 'g',
+          onAddService,
+        })}
+      </form>,
     );
 
-    const categoryGroup = screen.getByRole('radiogroup', { name: /categoria/i });
+    fireEvent.keyDown(screen.getByLabelText(/buscar por nombre/i), { key: 'Enter', code: 'Enter' });
+
+    expect(onAddService).toHaveBeenCalledTimes(1);
+    expect(onAddService).toHaveBeenCalledWith(expect.objectContaining({ id: 1, name: 'Glucosa' }));
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it('keeps scanner value, callback and Enter behavior when scanner is enabled', () => {
+    const onScanCodeChange = vi.fn();
+    const onAddByScanCode = vi.fn();
+    const scannerInputRef = createRef<HTMLInputElement>();
+    renderSearch({
+      scannerEnabled: true,
+      scanCode: 'LAB-001',
+      onScanCodeChange,
+      onAddByScanCode,
+      scannerInputRef,
+    });
+
+    const scanner = screen.getByLabelText(/scanner usb o código manual/i);
+    expect(scanner).toHaveValue('LAB-001');
+
+    fireEvent.change(scanner, { target: { value: 'LAB-002' } });
+    fireEvent.keyDown(scanner, { key: 'Enter', code: 'Enter' });
+    fireEvent.click(screen.getByRole('button', { name: /escanear/i }));
+
+    expect(onScanCodeChange).toHaveBeenCalledWith('LAB-002');
+    expect(onAddByScanCode).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps scanner controls disabled while a lookup is pending', () => {
+    renderSearch({
+      scannerEnabled: true,
+      scanningCode: true,
+      scanCode: 'LAB-001',
+    });
+
+    expect(screen.getByLabelText(/scanner usb o código manual/i)).toBeDisabled();
+    expect(screen.getByRole('button', { name: /buscando/i })).toBeDisabled();
+  });
+
+  it('supports keyboard navigation in category radio groups', async () => {
+    const onCategoryChange = vi.fn();
+    renderSearch({
+      categories: [
+        { id: 1, name: 'Laboratorio', slug: 'laboratorio', active: true, sort_order: 1 },
+        { id: 2, name: 'Imagenes', slug: 'imagenes', active: true, sort_order: 2 },
+      ],
+      onCategoryChange,
+    });
+
+    const categoryGroup = screen.getByRole('radiogroup', { name: /categoría/i });
     fireEvent.keyDown(categoryGroup, { key: 'ArrowRight' });
 
     expect(onCategoryChange).toHaveBeenCalledWith(1);
@@ -56,7 +131,40 @@ describe('ServiceSearch', () => {
     expect(onCategoryChange).toHaveBeenLastCalledWith(2);
     await waitFor(() => expect(screen.getByRole('radio', { name: 'Imagenes' })).toHaveFocus());
   });
+
+  it('does not expose hidden barcode or QR values in service results', () => {
+    renderSearch({
+      scannerEnabled: true,
+      search: 'glu',
+      services: [serviceFixture({ scan_code: 'SECRET-SCAN', barcode: 'SECRET-BAR', qr_code: 'SECRET-QR' })],
+    });
+
+    expect(screen.getByText(/disponible para lector/i)).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/SECRET-SCAN|SECRET-BAR|SECRET-QR/);
+  });
 });
+
+function renderSearch(overrides: Partial<ComponentProps<typeof ServiceSearch>> = {}) {
+  return render(defaultRender(overrides));
+}
+
+function defaultRender(overrides: Partial<ComponentProps<typeof ServiceSearch>> = {}) {
+  return (
+    <ServiceSearch
+      categories={[]}
+      services={[]}
+      selectedCategoryId="all"
+      onCategoryChange={vi.fn()}
+      search=""
+      onSearchChange={vi.fn()}
+      scanCode=""
+      onScanCodeChange={vi.fn()}
+      onAddService={vi.fn()}
+      onAddByScanCode={vi.fn()}
+      {...overrides}
+    />
+  );
+}
 
 function serviceFixture(overrides: Partial<Service> = {}): Service {
   return {

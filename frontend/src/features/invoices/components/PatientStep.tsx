@@ -21,13 +21,24 @@ export const PatientStep = forwardRef<HTMLInputElement, PatientStepProps>(functi
   const isNearLimit = remainingCharacters <= 20;
 
   return (
-    <div className="space-y-3">
-      <div>
+    <div className="rounded-lg border border-border bg-muted/20 p-4">
+      <div className="mb-3 flex items-start gap-3">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-md border border-secondary/25 bg-secondary/10 text-secondary">
+          <User className="size-5" aria-hidden="true" />
+        </span>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-foreground">Paciente</p>
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            Registre el nombre que debe aparecer en la factura.
+          </p>
+        </div>
+      </div>
+
+      <div className="min-w-0">
         <Label htmlFor="patient-name" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
           Nombre del paciente *
         </Label>
         <div className="relative">
-          <User className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-secondary" aria-hidden="true" />
           <Input
             ref={ref}
             id="patient-name"
@@ -42,7 +53,7 @@ export const PatientStep = forwardRef<HTMLInputElement, PatientStepProps>(functi
             }}
             placeholder="Ej. Maria Lopez…"
             autoComplete="off"
-            className={`min-h-14 pl-12 text-lg font-semibold ${error ? 'border-destructive ring-destructive' : ''}`}
+            className={`min-h-14 text-lg font-semibold ${error ? 'border-destructive ring-destructive' : ''}`}
             aria-invalid={error ? 'true' : 'false'}
             aria-describedby={errorId ? `${helpId} ${errorId}` : helpId}
             maxLength={PATIENT_NAME_MAX_LENGTH}
@@ -57,8 +68,8 @@ export const PatientStep = forwardRef<HTMLInputElement, PatientStepProps>(functi
         {error && <p id={errorId} className="mt-1.5 text-sm text-destructive" role="alert">{error}</p>}
       </div>
       {patientName && (
-        <p className="rounded-md border border-secondary/25 bg-secondary/10 px-3 py-2 text-sm text-muted-foreground">
-          Paciente: <span className="font-medium text-foreground">{patientName}</span>
+        <p className="mt-3 rounded-md border border-secondary/25 bg-secondary/10 px-3 py-2 text-sm text-muted-foreground">
+          Paciente: <span className="break-words font-medium text-foreground">{patientName}</span>
         </p>
       )}
     </div>

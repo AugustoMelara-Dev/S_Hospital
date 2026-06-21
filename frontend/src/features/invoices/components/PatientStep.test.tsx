@@ -1,10 +1,10 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { PATIENT_NAME_MAX_LENGTH } from '../../../schemas/invoice.schema';
 import { PatientStep } from './PatientStep';
 
 describe('PatientStep', () => {
-  it('shows the backend-aligned character limit and associates help text with the field', () => {
+  it('renders an accessible patient label, controlled value and backend-aligned character limit', () => {
     render(
       <PatientStep
         patientName="Maria Lopez"
@@ -15,8 +15,31 @@ describe('PatientStep', () => {
     const input = screen.getByLabelText(/nombre del paciente/i);
     const help = screen.getByText(`11/${PATIENT_NAME_MAX_LENGTH} caracteres`);
 
+    expect(input).toHaveValue('Maria Lopez');
+    expect(input).toHaveAttribute('id', 'patient-name');
+    expect(input).toHaveAttribute('name', 'patient_name');
     expect(input).toHaveAttribute('maxLength', String(PATIENT_NAME_MAX_LENGTH));
     expect(input).toHaveAccessibleDescription(help.textContent ?? '');
+  });
+
+  it('executes onChange with the exact value and submits only with Enter', () => {
+    const onPatientNameChange = vi.fn();
+    const onPatientSubmit = vi.fn();
+    render(
+      <PatientStep
+        patientName=""
+        onPatientNameChange={onPatientNameChange}
+        onPatientSubmit={onPatientSubmit}
+      />,
+    );
+
+    const input = screen.getByLabelText(/nombre del paciente/i);
+    fireEvent.change(input, { target: { value: 'Ana Maria' } });
+    fireEvent.keyDown(input, { key: 'Tab' });
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    expect(onPatientNameChange).toHaveBeenCalledWith('Ana Maria');
+    expect(onPatientSubmit).toHaveBeenCalledTimes(1);
   });
 
   it('keeps validation error announced with the character counter', () => {
@@ -34,5 +57,17 @@ describe('PatientStep', () => {
     expect(screen.getByText(`180/${PATIENT_NAME_MAX_LENGTH} caracteres`)).toBeInTheDocument();
     expect(input).toHaveAttribute('aria-describedby', 'patient-name-help patient-name-error');
     expect(input).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('does not add unsupported patient fields', () => {
+    render(
+      <PatientStep
+        patientName=""
+        onPatientNameChange={vi.fn()}
+      />,
+    );
+
+    expect(screen.getAllByRole('textbox')).toHaveLength(1);
+    expect(screen.queryByLabelText(/expediente|identidad|documento|medico|seguro|habitacion/i)).not.toBeInTheDocument();
   });
 });

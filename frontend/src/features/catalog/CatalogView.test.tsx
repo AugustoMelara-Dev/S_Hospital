@@ -1,9 +1,9 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { type ReactNode } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CatalogView } from './CatalogView';
-import { apiClient, type AuthUser, type Service } from '../../lib/api';
+import { apiClient, ApiError, type AuthUser, type Service } from '../../lib/api';
 
 function renderWithQueryClient(node: ReactNode) {
   const queryClient = new QueryClient({
@@ -12,11 +12,23 @@ function renderWithQueryClient(node: ReactNode) {
   return render(<QueryClientProvider client={queryClient}>{node}</QueryClientProvider>);
 }
 
+function setupBasicMocks() {
+  vi.spyOn(apiClient, 'getCategories').mockResolvedValue([]);
+  vi.spyOn(apiClient, 'getAreas').mockResolvedValue([]);
+  vi.spyOn(apiClient, 'getOperationalSettings').mockResolvedValue(null);
+}
+
 describe('CatalogView', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('renders malformed service prices as safe financial values', async () => {
-    vi.spyOn(apiClient, 'getCategories').mockResolvedValue([]);
-    vi.spyOn(apiClient, 'getAreas').mockResolvedValue([]);
-    vi.spyOn(apiClient, 'getOperationalSettings').mockResolvedValue(null);
+    setupBasicMocks();
     vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({
       data: [serviceFixture({ price: 'monto-danado' })],
       meta: { current_page: 1, per_page: 15, total: 1 },
@@ -31,9 +43,7 @@ describe('CatalogView', () => {
   });
 
   it('renders inside a QueryClientProvider without crashing', async () => {
-    vi.spyOn(apiClient, 'getCategories').mockResolvedValue([]);
-    vi.spyOn(apiClient, 'getAreas').mockResolvedValue([]);
-    vi.spyOn(apiClient, 'getOperationalSettings').mockResolvedValue(null);
+    setupBasicMocks();
     vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({
       data: [],
       meta: { current_page: 1, per_page: 15, total: 0 },
@@ -45,9 +55,7 @@ describe('CatalogView', () => {
   });
 
   it('shows billing visibility, billable state and tariff warnings', async () => {
-    vi.spyOn(apiClient, 'getCategories').mockResolvedValue([]);
-    vi.spyOn(apiClient, 'getAreas').mockResolvedValue([]);
-    vi.spyOn(apiClient, 'getOperationalSettings').mockResolvedValue(null);
+    setupBasicMocks();
     vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({
       data: [
         serviceFixture({
@@ -72,15 +80,249 @@ describe('CatalogView', () => {
   });
 });
 
-function catalogUser(): AuthUser {
+describe('CatalogView modernized structure', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('renders a single accessible h1 from the page header', async () => {
+    setupBasicMocks();
+    vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({
+      data: [],
+      meta: { current_page: 1, per_page: 15, total: 0 },
+    });
+
+    renderWithQueryClient(<CatalogView user={catalogUser()} onStatus={vi.fn()} />);
+
+    const headings = await screen.findAllByRole('heading', { level: 1 });
+    expect(headings).toHaveLength(1);
+    expect(headings[0]).toHaveTextContent(/cat[aá]logo de servicios/i);
+  });
+
+  it('shows the total services summary with the existing wording', async () => {
+    setupBasicMocks();
+    vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({
+      data: [serviceFixture()],
+      meta: { current_page: 1, per_page: 15, total: 1 },
+    });
+
+    renderWithQueryClient(<CatalogView user={catalogUser()} onStatus={vi.fn()} />);
+
+    expect(await screen.findByText('1 servicio en el catálogo')).toBeInTheDocument();
+  });
+
+  it('shows the plural summary when the total is not 1', async () => {
+    setupBasicMocks();
+    vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({
+      data: [serviceFixture({ id: 1 }), serviceFixture({ id: 2, name: 'Hemograma' })],
+      meta: { current_page: 1, per_page: 15, total: 2 },
+    });
+
+    renderWithQueryClient(<CatalogView user={catalogUser()} onStatus={vi.fn()} />);
+
+    expect(await screen.findByText('2 servicios en el catálogo')).toBeInTheDocument();
+  });
+
+  it('exposes the search input with an accessible name', async () => {
+    setupBasicMocks();
+    vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({
+      data: [],
+      meta: { current_page: 1, per_page: 15, total: 0 },
+    });
+
+    renderWithQueryClient(<CatalogView user={catalogUser()} onStatus={vi.fn()} />);
+
+    expect(await screen.findByLabelText(/buscar servicio/i)).toBeInTheDocument();
+  });
+
+  it('clears the search input and resets the filter state via the clear button', async () => {
+    setupBasicMocks();
+    const getServicesPage = vi
+      .spyOn(apiClient, 'getServicesPage')
+      .mockResolvedValue({ data: [], meta: { current_page: 1, per_page: 15, total: 0 } });
+
+    renderWithQueryClient(<CatalogView user={catalogUser()} onStatus={vi.fn()} />);
+
+    const search = await screen.findByLabelText(/buscar servicio/i);
+    fireEvent.change(search, { target: { value: 'glucosa' } });
+
+    await waitFor(() => {
+      expect(getServicesPage.mock.calls.some((call) => call[0]?.search === 'glucosa')).toBe(true);
+    });
+
+    const clear = await screen.findByRole('button', { name: /limpiar filtros de cat[aá]logo/i });
+    await act(async () => {
+      fireEvent.click(clear);
+    });
+
+    await waitFor(() => {
+      expect(search).toHaveValue('');
+    });
+  });
+
+  it('hides create actions for users without catalog.manage permission', async () => {
+    setupBasicMocks();
+    vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({
+      data: [serviceFixture()],
+      meta: { current_page: 1, per_page: 15, total: 1 },
+    });
+
+    renderWithQueryClient(<CatalogView user={catalogUser(['catalog.view'])} onStatus={vi.fn()} />);
+
+    expect(await screen.findByText('Glucosa')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /crear nuevo servicio/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /crear nueva categor[ií]a/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /acciones de servicio glucosa/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('shows create actions for users with catalog.manage permission', async () => {
+    setupBasicMocks();
+    vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({
+      data: [serviceFixture()],
+      meta: { current_page: 1, per_page: 15, total: 1 },
+    });
+
+    renderWithQueryClient(
+      <CatalogView user={catalogUser(['catalog.view', 'catalog.manage'])} onStatus={vi.fn()} />,
+    );
+
+    expect(
+      await screen.findByRole('button', { name: /crear nuevo servicio/i }),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole('button', { name: /crear nueva categor[ií]a/i }),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole('button', { name: /acciones de servicio glucosa/i }),
+    ).toBeInTheDocument();
+  });
+
+  it('renders error sanitized message and exposes a retry callback on the table', async () => {
+    setupBasicMocks();
+    const getServicesPage = vi
+      .spyOn(apiClient, 'getServicesPage')
+      .mockRejectedValueOnce(
+        new ApiError('SQLSTATE[HY000]: stack trace in storage/logs/laravel.log', 500),
+      )
+      .mockResolvedValueOnce({
+        data: [serviceFixture()],
+        meta: { current_page: 1, per_page: 15, total: 1 },
+      });
+
+    renderWithQueryClient(<CatalogView user={catalogUser()} onStatus={vi.fn()} />);
+
+    expect(
+      await screen.findByText(/el servidor lan no pudo completar la operaci[oó]n/i),
+    ).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/SQLSTATE|stack trace|storage\/logs/i);
+
+    const retry = await screen.findByRole('button', { name: /reintentar/i });
+    await act(async () => {
+      fireEvent.click(retry);
+    });
+
+    await waitFor(() => {
+      expect(getServicesPage).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  it('renders a safe empty state when no services exist and no filters are active', async () => {
+    setupBasicMocks();
+    vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({
+      data: [],
+      meta: { current_page: 1, per_page: 15, total: 0 },
+    });
+
+    renderWithQueryClient(<CatalogView user={catalogUser()} onStatus={vi.fn()} />);
+
+    expect(await screen.findByText(/no hay servicios/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/comience agregando su primer servicio al cat[aá]logo/i),
+    ).toBeInTheDocument();
+  });
+
+  it('preserves the table caption label for accessibility', async () => {
+    setupBasicMocks();
+    vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({
+      data: [serviceFixture({ name: 'Consulta General Larga Para Validar Caption' })],
+      meta: { current_page: 1, per_page: 15, total: 1 },
+    });
+
+    renderWithQueryClient(<CatalogView user={catalogUser()} onStatus={vi.fn()} />);
+
+    expect(
+      await screen.findByText('Consulta General Larga Para Validar Caption'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('region', { name: /listado de servicios del cat[aá]logo/i }),
+    ).toBeInTheDocument();
+  });
+
+  it('renders the service name and price with the existing monetary format and tabular-nums', async () => {
+    setupBasicMocks();
+    vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({
+      data: [serviceFixture({ price: '1234.50' })],
+      meta: { current_page: 1, per_page: 15, total: 1 },
+    });
+
+    renderWithQueryClient(<CatalogView user={catalogUser()} onStatus={vi.fn()} />);
+
+    const priceCell = await screen.findByText('L 1,234.50');
+    expect(priceCell).toBeInTheDocument();
+    expect(priceCell.className).toMatch(/tabular-nums/);
+  });
+
+  it('treats zero as a valid monetary value for the service price', async () => {
+    setupBasicMocks();
+    vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({
+      data: [serviceFixture({ price: '0.00' })],
+      meta: { current_page: 1, per_page: 15, total: 1 },
+    });
+
+    renderWithQueryClient(<CatalogView user={catalogUser()} onStatus={vi.fn()} />);
+
+    const zeroLabels = await screen.findAllByText('L 0.00');
+    expect(zeroLabels.length).toBeGreaterThan(0);
+  });
+
+  it('does not call the dashboard or system endpoints while rendering the catalog', async () => {
+    setupBasicMocks();
+    const getDashboardReport = vi.spyOn(apiClient, 'getDashboardReport');
+    const getSystemStatusSummary = vi.spyOn(apiClient, 'getSystemStatusSummary');
+
+    vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({
+      data: [],
+      meta: { current_page: 1, per_page: 15, total: 0 },
+    });
+
+    renderWithQueryClient(<CatalogView user={catalogUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(apiClient.getServicesPage).toHaveBeenCalled());
+
+    expect(getDashboardReport).not.toHaveBeenCalled();
+    expect(getSystemStatusSummary).not.toHaveBeenCalled();
+  });
+});
+
+function catalogUser(permissions: string[] = ['catalog.view']): AuthUser {
   return {
     id: 1,
     name: 'Catalogo Hospital',
     email: 'catalogo@hospital-san-isidro.local',
     username: 'catalogo',
     active: true,
-    roles: ['admin'],
-    permissions: ['catalog.view'],
+    roles: permissions.includes('catalog.manage') ? ['admin'] : ['cajero'],
+    permissions,
     must_change_password: false,
   };
 }

@@ -1,5 +1,5 @@
-import { render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AboutView } from './AboutView';
 import { useBackups } from '../../hooks/useBackups';
 import { usePublicBranding } from '../../hooks/useFiscalSettings';
@@ -63,6 +63,10 @@ describe('AboutView', () => {
     } as unknown as ReturnType<typeof useSystemStatusSnapshot>);
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('shows the operational health summary in non-technical language', async () => {
     vi.mocked(useServerStatus).mockReturnValue({
       checking: false,
@@ -78,10 +82,12 @@ describe('AboutView', () => {
 
     render(<AboutView user={cashierUser} onStatus={vi.fn()} />);
 
+    expect(screen.getByRole('heading', { level: 1, name: /informacion del sistema/i })).toBeInTheDocument();
     expect(screen.getAllByText('Todo bien')).toHaveLength(2);
     expect(screen.getByText(/base de datos y respaldos responden/i)).toBeInTheDocument();
     await waitFor(() => expect(useBackups).toHaveBeenCalledWith({ page: 1, perPage: 1, enabled: false }));
     expect(screen.getByText('Sin permiso')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /diagnostico administrativo/i })).not.toBeInTheDocument();
     expect(useSystemStatusSnapshot).toHaveBeenCalledWith(false);
   });
 
@@ -104,6 +110,28 @@ describe('AboutView', () => {
     expect(screen.getByText(/pida soporte/i)).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/queue:work|App\\\\|DB_PASSWORD|\.env|C:\\\\/i);
     await waitFor(() => expect(useBackups).toHaveBeenCalledWith({ page: 1, perPage: 1, enabled: false }));
+  });
+
+  it('keeps the institutional fallback when branding data has no hospital name', async () => {
+    vi.mocked(usePublicBranding).mockReturnValue({
+      data: { hospital_name: '' },
+    } as ReturnType<typeof usePublicBranding>);
+    vi.mocked(useServerStatus).mockReturnValue({
+      checking: false,
+      isOnline: true,
+      lastCheck: null,
+      operationalHealth: null,
+      summary: {
+        description: 'Servidor local, base de datos y respaldos responden.',
+        label: 'Todo bien',
+        level: 'ok',
+      },
+    });
+
+    render(<AboutView user={cashierUser} onStatus={vi.fn()} />);
+
+    expect(screen.getByText('Hospital San Isidro')).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/tel[eÃ©]fono|correo|RTN|licencia/i);
   });
 
   it('shows protected administrative diagnostics with human-safe labels for admin users', async () => {
@@ -131,9 +159,34 @@ describe('AboutView', () => {
     expect(screen.getByText(/192\.168\.1\.10:8000/i)).toBeInTheDocument();
     expect(screen.getByText(/America\/Tegucigalpa/i)).toBeInTheDocument();
     expect(screen.getByText(/1\.0\.0-rc\.3/i)).toBeInTheDocument();
+    expect(screen.queryByText(/frontend disponible/i)).not.toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/queue:work|APP_KEY|DB_PASSWORD|\.env|C:\\\\/i);
     expect(useBackups).toHaveBeenCalledWith({ page: 1, perPage: 1, enabled: true });
     expect(useSystemStatusSnapshot).toHaveBeenCalledWith(true);
+  });
+
+  it('keeps the local diagnostic action callback without changing hooks', async () => {
+    vi.useFakeTimers();
+    const onStatus = vi.fn();
+    vi.mocked(useServerStatus).mockReturnValue({
+      checking: false,
+      isOnline: true,
+      lastCheck: new Date('2026-06-02T14:00:00.000Z'),
+      operationalHealth: null,
+      summary: {
+        description: 'Servidor local, base de datos y respaldos responden.',
+        label: 'Todo bien',
+        level: 'ok',
+      },
+    });
+
+    render(<AboutView user={cashierUser} onStatus={onStatus} />);
+    fireEvent.click(screen.getByRole('button', { name: /revisar conexion local/i }));
+
+    expect(onStatus).toHaveBeenCalledWith('Revisando conexion local...');
+    vi.advanceTimersByTime(1000);
+    expect(onStatus).toHaveBeenCalledWith('Todo bien: Servidor local, base de datos y respaldos responden.');
+    vi.useRealTimers();
   });
 });
 
