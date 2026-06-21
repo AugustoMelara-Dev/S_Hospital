@@ -157,23 +157,27 @@ async function installApiMocks(page: Page) {
   let invoiceCounter = 1;
   const invoices: Record<number, Record<string, unknown>> = {};
   const backupLogs: Record<string, unknown>[] = [];
+  const fiscalSettings = {
+    primary_color: 'indigo',
+    hospital_name: 'Hospital San Isidro',
+    name: 'Hospital San Isidro',
+    rtn: '08011999123456',
+    address: 'Tocoa, Colon',
+    phone: '2222-2222',
+    email: 'contacto@hospital-san-isidro.local',
+    scanner_enabled: false,
+    partial_payments_enabled: false,
+    receipt_paper_size: 'half_letter',
+  };
 
   await page.route('**/favicon.ico', (route) => route.fulfill({ status: 204 }));
   await page.route('**/sanctum/csrf-cookie', (route) => route.fulfill({ status: 204 }));
 
   await page.route('**/api/settings/fiscal', (route) => json(route, {
-    data: {
-      primary_color: 'indigo',
-      hospital_name: 'Hospital San Isidro',
-      name: 'Hospital San Isidro',
-      rtn: '08011999123456',
-      address: 'Tocoa, Colon',
-      phone: '2222-2222',
-      email: 'contacto@hospital-san-isidro.local',
-      scanner_enabled: false,
-      partial_payments_enabled: false,
-      receipt_paper_size: 'half_letter',
-    }
+    data: fiscalSettings,
+  }));
+  await page.route('**/api/settings/operational', (route) => json(route, {
+    data: fiscalSettings,
   }));
   await page.route('**/api/fiscal-sequences**', (route) => json(route, {
     data: [
@@ -204,6 +208,9 @@ async function installApiMocks(page: Page) {
   await page.route('**/api/settings/logo', (route) => json(route, { logo_url: null }));
   await page.route('**/api/health', (route) => json(route, { status: 'ok' }));
   await page.route('**/api/system/health', (route) => json(route, { status: 'ok' }));
+  await page.route('**/api/system/setup-status', (route) => json(route, {
+    data: { setup_required: false, default_admin_present: true },
+  }));
   await page.route('**/api/system/echo-config', (route) => json(route, {
     data: {
       enabled: false,
@@ -426,6 +433,28 @@ async function installApiMocks(page: Page) {
       },
       voids_and_reversals: [],
       audit_summary: { critical_events: 0, reprints: 0, fiscal_changes: 0, cash_differences: 0, backup_events: 1 },
+    },
+  }));
+
+
+  await page.route('**/api/reports/dashboard**', (route) => json(route, {
+    data: {
+      current_month: {
+        total_billed: '25.00',
+        total_collected: '25.00',
+        invoice_count: Object.keys(invoices).length,
+        payment_count: Object.keys(invoices).length,
+      },
+      last_7_days: [{
+        date: operationalDate,
+        total_billed: '25.00',
+        total_collected: '25.00',
+        invoice_count: Object.keys(invoices).length,
+        payment_count: Object.keys(invoices).length,
+      }],
+      payments_by_method: { cash: '25.00', transfer: '0.00', card: '0.00', other: '0.00' },
+      top_services: [{ service_name: 'Eritropoyetina', category_name: 'Medicamentos', quantity: '1.00', total: '25.00' }],
+      cashiers_summary: [{ user_id: currentUser.id, name: currentUser.name, username: currentUser.username, payment_count: Object.keys(invoices).length, total_collected: '25.00' }],
     },
   }));
 
