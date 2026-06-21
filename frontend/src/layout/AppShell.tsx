@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { type AuthUser, type CashSession } from '../lib/api';
 import { useBroadcastSync } from '../lib/realtime/useBroadcastSync';
 import { GuidedTour, shouldAutoOpenGuidedTour } from '../features/onboarding/GuidedTour';
-import { getActiveNavigationItem, getBreadcrumbs, getVisibleNavigation } from '../navigation/appNavigation';
-import { MobileSidebar, SidebarContent } from './Sidebar';
+import { canAccessPath, getActiveNavigationItem, getBreadcrumbs, getVisibleNavigation } from '../navigation/appNavigation';
+import { MobileNavigation } from './components/MobileNavigation';
+import { SidebarContent } from './Sidebar';
 import { Topbar } from './Topbar';
 
 type AppShellProps = {
@@ -31,6 +32,7 @@ export function AppShell({
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
+  const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
 
   // Wire real-time sync (WebSocket/Soketi) when the user is logged in.
   // Mounted once at the shell so every authenticated route benefits
@@ -62,7 +64,7 @@ export function AppShell({
         Omitir al contenido principal
       </a>
 
-      <MobileSidebar
+      <MobileNavigation
         open={mobileMenuOpen}
         onOpenChange={setMobileMenuOpen}
         user={user}
@@ -70,6 +72,7 @@ export function AppShell({
         visibleNavigation={visibleNavigation}
         activeItem={activeItem}
         logoUrl={logoUrl}
+        triggerRef={mobileMenuButtonRef}
       />
 
       <aside className="print-hidden hidden lg:fixed lg:inset-y-0 lg:z-20 lg:flex lg:w-72 lg:flex-col">
@@ -89,12 +92,18 @@ export function AppShell({
           status={status}
           isMinimalTopbar={isMinimalTopbar}
           crumbs={crumbs}
+          canLinkToBreadcrumb={(path) => canAccessPath(path, user.permissions)}
+          mobileMenuButtonRef={mobileMenuButtonRef}
           onOpenMobileMenu={() => setMobileMenuOpen(true)}
           onOpenGuide={() => setGuideOpen(true)}
           onLogout={onLogout}
         />
 
-        <main id="main-content" className="flex-1 px-4 py-5 lg:px-7 lg:py-7" tabIndex={-1}>
+        <main
+          id="main-content"
+          className="min-w-0 flex-1 scroll-mt-16 px-4 py-5 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background lg:px-7 lg:py-7"
+          tabIndex={-1}
+        >
           <div className="mx-auto flex max-w-[1440px] flex-col gap-5">{children}</div>
         </main>
 

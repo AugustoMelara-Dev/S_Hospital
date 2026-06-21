@@ -14,12 +14,14 @@ import {
 } from 'lucide-react';
 
 type PermissionMode = 'all' | 'any';
+type NavigationGroup = 'operations' | 'administration' | 'support';
 
 export type AppNavigationItem = {
   id: string;
   label: string;
   path: string;
   icon: LucideIcon;
+  navigationGroup?: NavigationGroup;
   navigationPermissions?: string[];
   navigationPermissionMode?: PermissionMode;
 };
@@ -36,6 +38,7 @@ export type AppRouteDefinition = {
   icon: LucideIcon;
   breadcrumbs: AppBreadcrumb[];
   navigation: boolean;
+  navigationGroup?: NavigationGroup;
   navigationPermissions?: string[];
   navigationPermissionMode?: PermissionMode;
   requiredPermissions?: string[];
@@ -50,6 +53,7 @@ export const appRoutes = {
     path: '/dashboard',
     icon: LayoutDashboard,
     breadcrumbs: [{ label: 'Inicio', path: '/dashboard' }],
+    navigationGroup: 'operations',
     navigation: true,
   },
   newInvoice: {
@@ -61,6 +65,7 @@ export const appRoutes = {
       { label: 'Inicio', path: '/dashboard' },
       { label: 'Nueva factura', path: '/billing/new' },
     ],
+    navigationGroup: 'operations',
     navigation: true,
     navigationPermissions: ['invoices.create', 'catalog.view', 'cash.view', 'payments.create', 'receipts.view'],
     navigationPermissionMode: 'all',
@@ -77,6 +82,7 @@ export const appRoutes = {
       { label: 'Inicio', path: '/dashboard' },
       { label: 'Caja', path: '/cashbox' },
     ],
+    navigationGroup: 'operations',
     navigation: true,
     navigationPermissions: ['cash.view'],
     requiredPermissions: ['cash.view'],
@@ -91,6 +97,7 @@ export const appRoutes = {
       { label: 'Inicio', path: '/dashboard' },
       { label: 'Catálogo', path: '/catalog' },
     ],
+    navigationGroup: 'operations',
     navigation: true,
     navigationPermissions: ['catalog.view'],
     requiredPermissions: ['catalog.view'],
@@ -105,6 +112,7 @@ export const appRoutes = {
       { label: 'Inicio', path: '/dashboard' },
       { label: 'Historial', path: '/invoices' },
     ],
+    navigationGroup: 'operations',
     navigation: true,
     navigationPermissions: ['invoices.view'],
     requiredPermissions: ['invoices.view'],
@@ -119,6 +127,7 @@ export const appRoutes = {
       { label: 'Inicio', path: '/dashboard' },
       { label: 'Reportes', path: '/reports' },
     ],
+    navigationGroup: 'operations',
     navigation: true,
     navigationPermissions: ['reports.view', 'reports.managerial.view', 'reports.cash_session.view'],
     requiredPermissions: ['reports.view', 'reports.managerial.view', 'reports.cash_session.view'],
@@ -134,6 +143,7 @@ export const appRoutes = {
       { label: 'Inicio', path: '/dashboard' },
       { label: 'Respaldos', path: '/backups' },
     ],
+    navigationGroup: 'administration',
     navigation: true,
     navigationPermissions: ['backups.view'],
     requiredPermissions: ['backups.view'],
@@ -148,6 +158,7 @@ export const appRoutes = {
       { label: 'Inicio', path: '/dashboard' },
       { label: 'Configuración', path: '/settings/fiscal' },
     ],
+    navigationGroup: 'administration',
     navigation: true,
     navigationPermissions: ['settings.fiscal.view'],
     requiredPermissions: ['settings.fiscal.view'],
@@ -162,6 +173,7 @@ export const appRoutes = {
       { label: 'Inicio', path: '/dashboard' },
       { label: 'Recibos institucionales', path: '/settings/institutional-receipts' },
     ],
+    navigationGroup: 'administration',
     navigation: true,
     navigationPermissions: ['receipt_settings.view'],
     requiredPermissions: ['receipt_settings.view'],
@@ -176,6 +188,7 @@ export const appRoutes = {
       { label: 'Inicio', path: '/dashboard' },
       { label: 'Usuarios', path: '/admin/users' },
     ],
+    navigationGroup: 'administration',
     navigation: true,
     navigationPermissions: ['users.view'],
     requiredPermissions: ['users.view'],
@@ -190,6 +203,7 @@ export const appRoutes = {
       { label: 'Inicio', path: '/dashboard' },
       { label: 'Ayuda', path: '/help' },
     ],
+    navigationGroup: 'support',
     navigation: true,
   },
   support: {
@@ -220,12 +234,13 @@ export type AppRouteId = keyof typeof appRoutes;
 
 function toNavigationItem(route: AppRouteDefinition): AppNavigationItem {
   return {
-  id: route.id,
-  label: route.label,
-  path: route.path,
-  icon: route.icon,
-  navigationPermissions: route.navigationPermissions,
-  navigationPermissionMode: route.navigationPermissionMode,
+    id: route.id,
+    label: route.label,
+    path: route.path,
+    icon: route.icon,
+    navigationGroup: route.navigationGroup,
+    navigationPermissions: route.navigationPermissions,
+    navigationPermissionMode: route.navigationPermissionMode,
   };
 }
 
@@ -265,6 +280,11 @@ export function canViewNavigationItem(item: AppNavigationItem, grantedPermission
 
 export function canAccessRoute(route: AppRouteDefinition, grantedPermissions: readonly string[]) {
   return hasPermissions(grantedPermissions, route.requiredPermissions, route.permissionMode ?? 'all');
+}
+
+export function canAccessPath(path: string, grantedPermissions: readonly string[]) {
+  const route = Object.values(appRoutes).find((candidate) => candidate.path === path);
+  return route ? canAccessRoute(route, grantedPermissions) : false;
 }
 
 export function getVisibleNavigation(grantedPermissions: readonly string[]) {
