@@ -3,14 +3,15 @@ import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ApiError, apiClient, userSafeErrorMessage } from '@/lib/api';
-import { Button } from '@/components/ui/button';
+import { Alert } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Alert } from '@/components/ui/alert';
-import { Sheet } from '@/components/ui/sheet';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Sheet } from '@/components/ui/sheet';
+import { FieldGroup, FormSection } from '@/components/ui/form-section';
 import { cn } from '@/lib/utils';
+import { ServiceSheetFooter } from './ServiceSheetFooter';
 
 const serviceSchema = z.object({
   category_id: z.number().min(1, 'Seleccione una categoria'),
@@ -63,6 +64,9 @@ const defaultValues: ServiceFormData = {
   active: true,
   special_rule_code: null,
 };
+
+const SPECIAL_RULE_NONE = 'none';
+const SPECIAL_RULE_ERYTHROPOIETIN = 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION';
 
 export function ServiceSheet({
   open,
@@ -172,218 +176,255 @@ export function ServiceSheet({
       title={isEditing ? 'Editar servicio' : 'Nuevo servicio'}
       description={isEditing ? 'Modifique los datos del servicio.' : 'Agregue un nuevo servicio al catálogo.'}
     >
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="category_id">Categoría *</Label>
-          <Select
-            value={String(categoryId)}
-            onValueChange={(val) => setValue('category_id', Number(val))}
-          >
-            <SelectTrigger
-              id="category_id"
-              aria-invalid={Boolean(errors.category_id)}
-              aria-describedby={errors.category_id ? 'service-category-error' : undefined}
-              className={cn(errors.category_id && 'border-destructive')}
-            >
-              <SelectValue placeholder="Seleccione una categoria" />
-            </SelectTrigger>
-            <SelectContent>
-              {categories.map((cat) => (
-                <SelectItem key={cat.id} value={String(cat.id)}>
-                  {cat.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {errors.category_id && (
-            <p id="service-category-error" role="alert" className="text-sm text-destructive">
-              {errors.category_id.message}
-            </p>
-          )}
-        </div>
+      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
+        <FormSection
+          title="Identificación"
+          description="Categoría, área y nombre visible para el cajero."
+        >
+          <FieldGroup columns={2}>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="category_id">Categoría *</Label>
+              <Select
+                value={String(categoryId)}
+                onValueChange={(val) => setValue('category_id', Number(val))}
+              >
+                <SelectTrigger
+                  id="category_id"
+                  aria-invalid={Boolean(errors.category_id)}
+                  aria-describedby={errors.category_id ? 'service-category-error' : undefined}
+                  className={cn(errors.category_id && 'border-destructive')}
+                >
+                  <SelectValue placeholder="Seleccione una categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.id} value={String(cat.id)}>
+                      {cat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.category_id && (
+                <p id="service-category-error" role="alert" className="text-sm text-destructive">
+                  {errors.category_id.message}
+                </p>
+              )}
+            </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="area_id">Área *</Label>
-          <Select
-            value={String(areaId)}
-            onValueChange={(val) => setValue('area_id', Number(val))}
-          >
-            <SelectTrigger
-              id="area_id"
-              aria-invalid={Boolean(errors.area_id)}
-              aria-describedby={errors.area_id ? 'service-area-error' : undefined}
-              className={cn(errors.area_id && 'border-destructive')}
-            >
-              <SelectValue placeholder="Seleccione un area" />
-            </SelectTrigger>
-            <SelectContent>
-              {areas.map((area) => (
-                <SelectItem key={area.id} value={String(area.id)}>
-                  {area.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {errors.area_id && (
-            <p id="service-area-error" role="alert" className="text-sm text-destructive">
-              {errors.area_id.message}
-            </p>
-          )}
-        </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="area_id">Área *</Label>
+              <Select
+                value={String(areaId)}
+                onValueChange={(val) => setValue('area_id', Number(val))}
+              >
+                <SelectTrigger
+                  id="area_id"
+                  aria-invalid={Boolean(errors.area_id)}
+                  aria-describedby={errors.area_id ? 'service-area-error' : undefined}
+                  className={cn(errors.area_id && 'border-destructive')}
+                >
+                  <SelectValue placeholder="Seleccione un area" />
+                </SelectTrigger>
+                <SelectContent>
+                  {areas.map((area) => (
+                    <SelectItem key={area.id} value={String(area.id)}>
+                      {area.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.area_id && (
+                <p id="service-area-error" role="alert" className="text-sm text-destructive">
+                  {errors.area_id.message}
+                </p>
+              )}
+            </div>
+          </FieldGroup>
 
-        <div className="space-y-2">
-          <Label htmlFor="name">Nombre *</Label>
-          <Input
-            id="name"
-            {...register('name')}
-            aria-invalid={Boolean(errors.name)}
-            aria-describedby={errors.name ? 'service-name-error' : undefined}
-            className={cn(errors.name && 'border-destructive')}
-          />
-          {errors.name && (
-            <p id="service-name-error" role="alert" className="text-sm text-destructive">
-              {errors.name.message}
-            </p>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="price">Precio (L.) *</Label>
-          <Input
-            id="price"
-            type="text"
-            inputMode="decimal"
-            {...register('price')}
-            aria-invalid={Boolean(errors.price)}
-            aria-describedby={errors.price ? 'service-price-error' : undefined}
-            className={cn(errors.price && 'border-destructive')}
-          />
-          {errors.price && (
-            <p id="service-price-error" role="alert" className="text-sm text-destructive">
-              {errors.price.message}
-            </p>
-          )}
-        </div>
-
-        {requiresPriceChangeReason && (
-          <div className="space-y-2">
-            <Label htmlFor="price_change_reason">Motivo del cambio de precio *</Label>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="name">Nombre *</Label>
             <Input
-              id="price_change_reason"
-              {...register('price_change_reason')}
-              aria-invalid={Boolean(errors.price_change_reason)}
-              aria-describedby={errors.price_change_reason ? 'service-price-reason-error' : undefined}
-              className={cn(errors.price_change_reason && 'border-destructive')}
+              id="name"
+              {...register('name')}
+              aria-invalid={Boolean(errors.name)}
+              aria-describedby={errors.name ? 'service-name-error' : undefined}
+              className={cn(errors.name && 'border-destructive')}
             />
-            {errors.price_change_reason && (
-              <p id="service-price-reason-error" role="alert" className="text-sm text-destructive">
-                {errors.price_change_reason.message}
+            {errors.name && (
+              <p id="service-name-error" role="alert" className="text-sm text-destructive">
+                {errors.name.message}
               </p>
             )}
           </div>
-        )}
+        </FormSection>
+
+        <FormSection
+          title="Tarifa y trazabilidad"
+          description="Precio vigente y motivo del cambio. El cambio de precio siempre queda auditado."
+        >
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="price">Precio (L.) *</Label>
+            <Input
+              id="price"
+              type="text"
+              inputMode="decimal"
+              {...register('price')}
+              aria-invalid={Boolean(errors.price)}
+              aria-describedby={errors.price ? 'service-price-error' : undefined}
+              className={cn(errors.price && 'border-destructive')}
+            />
+            {errors.price && (
+              <p id="service-price-error" role="alert" className="text-sm text-destructive">
+                {errors.price.message}
+              </p>
+            )}
+          </div>
+
+          {requiresPriceChangeReason && (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="price_change_reason">Motivo del cambio de precio *</Label>
+              <Input
+                id="price_change_reason"
+                {...register('price_change_reason')}
+                aria-invalid={Boolean(errors.price_change_reason)}
+                aria-describedby={
+                  errors.price_change_reason ? 'service-price-reason-error' : undefined
+                }
+                className={cn(errors.price_change_reason && 'border-destructive')}
+              />
+              {errors.price_change_reason && (
+                <p
+                  id="service-price-reason-error"
+                  role="alert"
+                  className="text-sm text-destructive"
+                >
+                  {errors.price_change_reason.message}
+                </p>
+              )}
+            </div>
+          )}
+        </FormSection>
 
         {scannerEnabled && (
-          <>
-            <div className="space-y-2">
-              <Label htmlFor="scan_code">Código de escáner</Label>
-              <Input
-                id="scan_code"
-                placeholder="LAB-GLU-001"
-                {...register('scan_code')}
-                aria-invalid={Boolean(errors.scan_code)}
-                aria-describedby={errors.scan_code ? 'service-scan-code-error' : undefined}
-                className={cn(errors.scan_code && 'border-destructive')}
-              />
-              {errors.scan_code && (
-                <p id="service-scan-code-error" role="alert" className="text-sm text-destructive">
-                  {errors.scan_code.message}
-                </p>
-              )}
-            </div>
+          <FormSection
+            title="Códigos de escaneo"
+            description="Identificadores opcionales que se utilizan al escanear productos en caja."
+          >
+            <FieldGroup columns={3}>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="scan_code">Código de escáner</Label>
+                <Input
+                  id="scan_code"
+                  placeholder="LAB-GLU-001"
+                  {...register('scan_code')}
+                  aria-invalid={Boolean(errors.scan_code)}
+                  aria-describedby={errors.scan_code ? 'service-scan-code-error' : undefined}
+                  className={cn(errors.scan_code && 'border-destructive')}
+                />
+                {errors.scan_code && (
+                  <p id="service-scan-code-error" role="alert" className="text-sm text-destructive">
+                    {errors.scan_code.message}
+                  </p>
+                )}
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="barcode">Código de barra</Label>
-              <Input
-                id="barcode"
-                placeholder="Código de barra opcional"
-                {...register('barcode')}
-                aria-invalid={Boolean(errors.barcode)}
-                aria-describedby={errors.barcode ? 'service-barcode-error' : undefined}
-                className={cn(errors.barcode && 'border-destructive')}
-              />
-              {errors.barcode && (
-                <p id="service-barcode-error" role="alert" className="text-sm text-destructive">
-                  {errors.barcode.message}
-                </p>
-              )}
-            </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="barcode">Código de barra</Label>
+                <Input
+                  id="barcode"
+                  placeholder="Código de barra opcional"
+                  {...register('barcode')}
+                  aria-invalid={Boolean(errors.barcode)}
+                  aria-describedby={errors.barcode ? 'service-barcode-error' : undefined}
+                  className={cn(errors.barcode && 'border-destructive')}
+                />
+                {errors.barcode && (
+                  <p id="service-barcode-error" role="alert" className="text-sm text-destructive">
+                    {errors.barcode.message}
+                  </p>
+                )}
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="qr_code">Código QR</Label>
-              <Input
-                id="qr_code"
-                placeholder="Código QR opcional"
-                {...register('qr_code')}
-                aria-invalid={Boolean(errors.qr_code)}
-                aria-describedby={errors.qr_code ? 'service-qr-code-error' : undefined}
-                className={cn(errors.qr_code && 'border-destructive')}
-              />
-              {errors.qr_code && (
-                <p id="service-qr-code-error" role="alert" className="text-sm text-destructive">
-                  {errors.qr_code.message}
-                </p>
-              )}
-            </div>
-          </>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="qr_code">Código QR</Label>
+                <Input
+                  id="qr_code"
+                  placeholder="Código QR opcional"
+                  {...register('qr_code')}
+                  aria-invalid={Boolean(errors.qr_code)}
+                  aria-describedby={errors.qr_code ? 'service-qr-code-error' : undefined}
+                  className={cn(errors.qr_code && 'border-destructive')}
+                />
+                {errors.qr_code && (
+                  <p id="service-qr-code-error" role="alert" className="text-sm text-destructive">
+                    {errors.qr_code.message}
+                  </p>
+                )}
+              </div>
+            </FieldGroup>
+          </FormSection>
         )}
 
-        <div className="space-y-2">
-          <Label htmlFor="special_rule_code">Regla especial</Label>
-          <Select value={specialRuleCode ?? 'none'} onValueChange={(val) => setValue('special_rule_code', val === 'none' ? null : val)}>
-            <SelectTrigger id="special_rule_code">
-              <SelectValue placeholder="Sin regla" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">Sin regla</SelectItem>
-              <SelectItem value="ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION">
-                Eritropoyetina con receta de diálisis
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 cursor-pointer">
-            <Controller
-              control={control}
-              name="taxable"
-              render={({ field }) => (
-                <Checkbox
-                  id="taxable"
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              )}
-            />
-            <Label htmlFor="taxable" className="text-sm font-medium cursor-pointer">Aplica ISV</Label>
+        <FormSection
+          title="Reglas operativas"
+          description="Reglas especiales, ISV y disponibilidad del servicio en caja."
+        >
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="special_rule_code">Regla especial</Label>
+            <Select
+              value={specialRuleCode ?? SPECIAL_RULE_NONE}
+              onValueChange={(val) =>
+                setValue('special_rule_code', val === SPECIAL_RULE_NONE ? null : val)
+              }
+            >
+              <SelectTrigger id="special_rule_code">
+                <SelectValue placeholder="Sin regla" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={SPECIAL_RULE_NONE}>Sin regla</SelectItem>
+                <SelectItem value={SPECIAL_RULE_ERYTHROPOIETIN}>
+                  Eritropoyetina con receta de diálisis
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
-          <div className="flex items-center gap-2 cursor-pointer">
-            <Controller
-              control={control}
-              name="active"
-              render={({ field }) => (
-                <Checkbox
-                  id="active"
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              )}
-            />
-            <Label htmlFor="active" className="text-sm font-medium cursor-pointer">Servicio activo</Label>
-          </div>
-        </div>
+          <FieldGroup columns={2}>
+            <div className="flex items-center gap-2">
+              <Controller
+                control={control}
+                name="taxable"
+                render={({ field }) => (
+                  <Checkbox
+                    id="taxable"
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                )}
+              />
+              <Label htmlFor="taxable" className="cursor-pointer text-sm font-medium">
+                Aplica ISV
+              </Label>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Controller
+                control={control}
+                name="active"
+                render={({ field }) => (
+                  <Checkbox
+                    id="active"
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                )}
+              />
+              <Label htmlFor="active" className="cursor-pointer text-sm font-medium">
+                Servicio activo
+              </Label>
+            </div>
+          </FieldGroup>
+        </FormSection>
 
         {submitError && (
           <Alert variant="destructive" title="Error al guardar">
@@ -391,18 +432,12 @@ export function ServiceSheet({
           </Alert>
         )}
 
-        <div className="flex justify-end gap-2 pt-4 border-t">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-          >
-            Cancelar
-          </Button>
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Guardando...' : isEditing ? 'Actualizar' : 'Crear'}
-          </Button>
-        </div>
+        <ServiceSheetFooter
+          cancelLabel="Cancelar"
+          isEditing={isEditing}
+          isSubmitting={isSubmitting}
+          onCancel={() => onOpenChange(false)}
+        />
       </form>
     </Sheet>
   );
