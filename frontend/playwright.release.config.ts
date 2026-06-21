@@ -4,8 +4,9 @@ const baseURL = process.env.E2E_RELEASE_BASE_URL ?? process.env.PLAYWRIGHT_BASE_
 
 export default defineConfig({
   testDir: './e2e',
-  testMatch: /release-gate\.spec\.ts/,
+  testMatch: /release-(gate|rbac)\.spec\.ts/,
   timeout: 90_000,
+  workers: 1,
   expect: {
     timeout: 10_000,
   },
