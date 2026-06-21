@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { PageHeader } from '../../components/ui/page-header';
+import { ActionBar } from '../../components/ui/action-bar';
 import { Button } from '../../components/ui/button';
 import { Textarea } from '../../components/ui/textarea';
 import { type ShortcutScope, shortcutLabel, shortcutsByScope } from '../../lib/shortcuts';
@@ -224,6 +225,7 @@ function SupportEvidenceCard() {
   const [showDetails, setShowDetails] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
+  const detailsId = 'support-evidence-details';
   const issues = useMemo(() => getClientIssues(), []);
   const latestIssues = issues.slice(0, 3);
   const supportSummary = useMemo(
@@ -261,43 +263,52 @@ function SupportEvidenceCard() {
           <p className="text-sm leading-6 text-muted-foreground">
             Incidentes guardados: <span className="font-semibold text-foreground">{issues.length}</span>. No incluye contraseñas, tokens ni claves.
           </p>
-          <div className="flex flex-wrap gap-2">
+          <ActionBar align="start" fullWidthOnMobile>
             <Button type="button" variant="outline" size="sm" onClick={handlePrepareSummary}>
               <ClipboardList aria-hidden="true" className="size-4" />
               Preparar resumen
             </Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => setShowDetails((current) => !current)}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              aria-controls={detailsId}
+              aria-expanded={showDetails}
+              onClick={() => setShowDetails((current) => !current)}
+            >
               {showDetails ? 'Ocultar evidencia' : 'Ver evidencia'}
             </Button>
-          </div>
+          </ActionBar>
         </div>
-        {copyStatus ? <p className="text-sm font-medium text-secondary">{copyStatus}</p> : null}
+        {copyStatus ? <p role="status" aria-live="polite" className="text-sm font-medium text-secondary">{copyStatus}</p> : null}
 
         {showSummary ? (
           <Textarea
             aria-label="Resumen seguro para soporte"
             readOnly
             value={supportSummary}
-            className="min-h-48 font-mono text-xs leading-5"
+            className="min-h-48 break-words font-mono text-xs leading-5"
           />
         ) : null}
 
         {showDetails ? (
-          latestIssues.length > 0 ? (
+          <div id={detailsId}>
+            {latestIssues.length > 0 ? (
             <ul className="space-y-2">
               {latestIssues.map((issue) => (
                 <li key={`${issue.occurred_at}-${issue.action ?? 'acción'}`} className="rounded-md border border-border bg-muted/30 p-3">
                   <p className="text-sm font-semibold text-foreground">{issue.module ?? 'sistema'} - {issue.action ?? 'acción no indicada'}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">{issue.safe_message}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{issue.route} - {new Date(issue.occurred_at).toLocaleString()}</p>
+                  <p className="mt-1 break-words text-sm text-muted-foreground">{issue.safe_message}</p>
+                  <p className="mt-1 break-words text-xs text-muted-foreground">{issue.route} - {new Date(issue.occurred_at).toLocaleString()}</p>
                 </li>
               ))}
             </ul>
-          ) : (
+            ) : (
             <p className="rounded-md border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
               No hay incidentes guardados en este navegador.
             </p>
-          )
+            )}
+          </div>
         ) : null}
       </CardContent>
     </Card>
@@ -323,7 +334,7 @@ export function HelpView() {
           const Icon = guide.icon;
 
           return (
-            <Card key={guide.title}>
+            <Card key={guide.title} className="overflow-hidden">
               <CardHeader>
                 <div className="flex items-center gap-3">
                   <div className="flex size-10 items-center justify-center rounded-md bg-secondary/10 text-secondary">
@@ -338,7 +349,7 @@ export function HelpView() {
               <CardContent>
                 <ol className="space-y-2">
                   {guide.steps.map((step, index) => (
-                    <li key={step} className="flex gap-2 text-sm text-muted-foreground">
+                    <li key={step} className="flex gap-2 text-sm leading-6 text-muted-foreground">
                       <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-muted text-[11px] font-bold text-foreground">
                         {index + 1}
                       </span>
