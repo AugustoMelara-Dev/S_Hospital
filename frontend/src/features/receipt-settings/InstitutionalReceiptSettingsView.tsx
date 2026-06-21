@@ -326,7 +326,7 @@ export function InstitutionalReceiptSettingsView({ canEdit, onStatus }: Institut
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <FileText className="size-5" />
+                <FileText className="size-5" data-icon aria-hidden="true" />
                 Datos del recibo
               </CardTitle>
               <CardDescription>Encabezado, ubicacion y leyenda configurable del documento institucional.</CardDescription>
@@ -358,7 +358,7 @@ export function InstitutionalReceiptSettingsView({ canEdit, onStatus }: Institut
                 </Field>
                 <div className="flex justify-end">
                   <Button type="submit" disabled={!canEdit || institutionMutation.isPending}>
-                    <Save className="size-4" />
+                    <Save className="size-4" data-icon aria-hidden="true" />
                     Guardar institucion
                   </Button>
                 </div>
@@ -415,7 +415,7 @@ export function InstitutionalReceiptSettingsView({ canEdit, onStatus }: Institut
                 </Field>
                 <div className="flex justify-end">
                   <Button type="submit" disabled={!canEdit || seriesMutation.isPending}>
-                    <Save className="size-4" />
+                    <Save className="size-4" data-icon aria-hidden="true" />
                     Guardar serie
                   </Button>
                 </div>
@@ -450,7 +450,7 @@ export function InstitutionalReceiptSettingsView({ canEdit, onStatus }: Institut
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Settings2 className="size-5" />
+                  <Settings2 className="size-5" data-icon aria-hidden="true" />
                   Papel, margenes y copias
                 </CardTitle>
                 <CardDescription>{selectedProfile ? PAPER_LABELS[selectedProfile.code] : 'Seleccione un perfil'}</CardDescription>
@@ -519,11 +519,11 @@ export function InstitutionalReceiptSettingsView({ canEdit, onStatus }: Institut
 
                   <div className="flex flex-wrap justify-end gap-2">
                     <Button type="button" variant="secondary" disabled={testPrintMutation.isPending} onClick={() => testPrintMutation.mutate()}>
-                      <Printer className="size-4" />
+                      <Printer className="size-4" data-icon aria-hidden="true" />
                       Imprimir prueba
                     </Button>
                     <Button type="submit" disabled={!canEdit || profileMutation.isPending}>
-                      <Save className="size-4" />
+                      <Save className="size-4" data-icon aria-hidden="true" />
                       Guardar perfil
                     </Button>
                   </div>
