@@ -1,10 +1,13 @@
 import { type FormEvent, useEffect, useRef, useState } from 'react';
+import { Alert } from '../../../components/ui/alert';
 import { Button } from '../../../components/ui/button';
+import { Checkbox } from '../../../components/ui/checkbox';
+import { Dialog } from '../../../components/ui/dialog';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
-import { Dialog } from '../../../components/ui/dialog';
+import { MoneyText } from '../../../components/ui/money-text';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
-import { Checkbox } from '../../../components/ui/checkbox';
+import { Separator } from '../../../components/ui/separator';
 import type { Payment } from '../../../lib/api';
 import { formatLempirasUIFromCents, parseCents as parseCentsNullable } from '../../../lib/moneyCents';
 import { parseCents } from '../../../lib/money';
@@ -27,6 +30,13 @@ type PaymentModalProps = {
   onConfirm: (appliedAmount: string) => void;
   submitting?: boolean;
   partialPaymentsEnabled?: boolean;
+};
+
+const methodHelp: Record<Payment['method'], string> = {
+  cash: 'Solo los pagos en efectivo aumentan el efectivo esperado en caja.',
+  card: 'Este método queda separado del efectivo esperado de caja.',
+  transfer: 'Este método queda separado del efectivo esperado de caja.',
+  other: 'Este método queda separado del efectivo esperado de caja.',
 };
 
 export function PaymentModal({
@@ -68,6 +78,12 @@ export function PaymentModal({
   const needsAmount = paymentCents === null || paymentCents <= 0;
   const exceedsPending = !cashCanReturnChange && paymentCents !== null && balanceCents !== null && paymentCents > balanceCents;
   const pendingAmountLabel = balanceCents !== null ? formatMoneyCents(balanceCents) : '0.00';
+  const amountDescribedBy = [
+    'payment-amount-help',
+    capNotice && !error ? 'payment-amount-cap' : null,
+    error ? 'payment-amount-error' : null,
+  ].filter(Boolean).join(' ');
+  const patientLabel = patientName.trim() || 'Paciente no especificado';
 
   useEffect(() => {
     if (open) {
@@ -75,7 +91,7 @@ export function PaymentModal({
       setCapNotice(null);
       window.setTimeout(() => amountInputRef.current?.focus(), 0);
     }
-  }, [open]);
+  }, [open, invoiceNumber]);
 
   function handleAmountChange(value: string) {
     setError(null);
@@ -125,6 +141,12 @@ export function PaymentModal({
     onConfirm(formatMoneyCents(appliedAmountCents ?? amountCents));
   }
 
+  function requestClose() {
+    if (!submitting) {
+      onOpenChange(false);
+    }
+  }
+
   return (
     <Dialog
       open={open}
@@ -133,70 +155,101 @@ export function PaymentModal({
           onOpenChange(nextOpen);
         }
       }}
+      size="lg"
       title="Registrar pago"
       description={`Factura ${invoiceNumber} ya fue emitida. Si sale de este paso quedara pendiente de cobro.`}
     >
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Paciente:</span>
-            <span className="font-medium">{patientName}</span>
+      <form
+        aria-busy={submitting ? 'true' : undefined}
+        onSubmit={handleSubmit}
+        className="flex min-w-0 flex-col gap-5"
+      >
+        <section
+          aria-label="Resumen de factura"
+          className="rounded-md border border-border bg-muted/20 p-4"
+        >
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Factura</p>
+              <p className="break-words font-semibold tabular-nums text-foreground">{invoiceNumber}</p>
+              <p className="mt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Paciente</p>
+              <p className="break-words font-medium text-foreground">{patientLabel}</p>
+            </div>
+            <div className="grid gap-1 text-sm sm:min-w-44 sm:text-right">
+              <span className="text-muted-foreground">Saldo pendiente</span>
+              <MoneyText emphasis="strong" className="text-xl">
+                {moneyLabel(balanceDue)}
+              </MoneyText>
+            </div>
           </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Total:</span>
-            <span className="font-medium">{moneyLabel(total)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Saldo pendiente:</span>
-            <span className="font-bold">{moneyLabel(balanceDue)}</span>
-          </div>
-          {changeCents !== null && (
-            <div className="flex justify-between text-success-foreground">
-              <span className="text-muted-foreground">Cambio:</span>
-              <span className="font-bold">{moneyLabelFromCents(changeCents)}</span>
+          <Separator className="my-4" />
+          <dl className="grid gap-2 text-sm sm:grid-cols-2">
+            <div className="flex justify-between gap-3 sm:block">
+              <dt className="text-muted-foreground">Total:</dt>
+              <dd className="font-medium">
+                <MoneyText>{moneyLabel(total)}</MoneyText>
+              </dd>
             </div>
-          )}
-          {remainingBalanceCents !== null && (
-            <div className="flex justify-between text-warning-foreground">
-              <span className="text-muted-foreground">Saldo pendiente:</span>
-              <span className="font-bold">{moneyLabelFromCents(remainingBalanceCents)}</span>
+            <div className="flex justify-between gap-3 sm:block sm:text-right">
+              <dt className="text-muted-foreground">Pago aplicado:</dt>
+              <dd className="font-medium">
+                {appliedAmountCents !== null && appliedAmountCents > 0 ? (
+                  <MoneyText>{moneyLabelFromCents(appliedAmountCents)}</MoneyText>
+                ) : (
+                  <span className="tabular-nums text-muted-foreground">L 0.00</span>
+                )}
+              </dd>
             </div>
-          )}
-          {remainingBalanceCents !== null && !partialPaymentsEnabled ? (
-            <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm font-semibold text-destructive" role="alert">
-              El monto recibido es menor al total.
-            </div>
-          ) : null}
-          {remainingBalanceCents !== null && partialPaymentsEnabled ? (
-            <div className="rounded-md border border-warning/35 bg-warning/10 px-3 py-2 text-sm text-warning-foreground" role="alert">
-              Este pago quedara como abono parcial y mantendra saldo pendiente.
-            </div>
-          ) : null}
-          {appliedAmountCents !== null && appliedAmountCents > 0 && (
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Pago aplicado:</span>
-              <span className="font-medium">{moneyLabelFromCents(appliedAmountCents)}</span>
-            </div>
-          )}
-        </div>
+            {changeCents !== null ? (
+              <div className="flex justify-between gap-3 sm:block">
+                <dt className="text-muted-foreground">Cambio:</dt>
+                <dd className="font-semibold">
+                  <MoneyText tone="success">{moneyLabelFromCents(changeCents)}</MoneyText>
+                </dd>
+              </div>
+            ) : null}
+            {remainingBalanceCents !== null ? (
+              <div className="flex justify-between gap-3 sm:block sm:text-right">
+                <dt className="text-muted-foreground">Saldo pendiente:</dt>
+                <dd className="font-semibold">
+                  <MoneyText tone="warning">{moneyLabelFromCents(remainingBalanceCents)}</MoneyText>
+                </dd>
+              </div>
+            ) : null}
+          </dl>
+        </section>
 
-        <div className="space-y-3">
+        <div className="grid gap-3">
           {needsAmount && !error ? (
-            <div className="rounded-md border border-warning/35 bg-warning/10 px-3 py-2 text-sm text-warning-foreground" role="alert">
+            <Alert variant="warning" className="py-3">
               Ingrese el monto recibido para registrar el cobro.
-            </div>
+            </Alert>
+          ) : null}
+
+          {remainingBalanceCents !== null && !partialPaymentsEnabled ? (
+            <Alert variant="destructive" className="py-3">
+              El monto recibido es menor al total.
+            </Alert>
+          ) : null}
+
+          {remainingBalanceCents !== null && partialPaymentsEnabled ? (
+            <Alert variant="warning" className="py-3">
+              Este pago quedara como abono parcial y mantendra saldo pendiente.
+            </Alert>
           ) : null}
 
           {submitting ? (
-            <div className="rounded-md border border-primary/30 bg-primary/10 px-3 py-2 text-sm font-semibold text-primary" role="status" aria-live="polite">
+            <Alert variant="default" className="py-3" aria-live="polite">
               Registrando cobro, no repita la operacion.
-            </div>
+            </Alert>
           ) : null}
+        </div>
 
-          <div>
-            <Label htmlFor="payment-method" className="mb-1.5 block">Método de pago</Label>
+        <section aria-label="Datos del pago" className="grid gap-4">
+          <div className="grid gap-1.5">
+            <Label htmlFor="payment-method">Método de pago</Label>
             <Select value={paymentMethod} onValueChange={(v) => onPaymentMethodChange(v as Payment['method'])}>
-              <SelectTrigger id="payment-method">
+              <SelectTrigger id="payment-method" aria-describedby="payment-method-help">
                 <SelectValue placeholder="Seleccione método" />
               </SelectTrigger>
               <SelectContent>
@@ -206,19 +259,13 @@ export function PaymentModal({
                 <SelectItem value="other">Otro</SelectItem>
               </SelectContent>
             </Select>
-            {paymentMethod === 'cash' ? (
-              <p className="mt-1.5 text-xs text-muted-foreground">
-                Solo los pagos en efectivo aumentan el efectivo esperado en caja.
-              </p>
-            ) : (
-              <p className="mt-1.5 text-xs text-muted-foreground">
-                Este metodo queda separado del efectivo esperado de caja.
-              </p>
-            )}
+            <p id="payment-method-help" className="text-xs text-muted-foreground">
+              {methodHelp[paymentMethod]}
+            </p>
           </div>
 
-          <div>
-            <Label htmlFor="payment-amount" className="mb-1.5 block">Monto recibido (L.)</Label>
+          <div className="grid gap-1.5">
+            <Label htmlFor="payment-amount">Monto recibido (L.)</Label>
             <Input
               ref={amountInputRef}
               id="payment-amount"
@@ -228,57 +275,70 @@ export function PaymentModal({
               onChange={(e) => handleAmountChange(e.target.value)}
               placeholder="0.00"
               aria-invalid={error ? 'true' : 'false'}
-              aria-describedby={error ? 'payment-amount-error' : capNotice ? 'payment-amount-cap' : undefined}
+              aria-describedby={amountDescribedBy || undefined}
+              className="tabular-nums"
             />
+            <p id="payment-amount-help" className="text-xs text-muted-foreground">
+              Use hasta dos decimales. El backend registra el pago final.
+            </p>
             {capNotice && !error ? (
-              <p id="payment-amount-cap" className="mt-1 text-sm text-warning-foreground" role="status">
+              <p id="payment-amount-cap" className="text-sm text-warning-foreground" role="status">
                 {capNotice}
               </p>
             ) : null}
-            {error && <p id="payment-amount-error" className="mt-1 text-sm text-destructive" role="alert">{error}</p>}
+            {error ? (
+              <p id="payment-amount-error" className="text-sm text-destructive" role="alert">
+                {error}
+              </p>
+            ) : null}
           </div>
 
           {paymentMethod !== 'cash' ? (
-            <div>
-              <Label htmlFor="payment-reference" className="mb-1.5 block">Referencia de pago</Label>
+            <div className="grid gap-1.5">
+              <Label htmlFor="payment-reference">Referencia de pago</Label>
               <Input
                 id="payment-reference"
                 value={paymentReference}
                 onChange={(e) => onPaymentReferenceChange(e.target.value)}
-                placeholder="Numero de transaccion o comprobante"
+                placeholder="Número de transacción o comprobante"
+                aria-describedby="payment-reference-help"
+                className="break-words"
               />
+              <p id="payment-reference-help" className="text-xs text-muted-foreground">
+                Use la referencia real del comprobante cuando aplique.
+              </p>
             </div>
           ) : null}
+        </section>
 
-          <div className="flex items-start gap-3 rounded-md border border-border bg-muted/30 px-3 py-2.5 text-sm">
-            <Checkbox
-              id="preview-before-print"
-              checked={previewBeforePrint}
-              onCheckedChange={(checked) => onPreviewBeforePrintChange?.(checked === true)}
-              className="mt-0.5"
-            />
-            <Label htmlFor="preview-before-print" className="grid gap-0.5 leading-none cursor-pointer select-none">
-              <span className="font-medium text-foreground">
-                Ver preview antes de imprimir
-              </span>
-              <span className="text-xs text-muted-foreground mt-0.5 font-normal">
-                Desactivado: al confirmar cobro se registra el pago y se abre impresión directa.
-              </span>
-            </Label>
-          </div>
-
-          <p className="text-xs text-muted-foreground">
-            Cancelar la ventana de impresión no revierte el pago. Si necesita corregir una factura pagada, use el flujo de anulación autorizado.
-          </p>
+        <div className="flex items-start gap-3 rounded-md border border-border bg-muted/30 px-3 py-2.5 text-sm">
+          <Checkbox
+            id="preview-before-print"
+            checked={previewBeforePrint}
+            onCheckedChange={(checked) => onPreviewBeforePrintChange?.(checked === true)}
+            className="mt-0.5"
+          />
+          <Label htmlFor="preview-before-print" className="grid cursor-pointer select-none gap-0.5 leading-none">
+            <span className="font-medium text-foreground">
+              Ver preview antes de imprimir
+            </span>
+            <span className="mt-0.5 text-xs font-normal text-muted-foreground">
+              Desactivado: al confirmar cobro se registra el pago y se abre impresión directa.
+            </span>
+          </Label>
         </div>
 
-        <div className="flex gap-3 pt-2">
-          <Button type="button" variant="secondary" className="flex-1" onClick={() => onOpenChange(false)} disabled={submitting}>
+        <p className="text-xs text-muted-foreground">
+          Cancelar la ventana de impresión no revierte el pago. Si necesita corregir una factura pagada, use el flujo de anulación autorizado.
+        </p>
+
+        <div className="flex flex-col-reverse gap-3 border-t border-border pt-4 sm:flex-row sm:justify-end">
+          <Button type="button" variant="secondary" className="sm:min-w-36" onClick={requestClose} disabled={submitting}>
             Dejar pendiente
           </Button>
           <Button
             type="submit"
-            className="flex-1"
+            className="sm:min-w-56"
             disabled={submitting || exceedsPending || needsAmount}
             aria-label={previewBeforePrint ? 'Confirmar cobro y ver preview' : 'Confirmar cobro e imprimir'}
           >
