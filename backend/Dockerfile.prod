@@ -71,7 +71,7 @@ COPY --from=composer-builder /app/vendor/ ./vendor/
 COPY --from=frontend-builder /app/dist/ /var/www/frontend/dist/
 
 # Create public assets directories for Laravel
-RUN mkdir -p storage/framework/views storage/framework/cache storage/framework/sessions bootstrap/cache \
+RUN mkdir -p storage/framework/views storage/framework/cache storage/framework/sessions storage/logs bootstrap/cache \
     && rm -f bootstrap/cache/*.php
 
 # Adjust directory permissions so php-fpm (www-data) can write to storage & bootstrap
