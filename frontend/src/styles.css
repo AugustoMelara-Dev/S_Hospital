@@ -8,7 +8,7 @@
   --color-foreground: #0f172a;
   --color-primary: #0f172a;
   --color-primary-foreground: #ffffff;
-  --color-secondary: #0d9488;
+  --color-secondary: #0f766e;
   --color-secondary-foreground: #ffffff;
   --color-muted: #f1f5f9;
   --color-muted-foreground: #475569;
@@ -24,7 +24,7 @@
   --color-input: #cbd5e1;
 
   /* Interaction */
-  --color-ring: #0d9488;
+  --color-ring: #0f766e;
 
   /* State */
   --color-destructive: #b91c1c;
@@ -39,12 +39,12 @@
   /* Navigation */
   --color-sidebar: #ffffff;
   --color-sidebar-foreground: #0f172a;
-  --color-sidebar-primary: #0d9488;
+  --color-sidebar-primary: #0f766e;
   --color-sidebar-primary-foreground: #ffffff;
   --color-sidebar-accent: #f1f5f9;
   --color-sidebar-accent-foreground: #0f172a;
   --color-sidebar-border: #e2e8f0;
-  --color-sidebar-ring: #0d9488;
+  --color-sidebar-ring: #0f766e;
 
   /* Typography */
   --font-sans: "Geist", "Aptos", "Segoe UI Variable", "Segoe UI", ui-sans-serif, system-ui, sans-serif;

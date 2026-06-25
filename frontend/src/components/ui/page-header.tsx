@@ -28,7 +28,7 @@ export function PageHeader({
       {topContent ? <div data-slot="page-header-top">{topContent}</div> : null}
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div data-slot="page-header-main" className="flex min-w-0 flex-col gap-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-secondary">Operacion local</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-foreground">Operacion local</p>
           <HeadingTag data-slot="page-header-title" className="text-2xl font-semibold leading-tight text-foreground md:text-3xl">
             {title}
           </HeadingTag>

@@ -52,8 +52,8 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, exporting =
       <h2 className="text-xl font-semibold tracking-tight">Resumen del día</h2>
       <Card>
         <CardContent className="pt-6">
-          <form onSubmit={onSubmit} className="flex items-end gap-4">
-            <div className="w-[200px]">
+          <form onSubmit={onSubmit} className="grid gap-3 sm:grid-cols-[minmax(0,200px)_auto] sm:items-end">
+            <div className="w-full">
               <Label htmlFor="daily-date">Fecha</Label>
               <Input
                 id="daily-date"
@@ -62,7 +62,7 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, exporting =
                 onChange={(e) => onDateChange(e.target.value)}
               />
             </div>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" className="w-full sm:w-auto" disabled={loading}>
               {loading ? 'Consultando...' : 'Actualizar'}
             </Button>
           </form>
@@ -195,15 +195,20 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, exporting =
                 <CardTitle>Gráfico por método</CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={200} minWidth={1} minHeight={1}>
-                  <BarChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="method" tickLine={false} />
-                    <YAxis tickLine={false} width={64} />
-                    <Tooltip formatter={(value) => [formatLempirasUI(value as number), 'Monto']} />
-                    <Bar dataKey="amount" fill="var(--color-primary)" radius={[6, 6, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+                <div
+                  role="img"
+                  aria-label="Grafico de montos por metodo de pago; la tabla anterior contiene los valores exactos."
+                >
+                  <ResponsiveContainer width="100%" height={200} minWidth={1} minHeight={1}>
+                    <BarChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="method" tickLine={false} />
+                      <YAxis tickLine={false} width={64} />
+                      <Tooltip formatter={(value) => [formatLempirasUI(value as number), 'Monto']} />
+                      <Bar dataKey="amount" fill="var(--color-primary)" radius={[6, 6, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </CardContent>
             </Card>
           )}

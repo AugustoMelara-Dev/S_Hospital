@@ -10,10 +10,10 @@ type PaymentMethodPanelProps = {
 };
 
 const METHOD_COLORS: Record<string, string> = {
-  cash: '#047857',
-  transfer: '#0369a1',
-  card: '#0d9488',
-  other: '#b45309',
+  cash: 'var(--color-success)',
+  transfer: 'var(--color-info)',
+  card: 'var(--color-secondary)',
+  other: 'var(--color-warning)',
 };
 
 type TooltipPayloadEntry = { name?: string; value?: number };
@@ -50,7 +50,12 @@ export function PaymentMethodPanel({ report }: PaymentMethodPanelProps) {
       </CardHeader>
       <CardContent>
         <div className="grid gap-4 lg:grid-cols-[14rem_minmax(0,1fr)]">
-          <div ref={ref} className="h-48 w-full min-w-px">
+          <div
+            ref={ref}
+            className="h-48 w-full min-w-px"
+            role="img"
+            aria-label="Grafico de distribucion por metodo de pago; la tabla contigua contiene los valores exactos."
+          >
             {width > 0 ? (
               <PieChart width={width} height={192}>
                 <Tooltip content={<PieTooltip />} />
@@ -61,13 +66,13 @@ export function PaymentMethodPanel({ report }: PaymentMethodPanelProps) {
                   paddingAngle={1}
                   dataKey="value"
                   isAnimationActive={false}
-                  stroke="#ffffff"
+                  stroke="var(--color-card)"
                   strokeWidth={2}
                 >
                   {data.map((entry) => (
                     <Cell
                       key={entry.key}
-                      fill={METHOD_COLORS[entry.key] ?? '#475569'}
+                      fill={METHOD_COLORS[entry.key] ?? 'var(--color-muted-foreground)'}
                     />
                   ))}
                 </Pie>
@@ -90,7 +95,7 @@ export function PaymentMethodPanel({ report }: PaymentMethodPanelProps) {
                     <span className="flex items-center gap-2">
                       <span
                         className="inline-block size-2 rounded-sm"
-                        style={{ background: METHOD_COLORS[method.method] ?? '#475569' }}
+                        style={{ background: METHOD_COLORS[method.method] ?? 'var(--color-muted-foreground)' }}
                         aria-hidden="true"
                       />
                       {method.label}

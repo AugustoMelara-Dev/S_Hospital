@@ -39,8 +39,8 @@ export function CashSessionReportTab({
     <div className="space-y-6">
       <Card>
         <CardContent className="pt-6">
-          <form onSubmit={onSubmit} className="flex items-end gap-4">
-            <div className="w-[200px]">
+          <form onSubmit={onSubmit} className="grid gap-3 sm:grid-cols-[minmax(0,200px)_auto] sm:items-end">
+            <div className="w-full">
               <Label htmlFor="cash-session-id">Número de Caja</Label>
               <Input
                 id="cash-session-id"
@@ -52,7 +52,7 @@ export function CashSessionReportTab({
                 onChange={(e) => onCashReportIdChange(e.target.value)}
               />
             </div>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" className="w-full sm:w-auto" disabled={loading}>
               {loading ? 'Consultando...' : 'Ver caja'}
             </Button>
           </form>

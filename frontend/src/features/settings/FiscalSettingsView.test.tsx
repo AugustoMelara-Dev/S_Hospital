@@ -150,7 +150,48 @@ describe('FiscalSettingsView', () => {
         government_line: 'Gobierno de Honduras',
         secretariat_line: 'Secretaria de Salud Publica',
         receipt_location: 'Tocoa, Colon',
-        receipt_footer_text: '',
+        receipt_footer_text: null,
+        default_tax_rate: '15.00',
+      });
+    });
+  });
+
+  it('does not invent government, secretariat or receipt location when config is missing', async () => {
+    const updateFiscalSettings = vi.mocked(apiClient.updateFiscalSettings);
+    vi.mocked(apiClient.getFiscalSettings).mockResolvedValue({
+      ...fiscalSettings,
+      government_line: null,
+      secretariat_line: null,
+      receipt_location: null,
+      receipt_footer_text: null,
+    });
+
+    render(<FiscalSettingsView canEdit onStatus={vi.fn()} />);
+
+    await activateTab(/^hospital$/i);
+
+    expect(await screen.findByLabelText(/encabezado de gobierno/i)).toHaveValue('');
+    expect(screen.getByLabelText(/secretar/i)).toHaveValue('');
+    expect(screen.getByLabelText(/lugar del recibo/i)).toHaveValue('');
+    expect(screen.getByLabelText(/texto al pie/i)).toHaveValue('');
+
+    fireEvent.click(screen.getByRole('button', { name: /guardar hospital y recibo/i }));
+
+    await waitFor(() => {
+      expect(updateFiscalSettings).toHaveBeenCalledWith({
+        hospital_name: 'Hospital San Isidro',
+        rtn: '08011999000001',
+        primary_color: 'teal',
+        address: 'Tocoa, Colon',
+        slogan: 'Servicio publico',
+        scanner_enabled: true,
+        partial_payments_enabled: false,
+        receipt_template_mode: 'institutional',
+        receipt_paper_size: 'half_letter',
+        government_line: null,
+        secretariat_line: null,
+        receipt_location: null,
+        receipt_footer_text: null,
         default_tax_rate: '15.00',
       });
     });

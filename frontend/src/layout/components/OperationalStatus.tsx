@@ -30,7 +30,7 @@ export function OperationalStatus({
         className={cn(
           'flex size-9 items-center justify-center rounded-md border text-xs font-semibold sm:w-auto sm:px-2.5 sm:py-1.5',
           isOnline
-            ? 'border-secondary/40 bg-secondary/10 text-secondary'
+            ? 'border-secondary/40 bg-secondary/10 text-foreground'
             : 'border-destructive/40 bg-destructive/10 text-destructive',
         )}
         title={lanStatusTitle}

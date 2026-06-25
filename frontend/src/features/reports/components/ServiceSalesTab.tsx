@@ -42,8 +42,8 @@ export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, servi
     <div className="space-y-6">
       <Card>
         <CardContent className="pt-6">
-          <form onSubmit={(e) => { e.preventDefault(); onSubmit(); }} className="flex items-end gap-4">
-            <div>
+          <form onSubmit={(e) => { e.preventDefault(); onSubmit(); }} className="grid gap-3 sm:grid-cols-[minmax(0,200px)_minmax(0,200px)_auto] sm:items-end">
+            <div className="w-full">
               <Label htmlFor="service-date-from">Desde</Label>
               <Input
                 id="service-date-from"
@@ -52,7 +52,7 @@ export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, servi
                 onChange={(e) => onDateFromChange(e.target.value)}
               />
             </div>
-            <div>
+            <div className="w-full">
               <Label htmlFor="service-date-to">Hasta</Label>
               <Input
                 id="service-date-to"
@@ -61,7 +61,7 @@ export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, servi
                 onChange={(e) => onDateToChange(e.target.value)}
               />
             </div>
-            <Button type="submit">Actualizar</Button>
+            <Button type="submit" className="w-full sm:w-auto">Actualizar</Button>
           </form>
         </CardContent>
       </Card>
@@ -170,15 +170,20 @@ export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, servi
                 <CardTitle>Top 10 Servicios por {serviceAmountLabel}</CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={260} minWidth={1} minHeight={1}>
-                  <BarChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="service" tickLine={false} interval={0} height={70} angle={-20} textAnchor="end" />
-                    <YAxis tickLine={false} width={64} />
-                    <Tooltip formatter={(value) => [moneyLabel(value as number), serviceAmountLabel]} />
-                    <Bar dataKey="total" fill="var(--color-primary)" radius={[6, 6, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+                <div
+                  role="img"
+                  aria-label={`Grafico de top servicios por ${serviceAmountLabel}; la tabla anterior contiene los valores exactos.`}
+                >
+                  <ResponsiveContainer width="100%" height={260} minWidth={1} minHeight={1}>
+                    <BarChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="service" tickLine={false} interval={0} height={70} angle={-20} textAnchor="end" />
+                      <YAxis tickLine={false} width={64} />
+                      <Tooltip formatter={(value) => [moneyLabel(value as number), serviceAmountLabel]} />
+                      <Bar dataKey="total" fill="var(--color-primary)" radius={[6, 6, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </CardContent>
             </Card>
           )}

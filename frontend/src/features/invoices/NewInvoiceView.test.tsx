@@ -20,6 +20,9 @@ vi.mock('../../lib/download', () => ({
 }));
 
 describe('NewInvoiceView', () => {
+  const submitButtons = (name: RegExp = /emitir y cobrar/i) => screen.getAllByRole('button', { name });
+  const primarySubmitButton = (name: RegExp = /emitir y cobrar/i) => submitButtons(name)[0];
+
   beforeEach(() => {
     vi.restoreAllMocks();
     resetRequestChain();
@@ -391,12 +394,12 @@ describe('NewInvoiceView', () => {
     });
     expect(await screen.findByRole('button', { name: /eritropoyetina/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /eritropoyetina/i }));
-    expect(screen.getByRole('button', { name: /emitir y cobrar/i })).toBeDisabled();
+    expect(submitButtons().every((button) => button.hasAttribute('disabled'))).toBe(true);
     expect((await screen.findAllByText(/debe abrir la caja antes de emitir facturas/i)).length).toBeGreaterThan(0);
     fireEvent.change(screen.getByLabelText(/nombre del paciente/i), {
       target: { value: 'Maria Lopez' },
     });
-    expect(screen.getByRole('button', { name: /emitir y cobrar/i })).toBeDisabled();
+    expect(submitButtons().every((button) => button.hasAttribute('disabled'))).toBe(true);
     expect(screen.queryByRole('button', { name: /abrir caja/i })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /ir a caja/i })).toHaveAttribute('href', '/cashbox');
     expect(screen.getByText(/solicite apertura a un usuario autorizado/i)).toBeInTheDocument();
@@ -587,9 +590,9 @@ describe('NewInvoiceView', () => {
       target: { value: 'glucosa' },
     });
     fireEvent.click(await screen.findByRole('button', { name: /glucosa/i }));
-    await waitFor(() => expect(screen.getByRole('button', { name: /emitir y cobrar/i })).toBeEnabled());
+    await waitFor(() => expect(primarySubmitButton()).toBeEnabled());
     await waitFor(() => expect(screen.getAllByText(/L 17\.25/i).length).toBeGreaterThan(0));
-    fireEvent.click(screen.getByRole('button', { name: /emitir y cobrar/i }));
+    fireEvent.click(primarySubmitButton());
     expect(await screen.findByRole('button', { name: /emitir y abrir cobro/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /emitir y abrir cobro/i }));
     expect(await screen.findByRole('heading', { name: /registrar pago/i })).toBeInTheDocument();
@@ -1646,7 +1649,7 @@ describe('NewInvoiceView', () => {
 
       // Fill required fields to submit
       fireEvent.change(screen.getByLabelText(/nombre del paciente/i), { target: { value: 'Juan Perez' } });
-      fireEvent.click(screen.getByRole('button', { name: /emitir/i }));
+      fireEvent.click(primarySubmitButton(/emitir/i));
       fireEvent.click(screen.getByRole('button', { name: /confirmar emisión/i }));
 
       await waitFor(() => {
@@ -1733,7 +1736,7 @@ describe('NewInvoiceView', () => {
 
       // Submit
       fireEvent.change(screen.getByLabelText(/nombre del paciente/i), { target: { value: 'Juan Perez' } });
-      fireEvent.click(screen.getByRole('button', { name: /emitir/i }));
+      fireEvent.click(primarySubmitButton(/emitir/i));
       fireEvent.click(screen.getByRole('button', { name: /emitir y abrir cobro/i }));
 
       await waitFor(() => {

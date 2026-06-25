@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { InvoiceConfirmation } from './InvoiceConfirmation';
 
@@ -39,5 +39,34 @@ describe('InvoiceConfirmation', () => {
     fireEvent.keyDown(screen.getByRole('button', { name: /emitir y abrir cobro/i }), { key: 'Enter' });
 
     expect(onConfirm).not.toHaveBeenCalled();
+  });
+
+  it('keeps long patient and service names readable in narrow dialogs', () => {
+    const longPatientName = 'Paciente con nombre extremadamente largo para validar que la confirmacion no se desborde en caja';
+    const longService = {
+      ...service,
+      name: 'Consulta especializada de nefrologia con medicamento y descripcion administrativa muy extensa',
+    };
+
+    render(
+      <InvoiceConfirmation
+        open
+        onOpenChange={vi.fn()}
+        patientName={longPatientName}
+        items={[{ service: longService, quantity: '12.00', dialysisPrescription: false }]}
+        preview={{ subtotal: '207.00', tax: '31.05', total: '238.05' }}
+        taxRate="15"
+        cashSessionId={7}
+        onConfirm={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText(longPatientName)).toHaveClass('min-w-0', 'break-words', 'text-right');
+
+    const servicesList = screen.getByRole('list', { name: /servicios por confirmar/i });
+    expect(within(servicesList).getByText(/consulta especializada de nefrologia/i)).toHaveClass('min-w-0', 'break-words');
+    expect(within(servicesList).getByText(/L 17\.25/i)).toHaveClass('shrink-0', 'whitespace-nowrap', 'tabular-nums');
+    expect(screen.getByText(/L 238\.05/i)).toHaveClass('shrink-0', 'whitespace-nowrap', 'tabular-nums');
+    expect(screen.getByRole('button', { name: /emitir y abrir cobro/i })).toHaveClass('w-full', 'sm:flex-1');
   });
 });

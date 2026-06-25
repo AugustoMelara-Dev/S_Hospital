@@ -22,7 +22,7 @@ export function ServiceStatusSummary({
           : 'Cajero puede consultar catálogo y precios, sin permisos para modificar servicios.'
       }
       topContent={
-        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-secondary">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-foreground">
           Catálogo operativo
         </p>
       }

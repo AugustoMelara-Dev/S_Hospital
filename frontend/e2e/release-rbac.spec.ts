@@ -40,7 +40,7 @@ test('administrator creates exact catalog-only user and navigation enforces modu
   await page.getByRole('button', { name: /^crear usuario$/i }).click();
   await expect(page.getByRole('status').filter({ hasText: /usuario catalogo e2e exacto creado correctamente/i }).first()).toBeVisible();
   await expect(page.getByRole('dialog', { name: /crear usuario/i })).toBeHidden();
-  await expect(page.getByRole('row', { name: /catalogo e2e exacto/i })).toBeVisible();
+  await expect(page.getByRole('row', { name: new RegExp(username, 'i') })).toBeVisible();
 
   const createdPayload = await fetchJsonFromPage<{ data: { username: string; direct_permissions: string[]; permissions: string[] }[] }>(
     page,

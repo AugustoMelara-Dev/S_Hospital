@@ -3684,3 +3684,33 @@ Decision: `production_readiness_preflight.ps1` agrega `Test-ProofMatchesBaseUrl`
 Motivo: una prueba real contra una IP anterior no prueba el servidor final actual. Produccion local puede cambiar por DHCP o refresh LAN; por eso la evidencia final debe estar ligada a la URL vigente.
 
 Validacion: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\test_backup_task_envfile_hardening.ps1`, `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 -BaseUrl http://192.168.1.2:8081 -EnvFile C:\tmp\s_hospital_offlinetest.env -ComposeProjectName shospital_offlinetest`, `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\validate_installer_safety.ps1 -Root C:\Projects\S_Hospital`, `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\assert_offline_release_clean.ps1` y `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps1 -BaseUrl http://192.168.1.2:8081 -EnvFile C:\tmp\s_hospital_offlinetest.env -ComposeProjectName shospital_offlinetest`.
+
+# 2026-06-25 - Lineas institucionales opcionales no se inventan en configuracion fiscal
+
+Contexto: la auditoria V1.1 encontro que la pantalla de configuracion fiscal rellenaba valores por defecto para encabezado de gobierno, dependencia y lugar del recibo cuando el backend devolvia `null`. Eso podia guardar o mostrar datos institucionales no confirmados.
+
+Decision: los campos opcionales `government_line`, `secretariat_line`, `receipt_location` y `receipt_footer_text` se cargan vacios cuando no existen en base de datos y se envian como `null` si el usuario los deja en blanco. La direccion del hospital no se usa como sustituto automatico del lugar del recibo.
+
+Motivo: el recibo institucional debe usar solo datos reales configurados por el hospital. Si una linea oficial falta, el sistema debe tratarla como pendiente o vacia, no completar texto legal por conveniencia.
+
+Validacion: `npm.cmd run test -- FiscalSettingsView.test.tsx --run`.
+
+# 2026-06-25 - Release E2E separa artefactos Playwright de logs vivos
+
+Contexto: el E2E de release corre Vite y Laravel durante la prueba y guarda logs de esos servicios bajo `frontend\test-results\release-e2e`. En Windows, Playwright intenta limpiar su `outputDir` antes de ejecutar tests; si el `outputDir` coincide con `frontend\test-results`, los logs abiertos por los servicios bloquean la limpieza.
+
+Decision: `frontend\playwright.release.config.ts` define `outputDir: 'test-results/release-e2e-artifacts'`, dejando los logs vivos de servicios fuera del directorio que Playwright borra al iniciar. El spec RBAC tambien verifica la fila del usuario creado por username unico, no por nombre fijo, para tolerar corridas repetidas contra una base de pruebas no productiva.
+
+Motivo: mantener el release E2E repetible en Windows/Docker sin procesos colgados ni falsos fallos por datos creados en corridas anteriores.
+
+Validacion: Docker-backed release E2E contra Laravel en `127.0.0.1:18081` y Vite en `127.0.0.1:5174`: 2 specs passed, 0 skipped, 0 unexpected, 0 flaky.
+
+# 2026-06-25 - Revision independiente V1.1 exige matriz a11y completa
+
+Contexto: el handoff V1.1 dejaba la cobertura full axe/security como recomendacion final. Para aprobar merge interno sin declarar produccion fisica, la rama de revision necesitaba convertir esa recomendacion en evidencia ejecutable.
+
+Decision: agregar `frontend/e2e/v1-1-full-a11y.spec.ts` con la matriz de rutas activas, 6 viewports, axe critical/serious en cero, control de `h1`, nombres accesibles, labels, foco visible, overflow global, modo oscuro y cancelacion de dialogos peligrosos. Los ajustes visuales de contraste y encabezados se limitaron a estados globales, login, sidebar, permisos, 404 y pequenos acentos de UI; no cambian calculos, permisos backend, payloads ni numeracion fiscal.
+
+Motivo: internal merge debe basarse en una auditoria repetible, no solo en inspeccion visual o smoke parcial.
+
+Validacion: `npx playwright test e2e/v1-1-full-a11y.spec.ts`, `npm run smoke:buttons`, `npm run typecheck`, `npm run lint`, `npm run test`, `npm run build` y `npm run test:e2e`.

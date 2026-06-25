@@ -123,11 +123,25 @@ describe('InstitutionalReceiptSettingsView', () => {
     expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
     activateTab('Papel y copias');
 
-    expect(await screen.findByRole('button', { name: /Recibo pequeno personalizado/ })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Media carta horizontal/ })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /Recibo pequeño personalizado/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Media carta horizontal/ })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: /A5 horizontal/ })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Carta horizontal/ })).toBeInTheDocument();
     expect(screen.getAllByText('Solo original').length).toBeGreaterThan(0);
+    expect(screen.getByText(/perfiles institucionales fijos usan medidas sembradas/i)).toBeInTheDocument();
+    expect(screen.getByText(/Global no requiere ID/i)).toBeInTheDocument();
+    expect(screen.getByText(/No hay asignaciones específicas/i)).toBeInTheDocument();
+  });
+
+  it('explains sensitive receipt numbering before saving a series', async () => {
+    renderView();
+
+    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
+    activateTab('Serie');
+
+    expect(screen.getByText(/correlativo sensible/i)).toBeInTheDocument();
+    expect(screen.getByText(/solo con autorización documentada/i)).toBeInTheDocument();
+    expect(screen.getByText(/próximo recibo usará este valor \+ 1/i)).toBeInTheDocument();
   });
 
   it('generates a test print without leaving the settings screen', async () => {

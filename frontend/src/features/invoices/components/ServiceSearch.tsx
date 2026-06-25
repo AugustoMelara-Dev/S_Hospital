@@ -369,7 +369,7 @@ function CategoryButton({
       className={cn(
         'min-h-10 rounded-md border px-3 py-2 text-left text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         active
-          ? 'border-secondary bg-secondary text-secondary-foreground shadow-sm'
+          ? 'border-secondary bg-accent text-foreground shadow-sm'
           : 'border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground',
       )}
       onClick={onClick}

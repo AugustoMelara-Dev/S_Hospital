@@ -17,12 +17,13 @@ type TrendChartProps = {
 };
 
 const CHART_COLORS = {
-  billed: '#0f172a',
-  collected: '#0d9488',
-  pending: '#b45309',
-  voided: '#b91c1c',
-  axis: '#94a3b8',
-  grid: '#e2e8f0',
+  billed: 'var(--color-foreground)',
+  collected: 'var(--color-secondary)',
+  pending: 'var(--color-warning)',
+  voided: 'var(--color-destructive)',
+  axis: 'var(--color-muted-foreground)',
+  grid: 'var(--color-border)',
+  cursor: 'var(--color-border)',
 };
 
 function formatDay(date: string): string {
@@ -108,7 +109,12 @@ export function TrendChart({ report }: TrendChartProps) {
             </tbody>
           </table>
         </div>
-        <div ref={ref} className="h-72 w-full min-w-px" aria-hidden="true">
+        <div
+          ref={ref}
+          className="h-72 w-full min-w-px"
+          role="img"
+          aria-label="Grafico de tendencia diaria; la tabla oculta para lectores de pantalla contiene los valores exactos."
+        >
           {width > 0 ? (
             <AreaChart width={width} height={288} data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
               <defs>
@@ -135,7 +141,7 @@ export function TrendChart({ report }: TrendChartProps) {
                 axisLine={false}
                 width={50}
               />
-              <Tooltip content={<TrendTooltip />} cursor={{ stroke: '#cbd5e1', strokeWidth: 1 }} />
+              <Tooltip content={<TrendTooltip />} cursor={{ stroke: CHART_COLORS.cursor, strokeWidth: 1 }} />
               <Legend
                 iconType="square"
                 wrapperStyle={{ fontSize: 12, paddingTop: 4 }}

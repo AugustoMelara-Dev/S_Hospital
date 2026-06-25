@@ -66,7 +66,7 @@ export function ReceiptSettingsPreview({
 
           <div className="mt-4 grid grid-cols-[1.2fr_0.8fr] gap-4 border-y border-neutral-300 py-2 text-sm">
             <div>
-              <span className="font-semibold">Recibo No.</span>{' '}
+              <span className="font-semibold">Próximo estimado</span>{' '}
               <span className="text-lg font-bold" style={{ color: receiptColor }}>
                 {nextReceiptNumber(series)}
               </span>
@@ -113,7 +113,7 @@ export function ReceiptSettingsPreview({
               {profile?.show_physical_seal_space !== false ? (
                 <div className="mx-auto mb-1 h-12 w-3/4 border border-black" />
               ) : null}
-              <div className="border-t border-black pt-1">Sello y firma autorizada</div>
+              <div className="border-t border-black pt-1">Espacio para sello/firma</div>
             </div>
           </div>
 

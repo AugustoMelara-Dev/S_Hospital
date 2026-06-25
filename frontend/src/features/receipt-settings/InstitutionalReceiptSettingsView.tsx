@@ -46,17 +46,34 @@ const REQUIRED_PROFILE_CODES = [
 ] as const;
 
 const PAPER_LABELS: Record<ReceiptPrintProfile['code'], string> = {
-  recibo_pequeno_personalizado: 'Recibo pequeno personalizado',
+  recibo_pequeno_personalizado: 'Recibo pequeño personalizado',
   media_carta_horizontal: 'Media carta horizontal',
   a5_horizontal: 'A5 horizontal',
   carta_horizontal: 'Carta horizontal',
-  thermal_80mm: 'Termico 80 mm',
-  thermal_58mm: 'Termico 58 mm',
+  thermal_80mm: 'Térmico 80 mm',
+  thermal_58mm: 'Térmico 58 mm',
 };
 
 function asMoney(value: string | number): string {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed.toFixed(2) : '0.00';
+}
+
+function assignmentScopeLabel(scope: ReceiptProfileAssignment['scope_type']): string {
+  if (scope === 'global') return 'Global';
+  if (scope === 'user') return 'Usuario/cajero';
+  return 'Sesión de caja';
+}
+
+function assignmentLabel(assignment: ReceiptProfileAssignment): string {
+  const profileCode = assignment.print_profile?.code;
+  const profileLabel = profileCode ? PAPER_LABELS[profileCode] : `Perfil #${assignment.receipt_print_profile_id}`;
+
+  if (assignment.scope_type === 'global') {
+    return `${assignmentScopeLabel(assignment.scope_type)} - ${profileLabel}`;
+  }
+
+  return `${assignmentScopeLabel(assignment.scope_type)} #${assignment.scope_id ?? '-'} - ${profileLabel}`;
 }
 
 function profileDefaults(profile: ReceiptPrintProfile | null): ReceiptProfileForm {
@@ -258,7 +275,7 @@ export function InstitutionalReceiptSettingsView({ canEdit, onStatus }: Institut
       <>
         <PageHeader
           title="Recibos institucionales"
-          description="Configuracion del recibo clasico, serie, papel y copias para impresora normal."
+          description="Configuración del recibo clásico, serie, papel y copias para impresora normal."
         />
         <Alert variant="destructive" title="No se pudieron cargar los ajustes de recibos">
           {userSafeErrorMessage(settingsQuery.error, 'Revise el servidor local y vuelva a intentar.')}
@@ -297,7 +314,7 @@ export function InstitutionalReceiptSettingsView({ canEdit, onStatus }: Institut
     <>
       <PageHeader
         title="Recibos institucionales"
-        description="Configuracion del recibo clasico, serie, papel y copias para impresora normal."
+        description="Configuración del recibo clásico, serie, papel y copias para impresora normal."
       />
 
       {!canEdit ? (
@@ -315,7 +332,7 @@ export function InstitutionalReceiptSettingsView({ canEdit, onStatus }: Institut
       <Tabs defaultValue="institucion" className="space-y-6">
         <div className="overflow-x-auto pb-1">
           <TabsList className="min-w-max bg-muted/50">
-            <TabsTrigger value="institucion">Institucion</TabsTrigger>
+            <TabsTrigger value="institucion">Institución</TabsTrigger>
             <TabsTrigger value="serie">Serie</TabsTrigger>
             <TabsTrigger value="papel">Papel y copias</TabsTrigger>
             <TabsTrigger value="vista">Vista previa</TabsTrigger>
@@ -329,7 +346,7 @@ export function InstitutionalReceiptSettingsView({ canEdit, onStatus }: Institut
                 <FileText className="size-5" data-icon aria-hidden="true" />
                 Datos del recibo
               </CardTitle>
-              <CardDescription>Encabezado, ubicacion y leyenda configurable del documento institucional.</CardDescription>
+              <CardDescription>Encabezado, ubicación y leyenda configurable del documento institucional.</CardDescription>
             </CardHeader>
             <CardContent>
               <form className="space-y-4" onSubmit={institutionForm.handleSubmit((data) => institutionMutation.mutate(data))}>
@@ -340,16 +357,28 @@ export function InstitutionalReceiptSettingsView({ canEdit, onStatus }: Institut
                   <Field label="RTN si aplica" id="rtn">
                     <Input id="rtn" disabled={!canEdit} {...institutionForm.register('rtn')} />
                   </Field>
-                  <Field label="Dependencia superior" id="government_line">
+                  <Field
+                    label="Dependencia superior"
+                    id="government_line"
+                    hint="Déjelo en blanco si no existe un encabezado oficial configurado."
+                  >
                     <Input id="government_line" disabled={!canEdit} {...institutionForm.register('government_line')} />
                   </Field>
-                  <Field label="Secretaria o unidad" id="secretariat_line">
+                  <Field
+                    label="Secretaría o unidad"
+                    id="secretariat_line"
+                    hint="Use solo el texto autorizado por administración."
+                  >
                     <Input id="secretariat_line" disabled={!canEdit} {...institutionForm.register('secretariat_line')} />
                   </Field>
-                  <Field label="Ciudad o lugar" id="receipt_location">
+                  <Field
+                    label="Ciudad o lugar"
+                    id="receipt_location"
+                    hint="No se completa automáticamente desde la dirección; configure el lugar real del recibo."
+                  >
                     <Input id="receipt_location" disabled={!canEdit} {...institutionForm.register('receipt_location')} />
                   </Field>
-                  <Field label="Direccion o referencia" id="address">
+                  <Field label="Dirección o referencia" id="address">
                     <Input id="address" disabled={!canEdit} {...institutionForm.register('address')} />
                   </Field>
                 </div>
@@ -375,6 +404,9 @@ export function InstitutionalReceiptSettingsView({ canEdit, onStatus }: Institut
             </CardHeader>
             <CardContent>
               <form className="space-y-4" onSubmit={seriesForm.handleSubmit((data) => seriesMutation.mutate(data))}>
+                <Alert variant="warning" title="Correlativo sensible">
+                  Cambie el correlativo actual solo con autorización documentada. No lo use para corregir recibos ya emitidos; anule o reimprima con auditoría.
+                </Alert>
                 <div className="grid gap-4 md:grid-cols-3">
                   <Field label="Serie" id="series" error={seriesForm.formState.errors.series?.message}>
                     <Input id="series" disabled={!canEdit} {...seriesForm.register('series')} />
@@ -385,16 +417,21 @@ export function InstitutionalReceiptSettingsView({ canEdit, onStatus }: Institut
                   <Field label="Formato" id="number_format">
                     <Input id="number_format" disabled={!canEdit} {...seriesForm.register('number_format')} />
                   </Field>
-                  <Field label="Numero inicial" id="min_number">
+                  <Field label="Número inicial" id="min_number">
                     <Input id="min_number" type="number" disabled={!canEdit} {...seriesForm.register('min_number', { valueAsNumber: true })} />
                   </Field>
-                  <Field label="Numero final" id="max_number" error={seriesForm.formState.errors.max_number?.message}>
+                  <Field label="Número final" id="max_number" error={seriesForm.formState.errors.max_number?.message}>
                     <Input id="max_number" type="number" disabled={!canEdit} {...seriesForm.register('max_number', { valueAsNumber: true })} />
                   </Field>
-                  <Field label="Correlativo actual" id="current_number" error={seriesForm.formState.errors.current_number?.message}>
+                  <Field
+                    label="Correlativo actual"
+                    id="current_number"
+                    error={seriesForm.formState.errors.current_number?.message}
+                    hint="El próximo recibo usará este valor + 1."
+                  >
                     <Input id="current_number" type="number" disabled={!canEdit} {...seriesForm.register('current_number', { valueAsNumber: true })} />
                   </Field>
-                  <Field label="Color del numero" id="receipt_number_color">
+                  <Field label="Color del número" id="receipt_number_color">
                     <Input id="receipt_number_color" type="color" disabled={!canEdit} {...seriesForm.register('receipt_number_color')} />
                   </Field>
                   <Field label="Rango autorizado" id="range_authorization">
@@ -436,6 +473,7 @@ export function InstitutionalReceiptSettingsView({ canEdit, onStatus }: Institut
                   <Button
                     key={profile.code}
                     type="button"
+                    aria-pressed={selectedProfileCode === profile.code}
                     variant={selectedProfileCode === profile.code ? 'secondary' : 'outline'}
                     className="w-full justify-between"
                     onClick={() => setSelectedProfileCode(profile.code)}
@@ -458,10 +496,22 @@ export function InstitutionalReceiptSettingsView({ canEdit, onStatus }: Institut
               <CardContent>
                 <form className="space-y-4" onSubmit={profileForm.handleSubmit((data) => profileMutation.mutate(data))}>
                   <div className="grid gap-4 md:grid-cols-4">
-                    <Field label="Ancho mm" id="width_mm">
+                    <Field
+                      label="Ancho mm"
+                      id="width_mm"
+                      hint={selectedProfile?.paper_kind === 'custom_mm'
+                        ? 'Editable para recibo personalizado.'
+                        : 'Los perfiles institucionales fijos usan medidas sembradas.'}
+                    >
                       <Input id="width_mm" type="number" step="0.01" disabled={!canEdit || selectedProfile?.paper_kind !== 'custom_mm'} {...profileForm.register('width_mm', { valueAsNumber: true })} />
                     </Field>
-                    <Field label="Alto mm" id="height_mm">
+                    <Field
+                      label="Alto mm"
+                      id="height_mm"
+                      hint={selectedProfile?.paper_kind === 'custom_mm'
+                        ? 'Editable para recibo personalizado.'
+                        : 'Solo el perfil personalizado permite cambiar esta medida.'}
+                    >
                       <Input id="height_mm" type="number" step="0.01" disabled={!canEdit || selectedProfile?.paper_kind !== 'custom_mm'} {...profileForm.register('height_mm', { valueAsNumber: true })} />
                     </Field>
                     <Field label="Fuente" id="font_family">
@@ -501,7 +551,7 @@ export function InstitutionalReceiptSettingsView({ canEdit, onStatus }: Institut
                     </Field>
                     {[
                       ['show_copy_legend', 'Leyenda de copias'],
-                      ['show_physical_seal_space', 'Espacio para sello fisico'],
+                      ['show_physical_seal_space', 'Espacio para sello físico'],
                       ['use_logo', 'Usar logo autorizado'],
                       ['active', 'Perfil activo'],
                       ['is_global_default', 'Predeterminado global'],
@@ -535,45 +585,70 @@ export function InstitutionalReceiptSettingsView({ canEdit, onStatus }: Institut
           <Card>
             <CardHeader>
               <CardTitle>Perfil por caja o usuario</CardTitle>
-              <CardDescription>Si no hay asignacion especifica, se usa el perfil global institucional.</CardDescription>
+              <CardDescription>Si no hay asignación específica, se usa el perfil global institucional.</CardDescription>
             </CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-[1fr_1fr_1fr_auto] md:items-end">
-              <Field label="Perfil" id="assignment_profile">
-                <Select value={assignmentProfileCode} onValueChange={(value) => setAssignmentProfileCode(value as ReceiptPrintProfile['code'])} disabled={!canEdit}>
-                  <SelectTrigger id="assignment_profile"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {settings?.print_profiles.filter((profile) => profile.active).map((profile) => (
-                      <SelectItem key={profile.code} value={profile.code}>{PAPER_LABELS[profile.code]}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-              <Field label="Alcance" id="assignment_scope">
-                <Select value={assignmentScope} onValueChange={(value) => setAssignmentScope(value as ReceiptProfileAssignment['scope_type'])} disabled={!canEdit}>
-                  <SelectTrigger id="assignment_scope"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="global">Global</SelectItem>
-                    <SelectItem value="user">Usuario/cajero</SelectItem>
-                    <SelectItem value="cash_session">Sesion de caja</SelectItem>
-                  </SelectContent>
-                </Select>
-              </Field>
-              <Field label="ID de alcance" id="assignment_scope_id">
-                <Input
+            <CardContent className="space-y-4">
+              <Alert variant="default" title="Asignación avanzada">
+                Use asignaciones por usuario o sesión solo cuando operaciones haya identificado el ID correcto. Para la mayoría de cajas, el perfil global es suficiente.
+              </Alert>
+              <div className="grid gap-4 md:grid-cols-[1fr_1fr_1fr_auto] md:items-end">
+                <Field label="Perfil" id="assignment_profile">
+                  <Select value={assignmentProfileCode} onValueChange={(value) => setAssignmentProfileCode(value as ReceiptPrintProfile['code'])} disabled={!canEdit}>
+                    <SelectTrigger id="assignment_profile"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {settings?.print_profiles.filter((profile) => profile.active).map((profile) => (
+                        <SelectItem key={profile.code} value={profile.code}>{PAPER_LABELS[profile.code]}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field label="Alcance" id="assignment_scope">
+                  <Select value={assignmentScope} onValueChange={(value) => setAssignmentScope(value as ReceiptProfileAssignment['scope_type'])} disabled={!canEdit}>
+                    <SelectTrigger id="assignment_scope"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="global">Global</SelectItem>
+                      <SelectItem value="user">Usuario/cajero</SelectItem>
+                      <SelectItem value="cash_session">Sesión de caja</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field
+                  label="ID de alcance"
                   id="assignment_scope_id"
-                  type="number"
-                  value={assignmentScope === 'global' ? '' : assignmentScopeId}
-                  onChange={(event) => setAssignmentScopeId(event.target.value)}
-                  disabled={!canEdit || assignmentScope === 'global'}
-                />
-              </Field>
-              <Button
-                type="button"
-                disabled={!canEdit || assignmentMutation.isPending || (assignmentScope !== 'global' && !assignmentScopeId)}
-                onClick={() => assignmentMutation.mutate()}
-              >
-                Guardar asignacion
-              </Button>
+                  hint={assignmentScope === 'global' ? 'Global no requiere ID.' : 'Use el ID confirmado por administración; no adivine este valor.'}
+                >
+                  <Input
+                    id="assignment_scope_id"
+                    type="number"
+                    value={assignmentScope === 'global' ? '' : assignmentScopeId}
+                    onChange={(event) => setAssignmentScopeId(event.target.value)}
+                    disabled={!canEdit || assignmentScope === 'global'}
+                  />
+                </Field>
+                <Button
+                  type="button"
+                  disabled={!canEdit || assignmentMutation.isPending || (assignmentScope !== 'global' && !assignmentScopeId)}
+                  onClick={() => assignmentMutation.mutate()}
+                >
+                  Guardar asignación
+                </Button>
+              </div>
+              {settings?.assignments.length ? (
+                <div className="rounded-md border border-border bg-muted/30 p-3">
+                  <p className="text-sm font-semibold text-foreground">Asignaciones activas</p>
+                  <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+                    {settings.assignments.map((assignment) => (
+                      <li key={assignment.id} className="break-words">
+                        {assignmentLabel(assignment)}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : (
+                <p className="rounded-md border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
+                  No hay asignaciones específicas. Se usará el perfil global activo.
+                </p>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -597,22 +672,25 @@ export function InstitutionalReceiptSettingsView({ canEdit, onStatus }: Institut
 function Field({
   children,
   error,
+  hint,
   id,
   label,
 }: {
   children: ReactNode;
   error?: string;
+  hint?: ReactNode;
   id: string;
   label: string;
 }) {
   const errorId = `${id}-error`;
+  const hintId = `${id}-hint`;
   let control = children;
 
   if (isValidElement(children)) {
     const child = children as ReactElement<Record<string, unknown>>;
     control = cloneElement(child, {
-      'aria-describedby': error
-        ? [child.props['aria-describedby'], errorId].filter(Boolean).join(' ')
+      'aria-describedby': error || hint
+        ? [child.props['aria-describedby'], hint ? hintId : null, error ? errorId : null].filter(Boolean).join(' ')
         : child.props['aria-describedby'],
       'aria-invalid': error ? true : child.props['aria-invalid'],
     });
@@ -622,6 +700,11 @@ function Field({
     <div className="space-y-2">
       <Label htmlFor={id}>{label}</Label>
       {control}
+      {hint ? (
+        <p id={hintId} className="text-xs leading-5 text-muted-foreground">
+          {hint}
+        </p>
+      ) : null}
       {error ? (
         <p id={errorId} role="alert" className="text-sm text-destructive">
           {error}
