@@ -87,7 +87,7 @@ Build result:
 - `tsc --noEmit` completed.
 - Vite production build completed.
 
-Backend command:
+Backend partial Docker evidence command:
 
 ```powershell
 cd C:\Projects\S_Hospital-v1-1-polish
@@ -97,13 +97,14 @@ docker compose build backend
 docker run --rm -v ${PWD}:/workspace -v s_hospital-v1-1-polish_backend_vendor:/workspace/backend/vendor -w /workspace/backend s_hospital-v1-1-polish-backend php artisan test --colors=never
 ```
 
-Backend result:
+Backend partial Docker evidence result:
 
 - Passed.
-- 49 backend tests passed.
+- 49 backend tests passed in this partial/intermediate Docker run.
 - 668 backend warnings were reported by PHPUnit.
 - 1 backend coverage test was skipped because no coverage driver is enabled.
 - First Docker Compose test attempt with only `backend/` mounted was not accepted as final evidence because repo-root guard tests could not read `../frontend`, `../devex`, `../setup.bat`, and `.github` files.
+- This 49-test Docker run is retained as historical/intermediate evidence from the polish branch; it is not the final post-merge backend gate.
 
 Release E2E command:
 
@@ -190,7 +191,7 @@ Artifacts:
 ## Known Gaps
 
 - Mocked visual screenshots remain digital browser evidence, not physical acceptance.
-- Backend full suite passed in Docker against the configured test environment with warning-class outcomes from the missing mounted `.env`; this is accepted as internal merge evidence, not physical production evidence.
+- Backend partial Docker evidence from the polish/review branch had warning-class outcomes from the missing mounted `.env`; it is retained as intermediate evidence, not the final post-merge backend gate.
 - MariaDB focal integration passed for receipt PDF, cash/payment receipt, and user/RBAC suites; this is focal proof, not full load proof.
 - It does not prove physical printer output.
 - It does not prove a second LAN client can operate against the server.
@@ -211,8 +212,20 @@ Additional commands executed from `C:\Projects\S_Hospital-v1-1-review`:
 - `npm run smoke:buttons`: passed, 7/7 tests.
 - `npx playwright test e2e/production-readiness.spec.ts`: passed, 4/4 tests.
 - `npm run test:e2e`: passed, 2/2 release specs; cashier issue/pay/receipt/report flow and admin catalog-only RBAC flow.
-- Docker backend full suite: exit code 0, 49 passed, 668 warning-class outcomes, 1 skipped, 4672 assertions.
+- Backend partial Docker evidence: exit code 0, 49 passed, 668 warning-class outcomes, 1 skipped, 4672 assertions.
 - Disposable MariaDB focal: exit code 0, 71 tests and 614 assertions.
+
+## Final Post-Merge Backend Gate
+
+Executed after merging V1.1 to `main` at `7c49592968850cd890b6781788b42cf7a1273fd8`:
+
+- Result: PASS.
+- Exit code: 0.
+- Backend full suite: 707 passed.
+- Skipped: 11.
+- Assertions: 4672.
+
+This final post-merge gate supersedes the earlier 49-test Docker evidence for release decision purposes. The 49-test run remains useful historical/intermediate evidence only.
 
 ## QA Assessment
 

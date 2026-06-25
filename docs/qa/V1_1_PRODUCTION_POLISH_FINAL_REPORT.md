@@ -2,16 +2,18 @@
 
 HANDOFF - S_HOSPITAL V1.1 PRODUCTION POLISH
 
-Status: LISTO PARA REVISION
+Status: MERGED TO MAIN AFTER INDEPENDENT REVIEW
 Date: 2026-06-25
 Base SHA: `2e1949e6e1cccbccf8ae5c94a9472739fd0d14ac`
 Final branch: `codex/v1-1-production-polish`
 Final implementation SHA before this report commit: `f1b24840bcf733a273124ad6a01aecfbe9035a6f`
-Origin main SHA at report time: `2e1949e6e1cccbccf8ae5c94a9472739fd0d14ac`
-Merge to main: no
+Origin main SHA at original report time: `2e1949e6e1cccbccf8ae5c94a9472739fd0d14ac`
+Merge to main: yes, completed after independent review at `7c49592968850cd890b6781788b42cf7a1273fd8`
 Physical production approved: NO
 
 Independent review note: this handoff was written before the final review branch. `codex/v1-1-polish-review` closes the earlier full axe/security recommendation by adding `frontend/e2e/v1-1-full-a11y.spec.ts`, security/RBAC review, updated performance review, and `docs/qa/V1_1_POLISH_REVIEW_REPORT.md`. Physical production remains not approved.
+
+Final post-merge note: `main` and `origin/main` were updated to `7c49592968850cd890b6781788b42cf7a1273fd8`. The final backend gate passed with exit code 0: 707 passed, 11 skipped, 4672 assertions. No tag was created.
 
 ## 1. Branches And Subagents
 
@@ -135,7 +137,8 @@ Frontend:
 
 Backend:
 
-- Docker SQLite backend suite: 49 passed, 668 warnings, 1 skipped.
+- Backend partial Docker evidence from the polish branch: 49 passed, 668 warnings, 1 skipped. This was intermediate evidence, not the final post-merge backend gate.
+- Final post-merge backend gate on `main`: PASS, exit code 0, 707 passed, 11 skipped, 4672 assertions.
 - `InstitutionalReceiptPdfTest`: 13 tests / 171 assertions passed.
 - `UserManagementTest`: 26 warnings / 103 assertions passed in Docker SQLite.
 - Disposable MariaDB focal gate: 71 tests / 614 assertions passed.
@@ -179,10 +182,10 @@ Screenshot count in the tracked V1.1 package: 34 PNG files.
 - Restore proof against a disposable database is not complete in this V1.1 polish report.
 - LAN load/concurrency with real clients is not complete.
 - Full axe/security review beyond the focused smoke is complete in `codex/v1-1-polish-review`.
-- Final merge to `main` has not been performed.
+- Final merge to `main` has been performed. Physical production validation remains pending.
 
 ## 16. Recommendation
 
-The V1.1 polish branch is ready for digital review as an internal release candidate. It should not be declared physical go-live ready until operations completes second-PC LAN validation, real printer proof, restore proof, and LAN load evidence.
+The V1.1 polish branch was approved by independent review and merged to `main`. It should not be declared physical go-live ready until operations completes second-PC LAN validation, real printer proof, restore proof, and LAN load evidence.
 
-Final recommendation: LISTO PARA REVISION, with physical production approved: NO.
+Final recommendation: MERGED TO MAIN FOR INTERNAL USE, with physical production approved: NO.

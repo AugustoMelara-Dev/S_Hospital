@@ -59,7 +59,8 @@ Backend enforcement:
 
 - `npm run test:e2e`: passed 2/2 release specs, including admin creation of a catalog-only user and navigation/RBAC denial for unauthorized modules.
 - MariaDB focal: passed 71 tests / 614 assertions covering `InstitutionalReceiptPdfTest`, `CashPaymentsReceiptTest`, and `UserManagementTest`.
-- Backend full suite: exit code 0, 49 passed, 668 warning-class outcomes, 1 skipped, 4672 assertions.
+- Backend partial Docker evidence: exit code 0, 49 passed, 668 warning-class outcomes, 1 skipped, 4672 assertions.
+- Final post-merge backend gate: PASS, exit code 0, 707 passed, 11 skipped, 4672 assertions.
 - Frontend unit/component suite: 82 files / 487 tests passed, including sanitizer and access-denied coverage.
 - Full a11y matrix: 7/7 passed, including denied route and dialog cancel path.
 
