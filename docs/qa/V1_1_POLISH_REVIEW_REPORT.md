@@ -76,7 +76,7 @@ Coverage:
 - `npx playwright test e2e/production-readiness.spec.ts`: PASS, 4/4 tests in 58.1s.
 - `npm run test:e2e`: PASS, 2/2 release specs in 66.2s.
 
-## Backend Full Suite
+## Backend Partial Docker Evidence
 
 Command shape:
 
@@ -92,7 +92,19 @@ Result: PASS with exit code 0.
 - 4672 assertions.
 - Duration: 566.11s.
 
-Assessment: this satisfies the full backend suite gate for internal merge because the suite ran from the full repo mount and exited 0. The warning-class outcomes are documented and should be cleaned up later by providing a mounted testing `.env`, but they did not fail the test run.
+Assessment: this was intermediate Docker evidence from the review branch. It is retained for traceability, but it is not the final post-merge backend gate.
+
+## Final Post-Merge Backend Gate
+
+Executed after merging V1.1 to `main` at `7c49592968850cd890b6781788b42cf7a1273fd8`.
+
+- Result: PASS.
+- Exit code: 0.
+- Backend full suite: 707 passed.
+- Skipped: 11.
+- Assertions: 4672.
+
+This final gate supersedes the 49-test Docker evidence for the release decision.
 
 ## MariaDB Focal
 

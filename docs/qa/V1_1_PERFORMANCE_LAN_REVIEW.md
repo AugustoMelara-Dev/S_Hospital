@@ -62,7 +62,8 @@ Assessment: the reports/charts chunk remains the largest frontend cost and is ex
 - Production readiness: 4 Playwright tests passed in 58.1s.
 - Release E2E: 2 Playwright specs passed in 66.2s.
 - MariaDB focal: 71 backend tests passed in 85.0s.
-- Backend full suite: exit code 0 in 566.1s.
+- Backend partial Docker evidence: exit code 0 in 566.1s, 49 passed, 668 warning-class outcomes, 1 skipped, 4672 assertions.
+- Final post-merge backend gate: PASS, exit code 0, 707 passed, 11 skipped, 4672 assertions.
 
 ## Current Architecture Observations
 
