@@ -11,20 +11,34 @@ This report records the current digital QA evidence for the V1.1 production poli
 
 Screens and flows covered by mocked Playwright evidence:
 
+- Login light/dark.
 - Dashboard light/dark.
 - Cashbox open.
+- Cashbox close dialog/state.
 - New invoice empty.
 - New invoice with cart.
+- Invoice confirmation.
+- Payment modal.
+- Invoice history.
 - Receipt preview letter-like legacy view.
 - Receipt preview A5.
 - Receipt preview dark.
 - Reports admin light/dark.
+- Reports cash.
+- Reports services.
+- Catalog.
+- Fiscal settings.
 - Institutional receipt settings light.
 - Institutional receipt settings preview light/dark.
 - Admin users light/dark.
 - Backups pending.
+- Help.
+- About.
 - Access denied reports route.
 - 404 route.
+- Mobile dashboard.
+- Mobile billing.
+- Mobile reports access denied state.
 
 ## Command
 
@@ -40,7 +54,7 @@ Result:
 
 - 4 Playwright tests passed.
 - 0 Playwright failures.
-- 18 screenshots captured.
+- 33 screenshots captured.
 - Browser console issues recorded by the mocked capture report: 0.
 
 Build command:
@@ -79,7 +93,7 @@ Artifacts:
 - It does not prove a second LAN client can operate against the server.
 - It does not prove backup restore in an isolated database.
 - It does not prove concurrent LAN load.
-- It does not yet cover every requested V1.1 screenshot name, including login light/dark, payment modal, invoice confirmation, invoice history, catalog, fiscal settings, help, about, mobile dashboard, mobile billing, and mobile reports.
+- It does not yet cover every requested V1.1 screenshot name, including receipt PDF digital and a full successful mobile reports state with admin data.
 - It does not replace final backend, E2E release, smoke buttons, axe, responsive, PDF digital, and security/RBAC gates required before internal approval.
 
 ## QA Assessment

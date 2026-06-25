@@ -975,6 +975,7 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await expect(page.getByRole('heading', { name: /^caja$/i })).toBeVisible();
   await page.getByRole('main').getByRole('button', { name: /abrir caja/i }).click();
   await expect(page.getByRole('heading', { name: /cerrar caja/i })).toBeVisible();
+  await captureScreen(page, 'cashbox-close-dialog-light', 'light');
   if (await page.getByRole('dialog', { name: /caja activa/i }).isVisible().catch(() => false)) {
     await page.getByRole('button', { name: /cerrar modal/i }).click();
   }
@@ -988,19 +989,21 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await captureScreen(page, 'billing-new-cart-light', 'light');
   await expect(page.getByText(/Total estimado:\s*L\.?\s*25\.00/)).toBeVisible();
   await page.getByRole('button', { name: /emitir y cobrar/i }).click();
+  await captureScreen(page, 'invoice-confirmation-light', 'light');
   await page.getByRole('button', { name: /emitir y abrir cobro/i }).click();
   await expect(page.getByRole('heading', { name: /registrar pago/i })).toBeVisible();
+  await captureScreen(page, 'payment-modal-light', 'light');
   await expect(page.getByText(/ingrese el monto recibido/i)).toBeVisible();
   await page.getByLabel(/monto recibido/i).fill('25.00');
   await expect(page.getByText(/ingrese el monto recibido/i)).toBeHidden();
   await page.getByRole('button', { name: /confirmar cobro/i }).click();
   await expect(page.getByRole('dialog', { name: /comprobante de factura/i })).toBeVisible();
   await expect(page.getByText('Media carta')).toBeVisible();
+  await captureScreen(page, 'receipt-preview-light', 'light');
   await page.getByRole('combobox', { name: /tama(?:ñ|n)o del recibo/i }).click();
   await page.getByRole('option', { name: 'A5', exact: true }).click({ force: true });
   await expect(page.getByLabel(/recibo institucional/i)).toHaveClass(/receipt-a5/);
   await captureScreen(page, 'receipt-preview-a5-light', 'light');
-  await captureScreen(page, 'receipt-preview-light', 'light');
   await setVisualTheme(page, 'dark');
   await captureScreen(page, 'receipt-preview-dark', 'dark');
   await setVisualTheme(page, 'light');
@@ -1026,6 +1029,7 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   if (await page.getByRole('dialog', { name: /caja activa/i }).isVisible().catch(() => false)) {
     await page.getByRole('button', { name: /cerrar modal/i }).click();
   }
+  await captureScreen(page, 'invoice-history-light', 'light');
   await page.getByRole('button', { name: /buscar/i }).click();
   await page.getByRole('button', { name: /^reimprimir$/i }).first().click();
   await page.getByLabel(/motivo de reimpresi.n/i).fill('Copia solicitada por paciente para expediente administrativo.');
@@ -1049,9 +1053,22 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await expect(page.getByRole('heading', { name: /^reportes$/i })).toBeVisible();
   await expect(page.getByRole('heading', { name: /cobrado/i })).toBeVisible();
   await captureScreen(page, 'reports-admin-light', 'light');
+  await page.getByRole('tab', { name: /^caja$/i }).click();
+  await captureScreen(page, 'reports-cash-light', 'light');
+  await page.getByRole('tab', { name: /^servicios$/i }).click();
+  await captureScreen(page, 'reports-services-light', 'light');
+  await page.getByRole('tab', { name: /^resumen$/i }).click();
   await setVisualTheme(page, 'dark');
   await captureScreen(page, 'reports-admin-dark', 'dark');
   await setVisualTheme(page, 'light');
+
+  await page.goto('/catalog');
+  await expect(page.getByRole('heading', { name: /cat.logo/i })).toBeVisible();
+  await captureScreen(page, 'catalog-light', 'light');
+
+  await page.goto('/settings/fiscal');
+  await expect(page.getByRole('heading', { name: /^configuraci.n$/i })).toBeVisible();
+  await captureScreen(page, 'fiscal-settings-light', 'light');
 
   await page.goto('/settings/institutional-receipts');
   await expect(page.getByRole('heading', { name: /recibos institucionales/i })).toBeVisible();
@@ -1080,6 +1097,14 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await page.getByRole('button', { name: /^crear respaldo$/i }).click();
   await expect(page.getByRole('table').getByText('Pendiente', { exact: true })).toBeVisible();
   await captureScreen(page, 'backups-pending-light', 'light');
+
+  await page.goto('/help');
+  await expect(page.getByRole('heading', { name: /ayuda institucional/i })).toBeVisible();
+  await captureScreen(page, 'help-light', 'light');
+
+  await page.goto('/about');
+  await expect(page.getByRole('heading', { name: /informaci.n del sistema/i })).toBeVisible();
+  await captureScreen(page, 'about-light', 'light');
   await writeCaptureReport(consoleIssues);
   expect(consoleIssues).toEqual([]);
 });
@@ -1100,6 +1125,14 @@ test('supporting shell states expose visual fallbacks', async ({ page }) => {
   });
 
   await installApiMocks(page);
+  await page.goto('/login');
+  await setVisualTheme(page, 'light');
+  await expect(page.getByLabel(/usuario o (correo|email)/i)).toBeVisible();
+  await captureScreen(page, 'login-light', 'light');
+  await setVisualTheme(page, 'dark');
+  await captureScreen(page, 'login-dark', 'dark');
+  await setVisualTheme(page, 'light');
+
   await loginAs(page, 'cajero.validacion');
   await setVisualTheme(page, 'light');
 
@@ -1118,9 +1151,9 @@ test('supporting shell states expose visual fallbacks', async ({ page }) => {
 test('responsive shell keeps operational modules reachable', async ({ page }) => {
   const consoleIssues: string[] = [];
   const viewports = [
-    { width: 1280, height: 800 },
-    { width: 768, height: 1024 },
-    { width: 390, height: 844 },
+    { width: 1280, height: 800, name: 'desktop' },
+    { width: 768, height: 1024, name: 'tablet' },
+    { width: 390, height: 844, name: 'mobile' },
   ];
 
   page.on('console', (msg) => {
@@ -1149,8 +1182,19 @@ test('responsive shell keeps operational modules reachable', async ({ page }) =>
     await expect(page.getByLabel(/nombre del paciente/i)).toBeVisible();
     await expect(page.getByLabel(/buscar por nombre/i)).toBeVisible();
     await expect(page.getByLabel(/scanner usb o codigo manual/i)).toHaveCount(0);
+
+    if (viewport.name === 'mobile') {
+      await captureScreen(page, 'mobile-billing-light', 'light');
+      await page.goto('/dashboard');
+      await expect(page.getByRole('heading', { name: /inicio|dashboard/i })).toBeVisible();
+      await captureScreen(page, 'mobile-dashboard-light', 'light');
+      await page.goto('/reports');
+      await expect(page.getByText(/^Sin permisos$/i)).toBeVisible();
+      await captureScreen(page, 'mobile-reports-access-denied-light', 'light');
+    }
   }
 
+  await writeCaptureReport(consoleIssues);
   expect(consoleIssues).toEqual([]);
 });
 
