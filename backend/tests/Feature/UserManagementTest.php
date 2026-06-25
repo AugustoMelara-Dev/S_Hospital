@@ -543,10 +543,12 @@ class UserManagementTest extends TestCase
         $manager = User::factory()->create();
         $manager->givePermissionTo(['users.create', 'users.view']);
 
-        Role::query()->create([
-            'name' => 'Admin',
-            'guard_name' => 'web',
-        ]);
+        Role::query()
+            ->where('name', 'admin')
+            ->where('guard_name', 'web')
+            ->firstOrFail()
+            ->forceFill(['name' => 'Admin'])
+            ->save();
 
         $this->actingAs($manager)
             ->postJson('/api/admin/users', [

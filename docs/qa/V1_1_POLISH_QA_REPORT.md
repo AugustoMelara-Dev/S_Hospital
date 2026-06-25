@@ -144,6 +144,22 @@ Institutional receipt PDF digital proof result:
 - 13 warnings were emitted because the Docker test mount does not include `/workspace/backend/.env`; the test base forces testing config and assertions passed.
 - This is digital proof only and does not approve physical printer output.
 
+MySQL/MariaDB focal proof command:
+
+```powershell
+# Disposable MariaDB 11.4.3 network/container.
+php artisan testing:prepare-golden-database --database=s_hospital_test_<timestamp> --golden-database=s_hospital_golden_v11_polish
+vendor/bin/phpunit --configuration phpunit.mysql.xml --filter 'InstitutionalReceiptPdfTest|CashPaymentsReceiptTest|UserManagementTest'
+```
+
+MySQL/MariaDB focal proof result:
+
+- Passed after correcting a test-harness collation issue in `UserManagementTest`.
+- `testing:prepare-golden-database` prepared a disposable MariaDB clone.
+- 71 tests and 614 assertions passed against MariaDB 11.4.3.
+- Covered receipt PDF, cash/payment receipt, and user/RBAC flows.
+- SQLite regression for `UserManagementTest` also passed: 103 assertions, with the same Docker `.env` warnings seen in backend tests.
+
 Artifacts:
 
 - `qa/screenshots/v1-1-production-polish/manifest.json`
@@ -151,6 +167,7 @@ Artifacts:
 - `qa/screenshots/v1-1-production-polish/*.png`
 - `docs/qa/V1_1_PERFORMANCE_LAN_REVIEW.md`
 - `docs/qa/V1_1_RECEIPT_PDF_DIGITAL_PROOF.md`
+- `docs/qa/V1_1_MYSQL_MARIADB_FOCAL_PROOF.md`
 - `frontend/test-results/release-e2e-report.json`
 - `frontend/test-results/release-e2e-playwright.json`
 
@@ -168,6 +185,7 @@ Artifacts:
 - `docker run --rm -v ${PWD}:/workspace -v s_hospital-v1-1-polish_backend_vendor:/workspace/backend/vendor -w /workspace/backend s_hospital-v1-1-polish-backend php artisan test --colors=never`
 - Docker-backed release E2E with Vite on `127.0.0.1:5174` and Laravel on `127.0.0.1:18081`: `node .\node_modules\@playwright\test\cli.js test --config=playwright.release.config.ts`
 - Docker-backed receipt PDF proof: `php artisan test --filter=InstitutionalReceiptPdfTest --display-warnings --colors=never`
+- Disposable MariaDB focal proof: `vendor/bin/phpunit --configuration phpunit.mysql.xml --filter 'InstitutionalReceiptPdfTest|CashPaymentsReceiptTest|UserManagementTest'`
 
 ## Known Gaps
 
@@ -178,8 +196,8 @@ Artifacts:
 - It does not prove backup restore in an isolated database.
 - It does not prove concurrent LAN load.
 - It does not yet cover every requested V1.1 screenshot name as a single full regenerated matrix, although successful admin mobile reports evidence is now present as an additional focused screenshot.
-- It does not replace final full axe coverage beyond the responsive button smoke, MySQL/MariaDB production-like integration, and physical acceptance gates required before internal approval.
+- It does not replace final full axe coverage beyond the responsive button smoke, full MySQL/MariaDB load/restore validation, and physical acceptance gates required before internal approval.
 
 ## QA Assessment
 
-The current evidence is useful for visual regression and screen review on the polished branch, especially for dashboard, POS cart, reports, receipt settings, users, backups, access denied, and 404 states. The Docker-backed release E2E now provides digital cashier/RBAC integration evidence, and the receipt PDF suite provides digital PDF proof. V1.1 remains in progress until final full visual matrix, MySQL/MariaDB production-like validation, full axe/security review, and physical acceptance evidence are complete.
+The current evidence is useful for visual regression and screen review on the polished branch, especially for dashboard, POS cart, reports, receipt settings, users, backups, access denied, and 404 states. The Docker-backed release E2E now provides digital cashier/RBAC integration evidence, the receipt PDF suite provides digital PDF proof, and a disposable MariaDB focal gate covers receipt/RBAC flows. V1.1 remains in progress until final full visual matrix, full axe/security review, restore/load evidence, and physical acceptance evidence are complete.
