@@ -48,7 +48,7 @@ export function SidebarContent({
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[10px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/55">
+            <p className="truncate text-[10px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/80">
               Caja LAN
             </p>
             <p className="truncate text-sm font-semibold leading-tight text-sidebar-foreground" title={hospitalName}>
@@ -92,11 +92,11 @@ export function SidebarContent({
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold leading-tight text-sidebar-foreground">{user.name}</p>
-            <p className="truncate text-xs text-sidebar-foreground/60">{roleLabel}</p>
+            <p className="truncate text-xs text-sidebar-foreground/78">{roleLabel}</p>
           </div>
         </div>
         <Separator className="my-3 bg-sidebar-border" />
-        <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/45">
+        <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/80">
           <span>Operación local</span>
         </div>
       </div>

@@ -118,7 +118,7 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
     <section id="nueva-factura" className="flex h-full flex-col gap-4 pb-28 lg:pb-0">
       <header className="flex flex-col gap-3 border-b border-border pb-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="flex flex-col gap-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-secondary">Sistema institucional</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-foreground">Sistema institucional</p>
           <h1 className="text-2xl font-semibold leading-tight text-foreground md:text-3xl">Nueva factura</h1>
           <p className="text-sm text-muted-foreground">Paciente, servicios, cobro y recibo en una sola estacion.</p>
         </div>

@@ -2,12 +2,12 @@
 
 Branch: `codex/v1-1-production-polish`
 Base SHA: `2e1949e6e1cccbccf8ae5c94a9472739fd0d14ac`
-Status: in progress
-Updated: 2026-06-25
+Status: APROBADO PARA MERGE INTERNO by independent review
+Updated: 2026-06-25 independent review pass
 
 ## Scope Covered In This Pass
 
-This report records the current digital QA evidence for the V1.1 production polish branch. It is not the final approval report and does not approve physical production.
+This report records the digital QA evidence for the V1.1 production polish branch. It does not approve physical production. The independent review branch `codex/v1-1-polish-review` adds the final a11y/security review and supersedes earlier draft-status notes in this file.
 
 Screens and flows covered by mocked Playwright evidence:
 
@@ -189,15 +189,31 @@ Artifacts:
 
 ## Known Gaps
 
-- This pass uses mocked API data; it does not prove Laravel/MySQL/MariaDB integration.
-- Backend tests ran in Docker with SQLite/phpunit configuration; they do not prove MySQL/MariaDB production integration.
+- Mocked visual screenshots remain digital browser evidence, not physical acceptance.
+- Backend full suite passed in Docker against the configured test environment with warning-class outcomes from the missing mounted `.env`; this is accepted as internal merge evidence, not physical production evidence.
+- MariaDB focal integration passed for receipt PDF, cash/payment receipt, and user/RBAC suites; this is focal proof, not full load proof.
 - It does not prove physical printer output.
 - It does not prove a second LAN client can operate against the server.
 - It does not prove backup restore in an isolated database.
 - It does not prove concurrent LAN load.
-- It does not yet cover every requested V1.1 screenshot name as a single full regenerated matrix, although successful admin mobile reports evidence is now present as an additional focused screenshot.
-- It does not replace final full axe coverage beyond the responsive button smoke, full MySQL/MariaDB load/restore validation, and physical acceptance gates required before internal approval.
+- It does not replace full MySQL/MariaDB load/restore validation or physical acceptance gates required before go-live.
+
+## Independent Review Addendum
+
+Additional commands executed from `C:\Projects\S_Hospital-v1-1-review`:
+
+- `npm ci`: passed, 0 vulnerabilities reported by npm.
+- `npm run typecheck`: passed.
+- `npm run lint`: passed.
+- `npm run test`: passed, 82 test files and 487 tests.
+- `npm run build`: passed.
+- `npx playwright test e2e/v1-1-full-a11y.spec.ts`: passed, 7/7 tests across 320x640, 375x667, 768x1024, 1024x768, 1366x768, and 1920x1080 plus cancel path.
+- `npm run smoke:buttons`: passed, 7/7 tests.
+- `npx playwright test e2e/production-readiness.spec.ts`: passed, 4/4 tests.
+- `npm run test:e2e`: passed, 2/2 release specs; cashier issue/pay/receipt/report flow and admin catalog-only RBAC flow.
+- Docker backend full suite: exit code 0, 49 passed, 668 warning-class outcomes, 1 skipped, 4672 assertions.
+- Disposable MariaDB focal: exit code 0, 71 tests and 614 assertions.
 
 ## QA Assessment
 
-The current evidence is useful for visual regression and screen review on the polished branch, especially for dashboard, POS cart, reports, receipt settings, users, backups, access denied, and 404 states. The Docker-backed release E2E now provides digital cashier/RBAC integration evidence, the receipt PDF suite provides digital PDF proof, and a disposable MariaDB focal gate covers receipt/RBAC flows. V1.1 remains in progress until final full visual matrix, full axe/security review, restore/load evidence, and physical acceptance evidence are complete.
+The current evidence supports internal merge approval for the code branch: visual review, full axe route matrix, frontend gates, release E2E, backend full suite, PDF digital proof, MariaDB focal, and security/RBAC review are complete. Physical production remains not approved until second-PC LAN, printer, restore, and LAN load evidence are completed by operations.

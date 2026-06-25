@@ -3704,3 +3704,13 @@ Decision: `frontend\playwright.release.config.ts` define `outputDir: 'test-resul
 Motivo: mantener el release E2E repetible en Windows/Docker sin procesos colgados ni falsos fallos por datos creados en corridas anteriores.
 
 Validacion: Docker-backed release E2E contra Laravel en `127.0.0.1:18081` y Vite en `127.0.0.1:5174`: 2 specs passed, 0 skipped, 0 unexpected, 0 flaky.
+
+# 2026-06-25 - Revision independiente V1.1 exige matriz a11y completa
+
+Contexto: el handoff V1.1 dejaba la cobertura full axe/security como recomendacion final. Para aprobar merge interno sin declarar produccion fisica, la rama de revision necesitaba convertir esa recomendacion en evidencia ejecutable.
+
+Decision: agregar `frontend/e2e/v1-1-full-a11y.spec.ts` con la matriz de rutas activas, 6 viewports, axe critical/serious en cero, control de `h1`, nombres accesibles, labels, foco visible, overflow global, modo oscuro y cancelacion de dialogos peligrosos. Los ajustes visuales de contraste y encabezados se limitaron a estados globales, login, sidebar, permisos, 404 y pequenos acentos de UI; no cambian calculos, permisos backend, payloads ni numeracion fiscal.
+
+Motivo: internal merge debe basarse en una auditoria repetible, no solo en inspeccion visual o smoke parcial.
+
+Validacion: `npx playwright test e2e/v1-1-full-a11y.spec.ts`, `npm run smoke:buttons`, `npm run typecheck`, `npm run lint`, `npm run test`, `npm run build` y `npm run test:e2e`.

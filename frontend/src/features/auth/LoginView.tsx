@@ -2,7 +2,7 @@ import { type FormEvent, useEffect, useState } from 'react';
 import { Building2, Eye, EyeOff, Lock, ShieldCheck, User } from 'lucide-react';
 import { Alert } from '../../components/ui/alert';
 import { Button } from '../../components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader } from '../../components/ui/card';
 import { FormField } from '../../components/ui/form-field';
 import { Input } from '../../components/ui/input';
 import { usePublicBranding } from '../../hooks/useFiscalSettings';
@@ -106,7 +106,7 @@ export function LoginView({
 
           <div className="flex flex-col gap-5">
             <div className="max-w-md">
-              <h1 className="text-3xl font-semibold leading-tight">Operación hospitalaria local</h1>
+              <h2 className="text-3xl font-semibold leading-tight">Operación hospitalaria local</h2>
               <p className="mt-3 text-sm leading-6 text-sidebar-foreground/75">
                 Facturación, cobros, reportes y recibos institucionales para operar dentro del hospital.
               </p>
@@ -123,7 +123,7 @@ export function LoginView({
             </div>
           </div>
 
-          <p className="text-xs text-sidebar-foreground/50">Operación local</p>
+          <p className="text-xs text-sidebar-foreground/75">Operación local</p>
         </section>
 
         <section className="flex min-h-[calc(100dvh-2rem)] items-center justify-center p-5 sm:min-h-[40rem] sm:p-8 lg:min-h-0">
@@ -141,7 +141,7 @@ export function LoginView({
               <CardDescription className="text-xs font-semibold uppercase tracking-normal text-primary">
                 Acceso operativo
               </CardDescription>
-              <CardTitle className="text-2xl font-semibold tracking-normal">{hospitalName}</CardTitle>
+              <h1 className="text-2xl font-semibold tracking-normal">{hospitalName}</h1>
               <p className="text-sm text-muted-foreground">
                 Inicie sesión con sus credenciales para abrir el panel de caja.
               </p>

@@ -11,6 +11,8 @@ Origin main SHA at report time: `2e1949e6e1cccbccf8ae5c94a9472739fd0d14ac`
 Merge to main: no
 Physical production approved: NO
 
+Independent review note: this handoff was written before the final review branch. `codex/v1-1-polish-review` closes the earlier full axe/security recommendation by adding `frontend/e2e/v1-1-full-a11y.spec.ts`, security/RBAC review, updated performance review, and `docs/qa/V1_1_POLISH_REVIEW_REPORT.md`. Physical production remains not approved.
+
 ## 1. Branches And Subagents
 
 - Orchestrator branch: `codex/v1-1-production-polish`.
@@ -109,7 +111,7 @@ Reviewed modules are recorded in `docs/ux/MODULE_UX_UI_AUDIT.md` and QA evidence
 - Mocked Playwright production-readiness pass: 4 tests passed, 33 screenshots in full pass, 0 console issues.
 - Focused responsive pass added successful mobile reports admin screenshot: 1 test passed, 0 console issues.
 - Button/axe smoke: 7 passed.
-- Full axe coverage beyond the responsive smoke is still a recommended final review item before internal approval.
+- Full axe coverage beyond the responsive smoke was completed on the independent review branch: `npx playwright test e2e/v1-1-full-a11y.spec.ts` passed 7/7 across the required viewport matrix.
 
 ## 11. Performance LAN
 
@@ -176,7 +178,7 @@ Screenshot count in the tracked V1.1 package: 34 PNG files.
 - Second LAN client validation is not complete.
 - Restore proof against a disposable database is not complete in this V1.1 polish report.
 - LAN load/concurrency with real clients is not complete.
-- Full axe/security review beyond the focused smoke remains recommended.
+- Full axe/security review beyond the focused smoke is complete in `codex/v1-1-polish-review`.
 - Final merge to `main` has not been performed.
 
 ## 16. Recommendation

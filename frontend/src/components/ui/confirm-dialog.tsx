@@ -48,7 +48,7 @@ export function ConfirmDialog({
                 {title}
               </AlertDialogPrimitive.Title>
               <AlertDialogPrimitive.Description data-slot="confirm-dialog-description" className="sr-only">
-                Revise la informacion antes de confirmar esta accion.
+                Revise la informacion del dialogo antes de confirmar esta accion.
               </AlertDialogPrimitive.Description>
               <div className="text-sm text-muted-foreground">{children}</div>
             </div>

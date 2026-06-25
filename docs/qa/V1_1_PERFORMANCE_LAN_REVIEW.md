@@ -2,8 +2,8 @@
 
 Branch: `codex/v1-1-production-polish`
 Base SHA: `2e1949e6e1cccbccf8ae5c94a9472739fd0d14ac`
-Status: in progress
-Updated: 2026-06-25
+Status: APROBADO PARA MERGE INTERNO as digital performance review
+Updated: 2026-06-25 independent review pass
 
 ## Scope
 
@@ -18,11 +18,12 @@ cd C:\Projects\S_Hospital-v1-1-polish\frontend
 npm.cmd run build
 ```
 
-Result:
+Result in the independent review worktree:
 
 - Passed.
 - `tsc --noEmit` completed.
 - Vite production build completed.
+- No new runtime dependency was added in the review branch.
 
 Mocked browser evidence:
 
@@ -42,24 +43,26 @@ Result:
 
 ## Build Size Snapshot
 
-Largest generated assets from the latest local build:
+Largest generated asset groups from the review build:
 
-| Asset | Size |
-| --- | ---: |
-| `charts-JUI4aW6N.js` | 398.35 kB |
-| `vendor-Txi_p2nM.js` | 348.15 kB |
-| `index-LfpyPV8E.js` | 195.93 kB |
-| `ui-BhLfDv7l.js` | 159.80 kB |
-| `ReportsView-yIJQB8q5.js` | 98.05 kB |
-| `forms-ditSlwIx.js` | 97.64 kB |
-| `index-C97W6RCw.css` | 75.28 kB |
-| `DashboardView-HagcMhbI.js` | 36.19 kB |
-| `BackupsView-yOD0SGzv.js` | 29.21 kB |
-| `CatalogView-zdxJorZN.js` | 28.75 kB |
-| `InstitutionalReceiptSettingsView-CEC6k1dN.js` | 25.69 kB |
-| `FiscalSettingsView-CkBc8FO7.js` | 23.72 kB |
-| `InvoiceHistoryView-BAcGrrL9.js` | 21.16 kB |
-| `UsersView-COrQ2HZn.js` | 20.10 kB |
+| Asset group | Size | Gzip |
+| --- | ---: | ---: |
+| CSS | 74.49 kB | 13.65 kB |
+| vendor | 348.15 kB | 109.28 kB |
+| charts | 398.35 kB | 114.67 kB |
+| index | 196.81 kB | 49.80 kB |
+| ui | 159.79 kB | 48.57 kB |
+
+Assessment: the reports/charts chunk remains the largest frontend cost and is expected for the report-heavy screens. Route lazy loading keeps admin, reports, backups, settings, help, support, and about from all loading in the initial cashier path.
+
+## Review Timing Snapshot
+
+- Full a11y matrix: 7 Playwright tests passed in 5.3m.
+- Button/axe smoke: 7 Playwright tests passed in 3.5m.
+- Production readiness: 4 Playwright tests passed in 58.1s.
+- Release E2E: 2 Playwright specs passed in 66.2s.
+- MariaDB focal: 71 backend tests passed in 85.0s.
+- Backend full suite: exit code 0 in 566.1s.
 
 ## Current Architecture Observations
 
@@ -90,4 +93,4 @@ Largest generated assets from the latest local build:
 
 ## QA Assessment
 
-The current frontend build is suitable for continued internal review: it compiles, keeps major screens lazy-loaded, and has no mocked browser console issues in the V1.1 visual pass. Production LAN approval remains blocked until real API, database, restore, printer, and multi-client load evidence exists.
+The frontend build is suitable for internal merge: it compiles, keeps major screens lazy-loaded, has no mocked browser console issues in the V1.1 visual pass, and passed the full accessibility and smoke matrices. Production LAN go-live remains blocked until real second-client LAN, restore, printer, and multi-client load evidence exists.
