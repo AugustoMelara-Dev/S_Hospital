@@ -498,20 +498,20 @@ function ReportsViewContent({
       ) : null}
 
       <Tabs defaultValue={canViewManagerial ? 'resumen' : 'caja'}>
-          <TabsList>
+          <TabsList aria-label="Secciones de reportes" className="h-auto flex-wrap gap-1 py-1">
             {canViewManagerial ? (
               <>
                 <TabsTrigger value="resumen">Resumen</TabsTrigger>
                 <TabsTrigger value="diario">Diario</TabsTrigger>
                 <TabsTrigger value="mensual">Mensual</TabsTrigger>
-                <TabsTrigger value="rango">Por Rango</TabsTrigger>
+                <TabsTrigger value="rango">Por rango</TabsTrigger>
                 <TabsTrigger value="tendencia">Tendencia</TabsTrigger>
-                <TabsTrigger value="metodos">Metodos</TabsTrigger>
+                <TabsTrigger value="metodos">Métodos</TabsTrigger>
                 <TabsTrigger value="servicios">Servicios</TabsTrigger>
                 <TabsTrigger value="cajeros">Cajeros</TabsTrigger>
                 <TabsTrigger value="pendientes">Pendientes</TabsTrigger>
                 <TabsTrigger value="anulaciones">Anulaciones</TabsTrigger>
-                <TabsTrigger value="auditoria">Auditoria</TabsTrigger>
+                <TabsTrigger value="auditoria">Auditoría</TabsTrigger>
                 <TabsTrigger value="exportaciones">Exportaciones</TabsTrigger>
               </>
             ) : null}

@@ -52,8 +52,8 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, exporting =
       <h2 className="text-xl font-semibold tracking-tight">Resumen del día</h2>
       <Card>
         <CardContent className="pt-6">
-          <form onSubmit={onSubmit} className="flex items-end gap-4">
-            <div className="w-[200px]">
+          <form onSubmit={onSubmit} className="grid gap-3 sm:grid-cols-[minmax(0,200px)_auto] sm:items-end">
+            <div className="w-full">
               <Label htmlFor="daily-date">Fecha</Label>
               <Input
                 id="daily-date"
@@ -62,7 +62,7 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, exporting =
                 onChange={(e) => onDateChange(e.target.value)}
               />
             </div>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" className="w-full sm:w-auto" disabled={loading}>
               {loading ? 'Consultando...' : 'Actualizar'}
             </Button>
           </form>

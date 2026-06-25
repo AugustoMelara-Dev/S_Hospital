@@ -42,8 +42,8 @@ export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, servi
     <div className="space-y-6">
       <Card>
         <CardContent className="pt-6">
-          <form onSubmit={(e) => { e.preventDefault(); onSubmit(); }} className="flex items-end gap-4">
-            <div>
+          <form onSubmit={(e) => { e.preventDefault(); onSubmit(); }} className="grid gap-3 sm:grid-cols-[minmax(0,200px)_minmax(0,200px)_auto] sm:items-end">
+            <div className="w-full">
               <Label htmlFor="service-date-from">Desde</Label>
               <Input
                 id="service-date-from"
@@ -52,7 +52,7 @@ export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, servi
                 onChange={(e) => onDateFromChange(e.target.value)}
               />
             </div>
-            <div>
+            <div className="w-full">
               <Label htmlFor="service-date-to">Hasta</Label>
               <Input
                 id="service-date-to"
@@ -61,7 +61,7 @@ export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, servi
                 onChange={(e) => onDateToChange(e.target.value)}
               />
             </div>
-            <Button type="submit">Actualizar</Button>
+            <Button type="submit" className="w-full sm:w-auto">Actualizar</Button>
           </form>
         </CardContent>
       </Card>
