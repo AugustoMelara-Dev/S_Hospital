@@ -1,9 +1,10 @@
 import { createRef } from 'react';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { NewInvoiceViewLayout } from './NewInvoiceViewLayout';
 import { getInitialNewInvoiceState } from '../state/types';
+import type { Service } from '../../../lib/api';
 
 function renderLayout(overrides: Partial<React.ComponentProps<typeof NewInvoiceViewLayout>> = {}) {
   const noop = vi.fn();
@@ -66,4 +67,56 @@ describe('NewInvoiceViewLayout', () => {
     expect(screen.getByRole('link', { name: /ir a caja/i })).toHaveAttribute('href', '/cashbox');
     expect(screen.getByText(/solicite apertura a un usuario autorizado/i)).toBeInTheDocument();
   });
+
+  it('shows a mobile total summary when the cart has services and reuses confirm action', () => {
+    const onConfirm = vi.fn();
+    renderLayout({
+      state: {
+        ...getInitialNewInvoiceState(null),
+        loadingServices: false,
+        patientName: 'Maria Lopez',
+        cartItems: [{ service: serviceFixture(), quantity: '1.00', dialysisPrescription: false }],
+      },
+      preview: { subtotal: '120.00', tax: '18.00', total: '138.00' },
+      canEmit: true,
+      onConfirm,
+    });
+
+    expect(screen.getByText(/1 servicio en factura/i)).toBeInTheDocument();
+    expect(screen.getAllByText('L 138.00').length).toBeGreaterThan(0);
+
+    const mobileAction = screen.getAllByRole('button', { name: /emitir y cobrar/i })[0];
+    expect(mobileAction).toBeEnabled();
+    fireEvent.click(mobileAction);
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the mobile total summary hidden while the cart is empty', () => {
+    renderLayout();
+
+    expect(screen.queryByText(/servicio en factura/i)).not.toBeInTheDocument();
+  });
 });
+
+function serviceFixture(overrides: Partial<Service> = {}): Service {
+  return {
+    id: 1,
+    category_id: 1,
+    area_id: 1,
+    name: 'Hemograma',
+    aliases: null,
+    slug: 'hemograma',
+    scan_code: null,
+    barcode: null,
+    qr_code: null,
+    price: '120.00',
+    taxable: true,
+    active: true,
+    visible_in_billing: true,
+    is_billable: true,
+    special_rule_code: null,
+    category: { id: 1, name: 'Laboratorio', slug: 'laboratorio', active: true, sort_order: 1 },
+    area: { id: 1, name: 'Laboratorio', slug: 'laboratorio', active: true },
+    ...overrides,
+  };
+}

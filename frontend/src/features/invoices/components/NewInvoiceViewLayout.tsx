@@ -15,6 +15,7 @@ import { PaymentModal } from './PaymentModal';
 import { InvoiceSuccess } from './InvoiceSuccess';
 import type { Payment, ReceiptData, Service } from '../../../lib/api';
 import type { NewInvoiceState } from '../state/types';
+import { formatLempirasUIFromCents, parseCents } from '../../../lib/moneyCents';
 
 export type NewInvoiceLayoutProps = {
   state: NewInvoiceState;
@@ -105,9 +106,16 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
     searchInputRef,
     scannerInputRef,
   } = props;
+  const hasCartItems = state.cartItems.length > 0;
+  const mobileActionLabel = state.submitting
+    ? 'Emitiendo...'
+    : canCreatePayments && canViewReceipts
+      ? 'Emitir y cobrar'
+      : 'Emitir factura';
+  const mobileBlockedReason = emitBlockReasons[0];
 
   return (
-    <section id="nueva-factura" className="flex h-full flex-col gap-4">
+    <section id="nueva-factura" className="flex h-full flex-col gap-4 pb-28 lg:pb-0">
       <header className="flex flex-col gap-3 border-b border-border pb-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="flex flex-col gap-1">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-secondary">Sistema institucional</p>
@@ -177,6 +185,34 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
           {state.successMessage.replace(/^Agregado: /, '')}
         </Alert>
       )}
+
+      {hasCartItems ? (
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/95 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_30px_rgba(15,23,42,0.12)] backdrop-blur lg:hidden">
+          <div className="mx-auto flex max-w-3xl items-center gap-3">
+            <div className="min-w-0 flex-1" aria-live="polite">
+              <p className="text-[11px] font-semibold uppercase tracking-normal text-muted-foreground">
+                {state.cartItems.length} servicio{state.cartItems.length === 1 ? '' : 's'} en factura
+              </p>
+              <p className="mt-0.5 flex items-baseline gap-2">
+                <span className="text-xs text-muted-foreground">Total</span>
+                <span className="font-mono text-lg font-bold tabular-nums text-secondary">{moneyLabel(preview.total)}</span>
+              </p>
+              {mobileBlockedReason ? (
+                <p className="mt-0.5 truncate text-xs text-warning-foreground">{mobileBlockedReason}</p>
+              ) : null}
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              className="shrink-0"
+              disabled={state.submitting || !canEmit}
+              onClick={onConfirm}
+            >
+              {mobileActionLabel}
+            </Button>
+          </div>
+        </div>
+      ) : null}
 
       <div className="grid flex-1 gap-4 lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_400px]">
         <div className="flex flex-col gap-4 lg:min-h-0 lg:overflow-hidden">
@@ -318,4 +354,8 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
       </ConfirmDialog>
     </section>
   );
+}
+
+function moneyLabel(value: string | number | null | undefined): string {
+  return formatLempirasUIFromCents(parseCents(value));
 }
