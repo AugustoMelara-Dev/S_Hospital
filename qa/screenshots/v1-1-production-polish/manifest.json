@@ -1,0 +1,34 @@
+{
+  "name": "S_Hospital V1.1 production polish visual evidence",
+  "generated_at": "2026-06-25T17:08:15.354Z",
+  "branch": "codex/v1-1-production-polish",
+  "mode": "mocked-e2e",
+  "command": "E2E_CAPTURE_RC_SCREENSHOTS=1 E2E_CAPTURE_RC_OUTPUT_DIR=../qa/screenshots/v1-1-production-polish E2E_CAPTURE_RC_REPORT_DIR=qa/screenshots/v1-1-production-polish npx playwright test e2e/production-readiness.spec.ts",
+  "result": {
+    "tests": 4,
+    "passed": 4,
+    "failed": 0,
+    "console_issues": 0
+  },
+  "note": "Capturas con API mockeada; no sustituyen LAN, MySQL/MariaDB, impresora fisica, restore ni carga real.",
+  "screenshots": [
+    { "name": "dashboard-light", "path": "qa/screenshots/v1-1-production-polish/dashboard-light.png", "route": "/dashboard", "theme": "light" },
+    { "name": "dashboard-dark", "path": "qa/screenshots/v1-1-production-polish/dashboard-dark.png", "route": "/dashboard", "theme": "dark" },
+    { "name": "cashbox-open-light", "path": "qa/screenshots/v1-1-production-polish/cashbox-open-light.png", "route": "/cashbox", "theme": "light" },
+    { "name": "billing-new-empty-light", "path": "qa/screenshots/v1-1-production-polish/billing-new-empty-light.png", "route": "/billing/new", "theme": "light" },
+    { "name": "billing-new-cart-light", "path": "qa/screenshots/v1-1-production-polish/billing-new-cart-light.png", "route": "/billing/new", "theme": "light" },
+    { "name": "receipt-preview-a5-light", "path": "qa/screenshots/v1-1-production-polish/receipt-preview-a5-light.png", "route": "/billing/new", "theme": "light" },
+    { "name": "receipt-preview-light", "path": "qa/screenshots/v1-1-production-polish/receipt-preview-light.png", "route": "/billing/new", "theme": "light" },
+    { "name": "receipt-preview-dark", "path": "qa/screenshots/v1-1-production-polish/receipt-preview-dark.png", "route": "/billing/new", "theme": "dark" },
+    { "name": "reports-admin-light", "path": "qa/screenshots/v1-1-production-polish/reports-admin-light.png", "route": "/reports", "theme": "light" },
+    { "name": "reports-admin-dark", "path": "qa/screenshots/v1-1-production-polish/reports-admin-dark.png", "route": "/reports", "theme": "dark" },
+    { "name": "receipt-settings-light", "path": "qa/screenshots/v1-1-production-polish/receipt-settings-light.png", "route": "/settings/institutional-receipts", "theme": "light" },
+    { "name": "receipt-settings-preview-light", "path": "qa/screenshots/v1-1-production-polish/receipt-settings-preview-light.png", "route": "/settings/institutional-receipts", "theme": "light" },
+    { "name": "receipt-settings-preview-dark", "path": "qa/screenshots/v1-1-production-polish/receipt-settings-preview-dark.png", "route": "/settings/institutional-receipts", "theme": "dark" },
+    { "name": "admin-users-light", "path": "qa/screenshots/v1-1-production-polish/admin-users-light.png", "route": "/admin/users", "theme": "light" },
+    { "name": "admin-users-dark", "path": "qa/screenshots/v1-1-production-polish/admin-users-dark.png", "route": "/admin/users", "theme": "dark" },
+    { "name": "backups-pending-light", "path": "qa/screenshots/v1-1-production-polish/backups-pending-light.png", "route": "/backups", "theme": "light" },
+    { "name": "access-denied-reports-light", "path": "qa/screenshots/v1-1-production-polish/access-denied-reports-light.png", "route": "/reports", "theme": "light" },
+    { "name": "not-found-light", "path": "qa/screenshots/v1-1-production-polish/not-found-light.png", "route": "/does-not-exist", "theme": "light" }
+  ]
+}
