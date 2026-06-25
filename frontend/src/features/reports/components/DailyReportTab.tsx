@@ -195,7 +195,10 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, exporting =
                 <CardTitle>Gráfico por método</CardTitle>
               </CardHeader>
               <CardContent>
-                <div aria-hidden="true">
+                <div
+                  role="img"
+                  aria-label="Grafico de montos por metodo de pago; la tabla anterior contiene los valores exactos."
+                >
                   <ResponsiveContainer width="100%" height={200} minWidth={1} minHeight={1}>
                     <BarChart data={chartData}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} />

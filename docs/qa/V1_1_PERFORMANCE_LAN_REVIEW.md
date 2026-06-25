@@ -48,18 +48,18 @@ Largest generated assets from the latest local build:
 | --- | ---: |
 | `charts-JUI4aW6N.js` | 398.35 kB |
 | `vendor-Txi_p2nM.js` | 348.15 kB |
-| `index-BNR0Ep2y.js` | 195.93 kB |
+| `index-LfpyPV8E.js` | 195.93 kB |
 | `ui-BhLfDv7l.js` | 159.80 kB |
-| `ReportsView-DBSfW91L.js` | 97.68 kB |
+| `ReportsView-yIJQB8q5.js` | 98.05 kB |
 | `forms-ditSlwIx.js` | 97.64 kB |
 | `index-C97W6RCw.css` | 75.28 kB |
-| `DashboardView-bJHpXbHI.js` | 36.20 kB |
-| `BackupsView-DXrkr89x.js` | 29.21 kB |
-| `CatalogView-CTAY0zJE.js` | 28.75 kB |
-| `InstitutionalReceiptSettingsView-Bjd4g2Ri.js` | 25.70 kB |
-| `FiscalSettingsView-B-uRouwd.js` | 23.73 kB |
-| `InvoiceHistoryView-DaRwHH7s.js` | 21.17 kB |
-| `UsersView-DzGKNi7t.js` | 20.11 kB |
+| `DashboardView-HagcMhbI.js` | 36.19 kB |
+| `BackupsView-yOD0SGzv.js` | 29.21 kB |
+| `CatalogView-zdxJorZN.js` | 28.75 kB |
+| `InstitutionalReceiptSettingsView-CEC6k1dN.js` | 25.69 kB |
+| `FiscalSettingsView-CkBc8FO7.js` | 23.72 kB |
+| `InvoiceHistoryView-BAcGrrL9.js` | 21.16 kB |
+| `UsersView-COrQ2HZn.js` | 20.10 kB |
 
 ## Current Architecture Observations
 

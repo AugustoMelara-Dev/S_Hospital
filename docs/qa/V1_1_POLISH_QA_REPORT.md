@@ -84,6 +84,7 @@ Artifacts:
 - `npm.cmd run test -- receipt-settings --run`
 - `npm.cmd test -- --run src/features/reports/ReportsView.test.tsx src/features/reports/components/IncomeReportTab.test.tsx src/features/reports/components/CashSessionReportTab.test.tsx`
 - `npm.cmd run test -- NewInvoiceViewLayout.test.tsx InvoiceCart.test.tsx --run`
+- `npm.cmd run smoke:buttons`
 - `npm.cmd run typecheck`
 - `npm.cmd run lint`
 
@@ -95,7 +96,7 @@ Artifacts:
 - It does not prove backup restore in an isolated database.
 - It does not prove concurrent LAN load.
 - It does not yet cover every requested V1.1 screenshot name, including receipt PDF digital and a full successful mobile reports state with admin data.
-- It does not replace final backend, E2E release, smoke buttons, axe, responsive, PDF digital, and security/RBAC gates required before internal approval.
+- It does not replace final backend, E2E release, full axe coverage beyond the responsive button smoke, PDF digital, and security/RBAC gates required before internal approval.
 
 ## QA Assessment
 

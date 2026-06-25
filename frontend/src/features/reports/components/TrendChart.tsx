@@ -109,7 +109,12 @@ export function TrendChart({ report }: TrendChartProps) {
             </tbody>
           </table>
         </div>
-        <div ref={ref} className="h-72 w-full min-w-px" aria-hidden="true">
+        <div
+          ref={ref}
+          className="h-72 w-full min-w-px"
+          role="img"
+          aria-label="Grafico de tendencia diaria; la tabla oculta para lectores de pantalla contiene los valores exactos."
+        >
           {width > 0 ? (
             <AreaChart width={width} height={288} data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
               <defs>

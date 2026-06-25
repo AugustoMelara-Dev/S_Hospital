@@ -50,7 +50,12 @@ export function PaymentMethodPanel({ report }: PaymentMethodPanelProps) {
       </CardHeader>
       <CardContent>
         <div className="grid gap-4 lg:grid-cols-[14rem_minmax(0,1fr)]">
-          <div ref={ref} className="h-48 w-full min-w-px" aria-hidden="true">
+          <div
+            ref={ref}
+            className="h-48 w-full min-w-px"
+            role="img"
+            aria-label="Grafico de distribucion por metodo de pago; la tabla contigua contiene los valores exactos."
+          >
             {width > 0 ? (
               <PieChart width={width} height={192}>
                 <Tooltip content={<PieTooltip />} />
