@@ -195,15 +195,17 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, exporting =
                 <CardTitle>Gráfico por método</CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={200} minWidth={1} minHeight={1}>
-                  <BarChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="method" tickLine={false} />
-                    <YAxis tickLine={false} width={64} />
-                    <Tooltip formatter={(value) => [formatLempirasUI(value as number), 'Monto']} />
-                    <Bar dataKey="amount" fill="var(--color-primary)" radius={[6, 6, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+                <div aria-hidden="true">
+                  <ResponsiveContainer width="100%" height={200} minWidth={1} minHeight={1}>
+                    <BarChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="method" tickLine={false} />
+                      <YAxis tickLine={false} width={64} />
+                      <Tooltip formatter={(value) => [formatLempirasUI(value as number), 'Monto']} />
+                      <Bar dataKey="amount" fill="var(--color-primary)" radius={[6, 6, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </CardContent>
             </Card>
           )}

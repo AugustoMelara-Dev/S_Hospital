@@ -170,15 +170,17 @@ export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, servi
                 <CardTitle>Top 10 Servicios por {serviceAmountLabel}</CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={260} minWidth={1} minHeight={1}>
-                  <BarChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="service" tickLine={false} interval={0} height={70} angle={-20} textAnchor="end" />
-                    <YAxis tickLine={false} width={64} />
-                    <Tooltip formatter={(value) => [moneyLabel(value as number), serviceAmountLabel]} />
-                    <Bar dataKey="total" fill="var(--color-primary)" radius={[6, 6, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+                <div aria-hidden="true">
+                  <ResponsiveContainer width="100%" height={260} minWidth={1} minHeight={1}>
+                    <BarChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="service" tickLine={false} interval={0} height={70} angle={-20} textAnchor="end" />
+                      <YAxis tickLine={false} width={64} />
+                      <Tooltip formatter={(value) => [moneyLabel(value as number), serviceAmountLabel]} />
+                      <Bar dataKey="total" fill="var(--color-primary)" radius={[6, 6, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </CardContent>
             </Card>
           )}
