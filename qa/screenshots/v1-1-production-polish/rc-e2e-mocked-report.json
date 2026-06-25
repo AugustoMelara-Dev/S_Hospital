@@ -200,6 +200,12 @@
       "path": "qa/screenshots/v1-1-production-polish/mobile-reports-access-denied-light.png",
       "route": "/reports",
       "theme": "light"
+    },
+    {
+      "name": "mobile-reports-admin-light",
+      "path": "qa/screenshots/v1-1-production-polish/mobile-reports-admin-light.png",
+      "route": "/reports",
+      "theme": "light"
     }
   ],
   "console_issues": []

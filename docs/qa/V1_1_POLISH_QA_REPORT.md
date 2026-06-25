@@ -54,8 +54,25 @@ Result:
 
 - 4 Playwright tests passed.
 - 0 Playwright failures.
-- 33 screenshots captured.
+- 33 screenshots captured in the full mocked pass.
 - Browser console issues recorded by the mocked capture report: 0.
+
+Additional responsive evidence command:
+
+```powershell
+cd C:\Projects\S_Hospital-v1-1-polish\frontend
+$env:E2E_CAPTURE_RC_SCREENSHOTS='1'
+$env:E2E_CAPTURE_RC_OUTPUT_DIR='..\qa\screenshots\v1-1-production-polish-mobile-admin-temp'
+$env:E2E_CAPTURE_RC_REPORT_DIR='qa/screenshots/v1-1-production-polish-mobile-admin-temp'
+npx.cmd playwright test e2e/production-readiness.spec.ts --grep "responsive shell"
+```
+
+Additional responsive evidence result:
+
+- Passed.
+- 1 Playwright test passed.
+- 0 console issues.
+- Added `qa/screenshots/v1-1-production-polish/mobile-reports-admin-light.png` to close the successful admin mobile reports evidence gap.
 
 Build command:
 
@@ -160,7 +177,7 @@ Artifacts:
 - It does not prove a second LAN client can operate against the server.
 - It does not prove backup restore in an isolated database.
 - It does not prove concurrent LAN load.
-- It does not yet cover every requested V1.1 screenshot name, including a full successful mobile reports state with admin data.
+- It does not yet cover every requested V1.1 screenshot name as a single full regenerated matrix, although successful admin mobile reports evidence is now present as an additional focused screenshot.
 - It does not replace final full axe coverage beyond the responsive button smoke, MySQL/MariaDB production-like integration, and physical acceptance gates required before internal approval.
 
 ## QA Assessment

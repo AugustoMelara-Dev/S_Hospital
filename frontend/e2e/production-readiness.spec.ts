@@ -1191,6 +1191,12 @@ test('responsive shell keeps operational modules reachable', async ({ page }) =>
       await page.goto('/reports');
       await expect(page.getByText(/^Sin permisos$/i)).toBeVisible();
       await captureScreen(page, 'mobile-reports-access-denied-light', 'light');
+      await page.evaluate(() => fetch('/api/auth/logout', { method: 'POST' }));
+      await loginAs(page, 'admin.validacion');
+      await page.setViewportSize(viewport);
+      await page.goto('/reports');
+      await expect(page.getByRole('heading', { name: /^reportes$/i })).toBeVisible();
+      await captureScreen(page, 'mobile-reports-admin-light', 'light');
     }
   }
 

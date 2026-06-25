@@ -44,6 +44,7 @@
     { "name": "not-found-light", "path": "qa/screenshots/v1-1-production-polish/not-found-light.png", "route": "/does-not-exist", "theme": "light" },
     { "name": "mobile-billing-light", "path": "qa/screenshots/v1-1-production-polish/mobile-billing-light.png", "route": "/billing/new", "theme": "light" },
     { "name": "mobile-dashboard-light", "path": "qa/screenshots/v1-1-production-polish/mobile-dashboard-light.png", "route": "/dashboard", "theme": "light" },
-    { "name": "mobile-reports-access-denied-light", "path": "qa/screenshots/v1-1-production-polish/mobile-reports-access-denied-light.png", "route": "/reports", "theme": "light" }
+    { "name": "mobile-reports-access-denied-light", "path": "qa/screenshots/v1-1-production-polish/mobile-reports-access-denied-light.png", "route": "/reports", "theme": "light" },
+    { "name": "mobile-reports-admin-light", "path": "qa/screenshots/v1-1-production-polish/mobile-reports-admin-light.png", "route": "/reports", "theme": "light" }
   ]
 }
