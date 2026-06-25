@@ -84,6 +84,7 @@ Artifacts:
 - `npm.cmd run test -- receipt-settings --run`
 - `npm.cmd test -- --run src/features/reports/ReportsView.test.tsx src/features/reports/components/IncomeReportTab.test.tsx src/features/reports/components/CashSessionReportTab.test.tsx`
 - `npm.cmd run test -- NewInvoiceViewLayout.test.tsx InvoiceCart.test.tsx --run`
+- `npm.cmd run test`
 - `npm.cmd run smoke:buttons`
 - `npm.cmd run typecheck`
 - `npm.cmd run lint`
@@ -91,6 +92,7 @@ Artifacts:
 ## Known Gaps
 
 - This pass uses mocked API data; it does not prove Laravel/MySQL/MariaDB integration.
+- Backend tests have not run in this pass because `backend/vendor` is absent locally and `composer` is not available on PATH; Docker Compose also requires local `DB_PASSWORD` and `DB_ROOT_PASSWORD` values before services can start.
 - It does not prove physical printer output.
 - It does not prove a second LAN client can operate against the server.
 - It does not prove backup restore in an isolated database.
