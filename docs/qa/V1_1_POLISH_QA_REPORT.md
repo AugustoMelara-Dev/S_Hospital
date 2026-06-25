@@ -112,12 +112,28 @@ Release E2E result:
 - Flow covered: cashier invoice issue, payment, institutional PDF preview signal, invoice persistence, reports visibility, admin creation of catalog-only user, forced password change, navigation/RBAC enforcement.
 - The release runner now writes Playwright failure artifacts to `frontend/test-results/release-e2e-artifacts` so live service logs in `frontend/test-results/release-e2e` do not block Windows output cleanup.
 
+Institutional receipt PDF digital proof command:
+
+```powershell
+cd C:\Projects\S_Hospital-v1-1-polish
+docker run --rm -v ${PWD}:/workspace -v s_hospital-v1-1-polish_backend_vendor:/workspace/backend/vendor -w /workspace/backend s_hospital-v1-1-polish-backend php artisan test --filter=InstitutionalReceiptPdfTest --display-warnings --colors=never
+```
+
+Institutional receipt PDF digital proof result:
+
+- Passed with exit code 0.
+- 13 tests and 171 assertions in `Tests\Feature\InstitutionalReceiptPdfTest`.
+- Covered institutional fields, escaping, long/many-item receipts, half letter, letter, A5, 80mm, 58mm PDF bytes, no QR/barcode, access control, reprint reason/audit, idempotent PDF replay, and draft test print.
+- 13 warnings were emitted because the Docker test mount does not include `/workspace/backend/.env`; the test base forces testing config and assertions passed.
+- This is digital proof only and does not approve physical printer output.
+
 Artifacts:
 
 - `qa/screenshots/v1-1-production-polish/manifest.json`
 - `qa/screenshots/v1-1-production-polish/rc-e2e-mocked-report.json`
 - `qa/screenshots/v1-1-production-polish/*.png`
 - `docs/qa/V1_1_PERFORMANCE_LAN_REVIEW.md`
+- `docs/qa/V1_1_RECEIPT_PDF_DIGITAL_PROOF.md`
 - `frontend/test-results/release-e2e-report.json`
 - `frontend/test-results/release-e2e-playwright.json`
 
@@ -134,6 +150,7 @@ Artifacts:
 - `npm.cmd run lint`
 - `docker run --rm -v ${PWD}:/workspace -v s_hospital-v1-1-polish_backend_vendor:/workspace/backend/vendor -w /workspace/backend s_hospital-v1-1-polish-backend php artisan test --colors=never`
 - Docker-backed release E2E with Vite on `127.0.0.1:5174` and Laravel on `127.0.0.1:18081`: `node .\node_modules\@playwright\test\cli.js test --config=playwright.release.config.ts`
+- Docker-backed receipt PDF proof: `php artisan test --filter=InstitutionalReceiptPdfTest --display-warnings --colors=never`
 
 ## Known Gaps
 
@@ -143,9 +160,9 @@ Artifacts:
 - It does not prove a second LAN client can operate against the server.
 - It does not prove backup restore in an isolated database.
 - It does not prove concurrent LAN load.
-- It does not yet cover every requested V1.1 screenshot name, including receipt PDF digital and a full successful mobile reports state with admin data.
-- It does not replace final full axe coverage beyond the responsive button smoke, PDF digital proof, MySQL/MariaDB production-like integration, and physical acceptance gates required before internal approval.
+- It does not yet cover every requested V1.1 screenshot name, including a full successful mobile reports state with admin data.
+- It does not replace final full axe coverage beyond the responsive button smoke, MySQL/MariaDB production-like integration, and physical acceptance gates required before internal approval.
 
 ## QA Assessment
 
-The current evidence is useful for visual regression and screen review on the polished branch, especially for dashboard, POS cart, reports, receipt settings, users, backups, access denied, and 404 states. The Docker-backed release E2E now provides digital cashier/RBAC integration evidence, but V1.1 remains in progress until PDF digital proof, final full visual matrix, MySQL/MariaDB production-like validation, and physical acceptance evidence are complete.
+The current evidence is useful for visual regression and screen review on the polished branch, especially for dashboard, POS cart, reports, receipt settings, users, backups, access denied, and 404 states. The Docker-backed release E2E now provides digital cashier/RBAC integration evidence, and the receipt PDF suite provides digital PDF proof. V1.1 remains in progress until final full visual matrix, MySQL/MariaDB production-like validation, full axe/security review, and physical acceptance evidence are complete.
