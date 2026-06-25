@@ -70,6 +70,24 @@ Build result:
 - `tsc --noEmit` completed.
 - Vite production build completed.
 
+Backend command:
+
+```powershell
+cd C:\Projects\S_Hospital-v1-1-polish
+$env:DB_PASSWORD='local_test_password'
+$env:DB_ROOT_PASSWORD='local_root_password'
+docker compose build backend
+docker run --rm -v ${PWD}:/workspace -v s_hospital-v1-1-polish_backend_vendor:/workspace/backend/vendor -w /workspace/backend s_hospital-v1-1-polish-backend php artisan test --colors=never
+```
+
+Backend result:
+
+- Passed.
+- 49 backend tests passed.
+- 668 backend warnings were reported by PHPUnit.
+- 1 backend coverage test was skipped because no coverage driver is enabled.
+- First Docker Compose test attempt with only `backend/` mounted was not accepted as final evidence because repo-root guard tests could not read `../frontend`, `../devex`, `../setup.bat`, and `.github` files.
+
 Artifacts:
 
 - `qa/screenshots/v1-1-production-polish/manifest.json`
@@ -88,11 +106,12 @@ Artifacts:
 - `npm.cmd run smoke:buttons`
 - `npm.cmd run typecheck`
 - `npm.cmd run lint`
+- `docker run --rm -v ${PWD}:/workspace -v s_hospital-v1-1-polish_backend_vendor:/workspace/backend/vendor -w /workspace/backend s_hospital-v1-1-polish-backend php artisan test --colors=never`
 
 ## Known Gaps
 
 - This pass uses mocked API data; it does not prove Laravel/MySQL/MariaDB integration.
-- Backend tests have not run in this pass because `backend/vendor` is absent locally and `composer` is not available on PATH; Docker Compose also requires local `DB_PASSWORD` and `DB_ROOT_PASSWORD` values before services can start.
+- Backend tests ran in Docker with SQLite/phpunit configuration; they do not prove MySQL/MariaDB production integration.
 - It does not prove physical printer output.
 - It does not prove a second LAN client can operate against the server.
 - It does not prove backup restore in an isolated database.
