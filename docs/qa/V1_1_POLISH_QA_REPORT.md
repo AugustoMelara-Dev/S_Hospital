@@ -75,6 +75,7 @@ Artifacts:
 - `qa/screenshots/v1-1-production-polish/manifest.json`
 - `qa/screenshots/v1-1-production-polish/rc-e2e-mocked-report.json`
 - `qa/screenshots/v1-1-production-polish/*.png`
+- `docs/qa/V1_1_PERFORMANCE_LAN_REVIEW.md`
 
 ## Unit And Static Checks Run During V1.1 Slices
 
