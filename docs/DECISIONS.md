@@ -3694,3 +3694,13 @@ Decision: los campos opcionales `government_line`, `secretariat_line`, `receipt_
 Motivo: el recibo institucional debe usar solo datos reales configurados por el hospital. Si una linea oficial falta, el sistema debe tratarla como pendiente o vacia, no completar texto legal por conveniencia.
 
 Validacion: `npm.cmd run test -- FiscalSettingsView.test.tsx --run`.
+
+# 2026-06-25 - Release E2E separa artefactos Playwright de logs vivos
+
+Contexto: el E2E de release corre Vite y Laravel durante la prueba y guarda logs de esos servicios bajo `frontend\test-results\release-e2e`. En Windows, Playwright intenta limpiar su `outputDir` antes de ejecutar tests; si el `outputDir` coincide con `frontend\test-results`, los logs abiertos por los servicios bloquean la limpieza.
+
+Decision: `frontend\playwright.release.config.ts` define `outputDir: 'test-results/release-e2e-artifacts'`, dejando los logs vivos de servicios fuera del directorio que Playwright borra al iniciar. El spec RBAC tambien verifica la fila del usuario creado por username unico, no por nombre fijo, para tolerar corridas repetidas contra una base de pruebas no productiva.
+
+Motivo: mantener el release E2E repetible en Windows/Docker sin procesos colgados ni falsos fallos por datos creados en corridas anteriores.
+
+Validacion: Docker-backed release E2E contra Laravel en `127.0.0.1:18081` y Vite en `127.0.0.1:5174`: 2 specs passed, 0 skipped, 0 unexpected, 0 flaky.
