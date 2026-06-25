@@ -3684,3 +3684,13 @@ Decision: `production_readiness_preflight.ps1` agrega `Test-ProofMatchesBaseUrl`
 Motivo: una prueba real contra una IP anterior no prueba el servidor final actual. Produccion local puede cambiar por DHCP o refresh LAN; por eso la evidencia final debe estar ligada a la URL vigente.
 
 Validacion: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\test_backup_task_envfile_hardening.ps1`, `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 -BaseUrl http://192.168.1.2:8081 -EnvFile C:\tmp\s_hospital_offlinetest.env -ComposeProjectName shospital_offlinetest`, `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\validate_installer_safety.ps1 -Root C:\Projects\S_Hospital`, `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\assert_offline_release_clean.ps1` y `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps1 -BaseUrl http://192.168.1.2:8081 -EnvFile C:\tmp\s_hospital_offlinetest.env -ComposeProjectName shospital_offlinetest`.
+
+# 2026-06-25 - Lineas institucionales opcionales no se inventan en configuracion fiscal
+
+Contexto: la auditoria V1.1 encontro que la pantalla de configuracion fiscal rellenaba valores por defecto para encabezado de gobierno, dependencia y lugar del recibo cuando el backend devolvia `null`. Eso podia guardar o mostrar datos institucionales no confirmados.
+
+Decision: los campos opcionales `government_line`, `secretariat_line`, `receipt_location` y `receipt_footer_text` se cargan vacios cuando no existen en base de datos y se envian como `null` si el usuario los deja en blanco. La direccion del hospital no se usa como sustituto automatico del lugar del recibo.
+
+Motivo: el recibo institucional debe usar solo datos reales configurados por el hospital. Si una linea oficial falta, el sistema debe tratarla como pendiente o vacia, no completar texto legal por conveniencia.
+
+Validacion: `npm.cmd run test -- FiscalSettingsView.test.tsx --run`.

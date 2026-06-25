@@ -77,6 +77,12 @@ function safeFiscalErrorMessage(error: unknown, fallback: string): string {
     : message || fallback;
 }
 
+function optionalFiscalText(value: string): string | null {
+  const trimmed = value.trim();
+
+  return trimmed ? trimmed : null;
+}
+
 function formatSequenceNumber(value: number | null | undefined): string {
   if (value == null) return '-';
 
@@ -108,9 +114,9 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
     scanner_enabled: false,
     partial_payments_enabled: false,
     receipt_paper_size: 'half_letter',
-    government_line: 'Gobierno de Honduras',
-    secretariat_line: 'Secretaría de Salud Pública',
-    receipt_location: 'Tocoa, Colón',
+    government_line: '',
+    secretariat_line: '',
+    receipt_location: '',
     receipt_footer_text: '',
   });
 
@@ -183,9 +189,9 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
           scanner_enabled: settingsData.scanner_enabled === true,
           partial_payments_enabled: settingsData.partial_payments_enabled === true,
           receipt_paper_size: institutionalPaperSize(settingsData.receipt_paper_size),
-          government_line: settingsData.government_line ?? 'Gobierno de Honduras',
-          secretariat_line: settingsData.secretariat_line ?? 'Secretaría de Salud Pública',
-          receipt_location: settingsData.receipt_location ?? settingsData.address ?? 'Tocoa, Colón',
+          government_line: settingsData.government_line ?? '',
+          secretariat_line: settingsData.secretariat_line ?? '',
+          receipt_location: settingsData.receipt_location ?? '',
           receipt_footer_text: settingsData.receipt_footer_text ?? '',
         });
         if (settingsData.primary_color) {
@@ -233,10 +239,10 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
         partial_payments_enabled: hospitalForm.partial_payments_enabled,
         receipt_template_mode: 'institutional',
         receipt_paper_size: hospitalForm.receipt_paper_size,
-        government_line: hospitalForm.government_line,
-        secretariat_line: hospitalForm.secretariat_line,
-        receipt_location: hospitalForm.receipt_location,
-        receipt_footer_text: hospitalForm.receipt_footer_text,
+        government_line: optionalFiscalText(hospitalForm.government_line),
+        secretariat_line: optionalFiscalText(hospitalForm.secretariat_line),
+        receipt_location: optionalFiscalText(hospitalForm.receipt_location),
+        receipt_footer_text: optionalFiscalText(hospitalForm.receipt_footer_text),
         default_tax_rate: settings?.default_tax_rate ?? '15.00',
       });
       setSettings(updated);
@@ -270,10 +276,10 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
         partial_payments_enabled: hospitalForm.partial_payments_enabled,
         receipt_template_mode: 'institutional',
         receipt_paper_size: hospitalForm.receipt_paper_size || settings.receipt_paper_size,
-        government_line: hospitalForm.government_line || settings.government_line,
-        secretariat_line: hospitalForm.secretariat_line || settings.secretariat_line,
-        receipt_location: hospitalForm.receipt_location || settings.receipt_location,
-        receipt_footer_text: hospitalForm.receipt_footer_text || settings.receipt_footer_text,
+        government_line: optionalFiscalText(hospitalForm.government_line),
+        secretariat_line: optionalFiscalText(hospitalForm.secretariat_line),
+        receipt_location: optionalFiscalText(hospitalForm.receipt_location),
+        receipt_footer_text: optionalFiscalText(hospitalForm.receipt_footer_text),
         default_tax_rate: settings.default_tax_rate ?? '15.00',
       });
       setSettings(updated);
@@ -483,7 +489,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                     id="receipt_location"
                     value={hospitalForm.receipt_location}
                     onChange={(e) => setHospitalForm(prev => ({ ...prev, receipt_location: e.target.value }))}
-                    placeholder="Tocoa, Colón"
+                    placeholder="Ciudad o lugar autorizado"
                     disabled={!canEdit}
                   />
                 </div>
