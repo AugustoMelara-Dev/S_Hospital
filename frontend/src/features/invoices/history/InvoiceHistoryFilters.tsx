@@ -1,4 +1,5 @@
 import type { FormEvent } from 'react';
+import { Search } from 'lucide-react';
 import { DateRangePicker } from '../../../components/ui/date-range-picker';
 import { FilterBar } from '../../../components/ui/filter-bar';
 import { Input } from '../../../components/ui/input';
@@ -25,6 +26,7 @@ export function InvoiceHistoryFilters({
 }: InvoiceHistoryFiltersProps) {
   return (
     <FilterBar
+      className="border-operational-border"
       onSearch={(event) => onSubmit(event)}
       onClear={onClear}
       isLoading={loading}
@@ -62,24 +64,30 @@ export function InvoiceHistoryFilters({
 
       <div className="space-y-1.5">
         <Label htmlFor="patient" className="text-xs font-semibold text-muted-foreground">Paciente</Label>
-        <Input
-          id="patient"
-          placeholder="Nombre del paciente..."
-          value={filters.patient ?? ''}
-          onChange={(event) => onChange({ ...filters, patient: event.target.value })}
-          className="h-10"
-        />
+        <div className="relative">
+          <Search data-icon aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            id="patient"
+            placeholder="Nombre del paciente..."
+            value={filters.patient ?? ''}
+            onChange={(event) => onChange({ ...filters, patient: event.target.value })}
+            className="h-10 pl-9"
+          />
+        </div>
       </div>
 
       <div className="space-y-1.5">
         <Label htmlFor="invoice_number" className="text-xs font-semibold text-muted-foreground">Número de factura</Label>
-        <Input
-          id="invoice_number"
-          placeholder="A-0001..."
-          value={filters.invoice_number ?? ''}
-          onChange={(event) => onChange({ ...filters, invoice_number: event.target.value })}
-          className="h-10"
-        />
+        <div className="relative">
+          <Search data-icon aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            id="invoice_number"
+            placeholder="A-0001..."
+            value={filters.invoice_number ?? ''}
+            onChange={(event) => onChange({ ...filters, invoice_number: event.target.value })}
+            className="h-10 pl-9 font-mono tabular-nums"
+          />
+        </div>
       </div>
     </FilterBar>
   );
