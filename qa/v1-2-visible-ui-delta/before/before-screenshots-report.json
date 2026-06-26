@@ -1,0 +1,25 @@
+{
+  "capturedAt": "2026-06-26T13:25:58Z",
+  "baseUrl": "http://192.168.1.10:8081",
+  "loginUser": "admin.validacion",
+  "allowMutations": false,
+  "captures": [
+    {
+      "name": "login",
+      "route": "/login",
+      "viewport": {
+        "width": 1440,
+        "height": 960
+      },
+      "screenshot": "qa/v1-2-visible-ui-delta/before/login.png"
+    }
+  ],
+  "findings": [
+    {
+      "screen": "authenticated-before-captures",
+      "level": "blocker",
+      "message": "Runtime 8081 rejected the documented demo credentials with HTTP 422: Las credenciales no son validas."
+    }
+  ],
+  "consoleEntries": []
+}
