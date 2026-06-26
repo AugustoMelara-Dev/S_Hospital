@@ -2,16 +2,36 @@
 
 ## Estado general
 
-* SHA probado: `bfa115f15f613a69e81e54a462a5c0e7c9e40f69`
+* SHA probado para auditoria final: `4286887cf7f7e51b56ee27aecdb1b3a6b7d9691f`
+* SHA base de evidencia local descartable heredada: `bfa115f15f613a69e81e54a462a5c0e7c9e40f69`
 * Fecha: 2026-06-25 America/Tegucigalpa
 * Responsable tecnico: Codex, verificacion asistida local
 * Operador hospital: PENDIENTE - no disponible en esta sesion
 * PC servidor: `AugustoMelara`, Windows, Wi-Fi IPv4 `192.168.1.10`
 * PC cliente 1: misma PC servidor para self-check LAN por IP; no cuenta como segunda PC real
 * PC cliente 2: PENDIENTE - no disponible en esta sesion
-* Impresora: PENDIENTE - impresora fisica no disponible en esta sesion
+* Impresora: Epson L15150 detectada por Windows; salida fisica no ejecutada en esta sesion
 * Red: Wi-Fi LAN `192.168.1.0/24`, gateway `192.168.1.1`; URLs self-check `http://192.168.1.10:8080` y `http://192.168.1.10:8081`
 * Resultado general: PENDIENTE - restore descartable local PASS y concurrencia/carga local descartable PASS; gates fisicos LAN/impresion/carga real siguen pendientes
+
+## Auditoria final de campo asistida - 2026-06-25
+
+* Rama de auditoria: `codex/field-acceptance-final-audit`
+* SHA probado: `4286887cf7f7e51b56ee27aecdb1b3a6b7d9691f`
+* Hora local del servidor: `2026-06-25 22:44:07 -06:00`
+* URL LAN preferida: `http://192.168.1.10:8081`
+* URL LAN alternativa observada: `http://192.168.1.10:8080`
+* Validacion desde servidor: SELF-CHECK PASS, NO SUSTITUYE SEGUNDA PC LAN.
+* Safe GET en `8081`: `/` HTTP 200 105 ms, `/login` HTTP 200 47 ms, `/api/health` HTTP 200 85 ms, `/api/system/health` HTTP 200 102 ms, `/api/system/setup-status` HTTP 200 75 ms.
+* Safe GET en `8080`: PASS para `/`, `/login`, `/api/health`, `/api/system/health`, `/api/system/setup-status`.
+* Salud del sistema en `8081`: base de datos MySQL conectada, `recent_errors=[]`, `failed_last_24h=0`, issue operativo conocido `backup_worker_idle`.
+* Docker/stack activo: `shospital_offlinetest-*` healthy en `8081`; `shospital_prodtest-*` healthy en `8080`; `s_hospital_f7_verify-*` healthy en `18080`.
+* Impresoras detectadas: `L15150 Series(Network)` driver `EPSON L15150 Series`, puerto `EP8AFB63:L15150 SERIES`, estado Normal; `Epson L15150 Directa` driver `EPSON L15150 Series`, puerto `IP_192.168.1.34_RAW9100`, estado Normal; una instancia WSD del mismo modelo aparece Offline.
+* Configuracion de impresora observada: Epson L15150 con `PaperSize=A4`, color, una cara. Windows no reporto impresora predeterminada.
+* Salida fisica impresa: NO EJECUTADO - falta operador fisico, confirmacion de papel colocado y ejecucion de impresion con datos sinteticos.
+* Checklist generado: `qa/field-acceptance/print-proof-checklist-final-audit-20260625.txt`.
+* Produccion fisica aprobada: NO.
+* Tag creado: NO.
 
 ## Gate 1 - Segunda PC LAN
 
@@ -35,11 +55,11 @@ Tabla por formato:
 
 | Formato | Hardware disponible | Estado | Observacion | Evidencia |
 | ------- | ------------------- | ------ | ----------- | --------- |
-| Carta | No verificado | PENDIENTE | Impresora fisica no disponible en esta sesion. | Checklist generado por `scripts/qa/print-proof-checklist.ps1`; sin salida fisica. |
-| Media carta | No verificado | PENDIENTE | Impresora fisica no disponible en esta sesion. | Checklist generado por `scripts/qa/print-proof-checklist.ps1`; sin salida fisica. |
-| A5 | No verificado | PENDIENTE | Impresora fisica no disponible en esta sesion. | Checklist generado por `scripts/qa/print-proof-checklist.ps1`; sin salida fisica. |
-| 80mm | No verificado | PENDIENTE | Requiere impresora compatible; hardware no disponible en esta sesion. | Sin salida fisica. |
-| 58mm | No verificado | PENDIENTE | Requiere impresora compatible; hardware no disponible en esta sesion. | Sin salida fisica. |
+| Carta | Epson L15150 detectada; papel fisico no confirmado | PENDIENTE | Driver observado en A4; no se imprimio recibo/factura sintetica en papel carta. | Checklist generado por `scripts/qa/print-proof-checklist.ps1`; sin salida fisica. |
+| Media carta | Epson L15150 detectada; perfil/papel fisico no confirmado | PENDIENTE | Requiere confirmar perfil de media carta en driver y papel colocado. No se imprimio salida fisica. | Checklist generado por `scripts/qa/print-proof-checklist.ps1`; sin salida fisica. |
+| A5 | Epson L15150 detectada; perfil/papel fisico no confirmado | PENDIENTE | Requiere confirmar A5 en driver y papel colocado. No se imprimio salida fisica. | Checklist generado por `scripts/qa/print-proof-checklist.ps1`; sin salida fisica. |
+| 80mm | No verificado | HARDWARE NO DISPONIBLE | No se detecto impresora termica compatible en esta sesion. | Sin salida fisica. |
+| 58mm | No verificado | HARDWARE NO DISPONIBLE | No se detecto impresora termica compatible en esta sesion. | Sin salida fisica. |
 
 ## Gate 4 - Backup/restore
 
@@ -68,7 +88,7 @@ Tabla por formato:
 | -- | ---- | --------- | ------- | ------------ | --------- | ------ |
 | QA-SCRIPT-001 | Preparacion | Baja | `scripts/qa/check-main-state.ps1` tenia SHA por defecto anterior y fallo por manejo interno de parametros de su helper Git. | Ejecutar el script desde rama limpia con SHA actual esperado. | Corregido en esta rama de bitacora; verificado post-commit con `main` y `origin/main` en `bfa115f15f613a69e81e54a462a5c0e7c9e40f69`. | Corregido |
 | QA-SCRIPT-002 | Preparacion | Baja | El objetivo operativo invoca `scripts/qa/check-lan-url.ps1 -Url`, pero el script solo aceptaba `-BaseUrl`. | Ejecutar `powershell -ExecutionPolicy Bypass -File scripts/qa/check-lan-url.ps1 -Url "http://192.168.1.10:8081"`. | Corregido en esta rama con alias `Url`; verificado PASS contra `8080` y `8081`. | Corregido |
-| QA-SCRIPT-003 | Backup/restore | Baja | `scripts/validate_restore_mysql.sh` falla en esta imagen con `mktemp: Invalid argument` porque usa una plantilla con sufijo `.sql` no aceptada por el `mktemp` disponible. | Ejecutar restore cifrado con el script existente contra MariaDB 11.4.3. | No afecta producto. Se uso runner local `qa/field-acceptance/run-disposable-restore-local.sh` para completar evidencia descartable; conviene corregir el script operativo antes de entregarlo como comando oficial. | Abierto como mejora de script QA |
+| QA-SCRIPT-003 | Backup/restore | Baja | `scripts/validate_restore_mysql.sh` fallaba en una imagen con `mktemp: Invalid argument` porque usaba una plantilla con sufijo `.sql` no aceptada por el `mktemp` disponible. | Ejecutar restore cifrado con el script existente contra MariaDB 11.4.3. | Corregido en `codex/field-acceptance-finalize` usando `mktemp -d`, archivos temporales dentro del directorio y cleanup por `trap`. `C:\Program Files\Git\bin\bash.exe -n scripts/validate_restore_mysql.sh` PASS. Runtime restore del script operativo: PENDIENTE en entorno descartable explicito. | Corregido y validado en sintaxis; runtime pendiente |
 
 ## Decision final
 
