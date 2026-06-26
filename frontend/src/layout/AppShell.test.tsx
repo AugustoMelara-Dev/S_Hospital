@@ -98,7 +98,10 @@ describe('AppShell', () => {
   it('marks the active route with aria-current="page"', () => {
     renderShell({ initialPath: '/catalog' });
 
-    expect(screen.getByRole('link', { name: /catálogo/i })).toHaveAttribute('aria-current', 'page');
+    const activeLink = screen.getByRole('link', { name: /catálogo/i });
+
+    expect(activeLink).toHaveAttribute('aria-current', 'page');
+    expect(activeLink).toHaveAttribute('data-active', 'true');
   });
 
   it('keeps restricted navigation hidden until the user has all required permissions', () => {
@@ -184,11 +187,13 @@ describe('AppShell', () => {
 
   it('keeps operational cash and LAN status visible without changing dark-mode logic', () => {
     document.documentElement.classList.add('dark');
-    renderShell({ user: fullCashierUser });
+    const { container } = renderShell({ user: fullCashierUser });
 
     expect(screen.getAllByText(/caja #12/i).length).toBeGreaterThan(0);
     expect(screen.getByLabelText(/red local disponible/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /nueva factura/i })).toBeInTheDocument();
+    expect(container.querySelector('[data-slot="topbar-operational-status"]')).toBeInTheDocument();
+    expect(container.querySelector('[data-slot="sidebar-cash-status"]')).toBeInTheDocument();
 
     document.documentElement.classList.remove('dark');
   });

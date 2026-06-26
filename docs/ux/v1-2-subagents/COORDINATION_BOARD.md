@@ -130,3 +130,16 @@ php artisan test --filter=InstitutionalReceiptPdfTest --colors=never
   - `npm run test -- ui shared` PASS, 9 files / 42 tests
   - `npm run build` PASS
   - `git diff --check HEAD~1..HEAD` PASS
+
+### 2026-06-26 - Shell y navegacion
+
+- Rama de trabajo: `codex/v1-2-shell-navigation`
+- Worktree: `C:\Projects\S_Hospital-v12-shell`
+- Archivos principales: `frontend/src/layout/**`, tests `AppShell`, tablero de coordinacion.
+- Handoff: shell institucional actualizado con sidebar mas fuerte, estado LAN/caja mas prominente, active state reforzado, breadcrumbs desktop mas visibles y drawer movil pulido.
+- Guardrails confirmados: sin cambios en `appNavigation.ts`, rutas, orden, permisos, modes, backend, contratos API, POS, pagos o reportes.
+- Gates ejecutados en rama de shell:
+  - `npm run typecheck` PASS
+  - `npm run lint` PASS
+  - `npm run test -- AppShell appNavigation --run` PASS, 3 files / 16 tests
+  - `npm run build` PASS
