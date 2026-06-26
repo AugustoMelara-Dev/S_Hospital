@@ -11,7 +11,7 @@
 * PC cliente 2: PENDIENTE - no disponible en esta sesion
 * Impresora: PENDIENTE - impresora fisica no disponible en esta sesion
 * Red: Wi-Fi LAN `192.168.1.0/24`, gateway `192.168.1.1`; URLs self-check `http://192.168.1.10:8080` y `http://192.168.1.10:8081`
-* Resultado general: PENDIENTE
+* Resultado general: PENDIENTE - restore descartable local PASS; gates fisicos LAN/impresion/carga siguen pendientes
 
 ## Gate 1 - Segunda PC LAN
 
@@ -43,14 +43,14 @@ Tabla por formato:
 
 ## Gate 4 - Backup/restore
 
-* Estado: PENDIENTE - no ejecutado en entorno descartable de campo
-* Base origen descartable: No creada en esta sesion
-* Base destino descartable: No creada en esta sesion
-* Backup: No generado para este gate de campo
-* Checksum: No disponible
-* Conteos antes: No ejecutado
-* Conteos despues: No ejecutado
-* Resultado: PENDIENTE; no se hizo restore y no se toco ninguna base productiva
+* Estado: PASS local descartable - PENDIENTE para ejecucion final en sitio hospitalario
+* Base origen descartable: `s_hospital_test_field_src_20260625213129`
+* Base destino descartable: `s_hospital_restore_validation_20260625213129`
+* Backup: `storage/app/private/backups/hospital-backup-20260625-213256-lprlqd1y.sql.enc`
+* Checksum: `1d4ce6f7e113add9aad6edc241b476190dffa81615e1e0ccb9d0d1238f0fc97b`
+* Conteos antes: users=3, roles=5, services=122, invoices=0, invoice_items=0, payments=0, cash_register_sessions=0, cash_movements=0, institutional_receipts=0, audit_logs=91, fiscal_sequences=1, fiscal_settings=1
+* Conteos despues: users=3, roles=5, services=122, invoices=0, invoice_items=0, payments=0, cash_register_sessions=0, cash_movements=0, institutional_receipts=0, audit_logs=90, fiscal_sequences=1, fiscal_settings=1
+* Resultado: PASS local. El delta de `audit_logs` es 1 porque el evento de exito del backup se registra despues de producir el dump SQL. Evidencia: `qa/field-acceptance/restore-validation-local-20260625213129.md`. No se toco base productiva y los contenedores/base descartables fueron eliminados.
 
 ## Gate 5 - Carga/concurrencia
 
@@ -68,6 +68,7 @@ Tabla por formato:
 | -- | ---- | --------- | ------- | ------------ | --------- | ------ |
 | QA-SCRIPT-001 | Preparacion | Baja | `scripts/qa/check-main-state.ps1` tenia SHA por defecto anterior y fallo por manejo interno de parametros de su helper Git. | Ejecutar el script desde rama limpia con SHA actual esperado. | Corregido en esta rama de bitacora; verificado post-commit con `main` y `origin/main` en `bfa115f15f613a69e81e54a462a5c0e7c9e40f69`. | Corregido |
 | QA-SCRIPT-002 | Preparacion | Baja | El objetivo operativo invoca `scripts/qa/check-lan-url.ps1 -Url`, pero el script solo aceptaba `-BaseUrl`. | Ejecutar `powershell -ExecutionPolicy Bypass -File scripts/qa/check-lan-url.ps1 -Url "http://192.168.1.10:8081"`. | Corregido en esta rama con alias `Url`; verificado PASS contra `8080` y `8081`. | Corregido |
+| QA-SCRIPT-003 | Backup/restore | Baja | `scripts/validate_restore_mysql.sh` falla en esta imagen con `mktemp: Invalid argument` porque usa una plantilla con sufijo `.sql` no aceptada por el `mktemp` disponible. | Ejecutar restore cifrado con el script existente contra MariaDB 11.4.3. | No afecta producto. Se uso runner local `qa/field-acceptance/run-disposable-restore-local.sh` para completar evidencia descartable; conviene corregir el script operativo antes de entregarlo como comando oficial. | Abierto como mejora de script QA |
 
 ## Decision final
 
