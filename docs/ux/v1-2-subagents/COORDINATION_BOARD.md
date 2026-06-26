@@ -143,3 +143,19 @@ php artisan test --filter=InstitutionalReceiptPdfTest --colors=never
   - `npm run lint` PASS
   - `npm run test -- AppShell appNavigation --run` PASS, 3 files / 16 tests
   - `npm run build` PASS
+
+### 2026-06-26 - Dashboard command center
+
+- Rama de trabajo: `codex/v1-2-dashboard`
+- Worktree: `C:\Projects\S_Hospital-v12-dashboard`
+- Archivos principales: `frontend/src/features/dashboard/**`, test `DashboardView`.
+- Handoff: dashboard convertido en centro de mando operativo con banner institucional, estado de caja, acciones primarias, resumen de hoy/mes, pendiente mensual opcional, cards de ingresos, metodos de pago, servicios top, cajeros y next step.
+- Datos usados: `cashSession`, `setupStatus` existente, `DashboardReport.current_month`, `DashboardReport.last_7_days`, `payments_by_method`, `top_services` y `cashiers_summary`. No se agregaron endpoints, queries, contratos ni KPIs fuera de esos campos.
+- Guardrails confirmados: sin cambios backend, sin pagos/caja/reducers POS, sin payloads, sin calculos fiscales, sin permisos backend y sin librerias nuevas.
+- Charts: `RevenueBarChart` y `PaymentMethodPieChart` dejan de apagar `accessibilityLayer`; mantienen tablas `sr-only`, leyendas y tooltips con tokens V1.2.
+- Gates ejecutados en rama de dashboard:
+  - `npm run test -- DashboardView --run` PASS, 1 file / 18 tests
+  - `npm run lint` PASS
+  - `npm run typecheck` PASS
+  - `npm run build` PASS
+  - `git diff --check` PASS

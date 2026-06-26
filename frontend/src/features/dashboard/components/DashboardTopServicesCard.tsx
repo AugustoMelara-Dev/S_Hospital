@@ -37,6 +37,7 @@ export function DashboardTopServicesCard({
       onRetry={onRefresh}
       emptyDescription={EMPTY_DESCRIPTION}
       emptyTitle="Sin servicios facturados este mes"
+      variant="chart"
     >
       {topServices ? <TopServicesChart services={topServices} /> : null}
     </DashboardSectionCard>

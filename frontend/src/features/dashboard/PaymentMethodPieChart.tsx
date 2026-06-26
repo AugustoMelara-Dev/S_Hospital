@@ -20,10 +20,10 @@ function numericTooltipValue(value: TooltipValue): number {
 }
 
 const COLORS = {
-  cash: 'var(--color-success)',
-  transfer: 'var(--color-info)',
-  card: 'var(--color-secondary)',
-  other: 'var(--color-warning)',
+  cash: 'var(--color-chart-1)',
+  transfer: 'var(--color-chart-2)',
+  card: 'var(--color-chart-5)',
+  other: 'var(--color-chart-3)',
 };
 
 const LABELS = {
@@ -58,10 +58,10 @@ export function PaymentMethodPieChart({ data }: PaymentMethodPieChartProps) {
     <figure>
       <div className="sr-only">
         <table>
-          <caption>Cobros por método de pago</caption>
+          <caption>Cobros por metodo de pago</caption>
           <thead>
             <tr>
-              <th scope="col">Método</th>
+              <th scope="col">Metodo</th>
               <th scope="col">Monto</th>
               <th scope="col">Porcentaje</th>
             </tr>
@@ -79,51 +79,58 @@ export function PaymentMethodPieChart({ data }: PaymentMethodPieChartProps) {
       </div>
       <div ref={ref} className="h-[240px] w-full min-w-px" style={{ minHeight: 240 }}>
         {width > 0 ? (
-          <PieChart width={width} height={240} accessibilityLayer={false}>
-          <Pie
-            data={chartData}
-            cx="50%"
-            cy="50%"
-            innerRadius={60}
-            outerRadius={80}
-            paddingAngle={4}
-            dataKey="value"
+          <PieChart
+            width={width}
+            height={240}
+            accessibilityLayer
+            aria-label="Grafico de cobros por metodo de pago"
           >
-            {chartData.map((entry) => (
-              <Cell
-                key={`cell-${entry.key}`}
-                fill={COLORS[entry.key as keyof typeof COLORS] || 'var(--color-muted-foreground)'}
-              />
-            ))}
-          </Pie>
-          <Tooltip
-            contentStyle={{
-              backgroundColor: 'var(--color-card)',
-              borderColor: 'var(--color-border)',
-              borderRadius: 'var(--radius-md)',
-              color: 'var(--color-foreground)',
-              fontSize: '12px',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-            }}
-            formatter={(value: TooltipValue) => {
-              const numericValue = numericTooltipValue(value);
+            <Pie
+              data={chartData}
+              cx="50%"
+              cy="50%"
+              innerRadius={60}
+              outerRadius={80}
+              paddingAngle={4}
+              dataKey="value"
+            >
+              {chartData.map((entry) => (
+                <Cell
+                  key={`cell-${entry.key}`}
+                  fill={COLORS[entry.key as keyof typeof COLORS] || 'var(--color-muted-foreground)'}
+                />
+              ))}
+            </Pie>
+            <Tooltip
+              contentStyle={{
+                backgroundColor: 'var(--color-card)',
+                borderColor: 'var(--color-border)',
+                borderRadius: 'var(--radius-md)',
+                color: 'var(--color-foreground)',
+                fontSize: '12px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+              }}
+              formatter={(value: TooltipValue) => {
+                const numericValue = numericTooltipValue(value);
 
-              return [
-                `${formatLempirasUI(numericValue)} (${((numericValue / total) * 100).toFixed(1)}%)`,
-                'Total',
-              ];
-            }}
-          />
-          <Legend
-            verticalAlign="bottom"
-            iconType="circle"
-            iconSize={8}
-            formatter={(value) => {
-              const item = chartData.find((d) => d.name === value);
-              const amountStr = item ? ` (L. ${Math.round(item.value).toLocaleString()})` : '';
-              return <span className="text-xs text-muted-foreground">{value}{amountStr}</span>;
-            }}
-          />
+                return [
+                  `${formatLempirasUI(numericValue)} (${((numericValue / total) * 100).toFixed(1)}%)`,
+                  'Total',
+                ];
+              }}
+              wrapperStyle={{ outline: 'none' }}
+            />
+            <Legend
+              verticalAlign="bottom"
+              iconType="circle"
+              iconSize={8}
+              wrapperStyle={{ lineHeight: '1.25' }}
+              formatter={(value) => {
+                const item = chartData.find((d) => d.name === value);
+                const amountStr = item ? ` (${formatLempirasUI(item.value)})` : '';
+                return <span className="text-xs text-muted-foreground">{value}{amountStr}</span>;
+              }}
+            />
           </PieChart>
         ) : null}
       </div>
