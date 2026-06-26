@@ -1,5 +1,6 @@
 param(
     [Parameter(Mandatory = $true)]
+    [Alias("Url")]
     [string] $BaseUrl,
 
     [int] $TimeoutSeconds = 8

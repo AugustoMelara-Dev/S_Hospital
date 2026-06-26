@@ -1,15 +1,15 @@
 param(
     [string] $RepoRoot = "C:\Projects\S_Hospital",
-    [string] $ExpectedSha = "ebc9018102b1940ebe8ba9b5bfd3107a2ef4b122"
+    [string] $ExpectedSha = "bfa115f15f613a69e81e54a462a5c0e7c9e40f69"
 )
 
 $ErrorActionPreference = "Stop"
 
 function Invoke-Git {
-    param([string[]] $Args)
-    & git -C $RepoRoot @Args
+    param([string[]] $GitArgs)
+    & git -C $RepoRoot @GitArgs
     if ($LASTEXITCODE -ne 0) {
-        throw "git $($Args -join ' ') failed with exit code $LASTEXITCODE"
+        throw "git $($GitArgs -join ' ') failed with exit code $LASTEXITCODE"
     }
 }
 
@@ -17,10 +17,10 @@ if (-not (Test-Path -LiteralPath $RepoRoot)) {
     throw "Repository path not found: $RepoRoot"
 }
 
-$currentBranch = (Invoke-Git @("branch", "--show-current") | Out-String).Trim()
-$status = (Invoke-Git @("status", "--short") | Out-String).Trim()
-$mainSha = (Invoke-Git @("rev-parse", "main") | Out-String).Trim()
-$originMainSha = (Invoke-Git @("rev-parse", "origin/main") | Out-String).Trim()
+$currentBranch = (Invoke-Git -GitArgs @("branch", "--show-current") | Out-String).Trim()
+$status = (Invoke-Git -GitArgs @("status", "--short") | Out-String).Trim()
+$mainSha = (Invoke-Git -GitArgs @("rev-parse", "main") | Out-String).Trim()
+$originMainSha = (Invoke-Git -GitArgs @("rev-parse", "origin/main") | Out-String).Trim()
 
 Write-Host "Repository: $RepoRoot"
 Write-Host "Current branch: $currentBranch"
