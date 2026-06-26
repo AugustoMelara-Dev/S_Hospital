@@ -1,6 +1,6 @@
 import { Cell, Pie, PieChart, Tooltip } from 'recharts';
 import { formatLempirasUI } from '@/lib/moneyCents';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ChartCard } from '@/components/shared';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import type { ExecutiveReport } from '@/lib/api';
 import { useElementWidth } from '../../dashboard/useElementWidth';
@@ -41,28 +41,25 @@ export function PaymentMethodPanel({ report }: PaymentMethodPanelProps) {
   }));
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Recaudacion por metodo de pago</CardTitle>
-        <p className="text-xs text-muted-foreground">
-          Distribucion del cobro. Efectivo alimenta caja; los demas metodos se concilian por separado.
-        </p>
-      </CardHeader>
-      <CardContent>
-        <div className="grid gap-4 lg:grid-cols-[14rem_minmax(0,1fr)]">
+    <ChartCard
+      title="Recaudacion por metodo de pago"
+      description="Distribucion del cobro. Efectivo alimenta caja; los demas metodos se concilian por separado."
+      caption="La tabla contigua contiene los valores exactos por metodo."
+    >
+        <div className="grid gap-5 lg:grid-cols-[16rem_minmax(0,1fr)] lg:items-center">
           <div
             ref={ref}
-            className="h-48 w-full min-w-px"
+            className="h-56 w-full min-w-px"
             role="img"
             aria-label="Grafico de distribucion por metodo de pago; la tabla contigua contiene los valores exactos."
           >
             {width > 0 ? (
-              <PieChart width={width} height={192}>
+              <PieChart width={width} height={224}>
                 <Tooltip content={<PieTooltip />} />
                 <Pie
                   data={data}
-                  innerRadius={45}
-                  outerRadius={70}
+                  innerRadius={54}
+                  outerRadius={84}
                   paddingAngle={1}
                   dataKey="value"
                   isAnimationActive={false}
@@ -123,7 +120,6 @@ export function PaymentMethodPanel({ report }: PaymentMethodPanelProps) {
             </TableBody>
           </Table>
         </div>
-      </CardContent>
-    </Card>
+    </ChartCard>
   );
 }
