@@ -1,4 +1,4 @@
-import { Minus, Plus, ShoppingCart, Trash2 } from 'lucide-react';
+import { Banknote, Minus, Plus, ReceiptText, ShoppingCart, Trash2 } from 'lucide-react';
 import { Alert } from '../../../components/ui/alert';
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
@@ -64,7 +64,7 @@ export function InvoiceCart({
   return (
     <section className="flex h-full min-w-0 flex-col" aria-labelledby="invoice-cart-title" aria-busy={submitting ? 'true' : undefined}>
       <div className="mb-4 flex items-start gap-3">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-md border border-secondary/25 bg-secondary/10 text-secondary">
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-md border border-secondary/25 bg-secondary/10 text-secondary">
           <ShoppingCart className="size-5" aria-hidden="true" />
         </span>
         <div className="min-w-0">
@@ -82,7 +82,7 @@ export function InvoiceCart({
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         {isEmpty ? (
-          <div className="flex flex-col items-center justify-center rounded-md border border-dashed border-border bg-muted/35 px-4 py-12 text-center text-muted-foreground" role="status" aria-live="polite">
+          <div className="flex flex-col items-center justify-center rounded-md border border-dashed border-operational-border bg-operational-panel px-4 py-12 text-center text-muted-foreground" role="status" aria-live="polite">
             <ShoppingCart className="mb-3 size-10 opacity-50" aria-hidden="true" />
             <p className="text-sm font-semibold text-foreground">No hay servicios agregados</p>
             <p className="mt-1 max-w-56 text-xs">Busque por nombre, categoría o código para comenzar.</p>
@@ -98,7 +98,7 @@ export function InvoiceCart({
                 <div
                   key={`${item.service.id}-${index}`}
                   role="listitem"
-                  className="flex flex-col gap-3 rounded-md border border-border bg-card/95 p-3 transition-colors hover:border-secondary/35"
+                  className="flex flex-col gap-3 rounded-md border border-operational-border bg-card/95 p-3 transition-colors hover:border-secondary/35"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
@@ -191,21 +191,31 @@ export function InvoiceCart({
         )}
       </div>
 
-      <div className="sticky bottom-0 mt-4 border-t border-border bg-card/95 pt-4">
-        <dl className="mb-4 space-y-2">
+      <div className="sticky bottom-0 mt-4 border-t border-operational-border bg-operational-surface/95 pt-4">
+        <dl className="mb-4 rounded-md border border-operational-border bg-operational-panel/80 p-3">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <dt className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <ReceiptText className="size-4 text-secondary" aria-hidden="true" />
+              Resumen de factura
+            </dt>
+            <dd className="text-xs text-muted-foreground">{items.length} item{items.length === 1 ? '' : 's'}</dd>
+          </div>
           <div className="flex justify-between gap-3 text-sm">
             <dt className="text-muted-foreground">Subtotal:</dt>
             <dd className="font-mono tabular-nums">{moneyLabel(preview.subtotal)}</dd>
           </div>
           {taxRate && (
-            <div className="flex justify-between gap-3 text-sm">
+            <div className="mt-2 flex justify-between gap-3 text-sm">
               <dt className="text-muted-foreground">ISV ({taxRate}%):</dt>
               <dd className="font-mono tabular-nums">{moneyLabel(preview.tax)}</dd>
             </div>
           )}
-          <div className="flex justify-between gap-3 border-t border-border pt-3 text-xl font-bold">
-            <dt>Total estimado:</dt>
-            <dd className="font-mono tabular-nums text-secondary">{moneyLabel(preview.total)}</dd>
+          <div className="mt-3 flex justify-between gap-3 border-t border-border pt-3">
+            <dt className="flex items-center gap-2 text-base font-bold">
+              <Banknote className="size-4 text-secondary" aria-hidden="true" />
+              Total estimado:
+            </dt>
+            <dd className="font-mono text-xl font-bold tabular-nums text-secondary">{moneyLabel(preview.total)}</dd>
           </div>
         </dl>
 
