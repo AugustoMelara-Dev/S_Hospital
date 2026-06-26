@@ -36,6 +36,7 @@ export function DashboardPaymentMethodsCard({
       onRetry={onRefresh}
       emptyDescription={EMPTY_DESCRIPTION}
       emptyTitle="Sin cobros registrados hoy"
+      variant="chart"
     >
       {paymentsByMethod ? <PaymentMethodPieChart data={paymentsByMethod} /> : null}
     </DashboardSectionCard>

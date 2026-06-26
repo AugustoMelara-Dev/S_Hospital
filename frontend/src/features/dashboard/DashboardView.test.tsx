@@ -77,7 +77,7 @@ describe('DashboardView accessibility and behavior', () => {
 
     const headings = await screen.findAllByRole('heading', { level: 1 });
     expect(headings).toHaveLength(1);
-    expect(headings[0]).toHaveTextContent(/^inicio$/i);
+    expect(headings[0]).toHaveTextContent(/^centro de mando$/i);
   });
 
   it('renders the four top metric labels with the existing wording', async () => {
@@ -91,11 +91,11 @@ describe('DashboardView accessibility and behavior', () => {
 
   it('shows "Cerrada" when there is no cash session and "Caja #N" when there is', async () => {
     const { rerender } = render(<DashboardView {...makeBaseProps()} cashSession={null} />);
-    expect(await screen.findByText(/cerrada/i)).toBeInTheDocument();
+    expect((await screen.findAllByText(/cerrada/i)).length).toBeGreaterThan(0);
 
     rerender(<DashboardView {...makeBaseProps()} cashSession={makeCashSession({ id: 12 })} />);
     await waitFor(() => {
-      expect(screen.getByText(/caja #12/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/caja #12/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -205,7 +205,7 @@ describe('DashboardView setup status card', () => {
     mockSetupStatus(true);
     render(<DashboardView {...makeBaseProps()} />);
 
-    expect(await screen.findByText(/configuracion pendiente/i)).toBeInTheDocument();
+    expect((await screen.findAllByText(/configuracion pendiente/i)).length).toBeGreaterThan(0);
     expect(screen.getByText(/datos del hospital/i)).toBeInTheDocument();
     expect(screen.getByText(/usuario administrador/i)).toBeInTheDocument();
     expect(screen.getByText(/catalogo/i)).toBeInTheDocument();
@@ -216,7 +216,7 @@ describe('DashboardView setup status card', () => {
     mockSetupStatus(true);
     render(<DashboardView {...makeBaseProps({ canViewFiscalSettings: false })} />);
 
-    expect(await screen.findByText(/configuracion pendiente/i)).toBeInTheDocument();
+    expect((await screen.findAllByText(/configuracion pendiente/i)).length).toBeGreaterThan(0);
     expect(
       screen.queryByRole('button', { name: /revisar configuracion pendiente/i }),
     ).not.toBeInTheDocument();

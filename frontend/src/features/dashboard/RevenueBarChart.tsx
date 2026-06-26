@@ -1,12 +1,12 @@
 import {
+  Area,
   Bar,
   CartesianGrid,
+  ComposedChart,
   Legend,
   Tooltip,
   XAxis,
   YAxis,
-  ComposedChart,
-  Area,
 } from 'recharts';
 import { finiteNumber, formatLempirasUI } from '../../lib/money';
 import { useElementWidth } from './useElementWidth';
@@ -39,7 +39,6 @@ function numericTooltipValue(value: TooltipValue): number {
 export function RevenueBarChart({ data }: RevenueBarChartProps) {
   const { ref, width } = useElementWidth();
   const chartData = data.map((d) => {
-    // Format date from YYYY-MM-DD to DD/MM
     const dateParts = d.date.split('-');
     const formattedDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}` : d.date;
 
@@ -72,10 +71,10 @@ export function RevenueBarChart({ data }: RevenueBarChartProps) {
     <figure>
       <div className="sr-only">
         <table>
-          <caption>Tendencia de facturación y cobros de los últimos días</caption>
+          <caption>Tendencia de facturacion y cobros de los ultimos dias</caption>
           <thead>
             <tr>
-              <th scope="col">Día</th>
+              <th scope="col">Dia</th>
               <th scope="col">Facturado</th>
               <th scope="col">Cobrado</th>
               <th scope="col">Facturas</th>
@@ -98,79 +97,81 @@ export function RevenueBarChart({ data }: RevenueBarChartProps) {
       <div ref={ref} className="h-[300px] w-full min-w-px" style={{ minHeight: 300 }}>
         {width > 0 ? (
           <ComposedChart
-            accessibilityLayer={false}
+            accessibilityLayer
             data={chartData}
             width={width}
             height={300}
             margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
           >
-          <defs>
-            <linearGradient id="colorBilled" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.2} />
-              <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0.01} />
-            </linearGradient>
-            <linearGradient id="colorCollected" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="var(--color-success)" stopOpacity={0.3} />
-              <stop offset="95%" stopColor="var(--color-success)" stopOpacity={0.01} />
-            </linearGradient>
-          </defs>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" opacity={0.5} />
-          <XAxis
-            dataKey="name"
-            stroke="var(--color-muted-foreground)"
-            fontSize={12}
-            tickLine={false}
-            axisLine={false}
-          />
-          <YAxis
-            stroke="var(--color-muted-foreground)"
-            fontSize={11}
-            tickLine={false}
-            axisLine={false}
-            tickFormatter={formatCurrency}
-          />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: 'var(--color-card)',
-              borderColor: 'var(--color-border)',
-              borderRadius: 'var(--radius-md)',
-              color: 'var(--color-foreground)',
-              fontSize: '12px',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-            }}
-            formatter={(value: TooltipValue, name: TooltipName) => [
-              formatLempirasUI(numericTooltipValue(value)),
-              name === 'Billed' ? 'Facturado' : 'Cobrado',
-            ]}
-            labelStyle={{ fontWeight: 'bold', marginBottom: '4px' }}
-          />
-          <Legend
-            verticalAlign="top"
-            height={36}
-            iconType="circle"
-            iconSize={8}
-            formatter={(value) => (
-              <span className="text-xs font-medium text-foreground">
-                {value === 'Billed' ? 'Facturado (emision)' : 'Cobrado (pagos)'}
-              </span>
-            )}
-          />
-          <Area
-            type="monotone"
-            dataKey="Billed"
-            fill="url(#colorBilled)"
-            stroke="var(--color-primary)"
-            strokeWidth={2}
-            activeDot={{ r: 6 }}
-          />
-          <Bar
-            dataKey="Collected"
-            barSize={24}
-            fill="url(#colorCollected)"
-            stroke="var(--color-success)"
-            strokeWidth={1.5}
-            radius={[4, 4, 0, 0]}
-          />
+            <defs>
+              <linearGradient id="colorBilled" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="var(--color-chart-1)" stopOpacity={0.2} />
+                <stop offset="95%" stopColor="var(--color-chart-1)" stopOpacity={0.01} />
+              </linearGradient>
+              <linearGradient id="colorCollected" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="var(--color-chart-2)" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="var(--color-chart-2)" stopOpacity={0.01} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" opacity={0.5} />
+            <XAxis
+              dataKey="name"
+              stroke="var(--color-muted-foreground)"
+              fontSize={12}
+              tickLine={false}
+              axisLine={false}
+            />
+            <YAxis
+              stroke="var(--color-muted-foreground)"
+              fontSize={11}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={formatCurrency}
+            />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: 'var(--color-card)',
+                borderColor: 'var(--color-border)',
+                borderRadius: 'var(--radius-md)',
+                color: 'var(--color-foreground)',
+                fontSize: '12px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+              }}
+              formatter={(value: TooltipValue, name: TooltipName) => [
+                formatLempirasUI(numericTooltipValue(value)),
+                name === 'Billed' ? 'Facturado' : 'Cobrado',
+              ]}
+              labelStyle={{ fontWeight: 'bold', marginBottom: '4px' }}
+              wrapperStyle={{ outline: 'none' }}
+            />
+            <Legend
+              verticalAlign="top"
+              height={36}
+              iconType="circle"
+              iconSize={8}
+              wrapperStyle={{ lineHeight: '1.2' }}
+              formatter={(value) => (
+                <span className="text-xs font-medium text-foreground">
+                  {value === 'Billed' ? 'Facturado (emision)' : 'Cobrado (pagos)'}
+                </span>
+              )}
+            />
+            <Area
+              type="monotone"
+              dataKey="Billed"
+              fill="url(#colorBilled)"
+              stroke="var(--color-chart-1)"
+              strokeWidth={2}
+              activeDot={{ r: 6 }}
+            />
+            <Bar
+              dataKey="Collected"
+              barSize={24}
+              fill="url(#colorCollected)"
+              stroke="var(--color-chart-2)"
+              strokeWidth={1.5}
+              radius={[4, 4, 0, 0]}
+            />
           </ComposedChart>
         ) : null}
       </div>

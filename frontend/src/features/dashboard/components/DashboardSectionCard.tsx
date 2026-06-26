@@ -1,5 +1,6 @@
 import { AlertTriangle, Lock, RefreshCcw } from 'lucide-react';
 import { type ReactNode } from 'react';
+import { ChartCard } from '../../../components/shared';
 import { Button } from '../../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Skeleton } from '../../../components/ui/states';
@@ -19,7 +20,43 @@ export function DashboardSectionCard({
   onRetry,
   state,
   title,
+  variant = 'card',
 }: DashboardSectionCardProps) {
+  const content = (
+    <>
+      {state === 'loading' ? (
+        <div
+          className="flex min-h-40 items-center justify-center"
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+          aria-label={loadingLabel}
+        >
+          <Skeleton className="h-32 w-full" />
+        </div>
+      ) : state === 'error' ? (
+        <DashboardSectionError message={errorMessage} onRetry={onRetry} />
+      ) : state === 'empty' ? (
+        <DashboardSectionEmpty title={emptyTitle} description={emptyDescription} />
+      ) : state === 'permission-locked' ? (
+        <DashboardPermissionLocked />
+      ) : (
+        children
+      )}
+    </>
+  );
+
+  if (variant === 'chart') {
+    const chartTitle = typeof title === 'string' ? title : undefined;
+    const chartDescription = typeof description === 'string' ? description : undefined;
+
+    return (
+      <ChartCard title={chartTitle} description={chartDescription} actions={actions} className={className}>
+        <div className={cn('min-w-0', contentClassName)}>{content}</div>
+      </ChartCard>
+    );
+  }
+
   return (
     <Card className={className}>
       <CardHeader className="flex flex-col gap-3 pb-4 sm:flex-row sm:items-start sm:justify-between">
@@ -30,25 +67,7 @@ export function DashboardSectionCard({
         {actions ? <div className="flex flex-wrap items-center gap-2 sm:ml-auto">{actions}</div> : null}
       </CardHeader>
       <CardContent className={cn('px-2 sm:px-5', contentClassName)}>
-        {state === 'loading' ? (
-          <div
-            className="flex min-h-40 items-center justify-center"
-            role="status"
-            aria-live="polite"
-            aria-busy="true"
-            aria-label={loadingLabel}
-          >
-            <Skeleton className="h-32 w-full" />
-          </div>
-        ) : state === 'error' ? (
-          <DashboardSectionError message={errorMessage} onRetry={onRetry} />
-        ) : state === 'empty' ? (
-          <DashboardSectionEmpty title={emptyTitle} description={emptyDescription} />
-        ) : state === 'permission-locked' ? (
-          <DashboardPermissionLocked />
-        ) : (
-          children
-        )}
+        {content}
       </CardContent>
     </Card>
   );

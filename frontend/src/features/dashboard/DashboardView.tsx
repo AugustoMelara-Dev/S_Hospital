@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react';
-import { PageHeader } from '../../components/ui/page-header';
+import { BarChart3, ReceiptText, RefreshCw, WalletCards } from 'lucide-react';
+import { OperationalBanner, CashStatusCard, InfoPanel } from '../../components/shared';
+import { Badge } from '../../components/ui/badge';
+import { Button } from '../../components/ui/button';
 import { type CashSession, type DashboardReport, apiClient, userSafeErrorMessage } from '../../lib/api';
+import { formatDateTimeEs } from '../../lib/format/formatDate';
 import { DashboardCashiersCard } from './components/DashboardCashiersCard';
 import { DashboardMetricsGrid } from './components/DashboardMetricsGrid';
 import { DashboardNextActionCard } from './components/DashboardNextActionCard';
@@ -41,6 +45,7 @@ export function DashboardView({
   const [loadingDashboard, setLoadingDashboard] = useState(false);
   const [setupStatus, setSetupStatus] = useState<SetupStatus | null>(null);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
+  const todaySnapshot = dashboardData?.last_7_days.at(-1) ?? null;
 
   const fetchDashboard = () => {
     if (!canViewManagerialReports) {
@@ -87,10 +92,103 @@ export function DashboardView({
 
   return (
     <>
-      <PageHeader
-        title="Inicio"
-        description="Lo necesario para operar caja, cobros y facturacion sin perderse."
+      <OperationalBanner
+        meta="Inicio operativo"
+        title="Centro de mando"
+        description="Estado de caja, cobros, facturacion y senales de operacion para el turno del hospital."
+        tone={cashSession ? 'success' : 'warning'}
+        status={
+          <Badge variant={cashSession ? 'success' : 'warning'}>
+            {cashSession ? `Caja #${cashSession.id} abierta` : 'Caja cerrada'}
+          </Badge>
+        }
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            {cashSession && canCreateInvoices ? (
+              <Button
+                type="button"
+                onClick={onQuickInvoice}
+                className="gap-2"
+                aria-label="Crear factura desde el centro de mando"
+              >
+                <ReceiptText aria-hidden="true" className="size-4" />
+                Nueva factura
+              </Button>
+            ) : null}
+            {!cashSession && canViewCash ? (
+              <Button
+                type="button"
+                onClick={onQuickCash}
+                className="gap-2"
+                aria-label="Abrir caja desde el centro de mando"
+              >
+                <WalletCards aria-hidden="true" className="size-4" />
+                Abrir caja
+              </Button>
+            ) : null}
+            {canViewManagerialReports ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={fetchDashboard}
+                disabled={loadingDashboard}
+                className="gap-2"
+                aria-label="Actualizar tablero operativo"
+              >
+                <RefreshCw aria-hidden="true" className={`size-4 ${loadingDashboard ? 'animate-spin' : ''}`} />
+                Actualizar
+              </Button>
+            ) : null}
+          </div>
+        }
       />
+
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.4fr)]">
+        <CashStatusCard
+          status={cashSession ? 'open' : 'closed'}
+          amount={cashSession ? `Caja #${cashSession.id}` : 'Caja cerrada'}
+          timestamp={cashSession ? formatDateTimeEs(cashSession.opened_at) : undefined}
+          helper={
+            cashSession
+              ? 'El turno puede registrar pagos y emitir facturas segun permisos.'
+              : 'Abra una caja antes de iniciar cobros o facturacion.'
+          }
+          actions={
+            !cashSession && canViewCash ? (
+              <Button type="button" variant="outline" size="sm" onClick={onQuickCash}>
+                Abrir caja
+              </Button>
+            ) : cashSession && canCreateInvoices ? (
+              <Button type="button" variant="outline" size="sm" onClick={onQuickInvoice}>
+                Nueva factura
+              </Button>
+            ) : undefined
+          }
+        />
+
+        <InfoPanel
+          tone={setupStatus?.needs_setup ? 'warning' : dashboardError ? 'destructive' : cashSession ? 'success' : 'info'}
+          icon={<BarChart3 aria-hidden="true" className="size-4" />}
+          title={
+            setupStatus?.needs_setup
+              ? 'Configuracion pendiente'
+              : dashboardError
+                ? 'Resumen operativo no disponible'
+                : cashSession
+                  ? 'Operacion lista para caja'
+                  : 'Caja pendiente de apertura'
+          }
+          description={
+            setupStatus?.needs_setup
+              ? 'Revise los pasos institucionales antes de operar con normalidad.'
+              : dashboardError
+                ? dashboardError
+                : todaySnapshot
+                  ? `Ultimo dia en el resumen: ${todaySnapshot.date}.`
+                  : 'Los paneles mostraran actividad cuando existan movimientos registrados.'
+          }
+        />
+      </div>
 
       {setupStatus?.needs_setup ? (
         <DashboardSetupStatusCard
@@ -104,8 +202,13 @@ export function DashboardView({
         context={{
           cashSession,
           invoiceCount: dashboardData?.current_month.invoice_count,
+          todayBilled: todaySnapshot?.total_billed,
+          todayCollected: todaySnapshot?.total_collected,
+          todayInvoiceCount: todaySnapshot?.invoice_count,
+          todayPaymentCount: todaySnapshot?.payment_count,
           loading: loadingDashboard,
           paymentCount: dashboardData?.current_month.payment_count,
+          totalPending: dashboardData?.current_month.total_pending,
           totalBilled: dashboardData?.current_month.total_billed,
           totalCollected: dashboardData?.current_month.total_collected,
         }}
