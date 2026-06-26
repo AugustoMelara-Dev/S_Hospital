@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
-import { Calendar, Filter, RefreshCw } from 'lucide-react';
+import { Calendar, Download, FileText, Filter, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { NativeSelect } from '@/components/ui/select';
+import { CommandPanel } from '@/components/shared';
 import type { ExecutiveReportFilters } from '@/lib/api';
 
 type ReportFiltersPanelProps = {
@@ -108,9 +108,28 @@ export function ReportFiltersPanel({
   }
 
   return (
-    <Card>
-      <CardContent className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-end gap-3">
+    <CommandPanel
+      title="Control ejecutivo"
+      description="Ajuste el periodo y actualice los indicadores con los agregados actuales del backend."
+      className="bg-operational-surface"
+      footer={
+        rangeError ? (
+          <p role="alert" className="text-xs font-medium text-destructive">
+            {rangeError}
+          </p>
+        ) : inferredPreset !== preset ? (
+          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Filter className="size-3" aria-hidden="true" />
+            Rango personalizado. Total de dias: {daysInRange(filters.date_from, filters.date_to)}.
+          </p>
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            Los reportes ejecutivos permiten rangos de hasta 31 dias.
+          </p>
+        )
+      }
+    >
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[11rem_12rem_12rem_minmax(18rem,1fr)] xl:items-end">
           <div className="flex flex-col gap-1">
             <Label htmlFor="report-preset">Periodo rapido</Label>
             <NativeSelect
@@ -155,7 +174,7 @@ export function ReportFiltersPanel({
             </div>
           </div>
 
-          <div className="ml-auto flex flex-wrap items-end gap-2">
+          <div className="flex flex-wrap items-end gap-2 xl:justify-end">
             <Button
               type="button"
               variant="secondary"
@@ -175,6 +194,7 @@ export function ReportFiltersPanel({
               disabled={loading || exporting || !canExport || Boolean(rangeError)}
               className="gap-1.5"
             >
+              <FileText className="size-4" aria-hidden="true" />
               {exporting ? 'Exportando...' : 'PDF ejecutivo'}
             </Button>
             <Button
@@ -185,23 +205,12 @@ export function ReportFiltersPanel({
               disabled={loading || exporting || !canExport || Boolean(rangeError)}
               className="gap-1.5"
             >
+              <Download className="size-4" aria-hidden="true" />
               {exporting ? 'Exportando...' : 'Excel ejecutivo'}
             </Button>
           </div>
         </div>
-
-        {rangeError ? (
-          <p role="alert" className="text-xs font-medium text-destructive">
-            {rangeError}
-          </p>
-        ) : inferredPreset !== preset ? (
-          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Filter className="size-3" aria-hidden="true" />
-            Rango personalizado. Total de dias: {daysInRange(filters.date_from, filters.date_to)}.
-          </p>
-        ) : null}
-      </CardContent>
-    </Card>
+    </CommandPanel>
   );
 }
 

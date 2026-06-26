@@ -118,7 +118,7 @@ export function MonthlyReportTab({
             />
           </div>
 
-          <Card>
+          <Card className="rounded-panel border-operational-border bg-operational-surface shadow-operational">
             <CardHeader>
               <CardTitle>Cobros por método</CardTitle>
             </CardHeader>
@@ -168,13 +168,38 @@ export function MonthlyReportTab({
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="rounded-panel border-operational-border bg-operational-surface shadow-operational">
             <CardHeader>
               <CardTitle>Evolución por fecha</CardTitle>
             </CardHeader>
             <CardContent>
               {monthly.daily_totals.length > 0 ? (
                 <div className="space-y-4">
+                  <div className="sr-only">
+                    <table>
+                      <caption>Evolucion mensual por fecha</caption>
+                      <thead>
+                        <tr>
+                          <th scope="col">Fecha</th>
+                          <th scope="col">Cobrado</th>
+                          <th scope="col">Pendiente</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {chartData.map((day) => (
+                          <tr key={day.date}>
+                            <td>{day.date}</td>
+                            <td>{formatLempirasUI(day.cobrado)}</td>
+                            <td>{formatLempirasUI(day.pendiente)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div
+                    role="img"
+                    aria-label="Grafico de evolucion mensual por fecha; la tabla oculta contiene cobrado y pendiente."
+                  >
                   <ResponsiveContainer width="100%" height={220} minWidth={1} minHeight={1}>
                     <BarChart data={chartData}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -185,6 +210,7 @@ export function MonthlyReportTab({
                       <Bar dataKey="pendiente" fill="var(--color-accent-foreground)" radius={[6, 6, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
+                  </div>
                   <Table className="w-full text-sm">
                     <TableHeader>
                       <TableRow>
