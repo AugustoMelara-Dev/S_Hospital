@@ -2,9 +2,51 @@
 
 Use this sheet during the physical hospital acceptance session. Fill it with synthetic data only. Do not record passwords, tokens, `.env` values, real patient data, real fiscal numbers not already configured, or production database credentials.
 
-Tested software SHA: `bfa115f15f613a69e81e54a462a5c0e7c9e40f69`
+Tested software SHA for final audit branch: `4286887cf7f7e51b56ee27aecdb1b3a6b7d9691f`
+Inherited disposable evidence SHA: `bfa115f15f613a69e81e54a462a5c0e7c9e40f69`
 Production physical approval before this run: NO
 Production tag before this run: NO
+
+## Assisted final audit snapshot - 2026-06-25 America/Tegucigalpa
+
+| Field | Value |
+| --- | --- |
+| Date/time | `2026-06-25 22:44:07 -06:00` |
+| Technical responsible person | Codex, assisted local audit |
+| Hospital operator | PENDIENTE - not available in this session |
+| Server PC hostname | `AugustoMelara` |
+| Server LAN IP | `192.168.1.10` on Wi-Fi |
+| App LAN URL | Preferred `http://192.168.1.10:8081`; alternate `http://192.168.1.10:8080` |
+| Browser/version | Not executed from a second physical client in this session |
+| Client PC 1 | Same server PC for LAN-IP self-check only |
+| Client PC 2 | PENDIENTE - requires second physical PC |
+| Printer model | Epson L15150 detected by Windows; physical output not executed |
+| Printer driver/profile | `EPSON L15150 Series`, observed `PaperSize=A4`, one-sided, color; no default printer reported |
+| Network name/VLAN if known | Wi-Fi LAN `192.168.1.0/24`, gateway `192.168.1.1` |
+
+Preflight observed from the server PC:
+
+| Check | Result | Evidence / notes |
+| --- | --- | --- |
+| `main` SHA matches expected | PASS | `main=4286887cf7f7e51b56ee27aecdb1b3a6b7d9691f` |
+| `origin/main` SHA matches expected | PASS | `origin/main=4286887cf7f7e51b56ee27aecdb1b3a6b7d9691f` |
+| Git state acceptable before audit branch | PASS | `main` was clean before creating `codex/field-acceptance-final-audit` |
+| Docker/local stack running | PASS | `shospital_offlinetest-*` healthy on `8081`; `shospital_prodtest-*` healthy on `8080` |
+| LAN URL responds from server | SELF-CHECK PASS | `scripts/qa/check-lan-url.ps1 -Url "http://192.168.1.10:8081"` and `8080` passed safe GETs |
+| No firewall change needed | NOT CHANGED | No firewall modification was made |
+| Firewall change documented if needed | N/A | No approval requested and no firewall change performed |
+
+Physical gates from this assisted session:
+
+| Gate | Result | Evidence / notes |
+| --- | --- | --- |
+| Second PC LAN | PENDIENTE | Requires second physical PC; server self-check does not count |
+| PC1/PC2 sync | PENDIENTE | Requires two real clients or formal operations approval for an alternative |
+| Physical printing | PENDIENTE | Epson L15150 detected, but no operator-confirmed paper and no physical output |
+| Disposable backup/restore | PASS local descartable / PENDIENTE final en sitio | Existing evidence `qa/field-acceptance/restore-validation-local-20260625213129.md`; final hospital-site restore not executed |
+| Real LAN load/concurrency | PENDIENTE | Existing local disposable load evidence does not replace real two-client LAN run |
+| Production physical approval | NO | Required physical gates are still missing |
+| Production tag created | NO | No explicit tag authorization and no tag operation performed |
 
 ## Session header
 
