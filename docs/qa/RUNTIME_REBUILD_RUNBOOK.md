@@ -28,10 +28,12 @@ Objetivo: reconstruir/reiniciar el stack correcto para que los clientes LAN vean
 Ejemplo seguro para stack Docker:
 
 ```powershell
-docker compose --env-file C:\tmp\s_hospital_offlinetest.env -p shospital_offlinetest -f C:\Projects\S_Hospital\docker-compose.prod.yml exec backend php artisan hospital:backup --manual
+docker compose --env-file C:\tmp\s_hospital_offlinetest.env -p shospital_offlinetest -f C:\Projects\S_Hospital\docker-compose.prod.yml exec backend php artisan hospital:backup --type=manual
 ```
 
 Si el comando no existe o falla, no continuar con rebuild hasta registrar el motivo y decidir con el operador.
+
+Nota de ejecucion 2026-06-25: la opcion correcta validada es `--type=manual`; `--manual` no existe en este checkout.
 
 ## Alinear IP LAN
 
@@ -56,7 +58,7 @@ docker compose --env-file C:\tmp\s_hospital_offlinetest.env -p shospital_offline
 docker compose --env-file C:\tmp\s_hospital_offlinetest.env -p shospital_offlinetest -f C:\Projects\S_Hospital\docker-compose.prod.yml up -d --no-deps backend queue-worker scheduler nginx
 ```
 
-Si el frontend se publica desde `shared_public`, validar que el backend copio `frontend/dist` al volumen compartido durante build/start. Si no, usar el procedimiento de release del proyecto y no copiar archivos manualmente a ciegas.
+El frontend se publica desde `shared_public`: `backend/Dockerfile.prod` genera `frontend/dist`, el contenedor backend copia `/var/www/frontend/dist/.` a `/shared_public/` durante el arranque y nginx sirve ese volumen como `/var/www/html/public`. Validar que `index.html` referencie los assets frescos despues del rebuild. Si cambia este flujo, usar el procedimiento de release del proyecto y no copiar archivos manualmente a ciegas.
 
 ## Validacion post-rebuild
 
