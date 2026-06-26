@@ -4,10 +4,10 @@ import { Card, CardContent } from '../../../components/ui/card';
 
 export function BackupExplanationCard() {
   return (
-    <Card>
+    <Card className="border-operational-border bg-operational-surface shadow-operational">
       <CardContent className="pt-6">
         <div className="flex items-start gap-4">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-operational-panel">
             <Info aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
           </div>
           <div>
@@ -17,19 +17,19 @@ export function BackupExplanationCard() {
               Cree uno antes de cambios importantes y confirme que quede protegido.
             </p>
             <div className="mt-4 grid gap-3 text-sm md:grid-cols-3">
-              <div className="rounded-md border border-border p-3">
+              <div className="rounded-panel border border-operational-border bg-operational-panel p-3">
                 <p className="font-medium">1. Crear</p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   Use el boton manual cuando cierre caja, antes de mantenimiento o antes de actualizar.
                 </p>
               </div>
-              <div className="rounded-md border border-border p-3">
+              <div className="rounded-panel border border-operational-border bg-operational-panel p-3">
                 <p className="font-medium">2. Verificar</p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   Debe quedar completado, con tamano y huella SHA256 visible.
                 </p>
               </div>
-              <div className="rounded-md border border-border p-3">
+              <div className="rounded-panel border border-operational-border bg-operational-panel p-3">
                 <p className="font-medium">3. Restaurar con prueba</p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   No hay restauracion directa aqui. Primero se valida en una base descartable para no pisar datos reales.
@@ -51,7 +51,7 @@ export function BackupEmptyState({
   canCreate: boolean;
 }) {
   return (
-    <Card>
+    <Card className="border-operational-border bg-operational-surface shadow-operational">
       <CardContent className="flex flex-col items-center justify-center py-12">
         <Archive aria-hidden="true" className="mb-4 h-12 w-12 text-muted-foreground" />
         <h3 className="mb-2 text-lg font-semibold">No hay respaldos</h3>
