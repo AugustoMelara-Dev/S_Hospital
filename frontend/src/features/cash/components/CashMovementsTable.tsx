@@ -60,7 +60,6 @@ export function CashMovementsTable({ movements }: CashMovementsTableProps) {
                     <TableCell>
                       <div className="flex flex-col gap-1">
                         <Badge variant={movementBadgeVariant(direction)}>{movementLabel(movement.type)}</Badge>
-                        <span className="text-xs text-muted-foreground">{movement.type}</span>
                       </div>
                     </TableCell>
                     <TableCell>{methodLabel(movement.method)}</TableCell>
@@ -118,7 +117,7 @@ function movementLabel(type: string): string {
     void: 'Anulación',
   };
 
-  return labels[type] ?? type;
+  return labels[type] ?? 'Movimiento';
 }
 
 function methodLabel(method: string | null): string {
