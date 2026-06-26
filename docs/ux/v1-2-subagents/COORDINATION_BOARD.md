@@ -110,7 +110,23 @@ php artisan test --filter=InstitutionalReceiptPdfTest --colors=never
 - [ ] Subagentes despachados.
 - [ ] Worktrees creados.
 - [ ] Before screenshots capturados.
-- [ ] Design system integrado.
+- [x] Design system integrado.
 - [ ] Ramas de modulo integradas.
 - [ ] A11y/responsive/performance gates ejecutados.
 - [ ] Push final ejecutado.
+
+## Registro de integracion
+
+### 2026-06-26 - Design system
+
+- Rama integrada: `codex/v1-2-design-system`
+- Commits: `fc29d87e` y `214907a3`
+- Merge en rama principal: `merge: integrate v1.2 design system`
+- Archivos principales: `frontend/src/styles.css`, `frontend/src/components/shared/**`, `docs/ux/V1_2_DESIGN_SYSTEM.md`
+- Revisiones: spec compliance APPROVED; code quality requirio fix de print/dark y re-review APPROVED.
+- Gates ejecutados en rama principal:
+  - `npm run typecheck` PASS
+  - `npm run lint` PASS
+  - `npm run test -- ui shared` PASS, 9 files / 42 tests
+  - `npm run build` PASS
+  - `git diff --check HEAD~1..HEAD` PASS
