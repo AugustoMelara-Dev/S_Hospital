@@ -22,12 +22,15 @@ interface CashMovementsTableProps {
 
 export function CashMovementsTable({ movements }: CashMovementsTableProps) {
   return (
-    <Card>
-      <CardHeader>
+    <Card className="border-operational-border">
+      <CardHeader className="gap-1 border-b border-border">
         <CardTitle>Movimientos de caja</CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Entradas, salidas y ajustes registrados para conciliación de la sesión.
+        </p>
       </CardHeader>
-      <CardContent>
-        <Table containerLabel="Movimientos de caja" className="min-w-[640px]">
+      <CardContent className="p-0">
+        <Table containerLabel="Movimientos de caja" className="min-w-[720px]">
           <TableCaption>
             Movimientos registrados para la sesión de caja actual.
           </TableCaption>
@@ -53,15 +56,18 @@ export function CashMovementsTable({ movements }: CashMovementsTableProps) {
 
                 return (
                   <TableRow key={movement.id}>
-                    <TableCell className="whitespace-nowrap">{formatMovementTime(movement.occurred_at)}</TableCell>
+                    <TableCell className="whitespace-nowrap font-medium tabular-nums">{formatMovementTime(movement.occurred_at)}</TableCell>
                     <TableCell>
-                      <Badge variant="outline">{movement.type}</Badge>
+                      <div className="flex flex-col gap-1">
+                        <Badge variant={movementBadgeVariant(direction)}>{movementLabel(movement.type)}</Badge>
+                        <span className="text-xs text-muted-foreground">{movement.type}</span>
+                      </div>
                     </TableCell>
-                    <TableCell>{movement.method || '-'}</TableCell>
+                    <TableCell>{methodLabel(movement.method)}</TableCell>
                     <TableCell
                       data-numeric="true"
                       className={cn(
-                        'font-medium',
+                        'text-base font-semibold',
                         direction === 'positive' && 'text-success-foreground',
                         direction === 'negative' && 'text-destructive',
                         direction === 'neutral' && 'text-muted-foreground',
@@ -90,6 +96,41 @@ function movementDirection(type: string): 'positive' | 'negative' | 'neutral' {
   }
 
   return 'neutral';
+}
+
+function movementBadgeVariant(direction: 'positive' | 'negative' | 'neutral'): 'success' | 'destructive' | 'secondary' {
+  if (direction === 'positive') return 'success';
+  if (direction === 'negative') return 'destructive';
+  return 'secondary';
+}
+
+function movementLabel(type: string): string {
+  const labels: Record<string, string> = {
+    cash_in: 'Entrada',
+    cash_out: 'Salida',
+    closing: 'Cierre',
+    expense: 'Egreso',
+    income: 'Ingreso',
+    opening: 'Apertura',
+    payment: 'Pago',
+    payment_void: 'Reverso de pago',
+    refund: 'Devolución',
+    void: 'Anulación',
+  };
+
+  return labels[type] ?? type;
+}
+
+function methodLabel(method: string | null): string {
+  const labels: Record<string, string> = {
+    card: 'Tarjeta',
+    cash: 'Efectivo',
+    closing: 'Cierre',
+    other: 'Otro',
+    transfer: 'Transferencia',
+  };
+
+  return method ? labels[method] ?? method : '-';
 }
 
 function formatMovementTime(value: string): string {

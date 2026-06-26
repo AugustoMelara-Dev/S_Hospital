@@ -1,4 +1,4 @@
-import { Receipt, Printer, XCircle } from 'lucide-react';
+import { Printer, Receipt, ReceiptText, User, XCircle } from 'lucide-react';
 import { Button } from '../../../components/ui/button';
 import { StatusBadge } from '../../../components/ui/status-badge';
 import {
@@ -46,7 +46,7 @@ export function InvoiceHistoryTable({
   onReprint,
 }: InvoiceHistoryTableProps) {
   return (
-    <Table containerLabel="Listado de facturas" className="min-w-[920px]">
+    <Table containerLabel="Listado de facturas" className="min-w-[980px]">
       <TableCaption>
         Facturas filtradas con estado, montos y acciones autorizadas.
       </TableCaption>
@@ -65,14 +65,27 @@ export function InvoiceHistoryTable({
       <TableBody>
         {invoices.map((invoice) => (
           <TableRow key={invoice.id}>
-            <TableCell className="max-w-48 break-words text-sm font-medium tabular-nums">
-              {invoice.invoice_number}
+            <TableCell className="max-w-56 break-words text-sm font-semibold tabular-nums">
+              <div className="flex items-start gap-2">
+                <ReceiptText data-icon aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-secondary" />
+                <span>{invoice.invoice_number}</span>
+              </div>
             </TableCell>
             <TableCell className="whitespace-nowrap">{formatDate(invoice.issued_at)}</TableCell>
-            <TableCell className="max-w-56 break-words font-medium">{invoice.patient_name}</TableCell>
+            <TableCell className="max-w-60 break-words font-medium">
+              <div className="flex items-start gap-2">
+                <User data-icon aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                <span>{invoice.patient_name}</span>
+              </div>
+            </TableCell>
             <TableCell data-numeric="true">{moneyLabel(invoice.total)}</TableCell>
             <TableCell data-numeric="true">{moneyLabel(invoice.paid_amount)}</TableCell>
-            <TableCell data-numeric="true">{moneyLabel(invoice.balance_due)}</TableCell>
+            <TableCell
+              data-numeric="true"
+              className={invoice.status === 'partial' || invoice.status === 'issued' ? 'font-semibold text-warning-foreground' : undefined}
+            >
+              {moneyLabel(invoice.balance_due)}
+            </TableCell>
             <TableCell>
               <InvoiceStatusBadge status={invoice.status} />
             </TableCell>

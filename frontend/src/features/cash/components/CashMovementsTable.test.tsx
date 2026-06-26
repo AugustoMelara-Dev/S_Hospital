@@ -14,8 +14,11 @@ describe('CashMovementsTable', () => {
       />,
     );
 
+    expect(rowFor('payment')).toHaveTextContent('Pago');
     expect(rowFor('payment')).toHaveTextContent('+ L 51.75');
+    expect(rowFor('payment_void')).toHaveTextContent('Reverso de pago');
     expect(rowFor('payment_void')).toHaveTextContent('- L 17.25');
+    expect(rowFor('closing')).toHaveTextContent('Cierre');
     expect(rowFor('closing')).toHaveTextContent('L 134.50');
     expect(rowFor('closing')).not.toHaveTextContent('- L 134.50');
   });
