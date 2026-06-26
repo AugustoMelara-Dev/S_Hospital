@@ -184,16 +184,15 @@ BACKUP_EVIDENCE_PATH="storage/app/private/backups/${BACKUP_FILE_NAME}"
 
 echo "WARNING: disposable database ${RESTORE_TEST_DATABASE_VALUE} will be dropped and recreated."
 echo "Restoring backup into disposable database ${RESTORE_TEST_DATABASE_VALUE}."
+RESTORE_TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/s-hospital-restore-XXXXXX")"
 RESTORE_SQL_FILE="$BACKUP_ABSOLUTE"
 RESTORE_SQL_TEMP=""
-MYSQL_DEFAULTS_FILE="$(mktemp)"
+MYSQL_DEFAULTS_FILE="$RESTORE_TMP_DIR/mysql-defaults.cnf"
 cleanup_restore_validation() {
-  rm -f "$MYSQL_DEFAULTS_FILE"
-  if [ -n "${RESTORE_SQL_TEMP:-}" ]; then
-    rm -f "$RESTORE_SQL_TEMP"
-  fi
+  rm -rf -- "$RESTORE_TMP_DIR"
 }
 trap cleanup_restore_validation EXIT
+: > "$MYSQL_DEFAULTS_FILE"
 chmod 600 "$MYSQL_DEFAULTS_FILE"
 {
   printf '[client]\n'
@@ -205,7 +204,8 @@ chmod 600 "$MYSQL_DEFAULTS_FILE"
 
 case "$BACKUP_ABSOLUTE" in
   *.sql.enc)
-    RESTORE_SQL_TEMP="$(mktemp "${TMPDIR:-/tmp}/s-hospital-restore-XXXXXX.sql")"
+    RESTORE_SQL_TEMP="$RESTORE_TMP_DIR/restore.sql"
+    : > "$RESTORE_SQL_TEMP"
     chmod 600 "$RESTORE_SQL_TEMP"
     (cd "$BACKEND_DIR" && php artisan hospital:decrypt-backup "$BACKUP_ABSOLUTE" "$RESTORE_SQL_TEMP")
     RESTORE_SQL_FILE="$RESTORE_SQL_TEMP"

@@ -116,6 +116,7 @@ Print decisions:
 - Duplicates: none observed in inherited local disposable concurrency evidence; real LAN duplicate check remains pending.
 - Bugs found in this assisted pass: no product P0/P1 found.
 - Known issue carried forward: `backup_worker_idle` from health endpoint, operational status only.
+- QA-SCRIPT-003: corrected later in `codex/field-acceptance-finalize` by replacing the non-portable encrypted-restore `mktemp` suffix template with a `mktemp -d` directory, fixed temp filenames, and `trap` cleanup. Syntax validation with `C:\Program Files\Git\bin\bash.exe -n scripts/validate_restore_mysql.sh`: PASS. Runtime restore validation of the operative script remains PENDIENTE until an explicit disposable restore target is prepared.
 
 ## Final decision
 
@@ -142,6 +143,7 @@ HANDOFF - FINAL FIELD ACCEPTANCE AUDIT
 * Impresion fisica: PENDIENTE.
 * Papel/configuracion: Epson L15150 detectada, configuracion observada A4, salida fisica no ejecutada.
 * Restore descartable: PASS local descartable; final en sitio PENDIENTE.
+* Script restore QA: CORREGIDO Y VALIDADO EN SINTAXIS; runtime restore PENDIENTE en entorno descartable.
 * Carga/concurrencia LAN: PASS local descartable; LAN real PENDIENTE.
 * Bugs P0/P1: NINGUNO CONOCIDO.
 * Evidencia: `docs/qa/FIELD_ACCEPTANCE_EXECUTION_LOG.md`, `docs/qa/FIELD_ACCEPTANCE_SITE_RUN_SHEET.md`, `qa/field-acceptance/field-acceptance-final-audit-20260625.md`, `qa/field-acceptance/print-proof-checklist-final-audit-20260625.txt`.
