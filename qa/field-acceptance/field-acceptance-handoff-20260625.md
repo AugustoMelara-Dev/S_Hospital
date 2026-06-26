@@ -34,8 +34,8 @@ This handoff consolidates the current field-acceptance state from the execution 
 23. Produccion fisica aprobada: NO.
 24. Tag creado: NO.
 25. Rama de bitacora: `codex/field-acceptance-execution-log`.
-26. SHA de bitacora: `ab219c61ca4293821264b4eb0b89c0bf57ef0f9a`.
-27. Git status at handoff: clean branch synchronized with `origin/codex/field-acceptance-execution-log`.
+26. SHA de bitacora: use `git rev-parse origin/codex/field-acceptance-execution-log` as the authoritative branch SHA. This file is committed on the same branch, so a hard-coded self-SHA would become stale after each documentation commit.
+27. Git status at handoff: expected clean branch synchronized with `origin/codex/field-acceptance-execution-log`; verify with `git status --short --branch`.
 28. Recomendacion final: run the remaining physical gates with a hospital operator, second client PC, real printer, and real LAN load window before any go-live decision or production tag.
 
 ## Handoff block
