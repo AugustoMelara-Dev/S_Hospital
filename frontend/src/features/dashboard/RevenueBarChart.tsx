@@ -98,6 +98,7 @@ export function RevenueBarChart({ data }: RevenueBarChartProps) {
         {width > 0 ? (
           <ComposedChart
             accessibilityLayer
+            aria-label="Grafico de tendencia de facturacion y cobros"
             data={chartData}
             width={width}
             height={300}

@@ -3,6 +3,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, apiClient, type CashSession } from '../../lib/api';
 import { DashboardView } from './DashboardView';
 
+vi.mock('./useElementWidth', () => ({
+  useElementWidth: () => ({ ref: vi.fn(), width: 640 }),
+}));
+
 function makeCashSession(overrides: Partial<CashSession> = {}): CashSession {
   return {
     id: 7,
@@ -87,6 +91,34 @@ describe('DashboardView accessibility and behavior', () => {
     expect(screen.getByText(/^facturado$/i)).toBeInTheDocument();
     expect(screen.getByText(/^cobrado$/i)).toBeInTheDocument();
     expect(screen.getByText(/^facturas$/i)).toBeInTheDocument();
+  });
+
+  it('names focusable dashboard charts when Recharts accessibility layer is enabled', async () => {
+    vi.spyOn(apiClient, 'getDashboardReport').mockResolvedValue({
+      current_month: {
+        total_billed: '125.00',
+        total_collected: '100.00',
+        invoice_count: 2,
+        payment_count: 2,
+      },
+      last_7_days: [
+        {
+          date: '2026-06-26',
+          total_billed: '125.00',
+          total_collected: '100.00',
+          invoice_count: 2,
+          payment_count: 2,
+        },
+      ],
+      payments_by_method: { cash: '100.00', transfer: '0.00', card: '0.00', other: '0.00' },
+      top_services: [],
+      cashiers_summary: [],
+    });
+
+    render(<DashboardView {...makeBaseProps()} />);
+
+    expect(await screen.findByRole('application', { name: /grafico de tendencia de facturacion y cobros/i })).toBeInTheDocument();
+    expect(screen.getByRole('application', { name: /grafico de cobros por metodo de pago/i })).toBeInTheDocument();
   });
 
   it('shows "Cerrada" when there is no cash session and "Caja #N" when there is', async () => {

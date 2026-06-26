@@ -79,7 +79,12 @@ export function PaymentMethodPieChart({ data }: PaymentMethodPieChartProps) {
       </div>
       <div ref={ref} className="h-[240px] w-full min-w-px" style={{ minHeight: 240 }}>
         {width > 0 ? (
-          <PieChart width={width} height={240} accessibilityLayer>
+          <PieChart
+            width={width}
+            height={240}
+            accessibilityLayer
+            aria-label="Grafico de cobros por metodo de pago"
+          >
             <Pie
               data={chartData}
               cx="50%"
