@@ -38,7 +38,7 @@ export function ServiceCatalogTable({
 }: ServiceCatalogTableProps) {
   if (isLoading) {
     return (
-      <Card>
+      <Card className="border-operational-border bg-operational-surface shadow-operational">
         <CardContent className="p-0">
           <Table containerLabel="Listado de servicios del catálogo en carga">
             <TableHeader>
@@ -91,7 +91,7 @@ export function ServiceCatalogTable({
 
   if (loadError) {
     return (
-      <Card role="alert" aria-live="assertive">
+      <Card role="alert" aria-live="assertive" className="border-destructive/35 bg-destructive/10 shadow-operational">
         <CardContent className="flex flex-col items-center justify-center gap-3 py-12">
           <div className="flex size-12 items-center justify-center rounded-full bg-destructive/10 text-destructive">
             <Boxes aria-hidden="true" className="h-6 w-6" />
@@ -108,7 +108,7 @@ export function ServiceCatalogTable({
 
   if (isEmpty) {
     return (
-      <Card>
+      <Card className="border-operational-border bg-operational-surface shadow-operational">
         <CardContent className="flex flex-col items-center justify-center py-12">
           <Boxes aria-hidden="true" className="mb-4 h-12 w-12 text-muted-foreground" />
           <h3 className="mb-2 text-lg font-semibold">No hay servicios</h3>
@@ -128,7 +128,7 @@ export function ServiceCatalogTable({
   }
 
   return (
-    <Card>
+    <Card className="overflow-hidden border-operational-border bg-operational-surface shadow-operational">
       <Table containerLabel="Listado de servicios del catálogo">
         <TableHeader>
           <TableRow>

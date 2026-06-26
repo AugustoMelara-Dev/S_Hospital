@@ -1,5 +1,6 @@
 import { Download, RefreshCw, Archive, CheckCircle, Clock, XCircle, HardDrive, Server, ShieldAlert } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { StatGrid } from '@/components/shared';
 import { ActionBar } from '../../components/ui/action-bar';
 import { Button } from '../../components/ui/button';
 import { Alert } from '../../components/ui/alert';
@@ -398,6 +399,36 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
       <div className="space-y-6">
         <BackupExplanationCard />
 
+        <StatGrid
+          className="sm:grid-cols-2 xl:grid-cols-4"
+          items={[
+            {
+              label: 'Completados',
+              value: successCount,
+              helper: lastSuccessBackup ? `Ultimo ${formatRelativeTime(lastSuccessBackup.completed_at ?? lastSuccessBackup.created_at)}` : 'Sin respaldo protegido en esta pagina',
+              tone: successCount > 0 ? 'success' : 'warning',
+            },
+            {
+              label: 'Pendientes',
+              value: pendingCount,
+              helper: pendingCount > 0 ? 'Worker debe completar estos respaldos' : 'Sin pendientes visibles',
+              tone: pendingCount > 0 ? 'warning' : 'success',
+            },
+            {
+              label: 'Fallidos',
+              value: failedCount,
+              helper: failedCount > 0 ? 'Revise con soporte antes de confiar en backups' : 'Sin errores visibles',
+              tone: failedCount > 0 ? 'destructive' : 'success',
+            },
+            {
+              label: 'Worker',
+              value: systemStatus?.backups.worker_recently_active ? 'Activo' : 'Pendiente',
+              helper: systemStatus ? 'Estado reportado por el servidor local' : 'Estado operativo no cargado',
+              tone: systemStatus?.backups.worker_recently_active ? 'success' : 'warning',
+            },
+          ]}
+        />
+
         {systemStatusError ? (
           <Alert variant="destructive" title="Estado operativo no disponible">
             {systemStatusError}
@@ -405,7 +436,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
         ) : null}
 
         {operationalStatus ? (
-          <Card className={operationalStatus.className}>
+          <Card className={`${operationalStatus.className} shadow-operational`}>
             <CardContent className="flex flex-col gap-3 pt-6 md:flex-row md:items-center md:justify-between">
               <div className="min-w-0">
                 <p className="text-xs font-semibold uppercase tracking-normal">Estado operativo</p>
@@ -439,7 +470,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
 
         {systemStatus && showAdvancedStatus ? (
           <div id={advancedStatusId} className="grid grid-cols-1 gap-4 xl:grid-cols-4">
-            <Card className={systemStatus.database.connected && systemStatus.frontend.dist_index_exists && systemStatus.frontend.assets_present && systemStatus.network.lan_ready ? 'status-success' : 'status-warning'}>
+            <Card className={`${systemStatus.database.connected && systemStatus.frontend.dist_index_exists && systemStatus.frontend.assets_present && systemStatus.network.lan_ready ? 'status-success' : 'status-warning'} shadow-operational`}>
               <CardContent className="pt-6">
                 <div className="flex items-start gap-3">
                   <div className="rounded-lg bg-background/80 p-2.5">
@@ -464,7 +495,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
               </CardContent>
             </Card>
 
-            <Card className={systemStatus.backups.dump_binary.available && systemStatus.backups.storage.writable ? 'status-success' : 'status-warning'}>
+            <Card className={`${systemStatus.backups.dump_binary.available && systemStatus.backups.storage.writable ? 'status-success' : 'status-warning'} shadow-operational`}>
               <CardContent className="pt-6">
                 <div className="flex items-start gap-3">
                   <div className="rounded-lg bg-background/80 p-2.5">
@@ -490,7 +521,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
               </CardContent>
             </Card>
 
-            <Card className={systemStatus.backups.pending_count > 0 ? 'status-warning' : 'bg-muted/30'}>
+            <Card className={`${systemStatus.backups.pending_count > 0 ? 'status-warning' : 'bg-muted/30'} shadow-operational`}>
               <CardContent className="pt-6">
                 <div className="flex items-start gap-3">
                   <div className="rounded-lg bg-background/80 p-2.5">
@@ -512,7 +543,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
               </CardContent>
             </Card>
 
-            <Card className="status-info">
+            <Card className="status-info shadow-operational">
               <CardContent className="pt-6">
                 <div className="flex items-start gap-3">
                   <div className="rounded-lg bg-background/80 p-2.5">
@@ -554,7 +585,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
 
         {systemStatus && showAdvancedStatus ? (
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-            <Card>
+            <Card className="border-operational-border bg-operational-surface shadow-operational">
               <CardContent className="pt-6">
                 <div className="mb-4 flex items-start justify-between gap-3">
                   <div>
@@ -641,7 +672,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="border-operational-border bg-operational-surface shadow-operational">
               <CardContent className="pt-6">
                 <h3 className="text-sm font-semibold">Pruebas de campo obligatorias</h3>
                 <div className="mt-3 space-y-3">
@@ -696,7 +727,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
 
         {!isEmpty && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className={pendingCount > 0 ? 'status-warning' : 'bg-muted/30'}>
+            <Card className={`${pendingCount > 0 ? 'status-warning' : 'bg-muted/30'} shadow-operational`}>
               <CardContent className="pt-6">
                 <div className="flex items-center gap-3">
                   <div className={`p-2.5 rounded-lg ${pendingCount > 0 ? 'bg-warning/10' : 'bg-muted'}`}>
@@ -714,7 +745,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
               </CardContent>
             </Card>
 
-            <Card className="status-success">
+            <Card className="status-success shadow-operational">
               <CardContent className="pt-6">
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 rounded-lg bg-success/10">
@@ -734,7 +765,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
               </CardContent>
             </Card>
 
-            <Card className={failedCount > 0 ? 'border-destructive/30 bg-destructive/10 text-destructive' : 'bg-muted/30'}>
+            <Card className={`${failedCount > 0 ? 'border-destructive/30 bg-destructive/10 text-destructive' : 'bg-muted/30'} shadow-operational`}>
               <CardContent className="pt-6">
                 <div className="flex items-center gap-3">
                   <div className={`p-2.5 rounded-lg ${failedCount > 0 ? 'bg-destructive/10' : 'bg-muted'}`}>
