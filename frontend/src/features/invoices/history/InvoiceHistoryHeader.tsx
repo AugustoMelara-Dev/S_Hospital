@@ -1,3 +1,4 @@
+import { FileText } from 'lucide-react';
 import { PageHeader } from '../../../components/ui/page-header';
 import type { PaginatedMeta } from '../../../lib/api';
 
@@ -14,11 +15,14 @@ export function InvoiceHistoryHeader({ loading, meta }: InvoiceHistoryHeaderProp
       title="Historial de facturas"
       description="Consulte facturas recientes, reimprima recibos y gestione anulaciones autorizadas."
       secondary={(
-        <p className="text-sm text-muted-foreground" role="status" aria-live="polite">
+        <div className="inline-flex items-center gap-2 rounded border border-border bg-card px-3 py-2 text-sm text-muted-foreground shadow-sm" role="status" aria-live="polite">
+          <FileText data-icon aria-hidden="true" className="size-4 text-secondary" />
+          <span>
           {loading
             ? 'Actualizando listado de facturas.'
             : `${total} registro${total !== 1 ? 's' : ''} en total`}
-        </p>
+          </span>
+        </div>
       )}
     />
   );

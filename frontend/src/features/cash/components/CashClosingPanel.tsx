@@ -1,5 +1,5 @@
 import { type FormEvent, type RefObject } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, ClipboardCheck } from 'lucide-react';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -42,12 +42,19 @@ export function CashClosingPanel({
   pendingInvoiceCount,
 }: CashClosingPanelProps) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Cerrar caja</CardTitle>
-        <CardDescription>Cierre auditado de la sesión actual</CardDescription>
+    <Card className="border-operational-border">
+      <CardHeader className="gap-2 border-b border-border">
+        <div className="flex items-start gap-3">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded bg-muted text-secondary ring-1 ring-border">
+            <ClipboardCheck data-icon aria-hidden="true" className="size-5" />
+          </span>
+          <div className="min-w-0">
+            <CardTitle>Cerrar caja</CardTitle>
+            <CardDescription>Cierre auditado de la sesión actual</CardDescription>
+          </div>
+        </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-5">
         <form onSubmit={onSubmit} className="flex flex-col gap-4" aria-busy={isSubmitting}>
           <FormField
             id="closing_amount"
