@@ -159,3 +159,17 @@ php artisan test --filter=InstitutionalReceiptPdfTest --colors=never
   - `npm run typecheck` PASS
   - `npm run build` PASS
   - `git diff --check` PASS
+
+### 2026-06-26 - Billing / POS
+
+- Rama de trabajo: `codex/v1-2-billing-pos`
+- Worktree: `C:\Projects\S_Hospital-v12-billing-pos`
+- Archivos principales: `frontend/src/features/invoices/components/**`, tests focales de componentes POS.
+- Handoff: POS actualizado con banner operacional, tarjeta de estado de caja, captura de paciente mas clara, busqueda/filtros compactos, resultados densos, carrito con resumen financiero reforzado, modal de pago mas legible y confirmacion de factura con totales destacados.
+- Guardrails confirmados: sin cambios backend, rutas, contratos API, reducers, helpers de dinero/calculo, payloads, numeracion fiscal, impuestos, permisos, caja o logica PDF/recibos backend.
+- Gates ejecutados en rama de billing/POS:
+  - `npm run typecheck` PASS
+  - `npm run lint` PASS
+  - `npm run test -- NewInvoiceView NewInvoiceViewLayout ServiceSearch InvoiceCart PaymentModal InvoiceConfirmation --run` PASS, 6 files / 60 tests
+  - `npm run build` PASS
+  - `git diff --check` PASS

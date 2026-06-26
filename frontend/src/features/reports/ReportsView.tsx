@@ -1,10 +1,11 @@
 import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Alert } from '@/components/ui/alert';
-import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/states';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { InfoPanel, OperationalBanner } from '@/components/shared';
 import {
   type ExecutiveReport,
   type ExecutiveReportFilters,
@@ -449,10 +450,18 @@ function ReportsViewContent({
   }
 
   return (
-    <section id="reportes" aria-labelledby="reports-title" className="flex flex-col gap-5">
-      <PageHeader
+    <section id="reportes" aria-label="Reportes" className="flex flex-col gap-5">
+      <OperationalBanner
+        meta="Reportes y analitica"
         title="Reportes"
         description="Facturación, cobros, caja y auditoría en una vista clara, ejecutiva y auditada para contabilidad, administración y supervisión."
+        status={
+          <div className="flex flex-wrap items-center gap-2">
+            {canViewManagerial ? <Badge variant="secondary">Ejecutivo</Badge> : null}
+            {canViewCashSessionReport ? <Badge variant="secondary">Caja</Badge> : null}
+            {cashSession?.status === 'open' ? <Badge variant="success">Caja abierta #{cashSession.id}</Badge> : null}
+          </div>
+        }
       />
 
       {canViewManagerial ? (
@@ -498,7 +507,9 @@ function ReportsViewContent({
       ) : null}
 
       <Tabs defaultValue={canViewManagerial ? 'resumen' : 'caja'}>
-          <TabsList aria-label="Secciones de reportes" className="h-auto flex-wrap gap-1 py-1">
+        <div className="rounded-panel border border-operational-border bg-operational-surface p-2 shadow-operational">
+          <div className="overflow-x-auto pb-1">
+          <TabsList aria-label="Secciones de reportes" className="h-auto min-w-max flex-wrap gap-1 bg-transparent py-1">
             {canViewManagerial ? (
               <>
                 <TabsTrigger value="resumen">Resumen</TabsTrigger>
@@ -517,6 +528,8 @@ function ReportsViewContent({
             ) : null}
             {canViewCashSessionReport ? <TabsTrigger value="caja">Caja</TabsTrigger> : null}
           </TabsList>
+          </div>
+        </div>
 
           <TabsContent value="resumen">
             <div className="flex flex-col gap-5">
@@ -709,12 +722,17 @@ function ReportsViewContent({
           </TabsContent>
 
           <TabsContent value="exportaciones">
-            <Card>
-              <CardContent className="flex flex-col gap-3">
-                <h2 className="text-base font-semibold text-foreground">Exportaciones formales</h2>
-                <p className="text-sm text-muted-foreground">
-                  PDF ejecutivo y Excel contable usan los mismos totales del reporte mostrado en pantalla.
-                </p>
+            <Card className="rounded-panel border-operational-border bg-operational-surface shadow-operational">
+              <CardContent className="flex flex-col gap-3 pt-5">
+                <header className="flex flex-col gap-1">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                    Salidas oficiales
+                  </p>
+                  <h2 className="text-base font-semibold text-foreground">Exportaciones formales</h2>
+                  <p className="text-sm text-muted-foreground">
+                    PDF ejecutivo y Excel contable usan los mismos totales del reporte mostrado en pantalla.
+                  </p>
+                </header>
                 <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
@@ -740,10 +758,11 @@ function ReportsViewContent({
         </Tabs>
 
       {!canViewManagerial && !canViewCashSessionReport ? (
-        <Alert variant="warning" title="Sin permisos para reportes">
-          Su usuario no tiene acceso a la seccion ejecutiva ni a cajas. Solicite a un supervisor la
-          revision de sus permisos.
-        </Alert>
+        <InfoPanel
+          tone="warning"
+          title="Sin permisos para reportes"
+          description="Su usuario no tiene acceso a la seccion ejecutiva ni a cajas. Solicite a un supervisor la revision de sus permisos."
+        />
       ) : null}
     </section>
   );

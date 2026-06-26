@@ -14,10 +14,10 @@ interface AlertDialogContentProps {
 export function AlertDialogContent({ children, className }: AlertDialogContentProps) {
   return (
     <AlertDialogPrimitive.Portal>
-      <AlertDialogPrimitive.Overlay className="fixed inset-0 z-50 bg-foreground/45" />
+      <AlertDialogPrimitive.Overlay className="fixed inset-0 z-50 bg-foreground/50" />
       <AlertDialogPrimitive.Content
         className={cn(
-          'fixed left-1/2 top-1/2 z-50 w-[calc(100vw-1.5rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-lg border border-border bg-card p-5 text-card-foreground shadow-lg',
+          'fixed left-1/2 top-1/2 z-50 max-h-[calc(100dvh-1.5rem)] w-[calc(100vw-1.5rem)] max-w-xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-lg border border-border bg-card p-5 text-card-foreground shadow-lg',
           className,
         )}
       >
@@ -156,16 +156,18 @@ export function CloseSessionDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>¿Cerrar caja?</AlertDialogTitle>
           <AlertDialogDescription>
-            <div className="mt-2 space-y-2">
-              <div className="flex justify-between">
-                <span>Monto apertura:</span>
-                <strong>{formatLempirasUI(openingAmount)}</strong>
+            <div className="mt-3 grid gap-3">
+              <div className="rounded-md border border-border bg-muted/35 p-3 text-sm">
+                <div className="flex justify-between gap-4">
+                  <span>Monto apertura:</span>
+                  <strong>{formatLempirasUI(openingAmount)}</strong>
+                </div>
+                <div className="mt-2 flex justify-between gap-4">
+                  <span>Efectivo esperado:</span>
+                  <strong>{formatLempirasUI(expectedAmount)}</strong>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span>Efectivo esperado:</span>
-                <strong>{formatLempirasUI(expectedAmount)}</strong>
-              </div>
-              <div className="grid grid-cols-2 gap-2 rounded-md border border-border p-3 text-xs">
+              <div className="grid grid-cols-1 gap-2 rounded-md border border-border p-3 text-xs sm:grid-cols-2">
                 <div className="flex justify-between gap-2">
                   <span>Efectivo</span>
                   <strong>{formatLempirasUI(methods.cash)}</strong>
@@ -183,24 +185,26 @@ export function CloseSessionDialog({
                   <strong>{formatLempirasUI(methods.other)}</strong>
                 </div>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between gap-4 text-sm">
                 <span>Saldo pendiente:</span>
                 <strong>{formatLempirasUI(pendingAmount)}</strong>
               </div>
               {pendingInvoiceCount > 0 && (
-                <div className="rounded-md border border-warning/35 bg-warning/10 p-2 text-xs text-warning-foreground">
+                <div className="rounded-md border border-warning/35 bg-warning/10 p-3 text-xs font-medium text-warning-foreground">
                   Hay {pendingInvoiceCount} factura(s) pendientes o parciales. El servidor no permitira cerrar hasta revisarlas.
                 </div>
               )}
-              <div className="flex justify-between">
-                <span>Contado:</span>
-                <strong>{formatLempirasUI(closingAmount || '0.00')}</strong>
-              </div>
-              <div className="flex justify-between">
-                <span>Diferencia:</span>
-                <strong className={cn(isDifference ? 'text-destructive' : 'text-success-foreground')}>
-                  {formatLempirasUI(difference)}
-                </strong>
+              <div className="grid grid-cols-1 gap-2 rounded-md border border-border p-3 text-sm sm:grid-cols-2">
+                <div className="flex justify-between gap-4">
+                  <span>Contado:</span>
+                  <strong>{formatLempirasUI(closingAmount || '0.00')}</strong>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <span>Diferencia:</span>
+                  <strong className={cn(isDifference ? 'text-destructive' : 'text-success-foreground')}>
+                    {formatLempirasUI(difference)}
+                  </strong>
+                </div>
               </div>
             </div>
           </AlertDialogDescription>
