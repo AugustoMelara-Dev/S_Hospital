@@ -470,6 +470,15 @@ html.dark {
     --shadow-operational: none;
   }
 
+  html.dark {
+    --color-operational-bg: #ffffff;
+    --color-operational-surface: #ffffff;
+    --color-operational-panel: #ffffff;
+    --color-operational-border: #d1d5db;
+    --color-receipt-border: #111827;
+    --shadow-operational: none;
+  }
+
   body[data-printing-receipt="true"] * {
     visibility: hidden !important;
   }
