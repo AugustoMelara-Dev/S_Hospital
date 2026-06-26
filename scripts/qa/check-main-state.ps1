@@ -1,6 +1,6 @@
 param(
     [string] $RepoRoot = "C:\Projects\S_Hospital",
-    [string] $ExpectedSha = "bfa115f15f613a69e81e54a462a5c0e7c9e40f69"
+    [string] $ExpectedSha = "4286887cf7f7e51b56ee27aecdb1b3a6b7d9691f"
 )
 
 $ErrorActionPreference = "Stop"
