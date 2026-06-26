@@ -32,11 +32,11 @@ export function MobileNavigation({
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay
           data-slot="mobile-navigation-overlay"
-          className="fixed inset-0 z-50 bg-foreground/45 data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
+          className="fixed inset-0 z-50 bg-foreground/50 backdrop-blur-[1px] data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 motion-reduce:backdrop-blur-none"
         />
         <DialogPrimitive.Content
           data-slot="mobile-navigation-content"
-          className="fixed left-0 top-0 z-50 h-full w-[min(20rem,calc(100vw-1rem))] bg-sidebar text-sidebar-foreground shadow-xl outline-none transition-transform duration-200 ease-out data-[state=closed]:-translate-x-full data-[state=open]:translate-x-0 motion-reduce:transition-none"
+          className="fixed left-0 top-0 z-50 h-full w-[min(21rem,calc(100vw-0.75rem))] overflow-hidden rounded-r-panel border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-operational outline-none transition-transform duration-200 ease-out data-[state=closed]:-translate-x-full data-[state=open]:translate-x-0 motion-reduce:transition-none"
           onCloseAutoFocus={(event) => {
             event.preventDefault();
             triggerRef.current?.focus();
@@ -51,7 +51,7 @@ export function MobileNavigation({
               type="button"
               variant="ghost"
               size="icon"
-              className="absolute right-3 top-3 z-10 border border-sidebar-border bg-sidebar-accent text-sidebar-foreground hover:bg-sidebar-accent/80"
+              className="absolute right-3 top-3 z-10 border border-sidebar-border bg-sidebar-accent text-sidebar-foreground shadow-sm hover:bg-sidebar-accent/80"
               aria-label="Cerrar navegación"
             >
               <X data-icon aria-hidden="true" />
@@ -70,4 +70,3 @@ export function MobileNavigation({
     </DialogPrimitive.Root>
   );
 }
-
