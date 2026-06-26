@@ -47,7 +47,7 @@ Health observations:
 
 - `scripts/qa/check-lan-url.ps1 -Url "http://192.168.1.10:8081"`: PASS after adding `Url` alias.
 - `scripts/qa/check-lan-url.ps1 -Url "http://192.168.1.10:8080"`: PASS after adding `Url` alias.
-- `scripts/qa/check-main-state.ps1`: corrected to use current expected SHA and reliable Git argument handling. It must be re-run after commit because it intentionally fails while the working tree is dirty.
+- `scripts/qa/check-main-state.ps1`: corrected to use current expected SHA and reliable Git argument handling. Post-commit verification passed with `main` and `origin/main` at `bfa115f15f613a69e81e54a462a5c0e7c9e40f69`.
 - PowerShell syntax parse: PASS for all three QA scripts.
 
 ## Physical gates
