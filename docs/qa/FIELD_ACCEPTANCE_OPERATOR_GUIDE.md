@@ -4,7 +4,7 @@ This guide is for the technical operator at the hospital. Use only synthetic dat
 
 Verified software SHA for this package:
 
-`ebc9018102b1940ebe8ba9b5bfd3107a2ef4b122`
+`bfa115f15f613a69e81e54a462a5c0e7c9e40f69`
 
 Physical production approval is NO until all required gates pass with evidence.
 
@@ -17,6 +17,7 @@ Physical production approval is NO until all required gates pass with evidence.
 5. Confirm the browser is Edge or Chrome and is updated enough for normal printing.
 6. Confirm no screenshots or photos expose real patient data, credentials, tokens or `.env` content.
 7. Open `docs/qa/FIELD_ACCEPTANCE_EXECUTION_LOG.md` and fill each gate as it is executed.
+8. Use `docs/qa/FIELD_ACCEPTANCE_SITE_RUN_SHEET.md` as the printable field checklist if the operator wants a one-page-per-gate worksheet.
 
 ## Gate A - Second PC LAN
 
