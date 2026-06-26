@@ -15,6 +15,7 @@ export type DashboardSectionCardProps = {
   onRetry?: () => void;
   state: DashboardSectionState;
   title: ReactNode;
+  variant?: 'card' | 'chart';
 };
 
 export type SetupStatusStep = {
@@ -45,6 +46,11 @@ export type DashboardMetricsContext = {
   cashSession: { id: number } | null;
   invoiceCount: number | null | undefined;
   loading: boolean;
+  todayBilled: string | number | null | undefined;
+  todayCollected: string | number | null | undefined;
+  todayInvoiceCount: number | null | undefined;
+  todayPaymentCount: number | null | undefined;
   totalBilled: string | number | null | undefined;
   totalCollected: string | number | null | undefined;
+  totalPending: string | number | null | undefined;
 };
