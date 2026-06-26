@@ -3714,3 +3714,13 @@ Decision: agregar `frontend/e2e/v1-1-full-a11y.spec.ts` con la matriz de rutas a
 Motivo: internal merge debe basarse en una auditoria repetible, no solo en inspeccion visual o smoke parcial.
 
 Validacion: `npx playwright test e2e/v1-1-full-a11y.spec.ts`, `npm run smoke:buttons`, `npm run typecheck`, `npm run lint`, `npm run test`, `npm run build` y `npm run test:e2e`.
+ 
+# 2026-06-26 - V1.2 visible UI delta conserva stack y contratos de negocio
+
+Contexto: V1.1 fue funcional y sobria, pero el usuario percibe que la UI se ve demasiado parecida a la version anterior. V1.2 debe producir un cambio visual evidente, profesional e institucional para entregar a un hospital, sin convertir S_Hospital en HIS clinico ni tocar reglas fiscales/operativas.
+
+Decision: crear la rama `codex/v1-2-visible-ui-delta` desde `origin/main` (`d0f48aabcb8e3611808c5b8b130de12aafbc2f98`) y tratar V1.2 como refactor UX/UI. Se mantiene el stack existente: React, TypeScript, Tailwind CSS v4, Radix UI, componentes locales estilo shadcn, Recharts, TanStack Query, React Hook Form y Zod. No se agregan librerias nuevas al inicio; TanStack Table queda condicionado a una auditoria/piloto si las tablas actuales no bastan. Framer Motion/Motion, Sonner, date picker pesado y otra libreria de charts quedan rechazadas por defecto.
+
+Motivo: el sistema ya tiene contratos de facturacion, caja, pagos, RBAC, recibos institucionales, backups y release E2E estabilizados. Un reemplazo visual masivo o cambios backend mezclados aumentarian el riesgo de romper operacion offline/LAN. El delta visible debe venir de tokens, componentes compartidos, shell profesional, dashboard/POS/reportes/caja mas claros y evidencia before/after.
+
+Validacion prevista: `docs/ux/V1_2_RESEARCH_REFERENCES.md`, `docs/ux/V1_2_LIBRARY_DECISION_RECORD.md`, `docs/ux/V1_2_VISIBLE_UI_DELTA_IMPLEMENTATION_PLAN.md`, `docs/ux/V1_2_VISIBLE_UI_DELTA_PLAN_REVIEW.md`, capturas before/after, matriz `frontend/e2e/v1-2-visible-ui-a11y.spec.ts`, `npm run typecheck`, `npm run lint`, `npm run test`, `npm run build`, `npm run smoke:buttons`, `npx playwright test e2e/production-readiness.spec.ts` y `npm run test:e2e`.
