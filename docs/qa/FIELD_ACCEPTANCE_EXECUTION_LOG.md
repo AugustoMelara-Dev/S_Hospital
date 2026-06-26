@@ -11,7 +11,7 @@
 * PC cliente 2: PENDIENTE - no disponible en esta sesion
 * Impresora: PENDIENTE - impresora fisica no disponible en esta sesion
 * Red: Wi-Fi LAN `192.168.1.0/24`, gateway `192.168.1.1`; URLs self-check `http://192.168.1.10:8080` y `http://192.168.1.10:8081`
-* Resultado general: PENDIENTE - restore descartable local PASS; gates fisicos LAN/impresion/carga siguen pendientes
+* Resultado general: PENDIENTE - restore descartable local PASS y concurrencia/carga local descartable PASS; gates fisicos LAN/impresion/carga real siguen pendientes
 
 ## Gate 1 - Segunda PC LAN
 
@@ -54,13 +54,13 @@ Tabla por formato:
 
 ## Gate 5 - Carga/concurrencia
 
-* Estado: PENDIENTE - no ejecutado en LAN real
-* Clientes: No hubo dos clientes reales disponibles
-* Duracion: No ejecutado
-* Requests: Solo GET seguros de self-check local a `8080` y `8081`
-* Errores: Sin errores HTTP en self-check; no se ejecuto carga real
-* Duplicados: No evaluado
-* Resultado: PENDIENTE
+* Estado: PASS local descartable - PENDIENTE para carga/concurrencia LAN real con dos clientes fisicos
+* Clientes: Local descartable `127.0.0.1` contra Laravel/MariaDB en Docker; no hubo dos clientes reales disponibles
+* Duracion: ejecucion automatizada local el 2026-06-25/26; no sustituye los 15-30 minutos de campo
+* Requests: 24 requests autenticados con concurrencia 4 contra `/api/auth/me`, `/api/reports/dashboard`, `/api/reports/today`, `/api/cash-sessions/current`, `/api/services?search=Glucosa` y `/api/invoices?per_page=10`
+* Errores: 0 fallos HTTP en carga autenticada local; status counts `200=24`
+* Duplicados: doble apertura de caja produjo HTTP `201/422`; dos facturas concurrentes generaron numeros unicos `000-001-01-00000001` y `000-001-01-00000002`; doble pago produjo HTTP `201/422`
+* Resultado: PASS local descartable. Evidencia: `qa/field-acceptance/concurrency-load-local-20260625220353.md`. Limite: sigue pendiente el gate LAN real con dos PCs/clientes fisicos y operador hospitalario.
 
 ## Defectos encontrados
 
