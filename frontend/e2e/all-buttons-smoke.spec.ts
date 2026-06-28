@@ -226,7 +226,7 @@ const executiveReport = {
   audit_summary: { critical_events: 0, reprints: 1, fiscal_changes: 0, cash_differences: 0, backup_events: 1 },
 };
 const routeExpectations = [
-  { path: '/dashboard', heading: /inicio/i },
+  { path: '/dashboard', heading: /centro de mando/i },
   { path: '/billing/new', heading: /nueva factura/i },
   { path: '/cashbox', heading: /^caja$/i },
   { path: '/catalog', heading: /catalogo|cat.logo/i },
@@ -310,7 +310,7 @@ async function login(page: Page) {
   await page.locator('#login-input').fill('admin.validacion');
   await page.locator('#password-input').fill('Password123!');
   await page.getByRole('button', { name: /entrar|iniciar/i }).click();
-  await waitForScreen(page, /inicio/i);
+  await waitForScreen(page, /centro de mando/i);
 }
 
 async function waitForScreen(page: Page, heading: RegExp) {

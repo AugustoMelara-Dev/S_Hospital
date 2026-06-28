@@ -4,6 +4,7 @@ import { FileText, Printer, Save, Settings2 } from 'lucide-react';
 import type { ReactElement, ReactNode } from 'react';
 import { cloneElement, isValidElement, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { InfoPanel, StatGrid } from '@/components/shared';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -317,6 +318,42 @@ export function InstitutionalReceiptSettingsView({ canEdit, onStatus }: Institut
         description="Configuración del recibo clásico, serie, papel y copias para impresora normal."
       />
 
+      <StatGrid
+        className="sm:grid-cols-2 xl:grid-cols-4"
+        items={[
+          {
+            label: 'Perfil resuelto',
+            value: selectedProfile ? PAPER_LABELS[selectedProfile.code] : 'Pendiente',
+            helper: selectedProfile ? `${selectedProfile.width_mm} x ${selectedProfile.height_mm} mm` : 'Sin perfil activo',
+            tone: selectedProfile?.active ? 'success' : 'warning',
+          },
+          {
+            label: 'Serie recibo',
+            value: activeSeries?.series ?? 'Pendiente',
+            helper: activeSeries ? `Próximo ${activeSeries.current_number + 1}` : 'Configure una serie institucional',
+            tone: activeSeries?.active ? 'success' : 'warning',
+          },
+          {
+            label: 'Copias',
+            value: watchedProfile.copies_mode === 'original_first_second' ? '3' : watchedProfile.copies_mode === 'original_first' ? '2' : '1',
+            helper: watchedProfile.show_copy_legend ? 'Leyenda visible' : 'Leyenda oculta',
+            tone: 'info',
+          },
+          {
+            label: 'Modo',
+            value: canEdit ? 'Editable' : 'Lectura',
+            helper: canEdit ? 'Cambios permitidos por permiso' : 'Sin permiso para guardar',
+            tone: canEdit ? 'success' : 'warning',
+          },
+        ]}
+      />
+
+      <InfoPanel
+        title="Documento principal en papel"
+        description="Carta, media carta y A5 son los perfiles institucionales principales. Los formatos compactos quedan como compatibilidad secundaria."
+        tone="info"
+      />
+
       {!canEdit ? (
         <Alert variant="warning" title="Modo solo lectura">
           Solo usuarios autorizados pueden cambiar serie, perfiles o textos institucionales.
@@ -331,7 +368,7 @@ export function InstitutionalReceiptSettingsView({ canEdit, onStatus }: Institut
 
       <Tabs defaultValue="institucion" className="space-y-6">
         <div className="overflow-x-auto pb-1">
-          <TabsList className="min-w-max bg-muted/50">
+          <TabsList className="min-w-max border border-operational-border bg-operational-panel p-1">
             <TabsTrigger value="institucion">Institución</TabsTrigger>
             <TabsTrigger value="serie">Serie</TabsTrigger>
             <TabsTrigger value="papel">Papel y copias</TabsTrigger>
@@ -340,7 +377,7 @@ export function InstitutionalReceiptSettingsView({ canEdit, onStatus }: Institut
         </div>
 
         <TabsContent value="institucion" className="space-y-6">
-          <Card>
+          <Card className="border-operational-border bg-operational-surface shadow-operational">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="size-5" data-icon aria-hidden="true" />
@@ -397,7 +434,7 @@ export function InstitutionalReceiptSettingsView({ canEdit, onStatus }: Institut
         </TabsContent>
 
         <TabsContent value="serie" className="space-y-6">
-          <Card>
+          <Card className="border-operational-border bg-operational-surface shadow-operational">
             <CardHeader>
               <CardTitle>Serie y control fiscal</CardTitle>
               <CardDescription>Rango, formato y correlativo actual del recibo institucional.</CardDescription>
@@ -463,7 +500,7 @@ export function InstitutionalReceiptSettingsView({ canEdit, onStatus }: Institut
 
         <TabsContent value="papel" className="space-y-6">
           <div className="grid gap-6 lg:grid-cols-[0.85fr_1.15fr]">
-            <Card>
+            <Card className="border-operational-border bg-operational-surface shadow-operational">
               <CardHeader>
                 <CardTitle>Perfiles disponibles</CardTitle>
                 <CardDescription>El principal recomendado es media carta horizontal.</CardDescription>
@@ -475,7 +512,7 @@ export function InstitutionalReceiptSettingsView({ canEdit, onStatus }: Institut
                     type="button"
                     aria-pressed={selectedProfileCode === profile.code}
                     variant={selectedProfileCode === profile.code ? 'secondary' : 'outline'}
-                    className="w-full justify-between"
+                    className="h-auto w-full justify-between gap-3 p-3 text-left"
                     onClick={() => setSelectedProfileCode(profile.code)}
                   >
                     <span>{PAPER_LABELS[profile.code]}</span>
@@ -485,7 +522,7 @@ export function InstitutionalReceiptSettingsView({ canEdit, onStatus }: Institut
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="border-operational-border bg-operational-surface shadow-operational">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Settings2 className="size-5" data-icon aria-hidden="true" />
@@ -556,7 +593,7 @@ export function InstitutionalReceiptSettingsView({ canEdit, onStatus }: Institut
                       ['active', 'Perfil activo'],
                       ['is_global_default', 'Predeterminado global'],
                     ].map(([name, label]) => (
-                      <label key={name} className="flex items-center gap-2 rounded-md border border-border p-3 text-sm">
+                      <label key={name} className="flex items-center gap-2 rounded-md border border-operational-border bg-operational-panel p-3 text-sm">
                         <Checkbox
                           checked={Boolean(profileForm.watch(name as keyof ReceiptProfileForm))}
                           disabled={!canEdit}
@@ -582,7 +619,7 @@ export function InstitutionalReceiptSettingsView({ canEdit, onStatus }: Institut
             </Card>
           </div>
 
-          <Card>
+          <Card className="border-operational-border bg-operational-surface shadow-operational">
             <CardHeader>
               <CardTitle>Perfil por caja o usuario</CardTitle>
               <CardDescription>Si no hay asignación específica, se usa el perfil global institucional.</CardDescription>
@@ -634,7 +671,7 @@ export function InstitutionalReceiptSettingsView({ canEdit, onStatus }: Institut
                 </Button>
               </div>
               {settings?.assignments.length ? (
-                <div className="rounded-md border border-border bg-muted/30 p-3">
+                <div className="rounded-panel border border-operational-border bg-operational-panel p-3">
                   <p className="text-sm font-semibold text-foreground">Asignaciones activas</p>
                   <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
                     {settings.assignments.map((assignment) => (
@@ -645,7 +682,7 @@ export function InstitutionalReceiptSettingsView({ canEdit, onStatus }: Institut
                   </ul>
                 </div>
               ) : (
-                <p className="rounded-md border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
+                <p className="rounded-panel border border-operational-border bg-operational-panel p-3 text-sm text-muted-foreground">
                   No hay asignaciones específicas. Se usará el perfil global activo.
                 </p>
               )}

@@ -7,6 +7,7 @@ import {
 } from '@/lib/api';
 import { Alert } from '@/components/ui/alert';
 import { ActionBar } from '@/components/ui/action-bar';
+import { InfoPanel, StatGrid } from '@/components/shared';
 import { PageHeader } from '@/components/ui/page-header';
 import { ErrorState, LoadingState } from '@/components/ui/states';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -359,6 +360,42 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
         )}
       />
 
+      <StatGrid
+        className="sm:grid-cols-2 xl:grid-cols-4"
+        items={[
+          {
+            label: 'Hospital',
+            value: hospitalForm.hospital_name || 'Pendiente',
+            helper: hospitalForm.rtn ? `RTN ${hospitalForm.rtn}` : 'RTN sin configurar',
+            tone: hospitalForm.hospital_name ? 'success' : 'warning',
+          },
+          {
+            label: 'Secuencia fiscal',
+            value: sequenceForm.prefix || 'Pendiente',
+            helper: sequence?.current_number != null ? `Actual ${formatSequenceNumber(sequence.current_number)}` : 'Sin correlativo activo',
+            tone: sequence?.active ? 'success' : 'warning',
+          },
+          {
+            label: 'Recibo',
+            value: INSTITUTIONAL_RECEIPT_PAPER_OPTIONS.find((option) => option.value === hospitalForm.receipt_paper_size)?.label ?? 'Pendiente',
+            helper: 'Formato institucional principal',
+            tone: 'info',
+          },
+          {
+            label: 'Permiso',
+            value: canEdit ? 'Editable' : 'Solo lectura',
+            helper: canEdit ? 'Puede guardar cambios' : 'Los formularios quedan bloqueados',
+            tone: canEdit ? 'success' : 'warning',
+          },
+        ]}
+      />
+
+      <InfoPanel
+        title="Configuración fiscal y recibo"
+        description="Revise datos autorizados antes de guardar. Los campos opcionales vacíos se conservan vacíos y no se completan con valores supuestos."
+        tone="info"
+      />
+
       {error ? (
         <ErrorState
           title="No se pudo completar la operación fiscal"
@@ -372,7 +409,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
       ) : null}
 
       <Tabs defaultValue="resumen" className="space-y-6">
-        <TabsList className="bg-muted/50">
+        <TabsList className="border border-operational-border bg-operational-panel p-1">
           <TabsTrigger value="resumen">Resumen</TabsTrigger>
           <TabsTrigger value="hospital">Hospital</TabsTrigger>
           <TabsTrigger value="secuencia">Numeración</TabsTrigger>
@@ -506,7 +543,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                 </div>
               </FieldGroup>
 
-              <div className="grid gap-3 rounded-md border border-border bg-muted/30 p-3">
+                <div className="grid gap-3 rounded-panel border border-operational-border bg-operational-panel p-3">
                 <div className="flex items-start gap-3 text-sm">
                   <Checkbox
                     id="scanner_enabled"
@@ -636,7 +673,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                   )}
                 </FormField>
 
-                <div className="rounded-md border border-border bg-muted/30 p-3">
+                <div className="rounded-panel border border-operational-border bg-operational-panel p-3">
                   <p className="text-xs font-semibold uppercase text-muted-foreground">Correlativo actual</p>
                   <p className="mt-1 font-mono text-lg font-semibold tabular-nums">
                     {sequence?.prefix && sequence?.current_number != null
@@ -696,7 +733,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
 
         <TabsContent value="branding" className="mt-0">
           <div className="grid gap-6 md:grid-cols-2">
-            <Card>
+            <Card className="border-operational-border bg-operational-surface shadow-operational">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Building2 aria-hidden="true" className="size-5 text-secondary" />
@@ -712,7 +749,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                     La carga de logo requiere permiso para actualizar configuración fiscal.
                   </Alert>
                 ) : null}
-                <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-border rounded-lg bg-muted/40">
+                <div className="flex flex-col items-center justify-center rounded-panel border-2 border-dashed border-operational-border bg-operational-panel p-6">
                   {logoUrl ? (
                     <div className="relative group flex flex-col items-center">
                       <img
@@ -762,7 +799,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="border-operational-border bg-operational-surface shadow-operational">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Palette aria-hidden="true" className="size-5 text-secondary" />

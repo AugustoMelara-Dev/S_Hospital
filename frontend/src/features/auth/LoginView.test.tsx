@@ -29,6 +29,15 @@ describe('LoginView', () => {
     expect(screen.getByRole('button', { name: /iniciar sesión/i })).toBeInTheDocument();
   });
 
+  it('renders institutional LAN reassurance without changing the login controls', () => {
+    render(<LoginView {...defaultProps} />, { wrapper: Wrapper });
+
+    expect(screen.getAllByText(/sistema hospitalario lan/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/conexion local/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/usuario o correo/i)).toHaveAttribute('autocomplete', 'username');
+    expect(screen.getByLabelText(/^contrase/i)).toHaveAttribute('autocomplete', 'current-password');
+  });
+
   it('calls onLoginChange when user types in login field', () => {
     const onLoginChange = vi.fn();
     render(<LoginView {...defaultProps} onLoginChange={onLoginChange} />, { wrapper: Wrapper });

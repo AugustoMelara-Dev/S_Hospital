@@ -1,5 +1,6 @@
-﻿import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { InfoPanel, StatGrid } from '@/components/shared';
 import { type Area, type AuthUser, type Category, type Service, apiClient, userSafeErrorMessage } from '../../lib/api';
 import { CatalogPagination } from './components/CatalogPagination';
 import { CatalogToolbar } from './components/CatalogToolbar';
@@ -77,8 +78,8 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
         }),
         apiClient.getOperationalSettings().catch(() => null),
       ]);
-      setCategories(nextCategories);
-      setAreas(nextAreas);
+      setCategories(Array.isArray(nextCategories) ? nextCategories : []);
+      setAreas(Array.isArray(nextAreas) ? nextAreas : []);
       setServicesData(nextServices);
       setScannerEnabled(operationalSettings?.scanner_enabled === true);
     } catch (error) {
@@ -200,6 +201,42 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
         onNewCategory={openNewCategory}
         onNewService={openNewService}
         summary={{ count: services.length, total: meta.total }}
+      />
+
+      <InfoPanel
+        title="Catálogo operativo de caja"
+        description="Servicios, categorías y estado de facturación se administran aquí. Los precios históricos de facturas ya emitidas siguen protegidos por snapshots."
+        tone={canManageCatalog ? 'info' : 'neutral'}
+      />
+
+      <StatGrid
+        className="sm:grid-cols-2 xl:grid-cols-4"
+        items={[
+          {
+            label: 'Total catálogo',
+            value: meta.total,
+            helper: `${services.length} visibles en esta página`,
+            tone: meta.total > 0 ? 'success' : 'warning',
+          },
+          {
+            label: 'Categorías',
+            value: categories.length,
+            helper: 'Disponibles para filtrar servicios',
+            tone: categories.length > 0 ? 'info' : 'warning',
+          },
+          {
+            label: 'Áreas',
+            value: areas.length,
+            helper: 'Clasificación administrativa',
+            tone: areas.length > 0 ? 'info' : 'warning',
+          },
+          {
+            label: 'Escáner',
+            value: scannerEnabled ? 'Activo' : 'Oculto',
+            helper: scannerEnabled ? 'Códigos visibles para gestión' : 'Sin códigos en flujo principal',
+            tone: scannerEnabled ? 'info' : 'neutral',
+          },
+        ]}
       />
 
       <CatalogToolbar

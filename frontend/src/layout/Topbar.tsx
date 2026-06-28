@@ -42,6 +42,7 @@ export function Topbar({
   const { data: fiscal } = usePublicBranding();
   const [now, setNow] = useState(() => new Date());
   const hospitalName = displayHospitalName(fiscal?.hospital_name);
+  const roleLabel = user.roles.length > 0 ? user.roles.join(', ') : 'Sin rol';
   const currentCrumb = crumbs.at(-1);
   const currentTitle = currentCrumb?.label ?? 'Inicio';
   const localTime = new Intl.DateTimeFormat('es-HN', {
@@ -57,7 +58,7 @@ export function Topbar({
 
   return (
     <TooltipProvider>
-      <header className="print-hidden sticky top-0 z-10 flex min-h-14 items-center gap-2 border-b border-border bg-card/98 px-3 text-card-foreground lg:px-7">
+      <header className="print-hidden sticky top-0 z-10 flex min-h-16 items-center gap-3 border-b border-operational-border bg-operational-surface/98 px-3 text-card-foreground shadow-sm lg:px-7">
         <Button
           ref={mobileMenuButtonRef}
           type="button"
@@ -70,17 +71,25 @@ export function Topbar({
           <Menu data-icon="inline-start" aria-hidden="true" />
         </Button>
 
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 py-2">
           {!isMinimalTopbar && (
-            <p className="truncate text-sm font-semibold leading-tight text-foreground sm:text-base" title={currentTitle}>
-              {currentTitle}
-            </p>
+            <>
+              <p
+                className="hidden truncate text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground md:block"
+                title={hospitalName}
+              >
+                {hospitalName}
+              </p>
+              <p className="truncate text-base font-semibold leading-tight text-foreground sm:text-lg" title={currentTitle}>
+                {currentTitle}
+              </p>
+            </>
           )}
           {!isMinimalTopbar && (
             <AppBreadcrumbs
               crumbs={crumbs}
               canLinkTo={canLinkToBreadcrumb}
-              className="mt-0.5 hidden sm:block"
+              className="mt-1 hidden w-fit max-w-full rounded-md border border-operational-border bg-operational-panel/70 px-2 py-1 shadow-sm sm:block"
             />
           )}
         </div>
@@ -135,6 +144,7 @@ export function Topbar({
             onLogout={onLogout}
             onOpenGuide={onOpenGuide}
             onToggleTheme={toggleTheme}
+            roleLabel={roleLabel}
             user={user}
           />
         </div>

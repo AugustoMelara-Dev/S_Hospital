@@ -29,27 +29,27 @@ export function FiscalSummary({ settings, sequence }: FiscalSummaryProps) {
   const receiptPaperSize = settings?.receipt_paper_size ? receiptPaperSizeLabel(settings.receipt_paper_size) : null;
 
   return (
-    <Card>
+    <Card className="border-operational-border bg-operational-surface shadow-operational">
       <CardHeader>
-        <CardTitle>Resumen Fiscal</CardTitle>
+        <CardTitle>Resumen fiscal</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div className="min-w-0">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <div className="min-w-0 rounded-panel border border-operational-border bg-operational-panel p-3">
             <Label className="text-muted-foreground">Hospital</Label>
             <p className="break-words font-medium">{settings ? displayHospitalName(settings.hospital_name) : '-'}</p>
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 rounded-panel border border-operational-border bg-operational-panel p-3">
             <Label className="text-muted-foreground">RTN</Label>
             <p className="break-words font-mono font-medium tabular-nums">{settings?.rtn || '-'}</p>
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 rounded-panel border border-operational-border bg-operational-panel p-3">
             <Label className="text-muted-foreground">CAI</Label>
             <p className="break-words font-mono font-medium">
               {cai ? cai : <span className="text-destructive">No configurado</span>}
             </p>
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 rounded-panel border border-operational-border bg-operational-panel p-3">
             <Label className="text-muted-foreground">Rango Autorizado</Label>
             <p className="break-words font-mono font-medium tabular-nums">
               {sequence?.prefix && sequence?.min_number != null && sequence?.max_number != null && cai
@@ -57,7 +57,7 @@ export function FiscalSummary({ settings, sequence }: FiscalSummaryProps) {
                 : '-'}
             </p>
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 rounded-panel border border-operational-border bg-operational-panel p-3">
             <Label className="text-muted-foreground">Siguiente Correlativo</Label>
             <p className="break-words font-mono font-medium tabular-nums">
               {sequence?.prefix && sequence?.current_number != null && cai
@@ -65,11 +65,11 @@ export function FiscalSummary({ settings, sequence }: FiscalSummaryProps) {
                 : '-'}
             </p>
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 rounded-panel border border-operational-border bg-operational-panel p-3">
             <Label className="text-muted-foreground">Recibo institucional</Label>
             <p className="font-medium">{receiptPaperSize ?? 'Pendiente'}</p>
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 rounded-panel border border-operational-border bg-operational-panel p-3">
             <Label className="text-muted-foreground">Válido hasta</Label>
             <p className={`font-medium ${isExpired ? 'text-destructive' : ''}`}>
               {sequence?.valid_until && cai ? formatDate(sequence.valid_until) : '-'}

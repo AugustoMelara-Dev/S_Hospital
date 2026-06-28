@@ -77,7 +77,7 @@ export function ServiceRanking({ report }: ServiceRankingProps) {
 
   if (!hasData) {
     return (
-      <Card>
+      <Card className="rounded-panel border-operational-border bg-operational-surface shadow-operational">
         <CardHeader>
           <CardTitle className="text-base">Servicios facturados</CardTitle>
         </CardHeader>
@@ -89,7 +89,7 @@ export function ServiceRanking({ report }: ServiceRankingProps) {
   }
 
   return (
-    <Card>
+    <Card className="rounded-panel border-operational-border bg-operational-surface shadow-operational">
       <CardHeader>
         <div className="flex flex-col gap-1">
           <CardTitle className="text-base">Servicios facturados</CardTitle>
@@ -100,13 +100,16 @@ export function ServiceRanking({ report }: ServiceRankingProps) {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="amount">
-          <TabsList>
+          <div className="overflow-x-auto pb-2">
+          <TabsList className="min-w-max">
             <TabsTrigger value="amount">Por monto</TabsTrigger>
             <TabsTrigger value="quantity">Por cantidad</TabsTrigger>
             <TabsTrigger value="category">Por categoria</TabsTrigger>
             <TabsTrigger value="area">Por area</TabsTrigger>
           </TabsList>
+          </div>
           <TabsContent value="amount">
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -132,8 +135,10 @@ export function ServiceRanking({ report }: ServiceRankingProps) {
                 )}
               </TableBody>
             </Table>
+            </div>
           </TabsContent>
           <TabsContent value="quantity">
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -173,8 +178,10 @@ export function ServiceRanking({ report }: ServiceRankingProps) {
                 )}
               </TableBody>
             </Table>
+            </div>
           </TabsContent>
           <TabsContent value="category">
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -200,8 +207,10 @@ export function ServiceRanking({ report }: ServiceRankingProps) {
                 )}
               </TableBody>
             </Table>
+            </div>
           </TabsContent>
           <TabsContent value="area">
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -226,6 +235,7 @@ export function ServiceRanking({ report }: ServiceRankingProps) {
                 )}
               </TableBody>
             </Table>
+            </div>
           </TabsContent>
         </Tabs>
         <p className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">

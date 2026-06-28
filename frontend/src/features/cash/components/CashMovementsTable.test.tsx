@@ -14,10 +14,11 @@ describe('CashMovementsTable', () => {
       />,
     );
 
-    expect(rowFor('payment')).toHaveTextContent('+ L 51.75');
-    expect(rowFor('payment_void')).toHaveTextContent('- L 17.25');
-    expect(rowFor('closing')).toHaveTextContent('L 134.50');
-    expect(rowFor('closing')).not.toHaveTextContent('- L 134.50');
+    expect(rowFor('Pago')).toHaveTextContent('+ L 51.75');
+    expect(rowFor('Reverso de pago')).toHaveTextContent('- L 17.25');
+    expect(rowFor('Cierre')).toHaveTextContent('L 134.50');
+    expect(rowFor('Cierre')).not.toHaveTextContent('- L 134.50');
+    expect(screen.queryByText('payment_void')).not.toBeInTheDocument();
   });
 
   it('renders a semantic table with accessible caption and no invented actions', () => {
@@ -37,9 +38,9 @@ describe('CashMovementsTable', () => {
   });
 });
 
-function rowFor(type: string): HTMLElement {
-  return screen.getAllByText(type)[0]?.closest('tr') ?? (() => {
-    throw new Error(`Missing row for ${type}`);
+function rowFor(label: string): HTMLElement {
+  return screen.getAllByText(label)[0]?.closest('tr') ?? (() => {
+    throw new Error(`Missing row for ${label}`);
   })();
 }
 
