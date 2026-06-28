@@ -133,7 +133,7 @@ canExportReports={session.canExportReports}
             canDisableUsers={session.canDisableUsers}
             canManageRoles={session.canManageRoles}
             canMarkDialysisPrescription={session.canMarkDialysisPrescription}
-            cashSession={session.cashSession}
+            cashSession={cashSession ?? null}
             defaultAuthenticatedRoute={session.defaultAuthenticatedRoute}
           onQuickCash={() => setQuickCashOpen(true)}
           onQuickInvoice={() => setQuickInvoiceOpen(true)}

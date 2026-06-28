@@ -118,7 +118,6 @@ export function AppRoutes({
                 canViewCatalog={canViewCatalog}
                 canViewReceipts={canViewReceipts}
                 canMarkDialysisPrescription={canMarkDialysisPrescription}
-                onCashSessionChange={onCashSessionChange}
                 onOpenCash={canOpenCash ? onQuickCash : undefined}
                 onStatus={onStatus}
               />

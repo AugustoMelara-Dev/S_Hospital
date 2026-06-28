@@ -1,6 +1,6 @@
 import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { type AuthUser, type CashSession, apiClient, userSafeErrorMessage } from '../lib/api';
+import { type AuthUser, apiClient, userSafeErrorMessage } from '../lib/api';
 import { invalidateCsrfCookie } from '../lib/csrf';
 import { disconnectEcho } from '../lib/realtime/echo';
 import { type PasswordChangeForm } from '../features/auth/PasswordChangeView';
