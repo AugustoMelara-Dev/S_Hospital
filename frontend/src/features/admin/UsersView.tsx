@@ -23,14 +23,7 @@ import { Dialog } from '@/components/ui/dialog';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
 import {
   Search,
   UserPlus,
@@ -462,6 +455,124 @@ export function UsersView({
     );
   }
 
+  const userColumns: Array<DataTableColumn<AuthUser>> = [
+    {
+      key: 'name',
+      header: 'Usuario',
+      headerClassName: 'w-[30%]',
+      cellClassName: 'font-medium',
+      render: (user) => (
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary font-bold">
+            {user.name.charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <p className="font-semibold text-foreground">{user.name}</p>
+            <div className="mt-1 flex flex-wrap gap-1">
+              {user.must_change_password ? (
+                <Badge variant="warning" className="text-[10px]">
+                  <ShieldAlert data-icon aria-hidden="true" className="size-3" />
+                  Requiere cambio de clave
+                </Badge>
+              ) : null}
+              {user.uses_exact_permission_map ? (
+                <Badge variant="info" className="text-[10px]">
+                  Permisos directos
+                </Badge>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'account',
+      header: 'Usuario / Correo',
+      render: (user) => (
+        <div className="flex flex-col gap-0.5">
+          <span className="text-xs text-muted-foreground">{user.username}</span>
+          <span className="text-xs text-muted-foreground">{user.email}</span>
+        </div>
+      ),
+    },
+    {
+      key: 'roles',
+      header: 'Rol',
+      render: (user) => (
+        <div className="flex flex-wrap gap-1">
+          {user.roles.map((role) => (
+            <Badge
+              key={role}
+              variant={role === 'admin' ? 'destructive' : role === 'supervisor' ? 'default' : 'secondary'}
+              className="capitalize font-semibold"
+            >
+              {role}
+            </Badge>
+          ))}
+        </div>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Estado',
+      render: (user) => (
+        <StatusBadge status={user.active ? 'active' : 'closed'}>
+          {user.active ? 'Activo' : 'Inactivo'}
+        </StatusBadge>
+      ),
+    },
+    {
+      key: 'actions',
+      header: 'Acciones',
+      headerClassName: 'text-right',
+      cellClassName: 'text-right',
+      render: (user) => (
+        <div className="flex items-center justify-end gap-2">
+          {canUpdateUsers && (
+            <>
+              <Button
+                variant="secondary"
+                size="icon"
+                title="Editar detalles"
+                aria-label={`Editar usuario ${user.name}`}
+                onClick={() => handleOpenEditModal(user)}
+              >
+                <Edit2 className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant="secondary"
+                size="icon"
+                title="Restablecer clave"
+                aria-label={`Restablecer clave de ${user.name}`}
+                onClick={() => handleOpenResetModal(user)}
+              >
+                <KeyRound className="h-3.5 w-3.5 text-orange-500" />
+              </Button>
+            </>
+          )}
+          {canDisableUsers && (
+            <Button
+              variant="secondary"
+              size="icon"
+              title={user.active ? 'Desactivar usuario' : 'Activar usuario'}
+              aria-label={user.active ? `Desactivar usuario ${user.name}` : `Activar usuario ${user.name}`}
+              onClick={() => handleOpenToggleDialog(user)}
+            >
+              {user.active ? (
+                <UserX className="h-3.5 w-3.5 text-rose-500" />
+              ) : (
+                <UserCheck className="h-3.5 w-3.5 text-success" />
+              )}
+            </Button>
+          )}
+          {!canUpdateUsers && !canDisableUsers && (
+            <span className="text-xs text-muted-foreground">Solo lectura</span>
+          )}
+        </div>
+      ),
+    },
+  ];
+
   return (
     <>
       <OperationalBanner
@@ -605,132 +716,15 @@ export function UsersView({
 
       <Card className="border border-operational-border bg-operational-surface shadow-operational">
         <CardContent className="p-0">
-          <Table containerLabel="Usuarios autorizados">
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[30%]">Usuario</TableHead>
-                <TableHead>Usuario / Correo</TableHead>
-                <TableHead>Rol</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredUsers.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="p-6">
-                    <InfoPanel
-                      title={searchTerm ? 'Sin coincidencias' : 'No hay usuarios cargados'}
-                      description={searchTerm ? 'Ajuste la busqueda por nombre, correo o usuario.' : 'Cuando se creen usuarios autorizados apareceran en este directorio.'}
-                      tone="neutral"
-                    />
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredUsers.map((user) => (
-                  <TableRow key={user.id} className={!user.active ? 'bg-muted/20' : undefined}>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary font-bold">
-                          {user.name.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <p className="font-semibold text-foreground">{user.name}</p>
-                          <div className="mt-1 flex flex-wrap gap-1">
-                            {user.must_change_password ? (
-                              <Badge variant="warning" className="text-[10px]">
-                                <ShieldAlert data-icon aria-hidden="true" className="size-3" />
-                                Requiere cambio de clave
-                              </Badge>
-                            ) : null}
-                            {user.uses_exact_permission_map ? (
-                              <Badge variant="info" className="text-[10px]">
-                                Permisos directos
-                              </Badge>
-                            ) : null}
-                          </div>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-xs text-muted-foreground">{user.username}</span>
-                        <span className="text-xs text-muted-foreground">{user.email}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {user.roles.map((role) => (
-                          <Badge
-                            key={role}
-                            variant={
-                              role === 'admin'
-                                ? 'destructive'
-                                : role === 'supervisor'
-                                ? 'default'
-                                : 'secondary'
-                            }
-                            className="capitalize font-semibold"
-                          >
-                            {role}
-                          </Badge>
-                        ))}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge status={user.active ? 'active' : 'closed'}>
-                        {user.active ? 'Activo' : 'Inactivo'}
-                      </StatusBadge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        {canUpdateUsers && (
-                          <>
-                            <Button
-                              variant="secondary"
-                              size="icon"
-                              title="Editar detalles"
-                              aria-label={`Editar usuario ${user.name}`}
-                              onClick={() => handleOpenEditModal(user)}
-                            >
-                              <Edit2 className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                              variant="secondary"
-                              size="icon"
-                              title="Restablecer clave"
-                              aria-label={`Restablecer clave de ${user.name}`}
-                              onClick={() => handleOpenResetModal(user)}
-                            >
-                              <KeyRound className="h-3.5 w-3.5 text-orange-500" />
-                            </Button>
-                          </>
-                        )}
-                        {canDisableUsers && (
-                          <Button
-                            variant="secondary"
-                            size="icon"
-                            title={user.active ? 'Desactivar usuario' : 'Activar usuario'}
-                            aria-label={user.active ? `Desactivar usuario ${user.name}` : `Activar usuario ${user.name}`}
-                            onClick={() => handleOpenToggleDialog(user)}
-                          >
-                            {user.active ? (
-                              <UserX className="h-3.5 w-3.5 text-rose-500" />
-                            ) : (
-                              <UserCheck className="h-3.5 w-3.5 text-success" />
-                            )}
-                          </Button>
-                        )}
-                        {!canUpdateUsers && !canDisableUsers && (
-                          <span className="text-xs text-muted-foreground">Solo lectura</span>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+          <DataTable
+            containerLabel="Usuarios autorizados"
+            rows={filteredUsers}
+            columns={userColumns}
+            getRowKey={(user) => user.id}
+            getRowClassName={(user) => (!user.active ? 'bg-muted/20' : undefined)}
+            emptyTitle={searchTerm ? 'Sin coincidencias' : 'No hay usuarios cargados'}
+            emptyDescription={searchTerm ? 'Ajuste la busqueda por nombre, correo o usuario.' : 'Cuando se creen usuarios autorizados apareceran en este directorio.'}
+          />
         </CardContent>
       </Card>
 

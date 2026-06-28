@@ -1,0 +1,90 @@
+{
+  "generated_at": "2026-06-28T08:33:57.626Z",
+  "mode": "mocked-non-mutating-playwright",
+  "results": [
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "320x640",
+      "path": "/dashboard",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "320x640",
+      "path": "/billing/new",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "320x640",
+      "path": "/cashbox",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "320x640",
+      "path": "/catalog",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "320x640",
+      "path": "/invoices",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "320x640",
+      "path": "/reports",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "320x640",
+      "path": "/backups",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "320x640",
+      "path": "/settings/fiscal",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "320x640",
+      "path": "/settings/institutional-receipts",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "320x640",
+      "path": "/admin/users",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "320x640",
+      "path": "/help",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "320x640",
+      "path": "/support",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "320x640",
+      "path": "/about",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "320x640",
+      "path": "/does-not-exist",
+      "status": "passed"
+    }
+  ]
+}
