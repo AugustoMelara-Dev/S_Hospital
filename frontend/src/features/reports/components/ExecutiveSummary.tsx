@@ -224,7 +224,7 @@ export function ExecutiveSummary({ report }: ExecutiveSummaryProps) {
                   : formatLempirasUI(value)}
               </p>
               <p className="text-xs text-muted-foreground">{context}</p>
-              <p className="text-[11px] text-muted-foreground/80">{spec.helper}</p>
+              <p className="text-[11px] text-muted-foreground">{spec.helper}</p>
             </article>
           );
         })}

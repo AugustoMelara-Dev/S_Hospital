@@ -173,3 +173,24 @@ php artisan test --filter=InstitutionalReceiptPdfTest --colors=never
   - `npm run test -- NewInvoiceView NewInvoiceViewLayout ServiceSearch InvoiceCart PaymentModal InvoiceConfirmation --run` PASS, 6 files / 60 tests
   - `npm run build` PASS
   - `git diff --check` PASS
+
+### 2026-06-28 - Final QA and release gates
+
+- Rama principal: `codex/v1-2-visible-ui-delta`
+- Commits QA finales: app smoke hardening, a11y smoke semantics, V1.2 a11y/release selector updates, contrast fixes, evidence docs.
+- After screenshots: `qa/v1-2-visible-ui-delta/after` con 34 PNG y `rc-e2e-mocked-report.json`.
+- Before screenshots: parcial por credenciales invalidas en runtime anterior; solo login capturado sin mutaciones.
+- Gates finales:
+  - `npm audit` PASS, 0 vulnerabilities
+  - `npm run typecheck` PASS
+  - `npm run lint` PASS
+  - `npm run test:full:windows` PASS, 83 files / 494 tests
+  - `npm run build` PASS
+  - `npm run smoke:buttons` PASS, 7 tests
+  - `npx playwright test e2e/v1-2-visible-ui-a11y.spec.ts` PASS, 7 tests
+  - `npx playwright test e2e/production-readiness.spec.ts` PASS, 4 tests
+  - `npm run test:e2e` PASS, 2 tests
+- Backend productivo modificado: NO.
+- Contratos funcionales modificados: NO.
+- Produccion fisica aprobada: NO.
+- Tag creado: NO.

@@ -282,7 +282,7 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
                   <Banknote className="size-3.5" aria-hidden="true" />
                   Total
                 </div>
-                <p className="mt-1 font-mono text-lg font-semibold tabular-nums text-secondary">{moneyLabel(preview.total)}</p>
+                <p className="mt-1 font-mono text-lg font-semibold tabular-nums text-foreground">{moneyLabel(preview.total)}</p>
               </div>
             </div>
             <InvoiceCart

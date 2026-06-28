@@ -902,7 +902,7 @@ async function loginAs(page: Page, username: string) {
   const loginInput = page.getByLabel(/usuario o (correo|email)/i);
   const visibleState = await Promise.any([
     loginInput.waitFor({ state: 'visible', timeout: 10_000 }).then(() => 'login' as const),
-    page.getByRole('heading', { name: /inicio|dashboard/i }).waitFor({ state: 'visible', timeout: 10_000 }).then(() => 'session' as const),
+    page.getByRole('heading', { name: /centro de mando/i }).waitFor({ state: 'visible', timeout: 10_000 }).then(() => 'session' as const),
   ]).catch(() => 'timeout' as const);
 
   if (visibleState === 'session') {
@@ -964,7 +964,7 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await loginAs(page, 'cajero.validacion');
   await setVisualTheme(page, 'light');
   await page.goto('/dashboard');
-  await expect(page.getByRole('heading', { name: /inicio|dashboard/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /centro de mando/i })).toBeVisible();
   await captureScreen(page, 'dashboard-light', 'light');
   await setVisualTheme(page, 'dark');
   await captureScreen(page, 'dashboard-dark', 'dark');
@@ -1081,11 +1081,11 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await setVisualTheme(page, 'light');
 
   await page.goto('/admin/users');
-  await expect(page.getByRole('heading', { name: /^usuarios$/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /usuarios y permisos/i })).toBeVisible();
   await captureScreen(page, 'admin-users-light', 'light');
   await setVisualTheme(page, 'dark');
   await page.goto('/admin/users');
-  await expect(page.getByRole('heading', { name: /^usuarios$/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /usuarios y permisos/i })).toBeVisible();
   await page.keyboard.press('Escape');
   await page.waitForTimeout(150);
   await captureScreen(page, 'admin-users-dark', 'dark');
@@ -1186,7 +1186,7 @@ test('responsive shell keeps operational modules reachable', async ({ page }) =>
     if (viewport.name === 'mobile') {
       await captureScreen(page, 'mobile-billing-light', 'light');
       await page.goto('/dashboard');
-      await expect(page.getByRole('heading', { name: /inicio|dashboard/i })).toBeVisible();
+      await expect(page.getByRole('heading', { name: /centro de mando/i })).toBeVisible();
       await captureScreen(page, 'mobile-dashboard-light', 'light');
       await page.goto('/reports');
       await expect(page.getByText(/^Sin permisos$/i)).toBeVisible();
@@ -1207,7 +1207,7 @@ test('responsive shell keeps operational modules reachable', async ({ page }) =>
 test('main screens expose named controls and dangerous actions can be cancelled', async ({ page }) => {
   const consoleIssues: string[] = [];
   const screens = [
-    { path: '/dashboard', heading: /inicio|dashboard/i, name: 'dashboard' },
+    { path: '/dashboard', heading: /centro de mando/i, name: 'dashboard' },
     { path: '/cashbox', heading: /^caja$/i, name: 'cashbox' },
     { path: '/billing/new', heading: /nueva factura/i, name: 'billing-new' },
     { path: '/invoices', heading: /historial de facturas/i, name: 'invoice-history' },

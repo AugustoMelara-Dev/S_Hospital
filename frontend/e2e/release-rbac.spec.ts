@@ -25,7 +25,7 @@ test('administrator creates exact catalog-only user and navigation enforces modu
 
   await login(page, adminLogin, seededPassword);
   await page.getByRole('link', { name: /usuarios/i }).click();
-  await expect(page.getByRole('heading', { name: /usuarios/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /usuarios y permisos/i })).toBeVisible();
 
   await page.getByRole('button', { name: /crear usuario/i }).click();
   await expect(page.getByRole('dialog', { name: /crear usuario/i })).toBeVisible();
@@ -71,7 +71,7 @@ test('administrator creates exact catalog-only user and navigation enforces modu
   expect(consoleIssues, consoleIssues.join('\n')).toEqual([]);
 });
 
-async function login(page: Page, username: string, password: string, expectedHeading: RegExp = /inicio|nueva factura|cambio obligatorio/i) {
+async function login(page: Page, username: string, password: string, expectedHeading: RegExp = /centro de mando|nueva factura|cambio obligatorio/i) {
   await page.goto(`${baseUrl}/login`);
   await page.getByLabel(/usuario|correo/i).fill(username);
   await page.getByRole('textbox', { name: /contrase(?:n|ñ)a|password/i }).fill(password);
