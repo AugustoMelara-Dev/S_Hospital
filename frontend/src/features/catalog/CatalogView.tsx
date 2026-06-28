@@ -78,8 +78,8 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
         }),
         apiClient.getOperationalSettings().catch(() => null),
       ]);
-      setCategories(nextCategories);
-      setAreas(nextAreas);
+      setCategories(Array.isArray(nextCategories) ? nextCategories : []);
+      setAreas(Array.isArray(nextAreas) ? nextAreas : []);
       setServicesData(nextServices);
       setScannerEnabled(operationalSettings?.scanner_enabled === true);
     } catch (error) {
