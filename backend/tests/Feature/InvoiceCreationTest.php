@@ -90,6 +90,19 @@ class InvoiceCreationTest extends TestCase
             ->assertJsonValidationErrors('patient_name');
     }
 
+    public function test_patient_name_cannot_be_only_whitespace(): void
+    {
+        $this->seedBillingBase();
+
+        $this->actingAs($this->cashier())
+            ->postJson('/api/invoices', [
+                'patient_name' => '   ',
+                'items' => [$this->invoiceItem('Glucosa')],
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('patient_name');
+    }
+
     public function test_patient_name_above_180_chars_is_rejected(): void
     {
         $this->seedBillingBase();

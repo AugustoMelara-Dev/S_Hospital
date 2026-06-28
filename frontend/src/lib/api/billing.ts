@@ -39,11 +39,14 @@ export const billing = {
   async registerPayment(
     invoiceId: number,
     payload: { cash_session_id: number; method: Payment['method']; amount: string; reference?: string | null },
+    options: { idempotencyKey?: string } = {},
   ): Promise<PaymentRegistrationResult> {
     const response = await apiClient.request<{ data: PaymentRegistrationResult }>(
       `/api/invoices/${invoiceId}/payments`,
       {
         method: 'POST',
+        idempotencyKey: options.idempotencyKey,
+        headers: options.idempotencyKey ? { 'Idempotency-Key': options.idempotencyKey } : undefined,
         body: JSON.stringify(payload),
       },
     );

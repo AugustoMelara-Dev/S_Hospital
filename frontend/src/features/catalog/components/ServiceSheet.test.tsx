@@ -46,6 +46,8 @@ describe('ServiceSheet', () => {
           qr_code: null,
           taxable: true,
           active: true,
+          visible_in_billing: true,
+          is_billable: true,
           special_rule_code: null,
         }}
         categories={[{ id: 1, name: 'Laboratorio' }]}
@@ -67,6 +69,8 @@ describe('ServiceSheet', () => {
     fireEvent.change(screen.getByLabelText(/motivo del cambio de precio/i), {
       target: { value: 'Ajuste aprobado por administracion' },
     });
+    fireEvent.click(screen.getByLabelText(/visible en caja/i));
+    fireEvent.click(screen.getByLabelText(/^facturable$/i));
     fireEvent.click(screen.getByRole('button', { name: /actualizar/i }));
 
     await waitFor(() => {
@@ -75,6 +79,8 @@ describe('ServiceSheet', () => {
           price: '20.00',
           area_id: 1,
           price_change_reason: 'Ajuste aprobado por administracion',
+          visible_in_billing: false,
+          is_billable: false,
         }),
         1,
       );
@@ -128,6 +134,8 @@ describe('ServiceSheet contract preservation', () => {
           qr_code: null,
           taxable: false,
           active: true,
+          visible_in_billing: true,
+          is_billable: true,
           special_rule_code: 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION',
         }}
         categories={[{ id: 1, name: 'Laboratorio' }]}
@@ -141,6 +149,59 @@ describe('ServiceSheet contract preservation', () => {
     expect(screen.getByDisplayValue('275.50')).toBeInTheDocument();
     expect(screen.getByDisplayValue('LAB-HEM-01')).toBeInTheDocument();
     expect(screen.getByDisplayValue('1234567890')).toBeInTheDocument();
+    expect(screen.getByLabelText(/visible en caja/i)).toBeChecked();
+    expect(screen.getByLabelText(/^facturable$/i)).toBeChecked();
+  });
+
+  it('submits scanner, barcode, QR and billing-state flags from the form', async () => {
+    const saveService = vi.spyOn(apiClient, 'saveService').mockResolvedValue({
+      id: 12,
+      category_id: 1,
+      area_id: 1,
+      name: 'Glucosa',
+      slug: 'glucosa',
+      price: '15.00',
+      scan_code: 'LAB-GLU-001',
+      barcode: '7700000001001',
+      qr_code: 'QR-LAB-GLU',
+      taxable: true,
+      active: true,
+      special_rule_code: null,
+    });
+
+    render(
+      <ServiceSheet
+        open
+        onOpenChange={noop}
+        service={null}
+        categories={[{ id: 1, name: 'Laboratorio' }]}
+        areas={[{ id: 1, name: 'Laboratorio' }]}
+        scannerEnabled
+        onSuccess={noop}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText(/^nombre/i), { target: { value: 'Glucosa' } });
+    fireEvent.change(screen.getByLabelText(/precio/i), { target: { value: '15.00' } });
+    fireEvent.change(screen.getByLabelText(/código de escáner/i), { target: { value: 'LAB-GLU-001' } });
+    fireEvent.change(screen.getByLabelText(/código de barra/i), { target: { value: '7700000001001' } });
+    fireEvent.change(screen.getByLabelText(/código qr/i), { target: { value: 'QR-LAB-GLU' } });
+    fireEvent.click(screen.getByLabelText(/visible en caja/i));
+    fireEvent.click(screen.getByLabelText(/^facturable$/i));
+    fireEvent.click(screen.getByRole('button', { name: /crear/i }));
+
+    await waitFor(() => {
+      expect(saveService).toHaveBeenCalledWith(
+        expect.objectContaining({
+          scan_code: 'LAB-GLU-001',
+          barcode: '7700000001001',
+          qr_code: 'QR-LAB-GLU',
+          visible_in_billing: false,
+          is_billable: false,
+        }),
+        undefined,
+      );
+    });
   });
 
   it('submits the create payload with the same field names and category/area IDs', async () => {
@@ -191,6 +252,8 @@ describe('ServiceSheet contract preservation', () => {
           area_id: expect.any(Number),
           taxable: expect.any(Boolean),
           active: expect.any(Boolean),
+          visible_in_billing: true,
+          is_billable: true,
           special_rule_code: null,
         }),
         undefined,

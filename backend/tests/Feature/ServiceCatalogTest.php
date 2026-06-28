@@ -738,7 +738,7 @@ class ServiceCatalogTest extends TestCase
         $this->assertSame('25.00', $service->refresh()->price);
     }
 
-    public function test_billing_filter_excludes_hidden_services_but_keeps_visible_non_billable_services(): void
+    public function test_billing_filter_excludes_hidden_and_non_billable_services(): void
     {
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
         $admin = $this->admin();
@@ -764,6 +764,11 @@ class ServiceCatalogTest extends TestCase
 
         $this->actingAs($cashier)
             ->getJson('/api/services?active=1&billing=1&code=NO-BILL-HEMO')
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+
+        $this->actingAs($cashier)
+            ->getJson('/api/services?active=1&visible_in_billing=1&is_billable=0&code=NO-BILL-HEMO')
             ->assertOk()
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.name', 'Hemograma Completo')

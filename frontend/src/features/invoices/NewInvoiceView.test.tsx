@@ -1336,6 +1336,8 @@ describe('NewInvoiceView', () => {
   it('scopes receipt print hiding to the explicit printing receipt state', () => {
     const styles = readFileSync('src/styles.css', 'utf8');
 
+    expect(styles).toContain('.print-hidden');
+    expect(styles).toContain('display: none !important;');
     expect(styles).toContain('body[data-printing-receipt="true"] *');
     expect(styles).toContain('@page receipt-half-letter');
     expect(styles).toContain('size: 8.5in 5.5in;');

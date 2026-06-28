@@ -6,6 +6,15 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class StoreInvoiceRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('patient_name')) {
+            $this->merge([
+                'patient_name' => trim((string) $this->input('patient_name')),
+            ]);
+        }
+    }
+
     public function authorize(): bool
     {
         return $this->user()?->can('invoices.create') === true;
@@ -17,7 +26,7 @@ class StoreInvoiceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'patient_name' => ['required', 'string', 'max:180'],
+            'patient_name' => ['required', 'string', 'min:1', 'max:180'],
             'dialysis_prescription' => ['sometimes', 'boolean'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.service_id' => ['required', 'integer', 'exists:services,id'],

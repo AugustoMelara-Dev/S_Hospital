@@ -61,7 +61,8 @@ type ReportsViewProps = {
 
 const today = localDateString(new Date());
 const currentMonth = today.slice(0, 7);
-const MAX_REPORT_RANGE_DAYS = 31;
+const MAX_CLASSIC_REPORT_RANGE_DAYS = 31;
+const MAX_EXECUTIVE_REPORT_RANGE_DAYS = 92;
 
 export function ReportsView(props: ReportsViewProps) {
   return (
@@ -125,9 +126,19 @@ function ReportsViewContent({
   const [areaOptions, setAreaOptions] = useState<Area[]>([]);
   const [cashSessionOptions, setCashSessionOptions] = useState<CashSession[]>([]);
   const exportingReportRef = useRef(false);
-  const executiveRangeError = validateReportDateRange(filters.date_from, filters.date_to);
+  const executiveRangeError = validateReportDateRange(
+    filters.date_from,
+    filters.date_to,
+    MAX_EXECUTIVE_REPORT_RANGE_DAYS,
+    'ejecutivos',
+  );
 
-  const appliedRangeError = validateReportDateRange(appliedFilters.date_from, appliedFilters.date_to);
+  const appliedRangeError = validateReportDateRange(
+    appliedFilters.date_from,
+    appliedFilters.date_to,
+    MAX_EXECUTIVE_REPORT_RANGE_DAYS,
+    'ejecutivos',
+  );
   const { data: report, isFetching, isError, refetch, error: queryError } = useExecutiveReport(appliedFilters, canViewManagerial && appliedRangeError === null);
   const { data: cashSession } = useCashSession();
   const exportInProgress = exportingReport !== null;
@@ -290,7 +301,7 @@ function ReportsViewContent({
     const end = new Date(`${dateTo}T00:00:00`);
     const diffDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
-    if (diffDays > MAX_REPORT_RANGE_DAYS) {
+    if (diffDays > MAX_CLASSIC_REPORT_RANGE_DAYS) {
       const message = 'El rango maximo permitido para reportes es de 31 dias.';
       setRangeError(message);
       onStatus(message);
@@ -840,7 +851,7 @@ function cashSessionDate(value: string | null | undefined): string | null {
     : null;
 }
 
-function validateReportDateRange(dateFrom: string, dateTo: string): string | null {
+function validateReportDateRange(dateFrom: string, dateTo: string, maxDays: number, scope: string): string | null {
   if (!dateFrom || !dateTo) {
     return 'Seleccione fecha de inicio y fin para el reporte.';
   }
@@ -858,8 +869,8 @@ function validateReportDateRange(dateFrom: string, dateTo: string): string | nul
     return 'La fecha de inicio debe ser anterior o igual a la fecha de fin.';
   }
 
-  if (diffDays > MAX_REPORT_RANGE_DAYS) {
-    return 'El rango maximo permitido para reportes es de 31 dias.';
+  if (diffDays > maxDays) {
+    return `El rango maximo permitido para reportes ${scope} es de ${maxDays} dias.`;
   }
 
   return null;

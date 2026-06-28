@@ -171,6 +171,10 @@ html.dark {
     min-width: max-content;
   }
 
+  .print-hidden {
+    print-color-adjust: exact;
+  }
+
   .receipt-preview-panel {
     display: grid;
     gap: 1rem;
@@ -427,6 +431,10 @@ html.dark {
 }
 
 @media print {
+  .print-hidden {
+    display: none !important;
+  }
+
   body[data-printing-receipt="true"] * {
     visibility: hidden !important;
   }
