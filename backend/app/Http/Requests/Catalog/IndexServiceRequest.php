@@ -23,6 +23,8 @@ class IndexServiceRequest extends FormRequest
             'area_id' => ['sometimes', 'integer', 'exists:areas,id'],
             'active' => ['sometimes', 'boolean'],
             'billing' => ['sometimes', 'boolean'],
+            'visible_in_billing' => ['sometimes', 'boolean'],
+            'is_billable' => ['sometimes', 'boolean'],
             'page' => ['sometimes', 'integer', 'min:1'],
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:150'],
         ];

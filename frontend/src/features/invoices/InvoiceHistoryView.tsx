@@ -197,6 +197,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
 
     setLoadingActionInvoiceId(invoiceId);
     try {
+      generatingInstitutionalReceiptRef.current = true;
       const receipt = await institutionalReceipts.store({ invoice_id: invoiceId });
       queryClient.invalidateQueries({ queryKey: ['audit'] });
       await invalidateBillingQueries(queryClient);

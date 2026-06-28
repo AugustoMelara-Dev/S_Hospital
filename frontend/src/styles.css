@@ -205,6 +205,10 @@ html.dark {
     min-width: max-content;
   }
 
+  .print-hidden {
+    print-color-adjust: exact;
+  }
+
   .receipt-preview-panel {
     display: grid;
     gap: 1rem;
@@ -477,6 +481,10 @@ html.dark {
     --color-operational-border: #d1d5db;
     --color-receipt-border: #111827;
     --shadow-operational: none;
+  }
+
+  .print-hidden {
+    display: none !important;
   }
 
   body[data-printing-receipt="true"] * {

@@ -24,6 +24,8 @@ const serviceSchema = z.object({
   qr_code: z.string().nullable().optional(),
   taxable: z.boolean(),
   active: z.boolean(),
+  visible_in_billing: z.boolean(),
+  is_billable: z.boolean(),
   special_rule_code: z.string().nullable().optional(),
 });
 
@@ -43,6 +45,8 @@ type ServiceSheetProps = {
     qr_code?: string | null;
     taxable: boolean;
     active: boolean;
+    visible_in_billing?: boolean | null;
+    is_billable?: boolean | null;
     special_rule_code?: string | null;
   } | null;
   categories: Array<{ id: number; name: string }>;
@@ -62,6 +66,8 @@ const defaultValues: ServiceFormData = {
   qr_code: null,
   taxable: true,
   active: true,
+  visible_in_billing: true,
+  is_billable: true,
   special_rule_code: null,
 };
 
@@ -118,6 +124,8 @@ export function ServiceSheet({
         qr_code: service.qr_code,
         taxable: service.taxable,
         active: service.active,
+        visible_in_billing: service.visible_in_billing ?? true,
+        is_billable: service.is_billable ?? true,
         special_rule_code: service.special_rule_code,
       });
 
@@ -149,8 +157,8 @@ export function ServiceSheet({
       ...data,
       price_change_reason: optionalCode(data.price_change_reason),
       scan_code: optionalCode(data.scan_code),
-      barcode: service?.barcode ?? null,
-      qr_code: service?.qr_code ?? null,
+      barcode: optionalCode(data.barcode),
+      qr_code: optionalCode(data.qr_code),
       special_rule_code: optionalCode(data.special_rule_code),
     };
 
@@ -421,6 +429,40 @@ export function ServiceSheet({
               />
               <Label htmlFor="active" className="cursor-pointer text-sm font-medium">
                 Servicio activo
+              </Label>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Controller
+                control={control}
+                name="visible_in_billing"
+                render={({ field }) => (
+                  <Checkbox
+                    id="visible_in_billing"
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                )}
+              />
+              <Label htmlFor="visible_in_billing" className="cursor-pointer text-sm font-medium">
+                Visible en caja
+              </Label>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Controller
+                control={control}
+                name="is_billable"
+                render={({ field }) => (
+                  <Checkbox
+                    id="is_billable"
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                )}
+              />
+              <Label htmlFor="is_billable" className="cursor-pointer text-sm font-medium">
+                Facturable
               </Label>
             </div>
           </FieldGroup>

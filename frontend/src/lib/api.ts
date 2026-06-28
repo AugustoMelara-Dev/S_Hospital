@@ -221,8 +221,9 @@ export const apiClient = {
   async registerPayment(
     invoiceId: number,
     payload: { cash_session_id: number; method: Payment['method']; amount: string; reference?: string | null },
+    options: { idempotencyKey?: string } = {},
   ): Promise<PaymentRegistrationResult> {
-    return billing.registerPayment(invoiceId, payload);
+    return billing.registerPayment(invoiceId, payload, options);
   },
 
   async getReceipt(invoiceId: number, width?: ReceiptData['width']): Promise<ReceiptData> {

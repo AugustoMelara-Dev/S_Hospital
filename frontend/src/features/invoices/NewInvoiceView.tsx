@@ -10,6 +10,7 @@ import { computeSimpleEstimate, isZeroMoney, parseLocalCents } from './state/pos
 import { NewInvoiceViewLayout } from './components/NewInvoiceViewLayout';
 import { invalidateBillingQueries } from '@/lib/queryInvalidation';
 import { openBlobInNewTab } from '@/lib/download';
+import { createClientIdempotencyKey } from '@/lib/api/base';
 
 
 const POS_SERVICE_PAGE_SIZE = 24;
@@ -46,6 +47,7 @@ export function NewInvoiceView({
   const scannerInputRef = useRef<HTMLInputElement | null>(null);
   const submitInvoiceInFlightRef = useRef(false);
   const submitPaymentInFlightRef = useRef(false);
+  const submitPaymentIdempotencyKeyRef = useRef<string | null>(null);
   const scanCodeInFlightRef = useRef(false);
 
   useEffect(() => {
@@ -87,9 +89,7 @@ export function NewInvoiceView({
   }, [canViewCatalog, state.search, state.selectedAreaId, state.selectedCategoryId]);
 
   useEffect(() => {
-    if (cashSession) {
-      dispatch({ type: 'SET_LOADED_CASH_SESSION', payload: cashSession });
-    }
+    dispatch({ type: 'SET_LOADED_CASH_SESSION', payload: cashSession });
   }, [cashSession]);
 
   useEffect(() => {
@@ -390,6 +390,15 @@ export function NewInvoiceView({
       dispatch({ type: 'SET_CART_ITEMS', payload: [] });
       dispatch({ type: 'SET_PATIENT_NAME', payload: '' });
       if (state.loadedCashSession && parseLocalCents(invoice.balance_due) > 0) {
+        if (!canCreatePayments || !canViewReceipts) {
+          dispatch({ type: 'SET_SHOW_SUCCESS', payload: true });
+          dispatch({
+            type: 'SET_WARNING_MESSAGE',
+            payload: 'Factura emitida. Este usuario no tiene permisos completos para cobrar e imprimir recibos.',
+          });
+          onStatus(`Factura emitida ${invoice.invoice_number}. Cobro pendiente por permisos.`);
+          return;
+        }
         dispatch({ type: 'SET_SHOW_SUCCESS', payload: false });
         dispatch({ type: 'SET_SHOW_PAYMENT', payload: true });
         onStatus(`Factura emitida ${invoice.invoice_number}. Cobro abierto.`);
@@ -448,7 +457,10 @@ export function NewInvoiceView({
         method: state.paymentMethod,
         amount: appliedAmount,
         reference: state.paymentReference.trim() || null,
+      }, {
+        idempotencyKey: submitPaymentIdempotencyKeyRef.current ??= createClientIdempotencyKey(),
       });
+      submitPaymentIdempotencyKeyRef.current = null;
       await invalidateBillingQueries(queryClient);
       dispatch({ type: 'SET_ISSUED_INVOICE', payload: result.invoice });
       dispatch({ type: 'SET_PAYMENT_AMOUNT', payload: result.invoice.balance_due });
@@ -508,7 +520,7 @@ export function NewInvoiceView({
     } catch (error) {
       const message = userSafeErrorMessage(error, 'No se pudo registrar el pago.');
       dispatch({ type: 'SET_ALERT_MESSAGE', payload: message });
-      dispatch({ type: 'SET_SHOW_PAYMENT', payload: false });
+      dispatch({ type: 'SET_SHOW_PAYMENT', payload: true });
       onStatus(message);
     } finally {
       submitPaymentInFlightRef.current = false;
@@ -555,6 +567,9 @@ export function NewInvoiceView({
   function handlePaymentOpenChange(nextOpen: boolean) {
     if (state.paying) {
       return;
+    }
+    if (!nextOpen) {
+      submitPaymentIdempotencyKeyRef.current = null;
     }
     dispatch({ type: 'SET_SHOW_PAYMENT', payload: nextOpen });
     if (!nextOpen && state.issuedInvoice && (state.issuedInvoice.status === 'issued' || state.issuedInvoice.status === 'partial')) {
