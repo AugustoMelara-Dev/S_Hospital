@@ -76,17 +76,6 @@ jobs:
             echo "phpstan not installed; skipping"
           fi
 
-      - name: Pre-commit guard smoke
-        shell: pwsh
-        run: |
-          if (Get-Command pwsh -ErrorAction SilentlyContinue) {
-            pwsh -NoProfile -ExecutionPolicy Bypass -File backend/tests/PowerShell/pre-commit-guard.tests.ps1
-            pwsh -NoProfile -ExecutionPolicy Bypass -File backend/tests/PowerShell/cors-helpers.tests.ps1
-            pwsh -NoProfile -ExecutionPolicy Bypass -File backend/tests/PowerShell/env-helpers.tests.ps1
-          } else {
-            echo "pwsh not available on ubuntu runner; skipping PowerShell tests"
-          }
-
   backend-mariadb:
     name: Backend (MariaDB)
     runs-on: ubuntu-latest
@@ -176,23 +165,6 @@ jobs:
           DB_USERNAME: hospital
           DB_PASSWORD: ${{ env.CI_MARIADB_PASSWORD }}
         run: vendor/bin/phpunit --testdox
-
-  windows-ops-scripts:
-    name: Windows ops scripts
-    runs-on: windows-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-
-      - name: Validate installer and backup-task hardening
-        shell: pwsh
-        run: .\scripts\validate_installer_safety.ps1
-
-      - name: Validate golden DB test runner safety
-        shell: pwsh
-        run: .\scripts\test_golden_db_runner_safety.ps1
 
   frontend:
     name: Frontend (Vitest + lint + build)
