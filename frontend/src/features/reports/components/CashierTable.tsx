@@ -1,13 +1,6 @@
 import { formatLempirasUI } from '@/lib/moneyCents';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
 import type { ExecutiveReport } from '@/lib/api';
 
 type CashierTableProps = {
@@ -15,6 +8,73 @@ type CashierTableProps = {
 };
 
 export function CashierTable({ report }: CashierTableProps) {
+  const columns: Array<DataTableColumn<ExecutiveReport['cashiers'][number]>> = [
+    {
+      key: 'cashier',
+      header: 'Cajero',
+      render: (cashier) => (
+        <div className="flex flex-col">
+          <span className="font-semibold text-foreground">{cashier.name}</span>
+          <span className="text-xs text-muted-foreground">@{cashier.username}</span>
+        </div>
+      ),
+    },
+    {
+      key: 'collected',
+      header: 'Cobrado',
+      numeric: true,
+      cellClassName: 'font-mono tabular-nums font-semibold',
+      render: (cashier) => formatLempirasUI(cashier.collected),
+    },
+    {
+      key: 'cash',
+      header: 'Efectivo',
+      numeric: true,
+      cellClassName: 'font-mono tabular-nums text-secondary',
+      render: (cashier) => formatLempirasUI(cashier.cash),
+    },
+    {
+      key: 'transfer',
+      header: 'Transferencia',
+      numeric: true,
+      cellClassName: 'font-mono tabular-nums',
+      render: (cashier) => formatLempirasUI(cashier.transfer),
+    },
+    {
+      key: 'card',
+      header: 'Tarjeta',
+      numeric: true,
+      cellClassName: 'font-mono tabular-nums',
+      render: (cashier) => formatLempirasUI(cashier.card),
+    },
+    {
+      key: 'other',
+      header: 'Otro',
+      numeric: true,
+      cellClassName: 'font-mono tabular-nums',
+      render: (cashier) => formatLempirasUI(cashier.other),
+    },
+    {
+      key: 'payments',
+      header: 'Pagos',
+      numeric: true,
+      render: (cashier) => cashier.payment_count,
+    },
+    {
+      key: 'voided',
+      header: 'Anuladas',
+      numeric: true,
+      render: (cashier) => cashier.voided_count,
+    },
+    {
+      key: 'difference',
+      header: 'Diferencia',
+      numeric: true,
+      cellClassName: 'font-mono tabular-nums',
+      render: (cashier) => (cashier.difference_total !== '0.00' ? formatLempirasUI(cashier.difference_total) : '-'),
+    },
+  ];
+
   if (report.cashiers.length === 0) {
     return (
       <Card>
@@ -37,53 +97,12 @@ export function CashierTable({ report }: CashierTableProps) {
         </p>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Cajero</TableHead>
-              <TableHead className="text-right">Cobrado</TableHead>
-              <TableHead className="text-right">Efectivo</TableHead>
-              <TableHead className="text-right">Transferencia</TableHead>
-              <TableHead className="text-right">Tarjeta</TableHead>
-              <TableHead className="text-right">Otro</TableHead>
-              <TableHead className="text-right">Pagos</TableHead>
-              <TableHead className="text-right">Anuladas</TableHead>
-              <TableHead className="text-right">Diferencia</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {report.cashiers.map((cashier: ExecutiveReport['cashiers'][number]) => (
-              <TableRow key={cashier.user_id}>
-                <TableCell>
-                  <div className="flex flex-col">
-                    <span className="font-semibold text-foreground">{cashier.name}</span>
-                    <span className="text-xs text-muted-foreground">@{cashier.username}</span>
-                  </div>
-                </TableCell>
-                <TableCell className="text-right font-mono tabular-nums font-semibold">
-                  {formatLempirasUI(cashier.collected)}
-                </TableCell>
-                <TableCell className="text-right font-mono tabular-nums text-secondary">
-                  {formatLempirasUI(cashier.cash)}
-                </TableCell>
-                <TableCell className="text-right font-mono tabular-nums">
-                  {formatLempirasUI(cashier.transfer)}
-                </TableCell>
-                <TableCell className="text-right font-mono tabular-nums">
-                  {formatLempirasUI(cashier.card)}
-                </TableCell>
-                <TableCell className="text-right font-mono tabular-nums">
-                  {formatLempirasUI(cashier.other)}
-                </TableCell>
-                <TableCell className="text-right tabular-nums">{cashier.payment_count}</TableCell>
-                <TableCell className="text-right tabular-nums">{cashier.voided_count}</TableCell>
-                <TableCell className="text-right font-mono tabular-nums">
-                  {cashier.difference_total !== '0.00' ? formatLempirasUI(cashier.difference_total) : '-'}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <DataTable
+          containerLabel="Recaudacion por cajero"
+          rows={report.cashiers}
+          columns={columns}
+          getRowKey={(cashier) => cashier.user_id}
+        />
       </CardContent>
     </Card>
   );

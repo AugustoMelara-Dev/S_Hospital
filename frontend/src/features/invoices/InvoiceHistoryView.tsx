@@ -113,7 +113,6 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   async function prepareInvoiceAction(invoiceId: number, action: 'void' | 'reverse') {
     const requestId = actionRequestRef.current + 1;
     actionRequestRef.current = requestId;
-    setLoadingActionInvoiceId(invoiceId);
 
     try {
       const invoice = await apiClient.getInvoice(invoiceId);
@@ -130,10 +129,6 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     } catch (error) {
       if (actionRequestRef.current === requestId) {
         onStatus(userSafeErrorMessage(error, 'No se pudo cargar detalle.'));
-      }
-    } finally {
-      if (actionRequestRef.current === requestId) {
-        setLoadingActionInvoiceId(null);
       }
     }
   }

@@ -5,10 +5,12 @@ import {
   CheckCircle2,
   Info,
   LockKeyhole,
+  MonitorCheck,
+  Network,
   ShieldAlert,
   type LucideIcon,
 } from 'lucide-react';
-import { forwardRef, useId, type HTMLAttributes, type ReactNode } from 'react';
+import { forwardRef, useId, type ButtonHTMLAttributes, type HTMLAttributes, type ReactNode } from 'react';
 import { cn } from '../../lib/utils';
 import { Badge } from '../ui/badge';
 
@@ -117,6 +119,47 @@ export function SectionHeader({
   );
 }
 
+export const ModuleHeader = SectionHeader;
+
+type CommandCenterHeaderProps = OperationalBannerProps & {
+  metrics?: ReactNode;
+};
+
+export function CommandCenterHeader({
+  actions,
+  className,
+  description,
+  meta,
+  metrics,
+  status,
+  title,
+  tone = 'neutral',
+  ...props
+}: CommandCenterHeaderProps) {
+  return (
+    <section
+      data-slot="command-center-header"
+      className={cn('rounded-panel border bg-operational-surface p-panel shadow-command', toneStyles[tone], className)}
+      {...props}
+    >
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-start">
+        <div className="min-w-0">
+          {meta ? <div className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">{meta}</div> : null}
+          <h1 className="text-2xl font-semibold leading-tight text-foreground sm:text-3xl">{title}</h1>
+          {description ? <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted-foreground">{description}</p> : null}
+          {metrics ? <div className="mt-5">{metrics}</div> : null}
+        </div>
+        {(status || actions) ? (
+          <div className="flex flex-wrap items-center gap-2 xl:justify-end">
+            {status}
+            {actions}
+          </div>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
 type PanelProps = HTMLAttributes<HTMLElement> & {
   actions?: ReactNode;
   description?: ReactNode;
@@ -157,6 +200,41 @@ export const CommandPanel = forwardRef<HTMLElement, PanelProps>(function Command
         {children}
       </div>
       {footer ? <div data-slot="command-panel-footer" className="mt-4 border-t border-operational-border pt-4">{footer}</div> : null}
+    </section>
+  );
+});
+
+export const PrimaryActionPanel = forwardRef<HTMLElement, PanelProps & { emphasis?: ReactNode }>(function PrimaryActionPanel({
+  actions,
+  children,
+  className,
+  description,
+  emphasis,
+  footer,
+  title,
+  ...props
+}, ref) {
+  return (
+    <section
+      ref={ref}
+      data-slot="primary-action-panel"
+      className={cn('rounded-panel border border-hospital-border bg-hospital-surface p-panel shadow-command', className)}
+      {...props}
+    >
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0">
+          {title ? <h2 className="text-lg font-semibold text-foreground">{title}</h2> : null}
+          {description ? <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">{description}</p> : null}
+          {children ? <div className="mt-4 min-w-0">{children}</div> : null}
+        </div>
+        {(emphasis || actions) ? (
+          <div className="flex shrink-0 flex-col gap-3 lg:items-end">
+            {emphasis ? <div className="text-2xl font-semibold tabular-nums text-foreground">{emphasis}</div> : null}
+            {actions ? <div className="flex flex-wrap items-center gap-2 lg:justify-end">{actions}</div> : null}
+          </div>
+        ) : null}
+      </div>
+      {footer ? <div className="mt-4 border-t border-operational-border pt-4">{footer}</div> : null}
     </section>
   );
 });
@@ -249,6 +327,34 @@ export function ChartCard({
   );
 }
 
+type ChartLegendItem = {
+  color?: string;
+  label: ReactNode;
+  value?: ReactNode;
+};
+
+export function ChartLegend({
+  className,
+  items,
+  ...props
+}: HTMLAttributes<HTMLDivElement> & { items: ChartLegendItem[] }) {
+  return (
+    <div data-slot="chart-legend" className={cn('flex flex-wrap items-center gap-3 text-xs text-muted-foreground', className)} {...props}>
+      {items.map((item, index) => (
+        <span key={index} className="inline-flex items-center gap-2">
+          <span
+            aria-hidden="true"
+            className="size-2.5 rounded-sm border border-black/5"
+            style={{ backgroundColor: item.color ?? `var(--color-chart-${(index % 8) + 1})` }}
+          />
+          <span className="font-medium text-foreground">{item.label}</span>
+          {item.value ? <span className="tabular-nums">{item.value}</span> : null}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 type StatGridItem = {
   helper?: ReactNode;
   icon?: ReactNode;
@@ -327,6 +433,32 @@ export function InfoPanel({
         </div>
       </div>
       {actions ? <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div> : null}
+    </div>
+  );
+}
+
+export function OfflineState({
+  action,
+  className,
+  description = 'Verifique la conexion LAN con el servidor local antes de continuar.',
+  title = 'Servidor local no disponible',
+  ...props
+}: HTMLAttributes<HTMLDivElement> & { action?: ReactNode; description?: ReactNode; title?: ReactNode }) {
+  return (
+    <div
+      data-slot="offline-state"
+      role="alert"
+      className={cn('rounded-panel border border-warning/40 bg-warning/10 p-panel text-warning-foreground dark:text-warning-foreground', className)}
+      {...props}
+    >
+      <div className="flex gap-3">
+        <Network data-icon aria-hidden="true" className="mt-0.5 size-5 shrink-0" />
+        <div className="min-w-0">
+          <p className="font-semibold">{title}</p>
+          <p className="mt-1 text-sm leading-relaxed text-current/85">{description}</p>
+          {action ? <div className="mt-4 flex flex-wrap items-center gap-2">{action}</div> : null}
+        </div>
+      </div>
     </div>
   );
 }
@@ -490,6 +622,75 @@ export function CashStatusCard({
       {helper ? <p className="mt-4 text-sm text-muted-foreground">{helper}</p> : null}
       {actions ? <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-operational-border pt-4">{actions}</div> : null}
     </section>
+  );
+}
+
+type QuickActionTileProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'title'> & {
+  description?: ReactNode;
+  icon?: ReactNode;
+  title: ReactNode;
+};
+
+export function QuickActionTile({
+  className,
+  description,
+  icon,
+  title,
+  type = 'button',
+  ...props
+}: QuickActionTileProps) {
+  return (
+    <button
+      type={type}
+      data-slot="quick-action-tile"
+      className={cn(
+        'group flex min-h-24 w-full items-start gap-3 rounded-card border border-operational-border bg-operational-surface p-4 text-left shadow-sm transition hover:border-hospital-primary/45 hover:shadow-panel focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-operational-ring',
+        className,
+      )}
+      {...props}
+    >
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-hospital-primary/10 text-hospital-primary group-hover:bg-hospital-primary group-hover:text-primary-foreground">
+        {icon ?? <MonitorCheck data-icon aria-hidden="true" className="size-4" />}
+      </span>
+      <span className="min-w-0">
+        <span className="block font-semibold text-foreground">{title}</span>
+        {description ? <span className="mt-1 block text-sm leading-relaxed text-muted-foreground">{description}</span> : null}
+      </span>
+    </button>
+  );
+}
+
+export function SummaryRail({
+  children,
+  className,
+  title,
+  ...props
+}: Omit<HTMLAttributes<HTMLElement>, 'title'> & { title?: ReactNode }) {
+  return (
+    <aside
+      data-slot="summary-rail"
+      className={cn('rounded-panel border border-operational-border bg-operational-surface p-panel shadow-panel', className)}
+      {...props}
+    >
+      {title ? <h2 className="mb-4 text-base font-semibold text-foreground">{title}</h2> : null}
+      <div className="grid gap-4">{children}</div>
+    </aside>
+  );
+}
+
+export function MobileStickyActionBar({
+  children,
+  className,
+  ...props
+}: HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      data-slot="mobile-sticky-action-bar"
+      className={cn('sticky bottom-0 z-30 -mx-4 border-t border-operational-border bg-operational-surface/95 px-4 py-3 shadow-command backdrop-blur md:hidden', className)}
+      {...props}
+    >
+      <div className="flex items-center justify-between gap-3">{children}</div>
+    </div>
   );
 }
 
