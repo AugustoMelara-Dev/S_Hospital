@@ -35,6 +35,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'api/system/csp-report',
         ]);
         $middleware->prepend(StripApiReadSessionCookies::class);
+        $middleware->appendToGroup('web', \Illuminate\Session\Middleware\AuthenticateSession::class);
         $middleware->append(AddSecurityHeaders::class);
         $middleware->alias([
             'user.active' => EnsureUserIsActive::class,

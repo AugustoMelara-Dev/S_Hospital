@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -72,7 +73,14 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
 
+        Auth::logoutOtherDevices($credentials['password']);
+
         $user = $request->user();
+
+        // Clear idempotency keys to prevent cross-session replays
+        DB::table('idempotency_keys')
+            ->where('user_id', $user->id)
+            ->delete();
 
         $attempt->forceFill(['success' => true])->save();
 

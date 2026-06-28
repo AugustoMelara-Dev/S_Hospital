@@ -46,7 +46,6 @@ type AppRoutesProps = {
   defaultAuthenticatedRoute: string;
   onQuickCash: () => void;
   onQuickInvoice: () => void;
-  onCashSessionChange: (session: CashSession | null) => void;
   onStatus: (message: string) => void;
   user: AuthUser;
 };
@@ -77,7 +76,6 @@ export function AppRoutes({
   defaultAuthenticatedRoute,
   onQuickCash,
   onQuickInvoice,
-  onCashSessionChange,
   onStatus,
   user,
 }: AppRoutesProps) {
@@ -113,17 +111,17 @@ export function AppRoutes({
             allowed={canAccessRoute(appRoutes.newInvoice, user.permissions)}
             reason={appRoutes.newInvoice.deniedReason}
           >
-            <NewInvoiceView
-              cashSession={cashSession}
-              canCreatePayments={canCreatePayments}
-              canOpenCash={canOpenCash}
-              canViewCatalog={canViewCatalog}
-              canViewReceipts={canViewReceipts}
-              canMarkDialysisPrescription={canMarkDialysisPrescription}
-              onCashSessionChange={onCashSessionChange}
-              onOpenCash={canOpenCash ? onQuickCash : undefined}
-              onStatus={onStatus}
-            />
+<NewInvoiceView
+                cashSession={cashSession}
+                canCreatePayments={canCreatePayments}
+                canOpenCash={canOpenCash}
+                canViewCatalog={canViewCatalog}
+                canViewReceipts={canViewReceipts}
+                canMarkDialysisPrescription={canMarkDialysisPrescription}
+                onCashSessionChange={onCashSessionChange}
+                onOpenCash={canOpenCash ? onQuickCash : undefined}
+                onStatus={onStatus}
+              />
           </PermissionGate>
         }
       />
@@ -137,7 +135,6 @@ export function AppRoutes({
               canOpenCash={canOpenCash}
               canViewCashSessionReport={canViewCashSessionReports || canViewManagerialReports}
               onStatus={onStatus}
-              onSessionChange={onCashSessionChange}
             />
           </PermissionGate>
         }
