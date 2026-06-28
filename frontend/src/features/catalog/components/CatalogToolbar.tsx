@@ -26,9 +26,9 @@ export function CatalogToolbar({
   statusFilter,
 }: CatalogToolbarProps) {
   return (
-    <Card className="border-secondary/15">
+    <Card className="border-operational-border bg-operational-surface shadow-operational">
       <CardContent className="pt-6">
-        <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_200px_150px_auto]">
+        <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_220px_170px_auto]">
           <div className="flex min-w-[200px] flex-col gap-2">
             <label htmlFor={searchInputId} className="text-sm font-medium">
               Buscar servicio

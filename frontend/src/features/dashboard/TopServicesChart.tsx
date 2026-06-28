@@ -22,23 +22,38 @@ export function TopServicesChart({ services }: TopServicesChartProps) {
     );
   }
 
-  const maxTotal = Math.max(...services.map((s) => finiteNumber(s.total) || 1));
+  const visibleServices = services.slice(0, 5);
+  const maxTotal = Math.max(...visibleServices.map((s) => finiteNumber(s.total) || 1));
 
   return (
     <div className="flex flex-col gap-4">
-      {services.slice(0, 5).map((service, index) => {
+      <ol className="sr-only">
+        {visibleServices.map((service) => (
+          <li key={`${service.service_name}-${service.category_name}`}>
+            {service.service_name}, {service.category_name}, {finiteNumber(service.quantity).toFixed(0)} unidades,
+            {formatLempirasUI(service.total)}
+          </li>
+        ))}
+      </ol>
+
+      {visibleServices.map((service, index) => {
         const totalVal = finiteNumber(service.total);
         const pct = Math.min(100, Math.max(0, (totalVal / maxTotal) * 100));
 
         return (
-          <div key={`${service.service_name}-${index}`} className="group flex flex-col gap-1">
+          <div key={`${service.service_name}-${index}`} className="group flex flex-col gap-2">
             <div className="flex items-start justify-between gap-3 text-sm">
-              <div className="flex flex-col gap-0.5 min-w-0">
-                <span className="font-semibold text-foreground truncate" title={service.service_name}>
-                  {service.service_name}
-                </span>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-[10px] py-0 px-1.5 h-4">
+              <div className="flex min-w-0 flex-col gap-1">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-hospital-primary/10 text-xs font-bold text-hospital-primary">
+                    {index + 1}
+                  </span>
+                  <span className="truncate font-semibold text-foreground" title={service.service_name}>
+                    {service.service_name}
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 pl-8">
+                  <Badge variant="outline" className="h-5 px-2 py-0 text-[10px]">
                     {service.category_name}
                   </Badge>
                   <span className="text-xs text-muted-foreground">
@@ -46,17 +61,14 @@ export function TopServicesChart({ services }: TopServicesChartProps) {
                   </span>
                 </div>
               </div>
-              <div className="text-right shrink-0">
-                <span className="font-bold text-foreground">
-                  {formatLempirasUI(service.total)}
-                </span>
+              <div className="shrink-0 text-right">
+                <span className="font-bold text-foreground">{formatLempirasUI(service.total)}</span>
               </div>
             </div>
 
-            {/* Custom Premium progress bar */}
-            <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
               <div
-                className="h-full rounded-full bg-primary/80 transition-[width,background-color] duration-500 group-hover:bg-primary"
+                className="h-full rounded-full bg-hospital-primary transition-[width,background-color] duration-500 group-hover:bg-chart-2"
                 style={{ width: `${pct}%` }}
               />
             </div>

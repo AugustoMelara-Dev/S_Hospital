@@ -1,11 +1,13 @@
 import { Link } from 'react-router-dom';
 import type { RefObject } from 'react';
+import { Banknote, ClipboardList, ReceiptText } from 'lucide-react';
 import { Alert } from '../../../components/ui/alert';
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
 import { Card, CardContent } from '../../../components/ui/card';
 import { Dialog } from '../../../components/ui/dialog';
 import { ConfirmDialog } from '../../../components/ui/confirm-dialog';
+import { CashStatusCard, OperationalBanner } from '../../../components/shared/design-system';
 import { ReceiptPreview } from '../../receipts/ReceiptPreview';
 import { PatientStep } from './PatientStep';
 import { ServiceSearch } from './ServiceSearch';
@@ -113,27 +115,35 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
       ? 'Emitir y cobrar'
       : 'Emitir factura';
   const mobileBlockedReason = emitBlockReasons[0];
+  const cashIsOpen = Boolean(state.loadedCashSession);
+  const cashSessionLabel = state.loadedCashSession ? `Caja #${state.loadedCashSession.id}` : 'Caja cerrada';
 
   return (
     <section id="nueva-factura" className="flex h-full flex-col gap-4 pb-28 lg:pb-0">
-      <header className="flex flex-col gap-3 border-b border-border pb-4 lg:flex-row lg:items-end lg:justify-between">
-        <div className="flex flex-col gap-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-foreground">Sistema institucional</p>
-          <h1 className="text-2xl font-semibold leading-tight text-foreground md:text-3xl">Nueva factura</h1>
-          <p className="text-sm text-muted-foreground">Paciente, servicios, cobro y recibo en una sola estacion.</p>
-        </div>
-        <div className="flex items-center gap-3">
-          {state.loadedCashSession ? (
-            <Badge variant="success" className="font-mono text-sm tabular-nums">
-              Caja #{state.loadedCashSession.id} - Abierta
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
+        <OperationalBanner
+          className="border-hospital-primary/25 bg-[linear-gradient(135deg,var(--color-operational-surface),var(--color-accent))]"
+          meta="Punto de venta hospitalario"
+          title="Nueva factura"
+          description="Registre paciente, agregue servicios facturables y continue al cobro institucional sin salir del flujo de caja."
+          status={
+            <Badge variant={cashIsOpen ? 'success' : 'destructive'} className="font-mono text-sm tabular-nums">
+              {cashIsOpen ? `${cashSessionLabel} - Abierta` : cashSessionLabel}
             </Badge>
-          ) : (
-            <Badge variant="destructive" className="text-sm">
-              Caja cerrada
-            </Badge>
-          )}
-        </div>
-      </header>
+          }
+        />
+        <CashStatusCard
+          status={cashIsOpen ? 'open' : 'attention'}
+          amount={cashSessionLabel}
+          label="Operacion de caja"
+          helper={cashIsOpen ? 'Lista para emitir y cobrar facturas.' : 'Debe abrir caja antes de emitir facturas.'}
+          actions={!cashIsOpen && canOpenCash && onOpenCash ? (
+              <Button type="button" variant="secondary" size="sm" onClick={onOpenCash}>
+                Abrir Caja
+              </Button>
+          ) : null}
+        />
+      </div>
 
       {state.pointOfSaleLoadError && (
         <Alert variant="destructive" title="No se pudo cargar el punto de venta">
@@ -187,14 +197,17 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
       )}
 
       {hasCartItems ? (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/95 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_30px_rgba(15,23,42,0.12)] backdrop-blur lg:hidden">
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-operational-border bg-operational-surface/96 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 shadow-[0_-16px_34px_rgba(15,23,42,0.18)] backdrop-blur lg:hidden">
           <div className="mx-auto flex max-w-3xl items-center gap-3">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-md border border-secondary/25 bg-secondary/10 text-secondary">
+              <ReceiptText className="size-5" aria-hidden="true" />
+            </div>
             <div className="min-w-0 flex-1" aria-live="polite">
-              <p className="text-[11px] font-semibold uppercase tracking-normal text-muted-foreground">
+              <p className="truncate text-[11px] font-semibold uppercase tracking-normal text-muted-foreground">
                 {state.cartItems.length} servicio{state.cartItems.length === 1 ? '' : 's'} en factura
               </p>
-              <p className="mt-0.5 flex items-baseline gap-2">
-                <span className="text-xs text-muted-foreground">Total</span>
+              <p className="mt-0.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                <span className="text-xs text-muted-foreground">Total estimado</span>
                 <span className="font-mono text-lg font-bold tabular-nums text-secondary">{moneyLabel(preview.total)}</span>
               </p>
               {mobileBlockedReason ? (
@@ -214,9 +227,9 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
         </div>
       ) : null}
 
-      <div className="grid flex-1 gap-4 lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_400px]">
+      <div className="grid flex-1 gap-4 lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_400px] xl:grid-cols-[minmax(0,1fr)_430px]">
         <div className="flex flex-col gap-4 lg:min-h-0 lg:overflow-hidden">
-          <Card className="border-secondary/20 bg-card/95 lg:shrink-0">
+          <Card className="border-secondary/25 bg-operational-surface shadow-operational lg:shrink-0">
             <CardContent className="pt-5">
               <PatientStep
                 ref={patientInputRef}
@@ -228,7 +241,7 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
             </CardContent>
           </Card>
 
-          <Card className="lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
+          <Card className="border-operational-border bg-operational-surface shadow-operational lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
             <CardContent className="lg:min-h-0 lg:flex-1 lg:overflow-hidden">
               <ServiceSearch
                 categories={state.categories}
@@ -254,8 +267,24 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
           </Card>
         </div>
 
-        <Card className="lg:sticky lg:top-20 lg:h-fit lg:shrink-0">
+        <Card className="border-operational-border bg-operational-surface shadow-operational lg:sticky lg:top-20 lg:h-fit lg:shrink-0">
           <CardContent className="pt-5">
+            <div className="mb-4 grid grid-cols-2 gap-2">
+              <div className="rounded-md border border-operational-border bg-operational-panel px-3 py-2">
+                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                  <ClipboardList className="size-3.5" aria-hidden="true" />
+                  Items
+                </div>
+                <p className="mt-1 font-mono text-lg font-semibold tabular-nums">{state.cartItems.length}</p>
+              </div>
+              <div className="rounded-md border border-secondary/25 bg-secondary/10 px-3 py-2">
+                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                  <Banknote className="size-3.5" aria-hidden="true" />
+                  Total
+                </div>
+                <p className="mt-1 font-mono text-lg font-semibold tabular-nums text-foreground">{moneyLabel(preview.total)}</p>
+              </div>
+            </div>
             <InvoiceCart
               items={state.cartItems}
               preview={preview}

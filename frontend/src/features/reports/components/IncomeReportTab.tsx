@@ -413,11 +413,34 @@ export function IncomeReportTab({
           )}
 
           {chartData.length > 0 && (
-            <Card>
+            <Card className="rounded-panel border-operational-border bg-operational-surface shadow-operational">
               <CardHeader>
                 <CardTitle>Gráfico por método</CardTitle>
               </CardHeader>
               <CardContent>
+                <div className="sr-only">
+                  <table>
+                    <caption>Montos por metodo de pago del reporte por rango</caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">Metodo</th>
+                        <th scope="col">Monto</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {chartData.map((row) => (
+                        <tr key={row.method}>
+                          <td>{row.method}</td>
+                          <td>{moneyLabel(row.amount)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div
+                  role="img"
+                  aria-label="Grafico de montos por metodo de pago del rango; la tabla oculta contiene los valores exactos."
+                >
                 <ResponsiveContainer width="100%" height={200} minWidth={1} minHeight={1}>
                   <BarChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -427,6 +450,7 @@ export function IncomeReportTab({
                     <Bar dataKey="amount" fill="var(--color-primary)" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
+                </div>
               </CardContent>
             </Card>
           )}

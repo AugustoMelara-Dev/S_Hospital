@@ -19,29 +19,37 @@ export function OperationalStatus({
   now,
   status,
 }: OperationalStatusProps) {
+  const cashIsOpen = cashSession?.status === 'open';
   const cashLabel = cashSession?.status === 'open' ? `Caja #${cashSession.id}` : 'Sin caja abierta';
   const lanStatusTitle = isOnline
     ? `Red local disponible${lastCheck ? `. Ultima revision: ${lastCheck.toLocaleTimeString()}` : ''}`
     : `Sin conexion al servidor local. Estado: ${status}`;
 
   return (
-    <div className="flex shrink-0 items-center gap-1.5" aria-label="Indicadores operativos">
+    <div
+      data-slot="topbar-operational-status"
+      className="flex shrink-0 items-center gap-1.5 rounded-panel border border-operational-border bg-operational-panel/80 p-1 shadow-sm"
+      aria-label="Indicadores operativos"
+    >
       <div
         className={cn(
           'flex size-9 items-center justify-center rounded-md border text-xs font-semibold sm:w-auto sm:px-2.5 sm:py-1.5',
           isOnline
-            ? 'border-secondary/40 bg-secondary/10 text-foreground'
+            ? 'border-success/45 bg-success/10 text-foreground'
             : 'border-destructive/40 bg-destructive/10 text-destructive',
         )}
         title={lanStatusTitle}
         aria-label={lanStatusTitle}
       >
         {isOnline ? <Wifi data-icon aria-hidden="true" /> : <WifiOff data-icon aria-hidden="true" />}
-        <span className="sr-only sm:not-sr-only sm:ml-1.5">{isOnline ? 'Red local' : 'Sin red'}</span>
+        <span className="sr-only sm:not-sr-only sm:ml-1.5">{isOnline ? 'LAN activa' : 'Sin LAN'}</span>
       </div>
 
       <div
-        className="hidden items-center gap-1.5 rounded-md border border-border bg-muted px-2.5 py-1.5 text-xs font-semibold text-foreground md:flex"
+        className={cn(
+          'hidden items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-semibold text-foreground md:flex',
+          cashIsOpen ? 'border-secondary/45 bg-secondary/10' : 'border-warning/45 bg-warning/10',
+        )}
         title={cashLabel}
       >
         <WalletCards data-icon aria-hidden="true" />

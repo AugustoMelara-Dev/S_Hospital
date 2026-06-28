@@ -8,7 +8,7 @@ import {
   YAxis,
 } from 'recharts';
 import { formatLempirasUI } from '@/lib/moneyCents';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ChartCard } from '@/components/shared';
 import type { ExecutiveReport } from '@/lib/api';
 import { useElementWidth } from '../../dashboard/useElementWidth';
 
@@ -78,14 +78,11 @@ export function TrendChart({ report }: TrendChartProps) {
   }));
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Tendencia diaria</CardTitle>
-        <p className="text-xs text-muted-foreground">
-          Facturado vs cobrado por dia. Responde: cuanto se emite y cuanto realmente se cobra.
-        </p>
-      </CardHeader>
-      <CardContent>
+    <ChartCard
+      title="Tendencia diaria"
+      description="Facturado vs cobrado por dia. Responde: cuanto se emite y cuanto realmente se cobra."
+      caption="La tabla oculta para lectores de pantalla contiene los valores exactos del grafico."
+    >
         <div className="sr-only">
           <table>
             <caption>Tendencia diaria del reporte ejecutivo</caption>
@@ -111,12 +108,12 @@ export function TrendChart({ report }: TrendChartProps) {
         </div>
         <div
           ref={ref}
-          className="h-72 w-full min-w-px"
+          className="h-80 w-full min-w-px"
           role="img"
           aria-label="Grafico de tendencia diaria; la tabla oculta para lectores de pantalla contiene los valores exactos."
         >
           {width > 0 ? (
-            <AreaChart width={width} height={288} data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+            <AreaChart width={width} height={320} data={data} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="billed-fill" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor={CHART_COLORS.billed} stopOpacity={0.18} />
@@ -165,7 +162,6 @@ export function TrendChart({ report }: TrendChartProps) {
             </AreaChart>
           ) : null}
         </div>
-      </CardContent>
-    </Card>
+    </ChartCard>
   );
 }

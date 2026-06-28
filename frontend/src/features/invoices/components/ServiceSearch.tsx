@@ -1,4 +1,4 @@
-import { Barcode, Search } from 'lucide-react';
+import { Barcode, Filter, Search, X } from 'lucide-react';
 import { type KeyboardEvent, type RefObject, useEffect, useState, useCallback } from 'react';
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
@@ -72,6 +72,9 @@ export function ServiceSearch({
   const firstVisibleService = visibleServices[0];
   const areaOptions = ['all', ...serviceAreas.map((area) => area.id)] as Array<number | 'all'>;
   const categoryOptions = ['all', ...categories.map((category) => category.id)] as Array<number | 'all'>;
+  const activeFilterCount = [search.trim(), selectedAreaId, selectedCategoryId].filter((value) => {
+    return value !== '' && value !== undefined && value !== 'all';
+  }).length;
 
   const handleAddService = useCallback((service: Service) => {
     setAddFirstWhenReady(false);
@@ -127,7 +130,16 @@ export function ServiceSearch({
 
   return (
     <div className="flex flex-col gap-4 lg:h-full lg:overflow-hidden">
-      <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted/20 p-4 lg:shrink-0">
+      <div className="flex flex-col gap-3 rounded-panel border border-operational-border bg-operational-panel/70 p-4 lg:shrink-0">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-foreground">Busqueda de servicios</p>
+            <p className="text-xs text-muted-foreground">Filtre por area, categoria, texto o lector sin mostrar codigos internos.</p>
+          </div>
+          <Badge variant={activeFilterCount > 0 ? 'info' : 'secondary'} className="w-fit">
+            {activeFilterCount} filtro{activeFilterCount === 1 ? '' : 's'}
+          </Badge>
+        </div>
         <div className={scannerEnabled ? 'grid gap-3 sm:grid-cols-[1fr_minmax(14rem,18rem)]' : 'grid gap-3'}>
           <div className="flex min-w-0 flex-col gap-2">
             <Label htmlFor="service-search" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
@@ -157,7 +169,7 @@ export function ServiceSearch({
                   }
                 }}
                 autoComplete="off"
-                className="min-h-14 pl-12 text-base font-semibold"
+                className="min-h-14 pl-12 text-base font-semibold shadow-sm"
               />
             </div>
           </div>
@@ -187,7 +199,7 @@ export function ServiceSearch({
                     }}
                     autoComplete="off"
                     disabled={scanningCode}
-                    className="pl-9"
+                    className="min-h-10 pl-9"
                   />
                 </div>
                 <Button type="button" variant="secondary" size="sm" className="min-h-10 shrink-0" disabled={scanningCode} onClick={() => onAddByScanCode()}>
@@ -254,20 +266,25 @@ export function ServiceSearch({
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto pr-1">
-        <div className="mb-2 flex items-center justify-between gap-3" aria-live="polite">
-          <Label className="font-mono text-xs uppercase tracking-[0.14em] text-muted-foreground">
-            Servicios ({hasIntent ? filteredServices.length : 0})
-          </Label>
+        <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between" aria-live="polite">
+          <div className="flex min-w-0 items-center gap-2">
+            <Filter className="size-4 text-secondary" aria-hidden="true" />
+            <Label className="font-mono text-xs uppercase tracking-[0.14em] text-muted-foreground">
+              Servicios ({hasIntent ? filteredServices.length : 0})
+            </Label>
+          </div>
           <Button
             type="button"
             variant="ghost"
             size="sm"
+            className="w-fit"
             onClick={() => {
               onSearchChange('');
               onAreaChange(undefined);
               onCategoryChange(undefined);
             }}
           >
+            <X className="mr-1 size-3.5" aria-hidden="true" />
             Limpiar
           </Button>
         </div>
@@ -292,7 +309,7 @@ export function ServiceSearch({
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2" role="list" aria-label="Servicios facturables disponibles">
+            <div className="grid grid-cols-1 gap-2 md:grid-cols-2 2xl:grid-cols-3" role="list" aria-label="Servicios facturables disponibles">
               {visibleServices.map((service) => {
                 const isErythropoietin = service.special_rule_code === ERYTHROPOIETIN_RULE;
 
@@ -302,7 +319,7 @@ export function ServiceSearch({
                       type="button"
                       variant="outline"
                       aria-label={`Agregar ${service.name} por ${moneyLabel(service.price)}`}
-                      className="group h-full min-h-28 w-full items-stretch justify-start gap-3 p-3 text-left font-normal transition-[background-color,border-color,box-shadow,transform] duration-150 hover:border-secondary/45 hover:bg-accent/50 active:translate-y-px active:scale-[0.99]"
+                      className="group h-full min-h-24 w-full items-stretch justify-start gap-3 border-operational-border bg-card p-3 text-left font-normal transition-[background-color,border-color,box-shadow,transform] duration-150 hover:border-secondary/45 hover:bg-accent/50 active:translate-y-px active:scale-[0.99]"
                       onClick={() => handleAddService(service)}
                     >
                       <div className="flex min-w-0 flex-1 flex-col gap-2">
@@ -328,7 +345,7 @@ export function ServiceSearch({
                           )}
                         </div>
                         {isErythropoietin && (
-                          <p className="rounded-sm bg-muted px-1.5 py-1 text-[10px] text-muted-foreground">
+                          <p className="rounded-sm bg-warning/10 px-1.5 py-1 text-[10px] font-medium text-warning-foreground">
                             Con receta diálisis = gratis
                           </p>
                         )}
