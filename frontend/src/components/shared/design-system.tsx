@@ -471,7 +471,7 @@ export function CashStatusCard({
         </div>
         <Badge variant={tone === 'success' ? 'success' : tone === 'warning' ? 'warning' : 'secondary'}>{statusLabel}</Badge>
       </div>
-      {(cashier || timestamp || helper) ? (
+      {(cashier || timestamp) ? (
         <dl className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
           {cashier ? (
             <div>
@@ -485,9 +485,9 @@ export function CashStatusCard({
               <dd className="mt-1 text-foreground">{timestamp}</dd>
             </div>
           ) : null}
-          {helper ? <div className="sm:col-span-2 text-muted-foreground">{helper}</div> : null}
         </dl>
       ) : null}
+      {helper ? <p className="mt-4 text-sm text-muted-foreground">{helper}</p> : null}
       {actions ? <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-operational-border pt-4">{actions}</div> : null}
     </section>
   );
