@@ -12,11 +12,12 @@
     "test:full:windows": "vitest run --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000",
     "smoke:buttons": "playwright test e2e/all-buttons-smoke.spec.ts",
     "build": "tsc --noEmit && vite build",
-    "e2e": "playwright test --config=playwright.release.config.ts",
-    "test:e2e": "playwright test --config=playwright.release.config.ts",
+    "check:branding": "powershell -NoProfile -ExecutionPolicy Bypass -File ../scripts/check-branding.ps1",
+    "e2e": "node scripts/run-release-e2e.mjs",
+    "test:e2e": "node scripts/run-release-e2e.mjs",
     "e2e:legacy": "playwright test",
     "smoke:real": "playwright test --config=playwright.real.config.ts",
-    "visual:smoke": "playwright test e2e/all-buttons-smoke.spec.ts"
+    "visual:smoke": "node ../qa/visual-smoke/phase-12-visual-smoke.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
