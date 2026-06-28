@@ -1,12 +1,6 @@
 import type { Plugin, ResolvedConfig } from 'vite';
 import { createHash, randomBytes } from 'node:crypto';
 
-/**
- * Build-time placeholder that the Laravel backend substitutes with
- * a per-request nonce before serving the SPA. Keeping the placeholder
- * stable means the production CSP can require the nonce without
- * having to re-bundle the frontend on every cold start.
- */
 export const CSP_NONCE_PLACEHOLDER = '__S_HOSPITAL_CSP_NONCE__';
 
 export function cspNoncePlugin(options: { nonce?: string; meta?: boolean } = {}): Plugin {
@@ -36,7 +30,7 @@ export function cspNoncePlugin(options: { nonce?: string; meta?: boolean } = {})
             `<style nonce="${CSP_NONCE_PLACEHOLDER}"`,
           );
 
-          if (! injectMeta) {
+          if (!injectMeta) {
             return placeholderStyle;
           }
 
@@ -52,7 +46,7 @@ export function cspNoncePlugin(options: { nonce?: string; meta?: boolean } = {})
           };
         }
 
-        if (! injectMeta) {
+        if (!injectMeta) {
           return html;
         }
 
@@ -78,27 +72,17 @@ export function cspNoncePlugin(options: { nonce?: string; meta?: boolean } = {})
         return null;
       }
 
-      if (id.includes('node_modules')) {
+      if (id.includes('node_modules') || id.includes('vite-plugins')) {
         return null;
       }
-
-      if (id.includes('vite-plugins')) {
-        return null;
-      }
-
-      const nonce = buildNonce;
 
       if (id.endsWith('.html')) {
-        return code.replace(/<script\b/g, `<script nonce="${nonce}"`);
+        return code.replace(/<script\b/g, `<script nonce="${buildNonce}"`);
       }
 
-      const transformed = code.replace(
-        /<script\b/g,
-        `<script nonce="${nonce}"`,
-      ).replace(
-        /<style\b/g,
-        `<style nonce="${nonce}"`,
-      );
+      const transformed = code
+        .replace(/<script\b/g, `<script nonce="${buildNonce}"`)
+        .replace(/<style\b/g, `<style nonce="${buildNonce}"`);
 
       if (transformed === code) {
         return null;
@@ -115,20 +99,15 @@ export function cspNoncePlugin(options: { nonce?: string; meta?: boolean } = {})
         return;
       }
 
-      const manifest = buildCspNonceManifest(buildNonce);
       this.emitFile({
         type: 'asset',
         fileName: 'csp-nonce.json',
-        source: JSON.stringify(manifest, null, 2),
+        source: JSON.stringify(buildCspNonceManifest(buildNonce), null, 2),
       });
     },
   };
 }
 
-/**
- * Pure helper that the unit tests call directly so the plugin
- * wrapper around Vite is not part of the tested surface.
- */
 export function buildCspNonceManifest(nonce: string): {
   nonce: string;
   generated_at: string;

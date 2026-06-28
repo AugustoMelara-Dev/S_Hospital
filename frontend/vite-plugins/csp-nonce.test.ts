@@ -33,6 +33,7 @@ describe('cspNoncePlugin', () => {
   it('produces the same manifest for the same nonce', () => {
     const a = buildCspNonceManifest('shared-nonce');
     const b = buildCspNonceManifest('shared-nonce');
+
     expect(a.nonce).toBe(b.nonce);
   });
 
@@ -45,6 +46,7 @@ describe('cspNoncePlugin', () => {
     const html = '<html><script type="module" src="/main.js"></script><style>body{}</style></html>';
     const handler = plugin.transformIndexHtml as { handler: (html: string) => unknown };
     const config = (plugin as unknown as { configResolved: (cfg: unknown) => void }).configResolved;
+
     config({ command: 'build' });
 
     const result = await handler.handler(html);
@@ -62,6 +64,7 @@ describe('cspNoncePlugin', () => {
     const html = '<html><script type="module" src="/main.js"></script></html>';
     const handler = plugin.transformIndexHtml as { handler: (html: string) => unknown };
     const config = (plugin as unknown as { configResolved: (cfg: unknown) => void }).configResolved;
+
     config({ command: 'build' });
 
     const result = await handler.handler(html);

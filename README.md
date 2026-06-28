@@ -67,15 +67,12 @@ Clientes en red local:
 http://IP-DEL-SERVIDOR
 ```
 
-## Documentacion Para Operacion
+## Operacion
 
-Los manuales para personal estan en:
-
-- `docs/manuales/MANUAL_CAJERO.md`
-- `docs/manuales/MANUAL_ADMINISTRADOR.md`
-- `docs/manuales/GUIA_INSTALACION_OPERATIVA.md`
-- `docs/manuales/GUIA_RESPALDOS_Y_RESTAURACION.md`
-- `docs/manuales/CHECKLIST_CAPACITACION.md`
+La operacion diaria debe guiarse desde la interfaz del sistema y desde el
+paquete operativo entregado al hospital. Este repositorio mantiene solo el
+codigo, configuracion y pruebas necesarias para desarrollar y validar el
+producto.
 
 ## Notas De Seguridad
 
