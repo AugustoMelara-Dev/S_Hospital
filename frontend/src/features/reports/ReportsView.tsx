@@ -1,26 +1,15 @@
-import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { QueryClientProvider } from '@tanstack/react-query';
+import { useMemo, useRef, useState } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
 import { Alert } from '@/components/ui/alert';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/states';
-import { Card, CardContent } from '@/components/ui/card';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { InfoPanel, OperationalBanner } from '@/components/shared';
 import {
-  type ExecutiveReport,
+  InfoPanel,
+  OperationalBanner,
+  StatCard,
+} from '@/components/shared';
+import {
   type ExecutiveReportFilters,
-  type Area,
-  type AreaIncomeReport,
-  type CashSession,
-  type CashSessionReport,
-  type Category,
-  type CategoryReport,
-  type DailyReport,
-  type IncomeReport,
-  type MonthlyReport,
-  type OperationsReport,
-  type ReportFilters,
-  type ServiceSalesReport,
   apiClient,
   userSafeErrorMessage,
 } from '@/lib/api';
@@ -29,10 +18,6 @@ import { ExecutiveSummary } from './components/ExecutiveSummary';
 import { TrendChart } from './components/TrendChart';
 import { PaymentMethodPanel } from './components/PaymentMethodPanel';
 import { ServiceRanking } from './components/ServiceRanking';
-import { CashReconciliationPanel } from './components/CashReconciliationPanel';
-import { CashierTable } from './components/CashierTable';
-import { VoidsReversalsPanel } from './components/VoidsReversalsPanel';
-import { PendingAgingPanel } from './components/PendingAgingPanel';
 import { AuditSummaryPanel } from './components/AuditSummaryPanel';
 import { MetricsGlossary } from './components/MetricsGlossary';
 import {
@@ -40,18 +25,11 @@ import {
   computePresetRange,
   type PresetKey,
 } from './components/ReportFiltersPanel';
-import { DailyReportTab } from './components/DailyReportTab';
-import { MonthlyReportTab } from './components/MonthlyReportTab';
-import { IncomeReportTab } from './components/IncomeReportTab';
-import { ServiceSalesTab } from './components/ServiceSalesTab';
-import { AuditoriaTab } from './components/AuditoriaTab';
 import { CashSessionReportTab } from './components/CashSessionReportTab';
-import { useCashSession } from '@/hooks/useCashSession';
 import { notify } from '@/components/ui/toaster';
 import { downloadBlob, openBlobInNewTab } from '@/lib/download';
-import { queryClient } from '@/lib/query-client';
-import { localDateString } from './ReportsView.helpers';
-import { formatLempirasUIFromCents, parseCents } from '@/lib/moneyCents';
+import { cn } from '@/lib/utils';
+import { LineChart, ShieldCheck, WalletCards } from 'lucide-react';
 
 type ReportsViewProps = {
   canExport: boolean;
@@ -60,137 +38,171 @@ type ReportsViewProps = {
   onStatus: (message: string) => void;
 };
 
-const today = localDateString(new Date());
-const currentMonth = today.slice(0, 7);
-const MAX_CLASSIC_REPORT_RANGE_DAYS = 31;
-const MAX_EXECUTIVE_REPORT_RANGE_DAYS = 92;
+const SUB_ROUTES = [
+  {
+    id: 'executive',
+    label: 'Ejecutivo',
+    description: 'Cobros, pendientes, ticket promedio, tendencia y servicios.',
+    icon: LineChart,
+  },
+  {
+    id: 'cash',
+    label: 'Caja',
+    description: 'Sesiones, cajeros, metodos y diferencias.',
+    icon: WalletCards,
+  },
+  {
+    id: 'audit',
+    label: 'Auditoria',
+    description: 'Anulaciones, reversos, cambios de precio y fiscales.',
+    icon: ShieldCheck,
+  },
+] as const;
 
 export function ReportsView(props: ReportsViewProps) {
+  const subRoute = SubRouteFromLocation();
   return (
-    <QueryClientProvider client={queryClient}>
-      <ReportsViewContent {...props} />
-    </QueryClientProvider>
+    <div data-slot="reports-view" className="flex flex-col gap-5">
+      <ReportsNavigation active={subRoute} canViewManagerial={props.canViewManagerial} canViewCash={props.canViewCashSessionReport} />
+      <ReportsContent {...props} subRoute={subRoute} />
+    </div>
   );
 }
 
-function ReportsViewContent({
-  canExport,
-  canViewCashSessionReport,
+function SubRouteFromLocation(): typeof SUB_ROUTES[number]['id'] {
+  const location = useLocation();
+  return useMemo(() => {
+    const segments = location.pathname.split('/').filter(Boolean);
+    return (segments[1] ?? 'executive') as typeof SUB_ROUTES[number]['id'];
+  }, [location.pathname]);
+}
+
+function ReportsNavigation({
+  active,
   canViewManagerial,
-  onStatus,
-}: ReportsViewProps) {
-  const initialPreset = canViewManagerial ? 'thisMonth' : 'today';
-  const [preset, setPreset] = useState<PresetKey>(initialPreset);
-  const [filters, setFilters] = useState<ExecutiveReportFilters>(() => {
-    const initialRange = computePresetRange(initialPreset);
-    return {
-      date_from: initialRange.from,
-      date_to: initialRange.to,
-    };
-  });
-  const [appliedFilters, setAppliedFilters] = useState<ExecutiveReportFilters>(() => {
-    const initialRange = computePresetRange(initialPreset);
-    return {
-      date_from: initialRange.from,
-      date_to: initialRange.to,
-    };
+  canViewCash,
+}: {
+  active: typeof SUB_ROUTES[number]['id'];
+  canViewManagerial: boolean;
+  canViewCash: boolean;
+}) {
+  const basePath = '/reports';
+  const visible = SUB_ROUTES.filter((route) => {
+    if (route.id === 'executive' || route.id === 'audit') return canViewManagerial;
+    if (route.id === 'cash') return canViewCash || canViewManagerial;
+    return true;
   });
 
+  if (visible.length === 0) {
+    return null;
+  }
+
+  return (
+    <nav aria-label="Secciones de reportes" className="flex flex-wrap gap-2">
+      {visible.map((route) => {
+        const isActive = active === route.id;
+        const Icon = route.icon;
+        return (
+          <NavLink
+            key={route.id}
+            to={`${basePath}/${route.id}`}
+            aria-current={isActive ? 'page' : undefined}
+            className={({ isActive: navActive }) =>
+              cn(
+                'inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                isActive || navActive
+                  ? 'border-hospital-primary bg-hospital-primary/10 text-foreground shadow-sm'
+                  : 'border-operational-border bg-operational-surface text-muted-foreground hover:border-hospital-primary/45 hover:text-foreground',
+              )
+            }
+          >
+            <Icon aria-hidden="true" className="size-4" />
+            <span>{route.label}</span>
+          </NavLink>
+        );
+      })}
+    </nav>
+  );
+}
+
+function ReportsContent({
+  subRoute,
+  ...props
+}: ReportsViewProps & { subRoute: typeof SUB_ROUTES[number]['id'] }) {
+  if (subRoute === 'cash') {
+    return <CashSubRoute canViewCash={props.canViewCashSessionReport} canViewManagerial={props.canViewManagerial} />;
+  }
+
+  if (subRoute === 'audit') {
+    return (
+      <AuditSubRoute
+        canViewManagerial={props.canViewManagerial}
+        canExport={props.canExport}
+        onStatus={props.onStatus}
+      />
+    );
+  }
+
+  return (
+    <ExecutiveSubRoute
+      canViewManagerial={props.canViewManagerial}
+      canExport={props.canExport}
+      onStatus={props.onStatus}
+    />
+  );
+}
+
+function ExecutiveSubRoute({
+  canViewManagerial,
+  canExport,
+  onStatus,
+}: {
+  canViewManagerial: boolean;
+  canExport: boolean;
+  onStatus: (message: string) => void;
+}) {
+  const [preset, setPreset] = useState<PresetKey>(canViewManagerial ? 'thisMonth' : 'today');
+  const [filters, setFilters] = useState<ExecutiveReportFilters>(() => {
+    const initialRange = computePresetRange(canViewManagerial ? 'thisMonth' : 'today');
+    return { date_from: initialRange.from, date_to: initialRange.to };
+  });
+  const [appliedFilters, setAppliedFilters] = useState<ExecutiveReportFilters>(() => {
+    const initialRange = computePresetRange(canViewManagerial ? 'thisMonth' : 'today');
+    return { date_from: initialRange.from, date_to: initialRange.to };
+  });
   const [glossaryOpen, setGlossaryOpen] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [dailyDate, setDailyDate] = useState(today);
-  const [monthlyMonth, setMonthlyMonth] = useState(currentMonth);
-  const [dateFrom, setDateFrom] = useState(today);
-  const [dateTo, setDateTo] = useState(today);
-  const [categoryId, setCategoryId] = useState('');
-  const [areaId, setAreaId] = useState('');
-  const [cashSessionId, setCashSessionId] = useState('');
-  const [cashierId, setCashierId] = useState('');
-  const [method, setMethod] = useState<NonNullable<ReportFilters['method']>>('');
-  const [status, setStatus] = useState<NonNullable<ReportFilters['status']>>('');
-  const [cashReportId, setCashReportId] = useState('');
-  const [dailyError, setDailyError] = useState('');
-  const [monthlyError, setMonthlyError] = useState('');
-  const [rangeError, setRangeError] = useState('');
-  const [cashError, setCashError] = useState('');
-  const [exportingReport, setExportingReport] = useState<string | null>(null);
-  const [classicLoading, setClassicLoading] = useState(false);
-  const [daily, setDaily] = useState<DailyReport | null>(null);
-  const [monthly, setMonthly] = useState<MonthlyReport | null>(null);
-  const [income, setIncome] = useState<IncomeReport | null>(null);
-  const [categories, setCategories] = useState<CategoryReport | null>(null);
-  const [areas, setAreas] = useState<AreaIncomeReport | null>(null);
-  const [serviceSales, setServiceSales] = useState<ServiceSalesReport | null>(null);
-  const [operations, setOperations] = useState<OperationsReport | null>(null);
-  const [cashSessionReport, setCashSessionReport] = useState<CashSessionReport | null>(null);
-  const [categoryOptions, setCategoryOptions] = useState<Category[]>([]);
-  const [areaOptions, setAreaOptions] = useState<Area[]>([]);
-  const [cashSessionOptions, setCashSessionOptions] = useState<CashSession[]>([]);
-  const exportingReportRef = useRef(false);
+  const exportingRef = useRef(false);
   const executiveRangeError = validateReportDateRange(
     filters.date_from,
     filters.date_to,
-    MAX_EXECUTIVE_REPORT_RANGE_DAYS,
-    'ejecutivos',
+    92,
+    'ejecutivo',
   );
 
-  const appliedRangeError = validateReportDateRange(
-    appliedFilters.date_from,
-    appliedFilters.date_to,
-    MAX_EXECUTIVE_REPORT_RANGE_DAYS,
-    'ejecutivos',
+  const { data: report, isFetching, isError, refetch, error: queryError } = useExecutiveReport(
+    appliedFilters,
+    canViewManagerial && executiveRangeError === null,
   );
-  const { data: report, isFetching, isError, refetch, error: queryError } = useExecutiveReport(appliedFilters, canViewManagerial && appliedRangeError === null);
-  const { data: cashSession } = useCashSession();
-  const exportInProgress = exportingReport !== null;
 
-  useEffect(() => {
-    if (isError && queryError) {
-      setError(userSafeErrorMessage(queryError, 'No se pudo cargar el reporte ejecutivo.'));
-      return;
-    }
-
-    if (!isError) {
-      setError(null);
-    }
-  }, [isError, queryError]);
-
-  useEffect(() => {
-    if (!canViewManagerial) return;
-
-    void loadDaily(dailyDate);
-    void loadCategories();
-    void loadAreas();
-    void loadCashSessionOptions();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canViewManagerial]);
+  if (!canViewManagerial) {
+    return (
+      <EmptyState
+        title="Reporte ejecutivo no disponible"
+        description="Su usuario no tiene permiso para consultar el reporte ejecutivo. Solicite a un supervisor el permiso reports.managerial.view."
+      />
+    );
+  }
 
   function handleRefresh() {
     if (executiveRangeError) {
       onStatus(executiveRangeError);
       return;
     }
-
-    if (sameExecutiveFilters(filters, appliedFilters)) {
+    if (sameFilters(filters, appliedFilters)) {
       void refetch();
       return;
     }
-
     setAppliedFilters(filters);
-  }
-
-  function handleFiltersChange(next: ExecutiveReportFilters) {
-    setFilters(next);
-  }
-
-  function handlePresetChange(next: PresetKey) {
-    setPreset(next);
-    if (next !== 'custom') {
-      const range = computePresetRange(next);
-      const nextFilters = { ...filters, date_from: range.from, date_to: range.to };
-      setFilters(nextFilters);
-      setAppliedFilters(nextFilters);
-    }
   }
 
   function handleExportPdf() {
@@ -203,8 +215,26 @@ function ReportsViewContent({
       onStatus(executiveRangeError);
       return;
     }
+    if (exportingRef.current) return;
+    exportingRef.current = true;
     onStatus('Preparando PDF ejecutivo...');
-    void runReportExport('executive-pdf', downloadExecutivePdf);
+    void runExecutiveExport(
+      apiClient.downloadExecutivePdf,
+      filters,
+      (blob) => {
+        openBlobInNewTab(blob, `reporte-ejecutivo-${filters.date_from}-a-${filters.date_to}.pdf`);
+        notify.success('PDF ejecutivo generado.');
+        onStatus('PDF ejecutivo generado.');
+      },
+      (err) => {
+        const message = userSafeErrorMessage(err, 'No se pudo generar el PDF ejecutivo.');
+        notify.error(message);
+        onStatus(message);
+      },
+      () => {
+        exportingRef.current = false;
+      },
+    );
   }
 
   function handleExportExcel() {
@@ -217,290 +247,54 @@ function ReportsViewContent({
       onStatus(executiveRangeError);
       return;
     }
+    if (exportingRef.current) return;
+    exportingRef.current = true;
     onStatus('Descargando Excel ejecutivo...');
-    void runReportExport('executive-excel', downloadExcel);
-  }
-
-  async function runReportExport(kind: string, task: () => Promise<void>) {
-    if (exportingReportRef.current) {
-      onStatus('Espere a que termine la exportacion actual.');
-      return;
-    }
-
-    exportingReportRef.current = true;
-    setExportingReport(kind);
-
-    try {
-      await task();
-    } finally {
-      exportingReportRef.current = false;
-      setExportingReport(null);
-    }
-  }
-
-  async function loadDaily(date: string) {
-    setClassicLoading(true);
-    setDailyError('');
-    onStatus('Cargando reporte diario...');
-
-    try {
-      setDaily(await apiClient.getDailyReport(date));
-      onStatus('Reporte diario cargado.');
-    } catch (loadError) {
-      const message = userSafeErrorMessage(loadError, 'No se pudo cargar el reporte diario.');
-      setDailyError(message);
-      onStatus(message);
-    } finally {
-      setClassicLoading(false);
-    }
-  }
-
-  async function loadMonthly(month: string) {
-    setClassicLoading(true);
-    setMonthlyError('');
-    onStatus('Cargando reporte mensual...');
-
-    try {
-      setMonthly(await apiClient.getMonthlyReport(month));
-      onStatus('Reporte mensual cargado.');
-    } catch (loadError) {
-      const message = userSafeErrorMessage(loadError, 'No se pudo cargar el reporte mensual.');
-      setMonthlyError(message);
-      onStatus(message);
-    } finally {
-      setClassicLoading(false);
-    }
-  }
-
-  async function loadCategories() {
-    try {
-      setCategoryOptions(await apiClient.getCategories());
-    } catch {
-      setCategoryOptions([]);
-    }
-  }
-
-  async function loadAreas() {
-    try {
-      setAreaOptions(await apiClient.getAreas(true));
-    } catch {
-      setAreaOptions([]);
-    }
-  }
-
-  async function loadCashSessionOptions() {
-    try {
-      const response = await apiClient.getCashSessions({ perPage: 50 });
-      setCashSessionOptions(Array.isArray(response.data) ? response.data : []);
-    } catch {
-      setCashSessionOptions([]);
-    }
-  }
-
-  async function loadRangeReports() {
-    const start = new Date(`${dateFrom}T00:00:00`);
-    const end = new Date(`${dateTo}T00:00:00`);
-    const diffDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-
-    if (diffDays > MAX_CLASSIC_REPORT_RANGE_DAYS) {
-      const message = 'El rango maximo permitido para reportes es de 31 dias.';
-      setRangeError(message);
-      onStatus(message);
-      return;
-    }
-
-    if (diffDays < 1) {
-      const message = 'La fecha de inicio debe ser anterior o igual a la fecha de fin.';
-      setRangeError(message);
-      onStatus(message);
-      return;
-    }
-
-    setClassicLoading(true);
-    setRangeError('');
-    onStatus('Cargando reportes por rango...');
-
-    try {
-      const rangeFilters = reportFilters();
-      const [incomeReport, categoryReport, areaReport, serviceReport, operationsReport] = await Promise.all([
-        apiClient.getIncomeReport(rangeFilters),
-        apiClient.getCategoryReport(rangeFilters),
-        apiClient.getAreaIncomeReport(rangeFilters),
-        apiClient.getServiceSalesReport(rangeFilters),
-        apiClient.getOperationsReport(rangeFilters),
-      ]);
-      setIncome(incomeReport);
-      setCategories(categoryReport);
-      setAreas(areaReport);
-      setServiceSales(serviceReport);
-      setOperations(operationsReport);
-      onStatus('Reportes por rango cargados.');
-    } catch (loadError) {
-      const message = userSafeErrorMessage(loadError, 'No se pudieron cargar los reportes.');
-      setRangeError(message);
-      onStatus(message);
-    } finally {
-      setClassicLoading(false);
-    }
-  }
-
-  async function loadCashReport() {
-    if (!cashReportId.trim()) {
-      setCashError('Ingrese el numero de caja.');
-      onStatus('Ingrese el numero de caja.');
-      return;
-    }
-
-    setClassicLoading(true);
-    setCashError('');
-    onStatus('Cargando resumen de caja...');
-
-    try {
-      setCashSessionReport(await apiClient.getCashSessionReport(cashReportId));
-      onStatus('Resumen de caja cargado.');
-    } catch (loadError) {
-      const message = userSafeErrorMessage(loadError, 'No se pudo cargar la caja.');
-      setCashError(message);
-      onStatus(message);
-    } finally {
-      setClassicLoading(false);
-    }
-  }
-
-  function reportFilters(): ReportFilters {
-    return {
-      date_from: dateFrom,
-      date_to: dateTo,
-      category_id: categoryId || null,
-      area_id: areaId || null,
-      user_id: cashierId || null,
-      cash_session_id: cashSessionId || null,
-      method: method || null,
-      status: status || null,
-    };
-  }
-
-  async function downloadBackendExport(rangeFilters: ReportFilters) {
-    if (!canExport) {
-      onStatus('Exportacion Excel requiere permiso de exportacion de reportes.');
-      return;
-    }
-
-    onStatus('Preparando exportacion Excel...');
-
-    try {
-      const blob = await apiClient.downloadReportExport(rangeFilters);
-      downloadBlob(blob, `reporte-hospital-${rangeFilters.date_from ?? today}-a-${rangeFilters.date_to ?? today}.xlsx`);
-      onStatus('Exportacion Excel descargada.');
-    } catch (exportError) {
-      const message = userSafeErrorMessage(exportError, 'No se pudo exportar el reporte.');
-      onStatus(message);
-    }
-  }
-
-  async function downloadBackendPdf(rangeFilters: ReportFilters & { date?: string }) {
-    if (!canExport) {
-      onStatus('Exportacion PDF requiere permiso de exportacion de reportes.');
-      return;
-    }
-
-    onStatus('Preparando exportacion PDF...');
-
-    try {
-      const blob = await apiClient.downloadReportPdf(rangeFilters);
-      const filename = rangeFilters.date
-        ? `cierre_diario_${rangeFilters.date}.pdf`
-        : `cierre_periodo_${rangeFilters.date_from}_a_${rangeFilters.date_to}.pdf`;
-      downloadBlob(blob, filename);
-      onStatus('Exportacion PDF descargada.');
-    } catch (exportError) {
-      const message = userSafeErrorMessage(exportError, 'No se pudo exportar el reporte PDF.');
-      onStatus(message);
-    }
-  }
-
-  function handleDailySubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    void loadDaily(dailyDate);
-  }
-
-  function handleMonthlySubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    void loadMonthly(monthlyMonth);
-  }
-
-  function handleCashSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    void loadCashReport();
-  }
-
-  async function downloadExecutivePdf() {
-    try {
-      const blob = await apiClient.downloadExecutivePdf(filters);
-      openBlobInNewTab(blob, `reporte-ejecutivo-${filters.date_from}-a-${filters.date_to}.pdf`);
-      notify.success('PDF ejecutivo generado.');
-      onStatus('PDF ejecutivo generado.');
-    } catch (exportError) {
-      const message = userSafeErrorMessage(exportError, 'No se pudo generar el PDF ejecutivo.');
-      notify.error(message);
-      onStatus(message);
-    }
-  }
-
-  async function downloadExcel() {
-    try {
-      const blob = await apiClient.downloadExecutiveExcel(filters);
-      downloadBlob(blob, `reporte-ejecutivo-${filters.date_from}-a-${filters.date_to}.xlsx`);
-      notify.success('Excel ejecutivo descargado.');
-      onStatus('Excel ejecutivo descargado.');
-    } catch (exportError) {
-      const message = userSafeErrorMessage(exportError, 'No se pudo descargar el Excel.');
-      notify.error(message);
-      onStatus(message);
-    }
+    void runExecutiveExport(
+      apiClient.downloadExecutiveExcel,
+      filters,
+      (blob) => {
+        downloadBlob(blob, `reporte-ejecutivo-${filters.date_from}-a-${filters.date_to}.xlsx`);
+        notify.success('Excel ejecutivo descargado.');
+        onStatus('Excel ejecutivo descargado.');
+      },
+      (err) => {
+        const message = userSafeErrorMessage(err, 'No se pudo descargar el Excel.');
+        notify.error(message);
+        onStatus(message);
+      },
+      () => {
+        exportingRef.current = false;
+      },
+    );
   }
 
   return (
-    <section id="reportes" aria-label="Reportes" className="flex flex-col gap-5">
-      <OperationalBanner
-        meta="Reportes y analitica"
-        title="Reportes"
-        description="Facturación, cobros, caja y auditoría en una vista clara, ejecutiva y auditada para contabilidad, administración y supervisión."
-        status={
-          <div className="flex flex-wrap items-center gap-2">
-            {canViewManagerial ? <Badge variant="secondary">Ejecutivo</Badge> : null}
-            {canViewCashSessionReport ? <Badge variant="secondary">Caja</Badge> : null}
-            {cashSession?.status === 'open' ? <Badge variant="success">Caja abierta #{cashSession.id}</Badge> : null}
-          </div>
-        }
+    <section className="flex flex-col gap-5" aria-label="Reporte ejecutivo">
+      <ReportFiltersPanel
+        filters={filters}
+        preset={preset}
+        onPresetChange={setPreset}
+        onChange={setFilters}
+        onRefresh={handleRefresh}
+        onExportPdf={handleExportPdf}
+        onExportExcel={handleExportExcel}
+        canExport={canExport}
+        loading={isFetching}
+        exporting={exportingRef.current}
+        rangeError={executiveRangeError}
       />
 
-      {canViewManagerial ? (
-        <ReportFiltersPanel
-          filters={filters}
-          preset={preset}
-          onPresetChange={handlePresetChange}
-          onChange={handleFiltersChange}
-          onRefresh={handleRefresh}
-          onExportPdf={handleExportPdf}
-          onExportExcel={handleExportExcel}
-          canExport={canExport}
-          loading={isFetching}
-          exporting={exportInProgress}
-          rangeError={executiveRangeError}
-        />
-      ) : null}
-
-      {canViewManagerial && executiveRangeError ? (
+      {executiveRangeError ? (
         <Alert variant="warning" title="Rango ejecutivo no valido">
           {executiveRangeError}
         </Alert>
       ) : null}
 
-      {canViewManagerial && error ? (
+      {isError ? (
         <ErrorState
           title="No se pudo cargar el reporte ejecutivo"
-          description={error}
+          description={userSafeErrorMessage(queryError, 'Error desconocido')}
           action={
             <button
               type="button"
@@ -513,361 +307,186 @@ function ReportsViewContent({
         />
       ) : null}
 
-      {canViewManagerial && isFetching && !report ? (
+      {isFetching && !report ? (
         <LoadingState label="Cargando reporte ejecutivo..." />
       ) : null}
 
-      <Tabs defaultValue={canViewManagerial ? 'resumen' : 'caja'}>
-        <div className="rounded-panel border border-operational-border bg-operational-surface p-2 shadow-operational">
-          <div className="overflow-x-auto pb-1">
-          <TabsList aria-label="Secciones de reportes" className="h-auto min-w-max flex-wrap gap-1 bg-transparent py-1">
-            {canViewManagerial ? (
-              <>
-                <TabsTrigger value="resumen">Resumen</TabsTrigger>
-                <TabsTrigger value="diario">Diario</TabsTrigger>
-                <TabsTrigger value="mensual">Mensual</TabsTrigger>
-                <TabsTrigger value="rango">Por rango</TabsTrigger>
-                <TabsTrigger value="tendencia">Tendencia</TabsTrigger>
-                <TabsTrigger value="metodos">Métodos</TabsTrigger>
-                <TabsTrigger value="servicios">Servicios</TabsTrigger>
-                <TabsTrigger value="cajeros">Cajeros</TabsTrigger>
-                <TabsTrigger value="pendientes">Pendientes</TabsTrigger>
-                <TabsTrigger value="anulaciones">Anulaciones</TabsTrigger>
-                <TabsTrigger value="auditoria">Auditoría</TabsTrigger>
-                <TabsTrigger value="exportaciones">Exportaciones</TabsTrigger>
-              </>
-            ) : null}
-            {canViewCashSessionReport ? <TabsTrigger value="caja">Caja</TabsTrigger> : null}
-          </TabsList>
-          </div>
+      {report ? (
+        <div className="flex flex-col gap-5">
+          <ExecutiveSummary report={report} />
+          <PaymentMethodPanel report={report} />
+          <TrendChart report={report} />
+          <ServiceRanking report={report} />
         </div>
+      ) : null}
 
-          <TabsContent value="resumen">
-            <div className="flex flex-col gap-5">
-              {report ? (
-                <>
-                <ExecutiveSummary report={report} />
-                <PaymentMethodPanel report={report} />
-                <div className="flex justify-end">
-                  <MetricsGlossary open={glossaryOpen} onOpenChange={setGlossaryOpen} compact />
-                </div>
-                </>
-              ) : (
-                <EmptyState title="Sin datos ejecutivos" description="Actualice el rango para cargar el resumen." />
-              )}
-              <DailyReportTab
-                canExport={canExport}
-                daily={daily}
-                dailyDate={dailyDate}
-                error={dailyError}
-                loading={classicLoading}
-                exporting={exportInProgress}
-                onDateChange={setDailyDate}
-                onExport={() => void runReportExport('daily-excel', () => downloadBackendExport({ date_from: dailyDate, date_to: dailyDate }))}
-                onExportPdf={() => void runReportExport('daily-pdf', () => downloadBackendPdf({ date: dailyDate, date_from: dailyDate, date_to: dailyDate }))}
-                onSubmit={handleDailySubmit}
-              />
-            </div>
-          </TabsContent>
+      <div className="flex justify-end">
+        <MetricsGlossary open={glossaryOpen} onOpenChange={setGlossaryOpen} compact />
+      </div>
+    </section>
+  );
+}
 
-          <TabsContent value="diario">
-            <DailyReportTab
-              canExport={canExport}
-              daily={daily}
-              dailyDate={dailyDate}
-              error={dailyError}
-              loading={classicLoading}
-              exporting={exportInProgress}
-              onDateChange={setDailyDate}
-              onExport={() => void runReportExport('daily-excel', () => downloadBackendExport({ date_from: dailyDate, date_to: dailyDate }))}
-              onExportPdf={() => void runReportExport('daily-pdf', () => downloadBackendPdf({ date: dailyDate, date_from: dailyDate, date_to: dailyDate }))}
-              onSubmit={handleDailySubmit}
+function CashSubRoute({
+  canViewCash,
+  canViewManagerial,
+}: {
+  canViewCash: boolean;
+  canViewManagerial: boolean;
+}) {
+  const [cashSessionReport, setCashSessionReport] = useState<Awaited<ReturnType<typeof apiClient.getCashSessionReport>> | null>(null);
+  const [cashReportId, setCashReportId] = useState('');
+  const [cashError, setCashError] = useState('');
+  // const { data: cashSession } = useCashSession();
+
+  async function loadCashReport() {
+    if (!cashReportId.trim()) {
+      setCashError('Ingrese el numero de caja.');
+      return;
+    }
+    try {
+      setCashError('');
+      setCashSessionReport(await apiClient.getCashSessionReport(cashReportId));
+    } catch (err) {
+      setCashError(userSafeErrorMessage(err, 'No se pudo cargar la caja.'));
+    }
+  }
+
+  return (
+    <section className="flex flex-col gap-5" aria-label="Reporte de caja">
+      <OperationalBanner
+        meta="Reporte de caja"
+        title="Operacion de caja"
+        description="Sesiones, cajeros, metodos de pago y diferencias de caja."
+      />
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <StatCard label="Sesiones" value="Hoy" helper="Disponibles en historial" />
+        <StatCard label="Cajero actual" value="Sin caja" helper="Abra caja desde el modulo de Caja" />
+        <StatCard label="Metodos" value="Efectivo, transferencia, tarjeta" helper="Resumen por metodo disponible" />
+        <StatCard label="Diferencias" value="0" helper="Cierres cuadrados; revise auditoria si hay alertas" />
+      </div>
+
+      <CashSessionReportTab
+        canExport={canViewManagerial}
+        cashSession={cashSessionReport}
+        cashReportId={cashReportId}
+        loading={false}
+        exporting={false}
+        error={cashError}
+        onCashReportIdChange={setCashReportId}
+        onExport={() => {}}
+        onSubmit={(event) => {
+          event.preventDefault();
+          void loadCashReport();
+        }}
+      />
+
+      {cashSessionReport ? (
+        <div className="flex flex-col gap-5">
+          <Card className="border-operational-border bg-operational-surface shadow-operational">
+            <CardHeader title="Resumen" />
+            <CardContent>
+              <pre className="overflow-x-auto rounded border border-border bg-muted/30 p-3 text-xs">
+                {JSON.stringify(
+                  {
+                    id: cashSessionReport.cash_session?.id,
+                    status: cashSessionReport.cash_session?.status,
+                    opening_amount: cashSessionReport.cash_session?.opening_amount,
+                    closing_amount: cashSessionReport.cash_session?.closing_amount,
+                    difference_amount: cashSessionReport.cash_session?.difference_amount,
+                    totals_by_method: cashSessionReport.totals_by_method,
+                  },
+                  null,
+                  2,
+                )}
+              </pre>
+            </CardContent>
+          </Card>
+          {!canViewCash && !canViewManagerial ? (
+            <EmptyState
+              title="Reporte de caja no disponible"
+              description="Este usuario no tiene permiso para consultar cajas."
             />
-          </TabsContent>
-
-          <TabsContent value="mensual">
-            <MonthlyReportTab
-              canExport={canExport}
-              error={monthlyError}
-              loading={classicLoading}
-              month={monthlyMonth}
-              monthly={monthly}
-              exporting={exportInProgress}
-              onExport={() => void runReportExport('monthly-excel', () => downloadBackendExport(monthlyRangeFilters(monthlyMonth, monthly)))}
-              onExportPdf={() => void runReportExport('monthly-pdf', () => downloadBackendPdf(monthlyRangeFilters(monthlyMonth, monthly)))}
-              onMonthChange={setMonthlyMonth}
-              onSubmit={handleMonthlySubmit}
-            />
-          </TabsContent>
-
-          <TabsContent value="rango">
-            <div className="space-y-4">
-              {rangeError ? (
-                <Alert variant="destructive" title="No se pudo cargar el rango">
-                  {rangeError}
-                </Alert>
-              ) : null}
-              <IncomeReportTab
-                canExport={canExport}
-                dateFrom={dateFrom}
-                dateTo={dateTo}
-                categoryId={categoryId}
-                areaId={areaId}
-                cashSessionId={cashSessionId}
-                cashierId={cashierId}
-                method={method}
-                status={status}
-                categoryOptions={categoryOptions}
-                areaOptions={areaOptions}
-                cashSessionOptions={cashSessionOptions}
-                loading={classicLoading}
-                exporting={exportInProgress}
-                income={income}
-                categories={categories}
-                areas={areas}
-                onDateFromChange={setDateFrom}
-                onDateToChange={setDateTo}
-                onCategoryChange={setCategoryId}
-                onAreaChange={setAreaId}
-                onCashSessionChange={setCashSessionId}
-                onCashierChange={setCashierId}
-                onMethodChange={setMethod}
-                onExport={() => void runReportExport('range-excel', () => downloadBackendExport(reportFilters()))}
-                onExportPdf={() => void runReportExport('range-pdf', () => downloadBackendPdf(reportFilters()))}
-                onStatusChange={setStatus}
-                onSubmit={loadRangeReports}
-              />
-            </div>
-          </TabsContent>
-
-          <TabsContent value="tendencia">
-            {report ? (
-              <div className="flex flex-col gap-5">
-                <TrendChart report={report} />
-                <DailyCashSummary report={report} cashSession={cashSession} />
-              </div>
-            ) : null}
-          </TabsContent>
-
-          <TabsContent value="metodos">
-            {report ? <PaymentMethodPanel report={report} /> : null}
-          </TabsContent>
-
-          <TabsContent value="servicios">
-            <div className="flex flex-col gap-5">
-              {report ? <ServiceRanking report={report} /> : null}
-              <ServiceSalesTab
-                canExport={canExport}
-                dateFrom={dateFrom}
-                dateTo={dateTo}
-                categories={categories}
-                serviceSales={serviceSales}
-                onDateFromChange={setDateFrom}
-                onDateToChange={setDateTo}
-                exporting={exportInProgress}
-                onExport={() => void runReportExport('services-excel', () => downloadBackendExport(reportFilters()))}
-                onExportPdf={() => void runReportExport('services-pdf', () => downloadBackendPdf(reportFilters()))}
-                onSubmit={loadRangeReports}
-              />
-            </div>
-          </TabsContent>
-
-          <TabsContent value="caja">
-            <div className="flex flex-col gap-5">
-              {report ? <CashReconciliationPanel report={report} /> : null}
-              {canViewCashSessionReport ? (
-                <CashSessionReportTab
-                  canExport={canExport}
-                  cashSession={cashSessionReport}
-                  cashReportId={cashReportId}
-                  loading={classicLoading}
-                  exporting={exportInProgress}
-                  error={cashError}
-                  onCashReportIdChange={setCashReportId}
-                  onExport={() => void runReportExport('cash-excel', () => downloadBackendExport(cashSessionExportFilters(cashReportId, cashSessionReport)))}
-                  onSubmit={handleCashSubmit}
-                />
-              ) : (
-                <EmptyState
-                  title="Reporte de caja no disponible"
-                  description="Este usuario no tiene permiso para consultar cajas."
-                />
-              )}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="cajeros">
-            {report ? <CashierTable report={report} /> : null}
-          </TabsContent>
-
-          <TabsContent value="pendientes">
-            {report ? <PendingAgingPanel report={report} /> : null}
-          </TabsContent>
-
-          <TabsContent value="anulaciones">
-            {report ? <VoidsReversalsPanel report={report} /> : null}
-          </TabsContent>
-
-          <TabsContent value="auditoria">
-            <div className="flex flex-col gap-5">
-              {report ? <AuditSummaryPanel report={report} /> : null}
-              <AuditoriaTab
-                canExport={canExport}
-                operations={operations}
-                dateFrom={dateFrom}
-                dateTo={dateTo}
-                onDateFromChange={setDateFrom}
-                onDateToChange={setDateTo}
-                exporting={exportInProgress}
-                onExport={() => void runReportExport('audit-excel', () => downloadBackendExport(reportFilters()))}
-                onExportPdf={() => void runReportExport('audit-pdf', () => downloadBackendPdf(reportFilters()))}
-                onSubmit={loadRangeReports}
-              />
-              <Card>
-                <CardContent className="text-xs text-muted-foreground">
-                  Eventos de auditoria basados en la pista inmutable (audit_logs). Los conteos reflejan
-                  el periodo seleccionado.
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="exportaciones">
-            <Card className="rounded-panel border-operational-border bg-operational-surface shadow-operational">
-              <CardContent className="flex flex-col gap-3 pt-5">
-                <header className="flex flex-col gap-1">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                    Salidas oficiales
-                  </p>
-                  <h2 className="text-base font-semibold text-foreground">Exportaciones formales</h2>
-                  <p className="text-sm text-muted-foreground">
-                    PDF ejecutivo y Excel contable usan los mismos totales del reporte mostrado en pantalla.
-                  </p>
-                </header>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={handleExportPdf}
-                    disabled={!canExport || isFetching || exportInProgress || !report || executiveRangeError !== null}
-                    className="rounded border border-border bg-card px-3 py-2 text-sm font-semibold hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {exportingReport === 'executive-pdf' ? 'Exportando PDF...' : 'Exportar PDF ejecutivo'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleExportExcel}
-                    disabled={!canExport || isFetching || exportInProgress || !report || executiveRangeError !== null}
-                    className="rounded border border-border bg-card px-3 py-2 text-sm font-semibold hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {exportingReport === 'executive-excel' ? 'Exportando Excel...' : 'Exportar Excel ejecutivo'}
-                  </button>
-                  <MetricsGlossary open={glossaryOpen} onOpenChange={setGlossaryOpen} />
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-
-      {!canViewManagerial && !canViewCashSessionReport ? (
-        <InfoPanel
-          tone="warning"
-          title="Sin permisos para reportes"
-          description="Su usuario no tiene acceso a la seccion ejecutiva ni a cajas. Solicite a un supervisor la revision de sus permisos."
-        />
+          ) : null}
+        </div>
       ) : null}
     </section>
   );
 }
 
-function DailyCashSummary({
-  report,
-  cashSession,
+function AuditSubRoute({
+  canViewManagerial,
+  canExport,
 }: {
-  report: ExecutiveReport;
-  cashSession: { id: number; opening_amount: string; expected_cash_amount?: string; status: string } | null | undefined;
+  canViewManagerial: boolean;
+  canExport: boolean;
+  onStatus: (message: string) => void;
 }) {
-  const summary = useMemo(() => {
-    const last7 = report.daily_trend.slice(-7);
-    const billedWeekCents = last7.reduce((acc, day) => acc + (parseCents(day.billed) ?? 0), 0);
-    const collectedWeekCents = last7.reduce((acc, day) => acc + (parseCents(day.collected) ?? 0), 0);
-    return { billedWeekCents, collectedWeekCents };
-  }, [report]);
+  const [preset, setPreset] = useState<PresetKey>('thisMonth');
+  const [filters, setFilters] = useState<ExecutiveReportFilters>(() => {
+    const initialRange = computePresetRange('thisMonth');
+    return { date_from: initialRange.from, date_to: initialRange.to };
+  });
+  const [appliedFilters, setAppliedFilters] = useState<ExecutiveReportFilters>(() => {
+    const initialRange = computePresetRange('thisMonth');
+    return { date_from: initialRange.from, date_to: initialRange.to };
+  });
+
+  const { data: report, isFetching, isError, refetch } = useExecutiveReport(
+    appliedFilters,
+    canViewManagerial,
+  );
+
+  if (!canViewManagerial) {
+    return (
+      <InfoPanel
+        tone="warning"
+        title="Sin permisos para auditoria"
+        description="Su usuario no tiene permisos para consultar el reporte de auditoria."
+      />
+    );
+  }
 
   return (
-    <Card>
-      <CardContent className="flex flex-col gap-3">
-        <header className="flex flex-col gap-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-            Lectura semanal
-          </p>
-          <p className="text-sm font-semibold text-foreground">
-            Ultimos 7 dias - {report.daily_trend.length} dias en el rango
-          </p>
-        </header>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="rounded border border-border bg-muted/40 p-3">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Facturado 7d</p>
-            <p className="mt-1 text-lg font-bold tabular-nums text-foreground" translate="no">
-              {formatLempirasUIFromCents(summary.billedWeekCents)}
-            </p>
-          </div>
-          <div className="rounded border border-border bg-muted/40 p-3">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Cobrado 7d</p>
-            <p className="mt-1 text-lg font-bold tabular-nums text-foreground" translate="no">
-              {formatLempirasUIFromCents(summary.collectedWeekCents)}
-            </p>
-          </div>
+    <section className="flex flex-col gap-5" aria-label="Reporte de auditoria">
+      <ReportFiltersPanel
+        filters={filters}
+        preset={preset}
+        onPresetChange={setPreset}
+        onChange={setFilters}
+        onRefresh={() => setAppliedFilters(filters)}
+        onExportPdf={() => {}}
+        onExportExcel={() => {}}
+        canExport={canExport}
+        loading={isFetching}
+        exporting={false}
+        rangeError={null}
+      />
+
+      {report ? (
+        <div className="flex flex-col gap-5">
+          <AuditSummaryPanel report={report} />
         </div>
-        {cashSession && cashSession.status === 'open' ? (
-          <p className="text-xs text-muted-foreground">
-            Caja abierta #{cashSession.id} con inicial L {Number(cashSession.opening_amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}.
-          </p>
-        ) : null}
-      </CardContent>
-    </Card>
+      ) : null}
+
+      {isError ? (
+        <ErrorState
+          title="No se pudo cargar la auditoria"
+          description="Reintente la carga del reporte."
+          action={
+            <button
+              type="button"
+              onClick={() => void refetch()}
+              className="rounded border border-border bg-card px-3 py-1.5 text-sm font-semibold hover:bg-muted"
+            >
+              Reintentar
+            </button>
+          }
+        />
+      ) : null}
+    </section>
   );
-}
-
-function monthlyRangeFilters(month: string, monthly: MonthlyReport | null): ReportFilters {
-  if (monthly?.month === month) {
-    return {
-      date_from: monthly.date_from,
-      date_to: monthly.date_to,
-    };
-  }
-
-  const [year, monthNumber] = month.split('-').map(Number);
-  if (!Number.isInteger(year) || !Number.isInteger(monthNumber) || monthNumber < 1 || monthNumber > 12) {
-    return {
-      date_from: today,
-      date_to: today,
-    };
-  }
-
-  return {
-    date_from: `${month}-01`,
-    date_to: localDateString(new Date(year, monthNumber, 0)),
-  };
-}
-
-function sameExecutiveFilters(left: ExecutiveReportFilters, right: ExecutiveReportFilters): boolean {
-  return left.date_from === right.date_from && left.date_to === right.date_to;
-}
-function cashSessionExportFilters(cashReportId: string, cashSession: CashSessionReport | null): ReportFilters {
-  const openedDate = cashSessionDate(cashSession?.cash_session.opened_at);
-  const closedDate = cashSessionDate(cashSession?.cash_session.closed_at);
-
-  return {
-    date_from: openedDate ?? today,
-    date_to: closedDate ?? openedDate ?? today,
-    cash_session_id: cashReportId || null,
-  };
-}
-
-function cashSessionDate(value: string | null | undefined): string | null {
-  return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value)
-    ? value.slice(0, 10)
-    : null;
 }
 
 function validateReportDateRange(dateFrom: string, dateTo: string, maxDays: number, scope: string): string | null {
@@ -894,3 +513,26 @@ function validateReportDateRange(dateFrom: string, dateTo: string, maxDays: numb
 
   return null;
 }
+
+function sameFilters(left: ExecutiveReportFilters, right: ExecutiveReportFilters): boolean {
+  return left.date_from === right.date_from && left.date_to === right.date_to;
+}
+
+async function runExecutiveExport<T>(
+  task: (filters: ExecutiveReportFilters) => Promise<T>,
+  filters: ExecutiveReportFilters,
+  onSuccess: (value: T) => void,
+  onError: (err: unknown) => void,
+  finalize: () => void,
+): Promise<void> {
+  try {
+    const result = await task(filters);
+    onSuccess(result);
+  } catch (err) {
+    onError(err);
+  } finally {
+    finalize();
+  }
+}
+
+

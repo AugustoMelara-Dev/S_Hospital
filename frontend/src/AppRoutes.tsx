@@ -160,7 +160,7 @@ export function AppRoutes({
         }
       />
       <Route
-        path={appRoutes.reports.path}
+        path={`${appRoutes.reports.path}/*`}
         element={
           <PermissionGate
             allowed={canAccessRoute(appRoutes.reports, user.permissions)}
@@ -176,6 +176,10 @@ export function AppRoutes({
             </Suspense>
           </PermissionGate>
         }
+      />
+      <Route
+        path={appRoutes.reports.path}
+        element={<Navigate to={`${appRoutes.reports.path}/executive`} replace />}
       />
       <Route
         path={appRoutes.backups.path}
