@@ -8,6 +8,26 @@ import { MobileNavigation } from './components/MobileNavigation';
 import { SidebarContent } from './Sidebar';
 import { Topbar } from './Topbar';
 
+const SIDEBAR_COLLAPSED_KEY = 's-hospital-sidebar-collapsed';
+
+function readSidebarCollapsed(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function writeSidebarCollapsed(value: boolean): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, value ? '1' : '0');
+  } catch {
+    // ignore storage errors (private mode, etc.)
+  }
+}
+
 type AppShellProps = {
   cashSession: CashSession | null;
   children: React.ReactNode;
@@ -32,12 +52,9 @@ export function AppShell({
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
-  const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => readSidebarCollapsed());
+  const mobileMenuButtonRef = useRef<HTMLButtonElement | null>(null);
 
-  // Wire real-time sync (WebSocket/Soketi) when the user is logged in.
-  // Mounted once at the shell so every authenticated route benefits
-  // from cross-PC invalidations of invoices, dashboard reports and
-  // cash session queries.
   useBroadcastSync();
 
   useEffect(() => {
@@ -49,6 +66,10 @@ export function AppShell({
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    writeSidebarCollapsed(sidebarCollapsed);
+  }, [sidebarCollapsed]);
 
   const visibleNavigation = getVisibleNavigation(user.permissions);
   const activeItem = getActiveNavigationItem(location.pathname);
@@ -75,17 +96,27 @@ export function AppShell({
         triggerRef={mobileMenuButtonRef}
       />
 
-      <aside className="print-hidden hidden lg:fixed lg:inset-y-0 lg:z-20 lg:flex lg:w-72 lg:flex-col">
+      <aside
+        data-slot="app-sidebar"
+        data-sidebar-collapsed={sidebarCollapsed ? 'true' : 'false'}
+        className={
+          sidebarCollapsed
+            ? 'print-hidden hidden lg:fixed lg:inset-y-0 lg:z-20 lg:flex lg:w-16 lg:flex-col lg:border-r lg:border-sidebar-border lg:bg-sidebar lg:text-sidebar-foreground lg:shadow-operational'
+            : 'print-hidden hidden lg:fixed lg:inset-y-0 lg:z-20 lg:flex lg:w-64 lg:flex-col lg:border-r lg:border-sidebar-border lg:bg-sidebar lg:text-sidebar-foreground lg:shadow-operational'
+        }
+      >
         <SidebarContent
           user={user}
           cashSession={cashSession}
           visibleNavigation={visibleNavigation}
           activeItem={activeItem}
           logoUrl={logoUrl}
+          collapsed={sidebarCollapsed}
+          onToggleCollapsed={() => setSidebarCollapsed((value) => !value)}
         />
       </aside>
 
-      <div className="flex min-h-[100dvh] min-w-0 flex-col lg:ml-72">
+      <div className="flex min-h-[100dvh] min-w-0 flex-col lg:ml-16 lg:data-[sidebar-collapsed=false]:ml-64" data-sidebar-collapsed={sidebarCollapsed ? 'true' : 'false'}>
         <Topbar
           cashSession={cashSession}
           user={user}
@@ -97,11 +128,13 @@ export function AppShell({
           onOpenMobileMenu={() => setMobileMenuOpen(true)}
           onOpenGuide={() => setGuideOpen(true)}
           onLogout={onLogout}
+          onToggleSidebar={() => setSidebarCollapsed((value) => !value)}
+          sidebarCollapsed={sidebarCollapsed}
         />
 
         <main
           id="main-content"
-          className="min-w-0 flex-1 scroll-mt-20 px-4 py-5 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background lg:px-7 lg:py-7"
+          className="min-w-0 flex-1 scroll-mt-20 px-4 py-5 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background lg:px-6 lg:py-6"
           tabIndex={-1}
         >
           <div className="mx-auto flex max-w-[1440px] flex-col gap-5">{children}</div>

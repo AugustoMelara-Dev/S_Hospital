@@ -1,4 +1,4 @@
-import { HelpCircle, Menu, Moon, Sun } from 'lucide-react';
+import { HelpCircle, Menu, Moon, PanelLeftClose, PanelLeftOpen, Sun } from 'lucide-react';
 import { type RefObject, useEffect, useState } from 'react';
 import { Button } from '../components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
@@ -23,6 +23,8 @@ interface TopbarProps {
   onOpenMobileMenu: () => void;
   onOpenGuide: () => void;
   onLogout: () => void;
+  onToggleSidebar: () => void;
+  sidebarCollapsed: boolean;
 }
 
 export function Topbar({
@@ -36,6 +38,8 @@ export function Topbar({
   onOpenMobileMenu,
   onOpenGuide,
   onLogout,
+  onToggleSidebar,
+  sidebarCollapsed,
 }: TopbarProps) {
   const { setTheme, isDark } = useTheme();
   const { isOnline, lastCheck } = useServerStatus();
@@ -58,7 +62,7 @@ export function Topbar({
 
   return (
     <TooltipProvider>
-      <header className="print-hidden sticky top-0 z-10 flex min-h-16 items-center gap-3 border-b border-operational-border bg-operational-surface/98 px-3 text-card-foreground shadow-sm lg:px-7">
+      <header className="print-hidden sticky top-0 z-10 flex min-h-14 items-center gap-2 border-b border-operational-border bg-operational-surface/98 px-3 text-card-foreground shadow-sm lg:px-5">
         <Button
           ref={mobileMenuButtonRef}
           type="button"
@@ -71,30 +75,43 @@ export function Topbar({
           <Menu data-icon="inline-start" aria-hidden="true" />
         </Button>
 
+        {!isMinimalTopbar ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="hidden shrink-0 lg:inline-flex"
+            onClick={onToggleSidebar}
+            aria-pressed={sidebarCollapsed}
+            aria-label={sidebarCollapsed ? 'Expandir menu lateral' : 'Colapsar menu lateral'}
+          >
+            {sidebarCollapsed ? (
+              <PanelLeftOpen data-icon="inline-start" aria-hidden="true" />
+            ) : (
+              <PanelLeftClose data-icon="inline-start" aria-hidden="true" />
+            )}
+          </Button>
+        ) : null}
+
         <div className="min-w-0 flex-1 py-2">
-          {!isMinimalTopbar && (
-            <>
-              <p
-                className="hidden truncate text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground md:block"
-                title={hospitalName}
-              >
-                {hospitalName}
-              </p>
-              <p className="truncate text-base font-semibold leading-tight text-foreground sm:text-lg" title={currentTitle}>
-                {currentTitle}
-              </p>
-            </>
-          )}
-          {!isMinimalTopbar && (
+          {!isMinimalTopbar ? (
+            <p className="hidden truncate text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground md:block" title={hospitalName}>
+              {hospitalName}
+            </p>
+          ) : null}
+          <p className="truncate text-sm font-semibold leading-tight text-foreground sm:text-base" title={currentTitle}>
+            {currentTitle}
+          </p>
+          {!isMinimalTopbar ? (
             <AppBreadcrumbs
               crumbs={crumbs}
               canLinkTo={canLinkToBreadcrumb}
-              className="mt-1 hidden w-fit max-w-full rounded-md border border-operational-border bg-operational-panel/70 px-2 py-1 shadow-sm sm:block"
+              className="mt-1 hidden w-fit max-w-full text-xs sm:block"
             />
-          )}
+          ) : null}
         </div>
 
-        {!isMinimalTopbar && (
+        {!isMinimalTopbar ? (
           <OperationalStatus
             cashSession={cashSession}
             isOnline={isOnline}
@@ -103,40 +120,44 @@ export function Topbar({
             now={now}
             status={status}
           />
-        )}
+        ) : null}
 
         <div className="flex shrink-0 items-center gap-1">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="hidden sm:inline-flex"
-                onClick={onOpenGuide}
-                aria-label="Abrir ayuda"
-              >
-                <HelpCircle data-icon="inline-start" aria-hidden="true" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Ayuda operativa</TooltipContent>
-          </Tooltip>
+          {!isMinimalTopbar ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="hidden sm:inline-flex"
+                  onClick={onOpenGuide}
+                  aria-label="Abrir ayuda"
+                >
+                  <HelpCircle data-icon="inline-start" aria-hidden="true" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Ayuda operativa</TooltipContent>
+            </Tooltip>
+          ) : null}
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="hidden sm:inline-flex"
-                onClick={toggleTheme}
-                aria-label={isDark ? 'Cambiar a claro' : 'Cambiar a oscuro'}
-              >
-                {isDark ? <Sun data-icon="inline-start" aria-hidden="true" /> : <Moon data-icon="inline-start" aria-hidden="true" />}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>{isDark ? 'Cambiar a claro' : 'Cambiar a oscuro'}</TooltipContent>
-          </Tooltip>
+          {!isMinimalTopbar ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="hidden sm:inline-flex"
+                  onClick={toggleTheme}
+                  aria-label={isDark ? 'Cambiar a claro' : 'Cambiar a oscuro'}
+                >
+                  {isDark ? <Sun data-icon="inline-start" aria-hidden="true" /> : <Moon data-icon="inline-start" aria-hidden="true" />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{isDark ? 'Cambiar a claro' : 'Cambiar a oscuro'}</TooltipContent>
+            </Tooltip>
+          ) : null}
 
           <UserMenu
             hospitalName={hospitalName}
