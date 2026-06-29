@@ -13,7 +13,7 @@ class AuditLogger
      * @param  array<string, mixed>|null  $oldValues
      * @param  array<string, mixed>|null  $newValues
      */
-    public function log(
+    public static function log(
         string $action,
         Model|string $entity,
         ?int $entityId = null,

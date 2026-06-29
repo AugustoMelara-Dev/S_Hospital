@@ -4,15 +4,104 @@ namespace App\Http\Requests\InstitutionalReceipts;
 
 use App\Models\ReceiptPrintProfile;
 use App\Models\ReceiptProfileAssignment;
+use App\Support\AuditLogger;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 class UpdateReceiptPrintProfileRequest extends FormRequest
 {
+    /**
+     * @var list<string>
+     */
+    public const ADVANCED_FIELDS = [
+        'width_mm',
+        'height_mm',
+        'margin_top_mm',
+        'margin_right_mm',
+        'margin_bottom_mm',
+        'margin_left_mm',
+        'font_family',
+        'font_scale',
+    ];
+
     public function authorize(): bool
     {
-        return $this->user()?->can('receipt_settings.update') === true;
+        if ($this->user()?->can('receipt_settings.update') !== true) {
+            return false;
+        }
+
+        $payload = $this->all();
+        $hasAdvanced = false;
+        $present = [];
+
+        foreach (self::ADVANCED_FIELDS as $key) {
+            if (array_key_exists($key, $payload)) {
+                $hasAdvanced = true;
+                $present[] = $key;
+            }
+        }
+
+        if (! $hasAdvanced) {
+            return true;
+        }
+
+        if ($this->user()->can('receipt_settings.advanced')) {
+            return true;
+        }
+
+        $profile = $this->route('profile');
+
+        AuditLogger::log(
+            action: 'receipt_settings.advanced_denied',
+            entity: ReceiptPrintProfile::class,
+            entityId: $profile instanceof ReceiptPrintProfile ? $profile->getKey() : null,
+            request: $this,
+            newValues: ['attempted_fields' => $present],
+            reason: 'Intento de modificar campos avanzados sin permiso.',
+            result: 'denied',
+        );
+
+        throw new HttpResponseException(new JsonResponse([
+            'message' => 'Este cambio requiere el permiso receipt_settings.advanced.',
+            'errors' => [
+                'receipt_settings.advanced' => [
+                    'No tiene permiso para modificar margenes, tamano, fuente o escala del recibo. Solicite soporte tecnico.',
+                ],
+            ],
+        ], 403));
+    }
+
+    public function hasAdvancedFields(): bool
+    {
+        $payload = $this->all();
+
+        foreach (self::ADVANCED_FIELDS as $key) {
+            if (array_key_exists($key, $payload)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function advancedFieldsPresent(): array
+    {
+        $payload = $this->all();
+        $present = [];
+
+        foreach (self::ADVANCED_FIELDS as $key) {
+            if (array_key_exists($key, $payload)) {
+                $present[] = $key;
+            }
+        }
+
+        return $present;
     }
 
     /**
@@ -20,7 +109,7 @@ class UpdateReceiptPrintProfileRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
+        $rules = [
             'name' => ['sometimes', 'required', 'string', 'max:120'],
             'paper_kind' => ['sometimes', 'required', Rule::in([
                 'custom_mm',
@@ -30,16 +119,8 @@ class UpdateReceiptPrintProfileRequest extends FormRequest
                 'thermal_80mm',
                 'thermal_58mm',
             ])],
-            'width_mm' => ['sometimes', 'required', 'numeric', 'min:1', 'max:500', 'decimal:0,2'],
-            'height_mm' => ['sometimes', 'required', 'numeric', 'min:1', 'max:500', 'decimal:0,2'],
-            'margin_top_mm' => ['sometimes', 'required', 'numeric', 'min:0', 'max:50', 'decimal:0,2'],
-            'margin_right_mm' => ['sometimes', 'required', 'numeric', 'min:0', 'max:50', 'decimal:0,2'],
-            'margin_bottom_mm' => ['sometimes', 'required', 'numeric', 'min:0', 'max:50', 'decimal:0,2'],
-            'margin_left_mm' => ['sometimes', 'required', 'numeric', 'min:0', 'max:50', 'decimal:0,2'],
             'orientation' => ['sometimes', 'required', Rule::in(['landscape', 'portrait'])],
             'template_code' => ['sometimes', 'required', 'string', 'max:80', Rule::in(['institutional_classic'])],
-            'font_family' => ['nullable', 'string', 'max:120'],
-            'font_scale' => ['sometimes', 'required', 'numeric', 'min:0.70', 'max:1.30', 'decimal:0,2'],
             'copies_mode' => ['sometimes', 'required', Rule::in(['original_only', 'original_first', 'original_first_second'])],
             'show_copy_legend' => ['sometimes', 'required', 'boolean'],
             'show_physical_seal_space' => ['sometimes', 'required', 'boolean'],
@@ -48,6 +129,19 @@ class UpdateReceiptPrintProfileRequest extends FormRequest
             'active' => ['sometimes', 'required', 'boolean'],
             'is_global_default' => ['sometimes', 'required', 'boolean'],
         ];
+
+        if ($this->user()?->can('receipt_settings.advanced') === true) {
+            $rules['width_mm'] = ['sometimes', 'required', 'numeric', 'min:1', 'max:500', 'decimal:0,2'];
+            $rules['height_mm'] = ['sometimes', 'required', 'numeric', 'min:1', 'max:500', 'decimal:0,2'];
+            $rules['margin_top_mm'] = ['sometimes', 'required', 'numeric', 'min:0', 'max:50', 'decimal:0,2'];
+            $rules['margin_right_mm'] = ['sometimes', 'required', 'numeric', 'min:0', 'max:50', 'decimal:0,2'];
+            $rules['margin_bottom_mm'] = ['sometimes', 'required', 'numeric', 'min:0', 'max:50', 'decimal:0,2'];
+            $rules['margin_left_mm'] = ['sometimes', 'required', 'numeric', 'min:0', 'max:50', 'decimal:0,2'];
+            $rules['font_family'] = ['nullable', 'string', 'max:120'];
+            $rules['font_scale'] = ['sometimes', 'required', 'numeric', 'min:0.70', 'max:1.30', 'decimal:0,2'];
+        }
+
+        return $rules;
     }
 
     public function after(): array
@@ -57,36 +151,41 @@ class UpdateReceiptPrintProfileRequest extends FormRequest
                 /** @var ReceiptPrintProfile $profile */
                 $profile = $this->route('profile');
                 $paperKind = (string) $this->input('paper_kind', $profile->paper_kind);
-                $width = (float) $this->input('width_mm', $profile->width_mm);
-                $height = (float) $this->input('height_mm', $profile->height_mm);
                 $active = $this->boolean('active', $profile->active);
                 $isGlobalDefault = $this->boolean('is_global_default', $profile->is_global_default);
 
-                if ($paperKind === 'custom_mm') {
-                    if ($width < 80 || $width > 300) {
-                        $validator->errors()->add('width_mm', 'El ancho personalizado debe estar entre 80 mm y 300 mm.');
+                $userHasAdvanced = $this->user()?->can('receipt_settings.advanced') === true;
+
+                if ($userHasAdvanced) {
+                    $width = (float) $this->input('width_mm', $profile->width_mm);
+                    $height = (float) $this->input('height_mm', $profile->height_mm);
+
+                    if ($paperKind === 'custom_mm') {
+                        if ($width < 80 || $width > 300) {
+                            $validator->errors()->add('width_mm', 'El ancho personalizado debe estar entre 80 mm y 300 mm.');
+                        }
+
+                        if ($height < 50 || $height > 220) {
+                            $validator->errors()->add('height_mm', 'El alto personalizado debe estar entre 50 mm y 220 mm.');
+                        }
                     }
 
-                    if ($height < 50 || $height > 220) {
-                        $validator->errors()->add('height_mm', 'El alto personalizado debe estar entre 50 mm y 220 mm.');
-                    }
-                }
+                    $fixedDimensions = [
+                        'half_letter_landscape' => ['width' => 215.90, 'height' => 139.70],
+                        'a5_landscape' => ['width' => 210.00, 'height' => 148.00],
+                        'letter_landscape' => ['width' => 279.40, 'height' => 215.90],
+                    ];
 
-                $fixedDimensions = [
-                    'half_letter_landscape' => ['width' => 215.90, 'height' => 139.70],
-                    'a5_landscape' => ['width' => 210.00, 'height' => 148.00],
-                    'letter_landscape' => ['width' => 279.40, 'height' => 215.90],
-                ];
+                    if (isset($fixedDimensions[$paperKind])) {
+                        $expected = $fixedDimensions[$paperKind];
 
-                if (isset($fixedDimensions[$paperKind])) {
-                    $expected = $fixedDimensions[$paperKind];
+                        if (abs($width - $expected['width']) > 0.01) {
+                            $validator->errors()->add('width_mm', 'El ancho de este perfil estandar debe coincidir con el tamano real del papel.');
+                        }
 
-                    if (abs($width - $expected['width']) > 0.01) {
-                        $validator->errors()->add('width_mm', 'El ancho de este perfil estandar debe coincidir con el tamano real del papel.');
-                    }
-
-                    if (abs($height - $expected['height']) > 0.01) {
-                        $validator->errors()->add('height_mm', 'El alto de este perfil estandar debe coincidir con el tamano real del papel.');
+                        if (abs($height - $expected['height']) > 0.01) {
+                            $validator->errors()->add('height_mm', 'El alto de este perfil estandar debe coincidir con el tamano real del papel.');
+                        }
                     }
                 }
 

@@ -915,7 +915,7 @@ export const PAPER_PROFILES: readonly PaperProfile[] = [
   { code: '58mm', label: 'Ticket 58 mm', size: '58 mm auto', description: 'Termica compacta' },
 ] as const;
 
-type PaperProfileSelectorProps = HTMLAttributes<HTMLDivElement> & {
+type PaperProfileSelectorProps = Omit<HTMLAttributes<HTMLDivElement>, 'onChange'> & {
   disabled?: boolean;
   helperText?: string;
   onChange: (code: PaperProfile['code']) => void;

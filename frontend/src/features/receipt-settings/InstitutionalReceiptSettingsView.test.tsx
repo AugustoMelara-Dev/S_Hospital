@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { InstitutionalReceiptSettingsView } from './InstitutionalReceiptSettingsView';
 import type { InstitutionalReceiptSettings, ReceiptPrintProfile } from '@/lib/api';
 
@@ -109,37 +109,88 @@ function renderView() {
   );
 }
 
-function activateTab(name: string) {
-  const tab = screen.getByRole('tab', { name });
+async function activateTab(name: string) {
+  const tab = await screen.findByRole('tab', { name });
   fireEvent.mouseDown(tab, { button: 0, ctrlKey: false });
   fireEvent.mouseUp(tab, { button: 0, ctrlKey: false });
   fireEvent.click(tab);
 }
 
 describe('InstitutionalReceiptSettingsView', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('shows the required institutional paper profiles and default single original copy mode', async () => {
     renderView();
 
     expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
-    activateTab('Papel y copias');
+    await activateTab('Papel y copias');
 
     expect(await screen.findByRole('button', { name: /Recibo pequeño personalizado/ })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Media carta horizontal/ })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: /A5 horizontal/ })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Carta horizontal/ })).toBeInTheDocument();
-    expect(screen.getAllByText('Solo original').length).toBeGreaterThan(0);
-    expect(screen.getByText(/perfiles institucionales fijos usan medidas sembradas/i)).toBeInTheDocument();
+
+    expect(screen.getByText(/el hospital elige el papel/i)).toBeInTheDocument();
+    expect(screen.getByText(/los margenes y el tamano se calculan automaticamente/i)).toBeInTheDocument();
+
+    expect(screen.getAllByText(/Solo original/i).length).toBeGreaterThan(0);
+
+    expect(screen.getByText(/modo soporte tecnico/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /mostrar ajustes avanzados/i })).toBeInTheDocument();
+
     expect(screen.getByText(/Global no requiere ID/i)).toBeInTheDocument();
     expect(screen.getByText(/No hay asignaciones específicas/i)).toBeInTheDocument();
+  });
+
+  it('never exposes manual paper fields in the normal flow', async () => {
+    renderView();
+    await activateTab('Papel y copias');
+    await screen.findByText(/el hospital elige el papel/i);
+
+    [
+      'Ancho mm',
+      'Alto mm',
+      'Fuente',
+      'Escala',
+      'Margen sup. (mm)',
+      'Margen der. (mm)',
+      'Margen inf. (mm)',
+      'Margen izq. (mm)',
+    ].forEach((label) => {
+      expect(screen.queryByLabelText(label)).not.toBeInTheDocument();
+    });
+  });
+
+  it('reveals manual fields only for the small custom receipt and only after expanding the support-technical accordion', async () => {
+    renderView();
+    await activateTab('Papel y copias');
+
+    await screen.findByText(/mostrar ajustes avanzados/i);
+
+    expect(screen.queryByLabelText('Ancho mm')).not.toBeInTheDocument();
+
+    const customProfileButton = await screen.findByRole('button', { name: /Recibo pequeño personalizado/ });
+    fireEvent.click(customProfileButton);
+
+    const toggle = await screen.findByRole('button', { name: /mostrar ajustes avanzados/i });
+    expect(toggle).not.toBeDisabled();
+
+    fireEvent.click(toggle);
+
+    expect(await screen.findByLabelText('Ancho mm')).toBeInTheDocument();
+    expect(await screen.findByLabelText('Margen sup. (mm)')).toBeInTheDocument();
+    expect(await screen.findByText(/Cambios riesgosos/i)).toBeInTheDocument();
   });
 
   it('explains sensitive receipt numbering before saving a series', async () => {
     renderView();
 
     expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
-    activateTab('Serie');
+    await activateTab('Serie');
 
-    expect(screen.getByText(/correlativo sensible/i)).toBeInTheDocument();
+    expect(await screen.findByText(/correlativo sensible/i)).toBeInTheDocument();
     expect(screen.getByText(/solo con autorización documentada/i)).toBeInTheDocument();
     expect(screen.getByText(/próximo recibo usará este valor \+ 1/i)).toBeInTheDocument();
   });
@@ -149,7 +200,7 @@ describe('InstitutionalReceiptSettingsView', () => {
     renderView();
 
     expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
-    activateTab('Papel y copias');
+    await activateTab('Papel y copias');
     fireEvent.click(await screen.findByRole('button', { name: /Imprimir prueba/ }));
 
     await waitFor(() => {

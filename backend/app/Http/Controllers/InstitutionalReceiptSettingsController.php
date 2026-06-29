@@ -16,6 +16,7 @@ use App\Models\FiscalSetting;
 use App\Models\InstitutionalReceiptSeries;
 use App\Models\ReceiptPrintProfile;
 use App\Models\ReceiptProfileAssignment;
+use App\Support\AuditLogger;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -169,6 +170,26 @@ class InstitutionalReceiptSettingsController extends Controller
 
     public function updatePrintProfile(UpdateReceiptPrintProfileRequest $request, ReceiptPrintProfile $profile): JsonResponse
     {
+        if ($request->hasAdvancedFields() && ! $request->user()->can('receipt_settings.advanced')) {
+            AuditLogger::log(
+                action: 'receipt_settings.advanced_denied',
+                entity: $profile,
+                request: $request,
+                newValues: ['attempted_fields' => $request->advancedFieldsPresent()],
+                reason: 'Intento de modificar campos avanzados sin permiso.',
+                result: 'denied',
+            );
+
+            return response()->json([
+                'message' => 'Este cambio requiere el permiso receipt_settings.advanced.',
+                'errors' => [
+                    'receipt_settings.advanced' => [
+                        'No tiene permiso para modificar margenes, tamano, fuente o escala del recibo. Solicite soporte tecnico.',
+                    ],
+                ],
+            ], 403);
+        }
+
         $profile = DB::transaction(function () use ($request, $profile): ReceiptPrintProfile {
             $oldValues = $this->profileAuditPayload($profile);
             $values = $request->validated();

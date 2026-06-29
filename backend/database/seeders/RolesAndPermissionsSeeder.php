@@ -33,6 +33,7 @@ class RolesAndPermissionsSeeder extends Seeder
         'receipts.print_test',
         'receipt_settings.view',
         'receipt_settings.update',
+        'receipt_settings.advanced',
         'reports.view',
         'reports.managerial.view',
         'reports.cash_session.view',
@@ -110,6 +111,9 @@ class RolesAndPermissionsSeeder extends Seeder
 
         Role::findOrCreate('soporte_tecnico', 'web')->syncPermissions($permissions->whereIn('name', [
             'system.status.view',
+            'receipt_settings.view',
+            'receipt_settings.update',
+            'receipt_settings.advanced',
         ]));
 
         Role::findOrCreate('cajero', 'web')->syncPermissions($permissions->whereIn('name', [

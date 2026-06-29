@@ -47,14 +47,6 @@ export const receiptSeriesSchema = z.object({
 });
 
 export const receiptProfileSchema = z.object({
-  width_mm: z.number().min(1).max(500),
-  height_mm: z.number().min(1).max(500),
-  margin_top_mm: z.number().min(0).max(50),
-  margin_right_mm: z.number().min(0).max(50),
-  margin_bottom_mm: z.number().min(0).max(50),
-  margin_left_mm: z.number().min(0).max(50),
-  font_family: z.string().max(120).optional().nullable(),
-  font_scale: z.number().min(0.7).max(1.3),
   copies_mode: z.enum(['original_only', 'original_first', 'original_first_second']),
   show_copy_legend: z.boolean(),
   show_physical_seal_space: z.boolean(),
@@ -63,6 +55,21 @@ export const receiptProfileSchema = z.object({
   is_global_default: z.boolean(),
 });
 
+export const receiptProfileAdvancedSchema = z.object({
+  width_mm: z.number().min(1).max(500),
+  height_mm: z.number().min(1).max(500),
+  margin_top_mm: z.number().min(0).max(50),
+  margin_right_mm: z.number().min(0).max(50),
+  margin_bottom_mm: z.number().min(0).max(50),
+  margin_left_mm: z.number().min(0).max(50),
+  font_family: z.string().max(120).optional().nullable(),
+  font_scale: z.number().min(0.7).max(1.3),
+  paper_kind: z.string().min(1).max(64),
+  orientation: z.enum(['landscape', 'portrait']),
+  template_code: z.string().min(1).max(80),
+});
+
 export type ReceiptInstitutionForm = z.infer<typeof receiptInstitutionSchema>;
 export type ReceiptSeriesForm = z.infer<typeof receiptSeriesSchema>;
 export type ReceiptProfileForm = z.infer<typeof receiptProfileSchema>;
+export type ReceiptProfileAdvancedForm = z.infer<typeof receiptProfileAdvancedSchema>;
