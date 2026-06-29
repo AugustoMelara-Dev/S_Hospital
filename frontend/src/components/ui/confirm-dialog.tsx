@@ -1,6 +1,7 @@
 import * as AlertDialogPrimitive from '@radix-ui/react-alert-dialog';
-import { type ReactNode } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import { Button } from './button';
+import { Textarea } from './textarea';
 
 type ConfirmDialogProps = {
   cancelLabel?: string;
@@ -10,8 +11,11 @@ type ConfirmDialogProps = {
   danger?: boolean;
   cancelDisabled?: boolean;
   onCancel: () => void;
-  onConfirm: () => void;
+  onConfirm: (reason: string | null) => void;
   open: boolean;
+  reasonHelpText?: string;
+  requireReasonTextarea?: boolean;
+  requireReasonMinLength?: number;
   title: string;
 };
 
@@ -25,13 +29,24 @@ export function ConfirmDialog({
   onCancel,
   onConfirm,
   open,
+  reasonHelpText,
+  requireReasonTextarea = false,
+  requireReasonMinLength = 10,
   title,
 }: ConfirmDialogProps) {
+  const reasonId = useId();
+  const errorId = useId();
+  const [reason, setReason] = useState('');
+  const trimmedReason = reason.trim();
+  const meetsLength = !requireReasonTextarea || trimmedReason.length >= requireReasonMinLength;
+  const canConfirm = !confirmDisabled && meetsLength;
+
   return (
     <AlertDialogPrimitive.Root
       open={open}
       onOpenChange={(nextOpen) => {
         if (!nextOpen && !cancelDisabled) {
+          setReason('');
           onCancel();
         }
       }}
@@ -53,13 +68,51 @@ export function ConfirmDialog({
               <div className="text-sm text-muted-foreground">{children}</div>
             </div>
 
+            {requireReasonTextarea ? (
+              <div data-slot="confirm-dialog-reason" className="flex flex-col gap-2">
+                <label htmlFor={reasonId} className="text-sm font-medium leading-tight text-foreground">
+                  Motivo <span className="text-destructive" aria-hidden="true">*</span>
+                </label>
+                <Textarea
+                  id={reasonId}
+                  name="confirm-reason"
+                  value={reason}
+                  onChange={(event) => setReason(event.target.value)}
+                  rows={3}
+                  required
+                  aria-required="true"
+                  aria-describedby={`${reasonId}-help ${meetsLength ? '' : errorId}`.trim()}
+                  aria-invalid={!meetsLength}
+                  placeholder="Describa el motivo de esta accion. Quedara registrado en auditoria."
+                />
+                <p id={`${reasonId}-help`} className="text-xs leading-5 text-muted-foreground">
+                  {reasonHelpText ?? `Minimo ${requireReasonMinLength} caracteres. Esta accion no podra deshacerse.`}
+                </p>
+                {!meetsLength ? (
+                  <p id={errorId} role="alert" className="text-xs font-medium text-destructive">
+                    Ingrese al menos {requireReasonMinLength} caracteres antes de continuar.
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+
             <div data-slot="confirm-dialog-footer" className="flex flex-wrap justify-end gap-2">
               <AlertDialogPrimitive.Cancel asChild>
                 <Button type="button" variant="secondary" onClick={onCancel} disabled={cancelDisabled}>
                   {cancelLabel}
                 </Button>
               </AlertDialogPrimitive.Cancel>
-              <Button type="button" variant={danger ? 'danger' : 'default'} onClick={onConfirm} disabled={confirmDisabled}>
+              <Button
+                type="button"
+                variant={danger ? 'danger' : 'default'}
+                onClick={() => {
+                  const value = requireReasonTextarea ? trimmedReason : null;
+                  setReason('');
+                  onConfirm(value);
+                }}
+                disabled={!canConfirm}
+                aria-disabled={!canConfirm}
+              >
                 {confirmLabel}
               </Button>
             </div>

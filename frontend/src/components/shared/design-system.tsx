@@ -1,18 +1,17 @@
+import { useId as useReactId } from 'react';
 import {
   AlertTriangle,
   Banknote,
-  Ban,
-  CheckCircle2,
-  Eye,
-  EyeOff,
-  Info,
-  LockKeyhole,
-  MonitorCheck,
-  Network,
-  ShieldAlert,
+  Check,
+  ReceiptText,
   type LucideIcon,
 } from 'lucide-react';
-import { forwardRef, useId, type ButtonHTMLAttributes, type HTMLAttributes, type ReactNode } from 'react';
+import {
+  forwardRef,
+  type ButtonHTMLAttributes,
+  type HTMLAttributes,
+  type ReactNode,
+} from 'react';
 import { cn } from '../../lib/utils';
 import { Badge } from '../ui/badge';
 
@@ -27,11 +26,11 @@ const toneStyles: Record<Tone, string> = {
 };
 
 const toneIcons: Record<Tone, LucideIcon> = {
-  neutral: Info,
-  info: Info,
-  success: CheckCircle2,
+  neutral: AlertTriangle,
+  info: AlertTriangle,
+  success: AlertTriangle,
   warning: AlertTriangle,
-  destructive: ShieldAlert,
+  destructive: AlertTriangle,
 };
 
 const receiptFormatClasses = {
@@ -300,8 +299,8 @@ export function ChartCard({
   title,
   ...props
 }: ChartCardProps) {
-  const titleId = useId();
-  const descriptionId = useId();
+  const titleId = useReactId();
+  const descriptionId = useReactId();
 
   return (
     <figure
@@ -397,6 +396,94 @@ export function StatGrid({ children, className, items, ...props }: StatGridProps
   );
 }
 
+type StatCardProps = HTMLAttributes<HTMLDivElement> & StatGridItem & {
+  align?: 'horizontal' | 'vertical';
+};
+
+export function StatCard({
+  align = 'horizontal',
+  className,
+  helper,
+  icon,
+  label,
+  tone = 'neutral',
+  value,
+  ...props
+}: StatCardProps) {
+  return (
+    <div
+      data-slot="stat-card"
+      className={cn(
+        'rounded-panel border border-operational-border bg-operational-surface p-4 shadow-sm',
+        toneStyles[tone],
+        className,
+      )}
+      {...props}
+    >
+      <div
+        className={cn(
+          'flex gap-3',
+          align === 'vertical' ? 'flex-col' : 'items-start justify-between',
+        )}
+      >
+        <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">{label}</p>
+          <p className="mt-2 text-xl font-semibold text-foreground tabular-nums">{value}</p>
+        </div>
+        {icon ? (
+          <span className={cn('shrink-0 text-hospital-primary [&_svg]:size-4', align === 'vertical' && 'self-end')}>
+            {icon}
+          </span>
+        ) : null}
+      </div>
+      {helper ? <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{helper}</p> : null}
+    </div>
+  );
+}
+
+type SectionCardProps = HTMLAttributes<HTMLElement> & PanelProps & {
+  as?: 'section' | 'div';
+};
+
+export const SectionCard = forwardRef<HTMLElement, SectionCardProps>(function SectionCard({
+  actions,
+  as = 'section',
+  children,
+  className,
+  description,
+  footer,
+  title,
+  ...props
+}, ref) {
+  const Comp = as as unknown as 'section';
+  return (
+    <Comp
+      ref={ref as never}
+      data-slot="section-card"
+      className={cn(
+        'rounded-panel border border-operational-border bg-operational-surface p-panel shadow-operational',
+        'focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background',
+        className,
+      )}
+      {...props}
+    >
+      {title || description || actions ? (
+        <div data-slot="section-card-header" className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            {title ? <h2 className="text-base font-semibold text-foreground">{title}</h2> : null}
+            {description ? <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{description}</p> : null}
+          </div>
+          {actions ? <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div> : null}
+        </div>
+      ) : null}
+      <div data-slot="section-card-content" className="min-w-0">
+        {children}
+      </div>
+      {footer ? <div data-slot="section-card-footer" className="mt-4 border-t border-operational-border pt-4">{footer}</div> : null}
+    </Comp>
+  );
+});
+
 type InfoPanelProps = HTMLAttributes<HTMLDivElement> & {
   actions?: ReactNode;
   description?: ReactNode;
@@ -454,7 +541,7 @@ export function OfflineState({
       {...props}
     >
       <div className="flex gap-3">
-        <Network data-icon aria-hidden="true" className="mt-0.5 size-5 shrink-0" />
+        <AlertTriangle data-icon aria-hidden="true" className="mt-0.5 size-5 shrink-0" />
         <div className="min-w-0">
           <p className="font-semibold">{title}</p>
           <p className="mt-1 text-sm leading-relaxed text-current/85">{description}</p>
@@ -482,17 +569,17 @@ export function PermissionState({
 }: PermissionStateProps) {
   const content = {
     denied: {
-      icon: LockKeyhole,
+      icon: AlertTriangle,
       title: 'Acceso restringido',
       description: 'Tu usuario no tiene permiso para esta accion.',
     },
     readonly: {
-      icon: Ban,
+      icon: AlertTriangle,
       title: 'Solo lectura',
       description: 'Puedes revisar esta informacion, pero no modificarla.',
     },
     unavailable: {
-      icon: ShieldAlert,
+      icon: AlertTriangle,
       title: 'Accion no disponible',
       description: 'La accion esta bloqueada por el estado actual.',
     },
@@ -641,22 +728,22 @@ export function PermissionBadge({
 }: PermissionBadgeProps) {
   const config = {
     granted: {
-      icon: CheckCircle2,
+      icon: Check,
       label: 'Permitido',
       variant: 'success' as const,
     },
     readonly: {
-      icon: Eye,
+      icon: Check,
       label: 'Solo lectura',
       variant: 'info' as const,
     },
     denied: {
-      icon: EyeOff,
+      icon: Check,
       label: 'Restringido',
       variant: 'warning' as const,
     },
     system: {
-      icon: ShieldAlert,
+      icon: AlertTriangle,
       label: 'Sistema',
       variant: 'secondary' as const,
     },
@@ -702,7 +789,7 @@ export function QuickActionTile({
       {...props}
     >
       <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-hospital-primary/10 text-hospital-primary group-hover:bg-hospital-primary group-hover:text-primary-foreground">
-        {icon ?? <MonitorCheck data-icon aria-hidden="true" className="size-4" />}
+        {icon ?? <ReceiptText data-icon aria-hidden="true" className="size-4" />}
       </span>
       <span className="min-w-0">
         <span className="block font-semibold text-foreground">{title}</span>
@@ -812,3 +899,87 @@ export function PrintPreviewFrame({
     </section>
   );
 }
+
+export type PaperProfile = {
+  code: 'carta' | 'media_carta' | 'a5' | '80mm' | '58mm';
+  description: string;
+  label: string;
+  size: string;
+};
+
+export const PAPER_PROFILES: readonly PaperProfile[] = [
+  { code: 'carta', label: 'Carta', size: 'US Letter 8.5 × 11 in', description: 'Formal, vertical' },
+  { code: 'media_carta', label: 'Media carta', size: '8.5 × 5.5 in', description: 'Recomendado por defecto' },
+  { code: 'a5', label: 'A5', size: '148 × 210 mm', description: 'Folleto apaisado' },
+  { code: '80mm', label: 'Ticket 80 mm', size: '80 mm auto', description: 'Termica' },
+  { code: '58mm', label: 'Ticket 58 mm', size: '58 mm auto', description: 'Termica compacta' },
+] as const;
+
+type PaperProfileSelectorProps = HTMLAttributes<HTMLDivElement> & {
+  disabled?: boolean;
+  helperText?: string;
+  onChange: (code: PaperProfile['code']) => void;
+  options?: readonly PaperProfile[];
+  value: PaperProfile['code'];
+};
+
+export function PaperProfileSelector({
+  className,
+  disabled = false,
+  helperText,
+  onChange,
+  options = PAPER_PROFILES,
+  value,
+  ...props
+}: PaperProfileSelectorProps) {
+  return (
+    <div
+      data-slot="paper-profile-selector"
+      role="radiogroup"
+      aria-label="Tipo de papel del recibo"
+      aria-describedby={helperText ? 'paper-profile-helper' : undefined}
+      className={cn('grid gap-3 sm:grid-cols-2 lg:grid-cols-3', className)}
+      {...props}
+    >
+      {options.map((option) => {
+        const isActive = option.code === value;
+        return (
+          <button
+            key={option.code}
+            type="button"
+            role="radio"
+            aria-checked={isActive}
+            disabled={disabled}
+            onClick={() => onChange(option.code)}
+            className={cn(
+              'flex flex-col items-start gap-1 rounded-panel border bg-operational-surface p-4 text-left shadow-sm transition',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+              'hover:border-hospital-primary/45 hover:shadow-panel',
+              isActive
+                ? 'border-hospital-primary bg-hospital-primary/5 ring-2 ring-hospital-primary/40'
+                : 'border-operational-border',
+              disabled && 'cursor-not-allowed opacity-60',
+            )}
+          >
+            <span className="flex w-full items-center justify-between gap-2">
+              <span className="text-sm font-semibold leading-tight text-foreground">{option.label}</span>
+              {isActive ? (
+                <Check aria-hidden="true" className="size-4 text-hospital-primary" />
+              ) : (
+                <span aria-hidden="true" className="size-4 rounded-full border border-operational-border" />
+              )}
+            </span>
+            <span className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">{option.size}</span>
+            <span className="text-xs leading-relaxed text-muted-foreground">{option.description}</span>
+          </button>
+        );
+      })}
+      {helperText ? (
+        <p id="paper-profile-helper" className="col-span-full text-xs leading-5 text-muted-foreground">
+          {helperText}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
