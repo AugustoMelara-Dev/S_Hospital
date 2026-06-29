@@ -37,7 +37,9 @@ function HospitalApp() {
   const [quickInvoiceOpen, setQuickInvoiceOpen] = useState(false);
   const [quickCashOpen, setQuickCashOpen] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
-  const { data: cashSession } = useCashSession();
+  const { data: cashSession } = useCashSession({
+    enabled: Boolean(session.user && session.canViewCash),
+  });
 
   // Augment the onStatus callback: any message that features dispatch
   // is also surfaced as a real toast (top-right). The status string

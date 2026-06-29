@@ -64,4 +64,6 @@ Acciones tomadas desde esa auditoria:
 - `production-readiness.spec.ts` ahora captura Soporte (`support-light.png`) y mockea `/api/system/status-summary`.
 - Las capturas de dialogs/modales usan viewport screenshot para estabilizar Radix Dialog/Select durante evidencia visual.
 - Gates verificados: `pnpm run typecheck`, `pnpm run lint`, `pnpm run smoke:buttons`, `pnpm exec playwright test e2e/v1-2-full-a11y.spec.ts --config=playwright.config.ts` y `E2E_CAPTURE_RC_SCREENSHOTS=1 pnpm exec playwright test e2e/production-readiness.spec.ts --config=playwright.config.ts`.
-- `pnpm run test:e2e` queda bloqueado por 401 repetidos despues de login en el harness release real; no se mezclo esa investigacion con el commit visual/QA.
+- `pnpm run test:e2e` inicialmente fallo por 401 repetidos despues de login; causa corregida en `App` al no consultar caja protegida antes de autenticar usuario.
+- `release-gate.spec.ts` espera respuestas reales de pago/PDF institucional para no correr contra el flujo asincrono de recibo.
+- Verificacion posterior: `pnpm run test:e2e` PASS, 2 release tests; `pnpm exec playwright test e2e/production-readiness.spec.ts --config=playwright.config.ts` PASS, 4 tests.
