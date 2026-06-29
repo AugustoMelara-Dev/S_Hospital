@@ -1,5 +1,4 @@
 import { PERMISSION_DENIED_MESSAGE, logClientIssue, safeClientMessage } from '../support/clientIssueLog';
-import { invalidateCsrfCookie } from '../csrf';
 
 let forceLogoutHandler: (() => void) | null = null;
 
@@ -469,14 +468,6 @@ export const apiClient = {
       response = await send();
     }
 
-    if (response.status === 401) {
-      // Force a fresh XSRF-TOKEN on the next request so the next
-      // authenticated user does not reuse the previous session's
-      // token. The cookie endpoint is best-effort: the primary
-      // cleanup (session-expired notification) still runs.
-      void invalidateCsrfCookie();
-    }
-
     if (response.headers?.get('X-Force-Logout') === '1') {
       const handler = forceLogoutHandler;
       if (handler) {
@@ -590,7 +581,6 @@ export const apiClient = {
 
       if (!response.ok) {
         if (response.status === 401) {
-          void invalidateCsrfCookie();
           notifySessionExpired();
           recordApiIssue(new ApiError('Sesión vencida. Vuelva a iniciar sesión para continuar.', response.status), `POST_DOWNLOAD ${path}`);
         }

@@ -1,15 +1,15 @@
 import { type FormEvent } from 'react';
-import { Download, DollarSign, User, AlertTriangle } from 'lucide-react';
+import { AlertTriangle, DollarSign, Download, User } from 'lucide-react';
 import { Button } from '../../../components/ui/button';
 import { Alert } from '../../../components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
+import { DataTable, type DataTableColumn } from '../../../components/ui/data-table';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/data-table';
-import { KPICard } from './KPICard';
+import { formatLocalizedDateTime } from '../../../lib/format/formatDate';
 import type { CashSessionReport } from '../../../lib/api/types';
 import { formatLempirasUIFromCents, parseCents } from '../../../lib/moneyCents';
-import { formatLocalizedDateTime } from '../../../lib/format/formatDate';
+import { KPICard } from './KPICard';
 
 interface CashSessionReportTabProps {
   canExport: boolean;
@@ -23,6 +23,97 @@ interface CashSessionReportTabProps {
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }
 
+type MethodTotalRow = {
+  method: string;
+  total: string;
+};
+
+type RegisteredPayment = CashSessionReport['payments'][number];
+type CashMovement = CashSessionReport['movements'][number];
+
+const methodTotalColumns: Array<DataTableColumn<MethodTotalRow>> = [
+  {
+    key: 'method',
+    header: 'Metodo',
+    cellClassName: 'font-medium',
+    render: (row) => methodLabel(row.method),
+  },
+  {
+    key: 'total',
+    header: 'Total',
+    numeric: true,
+    render: (row) => moneyLabel(row.total),
+  },
+];
+
+const paymentColumns: Array<DataTableColumn<RegisteredPayment>> = [
+  {
+    key: 'invoice',
+    header: 'Factura',
+    cellClassName: 'font-medium',
+    render: (payment) => payment.invoice?.invoice_number ?? '-',
+  },
+  {
+    key: 'patient',
+    header: 'Paciente',
+    render: (payment) => payment.invoice?.patient_name ?? '-',
+  },
+  {
+    key: 'method',
+    header: 'Metodo',
+    render: (payment) => methodLabel(payment.method),
+  },
+  {
+    key: 'amount',
+    header: 'Monto',
+    numeric: true,
+    render: (payment) => moneyLabel(payment.amount),
+  },
+  {
+    key: 'paid_at',
+    header: 'Fecha',
+    cellClassName: 'text-xs text-muted-foreground',
+    render: (payment) => formatDate(payment.paid_at),
+  },
+];
+
+const movementColumns: Array<DataTableColumn<CashMovement>> = [
+  {
+    key: 'type',
+    header: 'Tipo',
+    cellClassName: 'font-medium',
+    render: (movement) => movementTypeLabel(movement.type),
+  },
+  {
+    key: 'method',
+    header: 'Metodo',
+    render: (movement) => movementMethodLabel(movement.method),
+  },
+  {
+    key: 'amount',
+    header: 'Monto',
+    numeric: true,
+    render: (movement) => signedMoneyLabel(movement.amount),
+  },
+  {
+    key: 'notes',
+    header: 'Notas',
+    cellClassName: 'max-w-[150px] truncate',
+    render: (movement) => movement.notes ?? '-',
+  },
+  {
+    key: 'user',
+    header: 'Usuario',
+    render: (movement) => movement.user?.name ?? '-',
+  },
+  {
+    key: 'occurred_at',
+    header: 'Fecha',
+    cellClassName: 'text-xs text-muted-foreground',
+    render: (movement) => formatDate(movement.occurred_at),
+  },
+];
+
 export function CashSessionReportTab({
   canExport,
   cashSession,
@@ -34,6 +125,9 @@ export function CashSessionReportTab({
   onExport,
   onSubmit,
 }: CashSessionReportTabProps) {
+  const methodTotalRows = cashSession
+    ? Object.entries(cashSession.totals_by_method).map(([method, total]) => ({ method, total }))
+    : [];
 
   return (
     <div className="space-y-6">
@@ -41,7 +135,7 @@ export function CashSessionReportTab({
         <CardContent className="pt-6">
           <form onSubmit={onSubmit} className="grid gap-3 sm:grid-cols-[minmax(0,200px)_auto] sm:items-end">
             <div className="w-full">
-              <Label htmlFor="cash-session-id">Número de Caja</Label>
+              <Label htmlFor="cash-session-id">Numero de Caja</Label>
               <Input
                 id="cash-session-id"
                 type="number"
@@ -49,7 +143,7 @@ export function CashSessionReportTab({
                 min="1"
                 placeholder="Ej: 1"
                 value={cashReportId}
-                onChange={(e) => onCashReportIdChange(e.target.value)}
+                onChange={(event) => onCashReportIdChange(event.target.value)}
               />
             </div>
             <Button type="submit" className="w-full sm:w-auto" disabled={loading}>
@@ -66,9 +160,9 @@ export function CashSessionReportTab({
         </CardContent>
       </Card>
 
-      {cashSession && (
+      {cashSession ? (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-6">
             <KPICard
               title="Cajero"
               value={cashSession.cash_session.user?.name ?? 'Sin asignar'}
@@ -100,7 +194,7 @@ export function CashSessionReportTab({
             />
           </div>
 
-          {cashSession.cash_session.difference_amount && (parseCents(cashSession.cash_session.difference_amount) ?? 0) !== 0 && (
+          {cashSession.cash_session.difference_amount && (parseCents(cashSession.cash_session.difference_amount) ?? 0) !== 0 ? (
             <Card className="border-destructive">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-destructive">
@@ -114,112 +208,75 @@ export function CashSessionReportTab({
                 </div>
               </CardContent>
             </Card>
-          )}
+          ) : null}
 
           <Card>
             <CardHeader>
-              <CardTitle>Totales por método</CardTitle>
+              <CardTitle>Totales por metodo</CardTitle>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Método</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {Object.entries(cashSession.totals_by_method).map(([method, total]) => (
-                    <TableRow key={method}>
-                      <TableCell className="font-medium">{methodLabel(method)}</TableCell>
-                      <TableCell className="text-right">{moneyLabel(total)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <DataTable
+                caption="Totales por metodo de pago."
+                columns={methodTotalColumns}
+                containerLabel="Totales por metodo"
+                emptyDescription="Los totales por metodo apareceran cuando la caja tenga datos de cobro."
+                emptyTitle="Sin totales por metodo"
+                getRowKey={(row) => row.method}
+                rows={methodTotalRows}
+              />
             </CardContent>
           </Card>
 
-          {cashSession.payments.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Pagos Registrados ({cashSession.payments.length})</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Factura</TableHead>
-                      <TableHead>Paciente</TableHead>
-                      <TableHead>Método</TableHead>
-                      <TableHead className="text-right">Monto</TableHead>
-                      <TableHead>Fecha</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {cashSession.payments.map((p) => (
-                      <TableRow key={p.id}>
-                        <TableCell className="font-medium">{p.invoice?.invoice_number ?? '—'}</TableCell>
-                        <TableCell>{p.invoice?.patient_name ?? '—'}</TableCell>
-                        <TableCell>{methodLabel(p.method)}</TableCell>
-                        <TableCell className="text-right">{moneyLabel(p.amount)}</TableCell>
-                        <TableCell>{formatDate(p.paid_at)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          )}
+          <Card>
+            <CardHeader>
+              <CardTitle>Pagos registrados ({cashSession.payments.length})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <DataTable
+                caption="Pagos registrados en la caja."
+                columns={paymentColumns}
+                containerLabel="Pagos registrados"
+                emptyDescription="Los pagos cobrados apareceran cuando esta caja tenga cobros publicados."
+                emptyTitle="Sin pagos registrados"
+                getRowKey={(payment) => payment.id}
+                rows={cashSession.payments}
+                tableClassName="min-w-[720px]"
+              />
+            </CardContent>
+          </Card>
 
-          {cashSession.movements.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Movimientos ({cashSession.movements.length})</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Tipo</TableHead>
-                      <TableHead>Método</TableHead>
-                      <TableHead className="text-right">Monto</TableHead>
-                      <TableHead>Notas</TableHead>
-                      <TableHead>Usuario</TableHead>
-                      <TableHead>Fecha</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {cashSession.movements.map((m) => (
-                      <TableRow key={m.id}>
-                        <TableCell className="font-medium">{movementTypeLabel(m.type)}</TableCell>
-                        <TableCell>{movementMethodLabel(m.method)}</TableCell>
-                        <TableCell className="text-right">{signedMoneyLabel(m.amount)}</TableCell>
-                        <TableCell className="max-w-[150px] truncate">{m.notes ?? '—'}</TableCell>
-                        <TableCell>{m.user?.name ?? '—'}</TableCell>
-                        <TableCell>{formatDate(m.occurred_at)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          )}
+          <Card>
+            <CardHeader>
+              <CardTitle>Movimientos ({cashSession.movements.length})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <DataTable
+                caption="Movimientos registrados en la caja."
+                columns={movementColumns}
+                containerLabel="Movimientos de caja"
+                emptyDescription="Aperturas, cierres y ajustes apareceran cuando esta caja tenga movimientos registrados."
+                emptyTitle="Sin movimientos de caja"
+                getRowKey={(movement) => movement.id}
+                rows={cashSession.movements}
+                tableClassName="min-w-[860px]"
+              />
+            </CardContent>
+          </Card>
 
           <div className="flex justify-end">
             {canExport ? (
               <Button type="button" variant="outline" onClick={onExport} disabled={exporting}>
-                <Download className="h-4 w-4 mr-2" />
+                <Download className="mr-2 h-4 w-4" />
                 {exporting ? 'Exportando...' : 'Exportar Excel'}
               </Button>
             ) : (
               <p className="text-sm text-muted-foreground">
-                Exportación Excel requiere permiso de exportación de reportes.
+                Exportacion Excel requiere permiso de exportacion de reportes.
               </p>
             )}
           </div>
         </>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -240,7 +297,7 @@ function movementTypeLabel(type: string): string {
 
 function movementMethodLabel(method: string | null): string {
   if (!method) {
-    return '—';
+    return '-';
   }
 
   return { ...methodLabels(), closing: 'Cierre de caja' }[method] ?? humanizeEnum(method);

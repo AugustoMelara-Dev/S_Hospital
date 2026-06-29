@@ -18,9 +18,10 @@ describe('ReportsView', () => {
     fireEvent.click(tab);
   }
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.restoreAllMocks();
     resetRequestChain();
+    await queryClient.cancelQueries();
     queryClient.clear();
     window.history.pushState({}, '', '/');
     vi.spyOn(apiClient, 'getLogo').mockResolvedValue(null);
@@ -28,8 +29,9 @@ describe('ReportsView', () => {
     document.body.removeAttribute('data-receipt-width');
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     cleanup();
+    await queryClient.cancelQueries();
     queryClient.clear();
   });
 

@@ -8,9 +8,9 @@ import { newInvoiceReducer } from './state/reducer';
 import { getInitialNewInvoiceState } from './state/types';
 import { computeSimpleEstimate, isZeroMoney, parseLocalCents } from './state/posMath';
 import { NewInvoiceViewLayout } from './components/NewInvoiceViewLayout';
-import { invalidateBillingQueries } from '@/lib/queryInvalidation';
 import { openBlobInNewTab } from '@/lib/download';
 import { createClientIdempotencyKey } from '@/lib/api/base';
+import { queryKeys } from '@/lib/queryKeys';
 
 
 const POS_SERVICE_PAGE_SIZE = 24;
@@ -461,7 +461,10 @@ export function NewInvoiceView({
         idempotencyKey: submitPaymentIdempotencyKeyRef.current ??= createClientIdempotencyKey(),
       });
       submitPaymentIdempotencyKeyRef.current = null;
-      await invalidateBillingQueries(queryClient);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.invoices.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.reports.dashboard(), refetchType: 'none' }),
+      ]);
       dispatch({ type: 'SET_ISSUED_INVOICE', payload: result.invoice });
       dispatch({ type: 'SET_PAYMENT_AMOUNT', payload: result.invoice.balance_due });
 

@@ -27,6 +27,7 @@ const backendEnv = buildBackendEnv(sqlitePath);
 
 const frontendEnv = {
   ...process.env,
+  VITE_API_BASE_URL: '',
   VITE_DEV_API_PROXY_TARGET: backendUrl,
   PLAYWRIGHT_EXTERNAL_SERVER: '1',
   PLAYWRIGHT_BASE_URL: frontendUrl,
@@ -79,6 +80,10 @@ function buildBackendEnv(databasePath) {
     CACHE_STORE: 'array',
     QUEUE_CONNECTION: 'sync',
     SESSION_DRIVER: 'database',
+    SESSION_DOMAIN: '',
+    SESSION_SECURE_COOKIE: 'false',
+    SESSION_SAME_SITE: 'lax',
+    SANCTUM_STATEFUL_DOMAINS: '127.0.0.1:5174,localhost:5174',
     BROADCAST_CONNECTION: 'null',
     PULSE_ENABLED: 'false',
     TELESCOPE_ENABLED: 'false',

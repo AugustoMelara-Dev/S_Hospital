@@ -1,7 +1,7 @@
 import { Cell, Pie, PieChart, Tooltip } from 'recharts';
 import { formatLempirasUI } from '@/lib/moneyCents';
 import { ChartCard } from '@/components/shared';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
 import type { ExecutiveReport } from '@/lib/api';
 import { useElementWidth } from '../../dashboard/useElementWidth';
 
@@ -17,6 +17,54 @@ const METHOD_COLORS: Record<string, string> = {
 };
 
 type TooltipPayloadEntry = { name?: string; value?: number };
+type PaymentMethod = ExecutiveReport['payment_methods'][number];
+type PaymentMethodRow = {
+  amount: string | number;
+  count: number;
+  isTotal?: boolean;
+  key: string;
+  label: string;
+  method: PaymentMethod['method'] | 'total';
+  percentage: number;
+};
+
+const paymentMethodColumns: Array<DataTableColumn<PaymentMethodRow>> = [
+  {
+    key: 'method',
+    header: 'Metodo',
+    render: (row) => (
+      <span className="flex items-center gap-2">
+        {!row.isTotal ? (
+          <span
+            className="inline-block size-2 rounded-sm"
+            style={{ background: METHOD_COLORS[row.method] ?? 'var(--color-muted-foreground)' }}
+            aria-hidden="true"
+          />
+        ) : null}
+        <span className={row.isTotal ? 'font-semibold' : undefined}>{row.label}</span>
+      </span>
+    ),
+  },
+  {
+    key: 'amount',
+    header: 'Monto',
+    numeric: true,
+    cellClassName: 'font-mono tabular-nums',
+    render: (row) => formatLempirasUI(row.amount),
+  },
+  {
+    key: 'count',
+    header: 'Pagos',
+    numeric: true,
+    render: (row) => row.count,
+  },
+  {
+    key: 'percentage',
+    header: '% del total',
+    numeric: true,
+    render: (row) => `${row.percentage.toFixed(2)}%`,
+  },
+];
 
 function PieTooltip({ active, payload }: { active?: boolean; payload?: TooltipPayloadEntry[] }) {
   if (!active || !payload || payload.length === 0) return null;
@@ -39,6 +87,29 @@ export function PaymentMethodPanel({ report }: PaymentMethodPanelProps) {
     value: Number(method.amount),
     key: method.method,
   }));
+  const totalPaymentCount = report.payment_methods.reduce((acc, method) => acc + method.count, 0);
+  const paymentMethodRows: PaymentMethodRow[] =
+    report.payment_methods.length > 0
+      ? [
+          ...report.payment_methods.map((method) => ({
+            amount: method.amount,
+            count: method.count,
+            key: method.method,
+            label: method.label,
+            method: method.method,
+            percentage: method.percentage,
+          })),
+          {
+            amount: totalCollectedCents / 100,
+            count: totalPaymentCount,
+            isTotal: true,
+            key: 'total',
+            label: 'Total',
+            method: 'total',
+            percentage: 100,
+          },
+        ]
+      : [];
 
   return (
     <ChartCard
@@ -76,49 +147,16 @@ export function PaymentMethodPanel({ report }: PaymentMethodPanelProps) {
               </PieChart>
             ) : null}
           </div>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Metodo</TableHead>
-                <TableHead className="text-right">Monto</TableHead>
-                <TableHead className="text-right">Pagos</TableHead>
-                <TableHead className="text-right">% del total</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {report.payment_methods.map((method) => (
-                <TableRow key={method.method}>
-                  <TableCell>
-                    <span className="flex items-center gap-2">
-                      <span
-                        className="inline-block size-2 rounded-sm"
-                        style={{ background: METHOD_COLORS[method.method] ?? 'var(--color-muted-foreground)' }}
-                        aria-hidden="true"
-                      />
-                      {method.label}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-right font-mono tabular-nums">
-                    {formatLempirasUI(method.amount)}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">{method.count}</TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {method.percentage.toFixed(2)}%
-                  </TableCell>
-                </TableRow>
-              ))}
-              <TableRow className="border-t-2 border-border bg-muted/40">
-                <TableCell className="font-semibold">Total</TableCell>
-                <TableCell className="text-right font-mono tabular-nums font-semibold">
-                  {formatLempirasUI(totalCollectedCents / 100)}
-                </TableCell>
-                <TableCell className="text-right tabular-nums font-semibold">
-                  {report.payment_methods.reduce((acc, m) => acc + m.count, 0)}
-                </TableCell>
-                <TableCell className="text-right tabular-nums font-semibold">100.00%</TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
+          <DataTable
+            caption="Recaudacion por metodo de pago."
+            columns={paymentMethodColumns}
+            containerLabel="Metodos de pago"
+            emptyDescription="Los cobros por metodo apareceran cuando existan pagos publicados en el periodo."
+            emptyTitle="Sin metodos de pago"
+            getRowClassName={(row) => (row.isTotal ? 'border-t-2 border-border bg-muted/40 font-semibold' : undefined)}
+            getRowKey={(row) => row.key}
+            rows={paymentMethodRows}
+          />
         </div>
     </ChartCard>
   );

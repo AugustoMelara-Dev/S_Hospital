@@ -1,6 +1,7 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { Button } from './button';
 import { DataTable, Table, TableHead, TableHeader, TableRow } from './data-table';
 
 describe('DataTable', () => {
@@ -64,6 +65,36 @@ describe('DataTable', () => {
 
     rerender(<DataTable data={[]} getRowId={(row) => row.id} columns={columns} error errorDescription="Servidor local no disponible" />);
     expect(screen.getByText('Servidor local no disponible')).toBeInTheDocument();
+  });
+
+  it('keeps empty and error recovery actions inside the shared table states', () => {
+    const columns: Array<ColumnDef<{ id: string }, unknown>> = [{ accessorKey: 'id', header: 'ID' }];
+    const onRetry = vi.fn();
+    const { rerender } = render(
+      <DataTable
+        data={[]}
+        getRowId={(row) => row.id}
+        columns={columns}
+        emptyTitle="Sin servicios"
+        emptyAction={<Button type="button">Limpiar filtros</Button>}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: 'Limpiar filtros' })).toBeInTheDocument();
+
+    rerender(
+      <DataTable
+        data={[]}
+        getRowId={(row) => row.id}
+        columns={columns}
+        error
+        errorDescription="Servidor local no disponible"
+        onRetry={onRetry}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /reintentar/i }));
+    expect(onRetry).toHaveBeenCalledTimes(1);
   });
 
 

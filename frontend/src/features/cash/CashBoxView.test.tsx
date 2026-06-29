@@ -11,9 +11,10 @@ import { resetRequestChain } from '../../lib/api/base';
 import { CashBoxView } from './CashBoxView';
 
 describe('CashBoxView', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.restoreAllMocks();
     resetRequestChain();
+    await queryClient.cancelQueries();
     queryClient.clear();
     window.history.pushState({}, '', '/');
     vi.spyOn(apiClient, 'getLogo').mockResolvedValue(null);
@@ -21,8 +22,9 @@ describe('CashBoxView', () => {
     document.body.removeAttribute('data-receipt-width');
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     cleanup();
+    await queryClient.cancelQueries();
     queryClient.clear();
   });
 

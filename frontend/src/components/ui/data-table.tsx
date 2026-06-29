@@ -41,6 +41,7 @@ export type DataTableColumn<T> = {
 type DataTableCommonProps<T> = {
   caption?: ReactNode;
   containerLabel?: string;
+  emptyAction?: ReactNode;
   emptyDescription?: string;
   emptyTitle?: string;
   error?: boolean;
@@ -49,6 +50,7 @@ type DataTableCommonProps<T> = {
   getRowClassName?: (row: T) => string | undefined;
   loading?: boolean;
   loadingLabel?: string;
+  onRetry?: () => void;
   tableClassName?: string;
 };
 
@@ -73,6 +75,7 @@ export type DataTableProps<T> = DataTableModernProps<T> | DataTableLegacyProps<T
 export function DataTable<T>(props: DataTableProps<T>) {
   const {
     caption,
+    emptyAction,
     emptyDescription = 'No hay datos para mostrar.',
     emptyTitle = 'Sin datos',
     error,
@@ -82,6 +85,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
     loading = false,
     loadingLabel = 'Cargando...',
     containerLabel = 'Tabla de datos',
+    onRetry,
     tableClassName,
   } = props;
   const isLegacy = isLegacyProps(props);
@@ -99,11 +103,11 @@ export function DataTable<T>(props: DataTableProps<T>) {
   }
 
   if (error) {
-    return <ErrorState title={errorTitle} description={errorDescription} />;
+    return <ErrorState title={errorTitle} description={errorDescription} onRetry={onRetry} />;
   }
 
   if (data.length === 0) {
-    return <DataTableEmpty title={emptyTitle} description={emptyDescription} />;
+    return <DataTableEmpty title={emptyTitle} description={emptyDescription} action={emptyAction} />;
   }
 
   return (
@@ -161,13 +165,15 @@ function toColumnDefs<T>(columns: Array<DataTableColumn<T>>): Array<ColumnDef<T,
 }
 
 export function DataTableEmpty({
+  action,
   description = 'No hay datos para mostrar.',
   title = 'Sin datos',
 }: {
+  action?: ReactNode;
   description?: string;
   title?: string;
 }) {
-  return <EmptyState title={title} description={description} />;
+  return <EmptyState title={title} description={description} action={action} />;
 }
 
 export function DataTableToolbar({

@@ -23,9 +23,10 @@ describe('NewInvoiceView', () => {
   const submitButtons = (name: RegExp = /emitir y cobrar/i) => screen.getAllByRole('button', { name });
   const primarySubmitButton = (name: RegExp = /emitir y cobrar/i) => submitButtons(name)[0];
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.restoreAllMocks();
     resetRequestChain();
+    await queryClient.cancelQueries();
     queryClient.clear();
     window.history.pushState({}, '', '/');
     vi.spyOn(apiClient, 'getLogo').mockResolvedValue(null);
@@ -33,8 +34,9 @@ describe('NewInvoiceView', () => {
     document.body.removeAttribute('data-receipt-width');
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     cleanup();
+    await queryClient.cancelQueries();
     queryClient.clear();
   });
 
@@ -617,7 +619,7 @@ describe('NewInvoiceView', () => {
         .filter(([url]) => String(url).includes('/api/invoices/100/receipt')),
     ).toHaveLength(0);
     expect(screen.queryByLabelText(/vista previa del recibo/i)).not.toBeInTheDocument();
-    expect(await screen.findByText(/REC-A-00000001/i)).toBeInTheDocument();
+    expect(await screen.findAllByText(/REC-A-00000001/i)).not.toHaveLength(0);
   });
 
   it('rejects inactive services returned by scanner lookup', async () => {

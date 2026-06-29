@@ -413,6 +413,30 @@ describe('resolveApiBaseUrl', () => {
       expect(a).not.toHaveBeenCalled();
     });
 
+    it('does not refresh csrf cookies after a read-only 401', async () => {
+      const handler = vi.fn();
+      const unsubscribe = apiClient.onSessionExpired(handler);
+      resetCsrfCache();
+      resetRequestChain();
+
+      const fetchMock = vi.spyOn(window, 'fetch').mockResolvedValue({
+        ok: false,
+        status: 401,
+        statusText: 'Unauth',
+        json: async () => ({ message: 'Unauthenticated.' }),
+      } as Response);
+
+      await expect(apiClient.request('/api/cash-sessions/current')).rejects.toBeInstanceOf(ApiError);
+
+      const csrfCalls = fetchMock.mock.calls
+        .map(([url]) => String(url))
+        .filter((url) => url.includes('/sanctum/csrf-cookie'));
+
+      expect(handler).toHaveBeenCalled();
+      expect(csrfCalls).toHaveLength(0);
+      unsubscribe();
+    });
+
     it('survives a handler that throws', async () => {
       const a = vi.fn(() => {
         throw new Error('handler bug');

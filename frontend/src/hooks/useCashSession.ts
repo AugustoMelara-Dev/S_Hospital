@@ -3,10 +3,11 @@ import { apiClient } from '@/lib/api';
 import { invalidateBillingQueries } from '@/lib/queryInvalidation';
 import { queryKeys } from '@/lib/queryKeys';
 
-export function useCashSession() {
+export function useCashSession(enabled = true) {
   return useQuery({
     queryKey: queryKeys.cashSessions.current(),
     queryFn: () => apiClient.getCurrentCashSession(),
+    enabled,
   });
 }
 
