@@ -253,6 +253,18 @@ describe('App', () => {
     expect(screen.getByLabelText(/usuario o correo/i)).toHaveValue('');
   });
 
+  it('does not request protected cash session data before authentication', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({ data: null }),
+    } as Response);
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: /acceso institucional para caja y administracion/i })).toBeInTheDocument();
+    expect(fetchMock.mock.calls.map(([input]) => String(input))).not.toContain('/api/cash-sessions/current');
+  });
+
   it('recovers an authenticated session after a hard refresh on login', async () => {
     window.history.pushState({}, '', '/login');
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {

@@ -3,7 +3,13 @@ import { apiClient } from '@/lib/api';
 import { invalidateBillingQueries } from '@/lib/queryInvalidation';
 import { queryKeys } from '@/lib/queryKeys';
 
-export function useCashSession(enabled = true) {
+type UseCashSessionOptions = {
+  enabled?: boolean;
+};
+
+export function useCashSession(options: UseCashSessionOptions | boolean = {}) {
+  const enabled = typeof options === 'boolean' ? options : options.enabled ?? true;
+
   return useQuery({
     queryKey: queryKeys.cashSessions.current(),
     queryFn: () => apiClient.getCurrentCashSession(),

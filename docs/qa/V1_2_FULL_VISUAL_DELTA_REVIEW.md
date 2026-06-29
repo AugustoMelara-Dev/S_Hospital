@@ -1,6 +1,6 @@
 # V1.2 Full Visual Delta Review
 
-Fecha: 2026-06-28
+Fecha: 2026-06-29
 
 ## Resultado
 
@@ -16,11 +16,13 @@ Before:
 After:
 
 - `qa/v1-2-full-ux-ui-redesign/after`
-- Capturas completas generadas contra `http://127.0.0.1:5175` con API mockeada.
+- Capturas completas generadas contra Playwright/Vite local con API mockeada.
+- Manifiesto: `qa/v1-2-full-ux-ui-redesign/after/rc-e2e-mocked-report.json`, generado el 2026-06-29T01:45:35Z, `console_issues: []`.
 
 Pantallas after capturadas:
 
 - login light/dark
+- cambio obligatorio de contraseña light/dark
 - dashboard light/dark
 - nueva factura empty/cart
 - payment modal
@@ -33,7 +35,7 @@ Pantallas after capturadas:
 - backups
 - fiscal settings
 - users light/dark
-- help/about
+- help/support/about
 - 404
 - access denied
 - mobile dashboard/billing/reports
@@ -44,6 +46,8 @@ Pantallas after capturadas:
 - Componentes exactos agregados: `ModuleHeader`, `CommandCenterHeader`, `PrimaryActionPanel`, `ChartLegend`, `OfflineState`, `QuickActionTile`, `SummaryRail`, `MobileStickyActionBar`.
 - Tablas principales migradas al wrapper `DataTable` con TanStack Table debajo: reportes/cajeros, reportes/areas, historial de facturas y usuarios.
 - Estados visuales y tablas usan patrones compartidos en lugar de loops locales.
+- Delta adicional aplicado sobre la base integrada: `PermissionBadge`, paginacion real de `DataTable`, sorting/visibilidad opt-in, utilidades `status-*` reales, `cash-layout` definido y columna de acciones de historial protegida contra recorte.
+- Evidencia after reforzada con `support-light.png`; el mock de produccion cubre `/api/system/status-summary` para que Soporte no dependa del backend real durante capturas.
 
 ## PASS/FAIL por superficie
 
@@ -66,6 +70,16 @@ Pantallas after capturadas:
 | Dark mode | PASS |
 | Loading/empty/error | PASS |
 | Tablas/filtros | PASS |
+
+## Correcciones P1 de auditoria adicional
+
+| Hallazgo | Resultado |
+| --- | --- |
+| Clases `status-success`, `status-warning`, `status-info` usadas pero no definidas | PASS: definidas en `frontend/src/styles.css` con tokens de estado. |
+| `cash-layout` usado sin definicion | PASS: definido en `frontend/src/styles.css`. |
+| `DataTablePagination` era un control simbolico deshabilitado | PASS: paginacion real anterior/siguiente con conteo de pagina. |
+| Historial podia recortar acciones a la derecha | PASS: columna de acciones con ancho minimo y no ocultable. |
+| `PermissionBadge` pendiente en design system | PASS: implementado y probado. |
 
 ## Riesgo residual
 

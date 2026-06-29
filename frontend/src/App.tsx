@@ -42,7 +42,7 @@ function HospitalApp() {
     !session.user.must_change_password &&
     (session.canViewCash || session.canOpenCash || session.canCreateInvoices || session.canCreatePayments),
   );
-  const { data: cashSession } = useCashSession(shouldLoadCashSession);
+  const { data: cashSession } = useCashSession({ enabled: shouldLoadCashSession });
 
   // Augment the onStatus callback: any message that features dispatch
   // is also surfaced as a real toast (top-right). The status string
@@ -131,15 +131,15 @@ function HospitalApp() {
           canViewReports={session.canViewReports}
           canViewManagerialReports={session.canViewManagerialReports}
           canViewCashSessionReports={session.canViewCashSessionReports}
-canExportReports={session.canExportReports}
-            canViewUsers={session.canViewUsers}
-            canCreateUsers={session.canCreateUsers}
-            canUpdateUsers={session.canUpdateUsers}
-            canDisableUsers={session.canDisableUsers}
-            canManageRoles={session.canManageRoles}
-            canMarkDialysisPrescription={session.canMarkDialysisPrescription}
-            cashSession={cashSession ?? null}
-            defaultAuthenticatedRoute={session.defaultAuthenticatedRoute}
+          canExportReports={session.canExportReports}
+          canViewUsers={session.canViewUsers}
+          canCreateUsers={session.canCreateUsers}
+          canUpdateUsers={session.canUpdateUsers}
+          canDisableUsers={session.canDisableUsers}
+          canManageRoles={session.canManageRoles}
+          canMarkDialysisPrescription={session.canMarkDialysisPrescription}
+          cashSession={cashSession ?? null}
+          defaultAuthenticatedRoute={session.defaultAuthenticatedRoute}
           onQuickCash={() => setQuickCashOpen(true)}
           onQuickInvoice={() => setQuickInvoiceOpen(true)}
           onStatus={handleStatus}
