@@ -18,9 +18,9 @@ export const buttonVariants = {
 
 export const buttonSizes = {
   default: 'min-h-10 px-4 py-2',
-  sm: 'min-h-9 px-3 py-1.5 text-sm',
+  sm: 'min-h-11 px-3 py-2 text-sm sm:min-h-9 sm:py-1.5',
   lg: 'min-h-12 px-6 py-3 text-base',
-  icon: 'size-9 p-0',
+  icon: 'size-11 p-0 sm:size-9',
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button({
