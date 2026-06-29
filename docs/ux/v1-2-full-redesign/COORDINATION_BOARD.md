@@ -62,6 +62,7 @@ Acciones tomadas desde esa auditoria:
 ## QA evidence refresh 2026-06-29
 
 - `production-readiness.spec.ts` ahora captura Soporte (`support-light.png`) y mockea `/api/system/status-summary`.
+- `production-readiness.spec.ts` ahora captura cambio obligatorio de contrasena (`password-change-required-light.png`, `password-change-required-dark.png`) usando un usuario mock con `must_change_password: true`.
 - Las capturas de dialogs/modales usan viewport screenshot para estabilizar Radix Dialog/Select durante evidencia visual.
 - Gates verificados: `pnpm run typecheck`, `pnpm run lint`, `pnpm run smoke:buttons`, `pnpm exec playwright test e2e/v1-2-full-a11y.spec.ts --config=playwright.config.ts` y `E2E_CAPTURE_RC_SCREENSHOTS=1 pnpm exec playwright test e2e/production-readiness.spec.ts --config=playwright.config.ts`.
 - `pnpm run test:e2e` inicialmente fallo por 401 repetidos despues de login; causa corregida en `App` al no consultar caja protegida antes de autenticar usuario.

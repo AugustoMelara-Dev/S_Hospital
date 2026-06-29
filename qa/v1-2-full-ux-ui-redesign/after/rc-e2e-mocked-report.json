@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-29T01:06:29.780Z",
+  "generated_at": "2026-06-29T01:45:35.964Z",
   "mode": "mocked-e2e",
   "note": "Capturas con API mockeada; no sustituyen LAN, MySQL/MariaDB ni impresora fisica.",
   "screenshots": [
@@ -174,6 +174,18 @@
     {
       "name": "login-dark",
       "path": "qa/v1-2-full-ux-ui-redesign/after/login-dark.png",
+      "route": "/login",
+      "theme": "dark"
+    },
+    {
+      "name": "password-change-required-light",
+      "path": "qa/v1-2-full-ux-ui-redesign/after/password-change-required-light.png",
+      "route": "/login",
+      "theme": "light"
+    },
+    {
+      "name": "password-change-required-dark",
+      "path": "qa/v1-2-full-ux-ui-redesign/after/password-change-required-dark.png",
       "route": "/login",
       "theme": "dark"
     },

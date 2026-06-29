@@ -75,6 +75,15 @@ const adminUser = {
   must_change_password: false,
 };
 
+const forcedPasswordUser = {
+  ...cashierUser,
+  id: 3,
+  name: 'Clave Obligatoria Validacion',
+  email: 'clave.obligatoria@hospital-san-isidro.local',
+  username: 'clave.obligatoria',
+  must_change_password: true,
+};
+
 const services = [
   {
     id: 10,
@@ -243,7 +252,11 @@ async function installApiMocks(page: Page) {
     } catch {
       payload = {};
     }
-    currentUser = payload.login === 'admin.validacion' ? adminUser : cashierUser;
+    currentUser = payload.login === 'admin.validacion'
+      ? adminUser
+      : payload.login === 'clave.obligatoria'
+        ? forcedPasswordUser
+        : cashierUser;
     isLogged = true;
     return json(route, { data: currentUser });
   });
@@ -1157,6 +1170,14 @@ test('supporting shell states expose visual fallbacks', async ({ page }) => {
   await setVisualTheme(page, 'dark');
   await captureScreen(page, 'login-dark', 'dark');
   await setVisualTheme(page, 'light');
+
+  await loginAs(page, 'clave.obligatoria');
+  await expect(page.getByRole('heading', { name: /cambio obligatorio de contrase/i })).toBeVisible();
+  await captureScreen(page, 'password-change-required-light', 'light');
+  await setVisualTheme(page, 'dark');
+  await captureScreen(page, 'password-change-required-dark', 'dark');
+  await setVisualTheme(page, 'light');
+  await page.evaluate(() => fetch('/api/auth/logout', { method: 'POST' }));
 
   await loginAs(page, 'cajero.validacion');
   await setVisualTheme(page, 'light');

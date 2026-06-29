@@ -17,11 +17,12 @@ After:
 
 - `qa/v1-2-full-ux-ui-redesign/after`
 - Capturas completas generadas contra Playwright/Vite local con API mockeada.
-- Manifiesto: `qa/v1-2-full-ux-ui-redesign/after/rc-e2e-mocked-report.json`, generado el 2026-06-29T01:06:29Z, `console_issues: []`.
+- Manifiesto: `qa/v1-2-full-ux-ui-redesign/after/rc-e2e-mocked-report.json`, generado el 2026-06-29T01:45:35Z, `console_issues: []`.
 
 Pantallas after capturadas:
 
 - login light/dark
+- cambio obligatorio de contraseña light/dark
 - dashboard light/dark
 - nueva factura empty/cart
 - payment modal

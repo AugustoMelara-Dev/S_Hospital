@@ -47,6 +47,7 @@ Rechazadas o diferidas:
 - Utilidades visuales `status-success`, `status-warning`, `status-info` y `cash-layout` definidas para eliminar clases muertas.
 - Historial de facturas protege su columna de acciones contra recorte y la mantiene visible.
 - `production-readiness.spec.ts` cubre ahora `/support`, mockea `/api/system/status-summary` y captura modales en viewport para evitar inestabilidad de screenshot full-page sobre dialogs.
+- `production-readiness.spec.ts` captura ahora el estado real de cambio obligatorio de contraseña (`must_change_password`) en light/dark.
 - `App` ya no consulta `/api/cash-sessions/current` antes de autenticar usuario, evitando que 401 de consultas protegidas en login invaliden una sesion recien iniciada.
 - `release-gate.spec.ts` espera explicitamente la respuesta de pago y el PDF institucional antes de validar el dialogo de exito.
 - Migradas tablas de reportes, historial de facturas y usuarios.
@@ -72,7 +73,7 @@ No se cambiaron endpoints, payloads, calculos, pagos, caja, impuestos, numeracio
 - `npm run test`: PASS, 83 archivos, 496 tests.
 - `pnpm run build`: PASS.
 - `pnpm exec playwright test e2e/v1-2-full-a11y.spec.ts --config=playwright.config.ts`: PASS, 7 tests, 6 viewports, reporte `qa/production-audit/v1-2-full-a11y-report.json`.
-- `E2E_CAPTURE_RC_SCREENSHOTS=1 pnpm exec playwright test e2e/production-readiness.spec.ts --config=playwright.config.ts`: PASS, 4 tests, evidencia `qa/v1-2-full-ux-ui-redesign/after/rc-e2e-mocked-report.json`.
+- `E2E_CAPTURE_RC_SCREENSHOTS=1 pnpm exec playwright test e2e/production-readiness.spec.ts --config=playwright.config.ts`: PASS, 4 tests, evidencia `qa/v1-2-full-ux-ui-redesign/after/rc-e2e-mocked-report.json` con login, cambio obligatorio de contraseña, soporte, mobile y modales.
 - `pnpm run smoke:buttons`: PASS, 7 tests, reporte `qa/production-audit/button-smoke-report.json`.
 - `pnpm exec vitest run src/App.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000`: PASS, 18 tests.
 - `pnpm run test:e2e`: PASS, 2 release tests contra harness real Laravel + SQLite + Vite.
@@ -80,7 +81,7 @@ No se cambiaron endpoints, payloads, calculos, pagos, caja, impuestos, numeracio
 
 ## Visual QA
 
-- After completo: PASS. Incluye `support-light.png` y manifiesto actualizado el 2026-06-29.
+- After completo: PASS. Incluye `support-light.png`, `password-change-required-light.png`, `password-change-required-dark.png` y manifiesto actualizado el 2026-06-29.
 - Before LAN: parcial por runtime no alineado con heading esperado.
 - Cambio visual grande: SI, heredado y ampliado desde `origin/codex/v1-2-visible-ui-delta`.
 
