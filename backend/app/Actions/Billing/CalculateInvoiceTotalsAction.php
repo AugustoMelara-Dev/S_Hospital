@@ -45,7 +45,7 @@ class CalculateInvoiceTotalsAction
                 $taxableSubtotalCents += $lineSubtotalCents;
             }
 
-            $categoryName = $service->category->name;
+            $categoryName = $service->category?->name ?? '';
             $areaName = $service->area?->name ?? $categoryName;
 
             $calculatedItems[] = [

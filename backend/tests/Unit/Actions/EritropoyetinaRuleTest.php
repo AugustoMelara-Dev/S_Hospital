@@ -13,7 +13,7 @@ class EritropoyetinaRuleTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->action = new CalculateInvoiceTotalsAction();
+        $this->action = new CalculateInvoiceTotalsAction;
     }
 
     public function test_it_charges_zero_for_erythropoietin_when_dialysis_prescription_is_true(): void
@@ -35,7 +35,7 @@ class EritropoyetinaRuleTest extends TestCase
             ],
         ];
 
-        $result = $this->action->execute($items, '15.00');
+        $result = $this->action->execute($items, '15.00', true);
 
         $this->assertSame('0.00', $result['subtotal']);
         $this->assertSame('0.00', $result['total']);

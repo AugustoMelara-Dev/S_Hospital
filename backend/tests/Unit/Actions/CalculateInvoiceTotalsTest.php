@@ -13,7 +13,7 @@ class CalculateInvoiceTotalsTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->action = new CalculateInvoiceTotalsAction();
+        $this->action = new CalculateInvoiceTotalsAction;
     }
 
     public function test_it_calculates_totals_correctly_for_taxable_services(): void
@@ -93,7 +93,7 @@ class CalculateInvoiceTotalsTest extends TestCase
             ],
         ];
 
-        $resultB = $this->action->execute($itemsWithDialysis, '15.00');
+        $resultB = $this->action->execute($itemsWithDialysis, '15.00', true);
         $this->assertSame('0.00', $resultB['subtotal']);
         $this->assertSame('0.00', $resultB['tax_amount']);
         $this->assertSame('0.00', $resultB['total']);

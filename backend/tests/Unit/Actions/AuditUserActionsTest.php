@@ -13,6 +13,7 @@ class AuditUserActionsTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private User $cashier;
 
     protected function setUp(): void
@@ -40,7 +41,7 @@ class AuditUserActionsTest extends TestCase
             'name' => 'New Cashier',
             'email' => 'new@email.com',
             'username' => 'new_cashier',
-            'password' => 'SecurePass123',
+            'password' => 'SecurePass123!',
             'role' => 'cajero',
             'active' => true,
         ];
@@ -99,13 +100,13 @@ class AuditUserActionsTest extends TestCase
         $response->assertStatus(200);
 
         $this->assertDatabaseHas('audit_logs', [
-            'action' => 'user.status_updated',
+            'action' => 'user.deactivated',
             'entity_type' => User::class,
             'entity_id' => $this->cashier->id,
             'user_id' => $this->admin->id,
         ]);
 
-        $log = AuditLog::where('action', 'user.status_updated')->firstOrFail();
+        $log = AuditLog::where('action', 'user.deactivated')->firstOrFail();
         $this->assertTrue($log->old_values['active']);
         $this->assertFalse($log->new_values['active']);
     }
@@ -115,7 +116,7 @@ class AuditUserActionsTest extends TestCase
         $this->actingAs($this->admin, 'web');
 
         $payload = [
-            'password' => 'NewSecurePassword123',
+            'password' => 'NewSecurePassword123!',
         ];
 
         $response = $this->postJson("/api/admin/users/{$this->cashier->id}/reset-password", $payload);

@@ -50,7 +50,33 @@ Local `git stash list` contains 35 entries, from `stash@{0}` through `stash@{34}
 - Integrated partially: `hardening-audit-complete-2026-06-15`; kept offline/security docs, offline dependency audit scripts, and Windows restore script; rejected subagent/worklog artifacts and older backup/frontend/API conflicts.
 - Cherry-picked documentation only: `codex/final-rc-scope-cutover` via `qa/FINAL_RC_CUTOVER_2026_06_12.md`; full branch would delete `GuidedTour` and overwrite current QA screenshots.
 - No-op/preserved: `preserve/refactor-platform-foundation-wip-20260628`; useful RoleController, RoleCatalog, docs, and scripts already exist in current integration history.
-- Pending: verification gates.
+- Verification fixes after integration:
+  - Restored integration-test dependency `@testing-library/dom`.
+  - Fixed invoice/category policies after branch merge exposed missing `InvoicePolicy::create()` and overly broad `CategoryPolicy::update()`.
+  - Preserved zero-total dialysis invoices with an auditable zero-amount `payments` row linked to cash session, cashier, method, and date.
+  - Scoped managerial reports without `cash.close_any` to the requesting user's activity.
+  - Mounted required repo-root files into the backend Docker service so hardening tests can inspect `.gitignore`, `.github`, `nginx`, `setup.bat`, frontend E2E files, and production compose files from inside the container.
+
+## Verification Gates
+
+Frontend:
+
+- `pnpm install --frozen-lockfile`: pass.
+- `pnpm run typecheck`: pass.
+- `pnpm run lint`: pass.
+- `pnpm run test`: pass, 91 files / 523 tests.
+- `pnpm run build`: pass.
+
+Backend Docker:
+
+- `docker compose config -q`: pass with local verification env.
+- `docker compose up -d` initially failed on occupied/blocked host port `127.0.0.1:3306`; rerun with `DB_PORT=3307` passed.
+- `docker compose exec -T backend composer install --no-interaction --prefer-dist`: pass.
+- `docker compose exec -T backend php artisan migrate --seed`: pass.
+- `docker compose exec -T backend php artisan test`: pass, 731 tests / 13 skipped / 4778 assertions.
+- `docker compose exec -T backend vendor/bin/pint --test`: pass, 417 files.
+- `docker compose exec -T backend vendor/bin/phpstan analyse`: failed only because container PHP memory limit was 128M.
+- `docker compose exec -T backend vendor/bin/phpstan analyse --memory-limit=512M`: pass, no errors.
 
 ## Acceptance Criteria
 

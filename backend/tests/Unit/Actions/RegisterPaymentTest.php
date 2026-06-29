@@ -5,6 +5,7 @@ namespace Tests\Unit\Actions;
 use App\Actions\Payments\RegisterPaymentAction;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSequence;
+use App\Models\FiscalSetting;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\User;
@@ -20,17 +21,21 @@ class RegisterPaymentTest extends TestCase
     use RefreshDatabase;
 
     private RegisterPaymentAction $action;
+
     private User $cashier;
+
     private CashRegisterSession $session;
+
     private Invoice $invoice;
+
     private InvoiceAccess $invoiceAccess;
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->seed(RolesAndPermissionsSeeder::class);
-        $this->action = new RegisterPaymentAction();
-        $this->invoiceAccess = new InvoiceAccess();
+        $this->action = app(RegisterPaymentAction::class);
+        $this->invoiceAccess = new InvoiceAccess;
 
         $this->cashier = User::factory()->create();
         $this->cashier->assignRole('cajero');
@@ -40,6 +45,15 @@ class RegisterPaymentTest extends TestCase
             'status' => CashRegisterSession::STATUS_OPEN,
             'opening_amount' => '100.00',
             'opened_at' => now(),
+        ]);
+
+        FiscalSetting::query()->create([
+            'hospital_name' => 'Hospital Local',
+            'rtn' => '12345',
+            'default_tax_rate' => '15.00',
+            'receipt_width' => '80mm',
+            'primary_color' => '#1f2937',
+            'partial_payments_enabled' => true,
         ]);
 
         $sequence = FiscalSequence::query()->create([
@@ -65,11 +79,17 @@ class RegisterPaymentTest extends TestCase
             'hospital_rtn' => '12345',
             'patient_name' => 'John Doe',
             'subtotal' => '100.00',
+            'subtotal_cents' => 10000,
             'tax_amount' => '15.00',
+            'tax_amount_cents' => 1500,
             'discount_amount' => '0.00',
+            'discount_amount_cents' => 0,
             'total' => '115.00',
+            'total_cents' => 11500,
             'paid_amount' => '0.00',
+            'paid_amount_cents' => 0,
             'balance_due' => '115.00',
+            'balance_due_cents' => 11500,
             'status' => Invoice::STATUS_ISSUED,
             'issued_by' => $this->cashier->id,
             'issued_at' => now(),

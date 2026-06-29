@@ -29,7 +29,7 @@ class CategoryPolicy
 
     public function update(User $user, Category $category): bool
     {
-        return $this->viewAny($user);
+        return $user->can('catalog.manage');
     }
 
     public function delete(User $user, Category $category): bool

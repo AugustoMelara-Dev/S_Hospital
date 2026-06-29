@@ -7,6 +7,7 @@ use App\Models\AuditLog;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSetting;
 use App\Models\Invoice;
+use App\Models\Payment;
 use App\Models\Service;
 use App\Models\User;
 use App\Support\Money;
