@@ -23,6 +23,7 @@ class InstitutionalReceiptSeriesSeederTest extends TestCase
             'number_format' => '{series}-{number:08}',
             'min_number' => 1,
             'current_number' => 0,
+            'range_authorization' => null,
             'active' => true,
         ]);
     }
