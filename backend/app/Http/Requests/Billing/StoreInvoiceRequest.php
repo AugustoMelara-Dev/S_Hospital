@@ -17,7 +17,7 @@ class StoreInvoiceRequest extends FormRequest
 
     public function authorize(): bool
     {
-        return $this->user()?->can('invoices.create') === true;
+        return $this->user()?->can('create', \App\Models\Invoice::class) === true;
     }
 
     /**
