@@ -260,7 +260,7 @@ class InstitutionalReceiptHtmlBuilder
     }
 
     /**
-     * @param  array<int, array<string, mixed>>  $snapshot
+     * @param  array<int, mixed>  $snapshot
      * @return list<array<string, mixed>>
      */
     private function normalizedItems(array $snapshot): array

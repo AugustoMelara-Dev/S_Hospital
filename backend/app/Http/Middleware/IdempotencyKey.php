@@ -185,18 +185,18 @@ class IdempotencyKey
         $plain = $reservation->response_body_plain;
         $status = (int) ($reservation->response_status ?? 200);
 
-        if (! is_string($plain) || $reservation->response_status === null) {
+        if ($plain === null || $reservation->response_status === null) {
             return $this->staleIncompleteResponse();
         }
 
-        if (is_string($plain) && str_starts_with($plain, '%PDF')) {
+        if (str_starts_with($plain, '%PDF')) {
             return new Response($plain, $status, [
                 'Content-Type' => 'application/pdf',
                 'Idempotent-Replay' => 'true',
             ]);
         }
 
-        $payload = is_string($plain) ? json_decode($plain, true) : null;
+        $payload = json_decode($plain, true);
         if (! is_array($payload)) {
             $payload = ['data' => null];
         }

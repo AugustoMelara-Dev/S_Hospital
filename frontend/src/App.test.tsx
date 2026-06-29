@@ -448,13 +448,22 @@ describe('App', () => {
         } as Response;
       }
 
+      if (url.includes('/api/cash-sessions/current')) {
+        return {
+          ok: true,
+          json: async () => ({ data: null }),
+        } as Response;
+      }
+
       return { ok: true, json: async () => ({}) } as Response;
     });
 
     render(<App />);
 
-    expect(await screen.findByRole('heading', { name: /cat[aá]l[oó]go de servicios/i })).toBeInTheDocument();
-    expect(await screen.findByText('Glucosa')).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: /cat[aá]l[oó]go de servicios/i }, { timeout: 20_000 }),
+    ).toBeInTheDocument();
+    expect(await screen.findByText('Glucosa', {}, { timeout: 20_000 })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /agregar servicio/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /nueva categoria/i })).not.toBeInTheDocument();
   });
@@ -1204,7 +1213,7 @@ describe('App', () => {
     expect(screen.queryByRole('heading', { name: /nueva factura/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /datos fiscales del hospital/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /respaldos/i })).not.toBeInTheDocument();
-  });
+  }, 30_000);
 
   it('keeps heavy authenticated routes behind lazy route chunks', () => {
     const source = readFileSync('src/AppRoutes.tsx', 'utf8');

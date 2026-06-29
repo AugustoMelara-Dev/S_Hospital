@@ -3,11 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\User;
-use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Crypt;
-use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class EncryptLegacyIdempotencyKeysTest extends TestCase
@@ -28,7 +27,7 @@ class EncryptLegacyIdempotencyKeysTest extends TestCase
             'response_status' => 200,
             'response_body' => '{"patient_name": "John Doe Plaintext"}',
             'created_at' => now(),
-            'updated_at' => now()
+            'updated_at' => now(),
         ]);
 
         $encryptedBody = Crypt::encryptString('{"patient_name": "Jane Doe Encrypted"}');
@@ -40,8 +39,12 @@ class EncryptLegacyIdempotencyKeysTest extends TestCase
             'response_status' => 200,
             'response_body' => $encryptedBody,
             'created_at' => now(),
-            'updated_at' => now()
+            'updated_at' => now(),
         ]);
+
+        DB::table('migrations')
+            ->where('migration', '2026_06_14_000002_encrypt_legacy_idempotency_keys')
+            ->delete();
 
         Artisan::call('migrate', ['--path' => 'database/migrations/2026_06_14_000002_encrypt_legacy_idempotency_keys.php']);
 

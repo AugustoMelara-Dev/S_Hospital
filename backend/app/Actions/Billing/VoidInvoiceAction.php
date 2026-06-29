@@ -5,9 +5,9 @@ namespace App\Actions\Billing;
 use App\Actions\InstitutionalReceipts\VoidInstitutionalReceiptAction;
 use App\Events\InvoiceChanged;
 use App\Models\AuditLog;
+use App\Models\CashRegisterSession;
 use App\Models\Invoice;
 use App\Models\Payment;
-use App\Models\CashRegisterSession;
 use App\Models\User;
 use App\Support\InvoiceAccess;
 use App\Support\Money;
@@ -48,7 +48,8 @@ class VoidInvoiceAction
                 ]);
             }
 
-            if ($lockedInvoice->cashSession && $lockedInvoice->cashSession->status !== CashRegisterSession::STATUS_OPEN) {
+            $cashSession = $lockedInvoice->cashSession;
+            if ($cashSession instanceof CashRegisterSession && $cashSession->status !== CashRegisterSession::STATUS_OPEN) {
                 throw ValidationException::withMessages([
                     'invoice' => 'No se puede anular una factura de una caja cerrada.',
                 ]);
