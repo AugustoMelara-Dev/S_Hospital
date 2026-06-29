@@ -2,24 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Admin\StoreRoleRequest;
+use App\Http\Requests\Admin\UpdateRoleRequest;
 use App\Support\AuditLogger;
-use App\Support\VisiblePermissions;
+use App\Support\RoleCatalog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 class RoleController extends Controller
 {
-    private const PROTECTED_ROLES = ['admin', 'root'];
-
-    private const RESERVED_ROLE_PERMISSIONS = [
-        'users.assign_admin_role',
-    ];
-
     public function index(Request $request): JsonResponse
     {
         abort_unless($request->user()?->can('users.view'), 403);
@@ -36,15 +30,9 @@ class RoleController extends Controller
         ]);
     }
 
-    public function store(Request $request, AuditLogger $auditLogger): JsonResponse
+    public function store(StoreRoleRequest $request, AuditLogger $auditLogger): JsonResponse
     {
-        abort_unless($request->user()?->can('users.assign_admin_role'), 403);
-
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:80', 'alpha_dash', $this->notProtectedRoleNameRule(), Rule::unique('roles', 'name')->where('guard_name', 'web')],
-            'permissions' => ['required', 'array', 'min:1'],
-            'permissions.*' => ['required', 'string', 'distinct', Rule::notIn(self::hiddenRolePermissionNames()), Rule::exists('permissions', 'name')->where('guard_name', 'web')],
-        ]);
+        $validated = $request->validated();
 
         $role = Role::query()->create([
             'name' => $validated['name'],
@@ -69,27 +57,9 @@ class RoleController extends Controller
         ], 201);
     }
 
-    public function update(Request $request, Role $role, AuditLogger $auditLogger): JsonResponse
+    public function update(UpdateRoleRequest $request, Role $role, AuditLogger $auditLogger): JsonResponse
     {
-        abort_unless($request->user()?->can('users.assign_admin_role'), 403);
-
-        if ($role->guard_name !== 'web') {
-            throw ValidationException::withMessages([
-                'role' => 'El rol no pertenece al guard operativo web.',
-            ]);
-        }
-
-        if ($this->isProtectedRoleName($role->name)) {
-            throw ValidationException::withMessages([
-                'role' => 'El rol administrativo base no se puede modificar desde el editor de modulos.',
-            ]);
-        }
-
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:80', 'alpha_dash', $this->notProtectedRoleNameRule(), Rule::unique('roles', 'name')->where('guard_name', 'web')->ignore($role->id)],
-            'permissions' => ['required', 'array', 'min:1'],
-            'permissions.*' => ['required', 'string', 'distinct', Rule::notIn(self::hiddenRolePermissionNames()), Rule::exists('permissions', 'name')->where('guard_name', 'web')],
-        ]);
+        $validated = $request->validated();
 
         $oldValues = $this->auditPayload($role->load('permissions'));
 
@@ -122,7 +92,7 @@ class RoleController extends Controller
         $permissions = [];
 
         foreach ($role->permissions->sortBy('name') as $permission) {
-            if (! $permission instanceof Permission || in_array($permission->name, self::hiddenRolePermissionNames(), true)) {
+            if (! $permission instanceof Permission || in_array($permission->name, RoleCatalog::hiddenPermissionNames(), true)) {
                 continue;
             }
 
@@ -136,7 +106,7 @@ class RoleController extends Controller
         return [
             'id' => $role->id,
             'name' => $role->name,
-            'protected' => $this->isProtectedRoleName($role->name),
+            'protected' => RoleCatalog::isProtectedRoleName($role->name),
             'permissions' => $permissions,
         ];
     }
@@ -148,7 +118,7 @@ class RoleController extends Controller
     {
         return Permission::query()
             ->where('guard_name', 'web')
-            ->whereNotIn('name', self::hiddenRolePermissionNames())
+            ->whereNotIn('name', RoleCatalog::hiddenPermissionNames())
             ->orderBy('name')
             ->get()
             ->groupBy(fn (Permission $permission): string => $this->moduleForPermission($permission->name))
@@ -185,31 +155,6 @@ class RoleController extends Controller
         return ucfirst(str_replace(['.', '_'], [' - ', ' '], $permission));
     }
 
-    private function isProtectedRoleName(string $role): bool
-    {
-        return in_array(strtolower($role), self::PROTECTED_ROLES, true);
-    }
-
-    private function notProtectedRoleNameRule(): \Closure
-    {
-        return function (string $attribute, mixed $value, \Closure $fail): void {
-            if (is_string($value) && $this->isProtectedRoleName($value)) {
-                $fail('El nombre del rol esta reservado.');
-            }
-        };
-    }
-
-    /**
-     * @return list<string>
-     */
-    private static function hiddenRolePermissionNames(): array
-    {
-        return array_values(array_unique([
-            ...VisiblePermissions::hiddenPermissionNames(),
-            ...self::RESERVED_ROLE_PERMISSIONS,
-        ]));
-    }
-
     /**
      * @return array{name: string, protected: bool, permissions: list<string>}
      */
@@ -217,7 +162,7 @@ class RoleController extends Controller
     {
         return [
             'name' => $role->name,
-            'protected' => $this->isProtectedRoleName($role->name),
+            'protected' => RoleCatalog::isProtectedRoleName($role->name),
             'permissions' => $role->permissions->pluck('name')->sort()->values()->all(),
         ];
     }

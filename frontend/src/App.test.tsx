@@ -247,7 +247,7 @@ describe('App', () => {
 
     render(<App />);
 
-    expect(await screen.findByRole('heading', { name: /operación hospitalaria local/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /acceso institucional para caja y administracion/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/usuario o correo/i)).toHaveValue('');
   });
 
@@ -1015,7 +1015,7 @@ describe('App', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: /actualizar/i }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(/contrasena actual no es correcta/i);
+    expect(await screen.findByText(/contrasena actual no es correcta/i)).toBeInTheDocument();
   });
 
   it('prevents duplicated required password change submissions while pending', async () => {

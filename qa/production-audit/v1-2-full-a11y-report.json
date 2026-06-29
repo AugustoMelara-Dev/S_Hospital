@@ -1,0 +1,90 @@
+{
+  "generated_at": "2026-06-28T16:37:01.840Z",
+  "mode": "mocked-non-mutating-playwright",
+  "results": [
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1920x1080",
+      "path": "/dashboard",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1920x1080",
+      "path": "/billing/new",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1920x1080",
+      "path": "/cashbox",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1920x1080",
+      "path": "/catalog",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1920x1080",
+      "path": "/invoices",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1920x1080",
+      "path": "/reports",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1920x1080",
+      "path": "/backups",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1920x1080",
+      "path": "/settings/fiscal",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1920x1080",
+      "path": "/settings/institutional-receipts",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1920x1080",
+      "path": "/admin/users",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1920x1080",
+      "path": "/help",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1920x1080",
+      "path": "/support",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1920x1080",
+      "path": "/about",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1920x1080",
+      "path": "/does-not-exist",
+      "status": "passed"
+    }
+  ]
+}

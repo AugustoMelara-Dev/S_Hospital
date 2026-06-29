@@ -159,8 +159,12 @@ function formatDelta(percentage: number | null): { label: string; icon: typeof A
 
 export function ExecutiveSummary({ report }: ExecutiveSummaryProps) {
   return (
-    <section aria-labelledby="executive-summary-title" className="flex flex-col gap-3">
-      <header className="flex flex-col gap-1 border-b border-border pb-3">
+    <section
+      aria-labelledby="executive-summary-title"
+      className="flex flex-col gap-4 rounded-panel border border-operational-border bg-operational-surface p-panel shadow-operational"
+    >
+      <header className="flex flex-col gap-3 border-b border-operational-border pb-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="min-w-0">
         <p id="executive-summary-title" className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
           Resumen ejecutivo
         </p>
@@ -170,8 +174,23 @@ export function ExecutiveSummary({ report }: ExecutiveSummaryProps) {
         <p className="text-xs text-muted-foreground">
           Periodo del {report.period.from} al {report.period.to} ({report.period.days} {report.period.days === 1 ? 'dia' : 'dias'}) · {report.period.timezone}
         </p>
+        </div>
+        <dl className="grid grid-cols-3 gap-2 text-right text-xs sm:min-w-80">
+          <div className="rounded-md border border-operational-border bg-operational-panel px-3 py-2">
+            <dt className="text-muted-foreground">Pagadas</dt>
+            <dd className="mt-1 font-semibold tabular-nums text-foreground">{report.summary.paid_count}</dd>
+          </div>
+          <div className="rounded-md border border-operational-border bg-operational-panel px-3 py-2">
+            <dt className="text-muted-foreground">Parciales</dt>
+            <dd className="mt-1 font-semibold tabular-nums text-foreground">{report.summary.partial_count}</dd>
+          </div>
+          <div className="rounded-md border border-operational-border bg-operational-panel px-3 py-2">
+            <dt className="text-muted-foreground">Anuladas</dt>
+            <dd className="mt-1 font-semibold tabular-nums text-foreground">{report.summary.voided_count}</dd>
+          </div>
+        </dl>
       </header>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
         {KPI_SPECS.map((spec) => {
           const value = spec.value(report);
           const context = spec.context(report);
@@ -183,7 +202,8 @@ export function ExecutiveSummary({ report }: ExecutiveSummaryProps) {
             <article
               key={spec.key}
               className={cn(
-                'flex flex-col gap-1.5 border border-border bg-card p-4',
+                'flex min-h-36 flex-col gap-1.5 rounded-md border border-operational-border bg-operational-panel p-4 shadow-sm transition-colors hover:border-hospital-primary/35',
+                spec.key === 'billed_total' || spec.key === 'collected_total' ? 'lg:col-span-3' : 'lg:col-span-2',
                 TONE_BORDER[spec.tone],
               )}
             >
@@ -204,7 +224,7 @@ export function ExecutiveSummary({ report }: ExecutiveSummaryProps) {
                   : formatLempirasUI(value)}
               </p>
               <p className="text-xs text-muted-foreground">{context}</p>
-              <p className="text-[11px] text-muted-foreground/80">{spec.helper}</p>
+              <p className="text-[11px] text-muted-foreground">{spec.helper}</p>
             </article>
           );
         })}

@@ -1,4 +1,5 @@
 import { type FormEvent, useEffect, useRef, useState } from 'react';
+import { Banknote, Printer, ReceiptText } from 'lucide-react';
 import { Alert } from '../../../components/ui/alert';
 import { Button } from '../../../components/ui/button';
 import { Checkbox } from '../../../components/ui/checkbox';
@@ -166,16 +167,19 @@ export function PaymentModal({
       >
         <section
           aria-label="Resumen de factura"
-          className="rounded-md border border-border bg-muted/20 p-4"
+          className="rounded-panel border border-operational-border bg-operational-panel/70 p-4"
         >
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Factura</p>
+              <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <ReceiptText className="size-3.5 text-secondary" aria-hidden="true" />
+                Factura
+              </p>
               <p className="break-words font-semibold tabular-nums text-foreground">{invoiceNumber}</p>
               <p className="mt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Paciente</p>
               <p className="break-words font-medium text-foreground">{patientLabel}</p>
             </div>
-            <div className="grid gap-1 text-sm sm:min-w-44 sm:text-right">
+            <div className="grid gap-1 rounded-md border border-secondary/25 bg-secondary/10 px-3 py-2 text-sm sm:min-w-44 sm:text-right">
               <span className="text-muted-foreground">Saldo pendiente</span>
               <MoneyText emphasis="strong" className="text-xl">
                 {moneyLabel(balanceDue)}
@@ -245,7 +249,7 @@ export function PaymentModal({
           ) : null}
         </div>
 
-        <section aria-label="Datos del pago" className="grid gap-4">
+        <section aria-label="Datos del pago" className="grid gap-4 rounded-panel border border-operational-border bg-card p-4">
           <div className="grid gap-1.5">
             <Label htmlFor="payment-method">Método de pago</Label>
             <Select value={paymentMethod} onValueChange={(v) => onPaymentMethodChange(v as Payment['method'])}>
@@ -266,18 +270,21 @@ export function PaymentModal({
 
           <div className="grid gap-1.5">
             <Label htmlFor="payment-amount">Monto recibido (L.)</Label>
-            <Input
-              ref={amountInputRef}
-              id="payment-amount"
-              type="text"
-              inputMode="decimal"
-              value={paymentAmount}
-              onChange={(e) => handleAmountChange(e.target.value)}
-              placeholder="0.00"
-              aria-invalid={error ? 'true' : 'false'}
-              aria-describedby={amountDescribedBy || undefined}
-              className="tabular-nums"
-            />
+            <div className="relative">
+              <Banknote className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-secondary" aria-hidden="true" />
+              <Input
+                ref={amountInputRef}
+                id="payment-amount"
+                type="text"
+                inputMode="decimal"
+                value={paymentAmount}
+                onChange={(e) => handleAmountChange(e.target.value)}
+                placeholder="0.00"
+                aria-invalid={error ? 'true' : 'false'}
+                aria-describedby={amountDescribedBy || undefined}
+                className="min-h-12 pl-10 text-lg font-semibold tabular-nums"
+              />
+            </div>
             <p id="payment-amount-help" className="text-xs text-muted-foreground">
               Use hasta dos decimales. El backend registra el pago final.
             </p>
@@ -311,7 +318,7 @@ export function PaymentModal({
           ) : null}
         </section>
 
-        <div className="flex items-start gap-3 rounded-md border border-border bg-muted/30 px-3 py-2.5 text-sm">
+        <div className="flex items-start gap-3 rounded-md border border-operational-border bg-operational-panel/70 px-3 py-2.5 text-sm">
           <Checkbox
             id="preview-before-print"
             checked={previewBeforePrint}
@@ -342,7 +349,12 @@ export function PaymentModal({
             disabled={submitting || exceedsPending || needsAmount}
             aria-label={previewBeforePrint ? 'Confirmar cobro y ver preview' : 'Confirmar cobro e imprimir'}
           >
-            {submitting ? 'Cobrando...' : previewBeforePrint ? 'Registrar cobro y ver preview' : 'Registrar cobro e imprimir'}
+            {submitting ? 'Cobrando...' : previewBeforePrint ? 'Registrar cobro y ver preview' : (
+              <span className="inline-flex items-center gap-2">
+                <Printer className="size-4" aria-hidden="true" />
+                Registrar cobro e imprimir
+              </span>
+            )}
           </Button>
         </div>
       </form>

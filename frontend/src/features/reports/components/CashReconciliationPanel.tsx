@@ -42,7 +42,7 @@ export function CashReconciliationPanel({ report }: CashReconciliationPanelProps
   const openSessions = report.cash_sessions.filter((s: ExecutiveReport['cash_sessions'][number]) => s.status === 'open');
 
   return (
-    <Card>
+    <Card className="rounded-panel border-operational-border bg-operational-surface shadow-operational">
       <CardHeader>
         <div className="flex flex-col gap-1">
           <CardTitle className="text-base">Caja y conciliacion</CardTitle>
@@ -89,6 +89,7 @@ export function CashReconciliationPanel({ report }: CashReconciliationPanelProps
         {report.cash_sessions.length === 0 ? (
           <p className="text-sm text-muted-foreground">Sin sesiones de caja en el periodo.</p>
         ) : (
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -160,6 +161,7 @@ export function CashReconciliationPanel({ report }: CashReconciliationPanelProps
               })}
             </TableBody>
           </Table>
+          </div>
         )}
       </CardContent>
     </Card>

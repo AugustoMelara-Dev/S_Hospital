@@ -13,7 +13,7 @@ import {
 } from '../../lib/api';
 import { useInvoices } from '../../hooks/useInvoices';
 import { Button } from '../../components/ui/button';
-import { Card, CardContent } from '../../components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { ConfirmDialog } from '../../components/ui/confirm-dialog';
 import { Dialog } from '../../components/ui/dialog';
 import { Label } from '../../components/ui/label';
@@ -113,7 +113,6 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   async function prepareInvoiceAction(invoiceId: number, action: 'void' | 'reverse') {
     const requestId = actionRequestRef.current + 1;
     actionRequestRef.current = requestId;
-    setLoadingActionInvoiceId(invoiceId);
 
     try {
       const invoice = await apiClient.getInvoice(invoiceId);
@@ -130,10 +129,6 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     } catch (error) {
       if (actionRequestRef.current === requestId) {
         onStatus(userSafeErrorMessage(error, 'No se pudo cargar detalle.'));
-      }
-    } finally {
-      if (actionRequestRef.current === requestId) {
-        setLoadingActionInvoiceId(null);
       }
     }
   }
@@ -391,7 +386,13 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       ) : loading ? (
         <LoadingState label="Cargando facturas..." />
       ) : !loadError ? (
-        <Card>
+        <Card className="border-operational-border">
+          <CardHeader className="gap-1 border-b border-border">
+            <CardTitle>Facturas filtradas</CardTitle>
+            <CardDescription>
+              Acciones disponibles según permisos, estado de pago y trazabilidad del recibo institucional.
+            </CardDescription>
+          </CardHeader>
           <CardContent className="p-0">
             <InvoiceHistoryTable
               canReprint={canReprint}

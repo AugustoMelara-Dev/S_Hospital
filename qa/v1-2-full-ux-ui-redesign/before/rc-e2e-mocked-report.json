@@ -1,0 +1,32 @@
+{
+  "generated_at": "2026-06-28T08:10:29.801Z",
+  "mode": "mocked-e2e",
+  "note": "Capturas con API mockeada; no sustituyen LAN, MySQL/MariaDB ni impresora fisica.",
+  "screenshots": [
+    {
+      "name": "login-light",
+      "path": "qa/v1-2-full-ux-ui-redesign/before/login-light.png",
+      "route": "/login",
+      "theme": "light"
+    },
+    {
+      "name": "login-dark",
+      "path": "qa/v1-2-full-ux-ui-redesign/before/login-dark.png",
+      "route": "/login",
+      "theme": "dark"
+    },
+    {
+      "name": "access-denied-reports-light",
+      "path": "qa/v1-2-full-ux-ui-redesign/before/access-denied-reports-light.png",
+      "route": "/reports",
+      "theme": "light"
+    },
+    {
+      "name": "not-found-light",
+      "path": "qa/v1-2-full-ux-ui-redesign/before/not-found-light.png",
+      "route": "/does-not-exist",
+      "theme": "light"
+    }
+  ],
+  "console_issues": []
+}

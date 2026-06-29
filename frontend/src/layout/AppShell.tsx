@@ -56,7 +56,7 @@ export function AppShell({
   const isMinimalTopbar = topbarVariant === 'minimal';
 
   return (
-    <div className="app-shell min-h-[100dvh] overflow-x-hidden bg-background text-foreground transition-colors">
+    <div className="app-shell min-h-[100dvh] overflow-x-hidden bg-operational-bg text-foreground transition-colors">
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:font-bold focus:text-primary-foreground focus:shadow-lg"
@@ -101,7 +101,7 @@ export function AppShell({
 
         <main
           id="main-content"
-          className="min-w-0 flex-1 scroll-mt-16 px-4 py-5 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background lg:px-7 lg:py-7"
+          className="min-w-0 flex-1 scroll-mt-20 px-4 py-5 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background lg:px-7 lg:py-7"
           tabIndex={-1}
         >
           <div className="mx-auto flex max-w-[1440px] flex-col gap-5">{children}</div>

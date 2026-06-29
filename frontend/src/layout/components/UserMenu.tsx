@@ -15,6 +15,7 @@ type UserMenuProps = {
   onLogout: () => void;
   onOpenGuide: () => void;
   onToggleTheme: () => void;
+  roleLabel: string;
   user: AuthUser;
 };
 
@@ -24,13 +25,19 @@ export function UserMenu({
   onLogout,
   onOpenGuide,
   onToggleTheme,
+  roleLabel,
   user,
 }: UserMenuProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button type="button" variant="ghost" className="h-auto gap-2 px-2 py-1.5" aria-label="Abrir menu de usuario">
-          <div className="flex size-7 items-center justify-center rounded-md border border-border bg-muted text-xs font-bold text-secondary">
+        <Button
+          type="button"
+          variant="ghost"
+          className="h-auto gap-2 border border-transparent px-2 py-1.5 hover:border-operational-border hover:bg-operational-panel"
+          aria-label="Abrir menu de usuario"
+        >
+          <div className="flex size-8 items-center justify-center rounded-md border border-secondary/35 bg-secondary/10 text-xs font-bold text-secondary">
             {user.name.charAt(0).toUpperCase()}
           </div>
           <span className="hidden max-w-[10rem] truncate text-xs lg:inline" title={user.name}>
@@ -39,9 +46,12 @@ export function UserMenu({
           <ChevronDown data-icon="inline-end" aria-hidden="true" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-60">
-        <div className="mb-1 border-b border-border px-3 py-2 text-xs">
+      <DropdownMenuContent align="end" className="min-w-64">
+        <div className="mb-1 border-b border-border px-3 py-3 text-xs">
           <p className="font-semibold text-foreground">{user.name}</p>
+          <p className="truncate font-medium text-secondary" title={roleLabel}>
+            {roleLabel}
+          </p>
           <p className="truncate text-muted-foreground" title={hospitalName}>
             {hospitalName}
           </p>
@@ -66,4 +76,3 @@ export function UserMenu({
     </DropdownMenu>
   );
 }
-

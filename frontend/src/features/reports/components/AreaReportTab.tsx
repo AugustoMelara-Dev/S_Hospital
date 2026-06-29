@@ -2,7 +2,7 @@ import { Building2, Download } from 'lucide-react';
 import { Button } from '../../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { EmptyState } from '../../../components/ui/states';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/data-table';
+import { DataTable, type DataTableColumn } from '../../../components/ui/data-table';
 import { KPICard } from './KPICard';
 import type { AreaReport } from '../../../lib/api/types';
 
@@ -15,6 +15,16 @@ type AreaReportTabProps = {
 
 export function AreaReportTab({ areaReport, canExport, onExport, onExportPdf }: AreaReportTabProps) {
   const areas = areaReport?.areas ?? [];
+  const columns: Array<DataTableColumn<AreaReport['areas'][number]>> = [
+    { key: 'area', header: 'Area', cellClassName: 'font-medium', render: (area) => area.area },
+    { key: 'invoice_count', header: 'Facturas', numeric: true, render: (area) => area.invoice_count },
+    { key: 'item_count', header: 'Items', numeric: true, render: (area) => area.item_count },
+    { key: 'subtotal', header: 'Subtotal', numeric: true, render: (area) => `L. ${area.subtotal}` },
+    { key: 'tax_amount', header: 'ISV', numeric: true, render: (area) => `L. ${area.tax_amount}` },
+    { key: 'total', header: 'Facturado', numeric: true, render: (area) => `L. ${area.total}` },
+    { key: 'collected', header: 'Cobrado', numeric: true, render: (area) => `L. ${area.collected}` },
+    { key: 'balance_due', header: 'Saldo', numeric: true, render: (area) => `L. ${area.balance_due}` },
+  ];
   const total = areas.reduce((sum, area) => sum + Number.parseFloat(area.total), 0);
   const collected = areas.reduce((sum, area) => sum + Number.parseFloat(area.collected), 0);
   const balance = areas.reduce((sum, area) => sum + Number.parseFloat(area.balance_due), 0);
@@ -50,34 +60,12 @@ export function AreaReportTab({ areaReport, canExport, onExport, onExportPdf }: 
           <CardTitle>Totales por area</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Area</TableHead>
-                <TableHead className="text-right">Facturas</TableHead>
-                <TableHead className="text-right">Items</TableHead>
-                <TableHead className="text-right">Subtotal</TableHead>
-                <TableHead className="text-right">ISV</TableHead>
-                <TableHead className="text-right">Facturado</TableHead>
-                <TableHead className="text-right">Cobrado</TableHead>
-                <TableHead className="text-right">Saldo</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {areas.map((area) => (
-                <TableRow key={`${area.area_id ?? 'none'}-${area.area}`}>
-                  <TableCell className="font-medium">{area.area}</TableCell>
-                  <TableCell className="text-right">{area.invoice_count}</TableCell>
-                  <TableCell className="text-right">{area.item_count}</TableCell>
-                  <TableCell className="text-right">L. {area.subtotal}</TableCell>
-                  <TableCell className="text-right">L. {area.tax_amount}</TableCell>
-                  <TableCell className="text-right">L. {area.total}</TableCell>
-                  <TableCell className="text-right">L. {area.collected}</TableCell>
-                  <TableCell className="text-right">L. {area.balance_due}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <DataTable
+            containerLabel="Totales por area"
+            rows={areas}
+            columns={columns}
+            getRowKey={(area) => `${area.area_id ?? 'none'}-${area.area}`}
+          />
         </CardContent>
       </Card>
 

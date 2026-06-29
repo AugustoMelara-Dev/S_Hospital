@@ -12,11 +12,12 @@
     "test:full:windows": "vitest run --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000",
     "smoke:buttons": "playwright test e2e/all-buttons-smoke.spec.ts",
     "build": "tsc --noEmit && vite build",
-    "e2e": "playwright test --config=playwright.release.config.ts",
-    "test:e2e": "playwright test --config=playwright.release.config.ts",
+    "e2e": "node scripts/run-release-e2e.mjs",
+    "test:e2e": "node scripts/run-release-e2e.mjs",
     "e2e:legacy": "playwright test",
     "smoke:real": "playwright test --config=playwright.real.config.ts",
-    "visual:smoke": "playwright test e2e/all-buttons-smoke.spec.ts"
+    "visual:smoke": "playwright test e2e/v1-2-visible-ui-a11y.spec.ts",
+    "v1-2:before": "playwright test e2e/v1-2-visible-ui-a11y.spec.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -34,6 +35,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@tailwindcss/vite": "^4.3.0",
     "@tanstack/react-query": "^5.100.10",
+    "@tanstack/react-table": "^8.21.3",
     "clsx": "^2.1.1",
     "laravel-echo": "^2.3.4",
     "lucide-react": "^1.16.0",

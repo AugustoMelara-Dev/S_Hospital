@@ -53,6 +53,21 @@ class StoreFiscalSequenceRequest extends FormRequest
                     ->exists()) {
                     $validator->errors()->add('active', 'Ya existe una secuencia fiscal activa para este tipo de documento.');
                 }
+
+                $prefix = $this->input('prefix');
+                if ($prefix && ! $validator->errors()->has('min_number') && ! $validator->errors()->has('max_number')) {
+                    $overlaps = FiscalSequence::query()
+                        ->where('prefix', $prefix)
+                        ->where(function ($query) use ($min, $max) {
+                            $query->where('min_number', '<=', $max)
+                                  ->where('max_number', '>=', $min);
+                        })
+                        ->exists();
+
+                    if ($overlaps) {
+                        $validator->errors()->add('min_number', 'El rango de la secuencia se superpone con otra secuencia existente con el mismo prefijo.');
+                    }
+                }
             },
         ];
     }

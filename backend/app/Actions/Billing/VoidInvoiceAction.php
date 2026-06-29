@@ -7,6 +7,7 @@ use App\Events\InvoiceChanged;
 use App\Models\AuditLog;
 use App\Models\Invoice;
 use App\Models\Payment;
+use App\Models\CashRegisterSession;
 use App\Models\User;
 use App\Support\InvoiceAccess;
 use App\Support\Money;
@@ -31,6 +32,7 @@ class VoidInvoiceAction
 
         $result = DB::transaction(function () use ($invoice, $user, $reason): ?Invoice {
             $lockedInvoice = Invoice::query()
+                ->with(['cashSession'])
                 ->withCount([
                     'payments as posted_payments_count' => fn ($query) => $query
                         ->where('status', Payment::STATUS_POSTED),
@@ -43,6 +45,12 @@ class VoidInvoiceAction
             if ($lockedInvoice->status === Invoice::STATUS_VOID) {
                 throw ValidationException::withMessages([
                     'invoice' => 'La factura ya esta anulada.',
+                ]);
+            }
+
+            if ($lockedInvoice->cashSession && $lockedInvoice->cashSession->status !== CashRegisterSession::STATUS_OPEN) {
+                throw ValidationException::withMessages([
+                    'invoice' => 'No se puede anular una factura de una caja cerrada.',
                 ]);
             }
 

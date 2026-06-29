@@ -13,6 +13,7 @@ import {
 import { PageHeader } from '@/components/ui/page-header';
 import { ErrorState, LoadingState } from '@/components/ui/states';
 import { Card, CardContent } from '@/components/ui/card';
+import { CommandPanel, InfoPanel, OperationalBanner, PermissionState, StatGrid } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,14 +23,7 @@ import { Dialog } from '@/components/ui/dialog';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
 import {
   Search,
   UserPlus,
@@ -42,6 +36,9 @@ import {
   Lock,
   ShieldCheck,
   PlusCircle,
+  Users,
+  UserCog,
+  ShieldAlert,
 } from 'lucide-react';
 
 type UsersViewProps = {
@@ -214,6 +211,10 @@ export function UsersView({
       u.email.toLowerCase().includes(term)
     );
   });
+  const activeUsersCount = users.filter((user) => user.active).length;
+  const pendingPasswordUsersCount = users.filter((user) => user.must_change_password).length;
+  const editableRolesCount = roles.filter((role) => !role.protected).length;
+  const totalPermissionCount = permissionCatalog.reduce((total, group) => total + group.permissions.length, 0);
 
   const handleOpenCreateModal = () => {
     const role = defaultRoleName();
@@ -454,20 +455,183 @@ export function UsersView({
     );
   }
 
+  const userColumns: Array<DataTableColumn<AuthUser>> = [
+    {
+      key: 'name',
+      header: 'Usuario',
+      headerClassName: 'w-[30%]',
+      cellClassName: 'font-medium',
+      render: (user) => (
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary font-bold">
+            {user.name.charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <p className="font-semibold text-foreground">{user.name}</p>
+            <div className="mt-1 flex flex-wrap gap-1">
+              {user.must_change_password ? (
+                <Badge variant="warning" className="text-[10px]">
+                  <ShieldAlert data-icon aria-hidden="true" className="size-3" />
+                  Requiere cambio de clave
+                </Badge>
+              ) : null}
+              {user.uses_exact_permission_map ? (
+                <Badge variant="info" className="text-[10px]">
+                  Permisos directos
+                </Badge>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'account',
+      header: 'Usuario / Correo',
+      render: (user) => (
+        <div className="flex flex-col gap-0.5">
+          <span className="text-xs text-muted-foreground">{user.username}</span>
+          <span className="text-xs text-muted-foreground">{user.email}</span>
+        </div>
+      ),
+    },
+    {
+      key: 'roles',
+      header: 'Rol',
+      render: (user) => (
+        <div className="flex flex-wrap gap-1">
+          {user.roles.map((role) => (
+            <Badge
+              key={role}
+              variant={role === 'admin' ? 'destructive' : role === 'supervisor' ? 'default' : 'secondary'}
+              className="capitalize font-semibold"
+            >
+              {role}
+            </Badge>
+          ))}
+        </div>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Estado',
+      render: (user) => (
+        <StatusBadge status={user.active ? 'active' : 'closed'}>
+          {user.active ? 'Activo' : 'Inactivo'}
+        </StatusBadge>
+      ),
+    },
+    {
+      key: 'actions',
+      header: 'Acciones',
+      headerClassName: 'text-right',
+      cellClassName: 'text-right',
+      render: (user) => (
+        <div className="flex items-center justify-end gap-2">
+          {canUpdateUsers && (
+            <>
+              <Button
+                variant="secondary"
+                size="icon"
+                title="Editar detalles"
+                aria-label={`Editar usuario ${user.name}`}
+                onClick={() => handleOpenEditModal(user)}
+              >
+                <Edit2 className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant="secondary"
+                size="icon"
+                title="Restablecer clave"
+                aria-label={`Restablecer clave de ${user.name}`}
+                onClick={() => handleOpenResetModal(user)}
+              >
+                <KeyRound className="h-3.5 w-3.5 text-orange-500" />
+              </Button>
+            </>
+          )}
+          {canDisableUsers && (
+            <Button
+              variant="secondary"
+              size="icon"
+              title={user.active ? 'Desactivar usuario' : 'Activar usuario'}
+              aria-label={user.active ? `Desactivar usuario ${user.name}` : `Activar usuario ${user.name}`}
+              onClick={() => handleOpenToggleDialog(user)}
+            >
+              {user.active ? (
+                <UserX className="h-3.5 w-3.5 text-rose-500" />
+              ) : (
+                <UserCheck className="h-3.5 w-3.5 text-success" />
+              )}
+            </Button>
+          )}
+          {!canUpdateUsers && !canDisableUsers && (
+            <span className="text-xs text-muted-foreground">Solo lectura</span>
+          )}
+        </div>
+      ),
+    },
+  ];
+
   return (
     <>
-      <PageHeader
-        title="Usuarios"
-        description="Administre el personal autorizado para facturar, cobrar y supervisar."
+      <OperationalBanner
+        title="Usuarios y permisos"
+        meta="Administracion segura"
+        description="Administre cuentas individuales, roles operativos y permisos por modulo sin cambiar la politica de acceso del servidor."
+        status={(
+          <Badge variant="info">
+            <ShieldCheck data-icon aria-hidden="true" />
+            RBAC activo
+          </Badge>
+        )}
+        actions={canCreateUsers ? (
+          <Button onClick={handleOpenCreateModal}>
+            <UserPlus data-icon aria-hidden="true" />
+            Crear usuario
+          </Button>
+        ) : undefined}
+      />
+
+      <StatGrid
+        className="mb-6 mt-6 xl:grid-cols-4"
+        items={[
+          {
+            label: 'Usuarios activos',
+            value: activeUsersCount,
+            helper: `${users.length} cuenta${users.length === 1 ? '' : 's'} registrada${users.length === 1 ? '' : 's'}`,
+            icon: <Users aria-hidden="true" />,
+            tone: 'success',
+          },
+          {
+            label: 'Cambio pendiente',
+            value: pendingPasswordUsersCount,
+            helper: 'Usuarios que deberan cambiar clave al ingresar.',
+            icon: <KeyRound aria-hidden="true" />,
+            tone: pendingPasswordUsersCount > 0 ? 'warning' : 'neutral',
+          },
+          {
+            label: 'Roles editables',
+            value: editableRolesCount,
+            helper: `${roles.length} rol${roles.length === 1 ? '' : 'es'} disponible${roles.length === 1 ? '' : 's'} en total.`,
+            icon: <UserCog aria-hidden="true" />,
+          },
+          {
+            label: 'Permisos agrupados',
+            value: totalPermissionCount,
+            helper: `${permissionCatalog.length} modulo${permissionCatalog.length === 1 ? '' : 's'} de acceso.`,
+            icon: <ShieldCheck aria-hidden="true" />,
+          },
+        ]}
       />
 
       {canManageRoles && (
-        <Card className="mb-6 border border-border">
+        <Card className="mb-6 border border-operational-border bg-operational-surface shadow-operational">
           <CardContent className="space-y-4 p-4">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div className="flex items-start gap-3">
                 <div className="mt-0.5 flex size-9 items-center justify-center rounded-md bg-primary/10 text-primary">
-                  <ShieldCheck className="size-5" />
+                  <ShieldCheck className="size-5" aria-hidden="true" />
                 </div>
                 <div>
                   <h2 className="text-base font-semibold text-foreground">Roles y modulos</h2>
@@ -477,14 +641,14 @@ export function UsersView({
                 </div>
               </div>
               <Button type="button" variant="outline" onClick={handleOpenCreateRole}>
-                <PlusCircle className="mr-2 size-4" />
+                <PlusCircle data-icon aria-hidden="true" />
                 Nuevo rol
               </Button>
             </div>
 
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               {roles.map((role) => (
-                <div key={role.id} className="rounded-md border border-border p-3">
+                <div key={role.id} className="rounded-md border border-operational-border bg-operational-panel/55 p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="font-semibold text-foreground">{roleLabel(role.name)}</p>
@@ -502,6 +666,9 @@ export function UsersView({
                         {module}
                       </Badge>
                     ))}
+                    {role.permissions.length === 0 ? (
+                      <Badge variant="warning">Sin permisos</Badge>
+                    ) : null}
                   </div>
                   <Button
                     type="button"
@@ -521,9 +688,22 @@ export function UsersView({
         </Card>
       )}
 
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+      {!canManageRoles ? (
+        <PermissionState
+          state="readonly"
+          className="mb-6"
+          title="Roles en modo consulta"
+          description="Su usuario puede revisar cuentas autorizadas, pero la asignacion directa de permisos requiere permiso de administracion de roles."
+        />
+      ) : null}
+
+      <CommandPanel
+        className="mb-6"
+        title="Directorio de usuarios"
+        description="Busque por nombre, correo o usuario para revisar estado, rol y acciones disponibles."
+      >
+        <div className="relative max-w-xl">
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
           <Input
             aria-label="Buscar usuarios"
             placeholder="Buscar por nombre, correo o usuario..."
@@ -532,130 +712,19 @@ export function UsersView({
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        {canCreateUsers && (
-          <Button onClick={handleOpenCreateModal} className="w-full md:w-auto">
-            <UserPlus className="mr-2 h-4 w-4" />
-            Crear usuario
-          </Button>
-        )}
-      </div>
+      </CommandPanel>
 
-      <Card className="border border-border">
+      <Card className="border border-operational-border bg-operational-surface shadow-operational">
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[30%]">Usuario</TableHead>
-                <TableHead>Usuario / Correo</TableHead>
-                <TableHead>Rol</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredUsers.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                    No se encontraron usuarios que coincidan con la búsqueda.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredUsers.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold">
-                          {user.name.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <p className="font-semibold text-foreground">{user.name}</p>
-                          {user.must_change_password && (
-                            <Badge variant="warning" className="text-[10px] px-1 py-0 mt-0.5">
-                              Requiere cambio de clave
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-xs text-muted-foreground">{user.username}</span>
-                        <span className="text-xs text-muted-foreground">{user.email}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {user.roles.map((role) => (
-                          <Badge
-                            key={role}
-                            variant={
-                              role === 'admin'
-                                ? 'destructive'
-                                : role === 'supervisor'
-                                ? 'default'
-                                : 'secondary'
-                            }
-                            className="capitalize font-semibold"
-                          >
-                            {role}
-                          </Badge>
-                        ))}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge status={user.active ? 'active' : 'closed'}>
-                        {user.active ? 'Activo' : 'Inactivo'}
-                      </StatusBadge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        {canUpdateUsers && (
-                          <>
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              title="Editar detalles"
-                              aria-label={`Editar usuario ${user.name}`}
-                              onClick={() => handleOpenEditModal(user)}
-                            >
-                              <Edit2 className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              title="Restablecer clave"
-                              aria-label={`Restablecer clave de ${user.name}`}
-                              onClick={() => handleOpenResetModal(user)}
-                            >
-                              <KeyRound className="h-3.5 w-3.5 text-orange-500" />
-                            </Button>
-                          </>
-                        )}
-                        {canDisableUsers && (
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            title={user.active ? 'Desactivar usuario' : 'Activar usuario'}
-                            aria-label={user.active ? `Desactivar usuario ${user.name}` : `Activar usuario ${user.name}`}
-                            onClick={() => handleOpenToggleDialog(user)}
-                          >
-                            {user.active ? (
-                              <UserX className="h-3.5 w-3.5 text-rose-500" />
-                            ) : (
-                              <UserCheck className="h-3.5 w-3.5 text-success" />
-                            )}
-                          </Button>
-                        )}
-                        {!canUpdateUsers && !canDisableUsers && (
-                          <span className="text-xs text-muted-foreground">Solo lectura</span>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+          <DataTable
+            containerLabel="Usuarios autorizados"
+            rows={filteredUsers}
+            columns={userColumns}
+            getRowKey={(user) => user.id}
+            getRowClassName={(user) => (!user.active ? 'bg-muted/20' : undefined)}
+            emptyTitle={searchTerm ? 'Sin coincidencias' : 'No hay usuarios cargados'}
+            emptyDescription={searchTerm ? 'Ajuste la busqueda por nombre, correo o usuario.' : 'Cuando se creen usuarios autorizados apareceran en este directorio.'}
+          />
         </CardContent>
       </Card>
 
@@ -675,7 +744,13 @@ export function UsersView({
             </div>
           )}
 
-          <div className="space-y-1">
+          <InfoPanel
+            title="Permisos por modulo"
+            description="Seleccione exactamente los accesos que tendra el rol. Los nombres tecnicos se muestran solo para trazabilidad administrativa."
+            tone="info"
+          />
+
+          <div className="rounded-md border border-operational-border bg-operational-panel/50 p-3 space-y-1">
             <Label htmlFor="role-name">Nombre del rol *</Label>
             <Input
               id="role-name"
@@ -686,10 +761,15 @@ export function UsersView({
             />
           </div>
 
-          <div className="max-h-[420px] space-y-3 overflow-y-auto rounded-md border border-border p-3">
+          <div className="max-h-[420px] space-y-3 overflow-y-auto rounded-md border border-operational-border bg-operational-panel/40 p-3">
             {permissionCatalog.map((group) => (
-              <fieldset key={group.module} className="rounded-md border border-border p-3">
-                <legend className="px-1 text-sm font-semibold text-foreground">{group.label}</legend>
+              <fieldset key={group.module} className="rounded-md border border-operational-border bg-operational-surface p-3">
+                <legend className="px-1 text-sm font-semibold text-foreground">
+                  {group.label}
+                  <span className="ml-2 text-xs font-normal text-muted-foreground">
+                    {group.permissions.length} permiso{group.permissions.length === 1 ? '' : 's'}
+                  </span>
+                </legend>
                 <div className="mt-3 grid gap-2 sm:grid-cols-2">
                   {group.permissions.map((permission) => {
                     const id = `permission-${permission.name.replace(/[^A-Za-z0-9_-]/g, '-')}`;
@@ -743,7 +823,14 @@ export function UsersView({
             </div>
           )}
 
-          <div className="space-y-1">
+          <InfoPanel
+            title={editingUser ? 'Edicion de cuenta operativa' : 'Alta de usuario individual'}
+            description={editingUser ? 'Actualice datos visibles y rol sin modificar la clave desde este formulario.' : 'Cree una cuenta personal para evitar usuarios compartidos en caja o administracion.'}
+            tone="info"
+          />
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1">
             <Label htmlFor="name">Nombre completo *</Label>
             <div className="relative">
               <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -757,9 +844,9 @@ export function UsersView({
               />
             </div>
             {userErrors.name && <p id="name-error" className="text-xs text-destructive" role="alert">{userErrors.name.message}</p>}
-          </div>
+            </div>
 
-          <div className="space-y-1">
+            <div className="space-y-1">
             <Label htmlFor="email">Correo electrónico *</Label>
             <div className="relative">
               <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -774,9 +861,9 @@ export function UsersView({
               />
             </div>
             {userErrors.email && <p id="email-error" className="text-xs text-destructive" role="alert">{userErrors.email.message}</p>}
-          </div>
+            </div>
 
-          <div className="space-y-1">
+            <div className="space-y-1">
             <Label htmlFor="username">Nombre de usuario *</Label>
             <div className="relative">
               <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -790,7 +877,7 @@ export function UsersView({
               />
             </div>
             {userErrors.username && <p id="username-error" className="text-xs text-destructive" role="alert">{userErrors.username.message}</p>}
-          </div>
+            </div>
 
           {!editingUser && (
             <div className="space-y-1">
@@ -810,6 +897,7 @@ export function UsersView({
               {userErrors.password && <p id="password-error" className="text-xs text-destructive" role="alert">{userErrors.password.message}</p>}
             </div>
           )}
+          </div>
 
           <div className="space-y-1">
             <Label htmlFor="role">Rol operativo *</Label>
@@ -842,7 +930,7 @@ export function UsersView({
           </div>
 
           {canManageRoles ? (
-            <div className="space-y-2 rounded-md border border-border p-3">
+            <div className="space-y-3 rounded-md border border-operational-border bg-operational-panel/45 p-3">
               <div>
                 <h3 className="text-sm font-semibold text-foreground">Acceso por modulos</h3>
                 <p className="mt-1 text-xs text-muted-foreground">
@@ -851,8 +939,13 @@ export function UsersView({
               </div>
               <div className="max-h-[320px] space-y-3 overflow-y-auto">
                 {permissionCatalog.map((group) => (
-                  <fieldset key={group.module} className="rounded-md border border-border p-3">
-                    <legend className="px-1 text-sm font-semibold text-foreground">{group.label}</legend>
+                  <fieldset key={group.module} className="rounded-md border border-operational-border bg-operational-surface p-3">
+                    <legend className="px-1 text-sm font-semibold text-foreground">
+                      {group.label}
+                      <span className="ml-2 text-xs font-normal text-muted-foreground">
+                        {group.permissions.length} permiso{group.permissions.length === 1 ? '' : 's'}
+                      </span>
+                    </legend>
                     <div className="mt-3 grid gap-2 sm:grid-cols-2">
                       {group.permissions.map((permission) => {
                         const id = `user-permission-${permission.name.replace(/[^A-Za-z0-9_-]/g, '-')}`;
@@ -911,6 +1004,12 @@ export function UsersView({
               {resetGlobalError}
             </div>
           )}
+
+          <InfoPanel
+            title="Clave temporal"
+            description="No se muestra ni se guarda la clave en pantalla despues de enviarla. El usuario debera cambiarla en el proximo ingreso."
+            tone="warning"
+          />
 
           <div className="space-y-1">
             <Label htmlFor="new-password">Nueva contraseña temporal *</Label>

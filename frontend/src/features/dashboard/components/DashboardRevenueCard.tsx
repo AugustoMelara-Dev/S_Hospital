@@ -25,14 +25,15 @@ export function DashboardRevenueCard({
 
   return (
     <DashboardSectionCard
-      title="Facturación y cobros"
-      description="Últimos 7 días."
+      title="Facturacion y cobros"
+      description="Ultimos 7 dias."
       state={state}
       loadingLabel="Cargando facturacion y cobros"
       errorMessage={dashboardError}
       onRetry={onRefresh}
       emptyDescription={EMPTY_DESCRIPTION}
       emptyTitle="Sin movimientos en los ultimos 7 dias"
+      variant="chart"
       actions={
         canViewManagerialReports ? (
           <Button

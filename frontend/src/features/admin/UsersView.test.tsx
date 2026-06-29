@@ -80,6 +80,16 @@ describe('UsersView', () => {
     expect(screen.queryByRole('button', { name: /crear usuario/i })).not.toBeInTheDocument();
   });
 
+  it('shows the V1.2 RBAC summary without changing read-only restrictions', async () => {
+    render(<UsersView onStatus={vi.fn()} canCreateUsers={false} canManageRoles={false} />);
+
+    expect(await screen.findByRole('heading', { name: /usuarios y permisos/i })).toBeInTheDocument();
+    expect(screen.getByText(/rbac activo/i)).toBeInTheDocument();
+    expect(screen.getByText(/usuarios activos/i)).toBeInTheDocument();
+    expect(screen.getByText(/roles en modo consulta/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /crear usuario/i })).not.toBeInTheDocument();
+  });
+
   it('hides user mutation actions when the operator only has users.view', async () => {
     render(<UsersView onStatus={vi.fn()} canCreateUsers={false} canManageRoles={false} />);
 
