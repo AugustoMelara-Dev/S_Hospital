@@ -183,6 +183,34 @@ class UserManagementTest extends TestCase
             ->assertJsonValidationErrors('role');
     }
 
+    public function test_user_manager_without_admin_assignment_permission_cannot_create_elevated_operational_roles(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $manager = User::factory()->create();
+        $manager->givePermissionTo(['users.create', 'users.view']);
+
+        foreach (['supervisor', 'auditor'] as $role) {
+            $this->actingAs($manager)
+                ->postJson('/api/admin/users', [
+                    'name' => "Nuevo {$role}",
+                    'email' => "nuevo-{$role}@hospital.local",
+                    'username' => "nuevo-{$role}",
+                    'password' => 'Temporary123!',
+                    'role' => $role,
+                    'active' => true,
+                ])
+                ->assertUnprocessable()
+                ->assertJsonValidationErrors('role');
+        }
+
+        $this->assertDatabaseMissing('users', [
+            'username' => 'nuevo-supervisor',
+        ]);
+        $this->assertDatabaseMissing('users', [
+            'username' => 'nuevo-auditor',
+        ]);
+    }
+
     public function test_user_editor_rejects_unknown_role_on_create(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
@@ -225,6 +253,83 @@ class UserManagementTest extends TestCase
             ])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('role');
+    }
+
+    public function test_user_manager_without_admin_assignment_permission_cannot_promote_user_to_elevated_operational_role(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $manager = User::factory()->create();
+        $manager->givePermissionTo(['users.update', 'users.view']);
+        $target = User::factory()->create([
+            'username' => 'target-cashier-supervisor',
+            'email' => 'target-cashier-supervisor@hospital.local',
+        ]);
+        $target->assignRole('cajero');
+
+        $this->actingAs($manager)
+            ->patchJson("/api/admin/users/{$target->id}", [
+                'name' => $target->name,
+                'email' => $target->email,
+                'username' => $target->username,
+                'role' => 'supervisor',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('role');
+
+        $this->assertTrue($target->refresh()->hasRole('cajero'));
+        $this->assertFalse($target->hasRole('supervisor'));
+    }
+
+    public function test_user_manager_without_admin_assignment_permission_cannot_demote_admin(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $manager = User::factory()->create();
+        $manager->givePermissionTo(['users.update', 'users.view']);
+        $admin = User::factory()->create([
+            'username' => 'protected-admin-demote',
+            'email' => 'protected-admin-demote@hospital.local',
+        ]);
+        $admin->assignRole('admin');
+
+        $this->actingAs($manager)
+            ->patchJson("/api/admin/users/{$admin->id}", [
+                'name' => $admin->name,
+                'email' => $admin->email,
+                'username' => $admin->username,
+                'role' => 'cajero',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('role');
+
+        $this->assertTrue($admin->refresh()->hasRole('admin'));
+        $this->assertFalse($admin->hasRole('cajero'));
+    }
+
+    public function test_user_manager_without_admin_assignment_permission_cannot_reset_or_deactivate_admin(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $manager = User::factory()->create();
+        $manager->givePermissionTo(['users.update', 'users.disable', 'users.view']);
+        $admin = User::factory()->create([
+            'username' => 'protected-admin-actions',
+            'email' => 'protected-admin-actions@hospital.local',
+        ]);
+        $admin->assignRole('admin');
+        $originalPassword = $admin->password;
+
+        $this->actingAs($manager)
+            ->postJson("/api/admin/users/{$admin->id}/reset-password", [
+                'password' => 'Temporary123!',
+            ])
+            ->assertForbidden();
+
+        $this->actingAs($manager)
+            ->postJson("/api/admin/users/{$admin->id}/toggle-active")
+            ->assertForbidden();
+
+        $admin->refresh();
+        $this->assertTrue($admin->active);
+        $this->assertSame($originalPassword, $admin->password);
     }
 
     public function test_admin_can_create_user_with_direct_module_permissions(): void

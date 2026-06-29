@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\Models\User;
+use App\Support\RoleCatalog;
 
 /**
  * Authorization for the admin user-management endpoints. The
@@ -40,11 +41,28 @@ class UserPolicy
 
         // No se puede desactivar a si mismo; el controller ya lo valida
         // pero la policy lo deja explicito.
-        return $actor->id !== $user->id;
+        return $actor->id !== $user->id && $this->canManageProtectedTarget($actor, $user);
     }
 
     public function resetPassword(User $actor, User $user): bool
     {
-        return $actor->can('users.update') && $actor->id !== $user->id;
+        return $actor->can('users.update')
+            && $actor->id !== $user->id
+            && $this->canManageProtectedTarget($actor, $user);
+    }
+
+    private function canManageProtectedTarget(User $actor, User $user): bool
+    {
+        if (! $this->hasProtectedRole($user)) {
+            return true;
+        }
+
+        return $actor->can('users.assign_admin_role');
+    }
+
+    private function hasProtectedRole(User $user): bool
+    {
+        return $user->getRoleNames()
+            ->contains(fn (string $role): bool => RoleCatalog::isProtectedRoleName($role));
     }
 }
