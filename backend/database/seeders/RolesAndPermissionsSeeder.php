@@ -51,6 +51,7 @@ class RolesAndPermissionsSeeder extends Seeder
         'audit.view',
         'patients.mark_dialysis_prescription',
         'system.exact_user_permissions',
+        'fiscal.sequences.reset',
     ];
 
     public function run(): void
