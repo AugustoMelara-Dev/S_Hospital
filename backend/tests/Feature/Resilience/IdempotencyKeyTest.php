@@ -468,6 +468,53 @@ class IdempotencyKeyTest extends TestCase
         $this->assertSame(201, $second->status());
     }
 
+    public function test_stale_incomplete_reservation_returns_conflict_instead_of_empty_success(): void
+    {
+        $this->seedBillingBase();
+        $this->togglePartial(true);
+
+        $cashier = $this->cashierWithOpenSession();
+        $sessionId = $this->openSessionFor($cashier, '500.00');
+        $glucose = Service::query()->where('name', 'Glucosa')->firstOrFail();
+
+        $invoiceId = $this->actingAs($cashier)
+            ->postJson('/api/invoices', [
+                'patient_name' => 'Reserva incompleta',
+                'items' => [['service_id' => $glucose->id, 'quantity' => '1.00']],
+            ])
+            ->assertCreated()
+            ->json('data.id');
+
+        $payload = [
+            'cash_session_id' => $sessionId,
+            'method' => Payment::METHOD_CASH,
+            'amount' => '4.00',
+        ];
+        $routeSignature = "POST api/invoices/{$invoiceId}/payments";
+        $body = json_encode($payload, JSON_THROW_ON_ERROR);
+        $key = (string) Str::uuid();
+
+        $reservation = IdempotencyKey::query()->create([
+            'user_id' => $cashier->id,
+            'route_signature' => $routeSignature,
+            'idempotency_key' => $key,
+            'request_fingerprint' => hash('sha256', 'POST|'.$routeSignature.'|'.$body),
+            'response_status' => null,
+            'response_body' => null,
+            'completed_at' => null,
+        ]);
+        $reservation->forceFill([
+            'created_at' => now()->subSeconds(180),
+            'updated_at' => now()->subSeconds(180),
+        ])->save();
+
+        $this->actingAs($cashier)
+            ->withHeaders(['Idempotency-Key' => $key])
+            ->postJson("/api/invoices/{$invoiceId}/payments", $payload)
+            ->assertStatus(409)
+            ->assertJsonPath('errors.idempotency_key.0', 'La operacion anterior no completo una respuesta replayable. Verifique el estado de la factura antes de reintentar.');
+    }
+
     private function seedBillingBase(): void
     {
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class, ReceiptPrintProfileSeeder::class]);
