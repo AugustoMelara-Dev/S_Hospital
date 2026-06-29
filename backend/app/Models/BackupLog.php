@@ -15,6 +15,10 @@ use Illuminate\Support\Carbon;
  * @property string|null $checksum_sha256
  * @property string $status
  * @property string $type
+ * @property string $format
+ * @property string|null $compression
+ * @property bool $encrypted
+ * @property string|null $encryption_key_id
  * @property int|null $created_by
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -42,6 +46,10 @@ class BackupLog extends Model
         'checksum_sha256',
         'status',
         'type',
+        'format',
+        'compression',
+        'encrypted',
+        'encryption_key_id',
         'created_by',
         'completed_at',
         'error_message',
@@ -57,6 +65,7 @@ class BackupLog extends Model
     {
         return [
             'size_bytes' => 'integer',
+            'encrypted' => 'boolean',
             'completed_at' => 'datetime',
         ];
     }

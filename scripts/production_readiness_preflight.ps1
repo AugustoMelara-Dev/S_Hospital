@@ -250,6 +250,39 @@ function Invoke-RouteCheck([string] $url, [string] $label, [int[]] $AllowedStatu
     Add-Failure "$label failed after $Attempts attempts: $lastError"
 }
 
+function Invoke-WebSocketHandshake([string] $BaseUrl, [string] $PusherKey) {
+    if ([string]::IsNullOrWhiteSpace($PusherKey)) {
+        Add-Failure "PUSHER_APP_KEY is required to validate realtime WebSocket handshake"
+        return
+    }
+
+    $baseUri = [Uri] $BaseUrl
+    $scheme = if ($baseUri.Scheme -eq "https") { "wss" } else { "ws" }
+    $builder = [System.UriBuilder]::new($baseUri)
+    $builder.Scheme = $scheme
+    $builder.Path = "/app/$PusherKey"
+    $builder.Query = "protocol=7&client=js&version=8.5.0&flash=false"
+
+    $socket = [System.Net.WebSockets.ClientWebSocket]::new()
+    $cts = [System.Threading.CancellationTokenSource]::new([TimeSpan]::FromSeconds(10))
+    try {
+        $socket.ConnectAsync($builder.Uri, $cts.Token).GetAwaiter().GetResult()
+        if ($socket.State -eq [System.Net.WebSockets.WebSocketState]::Open) {
+            Add-Pass "Realtime WebSocket handshake succeeded through Nginx same-origin route"
+        } else {
+            Add-Failure "Realtime WebSocket handshake did not open; state=$($socket.State)"
+        }
+    } catch {
+        Add-Failure "Realtime WebSocket handshake failed: $($_.Exception.Message)"
+    } finally {
+        if ($socket.State -eq [System.Net.WebSockets.WebSocketState]::Open) {
+            $socket.CloseAsync([System.Net.WebSockets.WebSocketCloseStatus]::NormalClosure, "preflight", [System.Threading.CancellationToken]::None).GetAwaiter().GetResult()
+        }
+        $socket.Dispose()
+        $cts.Dispose()
+    }
+}
+
 $backendDir = Join-Path $ProjectRoot "backend"
 $frontendDist = Join-Path $ProjectRoot "frontend\dist"
 $envPath = Join-Path $backendDir ".env"
@@ -273,6 +306,11 @@ $corsOriginsIsExplicit = $envValues.ContainsKey("CORS_ALLOWED_ORIGINS")
 $corsOriginList = @($corsOrigins.Split(",") | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne "" })
 $queueConnection = Get-EnvValue $envValues "QUEUE_CONNECTION" ""
 $configuredDumpBinary = Get-EnvValue $envValues "HOSPITAL_DUMP_BINARY" ""
+$allowInsecureHttp = Get-EnvValue $envValues "HOSPITAL_ALLOW_INSECURE_HTTP" ""
+$sessionSecureCookie = Get-EnvValue $envValues "SESSION_SECURE_COOKIE" ""
+$backupEncryptionKey = Get-EnvValue $envValues "HOSPITAL_BACKUP_ENCRYPTION_KEY" ""
+$pusherAppKey = Get-EnvValue $envValues "PUSHER_APP_KEY" ""
+$appScheme = Get-EnvValue $envValues "APP_SCHEME" ""
 
 Write-Host "Production readiness preflight for $BaseUrl"
 Write-Host "Project root: $ProjectRoot"
@@ -280,6 +318,23 @@ Write-Host "Project root: $ProjectRoot"
 if ($appEnv -eq "production") { Add-Pass "APP_ENV=production" } else { Add-Failure "APP_ENV must be production, current value is '$appEnv'" }
 if ($appDebug -eq "false") { Add-Pass "APP_DEBUG=false" } else { Add-Failure "APP_DEBUG must be false, current value is '$appDebug'" }
 if ($appUrl -eq $BaseUrl.TrimEnd("/")) { Add-Pass "APP_URL matches BaseUrl" } else { Add-Failure "APP_URL must match $($BaseUrl.TrimEnd('/')), current value is '$appUrl'" }
+if ($appScheme -ne "" -and $appScheme -ne $baseUri.Scheme) {
+    Add-Failure "APP_SCHEME must match BaseUrl scheme '$($baseUri.Scheme)', current value is '$appScheme'"
+}
+
+if ($baseUri.Scheme -eq "https") {
+    if ($sessionSecureCookie -eq "true") { Add-Pass "SESSION_SECURE_COOKIE=true for HTTPS" } else { Add-Failure "SESSION_SECURE_COOKIE must be true when BaseUrl uses HTTPS" }
+    if ($allowInsecureHttp -eq "1") { Add-Failure "HOSPITAL_ALLOW_INSECURE_HTTP must not be 1 when BaseUrl uses HTTPS" }
+} elseif ($allowInsecureHttp -eq "1") {
+    Add-Strong-Warning "HTTP LAN mode is explicitly enabled with HOSPITAL_ALLOW_INSECURE_HTTP=1. Credentials and patient names are not encrypted on the wire."
+    if ($sessionSecureCookie -eq "true") {
+        Add-Failure "SESSION_SECURE_COOKIE=true breaks login over explicit HTTP LAN mode. Use HTTPS or set SESSION_SECURE_COOKIE=false with documented risk."
+    } else {
+        Add-Pass "SESSION_SECURE_COOKIE is compatible with explicit HTTP LAN mode"
+    }
+} else {
+    Add-Failure "BaseUrl uses HTTP but HOSPITAL_ALLOW_INSECURE_HTTP is not 1. Enable HTTPS or explicitly document insecure LAN HTTP."
+}
 
 if ($BaseUrl -match "localhost|127\.0\.0\.1|::1") {
     Add-Failure "BaseUrl must be the final LAN IP or local domain, not localhost"
@@ -315,6 +370,12 @@ if ($queueConnection -eq "database") {
     Add-Pass "QUEUE_CONNECTION=database"
 } else {
     Add-Warning "QUEUE_CONNECTION is '$queueConnection'. Backups queued from UI need a durable local queue worker."
+}
+
+if ([string]::IsNullOrWhiteSpace($backupEncryptionKey)) {
+    Add-Failure "HOSPITAL_BACKUP_ENCRYPTION_KEY must be set before production backups"
+} else {
+    Add-Pass "HOSPITAL_BACKUP_ENCRYPTION_KEY is configured"
 }
 
 if (Test-IsWindowsHost) {
@@ -388,6 +449,7 @@ try {
 Invoke-RouteCheck "$($BaseUrl.TrimEnd('/'))/up" "/up"
 Invoke-RouteCheck "$($BaseUrl.TrimEnd('/'))/login" "/login"
 Invoke-RouteCheck "$($BaseUrl.TrimEnd('/'))/verify-email" "/verify-email" @(200, 302)
+Invoke-WebSocketHandshake $BaseUrl $pusherAppKey
 
 if ($AllowMissingPhysicalProof) {
     Add-Strong-Warning "AllowMissingPhysicalProof was used. This run is only an environment preflight and MUST NOT be called PRODUCTION_READY."
@@ -412,6 +474,7 @@ if ($AllowMissingPhysicalProof) {
             "/login",
             "/verify-email",
             "assets",
+            "Realtime",
             "Login",
             "Cashbox",
             "Invoice",
@@ -502,9 +565,7 @@ if ($failures.Count -gt 0) {
 Write-Host ""
 if ($warnings.Count -gt 0) {
     Write-Host "PRODUCTION_PREFLIGHT_PASSED_WITH_WARNINGS: $($warnings.Count) warning(s)" -ForegroundColor Yellow
-    if ($AllowMissingPhysicalProof) {
-        Write-Host "PRODUCTION_READY: NO. Physical LAN/printer proof was explicitly bypassed." -ForegroundColor Yellow
-    }
+    Write-Host "PRODUCTION_READY: NO. Resolve or formally accept every warning before handoff." -ForegroundColor Yellow
 } else {
     Write-Host "PRODUCTION_PREFLIGHT_PASSED" -ForegroundColor Green
 }

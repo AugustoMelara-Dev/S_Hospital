@@ -72,7 +72,7 @@ class DateRangeReportRequest extends FormRequest
     {
         $filters = $this->validated();
 
-        if ($this->user()?->can('cash.close_any') === true) {
+        if ($this->user()?->can('reports.managerial.view') === true) {
             return $filters;
         }
 

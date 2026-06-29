@@ -5,6 +5,7 @@ use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
@@ -18,9 +19,12 @@ $statelessWebMiddleware = [
 ];
 
 Route::get('/up', function () {
+    DB::connection()->getPdo();
+
     return response()->json([
         'status' => 'ok',
         'service' => 'Sistema de Caja Hospitalaria',
+        'database' => 'ok',
     ]);
 })->withoutMiddleware($statelessWebMiddleware);
 

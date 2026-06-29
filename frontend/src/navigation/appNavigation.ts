@@ -132,7 +132,7 @@ export const appRoutes = {
     navigationPermissions: ['reports.view', 'reports.managerial.view', 'reports.cash_session.view'],
     requiredPermissions: ['reports.view', 'reports.managerial.view', 'reports.cash_session.view'],
     permissionMode: 'any',
-    deniedReason: 'Requiere permiso para consultar reportes operativos o reportes de caja.',
+    deniedReason: 'Requiere permiso para consultar reportes operativos, gerenciales o de caja.',
   },
   backups: {
     id: 'backups',

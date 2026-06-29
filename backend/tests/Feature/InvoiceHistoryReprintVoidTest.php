@@ -321,6 +321,19 @@ class InvoiceHistoryReprintVoidTest extends TestCase
             ->assertJsonValidationErrors('width');
     }
 
+    public function test_invoice_void_permission_does_not_grant_unrelated_receipt_access(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $voidOnlyUser = User::factory()->create();
+        $voidOnlyUser->givePermissionTo(['receipts.view', 'invoices.void']);
+        $invoiceId = $this->createInvoice($cashier, 'Maria Lopez', 'Glucosa');
+
+        $this->actingAs($voidOnlyUser)
+            ->getJson("/api/invoices/{$invoiceId}/receipt?width=half_letter")
+            ->assertForbidden();
+    }
+
     public function test_void_requires_permission_and_reason(): void
     {
         $this->seedBillingBase();
