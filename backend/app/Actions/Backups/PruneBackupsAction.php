@@ -4,25 +4,55 @@ namespace App\Actions\Backups;
 
 use App\Models\AuditLog;
 use App\Models\BackupLog;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 
 class PruneBackupsAction
 {
     public function execute(?int $keepSuccessful = null): int
     {
-        $keepSuccessful ??= (int) config('backups.retention.successful_count', 30);
-        $keepSuccessful = max(1, $keepSuccessful);
+        if ($keepSuccessful !== null) {
+            return $this->pruneType(null, max(1, $keepSuccessful), 0);
+        }
 
-        $prunableBackups = BackupLog::query()
-            ->where('status', BackupLog::STATUS_SUCCESS)
+        $pruned = 0;
+
+        foreach ([BackupLog::TYPE_MANUAL, BackupLog::TYPE_SCHEDULED] as $type) {
+            $policy = config("backups.retention.{$type}", []);
+            $pruned += $this->pruneType(
+                $type,
+                max(1, (int) ($policy['keep_successful'] ?? config('backups.retention.successful_count', 30))),
+                max(0, (int) ($policy['keep_days'] ?? 0)),
+            );
+        }
+
+        return $pruned;
+    }
+
+    private function pruneType(?string $type, int $keepSuccessful, int $keepDays): int
+    {
+        $query = BackupLog::query()->where('status', BackupLog::STATUS_SUCCESS);
+
+        if ($type !== null) {
+            $query->where('type', $type);
+        }
+
+        $successfulBackups = $query
             ->orderByDesc('completed_at')
             ->orderByDesc('id')
-            ->get()
-            ->skip($keepSuccessful);
+            ->get();
+
+        $protectedLatestId = $successfulBackups->first()?->id;
+        $cutoff = now()->subDays($keepDays);
+        $prunableBackups = $successfulBackups->skip($keepSuccessful);
 
         $pruned = 0;
 
         foreach ($prunableBackups as $backupLog) {
+            if ($backupLog->id === $protectedLatestId || ! $this->isOldEnough($backupLog, $cutoff)) {
+                continue;
+            }
+
             if (! $this->deleteFileIfSafe($backupLog)) {
                 $this->audit($backupLog, 'backup.prune_skipped');
 
@@ -35,6 +65,13 @@ class PruneBackupsAction
         }
 
         return $pruned;
+    }
+
+    private function isOldEnough(BackupLog $backupLog, Carbon $cutoff): bool
+    {
+        $completedAt = $backupLog->completed_at ?? $backupLog->created_at;
+
+        return $completedAt === null || $completedAt->lessThanOrEqualTo($cutoff);
     }
 
     private function deleteFileIfSafe(BackupLog $backupLog): bool
@@ -68,6 +105,8 @@ class PruneBackupsAction
                 'filename' => $backupLog->filename,
                 'status' => $backupLog->status,
                 'type' => $backupLog->type,
+                'format' => $backupLog->format,
+                'encrypted' => $backupLog->encrypted,
                 'size_bytes' => $backupLog->size_bytes,
                 'checksum_sha256' => $backupLog->checksum_sha256,
             ],

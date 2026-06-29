@@ -2,23 +2,21 @@ import { AlertTriangle, CheckCircle2, Minus } from 'lucide-react';
 import { formatLempirasUI } from '@/lib/moneyCents';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
 import type { ExecutiveReport } from '@/lib/api';
 
 type CashReconciliationPanelProps = {
   report: ExecutiveReport;
 };
 
+type CashSession = ExecutiveReport['cash_sessions'][number];
+type CashSessionRow = CashSession & {
+  position: number;
+};
+
 function formatSigned(value: string): { display: string; tone: 'pos' | 'neg' | 'zero' } {
   if (value.startsWith('-')) {
-    return { display: `- ${formatLempirasUI(value)}`, tone: 'neg' };
+    return { display: `- ${formatLempirasUI(value.slice(1))}`, tone: 'neg' };
   }
   if (value === '0.00' || value === '0') {
     return { display: formatLempirasUI(value), tone: 'zero' };
@@ -26,20 +24,109 @@ function formatSigned(value: string): { display: string; tone: 'pos' | 'neg' | '
   return { display: `+ ${formatLempirasUI(value)}`, tone: 'pos' };
 }
 
+const cashSessionColumns: Array<DataTableColumn<CashSessionRow>> = [
+  {
+    key: 'position',
+    header: '#',
+    cellClassName: 'w-8 text-center text-muted-foreground',
+    render: (session) => session.position,
+  },
+  {
+    key: 'cashier',
+    header: 'Cajero',
+    cellClassName: 'font-semibold',
+    render: (session) => session.cashier,
+  },
+  {
+    key: 'opened_at',
+    header: 'Apertura',
+    cellClassName: 'text-xs text-muted-foreground',
+    render: (session) => formatSessionDate(session.opened_at),
+  },
+  {
+    key: 'closed_at',
+    header: 'Cierre',
+    cellClassName: 'text-xs text-muted-foreground',
+    render: (session) => formatSessionDate(session.closed_at),
+  },
+  {
+    key: 'opening_amount',
+    header: 'Inicial',
+    numeric: true,
+    cellClassName: 'font-mono tabular-nums',
+    render: (session) => formatLempirasUI(session.opening_amount),
+  },
+  {
+    key: 'expected_cash',
+    header: 'Esperado',
+    numeric: true,
+    cellClassName: 'font-mono tabular-nums',
+    render: (session) => formatLempirasUI(session.expected_cash),
+  },
+  {
+    key: 'counted_cash',
+    header: 'Contado',
+    numeric: true,
+    cellClassName: 'font-mono tabular-nums',
+    render: (session) => (session.counted_cash !== null ? formatLempirasUI(session.counted_cash) : '-'),
+  },
+  {
+    key: 'difference',
+    header: 'Diferencia',
+    numeric: true,
+    cellClassName: 'font-mono tabular-nums font-semibold',
+    render: (session) => {
+      const diffSigned = formatSigned(session.difference ?? '0.00');
+      const hasDiff = diffSigned.tone !== 'zero';
+
+      return (
+        <span className="flex items-center justify-end gap-1">
+          {hasDiff ? (
+            diffSigned.tone === 'pos' ? (
+              <CheckCircle2 className="size-3 text-secondary" aria-hidden="true" />
+            ) : (
+              <AlertTriangle className="size-3 text-destructive" aria-hidden="true" />
+            )
+          ) : (
+            <Minus className="size-3 text-muted-foreground" aria-hidden="true" />
+          )}
+          <span
+            className={
+              hasDiff ? (diffSigned.tone === 'pos' ? 'text-secondary' : 'text-destructive') : 'text-muted-foreground'
+            }
+          >
+            {diffSigned.display}
+          </span>
+        </span>
+      );
+    },
+  },
+  {
+    key: 'status',
+    header: 'Estado',
+    render: (session) => (
+      <Badge variant={session.status === 'open' ? 'success' : session.status === 'closed' ? 'secondary' : 'destructive'}>
+        {session.status === 'open' ? 'Abierta' : session.status === 'closed' ? 'Cerrada' : session.status}
+      </Badge>
+    ),
+  },
+];
+
 export function CashReconciliationPanel({ report }: CashReconciliationPanelProps) {
   const withDifference = report.cash_sessions.filter(
-    (s: ExecutiveReport['cash_sessions'][number]) => s.difference && s.difference !== '0.00' && s.difference !== '0',
+    (s: CashSession) => s.difference && s.difference !== '0.00' && s.difference !== '0',
   );
   const totalExpected = report.cash_sessions.reduce(
-    (acc: number, s: ExecutiveReport['cash_sessions'][number]) => acc + Number(s.expected_cash),
+    (acc: number, s: CashSession) => acc + Number(s.expected_cash),
     0,
   );
   const totalCounted = report.cash_sessions.reduce(
-    (acc: number, s: ExecutiveReport['cash_sessions'][number]) => acc + Number(s.counted_cash ?? 0),
+    (acc: number, s: CashSession) => acc + Number(s.counted_cash ?? 0),
     0,
   );
   const totalDifference = totalCounted - totalExpected;
-  const openSessions = report.cash_sessions.filter((s: ExecutiveReport['cash_sessions'][number]) => s.status === 'open');
+  const openSessions = report.cash_sessions.filter((s: CashSession) => s.status === 'open');
+  const cashSessionRows = report.cash_sessions.map((session, index) => ({ ...session, position: index + 1 }));
 
   return (
     <Card className="rounded-panel border-operational-border bg-operational-surface shadow-operational">
@@ -86,84 +173,21 @@ export function CashReconciliationPanel({ report }: CashReconciliationPanelProps
           </div>
         </div>
 
-        {report.cash_sessions.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Sin sesiones de caja en el periodo.</p>
-        ) : (
-          <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>#</TableHead>
-                <TableHead>Cajero</TableHead>
-                <TableHead>Apertura</TableHead>
-                <TableHead>Cierre</TableHead>
-                <TableHead className="text-right">Inicial</TableHead>
-                <TableHead className="text-right">Esperado</TableHead>
-                <TableHead className="text-right">Contado</TableHead>
-                <TableHead className="text-right">Diferencia</TableHead>
-                <TableHead>Estado</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {report.cash_sessions.map((session, index) => {
-                const diffSigned = formatSigned(session.difference ?? '0.00');
-                const hasDiff = diffSigned.tone !== 'zero';
-
-                return (
-                  <TableRow key={session.id}>
-                    <TableCell className="w-8 text-center text-muted-foreground">{index + 1}</TableCell>
-                    <TableCell className="font-semibold">{session.cashier}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {session.opened_at ? new Date(session.opened_at).toLocaleString('es-HN') : '-'}
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {session.closed_at ? new Date(session.closed_at).toLocaleString('es-HN') : '-'}
-                    </TableCell>
-                    <TableCell className="text-right font-mono tabular-nums">
-                      {formatLempirasUI(session.opening_amount)}
-                    </TableCell>
-                    <TableCell className="text-right font-mono tabular-nums">
-                      {formatLempirasUI(session.expected_cash)}
-                    </TableCell>
-                    <TableCell className="text-right font-mono tabular-nums">
-                      {session.counted_cash !== null ? formatLempirasUI(session.counted_cash) : '-'}
-                    </TableCell>
-                    <TableCell
-                      className={
-                        'text-right font-mono tabular-nums font-semibold ' +
-                        (hasDiff
-                          ? diffSigned.tone === 'pos'
-                            ? 'text-secondary'
-                            : 'text-destructive'
-                          : 'text-muted-foreground')
-                      }
-                    >
-                      <span className="flex items-center justify-end gap-1">
-                        {hasDiff ? (
-                          diffSigned.tone === 'pos' ? (
-                            <CheckCircle2 className="size-3 text-secondary" aria-hidden="true" />
-                          ) : (
-                            <AlertTriangle className="size-3 text-destructive" aria-hidden="true" />
-                          )
-                        ) : (
-                          <Minus className="size-3 text-muted-foreground" aria-hidden="true" />
-                        )}
-                        {diffSigned.display}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={session.status === 'open' ? 'success' : session.status === 'closed' ? 'secondary' : 'destructive'}>
-                        {session.status === 'open' ? 'Abierta' : session.status === 'closed' ? 'Cerrada' : session.status}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-          </div>
-        )}
+        <DataTable
+          caption="Sesiones de caja conciliadas."
+          columns={cashSessionColumns}
+          containerLabel="Sesiones de caja"
+          emptyDescription="Las sesiones conciliadas apareceran cuando el periodo tenga actividad de caja."
+          emptyTitle="Sin sesiones de caja"
+          getRowKey={(session) => session.id}
+          rows={cashSessionRows}
+          tableClassName="min-w-[980px]"
+        />
       </CardContent>
     </Card>
   );
+}
+
+function formatSessionDate(value: string | null): string {
+  return value ? new Date(value).toLocaleString('es-HN') : '-';
 }

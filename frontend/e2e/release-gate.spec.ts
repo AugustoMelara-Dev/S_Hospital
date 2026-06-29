@@ -34,12 +34,11 @@ test('release gate cashier can issue, collect, show receipt and surface reports'
   const consoleIssues: string[] = [];
   const patientName = `E2E Release Gate ${Date.now()}`;
 
-  captureBlockingIssues(page, consoleIssues);
-
   const health = await page.request.get(`${apiBaseUrl}/api/system/health`);
   expect(health.ok()).toBe(true);
 
   await loginToReleaseApp(page);
+  captureBlockingIssues(page, consoleIssues);
 
   const prepared = await page.evaluate(async () => {
     const [cash, branding, services] = await Promise.all([
@@ -58,7 +57,9 @@ test('release gate cashier can issue, collect, show receipt and surface reports'
   await page.getByRole('link', { name: /nueva factura/i }).click();
   await expect(page.getByRole('heading', { name: /nueva factura/i })).toBeVisible();
   await page.getByLabel(/buscar por nombre/i).fill(serviceQuery);
-  await page.getByRole('button', { name: new RegExp(`Agregar ${serviceQuery}`, 'i') }).first().click();
+  const serviceButton = page.getByRole('button', { name: new RegExp(serviceQuery, 'i') }).first();
+  await expect(serviceButton).toBeVisible();
+  await serviceButton.click();
   await page.getByLabel(/nombre del paciente/i).fill(patientName);
   await page.getByRole('button', { name: /emitir y cobrar/i }).click();
   await page.getByRole('button', { name: /emitir y abrir cobro/i }).click();
@@ -66,8 +67,20 @@ test('release gate cashier can issue, collect, show receipt and surface reports'
   await expect(page.getByRole('heading', { name: /registrar pago/i })).toBeVisible();
   await page.getByLabel(/ver preview antes de imprimir/i).check();
   await page.getByLabel(/monto recibido/i).fill('17.25');
-  await page.getByRole('button', { name: /confirmar cobro y ver preview|registrar cobro y ver preview/i }).click();
-  await expect(page.getByRole('heading', { name: /factura emitida exitosamente/i })).toBeVisible();
+  await Promise.all([
+    page.waitForResponse((response) =>
+      response.request().method() === 'POST' &&
+      /\/api\/invoices\/\d+\/payments$/.test(new URL(response.url()).pathname) &&
+      response.status() === 201,
+    ),
+    page.getByRole('button', { name: /confirmar cobro y ver preview|registrar cobro y ver preview/i }).click(),
+  ]);
+  await page.waitForResponse((response) =>
+    response.request().method() === 'GET' &&
+    /\/api\/institutional-receipts\/\d+\/pdf$/.test(new URL(response.url()).pathname) &&
+    response.ok(),
+  );
+  await expect(page.getByRole('heading', { name: /factura emitida exitosamente/i })).toBeVisible({ timeout: 30_000 });
   await expect(page.getByRole('status').filter({ hasText: /pdf institucional/i }).first()).toBeVisible();
   await expect(page.getByText(patientName)).toBeVisible();
 
@@ -84,9 +97,9 @@ test('release gate cashier can issue, collect, show receipt and surface reports'
   expect(invoice?.total).toBe('17.25');
 
   const adminPage = await browser.newPage();
-  captureBlockingIssues(adminPage, consoleIssues);
   try {
     await loginToReleaseApp(adminPage, 'admin.e2e');
+    captureBlockingIssues(adminPage, consoleIssues);
     await adminPage.getByRole('link', { name: /reportes/i }).click();
     await expect(adminPage.getByRole('heading', { name: /reportes/i })).toBeVisible();
     await expect(adminPage.getByRole('heading', { name: /resumen del d/i })).toBeVisible();

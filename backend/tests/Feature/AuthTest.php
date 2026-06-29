@@ -332,6 +332,37 @@ class AuthTest extends TestCase
         $this->assertFalse($user->must_change_password);
     }
 
+    public function test_session_remains_active_after_required_password_change(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $user = User::factory()->create([
+            'username' => 'catalog.local',
+            'email' => 'catalog.local@example.test',
+            'password' => Hash::make('Password123!'),
+            'must_change_password' => true,
+        ]);
+        $user->assignRole('admin');
+
+        $this->postJson('/api/auth/login', [
+            'login' => 'catalog.local',
+            'password' => 'Password123!',
+        ])->assertOk()
+            ->assertJsonPath('data.must_change_password', true);
+
+        $this->postJson('/api/auth/change-password', [
+            'current_password' => 'Password123!',
+            'password' => 'NewPassword123!',
+            'password_confirmation' => 'NewPassword123!',
+        ])->assertOk()
+            ->assertJsonPath('data.must_change_password', false);
+
+        $this->getJson('/api/auth/session')
+            ->assertOk()
+            ->assertJsonPath('data.username', 'catalog.local')
+            ->assertJsonPath('data.must_change_password', false);
+    }
+
     public function test_change_password_rejects_wrong_current_password(): void
     {
         $user = User::factory()->create([

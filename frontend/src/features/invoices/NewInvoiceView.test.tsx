@@ -1,4 +1,4 @@
-/// <reference types="node" />
+﻿/// <reference types="node" />
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
@@ -23,9 +23,10 @@ describe('NewInvoiceView', () => {
   const submitButtons = (name: RegExp = /emitir y cobrar/i) => screen.getAllByRole('button', { name });
   const primarySubmitButton = (name: RegExp = /emitir y cobrar/i) => submitButtons(name)[0];
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.restoreAllMocks();
     resetRequestChain();
+    await queryClient.cancelQueries();
     queryClient.clear();
     window.history.pushState({}, '', '/');
     vi.spyOn(apiClient, 'getLogo').mockResolvedValue(null);
@@ -33,8 +34,9 @@ describe('NewInvoiceView', () => {
     document.body.removeAttribute('data-receipt-width');
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     cleanup();
+    await queryClient.cancelQueries();
     queryClient.clear();
   });
 
@@ -617,7 +619,7 @@ describe('NewInvoiceView', () => {
         .filter(([url]) => String(url).includes('/api/invoices/100/receipt')),
     ).toHaveLength(0);
     expect(screen.queryByLabelText(/vista previa del recibo/i)).not.toBeInTheDocument();
-    expect(await screen.findByText(/REC-A-00000001/i)).toBeInTheDocument();
+    expect((await screen.findAllByText(/REC-A-00000001/i)).length).toBeGreaterThan(0);
   });
 
   it('rejects inactive services returned by scanner lookup', async () => {
@@ -1571,6 +1573,122 @@ describe('NewInvoiceView', () => {
     expect(screen.getByLabelText(/recibo institucional/i)).toHaveClass('receipt-letter');
     expect(screen.getAllByText(/configuración pendiente/i)).toHaveLength(3);
     expect(screen.queryByText(/\bQR\b|barra|barcode|codigo interno/i)).not.toBeInTheDocument();
+  });
+
+  it('reuses the same invoice idempotency key when retrying after a lost response', async () => {
+    window.history.pushState({}, '', '/billing/new');
+    const invoiceIdempotencyKeys: string[] = [];
+    let invoiceAttempts = 0;
+
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input);
+      const method = init?.method ?? 'GET';
+
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 2,
+              name: 'Cajero Retry',
+              email: 'retry@hospital.local',
+              username: 'retry',
+              active: true,
+              roles: ['cajero'],
+              permissions: ['catalog.view', 'cash.view', 'invoices.create', 'payments.create', 'receipts.view'],
+              must_change_password: false,
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/cash-sessions/current')) {
+        return { ok: true, json: async () => ({ data: { id: 7, status: 'open' } }) } as Response;
+      }
+
+      if (url.includes('/api/settings/operational')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: { scanner_enabled: false, partial_payments_enabled: false, receipt_paper_size: 'half_letter', default_tax_rate: '15.00' },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/categories')) {
+        return { ok: true, json: async () => ({ data: [{ id: 1, name: 'General' }] }) } as Response;
+      }
+
+      if (url.includes('/api/service-areas')) {
+        return { ok: true, json: async () => ({ data: [{ id: 1, name: 'Laboratorio' }] }) } as Response;
+      }
+
+      if (url.includes('/api/services')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: [{
+              id: 9,
+              category_id: 1,
+              area_id: 1,
+              name: 'Glucosa',
+              price: '15.00',
+              taxable: false,
+              active: true,
+              category: { id: 1, name: 'General' },
+              area: { id: 1, name: 'Laboratorio' },
+            }],
+          }),
+        } as Response;
+      }
+
+      if (url.endsWith('/api/invoices') && method === 'POST') {
+        invoiceAttempts += 1;
+        invoiceIdempotencyKeys.push(new Headers(init?.headers).get('Idempotency-Key') ?? '');
+
+        if (invoiceAttempts === 1) {
+          throw new TypeError('LAN response lost after commit');
+        }
+
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 100,
+              invoice_number: 'INV-RETRY-1',
+              patient_name: 'Paciente Retry',
+              status: 'issued',
+              total: '15.00',
+              balance_due: '15.00',
+              paid_amount: '0.00',
+              items: [],
+              payments: [],
+            },
+          }),
+        } as Response;
+      }
+
+      return { ok: true, json: async () => ({}) } as Response;
+    });
+
+    render(<App />);
+
+    await screen.findByRole('heading', { name: /nueva factura/i });
+    fireEvent.change(screen.getByLabelText(/nombre del paciente/i), { target: { value: 'Paciente Retry' } });
+    fireEvent.change(screen.getByPlaceholderText(/glucosa, hemograma/i), { target: { value: 'glucosa' } });
+    fireEvent.click(await screen.findByRole('button', { name: /glucosa/i }));
+
+    fireEvent.click(primarySubmitButton());
+    fireEvent.click(screen.getByRole('button', { name: /emitir y abrir cobro/i }));
+    await waitFor(() => expect(invoiceAttempts).toBe(1));
+
+    fireEvent.click(primarySubmitButton());
+    fireEvent.click(screen.getByRole('button', { name: /emitir y abrir cobro/i }));
+
+    await screen.findByRole('heading', { name: /registrar pago/i });
+    expect(invoiceIdempotencyKeys).toHaveLength(2);
+    expect(invoiceIdempotencyKeys[0]).toBeTruthy();
+    expect(invoiceIdempotencyKeys[1]).toBe(invoiceIdempotencyKeys[0]);
   });
 
   describe('dialysis prescription gating', () => {

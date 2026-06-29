@@ -1,19 +1,69 @@
 import { formatLempirasUI } from '@/lib/moneyCents';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
 import type { ExecutiveReport } from '@/lib/api';
 
 type VoidsReversalsPanelProps = {
   report: ExecutiveReport;
 };
+
+type VoidOrReversal = ExecutiveReport['voids_and_reversals'][number];
+
+const voidsAndReversalsColumns: Array<DataTableColumn<VoidOrReversal>> = [
+  {
+    key: 'kind',
+    header: 'Tipo',
+    render: (item) => (
+      <Badge variant={item.kind === 'reversal' ? 'warning' : 'destructive'}>
+        {item.kind === 'reversal' ? 'Reversa' : 'Anulacion'}
+      </Badge>
+    ),
+  },
+  {
+    key: 'invoice_number',
+    header: '# Factura',
+    cellClassName: 'font-mono text-xs',
+    render: (item) => item.invoice_number,
+  },
+  {
+    key: 'patient',
+    header: 'Paciente',
+    cellClassName: 'font-semibold',
+    render: (item) => item.patient ?? '-',
+  },
+  {
+    key: 'amount',
+    header: 'Monto',
+    numeric: true,
+    cellClassName: 'font-mono tabular-nums font-semibold',
+    render: (item) => formatLempirasUI(item.amount),
+  },
+  {
+    key: 'user',
+    header: 'Usuario',
+    cellClassName: 'text-xs',
+    render: (item) => item.user ?? '-',
+  },
+  {
+    key: 'authorized_by',
+    header: 'Autorizado por',
+    cellClassName: 'text-xs',
+    render: (item) => item.authorized_by ?? '-',
+  },
+  {
+    key: 'reason',
+    header: 'Motivo',
+    cellClassName: 'max-w-md truncate text-xs text-muted-foreground',
+    render: (item) => <span title={item.reason ?? ''}>{item.reason ?? '-'}</span>,
+  },
+  {
+    key: 'created_at',
+    header: 'Fecha',
+    cellClassName: 'text-xs text-muted-foreground',
+    render: (item) => formatDate(item.created_at),
+  },
+];
 
 function formatDate(value: string | null | undefined): string {
   if (!value) return '-';
@@ -37,46 +87,16 @@ export function VoidsReversalsPanel({ report }: VoidsReversalsPanelProps) {
         </div>
       </CardHeader>
       <CardContent>
-        {items.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Sin anulaciones ni reversas en el periodo.</p>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Tipo</TableHead>
-                <TableHead># Factura</TableHead>
-                <TableHead>Paciente</TableHead>
-                <TableHead className="text-right">Monto</TableHead>
-                <TableHead>Usuario</TableHead>
-                <TableHead>Autorizado por</TableHead>
-                <TableHead>Motivo</TableHead>
-                <TableHead>Fecha</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {items.map((item, index) => (
-                <TableRow key={`${item.invoice_number}-${index}`}>
-                  <TableCell>
-                    <Badge variant={item.kind === 'reversal' ? 'warning' : 'destructive'}>
-                      {item.kind === 'reversal' ? 'Reversa' : 'Anulacion'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="font-mono text-xs">{item.invoice_number}</TableCell>
-                  <TableCell className="font-semibold">{item.patient ?? '-'}</TableCell>
-                  <TableCell className="text-right font-mono tabular-nums font-semibold">
-                    {formatLempirasUI(item.amount)}
-                  </TableCell>
-                  <TableCell className="text-xs">{item.user ?? '-'}</TableCell>
-                  <TableCell className="text-xs">{item.authorized_by ?? '-'}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground max-w-md truncate" title={item.reason ?? ''}>
-                    {item.reason ?? '-'}
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{formatDate(item.created_at)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
+        <DataTable
+          caption="Operaciones anuladas o reversadas."
+          columns={voidsAndReversalsColumns}
+          containerLabel="Anulaciones y reversas"
+          emptyDescription="Las anulaciones y reversas apareceran cuando existan operaciones auditadas en el periodo."
+          emptyTitle="Sin anulaciones ni reversas"
+          getRowKey={(item) => `${item.kind}-${item.invoice_number}-${item.created_at ?? 'sin-fecha'}`}
+          rows={items}
+          tableClassName="min-w-[980px]"
+        />
       </CardContent>
     </Card>
   );

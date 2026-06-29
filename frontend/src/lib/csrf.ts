@@ -1,8 +1,8 @@
 /**
  * Force a fresh XSRF-TOKEN cookie by re-fetching
- * `/sanctum/csrf-cookie`. The frontend calls this on logout and on a
- * 401 from the API so the next mutating request gets a token bound to
- * the next authenticated user, not the previous one.
+ * `/sanctum/csrf-cookie`. Keep this for explicit recovery flows only:
+ * normal login already obtains CSRF through apiClient.csrf() before
+ * posting credentials.
  */
 
 export async function invalidateCsrfCookie(): Promise<void> {

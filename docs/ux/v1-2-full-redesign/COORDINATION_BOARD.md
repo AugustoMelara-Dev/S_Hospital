@@ -44,3 +44,27 @@ Worktree principal: `C:\Users\melar\.config\superpowers\worktrees\S_Hospital\cod
 - F / Data Tables Platform: explorer `019f0d34-2032-77e0-bc8c-f26d4f3667e0`
 - K / A11y Responsive Performance QA: explorer `019f0d34-79a1-7382-9e65-e047183d3796`
 - L / Integration Reviewer surface inventory: explorer `019f0d34-4d84-7303-b9e7-36d7d5c911a5`
+
+## Auditoria adicional 2026-06-28
+
+- Design System & Data Tables: explorer `019f10af-8987-7640-942e-4f17d85f123c`.
+- Shell / Dashboard / POS: explorer `019f10af-a84e-7141-9b7b-8c9b86f209ab`.
+- Reports / Cash / History / Receipts / Admin / Ops: explorer `019f10b0-1c51-76a2-96b4-ca516e0f52f8`.
+- A11y / Responsive / Performance QA: explorer `019f10b0-534d-79e3-af52-ee0dfef6a534`.
+
+Acciones tomadas desde esa auditoria:
+
+- `DataTable` reforzado con sorting, filtro, paginacion y visibilidad de columnas opt-in.
+- `PermissionBadge` implementado.
+- Clases `status-success`, `status-warning`, `status-info` y `cash-layout` definidas.
+- Historial de facturas ajustado para que acciones autorizadas no se recorten ni se oculten por configuracion de columnas.
+
+## QA evidence refresh 2026-06-29
+
+- `production-readiness.spec.ts` ahora captura Soporte (`support-light.png`) y mockea `/api/system/status-summary`.
+- `production-readiness.spec.ts` ahora captura cambio obligatorio de contrasena (`password-change-required-light.png`, `password-change-required-dark.png`) usando un usuario mock con `must_change_password: true`.
+- Las capturas de dialogs/modales usan viewport screenshot para estabilizar Radix Dialog/Select durante evidencia visual.
+- Gates verificados: `pnpm run typecheck`, `pnpm run lint`, `pnpm run smoke:buttons`, `pnpm exec playwright test e2e/v1-2-full-a11y.spec.ts --config=playwright.config.ts` y `E2E_CAPTURE_RC_SCREENSHOTS=1 pnpm exec playwright test e2e/production-readiness.spec.ts --config=playwright.config.ts`.
+- `pnpm run test:e2e` inicialmente fallo por 401 repetidos despues de login; causa corregida en `App` al no consultar caja protegida antes de autenticar usuario.
+- `release-gate.spec.ts` espera respuestas reales de pago/PDF institucional para no correr contra el flujo asincrono de recibo.
+- Verificacion posterior: `pnpm run test:e2e` PASS, 2 release tests; `pnpm exec playwright test e2e/production-readiness.spec.ts --config=playwright.config.ts` PASS, 4 tests.

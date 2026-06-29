@@ -76,6 +76,7 @@ class ThrottleByUserTest extends TestCase
         $this->getJson('/api/_test/throttle-by-user')->assertOk();
         $this->getJson('/api/_test/throttle-by-user')->assertStatus(429);
 
+        $this->flushSession();
         $this->actingAs($second, 'web');
         $this->getJson('/api/_test/throttle-by-user')->assertOk();
     }

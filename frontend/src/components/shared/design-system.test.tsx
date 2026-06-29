@@ -10,6 +10,7 @@ import {
   InfoPanel,
   OperationalBanner,
   PageShell,
+  PermissionBadge,
   PermissionState,
   PrintPreviewFrame,
   ReceiptDocumentShell,
@@ -86,6 +87,7 @@ describe('v1.2 shared design system components', () => {
           ]}
         />
         <InfoPanel title="Atencion" description="Revisar informacion visible" tone="warning" />
+        <PermissionBadge permission="users.view" state="granted">Usuarios</PermissionBadge>
         <PermissionState state="readonly" action={<Button variant="outline">Solicitar permiso</Button>} />
         <CashStatusCard status="open" amount="L 500.00" cashier="Caja 1" timestamp="2026-06-26 08:00" />
       </>,
@@ -94,6 +96,7 @@ describe('v1.2 shared design system components', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Centro operativo' })).toBeInTheDocument();
     expect(screen.getByText('L 1,250.00')).toHaveClass('tabular-nums');
     expect(screen.getByRole('alert')).toHaveTextContent('Revisar informacion visible');
+    expect(screen.getByText('Usuarios').closest('[data-slot="permission-badge"]')).toHaveAttribute('title', 'Permitido: users.view');
     expect(screen.getByRole('status')).toHaveTextContent('Solo lectura');
     expect(screen.getByText('Abierta')).toBeInTheDocument();
     expect(screen.getByText('L 500.00')).toHaveClass('tabular-nums');

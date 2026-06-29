@@ -41,7 +41,7 @@ Los tokens viven en `frontend/src/styles.css` bajo `@theme` y `html.dark`.
 | `FieldGroup` | Existe. | Agrupacion de campos. |
 | `MoneyText` | Existe. | Montos tabulares. |
 | `StatusBadge` | Existe. | Estados de negocio. |
-| `PermissionBadge` | Pendiente si RBAC requiere variante propia. | Permisos visibles. |
+| `PermissionBadge` | Existe. | Permisos visibles con estados granted/readonly/denied/system. |
 | `EmptyState` | Existe. | Estados vacios. |
 | `ErrorState` | Existe. | Errores recuperables. |
 | `LoadingState` | Existe. | Carga. |
@@ -58,7 +58,17 @@ Los tokens viven en `frontend/src/styles.css` bajo `@theme` y `html.dark`.
 
 - Las pantallas deben usar componentes compartidos antes de clases locales.
 - Las tablas principales deben usar `DataTable` y no construir headers/rows desde cero salvo tablas pequenas de detalle.
+- `DataTable` ofrece sorting, filtro, paginacion y visibilidad de columnas de forma opt-in para no alterar contratos ni ordenamientos backend por accidente.
 - Los charts deben vivir dentro de `ChartCard` con alto estable y fallback textual.
 - Los formularios deben usar `FormSection`/`FieldGroup` y errores asociados.
 - Los recibos deben usar `ReceiptDocumentShell` y print tokens; papel blanco siempre en impresion.
 - No introducir datos clinicos, legales o fiscales no existentes.
+
+## Delta adicional 2026-06-28
+
+- `PermissionBadge` quedo implementado y cubierto por pruebas.
+- `DataTable` dejo de ser solo wrapper visual: ahora soporta sorting, busqueda, paginacion y visibilidad de columnas cuando la pantalla lo habilita explicitamente.
+- La paginacion de tabla ya no muestra un boton deshabilitado de maqueta; usa controles reales anterior/siguiente.
+- Se definieron las utilidades `status-success`, `status-warning` y `status-info` usadas por backups/settings.
+- Se definio `cash-layout` para que la vista de caja no dependa de una clase muerta.
+- Historial de facturas protege la columna de acciones contra recorte y evita que esa columna pueda ocultarse.

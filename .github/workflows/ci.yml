@@ -175,32 +175,37 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
+          cache: 'pnpm'
+          cache-dependency-path: frontend/pnpm-lock.yaml
 
       - name: Install frontend dependencies
         working-directory: frontend
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: TypeScript typecheck
         working-directory: frontend
-        run: npm run typecheck
+        run: pnpm run typecheck
 
       - name: ESLint
         working-directory: frontend
-        run: npm run lint
+        run: pnpm run lint
 
       - name: Vitest
         working-directory: frontend
-        run: npm run test -- --run
+        run: pnpm run test
 
       - name: Build
         working-directory: frontend
-        run: npm run build
+        run: pnpm run build
 
   e2e-mocked:
     name: E2E (mocked Playwright)
@@ -219,12 +224,17 @@ jobs:
           extensions: intl, mbstring, pdo_sqlite, zip, gd, bcmath
           ini-values: memory_limit=512M
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
+          cache: 'pnpm'
+          cache-dependency-path: frontend/pnpm-lock.yaml
 
       - name: Install backend dependencies
         working-directory: backend
@@ -232,11 +242,11 @@ jobs:
 
       - name: Install frontend dependencies
         working-directory: frontend
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Install Playwright browsers
         working-directory: frontend
-        run: npx playwright install --with-deps chromium
+        run: pnpm exec playwright install --with-deps chromium
 
       - name: Run mocked E2E
         working-directory: frontend
@@ -247,4 +257,4 @@ jobs:
           # The production-readiness spec is fully mocked at the route level
           # and does not require a live backend; we just need the SPA built
           # and Playwright's route handlers in place.
-          npm run test:e2e -- --reporter=list
+          pnpm run test:e2e -- --reporter=list

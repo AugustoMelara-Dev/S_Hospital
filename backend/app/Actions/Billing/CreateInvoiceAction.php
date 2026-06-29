@@ -7,6 +7,7 @@ use App\Models\AuditLog;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSetting;
 use App\Models\Invoice;
+use App\Models\Payment;
 use App\Models\Service;
 use App\Models\User;
 use App\Support\Money;
@@ -101,6 +102,18 @@ class CreateInvoiceAction
                 $this->auditDialysisPrescriptionAppliedIfNeeded($totals['items'], $invoice, $issuer, $request);
 
                 if ($isZeroTotal) {
+                    Payment::query()->create([
+                        'invoice_id' => $invoice->id,
+                        'cash_session_id' => $cashSession->id,
+                        'user_id' => $issuer->id,
+                        'method' => Payment::METHOD_OTHER,
+                        'amount' => '0.00',
+                        'amount_cents' => 0,
+                        'reference' => 'Receta dialisis: factura sin cobro',
+                        'status' => Payment::STATUS_POSTED,
+                        'paid_at' => $invoice->issued_at,
+                    ]);
+
                     AuditLog::query()->create([
                         'user_id' => $issuer->id,
                         'action' => 'invoice.zero_amount_registered',

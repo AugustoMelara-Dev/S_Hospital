@@ -14,6 +14,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -35,7 +36,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'api/system/csp-report',
         ]);
         $middleware->prepend(StripApiReadSessionCookies::class);
-        $middleware->appendToGroup('web', \Illuminate\Session\Middleware\AuthenticateSession::class);
+        $middleware->appendToGroup('web', AuthenticateSession::class);
         $middleware->append(AddSecurityHeaders::class);
         $middleware->alias([
             'user.active' => EnsureUserIsActive::class,

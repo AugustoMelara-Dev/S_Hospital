@@ -71,8 +71,12 @@ class DateRangeReportRequest extends FormRequest
     public function authorizedFilters(): array
     {
         $filters = $this->validated();
+        $user = $this->user();
 
-        if ($this->user()?->can('cash.close_any') === true) {
+        if (
+            $user?->can('reports.managerial.view') === true
+            && $user->can('cash.close_any') === true
+        ) {
             return $filters;
         }
 
@@ -80,13 +84,13 @@ class DateRangeReportRequest extends FormRequest
             ! empty($filters['cash_session_id'])
             && CashRegisterSession::query()
                 ->whereKey($filters['cash_session_id'])
-                ->where('user_id', $this->user()?->id)
+                ->where('user_id', $user?->id)
                 ->doesntExist()
         ) {
             abort(403);
         }
 
-        $filters['user_id'] = $this->user()?->id;
+        $filters['user_id'] = $user?->id;
 
         return $filters;
     }

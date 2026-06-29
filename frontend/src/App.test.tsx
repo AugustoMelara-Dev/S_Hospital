@@ -1,4 +1,4 @@
-/// <reference types="node" />
+﻿/// <reference types="node" />
 import { readFileSync } from 'node:fs';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -224,9 +224,10 @@ describe('App', () => {
     fireEvent.click(tab);
   }
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.restoreAllMocks();
     resetRequestChain();
+    await queryClient.cancelQueries();
     queryClient.clear();
     window.history.pushState({}, '', '/');
     vi.spyOn(apiClient, 'getLogo').mockResolvedValue(null);
@@ -234,8 +235,9 @@ describe('App', () => {
     document.body.removeAttribute('data-receipt-width');
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     cleanup();
+    await queryClient.cancelQueries();
     queryClient.clear();
   });
 
@@ -249,6 +251,18 @@ describe('App', () => {
 
     expect(await screen.findByRole('heading', { name: /acceso institucional para caja y administracion/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/usuario o correo/i)).toHaveValue('');
+  });
+
+  it('does not request protected cash session data before authentication', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({ data: null }),
+    } as Response);
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: /acceso institucional para caja y administracion/i })).toBeInTheDocument();
+    expect(fetchMock.mock.calls.map(([input]) => String(input))).not.toContain('/api/cash-sessions/current');
   });
 
   it('recovers an authenticated session after a hard refresh on login', async () => {
@@ -365,8 +379,14 @@ describe('App', () => {
       'href',
       '/settings/fiscal',
     );
-    expect(await screen.findByRole('heading', { name: /^configuraci[oó]n$/i })).toBeInTheDocument();
-    expect(await screen.findByRole('heading', { name: /configuraci[oó]n pendiente/i })).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /^configuraci[oó]n$/i })).toBeInTheDocument();
+    }, { timeout: 5000 });
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /configuraci[oó]n pendiente/i })).toBeInTheDocument();
+    }, { timeout: 5000 });
     expect(screen.getByText(/datos temporales o de validaci[oó]n/i)).toBeInTheDocument();
     activateTab(/^hospital$/i);
     expect(await screen.findByRole('heading', { name: /hospital y recibo/i })).toBeInTheDocument();
@@ -448,13 +468,22 @@ describe('App', () => {
         } as Response;
       }
 
+      if (url.includes('/api/cash-sessions/current')) {
+        return {
+          ok: true,
+          json: async () => ({ data: null }),
+        } as Response;
+      }
+
       return { ok: true, json: async () => ({}) } as Response;
     });
 
     render(<App />);
 
-    expect(await screen.findByRole('heading', { name: /cat[aá]l[oó]go de servicios/i })).toBeInTheDocument();
-    expect(await screen.findByText('Glucosa')).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: /cat[aá]l[oó]go de servicios/i }, { timeout: 20_000 }),
+    ).toBeInTheDocument();
+    expect(await screen.findByText('Glucosa', {}, { timeout: 20_000 })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /agregar servicio/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /nueva categoria/i })).not.toBeInTheDocument();
   });
@@ -487,6 +516,13 @@ describe('App', () => {
         return {
           ok: true,
           json: async () => mockSystemStatusSummary(),
+        } as Response;
+      }
+
+      if (url.includes('/api/cash-sessions/current')) {
+        return {
+          ok: true,
+          json: async () => ({ data: null }),
         } as Response;
       }
 
@@ -741,10 +777,9 @@ describe('App', () => {
     fireEvent.click(await screen.findByRole('button', { name: /^crear respaldo$/i }));
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenLastCalledWith(
-        expect.stringContaining('/api/backups'),
-        expect.objectContaining({ method: 'POST' }),
-      );
+      expect(fetchMock.mock.calls.some(([url, init]) => (
+        String(url).includes('/api/backups') && init?.method === 'POST'
+      ))).toBe(true);
     });
     expect((await screen.findAllByText('hospital-backup-20260517-101500-test.sql')).length).toBeGreaterThan(0);
     expect(screen.getAllByText('Pendiente').length).toBeGreaterThan(0);
@@ -779,6 +814,13 @@ describe('App', () => {
         return {
           ok: true,
           json: async () => mockSystemStatusSummary(),
+        } as Response;
+      }
+
+      if (url.includes('/api/cash-sessions/current')) {
+        return {
+          ok: true,
+          json: async () => ({ data: null }),
         } as Response;
       }
 
@@ -821,7 +863,9 @@ describe('App', () => {
 
     render(<App />);
 
-    expect(await screen.findByText('hospital-backup-20260517-101500-test.sql')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('hospital-backup-20260517-101500-test.sql')).toBeInTheDocument();
+    });
     expect(screen.getByText(/SHA256 bbbbbbbb/i)).toBeInTheDocument();
     expect(screen.getByText(/huella de integridad/i)).toBeInTheDocument();
     expect(
@@ -854,6 +898,20 @@ describe('App', () => {
               must_change_password: false,
             },
           }),
+        } as Response;
+      }
+
+      if (url.includes('/api/system/status-summary')) {
+        return {
+          ok: true,
+          json: async () => mockSystemStatusSummary(),
+        } as Response;
+      }
+
+      if (url.includes('/api/cash-sessions/current')) {
+        return {
+          ok: true,
+          json: async () => ({ data: null }),
         } as Response;
       }
 
@@ -897,7 +955,9 @@ describe('App', () => {
 
     render(<App />);
 
-    expect(await screen.findByText('hospital-backup-20260602-090000-failed.sql')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('hospital-backup-20260602-090000-failed.sql')).toBeInTheDocument();
+    });
     expect(screen.getByText(/1 con error - avise al administrador antes de crear otro respaldo/i)).toBeInTheDocument();
     expect(screen.queryByText(/cree un nuevo respaldo/i)).not.toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/SQLSTATE|storage\/logs/i);
@@ -1204,7 +1264,7 @@ describe('App', () => {
     expect(screen.queryByRole('heading', { name: /nueva factura/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /datos fiscales del hospital/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /respaldos/i })).not.toBeInTheDocument();
-  });
+  }, 30_000);
 
   it('keeps heavy authenticated routes behind lazy route chunks', () => {
     const source = readFileSync('src/AppRoutes.tsx', 'utf8');

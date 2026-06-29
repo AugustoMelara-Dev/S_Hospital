@@ -81,6 +81,8 @@ class IdempotencyKey
                         'message' => 'Una solicitud previa con esta clave de idempotencia sigue en curso.',
                     ], 409);
                 }
+
+                return $this->staleIncompleteResponse();
             }
 
             return $this->replayResponse($existing);
@@ -183,14 +185,18 @@ class IdempotencyKey
         $plain = $reservation->response_body_plain;
         $status = (int) ($reservation->response_status ?? 200);
 
-        if (is_string($plain) && str_starts_with($plain, '%PDF')) {
+        if ($plain === null || $reservation->response_status === null) {
+            return $this->staleIncompleteResponse();
+        }
+
+        if (str_starts_with($plain, '%PDF')) {
             return new Response($plain, $status, [
                 'Content-Type' => 'application/pdf',
                 'Idempotent-Replay' => 'true',
             ]);
         }
 
-        $payload = is_string($plain) ? json_decode($plain, true) : null;
+        $payload = json_decode($plain, true);
         if (! is_array($payload)) {
             $payload = ['data' => null];
         }
@@ -198,6 +204,16 @@ class IdempotencyKey
         return new JsonResponse($payload, $status, [
             'Idempotent-Replay' => 'true',
         ]);
+    }
+
+    private function staleIncompleteResponse(): JsonResponse
+    {
+        return new JsonResponse([
+            'message' => 'La operacion anterior no completo una respuesta replayable.',
+            'errors' => [
+                'idempotency_key' => ['La operacion anterior no completo una respuesta replayable. Verifique el estado de la factura antes de reintentar.'],
+            ],
+        ], 409);
     }
 
     private function persistResponse(IdempotencyKeyModel $reservation, Response $response): void

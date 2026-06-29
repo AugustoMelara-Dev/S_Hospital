@@ -1,12 +1,12 @@
 # V1.3 Total Product Audit
 
-Status: initial controller audit, pending subagent handoffs.
+Status: refreshed controller audit, pending J-P subagent handoffs.
 Date: 2026-06-28.
-Base: `origin/main` at `e08f0e9d7bf740bcf10b7d0b036f6b05980acb42`.
+Base: `origin/main` at `742fdb551b202ddb0473a0269440e0bf6ff116ce`.
 
 ## Base Decision
 
-`origin/codex/v1-2-full-ux-ui-redesign` exists at `c7a35a8a` and contains useful UI work. It is not used as the direct base because its diff from `origin/main` includes more than 1,500 files and reintroduces agentic artifacts, prompts, local skills, screenshots, and generated documents that `main` intentionally cleaned. V1.3 starts from `origin/main` and will recover useful V1.2 product ideas selectively.
+`origin/codex/v1-2-full-ux-ui-redesign` and `origin/codex/v1-2-visible-ui-delta` now point at the same SHA as `origin/main` (`742fdb55`). The published V1.3 branch was older and divergent, so it was reused and synced forward with a merge commit instead of rebasing or recreating the branch. V1.3 now starts from the consolidated V1.2 baseline plus the existing V1.3 audit/hardening slice.
 
 ## System Snapshot
 
@@ -20,11 +20,19 @@ Base: `origin/main` at `e08f0e9d7bf740bcf10b7d0b036f6b05980acb42`.
 | Area | Problem | Impact | Solution | Contract | Risk | Priority | Tests |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Baseline backend | Host lacks `composer`; Docker compose requires local env variables. | Host backend gates cannot run directly; Docker path is usable. | Keep Docker as the verification path and document env bootstrap. | No | Medium | P0 | `php artisan test`, migrate/seed in Docker. |
-| V1.2 reuse | V1.2 has useful UI but also obsolete artifacts. | Direct base would regress repository hygiene. | Cherry-pick or manually port only frontend/product improvements. | No | Medium | P0 | Git diff review, frontend gates after port. |
-| Performance | Build shows `charts` 398.35 kB and `vendor` 348.15 kB chunks. | Slow first load on modest LAN PCs if not managed. | Lazy-load heavy analytics, avoid extra chart/table libs unless justified. | No | Medium | P1 | Build size report, Playwright smoke, LAN performance review. |
-| Documentation | Cleaned `main` has no `docs/` tree. | Phase records absent unless recreated. | Create V1.3 docs as first-class tracked artifacts. | No | Low | P0 | Review docs in final report. |
+| V1.2 reuse | V1.2 full/visible work is now consolidated into `main`. | V1.3 should not re-import older divergent worktrees or artifacts. | Treat `origin/main` as the product baseline and preserve old/local work only through checkpoint branches. | No | Medium | P0 | Git diff review, frontend gates after sync. |
+| Performance | Build shows `charts` 418.64 kB and `vendor` 394.78 kB chunks. | Slow first load on modest LAN PCs if not managed. | Lazy-load heavy analytics, avoid extra chart/table libs unless justified. | No | Medium | P1 | Build size report, Playwright smoke, LAN performance review. |
+| Documentation | V1.3 docs existed on the older branch but contained stale base/test data. | Decisions could be misleading during implementation. | Refresh V1.3 docs against `742fdb55`, current `pnpm` gates, and official/primary sources. | No | Low | P0 | Review docs in final report. |
 | Receipt issuance after payment | Payment can succeed while institutional receipt issuance reports an error. | Paid invoices can exist without principal institutional receipt. | Decide mandatory atomic payment+receipt rollback vs explicit receipt-pending recovery queue. | Yes if changed | High | P1 | Payment/receipt feature tests, frontend recovery tests. |
 | Critical mutation idempotency | Frontend generated fresh keys for manual payment retries. | Partial payment retry after timeout could double-apply. | V1.3 now supports stable POS payment keys; still needs timeout refetch policy. | No | High | P1 | Payment retry tests, double-payment feature tests. |
+| RBAC role assignment | Users with basic user-management permissions can assign elevated non-admin roles and mutate protected admin/root users. | Privilege escalation and admin lockout/deactivation risk. | Add protected-target and assignable-role rules; require elevated permission for protected roles; wrap user mutations in transactions. | Maybe | High | P0 | RBAC feature tests, UsersView action tests, direct API IDOR tests. |
+| CI package manager drift | CI uses npm/package-lock while frontend now uses pnpm/pnpm-lock. | CI frontend install fails before quality gates. | Convert CI frontend steps to pnpm with frozen lockfile. | No | High | P0 | CI-equivalent pnpm install/typecheck/lint/test/build. |
+| Release E2E reliability | QA docs record `pnpm test:e2e` failing with expired session; release E2E is SQLite-only and can reuse stale golden DB after auth/prep changes. | Release confidence is weak for the LAN/MariaDB target. | Fix session regression, widen golden DB hash inputs, add MariaDB-backed release gate. | Maybe | High | P0/P1 | Playwright release E2E, MariaDB migrate/seed/test. |
+| Receipt legal seed data | Default institutional receipt series seeded `AUT-REC-LOCAL` as authorization-like text. | Production PDFs could expose invented legal/authorization data. | Seed `range_authorization` as null; PDF only prints configured authorization. | No | High | P0 | Seeder test, PDF tests. |
+| POS invoice idempotency | POS invoice submit used a generated key per request, not per logical retry. | Lost LAN response after committed invoice could lead to duplicate fiscal invoice on retry. | Reuse caller-managed idempotency key until invoice success or payload changes. | No | High | P0 | NewInvoiceView retry test. |
+| Stale idempotency replay | Old incomplete idempotency reservations could replay `200 {"data": null}`. | Critical mutations could look successful while state is unknown. | Return 409 with recovery guidance when a reservation has no replayable response. | No | High | P1 | IdempotencyKeyTest. |
+| Mobile/a11y target size | Some buttons/icons used 36px targets on mobile. | Cashier touch errors on 320/375px devices. | Button `sm` and `icon` variants now keep 44px mobile targets and shrink only at `sm` breakpoints; reports tabs and receipt preview still need mobile proof. | No | Medium | P1 | Mobile Playwright target-size tests. |
+| Realtime/LAN performance | Echo/Pusher load statically and polling cadences can stack across terminals. | Slower first load and avoidable LAN/server load. | Lazy-load realtime only when enabled and add visibility/backoff-aware polling. | No | Medium | P1 | Build budget, runtime polling tests. |
 
 ## Module Audit Matrix
 
@@ -62,11 +70,19 @@ Base: `origin/main` at `e08f0e9d7bf740bcf10b7d0b036f6b05980acb42`.
 
 ## V1.3 Fix Verification To Date
 
-- `npm run test -- src/lib/api/billing.test.ts src/features/invoices/NewInvoiceView.test.tsx`: PASS, 23 tests.
-- `npm run test -- src/features/catalog/components/ServiceSheet.test.tsx src/features/reports/ReportsView.test.tsx src/features/invoices/InvoiceHistoryView.test.tsx`: PASS, 39 tests.
-- `npm run typecheck`: PASS after fixes.
-- `npm run lint`: PASS after fixes.
-- `docker compose run --rm backend composer install --no-interaction --no-progress`: PASS.
-- `docker compose run --rm backend vendor/bin/pint --test`: PASS, 403 files.
-- `docker compose run --rm backend php artisan test --filter='InvoiceCreationTest|ServiceCatalogTest' --colors=never`: PASS WITH WARNINGS, 57 tests and 303 assertions. Warnings are repeated `file_get_contents(/var/www/html/.env)` because the container lacks an ignored `.env` file.
-- `docker compose run --rm backend php artisan test --colors=never`: INCONCLUSIVE, timed out after 4 minutes without useful output.
+- `pnpm run typecheck`: PASS.
+- `pnpm run lint`: PASS.
+- `pnpm run build`: PASS; largest chunks `charts` 418.64 kB, `vendor` 394.78 kB, app index 223.43 kB.
+- `pnpm exec vitest run src/features/invoices/NewInvoiceView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000`: PASS, 22 tests.
+- `pnpm run test`: PASS, 83 files and 498 tests.
+- `pnpm exec vitest run src/features/invoices/NewInvoiceView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000`: PASS after POS idempotency change, 23 tests.
+- `pnpm run test`: PASS after App lazy route stabilization, 83 files and 499 tests.
+- `docker compose run --rm backend php artisan test --filter=UserManagementTest --colors=never` with `DB_PASSWORD`, `DB_ROOT_PASSWORD`, `DB_PORT=33307`: PASS, 30 tests with container `.env` warnings.
+- `docker compose run --rm backend php artisan test --filter=InstitutionalReceiptSeriesSeederTest --colors=never`: PASS with warning.
+- `docker compose run --rm backend php artisan test --filter=InstitutionalReceiptPdfTest --colors=never`: PASS, 13 tests with warnings.
+- `docker compose run --rm backend php artisan test --filter=IdempotencyKeyTest --colors=never`: PASS, 11 tests with warnings.
+- `docker compose run --rm backend php artisan test tests/Feature/EncryptLegacyIdempotencyKeysTest.php --colors=never`: PASS with warning.
+- `docker compose run --rm backend vendor/bin/pint --test`: PASS, 410 files.
+- `docker compose run --rm backend vendor/bin/phpstan analyse --memory-limit=1G --no-progress`: PASS.
+- Backend full gates: BLOCKED. Full `php artisan test` and Feature partition timed out at 10 minutes without final output; Unit partition failed repo-root file guards because Docker mounts backend at `/var/www/html` and those tests read `base_path('../...')`.
+- E2E: PENDING. Release E2E auth/session failure remains unresolved.

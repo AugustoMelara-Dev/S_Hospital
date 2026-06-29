@@ -20,17 +20,33 @@ use Illuminate\Auth\Access\HandlesAuthorization;
  *
  * For now the policy delegates to `InvoiceAccess`, which is the
  * canonical per-invoice scope check. Future v1.1 work can fold
- * the dedicated permission gates (`invoices.void`,
- * `invoices.reverse`, `invoices.operate_any`) into named policy
- * methods like `viewAny`, `view`, `create`, `update`, `void`,
- * `reverse`, `reprint` so the Gate facade resolves them
- * automatically.
+ * the remaining dedicated permission gates into named policy
+ * methods as the endpoints are moved to Gate-based authorization.
  */
 class InvoicePolicy
 {
     use HandlesAuthorization;
 
     public function __construct(private readonly InvoiceAccess $invoiceAccess) {}
+
+    /**
+     * List invoices. The controller still narrows cashier scope to
+     * own invoices from the current hospital day.
+     */
+    public function viewAny(User $user): bool
+    {
+        return $user->can('invoices.view');
+    }
+
+    public function view(User $user, Invoice $invoice): bool
+    {
+        return $user->can('invoices.view');
+    }
+
+    public function create(User $user): bool
+    {
+        return $user->can('invoices.create');
+    }
 
     /**
      * Operate on a specific invoice (void, reverse, register a

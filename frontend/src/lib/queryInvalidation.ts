@@ -4,6 +4,7 @@ import { queryKeys } from '@/lib/queryKeys';
 
 export async function invalidateCatalogQueries(queryClient: QueryClient): Promise<void> {
   await Promise.all([
+    queryClient.invalidateQueries({ queryKey: queryKeys.areas.all }),
     queryClient.invalidateQueries({ queryKey: queryKeys.categories.all }),
     queryClient.invalidateQueries({ queryKey: queryKeys.services.all }),
     queryClient.invalidateQueries({ queryKey: queryKeys.system.setupStatus() }),

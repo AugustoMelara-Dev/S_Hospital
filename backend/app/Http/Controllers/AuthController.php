@@ -13,8 +13,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -172,10 +172,13 @@ class AuthController extends Controller
             'must_change_password' => false,
         ])->save();
 
+        $user->refresh();
+        $request->session()->put('password_hash_'.Auth::getDefaultDriver(), $user->getAuthPassword());
+
         $this->auditAuth($request, 'auth.password_changed', $user);
 
         return response()->json([
-            'data' => $this->userPayload($user->refresh()),
+            'data' => $this->userPayload($user),
         ]);
     }
 

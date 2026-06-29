@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Billing;
 
+use App\Models\Invoice;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreInvoiceRequest extends FormRequest
@@ -17,7 +18,7 @@ class StoreInvoiceRequest extends FormRequest
 
     public function authorize(): bool
     {
-        return $this->user()?->can('invoices.create') === true;
+        return $this->user()?->can('create', Invoice::class) === true;
     }
 
     /**

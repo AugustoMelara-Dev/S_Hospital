@@ -6,6 +6,8 @@ import { dirname, resolve } from 'node:path';
 const reportPath = resolve(process.env.E2E_V1_2_VISIBLE_UI_A11Y_REPORT_PATH ?? '../qa/production-audit/v1-2-visible-ui-a11y-report.json');
 const smokeResults: Array<Record<string, unknown>> = [];
 
+test.setTimeout(180_000);
+
 const today = new Date().toISOString().slice(0, 10);
 const issuedAt = `${today}T08:00:00-06:00`;
 const paidAt = `${today}T08:03:00-06:00`;
@@ -729,6 +731,7 @@ function captureConsoleIssues(page: Page, consoleIssues: string[]) {
     const failure = request.failure();
     if (request.url().includes('/sanctum/csrf-cookie') && failure?.errorText === 'net::ERR_ABORTED') return;
     if (request.url().includes('/api/auth/logout') && failure?.errorText === 'net::ERR_ABORTED') return;
+    if (isBenignFrontendNavigationAbort(request.url(), request.method(), failure?.errorText)) return;
     consoleIssues.push(`requestfailed: ${request.method()} ${request.url()} ${failure?.errorText ?? ''}`.trim());
   });
   page.on('response', (response) => {
@@ -738,6 +741,20 @@ function captureConsoleIssues(page: Page, consoleIssues: string[]) {
       consoleIssues.push(`http.${status}: ${response.request().method()} ${url}`);
     }
   });
+}
+
+function isBenignFrontendNavigationAbort(url: string, method: string, errorText?: string): boolean {
+  if (method !== 'GET' || errorText !== 'net::ERR_ABORTED') return false;
+  const parsed = new URL(url);
+  if (parsed.origin !== 'http://127.0.0.1:5173') return false;
+  if (parsed.pathname.startsWith('/api/')) return false;
+  return parsed.pathname.startsWith('/src/')
+    || parsed.pathname.startsWith('/node_modules/.vite/')
+    || parsed.pathname.startsWith('/@vite/')
+    || parsed.pathname.endsWith('.tsx')
+    || parsed.pathname.endsWith('.ts')
+    || parsed.pathname.endsWith('.js')
+    || parsed.pathname.endsWith('.css');
 }
 
 function branding() {

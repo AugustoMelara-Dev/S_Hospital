@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Fiscal\UploadLogoRequest;
+use App\Models\AuditLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
@@ -40,11 +41,36 @@ class LogoController extends Controller
             ]);
         }
 
+        $disk = Storage::disk('public');
+        $oldPath = $disk->path('branding/logo.png');
+        $oldValues = is_file($oldPath)
+            ? [
+                'sha256' => hash_file('sha256', $oldPath),
+                'size_bytes' => filesize($oldPath),
+                'mime_type' => File::mimeType($oldPath) ?: 'application/octet-stream',
+            ]
+            : null;
+
         // Store as branding/logo.png on public disk
         $request->file('logo')->storeAs('branding', 'logo.png', 'public');
 
-        $path = Storage::disk('public')->path('branding/logo.png');
+        $path = $disk->path('branding/logo.png');
         $time = file_exists($path) ? filemtime($path) : time();
+
+        AuditLog::query()->create([
+            'user_id' => $request->user()?->id,
+            'action' => 'settings.logo.updated',
+            'entity_type' => 'settings.logo',
+            'entity_id' => null,
+            'old_values' => $oldValues,
+            'new_values' => [
+                'sha256' => is_file($path) ? hash_file('sha256', $path) : null,
+                'size_bytes' => is_file($path) ? filesize($path) : null,
+                'mime_type' => is_file($path) ? (File::mimeType($path) ?: 'application/octet-stream') : null,
+            ],
+            'ip' => $request->ip(),
+            'user_agent' => (string) $request->userAgent(),
+        ]);
 
         return response()->json([
             'message' => 'Logo actualizado con exito.',

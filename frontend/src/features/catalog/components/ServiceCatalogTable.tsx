@@ -1,7 +1,7 @@
-import { Boxes, MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal } from 'lucide-react';
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
-import { Card, CardContent } from '../../../components/ui/card';
+import { DataTable, type DataTableColumn } from '../../../components/ui/data-table';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,15 +9,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../../../components/ui/dropdown-menu';
-import { Skeleton } from '../../../components/ui/states';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '../../../components/ui/table';
 import { formatLempirasUIFromCents, parseCents } from '../../../lib/moneyCents';
 import { getServiceBillingSummary } from '../../../lib/serviceBilling';
 import type { ServiceBillingBadge } from '../../../lib/serviceBilling';
@@ -36,178 +27,132 @@ export function ServiceCatalogTable({
   hasActiveFilters,
   isEmpty,
 }: ServiceCatalogTableProps) {
-  if (isLoading) {
-    return (
-      <Card className="border-operational-border bg-operational-surface shadow-operational">
-        <CardContent className="p-0">
-          <Table containerLabel="Listado de servicios del catálogo en carga">
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nombre</TableHead>
-                <TableHead>Categoría</TableHead>
-                <TableHead>Área</TableHead>
-                <TableHead data-numeric="true">Precio</TableHead>
-                {scannerEnabled ? <TableHead>Código</TableHead> : null}
-                <TableHead>Estado en caja</TableHead>
-                {canManage ? <TableHead className="text-right">Acciones</TableHead> : null}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {Array.from({ length: 5 }).map((_, index) => (
-                <TableRow key={index}>
-                  <TableCell>
-                    <Skeleton className="h-5 w-32" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-5 w-24" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-5 w-24" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-5 w-16" />
-                  </TableCell>
-                  {scannerEnabled ? (
-                    <TableCell>
-                      <Skeleton className="h-5 w-20" />
-                    </TableCell>
-                  ) : null}
-                  <TableCell>
-                    <Skeleton className="h-5 w-24" />
-                  </TableCell>
-                  {canManage ? (
-                    <TableCell className="text-right">
-                      <Skeleton className="ml-auto h-5 w-12" />
-                    </TableCell>
-                  ) : null}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (loadError) {
-    return (
-      <Card role="alert" aria-live="assertive" className="border-destructive/35 bg-destructive/10 shadow-operational">
-        <CardContent className="flex flex-col items-center justify-center gap-3 py-12">
-          <div className="flex size-12 items-center justify-center rounded-full bg-destructive/10 text-destructive">
-            <Boxes aria-hidden="true" className="h-6 w-6" />
-          </div>
-          <h3 className="text-lg font-semibold">No se pudo cargar</h3>
-          <p className="max-w-md text-center text-sm text-muted-foreground">{loadError}</p>
-          <Button type="button" variant="outline" onClick={onRetry}>
-            Reintentar
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (isEmpty) {
-    return (
-      <Card className="border-operational-border bg-operational-surface shadow-operational">
-        <CardContent className="flex flex-col items-center justify-center py-12">
-          <Boxes aria-hidden="true" className="mb-4 h-12 w-12 text-muted-foreground" />
-          <h3 className="mb-2 text-lg font-semibold">No hay servicios</h3>
-          <p className="mb-4 text-center text-muted-foreground">
-            {hasActiveFilters
-              ? 'No se encontraron servicios con los filtros seleccionados.'
-              : 'Comience agregando su primer servicio al catálogo.'}
-          </p>
-          {hasActiveFilters ? (
-            <Button type="button" variant="outline" onClick={onClearFilters}>
-              Limpiar filtros
-            </Button>
-          ) : null}
-        </CardContent>
-      </Card>
-    );
-  }
+  const columns = createServiceColumns({ canManage, onRowActions, scannerEnabled });
 
   return (
-    <Card className="overflow-hidden border-operational-border bg-operational-surface shadow-operational">
-      <Table containerLabel="Listado de servicios del catálogo">
-        <TableHeader>
-          <TableRow>
-            <TableHead>Nombre</TableHead>
-            <TableHead>Categoría</TableHead>
-            <TableHead>Área</TableHead>
-            <TableHead data-numeric="true">Precio</TableHead>
-            {scannerEnabled ? <TableHead>Código</TableHead> : null}
-            <TableHead>Estado en caja</TableHead>
-            {canManage ? <TableHead className="text-right">Acciones</TableHead> : null}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {services.map((service) => (
-            <ServiceRow
-              key={service.id}
-              service={service}
-              scannerEnabled={scannerEnabled}
-              canManage={canManage}
-              onRowActions={onRowActions}
-            />
-          ))}
-        </TableBody>
-      </Table>
-    </Card>
+    <DataTable
+      columns={columns}
+      containerLabel="Listado de servicios del catálogo"
+      emptyAction={
+        hasActiveFilters ? (
+          <Button type="button" variant="outline" onClick={onClearFilters}>
+            Limpiar filtros
+          </Button>
+        ) : null
+      }
+      emptyDescription={
+        hasActiveFilters
+          ? 'No se encontraron servicios con los filtros seleccionados.'
+          : 'Comience agregando su primer servicio al catálogo.'
+      }
+      emptyTitle="No hay servicios"
+      error={Boolean(loadError)}
+      errorDescription={loadError}
+      getRowClassName={() => 'border-b transition-colors hover:bg-muted/30'}
+      getRowKey={(service) => service.id}
+      loading={isLoading}
+      loadingLabel="Cargando servicios del catálogo..."
+      onRetry={onRetry}
+      rows={isEmpty ? [] : services}
+    />
   );
 }
 
-type ServiceRowProps = {
+type CreateServiceColumnsOptions = {
   canManage: boolean;
   onRowActions: ServiceCatalogTableProps['onRowActions'];
   scannerEnabled: boolean;
-  service: Service;
 };
 
-function ServiceRow({ canManage, onRowActions, scannerEnabled, service }: ServiceRowProps) {
-  const billingSummary = getServiceBillingSummary(service);
+function createServiceColumns({
+  canManage,
+  onRowActions,
+  scannerEnabled,
+}: CreateServiceColumnsOptions): Array<DataTableColumn<Service>> {
+  const columns: Array<DataTableColumn<Service>> = [
+    {
+      key: 'name',
+      header: 'Nombre',
+      cellClassName: 'px-4 py-3 align-top',
+      render: (service) => {
+        const billingSummary = getServiceBillingSummary(service);
+        return (
+          <div className="flex flex-col gap-1">
+            <span className="break-words font-medium">{service.name}</span>
+            {billingSummary.reasons.length > 0 ? (
+              <span className="text-xs text-muted-foreground">{billingSummary.reasons[0]}</span>
+            ) : null}
+          </div>
+        );
+      },
+    },
+    {
+      key: 'category',
+      header: 'Categoría',
+      cellClassName: 'px-4 py-3 align-top text-sm',
+      render: (service) => service.category?.name ?? 'Sin categoría',
+    },
+    {
+      key: 'area',
+      header: 'Área',
+      cellClassName: 'px-4 py-3 align-top text-sm',
+      render: (service) => service.area?.name ?? 'Sin área',
+    },
+    {
+      key: 'price',
+      header: 'Precio',
+      numeric: true,
+      cellClassName: 'px-4 py-3 align-top',
+      render: (service) => {
+        const billingSummary = getServiceBillingSummary(service);
+        return (
+          <div className="flex flex-col items-end gap-1 text-right">
+            <span className="font-semibold tabular-nums">{formatServicePrice(service.price)}</span>
+            {!billingSummary.hasConfiguredPrice ? (
+              <span className="text-xs text-warning-foreground">Sin tarifa operativa</span>
+            ) : null}
+          </div>
+        );
+      },
+    },
+  ];
 
-  return (
-    <TableRow className="border-b transition-colors hover:bg-muted/30">
-      <TableCell className="px-4 py-3 align-top">
-        <div className="flex flex-col gap-1">
-          <span className="break-words font-medium">{service.name}</span>
-          {billingSummary.reasons.length > 0 ? (
-            <span className="text-xs text-muted-foreground">{billingSummary.reasons[0]}</span>
-          ) : null}
-        </div>
-      </TableCell>
-      <TableCell className="px-4 py-3 align-top text-sm">
-        {service.category?.name ?? 'Sin categoría'}
-      </TableCell>
-      <TableCell className="px-4 py-3 align-top text-sm">{service.area?.name ?? 'Sin área'}</TableCell>
-      <TableCell className="px-4 py-3 align-top" data-numeric="true">
-        <div className="flex flex-col items-end gap-1 text-right">
-          <span className="font-semibold tabular-nums">{formatServicePrice(service.price)}</span>
-          {!billingSummary.hasConfiguredPrice ? (
-            <span className="text-xs text-warning-foreground">Sin tarifa operativa</span>
-          ) : null}
-        </div>
-      </TableCell>
-      {scannerEnabled ? (
-        <TableCell className="px-4 py-3 align-top text-sm text-muted-foreground">
-          <ServiceCodeList service={service} />
-        </TableCell>
-      ) : null}
-      <TableCell className="px-4 py-3 align-top">
+  if (scannerEnabled) {
+    columns.push({
+      key: 'code',
+      header: 'Código',
+      cellClassName: 'px-4 py-3 align-top text-sm text-muted-foreground',
+      render: (service) => <ServiceCodeList service={service} />,
+    });
+  }
+
+  columns.push({
+    key: 'billing-state',
+    header: 'Estado en caja',
+    cellClassName: 'px-4 py-3 align-top',
+    render: (service) => {
+      const billingSummary = getServiceBillingSummary(service);
+      return (
         <div className="flex flex-wrap gap-1">
           {billingSummary.badges.map((badge) => (
             <ServiceBillingBadgeView key={`${service.id}-${badge.label}`} badge={badge} />
           ))}
         </div>
-      </TableCell>
-      {canManage ? (
-        <TableCell className="px-4 py-3 text-right align-top">
-          <ServiceRowActions service={service} onRowActions={onRowActions} />
-        </TableCell>
-      ) : null}
-    </TableRow>
-  );
+      );
+    },
+  });
+
+  if (canManage) {
+    columns.push({
+      key: 'actions',
+      header: 'Acciones',
+      headerClassName: 'text-right',
+      cellClassName: 'px-4 py-3 text-right align-top',
+      render: (service) => <ServiceRowActions service={service} onRowActions={onRowActions} />,
+    });
+  }
+
+  return columns;
 }
 
 type ServiceCodeListProps = {

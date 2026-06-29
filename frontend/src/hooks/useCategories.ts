@@ -10,6 +10,13 @@ export function useCategories(active?: boolean) {
   });
 }
 
+export function useAreas(active?: boolean) {
+  return useQuery({
+    queryKey: queryKeys.areas.list(active),
+    queryFn: () => apiClient.getAreas(active),
+  });
+}
+
 export function useCreateCategory() {
   const queryClient = useQueryClient();
 

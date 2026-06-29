@@ -36,6 +36,14 @@ describe('CashMovementsTable', () => {
     expect(screen.getByRole('cell', { name: /\+ L 10\.00/i })).toHaveAttribute('data-numeric', 'true');
     expect(screen.queryByRole('button', { name: /editar|eliminar|revertir/i })).not.toBeInTheDocument();
   });
+
+  it('uses the shared empty state instead of rendering an empty table row', () => {
+    render(<CashMovementsTable movements={[]} />);
+
+    expect(screen.getByText(/sin movimientos de caja/i)).toBeInTheDocument();
+    expect(screen.getByText(/entradas, salidas y ajustes aparecer[aá]n/i)).toBeInTheDocument();
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+  });
 });
 
 function rowFor(label: string): HTMLElement {

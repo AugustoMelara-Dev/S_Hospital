@@ -1,18 +1,56 @@
 import { formatLempirasUI } from '@/lib/moneyCents';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
+import { StatGrid } from '@/components/shared';
 import type { ExecutiveReport } from '@/lib/api';
 
 type PendingAgingPanelProps = {
   report: ExecutiveReport;
 };
+
+type PendingInvoice = ExecutiveReport['pending_aging']['items'][number];
+
+const pendingInvoiceColumns: Array<DataTableColumn<PendingInvoice>> = [
+  {
+    key: 'invoice_number',
+    header: '# Factura',
+    cellClassName: 'font-mono text-xs',
+    render: (item) => item.invoice_number,
+  },
+  {
+    key: 'patient',
+    header: 'Paciente',
+    cellClassName: 'font-semibold',
+    render: (item) => item.patient,
+  },
+  {
+    key: 'issued_at',
+    header: 'Emitida',
+    cellClassName: 'text-xs text-muted-foreground',
+    render: (item) => formatInvoiceDate(item.issued_at),
+  },
+  {
+    key: 'age_days',
+    header: 'Antiguedad',
+    numeric: true,
+    cellClassName: 'tabular-nums',
+    render: (item) => `${item.age_days} d`,
+  },
+  {
+    key: 'total',
+    header: 'Total',
+    numeric: true,
+    cellClassName: 'font-mono tabular-nums',
+    render: (item) => formatLempirasUI(item.total),
+  },
+  {
+    key: 'balance_due',
+    header: 'Saldo',
+    numeric: true,
+    cellClassName: 'font-mono tabular-nums font-semibold',
+    render: (item) => formatLempirasUI(item.balance_due),
+  },
+];
 
 export function PendingAgingPanel({ report }: PendingAgingPanelProps) {
   const aging = report.pending_aging;
@@ -21,6 +59,15 @@ export function PendingAgingPanel({ report }: PendingAgingPanelProps) {
     { key: '8_30_days', label: '8 a 30 dias' },
     { key: '31_plus_days', label: '31 o mas dias' },
   ] as const;
+  const bucketItems = buckets.map((bucket) => {
+    const value = aging[bucket.key];
+
+    return {
+      label: bucket.label,
+      value: value.count,
+      helper: formatLempirasUI(value.amount),
+    };
+  });
 
   return (
     <Card>
@@ -31,58 +78,23 @@ export function PendingAgingPanel({ report }: PendingAgingPanelProps) {
         </p>
       </CardHeader>
       <CardContent>
-        <div className="mb-4 grid gap-3 sm:grid-cols-3">
-          {buckets.map((bucket) => {
-            const value = aging[bucket.key];
-            return (
-              <div key={bucket.key} className="rounded border border-border bg-muted/40 p-3">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                  {bucket.label}
-                </p>
-                <p className="mt-1 text-xl font-bold tabular-nums text-foreground">{value.count}</p>
-                <p className="mt-1 font-mono text-sm font-semibold tabular-nums text-foreground" translate="no">
-                  {formatLempirasUI(value.amount)}
-                </p>
-              </div>
-            );
-          })}
-        </div>
+        <StatGrid className="mb-4 sm:grid-cols-3 xl:grid-cols-3" items={bucketItems} />
 
-        {aging.items.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Sin facturas pendientes en el periodo.</p>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead># Factura</TableHead>
-                <TableHead>Paciente</TableHead>
-                <TableHead>Emitida</TableHead>
-                <TableHead className="text-right">Antiguedad</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-                <TableHead className="text-right">Saldo</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {aging.items.map((item, index) => (
-                <TableRow key={`${item.invoice_number}-${index}`}>
-                  <TableCell className="font-mono text-xs">{item.invoice_number}</TableCell>
-                  <TableCell className="font-semibold">{item.patient}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
-                    {item.issued_at ? new Date(item.issued_at).toLocaleDateString('es-HN') : '-'}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">{item.age_days} d</TableCell>
-                  <TableCell className="text-right font-mono tabular-nums">
-                    {formatLempirasUI(item.total)}
-                  </TableCell>
-                  <TableCell className="text-right font-mono tabular-nums font-semibold">
-                    {formatLempirasUI(item.balance_due)}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
+        <DataTable
+          caption="Facturas pendientes por antiguedad."
+          columns={pendingInvoiceColumns}
+          containerLabel="Facturas pendientes"
+          emptyDescription="Las facturas con saldo abierto apareceran cuando el periodo tenga actividad pendiente."
+          emptyTitle="Sin facturas pendientes"
+          getRowKey={(item) => `${item.invoice_number}-${item.issued_at}-${item.bucket}`}
+          rows={aging.items}
+          tableClassName="min-w-[760px]"
+        />
       </CardContent>
     </Card>
   );
+}
+
+function formatInvoiceDate(value: string): string {
+  return value ? new Date(value).toLocaleDateString('es-HN') : '-';
 }

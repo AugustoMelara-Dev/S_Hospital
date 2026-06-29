@@ -25,7 +25,7 @@ class StoreServiceRequest extends FormRequest
 
     public function authorize(): bool
     {
-        return $this->user()?->can('catalog.manage') === true;
+        return $this->user()?->can('create', Service::class) === true;
     }
 
     /**
@@ -38,7 +38,7 @@ class StoreServiceRequest extends FormRequest
             'area_id' => ['required', 'integer', 'exists:areas,id'],
             'name' => ['required', 'string', 'max:160'],
             'aliases' => ['nullable', 'string', 'max:1000'],
-            'price' => ['required', 'decimal:0,2', 'min:0'],
+            'price' => ['required', 'decimal:0,2', 'gt:0'],
             'scan_code' => ['nullable', 'string', 'max:120', 'unique:services,scan_code'],
             'barcode' => ['nullable', 'string', 'max:120', 'unique:services,barcode'],
             'qr_code' => ['nullable', 'string', 'max:120', 'unique:services,qr_code'],

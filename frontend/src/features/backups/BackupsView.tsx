@@ -1,19 +1,20 @@
-import { Download, RefreshCw, Archive, CheckCircle, Clock, XCircle, HardDrive, Server, ShieldAlert } from 'lucide-react';
+import { RefreshCw, Archive, CheckCircle, Clock, XCircle, HardDrive, Server, ShieldAlert } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { StatGrid } from '@/components/shared';
+import { useBackups, useCreateBackup } from '@/hooks/useBackups';
+import { useSystemStatusSnapshot } from '@/hooks/useServerStatus';
 import { ActionBar } from '../../components/ui/action-bar';
 import { Button } from '../../components/ui/button';
 import { Alert } from '../../components/ui/alert';
 import { ConfirmDialog } from '../../components/ui/confirm-dialog';
 import { PaginationControls } from '../../components/ui/pagination';
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/data-table';
 import { PageHeader } from '../../components/ui/page-header';
 import { Card, CardContent } from '../../components/ui/card';
 import { ErrorState, LoadingState } from '../../components/ui/states';
 import { StatusBadge } from '../../components/ui/status-badge';
-import { BackupStatusBadge, getStatusDescription } from './components/BackupStatusBadge';
 import { BackupExplanationCard, BackupEmptyState } from './components/BackupExplanationCard';
-import { type AuthUser, type BackupLog, type PaginatedMeta, type SystemStatus, apiClient, userSafeErrorMessage } from '../../lib/api';
+import { BackupHistoryTable } from './components/BackupHistoryTable';
+import { type AuthUser, type BackupLog, type SystemStatus, apiClient, userSafeErrorMessage } from '../../lib/api';
 import { formatLocalizedDateTime } from '../../lib/format/formatDate';
 import { downloadBlob } from '../../lib/download';
 import { safeClientMessage } from '../../lib/support/clientIssueLog';
@@ -204,26 +205,34 @@ function safeBackupsErrorMessage(error: unknown, fallback: string): string {
 }
 
 export function BackupsView({ user, onStatus }: BackupsViewProps) {
-  const [backupsState, setBackups] = useState<BackupLog[]>([]);
-  const backups = Array.isArray(backupsState) ? backupsState : [];
-  const [meta, setMeta] = useState<PaginatedMeta | null>(null);
   const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null);
-  const [systemStatusError, setSystemStatusError] = useState('');
+  const [manualError, setManualError] = useState('');
   const [showAdvancedStatus, setShowAdvancedStatus] = useState(false);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [confirmCreateOpen, setConfirmCreateOpen] = useState(false);
   const [downloadTarget, setDownloadTarget] = useState<BackupLog | null>(null);
-  const [creatingBackup, setCreatingBackup] = useState(false);
   const [downloadingBackupId, setDownloadingBackupId] = useState<number | null>(null);
   const creatingBackupRef = useRef(false);
   const downloadingBackupRef = useRef<number | null>(null);
   const canCreate = user.permissions.includes('backups.create');
   const canDownload = user.permissions.includes('backups.download');
+  const backupsQuery = useBackups({ page, status: statusFilter });
+  const createBackupMutation = useCreateBackup();
+  const systemStatusQuery = useSystemStatusSnapshot();
 
-  const backupsList = Array.isArray(backups) ? backups : [];
+  const backupsList = Array.isArray(backupsQuery.data?.data) ? backupsQuery.data.data : [];
+  const meta = backupsQuery.data?.meta ?? null;
+  const systemStatus = systemStatusQuery.data ?? null;
+  const creatingBackup = createBackupMutation.isPending;
+  const initialLoading = backupsQuery.isLoading && backupsList.length === 0;
+  const busy = backupsQuery.isFetching || systemStatusQuery.isFetching || creatingBackup;
+  const backupsQueryError = backupsQuery.isError
+    ? safeBackupsErrorMessage(backupsQuery.error, 'No se pudieron cargar los respaldos.')
+    : '';
+  const systemStatusError = systemStatusQuery.isError
+    ? safeBackupsErrorMessage(systemStatusQuery.error, 'No se pudo cargar el estado operativo del servidor.')
+    : '';
+  const error = manualError || backupsQueryError;
 
   const pendingCount = backupsList.filter(b => b.status === 'pending').length;
   const successCount = backupsList.filter(b => b.status === 'success').length;
@@ -237,64 +246,34 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
   const advancedStatusId = 'backups-advanced-status';
 
   useEffect(() => {
-    void loadBackups(page);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, statusFilter]);
-
-  useEffect(() => {
-    void loadSystemStatus();
-  }, []);
-
-  useEffect(() => {
-    if (!backupsList.some((backup) => backup.status === 'pending')) {
-      return;
-    }
-
-    const timer = window.setTimeout(() => {
-      void loadBackups(page, false);
-    }, 5000);
-
-    return () => window.clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [backups, page]);
-
-  async function loadBackups(nextPage: number, announce = true) {
-    setLoading(true);
-    setError('');
-    if (announce) {
+    if (backupsQuery.isLoading) {
       onStatus('Cargando respaldos locales...');
     }
+  }, [backupsQuery.isLoading, onStatus]);
 
-    try {
-      const response = await apiClient.getBackups({ page: nextPage, status: statusFilter });
-      setBackups(response.data);
-      setMeta(response.meta);
-      if (announce) {
-        onStatus('Respaldos locales cargados.');
-      }
-    } catch (error) {
-      const message = safeBackupsErrorMessage(error, 'No se pudieron cargar los respaldos.');
-      setError(message);
-      onStatus(message);
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (backupsQuery.isSuccess && !backupsQuery.isFetching) {
+      onStatus('Respaldos locales cargados.');
     }
-  }
+  }, [backupsQuery.isFetching, backupsQuery.isSuccess, backupsQuery.dataUpdatedAt, onStatus]);
 
-  async function loadSystemStatus() {
-    setSystemStatusError('');
-
-    try {
-      setSystemStatus(await apiClient.getSystemStatus());
-    } catch (error) {
-      const message = safeBackupsErrorMessage(error, 'No se pudo cargar el estado operativo del servidor.');
-      setSystemStatusError(message);
+  useEffect(() => {
+    if (backupsQueryError) {
+      onStatus(backupsQueryError);
     }
-  }
+  }, [backupsQueryError, onStatus]);
+
+  useEffect(() => {
+    if (systemStatusError) {
+      onStatus(systemStatusError);
+    }
+  }, [systemStatusError, onStatus]);
 
   function refreshOperationalStatus() {
-    void loadBackups(page);
-    void loadSystemStatus();
+    setManualError('');
+    onStatus('Actualizando respaldos locales...');
+    void backupsQuery.refetch();
+    void systemStatusQuery.refetch();
   }
 
   async function handleCreateBackup() {
@@ -304,14 +283,12 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
     }
 
     creatingBackupRef.current = true;
-    setCreatingBackup(true);
-    setLoading(true);
-    setError('');
+    setManualError('');
     onStatus('Creando respaldo local...');
 
     try {
-      const backup = await apiClient.createBackup();
-      setBackups((current) => [backup, ...current]);
+      const backup = await createBackupMutation.mutateAsync();
+      setPage(1);
       onStatus(
         backup.status === 'success'
           ? 'Respaldo completado con huella SHA256.'
@@ -319,12 +296,10 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
       );
     } catch (error) {
       const message = safeBackupsErrorMessage(error, 'No se pudo crear el respaldo.');
-      setError(message);
+      setManualError(message);
       onStatus(message);
     } finally {
       creatingBackupRef.current = false;
-      setCreatingBackup(false);
-      setLoading(false);
     }
   }
 
@@ -336,7 +311,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
 
     downloadingBackupRef.current = backup.id;
     setDownloadingBackupId(backup.id);
-    setError('');
+    setManualError('');
 
     try {
       const blob = await apiClient.downloadBackup(backup.id);
@@ -344,7 +319,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
       onStatus(`Respaldo ${backup.filename} descargado.`);
     } catch (error) {
       const message = safeBackupsErrorMessage(error, 'No se pudo descargar el respaldo.');
-      setError(message);
+      setManualError(message);
       onStatus(message);
     } finally {
       downloadingBackupRef.current = null;
@@ -352,7 +327,8 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
     }
   }
 
-  const isEmpty = backupsList.length === 0 && !loading;
+  const isEmpty = backupsList.length === 0 && !initialLoading && !error && statusFilter === 'all';
+  const showHistory = !initialLoading && !error && (backupsList.length > 0 || statusFilter !== 'all');
 
   return (
     <section id="backups" aria-labelledby="backups-title">
@@ -375,7 +351,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                 variant="outline"
                 size="sm"
                 onClick={refreshOperationalStatus}
-                disabled={loading}
+                disabled={busy}
                 aria-label="Actualizar respaldos y estado operativo"
               >
                 <RefreshCw aria-hidden="true" className="h-4 w-4 mr-2" />
@@ -386,7 +362,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                 size="sm"
                 aria-busy={creatingBackup}
                 onClick={() => setConfirmCreateOpen(true)}
-                disabled={loading || creatingBackup}
+                disabled={creatingBackup}
               >
                 <Archive aria-hidden="true" className="h-4 w-4 mr-2" />
                 {creatingBackup ? 'Creando...' : 'Crear respaldo'}
@@ -579,7 +555,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
           </Alert>
         ) : null}
 
-        {loading && backupsList.length === 0 ? (
+        {initialLoading ? (
           <LoadingState label="Cargando respaldos locales..." />
         ) : null}
 
@@ -720,7 +696,10 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
           <ErrorState
             title="Error al cargar respaldos"
             message={error}
-            onRetry={() => void loadBackups(page)}
+            onRetry={() => {
+              setManualError('');
+              void backupsQuery.refetch();
+            }}
             retryLabel="Reintentar carga"
           />
         ) : null}
@@ -789,99 +768,23 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
           </div>
         )}
 
-        {!isEmpty && !loading && (
+        {showHistory && (
           <div className="space-y-4">
-            <div role="group" aria-label="Filtros de estado de respaldos" className="flex flex-wrap items-center gap-2">
-              <span className="text-sm text-muted-foreground">Filtrar:</span>
-              {(['all', 'pending', 'success', 'failed'] as StatusFilter[]).map((filter) => (
-                <Button
-                  key={filter}
-                  type="button"
-                  variant={statusFilter === filter ? 'secondary' : 'outline'}
-                  size="sm"
-                  aria-pressed={statusFilter === filter}
-                  onClick={() => {
-                    setStatusFilter(filter);
-                    setPage(1);
-                  }}
-                  className="h-8"
-                >
-                  {filter === 'all' ? 'Todos' : filter === 'pending' ? 'Pendientes' : filter === 'success' ? 'Completados' : 'Error'}
-                </Button>
-              ))}
-            </div>
 
-            <Table className="min-w-[960px]" containerLabel="Historial de respaldos locales">
-              <TableCaption>
-                Historial de respaldos locales con fecha, archivo, tamano, estado, usuario y acciones disponibles.
-              </TableCaption>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-40 whitespace-nowrap px-4 py-3">Fecha</TableHead>
-                  <TableHead className="min-w-72 px-4 py-3">Nombre</TableHead>
-                  <TableHead data-numeric="true" className="w-24 whitespace-nowrap px-4 py-3">Tamaño</TableHead>
-                  <TableHead className="px-4 py-3">Estado</TableHead>
-                  <TableHead className="w-44 whitespace-nowrap px-4 py-3">Usuario</TableHead>
-                  <TableHead className="px-4 py-3 text-right">Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {backupsList.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
-                      No hay respaldos con este estado. Quite el filtro para ver todos.
-                    </TableCell>
-                  </TableRow>
-                )}
-                {backupsList.map((backup) => (
-                  <TableRow key={backup.id}>
-                    <TableCell className="whitespace-nowrap px-4 py-3">{formatDate(backup.completed_at ?? backup.created_at)}</TableCell>
-                    <TableCell className="min-w-72 break-words px-4 py-3 text-sm">
-                      <span className="block">{backup.filename}</span>
-                      {backup.checksum_sha256 ? (
-                        <span className="mt-1 block text-xs text-muted-foreground">
-                          SHA256 {backup.checksum_sha256.slice(0, 8)}... huella de integridad
-                        </span>
-                      ) : null}
-                    </TableCell>
-                    <TableCell data-numeric="true" className="whitespace-nowrap px-4 py-3">{formatBytes(backup.size_bytes)}</TableCell>
-                    <TableCell className="px-4 py-3">
-                      <div className="flex flex-col gap-1">
-                        <BackupStatusBadge status={backup.status as 'pending' | 'success' | 'failed'} />
-                        <span className="text-xs text-muted-foreground">
-                          {getStatusDescription(backup.status as 'pending' | 'success' | 'failed')}
-                        </span>
-                        {backup.status === 'failed' && backup.error_message && (
-                          <span className="text-xs text-destructive max-w-[200px] truncate">
-                            No se completó. Revise con soporte técnico.
-                          </span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap px-4 py-3">{backup.creator?.name ?? 'Sistema'}</TableCell>
-                    <TableCell className="px-4 py-3 text-right">
-                      {canDownload && backup.status === 'success' ? (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          aria-label={`Descargar respaldo ${backup.filename}`}
-                          disabled={downloadingBackupId !== null}
-                          onClick={() => setDownloadTarget(backup)}
-                        >
-                          <Download aria-hidden="true" className="h-4 w-4" />
-                        </Button>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <BackupHistoryTable
+              backups={backupsList}
+              canDownload={canDownload}
+              downloadingBackupId={downloadingBackupId}
+              onDownloadRequest={setDownloadTarget}
+              onStatusFilterChange={(filter) => {
+                setStatusFilter(filter);
+                setPage(1);
+              }}
+              statusFilter={statusFilter}
+            />
 
             {meta ? (
-              <PaginationControls loading={loading} meta={meta} onPageChange={setPage} />
+              <PaginationControls loading={busy} meta={meta} onPageChange={setPage} />
             ) : null}
           </div>
         )}

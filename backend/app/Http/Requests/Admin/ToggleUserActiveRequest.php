@@ -10,7 +10,13 @@ class ToggleUserActiveRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('users.disable') === true;
+        $target = $this->route('user');
+
+        if ($target instanceof User && $target->is($this->user())) {
+            return $this->user()?->can('users.disable') === true;
+        }
+
+        return $target instanceof User && $this->user()?->can('toggleActive', $target) === true;
     }
 
     /**

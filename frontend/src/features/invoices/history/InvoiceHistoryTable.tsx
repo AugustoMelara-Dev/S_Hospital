@@ -87,7 +87,8 @@ export function InvoiceHistoryTable({
       key: 'actions',
       header: 'Acciones',
       headerClassName: 'text-right',
-      cellClassName: 'text-right',
+      cellClassName: 'min-w-72 text-right',
+      hideable: false,
       render: (invoice) => (
         <div className="flex flex-wrap justify-end gap-2">
           {canViewReceipt && (canReprintAny || canVoid || isOwnInvoiceFromToday(invoice)) && (
@@ -164,6 +165,7 @@ export function InvoiceHistoryTable({
       rows={invoices}
       columns={columns}
       getRowKey={(invoice) => invoice.id}
+      showColumnVisibility
     />
   );
 }

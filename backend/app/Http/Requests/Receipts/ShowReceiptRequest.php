@@ -19,7 +19,7 @@ class ShowReceiptRequest extends FormRequest
             return false;
         }
 
-        if ($user->can('receipts.reprint_any') || $user->can('invoices.void')) {
+        if ($user->can('receipts.reprint_any')) {
             return true;
         }
 

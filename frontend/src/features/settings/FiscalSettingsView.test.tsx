@@ -79,6 +79,17 @@ describe('FiscalSettingsView', () => {
     expect(screen.queryByRole('button', { name: /eliminar|regenerar|reiniciar/i })).not.toBeInTheDocument();
   });
 
+  it('renders an explicit empty state when fiscal sequences are missing', async () => {
+    vi.mocked(apiClient.getFiscalSequences).mockResolvedValue([]);
+
+    render(<FiscalSettingsView canEdit onStatus={vi.fn()} />);
+
+    await activateTab(/numeraci/i);
+
+    expect(await screen.findByText(/no hay secuencias fiscales/i)).toBeInTheDocument();
+    expect(screen.getByText(/configure una secuencia autorizada antes de emitir facturas/i)).toBeInTheDocument();
+  });
+
   it('renders loading with status semantics', async () => {
     vi.mocked(apiClient.getFiscalSettings).mockReturnValue(new Promise<never>(() => undefined));
 

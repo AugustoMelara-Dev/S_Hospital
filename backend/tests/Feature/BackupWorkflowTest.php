@@ -327,9 +327,13 @@ class BackupWorkflowTest extends TestCase
 
     public function test_successful_backup_runs_configured_retention_after_creation(): void
     {
-        Config::set('backups.retention.successful_count', 1);
+        Config::set('backups.retention.scheduled.keep_successful', 1);
+        Config::set('backups.retention.scheduled.keep_days', 0);
         $oldBackup = $this->successfulBackupLog(filename: 'old.sql', path: 'backups/old.sql');
-        $oldBackup->forceFill(['completed_at' => now()->subDay()])->save();
+        $oldBackup->forceFill([
+            'type' => BackupLog::TYPE_SCHEDULED,
+            'completed_at' => now()->subDay(),
+        ])->save();
 
         $created = app(CreateBackupAction::class)->execute(type: BackupLog::TYPE_SCHEDULED);
 

@@ -1,51 +1,57 @@
 # V1.3 Library Decision Record
 
-Status: initial decision record; update whenever dependencies change.
+Status: refreshed after syncing `codex/v1-3-total-product-refactor` with current `origin/main`.
+Local review date: 2026-06-28.
+
+## Baseline
+
+- Base SHA: `742fdb551b202ddb0473a0269440e0bf6ff116ce`.
+- Branch SHA after base sync: `b4b5fdcee0bab9a654dd60a47ae613059e71d766`.
+- Current verification:
+  - `pnpm run typecheck`: PASS.
+  - `pnpm run lint`: PASS.
+  - `pnpm exec vitest run src/features/invoices/NewInvoiceView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000`: PASS, 22 tests.
+  - `pnpm run test`: PASS, 83 files and 499 tests.
+  - `pnpm run build`: PASS; largest chunks are `charts` 418.64 kB, `vendor` 394.78 kB, and app index 223.43 kB.
+  - `docker compose run --rm backend vendor/bin/pint --test`: PASS.
+  - `docker compose run --rm backend vendor/bin/phpstan analyse --memory-limit=1G --no-progress`: PASS.
+- Docker backend tests require `DB_PASSWORD`, `DB_ROOT_PASSWORD`, and alternate `DB_PORT=33307` in this shell.
+- Full backend test suite remains blocked by container mount/timeout issues; focused backend tests pass.
+- No production dependency was added during this refresh.
 
 ## Current Dependency Position
 
-No new dependency has been added in V1.3 yet.
-
-Baseline frontend audit:
-
-- `npm ci`: PASS, 0 vulnerabilities.
-- `npm run typecheck`: PASS.
-- `npm run lint`: PASS.
-- `npm run test`: PASS, 487 tests.
-- `npm run build`: PASS.
-- Build watch item: `charts` 398.35 kB, `vendor` 348.15 kB.
-
-## Candidates
-
 | Library | Decision | Reason | Bundle/Offline Impact | Tests Required |
 | --- | --- | --- | --- | --- |
-| `@tanstack/react-table` | EVALUATE SERIOUSLY | Strong fit for reports, invoice history, users, catalog, backups; shadcn data table pattern uses it. | Adds table core but may reduce custom table complexity. | Table unit tests, report/history/admin flows, build size. |
-| `@tanstack/react-virtual` | DEFER | Use only if measured table sizes show rendering pressure. | Avoid extra runtime unless evidence requires it. | Large-table rendering test, performance review. |
-| `cmdk` | DEFER | Command palette may improve global navigation, but POS first actions may be enough. | Small but not free; must not distract cashiers. | Keyboard/a11y tests, navigation E2E. |
-| `react-aria-components` | DEFER | Useful for complex a11y components only when Radix wrappers are insufficient. | Larger design/API surface. | A11y tests for specific component. |
-| `ariakit` | DEFER | Same category as React Aria; do not duplicate primitives without need. | Extra primitive system risk. | A11y tests for specific component. |
-| `date-fns` | DEFER | Add only if current date/range handling is error-prone. | Usually manageable, but unnecessary if native helpers suffice. | Date range tests, report filter tests. |
-| `Recharts` | KEEP | Already installed and used; avoid chart suite migration. | Existing largest chart chunk requires lazy/performance review. | Chart tests, responsive visual smoke. |
-| `shadcn/ui` | USE AS PATTERN | Existing local wrappers and Radix fit this stack. | Copy code patterns, no runtime SaaS dependency. | Component tests and a11y. |
+| `@tanstack/react-table` | USE THROUGH LOCAL WRAPPER | Already installed and used by `frontend/src/components/ui/data-table.tsx`. Strong fit for professional catalog, report, history, users, and backups tables. | No new dependency. Central wrapper should reduce table duplication and improve consistency. | DataTable unit tests, per-module table tests, report/history/admin E2E. |
+| `@tanstack/react-virtual` | DEFER | No current dependency or usage. Add only after measured row counts or Playwright/performance evidence show rendering pressure. | Avoids extra runtime and complexity for modest LAN PCs. | Large-row rendering benchmark, performance review, focused table tests. |
+| `cmdk` | DEFER | Command palette/global search may help navigation, but cashier POS actions are higher priority and current shell does not prove need. | Avoids another command/menu abstraction. Offline-compatible if added later. | Keyboard/a11y tests, navigation E2E, cashier workflow test. |
+| `react-aria-components` | DEFER | Radix already covers current primitive needs. Add only for a specific complex interaction Radix cannot cover cleanly. | Larger component API surface. | Component a11y tests and interaction tests for the exact primitive. |
+| `ariakit` | DEFER | Same class as React Aria; do not mix primitive systems unless a specific blocker appears. | Extra primitive system risk. | Same as above. |
+| `date-fns` | DEFER | No current dependency. Use only if report/fiscal date range handling keeps duplicating or drifting. | Manageable, but unnecessary without evidence. | Date preset/range tests, report filter tests, timezone boundary tests. |
+| `zod` | KEEP | Already installed for frontend schema validation. Keep frontend validation as UX guard, not fiscal truth. | Existing dependency. | Form schema tests and API error handling tests. |
+| `Recharts` | KEEP | Already installed and used in dashboard/reports. Avoid chart suite migration. | Existing chart chunks need performance review before adding more chart weight. | Chart rendering tests, responsive visual smoke, build size review. |
+| shadcn/ui patterns | USE AS LOCAL PATTERN | Works with Tailwind, Radix, TanStack Table, and local component ownership. | No runtime SaaS/cloud dependency. Copy/adapt local code only. | Component tests, a11y checks, visual review. |
 
-## Rejected By Policy Unless New Evidence Appears
+## Rejected Without New Evidence
 
-- MUI
-- Ant Design
-- Chakra
-- Bootstrap
-- Heavy animation libraries
-- Alternative heavy chart suites
+- MUI.
+- Ant Design.
+- Chakra.
+- Bootstrap.
+- Heavy animation libraries.
+- Alternative heavy chart suites.
 
 ## Dependency Addition Rule
 
-If V1.3 adds a dependency:
+Before adding any dependency in V1.3:
 
-1. Record why current code cannot solve the problem safely.
-2. Run `npm install <package>`.
-3. Run `npm audit`.
-4. Run `npm run typecheck`.
-5. Run `npm run lint`.
-6. Run `npm run test`.
-7. Run `npm run build`.
-8. Document bundle impact here and in `docs/qa/V1_3_PERFORMANCE_LAN_REVIEW.md`.
+1. Record the product problem and why current code cannot solve it safely.
+2. Confirm offline/LAN runtime compatibility.
+3. Install with the project package manager (`pnpm` in the frontend).
+4. Run `pnpm audit` or the closest available audit gate.
+5. Run `pnpm run typecheck`.
+6. Run `pnpm run lint`.
+7. Run `pnpm run test`.
+8. Run `pnpm run build`.
+9. Document bundle impact in this file and in `docs/qa/V1_3_PERFORMANCE_LAN_REVIEW.md`.
