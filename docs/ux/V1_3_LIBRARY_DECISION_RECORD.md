@@ -11,8 +11,12 @@ Local review date: 2026-06-28.
   - `pnpm run typecheck`: PASS.
   - `pnpm run lint`: PASS.
   - `pnpm exec vitest run src/features/invoices/NewInvoiceView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000`: PASS, 22 tests.
-  - `pnpm run test`: PASS, 83 files and 498 tests.
-- Docker baseline blocked in this shell by missing required environment variable `DB_PASSWORD` for `docker compose ps`.
+  - `pnpm run test`: PASS, 83 files and 499 tests.
+  - `pnpm run build`: PASS; largest chunks are `charts` 418.64 kB, `vendor` 394.78 kB, and app index 223.43 kB.
+  - `docker compose run --rm backend vendor/bin/pint --test`: PASS.
+  - `docker compose run --rm backend vendor/bin/phpstan analyse --memory-limit=1G --no-progress`: PASS.
+- Docker backend tests require `DB_PASSWORD`, `DB_ROOT_PASSWORD`, and alternate `DB_PORT=33307` in this shell.
+- Full backend test suite remains blocked by container mount/timeout issues; focused backend tests pass.
 - No production dependency was added during this refresh.
 
 ## Current Dependency Position

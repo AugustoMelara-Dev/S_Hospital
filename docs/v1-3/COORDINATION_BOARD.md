@@ -36,11 +36,14 @@ Local review date: 2026-06-28
 | Frontend typecheck | PASS | `pnpm run typecheck`. |
 | Frontend lint | PASS | `pnpm run lint`. |
 | Targeted billing test | PASS | `pnpm exec vitest run src/features/invoices/NewInvoiceView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000`, now 23 tests after invoice idempotency coverage. |
-| Frontend tests | PASS | Baseline `pnpm run test`, 83 files and 498 tests before new POS idempotency test; focused POS suite now 23 tests. |
+| Frontend tests | PASS | `pnpm run test`, 83 files and 499 tests after stabilizing lazy route tests. |
 | Backend Docker baseline | PASS WITH ENV | Docker works when `DB_PASSWORD`, `DB_ROOT_PASSWORD`, and alternate `DB_PORT=33307` are supplied; host port 3306 is unavailable. |
-| Backend focused tests | PASS | `UserManagementTest`, `InstitutionalReceiptSeriesSeederTest`, `InstitutionalReceiptPdfTest`, and `IdempotencyKeyTest` pass in Docker with warnings from missing container `.env`. |
-| Build | PENDING | Must run after implementation slices or before final handoff. |
-| E2E | PENDING | Must run after browser/runtime setup. |
+| Backend focused tests | PASS | `UserManagementTest`, `InstitutionalReceiptSeriesSeederTest`, `InstitutionalReceiptPdfTest`, `IdempotencyKeyTest`, and `EncryptLegacyIdempotencyKeysTest` pass in Docker with warnings from missing container `.env`. |
+| Backend Pint | PASS | `docker compose run --rm backend vendor/bin/pint --test`, 410 files. |
+| Backend PHPStan | PASS | `docker compose run --rm backend vendor/bin/phpstan analyse --memory-limit=1G --no-progress`. |
+| Backend full tests | BLOCKED | `php artisan test` and full Feature partition timed out at 10 minutes without final output. Unit partition exposes container mount failures for repo-root files such as `../nginx/default.conf`, `../.env.example`, `../.gitignore`, `../setup.bat`, and `../.github/workflows/ci.yml`. |
+| Build | PASS | `pnpm run build`; largest chunks: `charts` 418.64 kB, `vendor` 394.78 kB, app index 223.43 kB. |
+| E2E | PENDING | Release E2E auth/session failure remains open; no final Playwright PASS recorded. |
 
 ## Research And Library Decisions
 
@@ -80,10 +83,12 @@ Local review date: 2026-06-28
 | QA/E2E | P0 | Release E2E is documented failing with expired session during admin/users access. | Re-run after auth/session investigation, fix session regression, and refresh evidence. |
 | QA/E2E | P1 | Release E2E uses SQLite and golden DB hash ignores prep/auth code changes. | Add invalidation inputs for E2E prep/auth/session files and define MariaDB-backed release gate. |
 | QA/E2E | P1 | E2E seed defaults receipt paper to `80mm`, conflicting with institutional paper as primary. | Change E2E seed default to letter/half-letter institutional profile and update assertions. |
+| QA/E2E | P1 | E2E seed used thermal paper as primary. | Fixed by defaulting release seed receipt paper to `half_letter`. |
 | Receipts/Settings | P0 | Seeded institutional receipt series exposed placeholder authorization `AUT-REC-LOCAL`. | Fixed by seeding `range_authorization` as null and adding seeder regression test. |
 | Billing/POS | P0 | POS invoice creation retried with a fresh idempotency key after lost LAN response, risking duplicate fiscal invoice. | Fixed by caller-managed invoice idempotency key reused across retry until success or payload changes. |
 | API idempotency | P1 | Stale incomplete idempotency reservation could replay `200 {"data": null}`. | Fixed by returning 409 with recovery guidance when response is not replayable. |
 | A11y/Responsive | P1 | Mobile buttons can be 36px; reports tabs and receipt preview need 320px usability tests. | Pending. |
+| A11y/Responsive | P1 | Small and icon buttons used sub-44px mobile targets. | Fixed in button foundations; responsive Playwright proof still pending. |
 | Performance/LAN | P1 | Echo/Pusher are statically imported and polling cadence may stack across many LAN clients. | Pending. |
 
 ## Implementation Queue
@@ -95,12 +100,14 @@ Local review date: 2026-06-28
    - Backend/env test bootstrap and Docker baseline. PARTIAL: Docker works with explicit env and alternate host port.
    - RBAC protected-role and role-assignment hardening. DONE.
    - CI pnpm migration. DONE.
-   - Release E2E session/golden DB repair. PENDING.
+   - Release E2E session/golden DB repair. PARTIAL: golden DB hash now includes auth/bootstrap/prep inputs; session failure remains PENDING.
    - Payment/receipt recovery semantics.
    - Zero-total erythropoietin/dialysis prescription invoice semantics.
    - POS invoice retry idempotency. DONE.
    - Stale idempotency reservation rejection. DONE.
    - Receipt placeholder authorization seed removal. DONE.
+   - E2E seed institutional receipt paper default. DONE.
+   - Mobile button target floor. DONE.
    - RBAC/IDOR coverage for receipts, invoices, reports, backups, users.
    - DataTable adoption where it replaces duplicated table behavior without weakening performance.
 5. Keep commits phase-sized and Conventional Commit compliant.
@@ -111,4 +118,4 @@ Local review date: 2026-06-28
 - The old V1.3 branch was divergent from current `main`; it has now been synced locally but not pushed yet.
 - The local Git pre-commit hook is stale and points at a missing script; quality gates must be run explicitly until hook hygiene is fixed.
 - Full V1.3 scope is larger than a single safe commit; implementation must proceed in slices with tests.
-- Payment receipt failure recovery contract, release E2E auth/session, mobile target sizing, and realtime/polling LAN performance remain open.
+- Payment receipt failure recovery contract, release E2E auth/session, reports mobile nav/receipt preview proof, backend full-test container mount/timeout, and realtime/polling LAN performance remain open.
