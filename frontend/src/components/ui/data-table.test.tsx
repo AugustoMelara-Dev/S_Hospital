@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { describe, expect, it } from 'vitest';
 import { DataTable, Table, TableHead, TableHeader, TableRow } from './data-table';
@@ -7,7 +7,7 @@ describe('DataTable', () => {
   it('renders column headers with table header scope', () => {
     render(
       <DataTable
-        rows={[{ id: 1, patient: 'María López' }]}
+        rows={[{ id: 1, patient: 'Maria Lopez' }]}
         getRowKey={(row) => row.id}
         columns={[
           { key: 'patient', header: 'Paciente', render: (row) => row.patient },
@@ -16,7 +16,8 @@ describe('DataTable', () => {
     );
 
     expect(screen.getByRole('columnheader', { name: 'Paciente' })).toHaveAttribute('scope', 'col');
-    expect(screen.getByRole('cell', { name: 'María López' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /ordenar/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: 'Maria Lopez' })).toBeInTheDocument();
   });
 
   it('renders TanStack column definitions with metadata', () => {
@@ -66,6 +67,80 @@ describe('DataTable', () => {
     expect(screen.getByText('Servidor local no disponible')).toBeInTheDocument();
   });
 
+  it('sorts rows only when sorting is enabled', () => {
+    render(
+      <DataTable
+        sortable
+        rows={[
+          { id: 1, patient: 'Zulema Rivera' },
+          { id: 2, patient: 'Ana Garcia' },
+        ]}
+        getRowKey={(row) => row.id}
+        columns={[
+          {
+            key: 'patient',
+            header: 'Paciente',
+            render: (row) => row.patient,
+            sortValue: (row) => row.patient,
+          },
+        ]}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ordenar columna patient' }));
+    expect(screen.getByRole('columnheader', { name: /Paciente/ })).toHaveAttribute('aria-sort', 'ascending');
+    const rows = screen.getAllByRole('row').slice(1);
+    expect(rows[0]).toHaveTextContent('Ana Garcia');
+    expect(rows[1]).toHaveTextContent('Zulema Rivera');
+  });
+
+  it('paginates rows with active next and previous controls', () => {
+    render(
+      <DataTable
+        showPagination
+        initialPageSize={1}
+        rows={[
+          { id: 1, patient: 'Ana Garcia' },
+          { id: 2, patient: 'Zulema Rivera' },
+        ]}
+        getRowKey={(row) => row.id}
+        columns={[
+          { key: 'patient', header: 'Paciente', render: (row) => row.patient },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText('2 filas - pagina 1 de 2')).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: 'Ana Garcia' })).toBeInTheDocument();
+    expect(screen.queryByRole('cell', { name: 'Zulema Rivera' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /siguiente/i }));
+    expect(screen.getByText('2 filas - pagina 2 de 2')).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: 'Zulema Rivera' })).toBeInTheDocument();
+  });
+
+  it('toggles optional column visibility while preserving locked columns', async () => {
+    render(
+      <DataTable
+        showColumnVisibility
+        rows={[{ id: 1, patient: 'Ana Garcia', total: '125.00' }]}
+        getRowKey={(row) => row.id}
+        columns={[
+          { key: 'patient', header: 'Paciente', render: (row) => row.patient, hideable: false },
+          { key: 'total', header: 'Total', numeric: true, render: (row) => row.total },
+        ]}
+      />,
+    );
+
+    const trigger = screen.getByRole('button', { name: /columnas/i });
+    trigger.focus();
+    fireEvent.keyDown(trigger, { key: 'Enter' });
+    expect(screen.queryByRole('menuitem', { name: /Paciente/i })).not.toBeInTheDocument();
+    fireEvent.click(await screen.findByRole('menuitem', { name: /Total/i }));
+    fireEvent.keyDown(document.body, { key: 'Escape' });
+    expect(screen.queryByRole('columnheader', { name: 'Total' })).not.toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Paciente' })).toBeInTheDocument();
+  });
 
   it('makes horizontally scrollable tables reachable by keyboard', () => {
     render(
@@ -83,6 +158,7 @@ describe('DataTable', () => {
     expect(tableRegion).toHaveAttribute('tabindex', '0');
     expect(within(tableRegion).getByRole('table')).toBeInTheDocument();
   });
+
   it('allows overriding header scope when a table needs row headers', () => {
     render(
       <Table>

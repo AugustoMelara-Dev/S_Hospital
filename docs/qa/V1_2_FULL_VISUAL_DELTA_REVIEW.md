@@ -44,6 +44,7 @@ Pantallas after capturadas:
 - Componentes exactos agregados: `ModuleHeader`, `CommandCenterHeader`, `PrimaryActionPanel`, `ChartLegend`, `OfflineState`, `QuickActionTile`, `SummaryRail`, `MobileStickyActionBar`.
 - Tablas principales migradas al wrapper `DataTable` con TanStack Table debajo: reportes/cajeros, reportes/areas, historial de facturas y usuarios.
 - Estados visuales y tablas usan patrones compartidos en lugar de loops locales.
+- Delta adicional aplicado sobre la base integrada: `PermissionBadge`, paginacion real de `DataTable`, sorting/visibilidad opt-in, utilidades `status-*` reales, `cash-layout` definido y columna de acciones de historial protegida contra recorte.
 
 ## PASS/FAIL por superficie
 
@@ -66,6 +67,16 @@ Pantallas after capturadas:
 | Dark mode | PASS |
 | Loading/empty/error | PASS |
 | Tablas/filtros | PASS |
+
+## Correcciones P1 de auditoria adicional
+
+| Hallazgo | Resultado |
+| --- | --- |
+| Clases `status-success`, `status-warning`, `status-info` usadas pero no definidas | PASS: definidas en `frontend/src/styles.css` con tokens de estado. |
+| `cash-layout` usado sin definicion | PASS: definido en `frontend/src/styles.css`. |
+| `DataTablePagination` era un control simbolico deshabilitado | PASS: paginacion real anterior/siguiente con conteo de pagina. |
+| Historial podia recortar acciones a la derecha | PASS: columna de acciones con ancho minimo y no ocultable. |
+| `PermissionBadge` pendiente en design system | PASS: implementado y probado. |
 
 ## Riesgo residual
 

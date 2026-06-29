@@ -224,6 +224,29 @@ html.dark {
     outline-offset: 2px;
   }
 
+  .status-success {
+    border-color: color-mix(in srgb, var(--color-success) 35%, transparent);
+    background: color-mix(in srgb, var(--color-success) 12%, var(--color-operational-surface));
+    color: var(--color-success-foreground);
+  }
+
+  .status-warning {
+    border-color: color-mix(in srgb, var(--color-warning) 42%, transparent);
+    background: color-mix(in srgb, var(--color-warning) 12%, var(--color-operational-surface));
+    color: var(--color-warning-foreground);
+  }
+
+  .status-info {
+    border-color: color-mix(in srgb, var(--color-info) 35%, transparent);
+    background: color-mix(in srgb, var(--color-info) 12%, var(--color-operational-surface));
+    color: var(--color-info-foreground);
+  }
+
+  .cash-layout {
+    display: grid;
+    gap: 1.5rem;
+  }
+
   .data-table {
     min-width: max-content;
   }

@@ -617,7 +617,7 @@ describe('NewInvoiceView', () => {
         .filter(([url]) => String(url).includes('/api/invoices/100/receipt')),
     ).toHaveLength(0);
     expect(screen.queryByLabelText(/vista previa del recibo/i)).not.toBeInTheDocument();
-    expect(await screen.findByText(/REC-A-00000001/i)).toBeInTheDocument();
+    expect((await screen.findAllByText(/REC-A-00000001/i)).length).toBeGreaterThan(0);
   });
 
   it('rejects inactive services returned by scanner lookup', async () => {

@@ -44,3 +44,17 @@ Worktree principal: `C:\Users\melar\.config\superpowers\worktrees\S_Hospital\cod
 - F / Data Tables Platform: explorer `019f0d34-2032-77e0-bc8c-f26d4f3667e0`
 - K / A11y Responsive Performance QA: explorer `019f0d34-79a1-7382-9e65-e047183d3796`
 - L / Integration Reviewer surface inventory: explorer `019f0d34-4d84-7303-b9e7-36d7d5c911a5`
+
+## Auditoria adicional 2026-06-28
+
+- Design System & Data Tables: explorer `019f10af-8987-7640-942e-4f17d85f123c`.
+- Shell / Dashboard / POS: explorer `019f10af-a84e-7141-9b7b-8c9b86f209ab`.
+- Reports / Cash / History / Receipts / Admin / Ops: explorer `019f10b0-1c51-76a2-96b4-ca516e0f52f8`.
+- A11y / Responsive / Performance QA: explorer `019f10b0-534d-79e3-af52-ee0dfef6a534`.
+
+Acciones tomadas desde esa auditoria:
+
+- `DataTable` reforzado con sorting, filtro, paginacion y visibilidad de columnas opt-in.
+- `PermissionBadge` implementado.
+- Clases `status-success`, `status-warning`, `status-info` y `cash-layout` definidas.
+- Historial de facturas ajustado para que acciones autorizadas no se recorten ni se oculten por configuracion de columnas.

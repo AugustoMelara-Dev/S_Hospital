@@ -42,6 +42,10 @@ Rechazadas o diferidas:
 - Tokens faltantes agregados en `frontend/src/styles.css`.
 - Componentes compartidos agregados en `frontend/src/components/shared/design-system.tsx`.
 - `DataTable` migrado a TanStack Table manteniendo compatibilidad legacy.
+- `DataTable` reforzado con sorting, filtro, paginacion y visibilidad de columnas opt-in; la paginacion ya no es un placeholder.
+- `PermissionBadge` agregado al design system.
+- Utilidades visuales `status-success`, `status-warning`, `status-info` y `cash-layout` definidas para eliminar clases muertas.
+- Historial de facturas protege su columna de acciones contra recorte y la mantiene visible.
 - Migradas tablas de reportes, historial de facturas y usuarios.
 - Nueva matriz `frontend/e2e/v1-2-full-a11y.spec.ts`.
 - Evidencia after completa en `qa/v1-2-full-ux-ui-redesign/after`.
@@ -56,12 +60,14 @@ No se cambiaron endpoints, payloads, calculos, pagos, caja, impuestos, numeracio
 
 ## Tests
 
-- `npm audit`: PASS, 0 vulnerabilidades.
-- `npm run typecheck`: PASS.
-- `npm run lint`: PASS.
+- `pnpm audit --audit-level moderate`: PASS, 0 vulnerabilidades.
+- `pnpm run typecheck`: PASS.
+- `pnpm run lint`: PASS.
+- `pnpm exec vitest run src/components/ui/data-table.test.tsx src/components/shared/design-system.test.tsx src/features/invoices/InvoiceHistoryView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000`: PASS, 27 tests.
+- `pnpm run test:critical`: PASS, 10 archivos, 127 tests.
 - `npm run test -- data-table UsersView InvoiceHistoryView CashierTable AreaReportTab`: PASS, 38 tests.
 - `npm run test`: PASS, 83 archivos, 496 tests.
-- `npm run build`: PASS.
+- `pnpm run build`: PASS.
 - `npm run smoke:buttons`: PASS, 7 tests.
 - `npx playwright test e2e/production-readiness.spec.ts --config=playwright.config.ts` contra `http://127.0.0.1:5175`: PASS, 4 tests.
 - `npx playwright test e2e/v1-2-full-a11y.spec.ts --config=playwright.config.ts`: 6/7 PASS en corrida completa; el viewport 320 fallo solo por abortos Vite `net::ERR_ABORTED`, se corrigio el filtro y `-g "320x640"` paso.

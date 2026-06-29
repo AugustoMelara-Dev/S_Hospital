@@ -3,6 +3,8 @@ import {
   Banknote,
   Ban,
   CheckCircle2,
+  Eye,
+  EyeOff,
   Info,
   LockKeyhole,
   MonitorCheck,
@@ -622,6 +624,56 @@ export function CashStatusCard({
       {helper ? <p className="mt-4 text-sm text-muted-foreground">{helper}</p> : null}
       {actions ? <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-operational-border pt-4">{actions}</div> : null}
     </section>
+  );
+}
+
+type PermissionBadgeProps = HTMLAttributes<HTMLSpanElement> & {
+  permission?: string;
+  state?: 'granted' | 'readonly' | 'denied' | 'system';
+};
+
+export function PermissionBadge({
+  children,
+  className,
+  permission,
+  state = 'granted',
+  ...props
+}: PermissionBadgeProps) {
+  const config = {
+    granted: {
+      icon: CheckCircle2,
+      label: 'Permitido',
+      variant: 'success' as const,
+    },
+    readonly: {
+      icon: Eye,
+      label: 'Solo lectura',
+      variant: 'info' as const,
+    },
+    denied: {
+      icon: EyeOff,
+      label: 'Restringido',
+      variant: 'warning' as const,
+    },
+    system: {
+      icon: ShieldAlert,
+      label: 'Sistema',
+      variant: 'secondary' as const,
+    },
+  }[state];
+  const Icon = config.icon;
+
+  return (
+    <Badge
+      data-slot="permission-badge"
+      variant={config.variant}
+      className={cn('rounded-md border border-current/10 text-[11px]', className)}
+      title={permission ? `${config.label}: ${permission}` : config.label}
+      {...props}
+    >
+      <Icon data-icon aria-hidden="true" className="size-3" />
+      {children ?? config.label}
+    </Badge>
   );
 }
 

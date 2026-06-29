@@ -7,29 +7,29 @@ Fecha: 2026-06-28
 Comando:
 
 ```powershell
-npm run build
+pnpm run build
 ```
 
 Resultado: PASS.
 
 ## Bundle observado
 
-Fragmentos principales del build:
+Fragmentos principales del build actualizado:
 
-- CSS: `index-B5pDcezo.css` 89.61 kB, gzip 15.34 kB.
-- `data-table-D29-E0zH.js`: 1.85 kB, gzip 0.82 kB.
-- `ReportsView-Xorh93hx.js`: 102.64 kB, gzip 20.61 kB.
-- `ui-B0p8LjPE.js`: 160.90 kB, gzip 48.91 kB.
-- `vendor-aed9HT-4.js`: 394.21 kB, gzip 120.84 kB.
-- `charts-JUI4aW6N.js`: 398.35 kB, gzip 114.67 kB.
+- CSS: `index-CSTmcuKx.css` 90.47 kB, gzip 15.59 kB.
+- `data-table-OLKsfSed.js`: 6.29 kB, gzip 2.36 kB.
+- `ReportsView-DgrLDlLW.js`: 102.54 kB, gzip 20.60 kB.
+- `ui-fhrwQZkq.js`: 155.16 kB, gzip 48.40 kB.
+- `vendor-CK0cgBnt.js`: 398.95 kB, gzip 122.28 kB.
+- `charts-C-LM1nRM.js`: 418.64 kB, gzip 119.09 kB.
 
 ## Nuevas dependencias
 
-- `@tanstack/react-table`
+- Ninguna en el delta adicional; `@tanstack/react-table` ya estaba instalado en la rama base.
 
 Impacto observado:
 
-- El chunk `data-table` es pequeno.
+- El chunk `data-table` crecio por sorting, filtro, paginacion y visibilidad opt-in, pero se mantiene pequeno.
 - No agrega llamadas externas ni dependencia de internet en produccion.
 - Se usa como motor headless debajo del wrapper local.
 
