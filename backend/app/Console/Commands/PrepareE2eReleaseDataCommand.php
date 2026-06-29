@@ -57,7 +57,7 @@ class PrepareE2eReleaseDataCommand extends Command
                 'hospital_name' => 'Hospital San Isidro E2E',
                 'rtn' => '08011999123456',
                 'default_tax_rate' => '15.00',
-                'receipt_paper_size' => '80mm',
+                'receipt_paper_size' => 'half_letter',
                 'receipt_template_mode' => 'institutional',
                 'government_line' => 'Gobierno de Honduras',
                 'secretariat_line' => 'Secretaria de Salud Publica',

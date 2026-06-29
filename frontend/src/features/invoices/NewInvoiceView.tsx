@@ -46,6 +46,7 @@ export function NewInvoiceView({
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const scannerInputRef = useRef<HTMLInputElement | null>(null);
   const submitInvoiceInFlightRef = useRef(false);
+  const submitInvoiceIdempotencyKeyRef = useRef<string | null>(null);
   const submitPaymentInFlightRef = useRef(false);
   const submitPaymentIdempotencyKeyRef = useRef<string | null>(null);
   const scanCodeInFlightRef = useRef(false);
@@ -91,6 +92,10 @@ export function NewInvoiceView({
   useEffect(() => {
     dispatch({ type: 'SET_LOADED_CASH_SESSION', payload: cashSession });
   }, [cashSession]);
+
+  useEffect(() => {
+    submitInvoiceIdempotencyKeyRef.current = null;
+  }, [canMarkDialysisPrescription, state.cartItems, state.patientName]);
 
   useEffect(() => {
     if (!operationalSettings) {
@@ -381,7 +386,10 @@ export function NewInvoiceView({
           quantity: item.quantity,
           dialysis_prescription: canMarkDialysisPrescription && item.dialysisPrescription,
         })),
+      }, {
+        idempotencyKey: submitInvoiceIdempotencyKeyRef.current ??= createClientIdempotencyKey(),
       });
+      submitInvoiceIdempotencyKeyRef.current = null;
       dispatch({ type: 'SET_ISSUED_INVOICE', payload: invoice });
       dispatch({ type: 'SET_PAYMENT_AMOUNT', payload: '0.00' });
       dispatch({ type: 'SET_RECEIPT', payload: null });

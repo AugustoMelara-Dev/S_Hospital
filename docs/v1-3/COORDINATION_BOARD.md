@@ -2,84 +2,120 @@
 
 Branch: `codex/v1-3-total-product-refactor`
 Worktree: `C:\Projects\S_Hospital-v1-3-total-product-refactor`
-Base SHA: `e08f0e9d7bf740bcf10b7d0b036f6b05980acb42`
-Base decision: start from `origin/main`; use V1.2 as reference only.
+Local review date: 2026-06-28
 
 ## Ground Rules
 
 - Production physical approval remains `NO`.
 - Release tag remains `NO`.
 - No force push, reset, branch deletion, worktree removal, or automatic conflict choices.
-- Contract changes require docs, migration plan, tests, idempotency review, permission review, and rollback notes.
-- Source of truth: code, tests, migrations, API contracts, and AGENTS.md business rules.
+- Do not lose useful V1.2 or local checkpoint work.
+- Contract changes require docs, migration plan, tests, idempotency review, permission review, rollback notes, and data impact notes.
+- Source of truth: code, tests, migrations, API contracts, AGENTS.md, and S_Hospital business rules.
 
-## Baseline
+## Base And Branch State
+
+| Item | Status | Evidence |
+| --- | --- | --- |
+| Fetch remotes | PASS | `git fetch --all --prune` completed. |
+| Main branch | PASS | `main` clean and aligned with `origin/main`. |
+| Current base SHA | PASS | `main` and `origin/main` at `742fdb551b202ddb0473a0269440e0bf6ff116ce`. |
+| V1.2 full redesign branch | PASS | `origin/codex/v1-2-full-ux-ui-redesign` exists and currently points to the same SHA as `origin/main`. |
+| V1.2 visible UI delta branch | PASS | `origin/codex/v1-2-visible-ui-delta` exists and currently points to the same SHA as `origin/main`. |
+| Local dirty checkpoint | PASS | Dirty pre-existing work preserved in `origin/checkpoint/local-pre-v1-3-dirty-20260628-1759` with commits `a1376278` and `69f990fa`. |
+| Required pre-V1.3 checkpoint | PASS | `origin/checkpoint/pre-v1-3-total-product-refactor-20260628-1802` pushed at `742fdb55`. |
+| V1.3 branch reuse | PASS | Existing `codex/v1-3-total-product-refactor` worktree reused rather than deleting/recreating a published branch. |
+| V1.3 sync with main | PASS | Merge commit `b4b5fdcee0bab9a654dd60a47ae613059e71d766` syncs old V1.3 branch with current `origin/main`. |
+| Hook issue | NOTED | Local pre-commit hook points to missing `C:\Projects\S_Hospital\scripts\pre-commit-guard.ps1`; checkpoint/sync commits used `--no-verify`. |
+
+## Baseline Verification
 
 | Gate | Status | Evidence |
 | --- | --- | --- |
-| `git fetch --all --prune` | PASS | Completed before branch creation. |
-| `main` clean | PASS | `git status --short` returned empty. |
-| `main == origin/main` | PASS | Both at `e08f0e9d7bf740bcf10b7d0b036f6b05980acb42`. |
-| Checkpoint branch | PASS | `checkpoint/pre-v1-3-total-product-refactor-20260628-0636` pushed. |
-| Frontend `npm ci` | PASS | 520 packages audited, 0 vulnerabilities. |
-| Frontend typecheck | PASS | `npm run typecheck`. |
-| Frontend lint | PASS | `npm run lint`. |
-| Frontend tests | PASS | 82 files, 489 tests. |
-| Frontend build | PASS | `npm run build`; largest chunks: `charts` 398.35 kB, `vendor` 348.15 kB. |
-| Backend composer local | BLOCKED | `composer` command unavailable on host. |
-| Backend Pint via Docker | PASS | `docker compose run --rm backend vendor/bin/pint --test`; 403 files. |
-| Docker backend targeted tests | PASS WITH WARNINGS | `docker compose run --rm backend php artisan test --filter='InvoiceCreationTest|ServiceCatalogTest'`; 57 tests, 303 assertions. Warnings are repeated `file_get_contents(/var/www/html/.env)` because the container lacks an ignored `.env` file. |
-| Docker backend full tests | INCONCLUSIVE | `docker compose run --rm backend php artisan test --colors=never` timed out after 4 minutes without useful output. No lingering test container remained. |
+| Frontend dependencies | PASS | `pnpm run typecheck` installed/restored dependencies from `pnpm-lock.yaml` without tracked file changes. |
+| Frontend typecheck | PASS | `pnpm run typecheck`. |
+| Frontend lint | PASS | `pnpm run lint`. |
+| Targeted billing test | PASS | `pnpm exec vitest run src/features/invoices/NewInvoiceView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000`, now 23 tests after invoice idempotency coverage. |
+| Frontend tests | PASS | `pnpm run test`, 83 files and 499 tests after stabilizing lazy route tests. |
+| Backend Docker baseline | PASS WITH ENV | Docker works when `DB_PASSWORD`, `DB_ROOT_PASSWORD`, and alternate `DB_PORT=33307` are supplied; host port 3306 is unavailable. |
+| Backend focused tests | PASS | `UserManagementTest`, `InstitutionalReceiptSeriesSeederTest`, `InstitutionalReceiptPdfTest`, `IdempotencyKeyTest`, and `EncryptLegacyIdempotencyKeysTest` pass in Docker with warnings from missing container `.env`. |
+| Backend Pint | PASS | `docker compose run --rm backend vendor/bin/pint --test`, 410 files. |
+| Backend PHPStan | PASS | `docker compose run --rm backend vendor/bin/phpstan analyse --memory-limit=1G --no-progress`. |
+| Backend full tests | BLOCKED | `php artisan test` and full Feature partition timed out at 10 minutes without final output. Unit partition exposes container mount failures for repo-root files such as `../nginx/default.conf`, `../.env.example`, `../.gitignore`, `../setup.bat`, and `../.github/workflows/ci.yml`. |
+| Build | PASS | `pnpm run build`; largest chunks: `charts` 418.64 kB, `vendor` 394.78 kB, app index 223.43 kB. |
+| E2E | PENDING | Release E2E auth/session failure remains open; no final Playwright PASS recorded. |
+
+## Research And Library Decisions
+
+| Artifact | Status | Notes |
+| --- | --- | --- |
+| `docs/ux/V1_3_RESEARCH_REFERENCES.md` | UPDATED | Official/primary sources refreshed for Tailwind, Radix, TanStack Table/Virtual, Recharts, shadcn/ui, cmdk, React Aria, Ariakit, Zod, date-fns, WAI/WCAG, GOV.UK, NN/g, OWASP. |
+| `docs/ux/V1_3_LIBRARY_DECISION_RECORD.md` | UPDATED | TanStack Table is now `USE THROUGH LOCAL WRAPPER`; TanStack Virtual, cmdk, React Aria, Ariakit, and date-fns are deferred until evidence justifies them. |
 
 ## Subagents
 
-| ID | Area | Branch/Worktree | Status | Scope |
+| ID | Area | Agent | Status | Scope |
 | --- | --- | --- | --- | --- |
-| A | Product Architecture | current audit agent | COMPLETE | Payment/receipt atomicity, frontend fiscal preview, resource contracts, catalog search. |
-| B | Design System | current audit agent | COMPLETE | Print-hidden utility, density tokens, receipt preview divergence, theme drift. |
-| C | Data Contracts & API | current audit agent | COMPLETE | POS service filters, mutation idempotency, weak output contracts, OpenAPI gaps. |
-| D | Dashboard & Analytics | current audit agent | COMPLETE | False cashier KPIs, manual dashboard fetch, cashbox visibility, LAN health, semantics. |
-| E | Billing/POS | current audit agent | COMPLETE | Patient whitespace, zero-total paid invoices, stale cash session, auto-payment permissions. |
-| F | Payments & Cashbox | current audit agent | COMPLETE | Partial payment retry, receipt failure after payment, movement adjustments, close_any. |
-| G | Invoice History & Receipts | current audit agent | COMPLETE | PDF open records print event, permission mismatch, missing detail drawer, duplicate manual issue. |
-| H | Reports/Data Tables | current audit agent | COMPLETE | Executive preset/date contract, audit 403 isolation, table scalability, report payload size. |
-| I | Catalog & Services | current audit agent | COMPLETE | POS billable filter, billing-state flags, barcode/QR save, area contract drift. |
-| J | Users/Auth/RBAC | pending | PENDING | Login, password change, users, roles, permissions, denied states. |
-| K | Backups/Restore/Operations | pending | PENDING | Backup status, create/download, restore guidance, logs. |
-| L | Settings/Fiscal/Institutional | pending | PENDING | Fiscal, receipt, branding, series, legal configured fields. |
-| M | Accessibility/Responsive | pending | PENDING | WCAG, keyboard, focus, mobile 320-1366, no overflow. |
-| N | Performance/LAN | pending | PENDING | Bundle, charts, tables, POS/report load on modest LAN PCs. |
-| O | QA/E2E | pending | PENDING | Playwright specs, smoke, visual, production readiness gates. |
-| P | Integration Reviewer | pending | PENDING | Final integration, conflicts, gates, risk acceptance. |
+| A | Product Architecture | `019f10bd-82c3-7313-bafb-f6bea2186588` | COMPLETE | CI/E2E P0 plus payment/receipt, POS preview, route capability, receipt PDF side-effect, DataTable contract P1s. |
+| B | Design System | `019f10bd-82c3-7313-bafb-f6bea2186588` | COMPLETE | DataTable wrapper and design-system contract are ahead of implementation; needs focused migration slices. |
+| C | Data Contracts & API | controller + previous audit slice | NEEDS FORMAL HANDOFF REFRESH | Resources, pagination, filters, mutation idempotency, compatibility. |
+| D | Dashboard & Analytics | controller + previous audit slice | NEEDS FORMAL HANDOFF REFRESH | Dashboard v2 data, charts, cash/backups/setup state. |
+| E | Billing/POS | controller + previous audit slice | NEEDS FORMAL HANDOFF REFRESH | Patient, service search, cart, totals, payment handoff. |
+| F | Payments & Cashbox | controller + previous audit slice | NEEDS FORMAL HANDOFF REFRESH | Session state, payment idempotency, close/reconcile, audit. |
+| G | Invoice History & Receipts | controller + previous audit slice | NEEDS FORMAL HANDOFF REFRESH | History filters, reprint, institutional PDF, receipt settings. |
+| H | Reports/Data Tables | controller + previous audit slice | NEEDS FORMAL HANDOFF REFRESH | Reports, exports, DataTable adoption, filters. |
+| I | Catalog & Services | controller + previous audit slice | NEEDS FORMAL HANDOFF REFRESH | Services, categories, billable/visible flags, pricing. |
+| J | Users/Auth/RBAC | `019f10ba-168a-7202-a6cd-09478fd9b322` | COMPLETE | P0 privilege escalation and protected-admin mutation gaps found. |
+| K | Backups/Restore/Operations | `019f10ba-43e2-73a2-95c7-ffd31255d6bd` | COMPLETE | Restore runbook/proof status and `backups.restore` contract ambiguity found. |
+| L | Settings/Fiscal/Institutional | `019f10ba-43e2-73a2-95c7-ffd31255d6bd` | COMPLETE | P0 placeholder receipt authorization seed found and fixed. |
+| M | Accessibility/Responsive | `019f10ba-7398-7230-ac22-a91aad6a152a` | COMPLETE | No P0; P1 mobile touch targets, reports mobile nav, receipt print timing found. |
+| N | Performance/LAN | `019f10ba-7398-7230-ac22-a91aad6a152a` | COMPLETE | P1 static Echo/Pusher load, polling cadence, chunk budget risks found. |
+| O | QA/E2E | `019f10ba-9dd9-79f3-a076-920868e781c7` | COMPLETE | P0 CI package-manager drift and release E2E auth failure found. |
+| P | Integration Reviewer | `019f10ba-9dd9-79f3-a076-920868e781c7` | COMPLETE | Missing MariaDB/live gates and stale E2E DB cache risk found. |
+| C/F | Data Contracts, Payments & Cashbox | `019f10bd-c6f9-7032-b2cc-eeb213e940f0` | COMPLETE | P0 POS invoice idempotency gap found and fixed; stale idempotency replay fixed. |
 
-## Integration Queue
+## Subagent Findings
 
-1. Launch remaining agents J-P after active agent slots free.
-2. Convert remaining audit findings into scoped implementation slices.
-3. Apply V1.2 useful frontend ideas selectively without reintroducing obsolete agent artifacts.
-4. Resolve contractual decisions before touching payment/receipt atomicity or zero-total invoice semantics.
-5. Run full gates and prepare final report.
+| Area | Severity | Finding | Next Slice |
+| --- | --- | --- | --- |
+| Users/Auth/RBAC | P0 | User managers with `users.create` or `users.update` can assign elevated non-admin roles such as `supervisor`; protected admin/root targets can be reset, deactivated, or demoted by lower permissions. | Add failing backend RBAC tests, enforce protected-target and assignable-role rules, wrap mutations in transactions, then update frontend row actions if contract exposes capabilities. |
+| QA/E2E | P0 | CI still assumes `npm ci` and `frontend/package-lock.json`, but frontend uses `pnpm-lock.yaml`; frontend CI install will fail. | Convert CI frontend setup to pnpm/frozen lockfile and use pnpm commands. |
+| QA/E2E | P0 | Release E2E is documented failing with expired session during admin/users access. | Re-run after auth/session investigation, fix session regression, and refresh evidence. |
+| QA/E2E | P1 | Release E2E uses SQLite and golden DB hash ignores prep/auth code changes. | Add invalidation inputs for E2E prep/auth/session files and define MariaDB-backed release gate. |
+| QA/E2E | P1 | E2E seed defaults receipt paper to `80mm`, conflicting with institutional paper as primary. | Change E2E seed default to letter/half-letter institutional profile and update assertions. |
+| QA/E2E | P1 | E2E seed used thermal paper as primary. | Fixed by defaulting release seed receipt paper to `half_letter`. |
+| Receipts/Settings | P0 | Seeded institutional receipt series exposed placeholder authorization `AUT-REC-LOCAL`. | Fixed by seeding `range_authorization` as null and adding seeder regression test. |
+| Billing/POS | P0 | POS invoice creation retried with a fresh idempotency key after lost LAN response, risking duplicate fiscal invoice. | Fixed by caller-managed invoice idempotency key reused across retry until success or payload changes. |
+| API idempotency | P1 | Stale incomplete idempotency reservation could replay `200 {"data": null}`. | Fixed by returning 409 with recovery guidance when response is not replayable. |
+| A11y/Responsive | P1 | Mobile buttons can be 36px; reports tabs and receipt preview need 320px usability tests. | Pending. |
+| A11y/Responsive | P1 | Small and icon buttons used sub-44px mobile targets. | Fixed in button foundations; responsive Playwright proof still pending. |
+| Performance/LAN | P1 | Echo/Pusher are statically imported and polling cadence may stack across many LAN clients. | Pending. |
 
-## Completed V1.3 Fix Slices
+## Implementation Queue
 
-| Slice | Status | Files |
-| --- | --- | --- |
-| POS service billing filter | DONE | Backend now validates/filters `visible_in_billing` and `is_billable`; `billing=1` means active + visible + billable. |
-| Patient whitespace validation | DONE | `StoreInvoiceRequest` trims `patient_name` and rejects empty-after-trim values. |
-| POS stale cash session | DONE | `NewInvoiceView` accepts `cashSession=null` and clears stale loaded session. |
-| POS auto-payment permission guard | DONE | Auto-open payment after invoice now requires payment and receipt permissions. |
-| POS payment idempotency | PARTIAL | Payment API accepts caller-managed key; POS keeps one key per open payment attempt until success/cancel. Refetch-after-timeout remains pending. |
-| Print utility | DONE | `.print-hidden` now hides shell chrome in normal print media. |
-| Catalog billing-state editing | DONE | `ServiceSheet` exposes visible/billable flags and preserves barcode/QR form values. |
-| Report executive range | DONE | Executive reports allow 92 days; classic range reports remain 31 days. |
-| Report preset desync | DONE | Child filter no longer emits stale `{ from, to }` keys after preset changes. |
-| Manual receipt generation guard | DONE | Duplicate manual institutional receipt generation ref is set before request and reset in finally. |
+1. Wait for J-P audit handoffs only when their outputs are needed for the next implementation slice.
+2. Refresh A-I handoffs from current code, because earlier notes predate the V1.2 consolidation now present in `main`.
+3. Update `docs/v1-3/V1_3_TOTAL_PRODUCT_AUDIT.md` with current base and subagent findings.
+4. Prioritize P0 implementation slices:
+   - Backend/env test bootstrap and Docker baseline. PARTIAL: Docker works with explicit env and alternate host port.
+   - RBAC protected-role and role-assignment hardening. DONE.
+   - CI pnpm migration. DONE.
+   - Release E2E session/golden DB repair. PARTIAL: golden DB hash now includes auth/bootstrap/prep inputs; session failure remains PENDING.
+   - Payment/receipt recovery semantics.
+   - Zero-total erythropoietin/dialysis prescription invoice semantics.
+   - POS invoice retry idempotency. DONE.
+   - Stale idempotency reservation rejection. DONE.
+   - Receipt placeholder authorization seed removal. DONE.
+   - E2E seed institutional receipt paper default. DONE.
+   - Mobile button target floor. DONE.
+   - RBAC/IDOR coverage for receipts, invoices, reports, backups, users.
+   - DataTable adoption where it replaces duplicated table behavior without weakening performance.
+5. Keep commits phase-sized and Conventional Commit compliant.
 
 ## Current Risks
 
-- V1.2 full redesign is useful but includes large obsolete agentic artifacts already cleaned from `main`.
-- Host Composer is unavailable; Docker Composer works with local env variables and populated `backend/vendor`.
-- Existing frontend build has large chart/vendor chunks that need LAN performance review before adding dependencies.
-- No `docs/` existed in cleaned `main`; V1.3 docs are new phase artifacts.
-- Payment success with institutional receipt failure still needs a product contract decision.
-- Zero-total paid invoices for dialysis-prescription erythropoietin still need a payment/waiver contract decision.
+- Backend Docker needs explicit `DB_PASSWORD`, `DB_ROOT_PASSWORD`, and `DB_PORT=33307` in this shell because local 3306 is unavailable.
+- The old V1.3 branch was divergent from current `main`; it has now been synced locally but not pushed yet.
+- The local Git pre-commit hook is stale and points at a missing script; quality gates must be run explicitly until hook hygiene is fixed.
+- Full V1.3 scope is larger than a single safe commit; implementation must proceed in slices with tests.
+- Payment receipt failure recovery contract, release E2E auth/session, reports mobile nav/receipt preview proof, backend full-test container mount/timeout, and realtime/polling LAN performance remain open.

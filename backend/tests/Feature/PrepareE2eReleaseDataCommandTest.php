@@ -36,6 +36,7 @@ class PrepareE2eReleaseDataCommandTest extends TestCase
             'id' => 1,
             'hospital_name' => 'Hospital San Isidro E2E',
             'default_tax_rate' => '15.00',
+            'receipt_paper_size' => 'half_letter',
         ]);
         $this->assertSame(1, FiscalSequence::query()->where('document_type', 'invoice')->where('active', true)->count());
         $this->assertTrue(Service::query()->where('name', 'Glucosa')->where('active', true)->where('visible_in_billing', true)->where('is_billable', true)->exists());

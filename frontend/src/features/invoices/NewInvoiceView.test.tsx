@@ -1,4 +1,4 @@
-/// <reference types="node" />
+﻿/// <reference types="node" />
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
@@ -389,9 +389,9 @@ describe('NewInvoiceView', () => {
 
     expect(await screen.findByRole('heading', { name: /nueva factura/i })).toBeInTheDocument();
     expect(await screen.findByLabelText(/nombre del paciente/i)).toBeInTheDocument();
-    expect(await screen.findByLabelText(/buscar por nombre, categoría o código/i)).toBeInTheDocument();
-    expect(screen.queryByLabelText(/scanner usb o código manual/i)).not.toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText(/buscar por nombre, categoría o código/i), {
+    expect(await screen.findByLabelText(/buscar por nombre, categorÃ­a o cÃ³digo/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/scanner usb o cÃ³digo manual/i)).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/buscar por nombre, categorÃ­a o cÃ³digo/i), {
       target: { value: 'eritropoyetina' },
     });
     expect(await screen.findByRole('button', { name: /eritropoyetina/i })).toBeInTheDocument();
@@ -588,7 +588,7 @@ describe('NewInvoiceView', () => {
     fireEvent.change(await screen.findByLabelText(/nombre del paciente/i), {
       target: { value: 'Maria Lopez' },
     });
-    fireEvent.change(await screen.findByLabelText(/buscar por nombre, categoría o código/i), {
+    fireEvent.change(await screen.findByLabelText(/buscar por nombre, categorÃ­a o cÃ³digo/i), {
       target: { value: 'glucosa' },
     });
     fireEvent.click(await screen.findByRole('button', { name: /glucosa/i }));
@@ -735,7 +735,7 @@ describe('NewInvoiceView', () => {
 
     render(<App />);
 
-    fireEvent.change(await screen.findByLabelText(/scanner usb o código manual/i), {
+    fireEvent.change(await screen.findByLabelText(/scanner usb o cÃ³digo manual/i), {
       target: { value: 'INACTIVE-001' },
     });
     fireEvent.click(screen.getByRole('button', { name: /escanear/i }));
@@ -839,12 +839,12 @@ describe('NewInvoiceView', () => {
 
     render(<App />);
 
-    fireEvent.change(await screen.findByLabelText(/scanner usb o código manual/i), {
+    fireEvent.change(await screen.findByLabelText(/scanner usb o cÃ³digo manual/i), {
       target: { value: 'CACHED-001' },
     });
     fireEvent.click(screen.getByRole('button', { name: /escanear/i }));
 
-    expect((await screen.findAllByText(/no se encontró servicio activo para este código/i)).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText(/no se encontrÃ³ servicio activo para este cÃ³digo/i)).length).toBeGreaterThan(0);
     expect(screen.getByText(/no hay servicios agregados/i)).toBeInTheDocument();
   });
 
@@ -912,14 +912,14 @@ describe('NewInvoiceView', () => {
 
     render(<App />);
 
-    fireEvent.change(await screen.findByLabelText(/scanner usb o código manual/i), {
+    fireEvent.change(await screen.findByLabelText(/scanner usb o cÃ³digo manual/i), {
       target: { value: 'MISSING-001' },
     });
     fireEvent.click(screen.getByRole('button', { name: /escanear/i }));
 
-    expect((await screen.findAllByText(/no se encontró servicio activo para este código/i)).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText(/no se encontrÃ³ servicio activo para este cÃ³digo/i)).length).toBeGreaterThan(0);
     await waitFor(() => {
-      expect(screen.getByLabelText(/scanner usb o código manual/i)).toHaveFocus();
+      expect(screen.getByLabelText(/scanner usb o cÃ³digo manual/i)).toHaveFocus();
     });
   });
 
@@ -986,7 +986,7 @@ describe('NewInvoiceView', () => {
       </QueryClientProvider>,
     );
 
-    const scannerInput = await screen.findByLabelText(/scanner usb o código manual/i);
+    const scannerInput = await screen.findByLabelText(/scanner usb o cÃ³digo manual/i);
     fireEvent.change(scannerInput, { target: { value: 'LAB-ONCE-001' } });
     const scanButton = screen.getByRole('button', { name: /escanear/i });
 
@@ -1002,7 +1002,7 @@ describe('NewInvoiceView', () => {
       resolveScan([service]);
     });
 
-    await waitFor(() => expect(onStatus).toHaveBeenCalledWith('Servicio agregado por código: Glucosa Scanner.'));
+    await waitFor(() => expect(onStatus).toHaveBeenCalledWith('Servicio agregado por cÃ³digo: Glucosa Scanner.'));
   });
   it('renders invoice history filters and reprint button based on permissions', async () => {
     window.history.pushState({}, '', '/invoices?invoice_number=00000001');
@@ -1203,7 +1203,7 @@ describe('NewInvoiceView', () => {
     });
     const printAuditCall = fetchMock.mock.calls.filter(([url]) => String(url).includes('/reprint'))[1];
     expect(JSON.parse(String(printAuditCall[1]?.body))).toMatchObject({
-      reason: 'Impresión desde vista de recibo.',
+      reason: 'ImpresiÃ³n desde vista de recibo.',
       width: 'half_letter',
     });
   });
@@ -1463,8 +1463,8 @@ describe('NewInvoiceView', () => {
     render(<App />);
 
     fireEvent.click(await screen.findByRole('button', { name: /anular/i }));
-    expect(await screen.findByLabelText(/motivo de anulación/i)).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText(/motivo de anulación/i), {
+    expect(await screen.findByLabelText(/motivo de anulaciÃ³n/i)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/motivo de anulaciÃ³n/i), {
       target: { value: 'Error de captura' },
     });
     fireEvent.click(screen.getByRole('button', { name: /anular factura/i }));
@@ -1571,8 +1571,124 @@ describe('NewInvoiceView', () => {
     render(<ReceiptPreview receipt={receipt} onWidthChange={vi.fn()} />);
 
     expect(screen.getByLabelText(/recibo institucional/i)).toHaveClass('receipt-letter');
-    expect(screen.getAllByText(/configuración pendiente/i)).toHaveLength(3);
+    expect(screen.getAllByText(/configuraciÃ³n pendiente/i)).toHaveLength(3);
     expect(screen.queryByText(/\bQR\b|barra|barcode|codigo interno/i)).not.toBeInTheDocument();
+  });
+
+  it('reuses the same invoice idempotency key when retrying after a lost response', async () => {
+    window.history.pushState({}, '', '/billing/new');
+    const invoiceIdempotencyKeys: string[] = [];
+    let invoiceAttempts = 0;
+
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input);
+      const method = init?.method ?? 'GET';
+
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 2,
+              name: 'Cajero Retry',
+              email: 'retry@hospital.local',
+              username: 'retry',
+              active: true,
+              roles: ['cajero'],
+              permissions: ['catalog.view', 'cash.view', 'invoices.create', 'payments.create', 'receipts.view'],
+              must_change_password: false,
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/cash-sessions/current')) {
+        return { ok: true, json: async () => ({ data: { id: 7, status: 'open' } }) } as Response;
+      }
+
+      if (url.includes('/api/settings/operational')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: { scanner_enabled: false, partial_payments_enabled: false, receipt_paper_size: 'half_letter', default_tax_rate: '15.00' },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/categories')) {
+        return { ok: true, json: async () => ({ data: [{ id: 1, name: 'General' }] }) } as Response;
+      }
+
+      if (url.includes('/api/service-areas')) {
+        return { ok: true, json: async () => ({ data: [{ id: 1, name: 'Laboratorio' }] }) } as Response;
+      }
+
+      if (url.includes('/api/services')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: [{
+              id: 9,
+              category_id: 1,
+              area_id: 1,
+              name: 'Glucosa',
+              price: '15.00',
+              taxable: false,
+              active: true,
+              category: { id: 1, name: 'General' },
+              area: { id: 1, name: 'Laboratorio' },
+            }],
+          }),
+        } as Response;
+      }
+
+      if (url.endsWith('/api/invoices') && method === 'POST') {
+        invoiceAttempts += 1;
+        invoiceIdempotencyKeys.push(new Headers(init?.headers).get('Idempotency-Key') ?? '');
+
+        if (invoiceAttempts === 1) {
+          throw new TypeError('LAN response lost after commit');
+        }
+
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 100,
+              invoice_number: 'INV-RETRY-1',
+              patient_name: 'Paciente Retry',
+              status: 'issued',
+              total: '15.00',
+              balance_due: '15.00',
+              paid_amount: '0.00',
+              items: [],
+              payments: [],
+            },
+          }),
+        } as Response;
+      }
+
+      return { ok: true, json: async () => ({}) } as Response;
+    });
+
+    render(<App />);
+
+    await screen.findByRole('heading', { name: /nueva factura/i });
+    fireEvent.change(screen.getByLabelText(/nombre del paciente/i), { target: { value: 'Paciente Retry' } });
+    fireEvent.change(screen.getByPlaceholderText(/glucosa, hemograma/i), { target: { value: 'glucosa' } });
+    fireEvent.click(await screen.findByRole('button', { name: /glucosa/i }));
+
+    fireEvent.click(primarySubmitButton());
+    fireEvent.click(screen.getByRole('button', { name: /emitir y abrir cobro/i }));
+    await waitFor(() => expect(invoiceAttempts).toBe(1));
+
+    fireEvent.click(primarySubmitButton());
+    fireEvent.click(screen.getByRole('button', { name: /emitir y abrir cobro/i }));
+
+    await screen.findByRole('heading', { name: /registrar pago/i });
+    expect(invoiceIdempotencyKeys).toHaveLength(2);
+    expect(invoiceIdempotencyKeys[0]).toBeTruthy();
+    expect(invoiceIdempotencyKeys[1]).toBe(invoiceIdempotencyKeys[0]);
   });
 
   describe('dialysis prescription gating', () => {
@@ -1654,7 +1770,7 @@ describe('NewInvoiceView', () => {
       // Fill required fields to submit
       fireEvent.change(screen.getByLabelText(/nombre del paciente/i), { target: { value: 'Juan Perez' } });
       fireEvent.click(primarySubmitButton(/emitir/i));
-      fireEvent.click(screen.getByRole('button', { name: /confirmar emisión/i }));
+      fireEvent.click(screen.getByRole('button', { name: /confirmar emisiÃ³n/i }));
 
       await waitFor(() => {
         expect(createdInvoicePayload).not.toBeNull();

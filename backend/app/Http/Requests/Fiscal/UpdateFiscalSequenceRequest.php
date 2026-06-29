@@ -73,7 +73,7 @@ class UpdateFiscalSequenceRequest extends FormRequest
                         ->whereKeyNot($sequence->id)
                         ->where(function ($query) use ($min, $max) {
                             $query->where('min_number', '<=', $max)
-                                  ->where('max_number', '>=', $min);
+                                ->where('max_number', '>=', $min);
                         })
                         ->exists();
 

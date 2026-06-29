@@ -1,9 +1,9 @@
 <?php
 
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Contracts\Encryption\DecryptException;
 
 return new class extends Migration
 {
@@ -21,7 +21,7 @@ return new class extends Migration
                         DB::table('idempotency_keys')
                             ->where('id', $key->id)
                             ->update([
-                                'response_body' => Crypt::encryptString($key->response_body)
+                                'response_body' => Crypt::encryptString($key->response_body),
                             ]);
                     }
                 }

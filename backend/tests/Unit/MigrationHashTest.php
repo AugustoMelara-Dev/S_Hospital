@@ -102,4 +102,27 @@ class MigrationHashTest extends TestCase
 
         $this->assertNotSame($original, MigrationHash::forLaravelBase($root));
     }
+
+    public function test_laravel_base_hash_includes_e2e_auth_and_bootstrap_inputs(): void
+    {
+        $root = storage_path('framework/testing/migration-hash-e2e-inputs');
+        File::deleteDirectory($root);
+        File::ensureDirectoryExists($root.'/database/migrations');
+        File::ensureDirectoryExists($root.'/database/seeders');
+        File::ensureDirectoryExists($root.'/app/Console/Commands');
+        File::ensureDirectoryExists($root.'/app/Http/Controllers');
+        File::ensureDirectoryExists($root.'/bootstrap');
+
+        File::put($root.'/database/migrations/2026_01_01_000001_create_alpha.php', '<?php return "alpha";');
+        File::put($root.'/database/seeders/DatabaseSeeder.php', '<?php return "database";');
+        File::put($root.'/app/Console/Commands/PrepareE2eReleaseDataCommand.php', '<?php return "prepare e2e";');
+        File::put($root.'/app/Http/Controllers/AuthController.php', '<?php return "auth";');
+        File::put($root.'/bootstrap/app.php', '<?php return "bootstrap";');
+
+        $original = MigrationHash::forLaravelBase($root);
+
+        File::put($root.'/app/Console/Commands/PrepareE2eReleaseDataCommand.php', '<?php return "prepare e2e changed";');
+
+        $this->assertNotSame($original, MigrationHash::forLaravelBase($root));
+    }
 }

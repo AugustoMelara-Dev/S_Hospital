@@ -20,7 +20,7 @@ class InstitutionalReceiptSeriesSeeder extends Seeder
                 'min_number' => 1,
                 'max_number' => 99999999,
                 'current_number' => 0,
-                'range_authorization' => 'AUT-REC-LOCAL',
+                'range_authorization' => null,
                 'legal_text' => 'Suscribe. CERTIFICA haber enterado en esta oficina la suma de',
                 'receipt_number_color' => '#b91c1c',
                 'active' => true,

@@ -3,9 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use Illuminate\Database\QueryException;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class RestrictInvoiceItemsInvoiceDeleteTest extends TestCase
@@ -82,7 +83,7 @@ class RestrictInvoiceItemsInvoiceDeleteTest extends TestCase
         try {
             DB::table('invoices')->where('id', $invoiceId)->delete();
             $this->fail('Delete should have been restricted.');
-        } catch (\Illuminate\Database\QueryException $e) {
+        } catch (QueryException $e) {
             $this->assertStringContainsString('foreign key constraint fails', strtolower($e->getMessage()));
         }
 

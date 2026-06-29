@@ -36,8 +36,21 @@ final class MigrationHash
 
         $files = glob($basePath.'/database/migrations/*.php') ?: [];
         $files = array_merge($files, self::filesUnder($basePath.'/database/seeders'));
+        $files = array_merge($files, self::releasePreparationFiles($basePath));
 
         return self::fromFiles($files, $basePath);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private static function releasePreparationFiles(string $basePath): array
+    {
+        return [
+            $basePath.'/app/Console/Commands/PrepareE2eReleaseDataCommand.php',
+            $basePath.'/app/Http/Controllers/AuthController.php',
+            $basePath.'/bootstrap/app.php',
+        ];
     }
 
     /**

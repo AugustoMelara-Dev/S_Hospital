@@ -37,7 +37,10 @@ describe('UI foundations compatibility', () => {
     const { rerender } = render(<Button variant="danger">Anular</Button>);
     expect(screen.getByRole('button', { name: 'Anular' })).toHaveClass('bg-destructive');
     expect(buttonVariants.outline).toContain('border-input');
-    expect(buttonSizes.icon).toContain('size-9');
+    expect(buttonSizes.sm).toContain('min-h-11');
+    expect(buttonSizes.sm).toContain('sm:min-h-9');
+    expect(buttonSizes.icon).toContain('size-11');
+    expect(buttonSizes.icon).toContain('sm:size-9');
 
     rerender(
       <Button asChild>

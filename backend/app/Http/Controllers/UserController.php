@@ -9,9 +9,11 @@ use App\Http\Requests\Admin\ToggleUserActiveRequest;
 use App\Http\Requests\Admin\UpdateUserRequest;
 use App\Models\User;
 use App\Support\AuditLogger;
+use App\Support\RoleCatalog;
 use App\Support\VisiblePermissions;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Models\Permission;
@@ -44,28 +46,32 @@ class UserController extends Controller
         $this->assertCanSyncDirectPermissions($request->user(), null, $directPermissions);
         $this->assertActiveExactPermissionMapHasAccess($directPermissions, $validated['active'] ?? true);
 
-        $user = User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'username' => $validated['username'],
-            'password' => Hash::make($validated['password']),
-            'active' => $validated['active'] ?? true,
-            'must_change_password' => true,
-        ]);
+        $user = DB::transaction(function () use ($validated, $directPermissions, $auditLogger, $request): User {
+            $user = User::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'username' => $validated['username'],
+                'password' => Hash::make($validated['password']),
+                'active' => $validated['active'] ?? true,
+                'must_change_password' => true,
+            ]);
 
-        $user->assignRole($validated['role']);
-        if ($directPermissions !== null) {
-            $user->syncPermissions($this->directPermissionsForExactAccess($directPermissions));
-        }
-        $user->load(['roles', 'permissions']);
+            $user->assignRole($validated['role']);
+            if ($directPermissions !== null) {
+                $user->syncPermissions($this->directPermissionsForExactAccess($directPermissions));
+            }
+            $user->load(['roles', 'permissions']);
 
-        $auditLogger->log(
-            action: 'user.created',
-            entity: $user,
-            user: $request->user(),
-            request: $request,
-            newValues: $this->auditPayload($user),
-        );
+            $auditLogger->log(
+                action: 'user.created',
+                entity: $user,
+                user: $request->user(),
+                request: $request,
+                newValues: $this->auditPayload($user),
+            );
+
+            return $user;
+        });
 
         return response()->json([
             'data' => $this->transformUser($user),
@@ -81,30 +87,32 @@ class UserController extends Controller
         $this->assertCanSyncDirectPermissions($request->user(), $user, $directPermissions);
         $this->assertActiveExactPermissionMapHasAccess($directPermissions, $user->active);
 
-        $user->update([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'username' => $validated['username'],
-        ]);
+        DB::transaction(function () use ($user, $validated, $directPermissions, $auditLogger, $request, $oldValues): void {
+            $user->update([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'username' => $validated['username'],
+            ]);
 
-        if (! $user->hasRole($validated['role'])) {
-            $user->syncRoles([$validated['role']]);
-        }
+            if (! $user->hasRole($validated['role'])) {
+                $user->syncRoles([$validated['role']]);
+            }
 
-        if ($directPermissions !== null) {
-            $user->syncPermissions($this->directPermissionsForExactAccess($directPermissions));
-        }
+            if ($directPermissions !== null) {
+                $user->syncPermissions($this->directPermissionsForExactAccess($directPermissions));
+            }
 
-        $user->load(['roles', 'permissions']);
+            $user->load(['roles', 'permissions']);
 
-        $auditLogger->log(
-            action: 'user.updated',
-            entity: $user,
-            user: $request->user(),
-            request: $request,
-            oldValues: $oldValues,
-            newValues: $this->auditPayload($user),
-        );
+            $auditLogger->log(
+                action: 'user.updated',
+                entity: $user,
+                user: $request->user(),
+                request: $request,
+                oldValues: $oldValues,
+                newValues: $this->auditPayload($user),
+            );
+        });
 
         return response()->json([
             'data' => $this->transformUser($user),
@@ -124,21 +132,23 @@ class UserController extends Controller
             );
         }
 
-        $user->update([
-            'active' => $newActiveState,
-            'deactivated_at' => $newActiveState ? null : now(),
-        ]);
-        $user->load(['roles', 'permissions']);
+        DB::transaction(function () use ($user, $newActiveState, $auditLogger, $request, $oldValues): void {
+            $user->update([
+                'active' => $newActiveState,
+                'deactivated_at' => $newActiveState ? null : now(),
+            ]);
+            $user->load(['roles', 'permissions']);
 
-        $auditLogger->log(
-            action: $user->active ? 'user.activated' : 'user.deactivated',
-            entity: $user,
-            user: $request->user(),
-            request: $request,
-            oldValues: $oldValues,
-            newValues: $this->auditPayload($user),
-            reason: $request->input('reason'),
-        );
+            $auditLogger->log(
+                action: $user->active ? 'user.activated' : 'user.deactivated',
+                entity: $user,
+                user: $request->user(),
+                request: $request,
+                oldValues: $oldValues,
+                newValues: $this->auditPayload($user),
+                reason: $request->input('reason'),
+            );
+        });
 
         return response()->json([
             'data' => $this->transformUser($user),
@@ -150,21 +160,23 @@ class UserController extends Controller
         $validated = $request->validated();
         $oldValues = ['must_change_password' => $user->must_change_password];
 
-        $user->forceFill([
-            'password' => Hash::make($validated['password']),
-            'must_change_password' => true,
-        ])->save();
-        $user->tokens()->delete();
-        $user->load(['roles', 'permissions']);
+        DB::transaction(function () use ($user, $validated, $auditLogger, $request, $oldValues): void {
+            $user->forceFill([
+                'password' => Hash::make($validated['password']),
+                'must_change_password' => true,
+            ])->save();
+            $user->tokens()->delete();
+            $user->load(['roles', 'permissions']);
 
-        $auditLogger->log(
-            action: 'user.password_reset',
-            entity: $user,
-            user: $request->user(),
-            request: $request,
-            oldValues: $oldValues,
-            newValues: ['must_change_password' => true],
-        );
+            $auditLogger->log(
+                action: 'user.password_reset',
+                entity: $user,
+                user: $request->user(),
+                request: $request,
+                oldValues: $oldValues,
+                newValues: ['must_change_password' => true],
+            );
+        });
 
         return response()->json([
             'data' => $this->transformUser($user),
@@ -200,37 +212,69 @@ class UserController extends Controller
             ]);
         }
 
-        if ($this->isProtectedRoleName($role) && ! $actor->can('users.assign_admin_role')) {
+        if (
+            $target instanceof User
+            && $this->userHasProtectedRole($target)
+            && ! $actor->can('users.assign_admin_role')
+        ) {
             throw ValidationException::withMessages([
-                'role' => 'No tiene permiso para asignar un rol administrativo.',
+                'role' => 'No tiene permiso para modificar un usuario administrativo protegido.',
             ]);
         }
 
-        if (! $this->isProtectedRoleName($role) && $this->roleContainsProtectedAdministrativePermissions($role)) {
+        if (! RoleCatalog::isProtectedRoleName($role) && $this->roleContainsReservedPermissions($role)) {
             throw ValidationException::withMessages([
                 'role' => 'El rol contiene permisos administrativos reservados y no se puede asignar como rol operativo.',
             ]);
         }
+
+        if ($this->isElevatedRole($role) && ! $actor->can('users.assign_admin_role')) {
+            throw ValidationException::withMessages([
+                'role' => 'No tiene permiso para asignar un rol administrativo o supervisor.',
+            ]);
+        }
     }
 
-    private function isProtectedRoleName(string $role): bool
+    private function isElevatedRole(string $role): bool
     {
-        return in_array(strtolower($role), ['admin', 'root'], true);
+        return RoleCatalog::isElevatedRoleName($role) || $this->roleContainsElevatedPermissions($role);
     }
 
-    private function roleContainsProtectedAdministrativePermissions(string $role): bool
+    private function roleContainsReservedPermissions(string $role): bool
     {
-        $roleModel = Role::query()
-            ->where('name', $role)
-            ->where('guard_name', 'web')
-            ->with('permissions')
-            ->first();
+        $roleModel = $this->findRoleWithPermissions($role);
 
         if (! $roleModel instanceof Role) {
             return false;
         }
 
-        return $roleModel->permissions->contains('name', 'users.assign_admin_role');
+        return RoleCatalog::containsReservedPermissions($roleModel->permissions->pluck('name')->all());
+    }
+
+    private function roleContainsElevatedPermissions(string $role): bool
+    {
+        $roleModel = $this->findRoleWithPermissions($role);
+
+        if (! $roleModel instanceof Role) {
+            return false;
+        }
+
+        return RoleCatalog::containsElevatedPermissions($roleModel->permissions->pluck('name')->all());
+    }
+
+    private function findRoleWithPermissions(string $role): ?Role
+    {
+        return Role::query()
+            ->where('name', $role)
+            ->where('guard_name', 'web')
+            ->with('permissions')
+            ->first();
+    }
+
+    private function userHasProtectedRole(User $user): bool
+    {
+        return $user->getRoleNames()
+            ->contains(fn (string $role): bool => RoleCatalog::isProtectedRoleName($role));
     }
 
     /**
