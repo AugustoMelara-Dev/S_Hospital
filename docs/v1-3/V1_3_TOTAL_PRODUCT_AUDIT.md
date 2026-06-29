@@ -25,6 +25,14 @@ Base: `origin/main` at `742fdb551b202ddb0473a0269440e0bf6ff116ce`.
 | Documentation | V1.3 docs existed on the older branch but contained stale base/test data. | Decisions could be misleading during implementation. | Refresh V1.3 docs against `742fdb55`, current `pnpm` gates, and official/primary sources. | No | Low | P0 | Review docs in final report. |
 | Receipt issuance after payment | Payment can succeed while institutional receipt issuance reports an error. | Paid invoices can exist without principal institutional receipt. | Decide mandatory atomic payment+receipt rollback vs explicit receipt-pending recovery queue. | Yes if changed | High | P1 | Payment/receipt feature tests, frontend recovery tests. |
 | Critical mutation idempotency | Frontend generated fresh keys for manual payment retries. | Partial payment retry after timeout could double-apply. | V1.3 now supports stable POS payment keys; still needs timeout refetch policy. | No | High | P1 | Payment retry tests, double-payment feature tests. |
+| RBAC role assignment | Users with basic user-management permissions can assign elevated non-admin roles and mutate protected admin/root users. | Privilege escalation and admin lockout/deactivation risk. | Add protected-target and assignable-role rules; require elevated permission for protected roles; wrap user mutations in transactions. | Maybe | High | P0 | RBAC feature tests, UsersView action tests, direct API IDOR tests. |
+| CI package manager drift | CI uses npm/package-lock while frontend now uses pnpm/pnpm-lock. | CI frontend install fails before quality gates. | Convert CI frontend steps to pnpm with frozen lockfile. | No | High | P0 | CI-equivalent pnpm install/typecheck/lint/test/build. |
+| Release E2E reliability | QA docs record `pnpm test:e2e` failing with expired session; release E2E is SQLite-only and can reuse stale golden DB after auth/prep changes. | Release confidence is weak for the LAN/MariaDB target. | Fix session regression, widen golden DB hash inputs, add MariaDB-backed release gate. | Maybe | High | P0/P1 | Playwright release E2E, MariaDB migrate/seed/test. |
+| Receipt legal seed data | Default institutional receipt series seeded `AUT-REC-LOCAL` as authorization-like text. | Production PDFs could expose invented legal/authorization data. | Seed `range_authorization` as null; PDF only prints configured authorization. | No | High | P0 | Seeder test, PDF tests. |
+| POS invoice idempotency | POS invoice submit used a generated key per request, not per logical retry. | Lost LAN response after committed invoice could lead to duplicate fiscal invoice on retry. | Reuse caller-managed idempotency key until invoice success or payload changes. | No | High | P0 | NewInvoiceView retry test. |
+| Stale idempotency replay | Old incomplete idempotency reservations could replay `200 {"data": null}`. | Critical mutations could look successful while state is unknown. | Return 409 with recovery guidance when a reservation has no replayable response. | No | High | P1 | IdempotencyKeyTest. |
+| Mobile/a11y target size | Some buttons/icons use 36px targets on mobile. | Cashier touch errors on 320/375px devices. | Raise mobile target sizes to 44px or document exceptions. | No | Medium | P1 | Mobile Playwright target-size tests. |
+| Realtime/LAN performance | Echo/Pusher load statically and polling cadences can stack across terminals. | Slower first load and avoidable LAN/server load. | Lazy-load realtime only when enabled and add visibility/backoff-aware polling. | No | Medium | P1 | Build budget, runtime polling tests. |
 
 ## Module Audit Matrix
 
@@ -66,5 +74,9 @@ Base: `origin/main` at `742fdb551b202ddb0473a0269440e0bf6ff116ce`.
 - `pnpm run lint`: PASS.
 - `pnpm exec vitest run src/features/invoices/NewInvoiceView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000`: PASS, 22 tests.
 - `pnpm run test`: PASS, 83 files and 498 tests.
-- `docker compose ps`: BLOCKED in this shell because required environment variable `DB_PASSWORD` is missing.
-- Backend full gates: PENDING after Docker/env bootstrap.
+- `pnpm exec vitest run src/features/invoices/NewInvoiceView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000`: PASS after POS idempotency change, 23 tests.
+- `docker compose run --rm backend php artisan test --filter=UserManagementTest --colors=never` with `DB_PASSWORD`, `DB_ROOT_PASSWORD`, `DB_PORT=33307`: PASS, 30 tests with container `.env` warnings.
+- `docker compose run --rm backend php artisan test --filter=InstitutionalReceiptSeriesSeederTest --colors=never`: PASS with warning.
+- `docker compose run --rm backend php artisan test --filter=InstitutionalReceiptPdfTest --colors=never`: PASS, 13 tests with warnings.
+- `docker compose run --rm backend php artisan test --filter=IdempotencyKeyTest --colors=never`: PASS, 11 tests with warnings.
+- Backend full gates: PENDING.

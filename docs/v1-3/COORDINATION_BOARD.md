@@ -35,10 +35,10 @@ Local review date: 2026-06-28
 | Frontend dependencies | PASS | `pnpm run typecheck` installed/restored dependencies from `pnpm-lock.yaml` without tracked file changes. |
 | Frontend typecheck | PASS | `pnpm run typecheck`. |
 | Frontend lint | PASS | `pnpm run lint`. |
-| Targeted billing test | PASS | `pnpm exec vitest run src/features/invoices/NewInvoiceView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000`, 22 tests. |
-| Frontend tests | PASS | `pnpm run test`, 83 files and 498 tests. |
-| Backend Docker baseline | BLOCKED | `docker compose ps` fails because required environment variable `DB_PASSWORD` is not set in this shell. |
-| Backend tests | PENDING | Must run after Docker/env bootstrap. |
+| Targeted billing test | PASS | `pnpm exec vitest run src/features/invoices/NewInvoiceView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000`, now 23 tests after invoice idempotency coverage. |
+| Frontend tests | PASS | Baseline `pnpm run test`, 83 files and 498 tests before new POS idempotency test; focused POS suite now 23 tests. |
+| Backend Docker baseline | PASS WITH ENV | Docker works when `DB_PASSWORD`, `DB_ROOT_PASSWORD`, and alternate `DB_PORT=33307` are supplied; host port 3306 is unavailable. |
+| Backend focused tests | PASS | `UserManagementTest`, `InstitutionalReceiptSeriesSeederTest`, `InstitutionalReceiptPdfTest`, and `IdempotencyKeyTest` pass in Docker with warnings from missing container `.env`. |
 | Build | PENDING | Must run after implementation slices or before final handoff. |
 | E2E | PENDING | Must run after browser/runtime setup. |
 
@@ -53,8 +53,8 @@ Local review date: 2026-06-28
 
 | ID | Area | Agent | Status | Scope |
 | --- | --- | --- | --- | --- |
-| A | Product Architecture | controller + previous audit slice | NEEDS FORMAL HANDOFF REFRESH | Architecture, product boundaries, module shell, data ownership. |
-| B | Design System | controller + previous audit slice | NEEDS FORMAL HANDOFF REFRESH | Tokens, shared UI, tables, receipt frame, print states. |
+| A | Product Architecture | `019f10bd-82c3-7313-bafb-f6bea2186588` | COMPLETE | CI/E2E P0 plus payment/receipt, POS preview, route capability, receipt PDF side-effect, DataTable contract P1s. |
+| B | Design System | `019f10bd-82c3-7313-bafb-f6bea2186588` | COMPLETE | DataTable wrapper and design-system contract are ahead of implementation; needs focused migration slices. |
 | C | Data Contracts & API | controller + previous audit slice | NEEDS FORMAL HANDOFF REFRESH | Resources, pagination, filters, mutation idempotency, compatibility. |
 | D | Dashboard & Analytics | controller + previous audit slice | NEEDS FORMAL HANDOFF REFRESH | Dashboard v2 data, charts, cash/backups/setup state. |
 | E | Billing/POS | controller + previous audit slice | NEEDS FORMAL HANDOFF REFRESH | Patient, service search, cart, totals, payment handoff. |
@@ -62,13 +62,29 @@ Local review date: 2026-06-28
 | G | Invoice History & Receipts | controller + previous audit slice | NEEDS FORMAL HANDOFF REFRESH | History filters, reprint, institutional PDF, receipt settings. |
 | H | Reports/Data Tables | controller + previous audit slice | NEEDS FORMAL HANDOFF REFRESH | Reports, exports, DataTable adoption, filters. |
 | I | Catalog & Services | controller + previous audit slice | NEEDS FORMAL HANDOFF REFRESH | Services, categories, billable/visible flags, pricing. |
-| J | Users/Auth/RBAC | `019f10ba-168a-7202-a6cd-09478fd9b322` | RUNNING | Audit users/auth/RBAC code and tests. |
-| K | Backups/Restore/Operations | `019f10ba-43e2-73a2-95c7-ffd31255d6bd` | RUNNING | Audit backups, restore guidance, operations. |
-| L | Settings/Fiscal/Institutional | `019f10ba-43e2-73a2-95c7-ffd31255d6bd` | RUNNING | Audit fiscal, receipt settings, branding, institutional fields. |
-| M | Accessibility/Responsive | `019f10ba-7398-7230-ac22-a91aad6a152a` | RUNNING | Audit WCAG, keyboard, responsive, dark mode, print isolation. |
-| N | Performance/LAN | `019f10ba-7398-7230-ac22-a91aad6a152a` | RUNNING | Audit bundle, charts, table scale, LAN/modest PC performance. |
-| O | QA/E2E | `019f10ba-9dd9-79f3-a076-920868e781c7` | RUNNING | Audit Playwright, frontend/backend gates, QA evidence. |
-| P | Integration Reviewer | `019f10ba-9dd9-79f3-a076-920868e781c7` | RUNNING | Audit integration risks, missing gates, final handoff blockers. |
+| J | Users/Auth/RBAC | `019f10ba-168a-7202-a6cd-09478fd9b322` | COMPLETE | P0 privilege escalation and protected-admin mutation gaps found. |
+| K | Backups/Restore/Operations | `019f10ba-43e2-73a2-95c7-ffd31255d6bd` | COMPLETE | Restore runbook/proof status and `backups.restore` contract ambiguity found. |
+| L | Settings/Fiscal/Institutional | `019f10ba-43e2-73a2-95c7-ffd31255d6bd` | COMPLETE | P0 placeholder receipt authorization seed found and fixed. |
+| M | Accessibility/Responsive | `019f10ba-7398-7230-ac22-a91aad6a152a` | COMPLETE | No P0; P1 mobile touch targets, reports mobile nav, receipt print timing found. |
+| N | Performance/LAN | `019f10ba-7398-7230-ac22-a91aad6a152a` | COMPLETE | P1 static Echo/Pusher load, polling cadence, chunk budget risks found. |
+| O | QA/E2E | `019f10ba-9dd9-79f3-a076-920868e781c7` | COMPLETE | P0 CI package-manager drift and release E2E auth failure found. |
+| P | Integration Reviewer | `019f10ba-9dd9-79f3-a076-920868e781c7` | COMPLETE | Missing MariaDB/live gates and stale E2E DB cache risk found. |
+| C/F | Data Contracts, Payments & Cashbox | `019f10bd-c6f9-7032-b2cc-eeb213e940f0` | COMPLETE | P0 POS invoice idempotency gap found and fixed; stale idempotency replay fixed. |
+
+## Subagent Findings
+
+| Area | Severity | Finding | Next Slice |
+| --- | --- | --- | --- |
+| Users/Auth/RBAC | P0 | User managers with `users.create` or `users.update` can assign elevated non-admin roles such as `supervisor`; protected admin/root targets can be reset, deactivated, or demoted by lower permissions. | Add failing backend RBAC tests, enforce protected-target and assignable-role rules, wrap mutations in transactions, then update frontend row actions if contract exposes capabilities. |
+| QA/E2E | P0 | CI still assumes `npm ci` and `frontend/package-lock.json`, but frontend uses `pnpm-lock.yaml`; frontend CI install will fail. | Convert CI frontend setup to pnpm/frozen lockfile and use pnpm commands. |
+| QA/E2E | P0 | Release E2E is documented failing with expired session during admin/users access. | Re-run after auth/session investigation, fix session regression, and refresh evidence. |
+| QA/E2E | P1 | Release E2E uses SQLite and golden DB hash ignores prep/auth code changes. | Add invalidation inputs for E2E prep/auth/session files and define MariaDB-backed release gate. |
+| QA/E2E | P1 | E2E seed defaults receipt paper to `80mm`, conflicting with institutional paper as primary. | Change E2E seed default to letter/half-letter institutional profile and update assertions. |
+| Receipts/Settings | P0 | Seeded institutional receipt series exposed placeholder authorization `AUT-REC-LOCAL`. | Fixed by seeding `range_authorization` as null and adding seeder regression test. |
+| Billing/POS | P0 | POS invoice creation retried with a fresh idempotency key after lost LAN response, risking duplicate fiscal invoice. | Fixed by caller-managed invoice idempotency key reused across retry until success or payload changes. |
+| API idempotency | P1 | Stale incomplete idempotency reservation could replay `200 {"data": null}`. | Fixed by returning 409 with recovery guidance when response is not replayable. |
+| A11y/Responsive | P1 | Mobile buttons can be 36px; reports tabs and receipt preview need 320px usability tests. | Pending. |
+| Performance/LAN | P1 | Echo/Pusher are statically imported and polling cadence may stack across many LAN clients. | Pending. |
 
 ## Implementation Queue
 
@@ -76,16 +92,23 @@ Local review date: 2026-06-28
 2. Refresh A-I handoffs from current code, because earlier notes predate the V1.2 consolidation now present in `main`.
 3. Update `docs/v1-3/V1_3_TOTAL_PRODUCT_AUDIT.md` with current base and subagent findings.
 4. Prioritize P0 implementation slices:
-   - Backend/env test bootstrap and Docker baseline.
+   - Backend/env test bootstrap and Docker baseline. PARTIAL: Docker works with explicit env and alternate host port.
+   - RBAC protected-role and role-assignment hardening. DONE.
+   - CI pnpm migration. DONE.
+   - Release E2E session/golden DB repair. PENDING.
    - Payment/receipt recovery semantics.
    - Zero-total erythropoietin/dialysis prescription invoice semantics.
+   - POS invoice retry idempotency. DONE.
+   - Stale idempotency reservation rejection. DONE.
+   - Receipt placeholder authorization seed removal. DONE.
    - RBAC/IDOR coverage for receipts, invoices, reports, backups, users.
    - DataTable adoption where it replaces duplicated table behavior without weakening performance.
 5. Keep commits phase-sized and Conventional Commit compliant.
 
 ## Current Risks
 
-- Backend Docker cannot be checked from this shell until `DB_PASSWORD` is supplied or a test env path is established.
+- Backend Docker needs explicit `DB_PASSWORD`, `DB_ROOT_PASSWORD`, and `DB_PORT=33307` in this shell because local 3306 is unavailable.
 - The old V1.3 branch was divergent from current `main`; it has now been synced locally but not pushed yet.
 - The local Git pre-commit hook is stale and points at a missing script; quality gates must be run explicitly until hook hygiene is fixed.
 - Full V1.3 scope is larger than a single safe commit; implementation must proceed in slices with tests.
+- Payment receipt failure recovery contract, release E2E auth/session, mobile target sizing, and realtime/polling LAN performance remain open.
