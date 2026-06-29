@@ -369,32 +369,32 @@ describe('App', () => {
 
     render(<App />);
 
-    const navigation = await screen.findByRole('navigation', { name: /navegaci[oÃ³]n principal/i });
+    const navigation = await screen.findByRole('navigation', { name: /navegaci[oó]n principal/i });
 
     expect(navigation).toBeInTheDocument();
     expect(navigation.closest('aside')).toHaveClass('print-hidden');
     expect(screen.getByRole('banner')).toHaveClass('print-hidden');
     expect(screen.getByRole('contentinfo')).toHaveClass('print-hidden');
-    expect(screen.getAllByRole('link', { name: /^configuraci[oÃ³]n$/i })[0]).toHaveAttribute(
+    expect(screen.getAllByRole('link', { name: /^configuraci[oó]n$/i })[0]).toHaveAttribute(
       'href',
       '/settings/fiscal',
     );
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /^configuraci[oÃ³]n$/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /^configuraci[oó]n$/i })).toBeInTheDocument();
     }, { timeout: 5000 });
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /configuraci[oÃ³]n pendiente/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /configuraci[oó]n pendiente/i })).toBeInTheDocument();
     }, { timeout: 5000 });
-    expect(screen.getByText(/datos temporales o de validaci[oÃ³]n/i)).toBeInTheDocument();
+    expect(screen.getByText(/datos temporales o de validaci[oó]n/i)).toBeInTheDocument();
     activateTab(/^hospital$/i);
     expect(await screen.findByRole('heading', { name: /hospital y recibo/i })).toBeInTheDocument();
     expect(screen.queryByDisplayValue(placeholderHospitalName)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /guardar hospital y recibo/i })).toBeEnabled();
-    activateTab(/numeraci[oÃ³]n/i);
+    activateTab(/numeraci[oó]n/i);
     expect(screen.queryByDisplayValue(placeholderCai)).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /guardar numeraci[oÃ³]n/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /guardar numeraci[oó]n/i })).toBeEnabled();
   });
 
   it('renders catalog as read only for a cashier', async () => {
@@ -481,7 +481,7 @@ describe('App', () => {
     render(<App />);
 
     expect(
-      await screen.findByRole('heading', { name: /cat[aÃ¡]l[oÃ³]go de servicios/i }, { timeout: 20_000 }),
+      await screen.findByRole('heading', { name: /cat[aá]l[oó]go de servicios/i }, { timeout: 20_000 }),
     ).toBeInTheDocument();
     expect(await screen.findByText('Glucosa', {}, { timeout: 20_000 })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /agregar servicio/i })).not.toBeInTheDocument();
@@ -548,8 +548,8 @@ describe('App', () => {
     expect(await screen.findByText(/respaldos del hospital/i)).toBeInTheDocument();
     expect(await screen.findByText(/estado operativo/i)).toBeInTheDocument();
     expect(await screen.findByRole('heading', { name: /requiere revisi/i })).toBeInTheDocument();
-    expect(await screen.findByText(/completar modo de operaci[oÃ³]n final/i)).toBeInTheDocument();
-    expect(await screen.findByText(/validar recibo f[iÃ­]sico media carta\/carta\/A5\/80mm\/58mm/i)).toBeInTheDocument();
+    expect(await screen.findByText(/completar modo de operaci[oó]n final/i)).toBeInTheDocument();
+    expect(await screen.findByText(/validar recibo f[ií]sico media carta\/carta\/A5\/80mm\/58mm/i)).toBeInTheDocument();
     expect(screen.queryByText(/APP_ENV=production/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /^pendiente$/i })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /ver detalle avanzado/i }));
@@ -558,8 +558,8 @@ describe('App', () => {
     expect(screen.getByText(/base de datos:\s*conectada/i)).toBeInTheDocument();
     expect(screen.getByText(/acceso cliente/i)).toBeInTheDocument();
     expect(screen.getByText(/192\.168\.1\.10:8000/i)).toBeInTheDocument();
-    expect(screen.getByText(/versi[oÃ³]n instalada/i)).toBeInTheDocument();
-    expect(screen.getByText(/^modo de operaci[oÃ³]n final$/i)).toBeInTheDocument();
+    expect(screen.getByText(/versi[oó]n instalada/i)).toBeInTheDocument();
+    expect(screen.getByText(/^modo de operaci[oó]n final$/i)).toBeInTheDocument();
     expect(screen.getByText(/pantalla de ingreso abre/i)).toBeInTheDocument();
     expect(screen.getByText(/segunda pc en lan/i)).toBeInTheDocument();
     expect(screen.getByText(/impresora institucional/i)).toBeInTheDocument();
@@ -874,7 +874,7 @@ describe('App', () => {
       }),
     ).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /crear respaldo/i })).not.toBeInTheDocument();
-    expect(screen.getByText(/p[aÃ¡]gina 1 de 2/i)).toBeInTheDocument();
+    expect(screen.getByText(/p[aá]gina 1 de 2/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /siguiente/i })).toBeEnabled();
   });
 
@@ -1001,19 +1001,19 @@ describe('App', () => {
     render(<App />);
 
     expect(
-      await screen.findByRole('heading', { name: /cambio obligatorio de contrase[nÃ±]a/i }),
+      await screen.findByRole('heading', { name: /cambio obligatorio de contrase[nñ]a/i }),
     ).toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText(/contrase[nÃ±]a actual/i), {
+    fireEvent.change(screen.getByLabelText(/contrase[nñ]a actual/i), {
       target: { value: 'Password123!' },
     });
-    fireEvent.change(screen.getByLabelText(/^nueva contrase[nÃ±]a$/i), {
+    fireEvent.change(screen.getByLabelText(/^nueva contrase[nñ]a$/i), {
       target: { value: 'NewPassword123!' },
     });
-    fireEvent.change(screen.getByLabelText(/confirmar nueva contrase[nÃ±]a/i), {
+    fireEvent.change(screen.getByLabelText(/confirmar nueva contrase[nñ]a/i), {
       target: { value: 'NewPassword123!' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /actualizar contrase[nÃ±]a/i }));
+    fireEvent.click(screen.getByRole('button', { name: /actualizar contrase[nñ]a/i }));
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenLastCalledWith(
@@ -1260,7 +1260,7 @@ describe('App', () => {
     );
     expect(reportHeadings.length).toBeGreaterThan(0);
     expect(screen.getByRole('link', { name: /nueva factura/i })).toBeInTheDocument();
-    expect(screen.getAllByRole('link', { name: /^configuraci[oÃ³]n$/i }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('link', { name: /^configuraci[oó]n$/i }).length).toBeGreaterThan(0);
     expect(screen.queryByRole('heading', { name: /nueva factura/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /datos fiscales del hospital/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /respaldos/i })).not.toBeInTheDocument();
@@ -1271,6 +1271,6 @@ describe('App', () => {
 
     expect(source).toContain('lazy(() => import');
     expect(source).toContain("import('./features/dashboard/DashboardView')");
-    expect(source).toContain('<Suspense fallback={<LoadingState label="Cargando mÃ³dulo..." />}>');
+    expect(source).toContain('<Suspense fallback={<LoadingState label="Cargando módulo..." />}>');
   });
 });
