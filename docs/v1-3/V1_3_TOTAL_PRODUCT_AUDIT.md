@@ -1,12 +1,12 @@
 # V1.3 Total Product Audit
 
-Status: initial controller audit, pending subagent handoffs.
+Status: refreshed controller audit, pending J-P subagent handoffs.
 Date: 2026-06-28.
-Base: `origin/main` at `e08f0e9d7bf740bcf10b7d0b036f6b05980acb42`.
+Base: `origin/main` at `742fdb551b202ddb0473a0269440e0bf6ff116ce`.
 
 ## Base Decision
 
-`origin/codex/v1-2-full-ux-ui-redesign` exists at `c7a35a8a` and contains useful UI work. It is not used as the direct base because its diff from `origin/main` includes more than 1,500 files and reintroduces agentic artifacts, prompts, local skills, screenshots, and generated documents that `main` intentionally cleaned. V1.3 starts from `origin/main` and will recover useful V1.2 product ideas selectively.
+`origin/codex/v1-2-full-ux-ui-redesign` and `origin/codex/v1-2-visible-ui-delta` now point at the same SHA as `origin/main` (`742fdb55`). The published V1.3 branch was older and divergent, so it was reused and synced forward with a merge commit instead of rebasing or recreating the branch. V1.3 now starts from the consolidated V1.2 baseline plus the existing V1.3 audit/hardening slice.
 
 ## System Snapshot
 
@@ -20,9 +20,9 @@ Base: `origin/main` at `e08f0e9d7bf740bcf10b7d0b036f6b05980acb42`.
 | Area | Problem | Impact | Solution | Contract | Risk | Priority | Tests |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Baseline backend | Host lacks `composer`; Docker compose requires local env variables. | Host backend gates cannot run directly; Docker path is usable. | Keep Docker as the verification path and document env bootstrap. | No | Medium | P0 | `php artisan test`, migrate/seed in Docker. |
-| V1.2 reuse | V1.2 has useful UI but also obsolete artifacts. | Direct base would regress repository hygiene. | Cherry-pick or manually port only frontend/product improvements. | No | Medium | P0 | Git diff review, frontend gates after port. |
+| V1.2 reuse | V1.2 full/visible work is now consolidated into `main`. | V1.3 should not re-import older divergent worktrees or artifacts. | Treat `origin/main` as the product baseline and preserve old/local work only through checkpoint branches. | No | Medium | P0 | Git diff review, frontend gates after sync. |
 | Performance | Build shows `charts` 398.35 kB and `vendor` 348.15 kB chunks. | Slow first load on modest LAN PCs if not managed. | Lazy-load heavy analytics, avoid extra chart/table libs unless justified. | No | Medium | P1 | Build size report, Playwright smoke, LAN performance review. |
-| Documentation | Cleaned `main` has no `docs/` tree. | Phase records absent unless recreated. | Create V1.3 docs as first-class tracked artifacts. | No | Low | P0 | Review docs in final report. |
+| Documentation | V1.3 docs existed on the older branch but contained stale base/test data. | Decisions could be misleading during implementation. | Refresh V1.3 docs against `742fdb55`, current `pnpm` gates, and official/primary sources. | No | Low | P0 | Review docs in final report. |
 | Receipt issuance after payment | Payment can succeed while institutional receipt issuance reports an error. | Paid invoices can exist without principal institutional receipt. | Decide mandatory atomic payment+receipt rollback vs explicit receipt-pending recovery queue. | Yes if changed | High | P1 | Payment/receipt feature tests, frontend recovery tests. |
 | Critical mutation idempotency | Frontend generated fresh keys for manual payment retries. | Partial payment retry after timeout could double-apply. | V1.3 now supports stable POS payment keys; still needs timeout refetch policy. | No | High | P1 | Payment retry tests, double-payment feature tests. |
 
@@ -62,11 +62,9 @@ Base: `origin/main` at `e08f0e9d7bf740bcf10b7d0b036f6b05980acb42`.
 
 ## V1.3 Fix Verification To Date
 
-- `npm run test -- src/lib/api/billing.test.ts src/features/invoices/NewInvoiceView.test.tsx`: PASS, 23 tests.
-- `npm run test -- src/features/catalog/components/ServiceSheet.test.tsx src/features/reports/ReportsView.test.tsx src/features/invoices/InvoiceHistoryView.test.tsx`: PASS, 39 tests.
-- `npm run typecheck`: PASS after fixes.
-- `npm run lint`: PASS after fixes.
-- `docker compose run --rm backend composer install --no-interaction --no-progress`: PASS.
-- `docker compose run --rm backend vendor/bin/pint --test`: PASS, 403 files.
-- `docker compose run --rm backend php artisan test --filter='InvoiceCreationTest|ServiceCatalogTest' --colors=never`: PASS WITH WARNINGS, 57 tests and 303 assertions. Warnings are repeated `file_get_contents(/var/www/html/.env)` because the container lacks an ignored `.env` file.
-- `docker compose run --rm backend php artisan test --colors=never`: INCONCLUSIVE, timed out after 4 minutes without useful output.
+- `pnpm run typecheck`: PASS.
+- `pnpm run lint`: PASS.
+- `pnpm exec vitest run src/features/invoices/NewInvoiceView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000`: PASS, 22 tests.
+- `pnpm run test`: PASS, 83 files and 498 tests.
+- `docker compose ps`: BLOCKED in this shell because required environment variable `DB_PASSWORD` is missing.
+- Backend full gates: PENDING after Docker/env bootstrap.
