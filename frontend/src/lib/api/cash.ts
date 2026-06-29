@@ -20,8 +20,8 @@ export const cash = {
   },
 
   async getCurrentCashSession(): Promise<CashSession | null> {
-    const response = await apiClient.request<{ data: CashSession | null }>('/api/cash-sessions/current');
-    return response.data;
+    const response = await apiClient.request<{ data?: CashSession | null }>('/api/cash-sessions/current');
+    return response.data ?? null;
   },
 
   async openCashSession(payload: { opening_amount: string; notes?: string | null }): Promise<CashSession> {

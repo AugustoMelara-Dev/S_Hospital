@@ -1,5 +1,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ReactNode } from 'react';
 import { BackupsView } from './BackupsView';
 import { apiClient, type AuthUser, type BackupLog, type SystemStatus } from '../../lib/api';
 
@@ -38,7 +40,7 @@ describe('BackupsView', () => {
   });
 
   it('renders the backups heading and keeps the existing guidance without restore or delete actions', async () => {
-    render(<BackupsView user={adminUser} onStatus={() => undefined} />);
+    renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
 
     expect(await screen.findByRole('heading', { level: 1, name: /respaldos/i })).toBeInTheDocument();
     expect(screen.getByText(/respaldos del hospital/i)).toBeInTheDocument();
@@ -50,7 +52,7 @@ describe('BackupsView', () => {
   it('renders an accessible loading state while backups are loading', async () => {
     vi.mocked(apiClient.getBackups).mockReturnValue(new Promise<never>(() => undefined));
 
-    render(<BackupsView user={adminUser} onStatus={() => undefined} />);
+    renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
 
     const status = await screen.findByRole('status');
     expect(status).toHaveTextContent(/cargando respaldos locales/i);
@@ -66,7 +68,7 @@ describe('BackupsView', () => {
       meta: { current_page: 1, per_page: 15, total: 3 },
     });
 
-    render(<BackupsView user={adminUser} onStatus={() => undefined} />);
+    renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
 
     expect(await screen.findByRole('table', { name: /historial de respaldos locales/i })).toBeInTheDocument();
     expect(screen.getByRole('region', { name: /historial de respaldos locales/i })).toBeInTheDocument();
@@ -87,7 +89,7 @@ describe('BackupsView', () => {
         meta: { current_page: 1, per_page: 15, total: 1 },
       });
 
-    render(<BackupsView user={adminUser} onStatus={() => undefined} />);
+    renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
 
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent(/no se pudieron cargar los respaldos/i);
@@ -106,7 +108,7 @@ describe('BackupsView', () => {
     };
     vi.spyOn(apiClient, 'downloadBackup').mockResolvedValue(new Blob(['backup-data']));
 
-    render(<BackupsView user={readonlyUser} onStatus={() => undefined} />);
+    renderWithQueryClient(<BackupsView user={readonlyUser} onStatus={() => undefined} />);
 
     await screen.findByText(/hospital-backup-20260618-120000-test\.sql\.enc/i);
     expect(screen.queryByRole('button', { name: /^crear respaldo$/i })).not.toBeInTheDocument();
@@ -117,7 +119,7 @@ describe('BackupsView', () => {
   it('keeps status filters controlled by the view without changing query params', async () => {
     const getBackups = vi.mocked(apiClient.getBackups);
 
-    render(<BackupsView user={adminUser} onStatus={() => undefined} />);
+    renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
 
     await screen.findByText(/hospital-backup-20260618-120000-test\.sql\.enc/i);
     fireEvent.click(screen.getByRole('button', { name: /completados/i }));
@@ -128,6 +130,37 @@ describe('BackupsView', () => {
     expect(screen.getByRole('button', { name: /completados/i })).toHaveAttribute('aria-pressed', 'true');
   });
 
+  it('keeps the current backup history visible while a status filter refetch is pending', async () => {
+    let resolveFilteredBackups!: (response: Awaited<ReturnType<typeof apiClient.getBackups>>) => void;
+    const getBackups = vi.mocked(apiClient.getBackups);
+    getBackups
+      .mockResolvedValueOnce({
+        data: [backupFixture({ filename: 'hospital-backup-visible-during-refetch.sql.enc' })],
+        meta: { current_page: 1, per_page: 15, total: 1 },
+      })
+      .mockReturnValueOnce(new Promise((resolve) => {
+        resolveFilteredBackups = resolve;
+      }));
+
+    renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
+
+    expect(await screen.findByText(/hospital-backup-visible-during-refetch\.sql\.enc/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /completados/i }));
+
+    await waitFor(() => {
+      expect(getBackups).toHaveBeenLastCalledWith({ page: 1, status: 'success' });
+    });
+    expect(screen.getByText(/hospital-backup-visible-during-refetch\.sql\.enc/i)).toBeInTheDocument();
+
+    act(() => {
+      resolveFilteredBackups({
+        data: [backupFixture({ id: 2, filename: 'hospital-backup-filtered.sql.enc' })],
+        meta: { current_page: 1, per_page: 15, total: 1 },
+      });
+    });
+  });
+
   it('prevents duplicate manual backup creation while the request is pending', async () => {
     let resolveCreate!: (backup: BackupLog) => void;
     const pendingCreate = new Promise<BackupLog>((resolve) => {
@@ -135,7 +168,7 @@ describe('BackupsView', () => {
     });
     const createBackup = vi.spyOn(apiClient, 'createBackup').mockReturnValue(pendingCreate);
 
-    render(<BackupsView user={adminUser} onStatus={() => undefined} />);
+    renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
 
     fireEvent.click(await screen.findByRole('button', { name: /^crear respaldo$/i }));
     const dialog = screen.getByRole('alertdialog');
@@ -143,7 +176,9 @@ describe('BackupsView', () => {
     fireEvent.click(confirm);
     fireEvent.click(confirm);
 
-    expect(createBackup).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(createBackup).toHaveBeenCalledTimes(1);
+    });
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /creando/i })).toBeDisabled();
     });
@@ -165,7 +200,7 @@ describe('BackupsView', () => {
     });
     const downloadBackup = vi.spyOn(apiClient, 'downloadBackup').mockReturnValue(pendingDownload);
 
-    render(<BackupsView user={adminUser} onStatus={() => undefined} />);
+    renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
 
     const downloadButton = await screen.findByRole('button', {
       name: /descargar respaldo hospital-backup-20260618-120000-test\.sql\.enc/i,
@@ -197,6 +232,17 @@ describe('BackupsView', () => {
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:backup-download');
   });
 });
+
+function renderWithQueryClient(node: ReactNode) {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
+
+  return render(<QueryClientProvider client={queryClient}>{node}</QueryClientProvider>);
+}
 
 function backupFixture(overrides: Partial<BackupLog> = {}): BackupLog {
   return {

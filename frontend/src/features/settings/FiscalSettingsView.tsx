@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import {
   type FiscalSequence,
   type FiscalSettings,
@@ -20,9 +20,9 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { FieldGroup, FormSection } from '@/components/ui/form-section';
 import { FormField } from '@/components/ui/form-field';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { FiscalStatusCard } from './components/FiscalStatusCard';
 import { FiscalSummary } from './components/FiscalSummary';
+import { FiscalSequencesTable } from './components/FiscalSequencesTable';
 import { useTheme, COLOR_THEMES, type ColorTheme } from '@/hooks/useTheme';
 import { INSTITUTIONAL_RECEIPT_PAPER_OPTIONS, type InstitutionalReceiptPaperOption, institutionalReceiptPaperSize } from '@/lib/institutionalReceiptPaper';
 import { Palette, UploadCloud, Check, Sparkles, Building2 } from 'lucide-react';
@@ -691,42 +691,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                   {saving ? 'Guardando...' : 'Guardar numeración'}
                 </Button>
               </div>
-
-              {sequences.length > 0 ? (
-                <Table containerLabel="Secuencias fiscales registradas" className="min-w-[760px]">
-                  <TableCaption>
-                    Secuencias fiscales reales devueltas por el servidor. Las acciones de activar o editar usan el formulario autorizado.
-                  </TableCaption>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Estado</TableHead>
-                      <TableHead>Documento</TableHead>
-                      <TableHead>Prefijo</TableHead>
-                      <TableHead>Rango</TableHead>
-                      <TableHead>Correlativo</TableHead>
-                      <TableHead>Válido hasta</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {sequences.map((item) => (
-                      <TableRow key={item.id ?? `${item.document_type}-${item.prefix}-${item.cai}`}>
-                        <TableCell>
-                          <StatusBadge status={item.active ? 'success' : 'pending'}>
-                            {item.active ? 'Activa' : 'Inactiva'}
-                          </StatusBadge>
-                        </TableCell>
-                        <TableCell className="capitalize">{item.document_type}</TableCell>
-                        <TableCell className="font-mono">{item.prefix}</TableCell>
-                        <TableCell className="font-mono tabular-nums">
-                          {formatSequenceNumber(item.min_number)} - {formatSequenceNumber(item.max_number)}
-                        </TableCell>
-                        <TableCell className="font-mono tabular-nums">{formatSequenceNumber(item.current_number)}</TableCell>
-                        <TableCell className="whitespace-nowrap">{item.valid_until || '-'}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              ) : null}
+              <FiscalSequencesTable sequences={sequences} />
             </div>
           </FormSection>
         </TabsContent>

@@ -11,6 +11,10 @@ export const queryKeys = {
     all: ['categories'] as const,
     list: (active?: boolean) => ['categories', { active }] as const,
   },
+  areas: {
+    all: ['areas'] as const,
+    list: (active?: boolean) => ['areas', { active }] as const,
+  },
   services: {
     all: ['services'] as const,
     list: (filters: ServiceFilters = {}) => ['services', filters] as const,

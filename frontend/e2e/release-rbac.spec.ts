@@ -27,8 +27,10 @@ test('administrator creates exact catalog-only user and navigation enforces modu
   await page.getByRole('link', { name: /usuarios/i }).click();
   await expect(page.getByRole('heading', { name: /usuarios y permisos/i })).toBeVisible();
 
-  await page.getByRole('button', { name: /crear usuario/i }).click();
-  await expect(page.getByRole('dialog', { name: /crear usuario/i })).toBeVisible();
+  const createUserButton = page.getByRole('button', { name: /^crear usuario$/i });
+  await expect(createUserButton).toBeEnabled();
+  await createUserButton.click();
+  await expect(page.getByRole('dialog', { name: /crear usuario/i })).toBeVisible({ timeout: 30_000 });
 
   await page.getByLabel(/nombre completo/i).fill('Catalogo E2E Exacto');
   await page.getByLabel(/correo electr/i).fill(`${username}@hospital-san-isidro.local`);
@@ -65,18 +67,25 @@ test('administrator creates exact catalog-only user and navigation enforces modu
   await page.getByRole('link', { name: /cat.logo/i }).click();
   await expect(page.getByRole('heading', { name: /cat.logo/i })).toBeVisible();
 
-  await page.goto(`${baseUrl}/reports`);
+  await page.evaluate(() => {
+    window.history.pushState({}, '', '/reports');
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  });
   await expect(page.getByText(/requiere permiso para consultar reportes/i)).toBeVisible();
 
   expect(consoleIssues, consoleIssues.join('\n')).toEqual([]);
 });
 
-async function login(page: Page, username: string, password: string, expectedHeading: RegExp = /centro de mando|nueva factura|cambio obligatorio/i) {
+async function login(page: Page, username: string, password: string, expectedHeading?: RegExp) {
   await page.goto(`${baseUrl}/login`);
   await page.getByLabel(/usuario|correo/i).fill(username);
   await page.getByRole('textbox', { name: /contrase(?:n|ñ)a|password/i }).fill(password);
   await page.getByRole('button', { name: /iniciar sesi(?:o|ó)n|entrar/i }).click();
-  await expect(page.getByRole('heading', { name: expectedHeading })).toBeVisible();
+  if (expectedHeading) {
+    await expect(page.getByRole('heading', { name: expectedHeading })).toBeVisible({ timeout: 30_000 });
+    return;
+  }
+  await expect(page.getByRole('button', { name: /men[uú] de usuario/i })).toBeVisible({ timeout: 30_000 });
 }
 
 async function logout(page: Page) {

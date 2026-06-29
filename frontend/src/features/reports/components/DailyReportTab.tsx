@@ -1,15 +1,15 @@
 import { type FormEvent } from 'react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { Banknote, DollarSign, FileText, Download, CircleSlash } from 'lucide-react';
-import { Button } from '../../../components/ui/button';
+import { Banknote, CircleSlash, DollarSign, Download, FileText } from 'lucide-react';
 import { Alert } from '../../../components/ui/alert';
+import { Button } from '../../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
+import { DataTable, type DataTableColumn } from '../../../components/ui/data-table';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/data-table';
 import { finiteNumber, formatLempirasUI } from '../../../lib/money';
-import { KPICard } from './KPICard';
 import type { DailyReport } from '../../../lib/api/types';
+import { KPICard } from './KPICard';
 
 interface DailyReportTabProps {
   canExport: boolean;
@@ -24,26 +24,116 @@ interface DailyReportTabProps {
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }
 
-export function DailyReportTab({ canExport, daily, dailyDate, error, exporting = false, loading, onDateChange,
-  onExport, onExportPdf, onSubmit }: DailyReportTabProps) {
+type FinancialReadingRow = {
+  key: string;
+  label: string;
+  value: number | string;
+};
 
-  const paymentsByMethod = daily?.payments_by_method || {
+type PaymentMethodRow = {
+  amount: string;
+  method: string;
+};
+
+type InvoiceStatusRow = {
+  count: number;
+  status: string;
+  total: string;
+};
+
+const financialReadingColumns: Array<DataTableColumn<FinancialReadingRow>> = [
+  {
+    key: 'label',
+    header: 'Concepto',
+    cellClassName: 'font-medium',
+    render: (row) => row.label,
+  },
+  {
+    key: 'value',
+    header: 'Monto',
+    numeric: true,
+    render: (row) => (typeof row.value === 'number' ? row.value : formatLempirasUI(row.value)),
+  },
+];
+
+const paymentMethodColumns: Array<DataTableColumn<PaymentMethodRow>> = [
+  {
+    key: 'method',
+    header: 'Método',
+    cellClassName: 'font-medium',
+    render: (row) => methodLabel(row.method),
+  },
+  {
+    key: 'amount',
+    header: 'Monto',
+    numeric: true,
+    render: (row) => formatLempirasUI(row.amount),
+  },
+];
+
+const invoiceStatusColumns: Array<DataTableColumn<InvoiceStatusRow>> = [
+  {
+    key: 'status',
+    header: 'Estado',
+    cellClassName: 'font-medium',
+    render: (row) => statusLabel(row.status),
+  },
+  {
+    key: 'count',
+    header: 'Cantidad',
+    numeric: true,
+    render: (row) => row.count,
+  },
+  {
+    key: 'total',
+    header: 'Total',
+    numeric: true,
+    render: (row) => formatLempirasUI(row.total),
+  },
+];
+
+export function DailyReportTab({
+  canExport,
+  daily,
+  dailyDate,
+  error,
+  exporting = false,
+  loading,
+  onDateChange,
+  onExport,
+  onExportPdf,
+  onSubmit,
+}: DailyReportTabProps) {
+  const paymentsByMethod = daily?.payments_by_method ?? {
     cash: '0.00',
     transfer: '0.00',
     card: '0.00',
     other: '0.00',
   };
-  const invoicesByStatus = daily?.invoices_by_status || {
+  const invoicesByStatus = daily?.invoices_by_status ?? {
     issued: { count: 0, total: '0.00' },
     partial: { count: 0, total: '0.00' },
     paid: { count: 0, total: '0.00' },
     void: { count: 0, total: '0.00' },
   };
 
+  const financialReadingRows: FinancialReadingRow[] = daily
+    ? [
+        { key: 'payments', label: 'Pagos registrados', value: daily.payment_count },
+        { key: 'partial', label: 'Facturas parciales', value: daily.total_partial },
+        { key: 'pending', label: 'Saldo pendiente', value: daily.total_pending },
+      ]
+    : [];
+  const paymentMethodRows = Object.entries(paymentsByMethod).map(([method, amount]) => ({ method, amount }));
+  const invoiceStatusRows = Object.entries(invoicesByStatus).map(([status, data]) => ({
+    count: data?.count ?? 0,
+    status,
+    total: data?.total ?? '0.00',
+  }));
   const chartData = daily
-    ? Object.entries(paymentsByMethod).map(([method, amount]) => ({
-        method: methodLabel(method),
-        amount: finiteNumber(amount as string),
+    ? paymentMethodRows.map((row) => ({
+        method: methodLabel(row.method),
+        amount: finiteNumber(row.amount),
       }))
     : [];
 
@@ -59,7 +149,7 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, exporting =
                 id="daily-date"
                 type="date"
                 value={dailyDate}
-                onChange={(e) => onDateChange(e.target.value)}
+                onChange={(event) => onDateChange(event.target.value)}
               />
             </div>
             <Button type="submit" className="w-full sm:w-auto" disabled={loading}>
@@ -76,9 +166,9 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, exporting =
         </CardContent>
       </Card>
 
-      {daily && (
+      {daily ? (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
             <KPICard
               title="Facturado"
               value={formatLempirasUI(daily.total_billed)}
@@ -114,28 +204,15 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, exporting =
               <CardTitle>Lectura financiera</CardTitle>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Concepto</TableHead>
-                    <TableHead className="text-right">Monto</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow>
-                    <TableCell className="font-medium">Pagos registrados</TableCell>
-                    <TableCell className="text-right">{daily.payment_count}</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">Facturas parciales</TableCell>
-                    <TableCell className="text-right">{formatLempirasUI(daily.total_partial)}</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">Saldo pendiente</TableCell>
-                    <TableCell className="text-right">{formatLempirasUI(daily.total_pending)}</TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
+              <DataTable
+                caption="Lectura financiera diaria."
+                columns={financialReadingColumns}
+                containerLabel="Lectura financiera"
+                emptyDescription="Los indicadores financieros aparecerán cuando se cargue el reporte diario."
+                emptyTitle="Sin lectura financiera"
+                getRowKey={(row) => row.key}
+                rows={financialReadingRows}
+              />
             </CardContent>
           </Card>
 
@@ -144,22 +221,15 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, exporting =
               <CardTitle>Cobros por método</CardTitle>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Metodo</TableHead>
-                    <TableHead className="text-right">Monto</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {Object.entries(paymentsByMethod).map(([method, amount]) => (
-                    <TableRow key={method}>
-                      <TableCell className="font-medium">{methodLabel(method)}</TableCell>
-                      <TableCell className="text-right">{formatLempirasUI(amount)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <DataTable
+                caption="Cobros diarios por método."
+                columns={paymentMethodColumns}
+                containerLabel="Cobros por método"
+                emptyDescription="Los cobros por método aparecerán cuando existan pagos en el día."
+                emptyTitle="Sin cobros por método"
+                getRowKey={(row) => row.method}
+                rows={paymentMethodRows}
+              />
             </CardContent>
           </Card>
 
@@ -168,28 +238,19 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, exporting =
               <CardTitle>Estado de facturas</CardTitle>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Estado</TableHead>
-                    <TableHead className="text-right">Cantidad</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {Object.entries(invoicesByStatus).map(([status, data]) => (
-                    <TableRow key={status}>
-                      <TableCell className="font-medium">{statusLabel(status)}</TableCell>
-                      <TableCell className="text-right">{(data as { count: number; total: string })?.count ?? 0}</TableCell>
-                      <TableCell className="text-right">{formatLempirasUI((data as { count: number; total: string })?.total)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <DataTable
+                caption="Estado diario de facturas."
+                columns={invoiceStatusColumns}
+                containerLabel="Estado de facturas"
+                emptyDescription="El estado de facturas aparecerá cuando se cargue el reporte diario."
+                emptyTitle="Sin estado de facturas"
+                getRowKey={(row) => row.status}
+                rows={invoiceStatusRows}
+              />
             </CardContent>
           </Card>
 
-          {chartData.length > 0 && (
+          {chartData.length > 0 ? (
             <Card>
               <CardHeader>
                 <CardTitle>Gráfico por método</CardTitle>
@@ -197,7 +258,7 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, exporting =
               <CardContent>
                 <div
                   role="img"
-                  aria-label="Grafico de montos por metodo de pago; la tabla anterior contiene los valores exactos."
+                  aria-label="Gráfico de montos por método de pago; la tabla anterior contiene los valores exactos."
                 >
                   <ResponsiveContainer width="100%" height={200} minWidth={1} minHeight={1}>
                     <BarChart data={chartData}>
@@ -211,28 +272,28 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, exporting =
                 </div>
               </CardContent>
             </Card>
-          )}
+          ) : null}
 
           <div className="flex justify-end gap-2">
             {canExport ? (
               <>
                 <Button type="button" variant="outline" onClick={onExport} disabled={exporting}>
-                  <Download className="h-4 w-4 mr-2" />
+                  <Download className="mr-2 h-4 w-4" />
                   {exporting ? 'Exportando...' : 'Exportar Excel'}
                 </Button>
                 <Button type="button" variant="outline" onClick={onExportPdf} disabled={exporting}>
-                  <Download className="h-4 w-4 mr-2" />
+                  <Download className="mr-2 h-4 w-4" />
                   {exporting ? 'Exportando...' : 'Exportar PDF'}
                 </Button>
               </>
             ) : (
               <p className="text-sm text-muted-foreground">
-                Exportacion requiere permiso de exportacion de reportes.
+                Exportación requiere permiso de exportación de reportes.
               </p>
             )}
           </div>
         </>
-      )}
+      ) : null}
     </div>
   );
 }

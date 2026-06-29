@@ -19,8 +19,8 @@ export const catalog = {
 
   async getAreas(active?: boolean): Promise<Area[]> {
     const query = active === undefined ? '' : `?active=${active ? '1' : '0'}`;
-    const response = await apiClient.request<{ data: Area[] }>(`/api/areas${query}`);
-    return response.data;
+    const response = await apiClient.request<{ data?: Area[] }>(`/api/areas${query}`);
+    return Array.isArray(response.data) ? response.data : [];
   },
 
   async saveCategory(payload: CategoryPayload, id?: number): Promise<Category> {

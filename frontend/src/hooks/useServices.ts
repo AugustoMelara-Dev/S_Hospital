@@ -7,6 +7,7 @@ export function useServices(filters: ServiceFilters = {}) {
   return useQuery({
     queryKey: queryKeys.services.list(filters),
     queryFn: () => apiClient.getServicesPage(filters),
+    placeholderData: (previousData) => previousData,
   });
 }
 

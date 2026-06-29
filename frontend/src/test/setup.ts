@@ -78,13 +78,13 @@ if (typeof HTMLFormElement !== 'undefined') {
   });
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   document.body.innerHTML = '';
   // Reset the module-level queryClient so each test starts with a
   // clean cache. Otherwise a previous test's stale data could leak
   // into mocks of the next test.
   if ('__resetQueryClient' in globalThis) {
-    (globalThis as { __resetQueryClient?: () => void }).__resetQueryClient?.();
+    await (globalThis as { __resetQueryClient?: () => void | Promise<void> }).__resetQueryClient?.();
   }
 });
 

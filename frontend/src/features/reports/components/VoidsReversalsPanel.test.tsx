@@ -1,0 +1,42 @@
+import { render, screen } from '@testing-library/react';
+import { describe, expect, it } from 'vitest';
+import { VoidsReversalsPanel } from './VoidsReversalsPanel';
+import { buildExecutiveReport } from './testUtils';
+
+describe('VoidsReversalsPanel', () => {
+  it('uses the shared empty state when no voids or reversals exist', () => {
+    render(<VoidsReversalsPanel report={buildExecutiveReport()} />);
+
+    expect(screen.getByText(/sin anulaciones ni reversas/i)).toBeInTheDocument();
+    expect(screen.getByText(/las anulaciones y reversas apareceran/i)).toBeInTheDocument();
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+  });
+
+  it('renders voids and reversals inside the shared accessible table container', () => {
+    render(
+      <VoidsReversalsPanel
+        report={buildExecutiveReport({
+          voids_and_reversals: [
+            {
+              kind: 'void',
+              invoice_number: 'FAC-000321',
+              patient: 'Jose Ramirez',
+              amount: '75.00',
+              reason: 'Error de cobro',
+              user: 'Caja Principal',
+              authorized_by: 'Administracion',
+              created_at: '2026-06-02T15:00:00.000000Z',
+            },
+          ],
+        })}
+      />,
+    );
+
+    expect(screen.getByRole('region', { name: /anulaciones y reversas/i })).toBeInTheDocument();
+    expect(screen.getByRole('table', { name: /operaciones anuladas o reversadas/i })).toBeInTheDocument();
+    expect(screen.getByText('FAC-000321')).toBeInTheDocument();
+    expect(screen.getByText('Jose Ramirez')).toBeInTheDocument();
+    expect(screen.getByText('Anulacion')).toBeInTheDocument();
+    expect(document.body.textContent).toContain('L 75.00');
+  });
+});

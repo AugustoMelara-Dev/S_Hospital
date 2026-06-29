@@ -1,7 +1,6 @@
 import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { type AuthUser, apiClient, userSafeErrorMessage } from '../lib/api';
-import { invalidateCsrfCookie } from '../lib/csrf';
 import { disconnectEcho } from '../lib/realtime/echo';
 import { type PasswordChangeForm } from '../features/auth/PasswordChangeView';
 
@@ -54,7 +53,6 @@ export function useHospitalSession() {
       // next session on this PC.
       disconnectEcho();
       queryClient.clear();
-      void invalidateCsrfCookie();
       if (typeof window !== 'undefined') {
         try {
           window.localStorage.removeItem('hospital_client_issue_log');
@@ -76,7 +74,6 @@ export function useHospitalSession() {
       apiClient.invalidateSession();
       disconnectEcho();
       queryClient.clear();
-      void invalidateCsrfCookie();
       if (typeof window !== 'undefined') {
         try {
           window.localStorage.removeItem('hospital_client_issue_log');
@@ -145,16 +142,14 @@ export function useHospitalSession() {
 
   async function handleLogout() {
     await apiClient.logout().catch(() => undefined);
-    // Drop the cached CSRF promise so the next login does not reuse
-    // the previous user's token.
+    // Drop the cached CSRF promise so the next login fetches a token
+    // for the current browser session before posting credentials.
     apiClient.invalidateSession();
-    // Tear down realtime, the TanStack Query cache, force a fresh
-    // XSRF cookie, and drop any persisted client-side issue log so
-    // the next user on the same browser cannot see the previous
-    // cashier's operational metadata.
+    // Tear down realtime, the TanStack Query cache, and any persisted
+    // client-side issue log so the next user on the same browser
+    // cannot see the previous cashier's operational metadata.
     disconnectEcho();
     queryClient.clear();
-    void invalidateCsrfCookie();
     if (typeof window !== 'undefined') {
       try {
         window.localStorage.removeItem('hospital_client_issue_log');

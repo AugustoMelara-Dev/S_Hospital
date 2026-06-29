@@ -84,7 +84,7 @@ describe('useHospitalSession', () => {
     expect(screen.getByText('ready:expired')).toBeInTheDocument();
   });
 
-  it('cleans up Echo, the query cache, and the CSRF cookie on session expiry', async () => {
+  it('cleans up Echo and the query cache on session expiry without refreshing csrf cookies', async () => {
     let expireSession: (() => void) | null = null;
     const unsubscribe = vi.fn();
 
@@ -105,7 +105,7 @@ describe('useHospitalSession', () => {
     });
 
     expect(disconnectEcho).toHaveBeenCalledTimes(1);
-    expect(invalidateCsrfCookie).toHaveBeenCalledTimes(1);
+    expect(invalidateCsrfCookie).not.toHaveBeenCalled();
   });
 
   it('ignores duplicate login submits while the first request is in flight', async () => {

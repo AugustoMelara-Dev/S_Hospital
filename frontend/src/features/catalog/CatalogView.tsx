@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { InfoPanel, StatGrid } from '@/components/shared';
-import { type Area, type AuthUser, type Category, type Service, apiClient, userSafeErrorMessage } from '../../lib/api';
+import { type AuthUser, type Category, type Service, type ServiceFilters, apiClient, userSafeErrorMessage } from '../../lib/api';
+import { useAreas, useCategories } from '@/hooks/useCategories';
+import { useOperationalSettings } from '@/hooks/useFiscalSettings';
+import { useServices } from '@/hooks/useServices';
 import { CatalogPagination } from './components/CatalogPagination';
 import { CatalogToolbar } from './components/CatalogToolbar';
 import { ServiceCatalogTable } from './components/ServiceCatalogTable';
@@ -30,12 +33,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
   const [activeFilter, setActiveFilter] = useState<string>(STATUS_FILTER_ALL);
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(DEFAULT_PER_PAGE);
-  const [servicesData, setServicesData] = useState<Awaited<ReturnType<typeof apiClient.getServicesPage>> | null>(null);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [areas, setAreas] = useState<Area[]>([]);
-  const [scannerEnabled, setScannerEnabled] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState('');
+  const [lastServicesData, setLastServicesData] = useState<Awaited<ReturnType<typeof apiClient.getServicesPage>> | null>(null);
   const queryClient = useQueryClient();
 
   const [serviceSheetOpen, setServiceSheetOpen] = useState(false);
@@ -48,8 +46,33 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
     [user.permissions],
   );
 
+  const serviceFilters = useMemo<ServiceFilters>(() => ({
+    search: debouncedSearch,
+    categoryId: categoryFilter !== CATEGORY_FILTER_ALL ? Number(categoryFilter) : undefined,
+    active: activeFilter !== STATUS_FILTER_ALL ? activeFilter === STATUS_FILTER_ACTIVE : undefined,
+    page,
+    perPage,
+  }), [activeFilter, categoryFilter, debouncedSearch, page, perPage]);
+
+  const servicesQuery = useServices(serviceFilters);
+  const categoriesQuery = useCategories();
+  const areasQuery = useAreas(true);
+  const operationalSettingsQuery = useOperationalSettings();
+
+  useEffect(() => {
+    if (servicesQuery.data) {
+      setLastServicesData(servicesQuery.data);
+    }
+  }, [servicesQuery.data]);
+
+  const servicesData = servicesQuery.data ?? lastServicesData;
+  const categories = categoriesQuery.data ?? [];
+  const areas = areasQuery.data ?? [];
   const services = servicesData?.data ?? [];
   const meta = servicesData?.meta ?? { current_page: 1, per_page: DEFAULT_PER_PAGE, total: 0 };
+  const scannerEnabled = operationalSettingsQuery.data?.scanner_enabled === true;
+  const loadError = errorMessageFromQueries(servicesQuery.error, categoriesQuery.error, areasQuery.error);
+  const isLoading = servicesQuery.isLoading && !servicesData;
 
   const hasFilters = search !== '' || categoryFilter !== CATEGORY_FILTER_ALL || activeFilter !== STATUS_FILTER_ALL;
   const isEmpty = services.length === 0 && !isLoading;
@@ -62,41 +85,20 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
     return () => clearTimeout(timeoutId);
   }, [search]);
 
-  const loadCatalogData = useCallback(async () => {
-    setIsLoading(true);
-    setLoadError('');
-    try {
-      const [nextCategories, nextAreas, nextServices, operationalSettings] = await Promise.all([
-        apiClient.getCategories(),
-        apiClient.getAreas(true),
-        apiClient.getServicesPage({
-          search: debouncedSearch,
-          categoryId: categoryFilter !== CATEGORY_FILTER_ALL ? Number(categoryFilter) : undefined,
-          active: activeFilter !== STATUS_FILTER_ALL ? activeFilter === STATUS_FILTER_ACTIVE : undefined,
-          page,
-          perPage,
-        }),
-        apiClient.getOperationalSettings().catch(() => null),
-      ]);
-      setCategories(Array.isArray(nextCategories) ? nextCategories : []);
-      setAreas(Array.isArray(nextAreas) ? nextAreas : []);
-      setServicesData(nextServices);
-      setScannerEnabled(operationalSettings?.scanner_enabled === true);
-    } catch (error) {
-      const message = userSafeErrorMessage(error, 'No se pudo cargar el catálogo.');
-      setLoadError(message);
-      onStatus(message);
-      setCategories([]);
-      setAreas([]);
-      setServicesData(null);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [activeFilter, categoryFilter, debouncedSearch, onStatus, page, perPage]);
-
   useEffect(() => {
-    void loadCatalogData();
-  }, [loadCatalogData]);
+    if (loadError) {
+      onStatus(loadError);
+    }
+  }, [loadError, onStatus]);
+
+  const refetchCatalogData = useCallback(async () => {
+    await Promise.all([
+      servicesQuery.refetch(),
+      categoriesQuery.refetch(),
+      areasQuery.refetch(),
+      operationalSettingsQuery.refetch(),
+    ]);
+  }, [areasQuery, categoriesQuery, operationalSettingsQuery, servicesQuery]);
 
   function handleCategoryFilterChange(value: string) {
     setCategoryFilter(value);
@@ -138,13 +140,13 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
 
   function handleServiceSuccess() {
     void invalidateCatalogQueries(queryClient);
-    void loadCatalogData();
+    void refetchCatalogData();
     onStatus('Servicio guardado exitosamente.');
   }
 
   function handleCategorySuccess() {
     void invalidateCatalogQueries(queryClient);
-    void loadCatalogData();
+    void refetchCatalogData();
     onStatus('Categoría guardada exitosamente.');
   }
 
@@ -169,13 +171,13 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
           service.id,
         );
         void invalidateCatalogQueries(queryClient);
-        void loadCatalogData();
+        void refetchCatalogData();
         onStatus(service.active ? 'Servicio desactivado.' : 'Servicio activado.');
       } catch {
         onStatus('No se pudo cambiar el estado del servicio.');
       }
     },
-    [loadCatalogData, onStatus, queryClient],
+    [onStatus, queryClient, refetchCatalogData],
   );
 
   function normalizeServiceForSheet(service: Service) {
@@ -257,7 +259,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
         isLoading={isLoading}
         loadError={loadError}
         onClearFilters={clearFilters}
-        onRetry={loadCatalogData}
+        onRetry={refetchCatalogData}
         onRowActions={{ canManage: canManageCatalog, onEdit: openEditService, onToggleActive: toggleServiceActive }}
         scannerEnabled={scannerEnabled}
         services={services}
@@ -300,4 +302,9 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
       ) : null}
     </section>
   );
+}
+
+function errorMessageFromQueries(...errors: unknown[]): string {
+  const firstError = errors.find(Boolean);
+  return firstError ? userSafeErrorMessage(firstError, 'No se pudo cargar el catálogo.') : '';
 }

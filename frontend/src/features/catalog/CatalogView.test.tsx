@@ -164,6 +164,45 @@ describe('CatalogView modernized structure', () => {
     });
   });
 
+  it('keeps the current service table visible during background search refetches', async () => {
+    setupBasicMocks();
+    let resolveSecondPage: (value: Awaited<ReturnType<typeof apiClient.getServicesPage>>) => void = () => undefined;
+    const getServicesPage = vi
+      .spyOn(apiClient, 'getServicesPage')
+      .mockImplementation((filters) => {
+        if (filters?.search === 'hemo') {
+          return new Promise((resolve) => {
+            resolveSecondPage = resolve;
+          });
+        }
+
+        return Promise.resolve({
+          data: [serviceFixture({ id: 1, name: 'Glucosa basal' })],
+          meta: { current_page: 1, per_page: 15, total: 1 },
+        });
+      });
+
+    renderWithQueryClient(<CatalogView user={catalogUser()} onStatus={vi.fn()} />);
+
+    expect(await screen.findByText('Glucosa basal')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText(/buscar servicio/i), { target: { value: 'hemo' } });
+
+    await waitFor(() => {
+      expect(getServicesPage.mock.calls.some((call) => call[0]?.search === 'hemo')).toBe(true);
+    });
+
+    expect(screen.getByText('Glucosa basal')).toBeInTheDocument();
+    expect(screen.queryByRole('status', { name: /cargando servicios/i })).not.toBeInTheDocument();
+
+    await act(async () => {
+      resolveSecondPage({
+        data: [serviceFixture({ id: 2, name: 'Hemograma' })],
+        meta: { current_page: 1, per_page: 15, total: 1 },
+      });
+    });
+  });
+
   it('hides create actions for users without catalog.manage permission', async () => {
     setupBasicMocks();
     vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({

@@ -55,6 +55,34 @@ describe('CashSessionReportTab', () => {
     expect(document.body.textContent).not.toMatch(/L 0\.00(?:\s*)Contado/);
   });
 
+  it('uses shared table states for totals, payments and movements', () => {
+    const cashSession = buildCashSessionReport({
+      payments: [],
+      movements: [],
+      totals_by_method: { cash: '17.25', transfer: '0.00', card: '5.00', other: '0.00' },
+    });
+
+    render(
+      <CashSessionReportTab
+        canExport={false}
+        cashSession={cashSession}
+        cashReportId="2"
+        loading={false}
+        error=""
+        onCashReportIdChange={() => undefined}
+        onExport={() => undefined}
+        onSubmit={() => undefined}
+      />,
+    );
+
+    expect(screen.getByRole('region', { name: /totales por metodo/i })).toBeInTheDocument();
+    expect(screen.getByRole('table', { name: /totales por metodo de pago/i })).toBeInTheDocument();
+    expect(screen.getByText(/sin pagos registrados/i)).toBeInTheDocument();
+    expect(screen.getByText(/los pagos cobrados apareceran/i)).toBeInTheDocument();
+    expect(screen.getByText(/sin movimientos de caja/i)).toBeInTheDocument();
+    expect(screen.getByText(/aperturas, cierres y ajustes apareceran/i)).toBeInTheDocument();
+  });
+
   it('renders cash movement types and methods as human financial labels', () => {
     const cashSession = {
       cash_session: {
@@ -226,3 +254,35 @@ describe('CashSessionReportTab', () => {
     expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-numero|undefined/);
   });
 });
+
+function buildCashSessionReport(overrides: Partial<CashSessionReport> = {}): CashSessionReport {
+  return {
+    cash_session: {
+      id: 2,
+      user_id: 7,
+      status: 'open',
+      opening_amount: '500.00',
+      closing_amount: null,
+      expected_amount: null,
+      difference_amount: null,
+      opening_notes: null,
+      closing_notes: null,
+      opened_at: '2026-06-02T08:00:00.000000Z',
+      closed_at: null,
+      user: { id: 7, name: 'Caja Principal', username: 'caja' },
+    },
+    totals_by_method: { cash: '17.25', transfer: '0.00', card: '5.00', other: '0.00' },
+    total_cash: '17.25',
+    total_transfer: '0.00',
+    total_card: '5.00',
+    total_other: '0.00',
+    payments_count: 2,
+    payments_total: '22.25',
+    expected_cash_amount: '517.25',
+    pending_invoice_count: 1,
+    pending_amount: '23.75',
+    payments: [],
+    movements: [],
+    ...overrides,
+  };
+}
