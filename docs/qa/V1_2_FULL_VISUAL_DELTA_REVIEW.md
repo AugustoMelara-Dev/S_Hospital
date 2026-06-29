@@ -1,6 +1,6 @@
 # V1.2 Full Visual Delta Review
 
-Fecha: 2026-06-28
+Fecha: 2026-06-29
 
 ## Resultado
 
@@ -16,7 +16,8 @@ Before:
 After:
 
 - `qa/v1-2-full-ux-ui-redesign/after`
-- Capturas completas generadas contra `http://127.0.0.1:5175` con API mockeada.
+- Capturas completas generadas contra Playwright/Vite local con API mockeada.
+- Manifiesto: `qa/v1-2-full-ux-ui-redesign/after/rc-e2e-mocked-report.json`, generado el 2026-06-29T01:06:29Z, `console_issues: []`.
 
 Pantallas after capturadas:
 
@@ -33,7 +34,7 @@ Pantallas after capturadas:
 - backups
 - fiscal settings
 - users light/dark
-- help/about
+- help/support/about
 - 404
 - access denied
 - mobile dashboard/billing/reports
@@ -45,6 +46,7 @@ Pantallas after capturadas:
 - Tablas principales migradas al wrapper `DataTable` con TanStack Table debajo: reportes/cajeros, reportes/areas, historial de facturas y usuarios.
 - Estados visuales y tablas usan patrones compartidos en lugar de loops locales.
 - Delta adicional aplicado sobre la base integrada: `PermissionBadge`, paginacion real de `DataTable`, sorting/visibilidad opt-in, utilidades `status-*` reales, `cash-layout` definido y columna de acciones de historial protegida contra recorte.
+- Evidencia after reforzada con `support-light.png`; el mock de produccion cubre `/api/system/status-summary` para que Soporte no dependa del backend real durante capturas.
 
 ## PASS/FAIL por superficie
 

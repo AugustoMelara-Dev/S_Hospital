@@ -128,7 +128,8 @@ async function captureScreen(page: Page, name: string, theme: 'light' | 'dark' =
   await mkdir(captureOutputDir, { recursive: true });
   const fileName = `${name}.png`;
   const file = path.join(captureOutputDir, fileName);
-  await page.screenshot({ path: file, fullPage: true });
+  const isDialogCapture = /dialog|modal|receipt-preview|invoice-confirmation/.test(name);
+  await page.screenshot({ path: file, fullPage: !isDialogCapture });
   capturedScreens.push({ name, path: path.posix.join(captureReportDir, fileName), route: new URL(page.url()).pathname, theme });
 }
 
@@ -588,6 +589,22 @@ async function installApiMocks(page: Page) {
 
     return json(route, { data: backupLogs, meta: { current_page: 1, per_page: 15, total: backupLogs.length } });
   });
+  await page.route('**/api/system/status-summary', (route) => json(route, {
+    data: {
+      summary: {
+        severity: 'ok',
+        problem_count: 0,
+        label: 'Operacion local estable',
+        action: 'Mantener monitoreo de caja y respaldos.',
+      },
+      checks: [
+        { code: 'BACKEND_ACTIVE', label: 'Backend', status: 'validated', detail: 'Servidor activo.' },
+        { code: 'DATABASE_CONNECTED', label: 'Base de datos', status: 'validated', detail: 'MySQL/MariaDB responde.' },
+        { code: 'BACKUP_RECENT', label: 'Respaldos', status: 'warning', detail: 'Sin respaldo protegido reciente.' },
+      ],
+      advanced_available: true,
+    },
+  }));
   await page.route('**/api/system/status', (route) => json(route, {
     data: {
       environment: {
@@ -936,6 +953,7 @@ async function expectOperationalNavigation(page: Page) {
 }
 
 test('production readiness cashier and admin workflow', async ({ page }) => {
+  test.slow(captureRcScreenshots, 'Full-page screenshot evidence mode captures the full workflow.');
   const consoleIssues: string[] = [];
   page.on('console', (msg) => {
     if (msg.type() === 'error' || msg.type() === 'warning') {
@@ -983,7 +1001,9 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
 
   await page.getByLabel(/navegaci(?:o|ó|Ã³)n principal/i).getByRole('link', { name: /nueva factura/i }).click();
   await captureScreen(page, 'billing-new-empty-light', 'light');
-  await page.getByLabel(/nombre del paciente/i).fill('Maria Lopez');
+  const patientInput = page.getByLabel(/nombre del paciente/i);
+  await patientInput.fill('Maria Lopez');
+  await expect(patientInput).toHaveValue('Maria Lopez');
   await page.getByLabel(/buscar por nombre/i).fill('eritropoyetina');
   await page.getByRole('button', { name: /eritropoyetina/i }).click();
   await captureScreen(page, 'billing-new-cart-light', 'light');
@@ -1011,7 +1031,8 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await page.getByRole('button', { name: /crear otra factura/i }).click();
 
   await page.getByRole('link', { name: /nueva factura/i }).click();
-  await page.getByLabel(/nombre del paciente/i).fill('Jose Perez');
+  await patientInput.fill('Jose Perez');
+  await expect(patientInput).toHaveValue('Jose Perez');
   await page.getByLabel(/buscar por nombre/i).fill('eritropoyetina');
   await page.getByRole('button', { name: /eritropoyetina/i }).click();
   const dialysisPrescription = page.getByLabel(/receta de di(?:á|a)lisis/i);
@@ -1101,6 +1122,10 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await page.goto('/help');
   await expect(page.getByRole('heading', { name: /ayuda institucional/i })).toBeVisible();
   await captureScreen(page, 'help-light', 'light');
+
+  await page.goto('/support');
+  await expect(page.getByRole('heading', { name: /soporte|centro de soporte/i })).toBeVisible();
+  await captureScreen(page, 'support-light', 'light');
 
   await page.goto('/about');
   await expect(page.getByRole('heading', { name: /informaci.n del sistema/i })).toBeVisible();
