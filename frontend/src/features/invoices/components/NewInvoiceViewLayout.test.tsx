@@ -1,5 +1,5 @@
 import { createRef } from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { NewInvoiceViewLayout } from './NewInvoiceViewLayout';
@@ -82,10 +82,12 @@ describe('NewInvoiceViewLayout', () => {
       onConfirm,
     });
 
-    expect(screen.getByText(/1 servicio en factura/i)).toBeInTheDocument();
-    expect(screen.getAllByText('L 138.00').length).toBeGreaterThan(0);
+    const summary = screen.getByTestId('invoice-mobile-summary');
+    expect(summary).toBeInTheDocument();
+    expect(within(summary).getByText(/total estimado/i)).toBeInTheDocument();
+    expect(within(summary).getByText('L 138.00')).toBeInTheDocument();
 
-    const mobileAction = screen.getAllByRole('button', { name: /emitir y cobrar/i })[0];
+    const mobileAction = within(summary).getByRole('button', { name: /emitir y cobrar/i });
     expect(mobileAction).toBeEnabled();
     fireEvent.click(mobileAction);
     expect(onConfirm).toHaveBeenCalledTimes(1);
@@ -94,7 +96,7 @@ describe('NewInvoiceViewLayout', () => {
   it('keeps the mobile total summary hidden while the cart is empty', () => {
     renderLayout();
 
-    expect(screen.queryByText(/servicio en factura/i)).not.toBeInTheDocument();
+    expect(screen.queryByTestId('invoice-mobile-summary')).not.toBeInTheDocument();
   });
 });
 

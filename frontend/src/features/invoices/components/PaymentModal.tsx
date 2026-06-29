@@ -84,7 +84,7 @@ export function PaymentModal({
     capNotice && !error ? 'payment-amount-cap' : null,
     error ? 'payment-amount-error' : null,
   ].filter(Boolean).join(' ');
-  const patientLabel = patientName.trim() || 'Paciente no especificado';
+  const patientLabel = (patientName ?? '').trim() || 'Paciente no especificado';
 
   useEffect(() => {
     if (open) {

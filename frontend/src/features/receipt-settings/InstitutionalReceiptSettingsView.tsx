@@ -74,8 +74,6 @@ const PAPER_TO_CODE: Record<PaperProfile['code'], ReceiptPrintProfile['code']> =
   '58mm': 'thermal_58mm',
 };
 
-const CUSTOM_PROFILE_CODE: ReceiptPrintProfile['code'] = 'recibo_pequeno_personalizado';
-
 const ADVANCED_AVAILABLE_PROFILE_CODES = new Set<ReceiptPrintProfile['code']>([
   'recibo_pequeno_personalizado',
 ]);
