@@ -41,10 +41,15 @@ Local `git stash list` contains 35 entries, from `stash@{0}` through `stash@{34}
 
 ## Integration Log
 
-- Pending: UI/V1.2 batch.
-- Pending: V1.3/hardening functional batch.
-- Pending: Offline LAN/operations batch.
-- Pending: RC and WIP selective review.
+- Integrated: `codex/v1-2-visible-ui-delta` with a normal merge.
+- Integrated: `codex/v1-2-full-ux-ui-redesign` with conflict resolution preserving the newer table platform, `useCashSession` options API, visible UI release fixes, and refreshed QA evidence.
+- Integrated: `codex/v1-3-total-product-refactor` with conflict resolution limited to frontend test expectations.
+- Integrated partially: `codex/operational-role-simulation`; kept backup/startup scripts and operational docs, rejected older frontend/report controller conflicts.
+- Integrated partially: `codex/supply-chain-hardening`; kept offline LAN scripts/docs, policy/FormRequest hardening, and tests; rejected generated view files, backend package lock, duplicate PDF request, npmrc lockfile policy, and older infra conflicts.
+- Integrated partially: `fix/f8-audit-hardening-2026-06-14`; kept backup protection metadata, LAN/preflight scripts, docs, and zero-total invoice payment registration; rejected older frontend/infra conflicts.
+- Integrated partially: `hardening-audit-complete-2026-06-15`; kept offline/security docs, offline dependency audit scripts, and Windows restore script; rejected subagent/worklog artifacts and older backup/frontend/API conflicts.
+- Cherry-picked documentation only: `codex/final-rc-scope-cutover` via `qa/FINAL_RC_CUTOVER_2026_06_12.md`; full branch would delete `GuidedTour` and overwrite current QA screenshots.
+- No-op/preserved: `preserve/refactor-platform-foundation-wip-20260628`; useful RoleController, RoleCatalog, docs, and scripts already exist in current integration history.
 - Pending: verification gates.
 
 ## Acceptance Criteria
