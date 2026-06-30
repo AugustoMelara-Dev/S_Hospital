@@ -173,7 +173,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
 
     const auditedReceipt = await apiClient.reprintInvoice(selectedInvoice.id, {
       width: institutionalReceiptPaperSize(receipt.width),
-      reason: 'Impresión desde vista de recibo.',
+      reason: 'Impresion desde vista de recibo.',
     });
     const normalizedWidth = institutionalReceiptPaperSize(auditedReceipt.width);
     setReceiptWidth(normalizedWidth);
