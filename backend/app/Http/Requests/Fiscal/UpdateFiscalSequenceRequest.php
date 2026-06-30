@@ -116,9 +116,7 @@ class UpdateFiscalSequenceRequest extends FormRequest
                 $maxIssued = $issuedCount > 0 ? ($sequence->min_number + $issuedCount - 1) : 0;
 
                 if ($current < $sequence->current_number || ($maxIssued > 0 && $current < $maxIssued)) {
-                    if (! $this->user()?->can('fiscal.sequences.reset')) {
-                        $validator->errors()->add('current_number', 'No se puede reducir el correlativo actual por debajo de los documentos ya emitidos sin permiso fiscal.sequences.reset.');
-                    }
+                    $validator->errors()->add('current_number', 'No se puede reducir el correlativo actual por debajo de los documentos ya emitidos.');
                 }
 
                 if ($active && FiscalSequence::query()
