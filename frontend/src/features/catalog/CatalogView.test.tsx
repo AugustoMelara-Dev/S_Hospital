@@ -246,6 +246,42 @@ describe('CatalogView modernized structure', () => {
     ).toBeInTheDocument();
   });
 
+  it('requires confirmation before deactivating an active service', async () => {
+    setupBasicMocks();
+    vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({
+      data: [serviceFixture()],
+      meta: { current_page: 1, per_page: 15, total: 1 },
+    });
+    const saveService = vi.spyOn(apiClient, 'saveService');
+    const deleteService = vi.spyOn(
+      apiClient as typeof apiClient & { deleteService: (id: number) => Promise<Service> },
+      'deleteService',
+    ).mockResolvedValue(serviceFixture({ active: false }));
+    const onStatus = vi.fn();
+
+    renderWithQueryClient(
+      <CatalogView user={catalogUser(['catalog.view', 'catalog.manage'])} onStatus={onStatus} />,
+    );
+
+    const actionsButton = await screen.findByRole('button', { name: /acciones de servicio glucosa/i });
+    actionsButton.focus();
+    fireEvent.keyDown(actionsButton, { key: 'Enter' });
+    fireEvent.click(await screen.findByRole('menuitem', { name: /^desactivar$/i }));
+
+    expect(saveService).not.toHaveBeenCalled();
+    expect(
+      await screen.findByRole('alertdialog', { name: /desactivar servicio/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/el servicio glucosa quedara oculto/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /desactivar servicio/i }));
+
+    await waitFor(() => {
+      expect(deleteService).toHaveBeenCalledWith(1);
+    });
+    expect(saveService).not.toHaveBeenCalled();
+  });
+
   it('renders error sanitized message and exposes a retry callback on the table', async () => {
     setupBasicMocks();
     const getServicesPage = vi

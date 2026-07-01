@@ -5,6 +5,7 @@ import { type AuthUser, type Category, type Service, type ServiceFilters, apiCli
 import { useAreas, useCategories } from '@/hooks/useCategories';
 import { useOperationalSettings } from '@/hooks/useFiscalSettings';
 import { useServices } from '@/hooks/useServices';
+import { ConfirmDialog } from '../../components/ui/confirm-dialog';
 import { CatalogPagination } from './components/CatalogPagination';
 import { CatalogToolbar } from './components/CatalogToolbar';
 import { ServiceCatalogTable } from './components/ServiceCatalogTable';
@@ -40,6 +41,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [categorySheetOpen, setCategorySheetOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [serviceToDeactivate, setServiceToDeactivate] = useState<Service | null>(null);
 
   const canManageCatalog = useMemo(
     () => user.permissions.includes('catalog.manage'),
@@ -152,6 +154,11 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
 
   const toggleServiceActive = useCallback(
     async (service: Service) => {
+      if (service.active) {
+        setServiceToDeactivate(service);
+        return;
+      }
+
       try {
         await apiClient.saveService(
           {
@@ -179,6 +186,24 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
     },
     [onStatus, queryClient, refetchCatalogData],
   );
+
+  const confirmServiceDeactivation = useCallback(async () => {
+    const service = serviceToDeactivate;
+
+    if (!service) {
+      return;
+    }
+
+    try {
+      await apiClient.deleteService(service.id);
+      setServiceToDeactivate(null);
+      void invalidateCatalogQueries(queryClient);
+      void refetchCatalogData();
+      onStatus('Servicio desactivado.');
+    } catch {
+      onStatus('No se pudo cambiar el estado del servicio.');
+    }
+  }, [onStatus, queryClient, refetchCatalogData, serviceToDeactivate]);
 
   function normalizeServiceForSheet(service: Service) {
     return {
@@ -298,6 +323,17 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
             category={editingCategory}
             onSuccess={handleCategorySuccess}
           />
+
+          <ConfirmDialog
+            danger
+            confirmLabel="Desactivar servicio"
+            onCancel={() => setServiceToDeactivate(null)}
+            onConfirm={() => void confirmServiceDeactivation()}
+            open={serviceToDeactivate !== null}
+            title="Desactivar servicio"
+          >
+            El servicio {serviceToDeactivate?.name ?? ''} quedara oculto para nuevos cobros. Las facturas historicas conservaran sus snapshots.
+          </ConfirmDialog>
         </>
       ) : null}
     </section>

@@ -192,6 +192,10 @@ export const apiClient = {
     return catalog.saveService(payload, id);
   },
 
+  async deleteService(id: number): Promise<Service> {
+    return catalog.deleteService(id);
+  },
+
   async createInvoice(payload: InvoicePayload, options: { idempotencyKey?: string } = {}): Promise<Invoice> {
     return billing.createInvoice(payload, options);
   },
