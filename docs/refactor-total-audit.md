@@ -237,3 +237,24 @@ Existen componentes reutilizables para acciones, menus, alertas, dialogos, tabla
 - [x] Riesgos y siguiente plan documentados.
 - [ ] Baseline backend oficial verde. Bloqueado por entorno Docker/Composer.
 - [ ] Playwright completo verde. Bloqueado por timeout.
+
+## 10. Fase 1 - Design system incremental
+
+Cambio aplicado:
+
+- Se agrego `SearchInput` en `frontend/src/components/ui/search-input.tsx` como primitiva accesible para busquedas operativas.
+- El componente usa label real, `type="search"`, icono decorativo y accion de limpiar solo cuando hay valor.
+- Se migro `CatalogToolbar` para reemplazar busqueda hecha a mano con la primitiva nueva.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- src/components/ui/search-input.test.tsx` | RED inicial confirmado y luego verde: 2 tests pasan. |
+| `npm run test -- src/components/ui/search-input.test.tsx src/features/catalog/CatalogView.test.tsx src/features/catalog/components/ServiceCatalogTable.test.tsx` | OK: 3 archivos, 21 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+
+Decision:
+
+- No se agrego libreria nueva. La necesidad era consolidar un patron repetido usando React, lucide-react y componentes locales existentes.

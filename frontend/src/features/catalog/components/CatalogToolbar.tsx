@@ -1,7 +1,7 @@
-import { RotateCcw, Search } from 'lucide-react';
+import { RotateCcw } from 'lucide-react';
 import { Button } from '../../../components/ui/button';
 import { Card, CardContent } from '../../../components/ui/card';
-import { Input } from '../../../components/ui/input';
+import { SearchInput } from '../../../components/ui/search-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { cn } from '../../../lib/utils';
 import {
@@ -29,26 +29,15 @@ export function CatalogToolbar({
     <Card className="border-operational-border bg-operational-surface shadow-operational">
       <CardContent className="pt-6">
         <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_220px_170px_auto]">
-          <div className="flex min-w-[200px] flex-col gap-2">
-            <label htmlFor={searchInputId} className="text-sm font-medium">
-              Buscar servicio
-            </label>
-            <div className="relative">
-              <Search
-                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-                aria-hidden="true"
-              />
-              <Input
-                id={searchInputId}
-                name="catalog_search"
-                placeholder="Buscar por nombre o código..."
-                autoComplete="off"
-                value={searchValue}
-                onChange={(event) => onSearchChange(event.target.value)}
-                className="pl-9"
-              />
-            </div>
-          </div>
+          <SearchInput
+            id={searchInputId}
+            name="catalog_search"
+            label="Buscar servicio"
+            placeholder="Buscar por nombre o código..."
+            value={searchValue}
+            onValueChange={onSearchChange}
+            className="min-w-[200px]"
+          />
 
           <div className="flex flex-col gap-2">
             <label htmlFor="catalog-category" className="text-sm font-medium">
