@@ -23,8 +23,8 @@ interface TopbarProps {
   onOpenMobileMenu: () => void;
   onOpenGuide: () => void;
   onLogout: () => void;
-  onToggleSidebar: () => void;
-  sidebarCollapsed: boolean;
+  onToggleSidebar?: () => void;
+  sidebarCollapsed?: boolean;
 }
 
 export function Topbar({
@@ -75,7 +75,7 @@ export function Topbar({
           <Menu data-icon="inline-start" aria-hidden="true" />
         </Button>
 
-        {!isMinimalTopbar ? (
+        {!isMinimalTopbar && onToggleSidebar ? (
           <Button
             type="button"
             variant="ghost"
@@ -173,3 +173,5 @@ export function Topbar({
     </TooltipProvider>
   );
 }
+
+

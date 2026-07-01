@@ -1,12 +1,10 @@
 import { useMemo, useRef, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Alert } from '@/components/ui/alert';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/states';
 import {
   InfoPanel,
   OperationalBanner,
-  StatCard,
 } from '@/components/shared';
 import {
   type ExecutiveReportFilters,
@@ -360,13 +358,6 @@ function CashSubRoute({
         description="Sesiones, cajeros, metodos de pago y diferencias de caja."
       />
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Sesiones" value="Hoy" helper="Disponibles en historial" />
-        <StatCard label="Cajero actual" value="Sin caja" helper="Abra caja desde el modulo de Caja" />
-        <StatCard label="Metodos" value="Efectivo, transferencia, tarjeta" helper="Resumen por metodo disponible" />
-        <StatCard label="Diferencias" value="0" helper="Cierres cuadrados; revise auditoria si hay alertas" />
-      </div>
-
       <CashSessionReportTab
         canExport={canViewManagerial}
         cashSession={cashSessionReport}
@@ -382,34 +373,11 @@ function CashSubRoute({
         }}
       />
 
-      {cashSessionReport ? (
-        <div className="flex flex-col gap-5">
-          <Card className="border-operational-border bg-operational-surface shadow-operational">
-            <CardHeader title="Resumen" />
-            <CardContent>
-              <pre className="overflow-x-auto rounded border border-border bg-muted/30 p-3 text-xs">
-                {JSON.stringify(
-                  {
-                    id: cashSessionReport.cash_session?.id,
-                    status: cashSessionReport.cash_session?.status,
-                    opening_amount: cashSessionReport.cash_session?.opening_amount,
-                    closing_amount: cashSessionReport.cash_session?.closing_amount,
-                    difference_amount: cashSessionReport.cash_session?.difference_amount,
-                    totals_by_method: cashSessionReport.totals_by_method,
-                  },
-                  null,
-                  2,
-                )}
-              </pre>
-            </CardContent>
-          </Card>
-          {!canViewCash && !canViewManagerial ? (
-            <EmptyState
-              title="Reporte de caja no disponible"
-              description="Este usuario no tiene permiso para consultar cajas."
-            />
-          ) : null}
-        </div>
+      {!canViewCash && !canViewManagerial ? (
+        <EmptyState
+          title="Reporte de caja no disponible"
+          description="Este usuario no tiene permiso para consultar cajas."
+        />
       ) : null}
     </section>
   );
@@ -534,5 +502,4 @@ async function runExecutiveExport<T>(
     finalize();
   }
 }
-
 

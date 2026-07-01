@@ -58,6 +58,7 @@ class UpdateFiscalSequenceRequest extends FormRequest
                 return true;
             }
         }
+
         return false;
     }
 

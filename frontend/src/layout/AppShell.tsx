@@ -7,6 +7,7 @@ import { canAccessPath, getActiveNavigationItem, getBreadcrumbs, getVisibleNavig
 import { MobileNavigation } from './components/MobileNavigation';
 import { SidebarContent } from './Sidebar';
 import { Topbar } from './Topbar';
+import { cn } from '../lib/utils';
 
 const SIDEBAR_COLLAPSED_KEY = 's-hospital-sidebar-collapsed';
 
@@ -24,7 +25,7 @@ function writeSidebarCollapsed(value: boolean): void {
   try {
     window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, value ? '1' : '0');
   } catch {
-    // ignore storage errors (private mode, etc.)
+    // localStorage can be unavailable in private mode.
   }
 }
 
@@ -53,8 +54,12 @@ export function AppShell({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => readSidebarCollapsed());
-  const mobileMenuButtonRef = useRef<HTMLButtonElement | null>(null);
+  const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
 
+  // Wire real-time sync (WebSocket/Soketi) when the user is logged in.
+  // Mounted once at the shell so every authenticated route benefits
+  // from cross-PC invalidations of invoices, dashboard reports and
+  // cash session queries.
   useBroadcastSync();
 
   useEffect(() => {
@@ -97,13 +102,11 @@ export function AppShell({
       />
 
       <aside
-        data-slot="app-sidebar"
         data-sidebar-collapsed={sidebarCollapsed ? 'true' : 'false'}
-        className={
-          sidebarCollapsed
-            ? 'print-hidden hidden lg:fixed lg:inset-y-0 lg:z-20 lg:flex lg:w-16 lg:flex-col lg:border-r lg:border-sidebar-border lg:bg-sidebar lg:text-sidebar-foreground lg:shadow-operational'
-            : 'print-hidden hidden lg:fixed lg:inset-y-0 lg:z-20 lg:flex lg:w-64 lg:flex-col lg:border-r lg:border-sidebar-border lg:bg-sidebar lg:text-sidebar-foreground lg:shadow-operational'
-        }
+        className={cn(
+          'print-hidden hidden lg:fixed lg:inset-y-0 lg:z-20 lg:flex lg:flex-col lg:border-r lg:border-sidebar-border lg:bg-sidebar lg:text-sidebar-foreground lg:shadow-operational',
+          sidebarCollapsed ? 'lg:w-16' : 'lg:w-72',
+        )}
       >
         <SidebarContent
           user={user}
@@ -116,7 +119,10 @@ export function AppShell({
         />
       </aside>
 
-      <div className="flex min-h-[100dvh] min-w-0 flex-col lg:ml-16 lg:data-[sidebar-collapsed=false]:ml-64" data-sidebar-collapsed={sidebarCollapsed ? 'true' : 'false'}>
+      <div
+        data-sidebar-collapsed={sidebarCollapsed ? 'true' : 'false'}
+        className={cn('flex min-h-[100dvh] min-w-0 flex-col', sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-72')}
+      >
         <Topbar
           cashSession={cashSession}
           user={user}
@@ -134,7 +140,7 @@ export function AppShell({
 
         <main
           id="main-content"
-          className="min-w-0 flex-1 scroll-mt-20 px-4 py-5 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background lg:px-6 lg:py-6"
+          className="min-w-0 flex-1 scroll-mt-20 px-4 py-5 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background lg:px-7 lg:py-7"
           tabIndex={-1}
         >
           <div className="mx-auto flex max-w-[1440px] flex-col gap-5">{children}</div>

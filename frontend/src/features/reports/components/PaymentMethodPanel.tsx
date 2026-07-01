@@ -1,9 +1,7 @@
-import { Cell, Pie, PieChart, Tooltip } from 'recharts';
 import { formatLempirasUI } from '@/lib/moneyCents';
 import { ChartCard } from '@/components/shared';
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
 import type { ExecutiveReport } from '@/lib/api';
-import { useElementWidth } from '../../dashboard/useElementWidth';
 
 type PaymentMethodPanelProps = {
   report: ExecutiveReport;
@@ -16,7 +14,6 @@ const METHOD_COLORS: Record<string, string> = {
   other: 'var(--color-warning)',
 };
 
-type TooltipPayloadEntry = { name?: string; value?: number };
 type PaymentMethod = ExecutiveReport['payment_methods'][number];
 type PaymentMethodRow = {
   amount: string | number;
@@ -66,27 +63,8 @@ const paymentMethodColumns: Array<DataTableColumn<PaymentMethodRow>> = [
   },
 ];
 
-function PieTooltip({ active, payload }: { active?: boolean; payload?: TooltipPayloadEntry[] }) {
-  if (!active || !payload || payload.length === 0) return null;
-  const entry = payload[0];
-  return (
-    <div className="rounded border border-border bg-card p-2 text-xs shadow-sm">
-      <p className="font-semibold text-foreground">{entry.name}</p>
-      <p className="font-mono tabular-nums text-muted-foreground">
-        {formatLempirasUI(entry.value ?? 0)}
-      </p>
-    </div>
-  );
-}
-
 export function PaymentMethodPanel({ report }: PaymentMethodPanelProps) {
-  const { ref, width } = useElementWidth();
   const totalCollectedCents = report.summary.collected_total_cents;
-  const data = report.payment_methods.map((method) => ({
-    name: method.label,
-    value: Number(method.amount),
-    key: method.method,
-  }));
   const totalPaymentCount = report.payment_methods.reduce((acc, method) => acc + method.count, 0);
   const paymentMethodRows: PaymentMethodRow[] =
     report.payment_methods.length > 0
@@ -114,38 +92,40 @@ export function PaymentMethodPanel({ report }: PaymentMethodPanelProps) {
   return (
     <ChartCard
       title="Recaudacion por metodo de pago"
-      description="Distribucion del cobro. Efectivo alimenta caja; los demas metodos se concilian por separado."
-      caption="La tabla contigua contiene los valores exactos por metodo."
+      description="Cuanto se cobro por efectivo, transferencia, tarjeta y otros metodos."
+      caption="Las barras muestran participacion relativa; la tabla contiene los valores exactos."
     >
-        <div className="grid gap-5 lg:grid-cols-[16rem_minmax(0,1fr)] lg:items-center">
-          <div
-            ref={ref}
-            className="h-56 w-full min-w-px"
-            role="img"
-            aria-label="Grafico de distribucion por metodo de pago; la tabla contigua contiene los valores exactos."
-          >
-            {width > 0 ? (
-              <PieChart width={width} height={224}>
-                <Tooltip content={<PieTooltip />} />
-                <Pie
-                  data={data}
-                  innerRadius={54}
-                  outerRadius={84}
-                  paddingAngle={1}
-                  dataKey="value"
-                  isAnimationActive={false}
-                  stroke="var(--color-card)"
-                  strokeWidth={2}
-                >
-                  {data.map((entry) => (
-                    <Cell
-                      key={entry.key}
-                      fill={METHOD_COLORS[entry.key] ?? 'var(--color-muted-foreground)'}
-                    />
-                  ))}
-                </Pie>
-              </PieChart>
-            ) : null}
+        <div className="grid gap-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] xl:items-start">
+          <div className="rounded-md border border-operational-border bg-operational-panel p-4">
+            <p className="text-sm font-semibold text-foreground">Participacion por metodo</p>
+            {report.payment_methods.length > 0 ? (
+              <div className="mt-4 space-y-4" role="list" aria-label="Participacion por metodo de pago">
+                {report.payment_methods.map((method) => (
+                  <div key={method.method} role="listitem" className="space-y-1.5">
+                    <div className="flex items-center justify-between gap-3 text-sm">
+                      <span className="font-medium text-foreground">
+                        {method.label} - {method.percentage.toFixed(2)}%
+                      </span>
+                    </div>
+                    <div className="h-2.5 overflow-hidden rounded-sm bg-muted" aria-hidden="true">
+                      <div
+                        className="h-full rounded-sm"
+                        style={{
+                          width: `${Math.max(0, Math.min(100, method.percentage))}%`,
+                          background: METHOD_COLORS[method.method] ?? 'var(--color-muted-foreground)',
+                        }}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                      <span>{method.count} pago{method.count === 1 ? '' : 's'}</span>
+                      <span className="font-mono tabular-nums">{formatLempirasUI(method.amount)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-muted-foreground">No hay pagos publicados en el periodo seleccionado.</p>
+            )}
           </div>
           <DataTable
             caption="Recaudacion por metodo de pago."

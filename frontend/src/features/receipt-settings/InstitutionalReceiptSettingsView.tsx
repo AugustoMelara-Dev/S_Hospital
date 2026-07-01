@@ -36,6 +36,7 @@ import { downloadBlob } from '@/lib/download';
 import { queryKeys } from '@/lib/queryKeys';
 
 type InstitutionalReceiptSettingsViewProps = {
+  canAdvancedPrintSettings: boolean;
   canEdit: boolean;
   onStatus: (message: string) => void;
 };
@@ -141,7 +142,7 @@ function profileSupportsAdvanced(profile: ReceiptPrintProfile | null): boolean {
   return ADVANCED_AVAILABLE_PROFILE_CODES.has(profile.code);
 }
 
-export function InstitutionalReceiptSettingsView({ canEdit, onStatus }: InstitutionalReceiptSettingsViewProps) {
+export function InstitutionalReceiptSettingsView({ canAdvancedPrintSettings, canEdit, onStatus }: InstitutionalReceiptSettingsViewProps) {
   const queryClient = useQueryClient();
   const [selectedCode, setSelectedCode] = useState<ReceiptPrintProfile['code']>('media_carta_horizontal');
   const [paper, setPaper] = useState<PaperProfile['code']>('media_carta');
@@ -162,7 +163,7 @@ export function InstitutionalReceiptSettingsView({ canEdit, onStatus }: Institut
     [selectedCode, settings],
   );
   const activeSeries = settings?.active_series ?? settings?.series[0] ?? null;
-  const canAdvanced = canEdit && profileSupportsAdvanced(selectedProfile);
+  const canAdvanced = canEdit && canAdvancedPrintSettings && profileSupportsAdvanced(selectedProfile);
 
   const institutionForm = useForm<ReceiptInstitutionForm>({
     resolver: zodResolver(receiptInstitutionSchema),
@@ -417,7 +418,7 @@ export function InstitutionalReceiptSettingsView({ canEdit, onStatus }: Institut
         <StatCard
           label="Perfil resuelto"
           value={selectedProfile ? PAPER_LABELS[selectedProfile.code] : 'Pendiente'}
-          helper={selectedProfile ? `${selectedProfile.width_mm} x ${selectedProfile.height_mm} mm` : 'Sin perfil activo'}
+          helper={selectedProfile ? 'Margenes automaticos segun papel' : 'Sin perfil activo'}
           tone={selectedProfile?.active ? 'success' : 'warning'}
         />
         <StatCard
@@ -599,7 +600,7 @@ export function InstitutionalReceiptSettingsView({ canEdit, onStatus }: Institut
                     >
                       <span>{PAPER_LABELS[profile.code]}</span>
                       <span className="text-xs font-normal">
-                        {profile.width_mm} x {profile.height_mm} mm
+                        {profile.active ? 'Activo' : 'Disponible'}
                       </span>
                     </Button>
                   );
@@ -689,33 +690,26 @@ export function InstitutionalReceiptSettingsView({ canEdit, onStatus }: Institut
                 </div>
               </form>
 
-              <div className="mt-5 rounded-md border border-warning/40 bg-warning/10 p-3 text-sm">
-                <p className="font-semibold text-warning-foreground">Modo soporte tecnico (oculto por defecto)</p>
-                <p className="mt-1 text-current/85">
-                  Los margenes, tamano, fuente y escala se calculan automaticamente desde el perfil seleccionado.
-                  Solo personal autorizado (permiso <code className="rounded bg-warning/20 px-1 py-0.5">receipt_settings.advanced</code>)
-                  puede ajustar dimensiones personalizadas en el recibo pequeno.
-                </p>
-                <div className="mt-3">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={!canAdvanced}
-                    aria-controls="receipt-advanced-panel"
-                    aria-expanded={advancedOpen}
-                    onClick={() => setAdvancedOpen((value) => !value)}
-                  >
-                    {advancedOpen ? 'Ocultar ajustes avanzados' : 'Mostrar ajustes avanzados'}
-                  </Button>
-                </div>
-                {!canAdvanced ? (
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    El perfil {selectedProfile ? PAPER_LABELS[selectedProfile.code] : ''} usa dimensiones fijas y no admite ajustes avanzados.
+              {canAdvanced ? (
+                <div className="mt-5 rounded-md border border-warning/40 bg-warning/10 p-3 text-sm">
+                  <p className="font-semibold text-warning-foreground">Modo soporte tecnico</p>
+                  <p className="mt-1 text-current/85">
+                    Use estos ajustes solo para perfiles personalizados de recibo pequeno. Documente el motivo antes de guardar.
                   </p>
-                ) : null}
+                  <div className="mt-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      aria-controls="receipt-advanced-panel"
+                      aria-expanded={advancedOpen}
+                      onClick={() => setAdvancedOpen((value) => !value)}
+                    >
+                      {advancedOpen ? 'Ocultar ajustes avanzados' : 'Mostrar ajustes avanzados'}
+                    </Button>
+                  </div>
 
-                {canAdvanced && advancedOpen ? (
+                  {advancedOpen ? (
                   <div id="receipt-advanced-panel" className="mt-4 space-y-4">
                     <Alert variant="warning" title="Cambios riesgosos">
                       Modificar margenes, tamano, fuente o escala puede afectar recibos ya impresos. Documente el motivo antes de continuar.
@@ -755,8 +749,9 @@ export function InstitutionalReceiptSettingsView({ canEdit, onStatus }: Institut
                       </div>
                     </form>
                   </div>
-                ) : null}
-              </div>
+                  ) : null}
+                </div>
+              ) : null}
             </SectionCard>
           </div>
 
@@ -918,5 +913,3 @@ function CheckboxField({
     </div>
   );
 }
-
-
