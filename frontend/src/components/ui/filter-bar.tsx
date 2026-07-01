@@ -89,8 +89,8 @@ export function FilterBar({
             </div>
           ) : null}
 
-          {advanced ? (
-            <div id={advancedId} data-slot="filter-bar-advanced" className={cn('grid gap-4', !showAdvanced && 'hidden')}>
+          {advanced && showAdvanced ? (
+            <div id={advancedId} data-slot="filter-bar-advanced" className="grid gap-4">
               {advanced}
             </div>
           ) : null}

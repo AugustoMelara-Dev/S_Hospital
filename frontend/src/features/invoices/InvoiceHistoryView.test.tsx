@@ -58,9 +58,15 @@ describe('InvoiceHistoryView', () => {
     renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
 
     expect(screen.getByRole('heading', { level: 1, name: /historial de facturas/i })).toBeInTheDocument();
-    expect(screen.getByRole('combobox', { name: /estado de factura/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/paciente/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/n.mero de factura/i)).toBeInTheDocument();
+    const advancedFilters = screen.getByRole('button', { name: /filtros avanzados/i });
+    expect(advancedFilters).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('combobox', { name: /estado de factura/i })).not.toBeInTheDocument();
+
+    fireEvent.click(advancedFilters);
+    expect(advancedFilters).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('combobox', { name: /estado de factura/i })).toBeInTheDocument();
 
     await waitFor(() => expect(screen.getByText('Paciente Accesible')).toBeInTheDocument());
 
@@ -142,7 +148,7 @@ describe('InvoiceHistoryView', () => {
 
     await waitFor(() => expect(screen.getByText('Paciente Historial')).toBeInTheDocument());
 
-    expect(screen.getByRole('combobox', { name: /estado de factura/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /filtros avanzados/i })).toHaveAttribute('aria-expanded', 'false');
     expect(document.body.textContent).toContain('L 0.00');
     expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-numero|undefined/);
   });
