@@ -210,6 +210,11 @@ Existen componentes reutilizables para acciones, menus, alertas, dialogos, tabla
 - Cierre exige motivo con diferencia y hay locks/transacciones.
 - Pendiente: validar visualmente si caja se siente como flujo de turno y no como acumulacion de tarjetas.
 
+### Dashboard
+
+- `DashboardView` ya usa `useDashboardReport` con TanStack Query para el resumen operativo; se elimino el fetching manual duplicado y el hook dejo de estar huerfano.
+- La pantalla mantiene una accion primaria segun estado de caja, 4 KPIs y facturas recientes.
+
 ### Usuarios
 
 - Megacomponente fue reducido con dialogos extraidos, pero `UsersView.tsx` aun concentra bastante estado y tiene tests skipped.

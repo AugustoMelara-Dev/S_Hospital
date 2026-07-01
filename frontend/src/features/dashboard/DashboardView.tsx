@@ -5,12 +5,13 @@ import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
 import { StatGrid } from '@/components/shared';
-import { type CashSession, type DashboardReport, type Invoice, apiClient, userSafeErrorMessage } from '@/lib/api';
+import { type CashSession, type Invoice, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { formatDateTimeEs } from '@/lib/format/formatDate';
 import { formatLempirasUI } from '@/lib/money';
 import { finiteNumber } from '@/lib/money';
 import { formatLempirasUIFromCents, parseCents } from '@/lib/moneyCents';
 import { LoadingState } from '@/components/ui/states';
+import { useDashboardReport } from '@/hooks/useDashboardReport';
 import { DashboardSetupStatusCard } from './components/DashboardSetupStatusCard';
 import { SetupWizardDialog } from './components/SetupWizardDialog';
 import { type SetupStatus } from './components/dashboardTypes';
@@ -41,33 +42,20 @@ export function DashboardView({
   onQuickInvoice,
   onStatus,
 }: DashboardViewProps) {
-  const [dashboardData, setDashboardData] = useState<DashboardReport | null>(null);
-  const [dashboardError, setDashboardError] = useState('');
-  const [loadingDashboard, setLoadingDashboard] = useState(false);
   const [setupStatus, setSetupStatus] = useState<SetupStatus | null>(null);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [recentInvoices, setRecentInvoices] = useState<Invoice[]>([]);
   const [loadingRecent, setLoadingRecent] = useState(false);
+  const dashboardQuery = useDashboardReport(canViewManagerialReports);
+  const dashboardData = dashboardQuery.data ?? null;
+  const dashboardError = dashboardQuery.isError
+    ? userSafeErrorMessage(dashboardQuery.error, 'No se pudo cargar el resumen.')
+    : '';
+  const loadingDashboard = dashboardQuery.isFetching;
 
   const todaySnapshot = dashboardData?.last_7_days.at(-1) ?? null;
   const cashIsOpen = Boolean(cashSession);
   const totalPending = dashboardData?.current_month.total_pending ?? null;
-
-  async function loadDashboard() {
-    if (!canViewManagerialReports) return;
-    setLoadingDashboard(true);
-    try {
-      const data = await apiClient.getDashboardReport();
-      setDashboardData(data);
-      setDashboardError('');
-    } catch (err) {
-      const msg = userSafeErrorMessage(err, 'No se pudo cargar el resumen.');
-      setDashboardError(msg);
-      onStatus(msg);
-    } finally {
-      setLoadingDashboard(false);
-    }
-  }
 
   async function loadRecentInvoices() {
     if (!canViewInvoices) return;
@@ -93,11 +81,16 @@ export function DashboardView({
   }
 
   useEffect(() => {
-    void loadDashboard();
     void loadSetupStatus();
     void loadRecentInvoices();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canViewManagerialReports, canViewFiscalSettings, canViewInvoices]);
+  }, [canViewFiscalSettings, canViewInvoices]);
+
+  useEffect(() => {
+    if (dashboardError) {
+      onStatus(dashboardError);
+    }
+  }, [dashboardError, onStatus]);
 
   const moneyValue = (value: string | number | null | undefined, hasData: boolean) => {
     if (loadingDashboard) return <span className="inline-block h-7 w-24 rounded-md bg-muted" aria-hidden="true" />;
@@ -261,7 +254,7 @@ export function DashboardView({
           onOpenChange={setIsWizardOpen}
           onComplete={() => {
             void loadSetupStatus();
-            void loadDashboard();
+            void dashboardQuery.refetch();
           }}
         />
       )}

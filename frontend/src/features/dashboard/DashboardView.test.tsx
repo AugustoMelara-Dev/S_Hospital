@@ -1,4 +1,5 @@
 import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, apiClient, type CashSession, type Invoice } from '../../lib/api';
@@ -70,10 +71,19 @@ function mockSetupStatus(needsSetup = false) {
 }
 
 function renderDashboard(props: React.ComponentProps<typeof DashboardView>) {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
+
   return render(
-    <MemoryRouter>
-      <DashboardView {...props} />
-    </MemoryRouter>,
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>
+        <DashboardView {...props} />
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 }
 
