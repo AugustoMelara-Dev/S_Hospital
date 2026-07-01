@@ -138,6 +138,7 @@ export function CloseSessionDialog({
   const expectedAmount = finiteNumber(session.expected_cash_amount ?? session.expected_amount);
   const pendingAmount = finiteNumber(session.pending_amount);
   const pendingInvoiceCount = session.pending_invoice_count ?? 0;
+  const hasPendingBalance = pendingInvoiceCount > 0 || pendingAmount > 0;
   const isDifference = difference !== 0;
   const methods = session.payments_by_method ?? {
     cash: '0.00',
@@ -290,7 +291,7 @@ export function CloseSessionDialog({
             Exportar resumen
           </Button>
           <AlertDialogCancel>Cancelar</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm} disabled={isSubmitting || (isDifference && !closingNotes.trim())}>
+          <AlertDialogAction onClick={onConfirm} disabled={isSubmitting || hasPendingBalance || (isDifference && !closingNotes.trim())}>
             {isSubmitting ? 'Cerrando...' : 'Cerrar caja'}
           </AlertDialogAction>
         </AlertDialogFooter>
