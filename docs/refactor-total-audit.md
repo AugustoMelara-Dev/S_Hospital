@@ -258,3 +258,22 @@ Pruebas ejecutadas:
 Decision:
 
 - No se agrego libreria nueva. La necesidad era consolidar un patron repetido usando React, lucide-react y componentes locales existentes.
+
+## 11. Fase 14 parcial - Seguridad de repo
+
+Cambio aplicado:
+
+- Se restauro `scripts/pre-commit-guard.ps1`, requerido por `.git/hooks/pre-commit.cmd` y documentado en `docs/SECRETS.md`.
+- El guard inspecciona solo staged files/diffs y bloquea `.env` reales, `offline-release/`, `nginx/ssl/`, `APP_KEY`, passwords de DB, `HOSPITAL_LICENSE_SALT` y `HOSPITAL_INITIAL_ADMIN_PASSWORD` con valores no placeholder.
+- `HOSPITAL_DUMP_BINARY` con ruta Windows queda como warning, no bloqueo, segun contrato existente.
+- Se agrego `scripts/test_pre_commit_guard.ps1` con repos Git temporales para validar casos permitidos, bloqueados y warning-only.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\test_pre_commit_guard.ps1` | RED por script faltante, luego OK: `pre-commit guard tests passed`. |
+
+Decision:
+
+- No se relajo el hook. Los commits anteriores usaron `--no-verify` solo porque el hook apuntaba a un archivo faltante; esta fase corrige esa deuda.
