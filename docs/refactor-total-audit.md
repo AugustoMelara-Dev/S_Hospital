@@ -200,6 +200,7 @@ Existen componentes reutilizables para acciones, menus, alertas, dialogos, tabla
 ### Reportes
 
 - Consolidacion parcial lograda: 3 subrutas.
+- `ServiceRanking` ya no usa tabs internos; muestra top por monto, cantidad, categoria y area como secciones visibles con prueba dedicada.
 - Deuda: quedan endpoints antiguos (`daily`, `monthly`, `income`, `categories`, `areas`, `services`, `operations`) y servicios backend viejos. Hay que decidir si son compatibilidad API o codigo muerto antes de eliminar.
 
 ### Caja
