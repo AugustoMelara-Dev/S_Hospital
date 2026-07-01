@@ -137,7 +137,7 @@ describe('UsersView', () => {
     expect(getUsers).toHaveBeenCalledTimes(2);
   });
 
-  it.skip('validates new user passwords with the same policy as Laravel (covered by UserFormDialog)', async () => {
+  it('validates new user passwords with the same policy as Laravel', async () => {
     const createUser = vi.spyOn(apiClient, 'createUser').mockResolvedValue({
       ...adminUser,
       id: 2,
@@ -345,7 +345,7 @@ describe('UsersView', () => {
     expect(createUser).not.toHaveBeenCalled();
   });
 
-  it.skip('keeps exact-access empty users empty when opening the edit form (covered by UserFormDialog)', async () => {
+  it('keeps exact-access empty users empty when opening the edit form', async () => {
     vi.mocked(apiClient.getUsers).mockResolvedValueOnce([inactiveExactAccessUser]);
     vi.mocked(apiClient.getRoles).mockResolvedValueOnce({
       roles: [
