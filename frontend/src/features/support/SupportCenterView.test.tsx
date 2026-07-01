@@ -50,7 +50,9 @@ describe('SupportCenterView', () => {
 
     render(<SupportCenterView user={supportUser} onStatus={vi.fn()} />);
 
-    expect(await screen.findByText('hospital-backup.sql')).toBeInTheDocument();
+    expect((await screen.findAllByText(/2\/6\/2026/)).length).toBeGreaterThan(0);
+    expect(screen.getByText(/fecha protegida mas reciente/i)).toBeInTheDocument();
+    expect(screen.queryByText('hospital-backup.sql')).not.toBeInTheDocument();
     expect(screen.getByText('MySQL/MariaDB')).toBeInTheDocument();
     expect(screen.getByText(/hora servidor/i)).toBeInTheDocument();
     expect(getStatus).toHaveBeenCalledTimes(1);

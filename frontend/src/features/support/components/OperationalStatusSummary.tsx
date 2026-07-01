@@ -62,6 +62,9 @@ function statusLabelForSeverity(severity: PublicSystemStatusSummary['summary']['
 export function OperationalStatusSummary({ loading, summary, status, canViewAdvanced, onRefresh }: Props) {
   const severity = summary?.summary.severity ?? 'loading';
   const Icon = iconForSeverity(severity);
+  const lastBackupValue = status?.backups.last_success_at
+    ? new Date(status.backups.last_success_at).toLocaleString('es-HN')
+    : 'Pendiente';
 
   if (loading && !summary) {
     return <LoadingState label="Cargando diagnostico operativo..." />;
@@ -122,9 +125,9 @@ export function OperationalStatusSummary({ loading, summary, status, canViewAdva
             <MetricCard
               icon={<HardDrive />}
               label="Ultimo respaldo"
-              value={status.backups.last_success_filename ?? 'Pendiente'}
-              helper="Archivo protegido mas reciente"
-              variant={status.backups.last_success_filename ? 'success' : 'warning'}
+              value={lastBackupValue}
+              helper="Fecha protegida mas reciente"
+              variant={status.backups.last_success_at ? 'success' : 'warning'}
             />
             <MetricCard
               icon={<Database />}
