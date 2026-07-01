@@ -545,14 +545,15 @@ describe('App', () => {
     render(<App />);
 
     expect(await screen.findByRole('heading', { name: /^respaldos$/i })).toBeInTheDocument();
-    expect(await screen.findByText(/respaldos del hospital/i)).toBeInTheDocument();
+    expect(await screen.findByText(/restauraci[oó]n no disponible desde la app/i)).toBeInTheDocument();
     expect(await screen.findByText(/estado operativo/i)).toBeInTheDocument();
     expect(await screen.findByRole('heading', { name: /requiere revisi/i })).toBeInTheDocument();
     expect(await screen.findByText(/completar modo de operaci[oó]n final/i)).toBeInTheDocument();
     expect(await screen.findByText(/validar recibo f[ií]sico media carta\/carta\/A5\/80mm\/58mm/i)).toBeInTheDocument();
     expect(screen.queryByText(/APP_ENV=production/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/respaldos del hospital/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /^pendiente$/i })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /ver detalle avanzado/i }));
+    fireEvent.click(screen.getByRole('button', { name: /ver detalle de soporte/i }));
     expect(await screen.findByText(/checklist operativo/i)).toBeInTheDocument();
     expect(screen.getByText(/servidor, datos y red local/i)).toBeInTheDocument();
     expect(screen.getByText(/base de datos:\s*conectada/i)).toBeInTheDocument();
@@ -781,10 +782,10 @@ describe('App', () => {
         String(url).includes('/api/backups') && init?.method === 'POST'
       ))).toBe(true);
     });
-    expect((await screen.findAllByText('hospital-backup-20260517-101500-test.sql')).length).toBeGreaterThan(0);
+    expect(screen.queryByText('hospital-backup-20260517-101500-test.sql')).not.toBeInTheDocument();
     expect(screen.getAllByText('Pendiente').length).toBeGreaterThan(0);
     expect(screen.getAllByText(/en proceso/i).length).toBeGreaterThan(0);
-    expect(screen.queryByRole('button', { name: /descargar respaldo hospital-backup/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /descargar respaldo/i })).not.toBeInTheDocument();
   });
 
   it('renders successful backups with accessible download and pagination controls', async () => {
@@ -864,15 +865,15 @@ describe('App', () => {
     render(<App />);
 
     await waitFor(() => {
-      expect(screen.getByText('hospital-backup-20260517-101500-test.sql')).toBeInTheDocument();
+      expect(screen.getAllByText('Completado').length).toBeGreaterThan(0);
     });
-    expect(screen.getByText(/SHA256 bbbbbbbb/i)).toBeInTheDocument();
-    expect(screen.getByText(/huella de integridad/i)).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', {
-        name: /descargar respaldo hospital-backup-20260517-101500-test\.sql/i,
-      }),
-    ).toBeInTheDocument();
+    expect(screen.queryByText('hospital-backup-20260517-101500-test.sql')).not.toBeInTheDocument();
+    expect(screen.queryByText(/SHA256 bbbbbbbb/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/huella de integridad/i)).not.toBeInTheDocument();
+    const downloadButton = screen.getByRole('button', {
+      name: /descargar respaldo del/i,
+    });
+    expect(downloadButton).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /crear respaldo/i })).not.toBeInTheDocument();
     expect(screen.getByText(/p[aá]gina 1 de 2/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /siguiente/i })).toBeEnabled();
@@ -956,11 +957,12 @@ describe('App', () => {
     render(<App />);
 
     await waitFor(() => {
-      expect(screen.getByText('hospital-backup-20260602-090000-failed.sql')).toBeInTheDocument();
+      expect(screen.getAllByText('Error').length).toBeGreaterThan(0);
     });
-    expect(screen.getByText(/1 con error - avise al administrador antes de crear otro respaldo/i)).toBeInTheDocument();
+    expect(screen.queryByText('hospital-backup-20260602-090000-failed.sql')).not.toBeInTheDocument();
+    expect(screen.getByText(/revise con soporte antes de confiar en respaldos/i)).toBeInTheDocument();
     expect(screen.queryByText(/cree un nuevo respaldo/i)).not.toBeInTheDocument();
-    expect(document.body.textContent).not.toMatch(/SQLSTATE|storage\/logs/i);
+    expect(document.body.textContent).not.toMatch(/SQLSTATE|storage\/logs|hospital-backup-20260602-090000-failed\.sql/i);
   });
 
   it('lets a user with required password change submit a new password', async () => {
