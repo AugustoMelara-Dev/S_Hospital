@@ -484,20 +484,6 @@ export function NewInvoiceView({
         dispatch({ type: 'SET_ALERT_MESSAGE', payload: null });
         dispatch({ type: 'SET_WARNING_MESSAGE', payload: null });
 
-        if (state.previewBeforePrint) {
-          try {
-            await openInstitutionalReceiptPdf(result.institutional_receipt);
-            dispatch({ type: 'SET_SHOW_PAYMENT', payload: false });
-            dispatch({ type: 'SET_SHOW_SUCCESS', payload: true });
-            onStatus(`Pago registrado. PDF institucional ${result.institutional_receipt.receipt_number_full} abierto para revisar.`);
-          } catch (error) {
-            dispatch({ type: 'SET_SHOW_PAYMENT', payload: false });
-            dispatch({ type: 'SET_SHOW_SUCCESS', payload: true });
-            onStatus(userSafeErrorMessage(error, `Pago registrado. Recibo institucional ${result.institutional_receipt.receipt_number_full} emitido; abra el PDF desde Ver recibo.`));
-          }
-          return;
-        }
-
         dispatch({ type: 'SET_SHOW_PAYMENT', payload: false });
         dispatch({ type: 'SET_SHOW_SUCCESS', payload: true });
         try {
@@ -518,16 +504,12 @@ export function NewInvoiceView({
       dispatch({ type: 'SET_RECEIPT', payload: nextReceipt });
       dispatch({ type: 'SET_INSTITUTIONAL_RECEIPT', payload: null });
       dispatch({ type: 'SET_RECEIPT_WIDTH', payload: nextReceipt.width });
-      dispatch({ type: 'SET_AUTO_PRINT_RECEIPT', payload: !state.previewBeforePrint });
+      dispatch({ type: 'SET_AUTO_PRINT_RECEIPT', payload: true });
       dispatch({ type: 'SET_SHOW_PAYMENT', payload: false });
       dispatch({ type: 'SET_SHOW_RECEIPT', payload: true });
       dispatch({ type: 'SET_ALERT_MESSAGE', payload: null });
       dispatch({ type: 'SET_WARNING_MESSAGE', payload: null });
-      onStatus(
-        state.previewBeforePrint
-          ? `Pago registrado. Vista previa ${nextReceipt.invoice.invoice_number} lista.`
-          : `Pago registrado. Recibo ${nextReceipt.invoice.invoice_number} enviado a impresión.`,
-      );
+      onStatus(`Pago registrado. Recibo ${nextReceipt.invoice.invoice_number} enviado a impresión.`);
     } catch (error) {
       const message = userSafeErrorMessage(error, 'No se pudo registrar el pago.');
       dispatch({ type: 'SET_ALERT_MESSAGE', payload: message });
@@ -628,7 +610,6 @@ export function NewInvoiceView({
       onPaymentMethodChange={(val) => dispatch({ type: 'SET_PAYMENT_METHOD', payload: val })}
       onPaymentAmountChange={(val) => dispatch({ type: 'SET_PAYMENT_AMOUNT', payload: val })}
       onPaymentReferenceChange={(val) => dispatch({ type: 'SET_PAYMENT_REFERENCE', payload: val })}
-      onPreviewBeforePrintChange={(val) => dispatch({ type: 'SET_PREVIEW_BEFORE_PRINT', payload: val })}
       onSubmitInvoice={() => void submitInvoice()}
       onCobrar={handleCobrarClick}
       onRetryLoad={loadPointOfSaleData}

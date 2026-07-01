@@ -44,7 +44,6 @@ describe('NewInvoiceViewLayout accessibility', () => {
           onPaymentMethodChange={() => {}}
           onPaymentAmountChange={() => {}}
           onPaymentReferenceChange={() => {}}
-          onPreviewBeforePrintChange={() => {}}
           onSubmitInvoice={() => {}}
           onCobrar={() => {}}
           onRetryLoad={() => {}}

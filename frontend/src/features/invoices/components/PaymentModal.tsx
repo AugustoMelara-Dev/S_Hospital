@@ -2,7 +2,6 @@ import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { Banknote, Printer, ReceiptText } from 'lucide-react';
 import { Alert } from '../../../components/ui/alert';
 import { Button } from '../../../components/ui/button';
-import { Checkbox } from '../../../components/ui/checkbox';
 import { Dialog } from '../../../components/ui/dialog';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
@@ -16,7 +15,6 @@ import { parseCents } from '../../../lib/money';
 type PaymentModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  previewBeforePrint?: boolean;
   invoiceNumber: string;
   patientName: string;
   total: string;
@@ -27,7 +25,6 @@ type PaymentModalProps = {
   onPaymentMethodChange: (method: Payment['method']) => void;
   onPaymentAmountChange: (amount: string) => void;
   onPaymentReferenceChange?: (reference: string) => void;
-  onPreviewBeforePrintChange?: (enabled: boolean) => void;
   onConfirm: (appliedAmount: string) => void;
   submitting?: boolean;
   partialPaymentsEnabled?: boolean;
@@ -43,7 +40,6 @@ const methodHelp: Record<Payment['method'], string> = {
 export function PaymentModal({
   open,
   onOpenChange,
-  previewBeforePrint = false,
   invoiceNumber,
   patientName,
   total,
@@ -54,7 +50,6 @@ export function PaymentModal({
   onPaymentMethodChange,
   onPaymentAmountChange,
   onPaymentReferenceChange = () => undefined,
-  onPreviewBeforePrintChange,
   onConfirm,
   submitting,
   partialPaymentsEnabled = false,
@@ -318,23 +313,6 @@ export function PaymentModal({
           ) : null}
         </section>
 
-        <div className="flex items-start gap-3 rounded-md border border-operational-border bg-operational-panel/70 px-3 py-2.5 text-sm">
-          <Checkbox
-            id="preview-before-print"
-            checked={previewBeforePrint}
-            onCheckedChange={(checked) => onPreviewBeforePrintChange?.(checked === true)}
-            className="mt-0.5"
-          />
-          <Label htmlFor="preview-before-print" className="grid cursor-pointer select-none gap-0.5 leading-none">
-            <span className="font-medium text-foreground">
-              Ver preview antes de imprimir
-            </span>
-            <span className="mt-0.5 text-xs font-normal text-muted-foreground">
-              Desactivado: al confirmar cobro se registra el pago y se abre impresión directa.
-            </span>
-          </Label>
-        </div>
-
         <p className="text-xs text-muted-foreground">
           Cancelar la ventana de impresión no revierte el pago. Si necesita corregir una factura pagada, use el flujo de anulación autorizado.
         </p>
@@ -347,9 +325,9 @@ export function PaymentModal({
             type="submit"
             className="sm:min-w-56"
             disabled={submitting || exceedsPending || needsAmount}
-            aria-label={previewBeforePrint ? 'Confirmar cobro y ver preview' : 'Confirmar cobro e imprimir'}
+            aria-label="Confirmar cobro e imprimir"
           >
-            {submitting ? 'Cobrando...' : previewBeforePrint ? 'Registrar cobro y ver preview' : (
+            {submitting ? 'Cobrando...' : (
               <span className="inline-flex items-center gap-2">
                 <Printer className="size-4" aria-hidden="true" />
                 Registrar cobro e imprimir

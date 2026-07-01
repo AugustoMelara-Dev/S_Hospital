@@ -215,6 +215,12 @@ Existen componentes reutilizables para acciones, menus, alertas, dialogos, tabla
 - `DashboardView` ya usa `useDashboardReport` con TanStack Query para el resumen operativo; se elimino el fetching manual duplicado y el hook dejo de estar huerfano.
 - La pantalla mantiene una accion primaria segun estado de caja, 4 KPIs y facturas recientes.
 
+### Facturacion
+
+- `PaymentModal` ya no expone `previewBeforePrint`; el cobro mantiene una accion primaria unica: registrar cobro e imprimir.
+- Se elimino el estado/cableado `previewBeforePrint` del flujo POS. El recibo legacy se abre con autoimpresion tras registrar pago y el recibo institucional abre PDF directamente.
+- Prueba dedicada valida que el modal no muestre controles de preview antes de imprimir.
+
 ### Usuarios
 
 - Megacomponente fue reducido con dialogos extraidos, pero `UsersView.tsx` aun concentra bastante estado y tiene tests skipped.

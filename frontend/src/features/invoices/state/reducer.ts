@@ -34,8 +34,6 @@ export function newInvoiceReducer(state: NewInvoiceState, action: NewInvoiceActi
       return { ...state, paymentAmount: action.payload };
     case 'SET_PAYMENT_REFERENCE':
       return { ...state, paymentReference: action.payload };
-    case 'SET_PREVIEW_BEFORE_PRINT':
-      return { ...state, previewBeforePrint: action.payload };
     case 'SET_RECEIPT_WIDTH':
       return { ...state, receiptWidth: action.payload };
     case 'SET_SCANNER_ENABLED':

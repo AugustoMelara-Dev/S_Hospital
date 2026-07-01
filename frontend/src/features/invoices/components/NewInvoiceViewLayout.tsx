@@ -45,7 +45,6 @@ export type NewInvoiceLayoutProps = {
   onPaymentMethodChange: (val: Payment['method']) => void;
   onPaymentAmountChange: (val: string) => void;
   onPaymentReferenceChange: (val: string) => void;
-  onPreviewBeforePrintChange: (val: boolean) => void;
   onSubmitInvoice: () => void;
   onCobrar: () => void;
   onRetryLoad: () => void;
@@ -90,7 +89,6 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
     onPaymentMethodChange,
     onPaymentAmountChange,
     onPaymentReferenceChange,
-    onPreviewBeforePrintChange,
     onSubmitInvoice,
     onCobrar,
     onRetryLoad,
@@ -289,12 +287,10 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
           paymentMethod={state.paymentMethod}
           paymentAmount={state.paymentAmount}
           paymentReference={state.paymentReference}
-          previewBeforePrint={state.previewBeforePrint}
           partialPaymentsEnabled={state.partialPaymentsEnabled}
           onPaymentMethodChange={onPaymentMethodChange}
           onPaymentAmountChange={onPaymentAmountChange}
           onPaymentReferenceChange={onPaymentReferenceChange}
-          onPreviewBeforePrintChange={onPreviewBeforePrintChange}
           onConfirm={onSubmitPayment}
           submitting={state.paying}
         />

@@ -36,7 +36,6 @@ function renderLayout(overrides: Partial<React.ComponentProps<typeof NewInvoiceV
         onPaymentMethodChange={noop}
         onPaymentAmountChange={noop}
         onPaymentReferenceChange={noop}
-        onPreviewBeforePrintChange={noop}
         onSubmitInvoice={noop}
         onCobrar={noop}
         onRetryLoad={noop}

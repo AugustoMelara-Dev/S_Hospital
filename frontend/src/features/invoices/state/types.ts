@@ -17,7 +17,6 @@ export interface NewInvoiceState {
   paymentMethod: Payment['method'];
   paymentAmount: string;
   paymentReference: string;
-  previewBeforePrint: boolean;
   receiptWidth: ReceiptData['width'];
   scannerEnabled: boolean;
   partialPaymentsEnabled: boolean;
@@ -55,7 +54,6 @@ export type NewInvoiceAction =
   | { type: 'SET_PAYMENT_METHOD'; payload: Payment['method'] }
   | { type: 'SET_PAYMENT_AMOUNT'; payload: string }
   | { type: 'SET_PAYMENT_REFERENCE'; payload: string }
-  | { type: 'SET_PREVIEW_BEFORE_PRINT'; payload: boolean }
   | { type: 'SET_RECEIPT_WIDTH'; payload: ReceiptData['width'] }
   | { type: 'SET_SCANNER_ENABLED'; payload: boolean }
   | { type: 'SET_PARTIAL_PAYMENTS_ENABLED'; payload: boolean }
@@ -102,7 +100,6 @@ export function getInitialNewInvoiceState(cashSession: CashSession | null): NewI
     paymentMethod: 'cash',
     paymentAmount: '',
     paymentReference: '',
-    previewBeforePrint: false,
     receiptWidth: 'half_letter',
     scannerEnabled: false,
     partialPaymentsEnabled: false,

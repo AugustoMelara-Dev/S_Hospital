@@ -27,7 +27,6 @@ function renderPaymentModal(overrides: Partial<PaymentModalTestProps> = {}) {
     onPaymentMethodChange: vi.fn(),
     onPaymentAmountChange: vi.fn(),
     onPaymentReferenceChange: vi.fn(),
-    onPreviewBeforePrintChange: vi.fn(),
     onConfirm: vi.fn(),
     ...overrides,
   } satisfies PaymentModalTestProps;
@@ -281,20 +280,26 @@ describe('PaymentModal', () => {
     expect(openSpy).not.toHaveBeenCalled();
   });
 
-  it('keeps cancel, Escape and preview callbacks separate from submit', () => {
+  it('keeps payment focused on a single print action without preview-before-print controls', () => {
+    const onConfirm = vi.fn();
+
+    renderPaymentModal({
+      onConfirm,
+    });
+
+    expect(screen.queryByRole('checkbox', { name: /preview|vista previa/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/preview antes de imprimir/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /confirmar cobro e imprimir/i })).toBeInTheDocument();
+  });
+
+  it('keeps cancel separate from submit', () => {
     const onOpenChange = vi.fn();
     const onConfirm = vi.fn();
-    const onPreviewBeforePrintChange = vi.fn();
 
     renderPaymentModal({
       onOpenChange,
       onConfirm,
-      onPreviewBeforePrintChange,
     });
-
-    fireEvent.click(screen.getByRole('checkbox', { name: /ver preview/i }));
-    expect(onPreviewBeforePrintChange).toHaveBeenCalledWith(true);
-    expect(onConfirm).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole('button', { name: /dejar pendiente/i }));
     expect(onOpenChange).toHaveBeenCalledWith(false);
