@@ -1,257 +1,239 @@
-# Refactor Integral S_Hospital — `docs/refactor-total-audit.md`
+# Refactor total S_Hospital - Auditoria viva
 
-> Documento vivo: refleja el estado tras la ejecución del refactor integral. Ejecutado el 2026-07-01 contra el código de la rama principal.
+Fecha de ejecucion: 2026-07-01  
+Rama de trabajo: `codex/refactor-total`  
+Alcance actual: Fase 0, auditoria + baseline + inventario, sin cambios funcionales.
 
----
+Este documento no sustituye al codigo, pruebas, migraciones ni contratos API. Es un registro operativo para guiar fases pequenas, verificables y commiteables del refactor total.
 
-## 0. Baseline (estado real previo)
+## 1. Estado baseline
 
-### 0.1 Frontend
-
-| Comando | Baseline | Final post-refactor |
-|---|---|---|
-| `npm run lint` | OK (0 warnings) | OK |
-| `npm run typecheck` | OK (0 errores) | OK |
-| `npm run test` | **507 tests / 94 archivos pasan** en 76.77s | **497 tests / 96 archivos pasan, 9 skipped** (componentes extraídos; tests específicos reemplazados por tests unitarios de cada componente extraído) |
-| `npm run build` | OK — 1.66 MB total, 932 módulos transformados | OK — 1.74 MB, 932 módulos |
-
-### 0.2 Backend
-
-Tests backend no ejecutables en el contenedor de verificación (`composer` no instalado en `s_hospital_f7_verify-backend-1`). PHP 8.3.31 sí está disponible.
-
-Tests presentes en repo:
-- `ReceiptPrintProfileAdvancedFieldsTest` (3 tests).
-- `FiscalSettingsTest` con tests existentes + **2 nuevos** (`paper_size_changed_mid_shift_warning` con y sin caja abierta).
-- `CloseCashSessionDifferenceTest`.
-- `UpdateFiscalSequenceRequest` ya rechaza reset sin motivo.
-
-### 0.3 Stack
-
-| Capa | Tecnología |
-|---|---|
-| Frontend | React 19 + TS 5 + Vite 8 + Tailwind 4 + Radix UI + TanStack Query/Table + react-hook-form + zod + recharts + react-to-print + react-router 7 |
-| Backend | Laravel 12 + PHP 8.3 + Sanctum 4 + Spatie Permission 6 + barryvdh/laravel-dompdf 3 |
-| Tests | Vitest 4 + axe-core + jsdom + Playwright (frontend); PHPUnit 11 (backend) |
-
----
-
-## 1. Resultados por fase
-
-### FASE 0 — Audit + baseline
-`docs/refactor-total-audit.md` creado. Frontend baseline verde.
-
-### FASE 1 — Design system
-- `components/ui/action-menu.tsx` — `ActionMenu` Radix-based con grupos y separador.
-- `components/ui/audit-log-list.tsx` — `AuditLogList` con humanización.
-- Tests: `action-menu.test.tsx` (4), `audit-log-list.test.tsx` (2).
-
-### FASE 13 (backend security)
-- Logout auditado con `auth.logout`.
-- CSP enforzado en producción + report-only (`AddSecurityHeaders`).
-- `client-error-log` con throttle 30/1.
-- **Nuevo**: `FiscalSettingsController::update` audita `fiscal_settings.paper_size_changed_mid_shift` cuando se cambia papel con caja abierta. Header `X-S-Hospital-Paper-Size-Warning: mid-shift-change`.
-- 2 tests nuevos en `FiscalSettingsTest.php`.
-
-### FASE 10 (separación de configuración)
-- `FiscalSettingsView` con 6 tabs.
-- 4 vistas nuevas: `HospitalSettingsView`, `FiscalNumerationView`, `OperationalRulesView`, `BrandingView`.
-- `receipt_paper_size` removido del form fiscal (vive solo en Recibos).
-- Eliminado `FiscalSettingsForm.tsx` y su test.
-- Tests: HospitalSettingsView (3), FiscalNumerationView (3), OperationalRulesView (3), FiscalSettingsView (3).
-
-### FASE 5 (recepción e impresión)
-- UI normal estricta: papel, copias, logo, sello/firma, prueba, guardar.
-- Inputs manuales solo en `<details>` colapsable, solo si `receipt_settings.advanced` y perfil = `recibo_pequeno_personalizado`.
-- Alerts: "Modo soporte no disponible" / "Modo soporte no aplica aquí".
-- Tests: `InstitutionalReceiptSettingsView.test.tsx` (7).
-
-### FASE 9 (reportes consolidados)
-- `ReportsView` mantiene 3 sub-rutas (Ejecutivo, Caja, Auditoría).
-- Eliminado código muerto: `AreaReportTab`, `AuditoriaTab`, `DailyReportTab`, `IncomeReportTab`, `MonthlyReportTab`, `ServiceSalesTab`, `CashierTable`, `KPICard`, `PaymentMethodPieChart`, `RevenueBarChart`, `TopServicesChart`, `useElementWidth`.
-- `TrendChart` usa `ResponsiveContainer` (recharts).
-- `CashSessionReportTab` ahora usa `StatGrid` del design-system.
-- 16 tests en reports verdes.
-
-### FASE 3 (dashboard)
-- `DashboardView.tsx` reescrito: header con acción primaria dinámica + 4 stat cards + tabla compacta de facturas recientes.
-- Eliminados: `DashboardRevenueCard`, `DashboardCashiersCard`, `DashboardPaymentMethodsCard`, `DashboardTopServicesCard`, `DashboardNextActionCard`, `DashboardSectionCard`, `DashboardMetricsGrid`.
-- Tests: 12 verdes.
-
-### FASE 4 (nueva factura)
-- `NewInvoiceViewLayout.tsx`: 5 `<Alert>` consolidados en una región `aria-live="polite"`.
-- Banner superior sin redundancia.
-- Tests: 91 verdes (1 skipped) en `features/invoices`.
-
-### FASE 6 (caja)
-- `CloseSessionDialog.tsx` pide motivo obligatorio cuando diferencia ≠ 0.
-- 17 tests en `features/cash` verdes.
-
-### FASE 7 (catálogo)
-- `ServiceSheet.tsx`: `price_change_reason` obligatorio si cambia el precio.
-- 35 tests en `features/catalog` verdes.
-
-### FASE 8 (historial con ActionMenu)
-- `InvoiceHistoryTable.tsx`: 4 acciones inline reemplazadas por `ActionMenu` con 2 grupos (`primary` y `danger`).
-- Cada item tiene `aria-label="Acciones de la factura X-NNN"`.
-- 90 tests en `features/invoices` verdes (1 skipped).
-
-### FASE 11 (respaldos)
-- `BackupsView.tsx`: añadido `Alert`: "Restauración no disponible desde la app. La restauración se realiza únicamente desde el servidor local por personal autorizado."
-- Backend ya audita sha256 + size_bytes en `CreateBackupAction::audit`.
-- 12 tests en `features/backups` verdes.
-
-### FASE 12 (usuarios)
-- `UsersView.tsx` dividido en `UserFormDialog`, `RoleFormDialog`, `PasswordResetDialog`.
-- `UsersView` ahora 380 líneas (antes 1068).
-- Permisos agrupados por módulo en `PermissionState`.
-- Tests: `UserFormDialog.test.tsx` (4), `RoleFormDialog.test.tsx` (3), `UsersView` (11 pasan, 7 skipped).
-
-### FASE 2 (navegación y AppShell)
-- `<aside id="app-sidebar" aria-label="Navegacion principal">`.
-- Topbar: `aria-expanded` + `aria-controls="app-sidebar"` en el botón de toggle.
-- Sidebar con 4 grupos: Operación, Análisis, Administración, Soporte.
-- 16 tests en layout/navigation verdes.
-
-### FASE 14 (accesibilidad transversal)
-- `v1-2-visible-ui-a11y.spec.ts` (8 tests) verde con axe-core WCAG 2 AA a 6 resoluciones.
-- Nueva `refactor-total.spec.ts` (7 tests).
-
-### FASE 15 (estados)
-- `EmptyState`/`ErrorState`/`LoadingState` consolidados en `components/ui/states.tsx`.
-- Alerts con `variant` válido. Copy claro en mensajes.
-
-### FASE 16 (performance y limpieza)
-- Sin `console.log` en producción.
-- Sin archivos huérfanos (verificado con grep).
-- `npm run build` verde, 1.74 MB total.
-
-### FASE 17 (E2E Playwright)
-- `v1-2-visible-ui-a11y.spec.ts` 8/8 verde.
-- `refactor-total.spec.ts` 1 test verificado (login); los demás requieren backend completo fuera de `verify`.
-
-### FASE 18 (documentación)
-- `docs/refactor-total-audit.md` actualizado.
-- `docs/print-profiles.md` y `docs/security-audit.md` actualizados.
-- `docs/accessibility-checklist.md` y `docs/testing-report.md` creados.
-
----
-
-## 2. Archivos eliminados / consolidados
-
-### Frontend eliminados (24 archivos)
-- `features/reports/components/AreaReportTab.tsx`, `AuditoriaTab.tsx`, `CashierTable.tsx`, `DailyReportTab.tsx`, `IncomeReportTab.tsx`, `KPICard.tsx`, `MonthlyReportTab.tsx`, `PaymentMethodPieChart.tsx`, `ReportFiltersPanel.tsx`, `RevenueBarChart.tsx`, `ServiceSalesTab.tsx`, `TopServicesChart.tsx`
-- `features/dashboard/components/DashboardCashiersCard.tsx`, `DashboardMetricsGrid.tsx`, `DashboardNextActionCard.tsx`, `DashboardPaymentMethodsCard.tsx`, `DashboardRevenueCard.tsx`, `DashboardSectionCard.tsx`, `DashboardTopServicesCard.tsx`
-- `features/dashboard/PaymentMethodPieChart.tsx`, `RevenueBarChart.tsx`, `TopServicesChart.tsx`, `useElementWidth.ts`
-- `features/settings/components/FiscalSettingsForm.tsx`
-
-### Tests huérfanos eliminados
-- `AuditoriaTab.test.tsx`, `DailyReportTab.test.tsx`, `IncomeReportTab.test.tsx`, `ServiceSalesTab.test.tsx`, `FiscalSettingsForm.test.ts`.
-
-### Backend
-- 2 tests nuevos en `FiscalSettingsTest.php`. Ningún archivo eliminado.
-
----
-
-## 3. Comandos al cierre
-
-### Frontend
+### 1.1 Backend solicitado por Docker
 
 | Comando | Resultado |
 |---|---|
-| `npm run lint` | OK (0 warnings) |
-| `npm run typecheck` | OK |
-| `npm run test` | **497 pasan + 9 skipped** / 96 archivos en 61.83s |
-| `npm run build` | OK — bundle 1.74 MB |
+| `docker exec s_hospital-backend-1 php artisan test` | Falla: contenedor `s_hospital-backend-1` no estaba corriendo. |
+| `docker exec s_hospital-backend-1 vendor/bin/pint --test` | Falla: contenedor `s_hospital-backend-1` no estaba corriendo. |
+| `docker exec s_hospital-backend-1 vendor/bin/phpstan analyse` | Falla: contenedor `s_hospital-backend-1` no estaba corriendo. |
 
-### E2E
-- `e2e/v1-2-visible-ui-a11y.spec.ts` 8/8 verde.
-- `e2e/refactor-total.spec.ts` 1/7 verificado (login).
+Intento de levantar el stack:
 
-### Backend
-- Tests PHPUnit viven en repo. Ejecutables con composer install.
+| Comando | Resultado |
+|---|---|
+| `docker compose up -d` | Falla al iniciar MariaDB: `127.0.0.1:3306` no disponible para bind. |
 
-### Fallos conocidos
-- 9 tests `it.skip` en `UsersView.test.tsx` y `InvoiceHistoryView.test.tsx` por refactor estructural. Cobertura reemplazada con tests unitarios por componente extraído.
-- `php artisan test`, `pint`, `phpstan` no ejecutables en `s_hospital_f7_verify-backend-1` (sin composer).
+Observacion: existen contenedores `s_hospital_f7_verify-*` saludables, pero no son el stack exacto exigido para baseline. Se intento fallback contra `s_hospital_f7_verify-backend-1`; no sirve como aprobacion backend porque ese contenedor no tiene `artisan test` ni binarios dev completos disponibles.
 
----
+### 1.2 Backend local
 
-## 4. Criterios de aceptación
+| Comando | Resultado |
+|---|---|
+| `php artisan test` en `backend` | Falla: falta `backend/vendor/autoload.php`. |
+| `vendor/bin/pint --test` en `backend` | Falla: binario no disponible. |
+| `vendor/bin/phpstan analyse` en `backend` | Falla: binario no disponible. |
 
-### Funcionales
-- [x] Factura simple con teclado en < 60 s.
-- [x] Doble click no duplica factura.
-- [x] Cierre de caja con diferencia exige motivo.
-- [x] Anulación pide motivo ≥ 5 caracteres.
-- [x] Cambios fiscales piden motivo ≥ 5 caracteres.
-- [x] Restaurar respaldo NO disponible en UI.
-- [x] Impresión normal: solo papel, copias, logo, sello/firma, prueba, guardar.
-- [x] Cero márgenes/fuentes/ancho/alto en flujo normal.
-- [x] Rama avanzada solo para soporte con `receipt_settings.advanced`.
+`composer` no esta instalado en el host actual. La carpeta `backend/vendor` existe, pero esta vacia o incompleta.
 
-### Calidad
-- [x] `npm run lint` verde.
-- [x] `npm run typecheck` verde.
-- [x] `npm run test` 497 verdes + 9 skipped con reemplazo.
-- [x] `npm run build` verde.
-- [x] E2E críticos verdes.
+### 1.3 Frontend
+
+| Comando | Resultado |
+|---|---|
+| `npm run lint` | OK. |
+| `npm run typecheck` | OK. |
+| `npm run test` | OK: 96 archivos, 497 tests pasan, 9 skipped, 506 total. |
+| `npm run build` | OK: Vite build, 2688 modulos transformados. |
+
+### 1.4 E2E
+
+| Comando | Resultado |
+|---|---|
+| `npx playwright test` | Timeout despues de 244 s. No se toma como verde. Los reportes parciales generados por el timeout fueron limpiados para evitar evidencia truncada. |
+
+## 2. Stack confirmado
+
+| Capa | Tecnologia encontrada |
+|---|---|
+| Frontend | React 19, TypeScript 5, Vite 8, Tailwind 4, React Router 7, TanStack Query/Table, Radix UI, React Hook Form, Zod, lucide-react, Recharts, react-to-print. |
+| Backend | Laravel 12, PHP 8.2+, Sanctum, Spatie Permission, DomPDF, PhpSpreadsheet, Pusher PHP Server. |
+| Datos | MySQL/MariaDB via Docker Compose. |
+| Tests | Vitest, Testing Library, axe-core, Playwright, PHPUnit, Pint, PHPStan/Larastan. |
+
+No se agregaron dependencias en Fase 0.
+
+## 3. Rutas actuales
+
+### 3.1 Rutas web SPA
+
+Rutas principales detectadas en `backend/routes/web.php`:
+
+- `/dashboard`
+- `/billing/new`
+- `/cashbox`
+- `/catalog`
+- `/invoices`
+- `/reports`
+- `/reports/{path}`
+- `/backups`
+- `/settings/fiscal`
+- `/settings/institutional-receipts`
+- `/admin/users`
+- `/help`
+- `/support`
+- `/about`
+
+### 3.2 API critica
+
+Rutas protegidas por `web`, `auth:web`, `user.active`, `password.changed` y throttling por usuario:
+
+- Auth: `/auth/me`, `/auth/change-password`, `/auth/logout`
+- Configuracion: `/settings/operational`, `/settings/fiscal`, `/settings/logo`
+- Recibos: `/settings/institutional-receipts/*`, `/institutional-receipts/*`
+- Catalogo: `/categories`, `/areas`, `/service-areas`, `/services`
+- Facturacion: `/invoices`, `/invoices/{invoice}`, `/void`, `/reverse`, `/receipt`, `/reprint`
+- Caja/pagos: `/cash-sessions/*`, `/payments/*`
+- Reportes: `/reports/dashboard`, `/reports/today`, `/reports/executive`, `/reports/export`, `/reports/pdf`, `/reports/cash-sessions/{cashSession}`
+- Respaldos: `/backups`, `/backups/{backupLog}/download`
+- Sistema: `/system/status-summary`, `/system/status`, `/system/client-errors`
+- Usuarios/roles: `/admin/users`, `/admin/roles`
+
+Operaciones criticas como factura, pagos, caja, reversos, reimpresion, recibos y respaldos usan middleware `idempotency` en rutas relevantes.
+
+## 4. Permisos actuales
+
+Permisos sembrados en `RolesAndPermissionsSeeder`:
+
+- Configuracion fiscal: `settings.fiscal.view`, `settings.fiscal.update`, `fiscal.sequences.reset`
+- Catalogo: `catalog.view`, `catalog.manage`
+- Facturas: `invoices.view`, `invoices.create`, `invoices.operate_any`, `invoices.void`, `invoices.reverse`
+- Caja: `cash.view`, `cash.open`, `cash.close`, `cash.close_any`
+- Pagos: `payments.create`, `payments.view`, `payments.void`
+- Recibos: `receipts.view`, `receipts.reprint`, `receipts.reprint_any`, `receipts.void`, `receipts.print_test`
+- Configuracion de recibos: `receipt_settings.view`, `receipt_settings.update`, `receipt_settings.advanced`
+- Reportes: `reports.view`, `reports.managerial.view`, `reports.cash_session.view`, `reports.export`
+- Usuarios: `users.view`, `users.create`, `users.update`, `users.disable`, `users.assign_admin_role`, `system.exact_user_permissions`
+- Respaldos: `backups.view`, `backups.create`, `backups.download`, `backups.restore`
+- Sistema/auditoria: `system.status.view`, `audit.view`
+- Regla especial: `patients.mark_dialysis_prescription`
+
+Roles existentes: `admin`, `supervisor`, `auditor`, `soporte_tecnico`, `cajero`.
+
+## 5. Inventario frontend
+
+### 5.1 Features vivas
+
+- `about`
+- `admin`
+- `areas`
+- `auth`
+- `backups`
+- `cash`
+- `catalog`
+- `dashboard`
+- `help`
+- `invoices`
+- `onboarding`
+- `receipt-settings`
+- `receipts`
+- `reports`
+- `settings`
+- `support`
+
+### 5.2 Componentes UI base vivos
+
+Existen componentes reutilizables para acciones, menus, alertas, dialogos, tablas, formularios, paginacion, estados, tabs, tooltips y formatos de dinero:
+
+- `action-menu`, `alert`, `audit-log-list`, `badge`, `button`, `card`, `checkbox`, `confirm-dialog`, `data-table`, `date-range-picker`, `dialog`, `dropdown-menu`, `filter-bar`, `form-field`, `input`, `money-text`, `page-header`, `pagination`, `select`, `sheet`, `states`, `status-badge`, `table`, `tabs`, `textarea`, `toaster`, `tooltip`.
+
+### 5.3 Modulos criticos inventariados
+
+- Reportes: `ReportsView`, `ExecutiveSummary`, `TrendChart`, `PaymentMethodPanel`, `ServiceRanking`, `AuditSummaryPanel`, `CashSessionReportTab`, `CashReconciliationPanel`, `ReportFiltersPanel`, `MetricsGlossary`.
+- Facturacion: `NewInvoiceView`, `PatientStep`, `ServiceSearch`, `InvoiceCart`, `PaymentModal`, `InvoiceConfirmation`, `InvoiceSuccess`, estado POS y tests.
+- Historial: `InvoiceHistoryView`, `InvoiceHistoryTable`, `InvoiceHistoryHeader`, `InvoiceHistoryFilters`.
+- Dashboard: `DashboardView`, `SetupWizardDialog`, `DashboardSetupStatusCard`.
+- Caja: `CashBoxView`, `OpenSessionForm`, `CloseSessionDialog`, `CashClosingPanel`, `CashMovementsTable`, `CashMethodSummary`, `SessionSummary`, `SessionStatusCard`.
+- Catalogo: `CatalogView`, `ServiceSheet`, `ServiceCatalogTable`, `CategorySheet`, `CatalogToolbar`, `CatalogPagination`, `ServiceStatusSummary`.
+- Respaldos: `BackupsView`, `BackupHistoryTable`, `BackupStatusBadge`, `BackupExplanationCard`.
+- Usuarios: `UsersView`, `UserFormDialog`, `RoleFormDialog`, `PasswordResetDialog`.
+- Configuracion: `FiscalSettingsView`, `HospitalSettingsView`, `FiscalNumerationView`, `OperationalRulesView`, `BrandingView`.
+- Layout: `AppShell`, `Sidebar`, `Topbar`, `AppBreadcrumbs`, `MobileNavigation`, `OperationalStatus`, `UserMenu`.
+- Recibos: `InstitutionalReceiptSettingsView`, `ReceiptSettingsPreview`, `ReceiptPreview`.
+
+## 6. Deuda encontrada por modulo
+
+### UX/UI
+
+- Reportes ya tiene 3 subrutas visibles (`executive`, `cash`, `audit`), pero aun usa `ReportFiltersPanel` y `MetricsGlossary`. No se puede sostener que esos componentes hayan sido eliminados.
+- `routes.ts` conserva etiquetas `Fase 12A`, posible deuda historica de release.
+- Algunos modulos siguen usando `SectionCard`/cards funcionales; hay que auditar visualmente si son operativas o decorativas.
+- Hay 9 tests `it.skip`, principalmente en usuarios y cobertura reemplazada por componentes extraidos. Deben revisarse antes de declarar cobertura final.
 
 ### Seguridad
-- [x] RBAC real en backend.
-- [x] Audit log en acciones críticas.
-- [x] Logout auditado.
-- [x] CSP enforzado en producción.
-- [x] SHA256 auditado al crear respaldo.
-- [x] Sin secretos en frontend.
-- [x] `client-error-log` con throttle.
 
-### UX
-- [x] Cero cards decorativas.
-- [x] Una acción primaria visible por pantalla.
-- [x] Tablas con `ActionMenu`.
-- [x] Reportes con 3 sub-rutas claras.
-- [x] Sin botón flotante.
-- [x] Header compacto.
+- Hay transacciones y locks en facturacion, pagos, caja, recibos y reimpresion.
+- Backend rechaza campos avanzados de recibos sin `receipt_settings.advanced` con 403 y audita `receipt_settings.advanced_denied`.
+- Hay permisos granulares y politicas/Form Requests en endpoints criticos.
+- Pendiente: backend no pudo ejecutarse en baseline por entorno; no se puede declarar suite Laravel verde.
 
 ### Accesibilidad
-- [x] axe-core sin violaciones graves.
-- [x] Foco visible global.
-- [x] `aria-live` consolidado.
-- [x] Modales con focus trap.
 
----
+- Existen tests a11y para layout, dialogos, botones, recibos y specs Playwright con axe.
+- Pendiente: `npx playwright test` completo hizo timeout; requiere ejecucion dividida o entorno estable.
 
-## 5. Instrucciones de prueba manual
+### Impresion/recibos
 
-### Facturación
-1. Caja cerrada.
-2. Abrir caja con monto inicial.
-3. Nueva factura → paciente → 2 servicios → verificar totales.
-4. Ctrl+Enter emite.
-5. Cobrar con efectivo: el sistema calcula cambio.
-
-### Caja
-1. Con caja abierta.
-2. Cerrar caja: ingresar contado que difiere del esperado.
-3. El botón "Cerrar caja" debe estar deshabilitado mientras la nota esté vacía.
-4. Ingresar motivo ≥ 5 caracteres. Confirmar.
+- Flujo normal contiene selector de papel, copias, logo y sello/firma.
+- Los campos tecnicos de ancho, alto, margenes, fuente y escala existen solo en panel avanzado `<details>` condicionado por permiso y soporte.
+- Riesgo UX: el mensaje normal menciona que el sistema resuelve margenes, CSS y fuente; conviene validar visualmente que ningun input tecnico aparezca para usuario normal.
 
 ### Reportes
-1. Ejecutivo: KPIs + tendencia 30 días + métodos + top servicios.
-2. Caja: sesiones + métodos + cajeros.
-3. Auditoría: anulaciones + cambios fiscales + respaldos.
 
-### Impresión / Recibos
-1. Cajero en Recibos: **no aparecen** "Ancho mm", "Alto mm", "Fuente", "Escala", ni los 4 márgenes.
-2. Admin: solo papel, copias, logo, sello/firma, prueba, guardar.
-3. Soporte (`receipt_settings.advanced`): en `<details>` aparecen los 8 campos manuales.
+- Consolidacion parcial lograda: 3 subrutas.
+- Deuda: quedan endpoints antiguos (`daily`, `monthly`, `income`, `categories`, `areas`, `services`, `operations`) y servicios backend viejos. Hay que decidir si son compatibilidad API o codigo muerto antes de eliminar.
+
+### Caja
+
+- Cierre exige motivo con diferencia y hay locks/transacciones.
+- Pendiente: validar visualmente si caja se siente como flujo de turno y no como acumulacion de tarjetas.
 
 ### Usuarios
-1. Crear usuario con contraseña 12+ chars, mayúscula, minúscula, número, símbolo.
-2. Validar rechazo de contraseñas débiles.
-3. Restablecer clave a un usuario existente.
+
+- Megacomponente fue reducido con dialogos extraidos, pero `UsersView.tsx` aun concentra bastante estado y tiene tests skipped.
+- Pendiente: revisar matriz de permisos por modulo y riesgo de permisos criticos en UI.
 
 ### Respaldos
-1. Crear respaldo manual.
-2. Verificar que no aparece botón "Restaurar".
-3. Verificar copy: "Restauración no disponible desde la app."
+
+- UI normal indica que restauracion no se hace desde la app.
+- Backend contiene flujo de respaldo y auditoria de metadatos.
+- Pendiente: validar que rutas sensibles no se expongan al usuario normal y que `backups.restore` no aparezca como accion normal.
+
+### Configuracion fiscal
+
+- Configuracion esta separada en vistas institucional, numeracion fiscal, reglas operativas y branding.
+- Pendiente: validar que papel de recibo no vuelva a mezclarse en fiscal y que cambios fiscales pidan motivo en todos los caminos.
+
+## 7. Riesgos tecnicos
+
+- El baseline backend oficial esta bloqueado por Docker/puerto `3306`; no hay veredicto real para `php artisan test`, Pint ni PHPStan.
+- El host no tiene Composer y `backend/vendor` no contiene autoload/binarios; no se puede reconstruir backend local sin preparar entorno.
+- Playwright completo excede 4 minutos; hay que ejecutar specs criticas por grupos y documentar tiempos.
+- Hay historial de documentacion previa que afirma eliminaciones que el arbol actual no confirma.
+- No se hizo backup en Fase 0 porque no hubo migraciones, cambios fiscales, schema, caja, settings ni numeracion. Antes de esas fases se debe verificar o crear backup.
+
+## 8. Plan de ejecucion real
+
+1. Resolver baseline backend: liberar/cambiar puerto 3306 o correr stack aislado con nombre/puertos no conflictivos; instalar dependencias PHP si se usa host.
+2. Ejecutar backend completo: `php artisan test`, `pint --test`, `phpstan analyse`.
+3. Ejecutar Playwright por grupos criticos: login/dashboard, recibos, facturacion, caja, reportes, usuarios, respaldos.
+4. Corregir inconsistencias documentacion/codigo antes de afirmar fases completadas.
+5. Empezar Fase 1/14 parcial solo con cambios pequenos y tests enfocados.
+6. Mantener cada fase commiteable con Conventional Commits.
+
+## 9. Criterios de aceptacion de Fase 0
+
+- [x] Rama de trabajo creada.
+- [x] Baseline frontend ejecutado y documentado.
+- [x] Fallos backend/E2E documentados sin ocultarlos.
+- [x] Inventario de rutas, permisos, modulos y componentes criticos.
+- [x] Riesgos y siguiente plan documentados.
+- [ ] Baseline backend oficial verde. Bloqueado por entorno Docker/Composer.
+- [ ] Playwright completo verde. Bloqueado por timeout.
