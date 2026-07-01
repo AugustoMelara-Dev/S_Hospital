@@ -199,7 +199,7 @@ export function ServiceSheet({
     >
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
         <FormSection
-          title="Identificación"
+          title="Datos básicos"
           description="Categoría, área y nombre visible para el cajero."
         >
           <FieldGroup columns={2}>
@@ -280,7 +280,7 @@ export function ServiceSheet({
         </FormSection>
 
         <FormSection
-          title="Tarifa y trazabilidad"
+          title="Precio"
           description="Precio vigente y motivo del cambio. El cambio de precio siempre queda auditado."
         >
           <div className="flex flex-col gap-2">
@@ -387,8 +387,8 @@ export function ServiceSheet({
         )}
 
         <FormSection
-          title="Reglas operativas"
-          description="Reglas especiales, ISV y disponibilidad del servicio en caja."
+          title="Reglas"
+          description="Regla especial e ISV aplicable al servicio."
         >
           <div className="flex flex-col gap-2">
             <Label htmlFor="special_rule_code">Regla especial</Label>
@@ -451,7 +451,14 @@ export function ServiceSheet({
                 )}
               </div>
             )}
+          </FieldGroup>
+        </FormSection>
 
+        <FormSection
+          title="Estado"
+          description="Disponibilidad del servicio para caja y facturacion."
+        >
+          <FieldGroup columns={2}>
             <div className="flex items-center gap-2">
               <Controller
                 control={control}

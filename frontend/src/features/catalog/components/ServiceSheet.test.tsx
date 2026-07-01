@@ -185,6 +185,34 @@ describe('ServiceSheet contract preservation', () => {
     ).toBeInTheDocument();
   });
 
+  it('organizes the service drawer into the required Phase 8 sections', () => {
+    render(
+      <ServiceSheet
+        open
+        onOpenChange={noop}
+        service={null}
+        categories={[{ id: 1, name: 'Laboratorio' }]}
+        areas={[{ id: 1, name: 'Laboratorio' }]}
+        onSuccess={noop}
+      />,
+    );
+
+    const sectionHeadings = screen
+      .getAllByRole('heading', { level: 2 })
+      .map((heading) => heading.textContent);
+
+    expect(sectionHeadings).toEqual([
+      'Nuevo servicio',
+      'Datos básicos',
+      'Precio',
+      'Reglas',
+      'Estado',
+    ]);
+    expect(screen.queryByText(/identificaci[oÃ³]n/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/tarifa y trazabilidad/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/reglas operativas/i)).not.toBeInTheDocument();
+  });
+
   it('renders the initial values for editing mode without changing units or rounding', () => {
     render(
       <ServiceSheet
