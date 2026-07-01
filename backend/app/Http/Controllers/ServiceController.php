@@ -6,6 +6,7 @@ use App\Http\Requests\Catalog\IndexServiceRequest;
 use App\Http\Requests\Catalog\StoreServiceRequest;
 use App\Http\Requests\Catalog\UpdateServiceRequest;
 use App\Models\AuditLog;
+use App\Models\InvoiceItem;
 use App\Models\Service;
 use App\Models\ServicePriceHistory;
 use App\Support\ServiceSearch;
@@ -14,6 +15,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 
 class ServiceController extends Controller
@@ -149,6 +151,37 @@ class ServiceController extends Controller
                     'reason' => $priceChangeReason,
                 ]);
             }
+
+            return $service;
+        });
+
+        return response()->json([
+            'data' => $service->load('category:id,name,slug,active,sort_order', 'area:id,name,slug,active'),
+        ]);
+    }
+
+    public function destroy(Request $request, Service $service): JsonResponse
+    {
+        Gate::authorize('delete', $service);
+
+        if (InvoiceItem::query()->where('service_id', $service->id)->exists()) {
+            return response()->json([
+                'message' => 'No se puede eliminar un servicio facturado. Desactive el servicio para ocultarlo de nuevos cobros.',
+            ], 409);
+        }
+
+        $service = DB::transaction(function () use ($request, $service): Service {
+            $oldValues = $this->auditPayload($service);
+
+            if ($service->active) {
+                $service->forceFill([
+                    'active' => false,
+                    'updated_by' => $request->user()->id,
+                ])->save();
+                $service->refresh();
+            }
+
+            $this->audit($request, 'service.deactivated', $service, $oldValues);
 
             return $service;
         });

@@ -139,6 +139,8 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle.user:240,1'])->gr
             ->middleware('throttle.user:60,1');
         Route::patch('/services/{service}', [ServiceController::class, 'update'])
             ->middleware('throttle.user:60,1');
+        Route::delete('/services/{service}', [ServiceController::class, 'destroy'])
+            ->middleware('throttle.user:30,1');
 
         Route::get('/invoices', [InvoiceController::class, 'index']);
         Route::post('/invoices', [InvoiceController::class, 'store'])

@@ -5,6 +5,9 @@ namespace Tests\Feature;
 use App\Models\Area;
 use App\Models\AuditLog;
 use App\Models\Category;
+use App\Models\FiscalSequence;
+use App\Models\Invoice;
+use App\Models\InvoiceItem;
 use App\Models\Service;
 use App\Models\ServiceArea;
 use App\Models\ServicePriceHistory;
@@ -881,6 +884,52 @@ class ServiceCatalogTest extends TestCase
             ->assertJsonCount(0, 'data');
     }
 
+    public function test_deleting_unbilled_service_deactivates_instead_of_removing_it(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $admin = $this->admin();
+        $service = Service::query()->where('name', 'Glucosa')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->deleteJson("/api/services/{$service->id}")
+            ->assertOk()
+            ->assertJsonPath('data.id', $service->id)
+            ->assertJsonPath('data.active', false);
+
+        $this->assertDatabaseHas('services', [
+            'id' => $service->id,
+            'active' => false,
+        ]);
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $admin->id,
+            'action' => 'service.deactivated',
+            'entity_type' => Service::class,
+            'entity_id' => $service->id,
+            'result' => 'success',
+        ]);
+    }
+
+    public function test_deleting_invoiced_service_returns_conflict_and_keeps_it_active(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $admin = $this->admin();
+        $service = Service::query()->where('name', 'Glucosa')->firstOrFail();
+
+        $this->createIssuedInvoiceForService($service, $admin);
+
+        $this->actingAs($admin)
+            ->deleteJson("/api/services/{$service->id}")
+            ->assertStatus(409)
+            ->assertJsonPath('message', 'No se puede eliminar un servicio facturado. Desactive el servicio para ocultarlo de nuevos cobros.');
+
+        $this->assertTrue($service->fresh()->active);
+        $this->assertDatabaseMissing('audit_logs', [
+            'action' => 'service.deactivated',
+            'entity_type' => Service::class,
+            'entity_id' => $service->id,
+        ]);
+    }
+
     public function test_service_change_rolls_back_when_audit_log_fails(): void
     {
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
@@ -919,5 +968,67 @@ class ServiceCatalogTest extends TestCase
         $cashier->assignRole('cajero');
 
         return $cashier->refresh();
+    }
+
+    private function createIssuedInvoiceForService(Service $service, User $issuer): Invoice
+    {
+        $sequence = FiscalSequence::query()->create([
+            'document_type' => 'invoice',
+            'prefix' => '000-001-01',
+            'min_number' => 1,
+            'max_number' => 99999999,
+            'current_number' => 1,
+            'cai' => 'CATALOG-DELETE-TEST',
+            'valid_until' => now()->addYear()->toDateString(),
+            'active' => true,
+        ]);
+
+        $invoice = Invoice::query()->create([
+            'invoice_number' => 'CAT-DEL-00000001',
+            'fiscal_sequence_id' => $sequence->id,
+            'fiscal_cai' => $sequence->cai,
+            'tax_label' => 'ISV',
+            'tax_rate_snapshot' => '15.00',
+            'patient_name' => 'Paciente catalogo',
+            'subtotal' => '100.00',
+            'subtotal_cents' => 10000,
+            'tax_amount' => '15.00',
+            'tax_amount_cents' => 1500,
+            'discount_amount' => '0.00',
+            'discount_amount_cents' => 0,
+            'total' => '115.00',
+            'total_cents' => 11500,
+            'paid_amount' => '0.00',
+            'paid_amount_cents' => 0,
+            'balance_due' => '115.00',
+            'balance_due_cents' => 11500,
+            'status' => Invoice::STATUS_ISSUED,
+            'issued_by' => $issuer->id,
+            'issued_at' => now(),
+        ]);
+
+        InvoiceItem::query()->create([
+            'invoice_id' => $invoice->id,
+            'service_id' => $service->id,
+            'service_name' => $service->name,
+            'category_id' => $service->category_id,
+            'category_name' => $service->category->name,
+            'area_id' => $service->area_id,
+            'area_name' => $service->area->name,
+            'quantity' => '1.00',
+            'quantity_cents' => 100,
+            'unit_price' => '100.00',
+            'unit_price_cents' => 10000,
+            'tax_rate' => '15.00',
+            'tax_amount' => '15.00',
+            'tax_amount_cents' => 1500,
+            'line_subtotal' => '100.00',
+            'line_subtotal_cents' => 10000,
+            'line_total' => '115.00',
+            'line_total_cents' => 11500,
+            'special_rule_applied' => false,
+        ]);
+
+        return $invoice;
     }
 }
