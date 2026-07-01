@@ -106,6 +106,27 @@ class FiscalSettingsTest extends TestCase
             ->assertJsonValidationErrors('receipt_paper_size');
     }
 
+    public function test_receipt_paper_size_update_returns_deprecation_warning(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin)
+            ->putJson('/api/settings/fiscal', [
+                ...$this->validPayload(),
+                'receipt_paper_size' => 'letter',
+            ])
+            ->assertOk()
+            ->assertHeader(
+                'Warning',
+                '299 - "El campo receipt_paper_size en la configuracion fiscal esta obsoleto y se ha migrado a perfiles de impresion de recibos institucionales."',
+            )
+            ->assertJsonPath('warning', 'El campo receipt_paper_size en la configuración fiscal está obsoleto y se ha migrado a perfiles de impresión de recibos institucionales.')
+            ->assertJsonPath('_deprecated.receipt_paper_size', 'Migrado a perfiles de impresión de recibos institucionales.');
+    }
+
     public function test_paper_size_change_with_open_cash_session_emits_mid_shift_warning(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);

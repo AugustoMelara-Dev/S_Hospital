@@ -133,13 +133,26 @@ class FiscalSettingsController extends Controller
             return $setting;
         });
 
-        $response = response()->json([
+        $responseData = [
             'data' => $setting->refresh(),
             'meta' => [
                 'paper_size_changed_mid_shift' => $payload['paper_size_changed_mid_shift'],
                 'open_cash_session_id' => $payload['open_cash_session_id'],
             ],
-        ]);
+        ];
+
+        if ($request->has('receipt_paper_size')) {
+            $responseData['warning'] = 'El campo receipt_paper_size en la configuración fiscal está obsoleto y se ha migrado a perfiles de impresión de recibos institucionales.';
+            $responseData['_deprecated'] = [
+                'receipt_paper_size' => 'Migrado a perfiles de impresión de recibos institucionales.',
+            ];
+        }
+
+        $response = response()->json($responseData);
+
+        if ($request->has('receipt_paper_size')) {
+            $response->headers->set('Warning', '299 - "El campo receipt_paper_size en la configuracion fiscal esta obsoleto y se ha migrado a perfiles de impresion de recibos institucionales."');
+        }
 
         if ($payload['paper_size_changed_mid_shift']) {
             $response->headers->set('X-S-Hospital-Paper-Size-Warning', 'mid-shift-change');
