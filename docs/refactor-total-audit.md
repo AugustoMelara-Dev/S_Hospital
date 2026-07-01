@@ -174,7 +174,7 @@ Existen componentes reutilizables para acciones, menus, alertas, dialogos, tabla
 ### UX/UI
 
 - Reportes ya tiene 3 subrutas visibles (`executive`, `cash`, `audit`), pero aun usa `ReportFiltersPanel` y `MetricsGlossary`. No se puede sostener que esos componentes hayan sido eliminados.
-- `routes.ts` conserva etiquetas `Fase 12A`, posible deuda historica de release.
+- Se elimino `frontend/src/routes.ts`, archivo obsoleto no importado que conservaba etiquetas historicas `Fase 12A`.
 - Algunos modulos siguen usando `SectionCard`/cards funcionales; hay que auditar visualmente si son operativas o decorativas.
 - Hay 9 tests `it.skip`, principalmente en usuarios y cobertura reemplazada por componentes extraidos. Deben revisarse antes de declarar cobertura final.
 
