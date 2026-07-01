@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { InfoPanel, StatGrid } from '@/components/shared';
+import { StatGrid } from '@/components/shared';
 import { type AuthUser, type Category, type Service, type ServiceFilters, apiClient, userSafeErrorMessage } from '../../lib/api';
 import { useAreas, useCategories } from '@/hooks/useCategories';
 import { useOperationalSettings } from '@/hooks/useFiscalSettings';
@@ -230,14 +230,8 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
         summary={{ count: services.length, total: meta.total }}
       />
 
-      <InfoPanel
-        title="Catálogo operativo de caja"
-        description="Servicios, categorías y estado de facturación se administran aquí. Los precios históricos de facturas ya emitidas siguen protegidos por snapshots."
-        tone={canManageCatalog ? 'info' : 'neutral'}
-      />
-
       <StatGrid
-        className="sm:grid-cols-2 xl:grid-cols-4"
+        className="sm:grid-cols-2 xl:grid-cols-2"
         items={[
           {
             label: 'Total catálogo',
@@ -250,18 +244,6 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
             value: categories.length,
             helper: 'Disponibles para filtrar servicios',
             tone: categories.length > 0 ? 'info' : 'warning',
-          },
-          {
-            label: 'Áreas',
-            value: areas.length,
-            helper: 'Clasificación administrativa',
-            tone: areas.length > 0 ? 'info' : 'warning',
-          },
-          {
-            label: 'Escáner',
-            value: scannerEnabled ? 'Activo' : 'Oculto',
-            helper: scannerEnabled ? 'Códigos visibles para gestión' : 'Sin códigos en flujo principal',
-            tone: scannerEnabled ? 'info' : 'neutral',
           },
         ]}
       />

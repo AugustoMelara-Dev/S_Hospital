@@ -127,6 +127,36 @@ describe('CatalogView modernized structure', () => {
     expect(await screen.findByText('2 servicios en el catálogo')).toBeInTheDocument();
   });
 
+  it('keeps the catalog metrics focused on at most two operational cards', async () => {
+    setupBasicMocks();
+    vi.spyOn(apiClient, 'getCategories').mockResolvedValue([
+      { id: 1, name: 'Laboratorio', slug: 'laboratorio', active: true, sort_order: 1 },
+    ]);
+    vi.spyOn(apiClient, 'getAreas').mockResolvedValue([
+      { id: 1, name: 'Laboratorio', slug: 'laboratorio', active: true },
+    ]);
+    vi.spyOn(apiClient, 'getOperationalSettings').mockResolvedValue({
+      scanner_enabled: true,
+    } as Awaited<ReturnType<typeof apiClient.getOperationalSettings>>);
+    vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({
+      data: [serviceFixture()],
+      meta: { current_page: 1, per_page: 15, total: 1 },
+    });
+
+    const { container } = renderWithQueryClient(<CatalogView user={catalogUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => {
+      expect(container.querySelectorAll('[data-slot="stat-grid-item"]').length).toBeGreaterThan(0);
+    });
+
+    const statCards = container.querySelectorAll('[data-slot="stat-grid-item"]');
+    const statText = Array.from(statCards).map((card) => card.textContent ?? '').join(' ');
+    expect(statCards).toHaveLength(2);
+    expect(statText).toMatch(/total cat.logo/i);
+    expect(statText).toMatch(/categor.as/i);
+    expect(statText).not.toMatch(/esc.ner/i);
+  });
+
   it('exposes the search input with an accessible name', async () => {
     setupBasicMocks();
     vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({
