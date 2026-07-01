@@ -335,6 +335,7 @@ Decision:
 Cambio aplicado:
 
 - `useOpenCashSession` y `useCloseCashSession` ahora generan una `Idempotency-Key` estable por intento con `createClientIdempotencyKey()`.
+- `CashBoxView`, que ejecuta apertura/cierre directamente desde la pantalla operativa, tambien pasa una `Idempotency-Key` explicita por intento al cliente API.
 - La clave se reutiliza si el intento falla y el operador reintenta; se limpia solo cuando el backend confirma exito.
 - `useCreateBackup` aplica el mismo patron para respaldo manual.
 - `frontend/src/lib/api/cash.ts`, `frontend/src/lib/api/backups.ts` y el facade `frontend/src/lib/api.ts` aceptan `options.idempotencyKey` y lo propagan al header `Idempotency-Key`.
@@ -349,6 +350,7 @@ Pruebas ejecutadas:
 | `npm run test -- src/hooks/useCashSession.test.tsx src/hooks/useBackups.test.tsx src/lib/api/cash.test.ts src/lib/api/backups.test.ts` | OK: 4 archivos, 17 tests pasan. |
 | `npm run test -- src/lib/api/billing.test.ts src/hooks/useInvoices.test.tsx` | OK: 2 archivos, 4 tests pasan. |
 | `npm run test -- src/hooks/useCashSession.test.tsx src/hooks/useBackups.test.tsx src/lib/api/cash.test.ts src/lib/api/backups.test.ts src/lib/api/billing.test.ts src/hooks/useInvoices.test.tsx` | OK: 6 archivos, 21 tests pasan. |
+| `npm run test -- src/features/cash/CashBoxView.test.tsx` | RED inicial por llamadas directas sin options; luego OK: 8 tests pasan. |
 | `npm run typecheck` | OK. |
 | `npm run lint` | OK. |
 

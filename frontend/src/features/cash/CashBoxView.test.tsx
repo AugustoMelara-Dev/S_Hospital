@@ -384,7 +384,10 @@ describe('CashBoxView', () => {
     fireEvent.click(openButton);
 
     await waitFor(() => expect(openCashSession).toHaveBeenCalledTimes(1));
-    expect(openCashSession).toHaveBeenCalledWith({ opening_amount: '0.00' });
+    expect(openCashSession).toHaveBeenCalledWith(
+      { opening_amount: '0.00' },
+      { idempotencyKey: expect.any(String) },
+    );
 
     await act(async () => {
       resolveOpen(opened);
@@ -415,10 +418,14 @@ describe('CashBoxView', () => {
     const confirmButtons = screen.getAllByRole('button', { name: /^cerrar caja$/i });
     fireEvent.click(confirmButtons[confirmButtons.length - 1]);
 
-    await waitFor(() => expect(closeCashSession).toHaveBeenCalledWith(1, {
-      closing_amount: '100.00',
-      notes: null,
-    }));
+    await waitFor(() => expect(closeCashSession).toHaveBeenCalledWith(
+      1,
+      {
+        closing_amount: '100.00',
+        notes: null,
+      },
+      { idempotencyKey: expect.any(String) },
+    ));
   });
 });
 

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/states';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type CashSession, apiClient, userSafeErrorMessage } from '@/lib/api';
+import { createClientIdempotencyKey } from '@/lib/api/base';
 import { formatLempirasUI, parseCents, toFloat } from '@/lib/money';
 import { invalidateBillingQueries } from '@/lib/queryInvalidation';
 import { queryKeys } from '@/lib/queryKeys';
@@ -50,6 +51,8 @@ export function CashBoxView({
   const closingAmountRef = useRef<HTMLInputElement | null>(null);
   const openingSessionInFlightRef = useRef(false);
   const closingSessionInFlightRef = useRef(false);
+  const openSessionIdempotencyKeyRef = useRef<string | null>(null);
+  const closeSessionIdempotencyKeyRef = useRef<string | null>(null);
 
   const {
     data: session,
@@ -89,9 +92,15 @@ export function CashBoxView({
     : '';
 
   const openSessionMutation = useMutation({
-    mutationFn: (payload: { opening_amount: string; notes?: string | null }) =>
-      apiClient.openCashSession(payload),
+    mutationFn: (payload: { opening_amount: string; notes?: string | null }) => {
+      openSessionIdempotencyKeyRef.current ??= createClientIdempotencyKey();
+
+      return apiClient.openCashSession(payload, {
+        idempotencyKey: openSessionIdempotencyKeyRef.current,
+      });
+    },
     onSuccess: async (opened) => {
+      openSessionIdempotencyKeyRef.current = null;
       queryClient.setQueryData(queryKeys.cashSessions.current(), opened);
       await invalidateBillingQueries(queryClient);
       setClosingAmount('');
@@ -111,9 +120,15 @@ export function CashBoxView({
   });
 
   const closeSessionMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: number; payload: { closing_amount: string; notes?: string | null } }) =>
-      apiClient.closeCashSession(id, payload),
+    mutationFn: ({ id, payload }: { id: number; payload: { closing_amount: string; notes?: string | null } }) => {
+      closeSessionIdempotencyKeyRef.current ??= createClientIdempotencyKey();
+
+      return apiClient.closeCashSession(id, payload, {
+        idempotencyKey: closeSessionIdempotencyKeyRef.current,
+      });
+    },
     onSuccess: async () => {
+      closeSessionIdempotencyKeyRef.current = null;
       queryClient.setQueryData(queryKeys.cashSessions.current(), null);
       await invalidateBillingQueries(queryClient);
       setClosingAmount('');
