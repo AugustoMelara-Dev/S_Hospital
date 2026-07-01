@@ -99,6 +99,29 @@ describe('InvoiceHistoryView', () => {
     })));
   });
 
+  it('treats advanced date changes as active filters in the empty state', async () => {
+    const getInvoices = vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [],
+      meta: { current_page: 1, per_page: 10, total: 0 },
+    });
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
+
+    expect(await screen.findByText(/no hay facturas registradas/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /filtros avanzados/i }));
+    fireEvent.change(screen.getByLabelText(/desde/i), { target: { value: '2026-06-01' } });
+
+    await waitFor(() => expect(getInvoices).toHaveBeenLastCalledWith(expect.objectContaining({
+      date_from: '2026-06-01',
+      page: 1,
+      per_page: 10,
+    })));
+
+    expect(await screen.findByText(/no se encontraron facturas con los filtros seleccionados/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /limpiar filtros/i })).toBeInTheDocument();
+  });
+
   it('does not expose restricted history actions or invented payment actions without permissions', async () => {
     vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
       data: [

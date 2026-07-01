@@ -380,7 +380,9 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   const hasActiveFilters = !!(
     filters.patient ||
     filters.invoice_number ||
-    filters.status
+    filters.status ||
+    (filters.date_from && filters.date_from !== today) ||
+    (filters.date_to && filters.date_to !== today)
   );
 
   const isEmpty = invoicesList.length === 0;
