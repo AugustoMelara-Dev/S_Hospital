@@ -1,8 +1,12 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CloseSessionDialog } from './CloseSessionDialog';
 
 describe('CloseSessionDialog', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it('has accessible title and description while preserving difference confirmation', async () => {
     const onConfirm = vi.fn();
     const onOpenChange = vi.fn();
@@ -38,6 +42,37 @@ describe('CloseSessionDialog', () => {
     fireEvent.click(screen.getByRole('button', { name: /cancelar/i }));
 
     await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
+    expect(onConfirm).not.toHaveBeenCalled();
+  });
+
+  it('prints the close summary without confirming the cash close', () => {
+    const onConfirm = vi.fn();
+    const print = vi.fn();
+    vi.stubGlobal('print', print);
+
+    render(
+      <CloseSessionDialog
+        open
+        onOpenChange={vi.fn()}
+        session={{
+          opening_amount: '100.00',
+          expected_cash_amount: '125.00',
+          payments_by_method: { cash: '25.00', transfer: '0.00', card: '0.00', other: '0.00' },
+          pending_invoice_count: 0,
+          pending_amount: '0.00',
+        }}
+        closingAmount="125.00"
+        closingNotes=""
+        difference={0}
+        isSubmitting={false}
+        onClosingNotesChange={vi.fn()}
+        onConfirm={onConfirm}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /imprimir resumen/i }));
+
+    expect(print).toHaveBeenCalledTimes(1);
     expect(onConfirm).not.toHaveBeenCalled();
   });
 });

@@ -1,5 +1,5 @@
 import * as AlertDialogPrimitive from '@radix-ui/react-alert-dialog';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Printer } from 'lucide-react';
 import { type ReactNode, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -244,6 +244,10 @@ export function CloseSessionDialog({
         </section>
 
         <AlertDialogFooter className="mt-6">
+          <Button type="button" variant="secondary" onClick={() => window.print()} disabled={isSubmitting}>
+            <Printer aria-hidden="true" className="size-4" />
+            Imprimir resumen
+          </Button>
           <AlertDialogCancel>Cancelar</AlertDialogCancel>
           <AlertDialogAction onClick={onConfirm} disabled={isSubmitting || (isDifference && !closingNotes.trim())}>
             {isSubmitting ? 'Cerrando...' : 'Cerrar caja'}
