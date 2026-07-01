@@ -2,7 +2,6 @@ import { AlertCircle, CheckCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { StatusBadge } from '@/components/ui/status-badge';
 import type { FiscalSequence, FiscalSettings } from '@/lib/api';
-import { INSTITUTIONAL_RECEIPT_PAPER_OPTIONS } from '@/lib/institutionalReceiptPaper';
 
 interface FiscalStatusCardProps {
   settings: FiscalSettings | null;
@@ -16,7 +15,6 @@ export function FiscalStatusCard({ settings, sequence }: FiscalStatusCardProps) 
   const isPlaceholderCai = new RegExp(`^${'de' + 'mo'}-cai$`, 'i').test(cai);
   const isHospitalConfigured = Boolean(hospitalName) && !isPlaceholderHospital;
   const hasRtn = Boolean(settings?.rtn?.trim());
-  const hasReceiptPaperSize = INSTITUTIONAL_RECEIPT_PAPER_OPTIONS.some((option) => option.value === settings?.receipt_paper_size);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const validUntil = sequence?.valid_until ? new Date(sequence.valid_until) : null;
@@ -36,7 +34,6 @@ export function FiscalStatusCard({ settings, sequence }: FiscalStatusCardProps) 
   const blockers = [
     !isHospitalConfigured ? 'nombre del hospital' : null,
     !hasRtn ? 'RTN del hospital' : null,
-    !hasReceiptPaperSize ? 'tamaño de recibo institucional' : null,
     !isSequenceConfigured ? 'CAI y prefijo fiscal' : null,
     !isSequenceActive ? 'secuencia fiscal activa' : null,
     !isDateValid ? 'fecha limite vigente' : null,

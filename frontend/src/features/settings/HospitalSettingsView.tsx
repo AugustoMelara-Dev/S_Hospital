@@ -105,7 +105,6 @@ export function HospitalSettingsView({ canEdit, onStatus }: HospitalSettingsView
         receipt_location: optionalText(data.receipt_location ?? ''),
         receipt_footer_text: optionalText(data.receipt_footer_text ?? ''),
         receipt_template_mode: 'institutional',
-        receipt_paper_size: settings?.receipt_paper_size ?? 'half_letter',
       });
       setSettings(updated);
       onStatus('Datos del hospital guardados.');

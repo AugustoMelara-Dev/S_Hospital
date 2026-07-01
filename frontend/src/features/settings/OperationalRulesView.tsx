@@ -57,7 +57,6 @@ export function OperationalRulesView({ canEdit, onStatus }: OperationalRulesView
         scanner_enabled: scannerEnabled,
         partial_payments_enabled: partialPaymentsEnabled,
         receipt_template_mode: 'institutional',
-        receipt_paper_size: settings.receipt_paper_size ?? 'half_letter',
       });
       setSettings(updated);
       onStatus('Reglas operativas guardadas.');

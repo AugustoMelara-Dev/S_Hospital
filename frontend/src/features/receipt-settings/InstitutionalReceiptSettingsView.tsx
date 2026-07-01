@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { LoadingState } from '@/components/ui/states';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { PaperProfileSelector, SectionCard, StatCard } from '@/components/shared';
+import { PaperProfileSelector, SectionCard, StatCard, PermissionState } from '@/components/shared';
 import { ReceiptSettingsPreview } from './components/ReceiptSettingsPreview';
 import { type InstitutionalReceiptSeries, type ReceiptPrintProfile, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { downloadBlob } from '@/lib/download';
@@ -770,6 +770,16 @@ export function InstitutionalReceiptSettingsView({
                 <Alert title="Modo soporte no aplica aquí">
                   Los ajustes avanzados solo aplican al perfil personalizado de recibo pequeño.
                 </Alert>
+              )}
+
+              {!canAdvancedPrintSettings && (
+                <div className="mt-5">
+                  <PermissionState
+                    state="denied"
+                    title="Ajustes avanzados restringidos"
+                    description="Ajustes avanzados requieren permiso de soporte técnico."
+                  />
+                </div>
               )}
 
             </SectionCard>

@@ -62,7 +62,6 @@ export function BrandingView({ canEdit, onStatus }: BrandingViewProps) {
         scanner_enabled: settings.scanner_enabled === true,
         partial_payments_enabled: settings.partial_payments_enabled === true,
         receipt_template_mode: 'institutional',
-        receipt_paper_size: settings.receipt_paper_size ?? 'half_letter',
       });
       setSettings(updated);
       onStatus(`Color de marca cambiado a ${COLOR_THEMES[newColor].name}.`);

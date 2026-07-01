@@ -186,4 +186,12 @@ describe('InstitutionalReceiptSettingsView', () => {
       }));
     });
   });
+
+  it('renders PermissionState when canAdvancedPrintSettings is false', async () => {
+    renderView({ canAdvancedPrintSettings: false });
+    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
+    await activateTab('Papel y copias');
+    expect(await screen.findByText('Ajustes avanzados restringidos')).toBeInTheDocument();
+    expect(screen.getByText('Ajustes avanzados requieren permiso de soporte técnico.')).toBeInTheDocument();
+  });
 });

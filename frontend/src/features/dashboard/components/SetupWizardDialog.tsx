@@ -4,10 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert } from '@/components/ui/alert';
 import { apiClient, userSafeErrorMessage } from '@/lib/api';
-import { INSTITUTIONAL_RECEIPT_PAPER_OPTIONS, type InstitutionalReceiptPaperOption, institutionalReceiptPaperSize } from '@/lib/institutionalReceiptPaper';
 import { parseCents } from '@/lib/moneyCents';
 import {
   Building2,
@@ -25,12 +23,6 @@ type SetupWizardDialogProps = {
   onComplete: () => void;
 };
 
-type InstitutionalReceiptPaperSize = InstitutionalReceiptPaperOption;
-
-function institutionalPaperSize(value: unknown): InstitutionalReceiptPaperSize {
-  return institutionalReceiptPaperSize(typeof value === 'string' ? value : undefined);
-}
-
 export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizardDialogProps) {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -41,7 +33,6 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
     hospital_name: '',
     rtn: '',
     default_tax_rate: '15.00',
-    receipt_paper_size: 'half_letter' as InstitutionalReceiptPaperSize,
     primary_color: 'indigo' as 'teal' | 'blue' | 'indigo' | 'green' | 'rose',
     address: '',
     slogan: '',
@@ -81,7 +72,6 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
           hospital_name: settings.hospital_name || '',
           rtn: settings.rtn || '',
           default_tax_rate: settings.default_tax_rate || '15.00',
-          receipt_paper_size: institutionalPaperSize(settings.receipt_paper_size),
           primary_color: settings.primary_color || 'indigo',
           address: settings.address || '',
           slogan: settings.slogan || '',
@@ -116,7 +106,6 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
         hospital_name: hospitalForm.hospital_name,
         rtn: hospitalForm.rtn,
         default_tax_rate: hospitalForm.default_tax_rate,
-        receipt_paper_size: hospitalForm.receipt_paper_size,
         primary_color: hospitalForm.primary_color,
         address: hospitalForm.address,
         slogan: hospitalForm.slogan,
@@ -344,22 +333,6 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="wiz-hosp-width">Tamaño del recibo institucional</Label>
-                <Select
-                  value={hospitalForm.receipt_paper_size}
-                  onValueChange={(val: string) => setHospitalForm({ ...hospitalForm, receipt_paper_size: val as InstitutionalReceiptPaperSize })}
-                >
-                  <SelectTrigger id="wiz-hosp-width">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {INSTITUTIONAL_RECEIPT_PAPER_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
 
             <div className="flex justify-end pt-4">

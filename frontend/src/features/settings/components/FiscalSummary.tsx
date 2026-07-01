@@ -2,7 +2,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import type { FiscalSequence, FiscalSettings } from '@/lib/api';
 import { displayHospitalName } from '@/lib/hospital-name';
-import { receiptPaperSizeLabel } from '@/lib/institutionalReceiptPaper';
 
 function formatDate(dateStr: string): string {
   const date = new Date(dateStr);
@@ -26,7 +25,6 @@ export function FiscalSummary({ settings, sequence }: FiscalSummaryProps) {
     ? new Date(sequence.valid_until) < new Date()
     : false;
   const cai = isPlaceholderCai(sequence?.cai) ? '' : sequence?.cai;
-  const receiptPaperSize = settings?.receipt_paper_size ? receiptPaperSizeLabel(settings.receipt_paper_size) : null;
 
   return (
     <Card className="border-operational-border bg-operational-surface shadow-operational">
@@ -64,10 +62,6 @@ export function FiscalSummary({ settings, sequence }: FiscalSummaryProps) {
                 ? `${sequence.prefix}-${String(sequence.current_number + 1).padStart(8, '0')}`
                 : '-'}
             </p>
-          </div>
-          <div className="min-w-0 rounded-panel border border-operational-border bg-operational-panel p-3">
-            <Label className="text-muted-foreground">Recibo institucional</Label>
-            <p className="font-medium">{receiptPaperSize ?? 'Pendiente'}</p>
           </div>
           <div className="min-w-0 rounded-panel border border-operational-border bg-operational-panel p-3">
             <Label className="text-muted-foreground">Válido hasta</Label>
