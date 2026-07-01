@@ -37,6 +37,17 @@ describe('ServiceCatalogTable', () => {
     fireEvent.click(screen.getByRole('button', { name: /reintentar/i }));
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
+
+  it('uses the compact Phase 8 catalog table columns', () => {
+    render(<ServiceCatalogTable {...baseProps()} />);
+
+    expect(screen.getByRole('columnheader', { name: /^Servicio$/ })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /categor/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /rea/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /^Precio$/ })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /^Estado$/ })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /^Acciones$/ })).toBeInTheDocument();
+  });
 });
 
 function baseProps() {

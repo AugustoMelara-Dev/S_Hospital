@@ -72,7 +72,7 @@ function createServiceColumns({
   const columns: Array<DataTableColumn<Service>> = [
     {
       key: 'name',
-      header: 'Nombre',
+      header: 'Servicio',
       cellClassName: 'px-4 py-3 align-top',
       render: (service) => {
         const billingSummary = getServiceBillingSummary(service);
@@ -128,7 +128,7 @@ function createServiceColumns({
 
   columns.push({
     key: 'billing-state',
-    header: 'Estado en caja',
+    header: 'Estado',
     cellClassName: 'px-4 py-3 align-top',
     render: (service) => {
       const billingSummary = getServiceBillingSummary(service);
