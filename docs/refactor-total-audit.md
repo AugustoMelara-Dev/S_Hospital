@@ -183,7 +183,7 @@ Existen componentes reutilizables para acciones, menus, alertas, dialogos, tabla
 - Hay transacciones y locks en facturacion, pagos, caja, recibos y reimpresion.
 - Backend rechaza campos avanzados de recibos sin `receipt_settings.advanced` con 403 y audita `receipt_settings.advanced_denied`.
 - Hay permisos granulares y politicas/Form Requests en endpoints criticos.
-- Pendiente: backend no pudo ejecutarse en baseline por entorno; no se puede declarar suite Laravel verde.
+- Pendiente: baseline backend oficial sigue bloqueado por puerto `3306`; en stack aislado pasan HealthCheck, Pint y PHPStan, pero la suite Laravel completa hizo timeout y no puede declararse verde.
 
 ### Accesibilidad
 
