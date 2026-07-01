@@ -24,6 +24,17 @@ Intento de levantar el stack:
 
 Observacion: existen contenedores `s_hospital_f7_verify-*` saludables, pero no son el stack exacto exigido para baseline. Se intento fallback contra `s_hospital_f7_verify-backend-1`; no sirve como aprobacion backend porque ese contenedor no tiene `artisan test` ni binarios dev completos disponibles.
 
+Baseline alternativo aislado:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose -p s_hospital_codex_baseline run --rm backend sh -lc "composer install --no-interaction && php artisan test --filter=HealthCheckTest --colors=never"` con `DB_PORT=33307` | OK: 7 tests, 41 assertions. |
+| `docker compose -p s_hospital_codex_baseline run --rm backend vendor/bin/pint --test` | OK: 424 files. |
+| `docker compose -p s_hospital_codex_baseline run --rm backend vendor/bin/phpstan analyse --memory-limit=1G --no-progress` | OK: no errors. |
+| `docker compose -p s_hospital_codex_baseline run --rm backend php artisan test --colors=never` | Timeout despues de 364 s, sin salida final. Se detuvo el contenedor `backend-run` y se bajo el stack aislado. |
+
+Decision: el puerto local 3306 sigue bloqueado para el project name normal, pero el backend puede verificarse parcialmente en Docker con project name aislado y puerto host 33307.
+
 ### 1.2 Backend local
 
 | Comando | Resultado |
@@ -213,7 +224,7 @@ Existen componentes reutilizables para acciones, menus, alertas, dialogos, tabla
 
 ## 7. Riesgos tecnicos
 
-- El baseline backend oficial esta bloqueado por Docker/puerto `3306`; no hay veredicto real para `php artisan test`, Pint ni PHPStan.
+- El baseline backend oficial esta bloqueado por Docker/puerto `3306`; con Docker aislado en puerto `33307`, HealthCheck, Pint y PHPStan pasan, pero `php artisan test` completo aun hace timeout.
 - El host no tiene Composer y `backend/vendor` no contiene autoload/binarios; no se puede reconstruir backend local sin preparar entorno.
 - Playwright completo excede 4 minutos; hay que ejecutar specs criticas por grupos y documentar tiempos.
 - Hay historial de documentacion previa que afirma eliminaciones que el arbol actual no confirma.
@@ -235,7 +246,7 @@ Existen componentes reutilizables para acciones, menus, alertas, dialogos, tabla
 - [x] Fallos backend/E2E documentados sin ocultarlos.
 - [x] Inventario de rutas, permisos, modulos y componentes criticos.
 - [x] Riesgos y siguiente plan documentados.
-- [ ] Baseline backend oficial verde. Bloqueado por entorno Docker/Composer.
+- [ ] Baseline backend oficial verde. Parcial en Docker aislado: HealthCheck/Pint/PHPStan OK; suite completa timeout.
 - [ ] Playwright completo verde. Bloqueado por timeout.
 
 ## 10. Fase 1 - Design system incremental
