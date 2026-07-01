@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom';
-import { Printer } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { Button } from '../../../components/ui/button';
 import { Dialog } from '../../../components/ui/dialog';
@@ -90,22 +89,9 @@ export function InvoiceSuccess({
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-3 pt-2">
-          <div className="flex flex-col gap-2">
-            <Button type="button" variant="outline" onClick={onImprimir} disabled={needsPayment}>
-              <Printer className="h-4 w-4 mr-2" />
-              Ver recibo
-            </Button>
-            {needsPayment && (
-              <p className="text-xs text-muted-foreground">
-                Disponible despues de cobrar.
-              </p>
-            )}
-          </div>
-          <Button asChild variant="outline">
-            <Link to={`/invoices?invoice_number=${encodeURIComponent(invoiceNumber)}`}>Ver factura</Link>
-          </Button>
-        </div>
+        <Button asChild variant="ghost" className="w-full">
+          <Link to={`/invoices?invoice_number=${encodeURIComponent(invoiceNumber)}`}>Ver detalle</Link>
+        </Button>
       </div>
     </Dialog>
   );

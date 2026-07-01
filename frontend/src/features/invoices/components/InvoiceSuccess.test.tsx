@@ -25,4 +25,30 @@ describe('InvoiceSuccess', () => {
     expect(document.body.textContent).toContain('L 0.00');
     expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|undefined/);
   });
+
+  it('keeps paid success actions to print, new invoice and detail only', () => {
+    render(
+      <MemoryRouter>
+        <InvoiceSuccess
+          open
+          onOpenChange={vi.fn()}
+          invoiceNumber="000-001-01-00000009"
+          patientName="Paciente Prueba"
+          total="125.00"
+          status="paid"
+          onCobrar={vi.fn()}
+          onImprimir={vi.fn()}
+          onNuevaFactura={vi.fn()}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getAllByRole('button', { name: /imprimir/i })).toHaveLength(1);
+    expect(screen.getByRole('button', { name: /crear otra factura/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /ver recibo/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /ver detalle/i })).toHaveAttribute(
+      'href',
+      '/invoices?invoice_number=000-001-01-00000009',
+    );
+  });
 });

@@ -220,6 +220,7 @@ Existen componentes reutilizables para acciones, menus, alertas, dialogos, tabla
 - `PaymentModal` ya no expone `previewBeforePrint`; el cobro mantiene una accion primaria unica: registrar cobro e imprimir.
 - Se elimino el estado/cableado `previewBeforePrint` del flujo POS. El recibo legacy se abre con autoimpresion tras registrar pago y el recibo institucional abre PDF directamente.
 - Prueba dedicada valida que el modal no muestre controles de preview antes de imprimir.
+- `InvoiceSuccess` pagada quedo con tres acciones: imprimir, crear otra factura y ver detalle; se elimino el boton duplicado `Ver recibo`.
 
 ### Usuarios
 
