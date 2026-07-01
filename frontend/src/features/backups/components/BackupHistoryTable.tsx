@@ -36,13 +36,6 @@ export function BackupHistoryTable({
       render: (backup) => formatDate(backup.completed_at ?? backup.created_at),
     },
     {
-      key: 'filename',
-      header: 'Nombre',
-      headerClassName: 'min-w-72 px-4 py-3',
-      cellClassName: 'min-w-72 break-words px-4 py-3 text-sm',
-      render: (backup) => backup.filename,
-    },
-    {
       key: 'size',
       header: 'Tamaño',
       headerClassName: 'w-24 whitespace-nowrap px-4 py-3',
@@ -87,7 +80,7 @@ export function BackupHistoryTable({
             type="button"
             variant="ghost"
             size="icon"
-            aria-label={`Descargar respaldo ${backup.filename}`}
+            aria-label={`Descargar respaldo del ${formatDate(backup.completed_at ?? backup.created_at)}`}
             disabled={downloadingBackupId !== null}
             onClick={() => onDownloadRequest(backup)}
           >
@@ -120,7 +113,7 @@ export function BackupHistoryTable({
       </div>
 
       <DataTable
-        caption="Historial de respaldos locales con fecha, archivo, tamano, estado, usuario y acciones disponibles."
+        caption="Historial de respaldos locales con fecha, tamano, estado, usuario y acciones disponibles."
         columns={columns}
         containerLabel="Historial de respaldos locales"
         emptyAction={

@@ -93,7 +93,13 @@ describe('BackupsView', () => {
 
     expect(await screen.findByRole('table', { name: /historial de respaldos locales/i })).toBeInTheDocument();
     expect(screen.getByRole('region', { name: /historial de respaldos locales/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /fecha/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /estado/i })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /tamaño/i })).toHaveAttribute('data-numeric', 'true');
+    expect(screen.getByRole('columnheader', { name: /usuario/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /acciones/i })).toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: /nombre/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/hospital-backup-.*\.sql\.enc/i)).not.toBeInTheDocument();
     expect(screen.getAllByRole('cell').some((cell) => cell.getAttribute('data-numeric') === 'true')).toBe(true);
     expect(screen.getByText(/respaldo en proceso/i)).toBeInTheDocument();
     expect(screen.getByText(/archivo creado correctamente/i)).toBeInTheDocument();
@@ -121,7 +127,7 @@ describe('BackupsView', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /reintentar carga/i }));
 
-    await screen.findByText(/hospital-backup-20260618-120000-test\.sql\.enc/i);
+    await screen.findByRole('table', { name: /historial de respaldos locales/i });
     expect(getBackups).toHaveBeenLastCalledWith({ page: 1, status: 'all' });
   });
 
@@ -134,7 +140,7 @@ describe('BackupsView', () => {
 
     renderWithQueryClient(<BackupsView user={readonlyUser} onStatus={() => undefined} />);
 
-    await screen.findByText(/hospital-backup-20260618-120000-test\.sql\.enc/i);
+    await screen.findByRole('table', { name: /historial de respaldos locales/i });
     expect(screen.queryByRole('button', { name: /^crear respaldo$/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /descargar respaldo/i })).not.toBeInTheDocument();
     expect(apiClient.downloadBackup).not.toHaveBeenCalled();
@@ -145,7 +151,7 @@ describe('BackupsView', () => {
 
     renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
 
-    await screen.findByText(/hospital-backup-20260618-120000-test\.sql\.enc/i);
+    await screen.findByRole('table', { name: /historial de respaldos locales/i });
     fireEvent.click(screen.getByRole('button', { name: /completados/i }));
 
     await waitFor(() => {
@@ -159,7 +165,10 @@ describe('BackupsView', () => {
     const getBackups = vi.mocked(apiClient.getBackups);
     getBackups
       .mockResolvedValueOnce({
-        data: [backupFixture({ filename: 'hospital-backup-visible-during-refetch.sql.enc' })],
+        data: [backupFixture({
+          filename: 'hospital-backup-visible-during-refetch.sql.enc',
+          creator: { id: 9, name: 'Operador Visible', username: 'operador.visible' },
+        })],
         meta: { current_page: 1, per_page: 15, total: 1 },
       })
       .mockReturnValueOnce(new Promise((resolve) => {
@@ -168,14 +177,14 @@ describe('BackupsView', () => {
 
     renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
 
-    expect(await screen.findByText(/hospital-backup-visible-during-refetch\.sql\.enc/i)).toBeInTheDocument();
+    expect(await screen.findByText(/operador visible/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /completados/i }));
 
     await waitFor(() => {
       expect(getBackups).toHaveBeenLastCalledWith({ page: 1, status: 'success' });
     });
-    expect(screen.getByText(/hospital-backup-visible-during-refetch\.sql\.enc/i)).toBeInTheDocument();
+    expect(screen.getByText(/operador visible/i)).toBeInTheDocument();
 
     act(() => {
       resolveFilteredBackups({
@@ -262,7 +271,7 @@ describe('BackupsView', () => {
     renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
 
     const downloadButton = await screen.findByRole('button', {
-      name: /descargar respaldo hospital-backup-20260618-120000-test\.sql\.enc/i,
+      name: /descargar respaldo del/i,
     });
     fireEvent.click(downloadButton);
     const dialog = screen.getByRole('alertdialog');
@@ -273,7 +282,7 @@ describe('BackupsView', () => {
     expect(downloadBackup).toHaveBeenCalledTimes(1);
     await waitFor(() => {
       expect(screen.getByRole('button', {
-        name: /descargar respaldo hospital-backup-20260618-120000-test\.sql\.enc/i,
+        name: /descargar respaldo del/i,
       })).toBeDisabled();
     });
 
@@ -284,7 +293,7 @@ describe('BackupsView', () => {
 
     await waitFor(() => {
       expect(screen.getByRole('button', {
-        name: /descargar respaldo hospital-backup-20260618-120000-test\.sql\.enc/i,
+        name: /descargar respaldo del/i,
       })).toBeEnabled();
     });
     expect(URL.createObjectURL).toHaveBeenCalled();
