@@ -157,6 +157,9 @@ export function CloseSessionDialog({
           <AlertDialogTitle>¿Cerrar caja?</AlertDialogTitle>
           <AlertDialogDescription>
             <div className="mt-3 grid gap-3">
+              <h3 className="text-xs font-semibold text-foreground">
+                1. Resumen del turno
+              </h3>
               <div className="rounded-md border border-border bg-muted/35 p-3 text-sm">
                 <div className="flex justify-between gap-4">
                   <span>Monto apertura:</span>
@@ -194,6 +197,9 @@ export function CloseSessionDialog({
                   Hay {pendingInvoiceCount} factura(s) pendientes o parciales. El servidor no permitira cerrar hasta revisarlas.
                 </div>
               )}
+              <h3 className="text-xs font-semibold text-foreground">
+                2. Conteo de efectivo
+              </h3>
               <div className="grid grid-cols-1 gap-2 rounded-md border border-border p-3 text-sm sm:grid-cols-2">
                 <div className="flex justify-between gap-4">
                   <span>Contado:</span>
@@ -227,6 +233,15 @@ export function CloseSessionDialog({
             />
           </div>
         )}
+
+        <section className="mt-5 grid gap-2" aria-labelledby="close-session-confirm-step">
+          <h3 id="close-session-confirm-step" className="text-xs font-semibold text-foreground">
+            3. Confirmar cierre
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            Confirme solo despues de revisar el resumen, el conteo fisico y la diferencia calculada.
+          </p>
+        </section>
 
         <AlertDialogFooter className="mt-6">
           <AlertDialogCancel>Cancelar</AlertDialogCancel>

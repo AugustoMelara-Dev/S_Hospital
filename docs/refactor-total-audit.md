@@ -380,3 +380,24 @@ Pruebas ejecutadas:
 Decision:
 
 - No se tocaron migraciones, schema ni correlativos. El backend ya exige `Idempotency-Key` en estas rutas `POST`; este corte evita que reintentos desde historial pierdan la clave gestionada por la UI.
+
+## 14. Fase 7 - Cierre de caja guiado
+
+Cambio aplicado:
+
+- `CloseSessionDialog` ahora expone el cierre como flujo guiado de 3 pasos: resumen del turno, conteo de efectivo y confirmacion de cierre.
+- La regla existente se conserva: si hay diferencia, la nota explicativa sigue siendo obligatoria antes de confirmar.
+- Este corte no cambia calculos, cierre backend, caja historica, correlativos ni movimientos; solo reduce ambiguedad en la confirmacion operativa.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- src/features/cash/components/CloseSessionDialog.test.tsx` | RED inicial por falta de pasos visibles; luego OK: 1 test pasa. |
+| `npm run test -- src/features/cash/components/CloseSessionDialog.test.tsx src/features/cash/CashBoxView.test.tsx` | OK: 2 archivos, 9 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+
+Decision:
+
+- Queda pendiente profundizar Fase 7 con impresion/exportacion de cierre y auditoria visual del layout completo de `/cashbox`.
