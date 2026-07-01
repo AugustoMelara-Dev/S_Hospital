@@ -176,7 +176,7 @@ Existen componentes reutilizables para acciones, menus, alertas, dialogos, tabla
 - Reportes ya tiene 3 subrutas visibles (`executive`, `cash`, `audit`), pero aun usa `ReportFiltersPanel` y `MetricsGlossary`. No se puede sostener que esos componentes hayan sido eliminados.
 - Se elimino `frontend/src/routes.ts`, archivo obsoleto no importado que conservaba etiquetas historicas `Fase 12A`.
 - Algunos modulos siguen usando `SectionCard`/cards funcionales; hay que auditar visualmente si son operativas o decorativas.
-- Hay 9 tests `it.skip`, principalmente en usuarios y cobertura reemplazada por componentes extraidos. Deben revisarse antes de declarar cobertura final.
+- Hay 8 tests `it.skip`, principalmente en usuarios y cobertura reemplazada por componentes extraidos. Deben revisarse antes de declarar cobertura final.
 
 ### Seguridad
 
@@ -210,6 +210,7 @@ Existen componentes reutilizables para acciones, menus, alertas, dialogos, tabla
 ### Usuarios
 
 - Megacomponente fue reducido con dialogos extraidos, pero `UsersView.tsx` aun concentra bastante estado y tiene tests skipped.
+- Se reactivo la prueba de `UserFormDialog` que valida que el campo de contrasena inicial solo exista al crear usuario, usando `rerender` para cubrir crear vs editar.
 - Pendiente: revisar matriz de permisos por modulo y riesgo de permisos criticos en UI.
 
 ### Respaldos

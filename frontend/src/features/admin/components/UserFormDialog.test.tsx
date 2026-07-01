@@ -60,8 +60,8 @@ describe('UserFormDialog', () => {
     cleanup();
   });
 
-  it.skip('renders password field only when creating a new user (covered by UsersView integration)', () => {
-    render(
+  it('renders password field only when creating a new user', () => {
+    const { rerender } = render(
       <UserFormDialog
         open
         onOpenChange={vi.fn()}
@@ -78,7 +78,7 @@ describe('UserFormDialog', () => {
 
     expect(screen.getByLabelText(/contraseña inicial/i)).toBeInTheDocument();
 
-    render(
+    rerender(
       <UserFormDialog
         open
         onOpenChange={vi.fn()}
