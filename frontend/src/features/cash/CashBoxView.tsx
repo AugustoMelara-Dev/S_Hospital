@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { AlertTriangle } from 'lucide-react';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/states';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type CashSession, apiClient, userSafeErrorMessage } from '@/lib/api';
@@ -48,6 +49,7 @@ export function CashBoxView({
   const [formAlert, setFormAlert] = useState<string | null>(null);
   const [closingAmountError, setClosingAmountError] = useState<string | null>(null);
   const [confirmingClose, setConfirmingClose] = useState(false);
+  const [pendingOpening, setPendingOpening] = useState<{ opening_amount: string } | null>(null);
   const closingAmountRef = useRef<HTMLInputElement | null>(null);
   const openingSessionInFlightRef = useRef(false);
   const closingSessionInFlightRef = useRef(false);
@@ -172,9 +174,15 @@ export function CashBoxView({
 
   function handleOpenSession(data: { opening_amount: string }) {
     if (openSessionMutation.isPending || openingSessionInFlightRef.current) return;
+    setPendingOpening({ opening_amount: data.opening_amount });
+  }
+
+  function confirmOpenSession() {
+    if (!pendingOpening || openSessionMutation.isPending || openingSessionInFlightRef.current) return;
     openingSessionInFlightRef.current = true;
     onStatus('Abriendo caja...');
-    openSessionMutation.mutate({ opening_amount: data.opening_amount });
+    openSessionMutation.mutate({ opening_amount: pendingOpening.opening_amount });
+    setPendingOpening(null);
   }
 
   function handleCloseConfirmation(event: FormEvent<HTMLFormElement>) {
@@ -367,6 +375,26 @@ export function CashBoxView({
         onClosingNotesChange={setClosingNotes}
         onConfirm={handleCloseSession}
       />
+
+      <ConfirmDialog
+        open={pendingOpening !== null}
+        title="Confirmar apertura de caja"
+        confirmLabel="Abrir caja"
+        confirmDisabled={openSessionMutation.isPending}
+        cancelDisabled={openSessionMutation.isPending}
+        onCancel={() => setPendingOpening(null)}
+        onConfirm={confirmOpenSession}
+      >
+        <div className="grid gap-3">
+          <p>
+            Revise el efectivo fisico antes de iniciar el turno. Esta apertura quedara auditada.
+          </p>
+          <div className="flex justify-between gap-4 rounded-md border border-border bg-muted/35 p-3 text-sm">
+            <span>Monto inicial</span>
+            <strong>{formatLempirasUI(pendingOpening?.opening_amount ?? '0.00')}</strong>
+          </div>
+        </div>
+      </ConfirmDialog>
     </section>
   );
 }

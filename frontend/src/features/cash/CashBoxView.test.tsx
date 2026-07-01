@@ -1,5 +1,5 @@
 /// <reference types="node" />
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { type ReactNode } from 'react';
 import { MemoryRouter } from 'react-router-dom';
@@ -94,6 +94,8 @@ describe('CashBoxView', () => {
     expect(await screen.findByText(/no hay una caja abierta actualmente/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/monto inicial/i)).toHaveValue('0.00');
     fireEvent.click(screen.getByRole('button', { name: /abrir caja/i }));
+    const openingDialog = await screen.findByRole('alertdialog', { name: /confirmar apertura de caja/i });
+    fireEvent.click(within(openingDialog).getByRole('button', { name: /^abrir caja$/i }));
 
     await waitFor(() => {
       expect(
@@ -366,7 +368,7 @@ describe('CashBoxView', () => {
     await waitFor(() => expect(getCurrentCashSession).toHaveBeenCalledTimes(2));
   });
 
-  it('preserves open cash payload and prevents duplicate opening while pending', async () => {
+  it('requires confirmation before opening cash and prevents duplicate opening while pending', async () => {
     let resolveOpen!: (session: CashSession) => void;
     const opened = cashSessionFixture({ id: 51, opening_amount: '0.00' });
     const openCashSession = vi.spyOn(apiClient, 'openCashSession')
@@ -382,6 +384,14 @@ describe('CashBoxView', () => {
     const openButton = screen.getByRole('button', { name: /abrir caja/i });
     fireEvent.click(openButton);
     fireEvent.click(openButton);
+
+    expect(openCashSession).not.toHaveBeenCalled();
+
+    const dialog = await screen.findByRole('alertdialog', { name: /confirmar apertura de caja/i });
+    expect(dialog).toHaveTextContent(/monto inicial/i);
+    expect(dialog).toHaveTextContent(/L 0\.00/i);
+
+    fireEvent.click(within(dialog).getByRole('button', { name: /^abrir caja$/i }));
 
     await waitFor(() => expect(openCashSession).toHaveBeenCalledTimes(1));
     expect(openCashSession).toHaveBeenCalledWith(
