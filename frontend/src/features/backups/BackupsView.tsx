@@ -1,4 +1,4 @@
-import { RefreshCw, Archive, CheckCircle, Clock, XCircle, HardDrive, Server, ShieldAlert } from 'lucide-react';
+import { RefreshCw, Archive, HardDrive, Server, ShieldAlert } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { StatGrid } from '@/components/shared';
 import { useBackups, useCreateBackup } from '@/hooks/useBackups';
@@ -239,7 +239,6 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
   const failedCount = backupsList.filter(b => b.status === 'failed').length;
 
   const lastSuccessBackup = backupsList.find(b => b.status === 'success');
-  const lastFailedBackup = backupsList.find(b => b.status === 'failed');
   const operationalStatus = systemStatus ? operationalSummary(systemStatus) : null;
   const stalePendingCount = systemStatus?.backups.stale_pending_count ?? 0;
   const stalePendingThresholdMinutes = systemStatus?.backups.stale_pending_threshold_minutes ?? 15;
@@ -705,70 +704,6 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
             retryLabel="Reintentar carga"
           />
         ) : null}
-
-        {!isEmpty && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className={`${pendingCount > 0 ? 'status-warning' : 'bg-muted/30'} shadow-operational`}>
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-3">
-                  <div className={`p-2.5 rounded-lg ${pendingCount > 0 ? 'bg-warning/10' : 'bg-muted'}`}>
-                    <Clock aria-hidden="true" className={`h-5 w-5 ${pendingCount > 0 ? 'text-warning' : 'text-muted-foreground'}`} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">
-                      {pendingCount > 0 ? `${pendingCount} en proceso` : 'Sin pendientes'}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {pendingCount > 0 ? 'Respaldos en proceso en esta página' : 'No hay pendientes en esta página'}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="status-success shadow-operational">
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-lg bg-success/10">
-                    <CheckCircle aria-hidden="true" className="h-5 w-5 text-success" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">
-                      {lastSuccessBackup
-                        ? `Último: ${formatRelativeTime(lastSuccessBackup.completed_at ?? lastSuccessBackup.created_at)}`
-                        : 'Sin respaldo completado'}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {successCount > 0 ? `${successCount} protegidos en esta página` : 'Sin respaldos protegidos en esta página'}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className={`${failedCount > 0 ? 'border-destructive/30 bg-destructive/10 text-destructive' : 'bg-muted/30'} shadow-operational`}>
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-3">
-                  <div className={`p-2.5 rounded-lg ${failedCount > 0 ? 'bg-destructive/10' : 'bg-muted'}`}>
-                    <XCircle aria-hidden="true" className={`h-5 w-5 ${failedCount > 0 ? 'text-destructive' : 'text-muted-foreground'}`} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">
-                      {lastFailedBackup
-                        ? `Último: ${formatRelativeTime(lastFailedBackup.completed_at ?? lastFailedBackup.created_at)}`
-                        : 'Sin fallos'}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {failedCount > 0
-                        ? `${failedCount} con error - avise al administrador antes de crear otro respaldo`
-                        : 'Sin fallos en esta página'}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
 
         {showHistory && (
           <div className="space-y-4">

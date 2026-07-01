@@ -61,6 +61,15 @@ describe('BackupsView', () => {
     expect(within(kpis).getAllByText(/^ultimo exitoso$|^pendientes$|^fallidos$/i)).toHaveLength(3);
   });
 
+  it('does not render a second visible status card row below the backup KPIs', async () => {
+    renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
+
+    await screen.findByRole('region', { name: /indicadores principales de respaldos/i });
+
+    expect(screen.queryByText(/^Sin pendientes$/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Sin fallos$/i)).not.toBeInTheDocument();
+  });
+
   it('renders an accessible loading state while backups are loading', async () => {
     vi.mocked(apiClient.getBackups).mockReturnValue(new Promise<never>(() => undefined));
     vi.mocked(apiClient.getSystemStatus).mockReturnValue(new Promise<never>(() => undefined));
