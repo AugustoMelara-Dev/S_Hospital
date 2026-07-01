@@ -81,10 +81,13 @@ describe('CloseSessionDialog', () => {
     expect(onConfirm).not.toHaveBeenCalled();
   });
 
-  it('exports the close summary without confirming the cash close', () => {
+  it('exports the close summary without confirming the cash close', async () => {
     const onConfirm = vi.fn();
     const anchorClick = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
-    const createObjectURL = vi.fn(() => 'blob:cash-close-summary');
+    const createObjectURL = vi.fn((blob: Blob) => {
+      void blob;
+      return 'blob:cash-close-summary';
+    });
     const revokeObjectURL = vi.fn();
     vi.stubGlobal('URL', {
       ...URL,
@@ -115,6 +118,12 @@ describe('CloseSessionDialog', () => {
     fireEvent.click(screen.getByRole('button', { name: /exportar resumen/i }));
 
     expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
+    const exportedBlob = createObjectURL.mock.calls[0]?.[0] as Blob;
+    const exportedBytes = new Uint8Array(await readBlobBytes(exportedBlob));
+    const exportedText = await readBlobText(exportedBlob);
+    expect([...exportedBytes.slice(0, 3)]).toEqual([0xef, 0xbb, 0xbf]);
+    expect(exportedText).toMatch(/^"Campo","Valor"/);
+    expect(exportedText).toContain('"Nota","Faltante revisado"');
     expect(anchorClick).toHaveBeenCalledTimes(1);
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:cash-close-summary');
     expect(onConfirm).not.toHaveBeenCalled();
@@ -152,3 +161,21 @@ describe('CloseSessionDialog', () => {
     expect(onConfirm).not.toHaveBeenCalled();
   });
 });
+
+function readBlobText(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(reader.error);
+    reader.onload = () => resolve(String(reader.result));
+    reader.readAsText(blob);
+  });
+}
+
+function readBlobBytes(blob: Blob): Promise<ArrayBuffer> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(reader.error);
+    reader.onload = () => resolve(reader.result as ArrayBuffer);
+    reader.readAsArrayBuffer(blob);
+  });
+}

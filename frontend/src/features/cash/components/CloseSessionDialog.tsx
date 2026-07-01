@@ -341,7 +341,7 @@ function buildCloseSummaryCsv({
     ['Nota', closingNotes.trim() || '-'],
   ];
 
-  return `${rows.map((row) => row.map(csvCell).join(',')).join('\n')}\n`;
+  return `\uFEFF${rows.map((row) => row.map(csvCell).join(',')).join('\n')}\n`;
 }
 
 function csvCell(value: string): string {
