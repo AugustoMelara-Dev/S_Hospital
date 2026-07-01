@@ -299,6 +299,26 @@ describe('BackupsView', () => {
     expect(URL.createObjectURL).toHaveBeenCalled();
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:backup-download');
   });
+
+  it('confirms and reports backup downloads without exposing the technical filename', async () => {
+    const onStatus = vi.fn();
+    vi.spyOn(apiClient, 'downloadBackup').mockResolvedValue(new Blob(['backup-data'], { type: 'application/octet-stream' }));
+
+    renderWithQueryClient(<BackupsView user={adminUser} onStatus={onStatus} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /descargar respaldo del/i }));
+
+    const dialog = screen.getByRole('alertdialog');
+    expect(dialog).toHaveTextContent(/descargara el respaldo seleccionado/i);
+    expect(dialog).not.toHaveTextContent(/hospital-backup-.*\.sql\.enc/i);
+
+    fireEvent.click(within(dialog).getByRole('button', { name: /^descargar$/i }));
+
+    await waitFor(() => {
+      expect(onStatus).toHaveBeenCalledWith('Respaldo descargado correctamente.');
+    });
+    expect(onStatus.mock.calls.flat().join(' ')).not.toMatch(/hospital-backup-.*\.sql\.enc/i);
+  });
 });
 
 function renderWithQueryClient(node: ReactNode) {

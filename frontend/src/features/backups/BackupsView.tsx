@@ -315,7 +315,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
     try {
       const blob = await apiClient.downloadBackup(backup.id);
       downloadBlob(blob, backup.filename);
-      onStatus(`Respaldo ${backup.filename} descargado.`);
+      onStatus('Respaldo descargado correctamente.');
     } catch (error) {
       const message = safeBackupsErrorMessage(error, 'No se pudo descargar el respaldo.');
       setManualError(message);
@@ -749,7 +749,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
         open={Boolean(downloadTarget)}
         title="¿Descargar respaldo?"
       >
-        Descargará el archivo {downloadTarget?.filename}. Esta acción queda auditada.
+        Descargara el respaldo seleccionado. Esta accion queda auditada.
       </ConfirmDialog>
     </section>
   );
