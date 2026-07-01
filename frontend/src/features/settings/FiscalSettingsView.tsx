@@ -13,7 +13,6 @@ import { HospitalSettingsView } from './HospitalSettingsView';
 import { FiscalNumerationView } from './FiscalNumerationView';
 import { OperationalRulesView } from './OperationalRulesView';
 import { BrandingView } from './BrandingView';
-import { InstitutionalReceiptSettingsView } from '@/features/receipt-settings/InstitutionalReceiptSettingsView';
 import { Link } from 'react-router-dom';
 
 type FiscalSettingsViewProps = {
@@ -45,7 +44,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Configuración"
-        description="Datos del hospital, numeración fiscal, reglas operativas, marca y recibos."
+        description="Datos del hospital, numeración fiscal, reglas operativas y marca."
         actions={
           <ActionBar align="end">
             <StatusBadge status={canEdit ? 'success' : 'info'}>
@@ -87,7 +86,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
 
       <InfoPanel
         title="Secciones de configuración"
-        description="Hospital, numeración fiscal, reglas operativas, marca y recibos. Cada una vive donde corresponde."
+        description="Hospital, numeración fiscal, reglas operativas y marca. Los recibos se administran en su pantalla dedicada."
         tone="info"
       />
 
@@ -105,7 +104,6 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
             <TabsTrigger value="numeracion">Numeración</TabsTrigger>
             <TabsTrigger value="operativa">Operativa</TabsTrigger>
             <TabsTrigger value="marca">Marca</TabsTrigger>
-            <TabsTrigger value="recibos">Recibos</TabsTrigger>
           </TabsList>
         </div>
 
@@ -128,14 +126,6 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
 
         <TabsContent value="marca" className="mt-0">
           <BrandingView canEdit={canEdit} onStatus={onStatus} />
-        </TabsContent>
-
-        <TabsContent value="recibos" className="mt-0">
-          <InstitutionalReceiptSettingsView
-            canEdit={canEdit}
-            canAdvancedPrintSettings={false}
-            onStatus={onStatus}
-          />
         </TabsContent>
       </Tabs>
     </div>

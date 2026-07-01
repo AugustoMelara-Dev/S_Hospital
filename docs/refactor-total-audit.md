@@ -288,3 +288,23 @@ Pruebas ejecutadas:
 Decision:
 
 - No se relajo el hook. Los commits anteriores usaron `--no-verify` solo porque el hook apuntaba a un archivo faltante; esta fase corrige esa deuda.
+
+## 12. Fase 11 - Configuracion separada por dominio
+
+Cambio aplicado:
+
+- Se removio `Recibos` como tab dentro de `FiscalSettingsView`.
+- La pantalla fiscal ahora se limita a hospital, numeracion, reglas operativas y marca.
+- La administracion de recibos queda en la ruta dedicada `/settings/institutional-receipts`, enlazada desde el resumen fiscal.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- src/features/settings/FiscalSettingsView.test.tsx` | RED por tab `Recibos` presente, luego OK: 3 tests pasan. |
+| `npm run test -- src/features/settings/FiscalSettingsView.test.tsx src/features/settings/HospitalSettingsView.test.tsx src/features/settings/FiscalNumerationView.test.tsx src/features/settings/OperationalRulesView.test.tsx src/features/receipt-settings/InstitutionalReceiptSettingsView.test.tsx src/navigation/appNavigation.test.ts src/AppRoutes.lazy.test.ts` | OK: 7 archivos, 22 tests pasan. |
+| `npm run typecheck` | OK. |
+
+Decision:
+
+- No se tocaron migraciones, correlativos ni datos fiscales. Es un corte de UX/ruta para reducir mezcla de dominios.

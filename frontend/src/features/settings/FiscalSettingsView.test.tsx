@@ -61,7 +61,7 @@ describe('FiscalSettingsView (separated sections)', () => {
     document.documentElement.removeAttribute('data-color-theme');
   });
 
-  it('renders a single accessible h1 and the sectioned configuration tabs', async () => {
+  it('renders a single accessible h1 and keeps receipts as a dedicated route, not a fiscal tab', async () => {
     renderView();
 
     expect(
@@ -73,7 +73,11 @@ describe('FiscalSettingsView (separated sections)', () => {
     expect(screen.getByRole('tab', { name: /numeraci[oó]n/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /operativa/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /^marca$/i })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /^recibos$/i })).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: /^recibos$/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /administrar recibos/i })).toHaveAttribute(
+      'href',
+      '/settings/institutional-receipts',
+    );
   });
 
   it('renders a sanitized load error when the API fails', async () => {
