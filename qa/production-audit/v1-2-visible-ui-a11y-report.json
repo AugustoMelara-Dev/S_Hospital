@@ -1,34 +1,34 @@
 {
-  "generated_at": "2026-07-01T02:54:28.044Z",
+  "generated_at": "2026-07-01T02:55:34.059Z",
   "mode": "mocked-non-mutating-playwright",
   "results": [
     {
       "name": "full route accessibility matrix",
-      "viewport": "1024x768",
+      "viewport": "1920x1080",
       "path": "/dashboard",
       "status": "passed"
     },
     {
       "name": "full route accessibility matrix",
-      "viewport": "1024x768",
+      "viewport": "1920x1080",
       "path": "/billing/new",
       "status": "passed"
     },
     {
       "name": "full route accessibility matrix",
-      "viewport": "1024x768",
+      "viewport": "1920x1080",
       "path": "/cashbox",
       "status": "passed"
     },
     {
       "name": "full route accessibility matrix",
-      "viewport": "1024x768",
+      "viewport": "1920x1080",
       "path": "/catalog",
       "status": "passed"
     },
     {
       "name": "full route accessibility matrix",
-      "viewport": "1024x768",
+      "viewport": "1920x1080",
       "path": "/invoices",
       "status": "passed"
     }
