@@ -9,13 +9,15 @@ import { cn } from '@/lib/utils';
 interface AlertDialogContentProps {
   children: ReactNode;
   className?: string;
+  printRoot?: boolean;
 }
 
-export function AlertDialogContent({ children, className }: AlertDialogContentProps) {
+export function AlertDialogContent({ children, className, printRoot = false }: AlertDialogContentProps) {
   return (
     <AlertDialogPrimitive.Portal>
       <AlertDialogPrimitive.Overlay className="fixed inset-0 z-50 bg-foreground/50" />
       <AlertDialogPrimitive.Content
+        data-cash-close-print-root={printRoot ? '' : undefined}
         className={cn(
           'fixed left-1/2 top-1/2 z-50 max-h-[calc(100dvh-1.5rem)] w-[calc(100vw-1.5rem)] max-w-xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-lg border border-border bg-card p-5 text-card-foreground shadow-lg',
           className,
@@ -170,9 +172,24 @@ export function CloseSessionDialog({
     URL.revokeObjectURL(url);
   }
 
+  function printCloseSummary() {
+    const previousPrinting = document.body.dataset.printingCashClose;
+    document.body.dataset.printingCashClose = 'true';
+
+    try {
+      window.print();
+    } finally {
+      if (previousPrinting) {
+        document.body.dataset.printingCashClose = previousPrinting;
+      } else {
+        delete document.body.dataset.printingCashClose;
+      }
+    }
+  }
+
   return (
     <AlertDialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
+      <AlertDialogContent printRoot>
         <AlertDialogHeader>
           <AlertDialogTitle>¿Cerrar caja?</AlertDialogTitle>
           <AlertDialogDescription>
@@ -263,8 +280,8 @@ export function CloseSessionDialog({
           </p>
         </section>
 
-        <AlertDialogFooter className="mt-6">
-          <Button type="button" variant="secondary" onClick={() => window.print()} disabled={isSubmitting}>
+        <AlertDialogFooter className="print-hidden mt-6">
+          <Button type="button" variant="secondary" onClick={printCloseSummary} disabled={isSubmitting}>
             <Printer aria-hidden="true" className="size-4" />
             Imprimir resumen
           </Button>

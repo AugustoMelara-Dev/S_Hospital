@@ -46,9 +46,11 @@ describe('CloseSessionDialog', () => {
     expect(onConfirm).not.toHaveBeenCalled();
   });
 
-  it('prints the close summary without confirming the cash close', () => {
+  it('prints only the close summary without confirming the cash close', () => {
     const onConfirm = vi.fn();
-    const print = vi.fn();
+    const print = vi.fn(() => {
+      expect(document.body.dataset.printingCashClose).toBe('true');
+    });
     vi.stubGlobal('print', print);
 
     render(
@@ -73,7 +75,9 @@ describe('CloseSessionDialog', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /imprimir resumen/i }));
 
+    expect(document.querySelector('[data-cash-close-print-root]')).toBeInTheDocument();
     expect(print).toHaveBeenCalledTimes(1);
+    expect(document.body.dataset.printingCashClose).toBeUndefined();
     expect(onConfirm).not.toHaveBeenCalled();
   });
 
