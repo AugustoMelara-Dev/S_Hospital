@@ -433,7 +433,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
 
         {stalePendingCount > 0 ? (
           <Alert title="Respaldos pendientes por demasiado tiempo">
-            {stalePendingCount} respaldo(s) siguen pendientes por mas de {stalePendingThresholdMinutes} minutos. Revise que el worker de backups y el scheduler esten activos antes de confiar en la automatizacion.
+            {stalePendingCount} respaldo(s) siguen pendientes por mas de {stalePendingThresholdMinutes} minutos. Revise el estado del servidor local antes de confiar en la automatizacion.
           </Alert>
         ) : null}
 

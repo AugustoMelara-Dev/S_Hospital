@@ -232,6 +232,26 @@ describe('BackupsView', () => {
     expect(onStatus.mock.calls.flat().join(' ')).not.toMatch(/sha256|checksum|huella/i);
   });
 
+  it('describes stale pending backups without worker or scheduler jargon', async () => {
+    const status = systemStatusFixture();
+    vi.mocked(apiClient.getSystemStatus).mockResolvedValue({
+      ...status,
+      backups: {
+        ...status.backups,
+        pending_count: 2,
+        stale_pending_count: 2,
+        stale_pending_threshold_minutes: 15,
+        worker_recently_active: false,
+      },
+    });
+
+    renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
+
+    expect(await screen.findByText(/respaldos pendientes por demasiado tiempo/i)).toBeInTheDocument();
+    expect(screen.getByText(/revise el estado del servidor local/i)).toBeInTheDocument();
+    expect(screen.queryByText(/worker|scheduler/i)).not.toBeInTheDocument();
+  });
+
   it('prevents duplicate backup downloads while the file request is pending', async () => {
     let resolveDownload!: (blob: Blob) => void;
     const pendingDownload = new Promise<Blob>((resolve) => {
