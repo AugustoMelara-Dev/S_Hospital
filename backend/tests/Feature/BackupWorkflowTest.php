@@ -405,6 +405,40 @@ class BackupWorkflowTest extends TestCase
         ]);
     }
 
+    public function test_backup_fails_before_dump_when_free_space_is_insufficient(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->admin();
+
+        $writer = new class extends DatabaseDumpWriter
+        {
+            public bool $called = false;
+
+            public function dumpTo(string $absolutePath): void
+            {
+                $this->called = true;
+                file_put_contents($absolutePath, 'should-not-run');
+            }
+        };
+
+        $backup = (new CreateBackupAction(
+            $writer,
+            app(EncryptBackupFileAction::class),
+            app(PruneBackupsAction::class),
+            freeSpaceResolver: fn (string $backupRoot): int => 1024,
+        ))->execute($admin, BackupLog::TYPE_MANUAL);
+
+        $this->assertFalse($writer->called);
+        $this->assertSame(BackupLog::STATUS_FAILED, $backup->status);
+        $this->assertSame('Espacio insuficiente para crear respaldo local.', $backup->error_message);
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $admin->id,
+            'action' => 'backup.failed',
+            'entity_type' => BackupLog::class,
+            'entity_id' => $backup->id,
+        ]);
+    }
+
     public function test_backup_job_failure_marks_pending_log_failed_with_safe_message(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
