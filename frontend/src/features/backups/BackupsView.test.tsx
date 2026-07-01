@@ -49,6 +49,18 @@ describe('BackupsView', () => {
     expect(screen.queryByRole('button', { name: /eliminar|borrar/i })).not.toBeInTheDocument();
   });
 
+  it('keeps the primary backup KPIs limited to last success, pending and failed backups', async () => {
+    renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
+
+    const kpis = await screen.findByRole('region', { name: /indicadores principales de respaldos/i });
+
+    expect(within(kpis).getByText(/^ultimo exitoso$/i)).toBeInTheDocument();
+    expect(within(kpis).getByText(/^pendientes$/i)).toBeInTheDocument();
+    expect(within(kpis).getByText(/^fallidos$/i)).toBeInTheDocument();
+    expect(within(kpis).queryByText(/worker/i)).not.toBeInTheDocument();
+    expect(within(kpis).getAllByText(/^ultimo exitoso$|^pendientes$|^fallidos$/i)).toHaveLength(3);
+  });
+
   it('renders an accessible loading state while backups are loading', async () => {
     vi.mocked(apiClient.getBackups).mockReturnValue(new Promise<never>(() => undefined));
     vi.mocked(apiClient.getSystemStatus).mockReturnValue(new Promise<never>(() => undefined));

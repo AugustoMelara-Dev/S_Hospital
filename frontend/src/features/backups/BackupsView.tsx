@@ -379,35 +379,33 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
           La restauración de un respaldo se realiza únicamente desde el servidor local por personal autorizado. Si necesita recuperar información, solicite soporte técnico.
         </Alert>
 
-        <StatGrid
-          className="sm:grid-cols-2 xl:grid-cols-4"
-          items={[
-            {
-              label: 'Completados visibles',
-              value: successCount,
-              helper: lastSuccessBackup ? `En esta pagina: ultimo ${formatRelativeTime(lastSuccessBackup.completed_at ?? lastSuccessBackup.created_at)}` : 'Sin respaldo protegido en esta pagina',
-              tone: successCount > 0 ? 'success' : 'warning',
-            },
-            {
-              label: 'Pendientes visibles',
-              value: pendingCount,
-              helper: pendingCount > 0 ? 'En esta pagina: worker debe completar estos respaldos' : 'Sin pendientes visibles',
-              tone: pendingCount > 0 ? 'warning' : 'success',
-            },
-            {
-              label: 'Fallidos visibles',
-              value: failedCount,
-              helper: failedCount > 0 ? 'En esta pagina: revise con soporte antes de confiar en backups' : 'Sin errores visibles',
-              tone: failedCount > 0 ? 'destructive' : 'success',
-            },
-            {
-              label: 'Worker',
-              value: systemStatus?.backups.worker_recently_active ? 'Activo' : 'Pendiente',
-              helper: systemStatus ? 'Estado reportado por el servidor local' : 'Estado operativo no cargado',
-              tone: systemStatus?.backups.worker_recently_active ? 'success' : 'warning',
-            },
-          ]}
-        />
+        <section aria-label="Indicadores principales de respaldos">
+          <StatGrid
+            className="sm:grid-cols-2 xl:grid-cols-3"
+            items={[
+              {
+                label: 'Ultimo exitoso',
+                value: lastSuccessBackup
+                  ? formatRelativeTime(lastSuccessBackup.completed_at ?? lastSuccessBackup.created_at)
+                  : 'Sin respaldo',
+                helper: lastSuccessBackup ? 'Respaldo protegido mas reciente en esta pagina' : 'Cree un respaldo local protegido',
+                tone: successCount > 0 ? 'success' : 'warning',
+              },
+              {
+                label: 'Pendientes',
+                value: pendingCount,
+                helper: pendingCount > 0 ? 'El worker debe completar estos respaldos' : 'Sin pendientes visibles',
+                tone: pendingCount > 0 ? 'warning' : 'success',
+              },
+              {
+                label: 'Fallidos',
+                value: failedCount,
+                helper: failedCount > 0 ? 'Revise con soporte antes de confiar en respaldos' : 'Sin errores visibles',
+                tone: failedCount > 0 ? 'destructive' : 'success',
+              },
+            ]}
+          />
+        </section>
 
         {systemStatusError ? (
           <Alert variant="destructive" title="Estado operativo no disponible">
