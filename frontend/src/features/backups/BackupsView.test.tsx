@@ -96,8 +96,10 @@ describe('BackupsView', () => {
     expect(screen.getByRole('columnheader', { name: /tamaño/i })).toHaveAttribute('data-numeric', 'true');
     expect(screen.getAllByRole('cell').some((cell) => cell.getAttribute('data-numeric') === 'true')).toBe(true);
     expect(screen.getByText(/pendiente del worker de respaldos/i)).toBeInTheDocument();
-    expect(screen.getByText(/archivo creado con huella sha256/i)).toBeInTheDocument();
+    expect(screen.getByText(/archivo creado correctamente/i)).toBeInTheDocument();
     expect(screen.getByText(/no se pudo completar\. revise con soporte/i)).toBeInTheDocument();
+    expect(screen.queryByText(/sha256/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/abc12345/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/sqlstate|secret|path/i)).not.toBeInTheDocument();
   });
 

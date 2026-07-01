@@ -26,7 +26,7 @@ export function BackupExplanationCard() {
               <div className="rounded-panel border border-operational-border bg-operational-panel p-3">
                 <p className="font-medium">2. Verificar</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Debe quedar completado, con tamano y huella SHA256 visible.
+                  Debe quedar completado y con tamano registrado antes de confiar en el respaldo.
                 </p>
               </div>
               <div className="rounded-panel border border-operational-border bg-operational-panel p-3">

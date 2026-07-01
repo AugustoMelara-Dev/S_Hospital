@@ -40,16 +40,7 @@ export function BackupHistoryTable({
       header: 'Nombre',
       headerClassName: 'min-w-72 px-4 py-3',
       cellClassName: 'min-w-72 break-words px-4 py-3 text-sm',
-      render: (backup) => (
-        <>
-          <span className="block">{backup.filename}</span>
-          {backup.checksum_sha256 ? (
-            <span className="mt-1 block text-xs text-muted-foreground">
-              SHA256 {backup.checksum_sha256.slice(0, 8)}... huella de integridad
-            </span>
-          ) : null}
-        </>
-      ),
+      render: (backup) => backup.filename,
     },
     {
       key: 'size',
