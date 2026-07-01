@@ -23,7 +23,7 @@ import { EmptyState, ErrorState, LoadingState } from '../../components/ui/states
 import { ReceiptPreview } from '../receipts/ReceiptPreview';
 import { Textarea } from '../../components/ui/textarea';
 import { INSTITUTIONAL_RECEIPT_PAPER_OPTIONS, institutionalReceiptPaperSize } from '../../lib/institutionalReceiptPaper';
-import { openBlobInNewTab } from '../../lib/download';
+import { downloadBlob, openBlobInNewTab } from '../../lib/download';
 import { formatLempirasUIFromCents, parseCents } from '../../lib/moneyCents';
 import { formatLocalizedDateTime } from '../../lib/format/formatDate';
 import { invalidateBillingQueries } from '@/lib/queryInvalidation';
@@ -215,6 +215,22 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       onStatus(userSafeErrorMessage(error, 'No se pudo generar el recibo institucional.'));
     } finally {
       generatingInstitutionalReceiptRef.current = false;
+      setLoadingActionInvoiceId(null);
+    }
+  }
+
+  async function downloadInstitutionalReceipt(invoice: Invoice) {
+    const institutionalReceipt = issuedInstitutionalReceipt(invoice);
+    if (!institutionalReceipt) return;
+
+    setLoadingActionInvoiceId(invoice.id);
+    try {
+      const blob = await apiClient.getInstitutionalReceiptPdf(institutionalReceipt.id);
+      downloadBlob(blob, `recibo-institucional-${institutionalReceipt.receipt_number_full}.pdf`);
+      onStatus(`PDF institucional ${institutionalReceipt.receipt_number_full} descargado.`);
+    } catch (error) {
+      onStatus(userSafeErrorMessage(error, 'No se pudo descargar el recibo institucional.'));
+    } finally {
       setLoadingActionInvoiceId(null);
     }
   }
@@ -428,6 +444,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
               loadingActionInvoiceId={loadingActionInvoiceId}
               moneyLabel={moneyLabel}
               onGenerateInstitutionalReceipt={(invoiceId) => void generateInstitutionalReceipt(invoiceId)}
+              onDownloadInstitutionalReceipt={(invoice) => void downloadInstitutionalReceipt(invoice)}
               onOpenReceipt={(invoiceId) => void openReceiptModal(invoiceId)}
               onPrepareInvoiceAction={(invoiceId, action) => void prepareInvoiceAction(invoiceId, action)}
               onReprint={setReprintTarget}

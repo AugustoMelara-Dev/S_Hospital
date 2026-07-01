@@ -7,9 +7,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { InvoiceHistoryView } from './InvoiceHistoryView';
 import { apiClient, institutionalReceipts, type AuthUser, type InstitutionalReceipt, type Invoice } from '../../lib/api';
 import * as apiBase from '../../lib/api/base';
-import { openBlobInNewTab } from '../../lib/download';
+import { downloadBlob, openBlobInNewTab } from '../../lib/download';
 
 vi.mock('../../lib/download', () => ({
+  downloadBlob: vi.fn(),
   openBlobInNewTab: vi.fn(),
 }));
 
@@ -36,6 +37,7 @@ async function openInvoiceMenu(invoiceNumber: string) {
 
 describe('InvoiceHistoryView', () => {
   afterEach(() => {
+    vi.clearAllMocks();
     vi.restoreAllMocks();
   });
 
@@ -393,6 +395,38 @@ describe('InvoiceHistoryView', () => {
     );
     expect(registerPrint).not.toHaveBeenCalled();
     expect(getReceipt).not.toHaveBeenCalled();
+  });
+
+  it('downloads an issued institutional receipt pdf without registering a reprint', async () => {
+    const paid = invoiceFixture({
+      id: 41,
+      invoice_number: '000-001-01-00000041',
+      patient_name: 'Paciente Descarga PDF',
+      status: 'paid',
+      institutional_receipt: institutionalReceiptFixture({ id: 141, receipt_number_full: 'REC-A-00000141' }),
+    });
+    const getPdf = vi.spyOn(apiClient, 'getInstitutionalReceiptPdf')
+      .mockResolvedValue(new Blob(['%PDF-download'], { type: 'application/pdf' }));
+    const reprintInvoice = vi.spyOn(apiClient, 'reprintInvoice');
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [paid],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente Descarga PDF')).toBeInTheDocument());
+    await openInvoiceMenu(paid.invoice_number);
+    fireEvent.click(await screen.findByRole('menuitem', { name: /Descargar/i }));
+
+    await waitFor(() => expect(getPdf).toHaveBeenCalledWith(141));
+    expect(downloadBlob).toHaveBeenCalledWith(
+      expect.any(Blob),
+      'recibo-institucional-REC-A-00000141.pdf',
+    );
+    expect(openBlobInNewTab).not.toHaveBeenCalled();
+    expect(reprintInvoice).not.toHaveBeenCalled();
   });
 
   it('generates a missing institutional receipt only once while the request is pending', async () => {

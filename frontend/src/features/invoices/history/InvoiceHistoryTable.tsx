@@ -1,4 +1,4 @@
-import { Printer, Receipt, ReceiptText, User, XCircle } from 'lucide-react';
+import { Download, Printer, Receipt, ReceiptText, User, XCircle } from 'lucide-react';
 import { ActionMenu, type ActionMenuGroup } from '../../../components/ui/action-menu';
 import { DataTable, type DataTableColumn } from '../../../components/ui/data-table';
 import { StatusBadge } from '../../../components/ui/status-badge';
@@ -15,6 +15,7 @@ type InvoiceHistoryTableProps = {
   isOwnInvoiceFromToday: (invoice: Invoice) => boolean;
   loadingActionInvoiceId: number | null;
   moneyLabel: (value: string | number | null | undefined) => string;
+  onDownloadInstitutionalReceipt: (invoice: Invoice) => void;
   onGenerateInstitutionalReceipt: (invoiceId: number) => void;
   onOpenReceipt: (invoiceId: number) => void;
   onPrepareInvoiceAction: (invoiceId: number, action: 'void' | 'reverse') => void;
@@ -32,6 +33,7 @@ export function InvoiceHistoryTable({
   isOwnInvoiceFromToday,
   loadingActionInvoiceId,
   moneyLabel,
+  onDownloadInstitutionalReceipt,
   onGenerateInstitutionalReceipt,
   onOpenReceipt,
   onPrepareInvoiceAction,
@@ -103,6 +105,15 @@ export function InvoiceHistoryTable({
             label: 'Ver recibo',
             icon: <Receipt aria-hidden="true" className="size-4" />,
             onSelect: () => onOpenReceipt(invoice.id),
+          });
+        }
+        if (canViewReceipt && issuedInstitutionalReceipt(invoice)) {
+          primaryGroup.items.push({
+            key: 'download',
+            label: 'Descargar',
+            icon: <Download aria-hidden="true" className="size-4" />,
+            disabled: loadingActionInvoiceId === invoice.id,
+            onSelect: () => onDownloadInstitutionalReceipt(invoice),
           });
         }
         if (canViewReceipt && invoice.status === 'paid' && !issuedInstitutionalReceipt(invoice)) {
