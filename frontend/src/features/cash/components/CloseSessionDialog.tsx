@@ -1,5 +1,5 @@
 import * as AlertDialogPrimitive from '@radix-ui/react-alert-dialog';
-import { AlertTriangle, Printer } from 'lucide-react';
+import { AlertTriangle, Download, Printer } from 'lucide-react';
 import { type ReactNode, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -150,6 +150,26 @@ export function CloseSessionDialog({
     }
   }, [isDifference, open]);
 
+  function exportCloseSummary() {
+    const csv = buildCloseSummaryCsv({
+      openingAmount,
+      expectedAmount,
+      methods,
+      pendingAmount,
+      pendingInvoiceCount,
+      closingAmount,
+      difference,
+      closingNotes,
+    });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `resumen-cierre-caja-${new Date().toISOString().slice(0, 10)}.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <AlertDialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
@@ -248,6 +268,10 @@ export function CloseSessionDialog({
             <Printer aria-hidden="true" className="size-4" />
             Imprimir resumen
           </Button>
+          <Button type="button" variant="secondary" onClick={exportCloseSummary} disabled={isSubmitting}>
+            <Download aria-hidden="true" className="size-4" />
+            Exportar resumen
+          </Button>
           <AlertDialogCancel>Cancelar</AlertDialogCancel>
           <AlertDialogAction onClick={onConfirm} disabled={isSubmitting || (isDifference && !closingNotes.trim())}>
             {isSubmitting ? 'Cerrando...' : 'Cerrar caja'}
@@ -263,4 +287,45 @@ export function CloseSessionDialog({
       </AlertDialogContent>
     </AlertDialogPrimitive.Root>
   );
+}
+
+function buildCloseSummaryCsv({
+  openingAmount,
+  expectedAmount,
+  methods,
+  pendingAmount,
+  pendingInvoiceCount,
+  closingAmount,
+  difference,
+  closingNotes,
+}: {
+  openingAmount: number;
+  expectedAmount: number;
+  methods: { cash: string; transfer: string; card: string; other: string };
+  pendingAmount: number;
+  pendingInvoiceCount: number;
+  closingAmount: string;
+  difference: number;
+  closingNotes: string;
+}): string {
+  const rows = [
+    ['Campo', 'Valor'],
+    ['Monto apertura', formatLempirasUI(openingAmount)],
+    ['Efectivo esperado', formatLempirasUI(expectedAmount)],
+    ['Efectivo', formatLempirasUI(methods.cash)],
+    ['Transferencia', formatLempirasUI(methods.transfer)],
+    ['Tarjeta', formatLempirasUI(methods.card)],
+    ['Otros', formatLempirasUI(methods.other)],
+    ['Facturas pendientes', String(pendingInvoiceCount)],
+    ['Saldo pendiente', formatLempirasUI(pendingAmount)],
+    ['Monto contado', formatLempirasUI(closingAmount || '0.00')],
+    ['Diferencia', formatLempirasUI(difference)],
+    ['Nota', closingNotes.trim() || '-'],
+  ];
+
+  return `${rows.map((row) => row.map(csvCell).join(',')).join('\n')}\n`;
+}
+
+function csvCell(value: string): string {
+  return `"${value.replace(/"/g, '""')}"`;
 }
