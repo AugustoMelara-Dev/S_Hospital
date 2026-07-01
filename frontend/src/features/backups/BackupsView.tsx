@@ -12,7 +12,7 @@ import { PageHeader } from '../../components/ui/page-header';
 import { Card, CardContent } from '../../components/ui/card';
 import { ErrorState, LoadingState } from '../../components/ui/states';
 import { StatusBadge } from '../../components/ui/status-badge';
-import { BackupExplanationCard, BackupEmptyState } from './components/BackupExplanationCard';
+import { BackupEmptyState } from './components/BackupExplanationCard';
 import { BackupHistoryTable } from './components/BackupHistoryTable';
 import { type AuthUser, type BackupLog, type SystemStatus, apiClient, userSafeErrorMessage } from '../../lib/api';
 import { formatLocalizedDateTime } from '../../lib/format/formatDate';
@@ -364,8 +364,6 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
       />
 
       <div className="space-y-6">
-        <BackupExplanationCard />
-
         <Alert title="Restauración no disponible desde la app">
           La restauración de un respaldo se realiza únicamente desde el servidor local por personal autorizado. Si necesita recuperar información, solicite soporte técnico.
         </Alert>
