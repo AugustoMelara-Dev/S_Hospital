@@ -177,3 +177,57 @@ cd frontend && npm run build
 # a11y / e2e (si aplica)
 cd frontend && npx playwright test --grep="a11y"
 ```
+
+## 11. Actualizacion 2026-06-30
+
+Cambios de seguridad verificados en esta iteracion:
+
+- `receipt_settings.advanced` ahora viaja como permiso explicito al frontend para mostrar/ocultar soporte tecnico de impresion.
+- La UI normal de recibos no renderiza inputs manuales de ancho, alto, margenes, fuente o escala.
+- El backend sigue siendo la barrera real: `UpdateReceiptPrintProfileRequest` rechaza campos avanzados sin `receipt_settings.advanced` y registra `receipt_settings.advanced_denied`.
+- El panel de facturacion conserva prevencion de doble submit y el boton principal ya no queda en un elemento fijo que pueda tapar errores o totales.
+- Reportes de caja dejaron de exponer JSON tecnico en pantalla.
+
+Pruebas ejecutadas:
+
+- `php artisan test --filter=ReceiptPrintProfile` -> 3 tests OK.
+- Suite critica frontend (`NewInvoiceViewLayout`, `NewInvoiceView`, `PaymentMethodPanel`, `ReportsView`, `InstitutionalReceiptSettingsView`, `AppShell`, `AppRoutes`) -> 37 tests OK.
+
+Riesgos abiertos:
+
+- Restauracion de backups sigue fuera de UI por diseno; no existe endpoint seguro implementado.
+- Suite backend completa, Pint y PHPStan pasaron en esta iteracion.
+- Falta validar headers de seguridad en runtime contra nginx/API levantados fuera del entorno de pruebas.
+
+## 12. Cierre final 2026-07-01
+
+### Comandos ejecutados
+
+| Comando | Resultado |
+|---|---|
+| `rg "dangerouslySetInnerHTML|console\\.log|debugger|TODO|FIXME" frontend/src backend/app backend/routes backend/config` | Sin hallazgos operativos; solo `SystemStatusController` contiene la palabra `TODO` como detector de placeholders. |
+| `rg "localStorage|password|token|stack trace|SQLSTATE" frontend/src backend/app backend/routes backend/config` | Hallazgos esperados en config, tests, auth y sanitizadores. No se encontro token de sesion guardado en `localStorage`. |
+| `rg "Route::|middleware|can\\(|permission" backend/routes backend/app` | Endpoints API agrupados bajo auth/middleware/permisos. |
+| `rg "audit|activity|AuditLog|activity\\(" backend/app backend/routes backend/tests` | Audit log presente en facturacion, pagos, caja, recibos, fiscal, catalogo, usuarios y respaldos. |
+| `php artisan route:list` | OK, 112 rutas listadas. |
+| `php artisan test` | OK, 744 passed, 12 skipped. |
+| `php artisan test --filter=ReceiptPrintProfileAdvancedFieldsTest` | OK, 3 passed: sin advanced -> 403, con advanced -> guarda y audita, update basico permitido. |
+| `php artisan test --filter=FiscalSequenceTest` | OK, 12 passed. |
+| `php artisan test --filter=UpdateFiscalSequenceReasonTest` | OK, 2 passed. |
+| `php artisan test --filter=CloseCashSessionTest` | OK, 3 passed. |
+
+### Confirmaciones finales
+
+- Endpoints sensibles: protegidos por `auth`, `user.active`, `password.changed`, permisos especificos y throttles por usuario.
+- Motivo obligatorio: anular factura, reversar pago, cerrar caja con diferencia, cambiar precio, cambios fiscales criticos y cambios de roles/permisos.
+- Audit log: acciones criticas registran before/after cuando aplica; respaldos, usuarios, caja, fiscal, catalogo, recibos y facturacion tienen eventos auditables.
+- Campos manuales de impresion: backend rechaza `width_mm`, `height_mm`, `margin_*_mm`, `font_family`, `font_scale` sin `receipt_settings.advanced`.
+- Restore de backups: no hay ruta ni boton operativo de restauracion. Restaurar queda fuera hasta implementar permiso `backups.restore`, motivo minimo 20 caracteres, SHA256, backup previo automatico, bloqueo operativo y audit success/failure.
+- Stack traces / SQL crudo: tests de seguridad validan que errores SQL no se exponen al usuario; grep solo encontro `SQLSTATE` en tests/sanitizacion.
+- Logs de password/token: backups redactan password; login/change-password tienen tests que no ecoan password; no se encontro persistencia de token de sesion en frontend.
+
+### Riesgos residuales de seguridad
+
+- Headers finales deben validarse en el servidor LAN/nginx real despues del despliegue, porque esta fase corrio en entorno local de pruebas.
+- `composer` no esta en PATH de esta terminal; los controles equivalentes se ejecutaron via `php artisan test`.
+- No queda riesgo critico conocido en facturacion, caja, recibos, reportes, permisos o restore.

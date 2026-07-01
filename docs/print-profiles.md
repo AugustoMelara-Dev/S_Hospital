@@ -132,3 +132,100 @@ Cuando se activa, muestra los 8 campos manuales antiguos (ancho, alto, 4 márgen
 - Los `code` (`carta`, `media_carta`, etc.) son los identificadores públicos en API.
 - El backend mantiene los `code` históricos (`recibo_pequeno_personalizado`, `media_carta_horizontal`, `a5_horizontal`, `carta_horizontal`, `thermal_80mm`, `thermal_58mm`) en la tabla `receipt_print_profiles`. La UI los mapea de forma transparente.
 - Datos existentes (perfiles sembrados, asignaciones globales) siguen funcionando.
+
+## 10. Actualizacion 2026-06-30
+
+Estado implementado:
+
+- `InstitutionalReceiptSettingsView` recibe `canAdvancedPrintSettings` desde `AppRoutes`, calculado con `user.permissions.includes('receipt_settings.advanced')`.
+- El flujo normal no muestra ni edita ancho, alto, margenes, fuente ni escala.
+- Las medidas en mm se retiraron de las tarjetas normales de perfil para evitar que el operador las interprete como parametros configurables.
+- Los campos manuales solo se renderizan si se cumplen las tres condiciones: permiso `receipt_settings.advanced`, permiso de edicion y perfil personalizado compatible.
+- La mutacion normal de perfil envia solo opciones operativas (`copies_mode`, logo, sello/firma, leyenda, activo, default global y template). La mutacion avanzada es independiente.
+
+Pruebas ejecutadas en esta iteracion:
+
+- `php artisan test --filter=ReceiptPrintProfile` paso con 3 tests.
+- `npm run test -- ... InstitutionalReceiptSettingsView ...` paso dentro de la suite critica de frontend.
+
+## 11. Cierre final 2026-07-01
+
+### Perfiles confirmados
+
+| Perfil visible | Codigo UI/API | Estado |
+|---|---|---|
+| Carta | `carta_horizontal` / `carta` | OK, visible en selector, preview y CSS `@page` |
+| Media carta | `media_carta_horizontal` / `media_carta` | OK, perfil institucional recomendado |
+| A5 | `a5_horizontal` / `a5` | OK, preview horizontal |
+| Ticket 80mm | `thermal_80mm` / `80mm` | OK, compatibilidad secundaria |
+| Ticket 58mm | `thermal_58mm` / `58mm` | OK, compatibilidad secundaria |
+| Recibo pequeno personalizado | `recibo_pequeno_personalizado` | OK, solo habilita ajustes manuales para soporte con `receipt_settings.advanced` |
+
+### Usuario normal
+
+Validado en `qa/refactor/screenshots/receipt-settings-normal.png` y `InstitutionalReceiptSettingsView.test.tsx`.
+
+El usuario normal con permiso de editar recibos pero sin `receipt_settings.advanced` solo ve:
+
+- tipo de papel/perfil;
+- copias;
+- mostrar logo autorizado;
+- espacio para sello/firma;
+- imprimir prueba;
+- guardar perfil;
+- asignacion operativa de perfil segun permiso.
+
+No se renderizan ni se nombran como controles visibles:
+
+- `width_mm`, `height_mm`;
+- `margin_top_mm`, `margin_right_mm`, `margin_bottom_mm`, `margin_left_mm`;
+- `font_family`, `font_scale`;
+- ancho, alto, margen superior/derecho/inferior/izquierdo, fuente, escala;
+- bloque `Modo soporte tecnico`.
+
+La mutacion normal envia solo campos operativos de perfil: `copies_mode`, `show_copy_legend`, `show_physical_seal_space`, `use_logo`, `active`, `is_global_default`, `template_code`.
+
+### Usuario soporte con advanced
+
+Validado en `qa/refactor/screenshots/receipt-settings-advanced.png`.
+
+Condiciones para mostrar avanzado:
+
+1. `canEdit` verdadero.
+2. Permiso `receipt_settings.advanced`.
+3. Perfil compatible: `recibo_pequeno_personalizado`.
+4. Acordeon abierto explicitamente por el usuario.
+
+Campos avanzados visibles solo en ese caso:
+
+- Ancho mm;
+- Alto mm;
+- Fuente;
+- Escala;
+- Margen sup. (mm);
+- Margen der. (mm);
+- Margen inf. (mm);
+- Margen izq. (mm).
+
+### Backend y auditoria
+
+`php artisan test --filter=ReceiptPrintProfileAdvancedFieldsTest`:
+
+- OK - usuario sin advanced no puede enviar campos manuales: 403.
+- OK - usuario con advanced puede actualizar campos manuales.
+- OK - cambio advanced queda auditado.
+- OK - update basico sin campos manuales funciona sin advanced.
+
+### CSS y prueba de impresion
+
+- `@page` define carta, media carta, A5, 80mm y 58mm.
+- `body[data-printing-receipt="true"]` oculta sidebar, topbar, botones, chrome de app y elementos `.no-print`.
+- Totales y filas usan `break-inside: avoid`.
+- Firma/sello tienen espacio reservado.
+- `Imprimir prueba` genera documento con marca `PRUEBA - SIN VALIDEZ` y no reserva correlativo fiscal.
+
+### Comandos finales
+
+- `pnpm exec vitest run src/features/receipt-settings/InstitutionalReceiptSettingsView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` - OK, 5 tests.
+- `php artisan test --filter=ReceiptPrintProfileAdvancedFieldsTest` - OK, 3 tests.
+- `pnpm exec playwright test e2e/v1-2-visible-ui-a11y.spec.ts -g "refactor final screenshots evidence"` - OK, screenshots normal y advanced generados.

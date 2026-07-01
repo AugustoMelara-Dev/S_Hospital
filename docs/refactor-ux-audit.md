@@ -183,3 +183,20 @@ Inconsistencias detectadas:
 - Sustituir MySQL/MariaDB.
 - Quitar `Spatie Permission` (es la fuente de permisos actual).
 - Reescribir DomPDF por otro motor (mantener `barryvdh/laravel-dompdf`).
+
+## 11. Actualizacion 2026-06-30
+
+Cambios aplicados en esta iteracion:
+
+- Se restauro el `AppShell` con sidebar compacto/colapsable y persistencia local no sensible (`s-hospital-sidebar-collapsed`).
+- Se elimino el dock fijo inferior en `NewInvoiceViewLayout`; la accion principal queda dentro del carrito para no tapar servicios, totales ni alertas en movil.
+- `ReportsView` mantiene 3 secciones navegables: Ejecutivo, Caja y Auditoria. Se retiraron tarjetas de caja con valores inventados y un bloque JSON tecnico.
+- `PaymentMethodPanel` dejo de usar donut y ahora muestra barras horizontales + tabla accesible.
+- `InstitutionalReceiptSettingsView` recibe explicitamente `canAdvancedPrintSettings`; los campos manuales de ancho, alto, margenes, fuente y escala solo aparecen con permiso `receipt_settings.advanced` y dentro del panel de soporte tecnico.
+- La UI normal de recibos ya no muestra medidas en mm como parte de la operacion diaria; solo muestra papel, copias, logo, sello/firma, prueba y guardar.
+
+Riesgos aun abiertos:
+
+- Hay documentos y textos fuente con mojibake historico (`CatÃ¡logo`, `ConfiguraciÃ³n`). No se normalizo de forma masiva para evitar churn fuera del alcance inmediato.
+- La verificacion visual final depende de levantar Vite/API con datos de sesion disponibles.
+- Reportes de caja requieren ingresar una caja concreta; aun no hay listado compacto de sesiones recientes en esta iteracion.
