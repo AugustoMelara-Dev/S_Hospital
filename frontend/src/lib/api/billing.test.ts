@@ -31,6 +31,60 @@ describe('billing api client', () => {
     });
   });
 
+  it('allows invoice voids to reuse a caller-managed idempotency key', async () => {
+    const invoice = { id: 12, status: 'void' } as Invoice;
+    mockedRequest.mockResolvedValueOnce({ data: invoice });
+
+    await expect(billing.voidInvoice(
+      12,
+      'Factura duplicada por error',
+      { idempotencyKey: 'void-attempt-1' },
+    )).resolves.toBe(invoice);
+
+    expect(mockedRequest).toHaveBeenCalledWith('/api/invoices/12/void', {
+      method: 'POST',
+      idempotencyKey: 'void-attempt-1',
+      headers: { 'Idempotency-Key': 'void-attempt-1' },
+      body: JSON.stringify({ reason: 'Factura duplicada por error' }),
+    });
+  });
+
+  it('allows invoice reversals to reuse a caller-managed idempotency key', async () => {
+    const invoice = { id: 12, status: 'void' } as Invoice;
+    mockedRequest.mockResolvedValueOnce({ data: invoice });
+
+    await expect(billing.reverseInvoice(
+      12,
+      'Pago aplicado a factura equivocada',
+      { idempotencyKey: 'reverse-attempt-1' },
+    )).resolves.toBe(invoice);
+
+    expect(mockedRequest).toHaveBeenCalledWith('/api/invoices/12/reverse', {
+      method: 'POST',
+      idempotencyKey: 'reverse-attempt-1',
+      headers: { 'Idempotency-Key': 'reverse-attempt-1' },
+      body: JSON.stringify({ reason: 'Pago aplicado a factura equivocada' }),
+    });
+  });
+
+  it('allows legacy receipt reprints to reuse a caller-managed idempotency key', async () => {
+    const receipt = { invoice_id: 12, width: 'half_letter' };
+    mockedRequest.mockResolvedValueOnce({ data: { receipt } });
+
+    await expect(billing.reprintInvoice(
+      12,
+      { width: 'half_letter', reason: 'Copia solicitada por auditoria' },
+      { idempotencyKey: 'legacy-reprint-attempt-1' },
+    )).resolves.toBe(receipt);
+
+    expect(mockedRequest).toHaveBeenCalledWith('/api/invoices/12/reprint', {
+      method: 'POST',
+      idempotencyKey: 'legacy-reprint-attempt-1',
+      headers: { 'Idempotency-Key': 'legacy-reprint-attempt-1' },
+      body: JSON.stringify({ width: 'half_letter', reason: 'Copia solicitada por auditoria' }),
+    });
+  });
+
   it('allows payment registration to reuse a caller-managed idempotency key', async () => {
     const payment = { id: 44, status: 'posted' } as Payment;
     const invoice = { id: 12, status: 'paid' } as Invoice;

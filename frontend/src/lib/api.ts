@@ -219,24 +219,26 @@ export const apiClient = {
   async reprintInvoice(
     invoiceId: number,
     payload: { width: ReceiptData['width']; reason?: string | null },
+    options: { idempotencyKey?: string } = {},
   ): Promise<ReceiptData> {
-    return billing.reprintInvoice(invoiceId, payload);
+    return billing.reprintInvoice(invoiceId, payload, options);
   },
 
-  async voidInvoice(invoiceId: number, reason: string): Promise<Invoice> {
-    return billing.voidInvoice(invoiceId, reason);
+  async voidInvoice(invoiceId: number, reason: string, options: { idempotencyKey?: string } = {}): Promise<Invoice> {
+    return billing.voidInvoice(invoiceId, reason, options);
   },
 
-  async reverseInvoice(invoiceId: number, reason: string): Promise<Invoice> {
-    return billing.reverseInvoice(invoiceId, reason);
+  async reverseInvoice(invoiceId: number, reason: string, options: { idempotencyKey?: string } = {}): Promise<Invoice> {
+    return billing.reverseInvoice(invoiceId, reason, options);
   },
 
   async voidPayment(
     invoiceId: number,
     paymentId: number,
     reason: string,
+    options: { idempotencyKey?: string } = {},
   ): Promise<{ payment: Payment; invoice: Invoice }> {
-    return billing.voidPayment(invoiceId, paymentId, { reason });
+    return billing.voidPayment(invoiceId, paymentId, { reason }, options);
   },
 
   async getCurrentCashSession(): Promise<CashSession | null> {
@@ -402,12 +404,20 @@ export const apiClient = {
     return institutionalReceipts.testPrint(payload);
   },
 
-  async registerInstitutionalReceiptPrintEvent(id: number, reason?: string | null): Promise<InstitutionalReceipt> {
-    return institutionalReceipts.registerPrintEvent(id, reason);
+  async registerInstitutionalReceiptPrintEvent(
+    id: number,
+    reason?: string | null,
+    options: { idempotencyKey?: string } = {},
+  ): Promise<InstitutionalReceipt> {
+    return institutionalReceipts.registerPrintEvent(id, reason, options);
   },
 
-  async getInstitutionalReceiptPdf(id: number, reason?: string | null): Promise<Blob> {
-    return institutionalReceipts.pdf(id, reason);
+  async getInstitutionalReceiptPdf(
+    id: number,
+    reason?: string | null,
+    options: { idempotencyKey?: string } = {},
+  ): Promise<Blob> {
+    return institutionalReceipts.pdf(id, reason, options);
   },
 
   async login(login: string, password: string): Promise<AuthUser> {

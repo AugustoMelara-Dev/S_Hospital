@@ -6,6 +6,7 @@ import { type ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { InvoiceHistoryView } from './InvoiceHistoryView';
 import { apiClient, institutionalReceipts, type AuthUser, type InstitutionalReceipt, type Invoice } from '../../lib/api';
+import * as apiBase from '../../lib/api/base';
 import { openBlobInNewTab } from '../../lib/download';
 
 vi.mock('../../lib/download', () => ({
@@ -178,6 +179,7 @@ describe('InvoiceHistoryView', () => {
   });
 
   it('exposes paid invoice reverse flow with reason', async () => {
+    vi.spyOn(apiBase, 'createClientIdempotencyKey').mockReturnValue('history-reverse-attempt-1');
     const paid = invoiceFixture({
       id: 3,
       invoice_number: '000-001-01-00000003',
@@ -207,7 +209,9 @@ describe('InvoiceHistoryView', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: /reversar factura/i }));
 
-    await waitFor(() => expect(reverseInvoice).toHaveBeenCalledWith(3, 'Pago aplicado a factura equivocada'));
+    await waitFor(() => expect(reverseInvoice).toHaveBeenCalledWith(3, 'Pago aplicado a factura equivocada', {
+      idempotencyKey: 'history-reverse-attempt-1',
+    }));
   });
 
   it('submits reverse only once while the critical action is in flight', async () => {
@@ -283,6 +287,38 @@ describe('InvoiceHistoryView', () => {
     expect(screen.getByText(/Anular factura 000-001-01-00000031/i)).toBeInTheDocument();
   });
 
+  it('voids invoices with a stable idempotency key from history', async () => {
+    vi.spyOn(apiBase, 'createClientIdempotencyKey').mockReturnValue('history-void-attempt-1');
+    const invoice = invoiceFixture({
+      id: 38,
+      invoice_number: '000-001-01-00000038',
+      patient_name: 'Paciente Anulacion Exitosa',
+    });
+    const voidInvoice = vi.spyOn(apiClient, 'voidInvoice').mockResolvedValue({ ...invoice, status: 'void' });
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [invoice],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+    vi.spyOn(apiClient, 'getInvoice').mockResolvedValue(invoice);
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente Anulacion Exitosa')).toBeInTheDocument());
+    await openInvoiceMenu(invoice.invoice_number);
+    fireEvent.click(await screen.findByRole('menuitem', { name: /Anular factura/i }));
+    await waitFor(() => expect(screen.getByText(/Anular factura 000-001-01-00000038/i)).toBeInTheDocument());
+
+    fireEvent.change(screen.getByLabelText(/motivo de anulación/i), {
+      target: { value: 'Factura emitida a paciente equivocado' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /anular factura/i }));
+
+    await waitFor(() => expect(voidInvoice).toHaveBeenCalledWith(38, 'Factura emitida a paciente equivocado', {
+      idempotencyKey: 'history-void-attempt-1',
+    }));
+  });
+
   it('keeps reverse confirmation open when reason is too short', async () => {
     const invoice = invoiceFixture({
       id: 32,
@@ -354,6 +390,7 @@ describe('InvoiceHistoryView', () => {
   });
 
   it('generates a missing institutional receipt only once while the request is pending', async () => {
+    vi.spyOn(apiBase, 'createClientIdempotencyKey').mockReturnValue('history-generate-receipt-attempt-1');
     const paid = invoiceFixture({
       id: 36,
       invoice_number: '000-001-01-00000036',
@@ -389,13 +426,17 @@ describe('InvoiceHistoryView', () => {
     fireEvent.click(generateButton);
 
     expect(store).toHaveBeenCalledTimes(1);
-    expect(store).toHaveBeenCalledWith({ invoice_id: 36 });
+    expect(store).toHaveBeenCalledWith({ invoice_id: 36 }, {
+      idempotencyKey: 'history-generate-receipt-attempt-1',
+    });
 
     await act(async () => {
       resolveStore(receipt);
     });
 
-    await waitFor(() => expect(apiClient.getInstitutionalReceiptPdf).toHaveBeenCalledWith(96, 'Emisión manual de recibo faltante.'));
+    await waitFor(() => expect(apiClient.getInstitutionalReceiptPdf).toHaveBeenCalledWith(96, 'Emisión manual de recibo faltante.', {
+      idempotencyKey: 'history-generate-receipt-attempt-1',
+    }));
   });
 
   it('requires a reprint reason before opening a previously printed institutional receipt from history', async () => {
@@ -439,7 +480,9 @@ describe('InvoiceHistoryView', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: /registrar reimpresi/i }));
 
-    await waitFor(() => expect(getPdf).toHaveBeenCalledWith(94, 'Copia solicitada por auditoria interna'));
+    await waitFor(() => expect(getPdf).toHaveBeenCalledWith(94, 'Copia solicitada por auditoria interna', {
+      idempotencyKey: expect.any(String),
+    }));
     expect(openBlobInNewTab).toHaveBeenCalledWith(
       expect.any(Blob),
       'recibo-institucional-REC-A-00000094.pdf',
@@ -447,6 +490,7 @@ describe('InvoiceHistoryView', () => {
   });
 
   it('reprints institutional receipt from history before falling back to legacy receipt', async () => {
+    vi.spyOn(apiBase, 'createClientIdempotencyKey').mockReturnValue('history-institutional-reprint-attempt-1');
     const paid = invoiceFixture({
       id: 5,
       invoice_number: '000-001-01-00000005',
@@ -477,13 +521,53 @@ describe('InvoiceHistoryView', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: /registrar reimpresi/i }));
 
-    await waitFor(() => expect(getPdf).toHaveBeenCalledWith(91, 'Copia solicitada por el paciente'));
+    await waitFor(() => expect(getPdf).toHaveBeenCalledWith(91, 'Copia solicitada por el paciente', {
+      idempotencyKey: 'history-institutional-reprint-attempt-1',
+    }));
     expect(registerPrint).not.toHaveBeenCalled();
     expect(openBlobInNewTab).toHaveBeenCalledWith(
       expect.any(Blob),
       'recibo-institucional-REC-A-00000091.pdf',
     );
     expect(reprintInvoice).not.toHaveBeenCalled();
+  });
+
+  it('reprints legacy receipts with a stable idempotency key from history', async () => {
+    vi.spyOn(apiBase, 'createClientIdempotencyKey').mockReturnValue('history-legacy-reprint-attempt-1');
+    const paid = invoiceFixture({
+      id: 37,
+      invoice_number: '000-001-01-00000037',
+      patient_name: 'Paciente Reimpresion Legacy',
+      status: 'paid',
+      institutional_receipt: null,
+    });
+    const receipt = receiptFixture(paid);
+    const reprintInvoice = vi.spyOn(apiClient, 'reprintInvoice').mockResolvedValue(receipt);
+    const getPdf = vi.spyOn(apiClient, 'getInstitutionalReceiptPdf');
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [paid],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+    vi.spyOn(apiClient, 'getInvoice').mockResolvedValue(paid);
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente Reimpresion Legacy')).toBeInTheDocument());
+    await openInvoiceMenu(paid.invoice_number);
+    fireEvent.click(await screen.findByRole('menuitem', { name: /Reimprimir/i }));
+    fireEvent.change(screen.getByLabelText(/motivo de reimpresi/i), {
+      target: { value: 'Copia solicitada por auditoria interna' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /registrar reimpresi/i }));
+
+    await waitFor(() => expect(reprintInvoice).toHaveBeenCalledWith(37, {
+      width: 'half_letter',
+      reason: 'Copia solicitada por auditoria interna',
+    }, {
+      idempotencyKey: 'history-legacy-reprint-attempt-1',
+    }));
+    expect(getPdf).not.toHaveBeenCalled();
   });
 
   it('keeps institutional reprint confirmation open when reason is too short', async () => {

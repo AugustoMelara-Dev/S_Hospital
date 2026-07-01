@@ -112,6 +112,7 @@ Los clientes frontend que pueden sufrir reintento humano despues de timeout cons
 - `NewInvoiceView` para registro de pago.
 - `useOpenCashSession` y `useCloseCashSession` para apertura/cierre de caja.
 - `useCreateBackup` para respaldo manual.
+- `InvoiceHistoryView` para anular, reversar, reimprimir recibo legacy, generar recibo institucional faltante y abrir PDF institucional con motivo de reimpresion.
 
 ## 5. CSRF y sesión
 

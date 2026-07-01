@@ -355,3 +355,26 @@ Pruebas ejecutadas:
 Decision:
 
 - No se tocaron migraciones, schema, correlativos ni datos fiscales. Es un corte frontend/API que completa el enlace con la proteccion backend ya existente para caja y respaldos.
+
+### Fase 5 - Historial y recibos
+
+Cambio aplicado:
+
+- `frontend/src/lib/api/billing.ts` acepta `options.idempotencyKey` en anular factura, reversar factura, anular pago y reimprimir recibo legacy.
+- `frontend/src/lib/api/institutionalReceipts.ts` acepta `options.idempotencyKey` en crear recibo institucional, registrar evento de impresion y descargar PDF con motivo por POST.
+- `InvoiceHistoryView` genera claves estables por intento para anular, reversar, generar recibo institucional faltante y reimprimir recibos legacy/institucionales.
+- Las claves se limpian tras exito confirmado; si falla la operacion, quedan disponibles para reintento del mismo intento operativo.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- src/lib/api/billing.test.ts` | RED inicial por llamadas sin `idempotencyKey`; luego OK: 5 tests pasan. |
+| `npm run test -- src/lib/api/institutionalReceipts.test.ts` | RED inicial por llamadas sin `idempotencyKey`; luego OK: 5 tests pasan. |
+| `npm run test -- src/features/invoices/InvoiceHistoryView.test.tsx` | RED inicial por llamadas sin options; luego OK: 16 tests pasan, 1 skipped existente. |
+| `npm run test -- src/lib/api/billing.test.ts src/lib/api/institutionalReceipts.test.ts src/features/invoices/InvoiceHistoryView.test.tsx src/hooks/useCashSession.test.tsx src/hooks/useBackups.test.tsx src/hooks/useInvoices.test.tsx` | OK: 6 archivos, 41 tests pasan, 1 skipped existente. |
+| `npm run typecheck` | OK. |
+
+Decision:
+
+- No se tocaron migraciones, schema ni correlativos. El backend ya exige `Idempotency-Key` en estas rutas `POST`; este corte evita que reintentos desde historial pierdan la clave gestionada por la UI.
