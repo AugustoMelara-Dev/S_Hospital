@@ -87,6 +87,73 @@ describe('ServiceSheet', () => {
     });
     expect(onSuccess).toHaveBeenCalled();
   });
+
+  it('requires and sends a reason when editing the service tax flag', async () => {
+    const saveService = vi.spyOn(apiClient, 'saveService').mockResolvedValue({
+      id: 1,
+      category_id: 1,
+      area_id: 1,
+      name: 'Glucosa',
+      slug: 'glucosa',
+      price: '15.00',
+      scan_code: null,
+      barcode: null,
+      qr_code: null,
+      taxable: false,
+      active: true,
+      special_rule_code: null,
+    });
+
+    render(
+      <ServiceSheet
+        open
+        onOpenChange={vi.fn()}
+        service={{
+          id: 1,
+          category_id: 1,
+          area_id: 1,
+          name: 'Glucosa',
+          price: '15.00',
+          scan_code: null,
+          barcode: null,
+          qr_code: null,
+          taxable: true,
+          active: true,
+          visible_in_billing: true,
+          is_billable: true,
+          special_rule_code: null,
+        }}
+        categories={[{ id: 1, name: 'Laboratorio' }]}
+        areas={[{ id: 1, name: 'Laboratorio' }]}
+        onSuccess={noop}
+      />,
+    );
+
+    expect(screen.queryByLabelText(/motivo del cambio de impuesto/i)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText(/aplica isv/i));
+    expect(await screen.findByLabelText(/motivo del cambio de impuesto/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /actualizar/i }));
+
+    expect(await screen.findByText(/indique el motivo del cambio de impuesto/i)).toBeInTheDocument();
+    expect(saveService).not.toHaveBeenCalled();
+
+    fireEvent.change(screen.getByLabelText(/motivo del cambio de impuesto/i), {
+      target: { value: 'Cambio autorizado por exoneracion institucional' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /actualizar/i }));
+
+    await waitFor(() => {
+      expect(saveService).toHaveBeenCalledWith(
+        expect.objectContaining({
+          taxable: false,
+          tax_change_reason: 'Cambio autorizado por exoneracion institucional',
+        }),
+        1,
+      );
+    });
+  });
 });
 
 describe('ServiceSheet contract preservation', () => {

@@ -19,6 +19,7 @@ const serviceSchema = z.object({
   name: z.string().min(1, 'El nombre es requerido'),
   price: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Precio debe ser un número válido'),
   price_change_reason: z.string().max(500, 'Motivo maximo 500 caracteres').nullable().optional(),
+  tax_change_reason: z.string().max(500, 'Motivo maximo 500 caracteres').nullable().optional(),
   scan_code: z.string().nullable().optional(),
   barcode: z.string().nullable().optional(),
   qr_code: z.string().nullable().optional(),
@@ -61,6 +62,7 @@ const defaultValues: ServiceFormData = {
   name: '',
   price: '0.00',
   price_change_reason: null,
+  tax_change_reason: null,
   scan_code: null,
   barcode: null,
   qr_code: null,
@@ -104,8 +106,10 @@ export function ServiceSheet({
   const categoryId = watch('category_id');
   const areaId = watch('area_id');
   const price = watch('price');
+  const taxable = watch('taxable');
   const specialRuleCode = watch('special_rule_code');
   const requiresPriceChangeReason = Boolean(isEditing && service && priceValuesDiffer(service.price, price));
+  const requiresTaxChangeReason = Boolean(isEditing && service && service.taxable !== taxable);
 
   useEffect(() => {
     if (!open) {
@@ -119,6 +123,7 @@ export function ServiceSheet({
         name: service.name,
         price: service.price,
         price_change_reason: null,
+        tax_change_reason: null,
         scan_code: service.scan_code,
         barcode: service.barcode,
         qr_code: service.qr_code,
@@ -153,9 +158,17 @@ export function ServiceSheet({
       return;
     }
 
+    if (requiresTaxChangeReason && optionalCode(data.tax_change_reason) === null) {
+      setError('tax_change_reason', { type: 'manual', message: 'Indique el motivo del cambio de impuesto.' });
+      setFocus('tax_change_reason');
+
+      return;
+    }
+
     const payload = {
       ...data,
       price_change_reason: optionalCode(data.price_change_reason),
+      tax_change_reason: optionalCode(data.tax_change_reason),
       scan_code: optionalCode(data.scan_code),
       barcode: optionalCode(data.barcode),
       qr_code: optionalCode(data.qr_code),
@@ -415,6 +428,30 @@ export function ServiceSheet({
               </Label>
             </div>
 
+            {requiresTaxChangeReason && (
+              <div className="flex flex-col gap-2 md:col-span-2">
+                <Label htmlFor="tax_change_reason">Motivo del cambio de impuesto *</Label>
+                <Input
+                  id="tax_change_reason"
+                  {...register('tax_change_reason')}
+                  aria-invalid={Boolean(errors.tax_change_reason)}
+                  aria-describedby={
+                    errors.tax_change_reason ? 'service-tax-reason-error' : undefined
+                  }
+                  className={cn(errors.tax_change_reason && 'border-destructive')}
+                />
+                {errors.tax_change_reason && (
+                  <p
+                    id="service-tax-reason-error"
+                    role="alert"
+                    className="text-sm text-destructive"
+                  >
+                    {errors.tax_change_reason.message}
+                  </p>
+                )}
+              </div>
+            )}
+
             <div className="flex items-center gap-2">
               <Controller
                 control={control}
@@ -489,7 +526,7 @@ function applyBackendErrors(
   validationErrors: Record<string, string[]>,
   setError: ReturnType<typeof useForm<ServiceFormData>>['setError'],
 ) {
-  (['category_id', 'area_id', 'name', 'price', 'price_change_reason', 'scan_code', 'barcode', 'qr_code'] as const).forEach((field) => {
+  (['category_id', 'area_id', 'name', 'price', 'price_change_reason', 'tax_change_reason', 'scan_code', 'barcode', 'qr_code'] as const).forEach((field) => {
     const message = validationErrors[field]?.[0];
     if (message) {
       setError(field, { type: 'server', message });
@@ -501,7 +538,7 @@ function focusFirstServiceError(
   validationErrors: Record<string, string[]>,
   setFocus: ReturnType<typeof useForm<ServiceFormData>>['setFocus'],
 ) {
-  const firstFocusable = (['name', 'price', 'price_change_reason', 'scan_code', 'barcode', 'qr_code'] as const).find((field) => validationErrors[field]?.[0]);
+  const firstFocusable = (['name', 'price', 'price_change_reason', 'tax_change_reason', 'scan_code', 'barcode', 'qr_code'] as const).find((field) => validationErrors[field]?.[0]);
   if (firstFocusable) {
     window.setTimeout(() => setFocus(firstFocusable), 0);
   }

@@ -123,6 +123,7 @@ export type ServicePayload = {
   aliases?: string | null;
   price: string;
   price_change_reason?: string | null;
+  tax_change_reason?: string | null;
   scan_code: string | null;
   barcode: string | null;
   qr_code: string | null;
