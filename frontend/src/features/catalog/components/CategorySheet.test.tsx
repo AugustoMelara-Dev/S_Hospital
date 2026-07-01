@@ -41,6 +41,21 @@ describe('CategorySheet', () => {
     ).toBeInTheDocument();
   });
 
+  it('organizes category editing into data and status sections', () => {
+    renderSheet();
+
+    const sectionHeadings = screen
+      .getAllByRole('heading', { level: 2 })
+      .map((heading) => heading.textContent);
+
+    expect(sectionHeadings).toEqual([
+      'Nueva Categoría',
+      'Datos básicos',
+      'Estado',
+    ]);
+    expect(screen.queryByText(/datos de la categor[iÃ­]a/i)).not.toBeInTheDocument();
+  });
+
   it('keeps the create payload contract (name, sort_order, active)', async () => {
     const saveCategory = vi.spyOn(apiClient, 'saveCategory').mockResolvedValue({
       id: 7,

@@ -95,8 +95,8 @@ export function CategorySheet({ open, onOpenChange, category, onSuccess }: Categ
     >
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
         <FormSection
-          title="Datos de la categoría"
-          description="Nombre, orden de aparición y disponibilidad."
+          title="Datos básicos"
+          description="Nombre y orden de aparicion en el catalogo."
         >
           <FieldGroup columns={2}>
             <div className="flex flex-col gap-2">
@@ -134,7 +134,12 @@ export function CategorySheet({ open, onOpenChange, category, onSuccess }: Categ
               )}
             </div>
           </FieldGroup>
+        </FormSection>
 
+        <FormSection
+          title="Estado"
+          description="Disponibilidad de la categoria para organizar servicios."
+        >
           <div className="flex items-center gap-2">
             <Controller
               control={control}
