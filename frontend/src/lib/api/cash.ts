@@ -24,17 +24,28 @@ export const cash = {
     return response.data ?? null;
   },
 
-  async openCashSession(payload: { opening_amount: string; notes?: string | null }): Promise<CashSession> {
+  async openCashSession(
+    payload: { opening_amount: string; notes?: string | null },
+    options: { idempotencyKey?: string } = {},
+  ): Promise<CashSession> {
     const response = await apiClient.request<{ data: CashSession }>('/api/cash-sessions/open', {
       method: 'POST',
+      idempotencyKey: options.idempotencyKey,
+      headers: options.idempotencyKey ? { 'Idempotency-Key': options.idempotencyKey } : undefined,
       body: JSON.stringify(payload),
     });
     return response.data;
   },
 
-  async closeCashSession(id: number, payload: { closing_amount: string; notes?: string | null }): Promise<CashSession> {
+  async closeCashSession(
+    id: number,
+    payload: { closing_amount: string; notes?: string | null },
+    options: { idempotencyKey?: string } = {},
+  ): Promise<CashSession> {
     const response = await apiClient.request<{ data: CashSession }>(`/api/cash-sessions/${id}/close`, {
       method: 'POST',
+      idempotencyKey: options.idempotencyKey,
+      headers: options.idempotencyKey ? { 'Idempotency-Key': options.idempotencyKey } : undefined,
       body: JSON.stringify(payload),
     });
     return response.data;

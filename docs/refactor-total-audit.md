@@ -181,6 +181,8 @@ Existen componentes reutilizables para acciones, menus, alertas, dialogos, tabla
 ### Seguridad
 
 - Hay transacciones y locks en facturacion, pagos, caja, recibos y reimpresion.
+- El middleware backend `idempotency` protege `POST /api/invoices`, pagos, anulaciones, reversos, caja, reimpresion, recibos institucionales y respaldos manuales con `Idempotency-Key` y respuestas 2xx cifradas en `idempotency_keys`.
+- El frontend conserva claves estables por intento en factura, pago, apertura/cierre de caja y respaldo manual; las renueva solo tras exito confirmado.
 - Backend rechaza campos avanzados de recibos sin `receipt_settings.advanced` con 403 y audita `receipt_settings.advanced_denied`.
 - Hay permisos granulares y politicas/Form Requests en endpoints criticos.
 - Pendiente: baseline backend oficial sigue bloqueado por puerto `3306`; en stack aislado pasan HealthCheck, Pint y PHPStan, pero la suite Laravel completa hizo timeout y no puede declararse verde.
@@ -233,6 +235,7 @@ Existen componentes reutilizables para acciones, menus, alertas, dialogos, tabla
 
 - UI normal indica que restauracion no se hace desde la app.
 - Backend contiene flujo de respaldo y auditoria de metadatos.
+- El respaldo manual usa idempotencia estable desde `useCreateBackup` hasta `POST /api/backups`, evitando duplicar jobs si el operador reintenta tras timeout.
 - Pendiente: validar que rutas sensibles no se expongan al usuario normal y que `backups.restore` no aparezca como accion normal.
 
 ### Configuracion fiscal
@@ -326,3 +329,29 @@ Pruebas ejecutadas:
 Decision:
 
 - No se tocaron migraciones, correlativos ni datos fiscales. Es un corte de UX/ruta para reducir mezcla de dominios.
+
+## 13. Fase 5 - Idempotencia frontend para caja y respaldos
+
+Cambio aplicado:
+
+- `useOpenCashSession` y `useCloseCashSession` ahora generan una `Idempotency-Key` estable por intento con `createClientIdempotencyKey()`.
+- La clave se reutiliza si el intento falla y el operador reintenta; se limpia solo cuando el backend confirma exito.
+- `useCreateBackup` aplica el mismo patron para respaldo manual.
+- `frontend/src/lib/api/cash.ts`, `frontend/src/lib/api/backups.ts` y el facade `frontend/src/lib/api.ts` aceptan `options.idempotencyKey` y lo propagan al header `Idempotency-Key`.
+- `docs/security-audit.md` quedo alineado con las rutas reales (`/api/invoices`, `/api/cash-sessions/open`, `/api/backups`) y con el middleware/tabla actuales (`idempotency`, `idempotency_keys`), no con la referencia antigua al modelo de idempotencia por operacion.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- src/hooks/useCashSession.test.tsx` | RED inicial por llamadas sin options; luego OK: 3 tests pasan. |
+| `npm run test -- src/hooks/useBackups.test.tsx` | RED inicial por llamadas sin options; luego OK: 10 tests pasan. |
+| `npm run test -- src/hooks/useCashSession.test.tsx src/hooks/useBackups.test.tsx src/lib/api/cash.test.ts src/lib/api/backups.test.ts` | OK: 4 archivos, 17 tests pasan. |
+| `npm run test -- src/lib/api/billing.test.ts src/hooks/useInvoices.test.tsx` | OK: 2 archivos, 4 tests pasan. |
+| `npm run test -- src/hooks/useCashSession.test.tsx src/hooks/useBackups.test.tsx src/lib/api/cash.test.ts src/lib/api/backups.test.ts src/lib/api/billing.test.ts src/hooks/useInvoices.test.tsx` | OK: 6 archivos, 21 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+
+Decision:
+
+- No se tocaron migraciones, schema, correlativos ni datos fiscales. Es un corte frontend/API que completa el enlace con la proteccion backend ya existente para caja y respaldos.

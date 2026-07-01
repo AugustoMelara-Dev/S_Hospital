@@ -249,12 +249,19 @@ export const apiClient = {
     return cash.getCashSessions(filters);
   },
 
-  async openCashSession(payload: { opening_amount: string; notes?: string | null }): Promise<CashSession> {
-    return cash.openCashSession(payload);
+  async openCashSession(
+    payload: { opening_amount: string; notes?: string | null },
+    options: { idempotencyKey?: string } = {},
+  ): Promise<CashSession> {
+    return cash.openCashSession(payload, options);
   },
 
-  async closeCashSession(id: number, payload: { closing_amount: string; notes?: string | null }): Promise<CashSession> {
-    return cash.closeCashSession(id, payload);
+  async closeCashSession(
+    id: number,
+    payload: { closing_amount: string; notes?: string | null },
+    options: { idempotencyKey?: string } = {},
+  ): Promise<CashSession> {
+    return cash.closeCashSession(id, payload, options);
   },
 
   async getDashboardReport(): Promise<DashboardReport> {
@@ -305,8 +312,8 @@ export const apiClient = {
     return backups.getBackups(filters);
   },
 
-  async createBackup(): Promise<BackupLog> {
-    return backups.createBackup();
+  async createBackup(options: { idempotencyKey?: string } = {}): Promise<BackupLog> {
+    return backups.createBackup(options);
   },
 
   backupDownloadUrl(id: number): string {

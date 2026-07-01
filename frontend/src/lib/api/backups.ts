@@ -11,9 +11,11 @@ export const backups = {
     return apiClient.request<{ data: BackupLog[]; meta: import('./types').PaginatedMeta }>(`/api/backups${query}`);
   },
 
-  async createBackup(): Promise<BackupLog> {
+  async createBackup(options: { idempotencyKey?: string } = {}): Promise<BackupLog> {
     const response = await apiClient.request<{ data: BackupLog }>('/api/backups', {
       method: 'POST',
+      idempotencyKey: options.idempotencyKey,
+      headers: options.idempotencyKey ? { 'Idempotency-Key': options.idempotencyKey } : undefined,
       body: JSON.stringify({}),
     });
     return response.data;

@@ -28,33 +28,35 @@ Permisos clave (no exhaustivo):
 Leyenda:
 - **A** = audit log obligatorio (`audit_logs`).
 - **M** = motivo obligatorio (textarea, longitud mínima `5` caracteres, max `500`).
-- **I** = idempotencia verificada vía `OperationIdempotencyKey`.
+- **I** = idempotencia verificada via middleware `idempotency` y tabla `idempotency_keys`.
 - **P** = permiso específico del backend.
 
 | # | Acción | Endpoint | Permiso | A | M | I | Validaciones extra |
 |---|---|---|---|---|---|---|---|
 | 1 | Login OK | `POST /api/auth/login` | público | sí | – | – | lockout 5/15 min (`LoginAttempt`), CSRF |
 | 2 | Login FAIL | `POST /api/auth/login` | público | sí | – | – | lockout, motivo adicional si está bloqueado |
-| 3 | Crear factura | `POST /api/billing/invoices` | `invoices.create` | sí | – | sí | paciente no vacío, 1+ items, cantidades > 0, precios snapshot |
-| 4 | Anular factura | `POST /api/billing/invoices/{id}/void` | `invoices.void` | sí | sí (≥5) | sí | factura no anulada previamente, no pagada totalmente |
-| 5 | Reversar pago | `POST /api/payments/{id}/reverse` | `payments.void` | sí | sí (≥5) | sí | pago no reversado, factura activa |
-| 6 | Crear pago | `POST /api/cash-sessions/{id}/payments` | `payments.create` | sí | – | sí | caja abierta, factura existe, balance disponible |
-| 7 | Abrir caja | `POST /api/cash-sessions` | `cash.open` | sí | – | – | sin caja abierta del mismo usuario |
+| 3 | Crear factura | `POST /api/invoices` | `invoices.create` | sí | – | sí | paciente no vacío, 1+ items, cantidades > 0, precios snapshot, correlativo bajo transacción |
+| 4 | Anular factura | `POST /api/invoices/{invoice}/void` | `invoices.void` | sí | sí (≥5) | sí | factura no anulada previamente, no pagada totalmente |
+| 5 | Reversar factura | `POST /api/invoices/{invoice}/reverse` | `invoices.reverse` | sí | sí (≥5) | sí | factura activa, motivo y auditoría |
+| 6 | Crear pago | `POST /api/invoices/{invoice}/payments` | `payments.create` | sí | – | sí | caja abierta, factura existe, balance disponible, movimiento de caja |
+| 7 | Abrir caja | `POST /api/cash-sessions/open` | `cash.open` | sí | – | sí | sin caja abierta del mismo usuario |
 | 8 | Cerrar caja | `POST /api/cash-sessions/{id}/close` | `cash.close` | sí | sí si diff≠0 | sí | efectivo contado numérico, sin facturas pendientes |
 | 9 | Diferencia de caja | (auto al cerrar) | – | sí | sí | – | se registra `cash_session.difference` además del cierre |
-| 10 | Cambiar precio de servicio | `PUT /api/catalog/services/{id}` | `catalog.manage` | sí | sí (≥5) | – | precio anterior → `service_price_history` |
-| 11 | Cambiar perfil impresión (básico) | `PUT /api/receipts/profiles/{id}` | `receipt_settings.update` | sí | – | – | no permite los 8 campos manuales sin `receipt_settings.advanced` |
-| 12 | Cambiar perfil impresión (avanzado) | `PUT /api/receipts/profiles/{id}` | `receipt_settings.advanced` | sí | – | – | cualquier campo manual exige el permiso; sin él → 403 + audit |
-| 13 | Cambiar CAI / rango / prefijo | `PUT /api/fiscal/sequences/{id}` | `settings.fiscal.update` | sí | sí (≥10) | – | no reiniciar `current_number` sin `fiscal.sequences.reset` |
-| 14 | Resetear correlativo fiscal | `PUT /api/fiscal/sequences/{id}/reset` | `fiscal.sequences.reset` | sí | sí (≥20) | – | exige que no haya facturas emitidas con ese correlativo, o motivo documentado si las hay |
-| 15 | Crear respaldo | `POST /api/backups` | `backups.create` | sí | – | – | storage disponible |
-| 16 | Descargar respaldo | `GET /api/backups/{id}/download` | `backups.download` | sí | – | – | – |
-| 17 | Restaurar respaldo | `POST /api/backups/{id}/restore` | `backups.restore` | **no implementado** | – | – | ver §3 |
-| 18 | Crear usuario | `POST /api/admin/users` | `users.create` | sí | – | – | password policy (12+ chars, upper/lower/digit/symbol) |
-| 19 | Actualizar usuario | `PUT /api/admin/users/{id}` | `users.update` | sí | sí si cambia rol | – | impide auto-demote del último admin |
-| 20 | Cambiar rol | (subconjunto de update) | `users.update` | sí | sí | – | impide quitar todos los admin |
-| 21 | Cambiar permisos directos | `PUT /api/admin/users/{id}/permissions` | `users.assign_admin_role` si son reservados | sí | – | – | separa reservados/elevados vía `RoleCatalog` |
-| 22 | Crear/editar rol | `POST/PUT /api/admin/roles` | `users.assign_admin_role` | sí | – | – | rechazar nombre `admin`/`root` |
+| 10 | Anular pago | `POST /api/invoices/{invoice}/payments/{payment}/void` o `POST /api/payments/{payment}/void` | `payments.void` | sí | sí (≥5) | sí | pago no anulado, factura activa, caja cerrada no recibe movimiento nuevo |
+| 11 | Reimprimir recibo legacy | `POST /api/invoices/{invoice}/reprint` | `receipts.reprint` | sí | opcional | sí | no emite documento nuevo; registra auditoría de reimpresión |
+| 12 | Emitir recibo institucional | `POST /api/institutional-receipts` | `receipts.view`/flujo operativo | sí | – | sí | serie activa, rango vigente, recibo asociado a factura |
+| 13 | PDF/print event recibo institucional | `POST /api/institutional-receipts/{receipt}/pdf`, `POST /api/institutional-receipts/{receipt}/print-events` | `receipts.view`/`receipts.reprint` | sí | opcional | sí | reimpresión auditada sin consumir correlativo |
+| 14 | Cambiar precio de servicio | `PATCH /api/services/{service}` | `catalog.manage` | sí | sí (≥5) | – | precio anterior → historial y snapshot histórico en facturas |
+| 15 | Cambiar perfil impresión (básico) | `PATCH /api/settings/institutional-receipts/print-profiles/{profile}` | `receipt_settings.update` | sí | – | – | no permite campos manuales sin `receipt_settings.advanced` |
+| 16 | Cambiar perfil impresión (avanzado) | `PATCH /api/settings/institutional-receipts/print-profiles/{profile}` | `receipt_settings.advanced` | sí | – | – | cualquier campo manual exige permiso; sin él → 403 + audit |
+| 17 | Cambiar CAI / rango / prefijo | `PATCH /api/fiscal-sequences/{fiscalSequence}` | `settings.fiscal.update` | sí | sí (≥5) | – | no reiniciar `current_number` sin `fiscal.sequences.reset` |
+| 18 | Crear respaldo | `POST /api/backups` | `backups.create` | sí | – | sí | storage disponible, job local, checksum/auditoría al completar |
+| 19 | Descargar respaldo | `GET /api/backups/{backupLog}/download` | `backups.download` | sí | – | – | solo archivos registrados dentro de `storage/app/backups` |
+| 20 | Restaurar respaldo | `POST /api/backups/{id}/restore` | `backups.restore` | **no implementado** | – | – | ver §3 |
+| 21 | Crear usuario | `POST /api/admin/users` | `users.create` | sí | – | – | password policy (12+ chars, upper/lower/digit/symbol) |
+| 22 | Actualizar usuario | `PATCH /api/admin/users/{user}` | `users.update` | sí | sí si cambia rol | – | impide auto-demote del último admin |
+| 23 | Cambiar rol | (subconjunto de update) | `users.update` | sí | sí | – | impide quitar todos los admin |
+| 24 | Crear/editar rol | `POST /api/admin/roles`, `PATCH /api/admin/roles/{role}` | `users.assign_admin_role` | sí | – | – | rechazar nombre `admin`/`root` |
 
 ## 3. Restauración de respaldos — **no disponible en UI**
 
@@ -85,9 +87,11 @@ Hasta entonces, **la restauración se hace desde el servidor** por personal auto
 
 ### 4.1 Doble emisión
 
-- `POST /api/billing/invoices` requiere `OperationIdempotencyKey` válido (TTL 24h).
-- Doble click del mismo operador en la UI con la misma idempotency-key → `409 Conflict` con cuerpo claro.
-- El frontend genera y guarda el key con `createClientIdempotencyKey()`.
+- `POST /api/invoices` requiere header `Idempotency-Key` en el middleware `idempotency`.
+- La tabla `idempotency_keys` conserva `user_id`, ruta, clave, fingerprint del body, status y respuesta 2xx cifrada.
+- Reintento con la misma clave y mismo payload reproduce la respuesta original con `Idempotent-Replay: true`.
+- Reintento con misma clave y payload distinto devuelve error de conflicto/validación.
+- El frontend conserva la clave por intento en factura, pago, apertura/cierre de caja y respaldo manual; solo la renueva cuando el backend confirma éxito.
 
 ### 4.2 Anti-XSS en nombres
 
@@ -100,7 +104,14 @@ Hasta entonces, **la restauración se hace desde el servidor** por personal auto
 
 ### 4.4 Idempotencia
 
-Todas las mutaciones críticas (`invoices.create`, `invoices.void`, `payments.create`, `payments.void`, `cash.open`, `cash.close`, `receipts.print`, `backups.create`, etc.) usan `OperationIdempotencyKey`.
+Todas las mutaciones críticas de tipo `POST` (`invoices.create`, `invoices.void`, `invoices.reverse`, `payments.create`, `payments.void`, `cash.open`, `cash.close`, `receipts.reprint`, `institutional_receipts.create/pdf/print_event`, `backups.create`, etc.) usan el middleware `idempotency`.
+
+Los clientes frontend que pueden sufrir reintento humano despues de timeout conservan una clave estable por intento:
+
+- `useCreateInvoice` / `NewInvoiceView` para emisión de factura.
+- `NewInvoiceView` para registro de pago.
+- `useOpenCashSession` y `useCloseCashSession` para apertura/cierre de caja.
+- `useCreateBackup` para respaldo manual.
 
 ## 5. CSRF y sesión
 

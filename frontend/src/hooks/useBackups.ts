@@ -1,6 +1,7 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { apiClient, type BackupLog } from '@/lib/api';
+import { createClientIdempotencyKey } from '@/lib/api/base';
 import { invalidateBackupQueries } from '@/lib/queryInvalidation';
 import { queryKeys } from '@/lib/queryKeys';
 
@@ -45,10 +46,18 @@ export function useBackups(filters: BackupsFilters = {}) {
 
 export function useCreateBackup() {
   const queryClient = useQueryClient();
+  const idempotencyKeyRef = useRef<string | null>(null);
 
   return useMutation({
-    mutationFn: () => apiClient.createBackup(),
+    mutationFn: () => {
+      idempotencyKeyRef.current ??= createClientIdempotencyKey();
+
+      return apiClient.createBackup({
+        idempotencyKey: idempotencyKeyRef.current,
+      });
+    },
     onSuccess: () => {
+      idempotencyKeyRef.current = null;
       return invalidateBackupQueries(queryClient);
     },
   });
