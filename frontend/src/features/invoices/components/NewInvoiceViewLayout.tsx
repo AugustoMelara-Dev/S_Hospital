@@ -138,56 +138,58 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
         />
       </div>
 
-      {state.pointOfSaleLoadError && (
-        <Alert variant="destructive" title="No se pudo cargar el punto de venta">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <span className="flex-1">{state.pointOfSaleLoadError}</span>
-            <Button type="button" variant="secondary" size="sm" onClick={onRetryLoad} disabled={state.loadingServices}>
-              {state.loadingServices ? 'Reintentando...' : 'Reintentar'}
-            </Button>
-          </div>
-        </Alert>
-      )}
-
-      {!state.loadedCashSession && !state.pointOfSaleLoadError && (
-        <Alert variant="warning" title="Caja no abierta">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-            <span className="flex-1">Debe abrir la caja antes de emitir facturas.</span>
-            {canOpenCash && onOpenCash ? (
-              <Button type="button" variant="secondary" size="sm" onClick={onOpenCash}>
-                Abrir Caja
+      <div role="status" aria-live="polite" aria-atomic="false" className="flex flex-col gap-3">
+        {state.pointOfSaleLoadError && (
+          <Alert variant="destructive" title="No se pudo cargar el punto de venta">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <span className="flex-1">{state.pointOfSaleLoadError}</span>
+              <Button type="button" variant="secondary" size="sm" onClick={onRetryLoad} disabled={state.loadingServices}>
+                {state.loadingServices ? 'Reintentando...' : 'Reintentar'}
               </Button>
-            ) : (
-              <div className="flex flex-col gap-1 sm:items-end">
-                <Button asChild variant="secondary" size="sm">
-                  <Link to="/cashbox">Ir a caja</Link>
+            </div>
+          </Alert>
+        )}
+
+        {!state.loadedCashSession && !state.pointOfSaleLoadError && (
+          <Alert variant="warning" title="Caja no abierta">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <span className="flex-1">Debe abrir la caja antes de emitir facturas.</span>
+              {canOpenCash && onOpenCash ? (
+                <Button type="button" variant="secondary" size="sm" onClick={onOpenCash}>
+                  Abrir Caja
                 </Button>
-                {!canOpenCash ? (
-                  <span className="text-xs text-muted-foreground">Solicite apertura a un usuario autorizado.</span>
-                ) : null}
-              </div>
-            )}
-          </div>
-        </Alert>
-      )}
+              ) : (
+                <div className="flex flex-col gap-1 sm:items-end">
+                  <Button asChild variant="secondary" size="sm">
+                    <Link to="/cashbox">Ir a caja</Link>
+                  </Button>
+                  {!canOpenCash ? (
+                    <span className="text-xs text-muted-foreground">Solicite apertura a un usuario autorizado.</span>
+                  ) : null}
+                </div>
+              )}
+            </div>
+          </Alert>
+        )}
 
-      {state.alertMessage && state.alertMessage !== state.pointOfSaleLoadError && (
-        <Alert variant="destructive" title="Revise antes de continuar">
-          {state.alertMessage}
-        </Alert>
-      )}
+        {state.alertMessage && state.alertMessage !== state.pointOfSaleLoadError && (
+          <Alert variant="destructive" title="Revise antes de continuar">
+            {state.alertMessage}
+          </Alert>
+        )}
 
-      {state.warningMessage && (
-        <Alert variant="warning" title="Factura pendiente">
-          {state.warningMessage}
-        </Alert>
-      )}
+        {state.warningMessage && (
+          <Alert variant="warning" title="Factura pendiente">
+            {state.warningMessage}
+          </Alert>
+        )}
 
-      {state.successMessage && (
-        <Alert variant="success" title="Servicio agregado">
-          {state.successMessage.replace(/^Agregado: /, '')}
-        </Alert>
-      )}
+        {state.successMessage && (
+          <Alert variant="success" title="Servicio agregado">
+            {state.successMessage.replace(/^Agregado: /, '')}
+          </Alert>
+        )}
+      </div>
 
       <div className="grid flex-1 gap-4 lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_400px] xl:grid-cols-[minmax(0,1fr)_430px]">
         <div className="flex flex-col gap-4 lg:min-h-0 lg:overflow-hidden">

@@ -1,0 +1,274 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Save } from 'lucide-react';
+import { Alert } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { FormField } from '@/components/ui/form-field';
+import { FormSection } from '@/components/ui/form-section';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { type FiscalSettings, apiClient, userSafeErrorMessage } from '@/lib/api';
+import { safeClientMessage } from '@/lib/support/clientIssueLog';
+
+type HospitalSettingsViewProps = {
+  canEdit: boolean;
+  onStatus: (message: string) => void;
+};
+
+const hospitalSchema = z.object({
+  hospital_name: z.string().min(1, 'El nombre del hospital es requerido'),
+  rtn: z.string().max(32, 'RTN muy largo').optional().or(z.literal('')),
+  address: z.string().max(255).optional().or(z.literal('')),
+  slogan: z.string().max(255).optional().or(z.literal('')),
+  government_line: z.string().max(120).optional().or(z.literal('')),
+  secretariat_line: z.string().max(160).optional().or(z.literal('')),
+  receipt_location: z.string().max(160).optional().or(z.literal('')),
+  receipt_footer_text: z.string().max(255).optional().or(z.literal('')),
+});
+
+type HospitalFormData = z.infer<typeof hospitalSchema>;
+
+function optionalText(value: string): string | null {
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
+}
+
+function isPlaceholderHospitalName(value: string | null | undefined): boolean {
+  return new RegExp(`^hospital ${'de' + 'mo'}$`, 'i').test(value?.trim() ?? '');
+}
+
+export function HospitalSettingsView({ canEdit, onStatus }: HospitalSettingsViewProps) {
+  const [settings, setSettings] = useState<FiscalSettings | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const savingRef = useRef(false);
+
+  const form = useForm<HospitalFormData>({
+    resolver: zodResolver(hospitalSchema),
+    defaultValues: {
+      hospital_name: '',
+      rtn: '',
+      address: '',
+      slogan: '',
+      government_line: '',
+      secretariat_line: '',
+      receipt_location: '',
+      receipt_footer_text: '',
+    },
+  });
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await apiClient.getFiscalSettings();
+      setSettings(data);
+      form.reset({
+        hospital_name: isPlaceholderHospitalName(data?.hospital_name) ? '' : data?.hospital_name ?? '',
+        rtn: data?.rtn ?? '',
+        address: data?.address ?? '',
+        slogan: data?.slogan ?? '',
+        government_line: data?.government_line ?? '',
+        secretariat_line: data?.secretariat_line ?? '',
+        receipt_location: data?.receipt_location ?? '',
+        receipt_footer_text: data?.receipt_footer_text ?? '',
+      });
+    } catch (err) {
+      const message = safeClientMessage(userSafeErrorMessage(err, 'No se pudo cargar los datos del hospital.'));
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  }, [form]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  async function onSubmit(data: HospitalFormData) {
+    if (savingRef.current) return;
+    savingRef.current = true;
+    setError('');
+    onStatus('Guardando datos del hospital...');
+    try {
+      const updated = await apiClient.updateFiscalSettings({
+        hospital_name: data.hospital_name,
+        rtn: data.rtn ?? '',
+        default_tax_rate: settings?.default_tax_rate ?? '15.00',
+        primary_color: settings?.primary_color ?? 'indigo',
+        address: optionalText(data.address ?? '') ?? '',
+        slogan: optionalText(data.slogan ?? '') ?? '',
+        government_line: optionalText(data.government_line ?? ''),
+        secretariat_line: optionalText(data.secretariat_line ?? ''),
+        receipt_location: optionalText(data.receipt_location ?? ''),
+        receipt_footer_text: optionalText(data.receipt_footer_text ?? ''),
+        receipt_template_mode: 'institutional',
+        receipt_paper_size: settings?.receipt_paper_size ?? 'half_letter',
+      });
+      setSettings(updated);
+      onStatus('Datos del hospital guardados.');
+    } catch (err) {
+      const message = safeClientMessage(userSafeErrorMessage(err, 'No se pudo guardar los datos del hospital.'));
+      setError(message);
+      onStatus(message);
+    } finally {
+      savingRef.current = false;
+    }
+  }
+
+  if (loading) {
+    return (
+      <div role="status" aria-live="polite" className="text-sm text-muted-foreground">
+        Cargando datos del hospital...
+      </div>
+    );
+  }
+
+  return (
+    <FormSection
+      title="Datos del hospital"
+      description="Información legal y de contacto del hospital. Aparece en recibos y cabecera de la app."
+    >
+      {error ? (
+        <Alert variant="destructive" title="No se pudo guardar">
+          {error}
+        </Alert>
+      ) : null}
+
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="space-y-4"
+        aria-busy={form.formState.isSubmitting}
+      >
+        <Card>
+          <CardHeader>
+            <CardTitle>Identidad</CardTitle>
+            <CardDescription>Nombre legal y datos fiscales básicos.</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4 md:grid-cols-2">
+            <FormField id="hospital_name" label="Nombre del hospital" required error={form.formState.errors.hospital_name?.message}>
+              {({ id, invalid, describedBy }) => (
+                <Input
+                  id={id}
+                  {...form.register('hospital_name')}
+                  placeholder="Hospital Nacional..."
+                  aria-invalid={invalid}
+                  aria-describedby={describedBy}
+                  disabled={!canEdit}
+                />
+              )}
+            </FormField>
+            <FormField id="rtn" label="RTN" hint="Opcional. Si no aplica, dejar vacío." error={form.formState.errors.rtn?.message}>
+              {({ id, invalid, describedBy }) => (
+                <Input
+                  id={id}
+                  {...form.register('rtn')}
+                  placeholder="0801-XXXX-XXXXX"
+                  aria-invalid={invalid}
+                  aria-describedby={describedBy}
+                  disabled={!canEdit}
+                />
+              )}
+            </FormField>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Encabezado institucional</CardTitle>
+            <CardDescription>Líneas opcionales que aparecen en el encabezado de recibos.</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4 md:grid-cols-2">
+            <FormField id="government_line" label="Dependencia superior" hint="Encabezado autorizado." error={form.formState.errors.government_line?.message}>
+              {({ id, invalid, describedBy }) => (
+                <Input
+                  id={id}
+                  {...form.register('government_line')}
+                  aria-invalid={invalid}
+                  aria-describedby={describedBy}
+                  disabled={!canEdit}
+                />
+              )}
+            </FormField>
+            <FormField id="secretariat_line" label="Secretaría o unidad" error={form.formState.errors.secretariat_line?.message}>
+              {({ id, invalid, describedBy }) => (
+                <Input
+                  id={id}
+                  {...form.register('secretariat_line')}
+                  aria-invalid={invalid}
+                  aria-describedby={describedBy}
+                  disabled={!canEdit}
+                />
+              )}
+            </FormField>
+            <FormField id="address" label="Dirección" error={form.formState.errors.address?.message}>
+              {({ id, invalid, describedBy }) => (
+                <Input
+                  id={id}
+                  {...form.register('address')}
+                  placeholder="Barrio Centro, Avenida Principal..."
+                  aria-invalid={invalid}
+                  aria-describedby={describedBy}
+                  disabled={!canEdit}
+                />
+              )}
+            </FormField>
+            <FormField id="slogan" label="Lema" error={form.formState.errors.slogan?.message}>
+              {({ id, invalid, describedBy }) => (
+                <Input
+                  id={id}
+                  {...form.register('slogan')}
+                  placeholder="Al servicio de tu salud..."
+                  aria-invalid={invalid}
+                  aria-describedby={describedBy}
+                  disabled={!canEdit}
+                />
+              )}
+            </FormField>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Pie de recibo</CardTitle>
+            <CardDescription>Textos opcionales que aparecen al pie del recibo.</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4 md:grid-cols-2">
+            <FormField id="receipt_location" label="Lugar del recibo" hint="Ciudad o lugar autorizado." error={form.formState.errors.receipt_location?.message}>
+              {({ id, invalid, describedBy }) => (
+                <Input
+                  id={id}
+                  {...form.register('receipt_location')}
+                  aria-invalid={invalid}
+                  aria-describedby={describedBy}
+                  disabled={!canEdit}
+                />
+              )}
+            </FormField>
+            <FormField id="receipt_footer_text" label="Texto al pie" error={form.formState.errors.receipt_footer_text?.message}>
+              {({ id, invalid, describedBy }) => (
+                <Textarea
+                  id={id}
+                  {...form.register('receipt_footer_text')}
+                  rows={2}
+                  aria-invalid={invalid}
+                  aria-describedby={describedBy}
+                  disabled={!canEdit}
+                />
+              )}
+            </FormField>
+          </CardContent>
+        </Card>
+
+        <div className="flex justify-end">
+          <Button type="submit" disabled={!canEdit || form.formState.isSubmitting}>
+            <Save data-icon aria-hidden="true" />
+            Guardar datos del hospital
+          </Button>
+        </div>
+      </form>
+    </FormSection>
+  );
+}

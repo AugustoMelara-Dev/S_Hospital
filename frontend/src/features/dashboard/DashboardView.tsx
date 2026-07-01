@@ -1,17 +1,17 @@
 import { useEffect, useState } from 'react';
-import { BarChart3, ReceiptText, RefreshCw, WalletCards } from 'lucide-react';
-import { OperationalBanner, CashStatusCard, InfoPanel } from '../../components/shared';
-import { Badge } from '../../components/ui/badge';
-import { Button } from '../../components/ui/button';
-import { type CashSession, type DashboardReport, apiClient, userSafeErrorMessage } from '../../lib/api';
-import { formatDateTimeEs } from '../../lib/format/formatDate';
-import { DashboardCashiersCard } from './components/DashboardCashiersCard';
-import { DashboardMetricsGrid } from './components/DashboardMetricsGrid';
-import { DashboardNextActionCard } from './components/DashboardNextActionCard';
-import { DashboardPaymentMethodsCard } from './components/DashboardPaymentMethodsCard';
-import { DashboardRevenueCard } from './components/DashboardRevenueCard';
+import { Link } from 'react-router-dom';
+import { Banknote, ReceiptText, TrendingUp, WalletCards } from 'lucide-react';
+import { Alert } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
+import { StatGrid } from '@/components/shared';
+import { type CashSession, type DashboardReport, type Invoice, apiClient, userSafeErrorMessage } from '@/lib/api';
+import { formatDateTimeEs } from '@/lib/format/formatDate';
+import { formatLempirasUI } from '@/lib/money';
+import { finiteNumber } from '@/lib/money';
+import { formatLempirasUIFromCents, parseCents } from '@/lib/moneyCents';
+import { LoadingState } from '@/components/ui/states';
 import { DashboardSetupStatusCard } from './components/DashboardSetupStatusCard';
-import { DashboardTopServicesCard } from './components/DashboardTopServicesCard';
 import { SetupWizardDialog } from './components/SetupWizardDialog';
 import { type SetupStatus } from './components/dashboardTypes';
 
@@ -34,6 +34,7 @@ export function DashboardView({
   canCreateInvoices,
   canViewCash,
   canViewFiscalSettings,
+  canViewInvoices,
   canViewManagerialReports,
   cashSession,
   onQuickCash,
@@ -45,231 +46,225 @@ export function DashboardView({
   const [loadingDashboard, setLoadingDashboard] = useState(false);
   const [setupStatus, setSetupStatus] = useState<SetupStatus | null>(null);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
+  const [recentInvoices, setRecentInvoices] = useState<Invoice[]>([]);
+  const [loadingRecent, setLoadingRecent] = useState(false);
+
   const todaySnapshot = dashboardData?.last_7_days.at(-1) ?? null;
+  const cashIsOpen = Boolean(cashSession);
+  const totalPending = dashboardData?.current_month.total_pending ?? null;
 
-  const fetchDashboard = () => {
-    if (!canViewManagerialReports) {
-      return;
-    }
-
+  async function loadDashboard() {
+    if (!canViewManagerialReports) return;
     setLoadingDashboard(true);
-    apiClient
-      .getDashboardReport()
-      .then((data) => {
-        setDashboardData(data);
-        setDashboardError('');
-      })
-      .catch((err) => {
-        const msg = userSafeErrorMessage(err, 'No se pudo cargar el resumen.');
-        setDashboardError(msg);
-        onStatus(msg);
-      })
-      .finally(() => {
-        setLoadingDashboard(false);
-      });
-  };
-
-  const fetchSetupStatus = () => {
-    if (!canViewFiscalSettings && !canViewManagerialReports) {
-      return;
+    try {
+      const data = await apiClient.getDashboardReport();
+      setDashboardData(data);
+      setDashboardError('');
+    } catch (err) {
+      const msg = userSafeErrorMessage(err, 'No se pudo cargar el resumen.');
+      setDashboardError(msg);
+      onStatus(msg);
+    } finally {
+      setLoadingDashboard(false);
     }
+  }
 
-    apiClient
-      .request<SetupStatus>('/api/system/setup-status')
-      .then((res: SetupStatus) => {
-        setSetupStatus(res);
-      })
-      .catch(() => {
-        setSetupStatus(null);
-      });
-  };
+  async function loadRecentInvoices() {
+    if (!canViewInvoices) return;
+    setLoadingRecent(true);
+    try {
+      const data = await apiClient.getInvoices({ page: 1, per_page: 5 });
+      setRecentInvoices(Array.isArray(data.data) ? (data.data as Invoice[]) : []);
+    } catch {
+      setRecentInvoices([]);
+    } finally {
+      setLoadingRecent(false);
+    }
+  }
+
+  async function loadSetupStatus() {
+    if (!canViewFiscalSettings && !canViewManagerialReports) return;
+    try {
+      const res = await apiClient.request<SetupStatus>('/api/system/setup-status');
+      setSetupStatus(res);
+    } catch {
+      setSetupStatus(null);
+    }
+  }
 
   useEffect(() => {
-    fetchDashboard();
-    fetchSetupStatus();
+    void loadDashboard();
+    void loadSetupStatus();
+    void loadRecentInvoices();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canViewManagerialReports, canViewFiscalSettings]);
+  }, [canViewManagerialReports, canViewFiscalSettings, canViewInvoices]);
+
+  const moneyValue = (value: string | number | null | undefined, hasData: boolean) => {
+    if (loadingDashboard) return <span className="inline-block h-7 w-24 rounded-md bg-muted" aria-hidden="true" />;
+    return hasData ? formatLempirasUI(value) : 'Sin datos';
+  };
+
+  const primaryAction = cashIsOpen && canCreateInvoices
+    ? { label: 'Nueva factura', icon: <ReceiptText aria-hidden="true" className="size-4" />, onClick: onQuickInvoice, ariaLabel: 'Crear nueva factura desde el centro de mando' }
+    : canViewCash
+      ? { label: 'Abrir caja', icon: <WalletCards aria-hidden="true" className="size-4" />, onClick: onQuickCash, ariaLabel: 'Abrir caja desde el centro de mando' }
+      : null;
+
+  const showTodayBilled = todaySnapshot?.total_billed !== null && todaySnapshot?.total_billed !== undefined;
+  const showTodayCollected = todaySnapshot?.total_collected !== null && todaySnapshot?.total_collected !== undefined;
+  const showPending = totalPending !== null && totalPending !== undefined;
+  const showRecentInvoices = !loadingRecent && recentInvoices.length === 0 && cashIsOpen;
+
+  const invoiceColumns: Array<DataTableColumn<Invoice>> = [
+    {
+      key: 'invoice_number',
+      header: 'Número',
+      cellClassName: 'font-mono tabular-nums',
+      render: (invoice) => invoice.invoice_number,
+    },
+    {
+      key: 'issued_at',
+      header: 'Fecha',
+      render: (invoice) => formatDateTimeEs(invoice.issued_at),
+    },
+    {
+      key: 'patient_name',
+      header: 'Paciente',
+      render: (invoice) => invoice.patient_name,
+    },
+    {
+      key: 'total',
+      header: 'Total',
+      numeric: true,
+      render: (invoice) => formatLempirasUIFromCents(parseCents(invoice.total)),
+    },
+    {
+      key: 'status',
+      header: 'Estado',
+      render: (invoice) => invoice.status,
+    },
+  ];
 
   return (
-    <>
-      <OperationalBanner
-        meta="Inicio operativo"
-        title="Centro de mando"
-        description="Estado de caja, cobros, facturacion y senales de operacion para el turno del hospital."
-        tone={cashSession ? 'success' : 'warning'}
-        status={
-          <Badge variant={cashSession ? 'success' : 'warning'}>
-            {cashSession ? `Caja #${cashSession.id} abierta` : 'Caja cerrada'}
-          </Badge>
-        }
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            {cashSession && canCreateInvoices ? (
-              <Button
-                type="button"
-                onClick={onQuickInvoice}
-                className="gap-2"
-                aria-label="Crear factura desde el centro de mando"
-              >
-                <ReceiptText aria-hidden="true" className="size-4" />
-                Nueva factura
-              </Button>
-            ) : null}
-            {!cashSession && canViewCash ? (
-              <Button
-                type="button"
-                onClick={onQuickCash}
-                className="gap-2"
-                aria-label="Abrir caja desde el centro de mando"
-              >
-                <WalletCards aria-hidden="true" className="size-4" />
-                Abrir caja
-              </Button>
-            ) : null}
-            {canViewManagerialReports ? (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={fetchDashboard}
-                disabled={loadingDashboard}
-                className="gap-2"
-                aria-label="Actualizar tablero operativo"
-              >
-                <RefreshCw aria-hidden="true" className={`size-4 ${loadingDashboard ? 'animate-spin' : ''}`} />
-                Actualizar
-              </Button>
-            ) : null}
-          </div>
-        }
-      />
+    <section aria-labelledby="dashboard-title" className="flex flex-col gap-5">
+      <header className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <div className="min-w-0">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+            Inicio operativo
+          </p>
+          <h1 id="dashboard-title" className="mt-1 text-2xl font-semibold leading-tight text-foreground sm:text-3xl">
+            Centro de mando
+          </h1>
+          <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+            Caja, cobros del día, pendientes y facturas recientes. Una acción clara:{' '}
+            <strong>{primaryAction?.label ?? 'Espere'}</strong>.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {primaryAction && (
+            <Button type="button" onClick={primaryAction.onClick} aria-label={primaryAction.ariaLabel}>
+              {primaryAction.icon}
+              {primaryAction.label}
+            </Button>
+          )}
+          {canCreateInvoices && cashIsOpen && (
+            <Button asChild variant="outline" size="sm">
+              <Link to="/invoices">Ver historial</Link>
+            </Button>
+          )}
+        </div>
+      </header>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.4fr)]">
-        <CashStatusCard
-          status={cashSession ? 'open' : 'closed'}
-          amount={cashSession ? `Caja #${cashSession.id}` : 'Caja cerrada'}
-          timestamp={cashSession ? formatDateTimeEs(cashSession.opened_at) : undefined}
-          helper={
-            cashSession
-              ? 'El turno puede registrar pagos y emitir facturas segun permisos.'
-              : 'Abra una caja antes de iniciar cobros o facturacion.'
-          }
-          actions={
-            !cashSession && canViewCash ? (
-              <Button type="button" variant="outline" size="sm" onClick={onQuickCash}>
-                Abrir caja
-              </Button>
-            ) : cashSession && canCreateInvoices ? (
-              <Button type="button" variant="outline" size="sm" onClick={onQuickInvoice}>
-                Nueva factura
-              </Button>
-            ) : undefined
-          }
-        />
-
-        <InfoPanel
-          tone={setupStatus?.needs_setup ? 'warning' : dashboardError ? 'destructive' : cashSession ? 'success' : 'info'}
-          icon={<BarChart3 aria-hidden="true" className="size-4" />}
-          title={
-            setupStatus?.needs_setup
-              ? 'Configuracion pendiente'
-              : dashboardError
-                ? 'Resumen operativo no disponible'
-                : cashSession
-                  ? 'Operacion lista para caja'
-                  : 'Caja pendiente de apertura'
-          }
-          description={
-            setupStatus?.needs_setup
-              ? 'Revise los pasos institucionales antes de operar con normalidad.'
-              : dashboardError
-                ? dashboardError
-                : todaySnapshot
-                  ? `Ultimo dia en el resumen: ${todaySnapshot.date}.`
-                  : 'Los paneles mostraran actividad cuando existan movimientos registrados.'
-          }
-        />
-      </div>
-
-      {setupStatus?.needs_setup ? (
+      {setupStatus?.needs_setup && (
         <DashboardSetupStatusCard
           canViewFiscalSettings={canViewFiscalSettings}
           onReview={() => setIsWizardOpen(true)}
           setupStatus={setupStatus}
         />
-      ) : null}
+      )}
 
-      <DashboardMetricsGrid
-        context={{
-          cashSession,
-          invoiceCount: dashboardData?.current_month.invoice_count,
-          todayBilled: todaySnapshot?.total_billed,
-          todayCollected: todaySnapshot?.total_collected,
-          todayInvoiceCount: todaySnapshot?.invoice_count,
-          todayPaymentCount: todaySnapshot?.payment_count,
-          loading: loadingDashboard,
-          paymentCount: dashboardData?.current_month.payment_count,
-          totalPending: dashboardData?.current_month.total_pending,
-          totalBilled: dashboardData?.current_month.total_billed,
-          totalCollected: dashboardData?.current_month.total_collected,
-        }}
+      <StatGrid
+        items={[
+          {
+            icon: <WalletCards aria-hidden="true" className="size-4" />,
+            label: 'Caja',
+            value: cashIsOpen ? `Caja #${cashSession?.id}` : 'Cerrada',
+            helper: cashIsOpen ? 'Lista para cobrar' : 'Abra caja para facturar',
+            tone: cashIsOpen ? 'success' : 'warning',
+          },
+          {
+            icon: <TrendingUp aria-hidden="true" className="size-4" />,
+            label: 'Facturado hoy',
+            value: moneyValue(todaySnapshot?.total_billed, Boolean(showTodayBilled)),
+            helper: `${finiteNumber(todaySnapshot?.invoice_count)} facturas registradas`,
+            tone: 'info',
+          },
+          {
+            icon: <Banknote aria-hidden="true" className="size-4" />,
+            label: 'Cobrado hoy',
+            value: moneyValue(todaySnapshot?.total_collected, Boolean(showTodayCollected)),
+            helper: `${finiteNumber(todaySnapshot?.payment_count)} pagos recibidos`,
+            tone: 'success',
+          },
+          {
+            icon: <ReceiptText aria-hidden="true" className="size-4" />,
+            label: 'Pendiente del mes',
+            value: moneyValue(totalPending ?? undefined, Boolean(showPending)),
+            helper: finiteNumber(totalPending) > 0 ? 'Saldo pendiente de cobro' : 'Sin pendientes',
+            tone: finiteNumber(totalPending) > 0 ? 'warning' : 'neutral',
+          },
+        ]}
       />
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.75fr)_minmax(300px,0.9fr)]">
-        <div className="flex flex-col gap-5">
-          <DashboardRevenueCard
-            canViewManagerialReports={canViewManagerialReports}
-            dashboardData={dashboardData}
-            dashboardError={dashboardError}
-            loading={loadingDashboard}
-            onRefresh={fetchDashboard}
-          />
+      {dashboardError && (
+        <Alert variant="destructive" title="Resumen no disponible">
+          {dashboardError}
+        </Alert>
+      )}
 
-          <DashboardCashiersCard
-            canViewManagerialReports={canViewManagerialReports}
-            cashiers={dashboardData?.cashiers_summary ?? null}
-            dashboardError={dashboardError}
-            loading={loadingDashboard}
-            onRefresh={fetchDashboard}
-          />
-        </div>
+      <section className="rounded-panel border border-operational-border bg-operational-surface p-5 shadow-operational" aria-labelledby="recent-invoices-title">
+        <header className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <h2 id="recent-invoices-title" className="text-base font-semibold text-foreground">
+            Facturas recientes
+          </h2>
+          {canViewInvoices && (
+            <Button asChild variant="ghost" size="sm">
+              <Link to="/invoices">Ver historial completo</Link>
+            </Button>
+          )}
+        </header>
 
-        <div className="flex flex-col gap-5">
-          <DashboardNextActionCard
-            canCreateInvoices={canCreateInvoices}
-            canViewCash={canViewCash}
-            cashSession={cashSession ? { id: cashSession.id } : null}
-            onQuickCash={onQuickCash}
-            onQuickInvoice={onQuickInvoice}
+        {loadingRecent ? (
+          <LoadingState label="Cargando facturas recientes..." />
+        ) : showRecentInvoices ? (
+          <Alert title="Sin facturas hoy">
+            Aún no se emitieron facturas en este turno. Cree la primera desde Nueva factura.
+          </Alert>
+        ) : recentInvoices.length === 0 ? (
+          <Alert title="Sin facturas recientes">
+            Cuando emita facturas aparecerán aquí.
+          </Alert>
+        ) : (
+          <DataTable
+            containerLabel="Facturas recientes"
+            rows={recentInvoices}
+            columns={invoiceColumns}
+            getRowKey={(invoice) => invoice.id}
+            emptyTitle="Sin facturas recientes"
           />
+        )}
+      </section>
 
-          <DashboardPaymentMethodsCard
-            canViewManagerialReports={canViewManagerialReports}
-            dashboardError={dashboardError}
-            loading={loadingDashboard}
-            onRefresh={fetchDashboard}
-            paymentsByMethod={dashboardData?.payments_by_method ?? null}
-          />
-
-          <DashboardTopServicesCard
-            canViewManagerialReports={canViewManagerialReports}
-            dashboardError={dashboardError}
-            loading={loadingDashboard}
-            onRefresh={fetchDashboard}
-            topServices={dashboardData?.top_services ?? null}
-          />
-        </div>
-      </div>
-
-      {canViewFiscalSettings ? (
+      {canViewFiscalSettings && (
         <SetupWizardDialog
           open={isWizardOpen}
           onOpenChange={setIsWizardOpen}
           onComplete={() => {
-            fetchSetupStatus();
-            fetchDashboard();
+            void loadSetupStatus();
+            void loadDashboard();
           }}
         />
-      ) : null}
-    </>
+      )}
+    </section>
   );
 }

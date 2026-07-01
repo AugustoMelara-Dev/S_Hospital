@@ -375,6 +375,10 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
       <div className="space-y-6">
         <BackupExplanationCard />
 
+        <Alert title="Restauración no disponible desde la app">
+          La restauración de un respaldo se realiza únicamente desde el servidor local por personal autorizado. Si necesita recuperar información, solicite soporte técnico.
+        </Alert>
+
         <StatGrid
           className="sm:grid-cols-2 xl:grid-cols-4"
           items={[

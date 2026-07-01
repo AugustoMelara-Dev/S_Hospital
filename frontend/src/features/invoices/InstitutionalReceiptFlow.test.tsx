@@ -44,7 +44,12 @@ describe('InstitutionalReceiptFlow', () => {
     renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
 
     await waitFor(() => expect(screen.getByText('Paciente Institucional')).toBeInTheDocument());
-    fireEvent.click(screen.getByRole('button', { name: /ver recibo/i }));
+    const trigger = await screen.findByRole('button', { name: 'Acciones de la factura 000-001-01-00000010' });
+    trigger.focus();
+    fireEvent.keyDown(trigger, { key: 'Enter', code: 'Enter', keyCode: 13, charCode: 13 });
+    fireEvent.click(trigger);
+    const menuItem = await screen.findByRole('menuitem', { name: /Ver recibo/i });
+    fireEvent.click(menuItem);
 
     await waitFor(() => expect(getPdf).toHaveBeenCalledWith(501));
     expect(openBlobInNewTab).toHaveBeenCalledWith(expect.any(Blob), 'recibo-institucional-REC-A-00000501.pdf');
@@ -72,7 +77,12 @@ describe('InstitutionalReceiptFlow', () => {
     renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
 
     await waitFor(() => expect(screen.getByText('Paciente Legacy')).toBeInTheDocument());
-    fireEvent.click(screen.getByRole('button', { name: /ver recibo/i }));
+    const trigger = await screen.findByRole('button', { name: 'Acciones de la factura 000-001-01-00000011' });
+    trigger.focus();
+    fireEvent.keyDown(trigger, { key: 'Enter', code: 'Enter', keyCode: 13, charCode: 13 });
+    fireEvent.click(trigger);
+    const menuItem = await screen.findByRole('menuitem', { name: /Ver recibo/i });
+    fireEvent.click(menuItem);
 
     await waitFor(() => expect(apiClient.getReceipt).toHaveBeenCalledWith(11, 'half_letter'));
     expect(getPdf).not.toHaveBeenCalled();

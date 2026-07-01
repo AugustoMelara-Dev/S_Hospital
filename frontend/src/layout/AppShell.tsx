@@ -102,7 +102,9 @@ export function AppShell({
       />
 
       <aside
+        id="app-sidebar"
         data-sidebar-collapsed={sidebarCollapsed ? 'true' : 'false'}
+        aria-label="Navegacion principal"
         className={cn(
           'print-hidden hidden lg:fixed lg:inset-y-0 lg:z-20 lg:flex lg:flex-col lg:border-r lg:border-sidebar-border lg:bg-sidebar lg:text-sidebar-foreground lg:shadow-operational',
           sidebarCollapsed ? 'lg:w-16' : 'lg:w-72',
@@ -136,6 +138,7 @@ export function AppShell({
           onLogout={onLogout}
           onToggleSidebar={() => setSidebarCollapsed((value) => !value)}
           sidebarCollapsed={sidebarCollapsed}
+          sidebarId="app-sidebar"
         />
 
         <main

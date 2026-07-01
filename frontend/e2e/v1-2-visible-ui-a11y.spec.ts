@@ -9,6 +9,8 @@ const smokeResults: Array<Record<string, unknown>> = [];
 test.setTimeout(180_000);
 
 const today = hondurasDate(new Date());
+const currentMonthStart = `${today.slice(0, 7)}-01`;
+const currentMonthDays = daysInInclusiveRange(currentMonthStart, today);
 const issuedAt = `${today}T08:00:00-06:00`;
 const paidAt = `${today}T08:03:00-06:00`;
 
@@ -234,7 +236,7 @@ const monthlyReport = {
 };
 
 const executiveReport = {
-  period: { from: `${today.slice(0, 7)}-01`, to: today, days: 1, timezone: 'America/Tegucigalpa' },
+  period: { from: currentMonthStart, to: today, days: currentMonthDays, timezone: 'America/Tegucigalpa' },
   filters: { cash_session_id: null, user_id: null, category_id: null, area_id: null, method: null, status: null },
   comparison: {
     billed: { current: '17.25', previous: '0.00', delta_cents: 1725, delta_percentage: null },
@@ -370,7 +372,8 @@ test('dangerous history actions open a confirmation path that can be cancelled',
   await page.goto('/invoices');
   await waitForScreen(page, /historial/i);
 
-  await page.getByRole('button', { name: /reversar/i }).click();
+  await page.getByRole('button', { name: /acciones de la factura/i }).click();
+  await page.getByRole('menuitem', { name: /reversar pago/i }).click();
   await expect(page.getByRole('alertdialog', { name: /reversar factura/i })).toBeVisible();
   await expect(page.getByRole('alertdialog', { name: /reversar factura/i })).toHaveAccessibleDescription(/revise la informacion/i);
   await page.getByRole('button', { name: /cancelar/i }).click();
@@ -438,7 +441,8 @@ test('refactor final screenshots evidence', async ({ page }) => {
   await page.goto('/invoices');
   await waitForScreen(page, /historial/i);
   await shot('invoices.png');
-  await page.getByRole('button', { name: /anular|reversar/i }).click();
+  await page.getByRole('button', { name: /acciones de la factura/i }).click();
+  await page.getByRole('menuitem', { name: /anular factura|reversar pago/i }).click();
   await expect(page.getByRole('alertdialog', { name: /anular factura|reversar factura/i })).toBeVisible();
   await shot('invoice-void-reason.png');
 
@@ -473,7 +477,7 @@ test('refactor final screenshots evidence', async ({ page }) => {
   await waitForScreen(page, /recibos institucionales|recibos/i);
   await page.getByRole('tab', { name: /papel y copias/i }).click();
   await page.getByRole('button', { name: /recibo peque/i }).click({ timeout: 5_000 });
-  await page.getByRole('button', { name: /mostrar ajustes avanzados/i }).click();
+  await page.locator('summary').filter({ hasText: /modo soporte/i }).click();
   await page.locator('#receipt-advanced-panel').scrollIntoViewIfNeeded();
   await shot('receipt-settings-advanced.png');
 
@@ -794,39 +798,57 @@ async function findVisibleUnnamedControls(page: Page) {
 }
 
 async function seriousAxeViolations(page: Page) {
-  await page.addScriptTag({ content: axeCore.source });
-  return page.evaluate(async () => {
-    const result = await window.axe.run(document, {
-      runOnly: {
-        type: 'tag',
-        values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'],
-      },
-    });
-    return result.violations
-      .filter((violation) => ['critical', 'serious'].includes(String(violation.impact)))
-      .map((violation) => ({
-        id: violation.id,
-        impact: violation.impact,
-        help: violation.help,
-        nodes: violation.nodes.slice(0, 3).map((node) => ({
-          target: node.target,
-          html: node.html,
-        })),
-      }));
-  });
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      await page.addScriptTag({ content: axeCore.source });
+      return await page.evaluate(async () => {
+        const result = await window.axe.run(document, {
+          runOnly: {
+            type: 'tag',
+            values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'],
+          },
+        });
+        return result.violations
+          .filter((violation) => ['critical', 'serious'].includes(String(violation.impact)))
+          .map((violation) => ({
+            id: violation.id,
+            impact: violation.impact,
+            help: violation.help,
+            nodes: violation.nodes.slice(0, 3).map((node) => ({
+              target: node.target,
+              html: node.html,
+            })),
+          }));
+      });
+    } catch (error) {
+      if (!String(error).includes('Execution context was destroyed') || attempt === 1) throw error;
+      await page.waitForLoadState('domcontentloaded').catch(() => undefined);
+    }
+  }
+
+  return [];
 }
 
 async function visibleH1Count(page: Page) {
-  return page.locator('h1').evaluateAll((headings) => headings.filter((heading) => {
-    const html = heading as HTMLElement;
-    const style = window.getComputedStyle(html);
-    const rect = html.getBoundingClientRect();
-    return style.display !== 'none'
-      && style.visibility !== 'hidden'
-      && rect.width > 0
-      && rect.height > 0
-      && !html.closest('[aria-hidden="true"]');
-  }).length);
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      return await page.locator('h1').evaluateAll((headings) => headings.filter((heading) => {
+        const html = heading as HTMLElement;
+        const style = window.getComputedStyle(html);
+        const rect = html.getBoundingClientRect();
+        return style.display !== 'none'
+          && style.visibility !== 'hidden'
+          && rect.width > 0
+          && rect.height > 0
+          && !html.closest('[aria-hidden="true"]');
+      }).length);
+    } catch (error) {
+      if (!String(error).includes('Execution context was destroyed') || attempt === 1) throw error;
+      await page.waitForLoadState('domcontentloaded').catch(() => undefined);
+    }
+  }
+
+  return 0;
 }
 
 async function horizontalOverflow(page: Page) {
@@ -916,6 +938,7 @@ function isBenignFrontendNavigationAbort(url: string, method: string, errorText?
   if (method !== 'GET' || errorText !== 'net::ERR_ABORTED') return false;
   const parsed = new URL(url);
   if (parsed.origin !== 'http://127.0.0.1:5173') return false;
+  if (['/api/auth/session', '/api/settings/logo'].includes(parsed.pathname)) return true;
   if (parsed.pathname.startsWith('/api/')) return false;
   return parsed.pathname.startsWith('/src/')
     || parsed.pathname.startsWith('/node_modules/.vite/')
@@ -1201,4 +1224,11 @@ function hondurasDate(date: Date): string {
 
   const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
   return `${values.year}-${values.month}-${values.day}`;
+}
+
+function daysInInclusiveRange(from: string, to: string): number {
+  const start = new Date(`${from}T00:00:00-06:00`);
+  const end = new Date(`${to}T00:00:00-06:00`);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return 1;
+  return Math.max(1, Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1);
 }

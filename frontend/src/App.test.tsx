@@ -389,12 +389,12 @@ describe('App', () => {
     }, { timeout: 5000 });
     expect(screen.getByText(/datos temporales o de validaci[oó]n/i)).toBeInTheDocument();
     activateTab(/^hospital$/i);
-    expect(await screen.findByRole('heading', { name: /hospital y recibo/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /datos del hospital/i })).toBeInTheDocument();
     expect(screen.queryByDisplayValue(placeholderHospitalName)).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /guardar hospital y recibo/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /guardar datos del hospital/i })).toBeEnabled();
     activateTab(/numeraci[oó]n/i);
+    expect(await screen.findByRole('button', { name: /guardar numeraci[oó]n/i })).toBeEnabled();
     expect(screen.queryByDisplayValue(placeholderCai)).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /guardar numeraci[oó]n/i })).toBeEnabled();
   });
 
   it('renders catalog as read only for a cashier', async () => {

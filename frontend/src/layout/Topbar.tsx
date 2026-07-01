@@ -25,6 +25,7 @@ interface TopbarProps {
   onLogout: () => void;
   onToggleSidebar?: () => void;
   sidebarCollapsed?: boolean;
+  sidebarId?: string;
 }
 
 export function Topbar({
@@ -40,6 +41,7 @@ export function Topbar({
   onLogout,
   onToggleSidebar,
   sidebarCollapsed,
+  sidebarId,
 }: TopbarProps) {
   const { setTheme, isDark } = useTheme();
   const { isOnline, lastCheck } = useServerStatus();
@@ -75,7 +77,7 @@ export function Topbar({
           <Menu data-icon="inline-start" aria-hidden="true" />
         </Button>
 
-        {!isMinimalTopbar && onToggleSidebar ? (
+{!isMinimalTopbar && onToggleSidebar ? (
           <Button
             type="button"
             variant="ghost"
@@ -83,6 +85,8 @@ export function Topbar({
             className="hidden shrink-0 lg:inline-flex"
             onClick={onToggleSidebar}
             aria-pressed={sidebarCollapsed}
+            aria-expanded={!sidebarCollapsed}
+            aria-controls={sidebarId}
             aria-label={sidebarCollapsed ? 'Expandir menu lateral' : 'Colapsar menu lateral'}
           >
             {sidebarCollapsed ? (

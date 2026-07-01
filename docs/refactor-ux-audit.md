@@ -195,6 +195,22 @@ Cambios aplicados en esta iteracion:
 - `InstitutionalReceiptSettingsView` recibe explicitamente `canAdvancedPrintSettings`; los campos manuales de ancho, alto, margenes, fuente y escala solo aparecen con permiso `receipt_settings.advanced` y dentro del panel de soporte tecnico.
 - La UI normal de recibos ya no muestra medidas en mm como parte de la operacion diaria; solo muestra papel, copias, logo, sello/firma, prueba y guardar.
 
+## 12. Cierre final 2026-07-01
+
+Cambios finales verificados:
+
+- `CommandPanel` y `OperationalBanner` soportan nivel de titulo configurable para mantener exactamente un `h1` visible por ruta.
+- `/reports` expone `Control ejecutivo` como `h1` en la ruta principal y mantiene las subrutas de caja/auditoria como secciones operativas.
+- Las tablas de reportes usan texto principal para importes; se elimino el uso de color secundario con contraste insuficiente en celdas monetarias.
+- Los checkboxes de recibos tienen nombre accesible explicito (`aria-label`) aun cuando Radix los renderiza como botones.
+- La configuracion fiscal separada conserva el saneamiento de placeholders historicos (`Hospital Demo`, `demo-cai`) para que no lleguen a operacion.
+- La prueba visual completa `npm run visual:smoke` paso en 320, 375, 768, 1024, 1366 y 1920 px.
+
+Gates finales:
+
+- Frontend: `npm run lint`, `npm run typecheck`, `npm run test`, `npm run build`, `npm run visual:smoke` OK.
+- Backend: `php artisan test`, `vendor/bin/pint --test`, `vendor/bin/phpstan analyse` OK.
+
 Riesgos aun abiertos:
 
 - Hay documentos y textos fuente con mojibake historico (`CatÃ¡logo`, `ConfiguraciÃ³n`). No se normalizo de forma masiva para evitar churn fuera del alcance inmediato.

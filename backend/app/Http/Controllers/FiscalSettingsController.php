@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Fiscal\ShowFiscalSettingsRequest;
 use App\Http\Requests\Fiscal\UpdateFiscalSettingsRequest;
+use App\Models\CashRegisterSession;
 use App\Models\FiscalSetting;
 use App\Support\AuditLogger;
 use Illuminate\Http\JsonResponse;
@@ -50,7 +51,13 @@ class FiscalSettingsController extends Controller
 
     public function update(UpdateFiscalSettingsRequest $request, AuditLogger $auditLogger): JsonResponse
     {
-        $setting = DB::transaction(function () use ($request, $auditLogger): FiscalSetting {
+        $payload = [
+            'setting' => null,
+            'paper_size_changed_mid_shift' => false,
+            'open_cash_session_id' => null,
+        ];
+
+        $setting = DB::transaction(function () use ($request, $auditLogger, &$payload): FiscalSetting {
             $setting = FiscalSetting::query()->first() ?? new FiscalSetting;
             $fieldsToTrack = [
                 'hospital_name',
@@ -69,6 +76,7 @@ class FiscalSettingsController extends Controller
                 'receipt_footer_text',
             ];
             $oldValues = $setting->exists ? $setting->only($fieldsToTrack) : null;
+            $previousPaperSize = $setting->receipt_paper_size;
 
             $setting->fill($request->validated());
 
@@ -88,11 +96,55 @@ class FiscalSettingsController extends Controller
                 newValues: $setting->only($fieldsToTrack),
             );
 
+            // Mid-shift paper size changes deserve a separate, auditable
+            // trail. The cashier UI surfaces this warning so the operator
+            // is aware that receipts already queued may render with the
+            // previous profile.
+            if (
+                $oldValues
+                && $previousPaperSize !== $setting->receipt_paper_size
+            ) {
+                $openSession = CashRegisterSession::query()
+                    ->where('status', CashRegisterSession::STATUS_OPEN)
+                    ->orderByDesc('id')
+                    ->first();
+
+                if ($openSession !== null) {
+                    $payload['paper_size_changed_mid_shift'] = true;
+                    $payload['open_cash_session_id'] = $openSession->id;
+
+                    $auditLogger->log(
+                        action: 'fiscal_settings.paper_size_changed_mid_shift',
+                        entity: $setting,
+                        user: $request->user(),
+                        request: $request,
+                        oldValues: ['receipt_paper_size' => $previousPaperSize],
+                        newValues: ['receipt_paper_size' => $setting->receipt_paper_size],
+                        reason: sprintf(
+                            'Cambio de papel con caja abierta (#%d).',
+                            $openSession->id,
+                        ),
+                    );
+                }
+            }
+
+            $payload['setting'] = $setting;
+
             return $setting;
         });
 
-        return response()->json([
+        $response = response()->json([
             'data' => $setting->refresh(),
+            'meta' => [
+                'paper_size_changed_mid_shift' => $payload['paper_size_changed_mid_shift'],
+                'open_cash_session_id' => $payload['open_cash_session_id'],
+            ],
         ]);
+
+        if ($payload['paper_size_changed_mid_shift']) {
+            $response->headers->set('X-S-Hospital-Paper-Size-Warning', 'mid-shift-change');
+        }
+
+        return $response;
     }
 }

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\AuditLog;
+use App\Models\CashRegisterSession;
 use App\Models\FiscalSetting;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
@@ -103,6 +104,68 @@ class FiscalSettingsTest extends TestCase
             ])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('receipt_paper_size');
+    }
+
+    public function test_paper_size_change_with_open_cash_session_emits_mid_shift_warning(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        FiscalSetting::query()->create($this->validPayload());
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $cashier = User::factory()->create();
+        $cashier->assignRole('cajero');
+
+        $session = CashRegisterSession::query()->create([
+            'user_id' => $cashier->id,
+            'opening_amount' => '0.00',
+            'status' => CashRegisterSession::STATUS_OPEN,
+            'opened_at' => now(),
+        ]);
+
+        $response = $this->actingAs($admin)
+            ->putJson('/api/settings/fiscal', [
+                ...$this->validPayload(),
+                'receipt_paper_size' => 'letter',
+            ])
+            ->assertOk();
+
+        $response->assertHeader('X-S-Hospital-Paper-Size-Warning', 'mid-shift-change');
+        $response->assertJsonPath('meta.paper_size_changed_mid_shift', true);
+        $response->assertJsonPath('meta.open_cash_session_id', $session->id);
+
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $admin->id,
+            'action' => 'fiscal_settings.paper_size_changed_mid_shift',
+            'entity_type' => 'App\\Models\\FiscalSetting',
+            'reason' => "Cambio de papel con caja abierta (#{$session->id}).",
+        ]);
+    }
+
+    public function test_paper_size_change_without_open_cash_session_does_not_warn(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        FiscalSetting::query()->create($this->validPayload());
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $response = $this->actingAs($admin)
+            ->putJson('/api/settings/fiscal', [
+                ...$this->validPayload(),
+                'receipt_paper_size' => 'letter',
+            ])
+            ->assertOk();
+
+        $response->assertJsonPath('meta.paper_size_changed_mid_shift', false);
+        $response->assertJsonPath('meta.open_cash_session_id', null);
+
+        $this->assertDatabaseMissing('audit_logs', [
+            'action' => 'fiscal_settings.paper_size_changed_mid_shift',
+        ]);
     }
 
     public function test_legacy_receipt_width_field_is_not_updateable(): void

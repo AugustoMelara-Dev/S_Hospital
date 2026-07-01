@@ -1,5 +1,5 @@
 import { Printer, Receipt, ReceiptText, User, XCircle } from 'lucide-react';
-import { Button } from '../../../components/ui/button';
+import { ActionMenu, type ActionMenuGroup } from '../../../components/ui/action-menu';
 import { DataTable, type DataTableColumn } from '../../../components/ui/data-table';
 import { StatusBadge } from '../../../components/ui/status-badge';
 import type { Invoice } from '../../../lib/api';
@@ -87,73 +87,79 @@ export function InvoiceHistoryTable({
       key: 'actions',
       header: 'Acciones',
       headerClassName: 'text-right',
-      cellClassName: 'min-w-72 text-right',
+      cellClassName: 'text-right',
       hideable: false,
-      render: (invoice) => (
-        <div className="flex flex-wrap justify-end gap-2">
-          {canViewReceipt && (canReprintAny || canVoid || isOwnInvoiceFromToday(invoice)) && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => onOpenReceipt(invoice.id)}
-            >
-              <Receipt data-icon aria-hidden="true" />
-              Ver recibo
-            </Button>
-          )}
-          {canViewReceipt && invoice.status === 'paid' && !issuedInstitutionalReceipt(invoice) && (
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              disabled={loadingActionInvoiceId === invoice.id}
-              onClick={() => onGenerateInstitutionalReceipt(invoice.id)}
-            >
-              <Receipt data-icon aria-hidden="true" />
-              Generar PDF
-            </Button>
-          )}
+      render: (invoice) => {
+        const isOwn = isOwnInvoiceFromToday(invoice);
+        const groups: ActionMenuGroup[] = [];
 
-          {canReprint && (canReprintAny || isOwnInvoiceFromToday(invoice)) && (
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={() => onReprint(invoice)}
-            >
-              <Printer data-icon aria-hidden="true" />
-              Reimprimir
-            </Button>
-          )}
+        const primaryGroup: ActionMenuGroup = {
+          key: 'receipt',
+          items: [],
+        };
+        if (canViewReceipt && (canReprintAny || canVoid || isOwn)) {
+          primaryGroup.items.push({
+            key: 'view',
+            label: 'Ver recibo',
+            icon: <Receipt aria-hidden="true" className="size-4" />,
+            onSelect: () => onOpenReceipt(invoice.id),
+          });
+        }
+        if (canViewReceipt && invoice.status === 'paid' && !issuedInstitutionalReceipt(invoice)) {
+          primaryGroup.items.push({
+            key: 'generate',
+            label: 'Generar PDF',
+            icon: <ReceiptText aria-hidden="true" className="size-4" />,
+            disabled: loadingActionInvoiceId === invoice.id,
+            onSelect: () => onGenerateInstitutionalReceipt(invoice.id),
+          });
+        }
+        if (canReprint && (canReprintAny || isOwn)) {
+          primaryGroup.items.push({
+            key: 'reprint',
+            label: 'Reimprimir',
+            icon: <Printer aria-hidden="true" className="size-4" />,
+            onSelect: () => onReprint(invoice),
+          });
+        }
+        if (primaryGroup.items.length > 0) {
+          groups.push(primaryGroup);
+        }
 
-          {canReverse && (invoice.status === 'paid' || invoice.status === 'partial') && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-              onClick={() => onPrepareInvoiceAction(invoice.id, 'reverse')}
-            >
-              <XCircle data-icon aria-hidden="true" />
-              Reversar
-            </Button>
-          )}
+        const dangerGroup: ActionMenuGroup = { key: 'danger', items: [] };
+        if (canReverse && (invoice.status === 'paid' || invoice.status === 'partial')) {
+          dangerGroup.items.push({
+            key: 'reverse',
+            label: 'Reversar pago',
+            icon: <XCircle aria-hidden="true" className="size-4" />,
+            destructive: true,
+            onSelect: () => onPrepareInvoiceAction(invoice.id, 'reverse'),
+          });
+        }
+        if (canVoid && invoice.status === 'issued') {
+          dangerGroup.items.push({
+            key: 'void',
+            label: 'Anular factura',
+            icon: <XCircle aria-hidden="true" className="size-4" />,
+            destructive: true,
+            onSelect: () => onPrepareInvoiceAction(invoice.id, 'void'),
+          });
+        }
+        if (dangerGroup.items.length > 0) {
+          groups.push(dangerGroup);
+        }
 
-          {canVoid && invoice.status === 'issued' && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-              onClick={() => onPrepareInvoiceAction(invoice.id, 'void')}
-            >
-              <XCircle data-icon aria-hidden="true" />
-              Anular
-            </Button>
-          )}
-        </div>
-      ),
+        if (groups.length === 0) {
+          return null;
+        }
+
+        return (
+          <ActionMenu
+            ariaLabel={`Acciones de la factura ${invoice.invoice_number}`}
+            groups={groups}
+          />
+        );
+      },
     },
   ];
 

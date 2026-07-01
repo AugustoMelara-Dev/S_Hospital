@@ -31,7 +31,7 @@ function ServiceRow({ index, service }: { index: number; service: ExecutiveRepor
       <TableCell className="text-right font-mono tabular-nums font-semibold">
         {formatLempirasUI(service.total)}
       </TableCell>
-      <TableCell className="text-right font-mono tabular-nums text-secondary">
+      <TableCell className="text-right font-mono tabular-nums text-foreground">
         {formatLempirasUI(service.collected)}
       </TableCell>
     </TableRow>
@@ -48,7 +48,7 @@ function CategoryRow({ index, row }: { index: number; row: ExecutiveReport['serv
       <TableCell className="text-right font-mono tabular-nums font-semibold">
         {formatLempirasUI(row.total)}
       </TableCell>
-      <TableCell className="text-right font-mono tabular-nums text-secondary">
+      <TableCell className="text-right font-mono tabular-nums text-foreground">
         {formatLempirasUI(row.collected)}
       </TableCell>
     </TableRow>

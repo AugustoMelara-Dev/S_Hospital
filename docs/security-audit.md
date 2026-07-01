@@ -231,3 +231,14 @@ Riesgos abiertos:
 - Headers finales deben validarse en el servidor LAN/nginx real despues del despliegue, porque esta fase corrio en entorno local de pruebas.
 - `composer` no esta en PATH de esta terminal; los controles equivalentes se ejecutaron via `php artisan test`.
 - No queda riesgo critico conocido en facturacion, caja, recibos, reportes, permisos o restore.
+
+## 13. Cierre de verificacion 2026-07-01
+
+Controles finales confirmados:
+
+- `receipt_settings.advanced` gobierna la exposicion de campos manuales de impresion en frontend y backend.
+- Los controles Radix de recibos tienen nombre accesible para evitar acciones anonimas en lectores de pantalla.
+- Reportes eliminan color de bajo contraste en importes y conservan estructura de encabezado con un solo `h1`.
+- Configuracion fiscal conserva sanitizacion de placeholders historicos antes de mostrar datos editables.
+- `php artisan test` paso con 746 pruebas y 12 omitidas; despues de formatear `FiscalSettingsTest.php`, `php artisan test tests/Feature/FiscalSettingsTest.php` paso 13 pruebas.
+- `vendor/bin/pint --test`, `vendor/bin/phpstan analyse`, `npm run lint`, `npm run test`, `npm run build` y `npm run visual:smoke` finalizaron OK.

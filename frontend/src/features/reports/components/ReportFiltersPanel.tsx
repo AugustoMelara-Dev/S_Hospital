@@ -18,6 +18,7 @@ type ReportFiltersPanelProps = {
   canExport: boolean;
   loading: boolean;
   exporting: boolean;
+  titleLevel?: 1 | 2 | 3;
   rangeError?: string | null;
 };
 
@@ -96,6 +97,7 @@ export function ReportFiltersPanel({
   canExport,
   loading,
   exporting,
+  titleLevel,
   rangeError,
 }: ReportFiltersPanelProps) {
   const inferredPreset = useMemo(() => detectPreset(filters), [filters]);
@@ -107,6 +109,7 @@ export function ReportFiltersPanel({
   return (
     <CommandPanel
       title="Control ejecutivo"
+      titleLevel={titleLevel}
       description="Ajuste el periodo y actualice los indicadores con los agregados actuales del backend."
       className="bg-operational-surface"
       footer={

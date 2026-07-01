@@ -229,3 +229,13 @@ Campos avanzados visibles solo en ese caso:
 - `pnpm exec vitest run src/features/receipt-settings/InstitutionalReceiptSettingsView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` - OK, 5 tests.
 - `php artisan test --filter=ReceiptPrintProfileAdvancedFieldsTest` - OK, 3 tests.
 - `pnpm exec playwright test e2e/v1-2-visible-ui-a11y.spec.ts -g "refactor final screenshots evidence"` - OK, screenshots normal y advanced generados.
+
+## 11. Cierre final 2026-07-01
+
+Validacion final:
+
+- Flujo normal de recibos: no muestra controles manuales de ancho, alto, margenes, fuente ni escala.
+- Soporte tecnico: campos manuales visibles solo con `receipt_settings.advanced`, `canEdit` y perfil personalizado.
+- Checkboxes de papel/copias/logo/sello/activo/default: nombre accesible explicito validado por `npm run visual:smoke`.
+- Screenshots finales generados en `qa/refactor/screenshots/receipt-settings-normal.png` y `qa/refactor/screenshots/receipt-settings-advanced.png`.
+- `npm run visual:smoke`, `npm run test`, `npm run build`, `php artisan test`, Pint y PHPStan finalizaron OK.

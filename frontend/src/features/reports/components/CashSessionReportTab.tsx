@@ -1,15 +1,15 @@
 import { type FormEvent } from 'react';
-import { AlertTriangle, DollarSign, Download, User } from 'lucide-react';
+import { AlertTriangle, Download } from 'lucide-react';
 import { Button } from '../../../components/ui/button';
 import { Alert } from '../../../components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { DataTable, type DataTableColumn } from '../../../components/ui/data-table';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
+import { StatGrid } from '../../../components/shared';
 import { formatLocalizedDateTime } from '../../../lib/format/formatDate';
 import type { CashSessionReport } from '../../../lib/api/types';
 import { formatLempirasUIFromCents, parseCents } from '../../../lib/moneyCents';
-import { KPICard } from './KPICard';
 
 interface CashSessionReportTabProps {
   canExport: boolean;
@@ -162,37 +162,44 @@ export function CashSessionReportTab({
 
       {cashSession ? (
         <>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-6">
-            <KPICard
-              title="Cajero"
-              value={cashSession.cash_session.user?.name ?? 'Sin asignar'}
-              icon={<User className="h-4 w-4" />}
-            />
-            <KPICard
-              title="Apertura"
-              value={moneyLabel(cashSession.cash_session.opening_amount)}
-              icon={<DollarSign className="h-4 w-4" />}
-            />
-            <KPICard
-              title="Esperado"
-              value={moneyLabel(cashSession.expected_cash_amount)}
-              description="Apertura mas cobros en efectivo"
-            />
-            <KPICard
-              title="Cobrado"
-              value={moneyLabel(cashSession.payments_total)}
-              description={`${cashSession.payments_count} ${cashSession.payments_count === 1 ? 'pago' : 'pagos'}`}
-            />
-            <KPICard
-              title="Pendiente"
-              value={moneyLabel(cashSession.pending_amount)}
-              description={pendingInvoiceLabel(cashSession.pending_invoice_count)}
-            />
-            <KPICard
-              title="Contado"
-              value={cashSession.cash_session.closing_amount === null ? 'Pendiente' : moneyLabel(cashSession.cash_session.closing_amount)}
-            />
-          </div>
+          <StatGrid
+            className="sm:grid-cols-2 xl:grid-cols-6"
+            items={[
+              {
+                label: 'Cajero',
+                value: cashSession.cash_session.user?.name ?? 'Sin asignar',
+              },
+              {
+                label: 'Apertura',
+                value: moneyLabel(cashSession.cash_session.opening_amount),
+              },
+              {
+                label: 'Esperado',
+                value: moneyLabel(cashSession.expected_cash_amount),
+                helper: 'Apertura mas cobros en efectivo',
+              },
+              {
+                label: 'Cobrado',
+                value: moneyLabel(cashSession.payments_total),
+                helper: `${cashSession.payments_count} ${cashSession.payments_count === 1 ? 'pago' : 'pagos'}`,
+                tone: 'success',
+              },
+              {
+                label: 'Pendiente',
+                value: moneyLabel(cashSession.pending_amount),
+                helper: pendingInvoiceLabel(cashSession.pending_invoice_count),
+                tone: cashSession.pending_invoice_count > 0 ? 'warning' : 'neutral',
+              },
+              {
+                label: 'Contado',
+                value:
+                  cashSession.cash_session.closing_amount === null
+                    ? 'Pendiente'
+                    : moneyLabel(cashSession.cash_session.closing_amount),
+                tone: cashSession.cash_session.closing_amount === null ? 'warning' : 'neutral',
+              },
+            ]}
+          />
 
           {cashSession.cash_session.difference_amount && (parseCents(cashSession.cash_session.difference_amount) ?? 0) !== 0 ? (
             <Card className="border-destructive">

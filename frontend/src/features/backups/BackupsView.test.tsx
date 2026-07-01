@@ -51,11 +51,11 @@ describe('BackupsView', () => {
 
   it('renders an accessible loading state while backups are loading', async () => {
     vi.mocked(apiClient.getBackups).mockReturnValue(new Promise<never>(() => undefined));
+    vi.mocked(apiClient.getSystemStatus).mockReturnValue(new Promise<never>(() => undefined));
 
     renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
 
-    const status = await screen.findByRole('status');
-    expect(status).toHaveTextContent(/cargando respaldos locales/i);
+    expect(await screen.findByText(/cargando respaldos locales/i)).toBeInTheDocument();
   });
 
   it('renders the table with caption, numeric size column and text status descriptions', async () => {

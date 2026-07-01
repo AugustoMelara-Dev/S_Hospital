@@ -280,6 +280,7 @@ function ExecutiveSubRoute({
         canExport={canExport}
         loading={isFetching}
         exporting={exportingRef.current}
+        titleLevel={1}
         rangeError={executiveRangeError}
       />
 
@@ -502,4 +503,3 @@ async function runExecutiveExport<T>(
     finalize();
   }
 }
-

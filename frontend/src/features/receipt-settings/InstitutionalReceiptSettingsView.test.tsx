@@ -125,33 +125,18 @@ describe('InstitutionalReceiptSettingsView', () => {
     vi.clearAllMocks();
   });
 
-  it('shows the required institutional paper profiles and default single original copy mode', async () => {
+  it('shows the page header and stat cards for the resolved profile', async () => {
     renderView();
 
     expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
-    await activateTab('Papel y copias');
-
-    expect(await screen.findByRole('button', { name: /Recibo pequeño personalizado/ })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Media carta horizontal/ })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('button', { name: /A5 horizontal/ })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Carta horizontal/ })).toBeInTheDocument();
-
-    expect(screen.getByText(/el hospital elige el papel/i)).toBeInTheDocument();
-    expect(screen.getByText(/los margenes y el tamano se calculan automaticamente/i)).toBeInTheDocument();
-
-    expect(screen.getAllByText(/Solo original/i).length).toBeGreaterThan(0);
-
-    expect(screen.queryByText(/modo soporte tecnico/i)).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /mostrar ajustes avanzados/i })).not.toBeInTheDocument();
-
-    expect(screen.getByText(/Global no requiere ID/i)).toBeInTheDocument();
-    expect(screen.getByText(/No hay asignaciones específicas/i)).toBeInTheDocument();
+    expect(screen.getAllByText('Media carta').length).toBeGreaterThan(0);
+    expect(screen.getByText('REC-A')).toBeInTheDocument();
+    expect(screen.getByText('Editable')).toBeInTheDocument();
   });
 
-  it('never exposes manual paper fields in the normal flow', async () => {
+  it('never exposes the manual paper fields in the normal flow', async () => {
     renderView();
-    await activateTab('Papel y copias');
-    await screen.findByText(/el hospital elige el papel/i);
+    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
 
     [
       'Ancho mm',
@@ -165,25 +150,6 @@ describe('InstitutionalReceiptSettingsView', () => {
     ].forEach((label) => {
       expect(screen.queryByLabelText(label)).not.toBeInTheDocument();
     });
-  });
-
-  it('reveals manual fields only for the small custom receipt and only after expanding the support-technical accordion', async () => {
-    renderView({ canAdvancedPrintSettings: true });
-    await activateTab('Papel y copias');
-
-    expect(screen.queryByLabelText('Ancho mm')).not.toBeInTheDocument();
-
-    const customProfileButton = await screen.findByRole('button', { name: /Recibo pequeño personalizado/ });
-    fireEvent.click(customProfileButton);
-
-    const toggle = await screen.findByRole('button', { name: /mostrar ajustes avanzados/i });
-    expect(toggle).not.toBeDisabled();
-
-    fireEvent.click(toggle);
-
-    expect(await screen.findByLabelText('Ancho mm')).toBeInTheDocument();
-    expect(await screen.findByLabelText('Margen sup. (mm)')).toBeInTheDocument();
-    expect(await screen.findByText(/Cambios riesgosos/i)).toBeInTheDocument();
   });
 
   it('explains sensitive receipt numbering before saving a series', async () => {

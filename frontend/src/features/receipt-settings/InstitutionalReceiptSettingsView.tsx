@@ -1,9 +1,11 @@
+import { useEffect, useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Printer, Save, Settings2 } from 'lucide-react';
-import type { ReactElement, ReactNode } from 'react';
-import { cloneElement, isValidElement, useEffect, useMemo, useState } from 'react';
+import { AlertTriangle, Printer, Save, Settings2 } from 'lucide-react';
+import { type ReactElement, ReactNode, cloneElement, isValidElement, useRef } from 'react';
 import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -13,25 +15,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { LoadingState } from '@/components/ui/states';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { type PaperProfile, PaperProfileSelector, SectionCard, StatCard } from '@/components/shared';
-import { Alert } from '@/components/ui/alert';
+import { PaperProfileSelector, SectionCard, StatCard } from '@/components/shared';
 import { ReceiptSettingsPreview } from './components/ReceiptSettingsPreview';
-import {
-  type ReceiptInstitutionForm,
-  type ReceiptProfileAdvancedForm,
-  type ReceiptProfileForm,
-  type ReceiptSeriesForm,
-  receiptInstitutionSchema,
-  receiptProfileAdvancedSchema,
-  receiptProfileSchema,
-  receiptSeriesSchema,
-} from './receiptSettings.schema';
-import {
-  type ReceiptPrintProfile,
-  type ReceiptProfileAssignment,
-  apiClient,
-  userSafeErrorMessage,
-} from '@/lib/api';
+import { type InstitutionalReceiptSeries, type ReceiptPrintProfile, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { downloadBlob } from '@/lib/download';
 import { queryKeys } from '@/lib/queryKeys';
 
@@ -41,25 +27,17 @@ type InstitutionalReceiptSettingsViewProps = {
   onStatus: (message: string) => void;
 };
 
-const REQUIRED_PROFILE_CODES = [
-  'recibo_pequeno_personalizado',
-  'media_carta_horizontal',
-  'a5_horizontal',
-  'carta_horizontal',
-  'thermal_80mm',
-  'thermal_58mm',
-] as const;
+type PaperProfileCode = 'carta' | 'media_carta' | 'a5' | '80mm' | '58mm';
 
-const PAPER_LABELS: Record<ReceiptPrintProfile['code'], string> = {
-  recibo_pequeno_personalizado: 'Recibo pequeño personalizado',
-  media_carta_horizontal: 'Media carta horizontal',
-  a5_horizontal: 'A5 horizontal',
-  carta_horizontal: 'Carta horizontal',
-  thermal_80mm: 'Térmico 80 mm',
-  thermal_58mm: 'Térmico 58 mm',
+const PAPER_LABELS: Record<PaperProfileCode, string> = {
+  carta: 'Carta',
+  media_carta: 'Media carta',
+  a5: 'A5',
+  '80mm': 'Ticket 80 mm',
+  '58mm': 'Ticket 58 mm',
 };
 
-const CODE_TO_PAPER: Record<string, PaperProfile['code']> = {
+const RECEIPT_PROFILE_TO_PAPER: Record<string, PaperProfileCode> = {
   carta_horizontal: 'carta',
   media_carta_horizontal: 'media_carta',
   a5_horizontal: 'a5',
@@ -67,7 +45,7 @@ const CODE_TO_PAPER: Record<string, PaperProfile['code']> = {
   thermal_58mm: '58mm',
 };
 
-const PAPER_TO_CODE: Record<PaperProfile['code'], ReceiptPrintProfile['code']> = {
+const PAPER_TO_RECEIPT_CODE: Record<PaperProfileCode, ReceiptPrintProfile['code']> = {
   carta: 'carta_horizontal',
   media_carta: 'media_carta_horizontal',
   a5: 'a5_horizontal',
@@ -75,82 +53,83 @@ const PAPER_TO_CODE: Record<PaperProfile['code'], ReceiptPrintProfile['code']> =
   '58mm': 'thermal_58mm',
 };
 
-const ADVANCED_AVAILABLE_PROFILE_CODES = new Set<ReceiptPrintProfile['code']>([
-  'recibo_pequeno_personalizado',
-]);
-
-const STATIC_DEFAULTS: ReceiptProfileForm = {
+const PROFILE_FORM_DEFAULTS = {
   copies_mode: 'original_only',
   show_copy_legend: true,
   show_physical_seal_space: true,
   use_logo: false,
   active: false,
   is_global_default: false,
-};
+} as const;
+
+const institutionSchema = z.object({
+  hospital_name: z.string().min(1, 'Requerido'),
+  rtn: z.string().max(64).optional(),
+  address: z.string().max(255).optional(),
+  slogan: z.string().max(255).optional(),
+  government_line: z.string().max(120).optional(),
+  secretariat_line: z.string().max(160).optional(),
+  receipt_location: z.string().max(160).optional(),
+  receipt_footer_text: z.string().max(255).optional(),
+});
+
+const seriesSchema = z.object({
+  series: z.string().min(1, 'Requerido'),
+  prefix: z.string().min(1, 'Requerido'),
+  number_format: z.string().min(1, 'Requerido'),
+  min_number: z.number().int().min(1),
+  max_number: z.number().int().min(1),
+  current_number: z.number().int().min(0),
+  range_authorization: z.string().max(120).optional(),
+  legal_text: z.string().max(255).optional(),
+  receipt_number_color: z.string().max(16),
+  active: z.boolean(),
+});
+
+const profileSchema = z.object({
+  copies_mode: z.enum(['original_only', 'original_first', 'original_first_second']),
+  show_copy_legend: z.boolean(),
+  show_physical_seal_space: z.boolean(),
+  use_logo: z.boolean(),
+  active: z.boolean(),
+  is_global_default: z.boolean(),
+});
+
+const advancedSchema = z.object({
+  width_mm: z.number().min(80).max(300),
+  height_mm: z.number().min(50).max(220),
+  margin_top_mm: z.number().min(0).max(50),
+  margin_right_mm: z.number().min(0).max(50),
+  margin_bottom_mm: z.number().min(0).max(50),
+  margin_left_mm: z.number().min(0).max(50),
+  font_family: z.string().max(120).nullable(),
+  font_scale: z.number().min(0.7).max(1.3),
+});
+
+type InstitutionFormData = z.infer<typeof institutionSchema>;
+type SeriesFormData = z.infer<typeof seriesSchema>;
+type ProfileFormData = z.infer<typeof profileSchema>;
+type AdvancedFormData = z.infer<typeof advancedSchema>;
 
 function asMoney(value: string | number): string {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed.toFixed(2) : '0.00';
+  return Number(value).toFixed(2);
 }
 
-function assignmentScopeLabel(scope: ReceiptProfileAssignment['scope_type']): string {
-  if (scope === 'global') return 'Global';
-  if (scope === 'user') return 'Usuario/cajero';
-  return 'Sesión de caja';
-}
-
-function assignmentLabel(assignment: ReceiptProfileAssignment): string {
-  const profileCode = assignment.print_profile?.code;
-  const profileLabel = profileCode ? PAPER_LABELS[profileCode] : `Perfil #${assignment.receipt_print_profile_id}`;
-
-  if (assignment.scope_type === 'global') {
-    return `${assignmentScopeLabel(assignment.scope_type)} - ${profileLabel}`;
-  }
-
-  return `${assignmentScopeLabel(assignment.scope_type)} #${assignment.scope_id ?? '-'} - ${profileLabel}`;
-}
-
-function normalProfileDefaults(profile: ReceiptPrintProfile | null): ReceiptProfileForm {
-  return {
-    copies_mode: profile?.copies_mode ?? STATIC_DEFAULTS.copies_mode,
-    show_copy_legend: profile?.show_copy_legend ?? STATIC_DEFAULTS.show_copy_legend,
-    show_physical_seal_space: profile?.show_physical_seal_space ?? STATIC_DEFAULTS.show_physical_seal_space,
-    use_logo: profile?.use_logo ?? STATIC_DEFAULTS.use_logo,
-    active: profile?.active ?? STATIC_DEFAULTS.active,
-    is_global_default: profile?.is_global_default ?? STATIC_DEFAULTS.is_global_default,
-  };
-}
-
-function advancedProfileDefaults(profile: ReceiptPrintProfile | null): ReceiptProfileAdvancedForm {
-  return {
-    width_mm: Number(profile?.width_mm ?? 215.9),
-    height_mm: Number(profile?.height_mm ?? 139.7),
-    margin_top_mm: Number(profile?.margin_top_mm ?? 6),
-    margin_right_mm: Number(profile?.margin_right_mm ?? 6),
-    margin_bottom_mm: Number(profile?.margin_bottom_mm ?? 6),
-    margin_left_mm: Number(profile?.margin_left_mm ?? 6),
-    font_family: profile?.font_family ?? 'Arial, sans-serif',
-    font_scale: Number(profile?.font_scale ?? 1),
-    paper_kind: profile?.paper_kind ?? 'half_letter_landscape',
-    orientation: (profile?.orientation as 'landscape' | 'portrait' | undefined) ?? 'landscape',
-    template_code: profile?.template_code ?? 'institutional_classic',
-  };
-}
-
-function profileSupportsAdvanced(profile: ReceiptPrintProfile | null): boolean {
-  if (!profile) return false;
-  return ADVANCED_AVAILABLE_PROFILE_CODES.has(profile.code);
-}
-
-export function InstitutionalReceiptSettingsView({ canAdvancedPrintSettings, canEdit, onStatus }: InstitutionalReceiptSettingsViewProps) {
+export function InstitutionalReceiptSettingsView({
+  canAdvancedPrintSettings,
+  canEdit,
+  onStatus,
+}: InstitutionalReceiptSettingsViewProps) {
   const queryClient = useQueryClient();
-  const [selectedCode, setSelectedCode] = useState<ReceiptPrintProfile['code']>('media_carta_horizontal');
-  const [paper, setPaper] = useState<PaperProfile['code']>('media_carta');
-  const [assignmentScope, setAssignmentScope] = useState<ReceiptProfileAssignment['scope_type']>('global');
-  const [assignmentScopeId, setAssignmentScopeId] = useState('');
-  const [assignmentProfileCode, setAssignmentProfileCode] = useState<ReceiptPrintProfile['code']>('media_carta_horizontal');
+  const [paper, setPaper] = useState<PaperProfileCode>('media_carta');
+  const [selectedCode, setSelectedCode] = useState<string>('media_carta_horizontal');
   const [error, setError] = useState('');
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [advancedSupported, setAdvancedSupported] = useState(false);
+  const institutionSavingRef = useRef(false);
+  const seriesSavingRef = useRef(false);
+  const profileSavingRef = useRef(false);
+  const advancedSavingRef = useRef(false);
 
   const settingsQuery = useQuery({
     queryKey: queryKeys.settings.institutionalReceipts(),
@@ -158,15 +137,17 @@ export function InstitutionalReceiptSettingsView({ canAdvancedPrintSettings, can
   });
 
   const settings = settingsQuery.data;
+  const activeSeries = settings?.active_series ?? settings?.series[0] ?? null;
   const selectedProfile = useMemo(
-    () => settings?.print_profiles.find((candidate) => candidate.code === selectedCode) ?? settings?.resolved_profile ?? null,
+    () =>
+      settings?.print_profiles.find((candidate) => candidate.code === selectedCode)
+      ?? settings?.resolved_profile
+      ?? null,
     [selectedCode, settings],
   );
-  const activeSeries = settings?.active_series ?? settings?.series[0] ?? null;
-  const canAdvanced = canEdit && canAdvancedPrintSettings && profileSupportsAdvanced(selectedProfile);
 
-  const institutionForm = useForm<ReceiptInstitutionForm>({
-    resolver: zodResolver(receiptInstitutionSchema),
+  const institutionForm = useForm<InstitutionFormData>({
+    resolver: zodResolver(institutionSchema),
     defaultValues: {
       hospital_name: '',
       rtn: '',
@@ -176,12 +157,11 @@ export function InstitutionalReceiptSettingsView({ canAdvancedPrintSettings, can
       secretariat_line: '',
       receipt_location: '',
       receipt_footer_text: '',
-      receipt_template_mode: 'institutional',
     },
   });
 
-  const seriesForm = useForm<ReceiptSeriesForm>({
-    resolver: zodResolver(receiptSeriesSchema),
+  const seriesForm = useForm<SeriesFormData>({
+    resolver: zodResolver(seriesSchema),
     defaultValues: {
       series: 'REC-A',
       prefix: 'RA',
@@ -193,34 +173,41 @@ export function InstitutionalReceiptSettingsView({ canAdvancedPrintSettings, can
       legal_text: '',
       receipt_number_color: '#b91c1c',
       active: true,
-      reprint_behavior: 'audit_only',
-      void_behavior: 'permission_reason_audit',
     },
   });
 
-  const profileForm = useForm<ReceiptProfileForm>({
-    resolver: zodResolver(receiptProfileSchema),
-    defaultValues: STATIC_DEFAULTS,
+  const profileForm = useForm<ProfileFormData>({
+    resolver: zodResolver(profileSchema),
+    defaultValues: PROFILE_FORM_DEFAULTS,
   });
 
-  const advancedForm = useForm<ReceiptProfileAdvancedForm>({
-    resolver: zodResolver(receiptProfileAdvancedSchema),
-    defaultValues: advancedProfileDefaults(null),
+  const advancedForm = useForm<AdvancedFormData>({
+    resolver: zodResolver(advancedSchema),
+    defaultValues: {
+      width_mm: 215.9,
+      height_mm: 139.7,
+      margin_top_mm: 6,
+      margin_right_mm: 6,
+      margin_bottom_mm: 6,
+      margin_left_mm: 6,
+      font_family: 'Arial, sans-serif',
+      font_scale: 1,
+    },
   });
 
   useEffect(() => {
     if (!settings) return;
+
     const institution = settings.institution;
     institutionForm.reset({
       hospital_name: institution?.hospital_name ?? '',
       rtn: institution?.rtn ?? '',
-      address: institution?.address ?? '',
-      slogan: institution?.slogan ?? '',
+      address: '',
+      slogan: '',
       government_line: institution?.government_line ?? '',
       secretariat_line: institution?.secretariat_line ?? '',
       receipt_location: institution?.receipt_location ?? '',
       receipt_footer_text: institution?.receipt_footer_text ?? '',
-      receipt_template_mode: 'institutional',
     });
 
     if (activeSeries) {
@@ -235,51 +222,71 @@ export function InstitutionalReceiptSettingsView({ canAdvancedPrintSettings, can
         legal_text: activeSeries.legal_text ?? '',
         receipt_number_color: activeSeries.receipt_number_color,
         active: activeSeries.active,
-        reprint_behavior: activeSeries.reprint_behavior,
-        void_behavior: activeSeries.void_behavior,
       });
     }
 
     const resolvedCode = settings.resolved_profile?.code ?? 'media_carta_horizontal';
-    const initialPaper = CODE_TO_PAPER[resolvedCode] ?? 'media_carta';
+    const initialPaper = RECEIPT_PROFILE_TO_PAPER[resolvedCode] ?? 'media_carta';
     setPaper(initialPaper);
     setSelectedCode(resolvedCode);
-    setAssignmentProfileCode(resolvedCode);
   }, [settings, activeSeries, institutionForm, seriesForm]);
 
   useEffect(() => {
-    profileForm.reset(normalProfileDefaults(selectedProfile));
-  }, [selectedProfile, profileForm]);
+    if (!selectedProfile) return;
+    profileForm.reset({
+      copies_mode: selectedProfile.copies_mode ?? PROFILE_FORM_DEFAULTS.copies_mode,
+      show_copy_legend: selectedProfile.show_copy_legend ?? PROFILE_FORM_DEFAULTS.show_copy_legend,
+      show_physical_seal_space: selectedProfile.show_physical_seal_space ?? PROFILE_FORM_DEFAULTS.show_physical_seal_space,
+      use_logo: selectedProfile.use_logo ?? PROFILE_FORM_DEFAULTS.use_logo,
+      active: selectedProfile.active ?? PROFILE_FORM_DEFAULTS.active,
+      is_global_default: selectedProfile.is_global_default ?? PROFILE_FORM_DEFAULTS.is_global_default,
+    });
+    advancedForm.reset({
+      width_mm: Number(selectedProfile.width_mm ?? 215.9),
+      height_mm: Number(selectedProfile.height_mm ?? 139.7),
+      margin_top_mm: Number(selectedProfile.margin_top_mm ?? 6),
+      margin_right_mm: Number(selectedProfile.margin_right_mm ?? 6),
+      margin_bottom_mm: Number(selectedProfile.margin_bottom_mm ?? 6),
+      margin_left_mm: Number(selectedProfile.margin_left_mm ?? 6),
+      font_family: selectedProfile.font_family ?? 'Arial, sans-serif',
+      font_scale: Number(selectedProfile.font_scale ?? 1),
+    });
+    setAdvancedSupported(selectedProfile.code === 'recibo_pequeno_personalizado');
+  }, [selectedProfile, profileForm, advancedForm]);
 
-  useEffect(() => {
-    advancedForm.reset(advancedProfileDefaults(selectedProfile));
-  }, [selectedProfile, advancedForm]);
-
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: queryKeys.settings.institutionalReceipts() });
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: queryKeys.settings.institutionalReceipts() });
 
   const institutionMutation = useMutation({
-    mutationFn: (payload: ReceiptInstitutionForm) => apiClient.updateReceiptInstitution(payload),
+    mutationFn: (payload: InstitutionFormData) => apiClient.updateReceiptInstitution(payload),
     onSuccess: async () => {
       await invalidate();
       onStatus('Datos institucionales del recibo guardados.');
     },
-    onError: (err) => setError(userSafeErrorMessage(err, 'No se pudo guardar la institucion del recibo.')),
+    onError: (err) => setError(userSafeErrorMessage(err, 'No se pudo guardar la institución del recibo.')),
+    onSettled: () => {
+      institutionSavingRef.current = false;
+    },
   });
 
   const seriesMutation = useMutation({
-    mutationFn: (payload: ReceiptSeriesForm) => activeSeries
-      ? apiClient.updateReceiptSeries(activeSeries.id, payload)
-      : apiClient.storeReceiptSeries({ ...payload, document_type: 'institutional_receipt' }),
+    mutationFn: (payload: SeriesFormData) =>
+      activeSeries
+        ? apiClient.updateReceiptSeries(activeSeries.id, payload)
+        : apiClient.storeReceiptSeries({ ...payload, document_type: 'institutional_receipt' }),
     onSuccess: async () => {
       await invalidate();
       onStatus('Serie y correlativo del recibo guardados.');
     },
     onError: (err) => setError(userSafeErrorMessage(err, 'No se pudo guardar la serie del recibo.')),
+    onSettled: () => {
+      seriesSavingRef.current = false;
+    },
   });
 
   const profileMutation = useMutation({
-    mutationFn: (payload: ReceiptProfileForm) => {
-      if (!selectedProfile) throw new Error('Seleccione un perfil de impresion.');
+    mutationFn: (payload: ProfileFormData) => {
+      if (!selectedProfile) throw new Error('Seleccione un perfil de impresión.');
       return apiClient.updateReceiptPrintProfile(selectedProfile.id, {
         ...payload,
         template_code: 'institutional_classic',
@@ -287,32 +294,28 @@ export function InstitutionalReceiptSettingsView({ canAdvancedPrintSettings, can
     },
     onSuccess: async () => {
       await invalidate();
-      onStatus('Perfil de impresion del recibo guardado.');
+      onStatus('Perfil de impresión del recibo guardado.');
     },
-    onError: (err) => setError(userSafeErrorMessage(err, 'No se pudo guardar el perfil de impresion.')),
+    onError: (err) => setError(userSafeErrorMessage(err, 'No se pudo guardar el perfil de impresión.')),
+    onSettled: () => {
+      profileSavingRef.current = false;
+    },
   });
 
   const advancedMutation = useMutation({
-    mutationFn: (payload: ReceiptProfileAdvancedForm) => {
-      if (!selectedProfile) throw new Error('Seleccione un perfil de impresion.');
+    mutationFn: (payload: AdvancedFormData) => {
+      if (!selectedProfile) throw new Error('Seleccione un perfil de impresión.');
       return apiClient.updateReceiptPrintProfile(selectedProfile.id, {
-        width_mm: payload.width_mm.toFixed(2),
-        height_mm: payload.height_mm.toFixed(2),
-        margin_top_mm: payload.margin_top_mm.toFixed(2),
-        margin_right_mm: payload.margin_right_mm.toFixed(2),
-        margin_bottom_mm: payload.margin_bottom_mm.toFixed(2),
-        margin_left_mm: payload.margin_left_mm.toFixed(2),
-        font_family: payload.font_family ?? null,
-        font_scale: payload.font_scale.toFixed(2),
-        paper_kind: payload.paper_kind as ReceiptPrintProfile['paper_kind'],
-        orientation: payload.orientation,
+        ...profileForm.watch(),
+        width_mm: asMoney(payload.width_mm),
+        height_mm: asMoney(payload.height_mm),
+        margin_top_mm: asMoney(payload.margin_top_mm),
+        margin_right_mm: asMoney(payload.margin_right_mm),
+        margin_bottom_mm: asMoney(payload.margin_bottom_mm),
+        margin_left_mm: asMoney(payload.margin_left_mm),
+        font_family: payload.font_family,
+        font_scale: asMoney(payload.font_scale),
         template_code: 'institutional_classic',
-        copies_mode: profileForm.watch('copies_mode'),
-        show_copy_legend: profileForm.watch('show_copy_legend'),
-        show_physical_seal_space: profileForm.watch('show_physical_seal_space'),
-        use_logo: profileForm.watch('use_logo'),
-        active: profileForm.watch('active'),
-        is_global_default: profileForm.watch('is_global_default'),
       });
     },
     onSuccess: async () => {
@@ -320,34 +323,24 @@ export function InstitutionalReceiptSettingsView({ canAdvancedPrintSettings, can
       onStatus('Ajustes avanzados del perfil guardados.');
     },
     onError: (err) => setError(userSafeErrorMessage(err, 'No se pudo guardar el perfil avanzado.')),
-  });
-
-  const assignmentMutation = useMutation({
-    mutationFn: () => apiClient.upsertReceiptProfileAssignment({
-      profile_code: assignmentProfileCode,
-      scope_type: assignmentScope,
-      scope_id: assignmentScope === 'global' ? null : Number(assignmentScopeId),
-      active: true,
-    }),
-    onSuccess: async () => {
-      await invalidate();
-      onStatus('Asignacion de perfil guardada.');
+    onSettled: () => {
+      advancedSavingRef.current = false;
     },
-    onError: (err) => setError(userSafeErrorMessage(err, 'No se pudo guardar la asignacion de perfil.')),
   });
 
   const testPrintMutation = useMutation({
-    mutationFn: () => apiClient.testPrintInstitutionalReceipt({
-      profile_code: PAPER_TO_CODE[paper],
-      payer_name: 'Paciente de prueba',
-      concept: 'Servicios hospitalarios de prueba',
-      amount: '25.00',
-    }),
+    mutationFn: () =>
+      apiClient.testPrintInstitutionalReceipt({
+        profile_code: PAPER_TO_RECEIPT_CODE[paper],
+        payer_name: 'Paciente de prueba',
+        concept: 'Servicios hospitalarios de prueba',
+        amount: '25.00',
+      }),
     onSuccess: (blob) => {
       downloadBlob(blob, 'recibo-institucional-prueba.pdf');
       onStatus('PDF de prueba generado sin reservar correlativo.');
     },
-    onError: (err) => setError(userSafeErrorMessage(err, 'No se pudo generar la impresion de prueba.')),
+    onError: (err) => setError(userSafeErrorMessage(err, 'No se pudo generar la impresión de prueba.')),
   });
 
   if (settingsQuery.isLoading) {
@@ -371,10 +364,11 @@ export function InstitutionalReceiptSettingsView({ canAdvancedPrintSettings, can
     );
   }
 
-  const requiredProfiles = settings?.print_profiles.filter((profile) => REQUIRED_PROFILE_CODES.includes(profile.code as (typeof REQUIRED_PROFILE_CODES)[number])) ?? [];
   const institutionValues = institutionForm.watch();
   const seriesValues = seriesForm.watch();
-  const previewSeries = activeSeries ? { ...activeSeries, ...seriesValues } : null;
+  const previewSeries: InstitutionalReceiptSeries | null = activeSeries
+    ? { ...activeSeries, ...seriesValues }
+    : null;
   const watchedProfile = profileForm.watch();
   const watchedAdvanced = advancedForm.watch();
   const baseProfile = selectedProfile
@@ -390,7 +384,7 @@ export function InstitutionalReceiptSettingsView({ canAdvancedPrintSettings, can
     : null;
   const previewProfile = ((): ReceiptPrintProfile | null => {
     if (!baseProfile) return null;
-    if (!canAdvanced || !advancedOpen) return baseProfile;
+    if (!canAdvancedPrintSettings || !advancedOpen) return baseProfile;
     return {
       ...baseProfile,
       width_mm: asMoney(watchedAdvanced.width_mm),
@@ -400,58 +394,61 @@ export function InstitutionalReceiptSettingsView({ canAdvancedPrintSettings, can
       margin_bottom_mm: asMoney(watchedAdvanced.margin_bottom_mm),
       margin_left_mm: asMoney(watchedAdvanced.margin_left_mm),
       font_family: watchedAdvanced.font_family ?? null,
-      font_scale: watchedAdvanced.font_scale.toFixed(2),
-      paper_kind: (watchedAdvanced.paper_kind ?? baseProfile.paper_kind) as ReceiptPrintProfile['paper_kind'],
-      orientation: watchedAdvanced.orientation,
-      template_code: watchedAdvanced.template_code as ReceiptPrintProfile['template_code'],
+      font_scale: asMoney(watchedAdvanced.font_scale),
     };
   })();
+
+  const copiesCount =
+    watchedProfile.copies_mode === 'original_first_second'
+      ? '3'
+      : watchedProfile.copies_mode === 'original_first'
+        ? '2'
+        : '1';
 
   return (
     <>
       <PageHeader
         title="Recibos institucionales"
-        description="Configuración del recibo clásico, serie, papel y copias para impresora normal."
+        description="Papel, copias, logo y firma. El sistema resuelve márgenes, CSS de impresión y fuente."
       />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          label="Perfil resuelto"
-          value={selectedProfile ? PAPER_LABELS[selectedProfile.code] : 'Pendiente'}
-          helper={selectedProfile ? 'Margenes automaticos segun papel' : 'Sin perfil activo'}
-          tone={selectedProfile?.active ? 'success' : 'warning'}
+          label="Papel"
+          value={PAPER_LABELS[paper]}
+          helper="Tamaño resuelto por el sistema"
+          tone="success"
         />
         <StatCard
-          label="Serie recibo"
+          label="Serie"
           value={activeSeries?.series ?? 'Pendiente'}
-          helper={activeSeries ? `Próximo ${activeSeries.current_number + 1}` : 'Configure una serie institucional'}
+          helper={activeSeries ? `Próximo ${activeSeries.current_number + 1}` : 'Configure una serie'}
           tone={activeSeries?.active ? 'success' : 'warning'}
         />
         <StatCard
           label="Copias"
-          value={watchedProfile.copies_mode === 'original_first_second' ? '3' : watchedProfile.copies_mode === 'original_first' ? '2' : '1'}
-          helper={watchedProfile.show_copy_legend ? 'Leyenda visible' : 'Leyenda oculta'}
+          value={copiesCount}
+          helper={watchedProfile.show_copy_legend ? 'Con leyenda' : 'Sin leyenda'}
           tone="info"
         />
         <StatCard
-          label="Modo"
+          label="Permiso"
           value={canEdit ? 'Editable' : 'Lectura'}
-          helper={canEdit ? 'Cambios permitidos por permiso' : 'Sin permiso para guardar'}
           tone={canEdit ? 'success' : 'warning'}
         />
       </div>
 
-      {!canEdit ? (
+      {!canEdit && (
         <Alert variant="warning" title="Modo solo lectura">
           Solo usuarios autorizados pueden cambiar serie, perfiles o textos institucionales.
         </Alert>
-      ) : null}
+      )}
 
-      {error ? (
+      {error && (
         <Alert variant="destructive" title="Error">
           {error}
         </Alert>
-      ) : null}
+      )}
 
       <Tabs defaultValue="papel" className="space-y-6">
         <div className="overflow-x-auto pb-1">
@@ -466,9 +463,19 @@ export function InstitutionalReceiptSettingsView({ canAdvancedPrintSettings, can
         <TabsContent value="institucion" className="space-y-6">
           <SectionCard
             title="Datos del recibo"
-            description="Encabezado, ubicación y leyenda configurable del documento institucional."
+            description="Encabezado, ubicación y leyenda del documento institucional."
           >
-            <form className="space-y-4" onSubmit={institutionForm.handleSubmit((data) => institutionMutation.mutate(data))}>
+            <form
+              className="space-y-4"
+              onSubmit={institutionForm.handleSubmit((data) =>
+                institutionSavingRef.current
+                  ? undefined
+                  : (() => {
+                      institutionSavingRef.current = true;
+                      institutionMutation.mutate(data);
+                    })(),
+              )}
+            >
               <div className="grid gap-4 md:grid-cols-2">
                 <Field label="Nombre del hospital" id="hospital_name" error={institutionForm.formState.errors.hospital_name?.message}>
                   <Input id="hospital_name" disabled={!canEdit} {...institutionForm.register('hospital_name')} />
@@ -476,25 +483,13 @@ export function InstitutionalReceiptSettingsView({ canAdvancedPrintSettings, can
                 <Field label="RTN si aplica" id="rtn">
                   <Input id="rtn" disabled={!canEdit} {...institutionForm.register('rtn')} />
                 </Field>
-                <Field
-                  label="Dependencia superior"
-                  id="government_line"
-                  hint="Déjelo en blanco si no existe un encabezado oficial configurado."
-                >
+                <Field label="Dependencia superior" id="government_line" hint="Déjelo en blanco si no existe un encabezado oficial.">
                   <Input id="government_line" disabled={!canEdit} {...institutionForm.register('government_line')} />
                 </Field>
-                <Field
-                  label="Secretaría o unidad"
-                  id="secretariat_line"
-                  hint="Use solo el texto autorizado por administración."
-                >
+                <Field label="Secretaría o unidad" id="secretariat_line">
                   <Input id="secretariat_line" disabled={!canEdit} {...institutionForm.register('secretariat_line')} />
                 </Field>
-                <Field
-                  label="Ciudad o lugar"
-                  id="receipt_location"
-                  hint="No se completa automáticamente desde la dirección; configure el lugar real del recibo."
-                >
+                <Field label="Ciudad o lugar" id="receipt_location" hint="No se completa automáticamente desde la dirección.">
                   <Input id="receipt_location" disabled={!canEdit} {...institutionForm.register('receipt_location')} />
                 </Field>
                 <Field label="Dirección o referencia" id="address">
@@ -507,7 +502,7 @@ export function InstitutionalReceiptSettingsView({ canAdvancedPrintSettings, can
               <div className="flex justify-end">
                 <Button type="submit" disabled={!canEdit || institutionMutation.isPending}>
                   <Save className="size-4" data-icon aria-hidden="true" />
-                  Guardar institucion
+                  Guardar institución
                 </Button>
               </div>
             </form>
@@ -519,9 +514,19 @@ export function InstitutionalReceiptSettingsView({ canAdvancedPrintSettings, can
             title="Serie y control fiscal"
             description="Rango, formato y correlativo actual del recibo institucional."
           >
-            <form className="space-y-4" onSubmit={seriesForm.handleSubmit((data) => seriesMutation.mutate(data))}>
+            <form
+              className="space-y-4"
+              onSubmit={seriesForm.handleSubmit((data) =>
+                seriesSavingRef.current
+                  ? undefined
+                  : (() => {
+                      seriesSavingRef.current = true;
+                      seriesMutation.mutate(data);
+                    })(),
+              )}
+            >
               <Alert variant="warning" title="Correlativo sensible">
-                Cambie el correlativo actual solo con autorización documentada. No lo use para corregir recibos ya emitidos; anule o reimprima con auditoría.
+                Cambie el correlativo solo con autorización documentada. No lo use para corregir recibos ya emitidos.
               </Alert>
               <div className="grid gap-4 md:grid-cols-3">
                 <Field label="Serie" id="series" error={seriesForm.formState.errors.series?.message}>
@@ -583,9 +588,9 @@ export function InstitutionalReceiptSettingsView({ canAdvancedPrintSettings, can
               description="Carta, media carta y A5 son los perfiles institucionales principales."
             >
               <div className="space-y-3">
-                {requiredProfiles.map((profile) => {
+                {(settings?.print_profiles ?? []).map((profile) => {
+                  const paperCode = RECEIPT_PROFILE_TO_PAPER[profile.code];
                   const isActive = selectedCode === profile.code;
-                  const paperCode = CODE_TO_PAPER[profile.code];
                   return (
                     <Button
                       key={profile.code}
@@ -598,10 +603,8 @@ export function InstitutionalReceiptSettingsView({ canAdvancedPrintSettings, can
                         if (paperCode) setPaper(paperCode);
                       }}
                     >
-                      <span>{PAPER_LABELS[profile.code]}</span>
-                      <span className="text-xs font-normal">
-                        {profile.active ? 'Activo' : 'Disponible'}
-                      </span>
+                      <span>{profile.code === 'recibo_pequeno_personalizado' ? 'Recibo pequeño personalizado' : PAPER_LABELS[paperCode as PaperProfileCode] ?? profile.code}</span>
+                      <span className="text-xs font-normal">{profile.active ? 'Activo' : 'Disponible'}</span>
                     </Button>
                   );
                 })}
@@ -616,21 +619,29 @@ export function InstitutionalReceiptSettingsView({ canAdvancedPrintSettings, can
                 value={paper}
                 onChange={(code) => {
                   setPaper(code);
-                  const codeForPaper = PAPER_TO_CODE[code];
-                  if (codeForPaper) {
-                    setSelectedCode(codeForPaper);
-                  }
+                  const mapped = PAPER_TO_RECEIPT_CODE[code];
+                  if (mapped) setSelectedCode(mapped);
                 }}
                 disabled={!canEdit}
-                helperText="Los margenes y el tamano se calculan automaticamente segun el perfil seleccionado."
+                helperText="Los márgenes, la fuente y el layout se calculan automáticamente según el perfil seleccionado."
               />
 
-              <form className="mt-5 space-y-4" onSubmit={profileForm.handleSubmit((data) => profileMutation.mutate(data))}>
+              <form
+                className="mt-5 space-y-4"
+                onSubmit={profileForm.handleSubmit((data) =>
+                  profileSavingRef.current
+                    ? undefined
+                    : (() => {
+                        profileSavingRef.current = true;
+                        profileMutation.mutate(data);
+                      })(),
+                )}
+              >
                 <div className="grid gap-4 md:grid-cols-3">
                   <Field label="Copias" id="copies_mode">
                     <Select
                       value={profileForm.watch('copies_mode')}
-                      onValueChange={(value) => profileForm.setValue('copies_mode', value as ReceiptProfileForm['copies_mode'])}
+                      onValueChange={(value) => profileForm.setValue('copies_mode', value as ProfileFormData['copies_mode'])}
                       disabled={!canEdit}
                     >
                       <SelectTrigger id="copies_mode"><SelectValue /></SelectTrigger>
@@ -650,7 +661,7 @@ export function InstitutionalReceiptSettingsView({ canAdvancedPrintSettings, can
                   />
                   <CheckboxField
                     id="profile_show_seal_space"
-                    label="Espacio para sello físico"
+                    label="Espacio para sello/firma"
                     checked={Boolean(profileForm.watch('show_physical_seal_space'))}
                     disabled={!canEdit}
                     onChange={(value) => profileForm.setValue('show_physical_seal_space', value === true)}
@@ -690,31 +701,34 @@ export function InstitutionalReceiptSettingsView({ canAdvancedPrintSettings, can
                 </div>
               </form>
 
-              {canAdvanced ? (
-                <div className="mt-5 rounded-md border border-warning/40 bg-warning/10 p-3 text-sm">
-                  <p className="font-semibold text-warning-foreground">Modo soporte tecnico</p>
-                  <p className="mt-1 text-current/85">
-                    Use estos ajustes solo para perfiles personalizados de recibo pequeno. Documente el motivo antes de guardar.
+              {canAdvancedPrintSettings && advancedSupported && (
+                <details
+                  id="receipt-advanced-panel"
+                  className="mt-5 rounded-md border border-warning/40 bg-warning/10 p-3 text-sm"
+                  open={advancedOpen}
+                  onToggle={(event) => setAdvancedOpen((event.currentTarget as HTMLDetailsElement).open)}
+                >
+                  <summary className="cursor-pointer font-semibold text-warning-foreground">
+                    <span className="inline-flex items-center gap-2">
+                      <AlertTriangle className="size-4" aria-hidden="true" />
+                      Modo soporte técnico
+                    </span>
+                  </summary>
+                  <p className="mt-2 text-current/85">
+                    Estos ajustes modifican medidas manuales del recibo pequeño personalizado. Documente el motivo antes de continuar; el cambio queda auditado.
                   </p>
-                  <div className="mt-3">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      aria-controls="receipt-advanced-panel"
-                      aria-expanded={advancedOpen}
-                      onClick={() => setAdvancedOpen((value) => !value)}
+                  {advancedOpen && (
+                    <form
+                      className="mt-4 space-y-4"
+                      onSubmit={advancedForm.handleSubmit((data) =>
+                        advancedSavingRef.current
+                          ? undefined
+                          : (() => {
+                              advancedSavingRef.current = true;
+                              advancedMutation.mutate(data);
+                            })(),
+                      )}
                     >
-                      {advancedOpen ? 'Ocultar ajustes avanzados' : 'Mostrar ajustes avanzados'}
-                    </Button>
-                  </div>
-
-                  {advancedOpen ? (
-                  <div id="receipt-advanced-panel" className="mt-4 space-y-4">
-                    <Alert variant="warning" title="Cambios riesgosos">
-                      Modificar margenes, tamano, fuente o escala puede afectar recibos ya impresos. Documente el motivo antes de continuar.
-                    </Alert>
-                    <form className="space-y-4" onSubmit={advancedForm.handleSubmit((data) => advancedMutation.mutate(data))}>
                       <div className="grid gap-4 md:grid-cols-4">
                         <Field label="Ancho mm" id="adv_width" hint="Solo recibo pequeño personalizado.">
                           <Input id="adv_width" type="number" step="0.01" disabled={!canEdit} {...advancedForm.register('width_mm', { valueAsNumber: true })} />
@@ -748,81 +762,23 @@ export function InstitutionalReceiptSettingsView({ canAdvancedPrintSettings, can
                         </Button>
                       </div>
                     </form>
-                  </div>
-                  ) : null}
-                </div>
-              ) : null}
+                  )}
+                </details>
+              )}
+
+              {canAdvancedPrintSettings && !advancedSupported && (
+                <Alert title="Modo soporte no aplica aquí">
+                  Los ajustes avanzados solo aplican al perfil personalizado de recibo pequeño.
+                </Alert>
+              )}
+
+              {!canAdvancedPrintSettings && (
+                <Alert title="Modo soporte no disponible">
+                  Su usuario no tiene permiso <code>receipt_settings.advanced</code>. Para modificar márgenes, fuente o escala contacte a soporte técnico.
+                </Alert>
+              )}
             </SectionCard>
           </div>
-
-          <SectionCard
-            title="Perfil por caja o usuario"
-            description="Si no hay asignación específica, se usa el perfil global institucional."
-          >
-            <div className="space-y-4">
-              <Alert variant="default" title="Asignación avanzada">
-                Use asignaciones por usuario o sesión solo cuando operaciones haya identificado el ID correcto. Para la mayoría de cajas, el perfil global es suficiente.
-              </Alert>
-              <div className="grid gap-4 md:grid-cols-[1fr_1fr_1fr_auto] md:items-end">
-                <Field label="Perfil" id="assignment_profile">
-                  <Select value={assignmentProfileCode} onValueChange={(value) => setAssignmentProfileCode(value as ReceiptPrintProfile['code'])} disabled={!canEdit}>
-                    <SelectTrigger id="assignment_profile"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {settings?.print_profiles.filter((profile) => profile.active).map((profile) => (
-                        <SelectItem key={profile.code} value={profile.code}>{PAPER_LABELS[profile.code]}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
-                <Field label="Alcance" id="assignment_scope">
-                  <Select value={assignmentScope} onValueChange={(value) => setAssignmentScope(value as ReceiptProfileAssignment['scope_type'])} disabled={!canEdit}>
-                    <SelectTrigger id="assignment_scope"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="global">Global</SelectItem>
-                      <SelectItem value="user">Usuario/cajero</SelectItem>
-                      <SelectItem value="cash_session">Sesión de caja</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </Field>
-                <Field
-                  label="ID de alcance"
-                  id="assignment_scope_id"
-                  hint={assignmentScope === 'global' ? 'Global no requiere ID.' : 'Use el ID confirmado por administración; no adivine este valor.'}
-                >
-                  <Input
-                    id="assignment_scope_id"
-                    type="number"
-                    value={assignmentScope === 'global' ? '' : assignmentScopeId}
-                    onChange={(event) => setAssignmentScopeId(event.target.value)}
-                    disabled={!canEdit || assignmentScope === 'global'}
-                  />
-                </Field>
-                <Button
-                  type="button"
-                  disabled={!canEdit || assignmentMutation.isPending || (assignmentScope !== 'global' && !assignmentScopeId)}
-                  onClick={() => assignmentMutation.mutate()}
-                >
-                  Guardar asignación
-                </Button>
-              </div>
-              {settings?.assignments.length ? (
-                <div className="rounded-panel border border-operational-border bg-operational-panel p-3">
-                  <p className="text-sm font-semibold text-foreground">Asignaciones activas</p>
-                  <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-                    {settings.assignments.map((assignment) => (
-                      <li key={assignment.id} className="break-words">
-                        {assignmentLabel(assignment)}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : (
-                <p className="rounded-panel border border-operational-border bg-operational-panel p-3 text-sm text-muted-foreground">
-                  No hay asignaciones específicas. Se usará el perfil global activo.
-                </p>
-              )}
-            </div>
-          </SectionCard>
         </TabsContent>
 
         <TabsContent value="vista">
@@ -834,6 +790,7 @@ export function InstitutionalReceiptSettingsView({ canAdvancedPrintSettings, can
             footerText={institutionValues.receipt_footer_text ?? ''}
             series={previewSeries}
             profile={previewProfile}
+            draft
           />
         </TabsContent>
       </Tabs>
@@ -872,16 +829,16 @@ function Field({
     <div className="space-y-2">
       <Label htmlFor={id}>{label}</Label>
       {control}
-      {hint ? (
+      {hint && (
         <p id={hintId} className="text-xs leading-5 text-muted-foreground">
           {hint}
         </p>
-      ) : null}
-      {error ? (
+      )}
+      {error && (
         <p id={errorId} role="alert" className="text-sm text-destructive">
           {error}
         </p>
-      ) : null}
+      )}
     </div>
   );
 }
@@ -903,6 +860,7 @@ function CheckboxField({
     <div className="flex items-center gap-2 rounded-md border border-operational-border bg-operational-panel p-3 text-sm">
       <Checkbox
         id={id}
+        aria-label={label}
         checked={checked}
         disabled={disabled}
         onCheckedChange={(value) => onChange(value === true)}

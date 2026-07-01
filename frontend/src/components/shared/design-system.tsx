@@ -166,6 +166,7 @@ type PanelProps = HTMLAttributes<HTMLElement> & {
   description?: ReactNode;
   footer?: ReactNode;
   title?: ReactNode;
+  titleLevel?: 1 | 2 | 3;
 };
 
 export const CommandPanel = forwardRef<HTMLElement, PanelProps>(function CommandPanel({
@@ -175,8 +176,11 @@ export const CommandPanel = forwardRef<HTMLElement, PanelProps>(function Command
   description,
   footer,
   title,
+  titleLevel = 2,
   ...props
 }, ref) {
+  const TitleTag = `h${titleLevel}` as const;
+
   return (
     <section
       ref={ref}
@@ -191,7 +195,7 @@ export const CommandPanel = forwardRef<HTMLElement, PanelProps>(function Command
       {title || description || actions ? (
         <div data-slot="command-panel-header" className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
-            {title ? <h2 className="text-base font-semibold text-foreground">{title}</h2> : null}
+            {title ? <TitleTag className="text-base font-semibold text-foreground">{title}</TitleTag> : null}
             {description ? <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{description}</p> : null}
           </div>
           {actions ? <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div> : null}
@@ -611,6 +615,7 @@ type OperationalBannerProps = HTMLAttributes<HTMLElement> & {
   meta?: ReactNode;
   status?: ReactNode;
   title: ReactNode;
+  titleLevel?: 1 | 2 | 3;
   tone?: Tone;
 };
 
@@ -621,9 +626,12 @@ export function OperationalBanner({
   meta,
   status,
   title,
+  titleLevel = 1,
   tone = 'neutral',
   ...props
 }: OperationalBannerProps) {
+  const TitleTag = `h${titleLevel}` as const;
+
   return (
     <section
       data-slot="operational-banner"
@@ -633,7 +641,7 @@ export function OperationalBanner({
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
           {meta ? <div className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">{meta}</div> : null}
-          <h1 className="text-2xl font-semibold leading-tight text-foreground sm:text-3xl">{title}</h1>
+          <TitleTag className="text-2xl font-semibold leading-tight text-foreground sm:text-3xl">{title}</TitleTag>
           {description ? <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted-foreground">{description}</p> : null}
         </div>
         {(status || actions) ? (
@@ -982,4 +990,3 @@ export function PaperProfileSelector({
     </div>
   );
 }
-
