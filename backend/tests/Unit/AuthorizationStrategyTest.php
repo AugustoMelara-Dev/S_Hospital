@@ -28,6 +28,10 @@ class AuthorizationStrategyTest extends TestCase
         $this->assertDirectoryExists($policiesPath);
         $this->assertFileExists($policiesPath.'/InvoicePolicy.php');
         $this->assertFileExists($policiesPath.'/CashSessionPolicy.php');
+        $this->assertFileDoesNotExist(
+            $policiesPath.'/CashRegisterSessionPolicy.php',
+            'CashRegisterSession must use the registered CashSessionPolicy only; a second policy class creates divergent RBAC rules.',
+        );
     }
 
     public function test_app_service_provider_registers_gate_policy_mappings(): void
