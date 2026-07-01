@@ -772,11 +772,6 @@ export function InstitutionalReceiptSettingsView({
                 </Alert>
               )}
 
-              {!canAdvancedPrintSettings && (
-                <Alert title="Modo soporte no disponible">
-                  Su usuario no tiene permiso <code>receipt_settings.advanced</code>. Para modificar márgenes, fuente o escala contacte a soporte técnico.
-                </Alert>
-              )}
             </SectionCard>
           </div>
         </TabsContent>

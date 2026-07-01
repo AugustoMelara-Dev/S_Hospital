@@ -194,7 +194,8 @@ Existen componentes reutilizables para acciones, menus, alertas, dialogos, tabla
 
 - Flujo normal contiene selector de papel, copias, logo y sello/firma.
 - Los campos tecnicos de ancho, alto, margenes, fuente y escala existen solo en panel avanzado `<details>` condicionado por permiso y soporte.
-- Riesgo UX: el mensaje normal menciona que el sistema resuelve margenes, CSS y fuente; conviene validar visualmente que ningun input tecnico aparezca para usuario normal.
+- El flujo normal ya no expone el permiso interno `receipt_settings.advanced`; hay test para evitar que reaparezca en la pantalla de papel y copias.
+- Pendiente: validar visualmente que el preview impreso conserve carta/media carta/A5 como experiencia primaria y 80mm/58mm como compatibilidad secundaria.
 
 ### Reportes
 

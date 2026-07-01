@@ -152,6 +152,15 @@ describe('InstitutionalReceiptSettingsView', () => {
     });
   });
 
+  it('keeps support permissions out of the normal print settings flow', async () => {
+    renderView();
+
+    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
+    await activateTab('Papel y copias');
+
+    expect(screen.queryByText('receipt_settings.advanced')).not.toBeInTheDocument();
+  });
+
   it('explains sensitive receipt numbering before saving a series', async () => {
     renderView();
 
