@@ -14,6 +14,8 @@ import {
 } from 'react';
 import { cn } from '../../lib/utils';
 import { Badge } from '../ui/badge';
+import { MoneyText } from '../ui/money-text';
+import { formatDateTimeEs } from '../../lib/format/formatDate';
 
 type Tone = 'neutral' | 'info' | 'success' | 'warning' | 'destructive';
 
@@ -988,5 +990,61 @@ export function PaperProfileSelector({
         </p>
       ) : null}
     </div>
+  );
+}
+
+export function MoneyDisplay({
+  amountCents,
+  className,
+  emphasis = 'normal',
+  tone = 'default',
+}: {
+  amountCents: number;
+  className?: string;
+  emphasis?: 'normal' | 'strong';
+  tone?: 'default' | 'success' | 'warning' | 'danger' | 'muted';
+}) {
+  return (
+    <MoneyText
+      amountCents={amountCents}
+      className={className}
+      emphasis={emphasis}
+      tone={tone}
+    />
+  );
+}
+
+export function DateDisplay({
+  value,
+  className,
+}: {
+  value: string | Date | null | undefined;
+  className?: string;
+}) {
+  return (
+    <span className={cn('tabular-nums text-muted-foreground', className)}>
+      {formatDateTimeEs(value)}
+    </span>
+  );
+}
+
+export function NumberDisplay({
+  value,
+  className,
+  decimals = 0,
+}: {
+  value: number;
+  className?: string;
+  decimals?: number;
+}) {
+  const formattedValue = new Intl.NumberFormat('es-HN', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(value);
+
+  return (
+    <span className={cn('tabular-nums font-mono', className)}>
+      {formattedValue}
+    </span>
   );
 }
