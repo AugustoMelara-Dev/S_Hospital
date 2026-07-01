@@ -1,20 +1,30 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Spatie\Permission\Models\Permission;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
     public function up(): void
     {
-        Permission::query()->firstOrCreate([
+        $now = now();
+        $payload = [
             'name' => 'receipt_settings.advanced',
             'guard_name' => 'web',
-        ]);
+            'created_at' => $now,
+            'updated_at' => $now,
+        ];
+
+        if (! DB::table('permissions')->where('name', $payload['name'])->where('guard_name', $payload['guard_name'])->exists()) {
+            DB::table('permissions')->insert($payload);
+        }
     }
 
     public function down(): void
     {
-        Permission::query()->where('name', 'receipt_settings.advanced')->delete();
+        if (Schema::hasTable('permissions')) {
+            DB::table('permissions')->where('name', 'receipt_settings.advanced')->delete();
+        }
     }
 };

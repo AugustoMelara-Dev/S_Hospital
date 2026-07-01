@@ -101,8 +101,9 @@ test('release gate cashier can issue, collect, show receipt and surface reports'
     await loginToReleaseApp(adminPage, 'admin.e2e');
     captureBlockingIssues(adminPage, consoleIssues);
     await adminPage.getByRole('link', { name: /reportes/i }).click();
-    await expect(adminPage.getByRole('heading', { name: /reportes/i })).toBeVisible();
-    await expect(adminPage.getByRole('heading', { name: /resumen del d/i })).toBeVisible();
+    await expect(adminPage.getByRole('navigation', { name: /secciones de reportes/i })).toBeVisible();
+    await expect(adminPage.getByRole('link', { name: /ejecutivo/i })).toHaveAttribute('aria-current', 'page');
+    await expect(adminPage.locator('section[aria-label="Reporte ejecutivo"]')).toBeVisible();
     await expect(adminPage.getByText(/cobrado/i).first()).toBeVisible();
   } finally {
     await adminPage.close();

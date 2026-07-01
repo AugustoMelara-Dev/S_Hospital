@@ -1,11 +1,13 @@
 import { Link } from 'react-router-dom';
 import type { RefObject } from 'react';
 import { Banknote, ClipboardList } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Alert } from '@/components/ui/alert';
-import { Dialog } from '@/components/ui/dialog';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { SectionCard } from '@/components/shared';
+import { Alert } from '../../../components/ui/alert';
+import { Badge } from '../../../components/ui/badge';
+import { Button } from '../../../components/ui/button';
+import { Card, CardContent } from '../../../components/ui/card';
+import { Dialog } from '../../../components/ui/dialog';
+import { ConfirmDialog } from '../../../components/ui/confirm-dialog';
+import { CashStatusCard, OperationalBanner } from '../../../components/shared/design-system';
 import { ReceiptPreview } from '../../receipts/ReceiptPreview';
 import { PatientStep } from './PatientStep';
 import { ServiceSearch } from './ServiceSearch';
@@ -106,176 +108,145 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
     searchInputRef,
     scannerInputRef,
   } = props;
-
-  const hasCartItems = state.cartItems.length > 0;
-  const mobileActionLabel = state.submitting
-    ? 'Emitiendo...'
-    : canCreatePayments && canViewReceipts
-      ? 'Emitir y cobrar'
-      : 'Emitir factura';
   const cashIsOpen = Boolean(state.loadedCashSession);
   const cashSessionLabel = state.loadedCashSession ? `Caja #${state.loadedCashSession.id}` : 'Caja cerrada';
-  const bannerLabel = cashIsOpen ? 'Lista para facturar' : 'Abra caja para empezar';
-
-  const bannerAlertMessage = state.pointOfSaleLoadError;
-  const inlineAlertMessage =
-    !bannerAlertMessage && state.alertMessage ? state.alertMessage : null;
-  const showInlineAlert = Boolean(
-    inlineAlertMessage && inlineAlertMessage !== state.pointOfSaleLoadError,
-  );
 
   return (
-    <section id="nueva-factura" className="flex h-full flex-col gap-4 pb-24 lg:pb-0">
-      <SectionCard
-        aria-live="polite"
-        title="Nueva factura"
-        description="Registre paciente, agregue servicios facturables y continue al cobro institucional sin salir del flujo de caja."
-        actions={
-          <div
-            className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
-              cashIsOpen
-                ? 'border-success/30 bg-success/10 text-success-foreground'
-                : 'border-warning/40 bg-warning/10 text-warning-foreground'
-            }`}
-          >
-            <span className="text-xs uppercase tracking-[0.14em]">Caja</span>
-            <span className="font-mono font-semibold tabular-nums">{cashSessionLabel}</span>
-            <span aria-hidden="true">{cashIsOpen ? '·' : '·'}</span>
-            <span>{bannerLabel}</span>
-            {!cashIsOpen && canOpenCash && onOpenCash ? (
+    <section id="nueva-factura" className="flex h-full flex-col gap-4 pb-28 lg:pb-0">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
+        <OperationalBanner
+          className="border-hospital-primary/25 bg-[linear-gradient(135deg,var(--color-operational-surface),var(--color-accent))]"
+          meta="Punto de venta hospitalario"
+          title="Nueva factura"
+          description="Registre paciente, agregue servicios facturables y continue al cobro institucional sin salir del flujo de caja."
+          status={
+            <Badge variant={cashIsOpen ? 'success' : 'destructive'} className="font-mono text-sm tabular-nums">
+              {cashIsOpen ? `${cashSessionLabel} - Abierta` : cashSessionLabel}
+            </Badge>
+          }
+        />
+        <CashStatusCard
+          status={cashIsOpen ? 'open' : 'attention'}
+          amount={cashSessionLabel}
+          label="Operacion de caja"
+          helper={cashIsOpen ? 'Lista para emitir y cobrar facturas.' : 'Debe abrir caja antes de emitir facturas.'}
+          actions={!cashIsOpen && canOpenCash && onOpenCash ? (
               <Button type="button" variant="secondary" size="sm" onClick={onOpenCash}>
-                Abrir caja
+                Abrir Caja
               </Button>
-            ) : null}
-          </div>
-        }
-      >
-        <output
-          className="sr-only"
-          aria-live="polite"
-          aria-atomic="true"
-        >
-          {bannerAlertMessage ?? state.warningMessage ?? ''}
-        </output>
-      </SectionCard>
+          ) : null}
+        />
+      </div>
 
-      {bannerAlertMessage ? (
-        <Alert
-          variant="destructive"
-          title="No se pudo cargar el punto de venta"
-          role="alert"
-        >
+      {state.pointOfSaleLoadError && (
+        <Alert variant="destructive" title="No se pudo cargar el punto de venta">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <span className="flex-1">{bannerAlertMessage}</span>
+            <span className="flex-1">{state.pointOfSaleLoadError}</span>
             <Button type="button" variant="secondary" size="sm" onClick={onRetryLoad} disabled={state.loadingServices}>
               {state.loadingServices ? 'Reintentando...' : 'Reintentar'}
             </Button>
           </div>
         </Alert>
-      ) : null}
+      )}
 
-      {!cashIsOpen && !bannerAlertMessage ? (
+      {!state.loadedCashSession && !state.pointOfSaleLoadError && (
         <Alert variant="warning" title="Caja no abierta">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex-1">
-              <p>Debe abrir la caja antes de emitir facturas.</p>
-              {!canOpenCash ? (
-                <p className="mt-1 text-xs">Solicite apertura a un usuario autorizado.</p>
-              ) : null}
-            </div>
-            <div className="flex items-center gap-2">
-              {canOpenCash && onOpenCash ? (
-                <Button type="button" variant="secondary" size="sm" onClick={onOpenCash}>
-                  Abrir caja
-                </Button>
-              ) : null}
-              {!canOpenCash ? (
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <span className="flex-1">Debe abrir la caja antes de emitir facturas.</span>
+            {canOpenCash && onOpenCash ? (
+              <Button type="button" variant="secondary" size="sm" onClick={onOpenCash}>
+                Abrir Caja
+              </Button>
+            ) : (
+              <div className="flex flex-col gap-1 sm:items-end">
                 <Button asChild variant="secondary" size="sm">
                   <Link to="/cashbox">Ir a caja</Link>
                 </Button>
-              ) : null}
-            </div>
+                {!canOpenCash ? (
+                  <span className="text-xs text-muted-foreground">Solicite apertura a un usuario autorizado.</span>
+                ) : null}
+              </div>
+            )}
           </div>
         </Alert>
-      ) : null}
+      )}
 
-      {showInlineAlert && inlineAlertMessage ? (
-        <Alert variant="destructive" title="Revise antes de continuar" role="alert">
-          {inlineAlertMessage}
+      {state.alertMessage && state.alertMessage !== state.pointOfSaleLoadError && (
+        <Alert variant="destructive" title="Revise antes de continuar">
+          {state.alertMessage}
         </Alert>
-      ) : null}
+      )}
 
-      {state.warningMessage && !showInlineAlert ? (
-        <Alert variant="warning" title="Factura pendiente" role="status">
+      {state.warningMessage && (
+        <Alert variant="warning" title="Factura pendiente">
           {state.warningMessage}
         </Alert>
-      ) : null}
+      )}
+
+      {state.successMessage && (
+        <Alert variant="success" title="Servicio agregado">
+          {state.successMessage.replace(/^Agregado: /, '')}
+        </Alert>
+      )}
 
       <div className="grid flex-1 gap-4 lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_400px] xl:grid-cols-[minmax(0,1fr)_430px]">
         <div className="flex flex-col gap-4 lg:min-h-0 lg:overflow-hidden">
-          <SectionCard
-            title="1. Paciente"
-            description="Registre el nombre del paciente y continue al siguiente paso."
-          >
-            <PatientStep
-              ref={patientInputRef}
-              patientName={state.patientName}
-              onPatientNameChange={onPatientNameChange}
-              onPatientSubmit={onPatientSubmit}
-              error={state.patientError}
-            />
-          </SectionCard>
+          <Card className="border-secondary/25 bg-operational-surface shadow-operational lg:shrink-0">
+            <CardContent className="pt-5">
+              <PatientStep
+                ref={patientInputRef}
+                patientName={state.patientName}
+                onPatientNameChange={onPatientNameChange}
+                onPatientSubmit={onPatientSubmit}
+                error={state.patientError}
+              />
+            </CardContent>
+          </Card>
 
-          <SectionCard
-            title="2. Servicios"
-            description="Busque por nombre, area o codigo de barra. Cada Enter agrega el resultado."
-            className="lg:flex lg:min-h-0 lg:flex-1 lg:flex-col"
-          >
-            <ServiceSearch
-              categories={state.categories}
-              serviceAreas={state.serviceAreas}
-              services={state.services}
-              selectedAreaId={state.selectedAreaId}
-              selectedCategoryId={state.selectedCategoryId}
-              onAreaChange={onAreaChange}
-              onCategoryChange={onCategoryChange}
-              search={state.search}
-              onSearchChange={onSearchChange}
-              scanCode={state.scanCode}
-              onScanCodeChange={onScanCodeChange}
-              onAddService={onAddService}
-              onAddByScanCode={onAddByScanCode}
-              searchInputRef={searchInputRef}
-              scannerInputRef={scannerInputRef}
-              loading={state.loadingServices}
-              scanningCode={state.scanningCode}
-              scannerEnabled={state.scannerEnabled}
-            />
-          </SectionCard>
+          <Card className="border-operational-border bg-operational-surface shadow-operational lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
+            <CardContent className="lg:min-h-0 lg:flex-1 lg:overflow-hidden">
+              <ServiceSearch
+                categories={state.categories}
+                serviceAreas={state.serviceAreas}
+                services={state.services}
+                selectedAreaId={state.selectedAreaId}
+                selectedCategoryId={state.selectedCategoryId}
+                onAreaChange={onAreaChange}
+                onCategoryChange={onCategoryChange}
+                search={state.search}
+                onSearchChange={onSearchChange}
+                scanCode={state.scanCode}
+                onScanCodeChange={onScanCodeChange}
+                onAddService={onAddService}
+                onAddByScanCode={onAddByScanCode}
+                searchInputRef={searchInputRef}
+                scannerInputRef={scannerInputRef}
+                loading={state.loadingServices}
+                scanningCode={state.scanningCode}
+                scannerEnabled={state.scannerEnabled}
+              />
+            </CardContent>
+          </Card>
         </div>
 
-        <SectionCard
-          title="3. Cobro y emision"
-          description="Revise el carrito y emita la factura institucional."
-          className="lg:sticky lg:top-20 lg:h-fit lg:shrink-0"
-        >
-          <div className="grid grid-cols-2 gap-2">
-            <div className="rounded-md border border-operational-border bg-operational-panel px-3 py-2">
-              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                <ClipboardList className="size-3.5" aria-hidden="true" />
-                Items
+        <Card className="border-operational-border bg-operational-surface shadow-operational lg:sticky lg:top-20 lg:h-fit lg:shrink-0">
+          <CardContent className="pt-5">
+            <div className="mb-4 grid grid-cols-2 gap-2">
+              <div className="rounded-md border border-operational-border bg-operational-panel px-3 py-2">
+                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                  <ClipboardList className="size-3.5" aria-hidden="true" />
+                  Items
+                </div>
+                <p className="mt-1 font-mono text-lg font-semibold tabular-nums">{state.cartItems.length}</p>
               </div>
-              <p className="mt-1 font-mono text-lg font-semibold tabular-nums">{state.cartItems.length}</p>
-            </div>
-            <div className="rounded-md border border-secondary/25 bg-secondary/10 px-3 py-2">
-              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                <Banknote className="size-3.5" aria-hidden="true" />
-                Total
+              <div className="rounded-md border border-secondary/25 bg-secondary/10 px-3 py-2">
+                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                  <Banknote className="size-3.5" aria-hidden="true" />
+                  Total
+                </div>
+                <p className="mt-1 font-mono text-lg font-semibold tabular-nums text-foreground">{moneyLabel(preview.total)}</p>
               </div>
-              <p className="mt-1 font-mono text-lg font-semibold tabular-nums text-foreground">{moneyLabel(preview.total)}</p>
             </div>
-          </div>
-          <div className="mt-4">
             <InvoiceCart
               items={state.cartItems}
               preview={preview}
@@ -290,30 +261,8 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
               submitting={state.submitting}
               canMarkDialysisPrescription={props.canMarkDialysisPrescription}
             />
-          </div>
-
-          {hasCartItems ? (
-            <div
-              className="sticky bottom-0 -mx-panel mt-4 flex items-center justify-between gap-3 border-t border-operational-border bg-operational-surface px-3 py-3 shadow-command lg:hidden"
-              data-testid="invoice-mobile-summary"
-            >
-              <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                  Total estimado
-                </p>
-                <p className="font-mono text-xl font-bold tabular-nums text-foreground">{moneyLabel(preview.total)}</p>
-              </div>
-              <Button
-                type="button"
-                disabled={state.submitting || !canEmit}
-                onClick={onConfirm}
-                aria-controls="nueva-factura"
-              >
-                {mobileActionLabel}
-              </Button>
-            </div>
-          ) : null}
-        </SectionCard>
+          </CardContent>
+        </Card>
       </div>
 
       <InvoiceConfirmation
@@ -327,7 +276,7 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
         submitting={state.submitting}
       />
 
-      {state.issuedInvoice ? (
+      {state.issuedInvoice && (
         <PaymentModal
           open={state.showPayment}
           onOpenChange={onPaymentOpenChange}
@@ -347,9 +296,9 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
           onConfirm={onSubmitPayment}
           submitting={state.paying}
         />
-      ) : null}
+      )}
 
-      {state.issuedInvoice ? (
+      {state.issuedInvoice && (
         <InvoiceSuccess
           open={state.showSuccess}
           onOpenChange={onSuccessDialogChange}
@@ -361,7 +310,7 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
           onImprimir={onPrintIssuedReceipt}
           onNuevaFactura={onNuevaFactura}
         />
-      ) : null}
+      )}
 
       <Dialog
         open={state.showReceipt && Boolean(state.receipt)}
