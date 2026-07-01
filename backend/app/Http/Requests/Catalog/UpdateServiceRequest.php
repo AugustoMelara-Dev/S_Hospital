@@ -41,6 +41,7 @@ class UpdateServiceRequest extends FormRequest
             'aliases' => ['nullable', 'string', 'max:1000'],
             'price' => ['sometimes', 'required', 'decimal:0,2', 'gt:0'],
             'price_change_reason' => ['nullable', 'string', 'max:500'],
+            'tax_change_reason' => ['nullable', 'string', 'max:500'],
             'scan_code' => ['nullable', 'string', 'max:120', Rule::unique('services', 'scan_code')->ignore($this->route('service'))],
             'barcode' => ['nullable', 'string', 'max:120', Rule::unique('services', 'barcode')->ignore($this->route('service'))],
             'qr_code' => ['nullable', 'string', 'max:120', Rule::unique('services', 'qr_code')->ignore($this->route('service'))],
@@ -100,6 +101,15 @@ class UpdateServiceRequest extends FormRequest
                     $validator->errors()->add('price_change_reason', 'Indique el motivo del cambio de precio.');
                 }
 
+                if (
+                    ! $validator->errors()->has('taxable')
+                    && $this->has('taxable')
+                    && $this->taxChanged($service)
+                    && ! $this->filled('tax_change_reason')
+                ) {
+                    $validator->errors()->add('tax_change_reason', 'Indique el motivo del cambio de impuesto.');
+                }
+
                 $this->validateGlobalCodes($validator, $service);
             },
         ];
@@ -109,6 +119,11 @@ class UpdateServiceRequest extends FormRequest
     {
         return Money::parseCents($this->string('price')->toString(), 'price')
             !== Money::parseCents((string) $service->price, 'current_price');
+    }
+
+    private function taxChanged(Service $service): bool
+    {
+        return $this->boolean('taxable') !== (bool) $service->taxable;
     }
 
     private function validateGlobalCodes(Validator $validator, Service $service): void
