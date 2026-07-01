@@ -157,7 +157,7 @@ Existen componentes reutilizables para acciones, menus, alertas, dialogos, tabla
 
 ### 5.3 Modulos criticos inventariados
 
-- Reportes: `ReportsView`, `ExecutiveSummary`, `TrendChart`, `PaymentMethodPanel`, `ServiceRanking`, `AuditSummaryPanel`, `CashSessionReportTab`, `CashReconciliationPanel`, `ReportFiltersPanel`, `MetricsGlossary`.
+- Reportes: `ReportsView`, `ReportsExecutive`, `ReportsCash`, `ReportsAudit`, `ExecutiveSummary`, `TrendChart`, `PaymentMethodPanel`, `ServiceRanking`, `AuditSummaryPanel`, `CashSessionReportTab`, `CashReconciliationPanel`, `ReportFiltersPanel`, `MetricsGlossary`.
 - Facturacion: `NewInvoiceView`, `PatientStep`, `ServiceSearch`, `InvoiceCart`, `PaymentModal`, `InvoiceConfirmation`, `InvoiceSuccess`, estado POS y tests.
 - Historial: `InvoiceHistoryView`, `InvoiceHistoryTable`, `InvoiceHistoryHeader`, `InvoiceHistoryFilters`.
 - Dashboard: `DashboardView`, `SetupWizardDialog`, `DashboardSetupStatusCard`.
@@ -200,7 +200,7 @@ Existen componentes reutilizables para acciones, menus, alertas, dialogos, tabla
 ### Reportes
 
 - Consolidacion parcial lograda: 3 subrutas.
-- Se extrajo `ReportsExecutive.tsx`; `ReportsView.tsx` queda como enrutador de subrutas y bajo de 505 a 275 lineas.
+- Se extrajeron `ReportsExecutive.tsx`, `ReportsCash.tsx` y `ReportsAudit.tsx`; `ReportsView.tsx` queda como enrutador de subrutas y bajo de 505 a 128 lineas.
 - `ServiceRanking` ya no usa tabs internos; muestra top por monto, cantidad, categoria y area como secciones visibles con prueba dedicada.
 - El cliente frontend ya no expone metodos/tipos legacy para `daily`, `monthly`, `income`, `categories`, `areas`, `services` ni `operations`.
 - Deuda: los endpoints backend antiguos siguen existiendo; hay que decidir si son compatibilidad API o codigo muerto antes de eliminarlos.

@@ -1,23 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { EmptyState, ErrorState } from '@/components/ui/states';
-import {
-  InfoPanel,
-  OperationalBanner,
-} from '@/components/shared';
-import {
-  type ExecutiveReportFilters,
-  apiClient,
-  userSafeErrorMessage,
-} from '@/lib/api';
-import { useExecutiveReport } from '@/hooks/useExecutiveReport';
-import { AuditSummaryPanel } from './components/AuditSummaryPanel';
-import {
-  ReportFiltersPanel,
-  computePresetRange,
-  type PresetKey,
-} from './components/ReportFiltersPanel';
-import { CashSessionReportTab } from './components/CashSessionReportTab';
+import { ReportsAudit } from './ReportsAudit';
+import { ReportsCash } from './ReportsCash';
 import { ReportsExecutive } from './ReportsExecutive';
 import { cn } from '@/lib/utils';
 import { LineChart, ShieldCheck, WalletCards } from 'lucide-react';
@@ -121,12 +105,12 @@ function ReportsContent({
   ...props
 }: ReportsViewProps & { subRoute: typeof SUB_ROUTES[number]['id'] }) {
   if (subRoute === 'cash') {
-    return <CashSubRoute canViewCash={props.canViewCashSessionReport} canViewManagerial={props.canViewManagerial} />;
+    return <ReportsCash canViewCash={props.canViewCashSessionReport} canViewManagerial={props.canViewManagerial} />;
   }
 
   if (subRoute === 'audit') {
     return (
-      <AuditSubRoute
+      <ReportsAudit
         canViewManagerial={props.canViewManagerial}
         canExport={props.canExport}
         onStatus={props.onStatus}
@@ -140,136 +124,5 @@ function ReportsContent({
       canExport={props.canExport}
       onStatus={props.onStatus}
     />
-  );
-}
-
-function CashSubRoute({
-  canViewCash,
-  canViewManagerial,
-}: {
-  canViewCash: boolean;
-  canViewManagerial: boolean;
-}) {
-  const [cashSessionReport, setCashSessionReport] = useState<Awaited<ReturnType<typeof apiClient.getCashSessionReport>> | null>(null);
-  const [cashReportId, setCashReportId] = useState('');
-  const [cashError, setCashError] = useState('');
-
-  async function loadCashReport() {
-    if (!cashReportId.trim()) {
-      setCashError('Ingrese el numero de caja.');
-      return;
-    }
-    try {
-      setCashError('');
-      setCashSessionReport(await apiClient.getCashSessionReport(cashReportId));
-    } catch (err) {
-      setCashError(userSafeErrorMessage(err, 'No se pudo cargar la caja.'));
-    }
-  }
-
-  return (
-    <section className="flex flex-col gap-5" aria-label="Reporte de caja">
-      <OperationalBanner
-        meta="Reporte de caja"
-        title="Operacion de caja"
-        description="Sesiones, cajeros, metodos de pago y diferencias de caja."
-      />
-
-      <CashSessionReportTab
-        canExport={canViewManagerial}
-        cashSession={cashSessionReport}
-        cashReportId={cashReportId}
-        loading={false}
-        exporting={false}
-        error={cashError}
-        onCashReportIdChange={setCashReportId}
-        onExport={() => {}}
-        onSubmit={(event) => {
-          event.preventDefault();
-          void loadCashReport();
-        }}
-      />
-
-      {!canViewCash && !canViewManagerial ? (
-        <EmptyState
-          title="Reporte de caja no disponible"
-          description="Este usuario no tiene permiso para consultar cajas."
-        />
-      ) : null}
-    </section>
-  );
-}
-
-function AuditSubRoute({
-  canViewManagerial,
-  canExport,
-}: {
-  canViewManagerial: boolean;
-  canExport: boolean;
-  onStatus: (message: string) => void;
-}) {
-  const [preset, setPreset] = useState<PresetKey>('thisMonth');
-  const [filters, setFilters] = useState<ExecutiveReportFilters>(() => {
-    const initialRange = computePresetRange('thisMonth');
-    return { date_from: initialRange.from, date_to: initialRange.to };
-  });
-  const [appliedFilters, setAppliedFilters] = useState<ExecutiveReportFilters>(() => {
-    const initialRange = computePresetRange('thisMonth');
-    return { date_from: initialRange.from, date_to: initialRange.to };
-  });
-
-  const { data: report, isFetching, isError, refetch } = useExecutiveReport(
-    appliedFilters,
-    canViewManagerial,
-  );
-
-  if (!canViewManagerial) {
-    return (
-      <InfoPanel
-        tone="warning"
-        title="Sin permisos para auditoria"
-        description="Su usuario no tiene permisos para consultar el reporte de auditoria."
-      />
-    );
-  }
-
-  return (
-    <section className="flex flex-col gap-5" aria-label="Reporte de auditoria">
-      <ReportFiltersPanel
-        filters={filters}
-        preset={preset}
-        onPresetChange={setPreset}
-        onChange={setFilters}
-        onRefresh={() => setAppliedFilters(filters)}
-        onExportPdf={() => {}}
-        onExportExcel={() => {}}
-        canExport={canExport}
-        loading={isFetching}
-        exporting={false}
-        rangeError={null}
-      />
-
-      {report ? (
-        <div className="flex flex-col gap-5">
-          <AuditSummaryPanel report={report} />
-        </div>
-      ) : null}
-
-      {isError ? (
-        <ErrorState
-          title="No se pudo cargar la auditoria"
-          description="Reintente la carga del reporte."
-          action={
-            <button
-              type="button"
-              onClick={() => void refetch()}
-              className="rounded border border-border bg-card px-3 py-1.5 text-sm font-semibold hover:bg-muted"
-            >
-              Reintentar
-            </button>
-          }
-        />
-      ) : null}
-    </section>
   );
 }
