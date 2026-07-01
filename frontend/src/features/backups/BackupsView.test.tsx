@@ -217,6 +217,21 @@ describe('BackupsView', () => {
     });
   });
 
+  it('reports manual backup completion without exposing checksum terminology', async () => {
+    const onStatus = vi.fn();
+    vi.spyOn(apiClient, 'createBackup').mockResolvedValue(backupFixture({ id: 7, filename: 'hospital-backup-created.sql.enc' }));
+
+    renderWithQueryClient(<BackupsView user={adminUser} onStatus={onStatus} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /^crear respaldo$/i }));
+    fireEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: /^crear respaldo$/i }));
+
+    await waitFor(() => {
+      expect(onStatus).toHaveBeenCalledWith('Respaldo completado correctamente.');
+    });
+    expect(onStatus.mock.calls.flat().join(' ')).not.toMatch(/sha256|checksum|huella/i);
+  });
+
   it('prevents duplicate backup downloads while the file request is pending', async () => {
     let resolveDownload!: (blob: Blob) => void;
     const pendingDownload = new Promise<Blob>((resolve) => {

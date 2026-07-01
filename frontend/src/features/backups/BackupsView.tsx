@@ -290,7 +290,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
       setPage(1);
       onStatus(
         backup.status === 'success'
-          ? 'Respaldo completado con huella SHA256.'
+          ? 'Respaldo completado correctamente.'
           : 'Respaldo registrado. Revise su estado en la lista.',
       );
     } catch (error) {
