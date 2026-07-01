@@ -2,6 +2,7 @@
 
 namespace App\Actions\Billing;
 
+use App\Actions\InstitutionalReceipts\ResolveReceiptPrintProfileAction;
 use App\Events\InvoiceChanged;
 use App\Models\AuditLog;
 use App\Models\CashRegisterSession;
@@ -56,6 +57,16 @@ class CreateInvoiceAction
                     throw new \RuntimeException('Invariante fallido: la suma de las lineas no coincide con el total de la factura.');
                 }
 
+                $paperSize = 'half_letter';
+                try {
+                    $printProfile = app(ResolveReceiptPrintProfileAction::class)->execute($issuer, $cashSession);
+                    $paperSize = ReceiptPaperSize::fromProfilePaperKind($printProfile->paper_kind);
+                } catch (\Exception $e) {
+                    if ($settings?->receipt_paper_size) {
+                        $paperSize = $settings->receipt_paper_size;
+                    }
+                }
+
                 $invoice = Invoice::query()->create([
                     'invoice_number' => $fiscal['invoice_number'],
                     'fiscal_sequence_id' => $sequence->id,
@@ -69,7 +80,7 @@ class CreateInvoiceAction
                     'hospital_address' => $settings?->address,
                     'hospital_slogan' => $settings?->slogan,
                     'receipt_template_mode' => $settings?->receipt_template_mode ?? 'institutional',
-                    'receipt_paper_size' => ReceiptPaperSize::normalize($settings?->receipt_paper_size),
+                    'receipt_paper_size' => ReceiptPaperSize::normalize($paperSize),
                     'receipt_government_line' => $settings?->government_line,
                     'receipt_secretariat_line' => $settings?->secretariat_line,
                     'receipt_location' => $settings?->receipt_location ?? $settings?->address,

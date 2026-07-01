@@ -7,6 +7,7 @@ use App\Models\CashRegisterSession;
 use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
 use App\Models\Invoice;
+use App\Models\ReceiptPrintProfile;
 use App\Models\Service;
 use App\Models\ServiceArea;
 use App\Models\User;
@@ -75,6 +76,49 @@ class InvoiceCreationTest extends TestCase
             'entity_type' => Invoice::class,
         ]);
         $this->assertSame(1, FiscalSequence::query()->where('document_type', 'invoice')->firstOrFail()->current_number);
+    }
+
+    public function test_invoice_receipt_paper_size_uses_resolved_print_profile(): void
+    {
+        $this->seedBillingBase();
+
+        ReceiptPrintProfile::query()->create([
+            'code' => ReceiptPrintProfile::CODE_A5,
+            'name' => 'A5 horizontal',
+            'paper_kind' => 'a5_landscape',
+            'width_mm' => '210.00',
+            'height_mm' => '148.00',
+            'margin_top_mm' => '6.00',
+            'margin_right_mm' => '6.00',
+            'margin_bottom_mm' => '6.00',
+            'margin_left_mm' => '6.00',
+            'orientation' => 'landscape',
+            'template_code' => 'institutional_classic',
+            'font_family' => 'Arial, sans-serif',
+            'font_scale' => '1.00',
+            'copies_mode' => 'original_only',
+            'show_copy_legend' => true,
+            'show_physical_seal_space' => true,
+            'use_logo' => false,
+            'show_technical_fields' => false,
+            'active' => true,
+            'is_global_default' => true,
+        ]);
+
+        $cashier = $this->cashier();
+
+        $invoiceId = $this->actingAs($cashier)
+            ->postJson('/api/invoices', [
+                'patient_name' => 'Paciente Perfil A5',
+                'items' => [$this->invoiceItem('Glucosa')],
+            ])
+            ->assertCreated()
+            ->json('data.id');
+
+        $this->assertDatabaseHas('invoices', [
+            'id' => $invoiceId,
+            'receipt_paper_size' => 'a5',
+        ]);
     }
 
     public function test_patient_name_is_required(): void
