@@ -337,14 +337,6 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
         actions={
           canCreate ? (
             <ActionBar align="end" fullWidthOnMobile>
-              {systemStatus && (
-                <StatusBadge
-                  className="hidden md:inline-flex"
-                  status={systemStatus.backups.worker_recently_active ? 'success' : 'pending'}
-                >
-                  Worker {systemStatus.backups.worker_recently_active ? 'activo' : 'inactivo'}
-                </StatusBadge>
-              )}
               <Button
                 type="button"
                 variant="outline"
@@ -393,7 +385,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
               {
                 label: 'Pendientes',
                 value: pendingCount,
-                helper: pendingCount > 0 ? 'El worker debe completar estos respaldos' : 'Sin pendientes visibles',
+                helper: pendingCount > 0 ? 'El servidor debe completar estos respaldos' : 'Sin pendientes visibles',
                 tone: pendingCount > 0 ? 'warning' : 'success',
               },
               {
