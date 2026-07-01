@@ -31,13 +31,6 @@ import type {
   InvoiceInstitutionalReceipt,
   ReceiptData,
   MoneyByMethod,
-  DailyReport,
-  MonthlyReport,
-  IncomeReport,
-  CategoryReport,
-  AreaIncomeReport,
-  ServiceSalesReport,
-  OperationsReport,
   CashSessionReport,
   BackupLog,
   SystemStatus,
@@ -103,13 +96,6 @@ export type {
   InvoiceInstitutionalReceipt,
   ReceiptData,
   MoneyByMethod,
-  DailyReport,
-  MonthlyReport,
-  IncomeReport,
-  CategoryReport,
-  AreaIncomeReport,
-  ServiceSalesReport,
-  OperationsReport,
   CashSessionReport,
   BackupLog,
   SystemStatus,
@@ -281,34 +267,6 @@ export const apiClient = {
 
   async getExecutiveReport(filters: ExecutiveReportFilters): Promise<ExecutiveReport> {
     return reports.getExecutiveReport(filters);
-  },
-
-  async getDailyReport(date?: string): Promise<DailyReport> {
-    return reports.getDailyReport(date);
-  },
-
-  async getMonthlyReport(month?: string): Promise<MonthlyReport> {
-    return reports.getMonthlyReport(month);
-  },
-
-  async getIncomeReport(filters: ReportFilters): Promise<IncomeReport> {
-    return reports.getIncomeReport(filters);
-  },
-
-  async getCategoryReport(filters: ReportFilters): Promise<CategoryReport> {
-    return reports.getCategoryReport(filters);
-  },
-
-  async getAreaIncomeReport(filters: ReportFilters): Promise<AreaIncomeReport> {
-    return reports.getAreaIncomeReport(filters);
-  },
-
-  async getServiceSalesReport(filters: ReportFilters): Promise<ServiceSalesReport> {
-    return reports.getServiceSalesReport(filters);
-  },
-
-  async getOperationsReport(filters: ReportFilters): Promise<OperationsReport> {
-    return reports.getOperationsReport(filters);
   },
 
   async getCashSessionReport(id: string): Promise<CashSessionReport> {

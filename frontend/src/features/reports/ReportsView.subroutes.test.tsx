@@ -10,13 +10,6 @@ vi.mock('@/lib/api', async () => {
     apiClient: {
       ...actual.apiClient,
       getExecutiveReport: vi.fn().mockRejectedValue(new Error('empty')),
-      getDailyReport: vi.fn(),
-      getMonthlyReport: vi.fn(),
-      getIncomeReport: vi.fn(),
-      getCategoryReport: vi.fn(),
-      getAreaIncomeReport: vi.fn(),
-      getServiceSalesReport: vi.fn(),
-      getOperationsReport: vi.fn(),
       getCashSessionReport: vi.fn(),
       downloadExecutivePdf: vi.fn(),
       downloadExecutiveExcel: vi.fn(),
