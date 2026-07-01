@@ -423,7 +423,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                 aria-expanded={showAdvancedStatus}
                 onClick={() => setShowAdvancedStatus((current) => !current)}
               >
-                {showAdvancedStatus ? 'Ocultar detalle avanzado' : 'Ver detalle avanzado'}
+                {showAdvancedStatus ? 'Ocultar detalle de soporte' : 'Ver detalle de soporte'}
               </Button>
             </CardContent>
           </Card>

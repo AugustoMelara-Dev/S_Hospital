@@ -73,6 +73,23 @@ describe('BackupsView', () => {
     expect(screen.queryByText(/^Sin fallos$/i)).not.toBeInTheDocument();
   });
 
+  it('keeps support diagnostics collapsed behind a human support label', async () => {
+    renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
+
+    const diagnosticsButton = await screen.findByRole('button', { name: /ver detalle de soporte/i });
+
+    expect(diagnosticsButton).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByText(/checklist operativo/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/pruebas de campo obligatorias/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /detalle avanzado/i })).not.toBeInTheDocument();
+
+    fireEvent.click(diagnosticsButton);
+
+    expect(await screen.findByText(/checklist operativo/i)).toBeInTheDocument();
+    expect(screen.getByText(/pruebas de campo obligatorias/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /ocultar detalle de soporte/i })).toHaveAttribute('aria-expanded', 'true');
+  });
+
   it('renders an accessible loading state while backups are loading', async () => {
     vi.mocked(apiClient.getBackups).mockReturnValue(new Promise<never>(() => undefined));
     vi.mocked(apiClient.getSystemStatus).mockReturnValue(new Promise<never>(() => undefined));
