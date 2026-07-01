@@ -148,6 +148,33 @@ describe('InvoiceHistoryView', () => {
     expect(screen.queryByRole('button', { name: /cobrar|registrar pago/i })).not.toBeInTheDocument();
   });
 
+  it('allows receipt viewers to open receipts without requiring reprint or void permissions', async () => {
+    const paid = invoiceFixture({
+      id: 42,
+      invoice_number: '000-001-01-00000042',
+      patient_name: 'Paciente Solo Lectura',
+      status: 'paid',
+      issuer: { id: 9, name: 'Otra Caja', username: 'otra-caja' },
+      institutional_receipt: institutionalReceiptFixture({ id: 142, receipt_number_full: 'REC-A-00000142' }),
+    });
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [paid],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+
+    renderWithQueryClient(<InvoiceHistoryView user={receiptViewerUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente Solo Lectura')).toBeInTheDocument());
+    await openInvoiceMenu(paid.invoice_number);
+
+    expect(await screen.findByRole('menuitem', { name: /Ver recibo/i })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: /Descargar/i })).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /Reimprimir/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /Anular factura/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /Reversar pago/i })).not.toBeInTheDocument();
+  });
+
   it('renders malformed invoice history amounts as safe financial values', async () => {
     vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
       data: [
@@ -823,5 +850,13 @@ function limitedUser(): AuthUser {
     ...adminUser(),
     roles: ['cashier'],
     permissions: ['invoices.view'],
+  };
+}
+
+function receiptViewerUser(): AuthUser {
+  return {
+    ...adminUser(),
+    roles: ['auditor'],
+    permissions: ['invoices.view', 'receipts.view'],
   };
 }

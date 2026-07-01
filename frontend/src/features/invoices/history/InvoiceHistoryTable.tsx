@@ -99,7 +99,7 @@ export function InvoiceHistoryTable({
           key: 'receipt',
           items: [],
         };
-        if (canViewReceipt && (canReprintAny || canVoid || isOwn)) {
+        if (canViewReceipt) {
           primaryGroup.items.push({
             key: 'view',
             label: 'Ver recibo',
