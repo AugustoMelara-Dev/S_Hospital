@@ -1,9 +1,35 @@
 {
-  "generated_at": "2026-06-30T00:44:43.594Z",
+  "generated_at": "2026-07-01T02:54:28.044Z",
   "mode": "mocked-non-mutating-playwright",
   "results": [
     {
-      "name": "history reverse cancel path",
+      "name": "full route accessibility matrix",
+      "viewport": "1024x768",
+      "path": "/dashboard",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1024x768",
+      "path": "/billing/new",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1024x768",
+      "path": "/cashbox",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1024x768",
+      "path": "/catalog",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1024x768",
+      "path": "/invoices",
       "status": "passed"
     }
   ]

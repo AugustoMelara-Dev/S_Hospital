@@ -8,7 +8,7 @@ const smokeResults: Array<Record<string, unknown>> = [];
 
 test.setTimeout(180_000);
 
-const today = new Date().toISOString().slice(0, 10);
+const today = hondurasDate(new Date());
 const issuedAt = `${today}T08:00:00-06:00`;
 const paidAt = `${today}T08:03:00-06:00`;
 
@@ -78,7 +78,27 @@ const cashierUser = {
     'payments.view',
     'receipts.view',
     'receipts.reprint',
+    'receipt_settings.view',
+    'receipt_settings.update',
     'patients.mark_dialysis_prescription',
+  ],
+  must_change_password: false,
+};
+
+const supportUser = {
+  id: 3,
+  name: 'Soporte Validacion',
+  email: 'soporte.validacion@hospital.local',
+  username: 'soporte.validacion',
+  active: true,
+  roles: ['soporte'],
+  permissions: [
+    'settings.fiscal.view',
+    'receipt_settings.view',
+    'receipt_settings.update',
+    'receipt_settings.advanced',
+    'receipts.print_test',
+    'system.status.view',
   ],
   must_change_password: false,
 };
@@ -101,6 +121,16 @@ const service = {
   special_rule_code: null,
   category,
   area: null,
+};
+
+const erythropoietinService = {
+  ...service,
+  id: 12,
+  name: 'Eritropoyetina',
+  slug: 'eritropoyetina',
+  price: '25.00',
+  scan_code: 'MED-ERI-001',
+  special_rule_code: 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION',
 };
 
 const cashSession = {
@@ -256,7 +286,7 @@ const routeExpectations = [
   { path: '/cashbox', heading: /^caja$/i },
   { path: '/catalog', heading: /catalogo|cat.logo/i },
   { path: '/invoices', heading: /historial/i },
-  { path: '/reports', heading: /reportes/i },
+  { path: '/reports', heading: /control ejecutivo/i },
   { path: '/backups', heading: /respaldos|backups/i },
   { path: '/settings/fiscal', heading: /configuracion|configuraci.n/i },
   { path: '/settings/institutional-receipts', heading: /recibos institucionales|recibos/i },
@@ -312,7 +342,7 @@ for (const viewport of smokeViewports) {
     await enableDarkMode(page);
     for (const darkRoute of [
       { path: '/dashboard', heading: /centro de mando/i },
-      { path: '/reports', heading: /reportes/i },
+      { path: '/reports', heading: /control ejecutivo/i },
       { path: '/settings/institutional-receipts', heading: /recibos institucionales|recibos/i },
       { path: '/admin/users', heading: /usuarios/i },
     ]) {
@@ -350,12 +380,118 @@ test('dangerous history actions open a confirmation path that can be cancelled',
   expect(consoleIssues, consoleIssues.join('\n')).toEqual([]);
 });
 
+test('refactor final screenshots evidence', async ({ page }) => {
+  test.setTimeout(300_000);
+  const screenshotDir = resolve('../qa/refactor/screenshots');
+  mkdirSync(screenshotDir, { recursive: true });
+  const consoleIssues: string[] = [];
+  captureConsoleIssues(page, consoleIssues);
+  await installApiMocks(page);
+  await page.setViewportSize({ width: 1366, height: 768 });
+
+  const shot = async (name: string) => {
+    await expect(page.getByRole('main')).toBeVisible();
+    await page.screenshot({ path: resolve(screenshotDir, name), fullPage: false });
+  };
+
+  await login(page, 'admin.validacion');
+
+  await page.goto('/dashboard');
+  await waitForScreen(page, /centro de mando/i);
+  await shot('dashboard.png');
+
+  await page.goto('/billing/new');
+  await waitForScreen(page, /nueva factura/i);
+  await shot('billing-new-empty.png');
+  await page.getByLabel(/nombre del paciente/i).fill('Paciente QA Visual');
+  await page.getByLabel(/buscar por nombre/i).fill('glu');
+  await page.getByRole('button', { name: /glucosa/i }).click();
+  await page.getByLabel(/buscar por nombre/i).fill('eri');
+  await page.getByRole('button', { name: /eritropoyetina/i }).click();
+  await shot('billing-new-cart.png');
+  await page.getByRole('button', { name: /emitir y cobrar/i }).click();
+  await expect(page.getByRole('dialog', { name: /confirmar emisi/i })).toBeVisible();
+  await page.getByRole('button', { name: /emitir y abrir cobro/i }).click();
+  await expect(page.getByRole('dialog', { name: /factura emitida/i })).toBeVisible();
+  await shot('billing-success.png');
+
+  await page.goto('/cashbox');
+  await waitForScreen(page, /^caja$/i);
+  await shot('cashbox-open.png');
+  await page.getByLabel(/monto contado/i).fill('500.00');
+  await page.getByLabel(/nota de cierre/i).fill('Diferencia revisada por QA visual final');
+  await page.getByRole('button', { name: /cerrar caja/i }).click();
+  await expect(page.getByRole('alertdialog', { name: /cerrar caja/i })).toBeVisible();
+  await shot('cashbox-close-diff.png');
+  await page.getByRole('alertdialog', { name: /cerrar caja/i }).getByRole('button', { name: /cerrar caja/i }).click();
+  await expect(page.getByRole('heading', { name: /caja cerrada/i })).toBeVisible();
+  await shot('cashbox-closed.png');
+
+  await page.goto('/catalog');
+  await waitForScreen(page, /catalogo|cat.logo/i);
+  await shot('catalog.png');
+  await page.getByRole('button', { name: /acciones de servicio glucosa/i }).click();
+  await page.getByRole('menuitem', { name: /editar/i }).click();
+  await expect(page.getByRole('dialog', { name: /editar servicio/i })).toBeVisible();
+  await shot('catalog-edit-service.png');
+
+  await page.goto('/invoices');
+  await waitForScreen(page, /historial/i);
+  await shot('invoices.png');
+  await page.getByRole('button', { name: /anular|reversar/i }).click();
+  await expect(page.getByRole('alertdialog', { name: /anular factura|reversar factura/i })).toBeVisible();
+  await shot('invoice-void-reason.png');
+
+  for (const [route, file, heading] of [
+    ['/reports/executive', 'reports-executive.png', /control ejecutivo/i],
+    ['/reports/cash', 'reports-cash.png', /control de caja|caja/i],
+    ['/reports/audit', 'reports-audit.png', /auditoria|auditor/i],
+  ] as const) {
+    await page.goto(route);
+    await waitForScreen(page, heading);
+    await shot(file);
+  }
+
+  await page.goto('/backups');
+  await waitForScreen(page, /respaldos|backups/i);
+  await shot('backups.png');
+
+  await page.goto('/settings/fiscal');
+  await waitForScreen(page, /configuracion|configuraci.n/i);
+  await shot('settings-fiscal.png');
+
+  await page.evaluate(() => fetch('/api/auth/logout', { method: 'POST' }));
+  await login(page, 'cajera.validacion');
+  await page.goto('/settings/institutional-receipts');
+  await waitForScreen(page, /recibos institucionales|recibos/i);
+  await page.getByRole('tab', { name: /papel y copias/i }).click();
+  await shot('receipt-settings-normal.png');
+
+  await page.evaluate(() => fetch('/api/auth/logout', { method: 'POST' }));
+  await login(page, 'soporte.validacion');
+  await page.goto('/settings/institutional-receipts');
+  await waitForScreen(page, /recibos institucionales|recibos/i);
+  await page.getByRole('tab', { name: /papel y copias/i }).click();
+  await page.getByRole('button', { name: /recibo peque/i }).click({ timeout: 5_000 });
+  await page.getByRole('button', { name: /mostrar ajustes avanzados/i }).click();
+  await page.locator('#receipt-advanced-panel').scrollIntoViewIfNeeded();
+  await shot('receipt-settings-advanced.png');
+
+  await page.evaluate(() => fetch('/api/auth/logout', { method: 'POST' }));
+  await login(page, 'admin.validacion');
+  await page.goto('/admin/users');
+  await waitForScreen(page, /usuarios/i);
+  await shot('admin-users.png');
+
+  expect(consoleIssues, consoleIssues.join('\n')).toEqual([]);
+});
+
 async function login(page: Page, username: string) {
   await page.goto('/login');
   await page.locator('#login-input').fill(username);
   await page.locator('#password-input').fill('Password123!');
   await page.getByRole('button', { name: /entrar|iniciar/i }).click();
-  await waitForScreen(page, /centro de mando/i);
+  await waitForScreen(page, /centro de mando|ayuda institucional/i);
 }
 
 async function waitForScreen(page: Page, heading: RegExp) {
@@ -403,6 +539,7 @@ function json(route: Route, body: unknown, status = 200) {
 async function installApiMocks(page: Page) {
   let isLogged = false;
   let currentUser = adminUser;
+  let currentCashSession = { ...cashSession };
   const backup = {
     id: 1,
     filename: 'hospital-backup-20260618-120000-test.sql.enc',
@@ -428,7 +565,11 @@ async function installApiMocks(page: Page) {
 
     if (path === '/api/auth/login' && method === 'POST') {
       const payload = request.postDataJSON() as { login?: string } | null;
-      currentUser = payload?.login === cashierUser.username ? cashierUser : adminUser;
+      currentUser = payload?.login === cashierUser.username
+        ? cashierUser
+        : payload?.login === supportUser.username
+          ? supportUser
+          : adminUser;
       isLogged = true;
       return json(route, { data: currentUser });
     }
@@ -468,18 +609,46 @@ async function installApiMocks(page: Page) {
       return json(route, { data: [] });
     }
     if (path === '/api/services') {
-      return json(route, { data: [service], meta: { current_page: 1, per_page: 24, total: 1 } });
+      return json(route, { data: [service, erythropoietinService], meta: { current_page: 1, per_page: 24, total: 2 } });
     }
     if (path === '/api/cash-sessions/current') {
-      return json(route, { data: cashSession });
+      return json(route, { data: currentCashSession.status === 'open' ? currentCashSession : null });
     }
     if (path === '/api/cash-sessions') {
-      return json(route, { data: [cashSession], meta: { current_page: 1, per_page: 50, total: 1 } });
+      return json(route, { data: [currentCashSession], meta: { current_page: 1, per_page: 50, total: 1 } });
     }
     if (path === '/api/cash-sessions/7/close') {
-      return json(route, { data: { ...cashSession, status: 'closed', closing_amount: '517.25', closed_at: paidAt } });
+      currentCashSession = { ...cashSession, status: 'closed', closing_amount: '500.00', difference_amount: '-17.25', closing_notes: 'Diferencia revisada por QA visual final', closed_at: paidAt };
+      return json(route, { data: currentCashSession });
     }
     if (path === '/api/invoices') {
+      if (method === 'POST') {
+        return json(route, {
+          data: {
+            ...invoice,
+            patient_name: 'Paciente QA Visual',
+            subtotal: '40.00',
+            tax_amount: '6.00',
+            total: '46.00',
+            paid_amount: '46.00',
+            balance_due: '0.00',
+            status: 'paid',
+            items: [
+              invoice.items[0],
+              {
+                ...invoice.items[0],
+                id: 2,
+                service_id: erythropoietinService.id,
+                service_name: erythropoietinService.name,
+                unit_price: '25.00',
+                tax_amount: '3.75',
+                line_subtotal: '25.00',
+                line_total: '28.75',
+              },
+            ],
+          },
+        }, 201);
+      }
       return json(route, { data: [invoice], meta: { current_page: 1, per_page: 10, total: 1 } });
     }
     if (path === '/api/invoices/100') {
@@ -823,6 +992,16 @@ function receiptSettings() {
     active: true,
     is_global_default: true,
   };
+  const customProfile = {
+    ...profile,
+    id: 2,
+    code: 'recibo_pequeno_personalizado',
+    name: 'Recibo pequeno personalizado',
+    paper_kind: 'custom_mm',
+    width_mm: '180.00',
+    height_mm: '95.00',
+    is_global_default: false,
+  };
   const series = {
     id: 1,
     series: 'REC-A',
@@ -842,7 +1021,7 @@ function receiptSettings() {
     institution: fiscalSettings(),
     series: [series],
     active_series: series,
-    print_profiles: [profile],
+    print_profiles: [customProfile, profile],
     resolved_profile: profile,
     assignments: [],
   };
@@ -1010,4 +1189,16 @@ function permissionCatalog() {
     { module: 'Caja', permissions: [{ name: 'cash.view', label: 'Ver caja' }, { name: 'payments.create', label: 'Registrar pagos' }] },
     { module: 'Usuarios', permissions: [{ name: 'users.view', label: 'Ver usuarios' }, { name: 'users.assign_admin_role', label: 'Gestionar administradores' }] },
   ];
+}
+
+function hondurasDate(date: Date): string {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    day: '2-digit',
+    month: '2-digit',
+    timeZone: 'America/Tegucigalpa',
+    year: 'numeric',
+  }).formatToParts(date);
+
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
 }

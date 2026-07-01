@@ -94,7 +94,7 @@ vi.mock('@/lib/download', () => ({
   downloadBlob: vi.fn(),
 }));
 
-function renderView() {
+function renderView({ canAdvancedPrintSettings = false } = {}) {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
@@ -104,7 +104,11 @@ function renderView() {
 
   return render(
     <QueryClientProvider client={queryClient}>
-      <InstitutionalReceiptSettingsView canEdit onStatus={vi.fn()} />
+      <InstitutionalReceiptSettingsView
+        canEdit
+        canAdvancedPrintSettings={canAdvancedPrintSettings}
+        onStatus={vi.fn()}
+      />
     </QueryClientProvider>,
   );
 }
@@ -137,8 +141,8 @@ describe('InstitutionalReceiptSettingsView', () => {
 
     expect(screen.getAllByText(/Solo original/i).length).toBeGreaterThan(0);
 
-    expect(screen.getByText(/modo soporte tecnico/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /mostrar ajustes avanzados/i })).toBeInTheDocument();
+    expect(screen.queryByText(/modo soporte tecnico/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /mostrar ajustes avanzados/i })).not.toBeInTheDocument();
 
     expect(screen.getByText(/Global no requiere ID/i)).toBeInTheDocument();
     expect(screen.getByText(/No hay asignaciones específicas/i)).toBeInTheDocument();
@@ -164,10 +168,8 @@ describe('InstitutionalReceiptSettingsView', () => {
   });
 
   it('reveals manual fields only for the small custom receipt and only after expanding the support-technical accordion', async () => {
-    renderView();
+    renderView({ canAdvancedPrintSettings: true });
     await activateTab('Papel y copias');
-
-    await screen.findByText(/mostrar ajustes avanzados/i);
 
     expect(screen.queryByLabelText('Ancho mm')).not.toBeInTheDocument();
 

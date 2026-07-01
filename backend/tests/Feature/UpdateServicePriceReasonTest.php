@@ -2,11 +2,9 @@
 
 namespace Tests\Feature;
 
-use App\Models\AuditLog;
 use App\Models\Category;
 use App\Models\Service;
 use App\Models\ServicePriceHistory;
-
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -129,6 +127,6 @@ class UpdateServicePriceReasonTest extends TestCase
             ])
             ->assertOk();
 
-        $this->assertSame(0, \App\Models\ServicePriceHistory::query()->count());
+        $this->assertSame(0, ServicePriceHistory::query()->count());
     }
 }

@@ -1255,7 +1255,7 @@ describe('App', () => {
     // resolution can exceed the default 10s asyncUtilTimeout on a busy CI
     // node. waitFor with a generous timeout retries on every React tick.
     const reportHeadings = await waitFor(
-      () => screen.findAllByRole('heading', { name: /^reportes$/i }),
+      () => screen.findAllByRole('heading', { name: /reporte/i }),
       { timeout: 20_000, interval: 100 },
     );
     expect(reportHeadings.length).toBeGreaterThan(0);

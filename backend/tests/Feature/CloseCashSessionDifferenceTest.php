@@ -3,8 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\CashRegisterSession;
-use App\Models\Invoice;
-use App\Models\Payment;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
