@@ -462,3 +462,28 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron migraciones, schema, caja, correlativos, settings ni datos fiscales.
 - La pantalla de usuarios reduce acciones inline y avanza la division del megacomponente sin cambiar contratos API.
+
+## 17. Fase 19/20 - PWA minima para operacion LAN
+
+Cambio aplicado:
+
+- Se agrego `frontend/public/sw.js` como service worker minimo para operacion LAN: precache de rutas base, `NetworkFirst` para `/api/*` con timeout y fallback JSON humano, y `CacheFirst` para assets GET del mismo origen.
+- `frontend/src/main.tsx` registra el service worker solo en build de produccion y lo trata como best-effort para no bloquear el arranque de caja/facturacion.
+- `frontend/e2e/pwa.spec.ts` valida manifest, presencia del service worker y enlace de manifest en `/login`.
+- El service worker queda en ASCII, sin mojibake y con mensaje `Sin conexion LAN al servidor.`
+- `frontend/eslint.config.js` vuelve a lintar `public/sw.js`; el archivo declara sus globals de service worker explicitamente.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec -e PLAYWRIGHT_EXTERNAL_SERVER=1 -e PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser frontend npx playwright test e2e/pwa.spec.ts --workers=1` | RED inicial por comentario mojibake y luego OK: 3 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `docker compose exec frontend npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron migraciones, schema, caja, correlativos, settings ni datos fiscales.
+- Esta fase no promete operacion offline completa; solo asegura assets base y error LAN humano como avance incremental de Fase 19.
