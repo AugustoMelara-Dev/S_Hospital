@@ -49,7 +49,7 @@ export function BackupStatusBadge({ status, className }: BackupStatusBadgeProps)
 export function getStatusDescription(status: BackupStatus): string {
   const descriptions: Record<BackupStatus, string> = {
     pending: 'Respaldo en proceso. Si tarda demasiado, revise el estado del servidor.',
-    success: 'Archivo creado correctamente. Valide restauracion antes de declararlo recuperable.',
+    success: 'Archivo creado correctamente. Mantenga una copia protegida.',
     failed: 'No se pudo completar. Revise con soporte antes de crear otro.',
   };
 

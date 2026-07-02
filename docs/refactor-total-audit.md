@@ -1056,3 +1056,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, contratos de reportes, exportaciones, permisos, caja ni facturacion.
 - Este corte reduce ruido de identificadores internos en reportes de caja sin cambiar la consulta existente.
+
+## 43. Fase 12 - Historial de respaldos sin restauracion operativa
+
+Cambio aplicado:
+
+- `BackupStatusBadge` deja de indicar `Valide restauracion` en respaldos exitosos del historial normal.
+- La fila exitosa ahora confirma que el archivo fue creado y pide mantener una copia protegida.
+- Se reforzo la prueba del historial para asegurar que la tabla normal no vuelva a sugerir restauracion como tarea de la app.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- src/features/backups/BackupsView.test.tsx -t "table with caption"` | RED inicial por `Valide restauracion`; luego OK: 1 test focal pasa. |
+| `docker compose exec frontend npm run test -- src/features/backups/BackupsView.test.tsx src/features/backups/components/BackupStatusBadge.a11y.test.tsx` | OK: 2 archivos, 19 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, jobs de respaldo, descargas, auditoria, rutas, permisos ni restauracion real.
+- Este corte mantiene restauracion fuera de la UI normal y preserva el foco en crear, verificar estado y descargar respaldos locales.

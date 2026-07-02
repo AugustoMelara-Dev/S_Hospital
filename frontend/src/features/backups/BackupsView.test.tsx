@@ -154,6 +154,7 @@ describe('BackupsView', () => {
     expect(screen.getByRole('columnheader', { name: /acciones/i })).toBeInTheDocument();
     expect(screen.queryByRole('columnheader', { name: /nombre/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/hospital-backup-.*\.sql\.enc/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('region', { name: /historial de respaldos locales/i })).not.toHaveTextContent(/restaur/i);
     expect(screen.getAllByRole('cell').some((cell) => cell.getAttribute('data-numeric') === 'true')).toBe(true);
     expect(screen.getByText(/respaldo en proceso/i)).toBeInTheDocument();
     expect(screen.getByText(/archivo creado correctamente/i)).toBeInTheDocument();
