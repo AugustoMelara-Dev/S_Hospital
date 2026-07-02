@@ -807,3 +807,24 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, facturacion, precios, auditoria, servicios facturados ni reglas de eritropoyetina.
 - Este corte reduce ruido tecnico en Catálogo sin eliminar la administracion de codigos cuando soporte/administracion edita un servicio.
+
+## 32. Fase 9 - Historial con identidad de factura bloqueada
+
+Cambio aplicado:
+
+- `InvoiceHistoryTable` mantiene visibles las columnas `Factura`, `Paciente` y `Acciones` aunque el usuario ajuste columnas.
+- Las columnas secundarias de montos y estado siguen siendo ocultables para adaptar la tabla sin perder identidad ni operacion de fila.
+- Se agrego cobertura para el menu `Columnas`, verificando que solo columnas opcionales aparezcan como ocultables.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- src/features/invoices/InvoiceHistoryView.test.tsx -t "keeps invoice identity"` | RED inicial porque `Factura` era ocultable; luego OK: 1 test focal pasa. |
+| `docker compose exec frontend npm run test -- src/features/invoices/InvoiceHistoryView.test.tsx src/features/invoices/InstitutionalReceiptFlow.test.tsx` | OK: 2 archivos, 23 tests pasan. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, anulaciones, reimpresiones, permisos, pagos, caja ni recibos institucionales.
+- Este corte evita que el historial quede sin identificadores esenciales durante busqueda, reimpresion o anulacion.

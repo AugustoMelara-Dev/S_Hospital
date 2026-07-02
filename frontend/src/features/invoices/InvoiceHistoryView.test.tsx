@@ -80,6 +80,36 @@ describe('InvoiceHistoryView', () => {
     expect(screen.getByRole('cell', { name: 'L 80.00' })).toHaveAttribute('data-numeric', 'true');
   });
 
+  it('keeps invoice identity and row actions locked while optional columns can be hidden', async () => {
+    const invoice = invoiceFixture({
+      id: 12,
+      invoice_number: '000-001-01-00000012',
+      patient_name: 'Paciente Columnas',
+      total: '200.00',
+      paid_amount: '200.00',
+      balance_due: '0.00',
+      status: 'paid',
+    });
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [invoice],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente Columnas')).toBeInTheDocument());
+
+    const columnsButton = screen.getByRole('button', { name: /columnas/i });
+    columnsButton.focus();
+    fireEvent.keyDown(columnsButton, { key: 'Enter' });
+
+    expect(screen.queryByRole('menuitem', { name: /^Factura$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /^Paciente$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /^Acciones$/i })).not.toBeInTheDocument();
+    expect(await screen.findByRole('menuitem', { name: /^Total$/i })).toBeInTheDocument();
+  });
+
   it('keeps invoice filters controlled and preserves the same query contract', async () => {
     const getInvoices = vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
       data: [],

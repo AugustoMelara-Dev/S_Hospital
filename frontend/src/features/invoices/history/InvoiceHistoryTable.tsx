@@ -44,6 +44,7 @@ export function InvoiceHistoryTable({
       key: 'invoice_number',
       header: 'Factura',
       cellClassName: 'max-w-56 break-words text-sm font-semibold tabular-nums',
+      hideable: false,
       render: (invoice) => (
         <div className="flex items-start gap-2">
           <ReceiptText data-icon aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-secondary" />
@@ -61,6 +62,7 @@ export function InvoiceHistoryTable({
       key: 'patient_name',
       header: 'Paciente',
       cellClassName: 'max-w-60 break-words font-medium',
+      hideable: false,
       render: (invoice) => (
         <div className="flex items-start gap-2">
           <User data-icon aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
