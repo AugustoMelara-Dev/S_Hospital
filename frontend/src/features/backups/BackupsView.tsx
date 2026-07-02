@@ -134,7 +134,7 @@ function friendlyReadinessBlocker(code: string, fallback: string): string {
     APP_DEBUG_FALSE: 'Ocultar mensajes internos',
     PENDING_LAN_CLIENT_VALIDATION: 'Validar acceso desde una segunda computadora',
     PENDING_HARDWARE_VALIDATION: 'Validar recibo físico media carta/carta/A5/80mm/58mm',
-    PENDING_RESTORE_VALIDATION: 'Validar restauracion segura',
+    PENDING_RESTORE_VALIDATION: 'Confirmar recuperacion con soporte',
     PENDING_CONCURRENCY_VALIDATION: 'Validar concurrencia de caja',
     PENDING_ENVIRONMENT_VALIDATION: 'Revisar configuración final del servidor',
     PENDING_DATABASE_MIGRATIONS: 'Actualizar base de datos con respaldo previo',

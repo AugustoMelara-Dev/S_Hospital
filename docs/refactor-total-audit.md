@@ -828,3 +828,24 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, anulaciones, reimpresiones, permisos, pagos, caja ni recibos institucionales.
 - Este corte evita que el historial quede sin identificadores esenciales durante busqueda, reimpresion o anulacion.
+
+## 33. Fase 12 - Respaldos sin lenguaje de restauracion operativa
+
+Cambio aplicado:
+
+- `BackupsView` deja de mostrar el blocker `PENDING_RESTORE_VALIDATION` como una tarea de restauracion que el hospital deba ejecutar en la app.
+- La vista normal ahora lo presenta como `Confirmar recuperacion con soporte`, coherente con la regla de que restaurar no esta disponible desde la UI normal.
+- Se agrego cobertura acotada al alert `Pendientes antes de operar` para asegurar que no vuelva a aparecer lenguaje de `restaurar/restauracion` en esa lista operativa.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- src/features/backups/BackupsView.test.tsx -t "restore validation blockers"` | RED inicial por `Validar restauracion segura`; luego OK: 1 test focal pasa. |
+| `docker compose exec frontend npm run test -- src/features/backups/BackupsView.test.tsx src/features/backups/components/BackupStatusBadge.a11y.test.tsx` | OK: 2 archivos, 19 tests pasan. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, jobs de respaldo, descarga, permisos, auditoria ni rutas de restore.
+- Este corte mantiene la seriedad de recuperacion de datos sin convertir la restauracion en una accion visible de operacion diaria.

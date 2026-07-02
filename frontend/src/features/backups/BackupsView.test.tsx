@@ -52,6 +52,32 @@ describe('BackupsView', () => {
     expect(screen.queryByRole('button', { name: /eliminar|borrar/i })).not.toBeInTheDocument();
   });
 
+  it('describes restore validation blockers as support recovery work in the normal view', async () => {
+    const status = systemStatusFixture();
+    vi.mocked(apiClient.getSystemStatus).mockResolvedValue({
+      ...status,
+      readiness: {
+        ...status.readiness,
+        blockers: [
+          {
+            code: 'PENDING_RESTORE_VALIDATION',
+            label: 'Validar restauracion segura',
+            status: 'pending',
+          },
+        ],
+      },
+    });
+
+    renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
+
+    const pendingTitle = await screen.findByText(/pendientes antes de operar/i);
+    const pendingAlert = pendingTitle.closest('[data-slot="alert"]');
+
+    expect(pendingAlert).not.toBeNull();
+    expect(pendingAlert).toHaveTextContent(/recuperacion con soporte/i);
+    expect(pendingAlert).not.toHaveTextContent(/restaur/i);
+  });
+
   it('keeps the primary backup KPIs limited to last success, pending and failed backups', async () => {
     renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
 
