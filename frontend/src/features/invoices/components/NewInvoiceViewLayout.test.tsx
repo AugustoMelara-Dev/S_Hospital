@@ -41,7 +41,6 @@ function renderLayout(overrides: Partial<React.ComponentProps<typeof NewInvoiceV
         onRetryLoad={noop}
         onPaymentOpenChange={noop}
         onSubmitPayment={noop}
-        onLoadReceipt={noop}
         onPrintIssuedReceipt={noop}
         onNuevaFactura={noop}
         onSuccessDialogChange={noop}

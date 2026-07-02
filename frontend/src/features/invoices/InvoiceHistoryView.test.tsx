@@ -721,6 +721,7 @@ describe('InvoiceHistoryView', () => {
 
     await waitFor(() => expect(screen.getByText(/fallback legacy para facturas sin recibo institucional pdf/i)).toBeInTheDocument());
     expect(apiClient.getReceipt).toHaveBeenCalledWith(6, 'half_letter');
+    expect(screen.queryByLabelText(/tama/i)).not.toBeInTheDocument();
     expect(getPdf).not.toHaveBeenCalled();
   });
 });

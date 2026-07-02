@@ -4,15 +4,8 @@ import { useReactToPrint } from 'react-to-print';
 import { Alert } from '../../components/ui/alert';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../../components/ui/select';
 import { type ReceiptData } from '../../lib/api';
-import { INSTITUTIONAL_RECEIPT_PAPER_OPTIONS, institutionalReceiptPaperSize } from '../../lib/institutionalReceiptPaper';
+import { institutionalReceiptPaperSize } from '../../lib/institutionalReceiptPaper';
 import { formatLempirasFromCents, parseCents } from '../../lib/moneyCents';
 import { formatLocalizedDateTime } from '../../lib/format/formatDate';
 
@@ -21,10 +14,9 @@ type ReceiptPreviewProps = {
   onNewInvoice?: () => void;
   onPrint?: () => void | Promise<void>;
   receipt: ReceiptData;
-  onWidthChange: (width: ReceiptData['width']) => void;
 };
 
-export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, receipt, onWidthChange }: ReceiptPreviewProps) {
+export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, receipt }: ReceiptPreviewProps) {
   const receiptRef = useRef<HTMLDivElement>(null);
   const autoPrintedReceiptRef = useRef<string | null>(null);
   const [printError, setPrintError] = useState('');
@@ -80,16 +72,6 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
   return (
     <div className="receipt-preview-panel" aria-label="Vista previa del recibo">
       <div className="receipt-preview-controls no-print">
-        <Select value={receiptWidth} onValueChange={(v) => onWidthChange(institutionalReceiptPaperSize(v))}>
-          <SelectTrigger aria-label="Tamaño del recibo" className="w-[170px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {INSTITUTIONAL_RECEIPT_PAPER_OPTIONS.map((option) => (
-              <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
         <Button type="button" onClick={handlePrintClick}>
           Imprimir
         </Button>

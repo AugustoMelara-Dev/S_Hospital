@@ -671,3 +671,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, contratos API, roles protegidos, permisos reales ni reglas RBAC.
 - Este corte sigue siendo compatible con el objetivo ajustado de una version monocomputadora estable: reduce riesgo al administrar usuarios basicos sin convertir permisos en una configuracion avanzada innecesaria.
+
+## 26. Fase 6/9 - Recibo normal sin selector manual de papel
+
+Cambio aplicado:
+
+- `ReceiptPreview` deja de mostrar el selector manual de tamano de recibo en la vista normal de impresion.
+- El fallback legacy de `InvoiceHistoryView` tambien deja de exponer `Tamano de vista previa`; usa el perfil/ancho ya cargado por el flujo.
+- `NewInvoiceViewLayout` ya no pasa callbacks de cambio de ancho al recibo, reduciendo configuracion visible durante cobro, impresion y reimpresion.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- src/features/receipts/ReceiptPreview.test.tsx src/features/invoices/InvoiceHistoryView.test.tsx` | RED inicial por controles `Tamano del recibo` y `Tamano de vista previa`; luego OK: 29 tests pasan. |
+| `docker compose exec frontend npm run test -- src/features/receipts/ReceiptPreview.test.tsx src/features/receipts/ReceiptPreview.a11y.test.tsx src/features/invoices/InvoiceHistoryView.test.tsx src/features/invoices/components/NewInvoiceViewLayout.test.tsx src/features/invoices/components/NewInvoiceViewLayout.a11y.test.tsx src/features/invoices/NewInvoiceView.test.tsx` | OK: 6 archivos, 44 tests pasan. La corrida mantiene warnings `act(...)` existentes en `NewInvoiceView.test.tsx`. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK despues de retirar un import no usado. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, generacion PDF, auditoria de reimpresion, correlativos fiscales, pagos ni caja.
+- Este corte avanza la version monocomputadora estable: el operador imprime con el perfil definido por el sistema y ya no ajusta papel desde la vista de recibo normal.

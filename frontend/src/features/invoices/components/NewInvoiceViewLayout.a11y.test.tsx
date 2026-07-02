@@ -49,7 +49,6 @@ describe('NewInvoiceViewLayout accessibility', () => {
           onRetryLoad={() => {}}
           onPaymentOpenChange={() => {}}
           onSubmitPayment={() => {}}
-          onLoadReceipt={() => {}}
           onPrintIssuedReceipt={() => {}}
           onNuevaFactura={() => {}}
           onSuccessDialogChange={() => {}}

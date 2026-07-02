@@ -77,7 +77,7 @@ function buildReceipt(): ReceiptData {
 describe('ReceiptPreview accessibility', () => {
   it('has no axe-core violations on the half-letter render', async () => {
     const { container } = render(
-      <ReceiptPreview receipt={buildReceipt()} onWidthChange={() => undefined} />,
+      <ReceiptPreview receipt={buildReceipt()} />,
     );
 
     expect(await axe(container)).toHaveNoViolations();
@@ -85,7 +85,7 @@ describe('ReceiptPreview accessibility', () => {
 
   it('labels the printable institutional receipt container for assistive technologies', () => {
     const { getByLabelText } = render(
-      <ReceiptPreview receipt={buildReceipt()} onWidthChange={() => undefined} />,
+      <ReceiptPreview receipt={buildReceipt()} />,
     );
 
     expect(getByLabelText('Vista previa del recibo')).toBeInTheDocument();

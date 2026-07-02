@@ -15,7 +15,7 @@ import { InvoiceCart } from './InvoiceCart';
 import { InvoiceConfirmation } from './InvoiceConfirmation';
 import { PaymentModal } from './PaymentModal';
 import { InvoiceSuccess } from './InvoiceSuccess';
-import type { Payment, ReceiptData, Service } from '../../../lib/api';
+import type { Payment, Service } from '../../../lib/api';
 import type { NewInvoiceState } from '../state/types';
 import { formatLempirasUIFromCents, parseCents } from '../../../lib/moneyCents';
 
@@ -50,7 +50,6 @@ export type NewInvoiceLayoutProps = {
   onRetryLoad: () => void;
   onPaymentOpenChange: (val: boolean) => void;
   onSubmitPayment: (appliedAmount: string) => void;
-  onLoadReceipt: (width: ReceiptData['width']) => void;
   onPrintIssuedReceipt: () => void;
   onNuevaFactura: () => void;
   onSuccessDialogChange: (val: boolean) => void;
@@ -94,7 +93,6 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
     onRetryLoad,
     onPaymentOpenChange,
     onSubmitPayment,
-    onLoadReceipt,
     onPrintIssuedReceipt,
     onNuevaFactura,
     onSuccessDialogChange,
@@ -321,7 +319,6 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
           <ReceiptPreview
             autoPrint={state.autoPrintReceipt}
             receipt={state.receipt}
-            onWidthChange={onLoadReceipt}
             onNewInvoice={onNuevaFactura}
             onPrint={() => onAutoPrintChange(false)}
           />

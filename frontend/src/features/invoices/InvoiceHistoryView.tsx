@@ -18,11 +18,10 @@ import { ConfirmDialog } from '../../components/ui/confirm-dialog';
 import { Dialog } from '../../components/ui/dialog';
 import { Label } from '../../components/ui/label';
 import { PaginationControls } from '../../components/ui/pagination';
-import { NativeSelect } from '../../components/ui/select';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/states';
 import { ReceiptPreview } from '../receipts/ReceiptPreview';
 import { Textarea } from '../../components/ui/textarea';
-import { INSTITUTIONAL_RECEIPT_PAPER_OPTIONS, institutionalReceiptPaperSize } from '../../lib/institutionalReceiptPaper';
+import { institutionalReceiptPaperSize } from '../../lib/institutionalReceiptPaper';
 import { downloadBlob, openBlobInNewTab } from '../../lib/download';
 import { formatLempirasUIFromCents, parseCents } from '../../lib/moneyCents';
 import { formatLocalizedDateTime } from '../../lib/format/formatDate';
@@ -476,35 +475,8 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       >
         {receipt && selectedInvoice && (
           <div className="space-y-4">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <label htmlFor="receipt-width" className="text-sm font-semibold">Tamaño</label>
-                <NativeSelect
-                  id="receipt-width"
-                  aria-label="Tamaño de vista previa"
-                  value={receiptWidth}
-                  onChange={(event) => {
-                    const newWidth = institutionalReceiptPaperSize(event.target.value);
-                    setReceiptWidth(newWidth);
-                    setReceipt({ ...receipt, width: newWidth });
-                  }}
-                  className="w-[140px]"
-                >
-                  {INSTITUTIONAL_RECEIPT_PAPER_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </NativeSelect>
-              </div>
-
-            </div>
-
             <ReceiptPreview
               receipt={receipt}
-              onWidthChange={(width) => {
-                const newWidth = institutionalReceiptPaperSize(width);
-                setReceipt({ ...receipt, width: newWidth });
-                setReceiptWidth(newWidth);
-              }}
               onPrint={async () => {
                 try {
                   await auditReceiptPrint();

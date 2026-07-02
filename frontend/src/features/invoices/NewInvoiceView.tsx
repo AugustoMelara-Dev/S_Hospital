@@ -615,7 +615,6 @@ export function NewInvoiceView({
       onRetryLoad={loadPointOfSaleData}
       onPaymentOpenChange={handlePaymentOpenChange}
       onSubmitPayment={(appliedAmount) => void submitPayment(appliedAmount)}
-      onLoadReceipt={loadReceipt}
       onPrintIssuedReceipt={() => void handlePrintIssuedReceipt()}
       onNuevaFactura={handleNuevaFactura}
       onSuccessDialogChange={(val) => dispatch({ type: 'SET_SHOW_SUCCESS', payload: val })}

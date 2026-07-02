@@ -39,7 +39,6 @@ describe('ReceiptPreview', () => {
       <ReceiptPreview
         receipt={receiptFixture()}
         onPrint={onPrint}
-        onWidthChange={vi.fn()}
       />,
     );
 
@@ -59,7 +58,6 @@ describe('ReceiptPreview', () => {
       <ReceiptPreview
         receipt={receiptFixture()}
         onPrint={onPrint}
-        onWidthChange={vi.fn()}
       />,
     );
 
@@ -80,7 +78,6 @@ describe('ReceiptPreview', () => {
       <ReceiptPreview
         receipt={receiptFixture()}
         onPrint={vi.fn()}
-        onWidthChange={vi.fn()}
       />,
     );
 
@@ -105,7 +102,6 @@ describe('ReceiptPreview', () => {
       <ReceiptPreview
         receipt={receipt}
         onPrint={vi.fn()}
-        onWidthChange={vi.fn()}
       />,
     );
 
@@ -116,6 +112,18 @@ describe('ReceiptPreview', () => {
     expect(printSpy).toHaveBeenCalledTimes(1);
     expect(document.body.dataset.receiptWidth).toBeUndefined();
     expect(document.body.dataset.printingReceipt).toBeUndefined();
+  });
+
+  it('does not expose manual paper size controls in the print preview', () => {
+    render(
+      <ReceiptPreview
+        receipt={receiptFixture()}
+        onPrint={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole('combobox', { name: /tama/i })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/tam/i)).not.toBeInTheDocument();
   });
 
   it('renders malformed historical receipt amounts as safe financial values', () => {
@@ -132,7 +140,6 @@ describe('ReceiptPreview', () => {
       <ReceiptPreview
         receipt={receipt}
         onPrint={vi.fn()}
-        onWidthChange={vi.fn()}
       />,
     );
 
@@ -149,7 +156,6 @@ describe('ReceiptPreview', () => {
       <ReceiptPreview
         receipt={receiptFixture()}
         onPrint={vi.fn()}
-        onWidthChange={vi.fn()}
       />,
     );
 
@@ -169,7 +175,6 @@ describe('ReceiptPreview', () => {
       <ReceiptPreview
         receipt={receiptFixture()}
         onPrint={vi.fn()}
-        onWidthChange={vi.fn()}
       />,
     );
 
@@ -198,7 +203,6 @@ describe('ReceiptPreview', () => {
       <ReceiptPreview
         receipt={receipt}
         onPrint={vi.fn()}
-        onWidthChange={vi.fn()}
       />,
     );
 
