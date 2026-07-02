@@ -1,8 +1,9 @@
 # Refactor total S_Hospital - Auditoria viva
 
-Fecha de ejecucion: 2026-07-01  
-Rama de trabajo: `codex/refactor-total`  
-Alcance actual: Fase 0, auditoria + baseline + inventario, sin cambios funcionales.
+Fecha de ejecucion: 2026-07-02
+Rama de trabajo: `codex/refactor-total`
+Alcance actual: refactor total en fases pequenas; evidencia viva de baseline,
+calidad backend/frontend y riesgos pendientes.
 
 Este documento no sustituye al codigo, pruebas, migraciones ni contratos API. Es un registro operativo para guiar fases pequenas, verificables y commiteables del refactor total.
 
@@ -12,53 +13,39 @@ Este documento no sustituye al codigo, pruebas, migraciones ni contratos API. Es
 
 | Comando | Resultado |
 |---|---|
-| `docker exec s_hospital-backend-1 php artisan test` | Falla: contenedor `s_hospital-backend-1` no estaba corriendo. |
-| `docker exec s_hospital-backend-1 vendor/bin/pint --test` | Falla: contenedor `s_hospital-backend-1` no estaba corriendo. |
-| `docker exec s_hospital-backend-1 vendor/bin/phpstan analyse` | Falla: contenedor `s_hospital-backend-1` no estaba corriendo. |
-
-Intento de levantar el stack:
-
-| Comando | Resultado |
-|---|---|
-| `docker compose up -d` | Falla al iniciar MariaDB: `127.0.0.1:3306` no disponible para bind. |
-
-Observacion: existen contenedores `s_hospital_f7_verify-*` saludables, pero no son el stack exacto exigido para baseline. Se intento fallback contra `s_hospital_f7_verify-backend-1`; no sirve como aprobacion backend porque ese contenedor no tiene `artisan test` ni binarios dev completos disponibles.
-
-Baseline alternativo aislado:
-
-| Comando | Resultado |
-|---|---|
-| `docker compose -p s_hospital_codex_baseline run --rm backend sh -lc "composer install --no-interaction && php artisan test --filter=HealthCheckTest --colors=never"` con `DB_PORT=33307` | OK: 7 tests, 41 assertions. |
-| `docker compose -p s_hospital_codex_baseline run --rm backend vendor/bin/pint --test` | OK: 424 files. |
-| `docker compose -p s_hospital_codex_baseline run --rm backend vendor/bin/phpstan analyse --memory-limit=1G --no-progress` | OK: no errors. |
-| `docker compose -p s_hospital_codex_baseline run --rm backend php artisan test --colors=never` | Timeout despues de 364 s, sin salida final. Se detuvo el contenedor `backend-run` y se bajo el stack aislado. |
-
-Decision: el puerto local 3306 sigue bloqueado para el project name normal, pero el backend puede verificarse parcialmente en Docker con project name aislado y puerto host 33307.
+| `docker compose exec backend php artisan migrate --seed` | OK: migraciones pendientes y seeders completados el 2026-07-02. |
+| `docker compose exec backend php artisan test` | OK: 752 passed, 13 skipped, 4862 assertions; 497.84 s con timeout amplio. |
+| `docker compose exec backend vendor/bin/pint --test` | OK: 423 files checked, 0 errors. |
+| `docker compose exec backend vendor/bin/phpstan analyse` | Falla operativa: worker paralelo termina con exit code 255. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=1G` | OK: 211/211 files, no errors. |
 
 ### 1.2 Backend local
 
-| Comando | Resultado |
-|---|---|
-| `php artisan test` en `backend` | Falla: falta `backend/vendor/autoload.php`. |
-| `vendor/bin/pint --test` en `backend` | Falla: binario no disponible. |
-| `vendor/bin/phpstan analyse` en `backend` | Falla: binario no disponible. |
-
-`composer` no esta instalado en el host actual. La carpeta `backend/vendor` existe, pero esta vacia o incompleta.
+No aplica ejecucion en el host directo puesto que el entorno de desarrollo y
+dependencias PHP se ejecutan completamente dentro de Docker Compose.
 
 ### 1.3 Frontend
 
 | Comando | Resultado |
 |---|---|
-| `npm run lint` | OK. |
-| `npm run typecheck` | OK. |
-| `npm run test` | OK: 96 archivos, 497 tests pasan, 9 skipped, 506 total. |
-| `npm run build` | OK: Vite build, 2688 modulos transformados. |
+| `docker compose exec frontend npm run lint` | OK |
+| `docker compose exec frontend npm run typecheck` | OK |
+| `docker compose exec frontend npm run test` | OK: 101 files, 557 tests. Advertencias de `act(...)` y TanStack Query quedan como higiene pendiente. |
+| `docker compose exec frontend npm run build` | OK: Vite production build. |
 
-### 1.4 E2E
+### 1.4 E2E (Playwright)
 
 | Comando | Resultado |
 |---|---|
-| `npx playwright test` | Timeout despues de 244 s. No se toma como verde. Los reportes parciales generados por el timeout fueron limpiados para evitar evidencia truncada. |
+| `docker compose exec frontend npx playwright test` | Pendiente como suite completa. Existen gates focalizados verdes documentados en `docs/testing-report.md`. |
+
+### 1.5 Respaldo de Seguridad ( Daño Controlado )
+
+| Fecha | Archivo de Respaldo | Tamaño | Integridad (SHA256) |
+|---|---|---|---|
+| 2026-07-01 11:07 | `hospital-backup-20260701-110720-xogwnvml.sql.enc` | 1,576,476 bytes | Creado localmente en `backend/storage/app/private/backups` |
+
+
 
 ## 2. Stack confirmado
 
