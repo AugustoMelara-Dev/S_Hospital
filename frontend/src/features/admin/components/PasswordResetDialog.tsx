@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -42,9 +43,11 @@ export function PasswordResetDialog({
     defaultValues: { newPassword: '' },
   });
 
-  if (open && targetUser) {
-    reset({ newPassword: '' });
-  }
+  useEffect(() => {
+    if (open && targetUser) {
+      reset({ newPassword: '' });
+    }
+  }, [open, targetUser, reset]);
 
   return (
     <Dialog

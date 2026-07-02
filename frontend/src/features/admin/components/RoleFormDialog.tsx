@@ -9,6 +9,11 @@ import { Alert } from '@/components/ui/alert';
 import { InfoPanel } from '@/components/shared';
 import { type RoleDefinition } from '@/lib/api';
 
+export type RoleFormPayload = {
+  name: string;
+  permissions: string[];
+};
+
 type RoleFormDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -17,7 +22,7 @@ type RoleFormDialogProps = {
   selectedPermissions: string[];
   onTogglePermission: (permissionName: string, checked: boolean) => void;
   globalError: string | null;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onSubmit: (data: RoleFormPayload) => void;
   isSaving: boolean;
 };
 
@@ -32,13 +37,17 @@ export function RoleFormDialog({
   onSubmit,
   isSaving,
 }: RoleFormDialogProps) {
-  const [roleName, setRoleName] = useState('');
+  const [roleName, setRoleName] = useState(editingRole?.name ?? '');
+  const isProtected = editingRole?.protected === true;
 
   useEffect(() => {
-    if (open) {
-      setRoleName(editingRole?.name ?? '');
-    }
-  }, [open, editingRole]);
+    setRoleName(editingRole?.name ?? '');
+  }, [editingRole]);
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    onSubmit({ name: roleName.trim(), permissions: [...selectedPermissions] });
+  }
 
   return (
     <Dialog
@@ -50,7 +59,7 @@ export function RoleFormDialog({
       title={editingRole ? 'Editar rol' : 'Nuevo rol'}
       description="Seleccione los permisos exactos que tendra este rol operativo."
     >
-      <form onSubmit={onSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4">
         {globalError && (
           <Alert variant="destructive" title="No se pudo guardar">
             {globalError}
@@ -70,9 +79,10 @@ export function RoleFormDialog({
             value={roleName}
             onChange={(event) => setRoleName(event.target.value)}
             placeholder="ejemplo: caja_turno_tarde"
-            disabled={isSaving || editingRole?.protected}
+            disabled={isSaving || isProtected}
+            autoComplete="off"
           />
-          {editingRole?.protected && (
+          {isProtected && (
             <p className="text-xs text-muted-foreground">
               Los roles protegidos no pueden renombrarse para preservar la asignacion administrativa.
             </p>

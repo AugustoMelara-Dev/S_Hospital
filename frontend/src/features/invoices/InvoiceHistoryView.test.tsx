@@ -205,35 +205,31 @@ describe('InvoiceHistoryView', () => {
     expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-numero|undefined/);
   });
 
-  it.skip('opens void confirmation only for the latest loaded invoice detail (covered by integration)', async () => {
-    const first = invoiceFixture({ id: 1, invoice_number: '000-001-01-00000001', patient_name: 'Paciente Lento' });
-    const second = invoiceFixture({ id: 2, invoice_number: '000-001-01-00000002', patient_name: 'Paciente Correcto' });
-    let resolveFirst!: (invoice: Invoice) => void;
-    let resolveSecond!: (invoice: Invoice) => void;
+  it('does not send void request when void is unavailable for the current invoice', async () => {
+    const issued = invoiceFixture({
+      id: 7,
+      invoice_number: '000-001-01-00000007',
+      patient_name: 'Paciente No Anulable',
+      status: 'paid',
+    });
+    const voidInvoice = vi.spyOn(apiClient, 'voidInvoice');
 
     vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
-      data: [first, second],
-      meta: { current_page: 1, per_page: 10, total: 2 },
+      data: [issued],
+      meta: { current_page: 1, per_page: 10, total: 1 },
     });
-    vi.spyOn(apiClient, 'getInvoice')
-      .mockReturnValueOnce(new Promise((resolve) => { resolveFirst = resolve; }))
-      .mockReturnValueOnce(new Promise((resolve) => { resolveSecond = resolve; }));
 
     renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
 
-    await waitFor(() => expect(screen.getByText('Paciente Lento')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Paciente No Anulable')).toBeInTheDocument());
 
-    // The ActionMenu keyboard/portal opening is jsdom-unstable, so we verify the
-    // intent (only the latest loaded invoice detail wins the dialog) by
-    // resolving both pending invoice-detail promises in inverted order and
-    // asserting the dialog never appears for the first invoice.
-    await act(async () => {
-      resolveFirst(first);
-      resolveSecond(second);
-    });
+    await openInvoiceMenu(issued.invoice_number);
 
-    await waitFor(() => expect(apiClient.getInvoice).toHaveBeenCalledTimes(2));
-    expect(screen.queryByText('¿Anular factura 000-001-01-00000001?')).not.toBeInTheDocument();
+    const items = screen.queryAllByRole('menuitem');
+    const hasVoid = items.some((item) => /anular factura/i.test(item.textContent ?? ''));
+
+    expect(hasVoid).toBe(false);
+    expect(voidInvoice).not.toHaveBeenCalled();
   });
 
   it('exposes paid invoice reverse flow with reason', async () => {

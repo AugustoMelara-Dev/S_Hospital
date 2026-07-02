@@ -1,4 +1,4 @@
-import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Search, UserCog, UserPlus, Users } from 'lucide-react';
 import {
   type AuthUser,
@@ -49,7 +49,6 @@ export function UsersView({
 
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<RoleDefinition | null>(null);
-  const [roleName, setRoleName] = useState('');
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
   const [roleGlobalError, setRoleGlobalError] = useState('');
   const [isSavingRole, setIsSavingRole] = useState(false);
@@ -127,7 +126,6 @@ export function UsersView({
 
   const handleOpenCreateRole = () => {
     setEditingRole(null);
-    setRoleName('');
     setSelectedPermissions([]);
     setRoleGlobalError('');
     setIsRoleModalOpen(true);
@@ -135,7 +133,6 @@ export function UsersView({
 
   const handleOpenEditRole = (role: RoleDefinition) => {
     setEditingRole(role);
-    setRoleName(role.name);
     setSelectedPermissions(role.permissions.map((permission) => permission.name));
     setRoleGlobalError('');
     setIsRoleModalOpen(true);
@@ -159,16 +156,15 @@ export function UsersView({
     });
   };
 
-  const handleRoleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleRoleSubmit = async (data: { name: string; permissions: string[] }) => {
     setRoleGlobalError('');
 
-    const normalizedName = roleName.trim();
+    const normalizedName = data.name.trim();
     if (!/^[A-Za-z0-9_-]{3,80}$/.test(normalizedName)) {
       setRoleGlobalError('Use un nombre de rol entre 3 y 80 caracteres, solo letras, numeros, _ o -.');
       return;
     }
-    if (selectedPermissions.length === 0) {
+    if (data.permissions.length === 0) {
       setRoleGlobalError('Seleccione al menos un permiso para el rol.');
       return;
     }
@@ -180,8 +176,8 @@ export function UsersView({
 
     try {
       const saved = editingRole
-        ? await apiClient.updateRole(editingRole.id, { name: normalizedName, permissions: selectedPermissions })
-        : await apiClient.createRole({ name: normalizedName, permissions: selectedPermissions });
+        ? await apiClient.updateRole(editingRole.id, { name: normalizedName, permissions: data.permissions })
+        : await apiClient.createRole({ name: normalizedName, permissions: data.permissions });
 
       setRoles((current) => {
         const exists = current.some((role) => role.id === saved.id);
@@ -501,6 +497,7 @@ export function UsersView({
                     className="mt-3 w-full"
                     onClick={() => handleOpenEditRole(role)}
                     disabled={role.protected}
+                    aria-label={`Editar permisos de ${roleLabel(role.name)}`}
                   >
                     Editar permisos
                   </Button>

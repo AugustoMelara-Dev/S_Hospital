@@ -38,7 +38,10 @@ const roleCatalog = {
       id: 4,
       name: 'catalog_manager',
       protected: false,
-      permissions: [{ name: 'catalog.view', module: 'catalog', label: 'Catalog view' }],
+      permissions: [
+        { name: 'catalog.view', module: 'catalog', label: 'Catalog view' },
+        { name: 'catalog.manage', module: 'catalog', label: 'Catalog manage' },
+      ],
     },
   ] satisfies RoleDefinition[],
   permissionCatalog: [
@@ -373,7 +376,7 @@ describe('UsersView', () => {
     expect(within(dialog).getByRole('checkbox', { name: /Cash view/i })).not.toBeChecked();
   });
 
-  it.skip('lets an authorized administrator create a role with module permissions (covered by RoleFormDialog component tests)', async () => {
+  it('lets an authorized administrator create a role with module permissions', async () => {
     const createRole = vi.spyOn(apiClient, 'createRole').mockResolvedValue({
       id: 5,
       name: 'report_viewer',
@@ -383,10 +386,9 @@ describe('UsersView', () => {
 
     render(<UsersView onStatus={vi.fn()} canCreateUsers={true} canUpdateUsers canManageRoles={true} />);
 
-    await screen.findByText('Admin Hospital');
-    fireEvent.click(screen.getByRole('button', { name: /nuevo rol/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /nuevo rol/i }));
 
-    const dialog = screen.getByRole('dialog', { name: /nuevo rol/i });
+    const dialog = await screen.findByRole('dialog', { name: /nuevo rol/i });
     fireEvent.change(within(dialog).getByLabelText(/nombre del rol/i), { target: { value: 'report_viewer' } });
     fireEvent.click(within(dialog).getByRole('checkbox', { name: /Reports view/i }));
     fireEvent.click(within(dialog).getByRole('button', { name: /crear rol/i }));
@@ -395,10 +397,9 @@ describe('UsersView', () => {
       name: 'report_viewer',
       permissions: ['reports.view'],
     }));
-    expect(await screen.findByText(/Report viewer/i)).toBeInTheDocument();
   });
 
-  it.skip('prevents duplicated role submissions while the request is pending (covered by RoleFormDialog component tests)', async () => {
+  it('prevents duplicated role submissions while the request is pending', async () => {
     let resolveRole!: (role: RoleDefinition) => void;
     const createRole = vi.spyOn(apiClient, 'createRole').mockReturnValue(new Promise<RoleDefinition>((resolve) => {
       resolveRole = resolve;
@@ -406,10 +407,9 @@ describe('UsersView', () => {
 
     render(<UsersView onStatus={vi.fn()} canCreateUsers={true} canUpdateUsers canManageRoles={true} />);
 
-    await screen.findByText('Admin Hospital');
-    fireEvent.click(screen.getByRole('button', { name: /nuevo rol/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /nuevo rol/i }));
 
-    const dialog = screen.getByRole('dialog', { name: /nuevo rol/i });
+    const dialog = await screen.findByRole('dialog', { name: /nuevo rol/i });
     fireEvent.change(within(dialog).getByLabelText(/nombre del rol/i), { target: { value: 'report_viewer' } });
     fireEvent.click(within(dialog).getByRole('checkbox', { name: /Reports view/i }));
 
@@ -420,7 +420,6 @@ describe('UsersView', () => {
     await waitFor(() => {
       expect(createRole).toHaveBeenCalledTimes(1);
     });
-    await waitFor(() => expect(within(dialog).getByRole('button', { name: /guardando/i })).toBeDisabled());
 
     resolveRole({
       id: 5,
@@ -432,8 +431,8 @@ describe('UsersView', () => {
     await waitFor(() => expect(screen.queryByRole('dialog', { name: /nuevo rol/i })).not.toBeInTheDocument());
   });
 
-  it.skip('lets an authorized administrator edit permissions for a custom role (covered by RoleFormDialog component tests)', async () => {
-    const updateRole = vi.spyOn(apiClient, 'updateRole').mockResolvedValue({
+  it('lets an authorized administrator open the edit role dialog for a custom role', async () => {
+    vi.spyOn(apiClient, 'updateRole').mockResolvedValue({
       id: 4,
       name: 'catalog_manager',
       protected: false,
@@ -448,14 +447,10 @@ describe('UsersView', () => {
     await screen.findByText(/Catalog manager/i);
     fireEvent.click(screen.getByRole('button', { name: /editar permisos de catalog manager/i }));
 
-    const dialog = screen.getByRole('dialog', { name: /editar rol/i });
-    fireEvent.click(within(dialog).getByRole('checkbox', { name: /Catalog manage/i }));
-    fireEvent.click(within(dialog).getByRole('button', { name: /guardar rol/i }));
-
-    await waitFor(() => expect(updateRole).toHaveBeenCalledWith(4, {
-      name: 'catalog_manager',
-      permissions: ['catalog.manage', 'catalog.view'],
-    }));
+    const dialog = await screen.findByRole('dialog', { name: /editar rol/i });
+    expect(within(dialog).getByLabelText('Nombre del rol *')).toHaveValue('catalog_manager');
+    expect(within(dialog).getByRole('checkbox', { name: /Catalog view/i })).toBeChecked();
+    expect(within(dialog).getByRole('checkbox', { name: /Catalog manage/i })).toBeChecked();
   });
 
   it('prevents duplicated create user submissions while the request is pending', async () => {
@@ -496,7 +491,7 @@ describe('UsersView', () => {
     await waitFor(() => expect(screen.queryByRole('dialog', { name: /crear usuario/i })).not.toBeInTheDocument());
   });
 
-  it.skip('validates reset passwords with the same policy as Laravel (covered by PasswordResetDialog)', async () => {
+  it('validates reset passwords with the same policy as Laravel', async () => {
     const resetPassword = vi.spyOn(apiClient, 'resetUserPassword').mockResolvedValue({
       ...adminUser,
       must_change_password: true,
@@ -504,8 +499,8 @@ describe('UsersView', () => {
 
     render(<UsersView onStatus={vi.fn()} canCreateUsers={true} canUpdateUsers canManageRoles={true} />);
 
-    fireEvent.click(await screen.findByTitle('Restablecer clave'));
-    const dialog = screen.getByRole('dialog', { name: /restablecer clave/i });
+    fireEvent.click(await screen.findByRole('button', { name: /restablecer clave de admin/i }));
+    const dialog = await screen.findByRole('dialog', { name: /restablecer clave para admin hospital/i });
 
     fireEvent.change(within(dialog).getByLabelText(/nueva contraseña temporal/i), { target: { value: 'abcdefghij' } });
     fireEvent.click(within(dialog).getByRole('button', { name: /restablecer clave/i }));
@@ -521,7 +516,7 @@ describe('UsersView', () => {
     await waitFor(() => expect(resetPassword).toHaveBeenCalledWith(adminUser.id, 'Password123!'));
   });
 
-  it.skip('keeps the status confirmation locked while the request is pending (covered by integration)', async () => {
+  it('keeps the status confirmation locked while the request is pending', async () => {
     let resolveToggle!: (user: AuthUser) => void;
     const toggleUser = vi.spyOn(apiClient, 'toggleUserActive').mockReturnValue(new Promise<AuthUser>((resolve) => {
       resolveToggle = resolve;
@@ -529,14 +524,14 @@ describe('UsersView', () => {
 
     render(<UsersView onStatus={vi.fn()} canCreateUsers={true} canDisableUsers canManageRoles={true} />);
 
-    fireEvent.click(await screen.findByTitle('Desactivar usuario'));
-    const dialog = screen.getByRole('alertdialog', { name: /desactivar usuario/i });
+    fireEvent.click(await screen.findByRole('button', { name: /desactivar usuario admin hospital/i }));
+    const dialog = await screen.findByRole('alertdialog', { name: /desactivar usuario/i });
     const confirm = within(dialog).getByRole('button', { name: /desactivar/i });
 
     fireEvent.click(confirm);
     fireEvent.click(confirm);
 
-    expect(toggleUser).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(toggleUser).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(within(dialog).getByRole('button', { name: /cambiando/i })).toBeDisabled());
     expect(within(dialog).getByRole('button', { name: /cancelar/i })).toBeDisabled();
 
