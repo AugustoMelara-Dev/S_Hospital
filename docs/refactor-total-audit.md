@@ -1010,3 +1010,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, PDF, auditoria, correlativos fiscales, pagos ni caja.
 - Este corte mantiene el flujo normal de recibos en lenguaje operativo y deja los detalles tecnicos internos al sistema o al modo soporte.
+
+## 41. Fase 10 - Filtros ejecutivos sin lenguaje de implementacion
+
+Cambio aplicado:
+
+- `ReportFiltersPanel` deja de mencionar `backend` en la descripcion visible del control ejecutivo.
+- El copy ahora habla de datos del cierre operativo, manteniendo el foco en la tarea del usuario.
+- Se agrego cobertura de componente para evitar que reaparezca lenguaje de implementacion en el panel de filtros.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- src/features/reports/components/ReportFiltersPanel.test.tsx` | RED inicial por `backend`; luego OK: 1 test pasa. |
+| `docker compose exec frontend npm run test -- src/features/reports/ReportsView.subroutes.test.tsx src/features/reports/ReportsAudit.test.tsx src/features/reports/components/ReportFiltersPanel.test.tsx src/features/reports/components/PaymentMethodPanel.test.tsx src/features/reports/components/ServiceRanking.test.tsx src/features/reports/components/CashReconciliationPanel.test.tsx src/features/reports/components/PendingAgingPanel.test.tsx src/features/reports/components/VoidsReversalsPanel.test.tsx src/features/reports/components/MetricsGlossary.test.tsx` | OK: 9 archivos, 20 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, contratos de reportes, exportaciones, permisos, caja ni facturacion.
+- Este corte mejora la pantalla de reportes ejecutivos sin cambiar calculos ni filtros.

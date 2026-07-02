@@ -110,7 +110,7 @@ export function ReportFiltersPanel({
     <CommandPanel
       title="Control ejecutivo"
       titleLevel={titleLevel}
-      description="Ajuste el periodo y actualice los indicadores con los agregados actuales del backend."
+      description="Ajuste el periodo y actualice los indicadores con los datos del cierre operativo."
       className="bg-operational-surface"
       footer={
         rangeError ? (
