@@ -604,3 +604,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, permisos reales, contratos API, roles protegidos ni reglas RBAC.
 - Este corte avanza Fase 13 reduciendo strings tecnicos visibles en la operacion diaria sin ocultar trazabilidad del rol.
+
+## 23. Fase 13/2 - Roles legibles en navegacion global
+
+Cambio aplicado:
+
+- `Topbar` y `Sidebar` dejan de construir etiquetas de rol con `user.roles.join(', ')`, lo que exponia strings tecnicos como `catalog_manager`.
+- Se movio el formateador de roles a `src/lib/role-labels.ts` para compartirlo entre administracion y layout sin acoplar el shell a una feature.
+- El menu de usuario y el pie del sidebar muestran `Catalog Manager` como nombre humano, reduciendo ruido tecnico en navegacion global.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- src/layout/AppShell.test.tsx` | RED inicial por ausencia de `Catalog Manager`; luego OK: 9 tests pasan. |
+| `docker compose exec frontend npm run test -- src/layout/AppShell.test.tsx src/features/admin/UsersView.test.tsx src/features/admin/components/UsersTable.test.tsx src/features/admin/components/UserFormDialog.test.tsx` | OK: 4 archivos, 37 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, permisos reales, contratos API, rutas ni reglas RBAC.
+- Este corte avanza Fase 13 y Fase 2 haciendo que el shell global use nombres de rol humanos sin cambiar autorizacion.

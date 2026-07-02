@@ -172,6 +172,25 @@ describe('AppShell', () => {
     expect(onLogout).toHaveBeenCalledTimes(1);
   });
 
+  it('shows human role labels in global user areas instead of raw technical names', async () => {
+    renderShell({
+      user: {
+        ...baseUser,
+        roles: ['catalog_manager'],
+      },
+    });
+
+    expect(screen.getByText('Catalog Manager')).toBeInTheDocument();
+    expect(screen.queryByText('catalog_manager')).not.toBeInTheDocument();
+
+    const trigger = screen.getByRole('button', { name: /abrir menu de usuario/i });
+    trigger.focus();
+    fireEvent.keyDown(trigger, { key: 'Enter', code: 'Enter' });
+
+    expect(await screen.findAllByText('Catalog Manager')).toHaveLength(2);
+    expect(screen.queryByText('catalog_manager')).not.toBeInTheDocument();
+  });
+
   it('keeps icon-only actions named and opens the guided tour from the shell', async () => {
     renderShell();
 

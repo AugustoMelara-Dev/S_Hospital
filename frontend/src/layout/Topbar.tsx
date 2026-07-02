@@ -7,6 +7,7 @@ import { useServerStatus } from '../hooks/useServerStatus';
 import { useTheme } from '../hooks/useTheme';
 import { type AuthUser, type CashSession } from '../lib/api';
 import { displayHospitalName } from '../lib/hospital-name';
+import { roleListLabel } from '../lib/role-labels';
 import { type AppBreadcrumb } from '../navigation/appNavigation';
 import { AppBreadcrumbs } from './components/AppBreadcrumbs';
 import { OperationalStatus } from './components/OperationalStatus';
@@ -50,7 +51,7 @@ export function Topbar({
   const { data: fiscal } = usePublicBranding();
   const [now, setNow] = useState(() => new Date());
   const hospitalName = displayHospitalName(fiscal?.hospital_name);
-  const roleLabel = user.roles.length > 0 ? user.roles.join(', ') : 'Sin rol';
+  const roleLabel = roleListLabel(user.roles);
   const currentCrumb = crumbs.at(-1);
   const currentTitle = currentCrumb?.label ?? 'Inicio';
   const localTime = new Intl.DateTimeFormat('es-HN', {

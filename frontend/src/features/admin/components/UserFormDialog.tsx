@@ -13,7 +13,7 @@ import { Alert } from '@/components/ui/alert';
 import { InfoPanel } from '@/components/shared';
 import { type AuthUser, type RoleDefinition, type UserPayload } from '@/lib/api';
 import { cn } from '@/lib/utils';
-import { roleLabel } from './roleLabels';
+import { roleLabel } from '@/lib/role-labels';
 
 const baseUserSchema = z.object({
   name: z.string().min(1, 'El nombre es obligatorio.'),

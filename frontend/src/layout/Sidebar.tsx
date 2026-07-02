@@ -7,6 +7,7 @@ import { Separator } from '../components/ui/separator';
 import { Button } from '../components/ui/button';
 import { usePublicBranding } from '../hooks/useFiscalSettings';
 import { displayHospitalName } from '../lib/hospital-name';
+import { roleListLabel } from '../lib/role-labels';
 import { cn } from '../lib/utils';
 
 interface SidebarProps {
@@ -32,7 +33,7 @@ export function SidebarContent({
 }: SidebarProps) {
   const { data: fiscal } = usePublicBranding();
   const hospitalName = displayHospitalName(fiscal?.hospital_name);
-  const roleLabel = user.roles.length > 0 ? user.roles.join(', ') : 'Sin rol';
+  const roleLabel = roleListLabel(user.roles);
   const cashIsOpen = cashSession?.status === 'open';
   const cashLabel = cashIsOpen ? `Caja #${cashSession.id}` : 'Caja cerrada';
   const groupedNavigation = groupNavigation(visibleNavigation);

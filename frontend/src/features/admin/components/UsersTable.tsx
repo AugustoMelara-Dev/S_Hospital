@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { UserActionMenu } from './UserActionMenu';
-import { roleLabel } from './roleLabels';
+import { roleLabel } from '@/lib/role-labels';
 
 type UsersTableProps = {
   canDisableUsers: boolean;

@@ -20,7 +20,7 @@ import { RoleFormDialog } from './components/RoleFormDialog';
 import { PermissionMatrix } from './components/PermissionMatrix';
 import { PasswordResetDialog } from './components/PasswordResetDialog';
 import { UsersTable } from './components/UsersTable';
-import { roleLabel } from './components/roleLabels';
+import { roleLabel } from '@/lib/role-labels';
 
 type UsersViewProps = {
   onStatus: (message: string) => void;
