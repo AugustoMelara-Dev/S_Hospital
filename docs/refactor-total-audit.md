@@ -438,6 +438,8 @@ Cambio aplicado:
 - `UsersView` ya no muestra botones inline por fila para editar, restablecer clave y activar/desactivar usuario.
 - Se agrego `UserActionMenu` como componente dedicado para construir acciones por permiso (`users.update`, `users.disable`) usando el `ActionMenu` compartido.
 - Se extrajo `UsersTable` para sacar columnas, estado visual y acciones por fila fuera de `UsersView`.
+- Se integro `PermissionMatrix` como vista de consulta de roles/permisos, visible solo cuando el operador puede gestionar roles y tiene `users.assign_admin_role`.
+- La matriz usa encabezados por modulo, nombres humanos de rol y marcas `Si`/`No` para no depender solo de color.
 - El flujo de desactivar usuario conserva confirmacion fuerte y no cambia reglas backend, auditoria, roles ni permisos.
 - `e2e/users-flow.spec.ts` ahora valida el flujo real de dos pasos: abrir acciones de usuario y luego seleccionar `Desactivar`.
 
@@ -448,8 +450,10 @@ Pruebas ejecutadas:
 | `docker compose exec frontend npm run test -- src/features/admin/UsersView.test.tsx` | RED inicial por falta de `Acciones de usuario ...`; luego OK: 19 tests pasan. |
 | `docker compose exec frontend npm run test -- src/features/admin/components/UsersTable.test.tsx` | RED inicial por import faltante; luego OK: 2 tests pasan. |
 | `docker compose exec frontend npm run test -- src/features/admin/components/UsersTable.test.tsx src/features/admin/UsersView.test.tsx` | OK: 2 archivos, 21 tests pasan. |
+| `docker compose exec frontend npx vitest run src/features/admin/components/PermissionMatrix.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial por senales corruptas/color-only y `tbody` anidado; luego OK: 3 tests pasan. |
+| `docker compose exec frontend npx vitest run src/features/admin/UsersView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial por integracion incompleta de matriz; luego OK: 20 tests pasan. |
 | `docker compose exec frontend npm run typecheck` | OK. |
-| `docker compose exec frontend npx eslint src/features/admin/UsersView.tsx src/features/admin/UsersView.test.tsx src/features/admin/components/UserActionMenu.tsx src/features/admin/components/UsersTable.tsx src/features/admin/components/UsersTable.test.tsx e2e/users-flow.spec.ts` | OK. |
+| `docker compose exec frontend npx eslint src/AppRoutes.tsx src/features/admin/UsersView.tsx src/features/admin/UsersView.test.tsx src/features/admin/components/PermissionMatrix.tsx src/features/admin/components/PermissionMatrix.test.tsx src/features/admin/components/UserActionMenu.tsx src/features/admin/components/UsersTable.tsx src/features/admin/components/UsersTable.test.tsx e2e/users-flow.spec.ts` | OK. |
 | `docker compose exec -e PLAYWRIGHT_EXTERNAL_SERVER=1 -e PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser frontend npx playwright test e2e/users-flow.spec.ts --workers=1` | OK: 1 test pasa tras reiniciar el contenedor frontend para limpiar el bundle viejo servido por Vite. |
 | `docker compose exec frontend npm run lint` | Bloqueado por trabajo no rastreado ajeno a esta subfase: `frontend/public/sw.js` introduce globals de service worker sin configuracion ESLint y variables `error` sin uso. No se tomo ese cambio en este commit. |
 

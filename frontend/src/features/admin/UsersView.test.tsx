@@ -474,6 +474,21 @@ describe('UsersView', () => {
     expect(within(dialog).getByRole('checkbox', { name: /Catalog manage/i })).toBeChecked();
   });
 
+  it('shows the permission matrix only for operators allowed to assign admin role', async () => {
+    render(<UsersView onStatus={vi.fn()} canCreateUsers={false} canUpdateUsers canManageRoles canAssignAdminRole />);
+
+    expect(await screen.findByRole('heading', { name: /matriz de permisos/i })).toBeInTheDocument();
+
+    cleanup();
+    vi.mocked(apiClient.getUsers).mockResolvedValue([adminUser]);
+    vi.mocked(apiClient.getRoles).mockResolvedValue(roleCatalog);
+
+    render(<UsersView onStatus={vi.fn()} canCreateUsers={false} canUpdateUsers canManageRoles canAssignAdminRole={false} />);
+
+    expect(await screen.findByText('Admin Hospital')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /matriz de permisos/i })).not.toBeInTheDocument();
+  });
+
   it('prevents duplicated create user submissions while the request is pending', async () => {
     let resolveCreate!: (user: AuthUser) => void;
     const createUser = vi.spyOn(apiClient, 'createUser').mockReturnValue(new Promise<AuthUser>((resolve) => {

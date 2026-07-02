@@ -27,6 +27,7 @@ type UsersViewProps = {
   canUpdateUsers?: boolean;
   canDisableUsers?: boolean;
   canManageRoles: boolean;
+  canAssignAdminRole?: boolean;
 };
 
 export function UsersView({
@@ -35,6 +36,7 @@ export function UsersView({
   canUpdateUsers = false,
   canDisableUsers = false,
   canManageRoles,
+  canAssignAdminRole = false,
 }: UsersViewProps) {
   const [users, setUsers] = useState<AuthUser[]>([]);
   const [roles, setRoles] = useState<RoleDefinition[]>([]);
@@ -414,6 +416,13 @@ export function UsersView({
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {canManageRoles && canAssignAdminRole && (
+        <PermissionMatrix
+          roles={roles}
+          permissionCatalog={permissionCatalog}
+        />
       )}
 
       {!canManageRoles && (

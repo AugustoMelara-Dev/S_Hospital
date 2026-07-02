@@ -222,6 +222,7 @@ export function AppRoutes({
                 canUpdateUsers={canUpdateUsers}
                 canDisableUsers={canDisableUsers}
                 canManageRoles={canManageRoles}
+                canAssignAdminRole={user.permissions.includes('users.assign_admin_role')}
               />
             </Suspense>
           </PermissionGate>
