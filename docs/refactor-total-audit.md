@@ -650,3 +650,24 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, permisos reales, contratos API ni reglas RBAC.
 - Este corte avanza Fase 13 y Fase 15: mejora la claridad de permisos tambien para tecnologia asistiva sin cambiar autorizacion.
+
+## 25. Fase 13/15 - Riesgo visible en permisos criticos
+
+Cambio aplicado:
+
+- `RoleFormDialog` marca permisos sensibles con la etiqueta visible `Permiso critico`.
+- La etiqueta se muestra junto al nombre humano del permiso, manteniendo el identificador tecnico en texto secundario para trazabilidad administrativa.
+- Se cubren permisos de soporte de recibos, fiscal, anulaciones/reversiones, caja elevada, respaldos y usuarios, sin ampliar la matriz ni cambiar permisos reales.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- src/features/admin/components/RoleFormDialog.test.tsx` | RED inicial por ausencia de `Permiso critico`; luego OK: 5 tests pasan. |
+| `docker compose exec frontend npm run test -- src/features/admin/UsersView.test.tsx src/features/admin/components/RoleFormDialog.test.tsx src/features/admin/components/PermissionMatrix.test.tsx` | OK: 3 archivos, 29 tests pasan. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, contratos API, roles protegidos, permisos reales ni reglas RBAC.
+- Este corte sigue siendo compatible con el objetivo ajustado de una version monocomputadora estable: reduce riesgo al administrar usuarios basicos sin convertir permisos en una configuracion avanzada innecesaria.

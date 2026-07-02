@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { InfoPanel } from '@/components/shared';
 import { type RoleDefinition } from '@/lib/api';
 
@@ -25,6 +26,25 @@ type RoleFormDialogProps = {
   onSubmit: (data: RoleFormPayload) => void;
   isSaving: boolean;
 };
+
+const CRITICAL_PERMISSION_NAMES = new Set([
+  'backups.create',
+  'backups.restore',
+  'cash.close_any',
+  'invoices.reverse',
+  'invoices.void',
+  'payments.void',
+  'receipt_settings.advanced',
+  'receipt_settings.update',
+  'receipts.reprint_any',
+  'settings.fiscal.update',
+  'users.assign_admin_role',
+  'users.update',
+]);
+
+function isCriticalPermission(permissionName: string): boolean {
+  return CRITICAL_PERMISSION_NAMES.has(permissionName);
+}
 
 export function RoleFormDialog({
   open,
@@ -148,6 +168,7 @@ export function RoleFormDialog({
                   {group.permissions.map((permission) => {
                     const id = `permission-${permission.name.replace(/[^A-Za-z0-9_-]/g, '-')}`;
                     const checked = selectedPermissions.includes(permission.name);
+                    const critical = isCriticalPermission(permission.name);
                     return (
                       <label key={permission.name} htmlFor={id} className="flex items-start gap-2 rounded-md p-2 text-sm hover:bg-muted/50">
                         <Checkbox
@@ -157,7 +178,10 @@ export function RoleFormDialog({
                           onCheckedChange={(value) => onTogglePermission(permission.name, value === true)}
                         />
                         <span>
-                          <span className="block font-medium text-foreground">{permission.label}</span>
+                          <span className="flex flex-wrap items-center gap-2 font-medium text-foreground">
+                            {permission.label}
+                            {critical && <Badge variant="warning">Permiso critico</Badge>}
+                          </span>
                           <span className="block text-xs text-muted-foreground">{permission.name}</span>
                         </span>
                       </label>

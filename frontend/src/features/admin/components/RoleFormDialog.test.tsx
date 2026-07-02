@@ -134,4 +134,37 @@ describe('RoleFormDialog', () => {
     fireEvent.change(search, { target: { value: 'no-existe' } });
     expect(screen.getByText(/no se encontraron permisos/i)).toBeInTheDocument();
   });
+
+  it('marks critical permissions with a visible risk label', () => {
+    render(
+      <RoleFormDialog
+        open
+        onOpenChange={vi.fn()}
+        editingRole={null}
+        permissionCatalog={[
+          {
+            module: 'receipts',
+            label: 'Recibos',
+            permissions: [
+              {
+                name: 'receipt_settings.advanced',
+                label: 'Modo soporte tecnico de recibos',
+              },
+            ],
+          },
+        ]}
+        selectedPermissions={[]}
+        onTogglePermission={vi.fn()}
+        globalError={null}
+        onSubmit={vi.fn()}
+        isSaving={false}
+      />,
+    );
+
+    expect(
+      screen.getByRole('checkbox', { name: /modo soporte tecnico de recibos/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/receipt_settings\.advanced/i)).toBeInTheDocument();
+    expect(screen.getByText(/permiso critico/i)).toBeInTheDocument();
+  });
 });
