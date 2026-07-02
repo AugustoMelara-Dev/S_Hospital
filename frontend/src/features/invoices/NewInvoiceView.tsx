@@ -50,6 +50,7 @@ export function NewInvoiceView({
   const submitPaymentInFlightRef = useRef(false);
   const submitPaymentIdempotencyKeyRef = useRef<string | null>(null);
   const scanCodeInFlightRef = useRef(false);
+  const skipInitialServiceSearchRef = useRef(true);
 
   useEffect(() => {
     void loadPointOfSaleData();
@@ -80,6 +81,10 @@ export function NewInvoiceView({
 
   useEffect(() => {
     if (!canViewCatalog) {
+      return;
+    }
+    if (skipInitialServiceSearchRef.current) {
+      skipInitialServiceSearchRef.current = false;
       return;
     }
     const timeoutId = window.setTimeout(() => {

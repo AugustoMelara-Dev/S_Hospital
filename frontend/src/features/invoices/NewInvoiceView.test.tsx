@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { NewInvoiceView } from './NewInvoiceView';
@@ -103,6 +103,12 @@ function renderNewInvoice(cashSession: CashSession | null = makeOpenCashSession(
   );
 }
 
+async function waitForPointOfSaleLoad() {
+  await waitFor(() => {
+    expect(screen.getByText(/busque o elija/i)).toBeInTheDocument();
+  });
+}
+
 describe('NewInvoiceView critical flows', () => {
   beforeEach(() => {
     mockFetchForOpenCashWithService();
@@ -114,25 +120,42 @@ describe('NewInvoiceView critical flows', () => {
 
   it('renders the patient input, service search and action button when cash session is open', async () => {
     renderNewInvoice();
+    await waitForPointOfSaleLoad();
 
     expect(screen.getByLabelText(/nombre del paciente/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/buscar por nombre/i)).toBeInTheDocument();
   });
 
-  it('does not show success dialog before an invoice is issued', () => {
+  it('does not repeat the initial services request before the cashier searches', async () => {
     renderNewInvoice();
+    await waitForPointOfSaleLoad();
+
+    const fetchMock = globalThis.fetch as ReturnType<typeof vi.fn>;
+
+    await new Promise((resolve) => setTimeout(resolve, 350));
+
+    expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(1);
+  });
+
+  it('does not show success dialog before an invoice is issued', async () => {
+    renderNewInvoice();
+    await waitForPointOfSaleLoad();
 
     expect(screen.queryByRole('dialog', { name: /factura emitida/i })).not.toBeInTheDocument();
   });
 
-  it('does not show receipt dialog before an invoice is issued', () => {
+  it('does not show receipt dialog before an invoice is issued', async () => {
     renderNewInvoice();
+    await waitForPointOfSaleLoad();
 
     expect(screen.queryByRole('dialog', { name: /comprobante de factura/i })).not.toBeInTheDocument();
   });
 
   it('does not call emit twice when Emit button is double-clicked', async () => {
     renderNewInvoice();
+    await waitForPointOfSaleLoad();
+
+    const fetchMock = globalThis.fetch as ReturnType<typeof vi.fn>;
 
     const patientInput = screen.getByLabelText(/nombre del paciente/i);
     fireEvent.change(patientInput, { target: { value: 'Maria Lopez' } });
@@ -144,15 +167,22 @@ describe('NewInvoiceView critical flows', () => {
       expect(screen.getByText('Eritropoyetina')).toBeInTheDocument();
     }, { timeout: 3000 });
 
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(2);
+    });
+
     fireEvent.click(screen.getByText('Eritropoyetina'));
 
-    const fetchMock = globalThis.fetch as ReturnType<typeof vi.fn>;
     fetchMock.mockClear();
 
-    fireEvent.click(screen.getAllByRole('button', { name: /emitir/i })[0]);
-    fireEvent.click(screen.getAllByRole('button', { name: /emitir/i })[0]);
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole('button', { name: /emitir/i })[0]);
+      fireEvent.click(screen.getAllByRole('button', { name: /emitir/i })[0]);
+    });
 
-    await new Promise((r) => setTimeout(r, 200));
+    await waitFor(() => {
+      expect(screen.getByRole('dialog', { name: /confirmar emis/i })).toBeInTheDocument();
+    });
 
     const invoiceCalls = fetchMock.mock.calls.filter(
       ([url]) => typeof url === 'string' && url.includes('/api/billing/invoices') && !String(url).includes('?'),

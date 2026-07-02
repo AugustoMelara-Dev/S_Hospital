@@ -718,3 +718,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, generacion PDF, auditoria real, pagos, caja ni correlativos fiscales.
 - Este corte evita instrucciones contradictorias para una operacion monocomputadora: el papel lo resuelve la configuracion, no el operador al imprimir.
+
+## 28. Fase 4/17 - Nueva factura sin carga duplicada inicial
+
+Cambio aplicado:
+
+- `NewInvoiceView` deja de ejecutar una segunda busqueda de servicios al montar la pantalla con filtros vacios.
+- La carga inicial de punto de venta queda como unica consulta de caja/catalogo al abrir `Nueva factura`; las busquedas debounced siguen ejecutandose cuando el cajero escribe o cambia filtros.
+- Las pruebas del flujo esperan la carga inicial real antes de afirmar estados iniciales, eliminando warnings `act(...)` en el archivo focal.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- src/features/invoices/NewInvoiceView.test.tsx` | RED inicial: la nueva prueba detecto 2 llamadas a `/api/services`; luego OK: 10 tests pasan sin warnings `act(...)`. |
+| `docker compose exec frontend npm run test -- src/features/invoices/NewInvoiceView.test.tsx src/features/invoices/components/NewInvoiceViewLayout.test.tsx src/features/invoices/components/NewInvoiceViewLayout.a11y.test.tsx src/features/receipts/ReceiptPreview.test.tsx src/features/invoices/InvoiceHistoryView.test.tsx` | OK: 5 archivos, 43 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, pagos, recibos, auditoria, caja ni correlativos fiscales.
+- Este corte reduce una llamada LAN innecesaria en el flujo critico de facturacion y deja una prueba explicita para evitar regresion.
