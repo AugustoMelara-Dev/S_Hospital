@@ -281,7 +281,7 @@ export function PaymentModal({
               />
             </div>
             <p id="payment-amount-help" className="text-xs text-muted-foreground">
-              Use hasta dos decimales. El backend registra el pago final.
+              Use hasta dos decimales. Se registrara el monto aplicado a la factura.
             </p>
             {capNotice && !error ? (
               <p id="payment-amount-cap" className="text-sm text-warning-foreground" role="status">

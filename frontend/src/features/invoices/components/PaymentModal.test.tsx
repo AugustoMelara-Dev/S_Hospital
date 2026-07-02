@@ -270,6 +270,13 @@ describe('PaymentModal', () => {
     expect(onOpenChange).not.toHaveBeenCalled();
   });
 
+  it('keeps amount guidance human and free of implementation wording', () => {
+    renderPaymentModal();
+
+    expect(screen.getByText(/use hasta dos decimales/i)).toHaveTextContent(/se registrara el monto aplicado a la factura/i);
+    expect(document.body.textContent).not.toMatch(/\bbackend\b/i);
+  });
+
   it('does not submit automatically or call receipt/pdf browser handoffs from the modal', () => {
     const confirmSpy = vi.fn();
     const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);

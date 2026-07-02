@@ -941,3 +941,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, precios, desactivacion, permisos, scanner operativo ni formularios de administracion.
 - Este corte reduce ruido tecnico en la vista principal de catalogo sin eliminar trazabilidad de codigos cuando administracion edita un servicio.
+
+## 38. Fase 4 - Cobro sin lenguaje tecnico de implementacion
+
+Cambio aplicado:
+
+- `PaymentModal` deja de mostrar la frase `El backend registra el pago final` en la ayuda del monto recibido.
+- La ayuda visible ahora explica la accion en lenguaje de caja: se registrara el monto aplicado a la factura.
+- Se agrego cobertura para evitar que reaparezca lenguaje de implementacion en el modal de cobro.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- src/features/invoices/components/PaymentModal.test.tsx -t "amount guidance"` | RED inicial por `backend`; luego OK: 1 test focal pasa. |
+| `docker compose exec frontend npm run test -- src/features/invoices/components/PaymentModal.test.tsx src/features/invoices/NewInvoiceView.test.tsx` | OK: 2 archivos, 29 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, pagos, caja, recibos, contratos API ni calculos de monto aplicado/cambio.
+- Este corte mejora la claridad del cobro sin relajar la regla de que el servidor decide y registra el pago final.
