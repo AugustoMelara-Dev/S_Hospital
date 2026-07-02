@@ -141,7 +141,7 @@ export function CashSessionReportTab({
                 type="number"
                 inputMode="numeric"
                 min="1"
-                placeholder="Ej: 1"
+                placeholder="Numero mostrado en caja"
                 value={cashReportId}
                 onChange={(event) => onCashReportIdChange(event.target.value)}
               />

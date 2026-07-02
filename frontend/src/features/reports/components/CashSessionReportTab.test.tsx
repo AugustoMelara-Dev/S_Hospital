@@ -4,6 +4,24 @@ import { CashSessionReportTab } from './CashSessionReportTab';
 import type { CashSessionReport } from '../../../lib/api/types';
 
 describe('CashSessionReportTab', () => {
+  it('asks for a cash turn without exposing raw numeric examples', () => {
+    render(
+      <CashSessionReportTab
+        canExport={false}
+        cashSession={null}
+        cashReportId=""
+        loading={false}
+        error=""
+        onCashReportIdChange={() => undefined}
+        onExport={() => undefined}
+        onSubmit={() => undefined}
+      />,
+    );
+
+    expect(screen.getByLabelText(/numero de caja/i)).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/ej:\s*1/i)).not.toBeInTheDocument();
+  });
+
   it('uses report reconciliation totals for open cash sessions', () => {
     const cashSession = {
       cash_session: {

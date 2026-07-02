@@ -1033,3 +1033,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, contratos de reportes, exportaciones, permisos, caja ni facturacion.
 - Este corte mejora la pantalla de reportes ejecutivos sin cambiar calculos ni filtros.
+
+## 42. Fase 10 - Filtro de caja sin ejemplo tecnico
+
+Cambio aplicado:
+
+- `CashSessionReportTab` deja de mostrar el placeholder `Ej: 1` en el filtro de caja.
+- El campo conserva el label `Numero de Caja` y ahora usa una guia operativa: `Numero mostrado en caja`.
+- Se agrego cobertura para evitar que reaparezca un ejemplo numerico crudo en el filtro.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- src/features/reports/components/CashSessionReportTab.test.tsx -t "cash turn"` | RED inicial por `Ej: 1`; luego OK: 1 test focal pasa. |
+| `docker compose exec frontend npm run test -- src/features/reports/ReportsView.subroutes.test.tsx src/features/reports/ReportsAudit.test.tsx src/features/reports/components/ReportFiltersPanel.test.tsx src/features/reports/components/PaymentMethodPanel.test.tsx src/features/reports/components/ServiceRanking.test.tsx src/features/reports/components/CashReconciliationPanel.test.tsx src/features/reports/components/CashSessionReportTab.test.tsx src/features/reports/components/PendingAgingPanel.test.tsx src/features/reports/components/VoidsReversalsPanel.test.tsx src/features/reports/components/MetricsGlossary.test.tsx` | OK: 10 archivos, 25 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, contratos de reportes, exportaciones, permisos, caja ni facturacion.
+- Este corte reduce ruido de identificadores internos en reportes de caja sin cambiar la consulta existente.
