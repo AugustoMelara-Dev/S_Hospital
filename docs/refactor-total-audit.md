@@ -741,3 +741,23 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, pagos, recibos, auditoria, caja ni correlativos fiscales.
 - Este corte reduce una llamada LAN innecesaria en el flujo critico de facturacion y deja una prueba explicita para evitar regresion.
+
+## 29. Fase 4/20 - Cobertura real para error 422 al emitir
+
+Cambio aplicado:
+
+- La prueba `preserves the cart after a 422 error from the backend` ahora confirma la factura desde el dialogo, fuerza un POST real a `/api/invoices` y simula la respuesta 422 del backend.
+- El test verifica que el carrito conserva `Eritropoyetina` y que se muestra el mensaje humano de validacion en la pantalla.
+- Se elimina la falsa confianza anterior donde la prueba podia pasar antes de llegar al endpoint de emision.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- src/features/invoices/NewInvoiceView.test.tsx` | RED inicial por expectativa de copy incorrecta tras llegar al backend simulado; luego OK: 10 tests pasan. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron componentes de produccion, backend, pagos, recibos, caja ni correlativos fiscales.
+- Este corte fortalece QA del flujo critico de facturacion: un 422 recuperable no debe vaciar el carrito del cajero.

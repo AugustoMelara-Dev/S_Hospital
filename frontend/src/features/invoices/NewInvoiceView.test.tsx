@@ -192,18 +192,9 @@ describe('NewInvoiceView critical flows', () => {
 
   it('preserves the cart after a 422 error from the backend', async () => {
     renderNewInvoice();
+    await waitForPointOfSaleLoad();
 
     const fetchMock = globalThis.fetch as ReturnType<typeof vi.fn>;
-    fetchMock.mockImplementationOnce(async () => {
-      return {
-        ok: false,
-        status: 422,
-        json: async () => ({
-          message: 'Error de validacion',
-          errors: { patient_name: ['Requerido'] },
-        }),
-      } as Response;
-    });
 
     const patientInput = screen.getByLabelText(/nombre del paciente/i);
     fireEvent.change(patientInput, { target: { value: 'Maria Lopez' } });
@@ -215,15 +206,44 @@ describe('NewInvoiceView critical flows', () => {
       expect(screen.getByText('Eritropoyetina')).toBeInTheDocument();
     }, { timeout: 3000 });
 
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(2);
+    });
+
     fireEvent.click(screen.getByText('Eritropoyetina'));
 
+    fetchMock.mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.endsWith('/api/invoices')) {
+        return {
+          ok: false,
+          status: 422,
+          json: async () => ({
+            message: 'Error de validacion',
+            errors: { patient_name: ['Requerido'] },
+          }),
+        } as Response;
+      }
+      return { ok: true, json: async () => ({ data: null }) } as Response;
+    });
+
     fireEvent.click(screen.getAllByRole('button', { name: /emitir/i })[0]);
+
+    await waitFor(() => {
+      expect(screen.getByRole('dialog', { name: /confirmar emis/i })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /emitir y abrir cobro/i }));
+
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.some(([url]) => String(url).endsWith('/api/invoices'))).toBe(true);
+    });
 
     await waitFor(() => {
       expect(screen.getAllByText('Eritropoyetina').length).toBeGreaterThan(0);
     });
 
-    expect(fetchMock).toHaveBeenCalled();
+    expect(screen.getByText(/patient name: requerido/i)).toBeInTheDocument();
   });
 
   it('does not let cashier proceed when cash session is closed', async () => {
