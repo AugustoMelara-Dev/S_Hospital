@@ -761,3 +761,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron componentes de produccion, backend, pagos, recibos, caja ni correlativos fiscales.
 - Este corte fortalece QA del flujo critico de facturacion: un 422 recuperable no debe vaciar el carrito del cajero.
+
+## 30. Fase 7/16 - Cierre de caja explica saldo pendiente
+
+Cambio aplicado:
+
+- `CloseSessionDialog` ahora muestra una advertencia accionable cuando el cierre esta bloqueado por saldo pendiente aunque el conteo de facturas pendientes venga en cero.
+- El boton `Cerrar caja` permanece deshabilitado mientras exista saldo pendiente, y el dialogo indica revisar Historial antes de cerrar.
+- Se corrigio un fixture de `CashBoxView.test.tsx` para que el reporte de movimientos coincida con la sesion de caja renderizada y la suite no deje warnings de TanStack Query.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- src/features/cash/components/CloseSessionDialog.test.tsx` | RED inicial por ausencia de copy `Revise Historial antes de cerrar`; luego OK: 5 tests pasan. |
+| `docker compose exec frontend npm run test -- src/features/cash/CashBoxView.test.tsx src/features/cash/components/CloseSessionDialog.test.tsx src/features/cash/components/SessionSummary.test.tsx src/features/cash/components/CashMovementsTable.test.tsx src/features/cash/components/OpenSessionForm.a11y.test.tsx` | OK: 5 archivos, 21 tests pasan sin warnings. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, pagos, facturacion, recibos, auditoria ni correlativos fiscales.
+- Este corte mejora el cierre guiado de caja para operacion monocomputadora: un bloqueo por saldo pendiente deja de ser silencioso.

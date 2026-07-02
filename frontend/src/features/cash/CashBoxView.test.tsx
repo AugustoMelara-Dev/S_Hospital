@@ -235,7 +235,7 @@ describe('CashBoxView', () => {
         } as Response;
       }
 
-      if (url.includes('/api/reports/cash-sessions/11')) {
+      if (url.includes('/api/reports/cash-sessions/10')) {
         return {
           ok: true,
           json: async () => ({

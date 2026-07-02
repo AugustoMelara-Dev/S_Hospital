@@ -230,11 +230,15 @@ export function CloseSessionDialog({
                 <span>Saldo pendiente:</span>
                 <strong>{formatLempirasUI(pendingAmount)}</strong>
               </div>
-              {pendingInvoiceCount > 0 && (
+              {pendingInvoiceCount > 0 ? (
                 <div className="rounded-md border border-warning/35 bg-warning/10 p-3 text-xs font-medium text-warning-foreground">
                   Hay {pendingInvoiceCount} factura(s) pendientes o parciales. El servidor no permitira cerrar hasta revisarlas.
                 </div>
-              )}
+              ) : pendingAmount > 0 ? (
+                <div className="rounded-md border border-warning/35 bg-warning/10 p-3 text-xs font-medium text-warning-foreground">
+                  Hay saldo pendiente en esta caja. Revise Historial antes de cerrar.
+                </div>
+              ) : null}
               <h3 className="text-xs font-semibold text-foreground">
                 2. Conteo de efectivo
               </h3>

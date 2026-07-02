@@ -160,6 +160,39 @@ describe('CloseSessionDialog', () => {
 
     expect(onConfirm).not.toHaveBeenCalled();
   });
+
+  it('explains why closing is blocked when pending amount exists without pending count', () => {
+    const onConfirm = vi.fn();
+
+    render(
+      <CloseSessionDialog
+        open
+        onOpenChange={vi.fn()}
+        session={{
+          opening_amount: '100.00',
+          expected_cash_amount: '125.00',
+          payments_by_method: { cash: '25.00', transfer: '0.00', card: '0.00', other: '0.00' },
+          pending_invoice_count: 0,
+          pending_amount: '30.00',
+        }}
+        closingAmount="125.00"
+        closingNotes=""
+        difference={0}
+        isSubmitting={false}
+        onClosingNotesChange={vi.fn()}
+        onConfirm={onConfirm}
+      />,
+    );
+
+    const closeButton = screen.getByRole('button', { name: /^cerrar caja$/i });
+    expect(screen.getByText(/hay saldo pendiente en esta caja/i)).toBeInTheDocument();
+    expect(screen.getByText(/revise historial antes de cerrar/i)).toBeInTheDocument();
+    expect(closeButton).toBeDisabled();
+
+    fireEvent.click(closeButton);
+
+    expect(onConfirm).not.toHaveBeenCalled();
+  });
 });
 
 function readBlobText(blob: Blob): Promise<string> {
