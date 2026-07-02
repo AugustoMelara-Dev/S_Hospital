@@ -166,7 +166,9 @@ describe('CatalogView modernized structure', () => {
 
     renderWithQueryClient(<CatalogView user={catalogUser()} onStatus={vi.fn()} />);
 
-    expect(await screen.findByLabelText(/buscar servicio/i)).toBeInTheDocument();
+    const search = await screen.findByLabelText(/buscar servicio/i);
+    expect(search).toHaveAttribute('placeholder', 'Buscar por nombre, categoria o area...');
+    expect(search).not.toHaveAttribute('placeholder', expect.stringMatching(/c[oó]digo/i));
   });
 
   it('clears the search input and resets the filter state via the clear button', async () => {

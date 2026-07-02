@@ -33,7 +33,7 @@ export function CatalogToolbar({
             id={searchInputId}
             name="catalog_search"
             label="Buscar servicio"
-            placeholder="Buscar por nombre o código..."
+            placeholder="Buscar por nombre, categoria o area..."
             value={searchValue}
             onValueChange={onSearchChange}
             className="min-w-[200px]"

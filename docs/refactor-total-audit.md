@@ -918,3 +918,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, emision, pagos, caja, catalogo ni calculos fiscales.
 - Este corte mantiene el carrito centrado en la tarea de caja: agregar servicios facturables sin ruido tecnico.
+
+## 37. Fase 8 - Busqueda principal de catalogo sin codigos internos
+
+Cambio aplicado:
+
+- `CatalogToolbar` deja de usar `Buscar por nombre o codigo...` como placeholder principal.
+- La busqueda visible del catalogo queda orientada a nombre, categoria o area.
+- Los codigos de scanner, barra y QR siguen disponibles en `ServiceSheet`, que es el lugar administrativo para configurar esos metadatos.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- src/features/catalog/CatalogView.test.tsx -t "search input"` | RED inicial por placeholder con `codigo`; luego OK: 2 tests filtrados pasan. |
+| `docker compose exec frontend npm run test -- src/features/catalog/CatalogView.test.tsx src/features/catalog/components/ServiceCatalogTable.test.tsx src/features/catalog/components/ServiceSheet.test.tsx src/features/catalog/components/CategorySheet.test.tsx` | OK: 4 archivos, 43 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, precios, desactivacion, permisos, scanner operativo ni formularios de administracion.
+- Este corte reduce ruido tecnico en la vista principal de catalogo sin eliminar trazabilidad de codigos cuando administracion edita un servicio.
