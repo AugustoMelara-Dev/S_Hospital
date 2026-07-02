@@ -437,6 +437,7 @@ Cambio aplicado:
 
 - `UsersView` ya no muestra botones inline por fila para editar, restablecer clave y activar/desactivar usuario.
 - Se agrego `UserActionMenu` como componente dedicado para construir acciones por permiso (`users.update`, `users.disable`) usando el `ActionMenu` compartido.
+- Se extrajo `UsersTable` para sacar columnas, estado visual y acciones por fila fuera de `UsersView`.
 - El flujo de desactivar usuario conserva confirmacion fuerte y no cambia reglas backend, auditoria, roles ni permisos.
 - `e2e/users-flow.spec.ts` ahora valida el flujo real de dos pasos: abrir acciones de usuario y luego seleccionar `Desactivar`.
 
@@ -445,8 +446,10 @@ Pruebas ejecutadas:
 | Comando | Resultado |
 |---|---|
 | `docker compose exec frontend npm run test -- src/features/admin/UsersView.test.tsx` | RED inicial por falta de `Acciones de usuario ...`; luego OK: 19 tests pasan. |
+| `docker compose exec frontend npm run test -- src/features/admin/components/UsersTable.test.tsx` | RED inicial por import faltante; luego OK: 2 tests pasan. |
+| `docker compose exec frontend npm run test -- src/features/admin/components/UsersTable.test.tsx src/features/admin/UsersView.test.tsx` | OK: 2 archivos, 21 tests pasan. |
 | `docker compose exec frontend npm run typecheck` | OK. |
-| `docker compose exec frontend npx eslint src/features/admin/UsersView.tsx src/features/admin/UsersView.test.tsx src/features/admin/components/UserActionMenu.tsx e2e/users-flow.spec.ts` | OK. |
+| `docker compose exec frontend npx eslint src/features/admin/UsersView.tsx src/features/admin/UsersView.test.tsx src/features/admin/components/UserActionMenu.tsx src/features/admin/components/UsersTable.tsx src/features/admin/components/UsersTable.test.tsx e2e/users-flow.spec.ts` | OK. |
 | `docker compose exec -e PLAYWRIGHT_EXTERNAL_SERVER=1 -e PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser frontend npx playwright test e2e/users-flow.spec.ts --workers=1` | OK: 1 test pasa tras reiniciar el contenedor frontend para limpiar el bundle viejo servido por Vite. |
 | `docker compose exec frontend npm run lint` | Bloqueado por trabajo no rastreado ajeno a esta subfase: `frontend/public/sw.js` introduce globals de service worker sin configuracion ESLint y variables `error` sin uso. No se tomo ese cambio en este commit. |
 
