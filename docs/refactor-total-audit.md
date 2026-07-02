@@ -784,3 +784,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, pagos, facturacion, recibos, auditoria ni correlativos fiscales.
 - Este corte mejora el cierre guiado de caja para operacion monocomputadora: un bloqueo por saldo pendiente deja de ser silencioso.
+
+## 31. Fase 8 - Tabla de catalogo sin codigos tecnicos
+
+Cambio aplicado:
+
+- `ServiceCatalogTable` mantiene columnas operativas fijas: Servicio, Categoria, Area, Precio, Estado y Acciones.
+- La tabla principal ya no agrega columna `Codigo` ni expone scan code, barcode o QR aunque el escaner este habilitado.
+- Los codigos siguen administrandose desde el formulario del servicio, donde pertenecen como configuracion puntual.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- src/features/catalog/components/ServiceCatalogTable.test.tsx` | RED inicial por columna `Codigo`; luego OK: 5 tests pasan. |
+| `docker compose exec frontend npm run test -- src/features/catalog/CatalogView.test.tsx src/features/catalog/components/ServiceCatalogTable.test.tsx src/features/catalog/components/ServiceSheet.test.tsx src/features/catalog/components/CategorySheet.test.tsx` | OK: 4 archivos, 43 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, facturacion, precios, auditoria, servicios facturados ni reglas de eritropoyetina.
+- Este corte reduce ruido tecnico en Catálogo sin eliminar la administracion de codigos cuando soporte/administracion edita un servicio.

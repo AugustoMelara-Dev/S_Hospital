@@ -16,12 +16,11 @@ export function ServiceCatalogTable({
   onClearFilters,
   onRetry,
   onRowActions,
-  scannerEnabled,
   services,
   hasActiveFilters,
   isEmpty,
 }: ServiceCatalogTableProps) {
-  const columns = createServiceColumns({ canManage, onRowActions, scannerEnabled });
+  const columns = createServiceColumns({ canManage, onRowActions });
 
   return (
     <DataTable
@@ -55,13 +54,11 @@ export function ServiceCatalogTable({
 type CreateServiceColumnsOptions = {
   canManage: boolean;
   onRowActions: ServiceCatalogTableProps['onRowActions'];
-  scannerEnabled: boolean;
 };
 
 function createServiceColumns({
   canManage,
   onRowActions,
-  scannerEnabled,
 }: CreateServiceColumnsOptions): Array<DataTableColumn<Service>> {
   const columns: Array<DataTableColumn<Service>> = [
     {
@@ -109,32 +106,22 @@ function createServiceColumns({
         );
       },
     },
-  ];
-
-  if (scannerEnabled) {
-    columns.push({
-      key: 'code',
-      header: 'Código',
-      cellClassName: 'px-4 py-3 align-top text-sm text-muted-foreground',
-      render: (service) => <ServiceCodeList service={service} />,
-    });
-  }
-
-  columns.push({
-    key: 'billing-state',
-    header: 'Estado',
-    cellClassName: 'px-4 py-3 align-top',
-    render: (service) => {
-      const billingSummary = getServiceBillingSummary(service);
-      return (
-        <div className="flex flex-wrap gap-1">
-          {billingSummary.badges.map((badge) => (
-            <ServiceBillingBadgeView key={`${service.id}-${badge.label}`} badge={badge} />
-          ))}
-        </div>
-      );
+    {
+      key: 'billing-state',
+      header: 'Estado',
+      cellClassName: 'px-4 py-3 align-top',
+      render: (service) => {
+        const billingSummary = getServiceBillingSummary(service);
+        return (
+          <div className="flex flex-wrap gap-1">
+            {billingSummary.badges.map((badge) => (
+              <ServiceBillingBadgeView key={`${service.id}-${badge.label}`} badge={badge} />
+            ))}
+          </div>
+        );
+      },
     },
-  });
+  ];
 
   if (canManage) {
     columns.push({
@@ -147,34 +134,6 @@ function createServiceColumns({
   }
 
   return columns;
-}
-
-type ServiceCodeListProps = {
-  service: Service;
-};
-
-function ServiceCodeList({ service }: ServiceCodeListProps) {
-  const codes: Array<['Escaner' | 'Barra' | 'QR', string | null | undefined]> = [
-    ['Escaner', service.scan_code],
-    ['Barra', service.barcode],
-    ['QR', service.qr_code],
-  ];
-
-  const visible = codes.filter(([, code]) => Boolean(code));
-
-  if (visible.length === 0) {
-    return <span>-</span>;
-  }
-
-  return (
-    <div className="flex flex-col gap-1">
-      {visible.map(([label, code]) => (
-        <span key={`${service.id}-${label}`} className="break-all text-xs">
-          {label}: {code}
-        </span>
-      ))}
-    </div>
-  );
 }
 
 function ServiceBillingBadgeView({ badge }: { badge: ServiceBillingBadge }) {

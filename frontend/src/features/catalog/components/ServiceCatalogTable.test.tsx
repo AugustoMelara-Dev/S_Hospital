@@ -49,6 +49,25 @@ describe('ServiceCatalogTable', () => {
     expect(screen.getByRole('columnheader', { name: /^Acciones$/ })).toBeInTheDocument();
   });
 
+  it('keeps scanner codes out of the main catalog table even when scanner is enabled', () => {
+    render(
+      <ServiceCatalogTable
+        {...baseProps()}
+        scannerEnabled
+        services={[
+          serviceFixture({
+            scan_code: 'LAB-GLU-001',
+            barcode: '741852963',
+            qr_code: 'QR-GLU-001',
+          }),
+        ]}
+      />,
+    );
+
+    expect(screen.queryByRole('columnheader', { name: /codigo|c[oó]digo/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/LAB-GLU-001|741852963|QR-GLU-001/i)).not.toBeInTheDocument();
+  });
+
   it('renders recognizable icons in row action menu items', async () => {
     render(<ServiceCatalogTable {...baseProps()} />);
 
