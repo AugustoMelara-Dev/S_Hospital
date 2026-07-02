@@ -161,6 +161,17 @@ describe('InstitutionalReceiptSettingsView', () => {
     expect(screen.queryByText('receipt_settings.advanced')).not.toBeInTheDocument();
   });
 
+  it('keeps technical support profiles out of the normal paper flow', async () => {
+    renderView({ canAdvancedPrintSettings: false });
+
+    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
+    await activateTab('Papel y copias');
+
+    expect(screen.queryByRole('button', { name: /recibo peque/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/ajustes avanzados/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/soporte t/i)).not.toBeInTheDocument();
+  });
+
   it('explains sensitive receipt numbering before saving a series', async () => {
     renderView();
 
@@ -187,11 +198,4 @@ describe('InstitutionalReceiptSettingsView', () => {
     });
   });
 
-  it('renders PermissionState when canAdvancedPrintSettings is false', async () => {
-    renderView({ canAdvancedPrintSettings: false });
-    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
-    await activateTab('Papel y copias');
-    expect(await screen.findByText('Ajustes avanzados restringidos')).toBeInTheDocument();
-    expect(screen.getByText('Ajustes avanzados requieren permiso de soporte técnico.')).toBeInTheDocument();
-  });
 });

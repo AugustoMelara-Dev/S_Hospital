@@ -964,3 +964,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, pagos, caja, recibos, contratos API ni calculos de monto aplicado/cambio.
 - Este corte mejora la claridad del cobro sin relajar la regla de que el servidor decide y registra el pago final.
+
+## 39. Fase 6 - Perfiles tecnicos fuera del flujo normal de recibos
+
+Cambio aplicado:
+
+- `InstitutionalReceiptSettingsView` deja de mostrar `Recibo pequeno personalizado` a usuarios sin `receipt_settings.advanced`.
+- El flujo normal de papel y copias ya no muestra avisos de ajustes avanzados ni mensajes de soporte tecnico.
+- El modo soporte sigue existiendo solo para usuarios con permiso avanzado y perfil compatible.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- src/features/receipt-settings/InstitutionalReceiptSettingsView.test.tsx -t "technical support profiles"` | RED inicial por perfil tecnico visible; luego OK: 1 test focal pasa. |
+| `docker compose exec frontend npm run test -- src/features/receipt-settings/InstitutionalReceiptSettingsView.test.tsx src/features/receipt-settings/ReceiptSettingsPreview.test.tsx src/features/receipts/ReceiptPreview.test.tsx src/features/receipts/ReceiptPreview.a11y.test.tsx` | OK: 4 archivos, 20 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, PDF, auditoria, correlativos fiscales, pagos ni caja.
+- Este corte refuerza la regla absoluta de impresion: la operacion normal solo elige papel, copias, logo, sello/firma, prueba, guardado y vista previa real.

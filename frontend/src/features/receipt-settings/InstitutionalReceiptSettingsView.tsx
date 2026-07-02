@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { LoadingState } from '@/components/ui/states';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { PaperProfileSelector, SectionCard, StatCard, PermissionState } from '@/components/shared';
+import { PaperProfileSelector, SectionCard, StatCard } from '@/components/shared';
 import { ReceiptSettingsPreview } from './components/ReceiptSettingsPreview';
 import { type InstitutionalReceiptSeries, type ReceiptPrintProfile, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { downloadBlob } from '@/lib/download';
@@ -52,6 +52,8 @@ const PAPER_TO_RECEIPT_CODE: Record<PaperProfileCode, ReceiptPrintProfile['code'
   '80mm': 'thermal_80mm',
   '58mm': 'thermal_58mm',
 };
+
+const SUPPORT_ONLY_PROFILE_CODES = new Set(['recibo_pequeno_personalizado']);
 
 const PROFILE_FORM_DEFAULTS = {
   copies_mode: 'original_only',
@@ -404,6 +406,9 @@ export function InstitutionalReceiptSettingsView({
       : watchedProfile.copies_mode === 'original_first'
         ? '2'
         : '1';
+  const visiblePrintProfiles = (settings?.print_profiles ?? []).filter(
+    (profile) => canAdvancedPrintSettings || !SUPPORT_ONLY_PROFILE_CODES.has(profile.code),
+  );
 
   return (
     <>
@@ -588,7 +593,7 @@ export function InstitutionalReceiptSettingsView({
               description="Carta, media carta y A5 son los perfiles institucionales principales."
             >
               <div className="space-y-3">
-                {(settings?.print_profiles ?? []).map((profile) => {
+                {visiblePrintProfiles.map((profile) => {
                   const paperCode = RECEIPT_PROFILE_TO_PAPER[profile.code];
                   const isActive = selectedCode === profile.code;
                   return (
@@ -770,16 +775,6 @@ export function InstitutionalReceiptSettingsView({
                 <Alert title="Modo soporte no aplica aquí">
                   Los ajustes avanzados solo aplican al perfil personalizado de recibo pequeño.
                 </Alert>
-              )}
-
-              {!canAdvancedPrintSettings && (
-                <div className="mt-5">
-                  <PermissionState
-                    state="denied"
-                    title="Ajustes avanzados restringidos"
-                    description="Ajustes avanzados requieren permiso de soporte técnico."
-                  />
-                </div>
               )}
 
             </SectionCard>
