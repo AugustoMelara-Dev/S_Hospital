@@ -63,6 +63,13 @@ const roleCatalog = {
   ],
 };
 
+async function openUserActions(userName: string) {
+  const trigger = await screen.findByRole('button', { name: new RegExp(`acciones de usuario ${userName}`, 'i') });
+  trigger.focus();
+  fireEvent.keyDown(trigger, { key: 'Enter', code: 'Enter', keyCode: 13, charCode: 13 });
+  fireEvent.click(trigger);
+}
+
 describe('UsersView', () => {
   beforeEach(() => {
     Element.prototype.scrollIntoView = vi.fn();
@@ -97,18 +104,30 @@ describe('UsersView', () => {
     render(<UsersView onStatus={vi.fn()} canCreateUsers={false} canManageRoles={false} />);
 
     expect(await screen.findByText('Admin Hospital')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /acciones de usuario admin hospital/i })).not.toBeInTheDocument();
+    expect(screen.getByText(/solo lectura/i)).toBeInTheDocument();
+  });
+
+  it('groups per-user mutation actions in a single action menu', async () => {
+    render(<UsersView onStatus={vi.fn()} canCreateUsers={false} canUpdateUsers canDisableUsers canManageRoles={false} />);
+
+    await openUserActions('Admin Hospital');
+
     expect(screen.queryByRole('button', { name: /editar usuario admin hospital/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /restablecer clave de admin hospital/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /desactivar usuario admin hospital/i })).not.toBeInTheDocument();
-    expect(screen.getByText(/solo lectura/i)).toBeInTheDocument();
+    expect(await screen.findByRole('menuitem', { name: /^editar$/i })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: /restablecer clave/i })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: /^desactivar$/i })).toBeInTheDocument();
   });
 
   it('shows exact user actions only for matching permissions', async () => {
     render(<UsersView onStatus={vi.fn()} canCreateUsers={false} canUpdateUsers canManageRoles={false} />);
 
-    expect(await screen.findByRole('button', { name: /editar usuario admin hospital/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /restablecer clave de admin hospital/i })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /desactivar usuario admin hospital/i })).not.toBeInTheDocument();
+    await openUserActions('Admin Hospital');
+    expect(await screen.findByRole('menuitem', { name: /^editar$/i })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: /restablecer clave/i })).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /^desactivar$/i })).not.toBeInTheDocument();
 
     cleanup();
     vi.mocked(apiClient.getUsers).mockResolvedValue([adminUser]);
@@ -116,9 +135,10 @@ describe('UsersView', () => {
 
     render(<UsersView onStatus={vi.fn()} canCreateUsers={false} canDisableUsers canManageRoles={false} />);
 
-    expect(await screen.findByRole('button', { name: /desactivar usuario admin hospital/i })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /editar usuario admin hospital/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /restablecer clave de admin hospital/i })).not.toBeInTheDocument();
+    await openUserActions('Admin Hospital');
+    expect(await screen.findByRole('menuitem', { name: /^desactivar$/i })).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /^editar$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /restablecer clave/i })).not.toBeInTheDocument();
   });
 
   it('shows a recoverable load error instead of leaving users in loading', async () => {
@@ -370,7 +390,8 @@ describe('UsersView', () => {
 
     render(<UsersView onStatus={vi.fn()} canCreateUsers={false} canUpdateUsers canManageRoles={true} />);
 
-    fireEvent.click(await screen.findByRole('button', { name: /editar usuario pendiente modulos/i }));
+    await openUserActions('Pendiente Modulos');
+    fireEvent.click(await screen.findByRole('menuitem', { name: /^editar$/i }));
     const dialog = screen.getByRole('dialog', { name: /editar usuario/i });
 
     expect(within(dialog).getByRole('checkbox', { name: /Cash view/i })).not.toBeChecked();
@@ -499,7 +520,8 @@ describe('UsersView', () => {
 
     render(<UsersView onStatus={vi.fn()} canCreateUsers={true} canUpdateUsers canManageRoles={true} />);
 
-    fireEvent.click(await screen.findByRole('button', { name: /restablecer clave de admin/i }));
+    await openUserActions('Admin Hospital');
+    fireEvent.click(await screen.findByRole('menuitem', { name: /restablecer clave/i }));
     const dialog = await screen.findByRole('dialog', { name: /restablecer clave para admin hospital/i });
 
     fireEvent.change(within(dialog).getByLabelText(/nueva contraseña temporal/i), { target: { value: 'abcdefghij' } });
@@ -524,7 +546,8 @@ describe('UsersView', () => {
 
     render(<UsersView onStatus={vi.fn()} canCreateUsers={true} canDisableUsers canManageRoles={true} />);
 
-    fireEvent.click(await screen.findByRole('button', { name: /desactivar usuario admin hospital/i }));
+    await openUserActions('Admin Hospital');
+    fireEvent.click(await screen.findByRole('menuitem', { name: /^desactivar$/i }));
     const dialog = await screen.findByRole('alertdialog', { name: /desactivar usuario/i });
     const confirm = within(dialog).getByRole('button', { name: /desactivar/i });
 

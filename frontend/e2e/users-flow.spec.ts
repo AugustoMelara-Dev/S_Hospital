@@ -108,7 +108,8 @@ test.describe('Users - critical mocked e2e', () => {
     await expect(page.getByRole('row', { name: /caja principal/i })).toBeVisible();
     await expect(page.getByRole('row', { name: /admin hospital/i })).toHaveCount(0);
 
-    await page.getByRole('button', { name: /desactivar usuario caja principal/i }).click();
+    await page.getByRole('button', { name: /acciones de usuario caja principal/i }).click();
+    await page.getByRole('menuitem', { name: /^desactivar$/i }).click();
     await expect.poll(() => toggleCalls).toBe(0);
     await expect(page.getByRole('alertdialog', { name: /desactivar usuario/i })).toBeVisible();
     await expect(page.getByText(/no podr. iniciar sesi.n ni operar en el sistema/i)).toBeVisible();

@@ -20,6 +20,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { UserFormDialog, roleLabel, type UserFormData } from './components/UserFormDialog';
 import { RoleFormDialog } from './components/RoleFormDialog';
 import { PasswordResetDialog } from './components/PasswordResetDialog';
+import { UserActionMenu } from './components/UserActionMenu';
 
 type UsersViewProps = {
   onStatus: (message: string) => void;
@@ -380,39 +381,14 @@ export function UsersView({
       headerClassName: 'text-right',
       cellClassName: 'text-right',
       render: (user) => (
-        <div className="flex flex-wrap justify-end gap-2">
-          {canUpdateUsers && (
-            <Button
-              variant="secondary"
-              size="sm"
-              aria-label={`Editar usuario ${user.name}`}
-              onClick={() => handleOpenEditModal(user)}
-            >
-              Editar
-            </Button>
-          )}
-          {canUpdateUsers && (
-            <Button
-              variant="secondary"
-              size="sm"
-              aria-label={`Restablecer clave de ${user.name}`}
-              onClick={() => handleOpenResetModal(user)}
-            >
-              Restablecer clave
-            </Button>
-          )}
-          {canDisableUsers && (
-            <Button
-              variant="secondary"
-              size="sm"
-              aria-label={user.active ? `Desactivar usuario ${user.name}` : `Activar usuario ${user.name}`}
-              className={user.active ? 'text-destructive' : 'text-success-foreground'}
-              onClick={() => handleOpenToggleDialog(user)}
-            >
-              {user.active ? 'Desactivar' : 'Activar'}
-            </Button>
-          )}
-        </div>
+        <UserActionMenu
+          canDisableUsers={canDisableUsers}
+          canUpdateUsers={canUpdateUsers}
+          onEdit={handleOpenEditModal}
+          onResetPassword={handleOpenResetModal}
+          onToggleActive={handleOpenToggleDialog}
+          user={user}
+        />
       ),
     },
   ];
