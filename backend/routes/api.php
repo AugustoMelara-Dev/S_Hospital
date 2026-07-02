@@ -2,6 +2,7 @@
 
 use App\Actions\Reports\OpenApiExporter;
 use App\Http\Controllers\AreaController;
+use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\CashSessionController;
@@ -197,6 +198,8 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle.user:240,1'])->gr
 
         Route::get('/system/status-summary', [SystemStatusController::class, 'summary']);
         Route::get('/system/status', [SystemStatusController::class, 'show']);
+        Route::get('/system/audit-logs', [AuditLogController::class, 'index'])
+            ->middleware('throttle.user:60,1');
         Route::post('/system/client-errors', [ClientErrorLogController::class, 'store'])
             ->middleware('throttle:30,1');
 

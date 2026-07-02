@@ -3,6 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { ReportsAudit } from './ReportsAudit';
 import { ReportsCash } from './ReportsCash';
 import { ReportsExecutive } from './ReportsExecutive';
+import { PageHeader } from '@/components/ui/page-header';
 import { cn } from '@/lib/utils';
 import { LineChart, ShieldCheck, WalletCards } from 'lucide-react';
 
@@ -35,20 +36,28 @@ const SUB_ROUTES = [
 ] as const;
 
 export function ReportsView(props: ReportsViewProps) {
-  const subRoute = SubRouteFromLocation();
+  const { isRoot, subRoute } = useReportsRoute();
   return (
     <div data-slot="reports-view" className="flex flex-col gap-5">
+      {isRoot ? (
+        <PageHeader
+          title="Reportes"
+          description="Ejecutivo, caja y auditoria para supervision diaria."
+          className="pb-4"
+        />
+      ) : null}
       <ReportsNavigation active={subRoute} canViewManagerial={props.canViewManagerial} canViewCash={props.canViewCashSessionReport} />
-      <ReportsContent {...props} subRoute={subRoute} />
+      <ReportsContent {...props} subRoute={subRoute} executiveTitleLevel={isRoot ? 2 : 1} />
     </div>
   );
 }
 
-function SubRouteFromLocation(): typeof SUB_ROUTES[number]['id'] {
+function useReportsRoute(): { isRoot: boolean; subRoute: typeof SUB_ROUTES[number]['id'] } {
   const location = useLocation();
   return useMemo(() => {
     const segments = location.pathname.split('/').filter(Boolean);
-    return (segments[1] ?? 'executive') as typeof SUB_ROUTES[number]['id'];
+    const subRoute = (segments[1] ?? 'executive') as typeof SUB_ROUTES[number]['id'];
+    return { isRoot: segments.length === 1, subRoute };
   }, [location.pathname]);
 }
 
@@ -101,9 +110,13 @@ function ReportsNavigation({
 }
 
 function ReportsContent({
+  executiveTitleLevel,
   subRoute,
   ...props
-}: ReportsViewProps & { subRoute: typeof SUB_ROUTES[number]['id'] }) {
+}: ReportsViewProps & {
+  executiveTitleLevel: 1 | 2 | 3;
+  subRoute: typeof SUB_ROUTES[number]['id'];
+}) {
   if (subRoute === 'cash') {
     return <ReportsCash canViewCash={props.canViewCashSessionReport} canViewManagerial={props.canViewManagerial} />;
   }
@@ -123,6 +136,7 @@ function ReportsContent({
       canViewManagerial={props.canViewManagerial}
       canExport={props.canExport}
       onStatus={props.onStatus}
+      titleLevel={executiveTitleLevel}
     />
   );
 }

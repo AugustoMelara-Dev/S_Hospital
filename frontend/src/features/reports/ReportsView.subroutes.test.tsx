@@ -72,9 +72,11 @@ function renderReports(initialPath: string, canViewManagerial = true) {
 describe('ReportsView (sub-routes)', () => {
   it('renders the three sub-route tabs', () => {
     renderReports('/reports');
+    expect(screen.getByRole('heading', { level: 1, name: /^reportes$/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /ejecutivo/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /caja/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /auditoria/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: /control ejecutivo/i })).toBeInTheDocument();
   });
 
   it('hides sub-routes when the user lacks managerial permission', () => {

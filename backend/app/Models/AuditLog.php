@@ -10,10 +10,13 @@ use Illuminate\Support\Carbon;
  * @property int $id
  * @property int|null $user_id
  * @property string $action
+ * @property string|null $result
  * @property string $entity_type
  * @property int|null $entity_id
  * @property array<string, mixed>|null $old_values
  * @property array<string, mixed>|null $new_values
+ * @property string|null $reason
+ * @property string|null $ip_address
  * @property string|null $ip
  * @property string|null $user_agent
  * @property string|null $url

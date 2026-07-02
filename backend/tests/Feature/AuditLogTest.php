@@ -142,6 +142,69 @@ class AuditLogTest extends TestCase
         $this->assertStringNotContainsString('plain-secret', json_encode($entry->toArray(), JSON_THROW_ON_ERROR));
     }
 
+    public function test_auditor_can_list_filtered_audit_logs_without_internal_payloads(): void
+    {
+        $auditor = User::factory()->create([
+            'username' => 'auditor-api',
+            'email' => 'auditor-api@hospital.local',
+            'active' => true,
+        ]);
+        $auditor->assignRole('auditor');
+
+        $cashier = User::factory()->create([
+            'username' => 'audit-cashier',
+            'email' => 'audit-cashier@hospital.local',
+            'active' => true,
+        ]);
+
+        AuditLog::query()->create([
+            'user_id' => $cashier->id,
+            'action' => 'invoice.voided',
+            'result' => 'success',
+            'entity_type' => 'invoice',
+            'entity_id' => 15,
+            'reason' => 'error operativo',
+            'ip_address' => '192.168.1.25',
+            'old_values' => ['patient' => 'Dato interno anterior'],
+            'new_values' => ['patient' => 'Dato interno nuevo'],
+            'created_at' => now()->setDate(2026, 6, 15)->setTime(10, 0),
+        ]);
+
+        AuditLog::query()->create([
+            'user_id' => $cashier->id,
+            'action' => 'backup.created',
+            'result' => 'success',
+            'entity_type' => 'backup',
+            'entity_id' => 7,
+            'created_at' => now()->setDate(2026, 6, 16)->setTime(10, 0),
+        ]);
+
+        $this->actingAs($auditor)
+            ->getJson('/api/system/audit-logs?action=void&from=2026-06-01&to=2026-06-30&per_page=10')
+            ->assertOk()
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('data.0.action', 'invoice.voided')
+            ->assertJsonPath('data.0.reason', 'error operativo')
+            ->assertJsonPath('data.0.ip', '192.168.1.25')
+            ->assertJsonPath('data.0.user.username', 'audit-cashier')
+            ->assertJsonMissingPath('data.0.old_values')
+            ->assertJsonMissingPath('data.0.new_values');
+    }
+
+    public function test_audit_log_register_requires_audit_view_permission(): void
+    {
+        $cashier = User::factory()->create([
+            'username' => 'audit-denied',
+            'email' => 'audit-denied@hospital.local',
+            'active' => true,
+        ]);
+        $cashier->assignRole('cajero');
+
+        $this->actingAs($cashier)
+            ->getJson('/api/system/audit-logs')
+            ->assertForbidden();
+    }
+
     private function admin(): User
     {
         $user = User::factory()->create([

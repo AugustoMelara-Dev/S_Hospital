@@ -801,6 +801,23 @@ export type DashboardReport = {
   }>;
 };
 
+export type AuditLogEntry = {
+  id: number;
+  action: string;
+  result?: string | null;
+  reason?: string | null;
+  ip?: string | null;
+  entity_type?: string | null;
+  entity_id?: number | string | null;
+  created_at?: string | null;
+  user?: { id: number; name: string; username: string } | null;
+};
+
+export type AuditLogPage = {
+  data: AuditLogEntry[];
+  meta: PaginatedMeta;
+};
+
 
 export type OperationalHealth = {
   generated_at: string;

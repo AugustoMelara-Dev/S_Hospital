@@ -24,12 +24,14 @@ type ReportsExecutiveProps = {
   canExport: boolean;
   canViewManagerial: boolean;
   onStatus: (message: string) => void;
+  titleLevel?: 1 | 2 | 3;
 };
 
 export function ReportsExecutive({
   canViewManagerial,
   canExport,
   onStatus,
+  titleLevel = 1,
 }: ReportsExecutiveProps) {
   const [preset, setPreset] = useState<PresetKey>(canViewManagerial ? 'thisMonth' : 'today');
   const [filters, setFilters] = useState<ExecutiveReportFilters>(() => {
@@ -152,7 +154,7 @@ export function ReportsExecutive({
         canExport={canExport}
         loading={isFetching}
         exporting={exportingRef.current}
-        titleLevel={1}
+        titleLevel={titleLevel}
         rangeError={executiveRangeError}
       />
 
