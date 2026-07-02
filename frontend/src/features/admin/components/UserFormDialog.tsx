@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -65,7 +65,9 @@ export function UserFormDialog({
   globalError,
   onSubmit,
 }: UserFormDialogProps) {
+  const [criticalAccessConfirmed, setCriticalAccessConfirmed] = useState(false);
   const schema = editingUser ? editUserSchema : createUserSchema;
+  const hasSelectedCriticalPermission = selectedUserPermissions.some(isCriticalPermission);
   const {
     register,
     unregister,
@@ -80,12 +82,26 @@ export function UserFormDialog({
 
   useEffect(() => {
     if (open) {
+      setCriticalAccessConfirmed(false);
       reset(defaultValuesFor(editingUser, roles));
       if (editingUser) {
         unregister('password');
       }
     }
   }, [open, editingUser, roles, reset, unregister]);
+
+  useEffect(() => {
+    if (!hasSelectedCriticalPermission) {
+      setCriticalAccessConfirmed(false);
+    }
+  }, [hasSelectedCriticalPermission]);
+
+  const handleSafeSubmit = handleSubmit((data) => {
+    if (hasSelectedCriticalPermission && !criticalAccessConfirmed) {
+      return;
+    }
+    return onSubmit(data);
+  });
 
   return (
     <Dialog
@@ -97,7 +113,7 @@ export function UserFormDialog({
       title={editingUser ? 'Editar usuario' : 'Crear usuario'}
       description="Configure nombre, acceso y rol operativo."
     >
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={handleSafeSubmit} className="space-y-4">
         {globalError && (
           <Alert variant="destructive" title="No se pudo guardar">
             {globalError}
@@ -163,6 +179,23 @@ export function UserFormDialog({
                 Ajuste los permisos directos de este usuario. El rol funciona como plantilla inicial.
               </p>
             </div>
+            {hasSelectedCriticalPermission && (
+              <div className="rounded-md border border-warning/40 bg-warning/10 p-3 text-sm text-warning-foreground">
+                <p className="font-semibold">Permisos criticos seleccionados</p>
+                <p className="mt-1 text-xs text-current/80">
+                  Estos accesos pueden modificar caja, recibos, anulaciones, respaldos o usuarios. Confirme que esta cuenta realmente los necesita.
+                </p>
+                <label htmlFor="critical-user-confirmation" className="mt-3 flex items-start gap-2">
+                  <Checkbox
+                    id="critical-user-confirmation"
+                    checked={criticalAccessConfirmed}
+                    disabled={isSubmitting}
+                    onCheckedChange={(value) => setCriticalAccessConfirmed(value === true)}
+                  />
+                  <span>Confirmo que este usuario necesita permisos criticos</span>
+                </label>
+              </div>
+            )}
             <div className="max-h-[320px] space-y-3 overflow-y-auto">
               {permissionCatalog.map((group) => (
                 <fieldset key={group.module} className="rounded-md border border-operational-border bg-operational-surface p-3">
@@ -212,7 +245,7 @@ export function UserFormDialog({
           <Button type="button" variant="secondary" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
             Cancelar
           </Button>
-          <Button type="submit" disabled={isSubmitting}>
+          <Button type="submit" disabled={isSubmitting || (hasSelectedCriticalPermission && !criticalAccessConfirmed)}>
             <Save data-icon aria-hidden="true" />
             {isSubmitting ? 'Guardando...' : editingUser ? 'Guardar cambios' : 'Crear usuario'}
           </Button>

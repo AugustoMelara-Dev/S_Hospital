@@ -1125,3 +1125,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, politicas, endpoints, auditoria, usuarios existentes ni catalogo de permisos.
 - Este corte mejora el flujo de administracion de roles sin cambiar la autorizacion final del servidor.
+
+## 46. Fase 13 - Confirmacion al guardar usuarios con permisos directos criticos
+
+Cambio aplicado:
+
+- `UserFormDialog` ahora muestra advertencia cuando una cuenta tiene permisos directos criticos seleccionados.
+- El boton de guardar/crear queda deshabilitado hasta que el administrador confirme explicitamente que la cuenta necesita esos accesos.
+- El submit del formulario tambien bloquea el envio por teclado si falta la confirmacion.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- src/features/admin/components/UserFormDialog.test.tsx -t "saving a user with critical"` | RED inicial porque el boton seguia habilitado; luego OK: 1 test focal pasa. |
+| `docker compose exec frontend npm run test -- src/features/admin/UsersView.test.tsx src/features/admin/components/UserFormDialog.test.tsx src/features/admin/components/RoleFormDialog.test.tsx src/features/admin/components/PermissionMatrix.test.tsx src/features/admin/components/UsersTable.test.tsx` | OK: 5 archivos, 40 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, politicas, endpoints, auditoria ni asignacion final de permisos.
+- Este corte hace que la administracion de permisos directos sea mas deliberada sin cambiar RBAC del servidor.

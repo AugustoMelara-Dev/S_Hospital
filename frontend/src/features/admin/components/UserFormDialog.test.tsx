@@ -129,6 +129,41 @@ describe('UserFormDialog', () => {
     expect(screen.getByText(/permiso critico/i)).toBeInTheDocument();
   });
 
+  it('requires explicit confirmation before saving a user with critical direct permissions', () => {
+    render(
+      <UserFormDialog
+        open
+        onOpenChange={vi.fn()}
+        editingUser={baseUser}
+        roles={roles}
+        canManageRoles
+        selectedUserPermissions={['receipt_settings.advanced']}
+        onToggleUserPermission={vi.fn()}
+        permissionCatalog={[
+          {
+            module: 'receipts',
+            label: 'Recibos',
+            permissions: [
+              {
+                name: 'receipt_settings.advanced',
+                label: 'Modo soporte tecnico de recibos',
+              },
+            ],
+          },
+        ]}
+        globalError={null}
+        onSubmit={vi.fn()}
+      />,
+    );
+
+    const submit = screen.getByRole('button', { name: /guardar cambios/i });
+    expect(submit).toBeDisabled();
+
+    fireEvent.click(screen.getByRole('checkbox', { name: /confirmo que este usuario necesita permisos criticos/i }));
+
+    expect(submit).not.toBeDisabled();
+  });
+
   it('rejects a non-compliant new user password with an inline message', async () => {
     const onSubmit = vi.fn();
 
