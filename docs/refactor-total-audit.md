@@ -872,3 +872,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, permisos, auditoria almacenada, reportes de caja, exportaciones ni reglas fiscales.
 - Este corte hace el reporte de auditoria mas util para operacion diaria sin eliminar la posibilidad de que soporte busque por codigo tecnico si lo necesita.
+
+## 35. Fase 4 - Busqueda de servicios sin codigos internos en modo normal
+
+Cambio aplicado:
+
+- `ServiceSearch` deja de mencionar `codigo`, `scanner` o `lector` en el flujo normal cuando la opcion de scanner esta desactivada.
+- La busqueda principal queda orientada a nombre, area o categoria, manteniendo el soporte de lector solo cuando `scanner_enabled` esta activo.
+- Las etiquetas accesibles del control de lector pasan a lenguaje operativo (`Lector USB o entrada manual`) sin exponer valores internos en resultados.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- src/features/invoices/components/ServiceSearch.test.tsx` | RED inicial por menciones a `codigo/lector`; luego OK: 9 tests pasan. |
+| `docker compose exec frontend npm run test -- src/features/invoices/NewInvoiceView.test.tsx src/features/invoices/components/ServiceSearch.test.tsx` | OK: 2 archivos, 19 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, contratos API, caja, pagos, precios, catalogo ni reglas de eritropoyetina.
+- Este corte reduce ruido tecnico en nueva factura sin quitar compatibilidad con lector cuando el hospital habilita scanner.

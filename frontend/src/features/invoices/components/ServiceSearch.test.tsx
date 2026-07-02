@@ -20,6 +20,19 @@ describe('ServiceSearch', () => {
     expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|undefined/);
   });
 
+  it('keeps normal service search free of scanner and internal code language', () => {
+    renderSearch({
+      scannerEnabled: false,
+      search: '',
+      selectedCategoryId: undefined,
+      selectedAreaId: undefined,
+    });
+
+    expect(screen.getByLabelText(/buscar por nombre, area o categoria/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/scanner|codigo|código|lector/i)).not.toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/scanner|lector|c[oó]digo/i);
+  });
+
   it('keeps search and filter callbacks controlled by the consumer', () => {
     const onSearchChange = vi.fn();
     const onAreaChange = vi.fn();
@@ -88,7 +101,7 @@ describe('ServiceSearch', () => {
       scannerInputRef,
     });
 
-    const scanner = screen.getByLabelText(/scanner usb o código manual/i);
+    const scanner = screen.getByLabelText(/lector usb o entrada manual/i);
     expect(scanner).toHaveValue('LAB-001');
 
     fireEvent.change(scanner, { target: { value: 'LAB-002' } });
@@ -106,7 +119,7 @@ describe('ServiceSearch', () => {
       scanCode: 'LAB-001',
     });
 
-    expect(screen.getByLabelText(/scanner usb o código manual/i)).toBeDisabled();
+    expect(screen.getByLabelText(/lector usb o entrada manual/i)).toBeDisabled();
     expect(screen.getByRole('button', { name: /buscando/i })).toBeDisabled();
   });
 

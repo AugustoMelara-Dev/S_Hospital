@@ -134,7 +134,11 @@ export function ServiceSearch({
         <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
             <p className="text-sm font-semibold text-foreground">Busqueda de servicios</p>
-            <p className="text-xs text-muted-foreground">Filtre por area, categoria, texto o lector sin mostrar codigos internos.</p>
+            <p className="text-xs text-muted-foreground">
+              {scannerEnabled
+                ? 'Filtre por area, categoria, texto o lector sin exponer datos internos.'
+                : 'Filtre por nombre, area o categoria para agregar servicios.'}
+            </p>
           </div>
           <Badge variant={activeFilterCount > 0 ? 'info' : 'secondary'} className="w-fit">
             {activeFilterCount} filtro{activeFilterCount === 1 ? '' : 's'}
@@ -143,7 +147,7 @@ export function ServiceSearch({
         <div className={scannerEnabled ? 'grid gap-3 sm:grid-cols-[1fr_minmax(14rem,18rem)]' : 'grid gap-3'}>
           <div className="flex min-w-0 flex-col gap-2">
             <Label htmlFor="service-search" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-              Buscar por nombre, categoría o código
+              Buscar por nombre, area o categoria
             </Label>
             <div className="relative">
               <Search className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-secondary" aria-hidden="true" />
@@ -151,7 +155,7 @@ export function ServiceSearch({
                 ref={searchInputRef}
                 id="service-search"
                 name="service_search"
-                aria-label="Buscar por nombre, categoría o código"
+                aria-label="Buscar por nombre, area o categoria"
                 placeholder="Glucosa, hemograma, eritropoyetina..."
                 value={search}
                 onChange={(e) => onSearchChange(e.target.value)}
@@ -177,7 +181,7 @@ export function ServiceSearch({
           {scannerEnabled ? (
             <div className="flex min-w-0 flex-col gap-2">
               <Label htmlFor="scanner-code" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                Scanner USB o código manual
+                Lector USB o entrada manual
               </Label>
               <div className="flex items-center gap-2">
                 <div className="relative min-w-0 flex-1">
@@ -186,8 +190,8 @@ export function ServiceSearch({
                     ref={scannerInputRef}
                     id="scanner-code"
                     name="scanner_code"
-                    aria-label="Scanner USB o código manual"
-                    placeholder="Código..."
+                    aria-label="Lector USB o entrada manual"
+                    placeholder="Escanee o ingrese referencia..."
                     value={scanCode}
                     onChange={(e) => onScanCodeChange(e.target.value)}
                     onKeyDown={(e) => {
@@ -299,7 +303,9 @@ export function ServiceSearch({
           <div className="flex flex-col items-center justify-center gap-2 rounded-md border border-dashed border-border bg-muted/35 px-4 py-10 text-center text-muted-foreground" role="status" aria-live="polite">
             <span className="font-medium text-foreground">Busque o elija una categoría</span>
             <span className="max-w-sm text-sm">
-              Escriba el nombre del servicio, escanee un código o toque una categoría para ver opciones facturables.
+              {scannerEnabled
+                ? 'Escriba el nombre del servicio, use el lector o toque una categoria para ver opciones facturables.'
+                : 'Escriba el nombre del servicio o toque una categoria para ver opciones facturables.'}
             </span>
           </div>
         ) : filteredServices.length === 0 ? (
