@@ -27,6 +27,18 @@ const EMPTY_FILTERS: AuditLogFilters = {
   page: 1,
 };
 
+const AUDIT_ACTION_ALIASES: Array<{ action: string; terms: string[] }> = [
+  { action: 'invoice.voided', terms: ['anulacion', 'anular', 'anulada', 'anulado'] },
+  { action: 'invoice.reversed', terms: ['reversa', 'reversar', 'reversado'] },
+  { action: 'invoice.reprinted', terms: ['reimpresion', 'reimprimir', 'copia'] },
+  { action: 'cash_session.opened', terms: ['apertura de caja', 'abrir caja', 'caja abierta'] },
+  { action: 'cash_session.closed', terms: ['cierre de caja', 'cerrar caja', 'caja cerrada'] },
+  { action: 'payment.registered', terms: ['cobro', 'pago', 'pago registrado'] },
+  { action: 'service.price_updated', terms: ['precio', 'cambio de precio'] },
+  { action: 'fiscal_sequence', terms: ['fiscal', 'correlativo', 'numeracion'] },
+  { action: 'backup', terms: ['respaldo', 'backup'] },
+];
+
 type ReportsAuditProps = {
   canExport: boolean;
   canViewManagerial: boolean;
@@ -49,7 +61,7 @@ export function ReportsAudit({
     queryKey,
     queryFn: () =>
       system.getAuditLogs({
-        action: applied.action || undefined,
+        action: resolveAuditActionFilter(applied.action),
         from: applied.from || undefined,
         to: applied.to || undefined,
         page: applied.page,
@@ -117,7 +129,7 @@ export function ReportsAudit({
                 id="audit-action"
                 value={draft.action}
                 onChange={(event) => setDraft((current) => ({ ...current, action: event.target.value }))}
-                placeholder="login, fiscal.update, …"
+                placeholder="Anulacion, reimpresion, cierre de caja..."
                 className="pl-9"
                 autoComplete="off"
               />
@@ -214,4 +226,25 @@ export function ReportsAudit({
       ) : null}
     </section>
   );
+}
+
+function resolveAuditActionFilter(value: string): string | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+
+  const normalized = normalizeSearchText(trimmed);
+  const alias = AUDIT_ACTION_ALIASES.find(({ terms }) =>
+    terms.some((term) => normalized.includes(normalizeSearchText(term))),
+  );
+
+  return alias?.action ?? trimmed;
+}
+
+function normalizeSearchText(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
 }

@@ -62,6 +62,23 @@ describe('ReportsAudit', () => {
     expect(screen.getByLabelText(/^hasta$/i)).toBeInTheDocument();
   });
 
+  it('maps common human action filters to backend audit action codes', async () => {
+    renderView();
+
+    const actionInput = screen.getByLabelText(/^acci.n$/i);
+    expect(actionInput).toHaveAttribute('placeholder', expect.stringMatching(/anulaci/i));
+    expect(actionInput).not.toHaveAttribute('placeholder', expect.stringMatching(/fiscal\.update|login/i));
+
+    fireEvent.change(actionInput, { target: { value: 'anulacion' } });
+    fireEvent.click(screen.getByRole('button', { name: /buscar/i }));
+
+    await waitFor(() => {
+      expect(getAuditLogsMock).toHaveBeenLastCalledWith(expect.objectContaining({
+        action: 'invoice.voided',
+      }));
+    });
+  });
+
   it('renders the access denied message when the user lacks managerial permission', () => {
     renderView({ canViewManagerial: false });
     expect(screen.getByText(/sin permisos para auditor/i)).toBeInTheDocument();

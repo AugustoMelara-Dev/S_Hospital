@@ -849,3 +849,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, jobs de respaldo, descarga, permisos, auditoria ni rutas de restore.
 - Este corte mantiene la seriedad de recuperacion de datos sin convertir la restauracion en una accion visible de operacion diaria.
+
+## 34. Fase 10 - Auditoria con busqueda por acciones humanas
+
+Cambio aplicado:
+
+- `ReportsAudit` reemplaza el placeholder tecnico `login, fiscal.update...` por ejemplos operativos: anulacion, reimpresion y cierre de caja.
+- El filtro de accion acepta alias humanos comunes y los traduce al codigo de auditoria real antes de llamar al backend.
+- Ejemplo probado: `anulacion` se envia como `invoice.voided`, manteniendo el contrato existente de `/api/system/audit-logs?action=...`.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- src/features/reports/ReportsAudit.test.tsx -t "maps common human"` | RED inicial por placeholder tecnico; luego OK: 1 test focal pasa. |
+| `docker compose exec frontend npm run test -- src/features/reports/ReportsAudit.test.tsx src/features/reports/ReportsView.subroutes.test.tsx src/features/reports/components/VoidsReversalsPanel.test.tsx src/features/reports/components/CashReconciliationPanel.test.tsx src/features/reports/components/PaymentMethodPanel.test.tsx src/features/reports/components/ServiceRanking.test.tsx` | OK: 6 archivos, 16 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, permisos, auditoria almacenada, reportes de caja, exportaciones ni reglas fiscales.
+- Este corte hace el reporte de auditoria mas util para operacion diaria sin eliminar la posibilidad de que soporte busque por codigo tecnico si lo necesita.
