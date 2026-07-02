@@ -627,3 +627,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, permisos reales, contratos API, rutas ni reglas RBAC.
 - Este corte avanza Fase 13 y Fase 2 haciendo que el shell global use nombres de rol humanos sin cambiar autorizacion.
+
+## 24. Fase 13/15 - Matriz de permisos con etiquetas accesibles
+
+Cambio aplicado:
+
+- `PermissionMatrix` deja de usar `role.name` crudo en los `aria-label` de celdas de permisos.
+- La matriz reutiliza `roleLabel` compartido para que lectores de pantalla anuncien nombres humanos como `Catalog Manager` en lugar de `catalog_manager`.
+- Se elimino el formateador local duplicado de `PermissionMatrix`, manteniendo una sola fuente para etiquetas de roles.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- src/features/admin/components/PermissionMatrix.test.tsx` | RED inicial por `aria-label` tecnico `catalog_manager`; luego OK: 4 tests pasan. |
+| `docker compose exec frontend npm run test -- src/features/admin/components/PermissionMatrix.test.tsx src/features/admin/UsersView.test.tsx src/layout/AppShell.test.tsx` | OK: 3 archivos, 33 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, permisos reales, contratos API ni reglas RBAC.
+- Este corte avanza Fase 13 y Fase 15: mejora la claridad de permisos tambien para tecnologia asistiva sin cambiar autorizacion.

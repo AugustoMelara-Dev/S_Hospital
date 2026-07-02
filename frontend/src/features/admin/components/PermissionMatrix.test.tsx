@@ -19,6 +19,12 @@ const roles: RoleDefinition[] = [
     protected: false,
     permissions: [{ name: 'audit.view', module: 'audit', label: 'Ver auditoria' }],
   },
+  {
+    id: 3,
+    name: 'catalog_manager',
+    protected: false,
+    permissions: [{ name: 'cash.view', module: 'cash', label: 'Ver caja' }],
+  },
 ];
 
 const catalog: PermissionCatalogGroup[] = [
@@ -47,13 +53,21 @@ describe('PermissionMatrix', () => {
   it('marks granted and denied permissions with text, not color alone', () => {
     render(<PermissionMatrix roles={roles} permissionCatalog={catalog} />);
 
-    const grantedCell = screen.getByLabelText('cajero tiene Crear facturas');
+    const grantedCell = screen.getByLabelText('Cajero tiene Crear facturas');
     expect(grantedCell).toBeInTheDocument();
     expect(within(grantedCell).getByText('Si')).toBeInTheDocument();
 
-    const deniedCell = screen.getByLabelText('auditor no tiene Crear facturas');
+    const deniedCell = screen.getByLabelText('Auditor no tiene Crear facturas');
     expect(deniedCell).toBeInTheDocument();
     expect(within(deniedCell).getByText('No')).toBeInTheDocument();
+  });
+
+  it('uses human role names in assistive labels', () => {
+    render(<PermissionMatrix roles={roles} permissionCatalog={catalog} />);
+
+    expect(screen.getByRole('columnheader', { name: /catalog manager/i })).toBeInTheDocument();
+    expect(screen.getByLabelText('Catalog Manager tiene Ver caja')).toBeInTheDocument();
+    expect(screen.queryByLabelText('catalog_manager tiene Ver caja')).not.toBeInTheDocument();
   });
 
   it('returns null when no roles or catalog are provided', () => {

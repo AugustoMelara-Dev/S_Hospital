@@ -1,6 +1,7 @@
 import { useId, useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import type { PermissionCatalogGroup, RoleDefinition } from '@/lib/api';
+import { roleLabel } from '@/lib/role-labels';
 import { cn } from '@/lib/utils';
 
 type PermissionMatrixProps = {
@@ -55,7 +56,7 @@ export function PermissionMatrix({ roles, permissionCatalog, className }: Permis
                   scope="col"
                   className="min-w-32 p-2 text-left text-xs font-semibold text-muted-foreground"
                 >
-                  {formatRoleName(role.name)}
+                  {roleLabel(role.name)}
                 </th>
               ))}
             </tr>
@@ -143,7 +144,7 @@ function PermissionGroup({
               <td
                 key={`${permission.name}-${role.id}`}
                 className="p-2 text-center align-middle"
-                aria-label={`${role.name} ${granted ? 'tiene' : 'no tiene'} ${permission.label}`}
+                aria-label={`${roleLabel(role.name)} ${granted ? 'tiene' : 'no tiene'} ${permission.label}`}
               >
                 <span
                   className={cn(
@@ -162,12 +163,4 @@ function PermissionGroup({
       ))}
     </tbody>
   );
-}
-
-function formatRoleName(name: string): string {
-  return name
-    .split(/[_-]+/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
 }
