@@ -1,92 +1,101 @@
-# Reporte de Pruebas — `docs/testing-report.md`
+# Testing Report
 
-> Resumen de los tests ejecutados al cierre del refactor integral S_Hospital.
+Living verification report for the S_Hospital total refactor. This document is
+evidence for the current branch, not a production approval.
 
-## 1. Frontend — Vitest
+Status date: 2026-07-02
+Branch: `codex/refactor-total`
+Production approval: NO
 
-| Suite | Tests pasados | Tests skipped | Notas |
+## Current Focus
+
+The latest work strengthened the critical mocked Playwright gates for:
+
+- invoice creation and payment;
+- reports executive/cash/audit sub-routes;
+- cashbox close with difference;
+- invoice history voiding;
+- catalog/user/backups/settings gates;
+- accessibility smoke across critical protected routes.
+
+These tests are intentionally mocked and non-mutating. They prove frontend
+contracts, RBAC visibility, payload shape, and accessible UI behavior. They do
+not replace real LAN, MySQL/MariaDB, printer, backup worker, or physical print
+validation.
+
+## Verified Commands
+
+| Date | Command | Result | Notes |
 |---|---|---|---|
-| `src/features/invoices` | 90 | 1 | 1 skip por jsdom + ActionMenu portal (cubierto por `v1-2-visible-ui-a11y.spec.ts`). |
-| `src/features/backups` | 12 | 0 | Añadido copy "Restauración no disponible". |
-| `src/features/cash` | 17 | 0 | Motivo obligatorio para diferencia. |
-| `src/features/catalog` | 35 | 0 | price_change_reason obligatorio. |
-| `src/features/dashboard` | 12 | 0 | Centro operativo con 4 stat cards. |
-| `src/features/reports` | 16 | 0 | 3 sub-rutas consolidadas. |
-| `src/features/receipt-settings` | 7 | 0 | UI normal estricta. |
-| `src/features/settings` | 12 | 0 | 4 sub-vistas dedicadas. |
-| `src/features/admin` | 18 | 7 | 7 skipped por refactor a sub-componentes; cobertura en `UserFormDialog.test.tsx` y `RoleFormDialog.test.tsx`. |
-| `src/features/auth` | (incluido en App) | 0 | OK |
-| `src/components/ui/action-menu` | 4 | 0 | |
-| `src/components/ui/audit-log-list` | 2 | 0 | |
-| Otros (lib, hooks, components, navigation) | variados | 0 | |
-| **Total** | **497** | **9** | |
+| 2026-07-02 | `npx playwright test e2e/accessibility.spec.ts e2e/new-invoice-flow.spec.ts e2e/reports-flow.spec.ts e2e/cashbox.spec.ts e2e/invoice-history-flow.spec.ts` | PASS, 8 tests | Fresh focused gate for accessibility, invoice/payment, reports, cashbox close and invoice voiding. |
+| 2026-07-02 | `npx playwright test e2e/accessibility.spec.ts` | PASS, 2 tests | Login and critical protected routes: one `h1`, `main`, named controls, no serious/critical axe issues. |
+| 2026-07-02 | `npx playwright test e2e/new-invoice-flow.spec.ts e2e/reports-flow.spec.ts` | PASS, 4 tests | Invoice payload/payment payload/PDF request; reports filters/export/cash/audit. |
+| 2026-07-02 | `npx playwright test e2e/cashbox.spec.ts e2e/invoice-history-flow.spec.ts` | PASS, 2 tests | Cash close difference requires note; invoice void requires reason and row ActionMenu. |
+| 2026-07-02 | `npm run lint` | PASS | Frontend lint. |
+| 2026-07-02 | `npm run typecheck` | PASS | TypeScript no emit. |
 
-### Comandos
+Recharts emits a known Playwright/Vite console warning about chart container
+dimensions in the mocked browser run. It does not currently fail the focused
+gates, but it remains a visual/performance review item for final QA.
 
-```bash
-cd frontend
-npm run lint          # OK, 0 warnings
-npm run typecheck     # OK, 0 errores
-npm run test          # 497 pasaron + 9 skipped
-npm run build         # OK, 1.74 MB total
-```
+## Focused E2E Coverage Added
 
-## 2. Backend — PHPUnit
-
-Tests en `backend/tests/Feature/*`. PHPUnit requiere composer install en el contenedor de backend (no disponible en `s_hospital_f7_verify-backend-1`).
-
-### Tests nuevos / ampliados
-
-- `ReceiptPrintProfileAdvancedFieldsTest` (3 tests) — sin cambios, sigue verde.
-- `FiscalSettingsTest` — **2 tests nuevos**:
-  - `test_paper_size_change_with_open_cash_session_emits_mid_shift_warning`
-  - `test_paper_size_change_without_open_cash_session_does_not_warn`
-
-### Tests existentes relevantes que cubrían el contrato
-
-- `CloseCashSessionDifferenceTest` (cierre con diferencia).
-- `UpdateFiscalSequenceRequest` (causa denegación si no hay motivo o no hay permiso `fiscal.sequences.reset`).
-- `UserTest`, `AuthTest`, `AuditLogTest`, `ClientErrorLogTest` (rendimiento continuo de la auditoría).
-
-### Comando esperado (en entorno dev)
-
-```bash
-cd backend
-composer install
-php artisan test                       # PHPUnit
-vendor/bin/pint --test                 # Estilo
-vendor/bin/phpstan analyse             # Tipos
-```
-
-## 3. E2E — Playwright + axe-core
-
-| Spec | Resultado |
+| Spec | Critical behavior covered |
 |---|---|
-| `e2e/v1-2-visible-ui-a11y.spec.ts` (8 tests) | **Verde** — login, 6 viewports, anulación con motivo, screenshots. |
-| `e2e/refactor-total.spec.ts` (7 tests) | Login verificado verde; los demás requieren backend completo fuera de `verify`. |
-| `e2e/all-buttons-smoke.spec.ts` | (no ejecutado en este contenedor, parte del set). |
-| `e2e/production-readiness.spec.ts` | (idem). |
+| `frontend/e2e/accessibility.spec.ts` | WCAG smoke for login and critical routes, one visible `h1`, `main` landmark, named controls, axe serious/critical gate. |
+| `frontend/e2e/new-invoice-flow.spec.ts` | Open cash session, patient, service search, invoice emission, payment registration payload, institutional receipt PDF request. |
+| `frontend/e2e/reports-flow.spec.ts` | Executive filters, PDF/Excel export, cash session lookup, audit counters. |
+| `frontend/e2e/cashbox.spec.ts` | Close cash session wizard/difference/note requirement/payload. |
+| `frontend/e2e/invoice-history-flow.spec.ts` | Patient filter, row action menu, void dialog, reason payload. |
+| `frontend/e2e/backups-flow.spec.ts` | Safe backup status, create confirmation, no restore/delete actions. |
+| `frontend/e2e/settings-flow.spec.ts` | Fiscal/receipt settings gates and receipt paper separation. |
+| `frontend/e2e/catalog-flow.spec.ts` | Service search, ActionMenu, deactivate confirmation. |
+| `frontend/e2e/users-flow.spec.ts` | User management and permission/role controls. |
+| `frontend/e2e/auth.spec.ts` / `frontend/e2e/rbac.spec.ts` | Auth/session and route permission gates. |
 
-### Comando
+## Required Final Gates Still Open
+
+These commands are still required before final completion can be claimed:
 
 ```bash
-cd frontend
-npx playwright test e2e/v1-2-visible-ui-a11y.spec.ts
-npx playwright test e2e/refactor-total.spec.ts
+docker compose up -d
+docker compose exec backend php artisan migrate --seed
+docker compose exec backend php artisan test
+docker compose exec backend vendor/bin/pint --test
+docker compose exec backend vendor/bin/phpstan analyse
+docker compose exec frontend npm run typecheck
+docker compose exec frontend npm run lint
+docker compose exec frontend npm run test
+docker compose exec frontend npm run build
+docker compose exec frontend npx playwright test
 ```
 
-## 4. Resumen
+If any full-suite command is too slow or environment-bound, the blocker and the
+latest focused substitute must be recorded in `docs/refactor-total-audit.md`.
 
-| Categoría | Resultado |
-|---|---|
-| Frontend lint | Verde |
-| Frontend typecheck | Verde |
-| Frontend tests | 497 verdes + 9 skipped con reemplazo |
-| Frontend build | Verde |
-| Backend PHPUnit | No ejecutable aquí; tests nuevos en repo. |
-| E2E Playwright (axe) | 8/8 verde (login + 6 viewports + anulación + screenshots). |
-| E2E Playwright (refactor) | 1/7 verificado; resto requiere backend completo. |
-| Errores de tipo | 0 |
-| Warnings de lint | 0 |
-| Código muerto eliminado | 24 archivos frontend. |
-| Tests huérfanos eliminados | 5 archivos de tests. |
+## Backend Status
+
+Backend full verification is not proven by this report. The final acceptance
+criteria still require:
+
+- `php artisan test`;
+- `vendor/bin/pint --test`;
+- `vendor/bin/phpstan analyse`;
+- focused RBAC/idempotency/audit tests for critical actions.
+
+## Manual/Physical QA Still Required
+
+- real LAN login and route access by server IP;
+- real MySQL/MariaDB migrations and seeders from zero;
+- physical or PDF print checks for Carta, Media carta and A5;
+- backup worker/scheduler behavior on the server;
+- restore runbook dry-run outside the app;
+- invoice/payment/cashbox flow against a real database;
+- browser zoom/responsive checks at 1366x768 and 125%.
+
+## Current Conclusion
+
+The focused mocked frontend gates are improving and currently green for the
+covered critical flows. The total refactor is not complete until the full
+backend, frontend, E2E, print, LAN/offline, and manual QA requirements above are
+verified.

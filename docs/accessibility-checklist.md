@@ -1,59 +1,81 @@
-# Checklist de Accesibilidad — `docs/accessibility-checklist.md`
+# Accessibility Checklist
 
-> Lista de verificación WCAG 2 AA aplicada al sistema S_Hospital tras el refactor integral.
+WCAG AA checklist for S_Hospital. This is a living checklist, not a final
+certification.
 
-## 1. Reglas generales (AA)
+Status date: 2026-07-02
+Production approval: NO
 
-- [x] **1.1.1 Texto alternativo**: todos los iconos decorativos tienen `aria-hidden="true"`; los iconos accionables tienen `aria-label`.
-- [x] **1.3.1 Información y relaciones**: los headings (`h1`/`h2`/...) están en orden secuencial y semánticamente correctos. Cada pantalla tiene un único `h1`.
-- [x] **1.4.3 Contraste mínimo (AA)**: paleta `styles.css` con tokens `--color-*` cumple ratio >= 4.5:1 en texto principal, >= 3:1 en iconos/interactivos grandes.
-- [x] **1.4.11 Contraste no textual (AA)**: bordes y focus rings usan `--color-ring` y `--color-destructive` auditados.
-- [x] **2.1.1 Teclado**: todas las acciones críticas son operables por teclado (`Tab`, `Enter`, `Esc`, `Ctrl+Enter` para emitir factura).
-- [x] **2.4.7 Foco visible**: `focus-visible:ring-2 focus-visible:ring-ring` global en `styles.css`.
-- [x] **3.3.1 Identificación de errores**: cada campo de formulario usa `aria-invalid` + `<p role="alert" id="...">` cuando hay error.
-- [x] **4.1.2 Nombre, rol, valor**: todos los botones tienen texto o `aria-label`. Iconos decorativos sin label no aparecen como controles.
-- [x] **4.1.3 Mensajes de estado**: regiones `role="status"` y `aria-live="polite"` consolidadas (no spinners decorativos duplicados).
+## Global Requirements
 
-## 2. Específicos del sistema
+- [x] One visible `h1` on critical screens covered by the focused E2E gate.
+- [x] `main` landmark present on authenticated critical routes.
+- [x] Icon-only buttons use text or `aria-label`.
+- [x] Decorative icons use `aria-hidden="true"`.
+- [x] Dialogs use Radix primitives with focus trap and accessible names.
+- [x] Alerts and validation errors use semantic roles where implemented.
+- [x] Data tables expose captions/container labels in the shared table wrapper.
+- [x] Critical route controls are checked for accessible names by Playwright.
+- [x] Serious/critical axe-core violations are blocked in the focused E2E gate.
 
-### Navegación
-- [x] Skip-link en `AppShell.tsx` apuntando a `#main-content`.
-- [x] `<aside id="app-sidebar" aria-label="Navegacion principal">`.
-- [x] `aria-expanded` + `aria-controls="app-sidebar"` en botón de toggle.
-- [x] Cada item del sidebar tiene `aria-current="page"` cuando está activo.
+## Focused Automated Evidence
 
-### Formularios
-- [x] Cada input tiene `<Label>` asociado vía `htmlFor`.
-- [x] Cada input tiene `aria-describedby` apuntando a hint y/o error.
-- [x] Errors se anuncian con `role="alert"`.
+Command:
 
-### Modales
-- [x] Radix Dialog/AlertDialog provee focus trap y restauración.
-- [x] Cierre con `Esc` no destructivo.
-- [x] `aria-label` o `aria-labelledby` en el diálogo.
+```bash
+cd frontend
+npx playwright test e2e/accessibility.spec.ts
+```
 
-### Datos
-- [x] Las `DataTable` tienen `caption` y `containerLabel` accesible.
-- [x] Headers de tabla semánticamente correctos (`<th scope="col">`).
-- [x] Celdas numéricas con `data-numeric="true"`.
+Latest recorded result: PASS, 2 tests on 2026-07-02.
 
-### Gráficos
-- [x] `TrendChart` con tabla `sr-only` alternativa para lectores de pantalla.
-- [x] `aria-label` en contenedor de chart.
+Coverage:
 
-### Navegación por teclado (flujos críticos verificados)
+- `/login`
+  - single accessible `h1`;
+  - username and password labels;
+  - password visibility button name;
+  - submit button name;
+  - no serious/critical axe violations;
+  - no visible unnamed controls.
+- Authenticated critical routes:
+  - `/dashboard`;
+  - `/billing/new`;
+  - `/cashbox`;
+  - `/catalog`;
+  - `/invoices`;
+  - `/reports/executive`;
+  - `/backups`;
+  - `/settings/fiscal`;
+  - `/admin/users`.
 
-- [x] **Factura**: Tab desde paciente → Enter → Tab a servicio → Enter → Ctrl+Enter emite.
-- [x] **Caja**: Tab a "Cerrar caja" → modal → Tab a input contado → input motivo → botón confirmar habilitado.
-- [x] **Reimprimir historial**: Botón con motivo obligatorio, ≥ 5 caracteres.
-- [x] **Sidebar collapse**: aria-pressed + aria-expanded correctos.
+For each protected route the test checks:
 
-## 3. Tests automatizados
+- `main` landmark visible;
+- exactly one level-one heading;
+- no visible unnamed controls;
+- no serious/critical axe-core violations.
 
-- `e2e/v1-2-visible-ui-a11y.spec.ts` corre axe-core en 6 resoluciones con WCAG 2 A + AA.
-- `e2e/refactor-total.spec.ts` corre smoke tests por pantalla.
+## Manual Keyboard QA Still Required
 
-## 4. Pendientes (no críticos)
+- [ ] First Tab exposes and activates the skip link to `#main-content`.
+- [ ] Sidebar collapse exposes correct `aria-expanded` and `aria-controls`.
+- [ ] New invoice can be completed by keyboard, including `Ctrl+Enter`.
+- [ ] Cash close wizard can be completed by keyboard.
+- [ ] ActionMenu rows in catalog/history/users are reachable by keyboard.
+- [ ] Dialog Escape behavior is safe and does not trigger destructive actions.
+- [ ] Focus returns to the invoking control after dialogs close.
+- [ ] Browser zoom 125% has no page-level horizontal scroll on critical routes.
 
-- Auditar detalles de focus en Tabs Content de settings (los headers Radix ya son accesibles).
+## Remaining Final QA Items
 
+- Full Playwright accessibility matrix across desktop/mobile viewports.
+- Real browser contrast review for light/dark mode.
+- Print/PDF accessibility is out of scope for axe and requires manual review.
+- Hardware-assisted keyboard review on the actual LAN workstation.
+
+## Current Conclusion
+
+The focused automated accessibility gates are green for the covered critical
+routes. Final accessibility acceptance still requires the manual keyboard,
+zoom/responsive, and real-workstation checks above.
