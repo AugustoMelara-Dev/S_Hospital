@@ -10,6 +10,8 @@ describe('InvoiceCart', () => {
 
     const status = screen.getByRole('status');
     expect(status).toHaveTextContent(/no hay servicios agregados/i);
+    expect(status).toHaveTextContent(/nombre, area o categoria/i);
+    expect(status).not.toHaveTextContent(/c[oó]digo/i);
     expect(screen.getByRole('button', { name: /emitir factura: agregar servicios/i })).toBeDisabled();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });

@@ -895,3 +895,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, contratos API, caja, pagos, precios, catalogo ni reglas de eritropoyetina.
 - Este corte reduce ruido tecnico en nueva factura sin quitar compatibilidad con lector cuando el hospital habilita scanner.
+
+## 36. Fase 4 - Carrito vacio con guia operativa simple
+
+Cambio aplicado:
+
+- `InvoiceCart` deja de indicar que el cajero busque por codigo cuando la factura aun no tiene servicios.
+- El empty state ahora orienta a buscar por nombre, area o categoria, consistente con el buscador normal de servicios.
+- Se agrego cobertura para evitar que el texto de carrito vacio vuelva a exponer lenguaje de codigos internos.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- src/features/invoices/components/InvoiceCart.test.tsx -t "accessible empty cart"` | RED inicial por `codigo`; luego OK: 1 test focal pasa. |
+| `docker compose exec frontend npm run test -- src/features/invoices/components/InvoiceCart.test.tsx src/features/invoices/components/ServiceSearch.test.tsx src/features/invoices/NewInvoiceView.test.tsx` | OK: 3 archivos, 27 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, emision, pagos, caja, catalogo ni calculos fiscales.
+- Este corte mantiene el carrito centrado en la tarea de caja: agregar servicios facturables sin ruido tecnico.

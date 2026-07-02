@@ -85,7 +85,7 @@ export function InvoiceCart({
           <div className="flex flex-col items-center justify-center rounded-md border border-dashed border-operational-border bg-operational-panel px-4 py-12 text-center text-muted-foreground" role="status" aria-live="polite">
             <ShoppingCart className="mb-3 size-10 opacity-50" aria-hidden="true" />
             <p className="text-sm font-semibold text-foreground">No hay servicios agregados</p>
-            <p className="mt-1 max-w-56 text-xs">Busque por nombre, categoría o código para comenzar.</p>
+            <p className="mt-1 max-w-56 text-xs">Busque por nombre, area o categoria para comenzar.</p>
           </div>
         ) : (
           <div className="flex flex-col gap-2 pr-1" role="list" aria-label="Servicios agregados a la factura">
