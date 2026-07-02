@@ -987,3 +987,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, PDF, auditoria, correlativos fiscales, pagos ni caja.
 - Este corte refuerza la regla absoluta de impresion: la operacion normal solo elige papel, copias, logo, sello/firma, prueba, guardado y vista previa real.
+
+## 40. Fase 6 - Copy de papel sin jerga de implementacion
+
+Cambio aplicado:
+
+- `InstitutionalReceiptSettingsView` deja de mencionar `CSS`, `fuente` y `layout` en textos visibles del flujo normal de papel y copias.
+- El copy queda orientado a la tarea: elegir papel y dejar que el sistema prepare la impresion.
+- Se conserva el mensaje permitido de que los margenes se calculan automaticamente segun el tipo de papel.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- src/features/receipt-settings/InstitutionalReceiptSettingsView.test.tsx -t "operational paper copy"` | RED inicial por `CSS de impresion`; luego OK: 1 test focal pasa. |
+| `docker compose exec frontend npm run test -- src/features/receipt-settings/InstitutionalReceiptSettingsView.test.tsx src/features/receipt-settings/ReceiptSettingsPreview.test.tsx src/features/receipts/ReceiptPreview.test.tsx src/features/receipts/ReceiptPreview.a11y.test.tsx` | OK: 4 archivos, 21 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, PDF, auditoria, correlativos fiscales, pagos ni caja.
+- Este corte mantiene el flujo normal de recibos en lenguaje operativo y deja los detalles tecnicos internos al sistema o al modo soporte.

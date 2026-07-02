@@ -172,6 +172,17 @@ describe('InstitutionalReceiptSettingsView', () => {
     expect(screen.queryByText(/soporte t/i)).not.toBeInTheDocument();
   });
 
+  it('uses operational paper copy without print implementation terms', async () => {
+    renderView({ canAdvancedPrintSettings: false });
+
+    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
+    await activateTab('Papel y copias');
+
+    expect(screen.queryByText(/css/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/fuente/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/layout/i)).not.toBeInTheDocument();
+  });
+
   it('explains sensitive receipt numbering before saving a series', async () => {
     renderView();
 

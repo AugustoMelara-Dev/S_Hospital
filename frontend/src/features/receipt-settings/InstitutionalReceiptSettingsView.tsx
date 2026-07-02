@@ -414,7 +414,7 @@ export function InstitutionalReceiptSettingsView({
     <>
       <PageHeader
         title="Recibos institucionales"
-        description="Papel, copias, logo y firma. El sistema resuelve márgenes, CSS de impresión y fuente."
+        description="Papel, copias, logo y firma. El sistema prepara la impresión según el perfil seleccionado."
       />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -618,7 +618,7 @@ export function InstitutionalReceiptSettingsView({
 
             <SectionCard
               title="Tipo de papel institucional"
-              description="El hospital elige el papel. El sistema resuelve márgenes y CSS de impresión."
+              description="El hospital elige el papel. El sistema prepara una impresión segura para ese formato."
             >
               <PaperProfileSelector
                 value={paper}
@@ -628,7 +628,7 @@ export function InstitutionalReceiptSettingsView({
                   if (mapped) setSelectedCode(mapped);
                 }}
                 disabled={!canEdit}
-                helperText="Los márgenes, la fuente y el layout se calculan automáticamente según el perfil seleccionado."
+                helperText="Los márgenes se calculan automáticamente según el tipo de papel seleccionado."
               />
 
               <form
