@@ -36,14 +36,6 @@ export function BackupHistoryTable({
       render: (backup) => formatDate(backup.completed_at ?? backup.created_at),
     },
     {
-      key: 'size',
-      header: 'Tamaño',
-      headerClassName: 'w-24 whitespace-nowrap px-4 py-3',
-      cellClassName: 'whitespace-nowrap px-4 py-3',
-      numeric: true,
-      render: (backup) => formatBytes(backup.size_bytes),
-    },
-    {
       key: 'status',
       header: 'Estado',
       headerClassName: 'px-4 py-3',
@@ -61,6 +53,14 @@ export function BackupHistoryTable({
           ) : null}
         </div>
       ),
+    },
+    {
+      key: 'size',
+      header: 'Tamaño',
+      headerClassName: 'w-24 whitespace-nowrap px-4 py-3',
+      cellClassName: 'whitespace-nowrap px-4 py-3',
+      numeric: true,
+      render: (backup) => formatBytes(backup.size_bytes),
     },
     {
       key: 'creator',

@@ -537,3 +537,25 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron migraciones, schema, precios, facturas historicas ni reglas fiscales.
 - Este corte avanza Fase 8 con una tabla de catalogo mas consistente y menos UI ad hoc.
+
+## 20. Fase 12 - Orden operativo en historial de respaldos
+
+Cambio aplicado:
+
+- `BackupHistoryTable` reordena sus columnas a `Fecha`, `Estado`, `Tamano`, `Usuario`, `Acciones`, siguiendo la tabla simple definida para respaldos.
+- El estado queda antes del tamano para que el operador vea primero si el respaldo sirve, esta pendiente o fallo.
+- La columna de tamano conserva formato numerico y no se exponen nombre tecnico, SHA256, rutas ni mensajes crudos.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- src/features/backups/BackupsView.test.tsx` | RED inicial por orden `Fecha, Tamano, Estado`; luego OK: 15 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, jobs, descargas, rutas de archivos, restauracion ni auditoria de respaldos.
+- Este corte avanza Fase 12 con una tabla mas escaneable para operacion diaria.

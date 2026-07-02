@@ -113,6 +113,14 @@ describe('BackupsView', () => {
 
     expect(await screen.findByRole('table', { name: /historial de respaldos locales/i })).toBeInTheDocument();
     expect(screen.getByRole('region', { name: /historial de respaldos locales/i })).toBeInTheDocument();
+    const headerLabels = screen.getAllByRole('columnheader').map((header) => normalizeLabel(header.textContent ?? ''));
+    expect(headerLabels).toEqual([
+      'Fecha',
+      'Estado',
+      'Tamano',
+      'Usuario',
+      'Acciones',
+    ]);
     expect(screen.getByRole('columnheader', { name: /fecha/i })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /estado/i })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /tamaño/i })).toHaveAttribute('data-numeric', 'true');
@@ -350,6 +358,10 @@ function renderWithQueryClient(node: ReactNode) {
   });
 
   return render(<QueryClientProvider client={queryClient}>{node}</QueryClientProvider>);
+}
+
+function normalizeLabel(value: string): string {
+  return value.trim().normalize('NFD').replace(/\p{Diacritic}/gu, '');
 }
 
 function backupFixture(overrides: Partial<BackupLog> = {}): BackupLog {
