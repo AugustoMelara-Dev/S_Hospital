@@ -559,6 +559,7 @@ describe('InvoiceHistoryView', () => {
     fireEvent.click(await screen.findByRole('menuitem', { name: /Ver recibo/i }));
 
     await waitFor(() => expect(screen.getByText(/Reimprimir 000-001-01-00000034/i)).toBeInTheDocument());
+    expect(screen.queryByText(/cambiar el tama/i)).not.toBeInTheDocument();
     expect(getPdf).not.toHaveBeenCalled();
     expect(getReceipt).not.toHaveBeenCalled();
     expect(onStatus).toHaveBeenCalledWith('Ingrese un motivo de reimpresión para abrir nuevamente el PDF institucional.');
@@ -722,6 +723,7 @@ describe('InvoiceHistoryView', () => {
     await waitFor(() => expect(screen.getByText(/fallback legacy para facturas sin recibo institucional pdf/i)).toBeInTheDocument());
     expect(apiClient.getReceipt).toHaveBeenCalledWith(6, 'half_letter');
     expect(screen.queryByLabelText(/tama/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/cambiar el tama/i)).not.toBeInTheDocument();
     expect(getPdf).not.toHaveBeenCalled();
   });
 });

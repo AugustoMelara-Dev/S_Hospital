@@ -471,7 +471,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
         open={receiptModalOpen}
         onOpenChange={setReceiptModalOpen}
         title={`Comprobante de factura - ${selectedInvoice?.invoice_number ?? ''}`}
-        description="Fallback legacy para facturas sin recibo institucional PDF. Cambiar el tamaño no registra reimpresión."
+        description="Fallback legacy para facturas sin recibo institucional PDF. Usa el perfil de papel configurado."
       >
         {receipt && selectedInvoice && (
           <div className="space-y-4">
@@ -602,7 +602,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       >
         <div className="flex flex-col gap-3">
           <p>
-            Esta acción queda auditada. Cambiar el tamaño en la vista previa no registra reimpresión; este botón sí.
+            Esta accion queda auditada. Registre un motivo claro antes de continuar.
           </p>
           <div className="space-y-2">
             <Label htmlFor="reprintReason">Motivo de reimpresión</Label>

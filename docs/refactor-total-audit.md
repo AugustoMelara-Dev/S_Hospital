@@ -694,3 +694,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, generacion PDF, auditoria de reimpresion, correlativos fiscales, pagos ni caja.
 - Este corte avanza la version monocomputadora estable: el operador imprime con el perfil definido por el sistema y ya no ajusta papel desde la vista de recibo normal.
+
+## 27. Fase 6/9 - Copy consistente con impresion simple
+
+Cambio aplicado:
+
+- `InvoiceHistoryView` deja de mencionar `Cambiar el tamano` en el modal de recibo legacy y en la confirmacion de reimpresion.
+- El copy ahora indica que el fallback usa el perfil de papel configurado y que la reimpresion requiere motivo auditado.
+- No se reintroducen controles manuales de papel ni opciones tecnicas en el flujo normal.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- src/features/invoices/InvoiceHistoryView.test.tsx` | RED inicial por copy residual `Cambiar el tamano`; luego OK: 20 tests pasan. |
+| `docker compose exec frontend npm run test -- src/features/invoices/InvoiceHistoryView.test.tsx src/features/receipts/ReceiptPreview.test.tsx src/features/invoices/InstitutionalReceiptFlow.test.tsx` | OK: 3 archivos, 31 tests pasan. |
+| `rg "Cambiar el tama|Tamano de vista previa|Tamano del recibo" frontend/src/features/invoices frontend/src/features/receipts -n` | Sin coincidencias; salida 1 esperada de `rg`. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, generacion PDF, auditoria real, pagos, caja ni correlativos fiscales.
+- Este corte evita instrucciones contradictorias para una operacion monocomputadora: el papel lo resuelve la configuracion, no el operador al imprimir.
