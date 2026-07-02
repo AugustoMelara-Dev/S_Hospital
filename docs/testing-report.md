@@ -45,6 +45,24 @@ print validation.
 | 2026-07-02 | `docker compose exec frontend npm run test` | PASS, 101 files / 557 tests | Containerized Vitest. React `act(...)` and TanStack Query undefined-data warnings remain test hygiene items. |
 | 2026-07-02 | `docker compose exec frontend npm run build` | PASS | Containerized production build. Largest chunks: `vendor` 398.37 kB gzip 121.92 kB, `charts` 357.04 kB gzip 104.93 kB, `index` 236.04 kB gzip 59.20 kB. |
 | 2026-07-02 | `docker compose exec frontend npm run test -- src/components/keyboard-shortcuts-palette.test.tsx src/layout/AppShell.test.tsx src/layout/AppShell.a11y.test.tsx src/features/admin/components/RoleFormDialog.test.tsx` | PASS, 21 tests | Focused gate for keyboard shortcuts palette, AppShell/topbar accessibility, and role permission filtering. |
+| 2026-07-02 | `docker compose exec frontend npm run test -- ReportsAudit.test.tsx src/lib/api/system.test.ts` | PASS, 5 tests | Audit report UI now mocks executive summary plus audit-log register; system API client query-string contract covered. |
+| 2026-07-02 | `docker compose exec frontend npm run test` | PASS, 102 files / 562 tests | First rerun exposed one transient `src/lib/realtime/echo.test.ts` timeout; focused rerun passed, and full rerun passed. React `act(...)` and TanStack Query warnings remain test hygiene items. |
+| 2026-07-02 | `docker compose exec frontend npm run typecheck` | PASS | Re-run after audit register/API client tests. |
+| 2026-07-02 | `docker compose exec frontend npm run lint` | PASS | Re-run after audit register/API client tests. |
+| 2026-07-02 | `docker compose exec backend php artisan test --filter=AuditLogTest` | PASS, 7 tests | Covers audit-log persistence plus `/api/system/audit-logs` filtered listing and `audit.view` 403 gate. |
+| 2026-07-02 | `docker compose exec -e PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser frontend npx playwright test` | FAIL, 36 passed / 39 failed | Environment browser is now usable. Initial failure was missing bundled Chromium; `npx playwright install chromium` could not download in-container because DNS/network timed out, so Alpine Chromium was installed and wired by env var. Remaining failures were app/test contract issues addressed with focused gates. |
+| 2026-07-02 | `docker compose exec -e PLAYWRIGHT_EXTERNAL_SERVER=1 -e PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser frontend npx playwright test e2e/reports-flow.spec.ts` | PASS, 3 tests | Reports executive/cash/audit flow after restoring `/reports` root and audit counters. |
+| 2026-07-02 | `docker compose exec -e PLAYWRIGHT_EXTERNAL_SERVER=1 -e PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser frontend npx playwright test e2e/all-buttons-smoke.spec.ts` | PASS, 7 tests | Button smoke updated for invoice history ActionMenu flow. |
+| 2026-07-02 | `docker compose exec -e PLAYWRIGHT_EXTERNAL_SERVER=1 -e PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser frontend npx playwright test e2e/v1-2-full-a11y.spec.ts` | PASS, 7 tests | Full v1.2 accessibility smoke after ActionMenu and backup contrast fixes. |
+| 2026-07-02 | `docker compose exec -e PLAYWRIGHT_EXTERNAL_SERVER=1 -e PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser frontend npx playwright test e2e/v1-2-visible-ui-a11y.spec.ts --grep "1920x1080"` | PASS, 1 test | Confirms backup status contrast correction for the desktop visible UI gate. |
+| 2026-07-02 | `docker compose exec frontend npm run typecheck` | PASS | Re-run after RC1/new-invoice/history/production-readiness E2E stabilization. |
+| 2026-07-02 | `docker compose exec frontend npm run lint` | PASS | Re-run after RC1/new-invoice/history/production-readiness E2E stabilization. |
+| 2026-07-02 | `docker compose exec -e PLAYWRIGHT_EXTERNAL_SERVER=1 -e PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser frontend npx playwright test e2e/rc1-screens.spec.ts` | PASS, 9 tests | RC1 screen capture flows for login, POS billing, reprint, cashbox close, reports, fiscal settings, backups, login validation and billing validation. |
+| 2026-07-02 | `docker compose exec -e PLAYWRIGHT_EXTERNAL_SERVER=1 -e PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser frontend npx playwright test e2e/new-invoice-flow.spec.ts` | PASS, 1 test | New invoice flow aligned with current service-area endpoint and confirmation dialog. |
+| 2026-07-02 | `docker compose exec -e PLAYWRIGHT_EXTERNAL_SERVER=1 -e PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser frontend npx playwright test e2e/invoice-history-flow.spec.ts` | PASS, 1 test | Invoice history ActionMenu void flow stabilized with Radix menu visibility/click handling. |
+| 2026-07-02 | `docker compose exec -e PLAYWRIGHT_EXTERNAL_SERVER=1 -e PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser frontend npx playwright test e2e/production-readiness.spec.ts` | PASS, 4 tests | Production readiness workflow with resilient receipt paper selection. |
+| 2026-07-02 | `docker compose exec -e PLAYWRIGHT_EXTERNAL_SERVER=1 -e PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser frontend npx playwright test e2e/refactor-total.spec.ts` | PASS, 7 tests | Refactor-total a11y gates with synchronized backend login. |
+| 2026-07-02 | `docker compose exec -e PLAYWRIGHT_EXTERNAL_SERVER=1 -e PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser frontend npx playwright test --workers=2` | PASS, 73 passed / 2 skipped | Full Docker Playwright gate. Release mutation specs remain skipped unless `E2E_RELEASE_ALLOW_MUTATIONS=1`. A prior `--workers=4` run exposed resource-sensitive timeouts; `--workers=2` is the stable offline/container setting. |
 
 Recharts emits a known Playwright/Vite console warning about chart container
 dimensions in the mocked browser run. It does not currently fail the focused
@@ -70,23 +88,19 @@ but they remain cleanup targets before final acceptance.
 | `frontend/e2e/users-flow.spec.ts` | User management and permission/role controls. |
 | `frontend/e2e/auth.spec.ts` / `frontend/e2e/rbac.spec.ts` | Auth/session and route permission gates. |
 
-## Required Final Gates Still Open
-
-These commands or equivalent full gates are still required before final
-completion can be claimed:
-
-```bash
-docker compose exec frontend npx playwright test
-```
+## Full Gate Status
 
 The Docker stack, backend migrations/seeders, full backend PHPUnit, backend
 Unit suite, focused backend Feature suite, Pint, PHPStan with
-`--memory-limit=1G`, frontend lint, frontend typecheck, frontend Vitest, and
-frontend build are now proven green for this pass. Full Playwright in Docker
-still needs to be executed.
+`--memory-limit=1G`, frontend lint, frontend typecheck, frontend Vitest,
+frontend build, and full Playwright are proven green for this pass.
 
-If any full-suite command is too slow or environment-bound, the blocker and the
-latest focused substitute must be recorded in `docs/refactor-total-audit.md`.
+For Playwright in this container, use the system Chromium executable because the
+bundled browser cannot be downloaded reliably in offline/LAN-style conditions:
+
+```bash
+docker compose exec -e PLAYWRIGHT_EXTERNAL_SERVER=1 -e PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser frontend npx playwright test --workers=2
+```
 
 ## Backend Status
 

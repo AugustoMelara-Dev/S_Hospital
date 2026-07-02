@@ -6,11 +6,7 @@ const adminLogin = process.env.E2E_RELEASE_ADMIN_LOGIN ?? 'admin.e2e';
 const seededPassword = process.env.E2E_RELEASE_PASSWORD ?? 'Password123!';
 const allowMutations = process.env.E2E_RELEASE_ALLOW_MUTATIONS === '1';
 
-test.beforeAll(() => {
-  if (!allowMutations) {
-    throw new Error('RBAC E2E requires E2E_RELEASE_ALLOW_MUTATIONS=1 against a prepared non-production database.');
-  }
-});
+test.skip(!allowMutations, 'RBAC E2E requires E2E_RELEASE_ALLOW_MUTATIONS=1 against a prepared non-production database.');
 
 test('administrator creates exact catalog-only user and navigation enforces module access', async ({ page }) => {
   const username = `catalogo-e2e-${Date.now()}`;

@@ -585,7 +585,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                           ? 'border-warning/30 bg-warning/10 text-warning'
                           : systemStatus.runtime.pending_migration_count > 0
                             ? 'border-destructive/30 bg-destructive/10 text-destructive'
-                            : 'border-success/30 bg-success/10 text-success'
+                            : 'border-success/30 bg-success/10 text-success-foreground'
                       }`}>
                         {systemStatus.runtime.pending_migration_count === null
                           ? 'Sin dato'
@@ -605,7 +605,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                   <div className="rounded-md border border-border p-3">
                     <div className="flex items-start justify-between gap-3">
                       <p className="text-sm font-medium">Tareas con problema</p>
-                      <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${systemStatus.backups.queue.failed_jobs_count ? 'border-warning/30 bg-warning/10 text-warning' : 'border-success/30 bg-success/10 text-success'}`}>
+                      <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${systemStatus.backups.queue.failed_jobs_count ? 'border-warning/30 bg-warning/10 text-warning' : 'border-success/30 bg-success/10 text-success-foreground'}`}>
                         {systemStatus.backups.queue.failed_jobs_count ?? 'Sin dato'}
                       </span>
                     </div>

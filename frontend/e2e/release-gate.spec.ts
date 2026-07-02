@@ -11,11 +11,7 @@ const allowMutations = process.env.E2E_RELEASE_ALLOW_MUTATIONS === '1';
 const reportPath = resolve(process.env.E2E_RELEASE_REPORT_PATH ?? 'test-results/release-e2e-report.json');
 const releaseResults: Array<Record<string, unknown>> = [];
 
-test.beforeAll(() => {
-  if (!allowMutations) {
-    throw new Error('Release E2E requires E2E_RELEASE_ALLOW_MUTATIONS=1 against a prepared non-production database.');
-  }
-});
+test.skip(!allowMutations, 'Release E2E requires E2E_RELEASE_ALLOW_MUTATIONS=1 against a prepared non-production database.');
 
 test.afterAll(() => {
   mkdirSync(dirname(reportPath), { recursive: true });

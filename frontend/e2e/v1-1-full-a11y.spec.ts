@@ -249,7 +249,7 @@ const executiveReport = {
   audit_summary: { critical_events: 0, reprints: 1, fiscal_changes: 0, cash_differences: 0, backup_events: 1 },
 };
 const routeExpectations = [
-  { path: '/dashboard', heading: /inicio/i },
+  { path: '/dashboard', heading: /centro de mando/i },
   { path: '/billing/new', heading: /nueva factura/i },
   { path: '/cashbox', heading: /^caja$/i },
   { path: '/catalog', heading: /catalogo|cat.logo/i },
@@ -309,7 +309,7 @@ for (const viewport of smokeViewports) {
 
     await enableDarkMode(page);
     for (const darkRoute of [
-      { path: '/dashboard', heading: /inicio/i },
+      { path: '/dashboard', heading: /centro de mando/i },
       { path: '/reports', heading: /reportes/i },
       { path: '/settings/institutional-receipts', heading: /recibos institucionales|recibos/i },
       { path: '/admin/users', heading: /usuarios/i },
@@ -338,7 +338,8 @@ test('dangerous history actions open a confirmation path that can be cancelled',
   await page.goto('/invoices');
   await waitForScreen(page, /historial/i);
 
-  await page.getByRole('button', { name: /reversar/i }).click();
+  await page.getByRole('button', { name: /acciones de la factura/i }).click();
+  await page.getByRole('menuitem', { name: /reversar pago/i }).click();
   await expect(page.getByRole('alertdialog', { name: /reversar factura/i })).toBeVisible();
   await expect(page.getByRole('alertdialog', { name: /reversar factura/i })).toHaveAccessibleDescription(/revise la informacion/i);
   await page.getByRole('button', { name: /cancelar/i }).click();
@@ -353,7 +354,7 @@ async function login(page: Page, username: string) {
   await page.locator('#login-input').fill(username);
   await page.locator('#password-input').fill('Password123!');
   await page.getByRole('button', { name: /entrar|iniciar/i }).click();
-  await waitForScreen(page, /inicio/i);
+  await waitForScreen(page, /centro de mando/i);
 }
 
 async function waitForScreen(page: Page, heading: RegExp) {
@@ -507,6 +508,9 @@ async function installApiMocks(page: Page) {
     }
     if (path === '/api/system/client-errors') {
       return route.fulfill({ status: 204 });
+    }
+    if (path === '/api/system/audit-logs') {
+      return json(route, { data: auditLogEntries(), meta: { current_page: 1, per_page: 25, total: 1 } });
     }
     if (path === '/api/reports/dashboard') {
       return json(route, { data: dashboardReport() });
@@ -893,6 +897,22 @@ function operationsReport() {
     backups: [{ filename: 'hospital-backup.sql.enc', status: 'success', created_at: issuedAt }],
     cashiers: [{ name: 'Administradora Hospital', payment_count: 1, total_collected: '17.25' }],
   };
+}
+
+function auditLogEntries() {
+  return [
+    {
+      id: 1,
+      action: 'invoice.voided',
+      result: 'success',
+      reason: 'Correccion auditada',
+      ip: '192.168.1.25',
+      entity_type: 'invoice',
+      entity_id: 77,
+      created_at: issuedAt,
+      user: { id: adminUser.id, name: adminUser.name, username: adminUser.username },
+    },
+  ];
 }
 
 function cashSessionReport() {

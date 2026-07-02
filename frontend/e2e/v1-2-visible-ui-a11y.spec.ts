@@ -683,6 +683,9 @@ async function installApiMocks(page: Page) {
     if (path === '/api/system/client-errors') {
       return route.fulfill({ status: 204 });
     }
+    if (path === '/api/system/audit-logs') {
+      return json(route, { data: auditLogEntries(), meta: { current_page: 1, per_page: 25, total: 1 } });
+    }
     if (path === '/api/reports/dashboard') {
       return json(route, { data: dashboardReport() });
     }
@@ -1112,6 +1115,22 @@ function operationsReport() {
     backups: [{ filename: 'hospital-backup.sql.enc', status: 'success', created_at: issuedAt }],
     cashiers: [{ name: 'Administradora Hospital', payment_count: 1, total_collected: '17.25' }],
   };
+}
+
+function auditLogEntries() {
+  return [
+    {
+      id: 1,
+      action: 'invoice.voided',
+      result: 'success',
+      reason: 'Correccion auditada',
+      ip: '192.168.1.25',
+      entity_type: 'invoice',
+      entity_id: 77,
+      created_at: issuedAt,
+      user: { id: adminUser.id, name: adminUser.name, username: adminUser.username },
+    },
+  ];
 }
 
 function cashSessionReport() {

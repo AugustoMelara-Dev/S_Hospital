@@ -388,3 +388,45 @@ Pruebas ejecutadas:
 Decision:
 
 - Queda pendiente profundizar Fase 7 con impresion/exportacion de cierre y auditoria visual del layout completo de `/cashbox`.
+
+## 15. Fase 10/15/20 - Reportes y E2E estabilizados
+
+Cambio aplicado:
+
+- `/reports` vuelve a ser una pantalla valida con `h1` propio y el reporte ejecutivo como contenido principal, sin redirigir a una subruta.
+- `ReportsAudit` conserva los contadores institucionales del resumen ejecutivo y agrega una bitacora filtrable respaldada por `/api/system/audit-logs`.
+- El backend expone `/api/system/audit-logs` protegido por `audit.view`, con filtros de accion, usuario y rango de fechas, paginacion y payload sin `old_values/new_values`.
+- Los tests Playwright antiguos de historial ahora usan el `ActionMenu` real para `Reversar pago`.
+- Los estados exitosos de respaldos usan texto con contraste AA (`text-success-foreground`).
+- `playwright.config.ts` permite `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` para ejecutar E2E con Chromium del sistema en entornos offline/LAN o contenedores sin navegador descargado.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter=AuditLogTest` | OK: 7 tests pasan. |
+| `docker compose exec frontend npm run test -- ReportsAudit.test.tsx src/lib/api/system.test.ts` | OK: 2 archivos, 5 tests pasan. |
+| `docker compose exec frontend npm run test` | OK: 102 archivos, 562 tests pasan tras repetir un timeout transitorio de `echo.test.ts`. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `docker compose exec -e PLAYWRIGHT_EXTERNAL_SERVER=1 -e PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser frontend npx playwright test e2e/reports-flow.spec.ts` | OK: 3 tests pasan. |
+| `docker compose exec -e PLAYWRIGHT_EXTERNAL_SERVER=1 -e PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser frontend npx playwright test e2e/all-buttons-smoke.spec.ts` | OK: 7 tests pasan. |
+| `docker compose exec -e PLAYWRIGHT_EXTERNAL_SERVER=1 -e PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser frontend npx playwright test e2e/v1-2-full-a11y.spec.ts` | OK: 7 tests pasan. |
+| `docker compose exec -e PLAYWRIGHT_EXTERNAL_SERVER=1 -e PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser frontend npx playwright test e2e/rc1-screens.spec.ts` | OK: 9 tests pasan. |
+| `docker compose exec -e PLAYWRIGHT_EXTERNAL_SERVER=1 -e PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser frontend npx playwright test e2e/new-invoice-flow.spec.ts` | OK: 1 test pasa. |
+| `docker compose exec -e PLAYWRIGHT_EXTERNAL_SERVER=1 -e PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser frontend npx playwright test e2e/invoice-history-flow.spec.ts` | OK: 1 test pasa. |
+| `docker compose exec -e PLAYWRIGHT_EXTERNAL_SERVER=1 -e PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser frontend npx playwright test e2e/production-readiness.spec.ts` | OK: 4 tests pasan. |
+| `docker compose exec -e PLAYWRIGHT_EXTERNAL_SERVER=1 -e PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser frontend npx playwright test e2e/refactor-total.spec.ts` | OK: 7 tests pasan. |
+| `docker compose exec -e PLAYWRIGHT_EXTERNAL_SERVER=1 -e PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser frontend npx playwright test --workers=2` | OK: 73 tests pasan, 2 skips controlados (`release-gate`, `release-rbac`). |
+
+Notas de entorno:
+
+- Playwright completo en Docker ya puede arrancar navegador usando `/usr/bin/chromium-browser`.
+- El primer intento de Playwright completo con navegador del sistema termino en `36 passed / 39 failed`; despues de estabilizar mocks y flujos, la corrida completa estable usa `--workers=2` y termina en `73 passed / 2 skipped`.
+- `npx playwright install chromium` fallo dentro del contenedor por timeouts/DNS, por lo que la estrategia offline documentada es usar Chromium del sistema mediante variable de entorno.
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron migraciones, schema, caja, correlativos ni datos fiscales.
+- La suite Playwright completa queda ejecutada en Docker con concurrencia conservadora (`--workers=2`) por estabilidad en contenedor/offline.

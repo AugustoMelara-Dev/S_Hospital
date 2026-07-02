@@ -86,6 +86,7 @@ test.describe('New invoice - critical mocked e2e', () => {
 
     await expect(page.getByRole('heading', { level: 1, name: /nueva factura/i })).toBeVisible();
     await expect(page.getByText(/caja #7 - abierta/i)).toBeVisible();
+    await expect(page.getByLabel(/nombre del paciente/i)).toBeEditable();
     await expect(page.getByRole('button', { name: /emitir y cobrar/i })).toBeDisabled();
 
     await page.getByLabel(/nombre del paciente/i).fill('Maria Lopez');
@@ -96,7 +97,7 @@ test.describe('New invoice - critical mocked e2e', () => {
     await expect(page.getByRole('button', { name: /^emitir y cobrar$/i })).toBeEnabled();
 
     await page.getByRole('button', { name: /^emitir y cobrar$/i }).click();
-    const confirmDialog = page.getByRole('dialog', { name: /confirmar emisi.n y cobro/i });
+    const confirmDialog = page.getByRole('dialog', { name: /confirmar emisi/i });
     await expect(confirmDialog).toBeVisible();
     await expect(confirmDialog).toContainText('Maria Lopez');
     await expect(confirmDialog).toContainText('#7');
@@ -150,6 +151,7 @@ async function installNewInvoiceMocks(
   }));
   await page.route(/\/api\/categories(?:[/?]|$)/, (route) => json(route, { data: [category] }));
   await page.route(/\/api\/areas(?:[/?]|$)/, (route) => json(route, { data: [area] }));
+  await page.route(/\/api\/service-areas(?:[/?]|$)/, (route) => json(route, { data: [area] }));
   await page.route(/\/api\/services(?:[/?]|$)/, (route) => {
     const url = new URL(route.request().url());
     const search = url.searchParams.get('search')?.toLowerCase() ?? '';
@@ -260,6 +262,7 @@ function issuedInvoice(patientName: string) {
 async function installCommonMocks(page: Page) {
   await page.route('**/sanctum/csrf-cookie', (route) => route.fulfill({ status: 204 }));
   await page.route('**/api/auth/session', (route) => json(route, { data: invoiceUser }));
+  await page.route('**/api/auth/me', (route) => json(route, { data: invoiceUser }));
   await page.route('**/api/settings/branding', (route) => json(route, {
     data: {
       hospital_name: 'Hospital San Isidro',

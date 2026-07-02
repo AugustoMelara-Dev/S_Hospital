@@ -88,7 +88,9 @@ test.describe('Invoice history - critical mocked e2e', () => {
 
     await page.getByRole('button', { name: /acciones de la factura A-0001/i }).click();
     await expect(page.getByRole('menuitem', { name: /ver recibo/i })).toBeVisible();
-    await page.getByRole('menuitem', { name: /anular factura/i }).click();
+    const voidItem = page.getByRole('menuitem', { name: /anular factura/i });
+    await expect(voidItem).toBeVisible();
+    await voidItem.click({ force: true });
 
     const dialog = page.getByRole('alertdialog', { name: /anular factura A-0001/i });
     await expect(dialog).toBeVisible();
@@ -184,6 +186,7 @@ function receiptFixture() {
 async function installCommonMocks(page: Page, sessionUser: typeof invoiceUser) {
   await page.route('**/sanctum/csrf-cookie', (route) => route.fulfill({ status: 204 }));
   await page.route('**/api/auth/session', (route) => json(route, { data: sessionUser }));
+  await page.route('**/api/auth/me', (route) => json(route, { data: sessionUser }));
   await page.route('**/api/settings/branding', (route) => json(route, {
     data: {
       hospital_name: 'Hospital San Isidro',

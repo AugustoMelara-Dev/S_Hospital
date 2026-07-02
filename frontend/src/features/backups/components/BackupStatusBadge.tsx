@@ -12,7 +12,7 @@ const statusConfig = {
   },
   success: {
     label: 'Completado',
-    className: 'border-success/30 bg-success/10 text-success',
+    className: 'border-success/30 bg-success/10 text-success-foreground',
     icon: CheckCircle,
   },
   failed: {

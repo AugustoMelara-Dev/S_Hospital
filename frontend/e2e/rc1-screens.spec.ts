@@ -188,6 +188,30 @@ async function installApiMocks(page: Page) {
       logo_url: null,
     },
   }));
+  await page.route('**/api/settings/operational', (route) => json(route, {
+    data: {
+      scanner_enabled: false,
+      partial_payments_enabled: false,
+      receipt_paper_size: 'half_letter',
+      default_payment_method: 'cash',
+      require_cash_session: true,
+    },
+  }));
+  await page.route('**/api/fiscal-sequences**', (route) => json(route, {
+    data: [
+      {
+        id: 1,
+        document_type: 'invoice',
+        prefix: '000-001-01',
+        min_number: 1,
+        max_number: 99999999,
+        current_number: 1,
+        cai: 'VALIDACION-CAI',
+        valid_until: '2027-06-09',
+        active: true,
+      },
+    ],
+  }));
 
   await page.route('**/api/settings/branding', (route) => json(route, {
     data: {
@@ -215,6 +239,10 @@ async function installApiMocks(page: Page) {
   });
 
   await page.route('**/api/auth/session', (route) => {
+    if (isLogged) return json(route, { data: currentUser });
+    return route.fulfill({ status: 401, body: JSON.stringify({ message: 'Unauthenticated.' }) });
+  });
+  await page.route('**/api/auth/me', (route) => {
     if (isLogged) return json(route, { data: currentUser });
     return route.fulfill({ status: 401, body: JSON.stringify({ message: 'Unauthenticated.' }) });
   });
@@ -366,6 +394,68 @@ async function installApiMocks(page: Page) {
       expected_cash_amount: '525.00',
       cash_difference: '0.00',
       permissions: { can_close: true, can_view_any: false },
+    },
+  }));
+  await page.route('**/api/reports/executive**', (route) => json(route, {
+    data: {
+      period: { from: operationalDate, to: operationalDate, timezone: 'America/Tegucigalpa', days: 1 },
+      filters: { cash_session_id: null, user_id: null, category_id: null, area_id: null, method: null, status: null },
+      comparison: {
+        billed: { current: '25.00', previous: '0.00', delta_cents: 2500, delta_percentage: null },
+        collected: { current: '25.00', previous: '0.00', delta_cents: 2500, delta_percentage: null },
+        previous_period: { from: operationalDate, to: operationalDate },
+      },
+      summary: {
+        billed_total: '25.00',
+        collected_total: '25.00',
+        collected_total_cents: 2500,
+        pending_total: '0.00',
+        voided_total: '0.00',
+        reversed_total: '0.00',
+        invoice_count: 1,
+        receipt_count: 1,
+        paid_count: 1,
+        partial_count: 0,
+        pending_count: 0,
+        voided_count: 0,
+        average_ticket: '25.00',
+      },
+      payment_methods: [
+        { method: 'cash', label: 'Efectivo', amount: '25.00', count: 1, percentage: 100 },
+        { method: 'transfer', label: 'Transferencia', amount: '0.00', count: 0, percentage: 0 },
+        { method: 'card', label: 'Tarjeta', amount: '0.00', count: 0, percentage: 0 },
+        { method: 'other', label: 'Otro', amount: '0.00', count: 0, percentage: 0 },
+      ],
+      daily_trend: [{ date: operationalDate, billed: '25.00', collected: '25.00', pending: '0.00', voided_count: 0, invoice_count: 1 }],
+      services: {
+        top_by_amount: [{ service: 'Eritropoyetina', category: 'Medicamentos', item_count: 1, quantity: '1.00', total: '25.00', collected: '25.00' }],
+        top_by_quantity: [{ service: 'Eritropoyetina', category: 'Medicamentos', item_count: 1, quantity: '1.00', total: '25.00' }],
+        by_category: [{ category: 'Medicamentos', quantity: '1.00', total: '25.00', collected: '25.00', item_count: 1 }],
+        by_area: [{ area_id: null, area: 'Sin area', item_count: 1, quantity: '1.00', total: '25.00' }],
+      },
+      cashiers: [{
+        user_id: currentUser.id,
+        name: currentUser.name,
+        username: currentUser.username,
+        invoice_count: 1,
+        payment_count: 1,
+        collected: '25.00',
+        cash: '25.00',
+        transfer: '0.00',
+        card: '0.00',
+        other: '0.00',
+        voided_count: 0,
+        difference_total: '0.00',
+      }],
+      cash_sessions: [],
+      pending_aging: {
+        '0_7_days': { count: 0, amount: '0.00' },
+        '8_30_days': { count: 0, amount: '0.00' },
+        '31_plus_days': { count: 0, amount: '0.00' },
+        items: [],
+      },
+      voids_and_reversals: [],
+      audit_summary: { critical_events: 0, reprints: 1, fiscal_changes: 0, cash_differences: 0, backup_events: 1 },
     },
   }));
 
@@ -549,7 +639,7 @@ test.describe('RC1 cashier flow screens', () => {
     ]);
     await setTheme(page, 'light');
     await page.goto('/dashboard');
-    await expect(page.getByRole('heading', { name: /inicio|dashboard/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /centro de mando|inicio|dashboard/i })).toBeVisible();
     await page.waitForTimeout(500);
     await page.waitForTimeout(500);
     await captureScreen(page, 'dashboard-light');
@@ -567,34 +657,40 @@ test.describe('RC1 cashier flow screens', () => {
     await page.goto('/cashbox');
     await expect(page.getByRole('heading', { name: /^caja$/i })).toBeVisible();
     await page.getByRole('main').getByRole('button', { name: /abrir caja/i }).click();
-    await expect(page.getByRole('heading', { name: /cerrar caja/i })).toBeVisible();
+    await expect(page.getByRole('alertdialog', { name: /confirmar apertura de caja/i })).toBeVisible();
+    await page.getByRole('alertdialog', { name: /confirmar apertura de caja/i }).getByRole('button', { name: /abrir caja/i }).click();
     if (await page.getByRole('dialog', { name: /caja activa/i }).isVisible().catch(() => false)) {
       await page.getByRole('button', { name: /cerrar modal/i }).click({ force: true });
     }
     await page.waitForTimeout(500);
     await captureScreen(page, 'cashbox-open-light');
 
-    await page.getByLabel('Navegacion principal').getByRole('link', { name: /nueva factura/i }).click();
+    await page.goto('/billing/new');
     await expect(page.getByRole('heading', { name: /nueva factura/i })).toBeVisible();
     await page.waitForTimeout(500);
     await captureScreen(page, 'billing-new-empty-light');
 
+    await expect(page.getByLabel(/nombre del paciente/i)).toBeEditable();
     await page.getByLabel(/nombre del paciente/i).fill('Maria Lopez');
     await page.getByLabel(/buscar por nombre/i).fill('eritropoyetina');
     await page.getByRole('button', { name: /eritropoyetina/i }).click();
-    await expect(page.getByText(/Total estimado:\s*L\.\s*25\.00/)).toBeVisible();
+    const invoiceDraft = page.getByRole('region', { name: /factura en curso/i });
+    await expect(invoiceDraft.getByText(/^Total estimado:$/i)).toBeVisible();
+    await expect(invoiceDraft.getByText(/L\s*25\.00/).first()).toBeVisible();
     await page.waitForTimeout(500);
     await captureScreen(page, 'billing-new-cart-light');
 
     await page.getByRole('button', { name: /emitir y cobrar/i }).click();
-    await page.getByRole('button', { name: /emitir y abrir cobro/i }).click();
+    const confirmIssueDialog = page.getByRole('dialog', { name: /confirmar emisi/i });
+    await expect(confirmIssueDialog).toBeVisible();
+    await confirmIssueDialog.getByRole('button', { name: /emitir y abrir cobro/i }).click();
     await expect(page.getByRole('heading', { name: /registrar pago/i })).toBeVisible();
     await page.waitForTimeout(500);
     await captureScreen(page, 'payment-modal-light');
 
     await page.getByLabel(/monto recibido/i).fill('25.00');
     await page.getByRole('button', { name: /confirmar cobro/i }).click();
-    await expect(page.getByRole('heading', { name: /vista previa del recibo/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /comprobante de factura|vista previa del recibo/i })).toBeVisible();
     await page.waitForTimeout(500);
     await captureScreen(page, 'receipt-preview-light');
 
@@ -621,20 +717,25 @@ test.describe('RC1 cashier flow screens', () => {
     await setTheme(page, 'light');
     await page.goto('/cashbox');
     await page.getByRole('main').getByRole('button', { name: /abrir caja/i }).click();
+    await expect(page.getByRole('alertdialog', { name: /confirmar apertura de caja/i })).toBeVisible();
+    await page.getByRole('alertdialog', { name: /confirmar apertura de caja/i }).getByRole('button', { name: /abrir caja/i }).click();
     if (await page.getByRole('dialog', { name: /caja activa/i }).isVisible().catch(() => false)) {
       await page.getByRole('button', { name: /cerrar modal/i }).click({ force: true });
     }
-    await page.getByLabel('Navegacion principal').getByRole('link', { name: /nueva factura/i }).click();
+    await page.goto('/billing/new');
+    await expect(page.getByLabel(/nombre del paciente/i)).toBeEditable();
     await page.getByLabel(/nombre del paciente/i).fill('Maria Lopez');
     await page.getByLabel(/buscar por nombre/i).fill('eritropoyetina');
     await page.getByRole('button', { name: /eritropoyetina/i }).click();
     await page.getByRole('button', { name: /emitir y cobrar/i }).click();
-    await page.getByRole('button', { name: /emitir y abrir cobro/i }).click();
+    const confirmIssueDialog = page.getByRole('dialog', { name: /confirmar emisi/i });
+    await expect(confirmIssueDialog).toBeVisible();
+    await confirmIssueDialog.getByRole('button', { name: /emitir y abrir cobro/i }).click();
     await page.getByLabel(/monto recibido/i).fill('25.00');
     await page.getByRole('button', { name: /confirmar cobro/i }).click();
-    await expect(page.getByRole('heading', { name: /vista previa del recibo/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /comprobante de factura|vista previa del recibo/i })).toBeVisible();
     await page.getByRole('button', { name: /cerrar modal/i }).click({ force: true });
-    await page.getByRole('button', { name: /crear otra factura/i }).click();
+    await page.getByRole('button', { name: /nueva factura|crear otra factura/i }).click();
 
     await page.getByRole('link', { name: /historial/i }).click();
     await expect(page.getByRole('heading', { name: /historial de facturas/i })).toBeVisible();
@@ -642,9 +743,13 @@ test.describe('RC1 cashier flow screens', () => {
     await captureScreen(page, 'invoice-history-light');
 
     await page.getByRole('button', { name: /buscar/i }).click();
-    await page.getByRole('button', { name: /^reimprimir$/i }).first().click();
+    await page.getByRole('button', { name: /acciones de la factura/i }).first().click();
+    const reprintItem = page.getByRole('menuitem', { name: /reimprimir/i });
+    await expect(reprintItem).toBeVisible();
+    await reprintItem.click({ force: true });
+    await page.getByLabel(/motivo de reimpresi.n/i).fill('Copia solicitada por paciente para expediente administrativo.');
     await page.getByRole('button', { name: /registrar reimpresi.n/i }).click();
-    await expect(page.getByRole('heading', { name: /recibo - 000-001-01-00000001/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /comprobante de factura - 000-001-01-00000001/i })).toBeVisible();
     await page.waitForTimeout(500);
     await captureScreen(page, 'reprint-modal-light');
   });
@@ -655,6 +760,8 @@ test.describe('RC1 cashier flow screens', () => {
     await setTheme(page, 'light');
     await page.goto('/cashbox');
     await page.getByRole('main').getByRole('button', { name: /abrir caja/i }).click();
+    await expect(page.getByRole('alertdialog', { name: /confirmar apertura de caja/i })).toBeVisible();
+    await page.getByRole('alertdialog', { name: /confirmar apertura de caja/i }).getByRole('button', { name: /abrir caja/i }).click();
     if (await page.getByRole('dialog', { name: /caja activa/i }).isVisible().catch(() => false)) {
       await page.getByRole('button', { name: /cerrar modal/i }).click({ force: true });
     }
@@ -768,7 +875,7 @@ test.describe('RC1 cashier flow screens', () => {
     if (await page.getByRole('dialog', { name: /caja activa/i }).isVisible().catch(() => false)) {
       await page.getByRole('button', { name: /cerrar modal/i }).click({ force: true });
     }
-    await page.getByLabel('Navegacion principal').getByRole('link', { name: /nueva factura/i }).click();
+    await page.goto('/billing/new');
     await expect(page.getByRole('button', { name: /emitir y cobrar/i })).toBeDisabled();
     await captureScreen(page, 'billing-validation-light');
   });

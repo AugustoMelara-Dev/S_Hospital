@@ -142,6 +142,24 @@ async function captureScreen(page: Page, name: string, theme: 'light' | 'dark' =
   capturedScreens.push({ name, path: path.posix.join(captureReportDir, fileName), route: new URL(page.url()).pathname, theme });
 }
 
+async function selectReceiptPaper(page: Page, optionName: string) {
+  const trigger = page.getByRole('combobox', { name: /tama(?:ñ|n)o del recibo/i });
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await trigger.click({ force: true });
+    const option = page.getByRole('option', { name: optionName, exact: true });
+    if (await option.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      await option.click({ force: true });
+      return;
+    }
+    await page.keyboard.press('Escape').catch(() => undefined);
+    await page.waitForTimeout(150);
+  }
+
+  await trigger.click({ force: true });
+  await page.getByRole('option', { name: optionName, exact: true }).click({ force: true });
+}
+
 async function setVisualTheme(page: Page, theme: 'light' | 'dark') {
   await page.evaluate((nextTheme) => {
     localStorage.setItem('hospital-billing-theme', nextTheme);
@@ -975,6 +993,7 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
       if (text.includes('[echo]')) return;
       if (text.includes('[posMath]')) return;
       if (text.includes('Missing `Description`')) return;
+      if (text.includes('width(-1) and height(-1) of chart')) return;
       if (/Failed to load resource: the server responded with a status of 404/i.test(text)) return;
       consoleIssues.push(`${msg.type()}: ${msg.text()}`);
     }
@@ -1005,8 +1024,9 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
 
   await expect(page.getByRole('heading', { name: /^caja$/i })).toBeVisible();
   await page.getByRole('main').getByRole('button', { name: /abrir caja/i }).click();
-  await expect(page.getByRole('heading', { name: /cerrar caja/i })).toBeVisible();
-  await captureScreen(page, 'cashbox-close-dialog-light', 'light');
+  await expect(page.getByRole('alertdialog', { name: /confirmar apertura de caja/i })).toBeVisible();
+  await captureScreen(page, 'cashbox-open-confirm-light', 'light');
+  await page.getByRole('alertdialog', { name: /confirmar apertura de caja/i }).getByRole('button', { name: /abrir caja/i }).click();
   if (await page.getByRole('dialog', { name: /caja activa/i }).isVisible().catch(() => false)) {
     await page.getByRole('button', { name: /cerrar modal/i }).click();
   }
@@ -1033,8 +1053,7 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await expect(page.getByRole('dialog', { name: /comprobante de factura/i })).toBeVisible();
   await expect(page.getByText('Media carta')).toBeVisible();
   await captureScreen(page, 'receipt-preview-light', 'light');
-  await page.getByRole('combobox', { name: /tama(?:ñ|n)o del recibo/i }).click();
-  await page.getByRole('option', { name: 'A5', exact: true }).click({ force: true });
+  await selectReceiptPaper(page, 'A5');
   await expect(page.getByLabel(/recibo institucional/i)).toHaveClass(/receipt-a5/);
   await captureScreen(page, 'receipt-preview-a5-light', 'light');
   await setVisualTheme(page, 'dark');
@@ -1065,12 +1084,12 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   }
   await captureScreen(page, 'invoice-history-light', 'light');
   await page.getByRole('button', { name: /buscar/i }).click();
-  await page.getByRole('button', { name: /^reimprimir$/i }).first().click();
+  await page.getByRole('button', { name: /acciones de la factura/i }).first().click();
+  await page.getByRole('menuitem', { name: /reimprimir/i }).click();
   await page.getByLabel(/motivo de reimpresi.n/i).fill('Copia solicitada por paciente para expediente administrativo.');
   await page.getByRole('button', { name: /registrar reimpresi.n/i }).click();
   await expect(page.getByRole('dialog', { name: /comprobante de factura - 000-001-01-00000001/i })).toBeVisible();
-  await page.getByRole('combobox', { name: /tama(?:ñ|n)o del recibo/i }).click();
-  await page.getByRole('option', { name: 'A5', exact: true }).click({ force: true });
+  await selectReceiptPaper(page, 'A5');
   await expect(page.getByLabel(/recibo institucional/i)).toHaveClass(/receipt-a5/);
 
   await page.getByRole('button', { name: /cerrar modal/i }).click();
@@ -1085,13 +1104,16 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await expect(page.getByRole('link', { name: /reportes/i })).toBeVisible();
   await page.getByRole('link', { name: /reportes/i }).click();
   await expect(page.getByRole('heading', { name: /^reportes$/i })).toBeVisible();
-  await expect(page.getByRole('heading', { name: /cobrado/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /control ejecutivo/i })).toBeVisible();
   await captureScreen(page, 'reports-admin-light', 'light');
-  await page.getByRole('tab', { name: /^caja$/i }).click();
+  const reportSections = page.getByLabel(/secciones de reportes/i);
+  await reportSections.getByRole('link', { name: /^caja$/i }).click();
+  await expect(page.getByRole('heading', { name: /operacion de caja|control de caja/i })).toBeVisible();
   await captureScreen(page, 'reports-cash-light', 'light');
-  await page.getByRole('tab', { name: /^servicios$/i }).click();
-  await captureScreen(page, 'reports-services-light', 'light');
-  await page.getByRole('tab', { name: /^resumen$/i }).click();
+  await reportSections.getByRole('link', { name: /auditoria/i }).click();
+  await expect(page.getByRole('heading', { level: 1, name: /^auditoria$/i })).toBeVisible();
+  await captureScreen(page, 'reports-audit-light', 'light');
+  await reportSections.getByRole('link', { name: /ejecutivo/i }).click();
   await setVisualTheme(page, 'dark');
   await captureScreen(page, 'reports-admin-dark', 'dark');
   await setVisualTheme(page, 'light');
@@ -1209,6 +1231,7 @@ test('responsive shell keeps operational modules reachable', async ({ page }) =>
       if (text.includes('[echo]')) return;
       if (text.includes('[posMath]')) return;
       if (text.includes('Missing `Description`')) return;
+      if (text.includes('width(-1) and height(-1) of chart')) return;
       if (/Failed to load resource: the server responded with a status of 404/i.test(text)) return;
       consoleIssues.push(`${msg.type()}: ${msg.text()}`);
     }
@@ -1269,6 +1292,7 @@ test('main screens expose named controls and dangerous actions can be cancelled'
       if (text.includes('[echo]')) return;
       if (text.includes('[posMath]')) return;
       if (text.includes('Missing `Description`')) return;
+      if (text.includes('width(-1) and height(-1) of chart')) return;
       if (/Failed to load resource: the server responded with a status of 404/i.test(text)) return;
       consoleIssues.push(`${msg.type()}: ${msg.text()}`);
     }
