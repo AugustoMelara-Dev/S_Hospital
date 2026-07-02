@@ -487,3 +487,30 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron migraciones, schema, caja, correlativos, settings ni datos fiscales.
 - Esta fase no promete operacion offline completa; solo asegura assets base y error LAN humano como avance incremental de Fase 19.
+
+## 18. Fase 5/14/19 - CORS e idempotencia de API
+
+Cambio aplicado:
+
+- `backend/config/cors.php` deja de usar wildcards para metodos y headers: ahora permite metodos HTTP explicitos y los headers operativos `Content-Type`, `Authorization`, `X-Requested-With`, `X-XSRF-TOKEN` e `Idempotency-Key`.
+- CORS expone `X-S-Hospital-Paper-Size-Warning` para que el frontend pueda avisar cambios de papel durante turno.
+- Se agrego cobertura de preflight LAN/Vite para confirmar que `Idempotency-Key` y `X-XSRF-TOKEN` pasan CORS.
+- Se agregaron pruebas de emision de factura con y sin `Idempotency-Key`: misma key y mismo payload reproduce la misma factura; sin key, dos submits crean dos facturas distintas.
+- `docs/API_CONTRACTS.md` y `docs/security-audit.md` documentan las rutas idempotentes reales sin prometer idempotencia universal en mutaciones administrativas que no usan middleware.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter='duplicate_invoice_with_same_idempotency_key|invoice_without_idempotency_key'` | RED inicial por rutas incorrectas `/api/billing/invoices`; luego OK: 2 tests, 7 assertions. |
+| `docker compose exec backend php artisan test --filter=HealthCheckTest` | RED inicial por comparacion de headers CORS y ubicacion de exposed headers; luego OK: 8 tests, 54 assertions. |
+| `docker compose exec backend php artisan test --filter='duplicate_invoice_with_same_idempotency_key|invoice_without_idempotency_key|repeated_invoice_submit_with_same_idempotency_key|reused_invoice_idempotency_key'` | OK: 4 tests, 15 assertions. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=1G` | OK: 213 archivos analizados. |
+| `docker compose exec backend vendor/bin/pint tests/Feature/InvoiceCreationTest.php tests/Feature/HealthCheckTest.php` | OK: normalizo formato de tests. |
+| `docker compose exec backend vendor/bin/pint --test` | OK: 425 archivos. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron migraciones, schema, correlativos fiscales, caja historica ni datos reales.
+- La proteccion de doble submit sigue en backend mediante middleware `idempotency`; frontend debe seguir enviando claves estables solo para las operaciones criticas listadas en el contrato API.

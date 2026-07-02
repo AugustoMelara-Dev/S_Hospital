@@ -647,4 +647,55 @@ class InvoiceCreationTest extends TestCase
 
         return $cashier->refresh();
     }
+
+    public function test_duplicate_invoice_with_same_idempotency_key_creates_one_invoice(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $glucose = Service::query()->where('name', 'Glucosa')->firstOrFail();
+
+        $idempotencyKey = 'invoice-test-idem-'.uniqid();
+        $payload = [
+            'patient_name' => 'Paciente Idempotente',
+            'items' => [
+                ['service_id' => $glucose->id, 'quantity' => 1],
+            ],
+        ];
+
+        $headers = [
+            'Idempotency-Key' => $idempotencyKey,
+            'Accept' => 'application/json',
+        ];
+
+        $first = $this->actingAs($cashier)
+            ->postJson('/api/invoices', $payload, $headers)
+            ->assertCreated();
+
+        $second = $this->actingAs($cashier)
+            ->postJson('/api/invoices', $payload, $headers);
+
+        $second->assertCreated();
+        $second->assertJsonPath('data.id', $first->json('data.id'));
+
+        $this->assertSame(1, Invoice::query()->where('patient_name', 'Paciente Idempotente')->count());
+    }
+
+    public function test_invoice_without_idempotency_key_still_creates_unique_invoice(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $glucose = Service::query()->where('name', 'Glucosa')->firstOrFail();
+
+        $payload = [
+            'patient_name' => 'Paciente Sin Key',
+            'items' => [
+                ['service_id' => $glucose->id, 'quantity' => 1],
+            ],
+        ];
+
+        $this->actingAs($cashier)->postJson('/api/invoices', $payload)->assertCreated();
+        $this->actingAs($cashier)->postJson('/api/invoices', $payload)->assertCreated();
+
+        $this->assertSame(2, Invoice::query()->where('patient_name', 'Paciente Sin Key')->count());
+    }
 }

@@ -104,7 +104,12 @@ Hasta entonces, **la restauración se hace desde el servidor** por personal auto
 
 ### 4.4 Idempotencia
 
-Todas las mutaciones críticas de tipo `POST` (`invoices.create`, `invoices.void`, `invoices.reverse`, `payments.create`, `payments.void`, `cash.open`, `cash.close`, `receipts.reprint`, `institutional_receipts.create/pdf/print_event`, `backups.create`, etc.) usan el middleware `idempotency`.
+Las mutaciones criticas de tipo `POST` que pueden duplicarse por retry humano,
+timeout LAN o doble submit usan el middleware `idempotency`: `POST /api/invoices`,
+anulacion/reversion de factura, pagos, apertura/cierre de caja, reimpresion,
+recibos institucionales y respaldo manual. Otras mutaciones administrativas
+siguen protegidas por permisos, validaciones, auditoria y throttling, pero no se
+documentan como idempotentes si la ruta no usa ese middleware.
 
 Los clientes frontend que pueden sufrir reintento humano despues de timeout conservan una clave estable por intento:
 
@@ -113,6 +118,13 @@ Los clientes frontend que pueden sufrir reintento humano despues de timeout cons
 - `useOpenCashSession` y `useCloseCashSession` para apertura/cierre de caja.
 - `useCreateBackup` para respaldo manual.
 - `InvoiceHistoryView` para anular, reversar, reimprimir recibo legacy, generar recibo institucional faltante y abrir PDF institucional con motivo de reimpresion.
+
+### 4.5 CORS LAN y headers operativos
+
+- `backend/config/cors.php` permite metodos explicitos (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS`) en lugar de wildcard.
+- El preflight acepta `Idempotency-Key` y `X-XSRF-TOKEN` para clientes Vite/LAN autorizados.
+- Las respuestas pueden exponer `X-S-Hospital-Paper-Size-Warning` para que el frontend avise cambios de papel durante turno.
+- Produccion conserva rechazo de wildcards en origenes para no abrir CORS credentialed accidentalmente.
 
 ## 5. CSRF y sesión
 
