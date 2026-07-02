@@ -9,6 +9,7 @@ import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { InfoPanel } from '@/components/shared';
 import { type RoleDefinition } from '@/lib/api';
+import { isCriticalPermission } from './critical-permissions';
 
 export type RoleFormPayload = {
   name: string;
@@ -26,25 +27,6 @@ type RoleFormDialogProps = {
   onSubmit: (data: RoleFormPayload) => void;
   isSaving: boolean;
 };
-
-const CRITICAL_PERMISSION_NAMES = new Set([
-  'backups.create',
-  'backups.restore',
-  'cash.close_any',
-  'invoices.reverse',
-  'invoices.void',
-  'payments.void',
-  'receipt_settings.advanced',
-  'receipt_settings.update',
-  'receipts.reprint_any',
-  'settings.fiscal.update',
-  'users.assign_admin_role',
-  'users.update',
-]);
-
-function isCriticalPermission(permissionName: string): boolean {
-  return CRITICAL_PERMISSION_NAMES.has(permissionName);
-}
 
 export function RoleFormDialog({
   open,

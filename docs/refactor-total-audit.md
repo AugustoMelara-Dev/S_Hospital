@@ -1079,3 +1079,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, jobs de respaldo, descargas, auditoria, rutas, permisos ni restauracion real.
 - Este corte mantiene restauracion fuera de la UI normal y preserva el foco en crear, verificar estado y descargar respaldos locales.
+
+## 44. Fase 13 - Permisos directos con riesgo visible
+
+Cambio aplicado:
+
+- `UserFormDialog` ahora marca permisos directos criticos con la misma etiqueta visible que el formulario de roles.
+- La lista de permisos criticos se centralizo en `critical-permissions.ts` para evitar divergencias entre roles y usuarios.
+- Se agrego cobertura para impedir que un permiso directo sensible vuelva a aparecer sin senal de riesgo.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- src/features/admin/components/UserFormDialog.test.tsx -t "critical direct permissions"` | RED inicial por ausencia de `Permiso critico`; luego OK: 1 test focal pasa. |
+| `docker compose exec frontend npm run test -- src/features/admin/UsersView.test.tsx src/features/admin/components/UserFormDialog.test.tsx src/features/admin/components/RoleFormDialog.test.tsx src/features/admin/components/PermissionMatrix.test.tsx src/features/admin/components/UsersTable.test.tsx` | OK: 5 archivos, 38 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, politicas, endpoints, sesiones, auditoria ni asignacion real de permisos.
+- Este corte reduce el riesgo operativo al asignar permisos directos sin ampliar alcance ni relajar RBAC.

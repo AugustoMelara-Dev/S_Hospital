@@ -96,6 +96,39 @@ describe('UserFormDialog', () => {
     expect(screen.queryByLabelText(/contraseña inicial/i)).not.toBeInTheDocument();
   });
 
+  it('marks critical direct permissions with a visible risk label', () => {
+    render(
+      <UserFormDialog
+        open
+        onOpenChange={vi.fn()}
+        editingUser={baseUser}
+        roles={roles}
+        canManageRoles
+        selectedUserPermissions={['receipt_settings.advanced']}
+        onToggleUserPermission={vi.fn()}
+        permissionCatalog={[
+          {
+            module: 'receipts',
+            label: 'Recibos',
+            permissions: [
+              {
+                name: 'receipt_settings.advanced',
+                label: 'Modo soporte tecnico de recibos',
+              },
+            ],
+          },
+        ]}
+        globalError={null}
+        onSubmit={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.getByRole('checkbox', { name: /modo soporte tecnico de recibos/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/permiso critico/i)).toBeInTheDocument();
+  });
+
   it('rejects a non-compliant new user password with an inline message', async () => {
     const onSubmit = vi.fn();
 
