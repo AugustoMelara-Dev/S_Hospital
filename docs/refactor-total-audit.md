@@ -1148,3 +1148,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, politicas, endpoints, auditoria ni asignacion final de permisos.
 - Este corte hace que la administracion de permisos directos sea mas deliberada sin cambiar RBAC del servidor.
+
+## 47. Fase 13 - Rol con modo soporte de recibos tratado como elevado
+
+Cambio aplicado:
+
+- `RoleCatalog` ahora considera `receipt_settings.advanced` como permiso elevado al evaluar roles operativos personalizados.
+- Un gestor con `users.create` pero sin `users.assign_admin_role` ya no puede asignar a otra cuenta un rol personalizado que habilite modo soporte tecnico de recibos.
+- Se agrego prueba feature para cubrir la escalada mediante rol personalizado existente.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter=UserManagementTest::test_user_manager_without_admin_assignment_permission_cannot_assign_custom_role_with_advanced_receipt_permission` | RED inicial: el backend respondia 201; luego OK: 1 test pasa. |
+| `docker compose exec backend php artisan test tests/Feature/UserManagementTest.php tests/Feature/RoleManagementTest.php` | OK: 40 tests pasan. |
+| `docker compose exec backend vendor/bin/pint --test` | OK: 425 archivos revisados. |
+| `docker compose exec backend vendor/bin/phpstan analyse` | OK: sin errores. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron migraciones, datos fiscales, recibos, caja, facturas ni politicas de impresion.
+- Este corte cierra una ruta de escalada por rol personalizado sin cambiar el contrato de API.

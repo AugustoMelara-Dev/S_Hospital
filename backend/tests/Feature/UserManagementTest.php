@@ -211,6 +211,34 @@ class UserManagementTest extends TestCase
         ]);
     }
 
+    public function test_user_manager_without_admin_assignment_permission_cannot_assign_custom_role_with_advanced_receipt_permission(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $manager = User::factory()->create();
+        $manager->givePermissionTo(['users.create', 'users.view']);
+        $role = Role::query()->create([
+            'name' => 'soporte_recibos_avanzado',
+            'guard_name' => 'web',
+        ]);
+        $role->givePermissionTo('receipt_settings.advanced');
+
+        $this->actingAs($manager)
+            ->postJson('/api/admin/users', [
+                'name' => 'Soporte Recibos',
+                'email' => 'soporte-recibos@hospital.local',
+                'username' => 'soporte-recibos',
+                'password' => 'Temporary123!',
+                'role' => 'soporte_recibos_avanzado',
+                'active' => true,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('role');
+
+        $this->assertDatabaseMissing('users', [
+            'username' => 'soporte-recibos',
+        ]);
+    }
+
     public function test_user_editor_rejects_unknown_role_on_create(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);

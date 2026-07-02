@@ -21,6 +21,7 @@ class RoleCatalog
         'invoices.reverse',
         'invoices.void',
         'payments.void',
+        'receipt_settings.advanced',
         'receipt_settings.update',
         'receipts.reprint_any',
         'receipts.void',
