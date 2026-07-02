@@ -514,3 +514,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron migraciones, schema, correlativos fiscales, caja historica ni datos reales.
 - La proteccion de doble submit sigue en backend mediante middleware `idempotency`; frontend debe seguir enviando claves estables solo para las operaciones criticas listadas en el contrato API.
+
+## 19. Fase 8 - Acciones de catalogo consistentes
+
+Cambio aplicado:
+
+- `ServiceCatalogTable` deja de implementar su propio `DropdownMenu` para acciones de fila y usa el `ActionMenu` compartido.
+- Las acciones `Editar`, `Desactivar` y `Activar` ahora muestran iconos lucide reconocibles dentro del menu, manteniendo el disparador icon-only con nombre accesible.
+- La accion destructiva `Desactivar` conserva tono destructivo mediante el contrato del `ActionMenu`; no cambia callbacks, confirmacion, permisos ni reglas backend.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- src/features/catalog/components/ServiceCatalogTable.test.tsx` | RED inicial por items sin icono; luego OK: 4 tests pasan. |
+| `docker compose exec frontend npm run test -- src/features/catalog/components/ServiceCatalogTable.test.tsx src/features/catalog/CatalogView.test.tsx` | OK: 2 archivos, 23 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron migraciones, schema, precios, facturas historicas ni reglas fiscales.
+- Este corte avanza Fase 8 con una tabla de catalogo mas consistente y menos UI ad hoc.

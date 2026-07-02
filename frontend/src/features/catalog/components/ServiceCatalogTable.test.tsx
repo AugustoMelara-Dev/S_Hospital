@@ -48,6 +48,17 @@ describe('ServiceCatalogTable', () => {
     expect(screen.getByRole('columnheader', { name: /^Estado$/ })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /^Acciones$/ })).toBeInTheDocument();
   });
+
+  it('renders recognizable icons in row action menu items', async () => {
+    render(<ServiceCatalogTable {...baseProps()} />);
+
+    const actionsButton = screen.getByRole('button', { name: /acciones de servicio glucosa/i });
+    actionsButton.focus();
+    fireEvent.keyDown(actionsButton, { key: 'Enter' });
+
+    expect((await screen.findByRole('menuitem', { name: /^Editar$/ })).querySelector('svg')).toBeInTheDocument();
+    expect((await screen.findByRole('menuitem', { name: /^Desactivar$/ })).querySelector('svg')).toBeInTheDocument();
+  });
 });
 
 function baseProps() {

@@ -1,14 +1,8 @@
-import { MoreHorizontal } from 'lucide-react';
+import { Pencil, Power, PowerOff } from 'lucide-react';
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
+import { ActionMenu, type ActionMenuGroup } from '../../../components/ui/action-menu';
 import { DataTable, type DataTableColumn } from '../../../components/ui/data-table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '../../../components/ui/dropdown-menu';
 import { formatLempirasUIFromCents, parseCents } from '../../../lib/moneyCents';
 import { getServiceBillingSummary } from '../../../lib/serviceBilling';
 import type { ServiceBillingBadge } from '../../../lib/serviceBilling';
@@ -197,28 +191,39 @@ type ServiceRowActionsProps = {
 };
 
 function ServiceRowActions({ onRowActions, service }: ServiceRowActionsProps) {
+  const groups: ActionMenuGroup[] = [
+    {
+      key: 'service',
+      items: [
+        {
+          key: 'edit',
+          label: 'Editar',
+          icon: <Pencil aria-hidden="true" className="size-4" />,
+          onSelect: () => onRowActions.onEdit(service),
+        },
+      ],
+    },
+    {
+      key: 'state',
+      items: [
+        {
+          key: service.active ? 'disable' : 'enable',
+          label: service.active ? 'Desactivar' : 'Activar',
+          icon: service.active
+            ? <PowerOff aria-hidden="true" className="size-4" />
+            : <Power aria-hidden="true" className="size-4" />,
+          destructive: service.active,
+          onSelect: () => onRowActions.onToggleActive(service),
+        },
+      ],
+    },
+  ];
+
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          aria-label={`Acciones de servicio ${service.name}`}
-        >
-          <MoreHorizontal aria-hidden="true" className="h-4 w-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => onRowActions.onEdit(service)}>Editar</DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onClick={() => onRowActions.onToggleActive(service)}
-          className={service.active ? 'text-destructive' : 'text-success'}
-        >
-          {service.active ? 'Desactivar' : 'Activar'}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <ActionMenu
+      ariaLabel={`Acciones de servicio ${service.name}`}
+      groups={groups}
+    />
   );
 }
 
