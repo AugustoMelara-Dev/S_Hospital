@@ -41,7 +41,9 @@ export function RoleFormDialog({
 }: RoleFormDialogProps) {
   const [roleName, setRoleName] = useState(editingRole?.name ?? '');
   const [permissionFilter, setPermissionFilter] = useState('');
+  const [criticalAccessConfirmed, setCriticalAccessConfirmed] = useState(false);
   const isProtected = editingRole?.protected === true;
+  const hasSelectedCriticalPermission = selectedPermissions.some(isCriticalPermission);
 
   useEffect(() => {
     setRoleName(editingRole?.name ?? '');
@@ -50,8 +52,15 @@ export function RoleFormDialog({
   useEffect(() => {
     if (!open) {
       setPermissionFilter('');
+      setCriticalAccessConfirmed(false);
     }
   }, [open]);
+
+  useEffect(() => {
+    if (!hasSelectedCriticalPermission) {
+      setCriticalAccessConfirmed(false);
+    }
+  }, [hasSelectedCriticalPermission]);
 
   const filteredCatalog = useMemo(() => {
     const query = permissionFilter.trim().toLowerCase();
@@ -72,6 +81,9 @@ export function RoleFormDialog({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (hasSelectedCriticalPermission && !criticalAccessConfirmed) {
+      return;
+    }
     onSubmit({ name: roleName.trim(), permissions: [...selectedPermissions] });
   }
 
@@ -97,6 +109,24 @@ export function RoleFormDialog({
           description="Seleccione exactamente los accesos que tendra el rol. Los nombres tecnicos se muestran solo para trazabilidad administrativa."
           tone="info"
         />
+
+        {hasSelectedCriticalPermission && (
+          <div className="rounded-md border border-warning/40 bg-warning/10 p-3 text-sm text-warning-foreground">
+            <p className="font-semibold">Permisos criticos seleccionados</p>
+            <p className="mt-1 text-xs text-current/80">
+              Estos accesos pueden modificar caja, recibos, anulaciones, respaldos o usuarios. Confirme que el rol realmente los necesita.
+            </p>
+            <label htmlFor="critical-role-confirmation" className="mt-3 flex items-start gap-2">
+              <Checkbox
+                id="critical-role-confirmation"
+                checked={criticalAccessConfirmed}
+                disabled={isSaving}
+                onCheckedChange={(value) => setCriticalAccessConfirmed(value === true)}
+              />
+              <span>Confirmo que este rol necesita permisos criticos</span>
+            </label>
+          </div>
+        )}
 
         <div className="rounded-md border border-operational-border bg-operational-panel/50 p-3 space-y-1">
           <Label htmlFor="role-name">Nombre del rol *</Label>
@@ -179,7 +209,7 @@ export function RoleFormDialog({
           <Button type="button" variant="secondary" onClick={() => onOpenChange(false)} disabled={isSaving}>
             Cancelar
           </Button>
-          <Button type="submit" disabled={isSaving}>
+          <Button type="submit" disabled={isSaving || (hasSelectedCriticalPermission && !criticalAccessConfirmed)}>
             <Save data-icon aria-hidden="true" />
             {isSaving ? 'Guardando...' : editingRole ? 'Guardar rol' : 'Crear rol'}
           </Button>

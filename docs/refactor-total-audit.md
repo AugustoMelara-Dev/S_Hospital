@@ -1102,3 +1102,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, politicas, endpoints, sesiones, auditoria ni asignacion real de permisos.
 - Este corte reduce el riesgo operativo al asignar permisos directos sin ampliar alcance ni relajar RBAC.
+
+## 45. Fase 13 - Confirmacion al guardar roles con permisos criticos
+
+Cambio aplicado:
+
+- `RoleFormDialog` ahora muestra una advertencia cuando el rol tiene permisos criticos seleccionados.
+- El boton de guardar queda deshabilitado hasta que el administrador confirme explicitamente que el rol necesita esos accesos.
+- `handleSubmit` tambien bloquea el envio por teclado si falta la confirmacion, no solo el click sobre el boton.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- src/features/admin/components/RoleFormDialog.test.tsx -t "explicit confirmation"` | RED inicial porque el boton seguia habilitado; luego OK: 1 test focal pasa. |
+| `docker compose exec frontend npm run test -- src/features/admin/UsersView.test.tsx src/features/admin/components/UserFormDialog.test.tsx src/features/admin/components/RoleFormDialog.test.tsx src/features/admin/components/PermissionMatrix.test.tsx src/features/admin/components/UsersTable.test.tsx` | OK: 5 archivos, 39 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, politicas, endpoints, auditoria, usuarios existentes ni catalogo de permisos.
+- Este corte mejora el flujo de administracion de roles sin cambiar la autorizacion final del servidor.
