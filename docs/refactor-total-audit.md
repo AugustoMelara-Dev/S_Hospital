@@ -559,3 +559,25 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, jobs, descargas, rutas de archivos, restauracion ni auditoria de respaldos.
 - Este corte avanza Fase 12 con una tabla mas escaneable para operacion diaria.
+
+## 21. Fase 9 - Encabezado claro en historial de facturas
+
+Cambio aplicado:
+
+- `InvoiceHistoryTable` reemplaza el encabezado abreviado `No.` por `Factura` en la primera columna.
+- El cambio reduce ambiguedad en una tabla operativa donde el usuario busca por numero de factura, paciente, estado y saldo.
+- No cambia datos, filtros, permisos, acciones de anulacion/reimpresion ni contratos API.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- src/features/invoices/InvoiceHistoryView.test.tsx` | RED inicial por ausencia del encabezado `Factura` y presencia de `No.`; luego OK: 20 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, migraciones, schema, caja, correlativos fiscales ni recibos.
+- Este corte avanza Fase 9 con una tabla de historial mas clara sin ampliar alcance funcional.

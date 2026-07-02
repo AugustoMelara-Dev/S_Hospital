@@ -42,7 +42,7 @@ export function InvoiceHistoryTable({
   const columns: Array<DataTableColumn<Invoice>> = [
     {
       key: 'invoice_number',
-      header: 'No.',
+      header: 'Factura',
       cellClassName: 'max-w-56 break-words text-sm font-semibold tabular-nums',
       render: (invoice) => (
         <div className="flex items-start gap-2">

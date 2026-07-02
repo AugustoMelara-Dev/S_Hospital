@@ -74,6 +74,8 @@ describe('InvoiceHistoryView', () => {
 
     expect(screen.getByRole('region', { name: /listado de facturas/i })).toBeInTheDocument();
     expect(screen.getByRole('table', { name: /facturas filtradas/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /^Factura$/i })).toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: /^No\.$/i })).not.toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /saldo/i })).toHaveAttribute('data-numeric', 'true');
     expect(screen.getByRole('cell', { name: 'L 80.00' })).toHaveAttribute('data-numeric', 'true');
   });
