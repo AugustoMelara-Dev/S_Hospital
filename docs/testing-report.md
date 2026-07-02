@@ -27,6 +27,8 @@ validation.
 
 | Date | Command | Result | Notes |
 |---|---|---|---|
+| 2026-07-02 | `npm run test` | PASS, 100 files / 552 tests | Local Vitest run from `frontend`; not Docker. |
+| 2026-07-02 | `npm run build` | PASS | Local production build: `tsc --noEmit && vite build`; largest chunks `vendor` 398.37 kB gzip 121.92 kB and `charts` 357.04 kB gzip 104.93 kB. |
 | 2026-07-02 | `npx playwright test e2e/accessibility.spec.ts e2e/new-invoice-flow.spec.ts e2e/reports-flow.spec.ts e2e/cashbox.spec.ts e2e/invoice-history-flow.spec.ts` | PASS, 8 tests | Fresh focused gate for accessibility, invoice/payment, reports, cashbox close and invoice voiding. |
 | 2026-07-02 | `npx playwright test e2e/accessibility.spec.ts` | PASS, 2 tests | Login and critical protected routes: one `h1`, `main`, named controls, no serious/critical axe issues. |
 | 2026-07-02 | `npx playwright test e2e/new-invoice-flow.spec.ts e2e/reports-flow.spec.ts` | PASS, 4 tests | Invoice payload/payment payload/PDF request; reports filters/export/cash/audit. |
@@ -69,6 +71,10 @@ docker compose exec frontend npm run test
 docker compose exec frontend npm run build
 docker compose exec frontend npx playwright test
 ```
+
+Local `npm run test` and `npm run build` are now proven green, but the Docker
+commands above remain open because final acceptance requires the production-like
+container path.
 
 If any full-suite command is too slow or environment-bound, the blocker and the
 latest focused substitute must be recorded in `docs/refactor-total-audit.md`.
