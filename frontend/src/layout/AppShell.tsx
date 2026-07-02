@@ -7,6 +7,7 @@ import { canAccessPath, getActiveNavigationItem, getBreadcrumbs, getVisibleNavig
 import { MobileNavigation } from './components/MobileNavigation';
 import { SidebarContent } from './Sidebar';
 import { Topbar } from './Topbar';
+import { KeyboardShortcutsPalette } from '../components/keyboard-shortcuts-palette';
 import { cn } from '../lib/utils';
 
 const SIDEBAR_COLLAPSED_KEY = 's-hospital-sidebar-collapsed';
@@ -53,6 +54,7 @@ export function AppShell({
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => readSidebarCollapsed());
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -135,6 +137,7 @@ export function AppShell({
           mobileMenuButtonRef={mobileMenuButtonRef}
           onOpenMobileMenu={() => setMobileMenuOpen(true)}
           onOpenGuide={() => setGuideOpen(true)}
+          onOpenShortcuts={() => setShortcutsOpen(true)}
           onLogout={onLogout}
           onToggleSidebar={() => setSidebarCollapsed((value) => !value)}
           sidebarCollapsed={sidebarCollapsed}
@@ -154,6 +157,7 @@ export function AppShell({
         </footer>
       </div>
       <GuidedTour open={guideOpen} onOpenChange={setGuideOpen} />
+      <KeyboardShortcutsPalette open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
     </div>
   );
 }

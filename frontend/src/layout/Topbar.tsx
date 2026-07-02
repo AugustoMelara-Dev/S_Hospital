@@ -1,4 +1,4 @@
-import { HelpCircle, Menu, Moon, PanelLeftClose, PanelLeftOpen, Sun } from 'lucide-react';
+import { HelpCircle, Keyboard, Menu, Moon, PanelLeftClose, PanelLeftOpen, Sun } from 'lucide-react';
 import { type RefObject, useEffect, useState } from 'react';
 import { Button } from '../components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
@@ -22,6 +22,7 @@ interface TopbarProps {
   mobileMenuButtonRef: RefObject<HTMLButtonElement | null>;
   onOpenMobileMenu: () => void;
   onOpenGuide: () => void;
+  onOpenShortcuts?: () => void;
   onLogout: () => void;
   onToggleSidebar?: () => void;
   sidebarCollapsed?: boolean;
@@ -38,6 +39,7 @@ export function Topbar({
   mobileMenuButtonRef,
   onOpenMobileMenu,
   onOpenGuide,
+  onOpenShortcuts,
   onLogout,
   onToggleSidebar,
   sidebarCollapsed,
@@ -127,6 +129,24 @@ export function Topbar({
         ) : null}
 
         <div className="flex shrink-0 items-center gap-1">
+          {!isMinimalTopbar && onOpenShortcuts ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="hidden sm:inline-flex"
+                  onClick={onOpenShortcuts}
+                  aria-label="Ver atajos de teclado (tecla ?)"
+                >
+                  <Keyboard data-icon="inline-start" aria-hidden="true" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Atajos (?)</TooltipContent>
+            </Tooltip>
+          ) : null}
+
           {!isMinimalTopbar ? (
             <Tooltip>
               <TooltipTrigger asChild>

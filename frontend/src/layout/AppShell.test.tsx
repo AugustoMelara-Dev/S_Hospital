@@ -176,9 +176,17 @@ describe('AppShell', () => {
     renderShell();
 
     expect(screen.getByRole('button', { name: /^abrir menú$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /ver atajos de teclado/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /abrir ayuda/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /cambiar a oscuro/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /abrir menu de usuario/i })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /ver atajos de teclado/i }));
+    expect(await screen.findByRole('dialog', { name: /atajos de teclado/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /cerrar modal/i }));
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog', { name: /atajos de teclado/i })).not.toBeInTheDocument();
+    });
 
     fireEvent.click(screen.getByRole('button', { name: /abrir ayuda/i }));
 

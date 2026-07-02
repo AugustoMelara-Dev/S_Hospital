@@ -94,4 +94,44 @@ describe('RoleFormDialog', () => {
 
     expect(onTogglePermission).toHaveBeenCalledWith('invoices.create', false);
   });
+
+  it('filters the visible permissions when the search input changes', () => {
+    const widerCatalog = [
+      ...permissionCatalog,
+      {
+        module: 'cash',
+        label: 'Caja',
+        permissions: [
+          { name: 'cash.view', label: 'Ver caja' },
+          { name: 'cash.open', label: 'Abrir caja' },
+        ],
+      },
+    ];
+
+    render(
+      <RoleFormDialog
+        open
+        onOpenChange={vi.fn()}
+        editingRole={null}
+        permissionCatalog={widerCatalog}
+        selectedPermissions={[]}
+        onTogglePermission={vi.fn()}
+        globalError={null}
+        onSubmit={vi.fn()}
+        isSaving={false}
+      />,
+    );
+
+    expect(screen.getByRole('checkbox', { name: /crear facturas/i })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /abrir caja/i })).toBeInTheDocument();
+
+    const search = screen.getByLabelText(/buscar permiso/i);
+    fireEvent.change(search, { target: { value: 'abrir' } });
+
+    expect(screen.queryByRole('checkbox', { name: /crear facturas/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /abrir caja/i })).toBeInTheDocument();
+
+    fireEvent.change(search, { target: { value: 'no-existe' } });
+    expect(screen.getByText(/no se encontraron permisos/i)).toBeInTheDocument();
+  });
 });
