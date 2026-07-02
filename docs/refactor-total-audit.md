@@ -581,3 +581,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, migraciones, schema, caja, correlativos fiscales ni recibos.
 - Este corte avanza Fase 9 con una tabla de historial mas clara sin ampliar alcance funcional.
+
+## 22. Fase 13 - Roles legibles en tabla de usuarios
+
+Cambio aplicado:
+
+- `UsersTable` deja de mostrar roles personalizados solo como strings tecnicos, por ejemplo `catalog_manager`.
+- Los roles ahora muestran un nombre humano (`Catalog Manager`) y conservan el identificador tecnico en texto secundario cuando aporta auditoria operativa.
+- Se extrajo `roleLabel` a `roleLabels.ts` para compartir el mismo formateo entre formulario, tarjetas de roles y tabla de usuarios.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- src/features/admin/components/UsersTable.test.tsx` | RED inicial por ausencia de `Catalog Manager`; luego OK: 3 tests pasan. |
+| `docker compose exec frontend npm run test -- src/features/admin/UsersView.test.tsx src/features/admin/components/UsersTable.test.tsx src/features/admin/components/UserFormDialog.test.tsx` | OK: 3 archivos, 28 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, permisos reales, contratos API, roles protegidos ni reglas RBAC.
+- Este corte avanza Fase 13 reduciendo strings tecnicos visibles en la operacion diaria sin ocultar trazabilidad del rol.

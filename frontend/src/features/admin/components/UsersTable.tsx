@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { UserActionMenu } from './UserActionMenu';
+import { roleLabel } from './roleLabels';
 
 type UsersTableProps = {
   canDisableUsers: boolean;
@@ -51,15 +52,25 @@ export function UsersTable({
       header: 'Rol',
       render: (user) => (
         <div className="flex flex-wrap gap-1">
-          {user.roles.map((role) => (
-            <Badge
-              key={role}
-              variant={role === 'admin' ? 'destructive' : role === 'supervisor' ? 'default' : 'secondary'}
-              className="capitalize font-semibold"
-            >
-              {role}
-            </Badge>
-          ))}
+          {user.roles.map((role) => {
+            const label = roleLabel(role);
+            const showTechnicalName = label !== role;
+
+            return (
+              <Badge
+                key={role}
+                variant={role === 'admin' ? 'destructive' : role === 'supervisor' ? 'default' : 'secondary'}
+                className="font-semibold"
+              >
+                <span>{label}</span>
+                {showTechnicalName && (
+                  <span className="ml-1 text-[10px] font-normal normal-case text-muted-foreground">
+                    {role}
+                  </span>
+                )}
+              </Badge>
+            );
+          })}
         </div>
       ),
     },

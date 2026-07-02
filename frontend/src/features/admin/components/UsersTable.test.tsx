@@ -14,6 +14,15 @@ const activeUser: AuthUser = {
   must_change_password: false,
 };
 
+const customRoleUser: AuthUser = {
+  ...activeUser,
+  id: 2,
+  name: 'Catalogo Turno',
+  email: 'catalogo@hospital.test',
+  username: 'catalogo',
+  roles: ['catalog_manager'],
+};
+
 async function openUserActions(userName: string) {
   const trigger = await screen.findByRole('button', { name: new RegExp(`acciones de usuario ${userName}`, 'i') });
   trigger.focus();
@@ -58,5 +67,22 @@ describe('UsersTable', () => {
 
     expect(screen.getByText('Caja Principal')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /acciones de usuario caja principal/i })).not.toBeInTheDocument();
+  });
+
+  it('shows human role names and keeps technical role names secondary', () => {
+    render(
+      <UsersTable
+        canDisableUsers={false}
+        canUpdateUsers={false}
+        onEdit={vi.fn()}
+        onResetPassword={vi.fn()}
+        onToggleActive={vi.fn()}
+        searchTerm=""
+        users={[customRoleUser]}
+      />,
+    );
+
+    expect(screen.getByText('Catalog Manager')).toBeInTheDocument();
+    expect(screen.getByText('catalog_manager')).toHaveClass('text-muted-foreground');
   });
 });

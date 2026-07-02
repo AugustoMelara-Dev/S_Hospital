@@ -15,11 +15,12 @@ import { ErrorState, LoadingState } from '@/components/ui/states';
 import { Input } from '@/components/ui/input';
 import { OperationalBanner, PermissionState, StatGrid } from '@/components/shared';
 import { Badge } from '@/components/ui/badge';
-import { UserFormDialog, roleLabel, type UserFormData } from './components/UserFormDialog';
+import { UserFormDialog, type UserFormData } from './components/UserFormDialog';
 import { RoleFormDialog } from './components/RoleFormDialog';
 import { PermissionMatrix } from './components/PermissionMatrix';
 import { PasswordResetDialog } from './components/PasswordResetDialog';
 import { UsersTable } from './components/UsersTable';
+import { roleLabel } from './components/roleLabels';
 
 type UsersViewProps = {
   onStatus: (message: string) => void;

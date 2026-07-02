@@ -13,6 +13,7 @@ import { Alert } from '@/components/ui/alert';
 import { InfoPanel } from '@/components/shared';
 import { type AuthUser, type RoleDefinition, type UserPayload } from '@/lib/api';
 import { cn } from '@/lib/utils';
+import { roleLabel } from './roleLabels';
 
 const baseUserSchema = z.object({
   name: z.string().min(1, 'El nombre es obligatorio.'),
@@ -256,13 +257,6 @@ function defaultValuesFor(editingUser: AuthUser | null, roles: RoleDefinition[])
     password: '',
     role: roles.find((role) => role.name === 'cajero')?.name || 'cajero',
   };
-}
-
-export function roleLabel(roleName: string): string {
-  return roleName
-    .split('_')
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
 }
 
 export function passwordPolicyHint(): string {
