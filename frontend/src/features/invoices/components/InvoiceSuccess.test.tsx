@@ -51,4 +51,26 @@ describe('InvoiceSuccess', () => {
       '/invoices?invoice_number=000-001-01-00000009',
     );
   });
+
+  it('uses a paid success title when the invoice is already collected', () => {
+    render(
+      <MemoryRouter>
+        <InvoiceSuccess
+          open
+          onOpenChange={vi.fn()}
+          invoiceNumber="000-001-01-00000010"
+          patientName="Paciente Pagado"
+          total="125.00"
+          status="paid"
+          onCobrar={vi.fn()}
+          onImprimir={vi.fn()}
+          onNuevaFactura={vi.fn()}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('dialog', { name: /factura pagada/i })).toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: /factura emitida exitosamente/i })).not.toBeInTheDocument();
+    expect(screen.getByText(/recibo listo para imprimir/i)).toBeInTheDocument();
+  });
 });

@@ -43,6 +43,11 @@ export function InvoiceSuccess({
 }: InvoiceSuccessProps) {
   const needsPayment = status === 'issued' || status === 'partial';
   const canShowPaymentAction = needsPayment && canCollectPayment;
+  const successTitle = status === 'paid' ? 'Factura pagada' : 'Factura emitida exitosamente';
+  const successDescription =
+    status === 'paid'
+      ? `Factura ${invoiceNumber} pagada. Recibo listo para imprimir.`
+      : `Factura ${invoiceNumber} creada. ${needsPayment ? 'Pendiente de pago.' : 'Pagada.'}`;
   const primaryActionRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
@@ -55,8 +60,8 @@ export function InvoiceSuccess({
     <Dialog
       open={open}
       onOpenChange={onOpenChange}
-      title="Factura emitida exitosamente"
-      description={`Factura ${invoiceNumber} creada. ${needsPayment ? 'Pendiente de pago.' : 'Pagada.'}`}
+      title={successTitle}
+      description={successDescription}
     >
       <div className="flex flex-col gap-4">
         <div className="flex justify-center py-2 animate-[scale-in_0.3s_ease-out_both]">

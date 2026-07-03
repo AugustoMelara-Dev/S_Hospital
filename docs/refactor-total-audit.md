@@ -3393,3 +3393,28 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, rutas, migraciones, seeders, policies, auditoria ni endpoints.
 - Este corte mejora legibilidad de respaldos sin exponer nombre tecnico, checksum, rutas locales ni restauracion en la vista normal.
+
+## 141. Fase 4/16 - Exito pagado orienta impresion
+
+Cambio aplicado:
+
+- El modal de exito de factura usa "Factura pagada" cuando la factura ya fue cobrada.
+- La descripcion accesible indica que el recibo esta listo para imprimir, alineando el estado pagado con la accion primaria.
+- Los flujos integrados de nueva factura ahora esperan el mismo titulo en escenarios cobrados.
+- No se cambian cobros, recibos, idempotencia, rutas, permisos ni contratos API.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- InvoiceSuccess --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial: el dialogo pagado seguia nombrandose "Factura emitida exitosamente"; luego OK: 3 tests pasan. |
+| `npm run test -- NewInvoiceView InvoiceSuccess --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED intermedio: tres escenarios integrados esperaban el titulo anterior; luego OK: 4 archivos, 21 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, rutas, migraciones, seeders, policies, auditoria ni endpoints.
+- Este corte reduce ambiguedad en el cierre de venta sin relajar caja, impresion institucional ni trazabilidad fiscal.

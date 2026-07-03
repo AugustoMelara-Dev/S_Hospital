@@ -450,7 +450,7 @@ describe('NewInvoiceView critical flows', () => {
     await waitFor(() => {
       expect(screen.queryByRole('dialog', { name: /registrar pago/i })).not.toBeInTheDocument();
     });
-    expect(await screen.findByRole('dialog', { name: /factura emitida/i })).toBeInTheDocument();
+    expect(await screen.findByRole('dialog', { name: /factura pagada/i })).toBeInTheDocument();
     expect(screen.getByText(/pago registrado/i)).toBeInTheDocument();
     expect(screen.getByText(/no se pudo generar el recibo/i)).toBeInTheDocument();
   });
@@ -538,7 +538,7 @@ describe('NewInvoiceView critical flows', () => {
 
     expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/api/invoices/56/receipt'))).toBe(false);
     expect(screen.queryByRole('dialog', { name: /comprobante de factura/i })).not.toBeInTheDocument();
-    expect(await screen.findByRole('dialog', { name: /factura emitida/i })).toBeInTheDocument();
+    expect(await screen.findByRole('dialog', { name: /factura pagada/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /imprimir recibo institucional/i })).not.toBeInTheDocument();
   });
 
@@ -673,7 +673,7 @@ describe('NewInvoiceView critical flows', () => {
     getInstitutionalReceiptPdf.mockClear();
 
     await waitFor(() => {
-      expect(screen.getByRole('dialog', { name: /factura emitida/i })).toBeInTheDocument();
+      expect(screen.getByRole('dialog', { name: /factura pagada/i })).toBeInTheDocument();
     });
     fireEvent.click(screen.getByRole('button', { name: /imprimir recibo institucional/i }));
 
