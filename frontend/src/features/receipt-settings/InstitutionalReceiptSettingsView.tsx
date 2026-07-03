@@ -91,6 +91,9 @@ const seriesSchema = z.object({
 }).refine((data) => data.max_number >= data.min_number, {
   path: ['max_number'],
   message: 'El numero final debe ser mayor o igual al inicial.',
+}).refine((data) => data.current_number <= data.max_number, {
+  path: ['current_number'],
+  message: 'El correlativo actual no puede superar el numero final.',
 });
 
 const profileSchema = z.object({

@@ -277,6 +277,21 @@ describe('InstitutionalReceiptSettingsView', () => {
     expect(apiClient.updateReceiptSeries).not.toHaveBeenCalled();
   });
 
+  it('blocks saving a receipt series when the current number exceeds the range end', async () => {
+    const { apiClient } = await import('@/lib/api');
+    renderView();
+
+    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
+    await activateTab('Serie');
+
+    fireEvent.change(screen.getByLabelText(/n.mero final/i), { target: { value: '100' } });
+    fireEvent.change(screen.getByLabelText(/correlativo actual/i), { target: { value: '150' } });
+    fireEvent.click(screen.getByRole('button', { name: /guardar serie/i }));
+
+    expect(await screen.findByText(/el correlativo actual no puede superar el numero final/i)).toBeInTheDocument();
+    expect(apiClient.updateReceiptSeries).not.toHaveBeenCalled();
+  });
+
   it('sends a documented support reason with advanced manual print settings', async () => {
     const { apiClient } = await import('@/lib/api');
     renderView({ canAdvancedPrintSettings: true });

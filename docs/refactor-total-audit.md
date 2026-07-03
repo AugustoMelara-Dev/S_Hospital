@@ -3851,3 +3851,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron caja, facturacion, catalogo, historial, reportes, respaldos ni usuarios.
 - Este corte reduce riesgo operativo al editar rangos de recibos institucionales desde la UI normal sin sustituir la validacion backend.
+
+## 160. Fase 6 - Serie de recibos bloquea correlativo fuera de rango
+
+Cambio aplicado:
+
+- `InstitutionalReceiptSettingsView` ahora valida que el correlativo actual no supere el numero final de la serie antes de guardar.
+- Se agrego una regresion que intenta guardar `max_number=100` y `current_number=150`, muestra un error humano y confirma que no se llama al API de serie.
+- No se cambian backend, endpoints, migraciones, correlativos existentes, perfiles de impresion, permisos ni auditoria.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- InstitutionalReceiptSettingsView.test.tsx -t "current number exceeds" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial correcto: no aparecia el mensaje `El correlativo actual no puede superar el numero final`; luego OK: 1 test pasa. |
+| `npm run test -- InstitutionalReceiptSettingsView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 16 tests pasan. |
+| `npm run lint` | OK. |
+| `npm run typecheck` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron caja, facturacion, catalogo, historial, reportes, respaldos ni usuarios.
+- Este corte evita configuraciones imposibles de correlativo desde la UI de recibos sin relajar la autoridad del backend sobre emision fiscal.
