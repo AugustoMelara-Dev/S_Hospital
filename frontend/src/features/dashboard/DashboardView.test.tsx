@@ -200,6 +200,19 @@ describe('DashboardView', () => {
     expect(screen.queryByRole('button', { name: /crear nueva factura/i })).not.toBeInTheDocument();
   });
 
+  it('does not announce a fake primary action when no dashboard action is available', async () => {
+    renderDashboard(
+      makeBaseProps({
+        canCreateInvoices: false,
+        canViewCash: false,
+        cashSession: null,
+      }),
+    );
+
+    expect(await screen.findByText(/^caja$/i)).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/Una acci[oó]n clara:\s*Espere/i);
+  });
+
   it('renders a sanitized error and never exposes technical detail', async () => {
     vi.spyOn(apiClient, 'getDashboardReport').mockRejectedValue(
       new ApiError('SQLSTATE[HY000]: stack trace in storage/logs/laravel.log', 500),

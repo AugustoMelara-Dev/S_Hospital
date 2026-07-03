@@ -2474,3 +2474,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, migraciones, CSS de impresion ni contratos API.
 - Este corte mantiene el recibo institucional diario enfocado en papel carta/media carta/A5, dejando tickets termicos como compatibilidad secundaria fuera del flujo normal.
+
+## 101. Fase 3 - Dashboard no anuncia accion inexistente
+
+Cambio aplicado:
+
+- El encabezado del dashboard solo menciona la accion primaria cuando existe una accion disponible.
+- Si el usuario no puede abrir caja ni crear factura, el centro de mando ya no muestra `Una accion clara: Espere`.
+- La prueba cubre el caso sin permisos de caja/facturacion para evitar una orientacion falsa en pantalla.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- DashboardView.test.tsx` | RED inicial: el encabezado anunciaba `Una accion clara: Espere`; luego OK: 13 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, rutas, permisos ni contratos API.
+- Este corte reduce ruido cognitivo del inicio operativo: el dashboard no inventa una accion primaria cuando el usuario no tiene ninguna disponible.

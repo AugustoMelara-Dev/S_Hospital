@@ -149,8 +149,12 @@ export function DashboardView({
             Centro de mando
           </h1>
           <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            Caja, cobros del día, pendientes y facturas recientes. Una acción clara:{' '}
-            <strong>{primaryAction?.label ?? 'Espere'}</strong>.
+            Caja, cobros del día, pendientes y facturas recientes.
+            {primaryAction ? (
+              <>
+                {' '}Una acción clara: <strong>{primaryAction.label}</strong>.
+              </>
+            ) : null}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
