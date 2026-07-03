@@ -3900,3 +3900,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron caja, facturacion, catalogo, historial, reportes, respaldos ni usuarios.
 - Este corte evita que la UI normal guarde una serie activa agotada mientras mantiene al backend como autoridad final del correlativo institucional.
+
+## 162. Fase 6 - Serie de recibos recorta identidad fiscal
+
+Cambio aplicado:
+
+- `InstitutionalReceiptSettingsView` ahora recorta espacios iniciales y finales en `series`, `prefix` y `number_format` antes de guardar la serie del recibo.
+- Se agrego una regresion para datos pegados con espacios, confirmando que el API recibe `REC-B`, `RB` y `{series}-{number:08}` normalizados.
+- No se cambian backend, endpoints, migraciones, correlativos existentes, perfiles de impresion, permisos ni auditoria.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- InstitutionalReceiptSettingsView.test.tsx -t "trims receipt series identity" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial correcto: `updateReceiptSeries` recibia `series`, `prefix` y `number_format` con espacios; luego OK: 1 test pasa. |
+| `npm run test -- InstitutionalReceiptSettingsView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 18 tests pasan. |
+| `npm run lint` | OK. |
+| `npm run typecheck` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron caja, facturacion, catalogo, historial, reportes, respaldos ni usuarios.
+- Este corte reduce errores humanos en la configuracion del correlativo visible del recibo sin modificar reglas fiscales server-side.

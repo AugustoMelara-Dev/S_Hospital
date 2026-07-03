@@ -307,6 +307,30 @@ describe('InstitutionalReceiptSettingsView', () => {
     expect(apiClient.updateReceiptSeries).not.toHaveBeenCalled();
   });
 
+  it('trims receipt series identity fields before saving', async () => {
+    const { apiClient } = await import('@/lib/api');
+    renderView();
+
+    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
+    await activateTab('Serie');
+
+    fireEvent.change(screen.getByRole('textbox', { name: /^Serie$/i }), { target: { value: '  REC-B  ' } });
+    fireEvent.change(screen.getByRole('textbox', { name: /prefijo/i }), { target: { value: '  RB  ' } });
+    fireEvent.change(screen.getByRole('textbox', { name: /formato/i }), { target: { value: '  {series}-{number:08}  ' } });
+    fireEvent.click(screen.getByRole('button', { name: /guardar serie/i }));
+
+    await waitFor(() => {
+      expect(apiClient.updateReceiptSeries).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({
+          series: 'REC-B',
+          prefix: 'RB',
+          number_format: '{series}-{number:08}',
+        }),
+      );
+    });
+  });
+
   it('sends a documented support reason with advanced manual print settings', async () => {
     const { apiClient } = await import('@/lib/api');
     renderView({ canAdvancedPrintSettings: true });

@@ -78,9 +78,9 @@ const institutionSchema = z.object({
 });
 
 const seriesSchema = z.object({
-  series: z.string().min(1, 'Requerido'),
-  prefix: z.string().min(1, 'Requerido'),
-  number_format: z.string().min(1, 'Requerido'),
+  series: z.string().trim().min(1, 'Requerido'),
+  prefix: z.string().trim().min(1, 'Requerido'),
+  number_format: z.string().trim().min(1, 'Requerido'),
   min_number: z.number().int().min(1),
   max_number: z.number().int().min(1),
   current_number: z.number().int().min(0),
