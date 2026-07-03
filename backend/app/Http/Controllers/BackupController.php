@@ -179,7 +179,6 @@ class BackupController extends Controller
             'id' => $backupLog->id,
             'filename' => $backupLog->filename,
             'size_bytes' => $backupLog->size_bytes,
-            'checksum_sha256' => $backupLog->checksum_sha256,
             'status' => $backupLog->status,
             'type' => $backupLog->type,
             'created_by' => $backupLog->created_by,

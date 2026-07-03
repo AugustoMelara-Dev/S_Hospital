@@ -2542,3 +2542,23 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, permisos, endpoints ni exportaciones.
 - Este corte reduce callejones sin salida en reportes para una instalacion monocomputadora: el usuario cae en el reporte que realmente puede operar.
+
+## 104. Fase 5 - API de respaldos oculta huella interna
+
+Cambio aplicado:
+
+- El payload publico de listado y creacion manual de respaldos ya no expone `checksum_sha256`.
+- La huella se conserva en base de datos, auditoria de descarga y validacion de integridad del archivo.
+- El tipo frontend marca `checksum_sha256` como opcional para que la UI no dependa de un dato tecnico interno.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter=BackupWorkflowTest` | RED inicial: listado y creacion exponian `checksum_sha256`; luego OK: 26 tests pasan. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron migraciones, generacion de backups, descarga, permisos ni restauracion.
+- Este corte reduce metadatos tecnicos en la API operativa sin debilitar la verificacion local de integridad.

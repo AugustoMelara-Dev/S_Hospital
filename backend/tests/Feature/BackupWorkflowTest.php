@@ -45,6 +45,7 @@ class BackupWorkflowTest extends TestCase
             ->assertJsonPath('data.0.creator.username', $admin->username)
             ->assertJsonMissingPath('data.0.path')
             ->assertJsonMissingPath('data.0.disk')
+            ->assertJsonMissingPath('data.0.checksum_sha256')
             ->assertJsonMissingPath('data.0.error_message');
     }
 
@@ -172,7 +173,8 @@ class BackupWorkflowTest extends TestCase
             ->postJson('/api/backups')
             ->assertAccepted()
             ->assertJsonPath('data.status', BackupLog::STATUS_PENDING)
-            ->assertJsonPath('data.type', BackupLog::TYPE_MANUAL);
+            ->assertJsonPath('data.type', BackupLog::TYPE_MANUAL)
+            ->assertJsonMissingPath('data.checksum_sha256');
 
         $backup = BackupLog::query()->findOrFail($response->json('data.id'));
 

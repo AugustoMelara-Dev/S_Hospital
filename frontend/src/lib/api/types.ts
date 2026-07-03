@@ -378,7 +378,7 @@ export type BackupLog = {
   id: number;
   filename: string;
   size_bytes: number | null;
-  checksum_sha256: string | null;
+  checksum_sha256?: string | null;
   status: 'pending' | 'success' | 'failed';
   type: 'manual' | 'scheduled';
   created_by: number | null;
