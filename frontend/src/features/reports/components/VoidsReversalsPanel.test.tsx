@@ -67,4 +67,28 @@ describe('VoidsReversalsPanel', () => {
     expect(screen.getByText('Sin fecha')).toBeInTheDocument();
     expect(screen.queryByText('-')).not.toBeInTheDocument();
   });
+
+  it('shows a human fallback when an audit date is unavailable', () => {
+    render(
+      <VoidsReversalsPanel
+        report={buildExecutiveReport({
+          voids_and_reversals: [
+            {
+              kind: 'void',
+              invoice_number: 'FAC-000777',
+              patient: 'Paciente Auditoria',
+              amount: '50.00',
+              reason: 'Correccion autorizada',
+              user: 'Caja Principal',
+              authorized_by: 'Administracion',
+              created_at: 'fecha-danada',
+            },
+          ],
+        })}
+      />,
+    );
+
+    expect(screen.getByText('Fecha no disponible')).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/Invalid Date|fecha-danada/i);
+  });
 });

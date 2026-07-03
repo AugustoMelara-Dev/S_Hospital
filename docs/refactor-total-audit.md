@@ -4075,3 +4075,29 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, facturacion, caja, catalogo, historial, recibos, respaldos ni reportes.
 - Este corte reduce errores humanos al crear cajeros/usuarios locales sin cambiar seguridad, auditoria ni RBAC.
+
+## 169. Fase 12 - Reporte de anulaciones tolera fechas no disponibles
+
+Cambio aplicado:
+
+- `VoidsReversalsPanel` ahora usa el formateador seguro compartido para fechas de anulaciones y reversas.
+- Si una fecha de auditoria llega corrupta o no parseable, el reporte muestra `Fecha no disponible` en vez de `Invalid Date` o el valor tecnico recibido.
+- Se agrego una regresion con `created_at='fecha-danada'` para asegurar que el reporte ejecutivo no exponga texto tecnico en auditoria operativa.
+- Se mantiene `Sin fecha` para datos realmente ausentes.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- VoidsReversalsPanel.test.tsx -t "shows a human fallback when an audit date is unavailable" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial correcto: la tabla mostraba `Invalid Date`; luego OK: 1 test pasa. |
+| `npm run test -- VoidsReversalsPanel.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 4 tests pasan. |
+| `npm run test -- ReportsExecutive.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 2 tests pasan. |
+| `npm run lint` | OK. |
+| `npm run typecheck` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, facturacion, caja, catalogo, historial, recibos, respaldos ni usuarios.
+- Este corte mejora reportes utiles para gerencia/auditoria sin alterar calculos, montos, permisos ni datos fiscales.

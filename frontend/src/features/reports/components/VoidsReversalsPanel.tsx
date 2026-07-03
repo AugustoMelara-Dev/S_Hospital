@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
 import type { ExecutiveReport } from '@/lib/api';
+import { formatLocalizedDateTime } from '@/lib/format/formatDate';
 
 type VoidsReversalsPanelProps = {
   report: ExecutiveReport;
@@ -70,11 +71,9 @@ const voidsAndReversalsColumns: Array<DataTableColumn<VoidOrReversal>> = [
 
 function formatDate(value: string | null | undefined): string {
   if (!value) return 'Sin fecha';
-  try {
-    return new Date(value).toLocaleString('es-HN');
-  } catch {
-    return value;
-  }
+  const formatted = formatLocalizedDateTime(value);
+
+  return formatted === '-' ? 'Fecha no disponible' : formatted;
 }
 
 function fallbackText(value: string | null | undefined, fallback: string): string {
