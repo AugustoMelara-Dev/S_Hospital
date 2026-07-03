@@ -14,6 +14,7 @@ type InvoiceSuccessProps = {
   patientName: string;
   total: string;
   status: InvoiceStatus;
+  canCollectPayment?: boolean;
   onCobrar: () => void;
   onImprimir: () => void;
   onNuevaFactura: () => void;
@@ -33,18 +34,20 @@ export function InvoiceSuccess({
   patientName,
   total,
   status,
+  canCollectPayment = true,
   onCobrar,
   onImprimir,
   onNuevaFactura,
 }: InvoiceSuccessProps) {
   const needsPayment = status === 'issued' || status === 'partial';
+  const canShowPaymentAction = needsPayment && canCollectPayment;
   const primaryActionRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     if (open) {
       window.setTimeout(() => primaryActionRef.current?.focus(), 0);
     }
-  }, [open, needsPayment]);
+  }, [open, canShowPaymentAction]);
 
   return (
     <Dialog
@@ -69,14 +72,24 @@ export function InvoiceSuccess({
         {needsPayment ? (
           <div className="flex flex-col gap-3">
             <p className="text-sm text-muted-foreground text-center">
-              La factura ya fue emitida. El siguiente paso operativo es registrar el cobro.
+              {canShowPaymentAction
+                ? 'La factura ya fue emitida. El siguiente paso operativo es registrar el cobro.'
+                : 'La factura ya fue emitida y queda pendiente de cobro para caja.'}
             </p>
-            <Button ref={primaryActionRef} type="button" size="lg" className="w-full font-semibold" onClick={onCobrar}>
-              Cobrar ahora
-            </Button>
-            <Button type="button" variant="secondary" className="w-full" onClick={onNuevaFactura}>
-              Dejar pendiente y crear otra
-            </Button>
+            {canShowPaymentAction ? (
+              <>
+                <Button ref={primaryActionRef} type="button" size="lg" className="w-full font-semibold" onClick={onCobrar}>
+                  Cobrar ahora
+                </Button>
+                <Button type="button" variant="secondary" className="w-full" onClick={onNuevaFactura}>
+                  Dejar pendiente y crear otra
+                </Button>
+              </>
+            ) : (
+              <Button ref={primaryActionRef} type="button" size="lg" className="w-full font-semibold" onClick={onNuevaFactura}>
+                Crear otra factura
+              </Button>
+            )}
           </div>
         ) : (
           <div className="flex flex-col gap-3">

@@ -1195,3 +1195,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, schema, caja, pagos, recibos ni permisos reales.
 - Este corte reduce confusion de caja: emitir factura y cobrar quedan diferenciados cuando la cuenta no tiene autorizacion para completar el cobro.
+
+## 49. Fase 4 - Exito sin accion imposible de cobro
+
+Cambio aplicado:
+
+- `InvoiceSuccess` ahora distingue entre factura pendiente de pago y cuenta autorizada para cobrar.
+- Cuando una cuenta sin permisos de cobro/recibo emite una factura, el dialogo de exito ya no ofrece `Cobrar ahora`.
+- En ese caso la accion principal pasa a `Crear otra factura` y el texto indica que el cobro queda pendiente para caja.
+- `NewInvoiceViewLayout` pasa `canCreatePayments && canViewReceipts` tambien al dialogo de exito, no solo a la confirmacion previa.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- src/features/invoices/NewInvoiceView.test.tsx -t "pending-payment warning"` | RED inicial porque aparecia `Cobrar ahora`; luego OK: 1 test focal pasa. |
+| `docker compose exec frontend npm run test -- src/features/invoices/NewInvoiceView.test.tsx src/features/invoices/components/InvoiceConfirmation.test.tsx src/features/invoices/components/NewInvoiceViewLayout.test.tsx src/features/invoices/components/InvoiceCart.test.tsx src/features/invoices/components/PaymentModal.test.tsx` | OK: 5 archivos, 43 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, schema, caja, pagos, recibos ni permisos reales.
+- Este corte evita una accion inutil para usuarios que solo emiten facturas y reduce friccion en operacion monocomputadora.

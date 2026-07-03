@@ -298,7 +298,9 @@ describe('NewInvoiceView critical flows', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /confirmar emis/i }));
 
-    expect(await screen.findByText(/pendiente de cobro/i)).toBeInTheDocument();
+    expect((await screen.findAllByText(/pendiente de cobro/i)).length).toBeGreaterThan(0);
+    expect(screen.queryByRole('button', { name: /cobrar ahora/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /crear otra factura/i })).toBeInTheDocument();
     expect(screen.queryByText(/permisos completos/i)).not.toBeInTheDocument();
   });
 
