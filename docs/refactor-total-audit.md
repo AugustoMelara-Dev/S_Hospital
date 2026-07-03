@@ -1291,3 +1291,28 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, schema, caja, pagos, endpoints ni generacion real de recibos.
 - Este corte reduce 403 previsibles desde la UI y mantiene el backend como fuente de verdad de RBAC.
+
+## 53. Fase 12 - Respaldo exitoso visible aunque la lista este filtrada
+
+Cambio aplicado:
+
+- `BackupsView` ahora toma el KPI `Ultimo exitoso` desde `systemStatus.backups.last_success_at` cuando el snapshot operativo esta disponible.
+- Si la tabla visible esta filtrada o solo contiene respaldos fallidos, la pantalla ya no comunica falsamente `Sin respaldo` cuando existe un respaldo protegido reciente.
+- El texto auxiliar del KPI queda global: `Respaldo protegido mas reciente`, no ligado a la pagina actual.
+- Se elimino el contador local `successCount` porque el tono del KPI depende del respaldo protegido real.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- src/features/backups/BackupsView.test.tsx -t "last successful backup KPI"` | RED inicial porque el KPI mostraba `Sin respaldo`; luego OK: 1 test focal pasa. |
+| `docker compose exec frontend npm run test -- src/features/backups/BackupsView.test.tsx src/features/backups/components/BackupStatusBadge.a11y.test.tsx` | OK: 2 archivos, 20 tests pasan. |
+| `docker compose exec frontend npm run test -- src/features/backups/BackupsView.test.tsx` | OK: 17 tests pasan despues de limpiar lint. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, schema, jobs, descarga ni creacion real de respaldos.
+- Este corte mejora la confiabilidad operativa de la pantalla normal de respaldos sin exponer nombres tecnicos, rutas ni checksum.

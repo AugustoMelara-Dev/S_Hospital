@@ -235,10 +235,13 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
   const error = manualError || backupsQueryError;
 
   const pendingCount = backupsList.filter(b => b.status === 'pending').length;
-  const successCount = backupsList.filter(b => b.status === 'success').length;
   const failedCount = backupsList.filter(b => b.status === 'failed').length;
 
   const lastSuccessBackup = backupsList.find(b => b.status === 'success');
+  const lastSuccessAt = systemStatus?.backups.last_success_at
+    ?? lastSuccessBackup?.completed_at
+    ?? lastSuccessBackup?.created_at
+    ?? null;
   const operationalStatus = systemStatus ? operationalSummary(systemStatus) : null;
   const stalePendingCount = systemStatus?.backups.stale_pending_count ?? 0;
   const stalePendingThresholdMinutes = systemStatus?.backups.stale_pending_threshold_minutes ?? 15;
@@ -374,11 +377,11 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
             items={[
               {
                 label: 'Ultimo exitoso',
-                value: lastSuccessBackup
-                  ? formatRelativeTime(lastSuccessBackup.completed_at ?? lastSuccessBackup.created_at)
+                value: lastSuccessAt
+                  ? formatRelativeTime(lastSuccessAt)
                   : 'Sin respaldo',
-                helper: lastSuccessBackup ? 'Respaldo protegido mas reciente en esta pagina' : 'Cree un respaldo local protegido',
-                tone: successCount > 0 ? 'success' : 'warning',
+                helper: lastSuccessAt ? 'Respaldo protegido mas reciente' : 'Cree un respaldo local protegido',
+                tone: lastSuccessAt ? 'success' : 'warning',
               },
               {
                 label: 'Pendientes',

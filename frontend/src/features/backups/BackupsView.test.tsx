@@ -99,6 +99,31 @@ describe('BackupsView', () => {
     expect(screen.queryByText(/^Sin fallos$/i)).not.toBeInTheDocument();
   });
 
+  it('keeps the last successful backup KPI from server status even when the visible list is filtered', async () => {
+    vi.mocked(apiClient.getBackups).mockResolvedValue({
+      data: [
+        backupFixture({
+          id: 8,
+          status: 'failed',
+          completed_at: null,
+          checksum_sha256: null,
+          error_message: 'SQLSTATE secret path',
+        }),
+      ],
+      meta: { current_page: 1, per_page: 15, total: 1 },
+    });
+
+    renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
+
+    const kpis = await screen.findByRole('region', { name: /indicadores principales de respaldos/i });
+
+    expect(within(kpis).getByText(/^ultimo exitoso$/i)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(within(kpis).queryByText(/^Sin respaldo$/i)).not.toBeInTheDocument();
+    });
+    expect(within(kpis).getByText(/respaldo protegido mas reciente/i)).toBeInTheDocument();
+  });
+
   it('keeps support diagnostics collapsed behind a human support label', async () => {
     renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
 
