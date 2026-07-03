@@ -291,6 +291,9 @@ class SystemStatusController extends Controller
         $pendingCount = BackupLog::query()
             ->where('status', BackupLog::STATUS_PENDING)
             ->count();
+        $failedCount = BackupLog::query()
+            ->where('status', BackupLog::STATUS_FAILED)
+            ->count();
         $oldestPending = BackupLog::query()
             ->where('status', BackupLog::STATUS_PENDING)
             ->oldest('created_at')
@@ -321,6 +324,7 @@ class SystemStatusController extends Controller
 
         return [
             'pending_count' => $pendingCount,
+            'failed_count' => $failedCount,
             'worker_recently_active' => $workerRecentlyActive,
             'oldest_pending_at' => $oldestPending?->created_at?->toJSON(),
             'stale_pending_count' => $stalePendingCount,

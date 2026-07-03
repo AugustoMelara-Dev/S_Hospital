@@ -158,6 +158,33 @@ describe('BackupsView', () => {
     expect(within(pendingCard as HTMLElement).getByText(/el servidor debe completar estos respaldos/i)).toBeInTheDocument();
   });
 
+  it('keeps the failed KPI from server status even when the visible list is filtered', async () => {
+    const status = systemStatusFixture();
+    vi.mocked(apiClient.getSystemStatus).mockResolvedValue({
+      ...status,
+      backups: {
+        ...status.backups,
+        failed_count: 2,
+      },
+    });
+    vi.mocked(apiClient.getBackups).mockResolvedValue({
+      data: [backupFixture({ id: 2, status: 'success' })],
+      meta: { current_page: 1, per_page: 15, total: 1 },
+    });
+
+    renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
+
+    const kpis = await screen.findByRole('region', { name: /indicadores principales de respaldos/i });
+    const failedLabel = within(kpis).getByText(/^fallidos$/i);
+    const failedCard = failedLabel.closest('[data-slot="stat-grid-item"]');
+
+    expect(failedCard).not.toBeNull();
+    await waitFor(() => {
+      expect(within(failedCard as HTMLElement).getByText('2')).toBeInTheDocument();
+    });
+    expect(within(failedCard as HTMLElement).getByText(/revise con soporte antes de confiar en respaldos/i)).toBeInTheDocument();
+  });
+
   it('keeps support diagnostics collapsed behind a human support label', async () => {
     renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
 
@@ -502,6 +529,7 @@ function systemStatusFixture(): SystemStatus {
     },
     backups: {
       pending_count: 0,
+      failed_count: 0,
       worker_recently_active: true,
       stale_pending_count: 0,
       stale_pending_threshold_minutes: 15,

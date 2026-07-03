@@ -1638,3 +1638,30 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, schema, migraciones, endpoints, permisos, creacion de respaldos ni descargas.
 - Este corte mejora la confiabilidad operativa de la pantalla de respaldos sin exponer rutas, SHA256 ni nombres tecnicos en la vista normal.
+
+## 67. Fase 12 - KPI de respaldos fallidos usa contador del servidor
+
+Cambio aplicado:
+
+- `/api/system/status` ahora incluye `data.backups.failed_count` con el total de respaldos fallidos registrados.
+- `BackupsView` usa `systemStatus.backups.failed_count` para el KPI principal de fallidos cuando esta disponible, con fallback a la lista visible para compatibilidad.
+- Se agrego cobertura frontend para asegurar que el KPI no queda en cero cuando el historial visible esta filtrado o paginado y no incluye fallos.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter=SystemStatusTest::test_admin_can_view_operational_status_without_secret_values` | RED inicial porque `data.backups.failed_count` era `null`; luego OK: 1 test, 39 assertions. |
+| `npm run test -- BackupsView.test.tsx -t "keeps the failed KPI"` | RED inicial porque el KPI mostraba `0` y `Sin errores visibles` aunque el servidor reportaba `2`; luego OK: 1 test focal pasa. |
+| `docker compose exec backend php artisan test --filter=SystemStatusTest` | OK: 19 tests pasan, 124 assertions. |
+| `npm run test -- BackupsView.test.tsx` | OK: 19 tests pasan. |
+| `docker compose exec backend vendor/bin/pint --test app/Http/Controllers/SystemStatusController.php tests/Feature/SystemStatusTest.php` | OK: 2 archivos pasan. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M app/Http/Controllers/SystemStatusController.php tests/Feature/SystemStatusTest.php` | OK: sin errores. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron schema, migraciones, creacion de respaldos, descargas ni permisos.
+- El campo frontend queda opcional para tolerar respuestas antiguas o parciales durante QA, pero el estado operativo completo del backend ya entrega el contador autoritativo.

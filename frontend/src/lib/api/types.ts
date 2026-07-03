@@ -427,6 +427,7 @@ export type SystemStatus = {
   };
   backups: {
     pending_count: number;
+    failed_count?: number;
     worker_recently_active: boolean;
     oldest_pending_at?: string | null;
     stale_pending_count?: number;

@@ -236,7 +236,8 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
 
   const visiblePendingCount = backupsList.filter(b => b.status === 'pending').length;
   const pendingCount = systemStatus?.backups.pending_count ?? visiblePendingCount;
-  const failedCount = backupsList.filter(b => b.status === 'failed').length;
+  const visibleFailedCount = backupsList.filter(b => b.status === 'failed').length;
+  const failedCount = systemStatus?.backups.failed_count ?? visibleFailedCount;
 
   const lastSuccessBackup = backupsList.find(b => b.status === 'success');
   const lastSuccessAt = systemStatus?.backups.last_success_at
@@ -393,7 +394,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
               {
                 label: 'Fallidos',
                 value: failedCount,
-                helper: failedCount > 0 ? 'Revise con soporte antes de confiar en respaldos' : 'Sin errores visibles',
+                helper: failedCount > 0 ? 'Revise con soporte antes de confiar en respaldos' : 'Sin errores registrados',
                 tone: failedCount > 0 ? 'destructive' : 'success',
               },
             ]}

@@ -78,6 +78,7 @@ class SystemStatusTest extends TestCase
             ->assertJsonPath('data.readiness.state', 'PRODUCTION_CANDIDATE')
             ->assertJsonPath('data.readiness.production_ready', false)
             ->assertJsonPath('data.backups.pending_count', 1)
+            ->assertJsonPath('data.backups.failed_count', 1)
             ->assertJsonPath('data.backups.worker_recently_active', false)
             ->assertJsonPath('data.backups.stale_pending_count', 0)
             ->assertJsonPath('data.backups.stale_pending_threshold_minutes', 15)
