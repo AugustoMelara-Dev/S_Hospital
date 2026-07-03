@@ -514,7 +514,24 @@ export function NewInvoiceView({
         onStatus(result.institutional_receipt_error);
       }
 
-      const nextReceipt = await apiClient.getReceipt(result.invoice.id, state.receiptWidth);
+      let nextReceipt;
+      try {
+        nextReceipt = await apiClient.getReceipt(result.invoice.id, state.receiptWidth);
+      } catch {
+        const message = 'Pago registrado, pero no se pudo generar el recibo. Reimprima desde Historial.';
+        dispatch({ type: 'SET_RECEIPT', payload: null });
+        dispatch({ type: 'SET_INSTITUTIONAL_RECEIPT', payload: null });
+        dispatch({ type: 'SET_AUTO_PRINT_RECEIPT', payload: false });
+        dispatch({ type: 'SET_SHOW_PAYMENT', payload: false });
+        dispatch({ type: 'SET_SHOW_RECEIPT', payload: false });
+        dispatch({ type: 'SET_SHOW_SUCCESS', payload: true });
+        dispatch({ type: 'SET_ALERT_MESSAGE', payload: null });
+        dispatch({ type: 'SET_WARNING_MESSAGE', payload: message });
+        onStatus(message);
+
+        return;
+      }
+
       dispatch({ type: 'SET_RECEIPT', payload: nextReceipt });
       dispatch({ type: 'SET_INSTITUTIONAL_RECEIPT', payload: null });
       dispatch({ type: 'SET_RECEIPT_WIDTH', payload: nextReceipt.width });

@@ -175,7 +175,7 @@ describe('NewInvoiceView critical flows', () => {
       expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(2);
     });
 
-    fireEvent.click(screen.getByText('Eritropoyetina'));
+    fireEvent.click(screen.getByRole('button', { name: /agregar eritropoyetina/i }));
 
     fetchMock.mockClear();
 
@@ -214,7 +214,7 @@ describe('NewInvoiceView critical flows', () => {
       expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(2);
     });
 
-    fireEvent.click(screen.getByText('Eritropoyetina'));
+    fireEvent.click(screen.getByRole('button', { name: /agregar eritropoyetina/i }));
 
     fetchMock.mockImplementation(async (input) => {
       const url = String(input);
@@ -263,6 +263,10 @@ describe('NewInvoiceView critical flows', () => {
       expect(screen.getByText('Eritropoyetina')).toBeInTheDocument();
     }, { timeout: 3000 });
 
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(2);
+    });
+
     fireEvent.click(screen.getByText('Eritropoyetina'));
 
     const emitButton = await screen.findByRole('button', { name: /^emitir factura$/i });
@@ -302,6 +306,141 @@ describe('NewInvoiceView critical flows', () => {
     expect(screen.queryByRole('button', { name: /cobrar ahora/i })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /crear otra factura/i })).toBeInTheDocument();
     expect(screen.queryByText(/permisos completos/i)).not.toBeInTheDocument();
+  });
+
+  it('keeps payment registered when legacy receipt loading fails after collection', async () => {
+    const onStatus = vi.fn();
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/billing/new']}>
+          <NewInvoiceView
+            cashSession={makeOpenCashSession()}
+            canCreatePayments
+            canOpenCash
+            canViewCatalog
+            canViewReceipts
+            onOpenCash={vi.fn()}
+            onStatus={onStatus}
+          />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    await waitForPointOfSaleLoad();
+
+    const fetchMock = globalThis.fetch as ReturnType<typeof vi.fn>;
+
+    fireEvent.change(screen.getByLabelText(/nombre del paciente/i), { target: { value: 'Maria Lopez' } });
+    fireEvent.change(screen.getByLabelText(/buscar por nombre/i), { target: { value: 'eritro' } });
+
+    await waitFor(() => {
+      expect(screen.getByText('Eritropoyetina')).toBeInTheDocument();
+    }, { timeout: 3000 });
+
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(2);
+    });
+
+    fireEvent.click(screen.getByText('Eritropoyetina'));
+
+    fetchMock.mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.endsWith('/api/invoices')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 57,
+              invoice_number: '000-001-01-00000057',
+              patient_name: 'Maria Lopez',
+              status: 'issued',
+              subtotal: '25.00',
+              tax_amount: '0.00',
+              discount_amount: '0.00',
+              total: '25.00',
+              paid_amount: '0.00',
+              balance_due: '25.00',
+              issued_at: '2026-05-17T08:50:00-06:00',
+              items: [],
+            },
+          }),
+        } as Response;
+      }
+      if (url.endsWith('/api/invoices/57/payments')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              payment: {
+                id: 88,
+                invoice_id: 57,
+                cash_session_id: 7,
+                user_id: 2,
+                method: 'cash',
+                amount: '25.00',
+                reference: null,
+                status: 'posted',
+                paid_at: '2026-05-17T08:51:00-06:00',
+              },
+              invoice: {
+                id: 57,
+                invoice_number: '000-001-01-00000057',
+                patient_name: 'Maria Lopez',
+                status: 'paid',
+                subtotal: '25.00',
+                tax_amount: '0.00',
+                discount_amount: '0.00',
+                total: '25.00',
+                paid_amount: '25.00',
+                balance_due: '0.00',
+                issued_at: '2026-05-17T08:50:00-06:00',
+                items: [],
+              },
+              institutional_receipt: null,
+              institutional_receipt_error: null,
+            },
+          }),
+        } as Response;
+      }
+      if (url.includes('/api/invoices/57/receipt')) {
+        return {
+          ok: false,
+          status: 500,
+          json: async () => ({ message: 'No se pudo generar PDF legacy' }),
+        } as Response;
+      }
+      return { ok: true, json: async () => ({ data: null }) } as Response;
+    });
+
+    await waitFor(() => {
+      expect(screen.getAllByRole('button', { name: /emitir/i }).length).toBeGreaterThan(0);
+    });
+    fireEvent.click(screen.getAllByRole('button', { name: /emitir/i })[0]);
+    await waitFor(() => {
+      expect(screen.getByRole('dialog', { name: /confirmar emis/i })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole('button', { name: /emitir y abrir cobro/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('dialog', { name: /registrar pago/i })).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByLabelText(/monto recibido/i), { target: { value: '25.00' } });
+    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro e imprimir/i }));
+
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.some(([url]) => String(url).endsWith('/api/invoices/57/payments'))).toBe(true);
+    });
+
+    expect(onStatus).not.toHaveBeenCalledWith(expect.stringMatching(/no se pudo registrar el pago/i));
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog', { name: /registrar pago/i })).not.toBeInTheDocument();
+    });
+    expect(await screen.findByRole('dialog', { name: /factura emitida/i })).toBeInTheDocument();
+    expect(screen.getByText(/pago registrado/i)).toBeInTheDocument();
+    expect(screen.getByText(/no se pudo generar el recibo/i)).toBeInTheDocument();
   });
 
   it('does not fetch or show a receipt for a paid zero-total invoice when receipts are not allowed', async () => {

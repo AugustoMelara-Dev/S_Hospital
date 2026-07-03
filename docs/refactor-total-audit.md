@@ -1711,3 +1711,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, schema, migraciones, endpoints, permisos, anulaciones, pagos ni correlativos.
 - Este corte reduce errores operativos por doble seleccion rapida en historial sin cambiar las reglas de auditoria, reimpresion o recibo institucional.
+
+## 70. Fase 4/7 - Cobro no se duplica si falla recibo legacy
+
+Cambio aplicado:
+
+- `NewInvoiceView` separa el exito del pago del fallo posterior al cargar el recibo legacy.
+- Si `/api/invoices/{id}/payments` registra el pago y luego falla `/api/invoices/{id}/receipt`, el modal de cobro se cierra, se muestra el dialogo de exito con advertencia y se indica reimprimir desde Historial.
+- Se agrego cobertura para el caso de pago exitoso con recibo legacy fallido, evitando mostrar "No se pudo registrar el pago" despues de que caja ya quedo cobrada.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- NewInvoiceView.test.tsx -t "keeps payment registered"` | RED inicial porque el fallo del recibo caia en el `catch` general, dejaba el modal de cobro abierto y trataba el pago registrado como fallo de pago; luego OK. |
+| `npm run test -- NewInvoiceView.test.tsx` | OK: 13 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, schema, migraciones, endpoints, permisos, caja, correlativos ni reglas fiscales.
+- Este corte reduce riesgo de doble cobro cuando la emision del recibo secundario falla despues de registrar un pago valido.
