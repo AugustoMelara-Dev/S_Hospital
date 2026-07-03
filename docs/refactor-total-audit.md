@@ -1589,3 +1589,29 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron schema, migraciones, frontend, caja, pagos ni correlativos.
 - El endpoint ya validaba `reason` con `min:5`; este corte refuerza la regla en la accion critica para que el backend siga protegido aunque cambie el controlador o aparezca otro flujo interno.
+
+## 65. Fase 8 - Cambios de precio e impuesto exigen motivo util
+
+Cambio aplicado:
+
+- `UpdateServiceRequest` ahora exige al menos 5 caracteres en `price_change_reason` y `tax_change_reason` cuando se envian.
+- Se agrego cobertura para rechazar cambios de precio e impuesto con motivo trivial como `x`.
+- Las pruebas confirman que el precio, el estado tributario y el historial de precios no se mutan cuando el motivo es insuficiente.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter=UpdateServicePriceReasonTest::test_price_change_with_short_reason_returns_422` | RED inicial porque `price_change_reason=x` actualizaba el precio; luego OK: 1 test pasa, 5 assertions. |
+| `docker compose exec backend php artisan test --filter=UpdateServicePriceReasonTest::test_tax_change_with_short_reason_returns_422` | RED inicial porque `tax_change_reason=x` actualizaba el impuesto; luego OK: 1 test pasa, 4 assertions. |
+| `docker compose exec backend php artisan test --filter=UpdateServicePriceReasonTest` | OK: 7 tests pasan, 26 assertions. |
+| `docker compose exec backend php artisan test --filter=ServiceCatalogTest` | OK: 34 tests pasan, 206 assertions. |
+| `docker compose exec backend vendor/bin/pint --test app/Http/Requests/Catalog/UpdateServiceRequest.php tests/Feature/UpdateServicePriceReasonTest.php` | OK: 2 archivos pasan. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M app/Http/Requests/Catalog/UpdateServiceRequest.php tests/Feature/UpdateServicePriceReasonTest.php` | OK: sin errores. |
+| `git diff --check -- backend/app/Http/Requests/Catalog/UpdateServiceRequest.php backend/tests/Feature/UpdateServicePriceReasonTest.php` | OK: sin whitespace errors. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron schema, migraciones, frontend, facturacion, caja, pagos ni correlativos.
+- Este corte fortalece la trazabilidad del catalogo sin cambiar precios existentes ni reglas de busqueda/facturacion.
