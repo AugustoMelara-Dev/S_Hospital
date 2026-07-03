@@ -346,7 +346,7 @@ function buildCloseSummaryCsv({
     ['Saldo pendiente', formatLempirasUI(pendingAmount)],
     ['Monto contado', formatLempirasUI(closingAmount || '0.00')],
     ['Diferencia', formatLempirasUI(difference)],
-    ['Nota', closingNotes.trim() || '-'],
+    ['Nota', closingNotes.trim() || 'Sin nota'],
   ];
 
   return `\uFEFF${rows.map((row) => row.map(csvCell).join(',')).join('\n')}\n`;

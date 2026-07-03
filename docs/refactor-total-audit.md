@@ -3285,3 +3285,23 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, rutas, migraciones, seeders, policies ni endpoints.
 - Este corte reduce ambiguedad en respaldos sin exponer nombres tecnicos, rutas, checksum ni restauracion en la vista normal.
+
+## 136. Fase 7 - Resumen exportado de cierre sin marcador crudo
+
+Cambio aplicado:
+
+- El CSV de resumen de cierre de caja ya no exporta la nota vacia como `-`.
+- Cuando no hay nota, el archivo muestra "Sin nota", manteniendo el reporte legible para revision administrativa.
+- No se cambia la regla de cierre: si hay diferencia, la nota sigue siendo obligatoria antes de confirmar.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- CloseSessionDialog.test.tsx -t "exports a human empty note label"` | RED inicial: el CSV contenia `"Nota","-"`; luego OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, rutas, migraciones, seeders, policies, auditoria ni calculos de caja.
+- Este corte mejora la salida exportable del cierre sin relajar permisos, motivo por diferencia ni bloqueo por facturas pendientes.

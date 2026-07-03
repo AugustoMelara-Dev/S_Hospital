@@ -164,6 +164,46 @@ describe('CloseSessionDialog', () => {
     expect(onConfirm).not.toHaveBeenCalled();
   });
 
+  it('exports a human empty note label in the close summary', async () => {
+    const createObjectURL = vi.fn((blob: Blob) => {
+      void blob;
+      return 'blob:cash-close-summary';
+    });
+    vi.stubGlobal('URL', {
+      ...URL,
+      createObjectURL,
+      revokeObjectURL: vi.fn(),
+    });
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+
+    render(
+      <CloseSessionDialog
+        open
+        onOpenChange={vi.fn()}
+        session={{
+          opening_amount: '100.00',
+          expected_cash_amount: '125.00',
+          payments_by_method: { cash: '25.00', transfer: '0.00', card: '0.00', other: '0.00' },
+          pending_invoice_count: 0,
+          pending_amount: '0.00',
+        }}
+        closingAmount="125.00"
+        closingNotes="   "
+        difference={0}
+        isSubmitting={false}
+        onClosingNotesChange={vi.fn()}
+        onConfirm={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /exportar resumen/i }));
+
+    const exportedBlob = createObjectURL.mock.calls[0]?.[0] as Blob;
+    const exportedText = await readBlobText(exportedBlob);
+    expect(exportedText).toContain('"Nota","Sin nota"');
+    expect(exportedText).not.toContain('"Nota","-"');
+  });
+
   it('does not allow confirming close while invoices are pending', () => {
     const onConfirm = vi.fn();
 
