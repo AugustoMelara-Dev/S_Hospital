@@ -3637,3 +3637,24 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, migraciones, caja, facturacion, recibos, reportes ni auditoria.
 - Este corte alinea la UX de catalogo con la validacion backend de motivos sin convertir el frontend en fuente de verdad fiscal.
+
+## 151. Fase 9/15 - Historial explica minimo de motivos criticos
+
+Cambio aplicado:
+
+- Los dialogos de reversa y reimpresion institucional en historial ahora muestran explicitamente que el motivo requiere minimo 5 caracteres.
+- La ayuda queda asociada al textarea por `aria-describedby`, evitando que el operador solo vea un boton deshabilitado sin contexto.
+- No se cambian endpoints, permisos, idempotencia, auditoria, anulacion, reversa ni generacion/descarga de recibos.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- InvoiceHistoryView.test.tsx -t "keeps reverse confirmation open|keeps institutional reprint confirmation open" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial: los dialogos no mostraban `minimo 5 caracteres`; luego OK: 2 tests pasan. |
+| `npm run test -- InvoiceHistoryView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 31 tests pasan. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, migraciones, caja, catalogo, reportes ni recibos institucionales backend.
+- Este corte mejora accesibilidad y claridad de acciones criticas de historial sin relajar la validacion server-side.
