@@ -3091,3 +3091,24 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, rutas, migraciones, seeders, policies ni endpoints.
 - Este corte expone una regla critica ya existente sin duplicar calculos fiscales ni cambiar el contrato API.
+
+## 127. Fase 4 - Cobro con Ctrl+Enter en modal de pago
+
+Cambio aplicado:
+
+- El modal de pago permite confirmar el cobro con `Ctrl+Enter` desde el campo de monto recibido.
+- Enter normal dentro del campo sigue sin ejecutar un envio manual; el submit queda limitado al formulario o al atajo explicito.
+- El atajo respeta el estado `submitting`, por lo que no intenta cerrar ni reenviar mientras el cobro esta en progreso.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- PaymentModal --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial: `Ctrl+Enter` no confirmaba el cobro; luego OK: 20 tests pasan. |
+| `npm run test -- NewInvoiceView PaymentModal --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 38 tests pasan. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, rutas, migraciones, seeders, policies ni endpoints.
+- Este corte mejora operacion por teclado en caja sin agregar texto instructivo ni cambiar el contrato de cobro.

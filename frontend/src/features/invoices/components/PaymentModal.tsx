@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useRef, useState } from 'react';
+import { type FormEvent, type KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { Banknote, Printer, ReceiptText } from 'lucide-react';
 import { Alert } from '../../../components/ui/alert';
 import { Button } from '../../../components/ui/button';
@@ -57,6 +57,7 @@ export function PaymentModal({
   const [error, setError] = useState<string | null>(null);
   const [capNotice, setCapNotice] = useState<string | null>(null);
   const amountInputRef = useRef<HTMLInputElement | null>(null);
+  const formRef = useRef<HTMLFormElement | null>(null);
 
   const balanceCents = parseMoneyCents(balanceDue);
   const paymentCents = parseMoneyCents(paymentAmount);
@@ -137,6 +138,15 @@ export function PaymentModal({
     onConfirm(formatMoneyCents(appliedAmountCents ?? amountCents));
   }
 
+  function handleAmountKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    if (!e.ctrlKey || e.key !== 'Enter' || submitting) {
+      return;
+    }
+
+    e.preventDefault();
+    formRef.current?.requestSubmit();
+  }
+
   function requestClose() {
     if (!submitting) {
       onOpenChange(false);
@@ -156,6 +166,7 @@ export function PaymentModal({
       description={`Factura ${invoiceNumber} ya fue emitida. Si sale de este paso quedara pendiente de cobro.`}
     >
       <form
+        ref={formRef}
         aria-busy={submitting ? 'true' : undefined}
         onSubmit={handleSubmit}
         className="flex min-w-0 flex-col gap-5"
@@ -274,6 +285,7 @@ export function PaymentModal({
                 inputMode="decimal"
                 value={paymentAmount}
                 onChange={(e) => handleAmountChange(e.target.value)}
+                onKeyDown={handleAmountKeyDown}
                 placeholder="0.00"
                 aria-invalid={error ? 'true' : 'false'}
                 aria-describedby={amountDescribedBy || undefined}

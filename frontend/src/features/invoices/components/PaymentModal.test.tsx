@@ -96,6 +96,23 @@ describe('PaymentModal', () => {
     expect(confirmSpy).toHaveBeenCalledWith('17.25');
   });
 
+  it('submits the payment with Ctrl+Enter from the amount field', async () => {
+    const confirmSpy = vi.fn();
+
+    renderPaymentModal({ onConfirm: confirmSpy });
+
+    fireEvent.keyDown(screen.getByLabelText(/monto recibido/i), {
+      key: 'Enter',
+      code: 'Enter',
+      ctrlKey: true,
+    });
+
+    await waitFor(() => {
+      expect(confirmSpy).toHaveBeenCalledTimes(1);
+    });
+    expect(confirmSpy).toHaveBeenCalledWith('17.25');
+  });
+
   it('allows cash above balance to calculate change but applies only the balance due', async () => {
     const onPaymentAmountChange = vi.fn();
     const confirmSpy = vi.fn();
