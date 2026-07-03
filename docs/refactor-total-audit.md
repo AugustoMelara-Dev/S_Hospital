@@ -2497,3 +2497,25 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, rutas, permisos ni contratos API.
 - Este corte reduce ruido cognitivo del inicio operativo: el dashboard no inventa una accion primaria cuando el usuario no tiene ninguna disponible.
+## 102. Fase 4/5 - Reimpresion institucional idempotente desde venta
+
+Cambio aplicado:
+
+- La reimpresion del recibo institucional desde el exito de venta/cobro envia una llave idempotente generada por el cliente.
+- La apertura inicial del PDF institucional tras registrar el pago se mantiene sin motivo de reimpresion.
+- La prueba cubre el flujo completo de emitir, cobrar, abrir el PDF inicial y luego reimprimir desde el dialogo de factura emitida.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- NewInvoiceView.test.tsx` | RED inicial: la reimpresion llamaba el PDF solo con `id` y motivo, sin `idempotencyKey`; luego OK: 14 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, migraciones, permisos ni contratos de recibos.
+- Este corte alinea el flujo de venta/cobro con la proteccion idempotente ya usada para reimpresiones institucionales desde historial.

@@ -6,7 +6,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { NewInvoiceView } from './NewInvoiceView';
 import { newInvoiceReducer } from './state/reducer';
 import { getInitialNewInvoiceState } from './state/types';
-import type { Service, CashSession } from '../../lib/api';
+import { apiClient, type Service, type CashSession } from '../../lib/api';
+import * as apiBase from '@/lib/api/base';
 import { queryKeys } from '@/lib/queryKeys';
 
 vi.mock('@/lib/api', async () => {
@@ -19,6 +20,10 @@ vi.mock('@/lib/api', async () => {
     },
   };
 });
+
+vi.mock('@/lib/download', () => ({
+  openBlobInNewTab: vi.fn(),
+}));
 
 function makeService(overrides: Partial<Service> = {}): Service {
   return {
@@ -535,6 +540,150 @@ describe('NewInvoiceView critical flows', () => {
     expect(screen.queryByRole('dialog', { name: /comprobante de factura/i })).not.toBeInTheDocument();
     expect(await screen.findByRole('dialog', { name: /factura emitida/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /imprimir recibo institucional/i })).not.toBeInTheDocument();
+  });
+
+  it('reprints the institutional receipt from the sale flow with an idempotency key', async () => {
+    vi.spyOn(apiBase, 'createClientIdempotencyKey').mockReturnValue('sale-reprint-attempt-1');
+    const getInstitutionalReceiptPdf = vi
+      .spyOn(apiClient, 'getInstitutionalReceiptPdf')
+      .mockResolvedValue(new Blob(['%PDF-1.4'], { type: 'application/pdf' }));
+
+    renderNewInvoice();
+    await waitForPointOfSaleLoad();
+
+    const fetchMock = globalThis.fetch as ReturnType<typeof vi.fn>;
+
+    fireEvent.change(screen.getByLabelText(/nombre del paciente/i), { target: { value: 'Maria Lopez' } });
+    fireEvent.change(screen.getByLabelText(/buscar por nombre/i), { target: { value: 'eritro' } });
+
+    await waitFor(() => {
+      expect(screen.getByText('Eritropoyetina')).toBeInTheDocument();
+    }, { timeout: 3000 });
+
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(2);
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /agregar eritropoyetina/i }));
+
+    fetchMock.mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.endsWith('/api/invoices')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 58,
+              invoice_number: '000-001-01-00000058',
+              patient_name: 'Maria Lopez',
+              status: 'issued',
+              subtotal: '25.00',
+              tax_amount: '0.00',
+              discount_amount: '0.00',
+              total: '25.00',
+              paid_amount: '0.00',
+              balance_due: '25.00',
+              issued_at: '2026-05-17T08:55:00-06:00',
+              items: [],
+            },
+          }),
+        } as Response;
+      }
+      if (url.endsWith('/api/invoices/58/payments')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              payment: {
+                id: 89,
+                invoice_id: 58,
+                cash_session_id: 7,
+                user_id: 2,
+                method: 'cash',
+                amount: '25.00',
+                reference: null,
+                status: 'posted',
+                paid_at: '2026-05-17T08:56:00-06:00',
+              },
+              invoice: {
+                id: 58,
+                invoice_number: '000-001-01-00000058',
+                patient_name: 'Maria Lopez',
+                status: 'paid',
+                subtotal: '25.00',
+                tax_amount: '0.00',
+                discount_amount: '0.00',
+                total: '25.00',
+                paid_amount: '25.00',
+                balance_due: '0.00',
+                issued_at: '2026-05-17T08:55:00-06:00',
+                items: [],
+              },
+              institutional_receipt: {
+                id: 96,
+                invoice_id: 58,
+                payment_id: 89,
+                cash_session_id: 7,
+                series_id: 1,
+                receipt_number: 96,
+                receipt_number_full: 'REC-A-00000096',
+                status: 'issued',
+                amount: '25.00',
+                amount_cents: 2500,
+                issued_at: '2026-05-17T08:56:00-06:00',
+                issued_by: 2,
+                payer_name: 'Maria Lopez',
+                concept: 'Pago de factura 000-001-01-00000058',
+                amount_words: 'Veinticinco lempiras exactos',
+                template_code: 'institutional_classic',
+                print_profile_code: 'letter',
+                copy_mode: 'single',
+                reprint_count: 0,
+                voided_by: null,
+                voided_at: null,
+                void_reason: null,
+              },
+              institutional_receipt_error: null,
+            },
+          }),
+        } as Response;
+      }
+      return { ok: true, json: async () => ({ data: null }) } as Response;
+    });
+
+    await waitFor(() => {
+      expect(screen.getAllByRole('button', { name: /emitir/i }).length).toBeGreaterThan(0);
+    });
+    fireEvent.click(screen.getAllByRole('button', { name: /emitir/i })[0]);
+    await waitFor(() => {
+      expect(screen.getByRole('dialog', { name: /confirmar emis/i })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole('button', { name: /emitir y abrir cobro/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('dialog', { name: /registrar pago/i })).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByLabelText(/monto recibido/i), { target: { value: '25.00' } });
+    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro e imprimir/i }));
+
+    await waitFor(() => {
+      expect(getInstitutionalReceiptPdf).toHaveBeenCalledTimes(1);
+    });
+    getInstitutionalReceiptPdf.mockClear();
+
+    await waitFor(() => {
+      expect(screen.getByRole('dialog', { name: /factura emitida/i })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole('button', { name: /imprimir recibo institucional/i }));
+
+    await waitFor(() => {
+      expect(getInstitutionalReceiptPdf).toHaveBeenCalledWith(
+        96,
+        'Reimpresion desde venta/cobro.',
+        { idempotencyKey: 'sale-reprint-attempt-1' },
+      );
+    });
   });
 
   it('does not let cashier proceed when cash session is closed', async () => {

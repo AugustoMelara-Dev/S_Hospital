@@ -48,6 +48,7 @@ export function NewInvoiceView({
   const submitInvoiceIdempotencyKeyRef = useRef<string | null>(null);
   const submitPaymentInFlightRef = useRef(false);
   const submitPaymentIdempotencyKeyRef = useRef<string | null>(null);
+  const receiptPdfIdempotencyKeyRef = useRef<string | null>(null);
   const scanCodeInFlightRef = useRef(false);
   const skipInitialServiceSearchRef = useRef(true);
 
@@ -562,7 +563,16 @@ export function NewInvoiceView({
   }
 
   async function openInstitutionalReceiptPdf(receipt: InstitutionalReceipt, reason?: string) {
-    const blob = await apiClient.getInstitutionalReceiptPdf(receipt.id, reason);
+    const trimmedReason = reason?.trim();
+    const blob = trimmedReason
+      ? await apiClient.getInstitutionalReceiptPdf(receipt.id, trimmedReason, {
+          idempotencyKey: receiptPdfIdempotencyKeyRef.current ??= createClientIdempotencyKey(),
+        })
+      : await apiClient.getInstitutionalReceiptPdf(receipt.id);
+
+    if (trimmedReason) {
+      receiptPdfIdempotencyKeyRef.current = null;
+    }
     openBlobInNewTab(blob, `recibo-institucional-${receipt.receipt_number_full}.pdf`);
   }
 
