@@ -1757,3 +1757,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, schema, migraciones, perfiles de papel, correlativos ni permisos.
 - Este corte protege configuracion institucional existente sin reabrir el flujo tecnico de impresion.
+
+## 72. Fase 6 - Flujo normal de impresion oculta activacion de perfiles
+
+Cambio aplicado:
+
+- `InstitutionalReceiptSettingsView` ya no muestra "Perfil activo" ni "Predeterminado global" en el flujo normal de Papel y copias.
+- Esos controles quedan disponibles solo para usuarios con permiso de soporte avanzado de recibos.
+- La pantalla normal conserva papel, copias, logo, sello/firma, impresion de prueba y guardar perfil como controles operativos principales.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- InstitutionalReceiptSettingsView.test.tsx -t "does not expose profile activation"` | RED inicial porque el flujo normal mostraba "Perfil activo"; luego OK. |
+| `npm run test -- InstitutionalReceiptSettingsView.test.tsx` | OK: 9 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, schema, migraciones, perfiles guardados, correlativos ni permisos.
+- Este corte reduce opciones tecnicas visibles para el operador normal sin cambiar valores existentes de los perfiles.

@@ -192,6 +192,16 @@ describe('InstitutionalReceiptSettingsView', () => {
     expect(screen.queryByText(/layout/i)).not.toBeInTheDocument();
   });
 
+  it('does not expose profile activation controls in the normal print flow', async () => {
+    renderView({ canAdvancedPrintSettings: false });
+
+    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
+    await activateTab('Papel y copias');
+
+    expect(screen.queryByRole('checkbox', { name: /perfil activo/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: /predeterminado global/i })).not.toBeInTheDocument();
+  });
+
   it('explains sensitive receipt numbering before saving a series', async () => {
     renderView();
 

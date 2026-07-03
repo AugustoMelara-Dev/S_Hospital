@@ -678,20 +678,24 @@ export function InstitutionalReceiptSettingsView({
                     disabled={!canEdit}
                     onChange={(value) => profileForm.setValue('use_logo', value === true)}
                   />
-                  <CheckboxField
-                    id="profile_active"
-                    label="Perfil activo"
-                    checked={Boolean(profileForm.watch('active'))}
-                    disabled={!canEdit}
-                    onChange={(value) => profileForm.setValue('active', value === true)}
-                  />
-                  <CheckboxField
-                    id="profile_is_global_default"
-                    label="Predeterminado global"
-                    checked={Boolean(profileForm.watch('is_global_default'))}
-                    disabled={!canEdit}
-                    onChange={(value) => profileForm.setValue('is_global_default', value === true)}
-                  />
+                  {canAdvancedPrintSettings && (
+                    <>
+                      <CheckboxField
+                        id="profile_active"
+                        label="Perfil activo"
+                        checked={Boolean(profileForm.watch('active'))}
+                        disabled={!canEdit}
+                        onChange={(value) => profileForm.setValue('active', value === true)}
+                      />
+                      <CheckboxField
+                        id="profile_is_global_default"
+                        label="Predeterminado global"
+                        checked={Boolean(profileForm.watch('is_global_default'))}
+                        disabled={!canEdit}
+                        onChange={(value) => profileForm.setValue('is_global_default', value === true)}
+                      />
+                    </>
+                  )}
                 </div>
 
                 <div className="flex flex-wrap justify-end gap-2">
