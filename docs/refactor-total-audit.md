@@ -3224,3 +3224,23 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, rutas, migraciones, seeders, policies ni endpoints.
 - Este corte reduce exposicion tecnica en respaldos sin cambiar el archivo real, checksum, permisos ni auditoria de descarga.
+
+## 133. Fase 10 - Ayuda accesible para reporte de caja
+
+Cambio aplicado:
+
+- El reporte de caja ahora explica junto al campo "Numero de Caja" que debe usarse el numero mostrado en Caja al abrir o cerrar turno.
+- La ayuda queda asociada al input con `aria-describedby`, para que tambien sea util con lector de pantalla.
+- Se mantiene el formulario simple de consulta por caja, sin ejemplos numericos crudos ni campos tecnicos adicionales.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- CashSessionReportTab` | RED inicial: faltaba la ayuda del numero de caja; luego OK: 5 tests pasan. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, rutas, migraciones, seeders, policies ni endpoints.
+- Este corte reduce friccion en reportes de caja para operacion diaria monocomputadora sin ampliar permisos ni contratos API.

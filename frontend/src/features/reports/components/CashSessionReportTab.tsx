@@ -142,9 +142,13 @@ export function CashSessionReportTab({
                 inputMode="numeric"
                 min="1"
                 placeholder="Numero mostrado en caja"
+                aria-describedby="cash-session-id-help"
                 value={cashReportId}
                 onChange={(event) => onCashReportIdChange(event.target.value)}
               />
+              <p id="cash-session-id-help" className="mt-1 text-xs text-muted-foreground">
+                Use el numero que aparece en Caja al abrir o cerrar turno.
+              </p>
             </div>
             <Button type="submit" className="w-full sm:w-auto" disabled={loading}>
               {loading ? 'Consultando...' : 'Ver caja'}

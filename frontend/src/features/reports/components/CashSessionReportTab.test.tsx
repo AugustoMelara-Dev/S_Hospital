@@ -19,6 +19,7 @@ describe('CashSessionReportTab', () => {
     );
 
     expect(screen.getByLabelText(/numero de caja/i)).toBeInTheDocument();
+    expect(screen.getByText(/use el numero que aparece en caja al abrir o cerrar turno/i)).toBeInTheDocument();
     expect(screen.queryByPlaceholderText(/ej:\s*1/i)).not.toBeInTheDocument();
   });
 
