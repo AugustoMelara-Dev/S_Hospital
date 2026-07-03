@@ -117,4 +117,28 @@ describe('ReceiptSettingsPreview', () => {
     expect(screen.getByText(/PRIMERA COPIA/)).toBeInTheDocument();
     expect(screen.getByText(/SEGUNDA COPIA/)).toBeInTheDocument();
   });
+
+  it('uses the A5 paper proportion for A5 receipt previews', () => {
+    render(
+      <ReceiptSettingsPreview
+        hospitalName="Hospital San Isidro"
+        governmentLine="Gobierno de Honduras"
+        secretariatLine="Secretaria de Salud"
+        location="Tocoa, Colon"
+        footerText="Original: Oficina Recaudadora"
+        series={series}
+        profile={{
+          ...profile,
+          code: 'a5_horizontal',
+          name: 'A5 horizontal',
+          paper_kind: 'a5_landscape',
+          width_mm: '210.00',
+          height_mm: '148.00',
+        }}
+      />,
+    );
+
+    expect(screen.getByRole('region', { name: /vista previa original/i })).toHaveClass('aspect-[210/148]');
+    expect(screen.getByRole('region', { name: /vista previa original/i })).not.toHaveClass('aspect-[8.5/5.5]');
+  });
 });

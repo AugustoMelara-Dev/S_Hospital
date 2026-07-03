@@ -29,6 +29,12 @@ function nextReceiptNumber(series: InstitutionalReceiptSeries | null): string {
     .replace(/\{number(?::0?\d+)?\}/, next);
 }
 
+function previewAspectClass(paperKind: ReceiptPrintProfile['paper_kind'] | undefined): string {
+  if (paperKind === 'letter_landscape') return 'aspect-[11/8.5]';
+  if (paperKind === 'a5_landscape') return 'aspect-[210/148]';
+  return 'aspect-[8.5/5.5]';
+}
+
 export function ReceiptSettingsPreview({
   hospitalName,
   governmentLine,
@@ -56,7 +62,7 @@ export function ReceiptSettingsPreview({
             key={label}
             className={cn(
               'mx-auto w-full max-w-3xl overflow-hidden rounded-sm border border-neutral-800 bg-white p-0 text-black shadow-[0_18px_45px_-28px_rgba(15,23,42,0.45)]',
-              profile?.paper_kind === 'letter_landscape' ? 'aspect-[11/8.5]' : 'aspect-[8.5/5.5]',
+              previewAspectClass(profile?.paper_kind),
             )}
             aria-label={`Vista previa ${label.toLowerCase()} del recibo institucional`}
           >

@@ -3565,3 +3565,25 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, rutas, migraciones, seeders, policies, auditoria ni endpoints.
 - Este corte reduce ruido de contrato en la regla no negociable de eritropoyetina sin convertir el frontend en fuente de verdad fiscal.
+
+## 148. Fase 6 - Vista previa A5 con proporcion real
+
+Cambio aplicado:
+
+- `ReceiptSettingsPreview` ahora asigna una proporcion visual especifica para `a5_landscape`.
+- La vista previa A5 deja de reutilizar la proporcion de media carta, manteniendo mas fiel la promesa de preview real para Carta, Media carta y A5.
+- No se exponen margenes, fuentes, escala, ancho ni alto en el flujo normal; el ajuste es interno al preview.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- ReceiptSettingsPreview.test.tsx -t "uses the A5 paper proportion" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial: A5 usaba `aspect-[8.5/5.5]`; luego OK: 1 test pasa. |
+| `npm run test -- ReceiptSettingsPreview.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 4 tests pasan. |
+| `npm run test -- InstitutionalReceiptSettingsView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 13 tests pasan. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, migraciones, perfiles guardados, permisos, auditoria ni endpoints.
+- Este corte mejora fidelidad visual de impresion institucional sin dar controles tecnicos al usuario normal.
