@@ -2378,3 +2378,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron migraciones, secuencias fiscales, caja, pagos, recibos ni permisos.
 - Este corte evita que una edicion visual dependa de datos fiscales sensibles y conserva la proteccion de creacion inicial completa.
+
+## 97. Fase 11 - Datos del hospital no arrastran marca ni reglas de recibo
+
+Cambio aplicado:
+
+- `HospitalSettingsView` deja de enviar `default_tax_rate`, `primary_color` y `receipt_template_mode` al guardar datos institucionales.
+- El payload de hospital queda limitado a nombre, RTN, direccion, lema, lineas institucionales, lugar/pie de recibo y motivo cuando cambia el RTN.
+- La prueba de hospital ahora cubre que el formulario no sobrescribe ISV, marca, recibos ni reglas operativas al guardar campos institucionales.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- HospitalSettingsView.test.tsx` | RED inicial: el payload aun enviaba `default_tax_rate=15.00`; luego OK: 4 tests pasan. |
+| `npm run test -- FiscalSettingsView.test.tsx BrandingView.test.tsx OperationalRulesView.test.tsx HospitalSettingsView.test.tsx` | OK: 4 archivos, 12 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron migraciones, backend, caja, pagos, recibos ni permisos.
+- Este corte aprovecha el contrato parcial ya probado del endpoint fiscal para reducir mezcla entre datos hospitalarios, marca, reglas fiscales y recibos.

@@ -67,6 +67,11 @@ describe('HospitalSettingsView', () => {
     expect(payload.government_line).toBeNull();
     expect(payload.secretariat_line).toBeNull();
     expect(payload.receipt_location).toBeNull();
+    expect(payload.default_tax_rate).toBeUndefined();
+    expect(payload.primary_color).toBeUndefined();
+    expect(payload.receipt_template_mode).toBeUndefined();
+    expect(payload.scanner_enabled).toBeUndefined();
+    expect(payload.partial_payments_enabled).toBeUndefined();
   });
 
   it('asks for a fiscal reason when the RTN changes', async () => {

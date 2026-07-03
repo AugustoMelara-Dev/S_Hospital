@@ -112,15 +112,12 @@ export function HospitalSettingsView({ canEdit, onStatus }: HospitalSettingsView
       const updated = await apiClient.updateFiscalSettings({
         hospital_name: data.hospital_name,
         rtn: data.rtn ?? '',
-        default_tax_rate: settings?.default_tax_rate ?? '15.00',
-        primary_color: settings?.primary_color ?? 'indigo',
         address: optionalText(data.address ?? '') ?? '',
         slogan: optionalText(data.slogan ?? '') ?? '',
         government_line: optionalText(data.government_line ?? ''),
         secretariat_line: optionalText(data.secretariat_line ?? ''),
         receipt_location: optionalText(data.receipt_location ?? ''),
         receipt_footer_text: optionalText(data.receipt_footer_text ?? ''),
-        receipt_template_mode: 'institutional',
         ...(rtnChanged ? { reason: fiscalReason } : {}),
       });
       setSettings(updated);
