@@ -112,7 +112,7 @@ export function InvoiceSuccess({
         ) : (
           <div className="flex flex-col gap-3">
             <p className="text-sm text-muted-foreground text-center">
-              La factura ya fue emitida. Solicite a caja imprimir el recibo institucional.
+              La factura ya fue pagada. Solicite a caja imprimir el recibo institucional.
             </p>
             <Button ref={primaryActionRef} type="button" size="lg" className="w-full font-semibold" onClick={onNuevaFactura}>
               Crear otra factura

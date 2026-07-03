@@ -3442,3 +3442,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, rutas, migraciones, seeders, policies, auditoria ni endpoints.
 - Este corte reduce una contradiccion de UI/RBAC sin exponer acciones de impresion a usuarios sin permiso.
+
+## 143. Fase 4/16 - Exito pagado sin impresion usa estado correcto
+
+Cambio aplicado:
+
+- El modal de exito para factura pagada sin permiso de impresion ahora dice "La factura ya fue pagada" en el cuerpo operativo.
+- Se evita la mezcla de "emitida" con estado pagado cuando la accion de impresion no esta disponible para el usuario.
+- No se cambian cobros, generacion PDF, reimpresion, permisos, idempotencia ni contratos API.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- InvoiceSuccess --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial: el cuerpo seguia diciendo `La factura ya fue emitida`; luego OK: 4 tests pasan. |
+| `npm run test -- NewInvoiceView InvoiceSuccess --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 4 archivos, 22 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, rutas, migraciones, seeders, policies, auditoria ni endpoints.
+- Este corte reduce ambiguedad en el flujo pagado sin permiso de recibos sin relajar RBAC ni impresion institucional.

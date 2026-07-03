@@ -94,6 +94,8 @@ describe('InvoiceSuccess', () => {
 
     expect(screen.getByRole('dialog', { name: /factura pagada/i })).toBeInTheDocument();
     expect(screen.queryByText(/recibo listo para imprimir/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/la factura ya fue emitida/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/la factura ya fue pagada/i)).toBeInTheDocument();
     expect(screen.getByText(/solicite a caja imprimir el recibo institucional/i)).toBeInTheDocument();
   });
 });
