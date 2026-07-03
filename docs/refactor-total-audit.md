@@ -3112,3 +3112,24 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, rutas, migraciones, seeders, policies ni endpoints.
 - Este corte mejora operacion por teclado en caja sin agregar texto instructivo ni cambiar el contrato de cobro.
+
+## 128. Fase 7 - Cierre de caja con lectura balanceada
+
+Cambio aplicado:
+
+- El resumen de caja muestra `Sin diferencia` cuando el monto contado coincide con el efectivo esperado.
+- Las diferencias con sobrante o faltante conservan su monto firmado, para que el cajero vea el riesgo antes del dialogo de cierre.
+- No se cambiaron calculos de caja ni payloads; solo la lectura operativa del estado balanceado.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- SessionSummary --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial: faltaba `Sin diferencia`; luego OK: 4 tests pasan. |
+| `npm run test -- CashBoxView CloseSessionDialog SessionSummary --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 20 tests pasan. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, rutas, migraciones, seeders, policies ni endpoints.
+- Este corte reduce ambiguedad en cierre de caja sin relajar la regla backend que exige motivo cuando existe diferencia.

@@ -36,6 +36,19 @@ describe('SessionSummary', () => {
     expect(screen.getByText('L +25.00')).toBeInTheDocument();
   });
 
+  it('labels a balanced cash count as no difference', () => {
+    render(
+      <SessionSummary
+        session={cashSessionFixture()}
+        closingAmount="100.00"
+        difference={0}
+      />,
+    );
+
+    expect(screen.getByText(/sin diferencia/i)).toBeInTheDocument();
+    expect(screen.queryByText('L. 0.00')).not.toBeInTheDocument();
+  });
+
   it('uses opening amount as expected cash fallback for legacy session payloads', () => {
     render(
       <SessionSummary

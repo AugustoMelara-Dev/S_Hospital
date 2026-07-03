@@ -52,7 +52,7 @@ export function SessionSummary({
         helper={!hasCountedAmount
           ? 'Ingrese monto contado para calcular diferencia.'
           : difference === null || difference === 0
-            ? 'L. 0.00'
+            ? 'Sin diferencia'
             : formatSignedLempiras(difference)}
         trend={hasCountedAmount && difference !== null && difference !== 0 ? {
           label: difference > 0 ? 'Sobrante registrado' : 'Faltante registrado',
