@@ -2996,3 +2996,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, rutas, migraciones, seeders, policies ni endpoints.
 - Este corte reduce la carga visual del modulo de usuarios sin eliminar la revision administrativa de roles.
+
+## 123. Fase 4/8 - Historial muestra trazabilidad de recibo
+
+Cambio aplicado:
+
+- La tabla de historial de facturas incluye una columna compacta `Recibo`.
+- Cuando la factura tiene recibo institucional emitido, se muestra el numero completo del PDF sin abrir el menu de acciones.
+- Cuando falta el PDF, la columna muestra un estado operativo humano como `PDF pendiente`, `Pendiente de pago` o `Anulada`.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- InvoiceHistoryView --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial: no existia columna `Recibo`; luego OK: 27 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, rutas, migraciones, seeders, policies ni endpoints.
+- Este corte mejora busqueda y reimpresion operativa al hacer visible la trazabilidad del recibo institucional en la lista principal.

@@ -110,6 +110,33 @@ describe('InvoiceHistoryView', () => {
     expect(await screen.findByRole('menuitem', { name: /^Total$/i })).toBeInTheDocument();
   });
 
+  it('shows institutional receipt traceability in the history table', async () => {
+    const invoice = invoiceFixture({
+      id: 13,
+      invoice_number: '000-001-01-00000013',
+      patient_name: 'Paciente Con Recibo',
+      total: '200.00',
+      paid_amount: '200.00',
+      balance_due: '0.00',
+      status: 'paid',
+      institutional_receipt: institutionalReceiptFixture({
+        receipt_number_full: 'REC-A-00000113',
+      }),
+    });
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [invoice],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente Con Recibo')).toBeInTheDocument());
+
+    expect(screen.getByRole('columnheader', { name: /^Recibo$/i })).toBeInTheDocument();
+    expect(screen.getByText('REC-A-00000113')).toBeInTheDocument();
+  });
+
   it('keeps invoice filters controlled and preserves the same query contract', async () => {
     const getInvoices = vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
       data: [],

@@ -92,6 +92,12 @@ export function InvoiceHistoryTable({
       render: (invoice) => <InvoiceStatusBadge status={invoice.status} />,
     },
     {
+      key: 'receipt',
+      header: 'Recibo',
+      cellClassName: 'max-w-48 break-words text-xs',
+      render: (invoice) => <ReceiptTrace invoice={invoice} />,
+    },
+    {
       key: 'actions',
       header: 'Acciones',
       headerClassName: 'text-right',
@@ -234,4 +240,29 @@ function InvoiceStatusBadge({ status }: { status: Invoice['status'] }) {
       {config.label}
     </StatusBadge>
   );
+}
+
+function ReceiptTrace({ invoice }: { invoice: Invoice }) {
+  const receipt = issuedInstitutionalReceipt(invoice);
+
+  if (receipt) {
+    return (
+      <span className="inline-flex flex-col gap-0.5">
+        <span className="font-mono text-xs font-semibold tabular-nums text-foreground">
+          {receipt.receipt_number_full}
+        </span>
+        <span className="text-[11px] text-muted-foreground">PDF emitido</span>
+      </span>
+    );
+  }
+
+  if (invoice.status === 'paid' || invoice.status === 'partial') {
+    return <span className="text-muted-foreground">PDF pendiente</span>;
+  }
+
+  if (invoice.status === 'void') {
+    return <span className="text-muted-foreground">Anulada</span>;
+  }
+
+  return <span className="text-muted-foreground">Pendiente de pago</span>;
 }
