@@ -2168,3 +2168,28 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron migraciones, calculo de totales, snapshots de facturas, pagos, caja ni recibos PDF.
 - Este corte alinea catalogo con la regla no negociable: Eritropoyetina cuesta L.25.00 y solo se vuelve gratis por receta de dialisis durante la facturacion autorizada.
+
+## 89. Fase 9 - Historial no ofrece reimpresion sin recibo
+
+Cambio aplicado:
+
+- `InvoiceHistoryTable` deja de ofrecer `Reimprimir` para facturas emitidas (`issued`) que aun no tienen pago ni recibo institucional.
+- La reimpresion se mantiene disponible para facturas con recibo institucional o estado de cobro (`paid`/`partial`) segun permisos y alcance operativo.
+- Se agrego cobertura para evitar que caja intente reimprimir un comprobante inexistente desde historial.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- InvoiceHistoryView.test.tsx -t "does not offer reprint for an issued invoice that has no receipt yet"` | RED inicial porque `Reimprimir` aparecia para una factura emitida sin recibo; luego OK. |
+| `npm run test -- InvoiceHistoryView.test.tsx` | OK: 26 tests pasan. |
+| `npm run test -- InvoiceHistoryView.test.tsx ReceiptPreview.test.tsx InstitutionalReceiptFlow.test.tsx` | OK: 3 archivos, 37 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, migraciones, pagos, recibos PDF, anulaciones ni permisos.
+- Este corte reduce acciones confusas en historial: una factura sin recibo se puede anular/cobrar desde el flujo correspondiente, pero no se presenta como reimprimible.

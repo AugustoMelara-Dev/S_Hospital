@@ -291,6 +291,33 @@ describe('InvoiceHistoryView', () => {
     expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-numero|undefined/);
   });
 
+  it('does not offer reprint for an issued invoice that has no receipt yet', async () => {
+    const issued = invoiceFixture({
+      id: 47,
+      invoice_number: '000-001-01-00000047',
+      patient_name: 'Paciente Sin Recibo',
+      status: 'issued',
+      paid_amount: '0.00',
+      balance_due: '17.25',
+      institutional_receipt: null,
+    });
+    const reprintInvoice = vi.spyOn(apiClient, 'reprintInvoice');
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [issued],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente Sin Recibo')).toBeInTheDocument());
+    await openInvoiceMenu(issued.invoice_number);
+
+    expect(screen.queryByRole('menuitem', { name: /^Reimprimir$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /Reimprimir PDF/i })).not.toBeInTheDocument();
+    expect(reprintInvoice).not.toHaveBeenCalled();
+  });
+
   it('does not send void request when void is unavailable for the current invoice', async () => {
     const issued = invoiceFixture({
       id: 7,

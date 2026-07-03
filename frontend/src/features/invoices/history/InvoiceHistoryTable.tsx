@@ -148,7 +148,8 @@ export function InvoiceHistoryTable({
             onSelect: () => onGenerateInstitutionalReceipt(invoice.id),
           });
         }
-        if (canReprint && (canReprintAny || isOwn)) {
+        const hasReprintableReceipt = Boolean(institutionalReceipt) || invoice.status === 'paid' || invoice.status === 'partial';
+        if (canReprint && (canReprintAny || isOwn) && hasReprintableReceipt) {
           primaryGroup.items.push({
             key: 'reprint',
             label: 'Reimprimir',
