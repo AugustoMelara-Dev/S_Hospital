@@ -10,6 +10,7 @@ type UsersTableProps = {
   canDisableUsers: boolean;
   canUpdateUsers: boolean;
   currentUserId?: number;
+  onlyActiveProtectedUserIds?: number[];
   onEdit: (user: AuthUser) => void;
   onResetPassword: (user: AuthUser) => void;
   onToggleActive: (user: AuthUser) => void;
@@ -22,6 +23,7 @@ export function UsersTable({
   canDisableUsers,
   canUpdateUsers,
   currentUserId,
+  onlyActiveProtectedUserIds = [],
   onEdit,
   onResetPassword,
   onToggleActive,
@@ -95,10 +97,11 @@ export function UsersTable({
       render: (user) => {
         const isCurrentUser = currentUserId !== undefined && user.id === currentUserId;
         const canManageProtectedTarget = !hasProtectedRole(user) || canAssignAdminRole;
+        const isOnlyActiveProtectedUser = onlyActiveProtectedUserIds.includes(user.id);
 
         return (
           <UserActionMenu
-            canDisableUsers={canDisableUsers && canManageProtectedTarget && !isCurrentUser}
+            canDisableUsers={canDisableUsers && canManageProtectedTarget && !isCurrentUser && !isOnlyActiveProtectedUser}
             canResetPassword={canUpdateUsers && canManageProtectedTarget && !isCurrentUser}
             canUpdateUsers={canUpdateUsers && canManageProtectedTarget}
             onEdit={onEdit}

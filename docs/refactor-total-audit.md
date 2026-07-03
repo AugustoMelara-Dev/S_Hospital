@@ -2606,3 +2606,28 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron rutas, permisos, migraciones ni contratos de negocio.
 - Este corte refuerza la instalacion LAN/offline para que endpoints y pantallas internas no sean indexables por cabecera HTTP, ademas de la metadata del frontend.
+## 107. Fase 13/14 - Usuarios reflejan ultimo admin activo
+
+Cambio aplicado:
+
+- La pantalla de usuarios oculta la accion `Desactivar` cuando el objetivo es el unico administrador/root activo.
+- El formulario de edicion bloquea la degradacion de rol del unico administrador/root activo y muestra una advertencia operativa clara.
+- Las pruebas existentes que validan desactivacion normal ahora usan dos administradores activos para no contradecir la regla critica.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- UsersView.test.tsx -t "only active administrator"` | RED inicial: `Desactivar` seguia visible; luego OK: caso puntual pasa. |
+| `npm run test -- UsersView.test.tsx -t "demoting the only active administrator"` | RED inicial: no habia advertencia ni bloqueo de rol; luego OK: caso puntual pasa. |
+| `npm run test -- UsersView.test.tsx` | OK: 26 tests pasan. |
+| `npm run test -- UsersView.test.tsx UserFormDialog.test.tsx UsersTable.test.tsx` | OK: 37 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, permisos, rutas ni migraciones; la proteccion autoritativa sigue en Laravel.
+- Este corte reduce errores operativos en instalaciones monocomputadora: el frontend ya guia al usuario antes de intentar una accion que dejaria al sistema sin administrador activo.

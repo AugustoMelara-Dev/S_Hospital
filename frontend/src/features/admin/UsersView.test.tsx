@@ -109,6 +109,17 @@ describe('UsersView', () => {
   });
 
   it('groups per-user mutation actions in a single action menu', async () => {
+    vi.mocked(apiClient.getUsers).mockResolvedValueOnce([
+      adminUser,
+      {
+        ...adminUser,
+        id: 2,
+        name: 'Admin Respaldo',
+        email: 'admin-respaldo@hospital.test',
+        username: 'admin-respaldo',
+      },
+    ]);
+
     render(<UsersView onStatus={vi.fn()} canCreateUsers={false} canUpdateUsers canDisableUsers canManageRoles={false} canAssignAdminRole />);
 
     await openUserActions('Admin Hospital');
@@ -122,6 +133,17 @@ describe('UsersView', () => {
   });
 
   it('shows exact user actions only for matching permissions', async () => {
+    vi.mocked(apiClient.getUsers).mockResolvedValueOnce([
+      adminUser,
+      {
+        ...adminUser,
+        id: 2,
+        name: 'Admin Respaldo',
+        email: 'admin-respaldo@hospital.test',
+        username: 'admin-respaldo',
+      },
+    ]);
+
     render(<UsersView onStatus={vi.fn()} canCreateUsers={false} canUpdateUsers canManageRoles={false} canAssignAdminRole />);
 
     await openUserActions('Admin Hospital');
@@ -130,7 +152,16 @@ describe('UsersView', () => {
     expect(screen.queryByRole('menuitem', { name: /^desactivar$/i })).not.toBeInTheDocument();
 
     cleanup();
-    vi.mocked(apiClient.getUsers).mockResolvedValue([adminUser]);
+    vi.mocked(apiClient.getUsers).mockResolvedValue([
+      adminUser,
+      {
+        ...adminUser,
+        id: 2,
+        name: 'Admin Respaldo',
+        email: 'admin-respaldo@hospital.test',
+        username: 'admin-respaldo',
+      },
+    ]);
     vi.mocked(apiClient.getRoles).mockResolvedValue(roleCatalog);
 
     render(<UsersView onStatus={vi.fn()} canCreateUsers={false} canDisableUsers canManageRoles={false} canAssignAdminRole />);
@@ -210,6 +241,73 @@ describe('UsersView', () => {
     expect(await screen.findByRole('menuitem', { name: /^editar$/i })).toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: /restablecer clave/i })).toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: /^desactivar$/i })).toBeInTheDocument();
+  });
+  it('does not expose deactivation for the only active administrator', async () => {
+    vi.mocked(apiClient.getUsers).mockResolvedValueOnce([
+      adminUser,
+      {
+        ...adminUser,
+        id: 3,
+        name: 'Caja Operativa',
+        email: 'caja-operativa@hospital.test',
+        username: 'caja-operativa',
+        roles: ['cajero'],
+      },
+    ]);
+
+    render(
+      <UsersView
+        onStatus={vi.fn()}
+        canCreateUsers={false}
+        canUpdateUsers
+        canDisableUsers
+        canManageRoles={false}
+        canAssignAdminRole
+        currentUserId={99}
+      />,
+    );
+
+    await openUserActions('Admin Hospital');
+
+    expect(await screen.findByRole('menuitem', { name: /^editar$/i })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: /restablecer clave/i })).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /^desactivar$/i })).not.toBeInTheDocument();
+  });
+  it('does not offer demoting the only active administrator', async () => {
+    vi.mocked(apiClient.getUsers).mockResolvedValueOnce([
+      adminUser,
+      {
+        ...adminUser,
+        id: 3,
+        name: 'Caja Operativa',
+        email: 'caja-operativa@hospital.test',
+        username: 'caja-operativa',
+        roles: ['cajero'],
+      },
+    ]);
+
+    render(
+      <UsersView
+        onStatus={vi.fn()}
+        canCreateUsers={false}
+        canUpdateUsers
+        canDisableUsers
+        canManageRoles={false}
+        canAssignAdminRole
+        currentUserId={99}
+      />,
+    );
+
+    await openUserActions('Admin Hospital');
+    fireEvent.click(await screen.findByRole('menuitem', { name: /^editar$/i }));
+
+    const dialog = await screen.findByRole('dialog', { name: /editar usuario/i });
+    expect(within(dialog).getByText(/conserva el rol protegido/i)).toBeInTheDocument();
+
+    fireEvent.click(within(dialog).getByRole('combobox', { name: /rol operativo/i }));
+
+    expect(screen.getByRole('option', { name: /Admin/i })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /^Cajero$/i })).not.toBeInTheDocument();
   });
 
   it('shows a recoverable load error instead of leaving users in loading', async () => {
@@ -693,6 +791,17 @@ describe('UsersView', () => {
   });
 
   it('keeps the status confirmation locked while the request is pending', async () => {
+    vi.mocked(apiClient.getUsers).mockResolvedValueOnce([
+      adminUser,
+      {
+        ...adminUser,
+        id: 2,
+        name: 'Admin Respaldo',
+        email: 'admin-respaldo@hospital.test',
+        username: 'admin-respaldo',
+      },
+    ]);
+
     let resolveToggle!: (user: AuthUser) => void;
     const toggleUser = vi.spyOn(apiClient, 'toggleUserActive').mockReturnValue(new Promise<AuthUser>((resolve) => {
       resolveToggle = resolve;

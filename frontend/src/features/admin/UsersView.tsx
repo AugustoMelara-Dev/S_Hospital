@@ -118,6 +118,8 @@ export function UsersView({
   }), [users, searchTerm]);
 
   const activeUsersCount = users.filter((user) => user.active).length;
+  const activeProtectedUsers = users.filter((user) => user.active && hasProtectedRole(user));
+  const onlyActiveProtectedUserIds = activeProtectedUsers.length === 1 ? [activeProtectedUsers[0].id] : [];
   const pendingPasswordUsersCount = users.filter((user) => user.must_change_password).length;
   const editableRolesCount = roles.filter((role) => !role.protected).length;
 
@@ -460,6 +462,7 @@ export function UsersView({
             canDisableUsers={canDisableUsers}
             canUpdateUsers={canUpdateUsers}
             currentUserId={currentUserId}
+            onlyActiveProtectedUserIds={onlyActiveProtectedUserIds}
             onEdit={handleOpenEditModal}
             onResetPassword={handleOpenResetModal}
             onToggleActive={handleOpenToggleDialog}
@@ -476,6 +479,7 @@ export function UsersView({
         roles={roles}
         canManageRoles={canManageRoles}
         canAssignAdminRole={canAssignAdminRole}
+        protectedRoleLocked={editingUser ? onlyActiveProtectedUserIds.includes(editingUser.id) : false}
         selectedUserPermissions={selectedUserPermissions}
         onToggleUserPermission={toggleUserPermission}
         onRoleChange={(roleNameValue) => {
@@ -533,4 +537,7 @@ export function UsersView({
       </ConfirmDialog>
     </>
   );
+}
+function hasProtectedRole(user: AuthUser): boolean {
+  return user.roles.some((role) => ['admin', 'root'].includes(role.toLowerCase()));
 }

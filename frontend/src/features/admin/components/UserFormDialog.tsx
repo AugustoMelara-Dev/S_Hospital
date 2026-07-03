@@ -47,6 +47,7 @@ type UserFormDialogProps = {
   roles: RoleDefinition[];
   canManageRoles: boolean;
   canAssignAdminRole?: boolean;
+  protectedRoleLocked?: boolean;
   selectedUserPermissions: string[];
   onToggleUserPermission: (permissionName: string, checked: boolean) => void;
   onRoleChange?: (roleName: string) => void;
@@ -62,6 +63,7 @@ export function UserFormDialog({
   roles,
   canManageRoles,
   canAssignAdminRole = false,
+  protectedRoleLocked = false,
   selectedUserPermissions,
   onToggleUserPermission,
   onRoleChange,
@@ -72,9 +74,15 @@ export function UserFormDialog({
   const [criticalAccessConfirmed, setCriticalAccessConfirmed] = useState(false);
   const schema = editingUser ? editUserSchema : createUserSchema;
   const editingRoleName = editingUser?.roles[0] ?? null;
-  const assignableRoles = useMemo(() => roles.filter((role) => (
-    canAssignAdminRole || !isElevatedRole(role) || role.name === editingRoleName
-  )), [canAssignAdminRole, editingRoleName, roles]);
+  const assignableRoles = useMemo(() => {
+    if (protectedRoleLocked && editingRoleName) {
+      return roles.filter((role) => role.name === editingRoleName);
+    }
+
+    return roles.filter((role) => (
+      canAssignAdminRole || !isElevatedRole(role) || role.name === editingRoleName
+    ));
+  }, [canAssignAdminRole, editingRoleName, protectedRoleLocked, roles]);
   const hasSelectedCriticalPermission = selectedUserPermissions.some(isCriticalPermission);
   const {
     register,
@@ -133,6 +141,12 @@ export function UserFormDialog({
           description={editingUser ? 'Actualice datos visibles y rol sin modificar la clave.' : 'Cree una cuenta personal para evitar usuarios compartidos.'}
           tone="info"
         />
+
+        {protectedRoleLocked && (
+          <Alert title="Unico administrador activo">
+            Esta cuenta conserva el rol protegido porque es el unico administrador activo. Cree o active otro administrador antes de cambiar este rol.
+          </Alert>
+        )}
 
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Nombre completo" id="name" error={errors.name?.message}>
