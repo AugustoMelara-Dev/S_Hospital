@@ -3369,3 +3369,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, rutas, migraciones, seeders, policies, auditoria ni endpoints.
 - Este corte reduce ambiguedad en reportes de caja sin relajar cierre, diferencias, RBAC ni trazabilidad.
+
+## 140. Fase 12/16 - Tamano de respaldo sin marcador crudo
+
+Cambio aplicado:
+
+- La tabla de respaldos deja de mostrar `-` cuando un respaldo pendiente o fallido aun no tiene tamano registrado.
+- La celda de tamano ahora muestra "Tamano no disponible", un estado humano para operacion diaria.
+- No se agregan rutas ni acciones nuevas; descarga, restauracion y detalle tecnico siguen sujetos a los permisos y vistas existentes.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- BackupsView.test.tsx -t "unavailable backup sizes" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial: la tabla no mostraba `Tamano no disponible`; luego OK. |
+| `npm run test -- BackupsView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 22 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, rutas, migraciones, seeders, policies, auditoria ni endpoints.
+- Este corte mejora legibilidad de respaldos sin exponer nombre tecnico, checksum, rutas locales ni restauracion en la vista normal.

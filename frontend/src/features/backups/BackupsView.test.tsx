@@ -280,6 +280,23 @@ describe('BackupsView', () => {
     expect(screen.getAllByText(/sin descarga/i)).toHaveLength(2);
   });
 
+  it('explains unavailable backup sizes instead of showing a raw dash', async () => {
+    vi.mocked(apiClient.getBackups).mockResolvedValue({
+      data: [
+        backupFixture({ id: 1, status: 'pending', size_bytes: null, checksum_sha256: null, completed_at: null }),
+        backupFixture({ id: 2, status: 'failed', size_bytes: null, checksum_sha256: null, completed_at: null }),
+      ],
+      meta: { current_page: 1, per_page: 15, total: 2 },
+    });
+
+    renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
+
+    await screen.findByRole('table', { name: /historial de respaldos locales/i });
+
+    expect(screen.getAllByText(/tamano no disponible/i)).toHaveLength(2);
+    expect(screen.queryAllByText(/^-$|^â€”$/)).toHaveLength(0);
+  });
+
   it('renders a sanitized error and retries without exposing local secrets', async () => {
     const getBackups = vi.mocked(apiClient.getBackups);
     getBackups
