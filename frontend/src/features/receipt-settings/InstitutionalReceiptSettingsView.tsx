@@ -94,6 +94,9 @@ const seriesSchema = z.object({
 }).refine((data) => data.current_number <= data.max_number, {
   path: ['current_number'],
   message: 'El correlativo actual no puede superar el numero final.',
+}).refine((data) => !data.active || (data.current_number + 1 >= data.min_number && data.current_number + 1 <= data.max_number), {
+  path: ['current_number'],
+  message: 'El siguiente recibo debe quedar dentro del rango autorizado.',
 });
 
 const profileSchema = z.object({

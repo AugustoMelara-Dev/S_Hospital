@@ -3875,3 +3875,28 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron caja, facturacion, catalogo, historial, reportes, respaldos ni usuarios.
 - Este corte evita configuraciones imposibles de correlativo desde la UI de recibos sin relajar la autoridad del backend sobre emision fiscal.
+
+## 161. Fase 6 - Serie activa de recibos valida el proximo numero
+
+Cambio aplicado:
+
+- `InstitutionalReceiptSettingsView` ahora valida que una serie activa deje el siguiente recibo dentro del rango autorizado antes de guardar.
+- Se agrego una regresion para `max_number=100` y `current_number=100`, confirmando que el formulario muestra un error humano y no llama al API.
+- La regla queda alineada con `StoreReceiptSeriesRequest` y `UpdateReceiptSeriesRequest`, que ya rechazan series activas cuando `current_number + 1` sale del rango.
+- No se cambian backend, endpoints, migraciones, correlativos existentes, perfiles de impresion, permisos ni auditoria.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- InstitutionalReceiptSettingsView.test.tsx -t "next number leaves" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial correcto: no aparecia `El siguiente recibo debe quedar dentro del rango autorizado`; luego OK: 1 test pasa. |
+| `npm run test -- InstitutionalReceiptSettingsView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 17 tests pasan. |
+| `npm run lint` | OK. |
+| `npm run typecheck` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron caja, facturacion, catalogo, historial, reportes, respaldos ni usuarios.
+- Este corte evita que la UI normal guarde una serie activa agotada mientras mantiene al backend como autoridad final del correlativo institucional.
