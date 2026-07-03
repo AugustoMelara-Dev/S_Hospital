@@ -15,14 +15,16 @@ type CashSessionRow = CashSession & {
   position: number;
 };
 
-function formatSigned(value: string): { display: string; tone: 'pos' | 'neg' | 'zero' } {
-  if (value.startsWith('-')) {
-    return { display: `- ${formatLempirasUI(value.slice(1))}`, tone: 'neg' };
+function formatSigned(value: string | null | undefined): { display: string; tone: 'pos' | 'neg' | 'zero' } {
+  const amount = safeCashAmount(value);
+
+  if (amount < 0) {
+    return { display: `- ${formatLempirasUI(Math.abs(amount))}`, tone: 'neg' };
   }
-  if (value === '0.00' || value === '0') {
-    return { display: formatLempirasUI(value), tone: 'zero' };
+  if (amount > 0) {
+    return { display: `+ ${formatLempirasUI(amount)}`, tone: 'pos' };
   }
-  return { display: `+ ${formatLempirasUI(value)}`, tone: 'pos' };
+  return { display: formatLempirasUI(0), tone: 'zero' };
 }
 
 const cashSessionColumns: Array<DataTableColumn<CashSessionRow>> = [
@@ -115,14 +117,14 @@ const cashSessionColumns: Array<DataTableColumn<CashSessionRow>> = [
 
 export function CashReconciliationPanel({ report }: CashReconciliationPanelProps) {
   const withDifference = report.cash_sessions.filter(
-    (s: CashSession) => s.difference && s.difference !== '0.00' && s.difference !== '0',
+    (s: CashSession) => safeCashAmount(s.difference) !== 0,
   );
   const totalExpected = report.cash_sessions.reduce(
-    (acc: number, s: CashSession) => acc + Number(s.expected_cash),
+    (acc: number, s: CashSession) => acc + safeCashAmount(s.expected_cash),
     0,
   );
   const totalCounted = report.cash_sessions.reduce(
-    (acc: number, s: CashSession) => acc + Number(s.counted_cash ?? 0),
+    (acc: number, s: CashSession) => acc + safeCashAmount(s.counted_cash),
     0,
   );
   const totalDifference = totalCounted - totalExpected;
@@ -194,4 +196,10 @@ function formatSessionDate(value: string | null): string {
   const formatted = formatLocalizedDateTime(value);
 
   return formatted === '-' ? 'Fecha no disponible' : formatted;
+}
+
+function safeCashAmount(value: string | number | null | undefined): number {
+  const amount = typeof value === 'number' ? value : Number(value ?? 0);
+
+  return Number.isFinite(amount) ? amount : 0;
 }

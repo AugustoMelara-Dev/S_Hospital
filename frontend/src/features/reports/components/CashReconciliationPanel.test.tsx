@@ -66,4 +66,30 @@ describe('CashReconciliationPanel', () => {
     expect(screen.getAllByText('Fecha no disponible')).toHaveLength(2);
     expect(document.body.textContent).not.toMatch(/Invalid Date|fecha-danada|cierre-danado/i);
   });
+
+  it('does not count malformed cash differences as real differences', () => {
+    render(
+      <CashReconciliationPanel
+        report={buildExecutiveReport({
+          cash_sessions: [
+            {
+              id: 11,
+              cashier: 'Caja Revision',
+              opened_at: '2026-06-02T08:00:00.000000Z',
+              closed_at: '2026-06-02T16:00:00.000000Z',
+              opening_amount: 'monto-danado',
+              expected_cash: 'no-numero',
+              counted_cash: 'NaN',
+              difference: 'monto-danado',
+              status: 'closed',
+              closure_note: null,
+            },
+          ],
+        })}
+      />,
+    );
+
+    expect(screen.getByText(/0 sesiones con diferencia/i)).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/\+ L 0\.00|monto-danado|no-numero|\bNaN\b/);
+  });
 });

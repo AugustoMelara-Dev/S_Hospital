@@ -4153,3 +4153,29 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, facturacion, caja operativa, catalogo, historial, recibos, respaldos ni usuarios.
 - Este corte mejora el reporte de caja/cierre diario sin alterar calculos de esperado, contado, diferencias ni auditoria.
+
+## 172. Fase 15 - Conciliacion no inventa diferencias con montos corruptos
+
+Cambio aplicado:
+
+- `CashReconciliationPanel` ahora normaliza montos de conciliacion antes de sumar efectivo esperado, contado y contar sesiones con diferencia.
+- Si `expected_cash`, `counted_cash` o `difference` llegan corruptos o no parseables, se tratan como cero para evitar `NaN`, valores crudos o una diferencia positiva falsa.
+- Se agrego una regresion con `monto-danado`, `no-numero`, `NaN` y `difference='monto-danado'`, confirmando que el panel conserva `0 sesiones con diferencia`.
+- No se cambian reglas backend ni calculos oficiales; solo se evita que un reporte con datos corruptos confunda el cierre diario.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- CashReconciliationPanel.test.tsx -t "does not count malformed cash differences as real differences" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial correcto: el panel contaba `1 sesion con diferencia` y mostraba `+ L 0.00`; luego OK: 1 test pasa. |
+| `npm run test -- CashReconciliationPanel.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 4 tests pasan. |
+| `npm run test -- ReportsExecutive.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 2 tests pasan. |
+| `npm run lint` | OK. |
+| `npm run typecheck` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, facturacion, caja operativa, catalogo, historial, recibos, respaldos ni usuarios.
+- Este corte endurece reportes utiles de caja sin alterar pagos, cierres reales, auditoria ni datos fiscales.
