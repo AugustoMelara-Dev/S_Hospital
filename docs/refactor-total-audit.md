@@ -2119,3 +2119,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron endpoints, permisos, exportaciones ni calculos de reportes.
 - Este corte reduce ambiguedad en reportes consolidados y mantiene la navegacion limitada a Ejecutivo, Caja y Auditoria.
+
+## 87. Fase 4/7 - Cobro refresca estado de caja
+
+Cambio aplicado:
+
+- `NewInvoiceView` invalida `cashSessions.current()` y `cashSessions.movements(sessionId)` despues de registrar un pago.
+- El flujo mantiene las invalidaciones existentes de facturas y dashboard.
+- Se reforzo el test del cobro con recibo legacy fallido para asegurar que el pago queda registrado y que caja se refresca igualmente.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- NewInvoiceView.test.tsx -t "legacy receipt loading fails"` | RED inicial porque el cobro no invalidaba queries de caja; luego OK. |
+| `npm run test -- NewInvoiceView.test.tsx CashBoxView.test.tsx CloseSessionDialog.test.tsx` | OK: 3 archivos, 28 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, schema, migraciones, pagos reales, recibos, caja historica ni correlativos.
+- Este corte evita que la caja quede con totales/movimientos obsoletos despues de cobrar desde Nueva factura en la operacion monocomputadora.

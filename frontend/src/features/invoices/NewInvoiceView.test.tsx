@@ -7,6 +7,7 @@ import { NewInvoiceView } from './NewInvoiceView';
 import { newInvoiceReducer } from './state/reducer';
 import { getInitialNewInvoiceState } from './state/types';
 import type { Service, CashSession } from '../../lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 
 vi.mock('@/lib/api', async () => {
   const actual = await vi.importActual<typeof import('@/lib/api')>('@/lib/api');
@@ -313,6 +314,7 @@ describe('NewInvoiceView critical flows', () => {
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
     });
+    const invalidateQueries = vi.spyOn(queryClient, 'invalidateQueries');
     render(
       <QueryClientProvider client={queryClient}>
         <MemoryRouter initialEntries={['/billing/new']}>
@@ -432,6 +434,11 @@ describe('NewInvoiceView critical flows', () => {
 
     await waitFor(() => {
       expect(fetchMock.mock.calls.some(([url]) => String(url).endsWith('/api/invoices/57/payments'))).toBe(true);
+    });
+
+    await waitFor(() => {
+      expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: queryKeys.cashSessions.current() });
+      expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: queryKeys.cashSessions.movements(7) });
     });
 
     expect(onStatus).not.toHaveBeenCalledWith(expect.stringMatching(/no se pudo registrar el pago/i));

@@ -485,6 +485,8 @@ export function NewInvoiceView({
       submitPaymentIdempotencyKeyRef.current = null;
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.invoices.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.cashSessions.current() }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.cashSessions.movements(sessionToUse.id) }),
         queryClient.invalidateQueries({ queryKey: queryKeys.reports.dashboard(), refetchType: 'none' }),
       ]);
       dispatch({ type: 'SET_ISSUED_INVOICE', payload: result.invoice });
