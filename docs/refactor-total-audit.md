@@ -2519,3 +2519,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, migraciones, permisos ni contratos de recibos.
 - Este corte alinea el flujo de venta/cobro con la proteccion idempotente ya usada para reimpresiones institucionales desde historial.
+
+## 103. Fase 10 - Reportes caen a seccion permitida
+
+Cambio aplicado:
+
+- Si un usuario con solo permiso de reporte de caja entra directo a una subruta restringida de reportes, la pantalla abre Caja como seccion activa.
+- Las rutas sin ningun permiso conservan su estado de no disponible, sin exponer controles de caja ni reporte ejecutivo.
+- La navegacion de reportes sigue limitada a Ejecutivo, Caja y Auditoria.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- ReportsView.subroutes.test.tsx` | RED inicial: Caja estaba visible pero no activa al entrar por `/reports/audit`; luego OK: 7 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, permisos, endpoints ni exportaciones.
+- Este corte reduce callejones sin salida en reportes para una instalacion monocomputadora: el usuario cae en el reporte que realmente puede operar.

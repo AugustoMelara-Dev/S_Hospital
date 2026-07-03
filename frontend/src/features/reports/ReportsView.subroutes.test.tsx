@@ -99,6 +99,14 @@ describe('ReportsView (sub-routes)', () => {
     expect(screen.queryByText(/reporte ejecutivo no disponible/i)).not.toBeInTheDocument();
   });
 
+  it('opens the cash report from a restricted report sub-route when it is the only permitted report', () => {
+    renderReports('/reports/audit', false, true);
+
+    expect(screen.getByRole('link', { name: /caja/i })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByText(/operacion de caja/i)).toBeInTheDocument();
+    expect(screen.queryByText(/reporte de auditoria no disponible/i)).not.toBeInTheDocument();
+  });
+
   it('falls back to executive when the report sub-route is unknown', () => {
     renderReports('/reports/desconocido');
 
@@ -107,7 +115,7 @@ describe('ReportsView (sub-routes)', () => {
   });
 
   it('shows empty state in executive sub-route without permissions', () => {
-    renderReports('/reports/executive', false);
+    renderReports('/reports/executive', false, false);
     expect(screen.getByText(/reporte ejecutivo no disponible/i)).toBeInTheDocument();
   });
 

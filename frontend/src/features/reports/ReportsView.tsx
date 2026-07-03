@@ -39,10 +39,11 @@ type ReportSubRoute = typeof SUB_ROUTES[number]['id'];
 
 export function ReportsView(props: ReportsViewProps) {
   const { isRoot, subRoute } = useReportsRoute();
-  const activeSubRoute =
+  const requestedSubRoute =
     isRoot && subRoute === 'executive' && !props.canViewManagerial && props.canViewCashSessionReport
       ? 'cash'
       : subRoute;
+  const activeSubRoute = permittedReportRoute(requestedSubRoute, props.canViewManagerial, props.canViewCashSessionReport);
 
   return (
     <div data-slot="reports-view" className="flex flex-col gap-5">
@@ -71,6 +72,34 @@ function useReportsRoute(): { isRoot: boolean; subRoute: ReportSubRoute } {
 
 function isReportSubRoute(value: string): value is ReportSubRoute {
   return SUB_ROUTES.some((route) => route.id === value);
+}
+
+function permittedReportRoute(
+  requested: ReportSubRoute,
+  canViewManagerial: boolean,
+  canViewCash: boolean,
+): ReportSubRoute {
+  if (canAccessReportRoute(requested, canViewManagerial, canViewCash)) {
+    return requested;
+  }
+
+  if (requested !== 'cash' && canViewCash) {
+    return 'cash';
+  }
+
+  return requested;
+}
+
+function canAccessReportRoute(
+  route: ReportSubRoute,
+  canViewManagerial: boolean,
+  canViewCash: boolean,
+): boolean {
+  if (route === 'cash') {
+    return canViewCash || canViewManagerial;
+  }
+
+  return canViewManagerial;
 }
 
 function ReportsNavigation({
