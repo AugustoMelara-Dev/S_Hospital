@@ -3587,3 +3587,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, migraciones, perfiles guardados, permisos, auditoria ni endpoints.
 - Este corte mejora fidelidad visual de impresion institucional sin dar controles tecnicos al usuario normal.
+
+## 149. Fase 7 - Cierre de caja normaliza monto contado
+
+Cambio aplicado:
+
+- `CashBoxView` valida y ahora envia `closing_amount` recortado al cerrar caja.
+- El frontend evita mandar espacios accidentales al contrato backend de cierre, reduciendo errores de Form Request en una operacion critica.
+- La nota de cierre conserva el recorte existente; no se cambian calculos, permisos, idempotencia ni cierre backend.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- CashBoxView.test.tsx -t "trims the counted amount" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial: el payload enviaba `" 100.00 "`; luego OK: 1 test pasa. |
+| `npm run test -- CashBoxView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 10 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, migraciones, reportes, recibos ni auditoria.
+- Este corte refuerza el cierre de caja local sin relajar seguridad ni reglas fiscales.
