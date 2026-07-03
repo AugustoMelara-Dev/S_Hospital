@@ -74,6 +74,32 @@ describe('HospitalSettingsView', () => {
     expect(payload.partial_payments_enabled).toBeUndefined();
   });
 
+  it('trims institutional identity fields before saving', async () => {
+    const updateFiscalSettings = vi.mocked(apiClient.updateFiscalSettings);
+
+    render(<HospitalSettingsView canEdit onStatus={vi.fn()} />);
+
+    fireEvent.change(await screen.findByLabelText(/nombre del hospital/i), {
+      target: { value: '  Hospital Regional del Norte  ' },
+    });
+    fireEvent.change(screen.getByLabelText(/^rtn$/i), {
+      target: { value: '  08011999123456  ' },
+    });
+    fireEvent.change(screen.getByLabelText(/motivo del cambio fiscal/i), {
+      target: { value: 'Correccion documentada de RTN' },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /guardar datos del hospital/i }));
+
+    await waitFor(() => {
+      expect(updateFiscalSettings).toHaveBeenCalled();
+    });
+
+    const payload = updateFiscalSettings.mock.calls.at(-1)?.[0] as Record<string, unknown>;
+    expect(payload.hospital_name).toBe('Hospital Regional del Norte');
+    expect(payload.rtn).toBe('08011999123456');
+  });
+
   it('asks for a fiscal reason when the RTN changes', async () => {
     const updateFiscalSettings = vi.mocked(apiClient.updateFiscalSettings);
 

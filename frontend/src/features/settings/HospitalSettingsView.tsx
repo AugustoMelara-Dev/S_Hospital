@@ -19,8 +19,8 @@ type HospitalSettingsViewProps = {
 };
 
 const hospitalSchema = z.object({
-  hospital_name: z.string().min(1, 'El nombre del hospital es requerido'),
-  rtn: z.string().max(32, 'RTN muy largo').optional().or(z.literal('')),
+  hospital_name: z.string().trim().min(1, 'El nombre del hospital es requerido'),
+  rtn: z.string().trim().max(32, 'RTN muy largo').optional().or(z.literal('')),
   address: z.string().max(255).optional().or(z.literal('')),
   slogan: z.string().max(255).optional().or(z.literal('')),
   government_line: z.string().max(120).optional().or(z.literal('')),

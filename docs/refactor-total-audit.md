@@ -3779,3 +3779,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, migraciones, reportes, catalogo, historial, respaldos ni usuarios.
 - Este corte reduce friccion en el cobro diario sin duplicar reglas fiscales ni relajar las validaciones del backend.
+
+## 157. Fase 11 - Identidad institucional se guarda recortada
+
+Cambio aplicado:
+
+- `HospitalSettingsView` ahora recorta espacios iniciales y finales del nombre del hospital y del RTN al resolver el formulario.
+- Se agrego una regresion para asegurar que los datos institucionales pegados con espacios lleguen normalizados al API antes de aparecer en recibos y cabeceras.
+- No se cambian backend, endpoints, migraciones, numeracion fiscal, recibos PDF, permisos ni auditoria.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- HospitalSettingsView.test.tsx -t "trims institutional identity fields" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial correcto: el payload enviaba `"  Hospital Regional del Norte  "`; luego OK: 1 test pasa. |
+| `npm run test -- HospitalSettingsView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 5 tests pasan. |
+| `npm run lint` | OK. |
+| `npm run typecheck` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron caja, facturacion, catalogo, historial, reportes, respaldos ni usuarios.
+- Este corte reduce errores humanos en configuracion institucional sin relajar la exigencia de motivo para cambios fiscales.
