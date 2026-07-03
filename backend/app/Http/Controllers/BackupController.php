@@ -73,6 +73,10 @@ class BackupController extends Controller
             $this->denyDownload($request, $backupLog, 'outside_backup_root');
         }
 
+        if (! $this->matchesRecordedIntegrity($backupLog, $absolutePath)) {
+            $this->denyDownload($request, $backupLog, 'integrity_mismatch');
+        }
+
         AuditLog::query()->create([
             'user_id' => $request->user()->id,
             'action' => 'backup.downloaded',
@@ -131,6 +135,23 @@ class BackupController extends Controller
         }
 
         return str_starts_with($realPath, rtrim($realRoot, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR);
+    }
+
+    private function matchesRecordedIntegrity(BackupLog $backupLog, string $absolutePath): bool
+    {
+        if ($backupLog->size_bytes === null || $backupLog->checksum_sha256 === null) {
+            return false;
+        }
+
+        $actualSize = filesize($absolutePath);
+        $actualChecksum = hash_file('sha256', $absolutePath);
+
+        if ($actualSize === false || $actualChecksum === false) {
+            return false;
+        }
+
+        return (int) $backupLog->size_bytes === (int) $actualSize
+            && hash_equals($backupLog->checksum_sha256, $actualChecksum);
     }
 
     private function safeDownloadFilename(string $filename): string

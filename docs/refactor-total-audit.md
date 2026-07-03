@@ -2022,3 +2022,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, rutas, migraciones, politicas ni descarga real de archivos.
 - Este corte reduce escalacion accidental: descargar una copia de la base hospitalaria requiere la misma pausa explicita que otros permisos de alto riesgo.
+
+## 83. Fase 13 - Descarga valida integridad del respaldo
+
+Cambio aplicado:
+
+- `BackupController` valida tamano y SHA-256 del archivo local contra el registro `backup_logs` antes de servir una descarga.
+- Si el archivo fue alterado o la metadata de integridad no esta disponible, la descarga responde 404 y queda auditada como `backup.download_denied` con motivo `integrity_mismatch`.
+- La auditoria `backup.downloaded` solo se escribe despues de superar estado, disco, path seguro, raiz local e integridad del archivo.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `php artisan test --filter=test_download_refuses_backup_when_file_integrity_no_longer_matches_log` | RED inicial porque un archivo manipulado se descargaba con 200; luego OK. |
+| `php artisan test --filter=BackupWorkflowTest` | OK: 26 tests pasan, 135 assertions. |
+| `vendor/bin/pint --test app/Http/Controllers/BackupController.php tests/Feature/BackupWorkflowTest.php` | Falla inicial por estilo en el test nuevo; se corrigio con Pint. |
+| `vendor/bin/phpstan analyse` | Falla inicial por limite de memoria 128M; `vendor/bin/phpstan analyse --memory-limit=512M` OK sin errores. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron frontend, rutas, migraciones, permisos, jobs de creacion de backups ni formato de archivos.
+- Este corte evita entregar respaldos locales cuyo contenido ya no coincide con el checksum registrado, manteniendo la falla como 404 para no exponer detalles operativos.

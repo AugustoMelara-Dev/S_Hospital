@@ -7,6 +7,7 @@ use App\Actions\Backups\DatabaseDumpWriter;
 use App\Actions\Backups\EncryptBackupFileAction;
 use App\Actions\Backups\PruneBackupsAction;
 use App\Jobs\RunBackupJob;
+use App\Models\AuditLog;
 use App\Models\BackupLog;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
@@ -531,6 +532,33 @@ class BackupWorkflowTest extends TestCase
 
         $this->assertDatabaseHas('audit_logs', [
             'user_id' => $admin->id,
+            'action' => 'backup.downloaded',
+            'entity_type' => BackupLog::class,
+            'entity_id' => $backup->id,
+        ]);
+    }
+
+    public function test_download_refuses_backup_when_file_integrity_no_longer_matches_log(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->admin();
+        $backup = $this->successfulBackupLog($admin);
+
+        Storage::disk('local')->put((string) $backup->path, 'tampered backup contents');
+
+        $this->actingAs($admin)
+            ->get("/api/backups/{$backup->id}/download")
+            ->assertNotFound();
+
+        $audit = AuditLog::query()
+            ->where('action', 'backup.download_denied')
+            ->where('entity_type', BackupLog::class)
+            ->where('entity_id', $backup->id)
+            ->firstOrFail();
+
+        $this->assertSame('integrity_mismatch', $audit->new_values['reason'] ?? null);
+        $this->assertSame(BackupLog::STATUS_SUCCESS, $audit->new_values['status'] ?? null);
+        $this->assertDatabaseMissing('audit_logs', [
             'action' => 'backup.downloaded',
             'entity_type' => BackupLog::class,
             'entity_id' => $backup->id,
