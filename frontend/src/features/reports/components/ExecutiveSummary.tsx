@@ -157,6 +157,23 @@ function formatDelta(percentage: number | null): { label: string; icon: typeof A
   };
 }
 
+function parseAmount(value: string | number | null | undefined): number {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+  if (!value) return 0;
+
+  const parsed = Number(String(value).replace(/[^\d.-]/g, ''));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function collectionCoverage(report: ExecutiveReport): string {
+  const billed = parseAmount(report.summary.billed_total);
+  const collected = parseAmount(report.summary.collected_total);
+
+  if (billed <= 0) return 'Sin facturacion en el periodo';
+
+  return `Cobrado ${((collected / billed) * 100).toFixed(1)}% de lo facturado`;
+}
+
 export function ExecutiveSummary({ report }: ExecutiveSummaryProps) {
   return (
     <section
@@ -190,6 +207,13 @@ export function ExecutiveSummary({ report }: ExecutiveSummaryProps) {
           </div>
         </dl>
       </header>
+      <div className="grid gap-3 rounded-md border border-operational-border bg-operational-panel px-4 py-3 text-sm sm:grid-cols-3">
+        <p className="font-semibold text-foreground">{collectionCoverage(report)}</p>
+        <p className="text-muted-foreground">Pendiente: {formatLempirasUI(report.summary.pending_total)}</p>
+        <p className="text-muted-foreground">
+          {report.summary.pending_count} factura{report.summary.pending_count === 1 ? '' : 's'} con saldo abierto
+        </p>
+      </div>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
         {KPI_SPECS.map((spec) => {
           const value = spec.value(report);

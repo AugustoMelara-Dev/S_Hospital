@@ -3019,3 +3019,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, rutas, migraciones, seeders, policies ni endpoints.
 - Este corte mejora busqueda y reimpresion operativa al hacer visible la trazabilidad del recibo institucional en la lista principal.
+
+## 124. Fase 10 - Resumen ejecutivo con lectura rapida de cobro
+
+Cambio aplicado:
+
+- El resumen ejecutivo muestra una lectura operativa de porcentaje cobrado sobre lo facturado.
+- El pendiente y la cantidad de facturas con saldo abierto quedan visibles antes del grid de KPIs.
+- La pantalla ayuda a distinguir facturado, cobrado y pendiente sin interpretar varias tarjetas por separado.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- ExecutiveSummary --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial: faltaba lectura `Cobrado 60.0% de lo facturado`; luego OK: 1 test pasa. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, rutas, migraciones, seeders, policies ni endpoints.
+- Este corte mejora lectura diaria de reportes sin cambiar calculos ni contratos API.
