@@ -357,6 +357,45 @@ describe('ServiceSheet contract preservation', () => {
     expect(onSuccess).toHaveBeenCalled();
   });
 
+  it('blocks zero service prices before saving', async () => {
+    const saveService = vi.spyOn(apiClient, 'saveService').mockResolvedValue({
+      id: 12,
+      category_id: 1,
+      area_id: 1,
+      name: 'Consulta cero',
+      slug: 'consulta-cero',
+      price: '0.00',
+      scan_code: null,
+      barcode: null,
+      qr_code: null,
+      taxable: true,
+      active: true,
+      special_rule_code: null,
+    });
+
+    render(
+      <ServiceSheet
+        open
+        onOpenChange={noop}
+        service={null}
+        categories={[{ id: 1, name: 'Consulta externa' }]}
+        areas={[{ id: 1, name: 'Consulta externa' }]}
+        onSuccess={noop}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText(/^nombre/i), {
+      target: { value: 'Consulta cero' },
+    });
+    fireEvent.change(screen.getByLabelText(/precio/i), {
+      target: { value: '0.00' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /crear/i }));
+
+    expect(await screen.findByText(/precio debe ser mayor que cero/i)).toBeInTheDocument();
+    expect(saveService).not.toHaveBeenCalled();
+  });
+
   it('keeps the edit payload contract and includes the service id', async () => {
     const saveService = vi.spyOn(apiClient, 'saveService').mockResolvedValue({
       id: 3,

@@ -1316,3 +1316,28 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, schema, jobs, descarga ni creacion real de respaldos.
 - Este corte mejora la confiabilidad operativa de la pantalla normal de respaldos sin exponer nombres tecnicos, rutas ni checksum.
+
+## 54. Fase 8 - Catalogo bloquea precios cero antes del API
+
+Cambio aplicado:
+
+- `ServiceSheet` ahora valida que el precio capturado sea mayor que cero, alineado con las reglas `gt:0` del backend Laravel.
+- El formulario conserva la validacion de formato monetario con hasta dos decimales, pero evita enviar `0`, `0.0` o `0.00`.
+- La pantalla muestra el mensaje humano `Precio debe ser mayor que cero` y no llama a `apiClient.saveService` cuando el precio no es cobrable.
+- Se agrego cobertura TDD para crear servicio con precio cero sin depender del rechazo tardio del API.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- ServiceSheet.test.tsx --runInBand` | ERROR de comando: Vitest no soporta `--runInBand` en este repo. Se corrigio el comando y no cuenta como verificacion funcional. |
+| `npm run test -- ServiceSheet.test.tsx` | RED inicial porque no aparecia `Precio debe ser mayor que cero`; luego OK: 12 tests pasan. |
+| `npm run test -- ServiceSheet.test.tsx ServiceCatalogTable.test.tsx` | OK: 2 archivos, 17 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, schema, migraciones, facturas, caja ni historicos.
+- Este corte reduce errores operativos en caja/catalogo y mantiene el backend como fuente de verdad fiscal.

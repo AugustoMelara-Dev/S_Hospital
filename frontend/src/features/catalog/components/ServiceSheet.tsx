@@ -17,7 +17,9 @@ const serviceSchema = z.object({
   category_id: z.number().min(1, 'Seleccione una categoria'),
   area_id: z.number().min(1, 'Seleccione un area'),
   name: z.string().min(1, 'El nombre es requerido'),
-  price: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Precio debe ser un número válido'),
+  price: z.string()
+    .regex(/^\d+(\.\d{1,2})?$/, 'Precio debe ser un número válido')
+    .refine((value) => (priceCents(value) ?? 0) > 0, 'Precio debe ser mayor que cero'),
   price_change_reason: z.string().max(500, 'Motivo maximo 500 caracteres').nullable().optional(),
   tax_change_reason: z.string().max(500, 'Motivo maximo 500 caracteres').nullable().optional(),
   scan_code: z.string().nullable().optional(),
