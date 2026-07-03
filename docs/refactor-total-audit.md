@@ -2631,3 +2631,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, permisos, rutas ni migraciones; la proteccion autoritativa sigue en Laravel.
 - Este corte reduce errores operativos en instalaciones monocomputadora: el frontend ya guia al usuario antes de intentar una accion que dejaria al sistema sin administrador activo.
+
+## 108. Fase 8 - Cierre de caja envia nota auditada limpia
+
+Cambio aplicado:
+
+- El cierre de caja recorta la nota antes de enviarla a la API cuando existe diferencia de efectivo.
+- El frontend sigue enviando `null` cuando la nota queda vacia, manteniendo el contrato actual del backend.
+- Se agrego cobertura para evitar que espacios accidentales queden en el payload auditado de caja.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- CashBoxView.test.tsx -t "trims close difference notes"` | RED inicial: la API recibia `"  Faltante validado  "`; luego OK: recibe `"Faltante validado"`. |
+| `npm run test -- CashBoxView.test.tsx CloseSessionDialog.test.tsx` | OK: 16 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, migraciones, permisos ni reportes.
+- Este corte mantiene alineado el payload frontend con la auditoria autoritativa del backend para diferencias de caja.

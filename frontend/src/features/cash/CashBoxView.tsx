@@ -218,11 +218,12 @@ export function CashBoxView({
     closingSessionInFlightRef.current = true;
     onStatus('Cerrando caja...');
     setConfirmingClose(false);
+    const trimmedClosingNotes = closingNotes.trim();
     closeSessionMutation.mutate({
       id: activeSession.id,
       payload: {
         closing_amount: closingAmount,
-        notes: closingNotes.trim() === '' ? null : closingNotes,
+        notes: trimmedClosingNotes === '' ? null : trimmedClosingNotes,
       },
     });
   }

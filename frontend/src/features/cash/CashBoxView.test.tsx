@@ -437,6 +437,27 @@ describe('CashBoxView', () => {
       { idempotencyKey: expect.any(String) },
     ));
   });
+
+  it('trims close difference notes before sending the audited payload', async () => {
+    const closeCashSession = vi.spyOn(apiClient, 'closeCashSession').mockResolvedValue(cashSessionFixture({ status: 'closed' }));
+    vi.spyOn(apiClient, 'getCurrentCashSession').mockResolvedValue(cashSessionFixture());
+
+    renderCashBox(<CashBoxView onStatus={vi.fn()} />);
+
+    fireEvent.change(await screen.findByLabelText(/monto contado/i), { target: { value: '99.00' } });
+    fireEvent.change(screen.getByLabelText(/nota de cierre/i), { target: { value: '  Faltante validado  ' } });
+    fireEvent.click(screen.getByRole('button', { name: /^cerrar caja$/i }));
+    fireEvent.click((await screen.findAllByRole('button', { name: /^cerrar caja$/i })).at(-1)!);
+
+    await waitFor(() => expect(closeCashSession).toHaveBeenCalledWith(
+      1,
+      {
+        closing_amount: '99.00',
+        notes: 'Faltante validado',
+      },
+      { idempotencyKey: expect.any(String) },
+    ));
+  });
 });
 
 function renderCashBox(node: ReactNode) {
