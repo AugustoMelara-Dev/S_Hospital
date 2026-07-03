@@ -278,6 +278,42 @@ describe('UsersView', () => {
     expect(screen.getByRole('option', { name: /Catalog manager/i })).toBeInTheDocument();
   });
 
+  it('updates the direct permission template when the administrator changes the user role', async () => {
+    const createUser = vi.spyOn(apiClient, 'createUser').mockResolvedValue({
+      ...adminUser,
+      id: 10,
+      name: 'Catalogo Turno',
+      email: 'catalogo-turno@hospital.test',
+      username: 'catalogo-turno',
+      roles: ['catalog_manager'],
+      direct_permissions: ['catalog.manage', 'catalog.view'],
+      permissions: ['catalog.manage', 'catalog.view'],
+      must_change_password: true,
+    });
+
+    render(<UsersView onStatus={vi.fn()} canCreateUsers={true} canUpdateUsers canManageRoles={true} canAssignAdminRole />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /crear usuario/i }));
+    const dialog = screen.getByRole('dialog', { name: /crear usuario/i });
+
+    fireEvent.click(within(dialog).getByRole('combobox', { name: /rol operativo/i }));
+    fireEvent.click(await screen.findByRole('option', { name: /Catalog manager/i }));
+
+    expect(within(dialog).getByRole('checkbox', { name: /Catalog view/i })).toBeChecked();
+    expect(within(dialog).getByRole('checkbox', { name: /Catalog manage/i })).toBeChecked();
+
+    fireEvent.change(within(dialog).getByLabelText(/nombre completo/i), { target: { value: 'Catalogo Turno' } });
+    fireEvent.change(within(dialog).getByLabelText(/correo electr/i), { target: { value: 'catalogo-turno@hospital.test' } });
+    fireEvent.change(within(dialog).getByLabelText(/nombre de usuario/i), { target: { value: 'catalogo-turno' } });
+    fireEvent.change(within(dialog).getByLabelText(/contrase/i), { target: { value: 'Password123!' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: /crear usuario/i }));
+
+    await waitFor(() => expect(createUser).toHaveBeenCalledWith(expect.objectContaining({
+      role: 'catalog_manager',
+      permissions: ['catalog.manage', 'catalog.view'],
+    })));
+  });
+
   it('does not send direct permissions when the operator cannot manage roles', async () => {
     const createUser = vi.spyOn(apiClient, 'createUser').mockResolvedValue({
       ...adminUser,

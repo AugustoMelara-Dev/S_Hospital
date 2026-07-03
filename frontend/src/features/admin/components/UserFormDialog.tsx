@@ -48,6 +48,7 @@ type UserFormDialogProps = {
   canManageRoles: boolean;
   selectedUserPermissions: string[];
   onToggleUserPermission: (permissionName: string, checked: boolean) => void;
+  onRoleChange?: (roleName: string) => void;
   permissionCatalog: { module: string; label: string; permissions: { name: string; label: string }[] }[];
   globalError: string | null;
   onSubmit: (data: UserFormData) => Promise<void> | void;
@@ -61,6 +62,7 @@ export function UserFormDialog({
   canManageRoles,
   selectedUserPermissions,
   onToggleUserPermission,
+  onRoleChange,
   permissionCatalog,
   globalError,
   onSubmit,
@@ -154,7 +156,13 @@ export function UserFormDialog({
             name="role"
             control={control}
             render={({ field }) => (
-              <Select value={field.value} onValueChange={field.value ? field.onChange : undefined}>
+              <Select
+                value={field.value}
+                onValueChange={(value) => {
+                  field.onChange(value);
+                  onRoleChange?.(value);
+                }}
+              >
                 <SelectTrigger id="role">
                   <SelectValue />
                 </SelectTrigger>

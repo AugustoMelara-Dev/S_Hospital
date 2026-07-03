@@ -477,6 +477,11 @@ export function UsersView({
         canManageRoles={canManageRoles}
         selectedUserPermissions={selectedUserPermissions}
         onToggleUserPermission={toggleUserPermission}
+        onRoleChange={(roleNameValue) => {
+          if (canManageRoles) {
+            setSelectedUserPermissions(permissionsForRole(roleNameValue));
+          }
+        }}
         permissionCatalog={permissionCatalog}
         globalError={formGlobalError}
         onSubmit={onUserSubmit}

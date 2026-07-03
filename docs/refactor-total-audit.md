@@ -1803,3 +1803,28 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, schema, migraciones, endpoints, permisos, creacion de respaldos ni descargas.
 - Este corte reduce ruido operacional en la pantalla inicial de respaldos sin cambiar seguridad ni auditoria.
+
+## 74. Fase 8 - Cambio de rol actualiza permisos directos del usuario
+
+Cambio aplicado:
+
+- `UserFormDialog` avisa al contenedor cuando cambia el rol operativo seleccionado.
+- `UsersView` recarga la plantilla de permisos directos del rol elegido cuando el operador administra permisos exactos.
+- Al crear un usuario con rol operativo personalizado, los permisos visibles y el payload guardado quedan alineados con la plantilla del rol.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- UsersView.test.tsx -t "updates the direct permission template"` | RED inicial porque cambiar a `Catalog manager` no marcaba `Catalog view`; luego OK. |
+| `npm run test -- UsersView.test.tsx` | OK: 23 tests pasan. |
+| `npm run test -- UserFormDialog.test.tsx UsersView.test.tsx` | OK: 30 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `git diff --check` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, schema, migraciones, endpoints, roles protegidos ni validaciones Laravel.
+- Este corte reduce riesgo de crear cuentas operativas con un rol visible pero sin los permisos exactos esperados.
