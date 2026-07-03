@@ -2045,3 +2045,29 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron frontend, rutas, migraciones, permisos, jobs de creacion de backups ni formato de archivos.
 - Este corte evita entregar respaldos locales cuyo contenido ya no coincide con el checksum registrado, manteniendo la falla como 404 para no exponer detalles operativos.
+
+## 84. Fase 6 - Recibo legacy no expone ids internos
+
+Cambio aplicado:
+
+- `GenerateReceiptDataAction` deja de serializar `invoice.id` y `payment.id` en el payload del recibo legacy.
+- `ReceiptData` en frontend refleja el contrato visible del recibo: numero de factura, paciente, servicios, totales y pagos sin ids internos.
+- `ReceiptPreview` usa una clave compuesta de datos visibles del pago para renderizar la lista sin depender de ids internos.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `php artisan test --filter=test_receipt_uses_invoice_item_snapshots_and_supports_institutional_paper_sizes` | RED inicial porque `data.invoice.id` seguia presente; luego OK. |
+| `php artisan test --filter=CashPaymentsReceiptTest` | OK: 32 tests pasan, 352 assertions. |
+| `npm run typecheck` | Falla inicial por fixtures tipados con ids internos; luego OK. |
+| `npm run test -- ReceiptPreview.test.tsx ReceiptPreview.a11y.test.tsx InstitutionalReceiptFlow.test.tsx InvoiceHistoryView.test.tsx` | OK: 4 archivos, 38 tests pasan. |
+| `vendor/bin/pint --test app/Actions/Receipts/GenerateReceiptDataAction.php tests/Feature/CashPaymentsReceiptTest.php` | OK. |
+| `vendor/bin/phpstan analyse --memory-limit=512M` | OK sin errores. |
+| `npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron migraciones, calculos de dinero, auditoria, pagos, caja ni PDF institucional.
+- Este corte reduce exposicion accidental de codigos internos en el recibo principal legacy y mantiene los identificadores internos solo para rutas/API operativas autenticadas.

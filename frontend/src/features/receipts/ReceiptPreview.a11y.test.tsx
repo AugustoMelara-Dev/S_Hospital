@@ -11,7 +11,6 @@ vi.mock('react-to-print', () => ({
 function buildReceipt(): ReceiptData {
   return {
     invoice: {
-      id: 1,
       invoice_number: '000-001-01-00000001',
       issued_at: '2026-06-02T08:00:00Z',
       patient_name: 'Paciente Validacion',
@@ -62,7 +61,6 @@ function buildReceipt(): ReceiptData {
     ],
     payments: [
       {
-        id: 1,
         method: 'cash',
         amount: '17.25',
         reference: null,

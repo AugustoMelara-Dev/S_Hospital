@@ -142,7 +142,6 @@ function receiptFixture(invoice: Invoice): ReceiptData {
       valid_until: null,
     },
     invoice: {
-      id: invoice.id,
       invoice_number: invoice.invoice_number,
       patient_name: invoice.patient_name,
       subtotal: invoice.subtotal,

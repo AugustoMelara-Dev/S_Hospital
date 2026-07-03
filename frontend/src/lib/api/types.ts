@@ -265,7 +265,6 @@ export type ReceiptData = {
   };
   invoice: Pick<
     Invoice,
-    | 'id'
     | 'invoice_number'
     | 'patient_name'
     | 'subtotal'
@@ -295,7 +294,7 @@ export type ReceiptData = {
       | 'notes'
     >
   >;
-  payments: Array<Pick<Payment, 'id' | 'method' | 'amount' | 'reference' | 'paid_at'> & {
+  payments: Array<Pick<Payment, 'method' | 'amount' | 'reference' | 'paid_at'> & {
     cashier: string | null;
   }>;
 };

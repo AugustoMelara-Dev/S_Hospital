@@ -1138,6 +1138,11 @@ class CashPaymentsReceiptTest extends TestCase
             $this->assertArrayNotHasKey($technicalField, $receiptItem);
         }
 
+        $receiptInvoice = $receipt->json('data.invoice');
+        $receiptPayment = $receipt->json('data.payments.0');
+        $this->assertArrayNotHasKey('id', $receiptInvoice);
+        $this->assertArrayNotHasKey('id', $receiptPayment);
+
         $this->actingAs($cashier)
             ->getJson("/api/invoices/{$invoiceId}/receipt?width=a5")
             ->assertOk()

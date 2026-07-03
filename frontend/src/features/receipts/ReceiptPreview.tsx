@@ -196,8 +196,8 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
               <div className="receipt-rule" aria-hidden="true" />
               <h2 className="receipt-section-title">Pagos</h2>
               <div className="receipt-items">
-                {receipt.payments.map((payment) => (
-                  <Row key={payment.id}>
+                {receipt.payments.map((payment, index) => (
+                  <Row key={`${payment.method}-${payment.paid_at}-${payment.reference ?? 'sin-referencia'}-${index}`}>
                     <span>
                       {paymentLabel(payment.method)}
                       {payment.reference ? ` / Ref: ${payment.reference}` : ''}

@@ -242,7 +242,6 @@ function receiptFixture(): ReceiptData {
       valid_until: '2026-12-31',
     },
     invoice: {
-      id: 1,
       invoice_number: '000-001-01-00000001',
       patient_name: 'Maria Lopez',
       subtotal: '15.00',
@@ -272,7 +271,6 @@ function receiptFixture(): ReceiptData {
     ],
     payments: [
       {
-        id: 1,
         method: 'cash',
         amount: '17.25',
         reference: null,
