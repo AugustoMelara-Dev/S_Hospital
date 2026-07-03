@@ -1441,3 +1441,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, schema, migraciones, seeders ni nombres de permisos.
 - Este corte alinea la UI de usuarios con la policy backend sin relajar RBAC ni ampliar privilegios.
+
+## 59. Fase 10 - Reporte de caja no expone busqueda sin permiso
+
+Cambio aplicado:
+
+- `ReportsCash` ahora muestra un estado sin permisos antes de exponer el formulario de consulta de caja.
+- La ruta directa `/reports/cash` ya no muestra el campo `Numero de Caja` ni el boton `Ver caja` cuando el usuario no tiene `canViewCashSessionReport` ni permiso gerencial.
+- Se agrego cobertura de subruta para confirmar que el lookup operativo queda oculto y que no se invoca `getCashSessionReport` sin permiso visual.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- ReportsView.subroutes.test.tsx` | RED inicial porque el formulario de caja seguia visible sin permiso; luego OK: 4 tests pasan. |
+| `npm run test -- ReportsView.subroutes.test.tsx CashSessionReportTab.test.tsx PaymentMethodPanel.test.tsx ServiceRanking.test.tsx` | OK: 4 archivos, 13 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, schema, migraciones, caja, pagos ni endpoints.
+- Este corte no sustituye RBAC backend; reduce exposicion de controles operativos de reportes y evita consultas previsiblemente no autorizadas desde la UI.

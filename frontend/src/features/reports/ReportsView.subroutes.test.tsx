@@ -17,6 +17,8 @@ vi.mock('@/lib/api', async () => {
   };
 });
 
+const { apiClient } = await import('@/lib/api');
+
 vi.mock('@/hooks/useCashSession', () => ({
   useCashSession: () => ({ data: null }),
 }));
@@ -33,7 +35,11 @@ vi.mock('@/hooks/useExecutiveReport', () => ({
 
 import { ReportsView } from './ReportsView';
 
-function renderReports(initialPath: string, canViewManagerial = true) {
+function renderReports(
+  initialPath: string,
+  canViewManagerial = true,
+  canViewCashSessionReport = true,
+) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
@@ -46,7 +52,7 @@ function renderReports(initialPath: string, canViewManagerial = true) {
             element={(
               <ReportsView
                 canExport
-                canViewCashSessionReport
+                canViewCashSessionReport={canViewCashSessionReport}
                 canViewManagerial={canViewManagerial}
                 onStatus={vi.fn()}
               />
@@ -57,7 +63,7 @@ function renderReports(initialPath: string, canViewManagerial = true) {
             element={(
               <ReportsView
                 canExport
-                canViewCashSessionReport
+                canViewCashSessionReport={canViewCashSessionReport}
                 canViewManagerial={canViewManagerial}
                 onStatus={vi.fn()}
               />
@@ -88,5 +94,14 @@ describe('ReportsView (sub-routes)', () => {
   it('shows empty state in executive sub-route without permissions', () => {
     renderReports('/reports/executive', false);
     expect(screen.getByText(/reporte ejecutivo no disponible/i)).toBeInTheDocument();
+  });
+
+  it('does not expose cash lookup controls without cash report permission', () => {
+    renderReports('/reports/cash', false, false);
+
+    expect(screen.getByText(/reporte de caja no disponible/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/numero de caja/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /ver caja/i })).not.toBeInTheDocument();
+    expect(apiClient.getCashSessionReport).not.toHaveBeenCalled();
   });
 });

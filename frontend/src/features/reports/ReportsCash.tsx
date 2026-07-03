@@ -30,6 +30,15 @@ export function ReportsCash({
     }
   }
 
+  if (!canViewCash && !canViewManagerial) {
+    return (
+      <EmptyState
+        title="Reporte de caja no disponible"
+        description="Este usuario no tiene permiso para consultar cajas."
+      />
+    );
+  }
+
   return (
     <section className="flex flex-col gap-5" aria-label="Reporte de caja">
       <OperationalBanner
@@ -52,13 +61,6 @@ export function ReportsCash({
           void loadCashReport();
         }}
       />
-
-      {!canViewCash && !canViewManagerial ? (
-        <EmptyState
-          title="Reporte de caja no disponible"
-          description="Este usuario no tiene permiso para consultar cajas."
-        />
-      ) : null}
     </section>
   );
 }
