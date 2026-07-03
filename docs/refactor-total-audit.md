@@ -1902,3 +1902,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, migraciones, endpoints, pagos, cierre real de caja ni permisos.
 - Este corte mantiene consistente la conciliacion visual de caja con el fallback ya usado por la vista principal.
+
+## 78. Fase 6 - Soporte avanzado de recibos no ensucia perfiles normales
+
+Cambio aplicado:
+
+- `InstitutionalReceiptSettingsView` deja de mostrar el aviso pasivo "Modo soporte no aplica aqui" mientras el usuario de soporte tiene seleccionado un perfil estandar.
+- El panel de soporte tecnico sigue disponible solo cuando se selecciona el perfil personalizado de recibo pequeno y existe `receipt_settings.advanced`.
+- El flujo normal de papel mantiene foco en papel, copias, logo, sello/firma, imprimir prueba y guardar.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- InstitutionalReceiptSettingsView.test.tsx -t "keeps support-only warnings hidden"` | RED inicial porque el aviso de soporte aparecia en Media carta; luego OK. |
+| `npm run test -- InstitutionalReceiptSettingsView.test.tsx` | OK: 10 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `git diff --check` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, migraciones, endpoints, permisos, auditoria ni generacion PDF.
+- Este corte reduce ruido para soporte sin relajar la barrera real: los campos manuales siguen gobernados por `receipt_settings.advanced`.

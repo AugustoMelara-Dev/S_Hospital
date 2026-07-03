@@ -202,6 +202,17 @@ describe('InstitutionalReceiptSettingsView', () => {
     expect(screen.queryByRole('checkbox', { name: /predeterminado global/i })).not.toBeInTheDocument();
   });
 
+  it('keeps support-only warnings hidden while a standard paper profile is selected', async () => {
+    renderView({ canAdvancedPrintSettings: true });
+
+    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
+    await activateTab('Papel y copias');
+
+    expect(screen.queryByText(/modo soporte no aplica/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/ajustes avanzados solo aplican/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/modo soporte t/i)).not.toBeInTheDocument();
+  });
+
   it('explains sensitive receipt numbering before saving a series', async () => {
     renderView();
 

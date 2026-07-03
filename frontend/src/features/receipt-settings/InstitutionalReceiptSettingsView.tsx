@@ -775,12 +775,6 @@ export function InstitutionalReceiptSettingsView({
                 </details>
               )}
 
-              {canAdvancedPrintSettings && !advancedSupported && (
-                <Alert title="Modo soporte no aplica aquí">
-                  Los ajustes avanzados solo aplican al perfil personalizado de recibo pequeño.
-                </Alert>
-              )}
-
             </SectionCard>
           </div>
         </TabsContent>
