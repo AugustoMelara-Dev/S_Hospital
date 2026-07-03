@@ -3418,3 +3418,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, rutas, migraciones, seeders, policies, auditoria ni endpoints.
 - Este corte reduce ambiguedad en el cierre de venta sin relajar caja, impresion institucional ni trazabilidad fiscal.
+
+## 142. Fase 4/16 - Exito pagado respeta permiso de impresion
+
+Cambio aplicado:
+
+- El modal de exito para factura pagada ya no anuncia "Recibo listo para imprimir" cuando el usuario no tiene permiso para imprimir recibos.
+- La descripcion accesible indica que la impresion esta restringida por permisos y el cuerpo orienta a solicitar la impresion en caja.
+- No se cambian cobros, generacion PDF, reimpresion, idempotencia, permisos ni contratos API.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- InvoiceSuccess --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial: el dialogo sin permiso seguia anunciando `Recibo listo para imprimir`; luego OK: 4 tests pasan. |
+| `npm run test -- NewInvoiceView InvoiceSuccess --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 4 archivos, 22 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, rutas, migraciones, seeders, policies, auditoria ni endpoints.
+- Este corte reduce una contradiccion de UI/RBAC sin exponer acciones de impresion a usuarios sin permiso.

@@ -73,4 +73,27 @@ describe('InvoiceSuccess', () => {
     expect(screen.queryByRole('dialog', { name: /factura emitida exitosamente/i })).not.toBeInTheDocument();
     expect(screen.getByText(/recibo listo para imprimir/i)).toBeInTheDocument();
   });
+
+  it('does not promise printing when a paid invoice cannot print receipts', () => {
+    render(
+      <MemoryRouter>
+        <InvoiceSuccess
+          open
+          onOpenChange={vi.fn()}
+          invoiceNumber="000-001-01-00000011"
+          patientName="Paciente Sin Permiso"
+          total="125.00"
+          status="paid"
+          canPrintReceipt={false}
+          onCobrar={vi.fn()}
+          onImprimir={vi.fn()}
+          onNuevaFactura={vi.fn()}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('dialog', { name: /factura pagada/i })).toBeInTheDocument();
+    expect(screen.queryByText(/recibo listo para imprimir/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/solicite a caja imprimir el recibo institucional/i)).toBeInTheDocument();
+  });
 });

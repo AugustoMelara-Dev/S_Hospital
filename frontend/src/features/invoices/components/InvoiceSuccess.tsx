@@ -46,7 +46,9 @@ export function InvoiceSuccess({
   const successTitle = status === 'paid' ? 'Factura pagada' : 'Factura emitida exitosamente';
   const successDescription =
     status === 'paid'
-      ? `Factura ${invoiceNumber} pagada. Recibo listo para imprimir.`
+      ? `Factura ${invoiceNumber} pagada. ${
+          canPrintReceipt ? 'Recibo listo para imprimir.' : 'Impresion de recibo restringida por permisos.'
+        }`
       : `Factura ${invoiceNumber} creada. ${needsPayment ? 'Pendiente de pago.' : 'Pagada.'}`;
   const primaryActionRef = useRef<HTMLButtonElement | null>(null);
 
