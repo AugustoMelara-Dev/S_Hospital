@@ -731,9 +731,9 @@ describe('InvoiceHistoryView', () => {
     renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={onStatus} />);
 
     await waitFor(() => expect(screen.getByText('Paciente Recibo Ya Impreso')).toBeInTheDocument());
-      const invoice = paid;
-    await openInvoiceMenu(invoice.invoice_number);
-    fireEvent.click(await screen.findByRole('menuitem', { name: /Ver recibo/i }));
+    await openInvoiceMenu(paid.invoice_number);
+    expect(screen.queryByRole('menuitem', { name: /^Ver recibo$/i })).not.toBeInTheDocument();
+    fireEvent.click(await screen.findByRole('menuitem', { name: /Reimprimir PDF/i }));
 
     await waitFor(() => expect(screen.getByText(/Reimprimir 000-001-01-00000034/i)).toBeInTheDocument());
     expect(screen.queryByText(/cambiar el tama/i)).not.toBeInTheDocument();

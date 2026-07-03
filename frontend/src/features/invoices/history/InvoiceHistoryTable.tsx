@@ -118,10 +118,15 @@ export function InvoiceHistoryTable({
           items: [],
         };
         if (canOpenReceipt) {
+          const opensAuditedReprint = institutionalReceipt
+            ? hasInstitutionalPrintEvents(institutionalReceipt)
+            : false;
           primaryGroup.items.push({
             key: 'view',
-            label: 'Ver recibo',
-            icon: <Receipt aria-hidden="true" className="size-4" />,
+            label: opensAuditedReprint ? 'Reimprimir PDF' : 'Ver recibo',
+            icon: opensAuditedReprint
+              ? <Printer aria-hidden="true" className="size-4" />
+              : <Receipt aria-hidden="true" className="size-4" />,
             onSelect: () => onOpenReceipt(invoice.id),
           });
         }

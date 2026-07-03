@@ -1853,3 +1853,28 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, endpoints, exportaciones PDF/Excel, permisos ni calculos financieros del reporte.
 - Este corte hace que los filtros ejecutivos sean operables para caja/supervision diaria sin obligar a ajustar fechas manualmente.
+
+## 76. Fase 4 - Historial distingue vista de recibo y reimpresion auditada
+
+Cambio aplicado:
+
+- `InvoiceHistoryTable` ahora muestra `Reimprimir PDF` cuando un recibo institucional ya tiene eventos de impresion.
+- Los recibos institucionales sin impresiones previas conservan `Ver recibo`.
+- La accion que exige motivo de reimpresion deja de presentarse como una vista simple del recibo.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- InvoiceHistoryView.test.tsx -t "requires a reprint reason"` | RED inicial porque el menu seguia mostrando `Ver recibo`; luego OK. |
+| `npm run test -- InvoiceHistoryView.test.tsx` | OK: 25 tests pasan. |
+| `npm run test -- InvoiceHistoryView.test.tsx -t "allows receipt viewers"` | OK: conserva la vista de recibo sin reimpresion para lectura autorizada. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `git diff --check` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, endpoints, auditoria, correlativos, PDF institucional ni permisos.
+- Este corte reduce confusion operacional en historial: abrir una copia ya impresa se anuncia como reimpresion auditada antes de pedir motivo.
