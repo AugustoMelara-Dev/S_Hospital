@@ -127,11 +127,13 @@ function ReportsNavigation({
       {visible.map((route) => {
         const isActive = active === route.id;
         const Icon = route.icon;
+        const descriptionId = `report-section-${route.id}-description`;
         return (
           <Link
             key={route.id}
             to={`${basePath}/${route.id}`}
             aria-current={isActive ? 'page' : undefined}
+            aria-describedby={descriptionId}
             className={cn(
               'inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
               isActive
@@ -141,6 +143,9 @@ function ReportsNavigation({
           >
             <Icon aria-hidden="true" className="size-4" />
             <span>{route.label}</span>
+            <span id={descriptionId} className="sr-only">
+              {route.description}
+            </span>
           </Link>
         );
       })}

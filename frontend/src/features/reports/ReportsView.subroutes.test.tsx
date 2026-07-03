@@ -85,6 +85,20 @@ describe('ReportsView (sub-routes)', () => {
     expect(screen.getByRole('heading', { name: /control ejecutivo/i })).toBeInTheDocument();
   });
 
+  it('exposes concise descriptions for each report section link', () => {
+    renderReports('/reports');
+
+    expect(screen.getByRole('link', { name: /ejecutivo/i })).toHaveAccessibleDescription(
+      /cobros, pendientes, ticket promedio, tendencia y servicios/i,
+    );
+    expect(screen.getByRole('link', { name: /caja/i })).toHaveAccessibleDescription(
+      /sesiones, cajeros, metodos y diferencias/i,
+    );
+    expect(screen.getByRole('link', { name: /auditoria/i })).toHaveAccessibleDescription(
+      /anulaciones, reversos, cambios de precio y fiscales/i,
+    );
+  });
+
   it('hides sub-routes when the user lacks managerial permission', () => {
     renderReports('/reports', false);
     expect(screen.queryByRole('link', { name: /ejecutivo/i })).not.toBeInTheDocument();

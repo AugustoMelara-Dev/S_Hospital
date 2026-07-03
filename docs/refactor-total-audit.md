@@ -2880,3 +2880,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron frontend, migraciones, rutas, seeders, policies ni endpoints.
 - Este corte cierra una ruta de escalacion donde un gestor operativo podia asignar capacidad de crear respaldos mediante un rol custom.
+
+## 118. Fase 10/15 - Navegacion de reportes con descripcion accesible
+
+Cambio aplicado:
+
+- Los enlaces de reportes `Ejecutivo`, `Caja` y `Auditoria` exponen una descripcion accesible con el contenido esperado de cada seccion.
+- La descripcion queda disponible para tecnologias asistivas mediante `aria-describedby` y texto `sr-only`, sin agregar ruido visual ni nuevas cards.
+- El cambio refuerza la consolidacion de reportes en tres secciones claras y mejora la comprension por teclado/lector de pantalla.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- ReportsView.subroutes --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial: los links no tenian descripcion accesible; luego OK: 8 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, rutas, permisos, endpoints ni modelos de reportes.
+- Este corte mejora accesibilidad transversal sin cambiar la superficie visual ni la logica de reportes.
