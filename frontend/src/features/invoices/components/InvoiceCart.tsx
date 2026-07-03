@@ -92,6 +92,7 @@ export function InvoiceCart({
             {items.map((item, index) => {
               const isErythropoietin = item.service.special_rule_code === ERYTHROPOIETIN_RULE;
               const isFree = item.dialysisPrescription && isErythropoietin;
+              const estimatedLineTotal = isFree ? 0 : lineTotalCents(item.service.price, item.quantity);
               const dialysisHelpId = `dialysis-${index}-help`;
 
               return (
@@ -165,8 +166,10 @@ export function InvoiceCart({
                       </Button>
                     </div>
                     <div className="text-right">
-                      <span className="block text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Importe base</span>
-                      <span className="font-mono text-sm font-semibold tabular-nums">{moneyLabel(item.service.price)}</span>
+                      <span className="block text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Importe estimado</span>
+                      <span className="font-mono text-sm font-semibold tabular-nums">
+                        {formatLempirasUIFromCents(estimatedLineTotal)}
+                      </span>
                     </div>
                   </div>
 
@@ -269,6 +272,13 @@ function actionLabelForBlockReason(reason: string, emptyActionLabel: string): st
 
 function moneyLabel(value: string | number | null | undefined): string {
   return formatLempirasUIFromCents(parseCents(value));
+}
+
+function lineTotalCents(price: string | number | null | undefined, quantity: string): number {
+  const priceCents = parseCents(price) ?? 0;
+  const quantityUnits = parseQuantityUnits(quantity);
+
+  return Math.max(0, Math.round((priceCents * quantityUnits) / 100));
 }
 
 function parseQuantityUnits(value: string): number {

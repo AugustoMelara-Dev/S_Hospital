@@ -108,6 +108,32 @@ describe('InvoiceCart', () => {
     expect(screen.getByText(/\(gratis - receta diálisis\)/i)).toBeInTheDocument();
   });
 
+  it('shows estimated line totals by quantity and erythropoietin prescription', () => {
+    renderCart({
+      items: [
+        cartItemFixture({ quantity: '2.00', service: serviceFixture({ name: 'Hemograma', price: '120.00' }) }),
+        cartItemFixture({
+          dialysisPrescription: true,
+          quantity: '3.00',
+          service: serviceFixture({
+            id: 2,
+            name: 'Eritropoyetina',
+            price: '25.00',
+            special_rule_code: 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION',
+          }),
+        }),
+      ],
+      canMarkDialysisPrescription: true,
+    });
+
+    const rows = screen.getAllByRole('listitem');
+
+    expect(within(rows[0]).getByText(/importe estimado/i)).toBeInTheDocument();
+    expect(within(rows[0]).getByText('L 240.00')).toBeInTheDocument();
+    expect(within(rows[1]).getByText(/importe estimado/i)).toBeInTheDocument();
+    expect(within(rows[1]).getByText('L 0.00')).toBeInTheDocument();
+  });
+
   it('announces disabled blockers and preserves the configured action label', () => {
     renderCart({
       disabled: true,

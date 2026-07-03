@@ -1511,3 +1511,28 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, schema, migraciones, endpoints ni permisos.
 - Este corte mejora feedback operativo del reporte de caja sin cambiar contratos API ni reglas de acceso.
+
+## 62. Fase 4 - Carrito muestra importe estimado por linea
+
+Cambio aplicado:
+
+- `InvoiceCart` reemplaza el dato ambiguo `Importe base` por `Importe estimado` calculado con precio unitario y cantidad.
+- La previsualizacion de linea muestra `L 0.00` cuando la eritropoyetina tiene receta de dialisis marcada, manteniendo el aviso textual de gratuidad.
+- Se agrego cobertura para cantidad mayor a uno y para eritropoyetina con receta, sin convertir el frontend en fuente de verdad fiscal.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- InvoiceCart.test.tsx -t "estimated line totals"` | RED inicial porque la fila mostraba `Importe base` y el precio unitario; luego OK: 1 test focal pasa. |
+| `npm run test -- InvoiceCart.test.tsx` | OK: 9 tests pasan. |
+| `npm run test -- InvoiceCart.test.tsx NewInvoiceView.test.tsx PaymentModal.test.tsx InvoiceConfirmation.test.tsx InvoiceSuccess.test.tsx` | OK: 5 archivos, 44 tests pasan. |
+| `docker compose exec backend php artisan test --filter=InvoiceDialysisPrescriptionTest` | OK: 5 tests pasan, 34 assertions; confirma defensa backend de permiso y auditoria. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, schema, migraciones, pagos, caja ni correlativos.
+- El backend sigue decidiendo totales fiscales; este corte solo mejora la claridad operativa del carrito antes de emitir.
