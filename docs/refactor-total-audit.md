@@ -2781,3 +2781,29 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, seeders, policies ni contratos API.
 - Este corte reduce asignaciones accidentales de acceso gerencial/exportacion sin cambiar la autorizacion autoritativa del servidor.
+## 114. Fase 14 - Reinicio fiscal tratado como permiso elevado
+
+Cambio aplicado:
+
+- `fiscal.sequences.reset` ahora se considera permiso elevado en `RoleCatalog`.
+- Un gestor de usuarios sin `users.assign_admin_role` ya no puede asignar un rol custom que contenga reinicio de correlativo fiscal.
+- La UI de usuarios y roles marca `fiscal.sequences.reset` como `Permiso critico` y exige confirmacion explicita antes de guardar.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter=custom_role_with_fiscal_sequence_reset_permission` | RED inicial: la API respondia 201; luego OK: 1 test, 4 assertions. |
+| `npm run test -- UserFormDialog RoleFormDialog --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial: no aparecia `Permiso critico` para `fiscal.sequences.reset`; luego OK: 19 tests pasan. |
+| `docker compose exec backend php artisan test --filter=UserManagementTest` | OK: 34 tests, 145 assertions. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M` | OK: sin errores. |
+| `docker compose exec backend vendor/bin/pint --test` | Primer intento marco formato en la prueba nueva; luego OK: 426 files. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron migraciones, rutas, requests ni la logica de numeracion fiscal.
+- Este corte reduce riesgo de escalacion operativa sobre correlativos fiscales sin cambiar el flujo autorizado para administradores.

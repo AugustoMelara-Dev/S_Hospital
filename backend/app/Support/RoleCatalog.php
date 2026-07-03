@@ -16,6 +16,7 @@ class RoleCatalog
         'audit.view',
         'backups.download',
         'cash.close_any',
+        'fiscal.sequences.reset',
         'invoices.operate_any',
         'invoices.reverse',
         'invoices.void',

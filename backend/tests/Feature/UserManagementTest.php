@@ -240,6 +240,34 @@ class UserManagementTest extends TestCase
         ]);
     }
 
+    public function test_user_manager_without_admin_assignment_permission_cannot_assign_custom_role_with_fiscal_sequence_reset_permission(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $manager = User::factory()->create();
+        $manager->givePermissionTo(['users.create', 'users.view']);
+        $role = Role::query()->create([
+            'name' => 'soporte_correlativos_fiscales',
+            'guard_name' => 'web',
+        ]);
+        $role->givePermissionTo('fiscal.sequences.reset');
+
+        $this->actingAs($manager)
+            ->postJson('/api/admin/users', [
+                'name' => 'Soporte Fiscal',
+                'email' => 'soporte-fiscal@hospital.local',
+                'username' => 'soporte-fiscal',
+                'password' => 'Temporary123!',
+                'role' => 'soporte_correlativos_fiscales',
+                'active' => true,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('role');
+
+        $this->assertDatabaseMissing('users', [
+            'username' => 'soporte-fiscal',
+        ]);
+    }
+
     public function test_user_editor_rejects_unknown_role_on_create(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
