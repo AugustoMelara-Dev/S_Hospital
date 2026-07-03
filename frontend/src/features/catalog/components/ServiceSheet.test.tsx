@@ -8,6 +8,7 @@ const noop = () => undefined;
 describe('ServiceSheet', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    Element.prototype.scrollIntoView = vi.fn();
   });
 
   afterEach(() => {
@@ -159,6 +160,7 @@ describe('ServiceSheet', () => {
 describe('ServiceSheet contract preservation', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    Element.prototype.scrollIntoView = vi.fn();
   });
 
   afterEach(() => {
@@ -293,6 +295,60 @@ describe('ServiceSheet contract preservation', () => {
           qr_code: 'QR-LAB-GLU',
           visible_in_billing: false,
           is_billable: false,
+        }),
+        undefined,
+      );
+    });
+  });
+
+  it('normalizes erythropoietin services to the fixed L 25.00 catalog price', async () => {
+    const saveService = vi.spyOn(apiClient, 'saveService').mockResolvedValue({
+      id: 13,
+      category_id: 1,
+      area_id: 1,
+      name: 'Eritropoyetina 4000 UI',
+      slug: 'eritropoyetina-4000-ui',
+      price: '25.00',
+      scan_code: null,
+      barcode: null,
+      qr_code: null,
+      taxable: true,
+      active: true,
+      special_rule_code: 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION',
+    });
+
+    render(
+      <ServiceSheet
+        open
+        onOpenChange={noop}
+        service={null}
+        categories={[{ id: 1, name: 'Farmacia' }]}
+        areas={[{ id: 1, name: 'Farmacia' }]}
+        onSuccess={noop}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText(/^nombre/i), {
+      target: { value: 'Eritropoyetina 4000 UI' },
+    });
+    fireEvent.change(screen.getByLabelText(/precio/i), {
+      target: { value: '125.00' },
+    });
+
+    const ruleSelect = screen.getByRole('combobox', { name: /regla especial/i });
+    fireEvent.keyDown(ruleSelect, { key: 'ArrowDown' });
+    fireEvent.click(await screen.findByRole('option', { name: /eritropoyetina con receta de di[aá]lisis/i }));
+
+    expect(screen.getByLabelText(/precio/i)).toHaveValue('25.00');
+
+    fireEvent.click(screen.getByRole('button', { name: /crear/i }));
+
+    await waitFor(() => {
+      expect(saveService).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'Eritropoyetina 4000 UI',
+          price: '25.00',
+          special_rule_code: 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION',
         }),
         undefined,
       );

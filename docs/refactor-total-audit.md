@@ -3180,3 +3180,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, rutas, migraciones, seeders, policies ni endpoints.
 - Este corte mejora busqueda operativa en historial sin relajar permisos, anulaciones ni auditoria de reimpresiones.
+
+## 131. Fase 8 - Eritropoyetina fija precio de catalogo en formulario
+
+Cambio aplicado:
+
+- Al seleccionar la regla `Eritropoyetina con receta de dialisis` en el formulario de servicio, el precio se normaliza a `25.00`.
+- El payload de creacion/edicion conserva `special_rule_code=ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION` y envia el precio fijo esperado por backend.
+- La validacion backend sigue siendo la fuente de verdad; este corte evita que el operador prepare una configuracion invalida antes de guardar.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- ServiceSheet --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial: al elegir eritropoyetina el precio seguia en `125.00`; luego OK: 13 tests pasan. |
+| `npm run test -- CatalogView ServiceCatalogTable ServiceSheet --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 38 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, rutas, migraciones, seeders, policies ni endpoints.
+- Este corte reduce errores de configuracion en catalogo sin duplicar calculos de facturacion ni relajar la regla server-side de L 25.00.

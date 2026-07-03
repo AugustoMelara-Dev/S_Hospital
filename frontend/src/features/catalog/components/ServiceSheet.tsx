@@ -77,6 +77,7 @@ const defaultValues: ServiceFormData = {
 
 const SPECIAL_RULE_NONE = 'none';
 const SPECIAL_RULE_ERYTHROPOIETIN = 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION';
+const ERYTHROPOIETIN_FIXED_PRICE = '25.00';
 
 export function ServiceSheet({
   open,
@@ -396,9 +397,15 @@ export function ServiceSheet({
             <Label htmlFor="special_rule_code">Regla especial</Label>
             <Select
               value={specialRuleCode ?? SPECIAL_RULE_NONE}
-              onValueChange={(val) =>
-                setValue('special_rule_code', val === SPECIAL_RULE_NONE ? null : val)
-              }
+              onValueChange={(val) => {
+                setValue('special_rule_code', val === SPECIAL_RULE_NONE ? null : val);
+                if (val === SPECIAL_RULE_ERYTHROPOIETIN) {
+                  setValue('price', ERYTHROPOIETIN_FIXED_PRICE, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  });
+                }
+              }}
             >
               <SelectTrigger id="special_rule_code">
                 <SelectValue placeholder="Sin regla" />
