@@ -3466,3 +3466,28 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, rutas, migraciones, seeders, policies, auditoria ni endpoints.
 - Este corte reduce ambiguedad en el flujo pagado sin permiso de recibos sin relajar RBAC ni impresion institucional.
+
+## 144. Fase 4/16 - Confirmacion de factura con Ctrl+Enter
+
+Cambio aplicado:
+
+- La confirmacion de factura permite usar `Ctrl+Enter` desde la accion primaria enfocada para emitir y abrir cobro.
+- Enter normal sigue sin disparar confirmacion manual, evitando dobles emisiones accidentales.
+- El atajo no se ejecuta cuando la confirmacion esta en estado `submitting`.
+- No se cambian endpoints, contratos API, calculos, caja, pagos ni recibos.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- InvoiceConfirmation --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial: `Ctrl+Enter` no confirmaba; luego OK: 3 tests pasan. |
+| `npm run test -- NewInvoiceView InvoiceConfirmation PaymentModal --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 5 archivos, 41 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK, sin advertencias tras mover el atajo al boton nativo. |
+| `npm run build` | OK. Vite reporto tiempos de plugin, sin fallar el build. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, rutas, migraciones, seeders, policies, auditoria ni endpoints.
+- Este corte mejora operacion por teclado en facturacion sin relajar protecciones contra doble emision.

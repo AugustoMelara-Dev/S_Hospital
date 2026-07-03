@@ -41,6 +41,30 @@ describe('InvoiceConfirmation', () => {
     expect(onConfirm).not.toHaveBeenCalled();
   });
 
+  it('confirms the invoice with Ctrl+Enter from the focused primary action', () => {
+    const onConfirm = vi.fn();
+
+    render(
+      <InvoiceConfirmation
+        open
+        onOpenChange={vi.fn()}
+        patientName="Maria Lopez"
+        items={[{ service, quantity: '1.00', dialysisPrescription: false }]}
+        preview={{ subtotal: '15.00', tax: '2.25', total: '17.25' }}
+        cashSessionId={7}
+        onConfirm={onConfirm}
+      />,
+    );
+
+    fireEvent.keyDown(screen.getByRole('button', { name: /emitir y abrir cobro/i }), {
+      key: 'Enter',
+      code: 'Enter',
+      ctrlKey: true,
+    });
+
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
+
   it('keeps long patient and service names readable in narrow dialogs', () => {
     const longPatientName = 'Paciente con nombre extremadamente largo para validar que la confirmacion no se desborde en caja';
     const longService = {

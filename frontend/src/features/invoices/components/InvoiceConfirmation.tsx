@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { type KeyboardEvent, useEffect, useRef } from 'react';
 import { AlertTriangle, Banknote, ReceiptText } from 'lucide-react';
 import { Button } from '../../../components/ui/button';
 import { Dialog } from '../../../components/ui/dialog';
@@ -43,6 +43,15 @@ export function InvoiceConfirmation({
       window.setTimeout(() => confirmButtonRef.current?.focus(), 0);
     }
   }, [open]);
+
+  function handleShortcut(e: KeyboardEvent<HTMLButtonElement>) {
+    if (!e.ctrlKey || e.key !== 'Enter' || submitting) {
+      return;
+    }
+
+    e.preventDefault();
+    onConfirm();
+  }
 
   return (
     <Dialog
@@ -121,6 +130,7 @@ export function InvoiceConfirmation({
             ref={confirmButtonRef}
             type="button"
             className="w-full sm:flex-1"
+            onKeyDown={handleShortcut}
             onClick={onConfirm}
             disabled={submitting}
           >
