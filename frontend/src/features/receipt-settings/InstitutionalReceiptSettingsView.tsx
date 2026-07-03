@@ -67,8 +67,8 @@ const PROFILE_FORM_DEFAULTS = {
 } as const;
 
 const institutionSchema = z.object({
-  hospital_name: z.string().min(1, 'Requerido'),
-  rtn: z.string().max(64).optional(),
+  hospital_name: z.string().trim().min(1, 'Requerido'),
+  rtn: z.string().trim().max(64).optional(),
   address: z.string().max(255).optional(),
   slogan: z.string().max(255).optional(),
   government_line: z.string().max(120).optional(),

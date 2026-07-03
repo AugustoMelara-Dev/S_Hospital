@@ -143,6 +143,31 @@ describe('InstitutionalReceiptSettingsView', () => {
     expect(screen.getByLabelText(/direcci/i)).toHaveValue('Tocoa, Colon');
   });
 
+  it('trims receipt institution identity fields before saving', async () => {
+    const { apiClient } = await import('@/lib/api');
+    renderView();
+
+    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
+    await activateTab(/instituci/i);
+
+    fireEvent.change(screen.getByLabelText(/nombre del hospital/i), {
+      target: { value: '  Hospital Regional del Norte  ' },
+    });
+    fireEvent.change(screen.getByLabelText(/rtn si aplica/i), {
+      target: { value: '  08011999123456  ' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /guardar instituci/i }));
+
+    await waitFor(() => {
+      expect(apiClient.updateReceiptInstitution).toHaveBeenCalledWith(
+        expect.objectContaining({
+          hospital_name: 'Hospital Regional del Norte',
+          rtn: '08011999123456',
+        }),
+      );
+    });
+  });
+
   it('never exposes the manual paper fields in the normal flow', async () => {
     renderView();
     expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();

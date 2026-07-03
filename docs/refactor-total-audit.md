@@ -3803,3 +3803,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron caja, facturacion, catalogo, historial, reportes, respaldos ni usuarios.
 - Este corte reduce errores humanos en configuracion institucional sin relajar la exigencia de motivo para cambios fiscales.
+
+## 158. Fase 6/11 - Institucion de recibos recorta identidad
+
+Cambio aplicado:
+
+- `InstitutionalReceiptSettingsView` ahora recorta espacios iniciales y finales del nombre del hospital y RTN al guardar la institucion del recibo.
+- Se agrego una regresion para el formulario propio de recibos institucionales, evitando que datos pegados con espacios pasen al API y luego al recibo PDF/papel.
+- No se cambian backend, endpoints, migraciones, correlativos de recibos, perfiles de impresion, permisos ni auditoria.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- InstitutionalReceiptSettingsView.test.tsx -t "trims receipt institution identity fields" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial correcto: `updateReceiptInstitution` recibia `hospital_name` y `rtn` con espacios; luego OK: 1 test pasa. |
+| `npm run test -- InstitutionalReceiptSettingsView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 14 tests pasan. |
+| `npm run lint` | OK. |
+| `npm run typecheck` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron caja, facturacion, catalogo, historial, reportes, respaldos ni usuarios.
+- Este corte mejora la calidad de los datos visibles en recibos institucionales sin exponer opciones tecnicas ni modificar la generacion fiscal.
