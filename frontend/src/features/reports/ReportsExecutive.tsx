@@ -10,6 +10,7 @@ import {
 import { useExecutiveReport } from '@/hooks/useExecutiveReport';
 import { downloadBlob, openBlobInNewTab } from '@/lib/download';
 import { ExecutiveSummary } from './components/ExecutiveSummary';
+import { ExecutiveAlerts } from './components/ExecutiveAlerts';
 import { TrendChart } from './components/TrendChart';
 import { PaymentMethodPanel } from './components/PaymentMethodPanel';
 import { ServiceRanking } from './components/ServiceRanking';
@@ -187,6 +188,7 @@ export function ReportsExecutive({
       {report ? (
         <div className="flex flex-col gap-5">
           <ExecutiveSummary report={report} />
+          <ExecutiveAlerts report={report} />
           <PaymentMethodPanel report={report} />
           <TrendChart report={report} />
           <ServiceRanking report={report} />

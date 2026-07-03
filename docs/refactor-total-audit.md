@@ -3042,3 +3042,28 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, rutas, migraciones, seeders, policies ni endpoints.
 - Este corte mejora lectura diaria de reportes sin cambiar calculos ni contratos API.
+
+## 125. Fase 10 - Alertas operativas en reporte ejecutivo
+
+Cambio aplicado:
+
+- El reporte ejecutivo muestra alertas compactas para pendientes de 31 o mas dias, diferencias de caja y eventos criticos de auditoria.
+- Las alertas usan lenguaje operativo y montos visibles para priorizar revision antes de navegar tablas o graficos.
+- El bloque se oculta cuando no hay alertas, evitando ruido visual en periodos sin riesgo.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- ExecutiveAlerts --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial: faltaba componente/comportamiento; luego OK: 1 test pasa. |
+| `npm run test -- ReportsExecutive --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial: el reporte no montaba `ExecutiveAlerts`; luego OK: 2 tests pasan. |
+| `npm run test -- ExecutiveAlerts ReportsExecutive --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 3 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, rutas, migraciones, seeders, policies ni endpoints.
+- Este corte mejora utilidad diaria de reportes con datos existentes, sin cambiar calculos ni contratos API.

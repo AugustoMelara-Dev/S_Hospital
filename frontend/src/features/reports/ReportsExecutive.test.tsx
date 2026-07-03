@@ -30,6 +30,10 @@ vi.mock('./components/ExecutiveSummary', () => ({
   ExecutiveSummary: () => <div data-testid="executive-summary" />,
 }));
 
+vi.mock('./components/ExecutiveAlerts', () => ({
+  ExecutiveAlerts: () => <div data-testid="executive-alerts" />,
+}));
+
 vi.mock('./components/PaymentMethodPanel', () => ({
   PaymentMethodPanel: () => <div data-testid="payment-method-panel" />,
 }));
@@ -56,6 +60,19 @@ vi.mock('@/lib/api', async () => {
 });
 
 describe('ReportsExecutive', () => {
+  it('renders operational alerts with the executive report content', () => {
+    render(
+      <ReportsExecutive
+        canExport
+        canViewManagerial
+        onStatus={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId('executive-summary')).toBeInTheDocument();
+    expect(screen.getByTestId('executive-alerts')).toBeInTheDocument();
+  });
+
   it('shows export progress while an executive PDF is being prepared', async () => {
     downloadExecutivePdf.mockReturnValue(new Promise(() => undefined));
 
