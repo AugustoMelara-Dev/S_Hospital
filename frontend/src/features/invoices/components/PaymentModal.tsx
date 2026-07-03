@@ -92,7 +92,7 @@ export function PaymentModal({
 
   function handleAmountChange(value: string) {
     setError(null);
-    const normalizedValue = value.replace(',', '.');
+    const normalizedValue = value.trim().replace(',', '.');
     if (normalizedValue === '') {
       setCapNotice(null);
       onPaymentAmountChange('');

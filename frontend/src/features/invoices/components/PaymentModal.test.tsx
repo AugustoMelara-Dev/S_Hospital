@@ -178,6 +178,19 @@ describe('PaymentModal', () => {
     });
   });
 
+  it('accepts pasted amount values with surrounding spaces', () => {
+    const onPaymentAmountChange = vi.fn();
+
+    renderPaymentModal({
+      paymentAmount: '',
+      onPaymentAmountChange,
+    });
+
+    fireEvent.change(screen.getByLabelText(/monto recibido/i), { target: { value: ' 17.25 ' } });
+
+    expect(onPaymentAmountChange).toHaveBeenCalledWith('17.25');
+  });
+
   it('keeps visible progress and prevents closing while a payment is being registered', () => {
     const onOpenChange = vi.fn();
 

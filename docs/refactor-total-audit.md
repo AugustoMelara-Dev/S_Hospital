@@ -3755,3 +3755,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, migraciones, facturacion, recibos, catalogo, historial, usuarios ni respaldos.
 - Este corte mejora la apertura de caja para operacion real de mostrador y mantiene el backend como autoridad de auditoria y reglas de caja.
+
+## 156. Fase 4 - Cobro acepta monto pegado
+
+Cambio aplicado:
+
+- `PaymentModal` ahora recorta espacios al normalizar el monto recibido antes de validar formato y aplicar reglas de efectivo/no efectivo.
+- El flujo conserva la normalizacion de coma decimal y sigue enviando el monto aplicado calculado por el modal al contenedor de factura.
+- No se cambian backend, endpoints, pagos server-side, caja, recibos, migraciones, permisos ni idempotencia.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- PaymentModal.test.tsx -t "accepts pasted amount" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial correcto: `onPaymentAmountChange` no recibia `17.25` para ` 17.25 `; luego OK: 1 test pasa. |
+| `npm run test -- PaymentModal.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 21 tests pasan. |
+| `npm run lint` | OK. |
+| `npm run typecheck` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, migraciones, reportes, catalogo, historial, respaldos ni usuarios.
+- Este corte reduce friccion en el cobro diario sin duplicar reglas fiscales ni relajar las validaciones del backend.
