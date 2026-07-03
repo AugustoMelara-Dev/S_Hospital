@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Checkbox } from '@/components/ui/checkbox';
 import { FormSection } from '@/components/ui/form-section';
 import { Label } from '@/components/ui/label';
-import { type FiscalSettings, apiClient, userSafeErrorMessage } from '@/lib/api';
+import { type OperationalSettings, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { safeClientMessage } from '@/lib/support/clientIssueLog';
 
 type OperationalRulesViewProps = {
@@ -15,7 +15,7 @@ type OperationalRulesViewProps = {
 };
 
 export function OperationalRulesView({ canEdit, onStatus }: OperationalRulesViewProps) {
-  const [settings, setSettings] = useState<FiscalSettings | null>(null);
+  const [settings, setSettings] = useState<OperationalSettings | null>(null);
   const [scannerEnabled, setScannerEnabled] = useState(false);
   const [partialPaymentsEnabled, setPartialPaymentsEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -29,7 +29,7 @@ export function OperationalRulesView({ canEdit, onStatus }: OperationalRulesView
   async function load() {
     setLoading(true);
     try {
-      const data = await apiClient.getFiscalSettings();
+      const data = await apiClient.getOperationalSettings();
       setSettings(data);
       setScannerEnabled(data?.scanner_enabled === true);
       setPartialPaymentsEnabled(data?.partial_payments_enabled === true);
@@ -47,18 +47,11 @@ export function OperationalRulesView({ canEdit, onStatus }: OperationalRulesView
     setError('');
     onStatus('Guardando reglas operativas...');
     try {
-      const updated = await apiClient.updateFiscalSettings({
-        hospital_name: settings.hospital_name ?? '',
-        rtn: settings.rtn ?? '',
-        default_tax_rate: settings.default_tax_rate ?? '15.00',
-        primary_color: settings.primary_color ?? 'indigo',
-        address: settings.address ?? '',
-        slogan: settings.slogan ?? '',
+      const updated = await apiClient.updateOperationalSettings({
         scanner_enabled: scannerEnabled,
         partial_payments_enabled: partialPaymentsEnabled,
-        receipt_template_mode: 'institutional',
       });
-      setSettings(updated);
+      setSettings((current) => (current ? { ...current, ...updated } : current));
       onStatus('Reglas operativas guardadas.');
     } catch (err) {
       const message = safeClientMessage(userSafeErrorMessage(err, 'No se pudo guardar reglas operativas.'));

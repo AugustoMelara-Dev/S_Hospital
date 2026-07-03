@@ -358,6 +358,12 @@ export const apiClient = {
     return fiscal.updateFiscalSettings(payload);
   },
 
+  async updateOperationalSettings(
+    payload: Pick<OperationalSettings, 'scanner_enabled' | 'partial_payments_enabled'>,
+  ): Promise<Pick<OperationalSettings, 'scanner_enabled' | 'partial_payments_enabled'>> {
+    return fiscal.updateOperationalSettings(payload);
+  },
+
   async getFiscalSequences(): Promise<FiscalSequence[]> {
     return fiscal.getFiscalSequences();
   },

@@ -25,6 +25,19 @@ export const fiscal = {
     return response.data;
   },
 
+  async updateOperationalSettings(
+    payload: Pick<OperationalSettings, 'scanner_enabled' | 'partial_payments_enabled'>,
+  ): Promise<Pick<OperationalSettings, 'scanner_enabled' | 'partial_payments_enabled'>> {
+    const response = await apiClient.request<{ data: Pick<OperationalSettings, 'scanner_enabled' | 'partial_payments_enabled'> }>(
+      '/api/settings/operational',
+      {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      },
+    );
+    return response.data;
+  },
+
   async getFiscalSequences(): Promise<FiscalSequence[]> {
     const response = await apiClient.request<{ data: FiscalSequence[] }>('/api/fiscal-sequences');
     return response?.data ?? [];

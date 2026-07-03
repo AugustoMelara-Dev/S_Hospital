@@ -284,6 +284,54 @@ class FiscalSettingsTest extends TestCase
             ->assertJsonMissingPath('data.address');
     }
 
+    public function test_admin_can_update_operational_settings_without_full_fiscal_payload(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        FiscalSetting::query()->create([
+            ...$this->validPayload(),
+            'scanner_enabled' => true,
+            'partial_payments_enabled' => false,
+        ]);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin)
+            ->putJson('/api/settings/operational', [
+                'scanner_enabled' => false,
+                'partial_payments_enabled' => true,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.scanner_enabled', false)
+            ->assertJsonPath('data.partial_payments_enabled', true)
+            ->assertJsonMissingPath('data.rtn')
+            ->assertJsonMissingPath('data.hospital_name')
+            ->assertJsonMissingPath('data.receipt_paper_size');
+
+        $this->assertDatabaseHas('fiscal_settings', [
+            'scanner_enabled' => false,
+            'partial_payments_enabled' => true,
+            'hospital_name' => 'Hospital San Miguel',
+            'rtn' => '08011999123456',
+        ]);
+
+        $audit = AuditLog::query()
+            ->where('action', 'operational_settings.updated')
+            ->where('entity_type', FiscalSetting::class)
+            ->firstOrFail();
+
+        $this->assertSame($admin->id, $audit->user_id);
+        $this->assertSame([
+            'scanner_enabled' => true,
+            'partial_payments_enabled' => false,
+        ], $audit->old_values);
+        $this->assertSame([
+            'scanner_enabled' => false,
+            'partial_payments_enabled' => true,
+        ], $audit->new_values);
+    }
+
     public function test_supervisor_can_view_but_not_update_fiscal_settings(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);

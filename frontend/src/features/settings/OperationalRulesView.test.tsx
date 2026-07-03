@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { OperationalRulesView } from './OperationalRulesView';
-import { apiClient, type FiscalSettings } from '@/lib/api';
+import { apiClient, type FiscalSettings, type OperationalSettings } from '@/lib/api';
 
 const baseSettings: FiscalSettings = {
   id: 1,
@@ -21,15 +21,35 @@ const baseSettings: FiscalSettings = {
   receipt_footer_text: null,
 };
 
+const operationalSettings: OperationalSettings = {
+  default_tax_rate: '15.00',
+  scanner_enabled: false,
+  partial_payments_enabled: false,
+  receipt_paper_size: 'half_letter',
+};
+
 describe('OperationalRulesView', () => {
   beforeEach(() => {
     vi.spyOn(apiClient, 'getFiscalSettings').mockResolvedValue(baseSettings);
+    vi.spyOn(apiClient, 'getOperationalSettings').mockResolvedValue(operationalSettings);
     vi.spyOn(apiClient, 'updateFiscalSettings').mockResolvedValue(baseSettings);
+    vi.spyOn(apiClient, 'updateOperationalSettings').mockResolvedValue({
+      scanner_enabled: true,
+      partial_payments_enabled: false,
+    });
   });
 
   afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
+  });
+
+  it('loads operational rules without requesting full fiscal settings', async () => {
+    render(<OperationalRulesView canEdit onStatus={vi.fn()} />);
+
+    expect(await screen.findByLabelText(/scanner/i)).toBeInTheDocument();
+    expect(apiClient.getOperationalSettings).toHaveBeenCalled();
+    expect(apiClient.getFiscalSettings).not.toHaveBeenCalled();
   });
 
   it('renders scanner and partial payments checkboxes', async () => {
@@ -40,7 +60,7 @@ describe('OperationalRulesView', () => {
   });
 
   it('submits the toggled flags', async () => {
-    const updateFiscalSettings = vi.mocked(apiClient.updateFiscalSettings);
+    const updateOperationalSettings = vi.mocked(apiClient.updateOperationalSettings);
 
     render(<OperationalRulesView canEdit onStatus={vi.fn()} />);
 
@@ -49,11 +69,11 @@ describe('OperationalRulesView', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /guardar reglas operativas/i }));
 
-    expect(updateFiscalSettings).toHaveBeenCalledWith(
-      expect.objectContaining({
-        scanner_enabled: true,
-      }),
-    );
+    expect(updateOperationalSettings).toHaveBeenCalledWith({
+      scanner_enabled: true,
+      partial_payments_enabled: false,
+    });
+    expect(apiClient.updateFiscalSettings).not.toHaveBeenCalled();
   });
 
   it('disables inputs without edit permission', async () => {

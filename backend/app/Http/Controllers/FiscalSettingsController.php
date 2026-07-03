@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Fiscal\ShowFiscalSettingsRequest;
 use App\Http\Requests\Fiscal\UpdateFiscalSettingsRequest;
+use App\Http\Requests\Fiscal\UpdateOperationalSettingsRequest;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSetting;
 use App\Support\AuditLogger;
@@ -46,6 +47,39 @@ class FiscalSettingsController extends Controller
                 'partial_payments_enabled' => $setting->partial_payments_enabled,
                 'receipt_paper_size' => $setting->receipt_paper_size,
             ] : null,
+        ]);
+    }
+
+    public function updateOperational(UpdateOperationalSettingsRequest $request, AuditLogger $auditLogger): JsonResponse
+    {
+        $fieldsToTrack = ['scanner_enabled', 'partial_payments_enabled'];
+
+        $setting = DB::transaction(function () use ($request, $auditLogger, $fieldsToTrack): FiscalSetting {
+            $setting = FiscalSetting::query()->firstOrFail();
+            $oldValues = $setting->only($fieldsToTrack);
+
+            $setting->fill($request->validated());
+            $setting->updated_by = $request->user()->id;
+            $setting->save();
+            $setting->refresh();
+
+            $auditLogger->log(
+                action: 'operational_settings.updated',
+                entity: $setting,
+                user: $request->user(),
+                request: $request,
+                oldValues: $oldValues,
+                newValues: $setting->only($fieldsToTrack),
+            );
+
+            return $setting;
+        });
+
+        return response()->json([
+            'data' => [
+                'scanner_enabled' => $setting->scanner_enabled,
+                'partial_payments_enabled' => $setting->partial_payments_enabled,
+            ],
         ]);
     }
 

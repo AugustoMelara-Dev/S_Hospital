@@ -85,6 +85,8 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle.user:240,1'])->gr
 
     Route::middleware('password.changed')->group(function () {
         Route::get('/settings/operational', [FiscalSettingsController::class, 'operational']);
+        Route::put('/settings/operational', [FiscalSettingsController::class, 'updateOperational'])
+            ->middleware('throttle.user:30,1');
 
         Route::get('/settings/fiscal', [FiscalSettingsController::class, 'show']);
         Route::put('/settings/fiscal', [FiscalSettingsController::class, 'update'])

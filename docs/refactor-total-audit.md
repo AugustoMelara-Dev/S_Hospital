@@ -2193,6 +2193,7 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, migraciones, pagos, recibos PDF, anulaciones ni permisos.
 - Este corte reduce acciones confusas en historial: una factura sin recibo se puede anular/cobrar desde el flujo correspondiente, pero no se presenta como reimprimible.
+
 ## 90. Fase 13 - Roles elevados ocultos sin autorizacion
 
 Cambio aplicado:
@@ -2216,3 +2217,32 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, migraciones, policies, permisos ni seeders.
 - Este corte alinea la interfaz con la proteccion existente del servidor: un creador basico puede usar roles operativos no elevados, pero no ve opciones que el API rechazaria.
+
+## 91. Fase 11 - Reglas operativas separadas del payload fiscal
+
+Cambio aplicado:
+
+- Se agrego `PUT /api/settings/operational` para guardar solo `scanner_enabled` y `partial_payments_enabled`.
+- `OperationalRulesView` ahora lee y guarda reglas operativas con el endpoint operativo, sin enviar nombre del hospital, RTN, marca ni papel de recibo.
+- El backend audita el cambio como `operational_settings.updated` con valores anteriores/nuevos limitados a reglas operativas.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter=test_admin_can_update_operational_settings_without_full_fiscal_payload` | RED inicial: 405 porque no existia `PUT /api/settings/operational`; luego OK. |
+| `npm run test -- OperationalRulesView.test.tsx -t "loads operational rules"` | RED inicial: la pantalla seguia llamando `getFiscalSettings`; luego OK. |
+| `docker compose exec backend php artisan test tests/Feature/FiscalSettingsTest.php` | OK: 15 tests, 100 assertions. |
+| `npm run test -- OperationalRulesView.test.tsx` | OK: 4 tests pasan. |
+| `npm run test -- OperationalRulesView.test.tsx FiscalSettingsView.test.tsx HospitalSettingsView.test.tsx FiscalNumerationView.test.tsx` | OK: 4 archivos, 13 tests pasan. |
+| `docker compose exec backend vendor/bin/pint --test` | OK: 426 files tras normalizar formato con Pint. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M` | OK sin errores. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron migraciones, CAI, secuencias fiscales, recibos ni caja.
+- Este corte reduce mezcla entre fiscal e instrucciones operativas del POS: guardar scanner/abonos ya no arrastra campos institucionales ni de impresion.
