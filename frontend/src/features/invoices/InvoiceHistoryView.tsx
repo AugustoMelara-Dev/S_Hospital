@@ -38,6 +38,11 @@ type InvoiceHistoryViewProps = {
 
 const today = localDateString();
 
+function invoicePatientNameLabel(invoice: Invoice | null) {
+  const patientName = invoice?.patient_name?.trim();
+  return patientName ? patientName : 'Paciente sin nombre';
+}
+
 export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
@@ -520,7 +525,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       >
         <div className="flex flex-col gap-4">
           <p className="text-sm">
-            <strong>Paciente:</strong> {selectedInvoice?.patient_name}
+            <strong>Paciente:</strong> {invoicePatientNameLabel(selectedInvoice)}
           </p>
           <div className="space-y-2">
             <Label htmlFor="voidReason">Motivo de anulación *</Label>
@@ -568,7 +573,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       >
         <div className="flex flex-col gap-4">
           <p className="text-sm">
-            <strong>Paciente:</strong> {selectedInvoice?.patient_name}
+            <strong>Paciente:</strong> {invoicePatientNameLabel(selectedInvoice)}
           </p>
           <div className="space-y-2">
             <Label htmlFor="reverseReason">Motivo de reversa *</Label>

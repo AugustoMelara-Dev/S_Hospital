@@ -574,6 +574,29 @@ describe('InvoiceHistoryView', () => {
     expect(screen.getByText(/Anular factura 000-001-01-00000031/i)).toBeInTheDocument();
   });
 
+  it('shows a human patient fallback in the void confirmation dialog', async () => {
+    const invoice = invoiceFixture({
+      id: 37,
+      invoice_number: '000-001-01-00000037',
+      patient_name: '   ',
+    });
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [invoice],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+    vi.spyOn(apiClient, 'getInvoice').mockResolvedValue(invoice);
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText(invoice.invoice_number)).toBeInTheDocument());
+    await openInvoiceMenu(invoice.invoice_number);
+    fireEvent.click(await screen.findByRole('menuitem', { name: /Anular factura/i }));
+
+    await waitFor(() => expect(screen.getByText(/Anular factura 000-001-01-00000037/i)).toBeInTheDocument());
+    expect(screen.getByText(/Paciente sin nombre/i)).toBeInTheDocument();
+  });
+
   it('voids invoices with a stable idempotency key from history', async () => {
     vi.spyOn(apiBase, 'createClientIdempotencyKey').mockReturnValue('history-void-attempt-1');
     const invoice = invoiceFixture({

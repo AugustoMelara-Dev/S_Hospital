@@ -3491,3 +3491,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, rutas, migraciones, seeders, policies, auditoria ni endpoints.
 - Este corte mejora operacion por teclado en facturacion sin relajar protecciones contra doble emision.
+
+## 145. Fase 9/16 - Dialogos de historial muestran paciente humano
+
+Cambio aplicado:
+
+- Los dialogos criticos de anular y reversar factura en historial ya no muestran el paciente vacio cuando `patient_name` llega en blanco.
+- Se agrego un fallback humano `Paciente sin nombre` solo para el contexto visible del dialogo.
+- No se cambian endpoints, permisos, anulacion, reversa, auditoria, idempotencia ni contratos API.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- InvoiceHistoryView.test.tsx -t "shows a human patient fallback" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial: no existia `Paciente sin nombre`; luego hubo un fallo intermitente del shim de Node (`Could not determine Node.js install directory`) antes de Vitest; reintento OK: 1 test pasa. |
+| `npm run test -- InvoiceHistoryView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 30 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, rutas, migraciones, seeders, policies, auditoria ni endpoints.
+- Este corte reduce ambiguedad en acciones peligrosas de historial sin cambiar las reglas fiscales ni de caja.
