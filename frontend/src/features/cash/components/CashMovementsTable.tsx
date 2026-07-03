@@ -149,9 +149,15 @@ function methodLabel(method: string | null): string {
 }
 
 function formatMovementTime(value: string): string {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return 'Hora no disponible';
+  }
+
   return new Intl.DateTimeFormat('es-HN', {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
-  }).format(new Date(value));
+  }).format(date);
 }

@@ -44,6 +44,19 @@ describe('CashMovementsTable', () => {
     expect(screen.getByText(/entradas, salidas y ajustes aparecer[aá]n/i)).toBeInTheDocument();
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
   });
+
+  it('shows a human fallback when a movement time is unavailable', () => {
+    render(
+      <CashMovementsTable
+        movements={[
+          movement({ id: 20, type: 'payment', method: 'cash', amount: '10.00', occurred_at: 'fecha-danada' }),
+        ]}
+      />,
+    );
+
+    expect(screen.getByText(/hora no disponible/i)).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/fecha-danada|invalid date/i);
+  });
 });
 
 function rowFor(label: string): HTMLElement {

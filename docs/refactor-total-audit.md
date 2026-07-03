@@ -3948,3 +3948,28 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron facturacion, caja, catalogo, historial, usuarios, recibos ni reportes.
 - Este corte reduce texto tecnico/ambiguo en el flujo normal de respaldos y mantiene la restauracion fuera de la app.
+
+## 164. Fase 7 - Movimientos de caja toleran hora no disponible
+
+Cambio aplicado:
+
+- `CashMovementsTable` ahora valida la fecha de cada movimiento antes de formatearla.
+- Si el reporte de caja trae una hora corrupta o no parseable, la tabla muestra `Hora no disponible` en vez de romper la pantalla con `RangeError: Invalid time value`.
+- Se agrego una regresion para un movimiento con `occurred_at='fecha-danada'`, confirmando que no se expone el valor tecnico ni `Invalid Date`.
+- No se cambian backend, endpoints, migraciones, permisos, auditoria, idempotencia, cobros ni cierre real de caja.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- CashMovementsTable.test.tsx -t "shows a human fallback when a movement time is unavailable" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial correcto: `RangeError: Invalid time value`; luego OK: 1 test pasa. |
+| `npm run test -- CashMovementsTable.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 4 tests pasan. |
+| `npm run lint` | OK. |
+| `npm run typecheck` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron facturacion, catalogo, historial, usuarios, recibos, respaldos ni reportes.
+- Este corte mejora la robustez visual del modulo de caja y evita mensajes/errores tecnicos ante datos historicos o reportes inconsistentes.
