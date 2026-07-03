@@ -31,7 +31,7 @@ export function useUpdateFiscalSettings() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (payload: FiscalSettings) => apiClient.updateFiscalSettings(payload),
+    mutationFn: (payload: Partial<FiscalSettings>) => apiClient.updateFiscalSettings(payload),
     onSuccess: () => {
       return invalidateSettingsQueries(queryClient);
     },

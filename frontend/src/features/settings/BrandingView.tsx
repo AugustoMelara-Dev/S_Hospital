@@ -53,13 +53,7 @@ export function BrandingView({ canEdit, onStatus }: BrandingViewProps) {
     onStatus('Guardando color de marca...');
     try {
       const updated = await apiClient.updateFiscalSettings({
-        hospital_name: settings.hospital_name ?? '',
-        rtn: settings.rtn ?? '',
-        default_tax_rate: settings.default_tax_rate ?? '15.00',
         primary_color: newColor,
-        address: settings.address ?? '',
-        slogan: settings.slogan ?? '',
-        receipt_template_mode: 'institutional',
       });
       setSettings(updated);
       onStatus(`Color de marca cambiado a ${COLOR_THEMES[newColor].name}.`);

@@ -354,7 +354,7 @@ export const apiClient = {
     return fiscal.getPublicBranding();
   },
 
-  async updateFiscalSettings(payload: FiscalSettings): Promise<FiscalSettings> {
+  async updateFiscalSettings(payload: Partial<FiscalSettings>): Promise<FiscalSettings> {
     return fiscal.updateFiscalSettings(payload);
   },
 

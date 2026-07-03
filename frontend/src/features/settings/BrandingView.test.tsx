@@ -36,7 +36,7 @@ describe('BrandingView', () => {
     localStorage.clear();
   });
 
-  it('updates brand color without sending operational settings', async () => {
+  it('updates brand color without sending fiscal or operational settings', async () => {
     const updateFiscalSettings = vi.mocked(apiClient.updateFiscalSettings);
 
     render(<BrandingView canEdit onStatus={vi.fn()} />);
@@ -49,6 +49,8 @@ describe('BrandingView', () => {
 
     const payload = updateFiscalSettings.mock.calls.at(-1)?.[0] as Record<string, unknown>;
     expect(payload.primary_color).toBe('blue');
+    expect(payload.rtn).toBeUndefined();
+    expect(payload.default_tax_rate).toBeUndefined();
     expect(payload.scanner_enabled).toBeUndefined();
     expect(payload.partial_payments_enabled).toBeUndefined();
   });

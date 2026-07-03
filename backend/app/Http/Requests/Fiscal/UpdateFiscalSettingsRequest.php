@@ -20,16 +20,18 @@ class UpdateFiscalSettingsRequest extends FormRequest
      */
     public function rules(): array
     {
+        $presenceRule = FiscalSetting::query()->exists() ? 'sometimes' : 'required';
+
         return [
-            'hospital_name' => ['required', 'string', 'max:255'],
-            'rtn' => ['required', 'string', 'max:32'],
-            'default_tax_rate' => ['required', 'numeric', 'min:0', 'max:100', 'decimal:0,2'],
+            'hospital_name' => [$presenceRule, 'string', 'max:255'],
+            'rtn' => [$presenceRule, 'string', 'max:32'],
+            'default_tax_rate' => [$presenceRule, 'numeric', 'min:0', 'max:100', 'decimal:0,2'],
             'receipt_width' => [
                 Rule::prohibitedIf(fn (): bool => $this->input('receipt_template_mode') !== 'institutional'),
                 'string',
                 'in:80mm,58mm',
             ],
-            'primary_color' => ['required', 'string', 'in:teal,blue,indigo,green,rose'],
+            'primary_color' => [$presenceRule, 'string', 'in:teal,blue,indigo,green,rose'],
             'address' => ['nullable', 'string', 'max:255'],
             'slogan' => ['nullable', 'string', 'max:255'],
             'scanner_enabled' => ['sometimes', 'boolean'],

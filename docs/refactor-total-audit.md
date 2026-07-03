@@ -2349,3 +2349,32 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron migraciones, backend, caja, pagos, recibos ni permisos.
 - Este corte reduce otra fuga entre configuracion visual/fiscal y reglas operativas, manteniendo scanner y abonos parciales como responsabilidad del endpoint operativo.
+
+## 96. Fase 11 - Marca usa payload parcial sin RTN/ISV
+
+Cambio aplicado:
+
+- `PUT /api/settings/fiscal` acepta actualizaciones parciales cuando ya existe configuracion fiscal, manteniendo payload completo obligatorio para la creacion inicial.
+- `BrandingView` guarda el color institucional enviando solo `primary_color`, sin reenviar RTN, tasa ISV, datos hospitalarios ni reglas operativas.
+- Los tipos frontend de `updateFiscalSettings` aceptan `Partial<FiscalSettings>` para reflejar el contrato real de actualizacion.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter=test_admin_can_update_brand_color_without_full_fiscal_payload` | RED inicial: 422 por `hospital_name`, `rtn` y `default_tax_rate` requeridos; luego OK: 1 test, 9 assertions. |
+| `npm run test -- BrandingView.test.tsx` | RED inicial: el payload aun enviaba `rtn`; luego OK: 1 test pasa. |
+| `docker compose exec backend php artisan test tests/Feature/FiscalSettingsTest.php` | OK: 20 tests, 124 assertions. |
+| `npm run test -- FiscalSettingsView.test.tsx BrandingView.test.tsx OperationalRulesView.test.tsx HospitalSettingsView.test.tsx` | OK: 4 archivos, 12 tests pasan. |
+| `docker compose exec backend php artisan test` | OK: 770 tests pasan, 13 skipped, 4961 assertions. |
+| `docker compose exec backend vendor/bin/pint --test` | OK: 426 files tras formatear los 2 archivos PHP tocados. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M` | OK sin errores. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron migraciones, secuencias fiscales, caja, pagos, recibos ni permisos.
+- Este corte evita que una edicion visual dependa de datos fiscales sensibles y conserva la proteccion de creacion inicial completa.

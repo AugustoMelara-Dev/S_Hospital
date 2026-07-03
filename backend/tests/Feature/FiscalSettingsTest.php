@@ -290,6 +290,42 @@ class FiscalSettingsTest extends TestCase
         ]);
     }
 
+    public function test_admin_can_update_brand_color_without_full_fiscal_payload(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        FiscalSetting::query()->create($this->validPayload());
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin)
+            ->putJson('/api/settings/fiscal', [
+                'primary_color' => 'blue',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.primary_color', 'blue')
+            ->assertJsonPath('data.rtn', '08011999123456')
+            ->assertJsonPath('data.default_tax_rate', '15.00');
+
+        $this->assertDatabaseHas('fiscal_settings', [
+            'hospital_name' => 'Hospital San Miguel',
+            'rtn' => '08011999123456',
+            'default_tax_rate' => '15.00',
+            'primary_color' => 'blue',
+        ]);
+
+        $audit = AuditLog::query()
+            ->where('action', 'fiscal_settings.updated')
+            ->where('entity_type', FiscalSetting::class)
+            ->firstOrFail();
+
+        $this->assertSame($admin->id, $audit->user_id);
+        $this->assertNull($audit->reason);
+        $this->assertSame('indigo', $audit->old_values['primary_color']);
+        $this->assertSame('blue', $audit->new_values['primary_color']);
+    }
+
     public function test_legacy_receipt_width_field_is_not_updateable(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);

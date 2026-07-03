@@ -17,7 +17,7 @@ export const fiscal = {
     return response?.data ?? null;
   },
 
-  async updateFiscalSettings(payload: FiscalSettings): Promise<FiscalSettings> {
+  async updateFiscalSettings(payload: Partial<FiscalSettings>): Promise<FiscalSettings> {
     const response = await apiClient.request<{ data: FiscalSettings }>('/api/settings/fiscal', {
       method: 'PUT',
       body: JSON.stringify(payload),
