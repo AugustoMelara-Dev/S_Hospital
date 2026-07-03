@@ -2926,3 +2926,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, rutas, migraciones, seeders, policies ni endpoints.
 - Este corte reduce asignaciones accidentales de acceso a auditoria sin cambiar la autorizacion autoritativa del servidor.
+
+## 120. Fase 13/14 - Operacion global de facturas marcada como permiso critico en UI
+
+Cambio aplicado:
+
+- `invoices.operate_any` ahora forma parte de la lista centralizada de permisos criticos del frontend.
+- Los formularios de usuarios y roles muestran `Permiso critico` y bloquean guardar hasta confirmar explicitamente cuando se asigna capacidad de operar cualquier factura.
+- La UI queda alineada con `RoleCatalog`, donde `invoices.operate_any` ya se considera permiso elevado por permitir operar facturas fuera del alcance normal de caja.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- UserFormDialog RoleFormDialog --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial: no aparecia `Permiso critico` para `invoices.operate_any`; luego OK: 25 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, rutas, migraciones, seeders, policies ni endpoints.
+- Este corte reduce asignaciones accidentales de alcance global sobre facturas sin cambiar la autorizacion autoritativa del servidor.

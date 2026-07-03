@@ -4,6 +4,7 @@ const CRITICAL_PERMISSION_NAMES = new Set([
   'backups.download',
   'cash.close_any',
   'fiscal.sequences.reset',
+  'invoices.operate_any',
   'invoices.reverse',
   'invoices.void',
   'payments.void',
