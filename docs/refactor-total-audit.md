@@ -1488,3 +1488,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, schema, migraciones, endpoints ni permisos.
 - Este corte mejora la navegacion consolidada de reportes sin ampliar acceso: la subruta ejecutiva directa sigue mostrando estado sin permiso cuando corresponde.
+
+## 61. Fase 10 - Reporte de caja muestra carga durante consulta LAN
+
+Cambio aplicado:
+
+- `ReportsCash` ahora mantiene `cashLoading` mientras consulta una caja por numero.
+- El boton `Ver caja` pasa a `Consultando...` y queda deshabilitado durante la peticion, evitando clics repetidos y dando feedback inmediato.
+- Se agrego una prueba de componente para confirmar que `getCashSessionReport` recibe el numero solicitado y que el control queda bloqueado mientras la promesa esta pendiente.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- ReportsCash.test.tsx` | RED inicial porque el boton seguia como `Ver caja`; luego OK: 1 test pasa. |
+| `npm run test -- ReportsCash.test.tsx ReportsView.subroutes.test.tsx CashSessionReportTab.test.tsx` | OK: 3 archivos, 11 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, schema, migraciones, endpoints ni permisos.
+- Este corte mejora feedback operativo del reporte de caja sin cambiar contratos API ni reglas de acceso.

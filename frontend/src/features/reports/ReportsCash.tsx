@@ -16,17 +16,25 @@ export function ReportsCash({
   const [cashSessionReport, setCashSessionReport] = useState<Awaited<ReturnType<typeof apiClient.getCashSessionReport>> | null>(null);
   const [cashReportId, setCashReportId] = useState('');
   const [cashError, setCashError] = useState('');
+  const [cashLoading, setCashLoading] = useState(false);
 
   async function loadCashReport() {
+    if (cashLoading) {
+      return;
+    }
+
     if (!cashReportId.trim()) {
       setCashError('Ingrese el numero de caja.');
       return;
     }
     try {
       setCashError('');
+      setCashLoading(true);
       setCashSessionReport(await apiClient.getCashSessionReport(cashReportId));
     } catch (err) {
       setCashError(userSafeErrorMessage(err, 'No se pudo cargar la caja.'));
+    } finally {
+      setCashLoading(false);
     }
   }
 
@@ -51,7 +59,7 @@ export function ReportsCash({
         canExport={canViewManagerial}
         cashSession={cashSessionReport}
         cashReportId={cashReportId}
-        loading={false}
+        loading={cashLoading}
         exporting={false}
         error={cashError}
         onCashReportIdChange={setCashReportId}
