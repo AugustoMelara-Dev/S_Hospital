@@ -190,6 +190,58 @@ describe('CashSessionReportTab', () => {
     expect(document.body.textContent).not.toMatch(/payment_void|closing|opening/);
   });
 
+  it('uses human labels instead of raw dashes for missing cash report details', () => {
+    const cashSession = buildCashSessionReport({
+      payments: [
+        {
+          id: 10,
+          invoice_id: 12,
+          cash_session_id: 2,
+          user_id: 7,
+          method: 'cash',
+          amount: '25.00',
+          status: 'posted',
+          reference: null,
+          paid_at: null as unknown as string,
+        },
+      ],
+      movements: [
+        {
+          id: 20,
+          cash_session_id: 2,
+          payment_id: null,
+          user_id: 7,
+          type: 'opening',
+          method: null,
+          amount: '500.00',
+          notes: null,
+          occurred_at: null as unknown as string,
+        },
+      ],
+    });
+
+    render(
+      <CashSessionReportTab
+        canExport={false}
+        cashSession={cashSession}
+        cashReportId="2"
+        loading={false}
+        error=""
+        onCashReportIdChange={() => undefined}
+        onExport={() => undefined}
+        onSubmit={() => undefined}
+      />,
+    );
+
+    expect(screen.getByText('Sin factura')).toBeInTheDocument();
+    expect(screen.getByText('Sin paciente')).toBeInTheDocument();
+    expect(screen.getByText('Sin metodo')).toBeInTheDocument();
+    expect(screen.getByText('Sin nota')).toBeInTheDocument();
+    expect(screen.getByText('Sin usuario')).toBeInTheDocument();
+    expect(screen.getAllByText('Sin fecha')).toHaveLength(2);
+    expect(screen.queryByText('-')).not.toBeInTheDocument();
+  });
+
   it('renders malformed cash session amounts as safe financial values', () => {
     const cashSession = {
       cash_session: {

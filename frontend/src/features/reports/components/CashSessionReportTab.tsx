@@ -51,12 +51,12 @@ const paymentColumns: Array<DataTableColumn<RegisteredPayment>> = [
     key: 'invoice',
     header: 'Factura',
     cellClassName: 'font-medium',
-    render: (payment) => payment.invoice?.invoice_number ?? '-',
+    render: (payment) => fallbackText(payment.invoice?.invoice_number, 'Sin factura'),
   },
   {
     key: 'patient',
     header: 'Paciente',
-    render: (payment) => payment.invoice?.patient_name ?? '-',
+    render: (payment) => fallbackText(payment.invoice?.patient_name, 'Sin paciente'),
   },
   {
     key: 'method',
@@ -99,12 +99,12 @@ const movementColumns: Array<DataTableColumn<CashMovement>> = [
     key: 'notes',
     header: 'Notas',
     cellClassName: 'max-w-[150px] truncate',
-    render: (movement) => movement.notes ?? '-',
+    render: (movement) => fallbackText(movement.notes, 'Sin nota'),
   },
   {
     key: 'user',
     header: 'Usuario',
-    render: (movement) => movement.user?.name ?? '-',
+    render: (movement) => fallbackText(movement.user?.name, 'Sin usuario'),
   },
   {
     key: 'occurred_at',
@@ -308,7 +308,7 @@ function movementTypeLabel(type: string): string {
 
 function movementMethodLabel(method: string | null): string {
   if (!method) {
-    return '-';
+    return 'Sin metodo';
   }
 
   return { ...methodLabels(), closing: 'Cierre de caja' }[method] ?? humanizeEnum(method);
@@ -360,6 +360,11 @@ function humanizeEnum(value: string): string {
     .join(' ');
 }
 
-function formatDate(value: string): string {
-  return formatLocalizedDateTime(value);
+function formatDate(value: string | null | undefined): string {
+  const formatted = formatLocalizedDateTime(value);
+  return formatted === '-' ? 'Sin fecha' : formatted;
+}
+
+function fallbackText(value: string | null | undefined, fallback: string): string {
+  return value?.trim() || fallback;
 }

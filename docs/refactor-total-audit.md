@@ -3345,3 +3345,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, rutas, migraciones, seeders, policies ni endpoints.
 - Este corte reduce ambiguedad en reportes de auditoria sin relajar RBAC, anulaciones, reversas ni trazabilidad.
+
+## 139. Fase 10/16 - Reporte de caja sin marcador crudo
+
+Cambio aplicado:
+
+- El reporte de caja por turno deja de mostrar `-` cuando faltan factura, paciente, metodo, nota, usuario o fecha en pagos y movimientos.
+- La tabla ahora usa estados humanos: "Sin factura", "Sin paciente", "Sin metodo", "Sin nota", "Sin usuario" y "Sin fecha".
+- No se cambian calculos de caja, conciliacion, exportacion, filtros, endpoints ni permisos; solo la lectura operativa del reporte.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- CashSessionReportTab --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial: la tabla seguia renderizando guiones crudos; luego OK: 6 tests pasan. |
+| `npm run test -- CashSessionReportTab ReportsCash ReportsView.subroutes --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 3 archivos, 16 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, rutas, migraciones, seeders, policies, auditoria ni endpoints.
+- Este corte reduce ambiguedad en reportes de caja sin relajar cierre, diferencias, RBAC ni trazabilidad.
