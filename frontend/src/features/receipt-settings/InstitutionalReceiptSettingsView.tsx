@@ -204,8 +204,8 @@ export function InstitutionalReceiptSettingsView({
     institutionForm.reset({
       hospital_name: institution?.hospital_name ?? '',
       rtn: institution?.rtn ?? '',
-      address: '',
-      slogan: '',
+      address: institution?.address ?? '',
+      slogan: institution?.slogan ?? '',
       government_line: institution?.government_line ?? '',
       secretariat_line: institution?.secretariat_line ?? '',
       receipt_location: institution?.receipt_location ?? '',

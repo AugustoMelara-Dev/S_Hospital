@@ -1734,3 +1734,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, schema, migraciones, endpoints, permisos, caja, correlativos ni reglas fiscales.
 - Este corte reduce riesgo de doble cobro cuando la emision del recibo secundario falla despues de registrar un pago valido.
+
+## 71. Fase 6/11 - Recibos conservan direccion institucional al editar
+
+Cambio aplicado:
+
+- `InstitutionalReceiptSettingsView` ahora precarga `address` y `slogan` desde los ajustes recibidos del servidor.
+- Se agrego cobertura para verificar que la direccion institucional guardada aparece antes de editar datos del recibo.
+- Evita que un guardado posterior de la pantalla de recibos pierda datos institucionales ya configurados.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- InstitutionalReceiptSettingsView.test.tsx -t "preloads saved institutional address"` | RED inicial porque el campo Direccion cargaba vacio aunque el backend entregaba `address`; luego OK. |
+| `npm run test -- InstitutionalReceiptSettingsView.test.tsx` | OK: 8 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, schema, migraciones, perfiles de papel, correlativos ni permisos.
+- Este corte protege configuracion institucional existente sin reabrir el flujo tecnico de impresion.

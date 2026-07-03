@@ -113,7 +113,7 @@ function renderView({ canAdvancedPrintSettings = false } = {}) {
   );
 }
 
-async function activateTab(name: string) {
+async function activateTab(name: string | RegExp) {
   const tab = await screen.findByRole('tab', { name });
   fireEvent.mouseDown(tab, { button: 0, ctrlKey: false });
   fireEvent.mouseUp(tab, { button: 0, ctrlKey: false });
@@ -132,6 +132,15 @@ describe('InstitutionalReceiptSettingsView', () => {
     expect(screen.getAllByText('Media carta').length).toBeGreaterThan(0);
     expect(screen.getByText('REC-A')).toBeInTheDocument();
     expect(screen.getByText('Editable')).toBeInTheDocument();
+  });
+
+  it('preloads saved institutional address before editing receipt data', async () => {
+    renderView();
+
+    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
+    await activateTab(/instituci/i);
+
+    expect(screen.getByLabelText(/direcci/i)).toHaveValue('Tocoa, Colon');
   });
 
   it('never exposes the manual paper fields in the normal flow', async () => {
