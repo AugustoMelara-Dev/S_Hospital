@@ -2734,3 +2734,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, migraciones, permisos, correlativos ni datos fiscales.
 - Este corte mejora la claridad de configuracion sin mezclar nuevamente recibos, reglas operativas o branding con numeracion fiscal.
+
+## 112. Fase 14 - Policy fiscal exige permiso de mutacion
+
+Cambio aplicado:
+
+- `FiscalSequencePolicy::update` ahora exige `settings.fiscal.update`, no solo permiso de lectura fiscal.
+- `FiscalSequencePolicy::view` conserva `settings.fiscal.view`, manteniendo el resumen fiscal disponible para usuarios autorizados a consultar.
+- Se agrego cobertura directa de policy para evitar que futuras rutas con `Gate::authorize('update', $sequence)` hereden una autorizacion demasiado amplia.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter=fiscal_sequence_policy_requires_update_permission` | RED inicial: `viewer->can('update', $sequence)` devolvia `true`; luego OK. |
+| `docker compose exec backend php artisan test --filter=FiscalSequenceTest` | OK: 13 tests, 41 assertions. |
+| `docker compose exec backend php artisan test --filter=UpdateFiscalSequenceReasonTest` | OK: 2 tests, 8 assertions. |
+| `docker compose exec backend vendor/bin/pint --test` | OK: 426 files. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M` | OK: sin errores. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron frontend, migraciones, rutas, requests ni correlativos fiscales.
+- Este corte refuerza RBAC backend como defensa autoritativa para numeracion fiscal aunque el controlador actual ya use Form Requests.
