@@ -59,8 +59,6 @@ export function BrandingView({ canEdit, onStatus }: BrandingViewProps) {
         primary_color: newColor,
         address: settings.address ?? '',
         slogan: settings.slogan ?? '',
-        scanner_enabled: settings.scanner_enabled === true,
-        partial_payments_enabled: settings.partial_payments_enabled === true,
         receipt_template_mode: 'institutional',
       });
       setSettings(updated);

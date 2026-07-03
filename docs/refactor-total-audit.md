@@ -2325,3 +2325,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron migraciones, secuencias fiscales, caja, recibos ni permisos.
 - Este corte completa otro tramo de cambios fiscales con motivo auditado sin pedir motivo para ediciones institucionales no fiscales.
+
+## 95. Fase 11 - Marca no arrastra reglas operativas
+
+Cambio aplicado:
+
+- `BrandingView` deja de enviar `scanner_enabled` y `partial_payments_enabled` cuando guarda el color institucional.
+- La actualizacion de marca queda limitada a datos fiscales/institucionales (`hospital_name`, `rtn`, `primary_color`, direccion, lema y modo institucional de recibo).
+- Se agrega cobertura especifica para evitar que una edicion visual sobrescriba reglas operativas del POS.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- BrandingView.test.tsx` | RED inicial: el payload de marca aun incluia `scanner_enabled=true`; luego OK: 1 test pasa. |
+| `npm run test -- FiscalSettingsView.test.tsx BrandingView.test.tsx OperationalRulesView.test.tsx HospitalSettingsView.test.tsx` | OK: 4 archivos, 12 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron migraciones, backend, caja, pagos, recibos ni permisos.
+- Este corte reduce otra fuga entre configuracion visual/fiscal y reglas operativas, manteniendo scanner y abonos parciales como responsabilidad del endpoint operativo.
