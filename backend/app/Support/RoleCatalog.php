@@ -14,6 +14,7 @@ class RoleCatalog
 
     private const ELEVATED_ROLE_PERMISSIONS = [
         'audit.view',
+        'backups.create',
         'backups.download',
         'cash.close_any',
         'fiscal.sequences.reset',

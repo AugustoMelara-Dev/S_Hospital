@@ -2857,3 +2857,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron migraciones, rutas, seeders, policies ni endpoints.
 - Este corte cierra una ruta de escalacion donde un gestor operativo podia asignar capacidad de desactivar usuarios mediante un rol custom.
+
+## 117. Fase 14 - Creacion de respaldos tratada como permiso elevado
+
+Cambio aplicado:
+
+- `backups.create` ahora se considera permiso elevado en `RoleCatalog`.
+- Un gestor con `users.create`/`users.view`, pero sin `users.assign_admin_role`, ya no puede asignar un rol custom que permita crear respaldos locales.
+- La UI ya trataba `backups.create` como permiso critico; este corte alinea la defensa autoritativa del backend con esa advertencia visual.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter=custom_role_with_backup_create_permission` | RED inicial: la API respondia 201; luego OK: 1 test, 4 assertions. |
+| `docker compose exec backend php artisan test --filter=UserManagementTest` | OK: 37 tests, 157 assertions. |
+| `docker compose exec backend vendor/bin/pint --test` | OK: 426 files. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M` | OK: sin errores. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron frontend, migraciones, rutas, seeders, policies ni endpoints.
+- Este corte cierra una ruta de escalacion donde un gestor operativo podia asignar capacidad de crear respaldos mediante un rol custom.
