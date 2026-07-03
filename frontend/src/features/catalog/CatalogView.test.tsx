@@ -281,7 +281,7 @@ describe('CatalogView modernized structure', () => {
   it('requires confirmation before deactivating an active service without deleting it', async () => {
     setupBasicMocks();
     vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({
-      data: [serviceFixture()],
+      data: [serviceFixture({ aliases: 'azucar, laboratorio rapido' })],
       meta: { current_page: 1, per_page: 15, total: 1 },
     });
     const saveService = vi
@@ -312,7 +312,10 @@ describe('CatalogView modernized structure', () => {
 
     await waitFor(() => {
       expect(saveService).toHaveBeenCalledWith(
-        expect.objectContaining({ active: false }),
+        expect.objectContaining({
+          active: false,
+          aliases: 'azucar, laboratorio rapido',
+        }),
         1,
       );
     });

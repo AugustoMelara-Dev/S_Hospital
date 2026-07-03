@@ -1974,3 +1974,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, rutas, permisos, calculos de caja ni formato del Excel del servidor.
 - Este corte convierte una accion visible de caja en una operacion real, alineada con reportes utiles para cierre y auditoria local.
+
+## 81. Fase 7 - Cambio de estado conserva alias de servicio
+
+Cambio aplicado:
+
+- `CatalogView` conserva `aliases` al construir el payload de activar/desactivar un servicio desde la tabla.
+- La confirmacion de desactivacion sigue sin borrar servicios ni cambiar precios, ISV, codigos o reglas especiales.
+- La busqueda operativa por alias queda protegida ante cambios rapidos de estado en catalogo.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- CatalogView.test.tsx -t "requires confirmation before deactivating"` | RED inicial porque el payload no incluia `aliases`; luego OK. |
+| `npm run test -- CatalogView.test.tsx ServiceSheet.test.tsx ServiceCatalogTable.test.tsx CategorySheet.test.tsx` | OK: 44 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `git diff --check` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, migraciones, endpoints, permisos ni reglas fiscales.
+- Este corte preserva metadata de busqueda del catalogo durante cambios de disponibilidad para caja.

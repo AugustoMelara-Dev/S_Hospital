@@ -311,6 +311,7 @@ function serviceStatusPayload(service: Service, active: boolean) {
     category_id: service.category_id,
     area_id: service.area_id ?? undefined,
     name: service.name,
+    aliases: service.aliases ?? null,
     price: service.price,
     scan_code: service.scan_code ?? null,
     barcode: service.barcode ?? null,
