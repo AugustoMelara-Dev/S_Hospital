@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Actions\Billing\CreateInvoiceAction;
+use App\Actions\Billing\VoidInvoiceAction;
 use App\Actions\Cash\OpenCashSessionAction;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSequence;
@@ -14,6 +15,7 @@ use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 class InvoiceHistoryReprintVoidTest extends TestCase
@@ -353,6 +355,29 @@ class InvoiceHistoryReprintVoidTest extends TestCase
             ->postJson("/api/invoices/{$invoiceId}/void", ['reason' => '   '])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('reason');
+    }
+
+    public function test_void_action_rejects_short_reason_before_mutating_invoice(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $supervisor = $this->supervisor();
+        $invoice = Invoice::query()->findOrFail($this->createInvoice($cashier, 'Maria Lopez', 'Glucosa'));
+
+        try {
+            app(VoidInvoiceAction::class)->execute($invoice, $supervisor, 'abc');
+            $this->fail('Expected short void reason to be rejected.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('reason', $exception->errors());
+        }
+
+        $this->assertDatabaseHas('invoices', [
+            'id' => $invoice->id,
+            'status' => Invoice::STATUS_ISSUED,
+            'void_reason' => null,
+            'voided_by' => null,
+            'voided_at' => null,
+        ]);
     }
 
     public function test_reprint_any_permission_does_not_grant_invoice_void_operation_scope(): void

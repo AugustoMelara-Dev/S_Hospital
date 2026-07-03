@@ -1563,3 +1563,29 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron schema, migraciones, pagos, facturas, correlativos ni datos existentes.
 - Este corte fortalece cierre de caja y auditoria sin cambiar el calculo de diferencia ni el movimiento contable.
+
+## 64. Fase 9 - Anulacion exige motivo util en accion de dominio
+
+Cambio aplicado:
+
+- `VoidInvoiceAction` ahora rechaza motivos de anulacion menores a 5 caracteres antes de abrir la transaccion y antes de mutar la factura.
+- Se agrego cobertura directa contra la accion de dominio para evitar que un flujo interno pueda saltarse la validacion `min:5` del Form Request.
+- La prueba confirma que una factura con motivo corto sigue `issued`, sin `void_reason`, `voided_by` ni `voided_at`.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter=InvoiceHistoryReprintVoidTest::test_void_action_rejects_short_reason_before_mutating_invoice` | RED inicial porque `abc` anulaba la factura; luego OK: 1 test pasa, 2 assertions. |
+| `docker compose exec backend php artisan test --filter=InvoiceHistoryReprintVoidTest` | OK: 19 tests pasan, 120 assertions. |
+| `docker compose exec backend php artisan test --filter=InvoiceReverseTest` | OK: 8 tests pasan, 45 assertions. |
+| `docker compose exec backend vendor/bin/pint --test app/Actions/Billing/VoidInvoiceAction.php tests/Feature/InvoiceHistoryReprintVoidTest.php` | OK: 2 archivos pasan. |
+| `docker compose exec backend vendor/bin/phpstan analyse app/Actions/Billing/VoidInvoiceAction.php tests/Feature/InvoiceHistoryReprintVoidTest.php` | Incompleto: PHPStan alcanzo el memory limit configurado de 128M. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M app/Actions/Billing/VoidInvoiceAction.php tests/Feature/InvoiceHistoryReprintVoidTest.php` | OK: sin errores. |
+| `git diff --check -- backend/app/Actions/Billing/VoidInvoiceAction.php backend/tests/Feature/InvoiceHistoryReprintVoidTest.php docs/refactor-total-audit.md` | OK: sin whitespace errors. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron schema, migraciones, frontend, caja, pagos ni correlativos.
+- El endpoint ya validaba `reason` con `min:5`; este corte refuerza la regla en la accion critica para que el backend siga protegido aunque cambie el controlador o aparezca otro flujo interno.

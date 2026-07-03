@@ -16,6 +16,8 @@ use Illuminate\Validation\ValidationException;
 
 class VoidInvoiceAction
 {
+    private const MIN_VOID_REASON_LENGTH = 5;
+
     public function __construct(
         private readonly InvoiceAccess $invoiceAccess,
         private readonly VoidInstitutionalReceiptAction $voidInstitutionalReceipt,
@@ -27,6 +29,11 @@ class VoidInvoiceAction
         if (empty($reason)) {
             throw ValidationException::withMessages([
                 'reason' => 'El motivo de anulacion es requerido.',
+            ]);
+        }
+        if (mb_strlen($reason) < self::MIN_VOID_REASON_LENGTH) {
+            throw ValidationException::withMessages([
+                'reason' => 'El motivo de anulacion debe tener al menos 5 caracteres.',
             ]);
         }
 
