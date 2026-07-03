@@ -12,6 +12,8 @@ use Illuminate\Validation\Validator;
 
 class UpdateServiceRequest extends FormRequest
 {
+    private const ERYTHROPOIETIN_PRICE_CENTS = 2500;
+
     protected function prepareForValidation(): void
     {
         if (is_array($this->input('aliases'))) {
@@ -110,9 +112,33 @@ class UpdateServiceRequest extends FormRequest
                     $validator->errors()->add('tax_change_reason', 'Indique el motivo del cambio de impuesto.');
                 }
 
+                $this->validateErythropoietinFixedPrice($validator, $service);
                 $this->validateGlobalCodes($validator, $service);
             },
         ];
+    }
+
+    private function validateErythropoietinFixedPrice(Validator $validator, Service $service): void
+    {
+        if ($validator->errors()->has('price')) {
+            return;
+        }
+
+        $specialRuleCode = $this->has('special_rule_code')
+            ? $this->input('special_rule_code')
+            : $service->special_rule_code;
+
+        if ($specialRuleCode !== Service::ERYTHROPOIETIN_RULE) {
+            return;
+        }
+
+        $price = $this->has('price')
+            ? $this->string('price')->toString()
+            : (string) $service->price;
+
+        if (Money::parseCents($price, 'price') !== self::ERYTHROPOIETIN_PRICE_CENTS) {
+            $validator->errors()->add('price', 'Eritropoyetina debe mantener precio fijo de L.25.00.');
+        }
     }
 
     private function priceChanged(Service $service): bool

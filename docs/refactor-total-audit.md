@@ -2143,3 +2143,28 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, schema, migraciones, pagos reales, recibos, caja historica ni correlativos.
 - Este corte evita que la caja quede con totales/movimientos obsoletos despues de cobrar desde Nueva factura en la operacion monocomputadora.
+
+## 88. Fase 3/8 - Eritropoyetina mantiene tarifa fija
+
+Cambio aplicado:
+
+- `StoreServiceRequest` y `UpdateServiceRequest` rechazan servicios con regla especial de eritropoyetina si el precio final no equivale a L.25.00.
+- La validacion usa centavos con `Money::parseCents`, aceptando formatos equivalentes como `25`, `25.0` o `25.00`.
+- Las pruebas de auditoria de cambio de precio dejan de usar Eritropoyetina como servicio generico y usan `Glucosa`, para no contradecir la regla de negocio fija.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `php artisan test --filter=test_erythropoietin_rule_requires_the_fixed_twenty_five_lempira_price` | RED inicial porque el API aceptaba cambiar Eritropoyetina a L.30.00; luego OK. |
+| `php artisan test tests/Feature/ServiceCatalogTest.php` | OK: 35 tests pasan, 213 assertions. |
+| `php artisan test tests/Unit/Actions/EritropoyetinaRuleTest.php tests/Unit/Actions/CalculateInvoiceTotalsTest.php tests/Feature/InvoiceCreationTest.php --filter=erythropoietin` | OK: 5 tests pasan, 24 assertions. |
+| `vendor/bin/pint --test` | OK: 425 files. |
+| `vendor/bin/phpstan analyse --memory-limit=512M` | OK sin errores. |
+| `php artisan test` | Timeout local a los 5 minutos sin salida util; se sustituyo por suites enfocadas de catalogo y eritropoyetina. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron migraciones, calculo de totales, snapshots de facturas, pagos, caja ni recibos PDF.
+- Este corte alinea catalogo con la regla no negociable: Eritropoyetina cuesta L.25.00 y solo se vuelve gratis por receta de dialisis durante la facturacion autorizada.

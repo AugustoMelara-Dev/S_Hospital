@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Catalog;
 
 use App\Models\Service;
+use App\Support\Money;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Str;
@@ -11,6 +12,8 @@ use Illuminate\Validation\Validator;
 
 class StoreServiceRequest extends FormRequest
 {
+    private const ERYTHROPOIETIN_PRICE_CENTS = 2500;
+
     protected function prepareForValidation(): void
     {
         if (is_array($this->input('aliases'))) {
@@ -76,9 +79,21 @@ class StoreServiceRequest extends FormRequest
                     }
                 }
 
+                $this->validateErythropoietinFixedPrice($validator);
                 $this->validateGlobalCodes($validator);
             },
         ];
+    }
+
+    private function validateErythropoietinFixedPrice(Validator $validator): void
+    {
+        if ($validator->errors()->has('price') || $this->input('special_rule_code') !== Service::ERYTHROPOIETIN_RULE) {
+            return;
+        }
+
+        if (Money::parseCents((string) $this->input('price'), 'price') !== self::ERYTHROPOIETIN_PRICE_CENTS) {
+            $validator->errors()->add('price', 'Eritropoyetina debe mantener precio fijo de L.25.00.');
+        }
     }
 
     private function validateGlobalCodes(Validator $validator): void

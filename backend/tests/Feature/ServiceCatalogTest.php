@@ -694,7 +694,8 @@ class ServiceCatalogTest extends TestCase
     {
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
         $admin = $this->admin();
-        $service = Service::query()->where('name', 'Eritropoyetina')->firstOrFail();
+        $service = Service::query()->where('name', 'Glucosa')->firstOrFail();
+        $originalPrice = (string) $service->price;
 
         $this->actingAs($admin)
             ->patchJson("/api/services/{$service->id}", [
@@ -722,11 +723,11 @@ class ServiceCatalogTest extends TestCase
 
         $priceAudit = AuditLog::query()->where('action', 'service.price_updated')->firstOrFail();
 
-        $this->assertSame('25.00', $priceAudit->old_values['price']);
+        $this->assertSame($originalPrice, $priceAudit->old_values['price']);
         $this->assertSame('30.00', $priceAudit->new_values['price']);
 
         $priceHistory = ServicePriceHistory::query()->where('service_id', $service->id)->firstOrFail();
-        $this->assertSame('25.00', $priceHistory->old_price);
+        $this->assertSame($originalPrice, $priceHistory->old_price);
         $this->assertSame('30.00', $priceHistory->new_price);
         $this->assertSame($admin->id, $priceHistory->changed_by);
         $this->assertSame('Actualizacion aprobada por administracion', $priceHistory->reason);
@@ -749,6 +750,39 @@ class ServiceCatalogTest extends TestCase
             'service_id' => $service->id,
             'new_price' => '30.00',
         ]);
+    }
+
+    public function test_erythropoietin_rule_requires_the_fixed_twenty_five_lempira_price(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $admin = $this->admin();
+        $service = Service::query()->where('name', 'Eritropoyetina')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->patchJson("/api/services/{$service->id}", [
+                'price' => '30.00',
+                'price_change_reason' => 'Intento de cambiar tarifa fija',
+                'special_rule_code' => Service::ERYTHROPOIETIN_RULE,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('price');
+
+        $this->assertSame('25.00', $service->refresh()->price);
+
+        $this->actingAs($admin)
+            ->postJson('/api/services', [
+                'category_id' => $service->category_id,
+                'area_id' => $service->area_id,
+                'name' => 'Eritropoyetina alterna',
+                'price' => '30.00',
+                'taxable' => false,
+                'active' => true,
+                'visible_in_billing' => true,
+                'is_billable' => true,
+                'special_rule_code' => Service::ERYTHROPOIETIN_RULE,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('price');
     }
 
     public function test_invalid_price_update_returns_validation_error_before_price_reason_check(): void
@@ -934,7 +968,8 @@ class ServiceCatalogTest extends TestCase
     {
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
         $admin = $this->admin();
-        $service = Service::query()->where('name', 'Eritropoyetina')->firstOrFail();
+        $service = Service::query()->where('name', 'Glucosa')->firstOrFail();
+        $originalPrice = (string) $service->price;
 
         Event::listen('eloquent.creating: '.AuditLog::class, function (): void {
             throw new \RuntimeException('audit failed');
@@ -951,7 +986,7 @@ class ServiceCatalogTest extends TestCase
             Event::forget('eloquent.creating: '.AuditLog::class);
         }
 
-        $this->assertSame('25.00', $service->refresh()->price);
+        $this->assertSame($originalPrice, $service->refresh()->price);
     }
 
     private function admin(): User
