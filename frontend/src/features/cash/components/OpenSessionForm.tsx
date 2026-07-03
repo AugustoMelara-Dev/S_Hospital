@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { parseCents } from '@/lib/moneyCents';
 
 const openSessionSchema = z.object({
-  opening_amount: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Debe ser un número válido')
+  opening_amount: z.string().trim().regex(/^\d+(\.\d{1,2})?$/, 'Debe ser un número válido')
     .refine(val => (parseCents(val) ?? 0) >= 0, 'El monto no puede ser negativo'),
 });
 

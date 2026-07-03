@@ -174,7 +174,7 @@ export function CashBoxView({
 
   function handleOpenSession(data: { opening_amount: string }) {
     if (openSessionMutation.isPending || openingSessionInFlightRef.current) return;
-    setPendingOpening({ opening_amount: data.opening_amount });
+    setPendingOpening({ opening_amount: data.opening_amount.trim() });
   }
 
   function confirmOpenSession() {

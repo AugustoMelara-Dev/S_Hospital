@@ -404,6 +404,27 @@ describe('CashBoxView', () => {
     });
   });
 
+  it('accepts a pasted opening amount with spaces and sends the trimmed value', async () => {
+    const opened = cashSessionFixture({ id: 52, opening_amount: '100.00' });
+    const openCashSession = vi.spyOn(apiClient, 'openCashSession').mockResolvedValue(opened);
+    vi.spyOn(apiClient, 'getCurrentCashSession').mockResolvedValue(null);
+
+    renderCashBox(<CashBoxView onStatus={vi.fn()} />);
+
+    const amount = await screen.findByLabelText(/monto inicial/i);
+    fireEvent.change(amount, { target: { value: ' 100.00 ' } });
+    fireEvent.click(screen.getByRole('button', { name: /abrir caja/i }));
+
+    const dialog = await screen.findByRole('alertdialog', { name: /confirmar apertura de caja/i });
+    expect(dialog).toHaveTextContent(/L 100\.00/i);
+    fireEvent.click(within(dialog).getByRole('button', { name: /^abrir caja$/i }));
+
+    await waitFor(() => expect(openCashSession).toHaveBeenCalledWith(
+      { opening_amount: '100.00' },
+      { idempotencyKey: expect.any(String) },
+    ));
+  });
+
   it('preserves close cash payload, permission gating and focus before confirmation', async () => {
     const closeCashSession = vi.spyOn(apiClient, 'closeCashSession').mockResolvedValue(cashSessionFixture({ status: 'closed' }));
     vi.spyOn(apiClient, 'getCurrentCashSession').mockResolvedValue(cashSessionFixture());

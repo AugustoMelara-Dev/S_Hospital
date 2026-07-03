@@ -3731,3 +3731,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, migraciones, pagos, caja, recibos, reportes ni permisos.
 - Este corte reduce errores humanos en caja sin duplicar calculo fiscal en el frontend ni recalcular facturas historicas.
+
+## 155. Fase 7 - Caja acepta monto inicial pegado
+
+Cambio aplicado:
+
+- `OpenSessionForm` ahora recorta espacios al validar el monto inicial de apertura de caja.
+- `CashBoxView` guarda el monto pendiente de apertura ya normalizado antes de mostrar confirmacion y enviarlo al backend.
+- No se cambian endpoints, idempotencia, permisos, auditoria, cierre de caja, pagos, migraciones ni reportes.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- CashBoxView.test.tsx -t "accepts a pasted opening amount" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial correcto: no abria la confirmacion para ` 100.00 `; luego OK: 1 test pasa. |
+| `npm run test -- CashBoxView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 11 tests pasan. |
+| `npm run lint` | OK. |
+| `npm run typecheck` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, migraciones, facturacion, recibos, catalogo, historial, usuarios ni respaldos.
+- Este corte mejora la apertura de caja para operacion real de mostrador y mantiene el backend como autoridad de auditoria y reglas de caja.
