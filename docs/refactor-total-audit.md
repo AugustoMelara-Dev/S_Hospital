@@ -3998,3 +3998,28 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron facturacion, caja, historial, usuarios, recibos, respaldos ni reportes.
 - Este corte reduce errores humanos al crear/editar servicios y conserva al backend como autoridad final para auditoria y reglas de catalogo.
+
+## 166. Fase 9 - Historial muestra fecha no disponible
+
+Cambio aplicado:
+
+- `InvoiceHistoryView` ahora muestra `Fecha no disponible` cuando la fecha de emision de una factura no puede formatearse.
+- Se agrego una regresion con `issued_at='fecha-danada'`, confirmando que el historial no expone el valor tecnico ni `Invalid Date`.
+- El cambio se limita al historial de facturas para mejorar lectura operativa sin cambiar el contrato global de formateo de fechas.
+- No se cambian backend, endpoints, migraciones, permisos, auditoria, anulacion, reversa ni reimpresion real.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- InvoiceHistoryView.test.tsx -t "shows a human fallback when the invoice date is unavailable" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial correcto: no aparecia `Fecha no disponible`; luego OK: 1 test pasa. |
+| `npm run test -- InvoiceHistoryView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 32 tests pasan. |
+| `npm run lint` | OK. |
+| `npm run typecheck` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron facturacion, caja, catalogo, usuarios, recibos, respaldos ni reportes.
+- Este corte evita texto ambiguo en una tabla critica para buscar, reimprimir, anular y auditar facturas.

@@ -368,6 +368,28 @@ describe('InvoiceHistoryView', () => {
     expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-numero|undefined/);
   });
 
+  it('shows a human fallback when the invoice date is unavailable', async () => {
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [
+        invoiceFixture({
+          id: 18,
+          invoice_number: '000-001-01-00000018',
+          patient_name: 'Paciente Fecha Invalida',
+          issued_at: 'fecha-danada',
+        }),
+      ],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente Fecha Invalida')).toBeInTheDocument());
+
+    expect(screen.getByText(/fecha no disponible/i)).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/fecha-danada|invalid date/i);
+    expect(screen.queryByRole('cell', { name: '-' })).not.toBeInTheDocument();
+  });
+
   it('shows a human patient fallback in the history table', async () => {
     const invoice = invoiceFixture({
       id: 34,

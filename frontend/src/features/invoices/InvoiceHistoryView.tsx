@@ -659,7 +659,9 @@ function hasInstitutionalPrintEvents(receipt: NonNullable<Invoice['institutional
 }
 
 function formatDate(value: string): string {
-  return formatLocalizedDateTime(value);
+  const formatted = formatLocalizedDateTime(value);
+
+  return formatted === '-' ? 'Fecha no disponible' : formatted;
 }
 
 function moneyLabel(value: string | number | null | undefined): string {
