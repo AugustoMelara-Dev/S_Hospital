@@ -45,7 +45,6 @@ class FiscalSettingsController extends Controller
                 'default_tax_rate' => $setting->default_tax_rate,
                 'scanner_enabled' => $setting->scanner_enabled,
                 'partial_payments_enabled' => $setting->partial_payments_enabled,
-                'receipt_paper_size' => $setting->receipt_paper_size,
             ] : null,
         ]);
     }

@@ -2246,3 +2246,30 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron migraciones, CAI, secuencias fiscales, recibos ni caja.
 - Este corte reduce mezcla entre fiscal e instrucciones operativas del POS: guardar scanner/abonos ya no arrastra campos institucionales ni de impresion.
+
+## 92. Fase 11 - Papel de recibo fuera de reglas operativas
+
+Cambio aplicado:
+
+- `GET /api/settings/operational` deja de exponer `receipt_paper_size`; conserva solo tasa por defecto, scanner y abonos parciales.
+- `OperationalSettings` ya no incluye el perfil de papel, por lo que el POS deja de derivar ancho de recibo desde reglas operativas.
+- Los mocks criticos de POS y reglas operativas ahora reflejan el contrato minimo del endpoint operativo.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter=test_cashier_can_view_minimal_operational_settings_without_full_fiscal_or_receipt_profile_data` | RED inicial: el endpoint operativo aun devolvia `receipt_paper_size`; luego OK. |
+| `npm run test -- OperationalRulesView.test.tsx NewInvoiceView.test.tsx App.test.tsx` | OK: 3 archivos, 35 tests pasan. |
+| `docker compose exec backend php artisan test tests/Feature/FiscalSettingsTest.php` | OK: 15 tests, 100 assertions. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+| `docker compose exec backend vendor/bin/pint --test` | OK: 426 files. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M` | OK sin errores. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron migraciones, perfiles de recibo institucional, generacion PDF, caja ni pagos.
+- El campo legado `receipt_paper_size` sigue cubierto en `/api/settings/fiscal` por compatibilidad/deprecacion, pero ya no se filtra a reglas operativas ni al arranque del POS.

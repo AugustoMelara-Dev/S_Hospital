@@ -14,7 +14,6 @@ const baseSettings: FiscalSettings = {
   scanner_enabled: false,
   partial_payments_enabled: false,
   receipt_template_mode: 'institutional',
-  receipt_paper_size: 'half_letter',
   government_line: null,
   secretariat_line: null,
   receipt_location: null,
@@ -25,7 +24,6 @@ const operationalSettings: OperationalSettings = {
   default_tax_rate: '15.00',
   scanner_enabled: false,
   partial_payments_enabled: false,
-  receipt_paper_size: 'half_letter',
 };
 
 describe('OperationalRulesView', () => {

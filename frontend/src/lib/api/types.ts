@@ -56,7 +56,7 @@ export type PublicBranding = Pick<
 
 export type OperationalSettings = Pick<
   FiscalSettings,
-  'default_tax_rate' | 'scanner_enabled' | 'partial_payments_enabled' | 'receipt_paper_size'
+  'default_tax_rate' | 'scanner_enabled' | 'partial_payments_enabled'
 >;
 
 export type FiscalSequence = {

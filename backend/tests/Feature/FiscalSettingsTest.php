@@ -256,7 +256,7 @@ class FiscalSettingsTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_cashier_can_view_minimal_operational_settings_without_full_fiscal_data(): void
+    public function test_cashier_can_view_minimal_operational_settings_without_full_fiscal_or_receipt_profile_data(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
 
@@ -279,7 +279,7 @@ class FiscalSettingsTest extends TestCase
             ->assertJsonPath('data.default_tax_rate', '15.00')
             ->assertJsonPath('data.scanner_enabled', true)
             ->assertJsonPath('data.partial_payments_enabled', true)
-            ->assertJsonPath('data.receipt_paper_size', 'half_letter')
+            ->assertJsonMissingPath('data.receipt_paper_size')
             ->assertJsonMissingPath('data.rtn')
             ->assertJsonMissingPath('data.address');
     }

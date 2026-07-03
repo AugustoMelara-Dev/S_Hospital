@@ -75,7 +75,7 @@ function mockFetchForOpenCashWithService(): ReturnType<typeof vi.fn> {
       return {
         ok: true,
         json: async () => ({
-          data: { scanner_enabled: false, partial_payments_enabled: false, receipt_paper_size: 'half_letter' },
+          data: { scanner_enabled: false, partial_payments_enabled: false },
         }),
       } as Response;
     }
@@ -553,7 +553,7 @@ describe('NewInvoiceView critical flows', () => {
         return {
           ok: true,
           json: async () => ({
-            data: { scanner_enabled: false, partial_payments_enabled: false, receipt_paper_size: 'half_letter' },
+            data: { scanner_enabled: false, partial_payments_enabled: false },
           }),
         } as Response;
       }

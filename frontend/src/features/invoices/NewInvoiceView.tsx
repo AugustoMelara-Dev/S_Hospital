@@ -1,7 +1,6 @@
 import { useEffect, useCallback, useMemo, useRef, useReducer } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { apiClient, type CashSession, type InstitutionalReceipt, type ReceiptData, type Service, userSafeErrorMessage } from '../../lib/api';
-import { institutionalReceiptPaperSize } from '../../lib/institutionalReceiptPaper';
 import { invoiceSchema } from '../../schemas/invoice.schema';
 import { useOperationalSettings } from '../../hooks/useFiscalSettings';
 import { newInvoiceReducer } from './state/reducer';
@@ -108,10 +107,6 @@ export function NewInvoiceView({
     }
     dispatch({ type: 'SET_SCANNER_ENABLED', payload: operationalSettings.scanner_enabled === true });
     dispatch({ type: 'SET_PARTIAL_PAYMENTS_ENABLED', payload: operationalSettings.partial_payments_enabled === true });
-    dispatch({
-      type: 'SET_RECEIPT_WIDTH',
-      payload: institutionalReceiptPaperSize(operationalSettings.receipt_paper_size),
-    });
   }, [operationalSettings]);
 
   const handleClearCart = useCallback(() => {
