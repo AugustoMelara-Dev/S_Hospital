@@ -83,6 +83,7 @@ class UserController extends Controller
         $validated = $request->validated();
         $oldValues = $this->auditPayload($user->load(['roles', 'permissions']));
         $this->assertCanAssignRole($request->user(), $validated['role'], $user);
+        $this->assertProtectedUserCanChangeToRole($user, $validated['role']);
         $directPermissions = $this->directPermissionsFromRequest($request, $validated);
         $this->assertCanSyncDirectPermissions($request->user(), $user, $directPermissions);
         $this->assertActiveExactPermissionMapHasAccess($directPermissions, $user->active);
@@ -123,6 +124,10 @@ class UserController extends Controller
     {
         $oldValues = $this->auditPayload($user->loadMissing(['roles', 'permissions']));
         $newActiveState = ! $user->active;
+        if (! $newActiveState) {
+            $this->assertProtectedUserCanBeDeactivated($user);
+        }
+
         if ($newActiveState) {
             $this->assertActiveExactPermissionMapHasAccess(
                 $user->usesExactDirectPermissionMap()
@@ -231,6 +236,39 @@ class UserController extends Controller
         if ($this->isElevatedRole($role) && ! $actor->can('users.assign_admin_role')) {
             throw ValidationException::withMessages([
                 'role' => 'No tiene permiso para asignar un rol administrativo o supervisor.',
+            ]);
+        }
+    }
+
+    private function assertProtectedUserCanChangeToRole(User $target, string $newRole): void
+    {
+        if (! $target->active || ! $this->userHasProtectedRole($target) || RoleCatalog::isProtectedRoleName($newRole)) {
+            return;
+        }
+
+        $this->assertAnotherActiveProtectedUserExists($target, 'role');
+    }
+
+    private function assertProtectedUserCanBeDeactivated(User $target): void
+    {
+        if (! $target->active || ! $this->userHasProtectedRole($target)) {
+            return;
+        }
+
+        $this->assertAnotherActiveProtectedUserExists($target, 'active');
+    }
+
+    private function assertAnotherActiveProtectedUserExists(User $target, string $field): void
+    {
+        $hasAnotherAdmin = User::query()
+            ->whereKeyNot($target->id)
+            ->where('active', true)
+            ->whereHas('roles', fn ($query) => $query->whereIn(DB::raw('LOWER(name)'), RoleCatalog::protectedRoleNames()))
+            ->exists();
+
+        if (! $hasAnotherAdmin) {
+            throw ValidationException::withMessages([
+                $field => 'Debe existir al menos un administrador activo.',
             ]);
         }
     }

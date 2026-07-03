@@ -29,6 +29,14 @@ class RoleCatalog
         'settings.fiscal.update',
     ];
 
+    /**
+     * @return list<string>
+     */
+    public static function protectedRoleNames(): array
+    {
+        return self::PROTECTED_ROLES;
+    }
+
     public static function isProtectedRoleName(string $role): bool
     {
         return in_array(strtolower($role), self::PROTECTED_ROLES, true);

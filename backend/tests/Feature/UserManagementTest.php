@@ -704,6 +704,52 @@ class UserManagementTest extends TestCase
             ->assertJsonValidationErrors('role');
     }
 
+    public function test_cannot_demote_the_only_active_admin(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $operator = User::factory()->create();
+        $operator->givePermissionTo(['users.update', 'users.assign_admin_role']);
+        $admin = User::factory()->create([
+            'username' => 'only-active-admin-demote',
+            'email' => 'only-active-admin-demote@hospital.local',
+            'active' => true,
+        ]);
+        $admin->assignRole('admin');
+
+        $this->actingAs($operator)
+            ->patchJson("/api/admin/users/{$admin->id}", [
+                'name' => $admin->name,
+                'email' => $admin->email,
+                'username' => $admin->username,
+                'role' => 'cajero',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('role');
+
+        $this->assertTrue($admin->refresh()->hasRole('admin'));
+    }
+
+    public function test_cannot_deactivate_the_only_active_admin(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $operator = User::factory()->create();
+        $operator->givePermissionTo(['users.disable', 'users.assign_admin_role']);
+        $admin = User::factory()->create([
+            'username' => 'only-active-admin-disable',
+            'email' => 'only-active-admin-disable@hospital.local',
+            'active' => true,
+        ]);
+        $admin->assignRole('admin');
+
+        $this->actingAs($operator)
+            ->postJson("/api/admin/users/{$admin->id}/toggle-active")
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('active');
+
+        $this->assertTrue($admin->refresh()->active);
+        $this->assertTrue($admin->hasRole('admin'));
+    }
+
     public function test_admin_cannot_change_own_direct_permissions_from_user_editor(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);

@@ -2562,3 +2562,24 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron migraciones, generacion de backups, descarga, permisos ni restauracion.
 - Este corte reduce metadatos tecnicos en la API operativa sin debilitar la verificacion local de integridad.
+
+## 105. Fase 13/14 - Usuarios no pueden dejar cero admins activos
+
+Cambio aplicado:
+
+- El backend rechaza degradar el unico administrador activo a un rol no protegido.
+- El backend rechaza desactivar el unico administrador activo, incluso si el actor tiene permisos administrativos delegados.
+- `RoleCatalog` expone los nombres de roles protegidos para que la consulta use la misma fuente que la validacion de roles.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter="only_active_admin"` | RED inicial: degradar/desactivar el unico admin devolvia 200; luego OK: 2 tests pasan. |
+| `docker compose exec backend php artisan test --filter=UserManagementTest` | OK: 33 tests pasan. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron migraciones, seeders, permisos nuevos, frontend ni rutas.
+- Este corte evita que una instalacion monocomputadora quede sin administrador operativo por error o mala asignacion de permisos.
