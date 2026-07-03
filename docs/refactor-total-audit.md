@@ -3924,3 +3924,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron caja, facturacion, catalogo, historial, reportes, respaldos ni usuarios.
 - Este corte reduce errores humanos en la configuracion del correlativo visible del recibo sin modificar reglas fiscales server-side.
+
+## 163. Fase 12 - Descarga de respaldo explica tamano no disponible
+
+Cambio aplicado:
+
+- `BackupsView` ahora muestra `Tamano no disponible` en la confirmacion de descarga cuando el respaldo no trae `size_bytes`.
+- Se agrego una regresion que abre el dialogo de descarga para un respaldo exitoso sin tamano y confirma que no aparece un guion crudo.
+- No se cambian backend, endpoints, permisos, auditoria, jobs de respaldo, cifrado ni descarga real.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- BackupsView.test.tsx -t "unavailable backup size in the download confirmation" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial correcto: el dialogo mostraba `Tamano—`; luego OK: 1 test pasa. |
+| `npm run test -- BackupsView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 23 tests pasan. |
+| `npm run lint` | OK. |
+| `npm run typecheck` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron facturacion, caja, catalogo, historial, usuarios, recibos ni reportes.
+- Este corte reduce texto tecnico/ambiguo en el flujo normal de respaldos y mantiene la restauracion fuera de la app.

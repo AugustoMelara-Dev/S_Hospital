@@ -514,6 +514,21 @@ describe('BackupsView', () => {
     expect(downloadAnchor.download).toBe('respaldo-local-2026-06-18-1.sql.enc');
     expect(downloadAnchor.download).not.toMatch(/hospital-backup|test/i);
   });
+
+  it('explains unavailable backup size in the download confirmation', async () => {
+    vi.mocked(apiClient.getBackups).mockResolvedValue({
+      data: [backupFixture({ status: 'success', size_bytes: null })],
+      meta: { current_page: 1, per_page: 15, total: 1 },
+    });
+
+    renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /descargar respaldo del/i }));
+
+    const dialog = screen.getByRole('alertdialog');
+    expect(dialog).toHaveTextContent(/tamano no disponible/i);
+    expect(dialog).not.toHaveTextContent(/^-$|^—$/);
+  });
 });
 
 function renderWithQueryClient(node: ReactNode) {
