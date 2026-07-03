@@ -2949,3 +2949,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, rutas, migraciones, seeders, policies ni endpoints.
 - Este corte reduce asignaciones accidentales de alcance global sobre facturas sin cambiar la autorizacion autoritativa del servidor.
+
+## 121. Fase 13/15 - Matriz de permisos senala permisos criticos
+
+Cambio aplicado:
+
+- La matriz de permisos reutiliza la lista centralizada de permisos criticos del frontend.
+- Cada fila critica muestra una etiqueta visible `Permiso critico` junto al nombre tecnico del permiso.
+- La revision comparativa de roles ahora expone riesgo operativo sin depender solo de los formularios de edicion.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- PermissionMatrix --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial: `audit.view` no mostraba etiqueta critica en la matriz; luego OK: 5 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, rutas, migraciones, seeders, policies ni endpoints.
+- Este corte mejora claridad administrativa y accesibilidad visual de riesgos sin cambiar permisos ni autorizacion.

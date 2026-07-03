@@ -38,6 +38,11 @@ const catalog: PermissionCatalogGroup[] = [
     label: 'Caja',
     permissions: [{ name: 'cash.view', module: 'cash', label: 'Ver caja' }],
   },
+  {
+    module: 'audit',
+    label: 'Auditoria',
+    permissions: [{ name: 'audit.view', module: 'audit', label: 'Ver auditoria' }],
+  },
 ];
 
 describe('PermissionMatrix', () => {
@@ -46,7 +51,7 @@ describe('PermissionMatrix', () => {
 
     expect(screen.getByRole('heading', { name: /matriz de permisos/i })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /cajero/i })).toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: /auditor/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /^auditor$/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /facturacion/i })).toBeInTheDocument();
   });
 
@@ -68,6 +73,14 @@ describe('PermissionMatrix', () => {
     expect(screen.getByRole('columnheader', { name: /catalog manager/i })).toBeInTheDocument();
     expect(screen.getByLabelText('Catalog Manager tiene Ver caja')).toBeInTheDocument();
     expect(screen.queryByLabelText('catalog_manager tiene Ver caja')).not.toBeInTheDocument();
+  });
+
+  it('marks critical permissions with a visible risk label', () => {
+    render(<PermissionMatrix roles={roles} permissionCatalog={catalog} />);
+
+    const auditPermission = screen.getByRole('rowheader', { name: /ver auditoria audit\.view/i });
+
+    expect(within(auditPermission).getByText(/permiso critico/i)).toBeInTheDocument();
   });
 
   it('returns null when no roles or catalog are provided', () => {
