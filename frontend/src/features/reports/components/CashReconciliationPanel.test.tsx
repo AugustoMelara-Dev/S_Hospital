@@ -40,4 +40,30 @@ describe('CashReconciliationPanel', () => {
     expect(document.body.textContent).toContain('- L 5.00');
     expect(screen.getByText('Cerrada')).toBeInTheDocument();
   });
+
+  it('shows human fallbacks when cash session dates are unavailable', () => {
+    render(
+      <CashReconciliationPanel
+        report={buildExecutiveReport({
+          cash_sessions: [
+            {
+              id: 10,
+              cashier: 'Caja Validacion',
+              opened_at: 'fecha-danada',
+              closed_at: 'cierre-danado',
+              opening_amount: '500.00',
+              expected_cash: '500.00',
+              counted_cash: '500.00',
+              difference: '0.00',
+              status: 'closed',
+              closure_note: null,
+            },
+          ],
+        })}
+      />,
+    );
+
+    expect(screen.getAllByText('Fecha no disponible')).toHaveLength(2);
+    expect(document.body.textContent).not.toMatch(/Invalid Date|fecha-danada|cierre-danado/i);
+  });
 });

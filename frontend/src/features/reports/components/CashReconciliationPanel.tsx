@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
 import type { ExecutiveReport } from '@/lib/api';
+import { formatLocalizedDateTime } from '@/lib/format/formatDate';
 
 type CashReconciliationPanelProps = {
   report: ExecutiveReport;
@@ -189,5 +190,8 @@ export function CashReconciliationPanel({ report }: CashReconciliationPanelProps
 }
 
 function formatSessionDate(value: string | null): string {
-  return value ? new Date(value).toLocaleString('es-HN') : '-';
+  if (!value) return 'Sin fecha';
+  const formatted = formatLocalizedDateTime(value);
+
+  return formatted === '-' ? 'Fecha no disponible' : formatted;
 }

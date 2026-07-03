@@ -4127,3 +4127,29 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, facturacion, caja, catalogo, historial, recibos, respaldos ni usuarios.
 - Este corte mejora reportes utiles de cuentas pendientes sin alterar auditoria, permisos ni datos fiscales.
+
+## 171. Fase 14 - Conciliacion de caja tolera fechas no disponibles
+
+Cambio aplicado:
+
+- `CashReconciliationPanel` ahora usa el formateador seguro compartido para apertura y cierre de sesiones de caja.
+- Si `opened_at` o `closed_at` llegan corruptos o no parseables, el reporte muestra `Fecha no disponible` en vez de `Invalid Date` o valores tecnicos.
+- Se agrego una regresion con apertura y cierre corruptos para proteger el reporte de conciliacion diaria.
+- Se mantiene `Sin fecha` para fechas realmente ausentes.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- CashReconciliationPanel.test.tsx -t "shows human fallbacks when cash session dates are unavailable" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial correcto: la tabla mostraba dos `Invalid Date`; luego OK: 1 test pasa. |
+| `npm run test -- CashReconciliationPanel.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 3 tests pasan. |
+| `npm run test -- ReportsExecutive.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 2 tests pasan. |
+| `npm run lint` | OK. |
+| `npm run typecheck` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, facturacion, caja operativa, catalogo, historial, recibos, respaldos ni usuarios.
+- Este corte mejora el reporte de caja/cierre diario sin alterar calculos de esperado, contado, diferencias ni auditoria.
