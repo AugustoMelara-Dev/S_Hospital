@@ -181,6 +181,19 @@ describe('InstitutionalReceiptSettingsView', () => {
     expect(screen.queryByText(/soporte t/i)).not.toBeInTheDocument();
   });
 
+  it('keeps thermal ticket compatibility out of the normal institutional paper choices', async () => {
+    renderView({ canAdvancedPrintSettings: false });
+
+    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
+    await activateTab('Papel y copias');
+
+    expect(screen.getByRole('radio', { name: /^Carta\b/i })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /^Media carta\b/i })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /^A5\b/i })).toBeInTheDocument();
+    expect(screen.queryByRole('radio', { name: /ticket 80/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('radio', { name: /ticket 58/i })).not.toBeInTheDocument();
+  });
+
   it('uses operational paper copy without print implementation terms', async () => {
     renderView({ canAdvancedPrintSettings: false });
 

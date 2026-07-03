@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { LoadingState } from '@/components/ui/states';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { PaperProfileSelector, SectionCard, StatCard } from '@/components/shared';
+import { PAPER_PROFILES, PaperProfileSelector, SectionCard, StatCard } from '@/components/shared';
 import { ReceiptSettingsPreview } from './components/ReceiptSettingsPreview';
 import { type InstitutionalReceiptSeries, type ReceiptPrintProfile, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { downloadBlob } from '@/lib/download';
@@ -53,7 +53,9 @@ const PAPER_TO_RECEIPT_CODE: Record<PaperProfileCode, ReceiptPrintProfile['code'
   '58mm': 'thermal_58mm',
 };
 
-const SUPPORT_ONLY_PROFILE_CODES = new Set(['recibo_pequeno_personalizado']);
+const PRIMARY_PAPER_PROFILE_CODES = new Set<PaperProfileCode>(['carta', 'media_carta', 'a5']);
+const NORMAL_RECEIPT_PAPER_OPTIONS = PAPER_PROFILES.filter((profile) => PRIMARY_PAPER_PROFILE_CODES.has(profile.code));
+const SUPPORT_ONLY_PROFILE_CODES = new Set(['recibo_pequeno_personalizado', 'thermal_80mm', 'thermal_58mm']);
 
 const PROFILE_FORM_DEFAULTS = {
   copies_mode: 'original_only',
@@ -628,6 +630,7 @@ export function InstitutionalReceiptSettingsView({
                   if (mapped) setSelectedCode(mapped);
                 }}
                 disabled={!canEdit}
+                options={canAdvancedPrintSettings ? PAPER_PROFILES : NORMAL_RECEIPT_PAPER_OPTIONS}
                 helperText="Los márgenes se calculan automáticamente según el tipo de papel seleccionado."
               />
 

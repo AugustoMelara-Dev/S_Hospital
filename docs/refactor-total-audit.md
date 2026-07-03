@@ -2450,3 +2450,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, migraciones, permisos, perfiles de impresion ni contratos API.
 - Este corte mantiene el flujo normal de recibo institucional sin opciones tecnicas y evita que la vista previa induzca a imprimir con una fecha de ejemplo obsoleta.
+
+## 100. Fase 6 - Papel normal limita tickets termicos a compatibilidad
+
+Cambio aplicado:
+
+- El selector normal de papel del recibo institucional muestra solo Carta, Media carta y A5.
+- Los perfiles `thermal_80mm` y `thermal_58mm` quedan fuera del flujo normal junto con el perfil pequeno personalizado.
+- El modo con permiso avanzado conserva la lista completa de perfiles de papel para soporte o compatibilidad.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- InstitutionalReceiptSettingsView.test.tsx` | RED inicial: `Ticket 80 mm` aparecia como radio normal; luego OK: 11 tests pasan. |
+| `npm run test -- ReceiptSettingsPreview.test.tsx InstitutionalReceiptSettingsView.test.tsx` | OK: 2 archivos, 14 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, migraciones, CSS de impresion ni contratos API.
+- Este corte mantiene el recibo institucional diario enfocado en papel carta/media carta/A5, dejando tickets termicos como compatibilidad secundaria fuera del flujo normal.
