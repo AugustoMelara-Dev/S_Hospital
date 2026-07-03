@@ -68,6 +68,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   const reprintIdempotencyKeyRef = useRef<string | null>(null);
   const receiptGenerationIdempotencyKeyRef = useRef<string | null>(null);
   const actionRequestRef = useRef(0);
+  const receiptRequestRef = useRef(0);
 
   const canReprint = user.permissions.includes('receipts.reprint');
   const canReprintAny = user.permissions.includes('receipts.reprint_any');
@@ -140,10 +141,14 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   }
 
   async function openReceiptModal(invoiceId: number) {
+    const requestId = receiptRequestRef.current + 1;
+    receiptRequestRef.current = requestId;
     setReceipt(null);
 
     try {
       const invoice = await apiClient.getInvoice(invoiceId);
+      if (receiptRequestRef.current !== requestId) return;
+
       setSelectedInvoice(invoice);
       const institutionalReceipt = issuedInstitutionalReceipt(invoice);
       if (institutionalReceipt) {
@@ -163,12 +168,16 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
 
       const requestedWidth = institutionalReceiptPaperSize(receiptWidth);
       const receiptData = await apiClient.getReceipt(invoiceId, requestedWidth);
+      if (receiptRequestRef.current !== requestId) return;
+
       const normalizedWidth = institutionalReceiptPaperSize(receiptData.width);
       setReceiptWidth(normalizedWidth);
       setReceipt({ ...receiptData, width: normalizedWidth });
       setReceiptModalOpen(true);
     } catch (error) {
-      onStatus(userSafeErrorMessage(error, 'No se pudo cargar recibo.'));
+      if (receiptRequestRef.current === requestId) {
+        onStatus(userSafeErrorMessage(error, 'No se pudo cargar recibo.'));
+      }
     }
   }
 

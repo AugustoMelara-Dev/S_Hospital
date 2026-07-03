@@ -572,6 +572,56 @@ describe('InvoiceHistoryView', () => {
     expect(getReceipt).not.toHaveBeenCalled();
   });
 
+  it('keeps the latest receipt selection when previous receipt requests finish late', async () => {
+    const first = invoiceFixture({
+      id: 51,
+      invoice_number: '000-001-01-00000051',
+      patient_name: 'Paciente Solicitud Lenta',
+      status: 'paid',
+      institutional_receipt: null,
+    });
+    const second = invoiceFixture({
+      id: 52,
+      invoice_number: '000-001-01-00000052',
+      patient_name: 'Paciente Solicitud Vigente',
+      status: 'paid',
+      institutional_receipt: null,
+    });
+    let resolveFirstInvoice!: (invoice: Invoice) => void;
+    const firstInvoiceRequest = new Promise<Invoice>((resolve) => {
+      resolveFirstInvoice = resolve;
+    });
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [first, second],
+      meta: { current_page: 1, per_page: 10, total: 2 },
+    });
+    vi.spyOn(apiClient, 'getInvoice').mockImplementation((invoiceId: number) => (
+      invoiceId === first.id ? firstInvoiceRequest : Promise.resolve(second)
+    ));
+    vi.spyOn(apiClient, 'getReceipt').mockImplementation((invoiceId: number) => (
+      Promise.resolve(receiptFixture(invoiceId === first.id ? first : second))
+    ));
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente Solicitud Lenta')).toBeInTheDocument());
+    await openInvoiceMenu(first.invoice_number);
+    fireEvent.click(await screen.findByRole('menuitem', { name: /Ver recibo/i }));
+
+    await openInvoiceMenu(second.invoice_number);
+    fireEvent.click(await screen.findByRole('menuitem', { name: /Ver recibo/i }));
+
+    await waitFor(() => expect(screen.getByRole('dialog', { name: new RegExp(second.invoice_number) })).toBeInTheDocument());
+
+    await act(async () => {
+      resolveFirstInvoice(first);
+    });
+
+    await waitFor(() => expect(screen.getByRole('dialog', { name: new RegExp(second.invoice_number) })).toBeInTheDocument());
+    expect(screen.queryByRole('dialog', { name: new RegExp(first.invoice_number) })).not.toBeInTheDocument();
+  });
+
   it('downloads an issued institutional receipt pdf without registering a reprint', async () => {
     const paid = invoiceFixture({
       id: 41,

@@ -1689,3 +1689,25 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, schema, migraciones, endpoints, permisos, caja, facturacion fiscal ni correlativos.
 - Este corte mejora las acciones por fila en historial, reportes, catalogo y demas tablas que usan el menu compartido, evitando que un menu abierto oculte/bloquee la siguiente accion del operador.
+
+## 69. Fase 9 - Historial conserva el recibo seleccionado ante respuestas tardias
+
+Cambio aplicado:
+
+- `InvoiceHistoryView` ahora usa un identificador de solicitud vigente para `Ver recibo`.
+- Si una solicitud anterior de detalle o recibo termina despues de que el operador ya eligio otra factura, la respuesta obsoleta no cambia el dialogo ni muestra errores atrasados.
+- Se agrego cobertura para dos aperturas consecutivas de recibo donde la primera respuesta llega tarde y la pantalla debe conservar la segunda factura.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- InvoiceHistoryView.test.tsx -t "keeps the latest receipt selection"` | RED inicial porque la respuesta tardia de la primera factura reemplazaba el dialogo vigente; luego OK: 1 test focal pasa. |
+| `npm run test -- InvoiceHistoryView.test.tsx` | OK: 25 tests pasan. |
+| `npm run test -- action-menu.test.tsx` | OK: 4 tests pasan. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, schema, migraciones, endpoints, permisos, anulaciones, pagos ni correlativos.
+- Este corte reduce errores operativos por doble seleccion rapida en historial sin cambiar las reglas de auditoria, reimpresion o recibo institucional.
