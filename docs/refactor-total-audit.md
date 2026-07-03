@@ -1366,3 +1366,28 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, schema, migraciones, facturas ni snapshots.
 - Este corte permite desactivar servicios ya facturados desde la UI normal sin intentar borrar ni romper historial fiscal.
+
+## 56. Fase 9 - Historial oculta anular/reversar fuera de alcance operativo
+
+Cambio aplicado:
+
+- `InvoiceHistoryTable` ahora exige alcance operativo por fila antes de mostrar `Anular factura` o `Reversar pago`.
+- Las acciones peligrosas se exponen solo si el usuario tiene `invoices.operate_any` o si la factura es propia del dia operativo actual, ademas del permiso nominal `invoices.void` o `invoices.reverse`.
+- La fixture `adminUser` del historial incluye `invoices.operate_any` para representar el alcance operativo que tiene una cuenta administrativa real.
+- Se agrego cobertura para un cajero con permisos nominales de anular/reversar pero sin alcance operativo sobre facturas ajenas o antiguas.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- InvoiceHistoryView.test.tsx -t "without operational invoice scope"` | RED inicial porque el menu de acciones seguia visible; luego OK: 1 test focal pasa. |
+| `npm run test -- InvoiceHistoryView.test.tsx` | OK: 24 tests pasan. |
+| `docker compose exec backend php artisan test --filter=InvoiceHistoryReprintVoidTest` | OK: 18 tests pasan, 118 assertions; confirma que el backend conserva la defensa de policy. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, schema, migraciones, caja, pagos, endpoints ni datos fiscales.
+- Este corte reduce 403 previsibles desde historial sin convertir el frontend en fuente de verdad de RBAC.

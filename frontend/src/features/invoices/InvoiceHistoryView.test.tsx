@@ -318,6 +318,49 @@ describe('InvoiceHistoryView', () => {
     expect(voidInvoice).not.toHaveBeenCalled();
   });
 
+  it('does not expose void or reverse actions without operational invoice scope', async () => {
+    const issued = invoiceFixture({
+      id: 21,
+      invoice_number: '000-001-01-00000021',
+      patient_name: 'Paciente Ajeno Emitido',
+      status: 'issued',
+      issued_at: '2026-06-01T12:00:00.000000Z',
+      issuer: { id: 99, name: 'Otra Caja', username: 'otra-caja' },
+    });
+    const paid = invoiceFixture({
+      id: 22,
+      invoice_number: '000-001-01-00000022',
+      patient_name: 'Paciente Ajeno Pagado',
+      status: 'paid',
+      paid_amount: '17.25',
+      balance_due: '0.00',
+      issued_at: '2026-06-01T12:00:00.000000Z',
+      issuer: { id: 99, name: 'Otra Caja', username: 'otra-caja' },
+    });
+    const voidInvoice = vi.spyOn(apiClient, 'voidInvoice');
+    const reverseInvoice = vi.spyOn(apiClient, 'reverseInvoice');
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [issued, paid],
+      meta: { current_page: 1, per_page: 10, total: 2 },
+    });
+
+    renderWithQueryClient(
+      <InvoiceHistoryView
+        user={historyUser(['invoices.view', 'invoices.void', 'invoices.reverse'])}
+        onStatus={vi.fn()}
+      />,
+    );
+
+    await waitFor(() => expect(screen.getByText('Paciente Ajeno Emitido')).toBeInTheDocument());
+    expect(screen.getByText('Paciente Ajeno Pagado')).toBeInTheDocument();
+
+    expect(screen.queryByRole('button', { name: `Acciones de la factura ${issued.invoice_number}` })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: `Acciones de la factura ${paid.invoice_number}` })).not.toBeInTheDocument();
+    expect(voidInvoice).not.toHaveBeenCalled();
+    expect(reverseInvoice).not.toHaveBeenCalled();
+  });
+
   it('exposes paid invoice reverse flow with reason', async () => {
     vi.spyOn(apiBase, 'createClientIdempotencyKey').mockReturnValue('history-reverse-attempt-1');
     const paid = invoiceFixture({
@@ -925,7 +968,7 @@ function adminUser(): AuthUser {
     username: 'admin',
     active: true,
     roles: ['admin'],
-    permissions: ['receipts.view', 'receipts.reprint', 'receipts.reprint_any', 'payments.create', 'invoices.void', 'invoices.reverse'],
+    permissions: ['receipts.view', 'receipts.reprint', 'receipts.reprint_any', 'payments.create', 'invoices.void', 'invoices.reverse', 'invoices.operate_any'],
     must_change_password: false,
   };
 }
@@ -935,6 +978,14 @@ function limitedUser(): AuthUser {
     ...adminUser(),
     roles: ['cashier'],
     permissions: ['invoices.view'],
+  };
+}
+
+function historyUser(permissions: string[]): AuthUser {
+  return {
+    ...adminUser(),
+    roles: ['cashier'],
+    permissions,
   };
 }
 

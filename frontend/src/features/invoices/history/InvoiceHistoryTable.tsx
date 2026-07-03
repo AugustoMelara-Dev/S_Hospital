@@ -100,6 +100,7 @@ export function InvoiceHistoryTable({
       render: (invoice) => {
         const isOwn = isOwnInvoiceFromToday(invoice);
         const institutionalReceipt = issuedInstitutionalReceipt(invoice);
+        const canOperateInvoice = canOperateAnyInvoice || isOwn;
         const canOperateReceipt = canReprintAny || canVoid || canOperateAnyInvoice || isOwn;
         const canOpenInstitutionalReceipt = institutionalReceipt
           ? canViewReceipt
@@ -155,7 +156,7 @@ export function InvoiceHistoryTable({
         }
 
         const dangerGroup: ActionMenuGroup = { key: 'danger', items: [] };
-        if (canReverse && (invoice.status === 'paid' || invoice.status === 'partial')) {
+        if (canReverse && canOperateInvoice && (invoice.status === 'paid' || invoice.status === 'partial')) {
           dangerGroup.items.push({
             key: 'reverse',
             label: 'Reversar pago',
@@ -164,7 +165,7 @@ export function InvoiceHistoryTable({
             onSelect: () => onPrepareInvoiceAction(invoice.id, 'reverse'),
           });
         }
-        if (canVoid && invoice.status === 'issued') {
+        if (canVoid && canOperateInvoice && invoice.status === 'issued') {
           dangerGroup.items.push({
             key: 'void',
             label: 'Anular factura',
