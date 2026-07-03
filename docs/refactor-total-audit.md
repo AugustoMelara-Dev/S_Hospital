@@ -3683,3 +3683,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, migraciones, caja operacional, permisos, auditoria ni exportadores.
 - Este corte mejora la UX del reporte de caja en operacion LAN/offline evitando consultas inutiles por IDs invalidos.
+
+## 153. Fase 10 - Auditoria bloquea rangos invertidos
+
+Cambio aplicado:
+
+- `ReportsAudit` valida localmente que la fecha de inicio no sea posterior a la fecha final antes de consultar la bitacora.
+- Si el rango es invalido, muestra una alerta humana y reporta el estado mediante `onStatus`, sin llamar al API con filtros imposibles.
+- La busqueda valida conserva los filtros existentes; no se cambian backend, endpoints, permisos, paginacion ni contratos de auditoria.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- ReportsAudit.test.tsx -t "blocks inverted audit date ranges" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial: el API recibia `from` posterior a `to`; luego OK: 1 test pasa. |
+| `npm run test -- ReportsAudit.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 6 tests pasan. |
+| `npm run lint` | OK. |
+| `npm run typecheck` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, migraciones, caja, facturacion, recibos, exportadores ni permisos.
+- Este corte mejora reportes de auditoria para operacion LAN/offline evitando errores evitables y mensajes tecnicos del servidor.

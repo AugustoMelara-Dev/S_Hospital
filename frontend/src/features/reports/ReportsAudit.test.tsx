@@ -84,6 +84,22 @@ describe('ReportsAudit', () => {
     expect(screen.getByText(/sin permisos para auditor/i)).toBeInTheDocument();
   });
 
+  it('blocks inverted audit date ranges before requesting logs', async () => {
+    renderView();
+
+    await waitFor(() => {
+      expect(getAuditLogsMock).toHaveBeenCalledTimes(1);
+    });
+    getAuditLogsMock.mockClear();
+
+    fireEvent.change(screen.getByLabelText(/^desde$/i), { target: { value: '2026-07-10' } });
+    fireEvent.change(screen.getByLabelText(/^hasta$/i), { target: { value: '2026-07-01' } });
+    fireEvent.click(screen.getByRole('button', { name: /buscar/i }));
+
+    expect(getAuditLogsMock).not.toHaveBeenCalled();
+    expect(screen.getByText(/fecha de inicio debe ser anterior o igual/i)).toBeInTheDocument();
+  });
+
   it('fetches audit logs and renders the entries when the API returns data', async () => {
     getAuditLogsMock.mockResolvedValue(oneEntryAuditPage);
 

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { AlertTriangle, Search } from 'lucide-react';
+import { Alert } from '@/components/ui/alert';
 import { ErrorState, LoadingState } from '@/components/ui/states';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,10 +48,12 @@ type ReportsAuditProps = {
 
 export function ReportsAudit({
   canViewManagerial,
+  onStatus,
 }: ReportsAuditProps) {
   const summaryRange = useMemo(() => computePresetRange('thisMonth'), []);
   const [draft, setDraft] = useState<AuditLogFilters>(EMPTY_FILTERS);
   const [applied, setApplied] = useState<AuditLogFilters>(EMPTY_FILTERS);
+  const [rangeError, setRangeError] = useState('');
 
   const queryKey = useMemo(
     () => ['audit-logs', applied] as const,
@@ -86,10 +89,20 @@ export function ReportsAudit({
   }
 
   function handleApply() {
+    const error = validateAuditDateRange(draft.from, draft.to);
+
+    if (error) {
+      setRangeError(error);
+      onStatus(error);
+      return;
+    }
+
+    setRangeError('');
     setApplied({ ...draft, page: 1 });
   }
 
   function handleReset() {
+    setRangeError('');
     setDraft(EMPTY_FILTERS);
     setApplied(EMPTY_FILTERS);
   }
@@ -168,6 +181,12 @@ export function ReportsAudit({
         </div>
       </form>
 
+      {rangeError ? (
+        <Alert variant="warning" title="Rango de auditoria no valido">
+          {rangeError}
+        </Alert>
+      ) : null}
+
       {isLoading ? (
         <LoadingState label="Cargando bitacora de auditoria..." />
       ) : null}
@@ -226,6 +245,25 @@ export function ReportsAudit({
       ) : null}
     </section>
   );
+}
+
+function validateAuditDateRange(from: string, to: string): string {
+  if (!from || !to) {
+    return '';
+  }
+
+  const start = new Date(`${from}T00:00:00`);
+  const end = new Date(`${to}T00:00:00`);
+
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return 'Seleccione fechas validas para la auditoria.';
+  }
+
+  if (start.getTime() > end.getTime()) {
+    return 'La fecha de inicio debe ser anterior o igual a la fecha de fin.';
+  }
+
+  return '';
 }
 
 function resolveAuditActionFilter(value: string): string | undefined {
