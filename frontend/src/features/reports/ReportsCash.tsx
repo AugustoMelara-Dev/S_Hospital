@@ -25,14 +25,22 @@ export function ReportsCash({
       return;
     }
 
-    if (!cashReportId.trim()) {
+    const normalizedCashReportId = cashReportId.trim();
+
+    if (!normalizedCashReportId) {
       setCashError('Ingrese el numero de caja.');
       return;
     }
+
+    if (!isPositiveInteger(normalizedCashReportId)) {
+      setCashError('Ingrese un numero de caja valido.');
+      return;
+    }
+
     try {
       setCashError('');
       setCashLoading(true);
-      setCashSessionReport(await apiClient.getCashSessionReport(cashReportId));
+      setCashSessionReport(await apiClient.getCashSessionReport(normalizedCashReportId));
     } catch (err) {
       setCashError(userSafeErrorMessage(err, 'No se pudo cargar la caja.'));
     } finally {
@@ -89,7 +97,12 @@ export function ReportsCash({
         loading={cashLoading}
         exporting={cashExporting}
         error={cashError}
-        onCashReportIdChange={setCashReportId}
+        onCashReportIdChange={(value) => {
+          setCashReportId(value);
+          if (cashError && (value.trim() === '' || isPositiveInteger(value.trim()))) {
+            setCashError('');
+          }
+        }}
         onExport={() => {
           void exportCashReport();
         }}
@@ -104,4 +117,8 @@ export function ReportsCash({
 
 function dateOnly(value: string): string {
   return value.slice(0, 10);
+}
+
+function isPositiveInteger(value: string): boolean {
+  return /^[1-9]\d*$/.test(value);
 }

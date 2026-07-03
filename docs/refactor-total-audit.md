@@ -3658,3 +3658,28 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, migraciones, caja, catalogo, reportes ni recibos institucionales backend.
 - Este corte mejora accesibilidad y claridad de acciones criticas de historial sin relajar la validacion server-side.
+
+## 152. Fase 10 - Reporte de caja valida numero local
+
+Cambio aplicado:
+
+- `ReportsCash` ahora normaliza el numero de caja antes de consultar y bloquea valores vacios o no positivos con errores humanos.
+- `CashSessionReportTab` usa input de texto con `inputMode="numeric"` para que la validacion de la app muestre el error en vez de depender del bloqueo nativo del navegador.
+- La consulta y la exportacion siguen usando el ID normalizado; no se cambian endpoints, permisos, backend, migraciones ni reportes fiscales.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- ReportsCash.test.tsx -t "blocks invalid cash session numbers" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial: no aparecia el error `Ingrese un numero de caja valido`; luego OK: 1 test pasa. |
+| `npm run test -- ReportsCash.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 3 tests pasan tras aislar mocks por caso. |
+| `npm run test -- CashSessionReportTab.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 6 tests pasan. |
+| `npm run lint` | OK. |
+| `npm run typecheck` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, migraciones, caja operacional, permisos, auditoria ni exportadores.
+- Este corte mejora la UX del reporte de caja en operacion LAN/offline evitando consultas inutiles por IDs invalidos.

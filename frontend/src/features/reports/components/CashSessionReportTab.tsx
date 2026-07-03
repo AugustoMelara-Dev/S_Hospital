@@ -138,9 +138,8 @@ export function CashSessionReportTab({
               <Label htmlFor="cash-session-id">Numero de Caja</Label>
               <Input
                 id="cash-session-id"
-                type="number"
+                type="text"
                 inputMode="numeric"
-                min="1"
                 placeholder="Numero mostrado en caja"
                 aria-describedby="cash-session-id-help"
                 value={cashReportId}
@@ -368,3 +367,4 @@ function formatDate(value: string | null | undefined): string {
 function fallbackText(value: string | null | undefined, fallback: string): string {
   return value?.trim() || fallback;
 }
+

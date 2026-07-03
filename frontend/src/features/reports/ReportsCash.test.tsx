@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ReportsCash } from './ReportsCash';
 import type { CashSessionReport } from '@/lib/api/types';
 
@@ -23,6 +23,12 @@ const { apiClient } = await import('@/lib/api');
 const { downloadBlob } = await import('@/lib/download');
 
 describe('ReportsCash', () => {
+  beforeEach(() => {
+    vi.mocked(apiClient.getCashSessionReport).mockReset();
+    vi.mocked(apiClient.downloadReportExport).mockReset();
+    vi.mocked(downloadBlob).mockReset();
+  });
+
   it('shows a loading state while cash session report is loading', () => {
     vi.mocked(apiClient.getCashSessionReport).mockReturnValue(new Promise(() => undefined));
 
@@ -33,6 +39,16 @@ describe('ReportsCash', () => {
 
     expect(apiClient.getCashSessionReport).toHaveBeenCalledWith('12');
     expect(screen.getByRole('button', { name: /consultando/i })).toBeDisabled();
+  });
+
+  it('blocks invalid cash session numbers before requesting the report', async () => {
+    render(<ReportsCash canViewCash canViewManagerial={false} />);
+
+    fireEvent.change(screen.getByLabelText(/numero de caja/i), { target: { value: '0' } });
+    fireEvent.click(screen.getByRole('button', { name: /ver caja/i }));
+
+    expect(apiClient.getCashSessionReport).not.toHaveBeenCalled();
+    expect(screen.getByText(/ingrese un numero de caja valido/i)).toBeInTheDocument();
   });
 
   it('exports the loaded cash session report with the selected cash box id', async () => {
