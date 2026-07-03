@@ -89,6 +89,108 @@ describe('ServiceSheet', () => {
     expect(onSuccess).toHaveBeenCalled();
   });
 
+  it('blocks short price change reasons before saving', async () => {
+    const saveService = vi.spyOn(apiClient, 'saveService').mockResolvedValue({
+      id: 1,
+      category_id: 1,
+      area_id: 1,
+      name: 'Glucosa',
+      slug: 'glucosa',
+      price: '20.00',
+      scan_code: null,
+      barcode: null,
+      qr_code: null,
+      taxable: true,
+      active: true,
+      special_rule_code: null,
+    });
+
+    render(
+      <ServiceSheet
+        open
+        onOpenChange={vi.fn()}
+        service={{
+          id: 1,
+          category_id: 1,
+          area_id: 1,
+          name: 'Glucosa',
+          price: '15.00',
+          scan_code: null,
+          barcode: null,
+          qr_code: null,
+          taxable: true,
+          active: true,
+          visible_in_billing: true,
+          is_billable: true,
+          special_rule_code: null,
+        }}
+        categories={[{ id: 1, name: 'Laboratorio' }]}
+        areas={[{ id: 1, name: 'Laboratorio' }]}
+        onSuccess={noop}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText(/precio/i), { target: { value: '20.00' } });
+    fireEvent.change(await screen.findByLabelText(/motivo del cambio de precio/i), {
+      target: { value: 'x' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /actualizar/i }));
+
+    expect(await screen.findByText(/motivo del cambio de precio debe tener al menos 5 caracteres/i)).toBeInTheDocument();
+    expect(saveService).not.toHaveBeenCalled();
+  });
+
+  it('blocks short tax change reasons before saving', async () => {
+    const saveService = vi.spyOn(apiClient, 'saveService').mockResolvedValue({
+      id: 1,
+      category_id: 1,
+      area_id: 1,
+      name: 'Glucosa',
+      slug: 'glucosa',
+      price: '15.00',
+      scan_code: null,
+      barcode: null,
+      qr_code: null,
+      taxable: false,
+      active: true,
+      special_rule_code: null,
+    });
+
+    render(
+      <ServiceSheet
+        open
+        onOpenChange={vi.fn()}
+        service={{
+          id: 1,
+          category_id: 1,
+          area_id: 1,
+          name: 'Glucosa',
+          price: '15.00',
+          scan_code: null,
+          barcode: null,
+          qr_code: null,
+          taxable: true,
+          active: true,
+          visible_in_billing: true,
+          is_billable: true,
+          special_rule_code: null,
+        }}
+        categories={[{ id: 1, name: 'Laboratorio' }]}
+        areas={[{ id: 1, name: 'Laboratorio' }]}
+        onSuccess={noop}
+      />,
+    );
+
+    fireEvent.click(screen.getByLabelText(/aplica isv/i));
+    fireEvent.change(await screen.findByLabelText(/motivo del cambio de impuesto/i), {
+      target: { value: 'x' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /actualizar/i }));
+
+    expect(await screen.findByText(/motivo del cambio de impuesto debe tener al menos 5 caracteres/i)).toBeInTheDocument();
+    expect(saveService).not.toHaveBeenCalled();
+  });
+
   it('requires and sends a reason when editing the service tax flag', async () => {
     const saveService = vi.spyOn(apiClient, 'saveService').mockResolvedValue({
       id: 1,

@@ -78,6 +78,7 @@ const defaultValues: ServiceFormData = {
 const SPECIAL_RULE_NONE = 'none';
 const SPECIAL_RULE_ERYTHROPOIETIN = 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION';
 const ERYTHROPOIETIN_FIXED_PRICE = '25.00';
+const MIN_CHANGE_REASON_LENGTH = 5;
 
 export function ServiceSheet({
   open,
@@ -154,15 +155,38 @@ export function ServiceSheet({
       return trimmed === '' ? null : trimmed;
     };
 
-    if (requiresPriceChangeReason && optionalCode(data.price_change_reason) === null) {
+    const priceChangeReason = optionalCode(data.price_change_reason);
+    const taxChangeReason = optionalCode(data.tax_change_reason);
+
+    if (requiresPriceChangeReason && priceChangeReason === null) {
       setError('price_change_reason', { type: 'manual', message: 'Indique el motivo del cambio de precio.' });
       setFocus('price_change_reason');
 
       return;
     }
 
-    if (requiresTaxChangeReason && optionalCode(data.tax_change_reason) === null) {
+    if (requiresPriceChangeReason && priceChangeReason !== null && priceChangeReason.length < MIN_CHANGE_REASON_LENGTH) {
+      setError('price_change_reason', {
+        type: 'manual',
+        message: 'El motivo del cambio de precio debe tener al menos 5 caracteres.',
+      });
+      setFocus('price_change_reason');
+
+      return;
+    }
+
+    if (requiresTaxChangeReason && taxChangeReason === null) {
       setError('tax_change_reason', { type: 'manual', message: 'Indique el motivo del cambio de impuesto.' });
+      setFocus('tax_change_reason');
+
+      return;
+    }
+
+    if (requiresTaxChangeReason && taxChangeReason !== null && taxChangeReason.length < MIN_CHANGE_REASON_LENGTH) {
+      setError('tax_change_reason', {
+        type: 'manual',
+        message: 'El motivo del cambio de impuesto debe tener al menos 5 caracteres.',
+      });
       setFocus('tax_change_reason');
 
       return;
@@ -170,8 +194,8 @@ export function ServiceSheet({
 
     const payload = {
       ...data,
-      price_change_reason: optionalCode(data.price_change_reason),
-      tax_change_reason: optionalCode(data.tax_change_reason),
+      price_change_reason: priceChangeReason,
+      tax_change_reason: taxChangeReason,
       scan_code: optionalCode(data.scan_code),
       barcode: optionalCode(data.barcode),
       qr_code: optionalCode(data.qr_code),

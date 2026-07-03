@@ -3611,3 +3611,29 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, migraciones, reportes, recibos ni auditoria.
 - Este corte refuerza el cierre de caja local sin relajar seguridad ni reglas fiscales.
+
+## 150. Fase 8 - Motivos cortos de catalogo se bloquean en frontend
+
+Cambio aplicado:
+
+- `ServiceSheet` ahora normaliza una sola vez los motivos de cambio de precio e impuesto antes de guardar.
+- Si el cambio requiere motivo, el frontend bloquea valores de menos de 5 caracteres y muestra un error humano antes de llamar al API.
+- El payload conserva los motivos ya recortados; no se cambian backend, migraciones, permisos, auditoria, endpoints ni reglas fiscales.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- ServiceSheet.test.tsx -t "blocks short price change reasons" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial: no aparecia el error de minimo 5 caracteres para precio. |
+| `npm run test -- ServiceSheet.test.tsx -t "blocks short tax change reasons" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial: no aparecia el error de minimo 5 caracteres para impuesto. |
+| `npm run test -- ServiceSheet.test.tsx -t "blocks short" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 2 tests pasan. |
+| `npm run test -- ServiceSheet.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 15 tests pasan. |
+| `npm run lint` | OK. |
+| `npm run typecheck` | Primer intento detecto estrechamiento nulo en los motivos; se ajusto la condicion explicita. Reintento OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, migraciones, caja, facturacion, recibos, reportes ni auditoria.
+- Este corte alinea la UX de catalogo con la validacion backend de motivos sin convertir el frontend en fuente de verdad fiscal.
