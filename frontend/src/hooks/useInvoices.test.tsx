@@ -2,12 +2,13 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useCreateInvoice } from './useInvoices';
+import { useCreateInvoice, useInvoices } from './useInvoices';
 import { apiClient } from '@/lib/api';
 import { createClientIdempotencyKey } from '@/lib/api/base';
 
 vi.mock('@/lib/api', () => ({
   apiClient: {
+    getInvoices: vi.fn(),
     createInvoice: vi.fn(),
   },
 }));
@@ -32,6 +33,35 @@ const payload = {
   patient_dialysis_prescription: false,
   items: [{ service_id: 1, quantity: '1.00', notes: null }],
 };
+
+describe('useInvoices', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('trims text filters before querying invoice history', async () => {
+    vi.mocked(apiClient.getInvoices).mockResolvedValue({ data: [], meta: { current_page: 1, per_page: 10, total: 0 } });
+
+    renderHook(() => useInvoices({
+      date_from: '2026-07-03',
+      date_to: '2026-07-03',
+      patient: '  Maria Lopez  ',
+      invoice_number: '  000-001-01-00000022  ',
+      status: '',
+      page: 1,
+      per_page: 10,
+    }), { wrapper });
+
+    await waitFor(() => expect(apiClient.getInvoices).toHaveBeenCalledWith({
+      date_from: '2026-07-03',
+      date_to: '2026-07-03',
+      patient: 'Maria Lopez',
+      invoice_number: '000-001-01-00000022',
+      page: 1,
+      per_page: 10,
+    }));
+  });
+});
 
 describe('useCreateInvoice', () => {
   beforeEach(() => {

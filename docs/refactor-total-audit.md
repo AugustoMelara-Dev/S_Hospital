@@ -4023,3 +4023,29 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron facturacion, caja, catalogo, usuarios, recibos, respaldos ni reportes.
 - Este corte evita texto ambiguo en una tabla critica para buscar, reimprimir, anular y auditar facturas.
+
+## 167. Fase 10 - Historial recorta filtros de busqueda antes de consultar
+
+Cambio aplicado:
+
+- `useInvoices` ahora normaliza filtros de historial antes de construir la query de TanStack Query y antes de llamar al API.
+- Los filtros de texto se recortan; si quedan vacios, se omiten de la consulta.
+- Se agrego una regresion para paciente y numero de factura con espacios de borde, confirmando que el API recibe `Maria Lopez` y `000-001-01-00000022`.
+- La UI mantiene el control de filtros existente; el cambio solo limpia el contrato de consulta para reducir errores humanos en caja/recepcion.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- useInvoices.test.tsx -t "trims text filters before querying invoice history" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial correcto: `getInvoices` recibia espacios y `status: ""`; luego OK: 1 test pasa. |
+| `npm run test -- useInvoices.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 3 tests pasan. |
+| `npm run test -- InvoiceHistoryView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 32 tests pasan. |
+| `npm run lint` | OK. |
+| `npm run typecheck` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, endpoints, migraciones, permisos, auditoria, caja, catalogo, recibos, respaldos ni reportes.
+- Este corte hace mas tolerante la busqueda de facturas sin alterar totales, pagos, anulaciones, reversas ni datos historicos.
