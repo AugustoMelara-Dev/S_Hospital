@@ -186,7 +186,8 @@ describe('InvoiceHistoryView', () => {
       invoice_number: '000-001-01-00000042',
       patient_name: 'Paciente Solo Lectura',
       status: 'paid',
-      issuer: { id: 9, name: 'Otra Caja', username: 'otra-caja' },
+      issued_at: new Date().toISOString(),
+      issuer: { id: 1, name: 'Admin Hospital', username: 'admin' },
       institutional_receipt: institutionalReceiptFixture({ id: 142, receipt_number_full: 'REC-A-00000142' }),
     });
 
@@ -213,8 +214,10 @@ describe('InvoiceHistoryView', () => {
       invoice_number: '000-001-01-00000043',
       patient_name: 'Paciente PDF Solo Lectura',
       status: 'paid',
+      issued_at: new Date().toISOString(),
       paid_amount: '17.25',
       balance_due: '0.00',
+      issuer: { id: 1, name: 'Admin Hospital', username: 'admin' },
       institutional_receipt: null,
     });
 
@@ -231,6 +234,31 @@ describe('InvoiceHistoryView', () => {
     expect(await screen.findByRole('menuitem', { name: /Ver recibo/i })).toBeInTheDocument();
     expect(screen.queryByRole('menuitem', { name: /Generar PDF/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('menuitem', { name: /Descargar/i })).not.toBeInTheDocument();
+  });
+
+  it('does not expose receipt actions to receipt viewers for invoices outside their operational access', async () => {
+    const paid = invoiceFixture({
+      id: 44,
+      invoice_number: '000-001-01-00000044',
+      patient_name: 'Paciente Recibo Ajeno',
+      status: 'paid',
+      issued_at: '2026-06-01T12:00:00.000000Z',
+      paid_amount: '17.25',
+      balance_due: '0.00',
+      issuer: { id: 9, name: 'Otra Caja', username: 'otra-caja' },
+      institutional_receipt: null,
+    });
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [paid],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+
+    renderWithQueryClient(<InvoiceHistoryView user={receiptViewerUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente Recibo Ajeno')).toBeInTheDocument());
+
+    expect(screen.queryByRole('button', { name: `Acciones de la factura ${paid.invoice_number}` })).not.toBeInTheDocument();
   });
 
   it('renders malformed invoice history amounts as safe financial values', async () => {

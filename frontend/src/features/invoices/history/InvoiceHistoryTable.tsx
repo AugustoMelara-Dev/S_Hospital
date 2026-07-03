@@ -6,6 +6,7 @@ import type { Invoice } from '../../../lib/api';
 
 type InvoiceHistoryTableProps = {
   canIssueInstitutionalReceipt: boolean;
+  canOperateAnyInvoice: boolean;
   canReprint: boolean;
   canReprintAny: boolean;
   canReverse: boolean;
@@ -25,6 +26,7 @@ type InvoiceHistoryTableProps = {
 
 export function InvoiceHistoryTable({
   canIssueInstitutionalReceipt,
+  canOperateAnyInvoice,
   canReprint,
   canReprintAny,
   canReverse,
@@ -97,13 +99,24 @@ export function InvoiceHistoryTable({
       hideable: false,
       render: (invoice) => {
         const isOwn = isOwnInvoiceFromToday(invoice);
+        const institutionalReceipt = issuedInstitutionalReceipt(invoice);
+        const canOperateReceipt = canReprintAny || canVoid || canOperateAnyInvoice || isOwn;
+        const canOpenInstitutionalReceipt = institutionalReceipt
+          ? canViewReceipt
+            && canOperateReceipt
+            && (!hasInstitutionalPrintEvents(institutionalReceipt) || canReprint)
+          : false;
+        const canOpenLegacyReceipt = canViewReceipt
+          && !institutionalReceipt
+          && (canReprintAny || isOwn);
+        const canOpenReceipt = canOpenInstitutionalReceipt || canOpenLegacyReceipt;
         const groups: ActionMenuGroup[] = [];
 
         const primaryGroup: ActionMenuGroup = {
           key: 'receipt',
           items: [],
         };
-        if (canViewReceipt) {
+        if (canOpenReceipt) {
           primaryGroup.items.push({
             key: 'view',
             label: 'Ver recibo',
@@ -111,7 +124,7 @@ export function InvoiceHistoryTable({
             onSelect: () => onOpenReceipt(invoice.id),
           });
         }
-        if (canViewReceipt && issuedInstitutionalReceipt(invoice)) {
+        if (canOpenInstitutionalReceipt && institutionalReceipt) {
           primaryGroup.items.push({
             key: 'download',
             label: 'Descargar',
@@ -120,7 +133,7 @@ export function InvoiceHistoryTable({
             onSelect: () => onDownloadInstitutionalReceipt(invoice),
           });
         }
-        if (canIssueInstitutionalReceipt && invoice.status === 'paid' && !issuedInstitutionalReceipt(invoice)) {
+        if (canIssueInstitutionalReceipt && invoice.status === 'paid' && !institutionalReceipt) {
           primaryGroup.items.push({
             key: 'generate',
             label: 'Generar PDF',
@@ -193,6 +206,10 @@ export function InvoiceHistoryTable({
 
 export function issuedInstitutionalReceipt(invoice: Invoice): NonNullable<Invoice['institutional_receipt']> | null {
   return invoice.institutional_receipt?.status === 'issued' ? invoice.institutional_receipt : null;
+}
+
+function hasInstitutionalPrintEvents(receipt: NonNullable<Invoice['institutional_receipt']>): boolean {
+  return receipt.has_print_events === true || (receipt.print_events_count ?? 0) > 0;
 }
 
 const statusConfig = {

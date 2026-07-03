@@ -1267,3 +1267,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, schema, caja, pagos, endpoints ni generacion real de recibos.
 - Este corte reduce acciones imposibles en historial y mantiene la defensa principal en RBAC backend.
+
+## 52. Fase 9 - Historial respeta acceso operativo para abrir recibos
+
+Cambio aplicado:
+
+- `InvoiceHistoryTable` ahora calcula por fila si el usuario puede abrir/descargar el recibo antes de mostrar `Ver recibo` o `Descargar`.
+- El fallback legacy solo se ofrece a usuarios con `receipts.reprint_any` o a quien emitio la factura durante el dia operativo actual, igual que `ShowReceiptRequest`.
+- El PDF institucional existente se ofrece cuando el usuario tiene acceso operativo amplio (`receipts.reprint_any`, `invoices.void`, `invoices.operate_any`) o es factura propia del dia; si ya tuvo eventos de impresion tambien exige `receipts.reprint`.
+- Se agrego cobertura para impedir que un lector de recibos vea acciones sobre facturas ajenas o antiguas que el backend rechazaria.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- src/features/invoices/InvoiceHistoryView.test.tsx -t "does not expose receipt actions"` | RED inicial porque el menu de acciones seguia visible; luego OK: 1 test focal pasa. |
+| `docker compose exec frontend npm run test -- src/features/invoices/InvoiceHistoryView.test.tsx` | OK: 23 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, schema, caja, pagos, endpoints ni generacion real de recibos.
+- Este corte reduce 403 previsibles desde la UI y mantiene el backend como fuente de verdad de RBAC.
