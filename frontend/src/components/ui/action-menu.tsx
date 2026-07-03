@@ -73,8 +73,8 @@ export function ActionMenu({
               key={`${group.key}-${item.key}`}
               disabled={item.disabled}
               onSelect={(event) => {
-                event.preventDefault();
                 if (item.disabled) {
+                  event.preventDefault();
                   return;
                 }
                 item.onSelect();

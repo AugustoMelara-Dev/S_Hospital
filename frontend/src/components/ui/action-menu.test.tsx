@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { ActionMenu } from './action-menu';
 
@@ -31,11 +31,8 @@ describe('ActionMenu', () => {
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 
-  it('invokes onSelect when a non-disabled item callback fires (smoke)', () => {
+  it('closes the menu after selecting an enabled action', async () => {
     const onSelect = vi.fn();
-    // Smoke test: confirm the onSelect ref is wired without
-    // opening the Radix portal. The portal-level click behaviour
-    // is covered by Radix's own test suite.
     render(
       <ActionMenu
         ariaLabel="Acciones"
@@ -47,8 +44,15 @@ describe('ActionMenu', () => {
         ]}
       />,
     );
-    expect(onSelect).not.toHaveBeenCalled();
-    onSelect();
+
+    const trigger = screen.getByRole('button', { name: 'Acciones' });
+    trigger.focus();
+    fireEvent.keyDown(trigger, { key: 'Enter', code: 'Enter', keyCode: 13, charCode: 13 });
+
+    const item = await screen.findByRole('menuitem', { name: 'Ver recibo' });
+    fireEvent.click(item);
+
     expect(onSelect).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(screen.queryByRole('menu')).not.toBeInTheDocument());
   });
 });

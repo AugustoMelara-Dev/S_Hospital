@@ -1665,3 +1665,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron schema, migraciones, creacion de respaldos, descargas ni permisos.
 - El campo frontend queda opcional para tolerar respuestas antiguas o parciales durante QA, pero el estado operativo completo del backend ya entrega el contador autoritativo.
+
+## 68. Fase transversal - Menus de acciones cierran al seleccionar
+
+Cambio aplicado:
+
+- `ActionMenu` deja que Radix cierre el menu despues de seleccionar una accion habilitada.
+- Las acciones deshabilitadas conservan `preventDefault()` para evitar selecciones accidentales.
+- Se reemplazo la prueba smoke por una prueba real de interaccion: abrir menu, seleccionar accion y verificar que el menu ya no bloquea la pantalla.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- action-menu.test.tsx -t "closes the menu"` | RED inicial porque la accion se ejecutaba pero el menu quedaba abierto; luego OK: 1 test focal pasa. |
+| `npm run test -- action-menu.test.tsx` | OK: 4 tests pasan. |
+| `npm run test -- InvoiceHistoryView.test.tsx` | OK: 24 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, schema, migraciones, endpoints, permisos, caja, facturacion fiscal ni correlativos.
+- Este corte mejora las acciones por fila en historial, reportes, catalogo y demas tablas que usan el menu compartido, evitando que un menu abierto oculte/bloquee la siguiente accion del operador.
