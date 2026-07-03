@@ -240,6 +240,42 @@ describe('UserFormDialog', () => {
     expect(submit).not.toBeDisabled();
   });
 
+  it('requires explicit confirmation before saving audit direct permission', () => {
+    render(
+      <UserFormDialog
+        open
+        onOpenChange={vi.fn()}
+        editingUser={baseUser}
+        roles={roles}
+        canManageRoles
+        selectedUserPermissions={['audit.view']}
+        onToggleUserPermission={vi.fn()}
+        permissionCatalog={[
+          {
+            module: 'audit',
+            label: 'Auditoria',
+            permissions: [
+              {
+                name: 'audit.view',
+                label: 'Ver auditoria',
+              },
+            ],
+          },
+        ]}
+        globalError={null}
+        onSubmit={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText(/permiso critico/i)).toBeInTheDocument();
+    const submit = screen.getByRole('button', { name: /guardar cambios/i });
+    expect(submit).toBeDisabled();
+
+    fireEvent.click(screen.getByRole('checkbox', { name: /confirmo que este usuario necesita permisos criticos/i }));
+
+    expect(submit).not.toBeDisabled();
+  });
+
   it('requires explicit confirmation before saving fiscal sequence reset direct permission', () => {
     render(
       <UserFormDialog

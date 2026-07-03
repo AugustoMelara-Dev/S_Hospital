@@ -1,4 +1,5 @@
 const CRITICAL_PERMISSION_NAMES = new Set([
+  'audit.view',
   'backups.create',
   'backups.download',
   'cash.close_any',

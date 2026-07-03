@@ -2903,3 +2903,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, rutas, permisos, endpoints ni modelos de reportes.
 - Este corte mejora accesibilidad transversal sin cambiar la superficie visual ni la logica de reportes.
+
+## 119. Fase 13/14 - Auditoria marcada como permiso critico en UI
+
+Cambio aplicado:
+
+- `audit.view` ahora forma parte de la lista centralizada de permisos criticos del frontend.
+- Los formularios de usuarios y roles muestran `Permiso critico` y bloquean guardar hasta confirmar explicitamente cuando se asigna acceso de auditoria.
+- La UI queda alineada con `RoleCatalog`, donde `audit.view` ya se considera permiso elevado por exponer trazabilidad administrativa sensible.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- UserFormDialog RoleFormDialog --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial: no aparecia `Permiso critico` para `audit.view`; luego OK: 23 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, rutas, migraciones, seeders, policies ni endpoints.
+- Este corte reduce asignaciones accidentales de acceso a auditoria sin cambiar la autorizacion autoritativa del servidor.
