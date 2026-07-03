@@ -1,5 +1,5 @@
 import { act } from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { type ReactNode } from 'react';
@@ -368,6 +368,26 @@ describe('InvoiceHistoryView', () => {
     expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-numero|undefined/);
   });
 
+  it('shows a human patient fallback in the history table', async () => {
+    const invoice = invoiceFixture({
+      id: 34,
+      invoice_number: '000-001-01-00000034',
+      patient_name: '   ',
+    });
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [invoice],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText(invoice.invoice_number)).toBeInTheDocument());
+
+    expect(screen.getByText(/Paciente sin nombre/i)).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/\bundefined\b/);
+  });
+
   it('does not offer reprint for an issued invoice that has no receipt yet', async () => {
     const issued = invoiceFixture({
       id: 47,
@@ -594,7 +614,7 @@ describe('InvoiceHistoryView', () => {
     fireEvent.click(await screen.findByRole('menuitem', { name: /Anular factura/i }));
 
     await waitFor(() => expect(screen.getByText(/Anular factura 000-001-01-00000037/i)).toBeInTheDocument());
-    expect(screen.getByText(/Paciente sin nombre/i)).toBeInTheDocument();
+    expect(within(screen.getByRole('alertdialog')).getByText(/Paciente sin nombre/i)).toBeInTheDocument();
   });
 
   it('voids invoices with a stable idempotency key from history', async () => {

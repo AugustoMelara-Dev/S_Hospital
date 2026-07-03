@@ -3515,3 +3515,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, rutas, migraciones, seeders, policies, auditoria ni endpoints.
 - Este corte reduce ambiguedad en acciones peligrosas de historial sin cambiar las reglas fiscales ni de caja.
+
+## 146. Fase 9/16 - Tabla de historial muestra paciente humano
+
+Cambio aplicado:
+
+- La tabla principal de historial ya no deja la celda de paciente en blanco cuando `patient_name` llega vacio o solo con espacios.
+- Se muestra `Paciente sin nombre` en la lista para mantener contexto operativo antes de abrir acciones de recibo, anulacion o reversa.
+- No se cambian endpoints, permisos, anulacion, reversa, recibos, auditoria, idempotencia ni contratos API.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- InvoiceHistoryView.test.tsx -t "shows a human patient fallback in the history table" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial: la tabla no mostraba `Paciente sin nombre`; luego OK: 1 test pasa. |
+| `npm run test -- InvoiceHistoryView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | Primer GREEN amplio detecto selector ambiguo en el test del dialogo; se acoto al `alertdialog`; luego OK: 31 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | Dos intentos previos fallaron sin logs/cayeron antes de Vite; reintento secuencial OK. Vite reporto tiempos de plugin, sin fallar el build. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, rutas, migraciones, seeders, policies, auditoria ni endpoints.
+- Este corte hace mas confiable la consulta diaria de historial sin alterar reglas fiscales ni caja.

@@ -24,6 +24,11 @@ type InvoiceHistoryTableProps = {
   onReprint: (invoice: Invoice) => void;
 };
 
+function patientNameLabel(invoice: Invoice) {
+  const patientName = invoice.patient_name.trim();
+  return patientName ? patientName : 'Paciente sin nombre';
+}
+
 export function InvoiceHistoryTable({
   canIssueInstitutionalReceipt,
   canOperateAnyInvoice,
@@ -70,7 +75,7 @@ export function InvoiceHistoryTable({
       render: (invoice) => (
         <div className="flex items-start gap-2">
           <User data-icon aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-          <span>{invoice.patient_name}</span>
+          <span>{patientNameLabel(invoice)}</span>
         </div>
       ),
     },
