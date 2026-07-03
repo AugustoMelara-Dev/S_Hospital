@@ -1536,3 +1536,30 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, schema, migraciones, pagos, caja ni correlativos.
 - El backend sigue decidiendo totales fiscales; este corte solo mejora la claridad operativa del carrito antes de emitir.
+
+## 63. Fase 7 - Cierre con diferencia exige nota util
+
+Cambio aplicado:
+
+- `CloseCashSessionAction` ahora rechaza cierres con diferencia cuando la nota tiene menos de 5 caracteres.
+- `CloseSessionDialog` aplica el mismo umbral visual: la nota corta queda `aria-invalid`, el boton `Cerrar caja` se mantiene deshabilitado y el error explica el minimo.
+- Se agrego cobertura backend y frontend para evitar cierres con explicaciones vacias o triviales.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter=CloseCashSessionDifferenceTest::test_closing_cash_session_with_short_notes_when_diff_is_nonzero_returns_422` | RED inicial porque `notes=x` cerraba la caja; luego cubierto por suite del archivo. |
+| `npm run test -- CloseSessionDialog.test.tsx -t "useful note"` | RED inicial porque la nota corta se trataba como valida; luego cubierto por suite del archivo. |
+| `docker compose exec backend php artisan test --filter=CloseCashSessionDifferenceTest` | OK: 3 tests pasan, 11 assertions. |
+| `npm run test -- CloseSessionDialog.test.tsx` | OK: 6 tests pasan. |
+| `npm run test -- CashBoxView.test.tsx CloseSessionDialog.test.tsx CashMovementsTable.test.tsx SessionSummary.test.tsx` | OK: 4 archivos, 19 tests pasan. |
+| `docker compose exec backend php artisan test --filter=CloseCashSessionTest` | OK: 3 tests pasan, 11 assertions. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron schema, migraciones, pagos, facturas, correlativos ni datos existentes.
+- Este corte fortalece cierre de caja y auditoria sin cambiar el calculo de diferencia ni el movimiento contable.

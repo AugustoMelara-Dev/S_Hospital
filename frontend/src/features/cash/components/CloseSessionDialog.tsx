@@ -122,6 +122,8 @@ interface CloseSessionDialogProps {
   onConfirm: () => void;
 }
 
+const MIN_DIFFERENCE_NOTE_LENGTH = 5;
+
 export function CloseSessionDialog({
   open,
   onOpenChange,
@@ -140,6 +142,8 @@ export function CloseSessionDialog({
   const pendingInvoiceCount = session.pending_invoice_count ?? 0;
   const hasPendingBalance = pendingInvoiceCount > 0 || pendingAmount > 0;
   const isDifference = difference !== 0;
+  const trimmedClosingNotes = closingNotes.trim();
+  const hasValidDifferenceNote = !isDifference || trimmedClosingNotes.length >= MIN_DIFFERENCE_NOTE_LENGTH;
   const methods = session.payments_by_method ?? {
     cash: '0.00',
     transfer: '0.00',
@@ -270,8 +274,8 @@ export function CloseSessionDialog({
               onChange={(e) => onClosingNotesChange(e.target.value)}
               placeholder="Explique la diferencia..."
               rows={2}
-              aria-invalid={isDifference && !closingNotes.trim()}
-              aria-describedby={isDifference && !closingNotes.trim() ? 'closing-notes-error' : undefined}
+              aria-invalid={isDifference && !hasValidDifferenceNote}
+              aria-describedby={isDifference && !hasValidDifferenceNote ? 'closing-notes-error' : undefined}
             />
           </div>
         )}
@@ -295,15 +299,15 @@ export function CloseSessionDialog({
             Exportar resumen
           </Button>
           <AlertDialogCancel>Cancelar</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm} disabled={isSubmitting || hasPendingBalance || (isDifference && !closingNotes.trim())}>
+          <AlertDialogAction onClick={onConfirm} disabled={isSubmitting || hasPendingBalance || !hasValidDifferenceNote}>
             {isSubmitting ? 'Cerrando...' : 'Cerrar caja'}
           </AlertDialogAction>
         </AlertDialogFooter>
 
-        {isDifference && !closingNotes.trim() && (
+        {isDifference && !hasValidDifferenceNote && (
           <div id="closing-notes-error" role="alert" className="mt-2 flex items-center gap-2 text-sm text-destructive">
             <AlertTriangle className="h-4 w-4" />
-            <span>La nota es obligatoria cuando hay diferencia.</span>
+            <span>La nota es obligatoria y debe tener al menos 5 caracteres cuando hay diferencia.</span>
           </div>
         )}
       </AlertDialogContent>

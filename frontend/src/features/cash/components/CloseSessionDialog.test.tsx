@@ -46,6 +46,41 @@ describe('CloseSessionDialog', () => {
     expect(onConfirm).not.toHaveBeenCalled();
   });
 
+  it('requires a useful note before confirming a cash difference', () => {
+    const onConfirm = vi.fn();
+    const onClosingNotesChange = vi.fn();
+
+    render(
+      <CloseSessionDialog
+        open
+        onOpenChange={vi.fn()}
+        session={{
+          opening_amount: '100.00',
+          expected_cash_amount: '100.00',
+          payments_by_method: { cash: '0.00', transfer: '0.00', card: '0.00', other: '0.00' },
+          pending_invoice_count: 0,
+          pending_amount: '0.00',
+        }}
+        closingAmount="105.00"
+        closingNotes="x"
+        difference={5}
+        isSubmitting={false}
+        onClosingNotesChange={onClosingNotesChange}
+        onConfirm={onConfirm}
+      />,
+    );
+
+    expect(screen.getByLabelText(/nota sobre la diferencia/i)).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByRole('button', { name: /^cerrar caja$/i })).toBeDisabled();
+    expect(screen.getByRole('alert')).toHaveTextContent(/al menos 5 caracteres/i);
+
+    fireEvent.change(screen.getByLabelText(/nota sobre la diferencia/i), {
+      target: { value: 'Sobrante confirmado' },
+    });
+
+    expect(onClosingNotesChange).toHaveBeenCalledWith('Sobrante confirmado');
+  });
+
   it('prints only the close summary without confirming the cash close', () => {
     const onConfirm = vi.fn();
     const print = vi.fn(() => {

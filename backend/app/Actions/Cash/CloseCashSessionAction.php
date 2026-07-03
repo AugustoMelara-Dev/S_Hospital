@@ -17,6 +17,8 @@ use Illuminate\Validation\ValidationException;
 
 class CloseCashSessionAction
 {
+    private const MIN_DIFFERENCE_NOTE_LENGTH = 5;
+
     public function __construct(private readonly BuildCashReconciliationAction $buildCashReconciliation) {}
 
     /**
@@ -63,6 +65,12 @@ class CloseCashSessionAction
             if ($differenceCents !== 0 && $notes === '') {
                 throw ValidationException::withMessages([
                     'notes' => 'Explique la diferencia de caja antes de cerrar.',
+                ]);
+            }
+
+            if ($differenceCents !== 0 && mb_strlen($notes) < self::MIN_DIFFERENCE_NOTE_LENGTH) {
+                throw ValidationException::withMessages([
+                    'notes' => 'Explique la diferencia de caja con al menos 5 caracteres.',
                 ]);
             }
 
