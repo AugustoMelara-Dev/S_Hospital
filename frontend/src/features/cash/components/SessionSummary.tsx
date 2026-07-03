@@ -15,8 +15,8 @@ export function SessionSummary({
   closingAmount,
   difference,
 }: SessionSummaryProps) {
-  const expectedAmount = finiteNumber(session.expected_cash_amount ?? session.expected_amount);
   const openingAmount = finiteNumber(session.opening_amount);
+  const expectedAmount = finiteNumber(session.expected_cash_amount ?? session.expected_amount ?? session.opening_amount);
   const cashPayments = finiteNumber(session.payments_by_method?.cash);
   const pendingAmount = finiteNumber(session.pending_amount);
   const pendingCount = session.pending_invoice_count ?? 0;

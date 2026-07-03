@@ -137,7 +137,7 @@ export function CloseSessionDialog({
 }: CloseSessionDialogProps) {
   const closingNotesRef = useRef<HTMLTextAreaElement | null>(null);
   const openingAmount = finiteNumber(session.opening_amount);
-  const expectedAmount = finiteNumber(session.expected_cash_amount ?? session.expected_amount);
+  const expectedAmount = finiteNumber(session.expected_cash_amount ?? session.expected_amount ?? session.opening_amount);
   const pendingAmount = finiteNumber(session.pending_amount);
   const pendingInvoiceCount = session.pending_invoice_count ?? 0;
   const hasPendingBalance = pendingInvoiceCount > 0 || pendingAmount > 0;

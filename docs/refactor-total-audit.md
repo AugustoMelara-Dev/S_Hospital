@@ -1878,3 +1878,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, endpoints, auditoria, correlativos, PDF institucional ni permisos.
 - Este corte reduce confusion operacional en historial: abrir una copia ya impresa se anuncia como reimpresion auditada antes de pedir motivo.
+
+## 77. Fase 2 - Caja usa apertura como respaldo del efectivo esperado
+
+Cambio aplicado:
+
+- `SessionSummary` usa `opening_amount` como fallback cuando el servidor legado no entrega `expected_cash_amount` ni `expected_amount`.
+- `CloseSessionDialog` aplica el mismo fallback antes de confirmar el cierre.
+- La pantalla evita mostrar `Efectivo esperado` como `L 0.00` en sesiones abiertas con monto inicial conocido.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- SessionSummary.test.tsx CloseSessionDialog.test.tsx -t "opening amount as expected cash fallback"` | RED inicial porque ambos componentes mostraban esperado `L 0.00`; luego OK. |
+| `npm run test -- SessionSummary.test.tsx CloseSessionDialog.test.tsx CashBoxView.test.tsx` | OK: 18 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `git diff --check` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, migraciones, endpoints, pagos, cierre real de caja ni permisos.
+- Este corte mantiene consistente la conciliacion visual de caja con el fallback ya usado por la vista principal.

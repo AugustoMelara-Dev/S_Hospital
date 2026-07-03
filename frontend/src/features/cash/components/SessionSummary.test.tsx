@@ -35,6 +35,23 @@ describe('SessionSummary', () => {
 
     expect(screen.getByText('L +25.00')).toBeInTheDocument();
   });
+
+  it('uses opening amount as expected cash fallback for legacy session payloads', () => {
+    render(
+      <SessionSummary
+        session={cashSessionFixture({
+          opening_amount: '100.00',
+          expected_amount: undefined,
+          expected_cash_amount: undefined,
+        })}
+        closingAmount={null}
+        difference={null}
+      />,
+    );
+
+    expect(screen.getByText('Efectivo esperado')).toBeInTheDocument();
+    expect(screen.getAllByText('L 100.00').length).toBeGreaterThanOrEqual(2);
+  });
 });
 
 function cashSessionFixture(overrides: Partial<CashSession> = {}): CashSession {

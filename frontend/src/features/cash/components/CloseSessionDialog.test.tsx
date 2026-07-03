@@ -228,6 +228,33 @@ describe('CloseSessionDialog', () => {
 
     expect(onConfirm).not.toHaveBeenCalled();
   });
+
+  it('uses opening amount as expected cash fallback for legacy session payloads', () => {
+    render(
+      <CloseSessionDialog
+        open
+        onOpenChange={vi.fn()}
+        session={{
+          opening_amount: '100.00',
+          expected_cash_amount: null,
+          expected_amount: null,
+          payments_by_method: { cash: '0.00', transfer: '0.00', card: '0.00', other: '0.00' },
+          pending_invoice_count: 0,
+          pending_amount: '0.00',
+        }}
+        closingAmount="100.00"
+        closingNotes=""
+        difference={0}
+        isSubmitting={false}
+        onClosingNotesChange={vi.fn()}
+        onConfirm={vi.fn()}
+      />,
+    );
+
+    const dialog = screen.getByRole('alertdialog', { name: /cerrar caja/i });
+    expect(dialog).toHaveTextContent(/monto apertura:\s*L 100\.00/i);
+    expect(dialog).toHaveTextContent(/efectivo esperado:\s*L 100\.00/i);
+  });
 });
 
 function readBlobText(blob: Blob): Promise<string> {
