@@ -104,6 +104,10 @@ export function ReportFiltersPanel({
 
   function handlePresetChange(next: PresetKey) {
     onPresetChange(next);
+    if (next !== 'custom') {
+      const range = computePresetRange(next);
+      onChange({ ...filters, date_from: range.from, date_to: range.to });
+    }
   }
 
   return (

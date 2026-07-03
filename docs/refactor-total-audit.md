@@ -1828,3 +1828,28 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, schema, migraciones, endpoints, roles protegidos ni validaciones Laravel.
 - Este corte reduce riesgo de crear cuentas operativas con un rol visible pero sin los permisos exactos esperados.
+
+## 75. Fase 10 - Periodos rapidos aplican fechas reales en reportes
+
+Cambio aplicado:
+
+- `ReportFiltersPanel` ahora aplica `date_from` y `date_to` al seleccionar un periodo rapido como Hoy, 7 dias, Este mes o Mes anterior.
+- La opcion Personalizado conserva el rango manual vigente.
+- El reporte ejecutivo deja de mostrar un periodo rapido que no correspondia al rango consultado.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- ReportFiltersPanel.test.tsx -t "updates the date range"` | RED inicial porque `onChange` no se llamaba al seleccionar `last7`; luego OK. |
+| `npm run test -- ReportFiltersPanel.test.tsx` | OK: 2 tests pasan. |
+| `npm run test -- ReportFiltersPanel.test.tsx ReportsView.subroutes.test.tsx` | OK: 7 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `git diff --check` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, endpoints, exportaciones PDF/Excel, permisos ni calculos financieros del reporte.
+- Este corte hace que los filtros ejecutivos sean operables para caja/supervision diaria sin obligar a ajustar fechas manualmente.

@@ -1,8 +1,12 @@
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ReportFiltersPanel } from './ReportFiltersPanel';
 
 describe('ReportFiltersPanel', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('describes report refresh without implementation language', () => {
     render(
       <ReportFiltersPanel
@@ -21,5 +25,35 @@ describe('ReportFiltersPanel', () => {
 
     expect(screen.getByText(/actualice los indicadores/i)).toBeInTheDocument();
     expect(screen.queryByText(/backend/i)).not.toBeInTheDocument();
+  });
+
+  it('updates the date range when a quick period is selected', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-03T12:00:00-06:00'));
+    const onPresetChange = vi.fn();
+    const onChange = vi.fn();
+
+    render(
+      <ReportFiltersPanel
+        filters={{ date_from: '2026-07-01', date_to: '2026-07-02' }}
+        preset="custom"
+        onPresetChange={onPresetChange}
+        onChange={onChange}
+        onRefresh={vi.fn()}
+        onExportPdf={vi.fn()}
+        onExportExcel={vi.fn()}
+        canExport
+        loading={false}
+        exporting={false}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText(/periodo rapido/i), { target: { value: 'last7' } });
+
+    expect(onPresetChange).toHaveBeenCalledWith('last7');
+    expect(onChange).toHaveBeenCalledWith({
+      date_from: '2026-06-27',
+      date_to: '2026-07-03',
+    });
   });
 });
