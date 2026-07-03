@@ -2273,3 +2273,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron migraciones, perfiles de recibo institucional, generacion PDF, caja ni pagos.
 - El campo legado `receipt_paper_size` sigue cubierto en `/api/settings/fiscal` por compatibilidad/deprecacion, pero ya no se filtra a reglas operativas ni al arranque del POS.
+
+## 93. Fase 11/14 - Cambio de ISV exige motivo fiscal
+
+Cambio aplicado:
+
+- `UpdateFiscalSettingsRequest` ahora detecta cambios de `default_tax_rate` en una configuracion existente y exige `reason` de al menos 5 caracteres.
+- `FiscalSettingsController` excluye `reason` del `fill()` de `FiscalSetting` y lo conserva en `audit_logs.reason` para `fiscal_settings.updated`.
+- La validacion evita mutar la tasa ISV y evita auditar cambios incompletos cuando falta el motivo.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter=default_tax_rate_change` | RED inicial: el backend aceptaba el cambio sin motivo y auditaba `reason=null`; luego OK: 2 tests, 8 assertions. |
+| `docker compose exec backend php artisan test tests/Feature/FiscalSettingsTest.php` | OK: 17 tests, 108 assertions. |
+| `docker compose exec backend php artisan test` | OK: 767 tests pasan, 13 skipped, 4945 assertions. |
+| `docker compose exec backend vendor/bin/pint --test` | OK: 426 files. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M` | OK sin errores. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron migraciones, secuencias fiscales, caja, recibos, frontend ni permisos.
+- Este corte avanza la regla de seguridad: los cambios fiscales sensibles empiezan a requerir motivo auditado sin bloquear creacion inicial ni cambios institucionales no tributarios.

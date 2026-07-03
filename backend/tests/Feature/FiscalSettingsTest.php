@@ -189,6 +189,59 @@ class FiscalSettingsTest extends TestCase
         ]);
     }
 
+    public function test_default_tax_rate_change_requires_reason_before_mutating_settings(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        FiscalSetting::query()->create($this->validPayload());
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin)
+            ->putJson('/api/settings/fiscal', [
+                ...$this->validPayload(),
+                'default_tax_rate' => '18.00',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('reason');
+
+        $this->assertDatabaseHas('fiscal_settings', [
+            'default_tax_rate' => '15.00',
+        ]);
+
+        $this->assertDatabaseMissing('audit_logs', [
+            'action' => 'fiscal_settings.updated',
+            'reason' => null,
+        ]);
+    }
+
+    public function test_default_tax_rate_change_with_reason_is_audited(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        FiscalSetting::query()->create($this->validPayload());
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin)
+            ->putJson('/api/settings/fiscal', [
+                ...$this->validPayload(),
+                'default_tax_rate' => '18.00',
+                'reason' => 'Actualizacion autorizada del ISV',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.default_tax_rate', '18.00');
+
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $admin->id,
+            'action' => 'fiscal_settings.updated',
+            'entity_type' => 'App\\Models\\FiscalSetting',
+            'reason' => 'Actualizacion autorizada del ISV',
+        ]);
+    }
+
     public function test_legacy_receipt_width_field_is_not_updateable(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);

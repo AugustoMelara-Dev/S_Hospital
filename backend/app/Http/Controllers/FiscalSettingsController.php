@@ -111,7 +111,10 @@ class FiscalSettingsController extends Controller
             $oldValues = $setting->exists ? $setting->only($fieldsToTrack) : null;
             $previousPaperSize = $setting->receipt_paper_size;
 
-            $setting->fill($request->validated());
+            $validated = $request->validated();
+            unset($validated['reason']);
+
+            $setting->fill($validated);
 
             if (! $setting->exists) {
                 $setting->created_by = $request->user()->id;
@@ -127,6 +130,7 @@ class FiscalSettingsController extends Controller
                 request: $request,
                 oldValues: $oldValues,
                 newValues: $setting->only($fieldsToTrack),
+                reason: $oldValues ? $request->reason() : null,
             );
 
             // Mid-shift paper size changes deserve a separate, auditable

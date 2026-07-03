@@ -2,9 +2,11 @@
 
 namespace App\Http\Requests\Fiscal;
 
+use App\Models\FiscalSetting;
 use App\Support\ReceiptPaperSize;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class UpdateFiscalSettingsRequest extends FormRequest
 {
@@ -38,6 +40,46 @@ class UpdateFiscalSettingsRequest extends FormRequest
             'secretariat_line' => ['nullable', 'string', 'max:160'],
             'receipt_location' => ['nullable', 'string', 'max:160'],
             'receipt_footer_text' => ['nullable', 'string', 'max:255'],
+            'reason' => ['nullable', 'string', 'max:500'],
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            if (! $this->defaultTaxRateChanged()) {
+                return;
+            }
+
+            $reason = trim((string) ($this->input('reason') ?? ''));
+
+            if ($reason === '') {
+                $validator->errors()->add('reason', 'Indique el motivo del cambio fiscal.');
+
+                return;
+            }
+
+            if (mb_strlen($reason) < 5) {
+                $validator->errors()->add('reason', 'Indique al menos 5 caracteres explicando el motivo del cambio fiscal.');
+            }
+        });
+    }
+
+    public function reason(): ?string
+    {
+        $reason = trim((string) ($this->validated('reason') ?? ''));
+
+        return $reason === '' ? null : $reason;
+    }
+
+    private function defaultTaxRateChanged(): bool
+    {
+        $setting = FiscalSetting::query()->first();
+
+        if ($setting === null || ! $this->has('default_tax_rate')) {
+            return false;
+        }
+
+        return number_format((float) $setting->default_tax_rate, 2, '.', '') !== number_format((float) $this->input('default_tax_rate'), 2, '.', '');
     }
 }
