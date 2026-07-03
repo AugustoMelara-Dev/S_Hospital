@@ -200,6 +200,46 @@ describe('UserFormDialog', () => {
     expect(submit).not.toBeDisabled();
   });
 
+  it('requires explicit confirmation before saving managerial report direct permissions', () => {
+    render(
+      <UserFormDialog
+        open
+        onOpenChange={vi.fn()}
+        editingUser={baseUser}
+        roles={roles}
+        canManageRoles
+        selectedUserPermissions={['reports.managerial.view', 'reports.export']}
+        onToggleUserPermission={vi.fn()}
+        permissionCatalog={[
+          {
+            module: 'reports',
+            label: 'Reportes',
+            permissions: [
+              {
+                name: 'reports.managerial.view',
+                label: 'Ver reportes gerenciales',
+              },
+              {
+                name: 'reports.export',
+                label: 'Exportar reportes',
+              },
+            ],
+          },
+        ]}
+        globalError={null}
+        onSubmit={vi.fn()}
+      />,
+    );
+
+    expect(screen.getAllByText(/permiso critico/i)).toHaveLength(2);
+    const submit = screen.getByRole('button', { name: /guardar cambios/i });
+    expect(submit).toBeDisabled();
+
+    fireEvent.click(screen.getByRole('checkbox', { name: /confirmo que este usuario necesita permisos criticos/i }));
+
+    expect(submit).not.toBeDisabled();
+  });
+
   it('rejects a non-compliant new user password with an inline message', async () => {
     const onSubmit = vi.fn();
 

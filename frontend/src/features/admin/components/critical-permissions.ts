@@ -8,6 +8,8 @@ const CRITICAL_PERMISSION_NAMES = new Set([
   'receipt_settings.advanced',
   'receipt_settings.update',
   'receipts.reprint_any',
+  'reports.export',
+  'reports.managerial.view',
   'settings.fiscal.update',
   'users.assign_admin_role',
   'users.update',

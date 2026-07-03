@@ -236,4 +236,43 @@ describe('RoleFormDialog', () => {
 
     expect(submit).not.toBeDisabled();
   });
+
+  it('requires explicit confirmation before saving a role with managerial report permissions', () => {
+    render(
+      <RoleFormDialog
+        open
+        onOpenChange={vi.fn()}
+        editingRole={null}
+        permissionCatalog={[
+          {
+            module: 'reports',
+            label: 'Reportes',
+            permissions: [
+              {
+                name: 'reports.managerial.view',
+                label: 'Ver reportes gerenciales',
+              },
+              {
+                name: 'reports.export',
+                label: 'Exportar reportes',
+              },
+            ],
+          },
+        ]}
+        selectedPermissions={['reports.managerial.view', 'reports.export']}
+        onTogglePermission={vi.fn()}
+        globalError={null}
+        onSubmit={vi.fn()}
+        isSaving={false}
+      />,
+    );
+
+    expect(screen.getAllByText(/permiso critico/i)).toHaveLength(2);
+    const submit = screen.getByRole('button', { name: /crear rol/i });
+    expect(submit).toBeDisabled();
+
+    fireEvent.click(screen.getByRole('checkbox', { name: /confirmo que este rol necesita permisos criticos/i }));
+
+    expect(submit).not.toBeDisabled();
+  });
 });

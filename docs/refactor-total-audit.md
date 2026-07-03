@@ -2758,3 +2758,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron frontend, migraciones, rutas, requests ni correlativos fiscales.
 - Este corte refuerza RBAC backend como defensa autoritativa para numeracion fiscal aunque el controlador actual ya use Form Requests.
+
+## 113. Fase 14 - Reportes sensibles exigen confirmacion critica en UI
+
+Cambio aplicado:
+
+- `reports.export` y `reports.managerial.view` ahora forman parte de la lista centralizada de permisos criticos del frontend.
+- Los formularios de usuarios y roles muestran `Permiso critico` y bloquean guardar hasta confirmar explicitamente cuando se asignan permisos gerenciales de reportes.
+- La medida alinea la advertencia visual del administrador con el tratamiento elevado que ya existe para reportes sensibles en backend.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- UserFormDialog RoleFormDialog --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial: no aparecia `Permiso critico` para `reports.managerial.view`/`reports.export`; luego OK: 17 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, seeders, policies ni contratos API.
+- Este corte reduce asignaciones accidentales de acceso gerencial/exportacion sin cambiar la autorizacion autoritativa del servidor.
