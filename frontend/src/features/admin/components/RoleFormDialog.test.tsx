@@ -310,4 +310,39 @@ describe('RoleFormDialog', () => {
 
     expect(submit).not.toBeDisabled();
   });
+
+  it('requires explicit confirmation before saving a role with user disable permission', () => {
+    render(
+      <RoleFormDialog
+        open
+        onOpenChange={vi.fn()}
+        editingRole={null}
+        permissionCatalog={[
+          {
+            module: 'users',
+            label: 'Usuarios',
+            permissions: [
+              {
+                name: 'users.disable',
+                label: 'Desactivar usuarios',
+              },
+            ],
+          },
+        ]}
+        selectedPermissions={['users.disable']}
+        onTogglePermission={vi.fn()}
+        globalError={null}
+        onSubmit={vi.fn()}
+        isSaving={false}
+      />,
+    );
+
+    expect(screen.getByText(/permiso critico/i)).toBeInTheDocument();
+    const submit = screen.getByRole('button', { name: /crear rol/i });
+    expect(submit).toBeDisabled();
+
+    fireEvent.click(screen.getByRole('checkbox', { name: /confirmo que este rol necesita permisos criticos/i }));
+
+    expect(submit).not.toBeDisabled();
+  });
 });

@@ -13,6 +13,7 @@ const CRITICAL_PERMISSION_NAMES = new Set([
   'reports.managerial.view',
   'settings.fiscal.update',
   'users.assign_admin_role',
+  'users.disable',
   'users.update',
 ]);
 

@@ -2830,3 +2830,30 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron frontend, migraciones, seeders, policies ni endpoints.
 - Este corte cierra una ruta de escalacion donde un gestor operativo podia asignar capacidades de edicion/reset de usuarios mediante un rol custom aparentemente operativo.
+
+## 116. Fase 14 - Desactivacion de usuarios tratada como permiso elevado
+
+Cambio aplicado:
+
+- `users.disable` ahora se considera permiso elevado en `RoleCatalog`.
+- Un gestor con `users.create`/`users.view`, pero sin `users.assign_admin_role`, ya no puede asignar un rol custom que permita desactivar cuentas.
+- La UI de usuarios y roles marca `users.disable` como `Permiso critico` y exige confirmacion explicita antes de guardar.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter=custom_role_with_user_disable_permission` | RED inicial: la API respondia 201; luego OK: 1 test, 4 assertions. |
+| `npm run test -- UserFormDialog RoleFormDialog --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial: no aparecia `Permiso critico` para `users.disable`; luego OK: 21 tests pasan. |
+| `docker compose exec backend php artisan test --filter=UserManagementTest` | OK: 36 tests, 153 assertions. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+| `docker compose exec backend vendor/bin/pint --test` | OK: 426 files. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M` | OK: sin errores. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron migraciones, rutas, seeders, policies ni endpoints.
+- Este corte cierra una ruta de escalacion donde un gestor operativo podia asignar capacidad de desactivar usuarios mediante un rol custom.
