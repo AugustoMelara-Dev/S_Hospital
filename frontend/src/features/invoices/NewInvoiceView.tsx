@@ -416,6 +416,15 @@ export function NewInvoiceView({
         dispatch({ type: 'SET_SHOW_PAYMENT', payload: true });
         onStatus(`Factura emitida ${invoice.invoice_number}. Cobro abierto.`);
       } else if (isZeroMoney(invoice.total) && invoice.status === 'paid') {
+        if (!canViewReceipts) {
+          dispatch({ type: 'SET_SHOW_SUCCESS', payload: true });
+          dispatch({
+            type: 'SET_WARNING_MESSAGE',
+            payload: 'Factura emitida. Esta cuenta no puede imprimir recibos; solicite apoyo a caja.',
+          });
+          onStatus(`Factura emitida ${invoice.invoice_number}. Recibo pendiente por permisos.`);
+          return;
+        }
         const nextReceipt = await apiClient.getReceipt(invoice.id, state.receiptWidth);
         dispatch({ type: 'SET_RECEIPT', payload: nextReceipt });
         dispatch({ type: 'SET_RECEIPT_WIDTH', payload: nextReceipt.width });

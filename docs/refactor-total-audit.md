@@ -1219,3 +1219,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, schema, caja, pagos, recibos ni permisos reales.
 - Este corte evita una accion inutil para usuarios que solo emiten facturas y reduce friccion en operacion monocomputadora.
+
+## 50. Fase 4 - Factura gratuita respeta permiso de recibos
+
+Cambio aplicado:
+
+- `NewInvoiceView` ya no solicita el recibo legacy automaticamente cuando una factura pagada en cero se emite desde una cuenta sin permiso de recibos.
+- `InvoiceSuccess` ahora recibe `canPrintReceipt` y oculta `Imprimir recibo institucional` cuando la cuenta no puede ver/imprimir recibos.
+- El dialogo de exito mantiene una salida segura: crear otra factura y solicitar apoyo a caja para imprimir el recibo.
+- Se agrego cobertura para impedir que la ruta `/api/invoices/{id}/receipt` se llame desde este flujo sin permiso.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- src/features/invoices/NewInvoiceView.test.tsx -t "zero-total invoice"` | RED inicial porque se llamaba `/api/invoices/56/receipt`; luego OK: 1 test focal pasa. |
+| `docker compose exec frontend npm run test -- src/features/invoices/NewInvoiceView.test.tsx src/features/invoices/components/InvoiceConfirmation.test.tsx src/features/invoices/components/NewInvoiceViewLayout.test.tsx src/features/invoices/components/InvoiceCart.test.tsx src/features/invoices/components/PaymentModal.test.tsx` | OK: 5 archivos, 44 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, schema, caja, pagos ni generacion real de recibos.
+- Este corte reduce riesgo de exposicion/impresion de recibos por UI cuando la cuenta solo puede emitir facturas.

@@ -304,6 +304,93 @@ describe('NewInvoiceView critical flows', () => {
     expect(screen.queryByText(/permisos completos/i)).not.toBeInTheDocument();
   });
 
+  it('does not fetch or show a receipt for a paid zero-total invoice when receipts are not allowed', async () => {
+    renderNewInvoice(makeOpenCashSession(), { canViewReceipts: false });
+    await waitForPointOfSaleLoad();
+
+    const fetchMock = globalThis.fetch as ReturnType<typeof vi.fn>;
+
+    fireEvent.change(screen.getByLabelText(/nombre del paciente/i), { target: { value: 'Maria Lopez' } });
+    fireEvent.change(screen.getByLabelText(/buscar por nombre/i), { target: { value: 'eritro' } });
+
+    await waitFor(() => {
+      expect(screen.getByText('Eritropoyetina')).toBeInTheDocument();
+    }, { timeout: 3000 });
+
+    fireEvent.click(screen.getByText('Eritropoyetina'));
+
+    fetchMock.mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.endsWith('/api/invoices')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 56,
+              invoice_number: '000-001-01-00000056',
+              patient_name: 'Maria Lopez',
+              status: 'paid',
+              subtotal: '0.00',
+              tax_amount: '0.00',
+              discount_amount: '0.00',
+              total: '0.00',
+              balance_due: '0.00',
+              paid_amount: '0.00',
+              issued_at: '2026-05-17T08:45:00-06:00',
+              items: [],
+            },
+          }),
+        } as Response;
+      }
+      if (url.includes('/api/invoices/56/receipt')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              width: 'half_letter',
+              hospital: { name: 'Hospital San Isidro', rtn: null },
+              fiscal: { cai: null, authorized_range: null, valid_until: null },
+              invoice: {
+                id: 56,
+                invoice_number: '000-001-01-00000056',
+                patient_name: 'Maria Lopez',
+                subtotal: '0.00',
+                tax_amount: '0.00',
+                discount_amount: '0.00',
+                total: '0.00',
+                paid_amount: '0.00',
+                balance_due: '0.00',
+                status: 'paid',
+                issued_at: '2026-05-17T08:45:00-06:00',
+                cashier: 'Caja',
+              },
+              items: [],
+              payments: [],
+            },
+          }),
+        } as Response;
+      }
+      return { ok: true, json: async () => ({ data: null }) } as Response;
+    });
+
+    fireEvent.click(await screen.findByRole('button', { name: /^emitir factura$/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('dialog', { name: /confirmar factura/i })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /confirmar emis/i }));
+
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.some(([url]) => String(url).endsWith('/api/invoices'))).toBe(true);
+    });
+
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/api/invoices/56/receipt'))).toBe(false);
+    expect(screen.queryByRole('dialog', { name: /comprobante de factura/i })).not.toBeInTheDocument();
+    expect(await screen.findByRole('dialog', { name: /factura emitida/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /imprimir recibo institucional/i })).not.toBeInTheDocument();
+  });
+
   it('does not let cashier proceed when cash session is closed', async () => {
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
       const url = String(input);

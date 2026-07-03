@@ -304,6 +304,7 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
           total={state.issuedInvoice.total}
           status={state.issuedInvoice.status}
           canCollectPayment={canCreatePayments && canViewReceipts}
+          canPrintReceipt={canViewReceipts}
           onCobrar={onCobrar}
           onImprimir={onPrintIssuedReceipt}
           onNuevaFactura={onNuevaFactura}

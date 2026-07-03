@@ -15,6 +15,7 @@ type InvoiceSuccessProps = {
   total: string;
   status: InvoiceStatus;
   canCollectPayment?: boolean;
+  canPrintReceipt?: boolean;
   onCobrar: () => void;
   onImprimir: () => void;
   onNuevaFactura: () => void;
@@ -35,6 +36,7 @@ export function InvoiceSuccess({
   total,
   status,
   canCollectPayment = true,
+  canPrintReceipt = true,
   onCobrar,
   onImprimir,
   onNuevaFactura,
@@ -91,12 +93,21 @@ export function InvoiceSuccess({
               </Button>
             )}
           </div>
-        ) : (
+        ) : canPrintReceipt ? (
           <div className="flex flex-col gap-3">
             <Button ref={primaryActionRef} type="button" size="lg" className="w-full font-semibold" onClick={onImprimir}>
               Imprimir recibo institucional
             </Button>
             <Button type="button" variant="secondary" className="w-full" onClick={onNuevaFactura}>
+              Crear otra factura
+            </Button>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            <p className="text-sm text-muted-foreground text-center">
+              La factura ya fue emitida. Solicite a caja imprimir el recibo institucional.
+            </p>
+            <Button ref={primaryActionRef} type="button" size="lg" className="w-full font-semibold" onClick={onNuevaFactura}>
               Crear otra factura
             </Button>
           </div>
