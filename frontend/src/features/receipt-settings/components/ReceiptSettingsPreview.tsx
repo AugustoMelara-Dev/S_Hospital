@@ -1,4 +1,5 @@
 import { PrintPreviewFrame } from '@/components/shared';
+import { formatDate } from '@/lib/format/formatDate';
 import type { InstitutionalReceiptSeries, ReceiptPrintProfile } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
@@ -40,6 +41,7 @@ export function ReceiptSettingsPreview({
 }: ReceiptSettingsPreviewProps) {
   const labels = copyLabels(profile?.copies_mode);
   const receiptColor = series?.receipt_number_color ?? '#b91c1c';
+  const previewDate = formatDate(new Date());
 
   return (
     <PrintPreviewFrame
@@ -82,7 +84,7 @@ export function ReceiptSettingsPreview({
                 <div className="space-y-1 sm:text-right">
                   <div><span className="font-semibold">Serie:</span> {series?.series ?? 'PRUEBA'}</div>
                   <div><span className="font-semibold">Monto:</span> L. 25.00</div>
-                  <div><span className="font-semibold">Fecha:</span> 15/06/2026</div>
+                  <div><span className="font-semibold">Fecha:</span> {previewDate}</div>
                 </div>
               </div>
 

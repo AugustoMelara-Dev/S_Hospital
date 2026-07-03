@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ReceiptSettingsPreview } from './components/ReceiptSettingsPreview';
 import type { InstitutionalReceiptSeries, ReceiptPrintProfile } from '@/lib/api';
 
@@ -45,6 +45,15 @@ const profile: ReceiptPrintProfile = {
 };
 
 describe('ReceiptSettingsPreview', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-03T09:30:00-06:00'));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('renders the classic institutional fields without technical labels', () => {
     render(
       <ReceiptSettingsPreview
@@ -67,6 +76,7 @@ describe('ReceiptSettingsPreview', () => {
     expect(screen.getByRole('table', { name: /detalle sintético/i })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /descripción/i })).toBeInTheDocument();
     expect(screen.getByText('Servicios hospitalarios de prueba')).toBeInTheDocument();
+    expect(document.body.textContent).toContain('Fecha: 03/07/2026');
     expect(screen.getByText('Espacio para sello/firma')).toBeInTheDocument();
     expect(document.body.textContent).toContain('ORIGINAL');
     expect(document.body.textContent).not.toMatch(/CAI|barcode|qr_code|user_id|Estado/);

@@ -2426,3 +2426,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron migraciones, frontend, caja, pagos, recibos ni permisos.
 - Este corte refuerza auditoria y separacion de dominios: una edicion parcial no deja trazas auditadas como si hubiera reenviado RTN, ISV, reglas operativas o papel.
+
+## 99. Fase 6 - Vista previa de recibo usa fecha operativa actual
+
+Cambio aplicado:
+
+- La vista previa del recibo institucional deja de mostrar una fecha fija de ejemplo.
+- `ReceiptSettingsPreview` usa el helper local `formatDate` para renderizar la fecha actual en formato `dd/mm/yyyy`.
+- La prueba congela el reloj y cubre que la vista previa muestre la fecha operativa esperada sin introducir campos tecnicos.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- ReceiptSettingsPreview.test.tsx` | RED inicial: la vista previa mostraba `Fecha: 15/06/2026`; luego OK: 3 tests pasan. |
+| `npm run test -- ReceiptSettingsPreview.test.tsx InstitutionalReceiptSettingsView.test.tsx` | OK: 2 archivos, 13 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, migraciones, permisos, perfiles de impresion ni contratos API.
+- Este corte mantiene el flujo normal de recibo institucional sin opciones tecnicas y evita que la vista previa induzca a imprimir con una fecha de ejemplo obsoleta.
