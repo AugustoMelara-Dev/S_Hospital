@@ -2709,3 +2709,28 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron migraciones, permisos, seeders ni contratos de impresion normal.
 - Este corte refuerza auditoria y trazabilidad para ajustes fisicos de impresion que solo debe realizar soporte tecnico.
+
+## 111. Fase 11 - Resumen fiscal usa secuencia activa real
+
+Cambio aplicado:
+
+- La pantalla de configuracion carga la secuencia fiscal junto con los datos del hospital.
+- El resumen fiscal y el estado de configuracion usan la secuencia activa para mostrar CAI, rango autorizado y siguiente correlativo.
+- Se evita que el resumen indique `CAI y prefijo fiscal` como pendiente cuando ya existe una secuencia fiscal activa.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- FiscalSettingsView.test.tsx -t "active fiscal sequence"` | RED inicial: el resumen no mostraba `CAI-TEST`; luego OK. |
+| `npm run test -- FiscalSettingsView.test.tsx` | OK: 4 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+| `git diff --check` | OK: sin errores; solo advertencias de normalizacion CRLF/LF en archivos tocados. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, migraciones, permisos, correlativos ni datos fiscales.
+- Este corte mejora la claridad de configuracion sin mezclar nuevamente recibos, reglas operativas o branding con numeracion fiscal.

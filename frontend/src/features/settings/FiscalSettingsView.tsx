@@ -1,5 +1,5 @@
-﻿import { useEffect, useState } from 'react';
-import { type FiscalSettings, apiClient, userSafeErrorMessage } from '@/lib/api';
+import { useEffect, useState } from 'react';
+import { type FiscalSequence, type FiscalSettings, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { useCallback } from 'react';
 import { Alert } from '@/components/ui/alert';
 import { ActionBar } from '@/components/ui/action-bar';
@@ -23,12 +23,17 @@ type FiscalSettingsViewProps = {
 export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProps) {
   const [activeTab, setActiveTab] = useState('resumen');
   const [settings, setSettings] = useState<FiscalSettings | null>(null);
+  const [sequence, setSequence] = useState<FiscalSequence | null>(null);
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
     try {
-      const data = await apiClient.getFiscalSettings();
+      const [data, sequences] = await Promise.all([
+        apiClient.getFiscalSettings(),
+        apiClient.getFiscalSequences(),
+      ]);
       setSettings(data);
+      setSequence(sequences.find((candidate) => candidate.active) ?? sequences[0] ?? null);
     } catch (err) {
       const message = userSafeErrorMessage(err, 'No se pudo cargar la configuración.');
       setError(message);
@@ -108,8 +113,8 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
         </div>
 
         <TabsContent value="resumen" className="mt-0 space-y-6">
-          <FiscalStatusCard settings={settings} sequence={null} />
-          <FiscalSummary settings={settings} sequence={null} />
+          <FiscalStatusCard settings={settings} sequence={sequence} />
+          <FiscalSummary settings={settings} sequence={sequence} />
         </TabsContent>
 
         <TabsContent value="hospital" className="mt-0">

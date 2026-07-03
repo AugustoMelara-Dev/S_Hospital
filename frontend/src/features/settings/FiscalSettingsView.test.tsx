@@ -2,7 +2,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FiscalSettingsView } from './FiscalSettingsView';
-import { apiClient, type FiscalSettings } from '@/lib/api';
+import { apiClient, type FiscalSequence, type FiscalSettings } from '@/lib/api';
 
 const fiscalSettings: FiscalSettings = {
   id: 1,
@@ -20,6 +20,18 @@ const fiscalSettings: FiscalSettings = {
   secretariat_line: 'Secretaria de Salud Publica',
   receipt_location: 'Tocoa, Colon',
   receipt_footer_text: '',
+};
+
+const fiscalSequence: FiscalSequence = {
+  id: 1,
+  document_type: 'invoice',
+  prefix: 'A',
+  min_number: 1,
+  max_number: 1000,
+  current_number: 10,
+  cai: 'CAI-TEST',
+  valid_until: '2026-12-31',
+  active: true,
 };
 
 function renderView(props: { canEdit?: boolean; onStatus?: (message: string) => void } = {}) {
@@ -100,5 +112,16 @@ describe('FiscalSettingsView (separated sections)', () => {
     expect(
       screen.queryByText(/prueba de impresi[oó]n|pdf de prueba|perfil de impresi[oó]n|serie de recibo/i),
     ).not.toBeInTheDocument();
+  });
+
+  it('uses the active fiscal sequence in the summary', async () => {
+    vi.mocked(apiClient.getFiscalSequences).mockResolvedValueOnce([fiscalSequence]);
+
+    renderView();
+
+    expect(await screen.findByText('CAI-TEST')).toBeInTheDocument();
+    expect(screen.getByText('A-00000001 a A-00001000')).toBeInTheDocument();
+    expect(screen.getByText('A-00000011')).toBeInTheDocument();
+    expect(screen.queryByText(/CAI y prefijo fiscal/i)).not.toBeInTheDocument();
   });
 });
