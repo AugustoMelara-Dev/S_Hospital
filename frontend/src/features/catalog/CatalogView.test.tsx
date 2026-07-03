@@ -278,13 +278,15 @@ describe('CatalogView modernized structure', () => {
     ).toBeInTheDocument();
   });
 
-  it('requires confirmation before deactivating an active service', async () => {
+  it('requires confirmation before deactivating an active service without deleting it', async () => {
     setupBasicMocks();
     vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({
       data: [serviceFixture()],
       meta: { current_page: 1, per_page: 15, total: 1 },
     });
-    const saveService = vi.spyOn(apiClient, 'saveService');
+    const saveService = vi
+      .spyOn(apiClient, 'saveService')
+      .mockResolvedValue(serviceFixture({ active: false }));
     const deleteService = vi.spyOn(
       apiClient as typeof apiClient & { deleteService: (id: number) => Promise<Service> },
       'deleteService',
@@ -309,9 +311,12 @@ describe('CatalogView modernized structure', () => {
     fireEvent.click(screen.getByRole('button', { name: /desactivar servicio/i }));
 
     await waitFor(() => {
-      expect(deleteService).toHaveBeenCalledWith(1);
+      expect(saveService).toHaveBeenCalledWith(
+        expect.objectContaining({ active: false }),
+        1,
+      );
     });
-    expect(saveService).not.toHaveBeenCalled();
+    expect(deleteService).not.toHaveBeenCalled();
   });
 
   it('renders error sanitized message and exposes a retry callback on the table', async () => {

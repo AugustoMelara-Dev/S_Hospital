@@ -160,23 +160,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
       }
 
       try {
-        await apiClient.saveService(
-          {
-            category_id: service.category_id,
-            area_id: service.area_id ?? undefined,
-            name: service.name,
-            price: service.price,
-            scan_code: service.scan_code ?? null,
-            barcode: service.barcode ?? null,
-            qr_code: service.qr_code ?? null,
-            taxable: service.taxable,
-            active: !service.active,
-            visible_in_billing: service.visible_in_billing ?? true,
-            is_billable: service.is_billable ?? true,
-            special_rule_code: service.special_rule_code,
-          },
-          service.id,
-        );
+        await apiClient.saveService(serviceStatusPayload(service, !service.active), service.id);
         void invalidateCatalogQueries(queryClient);
         void refetchCatalogData();
         onStatus(service.active ? 'Servicio desactivado.' : 'Servicio activado.');
@@ -195,7 +179,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
     }
 
     try {
-      await apiClient.deleteService(service.id);
+      await apiClient.saveService(serviceStatusPayload(service, false), service.id);
       setServiceToDeactivate(null);
       void invalidateCatalogQueries(queryClient);
       void refetchCatalogData();
@@ -320,6 +304,23 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
       ) : null}
     </section>
   );
+}
+
+function serviceStatusPayload(service: Service, active: boolean) {
+  return {
+    category_id: service.category_id,
+    area_id: service.area_id ?? undefined,
+    name: service.name,
+    price: service.price,
+    scan_code: service.scan_code ?? null,
+    barcode: service.barcode ?? null,
+    qr_code: service.qr_code ?? null,
+    taxable: service.taxable,
+    active,
+    visible_in_billing: service.visible_in_billing ?? true,
+    is_billable: service.is_billable ?? true,
+    special_rule_code: service.special_rule_code,
+  };
 }
 
 function errorMessageFromQueries(...errors: unknown[]): string {

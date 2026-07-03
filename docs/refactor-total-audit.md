@@ -1341,3 +1341,28 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, schema, migraciones, facturas, caja ni historicos.
 - Este corte reduce errores operativos en caja/catalogo y mantiene el backend como fuente de verdad fiscal.
+
+## 55. Fase 8 - Desactivar servicios sin invocar borrado
+
+Cambio aplicado:
+
+- `CatalogView` ya no usa `apiClient.deleteService` para la accion operativa `Desactivar`.
+- La confirmacion ahora llama `apiClient.saveService(..., id)` con `active: false`, igual que la activacion usa `active: true`.
+- El backend conserva su defensa: `DELETE /api/services/{id}` sigue rechazando servicios facturados con 409 y no borra historicos.
+- Se extrajo un helper local para construir el payload de cambio de estado sin duplicar campos del servicio.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- CatalogView.test.tsx -t "without deleting"` | RED inicial porque `saveService` no era llamado; luego OK: 1 test focal pasa. |
+| `npm run test -- CatalogView.test.tsx ServiceCatalogTable.test.tsx ServiceSheet.test.tsx` | OK: 3 archivos, 36 tests pasan. |
+| `docker compose exec backend php artisan test --filter=ServiceCatalogTest` | OK: 34 tests pasan; confirma que DELETE de servicio facturado sigue protegido con 409. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, schema, migraciones, facturas ni snapshots.
+- Este corte permite desactivar servicios ya facturados desde la UI normal sin intentar borrar ni romper historial fiscal.
