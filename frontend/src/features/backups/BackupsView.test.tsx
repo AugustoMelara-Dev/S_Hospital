@@ -52,6 +52,18 @@ describe('BackupsView', () => {
     expect(screen.queryByRole('button', { name: /eliminar|borrar/i })).not.toBeInTheDocument();
   });
 
+  it('shows a single create backup action when the history is empty', async () => {
+    vi.mocked(apiClient.getBackups).mockResolvedValue({
+      data: [],
+      meta: { current_page: 1, per_page: 15, total: 0 },
+    });
+
+    renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
+
+    expect(await screen.findByText(/no hay respaldos/i)).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /^crear respaldo$/i })).toHaveLength(1);
+  });
+
   it('describes restore validation blockers as support recovery work in the normal view', async () => {
     const status = systemStatusFixture();
     vi.mocked(apiClient.getSystemStatus).mockResolvedValue({

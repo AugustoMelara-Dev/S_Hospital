@@ -722,7 +722,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
         )}
 
         {isEmpty && (
-          <BackupEmptyState onCreate={() => setConfirmCreateOpen(true)} canCreate={canCreate} />
+          <BackupEmptyState canCreate={canCreate} />
         )}
       </div>
       <ConfirmDialog

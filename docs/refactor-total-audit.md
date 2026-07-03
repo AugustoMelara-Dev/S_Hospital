@@ -1780,3 +1780,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, schema, migraciones, perfiles guardados, correlativos ni permisos.
 - Este corte reduce opciones tecnicas visibles para el operador normal sin cambiar valores existentes de los perfiles.
+
+## 73. Fase 12 - Respaldos vacios muestran una sola accion primaria
+
+Cambio aplicado:
+
+- `BackupsView` conserva el boton principal "Crear respaldo" en el encabezado.
+- El estado vacio deja de renderizar un segundo boton "Crear respaldo", evitando dos acciones primarias identicas en la misma pantalla.
+- El mensaje del estado vacio sigue guiando al operador sin duplicar controles.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- BackupsView.test.tsx -t "single create backup action"` | RED inicial porque la pantalla vacia mostraba dos botones "Crear respaldo"; luego OK. |
+| `npm run test -- BackupsView.test.tsx` | OK: 20 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, schema, migraciones, endpoints, permisos, creacion de respaldos ni descargas.
+- Este corte reduce ruido operacional en la pantalla inicial de respaldos sin cambiar seguridad ni auditoria.
