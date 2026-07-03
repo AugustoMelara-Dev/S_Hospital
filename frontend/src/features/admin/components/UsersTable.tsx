@@ -8,6 +8,7 @@ import { roleLabel } from '@/lib/role-labels';
 type UsersTableProps = {
   canDisableUsers: boolean;
   canUpdateUsers: boolean;
+  currentUserId?: number;
   onEdit: (user: AuthUser) => void;
   onResetPassword: (user: AuthUser) => void;
   onToggleActive: (user: AuthUser) => void;
@@ -18,6 +19,7 @@ type UsersTableProps = {
 export function UsersTable({
   canDisableUsers,
   canUpdateUsers,
+  currentUserId,
   onEdit,
   onResetPassword,
   onToggleActive,
@@ -88,16 +90,21 @@ export function UsersTable({
       header: 'Acciones',
       headerClassName: 'text-right',
       cellClassName: 'text-right',
-      render: (user) => (
-        <UserActionMenu
-          canDisableUsers={canDisableUsers}
-          canUpdateUsers={canUpdateUsers}
-          onEdit={onEdit}
-          onResetPassword={onResetPassword}
-          onToggleActive={onToggleActive}
-          user={user}
-        />
-      ),
+      render: (user) => {
+        const isCurrentUser = currentUserId !== undefined && user.id === currentUserId;
+
+        return (
+          <UserActionMenu
+            canDisableUsers={canDisableUsers && !isCurrentUser}
+            canResetPassword={canUpdateUsers && !isCurrentUser}
+            canUpdateUsers={canUpdateUsers}
+            onEdit={onEdit}
+            onResetPassword={onResetPassword}
+            onToggleActive={onToggleActive}
+            user={user}
+          />
+        );
+      },
     },
   ];
 

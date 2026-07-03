@@ -141,6 +141,42 @@ describe('UsersView', () => {
     expect(screen.queryByRole('menuitem', { name: /restablecer clave/i })).not.toBeInTheDocument();
   });
 
+  it('does not expose self password reset or self deactivation actions', async () => {
+    vi.mocked(apiClient.getUsers).mockResolvedValueOnce([
+      adminUser,
+      {
+        ...adminUser,
+        id: 2,
+        name: 'Caja Objetivo',
+        email: 'caja-objetivo@hospital.test',
+        username: 'caja-objetivo',
+        roles: ['cajero'],
+      },
+    ]);
+
+    render(
+      <UsersView
+        onStatus={vi.fn()}
+        canCreateUsers={false}
+        canUpdateUsers
+        canDisableUsers
+        canManageRoles={false}
+        currentUserId={adminUser.id}
+      />,
+    );
+
+    await openUserActions('Admin Hospital');
+    expect(await screen.findByRole('menuitem', { name: /^editar$/i })).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /restablecer clave/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /^desactivar$/i })).not.toBeInTheDocument();
+
+    fireEvent.keyDown(document.body, { key: 'Escape', code: 'Escape' });
+    await openUserActions('Caja Objetivo');
+    expect(await screen.findByRole('menuitem', { name: /^editar$/i })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: /restablecer clave/i })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: /^desactivar$/i })).toBeInTheDocument();
+  });
+
   it('shows a recoverable load error instead of leaving users in loading', async () => {
     const getUsers = vi.mocked(apiClient.getUsers);
     getUsers

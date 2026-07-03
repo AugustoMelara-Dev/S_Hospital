@@ -29,6 +29,7 @@ type UsersViewProps = {
   canDisableUsers?: boolean;
   canManageRoles: boolean;
   canAssignAdminRole?: boolean;
+  currentUserId?: number;
 };
 
 export function UsersView({
@@ -38,6 +39,7 @@ export function UsersView({
   canDisableUsers = false,
   canManageRoles,
   canAssignAdminRole = false,
+  currentUserId,
 }: UsersViewProps) {
   const [users, setUsers] = useState<AuthUser[]>([]);
   const [roles, setRoles] = useState<RoleDefinition[]>([]);
@@ -456,6 +458,7 @@ export function UsersView({
           <UsersTable
             canDisableUsers={canDisableUsers}
             canUpdateUsers={canUpdateUsers}
+            currentUserId={currentUserId}
             onEdit={handleOpenEditModal}
             onResetPassword={handleOpenResetModal}
             onToggleActive={handleOpenToggleDialog}

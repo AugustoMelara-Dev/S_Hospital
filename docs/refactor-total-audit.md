@@ -1391,3 +1391,28 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, schema, migraciones, caja, pagos, endpoints ni datos fiscales.
 - Este corte reduce 403 previsibles desde historial sin convertir el frontend en fuente de verdad de RBAC.
+
+## 57. Fase 13 - Usuarios oculta acciones propias bloqueadas por backend
+
+Cambio aplicado:
+
+- `AppRoutes` pasa el `currentUserId` autenticado a `UsersView`.
+- `UsersTable` detecta la fila del usuario actual y no expone `Restablecer clave` ni `Desactivar` para esa cuenta.
+- `UserActionMenu` separa el permiso visual de editar del permiso visual de restablecer clave, manteniendo `Editar` disponible cuando corresponde.
+- Se agrego cobertura para confirmar que la fila propia conserva `Editar`, pero no ofrece auto-reset ni auto-desactivacion; una cuenta objetivo distinta conserva las acciones autorizadas.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- UsersView.test.tsx -t "self password reset"` | RED inicial porque `Restablecer clave` seguia visible en la fila propia; luego OK: 1 test focal pasa. |
+| `npm run test -- UsersView.test.tsx UsersTable.test.tsx UserFormDialog.test.tsx RoleFormDialog.test.tsx PermissionMatrix.test.tsx` | OK: 5 archivos, 41 tests pasan. |
+| `docker compose exec backend php artisan test --filter=UserManagementTest` | OK: 31 tests pasan, 129 assertions; confirma que el backend bloquea auto-reset y auto-desactivacion. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, schema, migraciones, roles seeders ni permisos.
+- Este corte evita acciones previsiblemente rechazadas por RBAC backend y reduce errores operativos en administracion de usuarios.
