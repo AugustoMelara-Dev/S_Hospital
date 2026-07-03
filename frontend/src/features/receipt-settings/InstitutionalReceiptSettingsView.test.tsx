@@ -259,6 +259,19 @@ describe('InstitutionalReceiptSettingsView', () => {
       );
     });
   });
+
+  it('labels the collapsed advanced panel as an explicit support activation', async () => {
+    renderView({ canAdvancedPrintSettings: true });
+
+    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
+    await activateTab('Papel y copias');
+    fireEvent.click(screen.getByRole('button', { name: /recibo peque/i }));
+
+    expect(screen.getByText(/activar modo soporte t/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText('Ancho mm')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Margen sup. (mm)')).not.toBeInTheDocument();
+  });
+
   it('generates a test print without leaving the settings screen', async () => {
     const { apiClient } = await import('@/lib/api');
     renderView();

@@ -727,7 +727,7 @@ export function InstitutionalReceiptSettingsView({
                   <summary className="cursor-pointer font-semibold text-warning-foreground">
                     <span className="inline-flex items-center gap-2">
                       <AlertTriangle className="size-4" aria-hidden="true" />
-                      Modo soporte técnico
+                      Activar modo soporte técnico
                     </span>
                   </summary>
                   <p className="mt-2 text-current/85">

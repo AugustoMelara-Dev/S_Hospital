@@ -3244,3 +3244,24 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, rutas, migraciones, seeders, policies ni endpoints.
 - Este corte reduce friccion en reportes de caja para operacion diaria monocomputadora sin ampliar permisos ni contratos API.
+
+## 134. Fase 6 - Activacion explicita de soporte en recibos
+
+Cambio aplicado:
+
+- El panel avanzado de recibos ahora se presenta como "Activar modo soporte tecnico", alineado con la regla de que el modo manual no es operacion diaria.
+- Los campos de ancho, alto, margenes, fuente y escala siguen sin renderizarse mientras el panel este colapsado.
+- La vista normal de papel mantiene solo papel, copias, logo, sello/firma, impresion de prueba, guardar perfil y vista previa.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- InstitutionalReceiptSettingsView.test.tsx -t "labels the collapsed advanced panel"` | RED inicial: el resumen decia "Modo soporte tecnico"; luego OK. |
+| `npm run test -- InstitutionalReceiptSettingsView.test.tsx ReceiptSettingsPreview.test.tsx ReceiptPreview.test.tsx ReceiptPreview.a11y.test.tsx` | OK: 4 archivos, 27 tests pasan. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, rutas, migraciones, seeders, policies ni endpoints.
+- Este corte refuerza que los ajustes manuales de impresion son una activacion consciente de soporte y no una opcion normal del hospital.
