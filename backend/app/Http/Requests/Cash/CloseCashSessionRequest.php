@@ -8,7 +8,8 @@ class CloseCashSessionRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('cash.close') === true;
+        return $this->user()?->can('cash.close') === true
+            || $this->user()?->can('cash.close_any') === true;
     }
 
     public function rules(): array

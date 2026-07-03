@@ -3133,3 +3133,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, rutas, migraciones, seeders, policies ni endpoints.
 - Este corte reduce ambiguedad en cierre de caja sin relajar la regla backend que exige motivo cuando existe diferencia.
+
+## 129. Fase 14/7 - Cierre global de caja autorizado por RBAC
+
+Cambio aplicado:
+
+- El request backend de cierre de caja acepta `cash.close_any` ademas de `cash.close`.
+- La Policy y la Action siguen validando alcance: un usuario sin `cash.close_any` no puede cerrar caja ajena.
+- Se cubre el caso de un rol operativo personalizado con cierre global, sin requerirle tambien el permiso de cierre propio.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker exec s_hospital-backend-1 php artisan test --filter=CloseCashSessionTest` | RED inicial: usuario con solo `cash.close_any` recibia 403; luego OK: 4 tests pasan. |
+| `docker exec s_hospital-backend-1 php artisan test --filter="CloseCashSessionTest\|CloseCashSessionDifferenceTest\|CashPaymentsReceiptTest"` | OK: 39 tests pasan, 378 assertions. |
+| `docker exec s_hospital-backend-1 vendor/bin/pint --test app/Http/Requests/Cash/CloseCashSessionRequest.php tests/Feature/Cash/CloseCashSessionTest.php` | OK: 2 files pasan. |
+| `docker exec s_hospital-backend-1 vendor/bin/phpstan analyse` | Fallo por limite de memoria PHP 128M del worker, sin resultado completo. |
+| `docker exec s_hospital-backend-1 vendor/bin/phpstan analyse --memory-limit=512M` | OK: No errors. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron migraciones, seeders, rutas ni contratos de payload.
+- Este corte fortalece RBAC backend para caja sin relajar auditoria, diferencia obligatoria ni bloqueo de caja ajena para cajeros.

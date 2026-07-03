@@ -13,6 +13,7 @@ use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
+use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
 class CloseCashSessionTest extends TestCase
@@ -93,6 +94,28 @@ class CloseCashSessionTest extends TestCase
             'method' => CashMovement::TYPE_CLOSING,
             'amount' => '0.00',
         ]);
+    }
+
+    public function test_close_any_permission_can_close_another_users_session_without_cash_close(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashierWithOpenSession('0.00');
+        $sessionId = $this->currentOpenSessionIdFor($cashier);
+        $supervisor = User::factory()->create();
+        $supervisor->givePermissionTo([
+            Permission::findOrCreate('cash.view', 'web'),
+            Permission::findOrCreate('cash.close_any', 'web'),
+        ]);
+
+        $this->actingAs($supervisor)
+            ->postJson("/api/cash-sessions/{$sessionId}/close", [
+                'closing_amount' => '0.00',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.status', CashRegisterSession::STATUS_CLOSED)
+            ->assertJsonPath('data.user_id', $cashier->id);
+
+        $this->assertSame(CashRegisterSession::STATUS_CLOSED, CashRegisterSession::query()->findOrFail($sessionId)->status);
     }
 
     private function seedBillingBase(): void
