@@ -1464,3 +1464,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, schema, migraciones, caja, pagos ni endpoints.
 - Este corte no sustituye RBAC backend; reduce exposicion de controles operativos de reportes y evita consultas previsiblemente no autorizadas desde la UI.
+
+## 60. Fase 10 - Reportes aterriza en caja para usuarios solo caja
+
+Cambio aplicado:
+
+- La raiz `/reports` ahora selecciona `Caja` cuando el usuario no puede ver reportes gerenciales pero si puede consultar reportes de caja.
+- `ReportsNavigation` usa estado activo controlado por la subruta resuelta, evitando depender de `NavLink` cuando la URL raiz representa una seccion permitida distinta.
+- Se agrego cobertura para confirmar que `Caja` queda marcada como pagina actual, se renderiza la operacion de caja y no aparece el estado de falta de permiso ejecutivo.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- ReportsView.subroutes.test.tsx -t "only permitted report"` | RED inicial porque `Caja` no quedaba activa ni reemplazaba Ejecutivo; luego OK: 1 test focal pasa. |
+| `npm run test -- ReportsView.subroutes.test.tsx` | OK: 5 tests pasan. |
+| `npm run test -- ReportsView.subroutes.test.tsx CashSessionReportTab.test.tsx PaymentMethodPanel.test.tsx ServiceRanking.test.tsx` | OK: 4 archivos, 14 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, schema, migraciones, endpoints ni permisos.
+- Este corte mejora la navegacion consolidada de reportes sin ampliar acceso: la subruta ejecutiva directa sigue mostrando estado sin permiso cuando corresponde.

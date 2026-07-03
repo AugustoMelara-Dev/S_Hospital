@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { ReportsAudit } from './ReportsAudit';
 import { ReportsCash } from './ReportsCash';
 import { ReportsExecutive } from './ReportsExecutive';
@@ -37,6 +37,11 @@ const SUB_ROUTES = [
 
 export function ReportsView(props: ReportsViewProps) {
   const { isRoot, subRoute } = useReportsRoute();
+  const activeSubRoute =
+    isRoot && subRoute === 'executive' && !props.canViewManagerial && props.canViewCashSessionReport
+      ? 'cash'
+      : subRoute;
+
   return (
     <div data-slot="reports-view" className="flex flex-col gap-5">
       {isRoot ? (
@@ -46,8 +51,8 @@ export function ReportsView(props: ReportsViewProps) {
           className="pb-4"
         />
       ) : null}
-      <ReportsNavigation active={subRoute} canViewManagerial={props.canViewManagerial} canViewCash={props.canViewCashSessionReport} />
-      <ReportsContent {...props} subRoute={subRoute} executiveTitleLevel={isRoot ? 2 : 1} />
+      <ReportsNavigation active={activeSubRoute} canViewManagerial={props.canViewManagerial} canViewCash={props.canViewCashSessionReport} />
+      <ReportsContent {...props} subRoute={activeSubRoute} executiveTitleLevel={isRoot ? 2 : 1} />
     </div>
   );
 }
@@ -87,22 +92,20 @@ function ReportsNavigation({
         const isActive = active === route.id;
         const Icon = route.icon;
         return (
-          <NavLink
+          <Link
             key={route.id}
             to={`${basePath}/${route.id}`}
             aria-current={isActive ? 'page' : undefined}
-            className={({ isActive: navActive }) =>
-              cn(
-                'inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-                isActive || navActive
-                  ? 'border-hospital-primary bg-hospital-primary/10 text-foreground shadow-sm'
-                  : 'border-operational-border bg-operational-surface text-muted-foreground hover:border-hospital-primary/45 hover:text-foreground',
-              )
-            }
+            className={cn(
+              'inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+              isActive
+                ? 'border-hospital-primary bg-hospital-primary/10 text-foreground shadow-sm'
+                : 'border-operational-border bg-operational-surface text-muted-foreground hover:border-hospital-primary/45 hover:text-foreground',
+            )}
           >
             <Icon aria-hidden="true" className="size-4" />
             <span>{route.label}</span>
-          </NavLink>
+          </Link>
         );
       })}
     </nav>
