@@ -3325,3 +3325,23 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, rutas, migraciones, seeders, policies, auditoria ni contratos API.
 - Este corte reduce jerga tecnica en historial sin relajar RBAC, reimpresion auditada ni generacion institucional.
+
+## 138. Fase 10/16 - Auditoria de anulaciones sin marcador crudo
+
+Cambio aplicado:
+
+- El panel ejecutivo de anulaciones y reversas deja de mostrar `-` cuando faltan paciente, usuario, autorizador, motivo o fecha.
+- La tabla ahora usa estados humanos: "Sin paciente", "Sin usuario", "Sin autorizador", "Sin motivo" y "Sin fecha".
+- No se cambian calculos, filtros, endpoints, permisos ni datos de auditoria; solo la lectura operativa del reporte.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- VoidsReversalsPanel --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial: la tabla renderizaba guiones crudos; luego OK: 3 tests pasan. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, rutas, migraciones, seeders, policies ni endpoints.
+- Este corte reduce ambiguedad en reportes de auditoria sin relajar RBAC, anulaciones, reversas ni trazabilidad.

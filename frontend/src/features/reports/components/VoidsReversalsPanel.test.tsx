@@ -39,4 +39,32 @@ describe('VoidsReversalsPanel', () => {
     expect(screen.getByText('Anulacion')).toBeInTheDocument();
     expect(document.body.textContent).toContain('L 75.00');
   });
+
+  it('uses human labels instead of raw dashes when audit details are missing', () => {
+    render(
+      <VoidsReversalsPanel
+        report={buildExecutiveReport({
+          voids_and_reversals: [
+            {
+              kind: 'reversal',
+              invoice_number: 'FAC-000654',
+              patient: null,
+              amount: '120.00',
+              reason: null,
+              user: null,
+              authorized_by: null,
+              created_at: null,
+            },
+          ],
+        })}
+      />,
+    );
+
+    expect(screen.getByText('Sin paciente')).toBeInTheDocument();
+    expect(screen.getByText('Sin usuario')).toBeInTheDocument();
+    expect(screen.getByText('Sin autorizador')).toBeInTheDocument();
+    expect(screen.getByText('Sin motivo')).toBeInTheDocument();
+    expect(screen.getByText('Sin fecha')).toBeInTheDocument();
+    expect(screen.queryByText('-')).not.toBeInTheDocument();
+  });
 });

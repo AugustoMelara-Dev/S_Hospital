@@ -30,7 +30,7 @@ const voidsAndReversalsColumns: Array<DataTableColumn<VoidOrReversal>> = [
     key: 'patient',
     header: 'Paciente',
     cellClassName: 'font-semibold',
-    render: (item) => item.patient ?? '-',
+    render: (item) => fallbackText(item.patient, 'Sin paciente'),
   },
   {
     key: 'amount',
@@ -43,19 +43,22 @@ const voidsAndReversalsColumns: Array<DataTableColumn<VoidOrReversal>> = [
     key: 'user',
     header: 'Usuario',
     cellClassName: 'text-xs',
-    render: (item) => item.user ?? '-',
+    render: (item) => fallbackText(item.user, 'Sin usuario'),
   },
   {
     key: 'authorized_by',
     header: 'Autorizado por',
     cellClassName: 'text-xs',
-    render: (item) => item.authorized_by ?? '-',
+    render: (item) => fallbackText(item.authorized_by, 'Sin autorizador'),
   },
   {
     key: 'reason',
     header: 'Motivo',
     cellClassName: 'max-w-md truncate text-xs text-muted-foreground',
-    render: (item) => <span title={item.reason ?? ''}>{item.reason ?? '-'}</span>,
+    render: (item) => {
+      const reason = fallbackText(item.reason, 'Sin motivo');
+      return <span title={reason}>{reason}</span>;
+    },
   },
   {
     key: 'created_at',
@@ -66,12 +69,16 @@ const voidsAndReversalsColumns: Array<DataTableColumn<VoidOrReversal>> = [
 ];
 
 function formatDate(value: string | null | undefined): string {
-  if (!value) return '-';
+  if (!value) return 'Sin fecha';
   try {
     return new Date(value).toLocaleString('es-HN');
   } catch {
     return value;
   }
+}
+
+function fallbackText(value: string | null | undefined, fallback: string): string {
+  return value?.trim() || fallback;
 }
 
 export function VoidsReversalsPanel({ report }: VoidsReversalsPanelProps) {
