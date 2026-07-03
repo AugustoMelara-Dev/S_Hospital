@@ -234,7 +234,8 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
     : '';
   const error = manualError || backupsQueryError;
 
-  const pendingCount = backupsList.filter(b => b.status === 'pending').length;
+  const visiblePendingCount = backupsList.filter(b => b.status === 'pending').length;
+  const pendingCount = systemStatus?.backups.pending_count ?? visiblePendingCount;
   const failedCount = backupsList.filter(b => b.status === 'failed').length;
 
   const lastSuccessBackup = backupsList.find(b => b.status === 'success');
@@ -386,7 +387,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
               {
                 label: 'Pendientes',
                 value: pendingCount,
-                helper: pendingCount > 0 ? 'El servidor debe completar estos respaldos' : 'Sin pendientes visibles',
+                helper: pendingCount > 0 ? 'El servidor debe completar estos respaldos' : 'Sin pendientes registrados',
                 tone: pendingCount > 0 ? 'warning' : 'success',
               },
               {

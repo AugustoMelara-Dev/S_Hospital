@@ -124,6 +124,40 @@ describe('BackupsView', () => {
     expect(within(kpis).getByText(/respaldo protegido mas reciente/i)).toBeInTheDocument();
   });
 
+  it('keeps the pending KPI from server status even when the visible list is filtered', async () => {
+    const status = systemStatusFixture();
+    vi.mocked(apiClient.getSystemStatus).mockResolvedValue({
+      ...status,
+      backups: {
+        ...status.backups,
+        pending_count: 3,
+      },
+    });
+    vi.mocked(apiClient.getBackups).mockResolvedValue({
+      data: [
+        backupFixture({
+          id: 8,
+          status: 'failed',
+          completed_at: null,
+          checksum_sha256: null,
+        }),
+      ],
+      meta: { current_page: 1, per_page: 15, total: 1 },
+    });
+
+    renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
+
+    const kpis = await screen.findByRole('region', { name: /indicadores principales de respaldos/i });
+    const pendingLabel = within(kpis).getByText(/^pendientes$/i);
+    const pendingCard = pendingLabel.closest('[data-slot="stat-grid-item"]');
+
+    expect(pendingCard).not.toBeNull();
+    await waitFor(() => {
+      expect(within(pendingCard as HTMLElement).getByText('3')).toBeInTheDocument();
+    });
+    expect(within(pendingCard as HTMLElement).getByText(/el servidor debe completar estos respaldos/i)).toBeInTheDocument();
+  });
+
   it('keeps support diagnostics collapsed behind a human support label', async () => {
     renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
 

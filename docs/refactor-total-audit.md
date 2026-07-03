@@ -1615,3 +1615,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron schema, migraciones, frontend, facturacion, caja, pagos ni correlativos.
 - Este corte fortalece la trazabilidad del catalogo sin cambiar precios existentes ni reglas de busqueda/facturacion.
+
+## 66. Fase 12 - KPI de respaldos pendientes usa estado del servidor
+
+Cambio aplicado:
+
+- `BackupsView` ahora usa `systemStatus.backups.pending_count` para el KPI principal de pendientes cuando el estado operativo esta disponible.
+- La lista visible sigue siendo solo respaldo local para el KPI mientras carga el estado del servidor.
+- Se agrego cobertura para asegurar que el KPI no se vuelve falso cuando el historial visible esta filtrado o paginado y no incluye respaldos pendientes.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- BackupsView.test.tsx -t "keeps the pending KPI"` | RED inicial porque el KPI mostraba `0` y `Sin pendientes visibles` aunque el servidor reportaba `3`; luego OK: 1 test focal pasa. |
+| `npm run test -- BackupsView.test.tsx` | OK: 18 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, schema, migraciones, endpoints, permisos, creacion de respaldos ni descargas.
+- Este corte mejora la confiabilidad operativa de la pantalla de respaldos sin exponer rutas, SHA256 ni nombres tecnicos en la vista normal.
