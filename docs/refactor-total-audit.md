@@ -2193,3 +2193,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, migraciones, pagos, recibos PDF, anulaciones ni permisos.
 - Este corte reduce acciones confusas en historial: una factura sin recibo se puede anular/cobrar desde el flujo correspondiente, pero no se presenta como reimprimible.
+## 90. Fase 13 - Roles elevados ocultos sin autorizacion
+
+Cambio aplicado:
+
+- `UserFormDialog` filtra roles elevados (`admin`, `root`, `supervisor`, `auditor` o roles protegidos) cuando el operador no tiene permiso para asignar roles administrativos.
+- `UsersView` pasa la autorizacion `canAssignAdminRole` al formulario de creacion/edicion de usuarios.
+- La edicion conserva visible el rol elevado actual del usuario para evitar que el formulario pierda su valor al abrir una cuenta ya existente.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- UsersView.test.tsx -t "hides elevated roles from user creators without admin assignment permission"` | RED inicial porque el selector ofrecia `Admin`, `Supervisor` y `Auditor`; luego OK. |
+| `npm run test -- UsersView.test.tsx UserFormDialog.test.tsx UsersTable.test.tsx RoleFormDialog.test.tsx PermissionMatrix.test.tsx` | OK: 5 archivos, 46 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, migraciones, policies, permisos ni seeders.
+- Este corte alinea la interfaz con la proteccion existente del servidor: un creador basico puede usar roles operativos no elevados, pero no ve opciones que el API rechazaria.

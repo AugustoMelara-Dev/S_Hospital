@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -46,6 +46,7 @@ type UserFormDialogProps = {
   editingUser: AuthUser | null;
   roles: RoleDefinition[];
   canManageRoles: boolean;
+  canAssignAdminRole?: boolean;
   selectedUserPermissions: string[];
   onToggleUserPermission: (permissionName: string, checked: boolean) => void;
   onRoleChange?: (roleName: string) => void;
@@ -60,6 +61,7 @@ export function UserFormDialog({
   editingUser,
   roles,
   canManageRoles,
+  canAssignAdminRole = false,
   selectedUserPermissions,
   onToggleUserPermission,
   onRoleChange,
@@ -69,6 +71,10 @@ export function UserFormDialog({
 }: UserFormDialogProps) {
   const [criticalAccessConfirmed, setCriticalAccessConfirmed] = useState(false);
   const schema = editingUser ? editUserSchema : createUserSchema;
+  const editingRoleName = editingUser?.roles[0] ?? null;
+  const assignableRoles = useMemo(() => roles.filter((role) => (
+    canAssignAdminRole || !isElevatedRole(role) || role.name === editingRoleName
+  )), [canAssignAdminRole, editingRoleName, roles]);
   const hasSelectedCriticalPermission = selectedUserPermissions.some(isCriticalPermission);
   const {
     register,
@@ -79,18 +85,18 @@ export function UserFormDialog({
     formState: { errors, isSubmitting },
   } = useForm<UserFormData>({
     resolver: zodResolver(schema) as never,
-    defaultValues: defaultValuesFor(editingUser, roles),
+    defaultValues: defaultValuesFor(editingUser, assignableRoles),
   });
 
   useEffect(() => {
     if (open) {
       setCriticalAccessConfirmed(false);
-      reset(defaultValuesFor(editingUser, roles));
+      reset(defaultValuesFor(editingUser, assignableRoles));
       if (editingUser) {
         unregister('password');
       }
     }
-  }, [open, editingUser, roles, reset, unregister]);
+  }, [open, editingUser, assignableRoles, reset, unregister]);
 
   useEffect(() => {
     if (!hasSelectedCriticalPermission) {
@@ -167,7 +173,7 @@ export function UserFormDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {roles.map((role) => (
+                  {assignableRoles.map((role) => (
                     <SelectItem key={role.id} value={role.name}>
                       {roleLabel(role.name)}
                       {role.protected ? ' (base protegido)' : ''}
@@ -320,3 +326,13 @@ export function isPasswordPolicyCompliant(password: string): boolean {
 
 export type { UserFormData };
 export { type UserPayload };
+
+function isElevatedRole(role: RoleDefinition): boolean {
+  const normalized = role.name.toLowerCase();
+
+  return role.protected
+    || normalized === 'admin'
+    || normalized === 'root'
+    || normalized === 'supervisor'
+    || normalized === 'auditor';
+}

@@ -266,6 +266,38 @@ describe('UsersView', () => {
     })));
   });
 
+  it('hides elevated roles from user creators without admin assignment permission', async () => {
+    vi.mocked(apiClient.getRoles).mockResolvedValueOnce({
+      roles: [
+        { id: 1, name: 'admin', protected: true, permissions: [] },
+        { id: 2, name: 'cajero', protected: false, permissions: [] },
+        { id: 3, name: 'supervisor', protected: false, permissions: [] },
+        { id: 4, name: 'auditor', protected: false, permissions: [] },
+        { id: 5, name: 'catalog_manager', protected: false, permissions: [] },
+      ],
+      permissionCatalog: [],
+    });
+
+    render(
+      <UsersView
+        onStatus={vi.fn()}
+        canCreateUsers
+        canManageRoles={false}
+        canAssignAdminRole={false}
+      />,
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: /crear usuario/i }));
+    const dialog = screen.getByRole('dialog', { name: /crear usuario/i });
+    fireEvent.click(within(dialog).getByRole('combobox', { name: /rol operativo/i }));
+
+    expect(screen.getByRole('option', { name: /^Cajero$/i })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /Catalog manager/i })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /^Admin/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /^Supervisor$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /^Auditor$/i })).not.toBeInTheDocument();
+  });
+
   it('loads operational roles from the API instead of hardcoding only default roles', async () => {
     render(<UsersView onStatus={vi.fn()} canCreateUsers={true} canManageRoles={false} />);
 
@@ -274,8 +306,8 @@ describe('UsersView', () => {
 
     fireEvent.click(within(dialog).getByRole('combobox', { name: /rol operativo/i }));
 
-    expect(await screen.findByRole('option', { name: /Auditor/i })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: /Catalog manager/i })).toBeInTheDocument();
+    expect(await screen.findByRole('option', { name: /Catalog manager/i })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /Auditor/i })).not.toBeInTheDocument();
   });
 
   it('updates the direct permission template when the administrator changes the user role', async () => {

@@ -475,6 +475,7 @@ export function UsersView({
         editingUser={editingUser}
         roles={roles}
         canManageRoles={canManageRoles}
+        canAssignAdminRole={canAssignAdminRole}
         selectedUserPermissions={selectedUserPermissions}
         onToggleUserPermission={toggleUserPermission}
         onRoleChange={(roleNameValue) => {
