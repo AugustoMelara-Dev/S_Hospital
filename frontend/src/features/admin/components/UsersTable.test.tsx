@@ -34,6 +34,7 @@ describe('UsersTable', () => {
   it('renders authorized row actions through the shared action menu', async () => {
     render(
       <UsersTable
+        canAssignAdminRole={false}
         canDisableUsers
         canUpdateUsers
         onEdit={vi.fn()}
@@ -55,6 +56,7 @@ describe('UsersTable', () => {
   it('does not render row actions for read-only operators', () => {
     render(
       <UsersTable
+        canAssignAdminRole={false}
         canDisableUsers={false}
         canUpdateUsers={false}
         onEdit={vi.fn()}
@@ -72,6 +74,7 @@ describe('UsersTable', () => {
   it('shows human role names and keeps technical role names secondary', () => {
     render(
       <UsersTable
+        canAssignAdminRole={false}
         canDisableUsers={false}
         canUpdateUsers={false}
         onEdit={vi.fn()}

@@ -109,7 +109,7 @@ describe('UsersView', () => {
   });
 
   it('groups per-user mutation actions in a single action menu', async () => {
-    render(<UsersView onStatus={vi.fn()} canCreateUsers={false} canUpdateUsers canDisableUsers canManageRoles={false} />);
+    render(<UsersView onStatus={vi.fn()} canCreateUsers={false} canUpdateUsers canDisableUsers canManageRoles={false} canAssignAdminRole />);
 
     await openUserActions('Admin Hospital');
 
@@ -122,7 +122,7 @@ describe('UsersView', () => {
   });
 
   it('shows exact user actions only for matching permissions', async () => {
-    render(<UsersView onStatus={vi.fn()} canCreateUsers={false} canUpdateUsers canManageRoles={false} />);
+    render(<UsersView onStatus={vi.fn()} canCreateUsers={false} canUpdateUsers canManageRoles={false} canAssignAdminRole />);
 
     await openUserActions('Admin Hospital');
     expect(await screen.findByRole('menuitem', { name: /^editar$/i })).toBeInTheDocument();
@@ -133,7 +133,7 @@ describe('UsersView', () => {
     vi.mocked(apiClient.getUsers).mockResolvedValue([adminUser]);
     vi.mocked(apiClient.getRoles).mockResolvedValue(roleCatalog);
 
-    render(<UsersView onStatus={vi.fn()} canCreateUsers={false} canDisableUsers canManageRoles={false} />);
+    render(<UsersView onStatus={vi.fn()} canCreateUsers={false} canDisableUsers canManageRoles={false} canAssignAdminRole />);
 
     await openUserActions('Admin Hospital');
     expect(await screen.findByRole('menuitem', { name: /^desactivar$/i })).toBeInTheDocument();
@@ -161,6 +161,7 @@ describe('UsersView', () => {
         canUpdateUsers
         canDisableUsers
         canManageRoles={false}
+        canAssignAdminRole
         currentUserId={adminUser.id}
       />,
     );
@@ -172,6 +173,40 @@ describe('UsersView', () => {
 
     fireEvent.keyDown(document.body, { key: 'Escape', code: 'Escape' });
     await openUserActions('Caja Objetivo');
+    expect(await screen.findByRole('menuitem', { name: /^editar$/i })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: /restablecer clave/i })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: /^desactivar$/i })).toBeInTheDocument();
+  });
+
+  it('does not expose protected user actions without admin assignment permission', async () => {
+    vi.mocked(apiClient.getUsers).mockResolvedValueOnce([
+      adminUser,
+      {
+        ...adminUser,
+        id: 3,
+        name: 'Caja Operativa',
+        email: 'caja-operativa@hospital.test',
+        username: 'caja-operativa',
+        roles: ['cajero'],
+      },
+    ]);
+
+    render(
+      <UsersView
+        onStatus={vi.fn()}
+        canCreateUsers={false}
+        canUpdateUsers
+        canDisableUsers
+        canManageRoles={false}
+        canAssignAdminRole={false}
+        currentUserId={99}
+      />,
+    );
+
+    expect(await screen.findByText('Admin Hospital')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /acciones de usuario admin hospital/i })).not.toBeInTheDocument();
+
+    await openUserActions('Caja Operativa');
     expect(await screen.findByRole('menuitem', { name: /^editar$/i })).toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: /restablecer clave/i })).toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: /^desactivar$/i })).toBeInTheDocument();
@@ -286,7 +321,7 @@ describe('UsersView', () => {
       must_change_password: true,
     });
 
-    render(<UsersView onStatus={vi.fn()} canCreateUsers={true} canUpdateUsers canManageRoles={true} />);
+    render(<UsersView onStatus={vi.fn()} canCreateUsers={true} canUpdateUsers canManageRoles={true} canAssignAdminRole />);
 
     fireEvent.click(await screen.findByRole('button', { name: /crear usuario/i }));
     const dialog = screen.getByRole('dialog', { name: /crear usuario/i });
@@ -441,7 +476,7 @@ describe('UsersView', () => {
       permissions: [{ name: 'reports.view', module: 'reports', label: 'Reports view' }],
     });
 
-    render(<UsersView onStatus={vi.fn()} canCreateUsers={true} canUpdateUsers canManageRoles={true} />);
+    render(<UsersView onStatus={vi.fn()} canCreateUsers={true} canUpdateUsers canManageRoles={true} canAssignAdminRole />);
 
     fireEvent.click(await screen.findByRole('button', { name: /nuevo rol/i }));
 
@@ -462,7 +497,7 @@ describe('UsersView', () => {
       resolveRole = resolve;
     }));
 
-    render(<UsersView onStatus={vi.fn()} canCreateUsers={true} canUpdateUsers canManageRoles={true} />);
+    render(<UsersView onStatus={vi.fn()} canCreateUsers={true} canUpdateUsers canManageRoles={true} canAssignAdminRole />);
 
     fireEvent.click(await screen.findByRole('button', { name: /nuevo rol/i }));
 
@@ -499,9 +534,9 @@ describe('UsersView', () => {
       ],
     });
 
-    render(<UsersView onStatus={vi.fn()} canCreateUsers={true} canDisableUsers canManageRoles={true} />);
+    render(<UsersView onStatus={vi.fn()} canCreateUsers={true} canDisableUsers canManageRoles={true} canAssignAdminRole />);
 
-    await screen.findByText(/Catalog manager/i);
+    await screen.findAllByText(/Catalog manager/i);
     fireEvent.click(screen.getByRole('button', { name: /editar permisos de catalog manager/i }));
 
     const dialog = await screen.findByRole('dialog', { name: /editar rol/i });
@@ -569,7 +604,7 @@ describe('UsersView', () => {
       must_change_password: true,
     });
 
-    render(<UsersView onStatus={vi.fn()} canCreateUsers={true} canUpdateUsers canManageRoles={true} />);
+    render(<UsersView onStatus={vi.fn()} canCreateUsers={true} canUpdateUsers canManageRoles={true} canAssignAdminRole />);
 
     await openUserActions('Admin Hospital');
     fireEvent.click(await screen.findByRole('menuitem', { name: /restablecer clave/i }));
@@ -595,7 +630,7 @@ describe('UsersView', () => {
       resolveToggle = resolve;
     }));
 
-    render(<UsersView onStatus={vi.fn()} canCreateUsers={true} canDisableUsers canManageRoles={true} />);
+    render(<UsersView onStatus={vi.fn()} canCreateUsers={true} canDisableUsers canManageRoles={true} canAssignAdminRole />);
 
     await openUserActions('Admin Hospital');
     fireEvent.click(await screen.findByRole('menuitem', { name: /^desactivar$/i }));

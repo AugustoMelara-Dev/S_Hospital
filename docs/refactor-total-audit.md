@@ -1416,3 +1416,28 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, schema, migraciones, roles seeders ni permisos.
 - Este corte evita acciones previsiblemente rechazadas por RBAC backend y reduce errores operativos en administracion de usuarios.
+
+## 58. Fase 13 - Usuarios respeta cuentas protegidas sin permiso administrativo
+
+Cambio aplicado:
+
+- `UsersTable` ahora recibe `canAssignAdminRole` y evalua por fila si el objetivo tiene rol protegido (`admin` o `root`).
+- Un gestor con `users.update` o `users.disable`, pero sin `users.assign_admin_role`, ya no ve acciones por fila sobre cuentas protegidas.
+- Las cuentas operativas no protegidas conservan `Editar`, `Restablecer clave` y `Desactivar` segun permisos exactos.
+- Se agrego cobertura para confirmar que la fila admin queda en modo consulta para gestores no autorizados, mientras una cuenta cajero sigue operable.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- UsersView.test.tsx -t "protected user actions"` | RED inicial porque el menu de la cuenta admin seguia visible; luego OK: 1 test focal pasa. |
+| `npm run test -- UsersView.test.tsx UsersTable.test.tsx UserFormDialog.test.tsx RoleFormDialog.test.tsx PermissionMatrix.test.tsx` | OK: 5 archivos, 42 tests pasan. |
+| `docker compose exec backend php artisan test --filter=UserManagementTest` | OK: 31 tests pasan, 129 assertions; confirma que el backend bloquea modificar cuentas protegidas sin `users.assign_admin_role`. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, schema, migraciones, seeders ni nombres de permisos.
+- Este corte alinea la UI de usuarios con la policy backend sin relajar RBAC ni ampliar privilegios.

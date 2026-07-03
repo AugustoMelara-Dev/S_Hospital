@@ -6,6 +6,7 @@ import { UserActionMenu } from './UserActionMenu';
 import { roleLabel } from '@/lib/role-labels';
 
 type UsersTableProps = {
+  canAssignAdminRole: boolean;
   canDisableUsers: boolean;
   canUpdateUsers: boolean;
   currentUserId?: number;
@@ -17,6 +18,7 @@ type UsersTableProps = {
 };
 
 export function UsersTable({
+  canAssignAdminRole,
   canDisableUsers,
   canUpdateUsers,
   currentUserId,
@@ -92,12 +94,13 @@ export function UsersTable({
       cellClassName: 'text-right',
       render: (user) => {
         const isCurrentUser = currentUserId !== undefined && user.id === currentUserId;
+        const canManageProtectedTarget = !hasProtectedRole(user) || canAssignAdminRole;
 
         return (
           <UserActionMenu
-            canDisableUsers={canDisableUsers && !isCurrentUser}
-            canResetPassword={canUpdateUsers && !isCurrentUser}
-            canUpdateUsers={canUpdateUsers}
+            canDisableUsers={canDisableUsers && canManageProtectedTarget && !isCurrentUser}
+            canResetPassword={canUpdateUsers && canManageProtectedTarget && !isCurrentUser}
+            canUpdateUsers={canUpdateUsers && canManageProtectedTarget}
             onEdit={onEdit}
             onResetPassword={onResetPassword}
             onToggleActive={onToggleActive}
@@ -118,4 +121,8 @@ export function UsersTable({
       emptyDescription={searchTerm ? 'Ajuste la busqueda por nombre, correo o usuario.' : 'Cuando se creen usuarios autorizados apareceran en este directorio.'}
     />
   );
+}
+
+function hasProtectedRole(user: AuthUser): boolean {
+  return user.roles.some((role) => ['admin', 'root'].includes(role.toLowerCase()));
 }

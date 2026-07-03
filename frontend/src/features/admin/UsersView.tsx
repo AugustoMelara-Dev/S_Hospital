@@ -456,6 +456,7 @@ export function UsersView({
         </CardContent>
         <CardContent className="p-0">
           <UsersTable
+            canAssignAdminRole={canAssignAdminRole}
             canDisableUsers={canDisableUsers}
             canUpdateUsers={canUpdateUsers}
             currentUserId={currentUserId}
