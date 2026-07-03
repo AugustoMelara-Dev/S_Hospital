@@ -82,7 +82,7 @@ describe('ReportsView (sub-routes)', () => {
     expect(screen.getByRole('link', { name: /ejecutivo/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /caja/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /auditoria/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 2, name: /control ejecutivo/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /control ejecutivo/i })).toBeInTheDocument();
   });
 
   it('hides sub-routes when the user lacks managerial permission', () => {
@@ -97,6 +97,13 @@ describe('ReportsView (sub-routes)', () => {
     expect(screen.getByRole('link', { name: /caja/i })).toHaveAttribute('aria-current', 'page');
     expect(screen.getByText(/operacion de caja/i)).toBeInTheDocument();
     expect(screen.queryByText(/reporte ejecutivo no disponible/i)).not.toBeInTheDocument();
+  });
+
+  it('falls back to executive when the report sub-route is unknown', () => {
+    renderReports('/reports/desconocido');
+
+    expect(screen.getByRole('link', { name: /ejecutivo/i })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('heading', { name: /control ejecutivo/i })).toBeInTheDocument();
   });
 
   it('shows empty state in executive sub-route without permissions', () => {

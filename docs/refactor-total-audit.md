@@ -2094,3 +2094,28 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron rutas, migraciones, jobs de respaldo, descarga ni creacion de backups.
 - Este corte elimina la ambiguedad operacional: restaurar backups queda fuera de la app hasta que exista un flujo seguro completo, mientras los permisos legados quedan ocultos y no autorizan acciones.
+
+## 86. Fase 10 - Reportes normaliza subrutas desconocidas
+
+Cambio aplicado:
+
+- `ReportsView` valida la subruta solicitada contra las tres secciones operativas (`executive`, `cash`, `audit`).
+- Una URL desconocida bajo `/reports/*` cae en Ejecutivo y mantiene la navegacion con `aria-current="page"` en la seccion activa.
+- Se agrego cobertura para evitar que una ruta invalida deje al operador con contenido visible pero sin ubicacion activa.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- ReportsView.subroutes.test.tsx -t "unknown"` | RED inicial porque `/reports/desconocido` no marcaba ninguna seccion activa; luego OK. |
+| `npm run test -- ReportsView.subroutes.test.tsx` | OK: 6 tests pasan. |
+| `npm run test -- ReportsView.subroutes.test.tsx ReportsExecutive.test.tsx ReportsCash.test.tsx ReportsAudit.test.tsx` | OK: 4 archivos, 14 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron endpoints, permisos, exportaciones ni calculos de reportes.
+- Este corte reduce ambiguedad en reportes consolidados y mantiene la navegacion limitada a Ejecutivo, Caja y Auditoria.

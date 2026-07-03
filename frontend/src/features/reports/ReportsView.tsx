@@ -35,6 +35,8 @@ const SUB_ROUTES = [
   },
 ] as const;
 
+type ReportSubRoute = typeof SUB_ROUTES[number]['id'];
+
 export function ReportsView(props: ReportsViewProps) {
   const { isRoot, subRoute } = useReportsRoute();
   const activeSubRoute =
@@ -57,13 +59,18 @@ export function ReportsView(props: ReportsViewProps) {
   );
 }
 
-function useReportsRoute(): { isRoot: boolean; subRoute: typeof SUB_ROUTES[number]['id'] } {
+function useReportsRoute(): { isRoot: boolean; subRoute: ReportSubRoute } {
   const location = useLocation();
   return useMemo(() => {
     const segments = location.pathname.split('/').filter(Boolean);
-    const subRoute = (segments[1] ?? 'executive') as typeof SUB_ROUTES[number]['id'];
+    const requestedSubRoute = segments[1] ?? 'executive';
+    const subRoute = isReportSubRoute(requestedSubRoute) ? requestedSubRoute : 'executive';
     return { isRoot: segments.length === 1, subRoute };
   }, [location.pathname]);
+}
+
+function isReportSubRoute(value: string): value is ReportSubRoute {
+  return SUB_ROUTES.some((route) => route.id === value);
 }
 
 function ReportsNavigation({
@@ -71,7 +78,7 @@ function ReportsNavigation({
   canViewManagerial,
   canViewCash,
 }: {
-  active: typeof SUB_ROUTES[number]['id'];
+  active: ReportSubRoute;
   canViewManagerial: boolean;
   canViewCash: boolean;
 }) {
@@ -118,7 +125,7 @@ function ReportsContent({
   ...props
 }: ReportsViewProps & {
   executiveTitleLevel: 1 | 2 | 3;
-  subRoute: typeof SUB_ROUTES[number]['id'];
+  subRoute: ReportSubRoute;
 }) {
   if (subRoute === 'cash') {
     return <ReportsCash canViewCash={props.canViewCashSessionReport} canViewManagerial={props.canViewManagerial} />;
