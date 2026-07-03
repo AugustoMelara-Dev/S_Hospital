@@ -14,11 +14,11 @@ vi.mock('../../lib/download', () => ({
   openBlobInNewTab: vi.fn(),
 }));
 
-function renderWithQueryClient(node: ReactNode) {
+function renderWithQueryClient(node: ReactNode, initialEntries = ['/']) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter>{node}</MemoryRouter>
+      <MemoryRouter initialEntries={initialEntries}>{node}</MemoryRouter>
     </QueryClientProvider>
   );
 }
@@ -153,6 +153,31 @@ describe('InvoiceHistoryView', () => {
     await waitFor(() => expect(getInvoices).toHaveBeenLastCalledWith(expect.objectContaining({
       patient: 'Maria Lopez',
       invoice_number: '00000022',
+      page: 1,
+      per_page: 10,
+    })));
+  });
+
+  it('returns to the first page when a search filter changes', async () => {
+    const getInvoices = vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [],
+      meta: { current_page: 3, per_page: 10, total: 40 },
+    });
+
+    renderWithQueryClient(
+      <InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />,
+      ['/invoices?page=3&per_page=10'],
+    );
+
+    await waitFor(() => expect(getInvoices).toHaveBeenCalledWith(expect.objectContaining({
+      page: 3,
+      per_page: 10,
+    })));
+
+    fireEvent.change(screen.getByLabelText(/paciente/i), { target: { value: 'Maria Lopez' } });
+
+    await waitFor(() => expect(getInvoices).toHaveBeenLastCalledWith(expect.objectContaining({
+      patient: 'Maria Lopez',
       page: 1,
       per_page: 10,
     })));

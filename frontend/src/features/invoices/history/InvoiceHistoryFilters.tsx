@@ -24,6 +24,10 @@ export function InvoiceHistoryFilters({
   onClear,
   onSubmit,
 }: InvoiceHistoryFiltersProps) {
+  function updateFilter(patch: Partial<InvoiceFilters>) {
+    onChange({ ...filters, ...patch, page: 1 });
+  }
+
   return (
     <FilterBar
       className="border-operational-border"
@@ -32,8 +36,8 @@ export function InvoiceHistoryFilters({
           <DateRangePicker
             startDate={filters.date_from ?? ''}
             endDate={filters.date_to ?? ''}
-            onStartDateChange={(val) => onChange({ ...filters, date_from: val })}
-            onEndDateChange={(val) => onChange({ ...filters, date_to: val })}
+            onStartDateChange={(val) => updateFilter({ date_from: val })}
+            onEndDateChange={(val) => updateFilter({ date_to: val })}
             className="col-span-1 sm:col-span-2"
           />
 
@@ -41,8 +45,7 @@ export function InvoiceHistoryFilters({
             <Label htmlFor="status" className="text-xs font-semibold text-muted-foreground">Estado</Label>
             <Select
               value={filters.status ?? 'all'}
-              onValueChange={(value) => onChange({
-                ...filters,
+              onValueChange={(value) => updateFilter({
                 status: value === 'all' ? '' : value as InvoiceFilters['status'],
               })}
             >
@@ -75,7 +78,7 @@ export function InvoiceHistoryFilters({
             id="patient"
             placeholder="Nombre del paciente..."
             value={filters.patient ?? ''}
-            onChange={(event) => onChange({ ...filters, patient: event.target.value })}
+            onChange={(event) => updateFilter({ patient: event.target.value })}
             className="h-10 pl-9"
           />
         </div>
@@ -89,7 +92,7 @@ export function InvoiceHistoryFilters({
             id="invoice_number"
             placeholder="A-0001..."
             value={filters.invoice_number ?? ''}
-            onChange={(event) => onChange({ ...filters, invoice_number: event.target.value })}
+            onChange={(event) => updateFilter({ invoice_number: event.target.value })}
             className="h-10 pl-9 font-mono tabular-nums"
           />
         </div>

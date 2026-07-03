@@ -3157,3 +3157,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron migraciones, seeders, rutas ni contratos de payload.
 - Este corte fortalece RBAC backend para caja sin relajar auditoria, diferencia obligatoria ni bloqueo de caja ajena para cajeros.
+
+## 130. Fase 9 - Busqueda de historial vuelve a primera pagina
+
+Cambio aplicado:
+
+- Los filtros del historial reinician la paginacion a `page: 1` cuando cambia paciente, numero de factura, fechas o estado.
+- Esto evita falsos vacios cuando el usuario esta en una pagina posterior y busca una factura o paciente con pocos resultados.
+- No se cambiaron endpoints, payloads ni calculos; se mantiene el contrato existente de `getInvoices`.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- InvoiceHistoryView --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial: al cambiar paciente desde `page=3`, la consulta seguia en pagina 3; luego OK: 28 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, rutas, migraciones, seeders, policies ni endpoints.
+- Este corte mejora busqueda operativa en historial sin relajar permisos, anulaciones ni auditoria de reimpresiones.
