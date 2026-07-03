@@ -137,6 +137,31 @@ describe('InvoiceHistoryView', () => {
     expect(screen.getByText('REC-A-00000113')).toBeInTheDocument();
   });
 
+  it('uses a human receipt pending label when a paid invoice has no institutional receipt yet', async () => {
+    const invoice = invoiceFixture({
+      id: 14,
+      invoice_number: '000-001-01-00000014',
+      patient_name: 'Paciente Recibo Pendiente',
+      total: '200.00',
+      paid_amount: '200.00',
+      balance_due: '0.00',
+      status: 'paid',
+      institutional_receipt: null,
+    });
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [invoice],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente Recibo Pendiente')).toBeInTheDocument());
+
+    expect(screen.getByText('Recibo pendiente')).toBeInTheDocument();
+    expect(screen.queryByText(/pdf pendiente/i)).not.toBeInTheDocument();
+  });
+
   it('keeps invoice filters controlled and preserves the same query contract', async () => {
     const getInvoices = vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
       data: [],

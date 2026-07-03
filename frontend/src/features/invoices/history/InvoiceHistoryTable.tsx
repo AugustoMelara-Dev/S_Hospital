@@ -257,7 +257,7 @@ function ReceiptTrace({ invoice }: { invoice: Invoice }) {
   }
 
   if (invoice.status === 'paid' || invoice.status === 'partial') {
-    return <span className="text-muted-foreground">PDF pendiente</span>;
+    return <span className="text-muted-foreground">Recibo pendiente</span>;
   }
 
   if (invoice.status === 'void') {

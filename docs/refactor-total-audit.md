@@ -3305,3 +3305,23 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, rutas, migraciones, seeders, policies, auditoria ni calculos de caja.
 - Este corte mejora la salida exportable del cierre sin relajar permisos, motivo por diferencia ni bloqueo por facturas pendientes.
+
+## 137. Fase 9 - Recibo pendiente con copy operativo
+
+Cambio aplicado:
+
+- La columna "Recibo" del historial deja de mostrar `PDF pendiente` para facturas pagadas o parciales sin recibo institucional.
+- El estado visible ahora es "Recibo pendiente", centrado en la tarea del operador y no en el artefacto tecnico.
+- Las acciones autorizadas de ver, generar, descargar, reimprimir, anular o reversar no cambian.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- InvoiceHistoryView.test.tsx -t "human receipt pending label"` | RED inicial: la tabla seguia mostrando `PDF pendiente`; luego OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, rutas, migraciones, seeders, policies, auditoria ni contratos API.
+- Este corte reduce jerga tecnica en historial sin relajar RBAC, reimpresion auditada ni generacion institucional.
