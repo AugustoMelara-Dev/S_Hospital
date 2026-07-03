@@ -204,6 +204,13 @@ function safeBackupsErrorMessage(error: unknown, fallback: string): string {
     : message || fallback;
 }
 
+function backupDownloadFilename(backup: BackupLog): string {
+  const rawDate = backup.completed_at ?? backup.created_at;
+  const date = rawDate.match(/^\d{4}-\d{2}-\d{2}/)?.[0] ?? 'sin-fecha';
+
+  return `respaldo-local-${date}-${backup.id}.sql.enc`;
+}
+
 export function BackupsView({ user, onStatus }: BackupsViewProps) {
   const [page, setPage] = useState(1);
   const [manualError, setManualError] = useState('');
@@ -319,7 +326,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
 
     try {
       const blob = await apiClient.downloadBackup(backup.id);
-      downloadBlob(blob, backup.filename);
+      downloadBlob(blob, backupDownloadFilename(backup));
       onStatus('Respaldo descargado correctamente.');
     } catch (error) {
       const message = safeBackupsErrorMessage(error, 'No se pudo descargar el respaldo.');

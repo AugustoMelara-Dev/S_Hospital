@@ -473,6 +473,12 @@ describe('BackupsView', () => {
       expect(onStatus).toHaveBeenCalledWith('Respaldo descargado correctamente.');
     });
     expect(onStatus.mock.calls.flat().join(' ')).not.toMatch(/hospital-backup-.*\.sql\.enc/i);
+    await waitFor(() => {
+      expect(HTMLAnchorElement.prototype.click).toHaveBeenCalled();
+    });
+    const downloadAnchor = vi.mocked(HTMLAnchorElement.prototype.click).mock.contexts.at(-1) as HTMLAnchorElement;
+    expect(downloadAnchor.download).toBe('respaldo-local-2026-06-18-1.sql.enc');
+    expect(downloadAnchor.download).not.toMatch(/hospital-backup|test/i);
   });
 });
 

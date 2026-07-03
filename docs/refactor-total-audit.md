@@ -3204,3 +3204,23 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, rutas, migraciones, seeders, policies ni endpoints.
 - Este corte reduce errores de configuracion en catalogo sin duplicar calculos de facturacion ni relajar la regla server-side de L 25.00.
+
+## 132. Fase 12 - Descarga de respaldo sin nombre tecnico
+
+Cambio aplicado:
+
+- La descarga desde la vista normal de respaldos ahora usa un nombre humano: `respaldo-local-YYYY-MM-DD-ID.sql.enc`.
+- El dialogo, estados y atributo real de descarga del navegador evitan exponer `hospital-backup-*` o sufijos tecnicos del servidor.
+- El backend conserva su nombre seguro de attachment y sus validaciones de integridad; no se relaja la proteccion de rutas ni auditoria.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- BackupsView` | RED inicial: la descarga usaba `hospital-backup-20260618-120000-test.sql.enc`; luego OK: 20 tests pasan. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, rutas, migraciones, seeders, policies ni endpoints.
+- Este corte reduce exposicion tecnica en respaldos sin cambiar el archivo real, checksum, permisos ni auditoria de descarga.
