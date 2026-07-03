@@ -5,6 +5,7 @@ import { StatusBadge } from '../../../components/ui/status-badge';
 import type { Invoice } from '../../../lib/api';
 
 type InvoiceHistoryTableProps = {
+  canIssueInstitutionalReceipt: boolean;
   canReprint: boolean;
   canReprintAny: boolean;
   canReverse: boolean;
@@ -23,6 +24,7 @@ type InvoiceHistoryTableProps = {
 };
 
 export function InvoiceHistoryTable({
+  canIssueInstitutionalReceipt,
   canReprint,
   canReprintAny,
   canReverse,
@@ -118,7 +120,7 @@ export function InvoiceHistoryTable({
             onSelect: () => onDownloadInstitutionalReceipt(invoice),
           });
         }
-        if (canViewReceipt && invoice.status === 'paid' && !issuedInstitutionalReceipt(invoice)) {
+        if (canIssueInstitutionalReceipt && invoice.status === 'paid' && !issuedInstitutionalReceipt(invoice)) {
           primaryGroup.items.push({
             key: 'generate',
             label: 'Generar PDF',

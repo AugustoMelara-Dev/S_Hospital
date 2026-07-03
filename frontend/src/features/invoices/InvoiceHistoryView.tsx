@@ -72,6 +72,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   const canReprint = user.permissions.includes('receipts.reprint');
   const canReprintAny = user.permissions.includes('receipts.reprint_any');
   const canViewReceipt = user.permissions.includes('receipts.view');
+  const canIssueInstitutionalReceipt = canViewReceipt && user.permissions.includes('payments.create');
   const canVoid = user.permissions.includes('invoices.void');
   const canReverse = user.permissions.includes('invoices.reverse');
 
@@ -437,6 +438,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
               canReprint={canReprint}
               canReprintAny={canReprintAny}
               canReverse={canReverse}
+              canIssueInstitutionalReceipt={canIssueInstitutionalReceipt}
               canViewReceipt={canViewReceipt}
               canVoid={canVoid}
               formatDate={formatDate}

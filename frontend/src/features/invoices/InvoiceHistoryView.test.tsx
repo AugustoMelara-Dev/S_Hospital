@@ -207,6 +207,32 @@ describe('InvoiceHistoryView', () => {
     expect(screen.queryByRole('menuitem', { name: /Reversar pago/i })).not.toBeInTheDocument();
   });
 
+  it('does not offer institutional receipt generation to receipt viewers without payment permission', async () => {
+    const paid = invoiceFixture({
+      id: 43,
+      invoice_number: '000-001-01-00000043',
+      patient_name: 'Paciente PDF Solo Lectura',
+      status: 'paid',
+      paid_amount: '17.25',
+      balance_due: '0.00',
+      institutional_receipt: null,
+    });
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [paid],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+
+    renderWithQueryClient(<InvoiceHistoryView user={receiptViewerUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente PDF Solo Lectura')).toBeInTheDocument());
+    await openInvoiceMenu(paid.invoice_number);
+
+    expect(await screen.findByRole('menuitem', { name: /Ver recibo/i })).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /Generar PDF/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /Descargar/i })).not.toBeInTheDocument();
+  });
+
   it('renders malformed invoice history amounts as safe financial values', async () => {
     vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
       data: [
@@ -871,7 +897,7 @@ function adminUser(): AuthUser {
     username: 'admin',
     active: true,
     roles: ['admin'],
-    permissions: ['receipts.view', 'receipts.reprint', 'receipts.reprint_any', 'invoices.void', 'invoices.reverse'],
+    permissions: ['receipts.view', 'receipts.reprint', 'receipts.reprint_any', 'payments.create', 'invoices.void', 'invoices.reverse'],
     must_change_password: false,
   };
 }

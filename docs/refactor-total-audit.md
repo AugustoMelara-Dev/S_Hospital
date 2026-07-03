@@ -1243,3 +1243,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, schema, caja, pagos ni generacion real de recibos.
 - Este corte reduce riesgo de exposicion/impresion de recibos por UI cuando la cuenta solo puede emitir facturas.
+
+## 51. Fase 9 - Historial oculta generacion de recibos sin permiso de cobro
+
+Cambio aplicado:
+
+- `InvoiceHistoryView` ahora calcula `canIssueInstitutionalReceipt` con `receipts.view` y `payments.create`, alineado con la autorizacion del backend para emitir recibos institucionales faltantes.
+- `InvoiceHistoryTable` usa ese permiso compuesto solo para mostrar `Generar PDF`.
+- Los usuarios con solo `receipts.view` conservan `Ver recibo` y `Descargar` cuando el recibo ya existe, pero no ven una accion que el backend rechazaria con 403.
+- La fixture de usuario administrador del test de historial incluye `payments.create` para representar una cuenta que realmente puede generar recibos faltantes.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- src/features/invoices/InvoiceHistoryView.test.tsx -t "does not offer institutional receipt generation"` | RED inicial porque `Generar PDF` seguia visible; luego OK: 1 test focal pasa. |
+| `docker compose exec frontend npm run test -- src/features/invoices/InvoiceHistoryView.test.tsx` | OK: 22 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, schema, caja, pagos, endpoints ni generacion real de recibos.
+- Este corte reduce acciones imposibles en historial y mantiene la defensa principal en RBAC backend.
