@@ -1950,3 +1950,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, endpoints, exportadores PDF/Excel, permisos ni agregados financieros.
 - Este corte mejora la operacion LAN cuando una exportacion tarda: el operador ve progreso y evita acciones repetidas.
+
+## 80. Fase 10 - Reporte de caja exporta Excel real
+
+Cambio aplicado:
+
+- `ReportsCash` deja de pasar un handler vacio al boton `Exportar Excel`.
+- La exportacion usa `apiClient.downloadReportExport` con `cash_session_id` y las fechas de apertura/cierre de la caja cargada.
+- El archivo se descarga como `reporte-caja-{id}.xlsx` y el boton muestra estado de exportacion mientras la descarga esta en curso.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- ReportsCash.test.tsx -t "exports the loaded cash"` | RED inicial porque `downloadReportExport` nunca se llamaba; luego OK. |
+| `npm run test -- ReportsCash.test.tsx CashSessionReportTab.test.tsx ReportsView.subroutes.test.tsx` | OK: 12 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `git diff --check` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, rutas, permisos, calculos de caja ni formato del Excel del servidor.
+- Este corte convierte una accion visible de caja en una operacion real, alineada con reportes utiles para cierre y auditoria local.
