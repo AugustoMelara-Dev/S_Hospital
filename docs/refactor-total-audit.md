@@ -4101,3 +4101,29 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, facturacion, caja, catalogo, historial, recibos, respaldos ni usuarios.
 - Este corte mejora reportes utiles para gerencia/auditoria sin alterar calculos, montos, permisos ni datos fiscales.
+
+## 170. Fase 13 - Reporte de pendientes tolera fechas no disponibles
+
+Cambio aplicado:
+
+- `PendingAgingPanel` ahora usa el formateador seguro compartido para la fecha de emision de facturas pendientes.
+- Si `issued_at` llega corrupto o no parseable, el reporte muestra `Fecha no disponible` en vez de `Invalid Date` o el valor tecnico recibido.
+- Se agrego una regresion con `issued_at='fecha-danada'` para proteger el reporte de antiguedad de saldos pendientes.
+- No se cambian calculos de antiguedad, saldos, totales ni agrupaciones por rango.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- PendingAgingPanel.test.tsx -t "shows a human fallback when a pending invoice date is unavailable" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial correcto: la tabla mostraba `Invalid Date`; luego OK: 1 test pasa. |
+| `npm run test -- PendingAgingPanel.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 3 tests pasan. |
+| `npm run test -- ReportsExecutive.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 2 tests pasan. |
+| `npm run lint` | OK. |
+| `npm run typecheck` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, facturacion, caja, catalogo, historial, recibos, respaldos ni usuarios.
+- Este corte mejora reportes utiles de cuentas pendientes sin alterar auditoria, permisos ni datos fiscales.

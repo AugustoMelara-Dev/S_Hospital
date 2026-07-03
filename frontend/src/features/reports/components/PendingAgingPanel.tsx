@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
 import { StatGrid } from '@/components/shared';
 import type { ExecutiveReport } from '@/lib/api';
+import { formatDate } from '@/lib/format/formatDate';
 
 type PendingAgingPanelProps = {
   report: ExecutiveReport;
@@ -96,5 +97,7 @@ export function PendingAgingPanel({ report }: PendingAgingPanelProps) {
 }
 
 function formatInvoiceDate(value: string): string {
-  return value ? new Date(value).toLocaleDateString('es-HN') : '-';
+  const formatted = formatDate(value);
+
+  return formatted === '-' ? 'Fecha no disponible' : formatted;
 }

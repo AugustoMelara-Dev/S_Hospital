@@ -43,4 +43,32 @@ describe('PendingAgingPanel', () => {
     expect(screen.getByText('4 d')).toBeInTheDocument();
     expect(document.body.textContent).toContain('L 150.00');
   });
+
+  it('shows a human fallback when a pending invoice date is unavailable', () => {
+    render(
+      <PendingAgingPanel
+        report={buildExecutiveReport({
+          pending_aging: {
+            '0_7_days': { count: 0, amount: '0.00' },
+            '8_30_days': { count: 1, amount: '75.00' },
+            '31_plus_days': { count: 0, amount: '0.00' },
+            items: [
+              {
+                invoice_number: 'FAC-000456',
+                patient: 'Paciente Pendiente',
+                total: '100.00',
+                balance_due: '75.00',
+                issued_at: 'fecha-danada',
+                age_days: 10,
+                bucket: '8_30_days',
+              },
+            ],
+          },
+        })}
+      />,
+    );
+
+    expect(screen.getByText('Fecha no disponible')).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/Invalid Date|fecha-danada/i);
+  });
 });
