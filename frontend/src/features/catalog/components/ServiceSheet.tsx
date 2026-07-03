@@ -16,7 +16,7 @@ import { ServiceSheetFooter } from './ServiceSheetFooter';
 const serviceSchema = z.object({
   category_id: z.number().min(1, 'Seleccione una categoria'),
   area_id: z.number().min(1, 'Seleccione un area'),
-  name: z.string().min(1, 'El nombre es requerido'),
+  name: z.string().trim().min(1, 'El nombre es requerido'),
   price: z.string()
     .regex(/^\d+(\.\d{1,2})?$/, 'Precio debe ser un número válido')
     .refine((value) => (priceCents(value) ?? 0) > 0, 'Precio debe ser mayor que cero'),

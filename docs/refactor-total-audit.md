@@ -3973,3 +3973,28 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron facturacion, catalogo, historial, usuarios, recibos, respaldos ni reportes.
 - Este corte mejora la robustez visual del modulo de caja y evita mensajes/errores tecnicos ante datos historicos o reportes inconsistentes.
+
+## 165. Fase 8 - Servicios recortan el nombre visible antes de guardar
+
+Cambio aplicado:
+
+- `ServiceSheet` ahora recorta espacios iniciales y finales del nombre visible del servicio desde el schema de formulario.
+- Se agrego una regresion para un servicio creado como `  Consulta externa `, confirmando que el API recibe `Consulta externa`.
+- El cambio evita nombres con espacios pegados en catalogo, facturacion, recibos e historial, sin modificar snapshots historicos ya emitidos.
+- No se cambian backend, endpoints, migraciones, permisos, auditoria, precios ni reglas especiales como eritropoyetina.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- ServiceSheet.test.tsx -t "trims the visible service name before saving" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial correcto: `saveService` recibia `name: "  Consulta externa  "`; luego OK: 1 test pasa. |
+| `npm run test -- ServiceSheet.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 16 tests pasan. |
+| `npm run lint` | OK. |
+| `npm run typecheck` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron facturacion, caja, historial, usuarios, recibos, respaldos ni reportes.
+- Este corte reduce errores humanos al crear/editar servicios y conserva al backend como autoridad final para auditoria y reglas de catalogo.
