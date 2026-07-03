@@ -2679,3 +2679,33 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, migraciones, permisos ni contratos API.
 - Este corte reduce riesgo operativo en una accion sensible de respaldos sin exponer datos tecnicos al usuario normal.
+
+## 110. Fase 6/14 - Motivo obligatorio en ajustes avanzados de recibo
+
+Cambio aplicado:
+
+- Los campos manuales avanzados de perfiles de impresion ahora requieren un motivo de soporte cuando el usuario tiene permiso tecnico.
+- El backend recorta el motivo, lo valida y lo guarda en la auditoria de `receipt_print_profile.updated` sin persistirlo como atributo del perfil.
+- La pantalla de recibos muestra el campo solo dentro del modo soporte tecnico para el recibo pequeno personalizado y envia el motivo recortado.
+- El flujo normal de papel/copia/impresion no cambia y sigue ocultando medidas tecnicas a usuarios sin permiso avanzado.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter=advanced_manual_fields_require_support_reason` | RED inicial: la API aceptaba el cambio avanzado sin motivo con 200; luego OK. |
+| `npm run test -- InstitutionalReceiptSettingsView.test.tsx -t "documented support reason"` | RED inicial: no existia el campo `Motivo de soporte`; luego OK: envia `support_reason` recortado. |
+| `docker compose exec backend php artisan test --filter=ReceiptPrintProfileAdvancedFieldsTest` | OK: 4 tests, 22 assertions. |
+| `npm run test -- InstitutionalReceiptSettingsView.test.tsx` | OK: 12 tests pasan. |
+| `docker compose exec backend vendor/bin/pint --test` | OK: 426 files. |
+| `docker compose exec backend vendor/bin/phpstan analyse` | Primer intento incompleto por limite PHP de 128M. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M` | OK: sin errores. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron migraciones, permisos, seeders ni contratos de impresion normal.
+- Este corte refuerza auditoria y trazabilidad para ajustes fisicos de impresion que solo debe realizar soporte tecnico.

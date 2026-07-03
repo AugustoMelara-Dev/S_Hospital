@@ -237,6 +237,28 @@ describe('InstitutionalReceiptSettingsView', () => {
     expect(screen.getByText(/próximo recibo usará este valor \+ 1/i)).toBeInTheDocument();
   });
 
+  it('sends a documented support reason with advanced manual print settings', async () => {
+    const { apiClient } = await import('@/lib/api');
+    renderView({ canAdvancedPrintSettings: true });
+
+    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
+    await activateTab('Papel y copias');
+    fireEvent.click(screen.getByRole('button', { name: /recibo peque/i }));
+    fireEvent.click(screen.getByText(/modo soporte t/i));
+
+    const reason = await screen.findByLabelText(/motivo de soporte/i);
+    fireEvent.change(reason, { target: { value: '  Ajuste por prueba de impresora  ' } });
+    fireEvent.click(screen.getByRole('button', { name: /guardar ajustes avanzados/i }));
+
+    await waitFor(() => {
+      expect(apiClient.updateReceiptPrintProfile).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({
+          support_reason: 'Ajuste por prueba de impresora',
+        }),
+      );
+    });
+  });
   it('generates a test print without leaving the settings screen', async () => {
     const { apiClient } = await import('@/lib/api');
     renderView();

@@ -193,13 +193,15 @@ class InstitutionalReceiptSettingsController extends Controller
         $profile = DB::transaction(function () use ($request, $profile): ReceiptPrintProfile {
             $oldValues = $this->profileAuditPayload($profile);
             $values = $request->validated();
+            $auditReason = $request->hasAdvancedFields() ? $request->supportReason() : null;
+            unset($values['support_reason']);
 
             if (($values['is_global_default'] ?? false) === true) {
                 ReceiptPrintProfile::query()
                     ->whereKeyNot($profile->id)
                     ->where('is_global_default', true)
                     ->get()
-                    ->each(function (ReceiptPrintProfile $defaultProfile) use ($request): void {
+                    ->each(function (ReceiptPrintProfile $defaultProfile) use ($request, $auditReason): void {
                         $oldDefaultValues = $this->profileAuditPayload($defaultProfile);
 
                         $defaultProfile->is_global_default = false;
@@ -211,7 +213,8 @@ class InstitutionalReceiptSettingsController extends Controller
                             ReceiptPrintProfile::class,
                             $defaultProfile->id,
                             $oldDefaultValues,
-                            $this->profileAuditPayload($defaultProfile->refresh())
+                            $this->profileAuditPayload($defaultProfile->refresh()),
+                            $auditReason
                         );
                     });
 
@@ -227,7 +230,8 @@ class InstitutionalReceiptSettingsController extends Controller
                 ReceiptPrintProfile::class,
                 $profile->id,
                 $oldValues,
-                $this->profileAuditPayload($profile->refresh())
+                $this->profileAuditPayload($profile->refresh()),
+                $auditReason
             );
 
             return $profile->refresh();
@@ -488,7 +492,7 @@ class InstitutionalReceiptSettingsController extends Controller
      * @param  array<string, mixed>|array<int, mixed>|null  $oldValues
      * @param  array<string, mixed>|array<int, mixed>|null  $newValues
      */
-    private function audit(int $userId, string $action, string $entityType, ?int $entityId, ?array $oldValues, ?array $newValues): void
+    private function audit(int $userId, string $action, string $entityType, ?int $entityId, ?array $oldValues, ?array $newValues, ?string $reason = null): void
     {
         AuditLog::query()->create([
             'user_id' => $userId,
@@ -497,6 +501,7 @@ class InstitutionalReceiptSettingsController extends Controller
             'entity_id' => $entityId,
             'old_values' => $oldValues,
             'new_values' => $newValues,
+            'reason' => $reason,
         ]);
     }
 }

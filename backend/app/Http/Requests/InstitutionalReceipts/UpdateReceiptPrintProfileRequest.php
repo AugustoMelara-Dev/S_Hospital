@@ -104,6 +104,13 @@ class UpdateReceiptPrintProfileRequest extends FormRequest
         return $present;
     }
 
+    public function supportReason(): ?string
+    {
+        $reason = trim((string) $this->input('support_reason', ''));
+
+        return $reason === '' ? null : $reason;
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -128,6 +135,7 @@ class UpdateReceiptPrintProfileRequest extends FormRequest
             'show_technical_fields' => ['sometimes', 'required', 'boolean'],
             'active' => ['sometimes', 'required', 'boolean'],
             'is_global_default' => ['sometimes', 'required', 'boolean'],
+            'support_reason' => ['nullable', 'string', 'max:500'],
         ];
 
         if ($this->user()?->can('receipt_settings.advanced') === true) {
@@ -155,6 +163,16 @@ class UpdateReceiptPrintProfileRequest extends FormRequest
                 $isGlobalDefault = $this->boolean('is_global_default', $profile->is_global_default);
 
                 $userHasAdvanced = $this->user()?->can('receipt_settings.advanced') === true;
+
+                if ($userHasAdvanced && $this->hasAdvancedFields()) {
+                    $supportReason = trim((string) $this->input('support_reason', ''));
+
+                    if ($supportReason === '') {
+                        $validator->errors()->add('support_reason', 'Indique el motivo del ajuste avanzado de impresion.');
+                    } elseif (mb_strlen($supportReason) < 5) {
+                        $validator->errors()->add('support_reason', 'Indique al menos 5 caracteres explicando el ajuste avanzado de impresion.');
+                    }
+                }
 
                 if ($userHasAdvanced) {
                     $width = (float) $this->input('width_mm', $profile->width_mm);

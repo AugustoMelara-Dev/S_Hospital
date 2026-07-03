@@ -51,6 +51,36 @@ class ReceiptPrintProfileAdvancedFieldsTest extends TestCase
         ]);
     }
 
+    public function test_advanced_manual_fields_require_support_reason(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $this->seed(ReceiptPrintProfileSeeder::class);
+
+        $support = User::factory()->create();
+        $support->assignRole('soporte_tecnico');
+
+        $profile = ReceiptPrintProfile::query()
+            ->where('code', ReceiptPrintProfile::CODE_HALF_LETTER)
+            ->firstOrFail();
+        $originalScale = (string) $profile->font_scale;
+
+        $this->actingAs($support)
+            ->patchJson("/api/settings/institutional-receipts/print-profiles/{$profile->id}", [
+                'font_scale' => '1.10',
+                'width_mm' => '215.90',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('support_reason');
+
+        $this->assertSame($originalScale, (string) $profile->refresh()->font_scale);
+        $this->assertDatabaseMissing('audit_logs', [
+            'user_id' => $support->id,
+            'action' => 'receipt_print_profile.updated',
+            'entity_type' => ReceiptPrintProfile::class,
+            'entity_id' => $profile->id,
+        ]);
+    }
+
     public function test_user_with_advanced_permission_can_update_manual_fields_and_is_audited(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
@@ -67,6 +97,7 @@ class ReceiptPrintProfileAdvancedFieldsTest extends TestCase
             ->patchJson("/api/settings/institutional-receipts/print-profiles/{$profile->id}", [
                 'font_scale' => '1.10',
                 'width_mm' => '215.90',
+                'support_reason' => 'Ajuste por prueba fisica de impresion',
             ])
             ->assertOk();
 
@@ -80,6 +111,7 @@ class ReceiptPrintProfileAdvancedFieldsTest extends TestCase
             'entity_type' => ReceiptPrintProfile::class,
             'entity_id' => $profile->id,
             'result' => 'success',
+            'reason' => 'Ajuste por prueba fisica de impresion',
         ]);
     }
 

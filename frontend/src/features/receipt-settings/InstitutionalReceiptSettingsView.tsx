@@ -108,6 +108,7 @@ const advancedSchema = z.object({
   margin_left_mm: z.number().min(0).max(50),
   font_family: z.string().max(120).nullable(),
   font_scale: z.number().min(0.7).max(1.3),
+  support_reason: z.string().trim().min(5, 'Indique el motivo del ajuste.').max(500),
 });
 
 type InstitutionFormData = z.infer<typeof institutionSchema>;
@@ -196,6 +197,7 @@ export function InstitutionalReceiptSettingsView({
       margin_left_mm: 6,
       font_family: 'Arial, sans-serif',
       font_scale: 1,
+      support_reason: '',
     },
   });
 
@@ -254,6 +256,7 @@ export function InstitutionalReceiptSettingsView({
       margin_left_mm: Number(selectedProfile.margin_left_mm ?? 6),
       font_family: selectedProfile.font_family ?? 'Arial, sans-serif',
       font_scale: Number(selectedProfile.font_scale ?? 1),
+      support_reason: '',
     });
     setAdvancedSupported(selectedProfile.code === 'recibo_pequeno_personalizado');
   }, [selectedProfile, profileForm, advancedForm]);
@@ -319,6 +322,7 @@ export function InstitutionalReceiptSettingsView({
         margin_left_mm: asMoney(payload.margin_left_mm),
         font_family: payload.font_family,
         font_scale: asMoney(payload.font_scale),
+        support_reason: payload.support_reason.trim(),
         template_code: 'institutional_classic',
       });
     },
@@ -741,6 +745,14 @@ export function InstitutionalReceiptSettingsView({
                             })(),
                       )}
                     >
+                      <Field
+                        label="Motivo de soporte"
+                        id="adv_support_reason"
+                        error={advancedForm.formState.errors.support_reason?.message}
+                        hint="Explique la prueba fisica o ajuste solicitado."
+                      >
+                        <Textarea id="adv_support_reason" disabled={!canEdit} {...advancedForm.register('support_reason')} />
+                      </Field>
                       <div className="grid gap-4 md:grid-cols-4">
                         <Field label="Ancho mm" id="adv_width" hint="Solo recibo pequeño personalizado.">
                           <Input id="adv_width" type="number" step="0.01" disabled={!canEdit} {...advancedForm.register('width_mm', { valueAsNumber: true })} />

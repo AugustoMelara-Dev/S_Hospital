@@ -961,7 +961,9 @@ export type ReceiptPrintProfilePayload = Partial<Pick<
   | 'show_technical_fields'
   | 'active'
   | 'is_global_default'
->>;
+>> & {
+  support_reason?: string | null;
+};
 
 export type ReceiptTestPrintPayload = {
   profile_id?: number;
