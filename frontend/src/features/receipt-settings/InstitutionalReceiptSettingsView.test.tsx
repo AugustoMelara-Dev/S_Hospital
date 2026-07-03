@@ -262,6 +262,21 @@ describe('InstitutionalReceiptSettingsView', () => {
     expect(screen.getByText(/próximo recibo usará este valor \+ 1/i)).toBeInTheDocument();
   });
 
+  it('blocks saving a receipt series when the range end is below the start', async () => {
+    const { apiClient } = await import('@/lib/api');
+    renderView();
+
+    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
+    await activateTab('Serie');
+
+    fireEvent.change(screen.getByLabelText(/n.mero inicial/i), { target: { value: '100' } });
+    fireEvent.change(screen.getByLabelText(/n.mero final/i), { target: { value: '50' } });
+    fireEvent.click(screen.getByRole('button', { name: /guardar serie/i }));
+
+    expect(await screen.findByText(/el n.mero final debe ser mayor o igual al inicial/i)).toBeInTheDocument();
+    expect(apiClient.updateReceiptSeries).not.toHaveBeenCalled();
+  });
+
   it('sends a documented support reason with advanced manual print settings', async () => {
     const { apiClient } = await import('@/lib/api');
     renderView({ canAdvancedPrintSettings: true });

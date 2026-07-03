@@ -88,6 +88,9 @@ const seriesSchema = z.object({
   legal_text: z.string().max(255).optional(),
   receipt_number_color: z.string().max(16),
   active: z.boolean(),
+}).refine((data) => data.max_number >= data.min_number, {
+  path: ['max_number'],
+  message: 'El numero final debe ser mayor o igual al inicial.',
 });
 
 const profileSchema = z.object({

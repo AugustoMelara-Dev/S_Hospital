@@ -3827,3 +3827,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron caja, facturacion, catalogo, historial, reportes, respaldos ni usuarios.
 - Este corte mejora la calidad de los datos visibles en recibos institucionales sin exponer opciones tecnicas ni modificar la generacion fiscal.
+
+## 159. Fase 6 - Serie de recibos bloquea rango invertido
+
+Cambio aplicado:
+
+- `InstitutionalReceiptSettingsView` ahora valida que el numero final de la serie sea mayor o igual al numero inicial antes de guardar.
+- Se agrego una regresion que intenta guardar un rango `100-50`, muestra un error humano y confirma que no se llama al API de serie.
+- No se cambian backend, endpoints, migraciones, correlativos existentes, perfiles de impresion, permisos ni auditoria.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- InstitutionalReceiptSettingsView.test.tsx -t "blocks saving a receipt series" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial correcto: no aparecia el mensaje `El numero final debe ser mayor o igual al inicial`; luego OK: 1 test pasa. |
+| `npm run test -- InstitutionalReceiptSettingsView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 15 tests pasan. |
+| `npm run lint` | OK. |
+| `npm run typecheck` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron caja, facturacion, catalogo, historial, reportes, respaldos ni usuarios.
+- Este corte reduce riesgo operativo al editar rangos de recibos institucionales desde la UI normal sin sustituir la validacion backend.
