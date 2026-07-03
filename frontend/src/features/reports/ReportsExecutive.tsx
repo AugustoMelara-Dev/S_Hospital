@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { Alert } from '@/components/ui/alert';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/states';
 import { notify } from '@/components/ui/toaster';
@@ -43,7 +43,7 @@ export function ReportsExecutive({
     return { date_from: initialRange.from, date_to: initialRange.to };
   });
   const [glossaryOpen, setGlossaryOpen] = useState(false);
-  const exportingRef = useRef(false);
+  const [exporting, setExporting] = useState(false);
   const executiveRangeError = validateReportDateRange(
     filters.date_from,
     filters.date_to,
@@ -87,8 +87,8 @@ export function ReportsExecutive({
       onStatus(executiveRangeError);
       return;
     }
-    if (exportingRef.current) return;
-    exportingRef.current = true;
+    if (exporting) return;
+    setExporting(true);
     onStatus('Preparando PDF ejecutivo...');
     void runExecutiveExport(
       apiClient.downloadExecutivePdf,
@@ -104,7 +104,7 @@ export function ReportsExecutive({
         onStatus(message);
       },
       () => {
-        exportingRef.current = false;
+        setExporting(false);
       },
     );
   }
@@ -119,8 +119,8 @@ export function ReportsExecutive({
       onStatus(executiveRangeError);
       return;
     }
-    if (exportingRef.current) return;
-    exportingRef.current = true;
+    if (exporting) return;
+    setExporting(true);
     onStatus('Descargando Excel ejecutivo...');
     void runExecutiveExport(
       apiClient.downloadExecutiveExcel,
@@ -136,7 +136,7 @@ export function ReportsExecutive({
         onStatus(message);
       },
       () => {
-        exportingRef.current = false;
+        setExporting(false);
       },
     );
   }
@@ -153,7 +153,7 @@ export function ReportsExecutive({
         onExportExcel={handleExportExcel}
         canExport={canExport}
         loading={isFetching}
-        exporting={exportingRef.current}
+        exporting={exporting}
         titleLevel={titleLevel}
         rangeError={executiveRangeError}
       />

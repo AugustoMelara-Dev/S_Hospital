@@ -1926,3 +1926,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, migraciones, endpoints, permisos, auditoria ni generacion PDF.
 - Este corte reduce ruido para soporte sin relajar la barrera real: los campos manuales siguen gobernados por `receipt_settings.advanced`.
+
+## 79. Fase 10 - Exportacion ejecutiva muestra progreso real
+
+Cambio aplicado:
+
+- `ReportsExecutive` ahora usa estado renderizable para marcar una exportacion en curso.
+- Al preparar PDF o Excel ejecutivo, los botones de exportacion muestran `Exportando...` y los controles de refresco/exportacion quedan deshabilitados hasta finalizar la descarga.
+- La proteccion contra doble ejecucion se mantiene sin cambiar filtros, calculos financieros ni contratos API.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- ReportsExecutive.test.tsx -t "shows export progress"` | RED inicial porque los botones seguian mostrando `PDF ejecutivo`/`Excel ejecutivo`; luego OK. |
+| `npm run test -- ReportsExecutive.test.tsx ReportFiltersPanel.test.tsx ReportsView.subroutes.test.tsx` | OK: 8 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `git diff --check` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, endpoints, exportadores PDF/Excel, permisos ni agregados financieros.
+- Este corte mejora la operacion LAN cuando una exportacion tarda: el operador ve progreso y evita acciones repetidas.
