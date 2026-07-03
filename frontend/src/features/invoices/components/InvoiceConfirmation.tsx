@@ -18,6 +18,7 @@ type InvoiceConfirmationProps = {
   preview: { subtotal: string; tax: string; total: string };
   taxRate?: string;
   cashSessionId?: number;
+  canOpenPayment?: boolean;
   onConfirm: () => void;
   submitting?: boolean;
 };
@@ -30,11 +31,12 @@ export function InvoiceConfirmation({
   preview,
   taxRate,
   cashSessionId,
+  canOpenPayment = true,
   onConfirm,
   submitting,
 }: InvoiceConfirmationProps) {
   const confirmButtonRef = useRef<HTMLButtonElement | null>(null);
-  const willOpenPayment = Boolean(cashSessionId) && (parseCents(preview.total) ?? 0) > 0;
+  const willOpenPayment = canOpenPayment && Boolean(cashSessionId) && (parseCents(preview.total) ?? 0) > 0;
 
   useEffect(() => {
     if (open) {

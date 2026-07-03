@@ -1171,3 +1171,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron migraciones, datos fiscales, recibos, caja, facturas ni politicas de impresion.
 - Este corte cierra una ruta de escalada por rol personalizado sin cambiar el contrato de API.
+
+## 48. Fase 4 - Factura emitida sin permisos de cobro
+
+Cambio aplicado:
+
+- `InvoiceConfirmation` ahora recibe `canOpenPayment` y solo anuncia `Emitir y abrir cobro` cuando la cuenta puede cobrar e imprimir recibos.
+- `NewInvoiceViewLayout` pasa la capacidad real `canCreatePayments && canViewReceipts` al dialogo de confirmacion.
+- `NewInvoiceView` muestra un mensaje operativo cuando la factura queda emitida pero pendiente de cobro por falta de permisos: solicitar a caja cobrar e imprimir el recibo.
+- Se agrego cobertura para asegurar que este flujo no vuelva a prometer cobro automatico ni muestre un mensaje tecnico de permisos completos.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- src/features/invoices/NewInvoiceView.test.tsx -t "pending-payment warning"` | RED inicial por dialogo/promesa de cobro incorrecta; luego OK: 1 test focal pasa. |
+| `docker compose exec frontend npm run test -- src/features/invoices/NewInvoiceView.test.tsx src/features/invoices/components/InvoiceConfirmation.test.tsx src/features/invoices/components/NewInvoiceViewLayout.test.tsx src/features/invoices/components/InvoiceCart.test.tsx src/features/invoices/components/PaymentModal.test.tsx` | OK: 5 archivos, 43 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, schema, caja, pagos, recibos ni permisos reales.
+- Este corte reduce confusion de caja: emitir factura y cobrar quedan diferenciados cuando la cuenta no tiene autorizacion para completar el cobro.

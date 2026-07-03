@@ -270,6 +270,7 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
         items={state.cartItems}
         preview={preview}
         cashSessionId={state.loadedCashSession?.id}
+        canOpenPayment={canCreatePayments && canViewReceipts}
         onConfirm={onSubmitInvoice}
         submitting={state.submitting}
       />

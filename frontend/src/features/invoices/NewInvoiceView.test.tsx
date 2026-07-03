@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import type { ComponentProps } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { NewInvoiceView } from './NewInvoiceView';
@@ -81,7 +82,10 @@ function mockFetchForOpenCashWithService(): ReturnType<typeof vi.fn> {
   });
 }
 
-function renderNewInvoice(cashSession: CashSession | null = makeOpenCashSession()) {
+function renderNewInvoice(
+  cashSession: CashSession | null = makeOpenCashSession(),
+  overrides: Partial<ComponentProps<typeof NewInvoiceView>> = {},
+) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
@@ -91,10 +95,10 @@ function renderNewInvoice(cashSession: CashSession | null = makeOpenCashSession(
       <MemoryRouter initialEntries={['/billing/new']}>
         <NewInvoiceView
           cashSession={cashSession}
-          canCreatePayments
+          canCreatePayments={overrides.canCreatePayments ?? true}
           canOpenCash
           canViewCatalog
-          canViewReceipts
+          canViewReceipts={overrides.canViewReceipts ?? true}
           onOpenCash={vi.fn()}
           onStatus={vi.fn()}
         />
@@ -244,6 +248,58 @@ describe('NewInvoiceView critical flows', () => {
     });
 
     expect(screen.getByText(/patient name: requerido/i)).toBeInTheDocument();
+  });
+
+  it('shows a human pending-payment warning when the cashier cannot collect after emitting', async () => {
+    renderNewInvoice(makeOpenCashSession(), { canCreatePayments: false });
+    await waitForPointOfSaleLoad();
+
+    const fetchMock = globalThis.fetch as ReturnType<typeof vi.fn>;
+
+    fireEvent.change(screen.getByLabelText(/nombre del paciente/i), { target: { value: 'Maria Lopez' } });
+    fireEvent.change(screen.getByLabelText(/buscar por nombre/i), { target: { value: 'eritro' } });
+
+    await waitFor(() => {
+      expect(screen.getByText('Eritropoyetina')).toBeInTheDocument();
+    }, { timeout: 3000 });
+
+    fireEvent.click(screen.getByText('Eritropoyetina'));
+
+    const emitButton = await screen.findByRole('button', { name: /^emitir factura$/i });
+
+    fetchMock.mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.endsWith('/api/invoices')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 55,
+              invoice_number: '000-001-01-00000055',
+              patient_name: 'Maria Lopez',
+              status: 'issued',
+              total: '25.00',
+              balance_due: '25.00',
+              paid_amount: '0.00',
+              issued_at: '2026-05-17T08:30:00-06:00',
+              items: [],
+            },
+          }),
+        } as Response;
+      }
+      return { ok: true, json: async () => ({ data: null }) } as Response;
+    });
+
+    fireEvent.click(emitButton);
+
+    await waitFor(() => {
+      expect(screen.getByRole('dialog', { name: /confirmar factura/i })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /confirmar emis/i }));
+
+    expect(await screen.findByText(/pendiente de cobro/i)).toBeInTheDocument();
+    expect(screen.queryByText(/permisos completos/i)).not.toBeInTheDocument();
   });
 
   it('does not let cashier proceed when cash session is closed', async () => {

@@ -407,9 +407,9 @@ export function NewInvoiceView({
           dispatch({ type: 'SET_SHOW_SUCCESS', payload: true });
           dispatch({
             type: 'SET_WARNING_MESSAGE',
-            payload: 'Factura emitida. Este usuario no tiene permisos completos para cobrar e imprimir recibos.',
+            payload: 'Factura emitida. Quedo pendiente de cobro; solicite a caja cobrar e imprimir el recibo.',
           });
-          onStatus(`Factura emitida ${invoice.invoice_number}. Cobro pendiente por permisos.`);
+          onStatus(`Factura emitida ${invoice.invoice_number}. Quedo pendiente de cobro.`);
           return;
         }
         dispatch({ type: 'SET_SHOW_SUCCESS', payload: false });
@@ -441,7 +441,7 @@ export function NewInvoiceView({
       return;
     }
     if (!canCreatePayments || !canViewReceipts) {
-      dispatch({ type: 'SET_ALERT_MESSAGE', payload: 'Este usuario no tiene permisos completos para cobrar e imprimir recibos.' });
+      dispatch({ type: 'SET_ALERT_MESSAGE', payload: 'Esta cuenta no puede cobrar ni imprimir recibos. Solicite apoyo a caja.' });
       return;
     }
     dispatch({ type: 'SET_SHOW_SUCCESS', payload: false });
