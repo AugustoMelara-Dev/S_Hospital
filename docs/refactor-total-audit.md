@@ -2402,3 +2402,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron migraciones, backend, caja, pagos, recibos ni permisos.
 - Este corte aprovecha el contrato parcial ya probado del endpoint fiscal para reducir mezcla entre datos hospitalarios, marca, reglas fiscales y recibos.
+
+## 98. Fase 11/14 - Auditoria fiscal respeta payload parcial
+
+Cambio aplicado:
+
+- `FiscalSettingsController` ahora audita solo los campos enviados en actualizaciones existentes de configuracion fiscal.
+- La creacion inicial conserva auditoria completa de los campos fiscales/institucionales configurados.
+- El warning auditado de cambio de papel a mitad de turno sigue usando la comparacion real de `receipt_paper_size`, pero ya no depende de que `old_values` incluya todos los campos.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter=test_admin_can_update_brand_color_without_full_fiscal_payload` | RED inicial: la auditoria de marca aun incluia `rtn`; luego OK: 1 test, 17 assertions. |
+| `docker compose exec backend php artisan test tests/Feature/FiscalSettingsTest.php` | OK: 20 tests, 132 assertions. |
+| `docker compose exec backend vendor/bin/pint --test` | OK: 426 files tras formatear los 2 archivos PHP tocados. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M` | OK sin errores. |
+| `docker compose exec backend php artisan test` | OK: 770 tests pasan, 13 skipped, 4969 assertions. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron migraciones, frontend, caja, pagos, recibos ni permisos.
+- Este corte refuerza auditoria y separacion de dominios: una edicion parcial no deja trazas auditadas como si hubiera reenviado RTN, ISV, reglas operativas o papel.

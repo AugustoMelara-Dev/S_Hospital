@@ -92,7 +92,8 @@ class FiscalSettingsController extends Controller
 
         $setting = DB::transaction(function () use ($request, $auditLogger, &$payload): FiscalSetting {
             $setting = FiscalSetting::query()->first() ?? new FiscalSetting;
-            $fieldsToTrack = [
+            $settingExisted = $setting->exists;
+            $trackableFields = [
                 'hospital_name',
                 'rtn',
                 'default_tax_rate',
@@ -108,15 +109,19 @@ class FiscalSettingsController extends Controller
                 'receipt_location',
                 'receipt_footer_text',
             ];
-            $oldValues = $setting->exists ? $setting->only($fieldsToTrack) : null;
             $previousPaperSize = $setting->receipt_paper_size;
 
             $validated = $request->validated();
             unset($validated['reason']);
 
+            $fieldsToTrack = $settingExisted
+                ? array_values(array_intersect($trackableFields, array_keys($validated)))
+                : $trackableFields;
+            $oldValues = $settingExisted ? $setting->only($fieldsToTrack) : null;
+
             $setting->fill($validated);
 
-            if (! $setting->exists) {
+            if (! $settingExisted) {
                 $setting->created_by = $request->user()->id;
             }
 
@@ -124,13 +129,13 @@ class FiscalSettingsController extends Controller
             $setting->save();
 
             $auditLogger->log(
-                action: $oldValues ? 'fiscal_settings.updated' : 'fiscal_settings.created',
+                action: $settingExisted ? 'fiscal_settings.updated' : 'fiscal_settings.created',
                 entity: $setting,
                 user: $request->user(),
                 request: $request,
                 oldValues: $oldValues,
                 newValues: $setting->only($fieldsToTrack),
-                reason: $oldValues ? $request->reason() : null,
+                reason: $settingExisted ? $request->reason() : null,
             );
 
             // Mid-shift paper size changes deserve a separate, auditable
@@ -138,7 +143,7 @@ class FiscalSettingsController extends Controller
             // is aware that receipts already queued may render with the
             // previous profile.
             if (
-                $oldValues
+                $settingExisted
                 && $previousPaperSize !== $setting->receipt_paper_size
             ) {
                 $openSession = CashRegisterSession::query()

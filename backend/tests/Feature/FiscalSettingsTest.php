@@ -324,6 +324,14 @@ class FiscalSettingsTest extends TestCase
         $this->assertNull($audit->reason);
         $this->assertSame('indigo', $audit->old_values['primary_color']);
         $this->assertSame('blue', $audit->new_values['primary_color']);
+        $this->assertArrayNotHasKey('rtn', $audit->old_values);
+        $this->assertArrayNotHasKey('rtn', $audit->new_values);
+        $this->assertArrayNotHasKey('default_tax_rate', $audit->old_values);
+        $this->assertArrayNotHasKey('default_tax_rate', $audit->new_values);
+        $this->assertArrayNotHasKey('scanner_enabled', $audit->old_values);
+        $this->assertArrayNotHasKey('scanner_enabled', $audit->new_values);
+        $this->assertArrayNotHasKey('receipt_paper_size', $audit->old_values);
+        $this->assertArrayNotHasKey('receipt_paper_size', $audit->new_values);
     }
 
     public function test_legacy_receipt_width_field_is_not_updateable(): void
