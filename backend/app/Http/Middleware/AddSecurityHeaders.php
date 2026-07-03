@@ -21,6 +21,9 @@ class AddSecurityHeaders
         $response->headers->set('X-Frame-Options', 'DENY');
         $response->headers->set('Referrer-Policy', 'same-origin');
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+        if ($this->shouldPreventIndexing($request, $response)) {
+            $response->headers->set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+        }
         if ($this->canUseCrossOriginOpenerPolicy($request)) {
             $response->headers->set('Cross-Origin-Opener-Policy', 'same-origin');
         }
@@ -67,6 +70,15 @@ class AddSecurityHeaders
 
         return in_array($runtimeEnv, ['production', 'prod'], true)
             || in_array($configuredEnv, ['production', 'prod'], true);
+    }
+
+    private function shouldPreventIndexing(Request $request, Response $response): bool
+    {
+        if ($request->is('api/*')) {
+            return true;
+        }
+
+        return str_contains(strtolower((string) $response->headers->get('Content-Type', '')), 'text/html');
     }
 
     private function canUseCrossOriginOpenerPolicy(Request $request): bool

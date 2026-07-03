@@ -2583,3 +2583,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron migraciones, seeders, permisos nuevos, frontend ni rutas.
 - Este corte evita que una instalacion monocomputadora quede sin administrador operativo por error o mala asignacion de permisos.
+
+## 106. Fase 14 - Rutas dinamicas no indexables por cabecera
+
+Cambio aplicado:
+
+- El middleware global de seguridad agrega `X-Robots-Tag: noindex, nofollow, noarchive` a respuestas API y HTML dinamico.
+- La proteccion cubre rutas autenticadas aunque el navegador, proxy o crawler no procese la metadata del `index.html`.
+- La prueba nueva valida `/api/auth/me` como ruta autenticada con datos de usuario.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter=authenticated_api_responses_are_not_indexable` | RED inicial: la cabecera era `null`; luego OK: 1 test pasa. |
+| `docker compose exec backend php artisan test --filter=SecurityHeadersTest` | OK: 8 tests pasan. |
+| `docker compose exec backend php artisan test --filter=CspReportControllerTest` | OK: 12 tests pasan. |
+| `docker compose exec backend php artisan test --filter=ProductionSpaRouteTest` | OK: 5 tests pasan, 1 skip esperado por metadata fuente no montada. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron rutas, permisos, migraciones ni contratos de negocio.
+- Este corte refuerza la instalacion LAN/offline para que endpoints y pantallas internas no sean indexables por cabecera HTTP, ademas de la metadata del frontend.
