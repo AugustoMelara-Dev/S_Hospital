@@ -3067,3 +3067,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, rutas, migraciones, seeders, policies ni endpoints.
 - Este corte mejora utilidad diaria de reportes con datos existentes, sin cambiar calculos ni contratos API.
+
+## 126. Fase 8 - Regla de eritropoyetina visible en catalogo
+
+Cambio aplicado:
+
+- La tabla del catalogo muestra la regla `Receta dialisis` para servicios con `ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION`.
+- El resumen bajo el nombre indica que eritropoyetina queda gratis con receta de dialisis y cobra L 25.00 sin receta.
+- La senal queda visible sin abrir el formulario de edicion, reduciendo errores operativos en caja.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- ServiceCatalogTable --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial: la tabla no mostraba `gratis con receta de dialisis`; luego OK: 6 tests pasan. |
+| `npm run test -- CatalogView ServiceCatalogTable ServiceSheet --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 37 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, rutas, migraciones, seeders, policies ni endpoints.
+- Este corte expone una regla critica ya existente sin duplicar calculos fiscales ni cambiar el contrato API.

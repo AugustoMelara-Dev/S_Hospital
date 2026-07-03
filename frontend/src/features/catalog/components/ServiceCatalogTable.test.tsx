@@ -78,6 +78,25 @@ describe('ServiceCatalogTable', () => {
     expect((await screen.findByRole('menuitem', { name: /^Editar$/ })).querySelector('svg')).toBeInTheDocument();
     expect((await screen.findByRole('menuitem', { name: /^Desactivar$/ })).querySelector('svg')).toBeInTheDocument();
   });
+
+  it('surfaces the dialysis prescription rule for erythropoietin services', () => {
+    render(
+      <ServiceCatalogTable
+        {...baseProps()}
+        services={[
+          serviceFixture({
+            name: 'Eritropoyetina',
+            price: '25.00',
+            special_rule_code: 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION',
+          }),
+        ]}
+      />,
+    );
+
+    expect(screen.getByText('Eritropoyetina')).toBeInTheDocument();
+    expect(screen.getByText(/gratis con receta de dialisis/i)).toBeInTheDocument();
+    expect(screen.getByText(/receta dialisis/i)).toBeInTheDocument();
+  });
 });
 
 function baseProps() {
