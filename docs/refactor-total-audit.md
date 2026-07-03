@@ -2655,3 +2655,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, migraciones, permisos ni reportes.
 - Este corte mantiene alineado el payload frontend con la auditoria autoritativa del backend para diferencias de caja.
+
+## 109. Fase 12 - Descarga de respaldo confirma contexto humano
+
+Cambio aplicado:
+
+- El dialogo de descarga de respaldos ahora muestra fecha, tamano y usuario del respaldo seleccionado antes de confirmar.
+- El dialogo mantiene oculto el nombre tecnico del archivo, rutas locales, checksum y metadatos internos.
+- La accion de descarga sigue pasando por confirmacion y auditoria backend.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- BackupsView.test.tsx -t "confirms and reports backup downloads"` | RED inicial: el dialogo solo mostraba texto generico; luego OK: muestra tamano y usuario sin filename tecnico. |
+| `npm run test -- BackupsView.test.tsx` | OK: 20 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, migraciones, permisos ni contratos API.
+- Este corte reduce riesgo operativo en una accion sensible de respaldos sin exponer datos tecnicos al usuario normal.

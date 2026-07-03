@@ -752,7 +752,25 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
         open={Boolean(downloadTarget)}
         title="¿Descargar respaldo?"
       >
-        Descargara el respaldo seleccionado. Esta accion queda auditada.
+        <div className="space-y-3 text-sm">
+          <p>Descargara el respaldo seleccionado. Esta accion queda auditada.</p>
+          {downloadTarget ? (
+            <dl className="grid gap-2 rounded-md border border-border bg-muted/35 p-3 sm:grid-cols-2">
+              <div>
+                <dt className="text-xs font-medium text-muted-foreground">Fecha</dt>
+                <dd className="font-semibold">{formatDate(downloadTarget.completed_at ?? downloadTarget.created_at)}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-medium text-muted-foreground">Tamano</dt>
+                <dd className="font-semibold">{formatBytes(downloadTarget.size_bytes)}</dd>
+              </div>
+              <div className="sm:col-span-2">
+                <dt className="text-xs font-medium text-muted-foreground">Usuario</dt>
+                <dd className="font-semibold">{downloadTarget.creator?.name ?? 'Sistema'}</dd>
+              </div>
+            </dl>
+          ) : null}
+        </div>
       </ConfirmDialog>
     </section>
   );

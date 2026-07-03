@@ -463,6 +463,8 @@ describe('BackupsView', () => {
 
     const dialog = screen.getByRole('alertdialog');
     expect(dialog).toHaveTextContent(/descargara el respaldo seleccionado/i);
+    expect(dialog).toHaveTextContent(/3\.0 MB/i);
+    expect(dialog).toHaveTextContent(/administradora hospital/i);
     expect(dialog).not.toHaveTextContent(/hospital-backup-.*\.sql\.enc/i);
 
     fireEvent.click(within(dialog).getByRole('button', { name: /^descargar$/i }));
