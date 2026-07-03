@@ -378,8 +378,9 @@ export function NewInvoiceView({
     dispatch({ type: 'SET_WARNING_MESSAGE', payload: null });
     try {
       const hasDialysis = canMarkDialysisPrescription && state.cartItems.some(item => item.dialysisPrescription);
+      const patientName = state.patientName.trim();
       const invoice = await apiClient.createInvoice({
-        patient_name: state.patientName,
+        patient_name: patientName,
         dialysis_prescription: hasDialysis,
         items: state.cartItems.map((item) => ({
           service_id: item.service.id,

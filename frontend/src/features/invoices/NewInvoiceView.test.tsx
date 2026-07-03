@@ -257,6 +257,70 @@ describe('NewInvoiceView critical flows', () => {
     expect(screen.getByText(/patient name: requerido/i)).toBeInTheDocument();
   });
 
+  it('trims patient name before creating the invoice', async () => {
+    const fetchMock = globalThis.fetch as ReturnType<typeof vi.fn>;
+    let invoicePayload: unknown = null;
+
+    fetchMock.mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url.includes('/api/cash-sessions/current')) {
+        return { ok: true, json: async () => ({ data: makeOpenCashSession() }) } as Response;
+      }
+      if (url.includes('/api/services')) {
+        return { ok: true, json: async () => ({ data: [makeService()] }) } as Response;
+      }
+      if (url.includes('/api/categories')) {
+        return { ok: true, json: async () => ({ data: [] }) } as Response;
+      }
+      if (url.includes('/api/settings/operational')) {
+        return {
+          ok: true,
+          json: async () => ({ data: { scanner_enabled: false, partial_payments_enabled: false } }),
+        } as Response;
+      }
+      if (url.endsWith('/api/invoices')) {
+        invoicePayload = JSON.parse(String(init?.body ?? '{}'));
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 60,
+              invoice_number: '000-001-01-00000060',
+              patient_name: 'Maria Lopez',
+              status: 'issued',
+              subtotal: '25.00',
+              tax_amount: '0.00',
+              discount_amount: '0.00',
+              total: '25.00',
+              paid_amount: '0.00',
+              balance_due: '25.00',
+              issued_at: '2026-05-17T09:10:00-06:00',
+              items: [],
+            },
+          }),
+        } as Response;
+      }
+      return { ok: true, json: async () => ({ data: null }) } as Response;
+    });
+
+    renderNewInvoice();
+    await waitForPointOfSaleLoad();
+
+    fireEvent.change(screen.getByLabelText(/nombre del paciente/i), { target: { value: '  Maria Lopez  ' } });
+    fireEvent.change(screen.getByLabelText(/buscar por nombre/i), { target: { value: 'eritro' } });
+    await waitFor(() => expect(screen.getByText('Eritropoyetina')).toBeInTheDocument(), { timeout: 3000 });
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(2);
+    });
+    fireEvent.click(screen.getByRole('button', { name: /agregar eritropoyetina/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /^emitir y cobrar$/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /emitir y abrir cobro/i }));
+
+    await waitFor(() => expect(invoicePayload).toEqual(expect.objectContaining({
+      patient_name: 'Maria Lopez',
+    })));
+  });
+
   it('sends dialysis prescription only as an invoice-level flag', async () => {
     const erythropoietin = makeService({ special_rule_code: 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION' });
     const fetchMock = globalThis.fetch as ReturnType<typeof vi.fn>;

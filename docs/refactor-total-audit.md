@@ -3707,3 +3707,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, migraciones, caja, facturacion, recibos, exportadores ni permisos.
 - Este corte mejora reportes de auditoria para operacion LAN/offline evitando errores evitables y mensajes tecnicos del servidor.
+
+## 154. Fase 4 - Facturacion recorta nombre de paciente
+
+Cambio aplicado:
+
+- `NewInvoiceView` ahora recorta espacios iniciales y finales del nombre del paciente justo antes de enviar la factura al backend.
+- El frontend conserva al backend como fuente de verdad de totales y validacion fiscal; este cambio solo normaliza el payload de emision para evitar nombres fiscales con espacios accidentales.
+- No se cambian endpoints, pagos, caja, recibos, numeracion fiscal, migraciones ni reglas de eritropoyetina.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- NewInvoiceView.test.tsx -t "trims patient name" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial correcto: el payload enviaba `"  Maria Lopez  "`; luego OK: 1 test pasa. |
+| `npm run test -- NewInvoiceView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 16 tests pasan. |
+| `npm run lint` | OK. |
+| `npm run typecheck` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, migraciones, pagos, caja, recibos, reportes ni permisos.
+- Este corte reduce errores humanos en caja sin duplicar calculo fiscal en el frontend ni recalcular facturas historicas.
