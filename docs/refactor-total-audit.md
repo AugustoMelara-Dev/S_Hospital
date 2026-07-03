@@ -4049,3 +4049,29 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, endpoints, migraciones, permisos, auditoria, caja, catalogo, recibos, respaldos ni reportes.
 - Este corte hace mas tolerante la busqueda de facturas sin alterar totales, pagos, anulaciones, reversas ni datos historicos.
+
+## 168. Fase 11 - Usuarios recortan identidad antes de guardar
+
+Cambio aplicado:
+
+- `UserFormDialog` ahora recorta espacios iniciales y finales de nombre, correo y nombre de usuario antes de validar y enviar.
+- Se agrego una regresion para crear una cuenta operativa con espacios de borde, confirmando que el submit recibe `Caja Principal`, `caja.principal@hospital.org` y `caja_principal`.
+- La contrasena inicial no se recorta ni se relaja; conserva la misma politica de complejidad alineada con Laravel.
+- No se cambian permisos, roles protegidos, ultimo administrador activo, endpoints ni reglas backend.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- UserFormDialog.test.tsx -t "trims user identity fields before creating an operational account" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial correcto: `onSubmit` no era llamado por validacion con espacios; luego OK: 1 test pasa. |
+| `npm run test -- UserFormDialog.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 14 tests pasan. |
+| `npm run test -- UsersView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 26 tests pasan. |
+| `npm run lint` | OK. |
+| `npm run typecheck` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, facturacion, caja, catalogo, historial, recibos, respaldos ni reportes.
+- Este corte reduce errores humanos al crear cajeros/usuarios locales sin cambiar seguridad, auditoria ni RBAC.

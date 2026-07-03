@@ -60,6 +60,40 @@ describe('UserFormDialog', () => {
     cleanup();
   });
 
+  it('trims user identity fields before creating an operational account', async () => {
+    const onSubmit = vi.fn();
+
+    render(
+      <UserFormDialog
+        open
+        onOpenChange={vi.fn()}
+        editingUser={null}
+        roles={roles}
+        canManageRoles={false}
+        selectedUserPermissions={['invoices.create']}
+        onToggleUserPermission={vi.fn()}
+        permissionCatalog={permissionCatalog}
+        globalError={null}
+        onSubmit={onSubmit}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText(/nombre completo/i), { target: { value: '  Caja Principal  ' } });
+    fireEvent.change(screen.getByLabelText(/correo electr/i), { target: { value: '  caja.principal@hospital.org  ' } });
+    fireEvent.change(screen.getByLabelText(/nombre de usuario/i), { target: { value: '  caja_principal  ' } });
+    fireEvent.change(screen.getByLabelText(/contrase/i), { target: { value: 'Password123!' } });
+
+    fireEvent.click(screen.getByRole('button', { name: /crear usuario/i }));
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith({
+      name: 'Caja Principal',
+      email: 'caja.principal@hospital.org',
+      username: 'caja_principal',
+      password: 'Password123!',
+      role: 'cajero',
+    }));
+  });
+
   it('renders password field only when creating a new user', () => {
     const { rerender } = render(
       <UserFormDialog

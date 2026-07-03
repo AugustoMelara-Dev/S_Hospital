@@ -18,9 +18,9 @@ import { roleLabel } from '@/lib/role-labels';
 import { isCriticalPermission } from './critical-permissions';
 
 const baseUserSchema = z.object({
-  name: z.string().min(1, 'El nombre es obligatorio.'),
-  email: z.string().email('Formato de correo no válido.'),
-  username: z.string().regex(/^[a-zA-Z0-9_-]+$/, 'Nombre de usuario no válido (solo letras, números, _ o -).'),
+  name: z.string().trim().min(1, 'El nombre es obligatorio.'),
+  email: z.string().trim().email('Formato de correo no válido.'),
+  username: z.string().trim().regex(/^[a-zA-Z0-9_-]+$/, 'Nombre de usuario no válido (solo letras, números, _ o -).'),
   role: z.string().min(1, 'El rol es obligatorio.'),
 });
 
