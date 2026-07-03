@@ -329,7 +329,7 @@ async function installApiMocks(page: Page) {
 
     if (route.request().method() === 'POST') {
       const payload = await route.request().postDataJSON();
-      const hasDialysisPrescription = payload.items?.some((item: { dialysis_prescription?: boolean }) => item.dialysis_prescription);
+      const hasDialysisPrescription = payload.dialysis_prescription === true;
       const id = 100 + invoiceCounter;
       const invoice = {
         id,

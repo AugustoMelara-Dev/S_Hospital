@@ -3539,3 +3539,29 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, rutas, migraciones, seeders, policies, auditoria ni endpoints.
 - Este corte hace mas confiable la consulta diaria de historial sin alterar reglas fiscales ni caja.
+
+## 147. Fase 4/5 - Receta de dialisis solo a nivel factura
+
+Cambio aplicado:
+
+- El frontend dejo de enviar `dialysis_prescription` dentro de cada item de factura.
+- `NewInvoiceView`, `invoice.schema.ts` y `InvoiceItemPayload` quedan alineados con el contrato backend: la receta de dialisis se envia solo como bandera top-level de la factura.
+- Los mocks e2e de nueva factura/validacion leen la receta desde `payload.dialysis_prescription`, no desde las lineas.
+- No se cambian backend, migraciones, caja, pagos, auditoria ni calculos fiscales.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- NewInvoiceView.test.tsx -t "sends dialysis prescription only as an invoice-level flag" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial correcto: el payload aun incluia `items[0].dialysis_prescription`; luego OK: 1 test pasa. |
+| `npm run test -- NewInvoiceView InvoiceCart --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 4 archivos, 28 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+| `npx playwright test e2e/new-invoice-flow.spec.ts` | Primer intento fallo por esperar el titulo obsoleto `Factura emitida exitosamente`; se actualizo a `Factura pagada`; reintento OK: 1 test pasa. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, rutas, migraciones, seeders, policies, auditoria ni endpoints.
+- Este corte reduce ruido de contrato en la regla no negociable de eritropoyetina sin convertir el frontend en fuente de verdad fiscal.

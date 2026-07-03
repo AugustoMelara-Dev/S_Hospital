@@ -336,7 +336,6 @@ export function NewInvoiceView({
       items: state.cartItems.map((item) => ({
         service_id: item.service.id,
         quantity: item.quantity,
-        dialysis_prescription: item.dialysisPrescription,
       })),
     });
     if (!validationResult.success) {
@@ -385,7 +384,6 @@ export function NewInvoiceView({
         items: state.cartItems.map((item) => ({
           service_id: item.service.id,
           quantity: item.quantity,
-          dialysis_prescription: canMarkDialysisPrescription && item.dialysisPrescription,
         })),
       }, {
         idempotencyKey: submitInvoiceIdempotencyKeyRef.current ??= createClientIdempotencyKey(),

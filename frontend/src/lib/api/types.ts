@@ -141,7 +141,6 @@ export type ServicePayload = {
 export type InvoiceItemPayload = {
   service_id: number;
   quantity: string;
-  dialysis_prescription?: boolean;
   notes?: string | null;
 };
 

@@ -106,7 +106,7 @@ test.describe('New invoice - critical mocked e2e', () => {
     await expect.poll(() => invoicePayload).toEqual({
       patient_name: 'Maria Lopez',
       dialysis_prescription: false,
-      items: [{ service_id: glucoseService.id, quantity: '1', dialysis_prescription: false }],
+      items: [{ service_id: glucoseService.id, quantity: '1' }],
     });
 
     const paymentDialog = page.getByRole('dialog', { name: /registrar pago/i });
@@ -124,7 +124,7 @@ test.describe('New invoice - critical mocked e2e', () => {
       reference: null,
     });
     await expect.poll(() => receiptPdfRequests).toBe(1);
-    await expect(page.getByRole('dialog', { name: /factura emitida exitosamente/i })).toBeVisible();
+    await expect(page.getByRole('dialog', { name: /factura pagada/i })).toBeVisible();
     await expect(page.getByRole('contentinfo').getByText(/REC-A-00000077/i)).toBeVisible();
   });
 });

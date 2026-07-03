@@ -102,6 +102,7 @@ function renderNewInvoice(
         <NewInvoiceView
           cashSession={cashSession}
           canCreatePayments={overrides.canCreatePayments ?? true}
+          canMarkDialysisPrescription={overrides.canMarkDialysisPrescription ?? false}
           canOpenCash
           canViewCatalog
           canViewReceipts={overrides.canViewReceipts ?? true}
@@ -254,6 +255,73 @@ describe('NewInvoiceView critical flows', () => {
     });
 
     expect(screen.getByText(/patient name: requerido/i)).toBeInTheDocument();
+  });
+
+  it('sends dialysis prescription only as an invoice-level flag', async () => {
+    const erythropoietin = makeService({ special_rule_code: 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION' });
+    const fetchMock = globalThis.fetch as ReturnType<typeof vi.fn>;
+    let invoicePayload: unknown = null;
+
+    fetchMock.mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url.includes('/api/cash-sessions/current')) {
+        return { ok: true, json: async () => ({ data: makeOpenCashSession() }) } as Response;
+      }
+      if (url.includes('/api/services')) {
+        return { ok: true, json: async () => ({ data: [erythropoietin] }) } as Response;
+      }
+      if (url.includes('/api/categories')) {
+        return { ok: true, json: async () => ({ data: [] }) } as Response;
+      }
+      if (url.includes('/api/settings/operational')) {
+        return {
+          ok: true,
+          json: async () => ({ data: { scanner_enabled: false, partial_payments_enabled: false } }),
+        } as Response;
+      }
+      if (url.endsWith('/api/invoices')) {
+        invoicePayload = JSON.parse(String(init?.body ?? '{}'));
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 59,
+              invoice_number: '000-001-01-00000059',
+              patient_name: 'Maria Lopez',
+              status: 'paid',
+              subtotal: '0.00',
+              tax_amount: '0.00',
+              discount_amount: '0.00',
+              total: '0.00',
+              paid_amount: '0.00',
+              balance_due: '0.00',
+              issued_at: '2026-05-17T09:05:00-06:00',
+              items: [],
+            },
+          }),
+        } as Response;
+      }
+      return { ok: true, json: async () => ({ data: null }) } as Response;
+    });
+
+    renderNewInvoice(makeOpenCashSession(), { canMarkDialysisPrescription: true });
+    await waitForPointOfSaleLoad();
+
+    fireEvent.change(screen.getByLabelText(/nombre del paciente/i), { target: { value: 'Maria Lopez' } });
+    fireEvent.change(screen.getByLabelText(/buscar por nombre/i), { target: { value: 'eritro' } });
+
+    await waitFor(() => expect(screen.getByText('Eritropoyetina')).toBeInTheDocument(), { timeout: 3000 });
+    fireEvent.click(screen.getByRole('button', { name: /agregar eritropoyetina/i }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /receta de di/i }));
+
+    fireEvent.click(await screen.findByRole('button', { name: /^emitir y cobrar$/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /confirmar emis/i }));
+
+    await waitFor(() => expect(invoicePayload).toEqual({
+      patient_name: 'Maria Lopez',
+      dialysis_prescription: true,
+      items: [{ service_id: erythropoietin.id, quantity: '1' }],
+    }));
   });
 
   it('shows a human pending-payment warning when the cashier cannot collect after emitting', async () => {
