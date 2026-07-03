@@ -201,4 +201,39 @@ describe('RoleFormDialog', () => {
 
     expect(submit).not.toBeDisabled();
   });
+
+  it('requires explicit confirmation before saving a role that can download backups', () => {
+    render(
+      <RoleFormDialog
+        open
+        onOpenChange={vi.fn()}
+        editingRole={null}
+        permissionCatalog={[
+          {
+            module: 'backups',
+            label: 'Respaldos',
+            permissions: [
+              {
+                name: 'backups.download',
+                label: 'Descargar respaldos',
+              },
+            ],
+          },
+        ]}
+        selectedPermissions={['backups.download']}
+        onTogglePermission={vi.fn()}
+        globalError={null}
+        onSubmit={vi.fn()}
+        isSaving={false}
+      />,
+    );
+
+    expect(screen.getByText(/permiso critico/i)).toBeInTheDocument();
+    const submit = screen.getByRole('button', { name: /crear rol/i });
+    expect(submit).toBeDisabled();
+
+    fireEvent.click(screen.getByRole('checkbox', { name: /confirmo que este rol necesita permisos criticos/i }));
+
+    expect(submit).not.toBeDisabled();
+  });
 });

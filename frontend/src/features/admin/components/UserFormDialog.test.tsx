@@ -164,6 +164,42 @@ describe('UserFormDialog', () => {
     expect(submit).not.toBeDisabled();
   });
 
+  it('requires explicit confirmation before saving a user that can download backups directly', () => {
+    render(
+      <UserFormDialog
+        open
+        onOpenChange={vi.fn()}
+        editingUser={baseUser}
+        roles={roles}
+        canManageRoles
+        selectedUserPermissions={['backups.download']}
+        onToggleUserPermission={vi.fn()}
+        permissionCatalog={[
+          {
+            module: 'backups',
+            label: 'Respaldos',
+            permissions: [
+              {
+                name: 'backups.download',
+                label: 'Descargar respaldos',
+              },
+            ],
+          },
+        ]}
+        globalError={null}
+        onSubmit={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText(/permiso critico/i)).toBeInTheDocument();
+    const submit = screen.getByRole('button', { name: /guardar cambios/i });
+    expect(submit).toBeDisabled();
+
+    fireEvent.click(screen.getByRole('checkbox', { name: /confirmo que este usuario necesita permisos criticos/i }));
+
+    expect(submit).not.toBeDisabled();
+  });
+
   it('rejects a non-compliant new user password with an inline message', async () => {
     const onSubmit = vi.fn();
 

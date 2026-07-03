@@ -1,5 +1,6 @@
 const CRITICAL_PERMISSION_NAMES = new Set([
   'backups.create',
+  'backups.download',
   'backups.restore',
   'cash.close_any',
   'invoices.reverse',

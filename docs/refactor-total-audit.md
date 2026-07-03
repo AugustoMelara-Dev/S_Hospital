@@ -1998,3 +1998,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, migraciones, endpoints, permisos ni reglas fiscales.
 - Este corte preserva metadata de busqueda del catalogo durante cambios de disponibilidad para caja.
+
+## 82. Fase 13 - Descargar respaldos exige confirmacion critica
+
+Cambio aplicado:
+
+- `backups.download` se marca como permiso critico en el catalogo central usado por roles y permisos directos de usuario.
+- `RoleFormDialog` exige confirmacion explicita antes de guardar un rol que puede descargar respaldos.
+- `UserFormDialog` exige la misma confirmacion antes de guardar un permiso directo de descarga de respaldos.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- RoleFormDialog.test.tsx UserFormDialog.test.tsx -t "download backups"` | RED inicial porque `backups.download` no mostraba `Permiso critico`; luego OK. |
+| `npm run test -- UsersView.test.tsx UsersTable.test.tsx UserFormDialog.test.tsx RoleFormDialog.test.tsx PermissionMatrix.test.tsx PasswordResetDialog.test.tsx` | OK: 45 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `git diff --check` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, rutas, migraciones, politicas ni descarga real de archivos.
+- Este corte reduce escalacion accidental: descargar una copia de la base hospitalaria requiere la misma pausa explicita que otros permisos de alto riesgo.
