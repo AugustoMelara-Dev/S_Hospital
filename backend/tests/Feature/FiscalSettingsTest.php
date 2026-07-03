@@ -242,6 +242,54 @@ class FiscalSettingsTest extends TestCase
         ]);
     }
 
+    public function test_rtn_change_requires_reason_before_mutating_settings(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        FiscalSetting::query()->create($this->validPayload());
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin)
+            ->putJson('/api/settings/fiscal', [
+                ...$this->validPayload(),
+                'rtn' => '08011999111111',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('reason');
+
+        $this->assertDatabaseHas('fiscal_settings', [
+            'rtn' => '08011999123456',
+        ]);
+    }
+
+    public function test_rtn_change_with_reason_is_audited(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        FiscalSetting::query()->create($this->validPayload());
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin)
+            ->putJson('/api/settings/fiscal', [
+                ...$this->validPayload(),
+                'rtn' => '08011999111111',
+                'reason' => 'Correccion documentada de RTN',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.rtn', '08011999111111');
+
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $admin->id,
+            'action' => 'fiscal_settings.updated',
+            'entity_type' => 'App\\Models\\FiscalSetting',
+            'reason' => 'Correccion documentada de RTN',
+        ]);
+    }
+
     public function test_legacy_receipt_width_field_is_not_updateable(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);

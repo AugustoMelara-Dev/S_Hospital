@@ -2297,3 +2297,31 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron migraciones, secuencias fiscales, caja, recibos, frontend ni permisos.
 - Este corte avanza la regla de seguridad: los cambios fiscales sensibles empiezan a requerir motivo auditado sin bloquear creacion inicial ni cambios institucionales no tributarios.
+
+## 94. Fase 11/14 - Cambio de RTN exige motivo fiscal
+
+Cambio aplicado:
+
+- `UpdateFiscalSettingsRequest` ahora trata cambios de `rtn` como dato fiscal sensible y exige `reason` de al menos 5 caracteres en configuraciones existentes.
+- `HospitalSettingsView` muestra `Motivo del cambio fiscal` solo cuando el RTN difiere del valor cargado y envia el motivo al backend.
+- El motivo queda auditado en `fiscal_settings.updated` sin persistirse como atributo de `FiscalSetting`.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter=rtn_change` | RED inicial: el backend aceptaba RTN nuevo sin motivo; luego OK: 2 tests, 7 assertions. |
+| `npm run test -- HospitalSettingsView.test.tsx -t "RTN changes"` | RED inicial: la UI no mostraba campo de motivo; luego OK: 1 test pasa. |
+| `docker compose exec backend php artisan test tests/Feature/FiscalSettingsTest.php` | OK: 19 tests, 115 assertions. |
+| `npm run test -- HospitalSettingsView.test.tsx FiscalSettingsView.test.tsx BrandingView.test.tsx OperationalRulesView.test.tsx` | OK: 3 archivos, 11 tests pasan. |
+| `docker compose exec backend vendor/bin/pint --test` | OK: 426 files tras formatear `FiscalSettingsTest.php`. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M` | OK sin errores. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron migraciones, secuencias fiscales, caja, recibos ni permisos.
+- Este corte completa otro tramo de cambios fiscales con motivo auditado sin pedir motivo para ediciones institucionales no fiscales.

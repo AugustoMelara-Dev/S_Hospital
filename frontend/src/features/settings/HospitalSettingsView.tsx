@@ -27,6 +27,7 @@ const hospitalSchema = z.object({
   secretariat_line: z.string().max(160).optional().or(z.literal('')),
   receipt_location: z.string().max(160).optional().or(z.literal('')),
   receipt_footer_text: z.string().max(255).optional().or(z.literal('')),
+  reason: z.string().max(500).optional().or(z.literal('')),
 });
 
 type HospitalFormData = z.infer<typeof hospitalSchema>;
@@ -57,6 +58,7 @@ export function HospitalSettingsView({ canEdit, onStatus }: HospitalSettingsView
       secretariat_line: '',
       receipt_location: '',
       receipt_footer_text: '',
+      reason: '',
     },
   });
 
@@ -74,6 +76,7 @@ export function HospitalSettingsView({ canEdit, onStatus }: HospitalSettingsView
         secretariat_line: data?.secretariat_line ?? '',
         receipt_location: data?.receipt_location ?? '',
         receipt_footer_text: data?.receipt_footer_text ?? '',
+        reason: '',
       });
     } catch (err) {
       const message = safeClientMessage(userSafeErrorMessage(err, 'No se pudo cargar los datos del hospital.'));
@@ -87,7 +90,20 @@ export function HospitalSettingsView({ canEdit, onStatus }: HospitalSettingsView
     void load();
   }, [load]);
 
+  const watchedRtn = form.watch('rtn') ?? '';
+  const rtnChanged = settings !== null && watchedRtn.trim() !== (settings.rtn ?? '').trim();
+
   async function onSubmit(data: HospitalFormData) {
+    const fiscalReason = data.reason?.trim() ?? '';
+    if (rtnChanged && fiscalReason.length < 5) {
+      form.setError('reason', {
+        type: 'manual',
+        message: 'Indique al menos 5 caracteres explicando el motivo del cambio fiscal.',
+      });
+      onStatus('Ingrese un motivo del cambio fiscal de al menos 5 caracteres.');
+
+      return;
+    }
     if (savingRef.current) return;
     savingRef.current = true;
     setError('');
@@ -105,6 +121,7 @@ export function HospitalSettingsView({ canEdit, onStatus }: HospitalSettingsView
         receipt_location: optionalText(data.receipt_location ?? ''),
         receipt_footer_text: optionalText(data.receipt_footer_text ?? ''),
         receipt_template_mode: 'institutional',
+        ...(rtnChanged ? { reason: fiscalReason } : {}),
       });
       setSettings(updated);
       onStatus('Datos del hospital guardados.');
@@ -171,6 +188,20 @@ export function HospitalSettingsView({ canEdit, onStatus }: HospitalSettingsView
                 />
               )}
             </FormField>
+            {rtnChanged ? (
+              <FormField id="reason" label="Motivo del cambio fiscal" required hint="Obligatorio al modificar el RTN." error={form.formState.errors.reason?.message}>
+                {({ id, invalid, describedBy }) => (
+                  <Textarea
+                    id={id}
+                    {...form.register('reason')}
+                    rows={2}
+                    aria-invalid={invalid}
+                    aria-describedby={describedBy}
+                    disabled={!canEdit}
+                  />
+                )}
+              </FormField>
+            ) : null}
           </CardContent>
         </Card>
 

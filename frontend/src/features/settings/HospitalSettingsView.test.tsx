@@ -69,6 +69,26 @@ describe('HospitalSettingsView', () => {
     expect(payload.receipt_location).toBeNull();
   });
 
+  it('asks for a fiscal reason when the RTN changes', async () => {
+    const updateFiscalSettings = vi.mocked(apiClient.updateFiscalSettings);
+
+    render(<HospitalSettingsView canEdit onStatus={vi.fn()} />);
+
+    const rtnInput = await screen.findByLabelText(/^rtn$/i);
+    fireEvent.change(rtnInput, { target: { value: '08011999111111' } });
+
+    const reasonInput = screen.getByLabelText(/motivo del cambio fiscal/i);
+    fireEvent.change(reasonInput, { target: { value: 'Correccion documentada de RTN' } });
+    fireEvent.click(screen.getByRole('button', { name: /guardar datos del hospital/i }));
+
+    await waitFor(() => {
+      expect(updateFiscalSettings).toHaveBeenCalled();
+    });
+
+    const payload = updateFiscalSettings.mock.calls.at(-1)?.[0] as Record<string, unknown>;
+    expect(payload.rtn).toBe('08011999111111');
+    expect(payload.reason).toBe('Correccion documentada de RTN');
+  });
   it('disables inputs without edit permission', async () => {
     render(<HospitalSettingsView canEdit={false} onStatus={vi.fn()} />);
 

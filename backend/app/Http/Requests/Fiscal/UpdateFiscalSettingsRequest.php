@@ -47,7 +47,7 @@ class UpdateFiscalSettingsRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
-            if (! $this->defaultTaxRateChanged()) {
+            if (! $this->sensitiveFiscalDataChanged()) {
                 return;
             }
 
@@ -72,14 +72,20 @@ class UpdateFiscalSettingsRequest extends FormRequest
         return $reason === '' ? null : $reason;
     }
 
-    private function defaultTaxRateChanged(): bool
+    private function sensitiveFiscalDataChanged(): bool
     {
         $setting = FiscalSetting::query()->first();
 
-        if ($setting === null || ! $this->has('default_tax_rate')) {
+        if ($setting === null) {
             return false;
         }
 
-        return number_format((float) $setting->default_tax_rate, 2, '.', '') !== number_format((float) $this->input('default_tax_rate'), 2, '.', '');
+        if ($this->has('default_tax_rate')
+            && number_format((float) $setting->default_tax_rate, 2, '.', '') !== number_format((float) $this->input('default_tax_rate'), 2, '.', '')
+        ) {
+            return true;
+        }
+
+        return $this->has('rtn') && trim($setting->rtn) !== trim((string) $this->input('rtn'));
     }
 }

@@ -47,6 +47,7 @@ export type FiscalSettings = {
   secretariat_line?: string | null;
   receipt_location?: string | null;
   receipt_footer_text?: string | null;
+  reason?: string | null;
 };
 
 export type PublicBranding = Pick<
