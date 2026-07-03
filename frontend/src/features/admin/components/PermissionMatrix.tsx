@@ -13,6 +13,8 @@ type PermissionMatrixProps = {
 
 export function PermissionMatrix({ roles, permissionCatalog, className }: PermissionMatrixProps) {
   const titleId = useId();
+  const matrixId = useId();
+  const [isMatrixOpen, setIsMatrixOpen] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
   if (roles.length === 0 || permissionCatalog.length === 0) {
@@ -35,49 +37,67 @@ export function PermissionMatrix({ roles, permissionCatalog, className }: Permis
         className,
       )}
     >
-      <header className="mb-3 flex flex-wrap items-center justify-between gap-2">
+      <header className="flex flex-wrap items-center justify-between gap-3">
         <h2 id={titleId} className="text-sm font-semibold text-foreground">
           Matriz de permisos
         </h2>
-        <p className="text-xs text-muted-foreground">
-          {permissionCatalog.reduce((acc, group) => acc + group.permissions.length, 0)} permisos / {roles.length} roles
-        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="text-xs text-muted-foreground">
+            {permissionCatalog.reduce((acc, group) => acc + group.permissions.length, 0)} permisos / {roles.length} roles
+          </p>
+          <button
+            type="button"
+            aria-controls={matrixId}
+            aria-expanded={isMatrixOpen}
+            onClick={() => setIsMatrixOpen((current) => !current)}
+            className="inline-flex min-h-9 items-center gap-2 rounded border border-operational-border bg-operational-panel px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-operational-panel/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            {isMatrixOpen ? (
+              <ChevronDown aria-hidden="true" className="size-3.5" />
+            ) : (
+              <ChevronRight aria-hidden="true" className="size-3.5" />
+            )}
+            {isMatrixOpen ? 'Ocultar matriz de permisos' : 'Mostrar matriz de permisos'}
+          </button>
+        </div>
       </header>
 
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-sm" aria-labelledby={titleId}>
-          <thead>
-            <tr>
-              <th scope="col" className="sticky left-0 z-10 bg-operational-surface p-2 text-left text-xs font-semibold text-muted-foreground">
-                Permiso
-              </th>
-              {roles.map((role) => (
-                <th
-                  key={role.id}
-                  scope="col"
-                  className="min-w-32 p-2 text-left text-xs font-semibold text-muted-foreground"
-                >
-                  {roleLabel(role.name)}
+      {isMatrixOpen && (
+        <div id={matrixId} className="mt-3 overflow-x-auto">
+          <table className="w-full border-collapse text-sm" aria-labelledby={titleId}>
+            <thead>
+              <tr>
+                <th scope="col" className="sticky left-0 z-10 bg-operational-surface p-2 text-left text-xs font-semibold text-muted-foreground">
+                  Permiso
                 </th>
-              ))}
-            </tr>
-          </thead>
-          {permissionCatalog.map((group) => {
-            const isExpanded = expandedGroups[group.module] ?? true;
+                {roles.map((role) => (
+                  <th
+                    key={role.id}
+                    scope="col"
+                    className="min-w-32 p-2 text-left text-xs font-semibold text-muted-foreground"
+                  >
+                    {roleLabel(role.name)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            {permissionCatalog.map((group) => {
+              const isExpanded = expandedGroups[group.module] ?? true;
 
-            return (
-              <PermissionGroup
-                key={group.module}
-                group={group}
-                roles={roles}
-                isExpanded={isExpanded}
-                onToggle={() => toggleGroup(group.module)}
-                roleHasPermission={roleHasPermission}
-              />
-            );
-          })}
-        </table>
-      </div>
+              return (
+                <PermissionGroup
+                  key={group.module}
+                  group={group}
+                  roles={roles}
+                  isExpanded={isExpanded}
+                  onToggle={() => toggleGroup(group.module)}
+                  roleHasPermission={roleHasPermission}
+                />
+              );
+            })}
+          </table>
+        </div>
+      )}
     </section>
   );
 }

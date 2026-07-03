@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import type { PermissionCatalogGroup, RoleDefinition } from '@/lib/api';
 import { PermissionMatrix } from './PermissionMatrix';
@@ -46,17 +46,34 @@ const catalog: PermissionCatalogGroup[] = [
 ];
 
 describe('PermissionMatrix', () => {
+  function openPermissionMatrix() {
+    fireEvent.click(screen.getByRole('button', { name: /mostrar matriz de permisos/i }));
+  }
+
   it('renders the matrix with all role columns and group sections', () => {
     render(<PermissionMatrix roles={roles} permissionCatalog={catalog} />);
 
     expect(screen.getByRole('heading', { name: /matriz de permisos/i })).toBeInTheDocument();
+    openPermissionMatrix();
+
     expect(screen.getByRole('columnheader', { name: /cajero/i })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /^auditor$/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /facturacion/i })).toBeInTheDocument();
   });
 
+  it('keeps role comparison collapsed until explicitly opened', () => {
+    render(<PermissionMatrix roles={roles} permissionCatalog={catalog} />);
+
+    expect(screen.queryByRole('rowheader', { name: /crear facturas invoices\.create/i })).not.toBeInTheDocument();
+
+    openPermissionMatrix();
+
+    expect(screen.getByRole('rowheader', { name: /crear facturas invoices\.create/i })).toBeInTheDocument();
+  });
+
   it('marks granted and denied permissions with text, not color alone', () => {
     render(<PermissionMatrix roles={roles} permissionCatalog={catalog} />);
+    openPermissionMatrix();
 
     const grantedCell = screen.getByLabelText('Cajero tiene Crear facturas');
     expect(grantedCell).toBeInTheDocument();
@@ -69,6 +86,7 @@ describe('PermissionMatrix', () => {
 
   it('uses human role names in assistive labels', () => {
     render(<PermissionMatrix roles={roles} permissionCatalog={catalog} />);
+    openPermissionMatrix();
 
     expect(screen.getByRole('columnheader', { name: /catalog manager/i })).toBeInTheDocument();
     expect(screen.getByLabelText('Catalog Manager tiene Ver caja')).toBeInTheDocument();
@@ -77,6 +95,7 @@ describe('PermissionMatrix', () => {
 
   it('marks critical permissions with a visible risk label', () => {
     render(<PermissionMatrix roles={roles} permissionCatalog={catalog} />);
+    openPermissionMatrix();
 
     const auditPermission = screen.getByRole('rowheader', { name: /ver auditoria audit\.view/i });
 

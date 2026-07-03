@@ -2972,3 +2972,27 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, rutas, migraciones, seeders, policies ni endpoints.
 - Este corte mejora claridad administrativa y accesibilidad visual de riesgos sin cambiar permisos ni autorizacion.
+
+## 122. Fase 13/15 - Matriz de permisos colapsada por defecto
+
+Cambio aplicado:
+
+- La matriz comparativa de permisos queda colapsada por defecto en la pantalla de usuarios.
+- El resumen de cantidad de permisos y roles permanece visible, con un boton accesible para mostrar u ocultar la matriz cuando se necesite revisar roles.
+- La tabla conserva sus grupos colapsables internos y las etiquetas de permisos criticos al abrirse.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- PermissionMatrix --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial: no existia boton `Mostrar matriz de permisos` y la tabla se renderizaba abierta; luego OK: 6 tests pasan. |
+| `npm run test -- UsersView --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 26 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, rutas, migraciones, seeders, policies ni endpoints.
+- Este corte reduce la carga visual del modulo de usuarios sin eliminar la revision administrativa de roles.
