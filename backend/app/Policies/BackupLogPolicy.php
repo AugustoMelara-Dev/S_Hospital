@@ -33,6 +33,6 @@ class BackupLogPolicy
 
     public function restore(User $user, BackupLog $backupLog): bool
     {
-        return $user->can('backups.restore');
+        return false;
     }
 }

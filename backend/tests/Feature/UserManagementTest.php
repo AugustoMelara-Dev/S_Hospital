@@ -7,6 +7,7 @@ use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
@@ -631,19 +632,26 @@ class UserManagementTest extends TestCase
     {
         $this->seed(RolesAndPermissionsSeeder::class);
         $admin = $this->userWithRole('admin');
+        Permission::query()->firstOrCreate([
+            'name' => 'backups.restore',
+            'guard_name' => 'web',
+        ]);
 
-        $this->actingAs($admin)
-            ->postJson('/api/admin/users', [
-                'name' => 'Permiso Inoperable',
-                'email' => 'permiso-inoperable@hospital.local',
-                'username' => 'permiso-inoperable',
-                'password' => 'Temporary123!',
-                'role' => 'cajero',
-                'permissions' => ['receipts.void'],
-                'active' => true,
-            ])
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors('permissions.0');
+        foreach (['backups.restore', 'receipts.void'] as $permission) {
+            $permissionSlug = str_replace('.', '-', $permission);
+            $this->actingAs($admin)
+                ->postJson('/api/admin/users', [
+                    'name' => 'Permiso Inoperable',
+                    'email' => 'permiso-inoperable-'.$permissionSlug.'@hospital.local',
+                    'username' => 'permiso-inoperable-'.$permissionSlug,
+                    'password' => 'Temporary123!',
+                    'role' => 'cajero',
+                    'permissions' => [$permission],
+                    'active' => true,
+                ])
+                ->assertUnprocessable()
+                ->assertJsonValidationErrors('permissions.0');
+        }
     }
 
     public function test_user_editor_rejects_legacy_custom_roles_with_reserved_admin_permissions(): void

@@ -46,7 +46,6 @@ class RolesAndPermissionsSeeder extends Seeder
         'backups.view',
         'backups.create',
         'backups.download',
-        'backups.restore',
         'system.status.view',
         'audit.view',
         'patients.mark_dialysis_prescription',

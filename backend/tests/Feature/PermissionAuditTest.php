@@ -218,7 +218,7 @@ class PermissionAuditTest extends TestCase
         $this->assertFalse(Gate::forUser($disabler)->allows('toggleActive', $disabler));
     }
 
-    public function test_backup_restore_policy_uses_seeded_admin_only_permission(): void
+    public function test_backup_restore_is_not_seeded_or_authorizable_from_the_app(): void
     {
         $admin = User::factory()->create([
             'username' => 'admin-backup-restore-policy',
@@ -246,11 +246,11 @@ class PermissionAuditTest extends TestCase
             'completed_at' => now(),
         ]);
 
-        $this->assertContains('backups.restore', RolesAndPermissionsSeeder::PERMISSIONS);
-        $this->assertDatabaseHas('permissions', ['name' => 'backups.restore']);
-        $this->assertTrue($admin->can('backups.restore'));
+        $this->assertNotContains('backups.restore', RolesAndPermissionsSeeder::PERMISSIONS);
+        $this->assertDatabaseMissing('permissions', ['name' => 'backups.restore']);
+        $this->assertFalse($admin->can('backups.restore'));
         $this->assertFalse($auditor->can('backups.restore'));
-        $this->assertTrue(Gate::forUser($admin)->allows('restore', $backup));
+        $this->assertFalse(Gate::forUser($admin)->allows('restore', $backup));
         $this->assertFalse(Gate::forUser($auditor)->allows('restore', $backup));
     }
 

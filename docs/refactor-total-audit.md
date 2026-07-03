@@ -109,7 +109,7 @@ Permisos sembrados en `RolesAndPermissionsSeeder`:
 - Configuracion de recibos: `receipt_settings.view`, `receipt_settings.update`, `receipt_settings.advanced`
 - Reportes: `reports.view`, `reports.managerial.view`, `reports.cash_session.view`, `reports.export`
 - Usuarios: `users.view`, `users.create`, `users.update`, `users.disable`, `users.assign_admin_role`, `system.exact_user_permissions`
-- Respaldos: `backups.view`, `backups.create`, `backups.download`, `backups.restore`
+- Respaldos: `backups.view`, `backups.create`, `backups.download`
 - Sistema/auditoria: `system.status.view`, `audit.view`
 - Regla especial: `patients.mark_dialysis_prescription`
 
@@ -223,7 +223,7 @@ Existen componentes reutilizables para acciones, menus, alertas, dialogos, tabla
 - UI normal indica que restauracion no se hace desde la app.
 - Backend contiene flujo de respaldo y auditoria de metadatos.
 - El respaldo manual usa idempotencia estable desde `useCreateBackup` hasta `POST /api/backups`, evitando duplicar jobs si el operador reintenta tras timeout.
-- Pendiente: validar que rutas sensibles no se expongan al usuario normal y que `backups.restore` no aparezca como accion normal.
+- Validado: restauracion no tiene ruta expuesta y `backups.restore` no aparece como permiso operativo normal.
 
 ### Configuracion fiscal
 
@@ -2071,3 +2071,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron migraciones, calculos de dinero, auditoria, pagos, caja ni PDF institucional.
 - Este corte reduce exposicion accidental de codigos internos en el recibo principal legacy y mantiene los identificadores internos solo para rutas/API operativas autenticadas.
+
+## 85. Fase 13 - Restauracion no es permiso operativo
+
+Cambio aplicado:
+
+- `backups.restore` se retira de `RolesAndPermissionsSeeder` y del catalogo de permisos elevados.
+- `VisiblePermissions` oculta `backups.restore` si existe como permiso legado en una instalacion previa.
+- `BackupLogPolicy::restore` devuelve `false`, de modo que ninguna asignacion heredada pueda autorizar restauracion desde la app.
+- El marcador frontend de permisos criticos deja de listar una accion inexistente; `backups.download` sigue siendo critico.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `php artisan test --filter="session_payload_does_not_expose_internal_or_inoperable_permissions|user_editor_rejects_inoperable_permissions_hidden_from_catalog|backup_restore_is_not_seeded_or_authorizable_from_the_app"` | RED inicial por permiso visible/sembrado/autorizable; luego OK. |
+| `php artisan test --filter="AuthTest|UserManagementTest|PermissionAuditTest|BackupWorkflowTest"` | OK: 84 tests pasan, 385 assertions. |
+| `npm run test -- RoleFormDialog.test.tsx UserFormDialog.test.tsx` | OK: 15 tests pasan. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron rutas, migraciones, jobs de respaldo, descarga ni creacion de backups.
+- Este corte elimina la ambiguedad operacional: restaurar backups queda fuera de la app hasta que exista un flujo seguro completo, mientras los permisos legados quedan ocultos y no autorizan acciones.

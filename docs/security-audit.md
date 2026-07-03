@@ -18,7 +18,7 @@ Roles oficiales del sistema (definidos en `RolesAndPermissionsSeeder`):
 Permisos clave (no exhaustivo):
 
 - `users.assign_admin_role` — solo admin y root.
-- `backups.restore` — supervisor/admin (UI actualmente no expone esta acción por seguridad).
+- `backups.restore` - no operativo: no se siembra, se oculta si existe como legado y ninguna policy lo autoriza desde la app.
 - `receipt_settings.advanced` — soporte (nuevo en este refactor) — desbloquea los 8 campos manuales de impresión.
 - `fiscal.sequences.reset` — admin (nuevo) — para reiniciar correlativo fiscal cuando no hay facturas emitidas.
 - `settings.fiscal.update`, `receipts.void`, `invoices.reverse`, `payments.void`, `cash.close_any`, `invoices.operate_any` — supervisor/admin (consolidado en `RoleCatalog::ELEVATED_ROLE_PERMISSIONS`).
@@ -52,7 +52,7 @@ Leyenda:
 | 17 | Cambiar CAI / rango / prefijo | `PATCH /api/fiscal-sequences/{fiscalSequence}` | `settings.fiscal.update` | sí | sí (≥5) | – | no reiniciar `current_number` sin `fiscal.sequences.reset` |
 | 18 | Crear respaldo | `POST /api/backups` | `backups.create` | sí | – | sí | storage disponible, job local, checksum/auditoría al completar |
 | 19 | Descargar respaldo | `GET /api/backups/{backupLog}/download` | `backups.download` | sí | – | – | solo archivos registrados dentro de `storage/app/backups` |
-| 20 | Restaurar respaldo | `POST /api/backups/{id}/restore` | `backups.restore` | **no implementado** | – | – | ver §3 |
+| 20 | Restaurar respaldo | `POST /api/backups/{id}/restore` | ninguno operativo | **no implementado** | - | - | ver seccion 3 |
 | 21 | Crear usuario | `POST /api/admin/users` | `users.create` | sí | – | – | password policy (12+ chars, upper/lower/digit/symbol) |
 | 22 | Actualizar usuario | `PATCH /api/admin/users/{user}` | `users.update` | sí | sí si cambia rol | – | impide auto-demote del último admin |
 | 23 | Cambiar rol | (subconjunto de update) | `users.update` | sí | sí | – | impide quitar todos los admin |
@@ -73,7 +73,7 @@ Leyenda:
 
 Si en el futuro se requiere restaurar desde la app, el flujo será:
 
-1. Permiso `backups.restore`.
+1. Crear e introducir un permiso operativo nuevo para restauracion; `backups.restore` permanece fuera del seeder actual hasta que exista este flujo seguro.
 2. Verificación de integridad SHA256 del archivo.
 3. Confirmación visual con `ConfirmDialog` que exige motivo ≥ 20 caracteres.
 4. Bloqueo de la app durante la operación.
@@ -246,7 +246,7 @@ Riesgos abiertos:
 - Motivo obligatorio: anular factura, reversar pago, cerrar caja con diferencia, cambiar precio, cambios fiscales criticos y cambios de roles/permisos.
 - Audit log: acciones criticas registran before/after cuando aplica; respaldos, usuarios, caja, fiscal, catalogo, recibos y facturacion tienen eventos auditables.
 - Campos manuales de impresion: backend rechaza `width_mm`, `height_mm`, `margin_*_mm`, `font_family`, `font_scale` sin `receipt_settings.advanced`.
-- Restore de backups: no hay ruta ni boton operativo de restauracion. Restaurar queda fuera hasta implementar permiso `backups.restore`, motivo minimo 20 caracteres, SHA256, backup previo automatico, bloqueo operativo y audit success/failure.
+- Restore de backups: no hay ruta ni boton operativo de restauracion. `backups.restore` no se siembra, se oculta si existe como legado y restaurar queda fuera hasta implementar permiso/flujo seguro con motivo minimo 20 caracteres, SHA256, backup previo automatico, bloqueo operativo y audit success/failure.
 - Stack traces / SQL crudo: tests de seguridad validan que errores SQL no se exponen al usuario; grep solo encontro `SQLSTATE` en tests/sanitizacion.
 - Logs de password/token: backups redactan password; login/change-password tienen tests que no ecoan password; no se encontro persistencia de token de sesion en frontend.
 

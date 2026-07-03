@@ -15,7 +15,6 @@ class RoleCatalog
     private const ELEVATED_ROLE_PERMISSIONS = [
         'audit.view',
         'backups.download',
-        'backups.restore',
         'cash.close_any',
         'invoices.operate_any',
         'invoices.reverse',
