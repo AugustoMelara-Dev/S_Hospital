@@ -3265,3 +3265,23 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, rutas, migraciones, seeders, policies ni endpoints.
 - Este corte refuerza que los ajustes manuales de impresion son una activacion consciente de soporte y no una opcion normal del hospital.
+
+## 135. Fase 12 - Acciones de respaldo sin marcador crudo
+
+Cambio aplicado:
+
+- La tabla de respaldos deja de mostrar `-` cuando un respaldo pendiente o fallido no tiene descarga disponible.
+- La celda de acciones ahora muestra "Sin descarga", un estado humano y legible para operacion diaria.
+- No se agregan acciones nuevas: solo los respaldos exitosos siguen exponiendo el boton de descarga con permiso `backups.download`.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- BackupsView.test.tsx -t "explains unavailable backup downloads"` | RED inicial: la columna Acciones mostraba dos guiones; luego OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, rutas, migraciones, seeders, policies ni endpoints.
+- Este corte reduce ambiguedad en respaldos sin exponer nombres tecnicos, rutas, checksum ni restauracion en la vista normal.

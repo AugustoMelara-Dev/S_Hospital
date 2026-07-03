@@ -87,7 +87,7 @@ export function BackupHistoryTable({
             <Download aria-hidden="true" className="h-4 w-4" />
           </Button>
         ) : (
-          <span className="text-sm text-muted-foreground">-</span>
+          <span className="text-sm text-muted-foreground">Sin descarga</span>
         )
       ),
     },

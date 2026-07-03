@@ -263,6 +263,23 @@ describe('BackupsView', () => {
     expect(screen.queryByText(/sqlstate|secret|path/i)).not.toBeInTheDocument();
   });
 
+  it('explains unavailable backup downloads instead of showing a dash', async () => {
+    vi.mocked(apiClient.getBackups).mockResolvedValue({
+      data: [
+        backupFixture({ id: 1, status: 'pending', checksum_sha256: null, completed_at: null }),
+        backupFixture({ id: 2, status: 'failed', checksum_sha256: null, completed_at: null }),
+      ],
+      meta: { current_page: 1, per_page: 15, total: 2 },
+    });
+
+    renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
+
+    await screen.findByRole('table', { name: /historial de respaldos locales/i });
+
+    expect(screen.queryAllByText(/^-$|^—$/)).toHaveLength(0);
+    expect(screen.getAllByText(/sin descarga/i)).toHaveLength(2);
+  });
+
   it('renders a sanitized error and retries without exposing local secrets', async () => {
     const getBackups = vi.mocked(apiClient.getBackups);
     getBackups
