@@ -28,6 +28,7 @@ class RoleCatalog
         'reports.export',
         'reports.managerial.view',
         'settings.fiscal.update',
+        'users.update',
     ];
 
     /**

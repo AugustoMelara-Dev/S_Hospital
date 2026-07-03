@@ -268,6 +268,34 @@ class UserManagementTest extends TestCase
         ]);
     }
 
+    public function test_user_manager_without_admin_assignment_permission_cannot_assign_custom_role_with_user_update_permission(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $manager = User::factory()->create();
+        $manager->givePermissionTo(['users.create', 'users.view']);
+        $role = Role::query()->create([
+            'name' => 'editor_usuarios_operativo',
+            'guard_name' => 'web',
+        ]);
+        $role->givePermissionTo('users.update');
+
+        $this->actingAs($manager)
+            ->postJson('/api/admin/users', [
+                'name' => 'Editor Usuarios',
+                'email' => 'editor-usuarios@hospital.local',
+                'username' => 'editor-usuarios',
+                'password' => 'Temporary123!',
+                'role' => 'editor_usuarios_operativo',
+                'active' => true,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('role');
+
+        $this->assertDatabaseMissing('users', [
+            'username' => 'editor-usuarios',
+        ]);
+    }
+
     public function test_user_editor_rejects_unknown_role_on_create(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);

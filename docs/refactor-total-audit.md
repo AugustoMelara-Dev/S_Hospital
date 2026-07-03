@@ -2807,3 +2807,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron migraciones, rutas, requests ni la logica de numeracion fiscal.
 - Este corte reduce riesgo de escalacion operativa sobre correlativos fiscales sin cambiar el flujo autorizado para administradores.
+
+## 115. Fase 14 - Edicion de usuarios tratada como permiso elevado
+
+Cambio aplicado:
+
+- `users.update` ahora se considera permiso elevado en `RoleCatalog`.
+- Un gestor con `users.create`/`users.view`, pero sin `users.assign_admin_role`, ya no puede asignar un rol custom que incluya edicion de usuarios.
+- La proteccion backend queda alineada con la UI, donde `users.update` ya estaba marcado como permiso critico por su capacidad de editar cuentas y resetear contrasenas.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter=custom_role_with_user_update_permission` | RED inicial: la API respondia 201; luego OK: 1 test, 4 assertions. |
+| `docker compose exec backend php artisan test --filter=UserManagementTest` | OK: 35 tests, 149 assertions. |
+| `docker compose exec backend vendor/bin/pint --test` | OK: 426 files. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M` | OK: sin errores. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron frontend, migraciones, seeders, policies ni endpoints.
+- Este corte cierra una ruta de escalacion donde un gestor operativo podia asignar capacidades de edicion/reset de usuarios mediante un rol custom aparentemente operativo.
