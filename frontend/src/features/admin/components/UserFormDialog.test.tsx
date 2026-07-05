@@ -449,4 +449,40 @@ describe('UserFormDialog', () => {
 
     expect(await screen.findByText(/la contraseña debe tener al menos 12 caracteres/i)).toBeInTheDocument();
   });
+
+  it('locks user identity fields while the save request is pending', async () => {
+    let resolveSave: () => void = () => undefined;
+    const onSubmit = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+
+    render(
+      <UserFormDialog
+        open
+        onOpenChange={vi.fn()}
+        editingUser={null}
+        roles={roles}
+        canManageRoles={false}
+        selectedUserPermissions={['invoices.create']}
+        onToggleUserPermission={vi.fn()}
+        permissionCatalog={permissionCatalog}
+        globalError={null}
+        onSubmit={onSubmit}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText(/nombre completo/i), { target: { value: 'Caja Turno' } });
+    fireEvent.change(screen.getByLabelText(/correo electr/i), { target: { value: 'caja.turno@hospital.org' } });
+    fireEvent.change(screen.getByLabelText(/nombre de usuario/i), { target: { value: 'caja_turno' } });
+    fireEvent.change(screen.getByLabelText(/contrase/i), { target: { value: 'Password123!' } });
+    fireEvent.click(screen.getByRole('button', { name: /crear usuario/i }));
+
+    await waitFor(() => expect(screen.getByRole('button', { name: /guardando/i })).toBeDisabled());
+    expect(screen.getByLabelText(/correo electr/i)).toBeDisabled();
+
+    resolveSave();
+  });
 });

@@ -150,13 +150,13 @@ export function UserFormDialog({
 
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Nombre completo" id="name" error={errors.name?.message}>
-            <Input id="name" placeholder="Juan Pérez" aria-invalid={Boolean(errors.name)} {...register('name')} />
+            <Input id="name" placeholder="Juan Pérez" disabled={isSubmitting} aria-invalid={Boolean(errors.name)} {...register('name')} />
           </Field>
           <Field label="Correo electrónico" id="email" error={errors.email?.message}>
-            <Input id="email" type="email" placeholder="jperez@hospital.org" aria-invalid={Boolean(errors.email)} {...register('email')} />
+            <Input id="email" type="email" placeholder="jperez@hospital.org" disabled={isSubmitting} aria-invalid={Boolean(errors.email)} {...register('email')} />
           </Field>
           <Field label="Nombre de usuario" id="username" error={errors.username?.message}>
-            <Input id="username" placeholder="jperez" aria-invalid={Boolean(errors.username)} {...register('username')} />
+            <Input id="username" placeholder="jperez" disabled={isSubmitting} aria-invalid={Boolean(errors.username)} {...register('username')} />
           </Field>
           {!editingUser && (
             <Field label="Contraseña inicial" id="password" error={errors.password?.message}>
@@ -164,6 +164,7 @@ export function UserFormDialog({
                 id="password"
                 type="password"
                 placeholder="Mínimo 12 caracteres"
+                disabled={isSubmitting}
                 aria-invalid={Boolean(errors.password)}
                 {...register('password')}
               />

@@ -4435,3 +4435,29 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, facturacion, caja, catalogo, historial, recibos, reportes ni usuarios.
 - Este corte mejora la resiliencia visual del panel de respaldos locales sin alterar la operacion de backup.
+
+## 183. Fase 7 - Usuarios bloquean identidad durante guardado
+
+Cambio aplicado:
+
+- `UserFormDialog` ahora deshabilita nombre, correo, usuario y contraseña inicial mientras `isSubmitting=true`.
+- Esto evita que el administrador modifique visualmente datos de una cuenta operativa despues de enviar la solicitud de creacion o edicion.
+- Se agrego una regresion con `onSubmit` pendiente que confirma que el boton muestra `Guardando...` y el correo queda bloqueado.
+- No se cambian roles, permisos directos, confirmaciones criticas, validacion de contrasena ni contratos API.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- UserFormDialog.test.tsx -t "locks user identity fields" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial correcto: el correo seguia habilitado durante `Guardando...`; luego OK: 1 test pasa. |
+| `npm run test -- UserFormDialog.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=45000` | OK: 15 tests pasan. |
+| `npm run test -- UsersView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=60000` | OK: 26 tests pasan. |
+| `npm run lint` | OK. |
+| `npm run typecheck` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, facturacion, caja, catalogo, historial, recibos, respaldos ni reportes.
+- Este corte reduce confusion operativa al administrar usuarios basicos sin ampliar la matriz RBAC.
