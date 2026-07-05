@@ -5386,3 +5386,27 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte evita falsos rechazos durante reintentos reales de caja en LAN, sin debilitar la deduplicacion del backend.
+
+## 223. Fase 8 - Pago con recibo emitido mantiene recuperacion visible
+
+Cambio aplicado:
+
+- Si el pago se registra y el recibo institucional se emite, pero el PDF no se abre, el modal de factura pagada muestra una advertencia visible.
+- El flujo conserva el boton `Imprimir recibo institucional` para reintentar abrir el PDF, y mantiene la alternativa de reimprimir desde Historial.
+- El frontend no cae al recibo legacy cuando el recibo institucional ya existe o cuando su emision falla.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- NewInvoiceView.test.tsx -t "keeps a visible retry path"` | RED inicial correcto: no habia advertencia visible; luego OK. |
+| `docker compose exec frontend npm run test -- NewInvoiceView.test.tsx` | OK: 18 tests pasan. |
+| `docker compose exec frontend npm run test -- InvoiceSuccess.test.tsx` | OK: 4 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `docker compose exec frontend npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte reduce ambiguedad operativa en caja: el pago queda registrado, el recibo institucional queda identificado y el cajero conserva un reintento visible sin entregar comprobantes secundarios.

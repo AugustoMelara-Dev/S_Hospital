@@ -104,6 +104,11 @@ export function InvoiceSuccess({
           </div>
         ) : canPrintReceipt ? (
           <div className="flex flex-col gap-3">
+            {receiptRecoveryMessage ? (
+              <p className="rounded-md border border-warning/30 bg-warning/10 p-3 text-sm text-warning-foreground">
+                {receiptRecoveryMessage}
+              </p>
+            ) : null}
             <Button ref={primaryActionRef} type="button" size="lg" className="w-full font-semibold" onClick={onImprimir}>
               Imprimir recibo institucional
             </Button>

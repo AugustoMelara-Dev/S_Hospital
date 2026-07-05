@@ -971,6 +971,162 @@ describe('NewInvoiceView critical flows', () => {
     });
   });
 
+  it('keeps a visible retry path when the institutional PDF fails to open after payment', async () => {
+    const onStatus = vi.fn();
+    const getInstitutionalReceiptPdf = vi
+      .spyOn(apiClient, 'getInstitutionalReceiptPdf')
+      .mockRejectedValue(new Error('No se pudo abrir el PDF institucional'));
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/billing/new']}>
+          <NewInvoiceView
+            cashSession={makeOpenCashSession()}
+            canCreatePayments
+            canOpenCash
+            canViewCatalog
+            canViewReceipts
+            onOpenCash={vi.fn()}
+            onStatus={onStatus}
+          />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    await waitForPointOfSaleLoad();
+
+    const fetchMock = globalThis.fetch as ReturnType<typeof vi.fn>;
+
+    fireEvent.change(screen.getByLabelText(/nombre del paciente/i), { target: { value: 'Maria Lopez' } });
+    fireEvent.change(screen.getByLabelText(/buscar por nombre/i), { target: { value: 'eritro' } });
+
+    await waitFor(() => {
+      expect(screen.getByText('Eritropoyetina')).toBeInTheDocument();
+    }, { timeout: 3000 });
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(2);
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /agregar eritropoyetina/i }));
+
+    fetchMock.mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.endsWith('/api/invoices')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 62,
+              invoice_number: '000-001-01-00000062',
+              patient_name: 'Maria Lopez',
+              status: 'issued',
+              subtotal: '25.00',
+              tax_amount: '0.00',
+              discount_amount: '0.00',
+              total: '25.00',
+              paid_amount: '0.00',
+              balance_due: '25.00',
+              issued_at: '2026-05-17T09:10:00-06:00',
+              items: [],
+            },
+          }),
+        } as Response;
+      }
+      if (url.endsWith('/api/invoices/62/payments')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              payment: {
+                id: 92,
+                invoice_id: 62,
+                cash_session_id: 7,
+                user_id: 2,
+                method: 'cash',
+                amount: '25.00',
+                reference: null,
+                status: 'posted',
+                paid_at: '2026-05-17T09:11:00-06:00',
+              },
+              invoice: {
+                id: 62,
+                invoice_number: '000-001-01-00000062',
+                patient_name: 'Maria Lopez',
+                status: 'paid',
+                subtotal: '25.00',
+                tax_amount: '0.00',
+                discount_amount: '0.00',
+                total: '25.00',
+                paid_amount: '25.00',
+                balance_due: '0.00',
+                issued_at: '2026-05-17T09:10:00-06:00',
+                items: [],
+              },
+              institutional_receipt: {
+                id: 97,
+                invoice_id: 62,
+                payment_id: 92,
+                cash_session_id: 7,
+                series_id: 1,
+                receipt_number: 97,
+                receipt_number_full: 'REC-A-00000097',
+                status: 'issued',
+                amount: '25.00',
+                amount_cents: 2500,
+                issued_at: '2026-05-17T09:11:00-06:00',
+                issued_by: 2,
+                payer_name: 'Maria Lopez',
+                concept: 'Pago de factura 000-001-01-00000062',
+                amount_words: 'Veinticinco lempiras exactos',
+                template_code: 'institutional_classic',
+                print_profile_code: 'letter',
+                copy_mode: 'single',
+                reprint_count: 0,
+                voided_by: null,
+                voided_at: null,
+                void_reason: null,
+              },
+              institutional_receipt_error: null,
+            },
+          }),
+        } as Response;
+      }
+      if (url.includes('/api/invoices/62/receipt')) {
+        return {
+          ok: true,
+          json: async () => ({ data: null }),
+        } as Response;
+      }
+      return { ok: true, json: async () => ({ data: null }) } as Response;
+    });
+
+    fireEvent.click(screen.getAllByRole('button', { name: /emitir/i })[0]);
+    await waitFor(() => {
+      expect(screen.getByRole('dialog', { name: /confirmar emis/i })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole('button', { name: /emitir y abrir cobro/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('dialog', { name: /registrar pago/i })).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByLabelText(/monto recibido/i), { target: { value: '25.00' } });
+    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro e imprimir/i }));
+
+    await waitFor(() => {
+      expect(getInstitutionalReceiptPdf).toHaveBeenCalledTimes(1);
+    });
+
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/api/invoices/62/receipt'))).toBe(false);
+    expect(await screen.findByRole('dialog', { name: /factura pagada/i })).toBeInTheDocument();
+    expect(screen.getAllByText(/recibo institucional REC-A-00000097 emitido/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/no se pudo abrir el PDF/i).length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: /imprimir recibo institucional/i })).toBeInTheDocument();
+    expect(onStatus).toHaveBeenCalledWith(expect.stringMatching(/no se pudo abrir el PDF/i));
+  });
+
   it('does not let cashier proceed when cash session is closed', async () => {
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
       const url = String(input);

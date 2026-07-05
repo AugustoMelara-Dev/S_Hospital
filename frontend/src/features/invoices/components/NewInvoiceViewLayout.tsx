@@ -304,7 +304,7 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
           total={state.issuedInvoice.total}
           status={state.issuedInvoice.status}
           canCollectPayment={canCreatePayments && canViewReceipts}
-          canPrintReceipt={canViewReceipts && !state.institutionalReceiptRecoveryMessage}
+          canPrintReceipt={canViewReceipts && Boolean(state.institutionalReceipt || state.receipt)}
           receiptRecoveryMessage={state.institutionalReceiptRecoveryMessage ?? undefined}
           onCobrar={onCobrar}
           onImprimir={onPrintIssuedReceipt}

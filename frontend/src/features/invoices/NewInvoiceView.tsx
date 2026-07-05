@@ -503,7 +503,14 @@ export function NewInvoiceView({
           await openInstitutionalReceiptPdf(result.institutional_receipt);
           onStatus(`Pago registrado. PDF institucional ${result.institutional_receipt.receipt_number_full} abierto.`);
         } catch (error) {
-          onStatus(userSafeErrorMessage(error, `Pago registrado. Recibo institucional ${result.institutional_receipt.receipt_number_full} emitido, pero no se pudo abrir el PDF.`));
+          const message = userSafeErrorMessage(
+            error,
+            `Pago registrado. Recibo institucional ${result.institutional_receipt.receipt_number_full} emitido, pero no se pudo abrir el PDF.`,
+          );
+          const recoveryMessage = `Recibo institucional ${result.institutional_receipt.receipt_number_full} emitido, pero no se pudo abrir el PDF. Use Imprimir recibo institucional para intentar de nuevo o reimprima desde Historial.`;
+          dispatch({ type: 'SET_INSTITUTIONAL_RECEIPT_RECOVERY_MESSAGE', payload: recoveryMessage });
+          dispatch({ type: 'SET_WARNING_MESSAGE', payload: recoveryMessage });
+          onStatus(message);
         }
         return;
       }
