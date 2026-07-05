@@ -6095,3 +6095,24 @@ Pruebas ejecutadas:
 Decision:
 
 - La impresion de prueba debe probar exactamente el perfil que el usuario esta configurando. Esto evita falsos positivos de soporte cuando el PDF se genera con otro formato.
+
+## 253. Fase 12/20 - E2E visual de respaldos usa contrato actual
+
+Cambio aplicado:
+
+- `frontend/e2e/rc-backup-screen.spec.ts` deja de depender de login manual parcial y usa una sesion mockeada con permisos de respaldos.
+- El mock de `/api/backups` usa el contrato paginado actual (`data: []`, `meta`) y no entrega `filename`, `checksum_sha256`, rutas ni datos tecnicos.
+- El spec ahora afirma que se muestra una fila operativa con usuario responsable y que no aparecen nombres internos de archivo ni detalles sensibles.
+- No se agregaron dependencias, migraciones, permisos ni cambios de backend.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npx playwright test e2e/rc-backup-screen.spec.ts --workers=1 --reporter=list` | RED inicial por spec/login/mock viejo; luego OK: 1 test pasa. |
+| `docker compose exec frontend npx playwright test e2e/backups-flow.spec.ts --workers=1 --reporter=list` | OK: 1 test pasa. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+Decision:
+
+- La captura visual de respaldos vuelve a validar la regla actual: la vista normal muestra informacion operativa y oculta nombres tecnicos del archivo de respaldo.

@@ -198,3 +198,11 @@ verified.
 | `docker compose exec frontend npm run test -- InstitutionalReceiptSettingsView --run` | PASS, 23 tests. |
 | `docker compose exec frontend npm run typecheck` | PASS. |
 | `docker compose exec frontend npm run lint` | PASS. |
+
+### 2026-07-05 Backup Visual E2E Contract Gate
+
+| Command | Result |
+|---|---|
+| `docker compose exec frontend npx playwright test e2e/rc-backup-screen.spec.ts --workers=1 --reporter=list` | RED first on stale login/mock contract; then PASS, 1 test. |
+| `docker compose exec frontend npx playwright test e2e/backups-flow.spec.ts --workers=1 --reporter=list` | PASS, 1 test. |
+| `docker compose exec frontend npm run lint` | PASS. |
