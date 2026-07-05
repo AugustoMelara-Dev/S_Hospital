@@ -174,6 +174,29 @@ class TodayReportTest extends TestCase
             ->assertJsonPath('data.voided_amount', $voided->total);
     }
 
+    public function test_today_report_counts_invoices_voided_today_even_when_issued_earlier(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $voided = $this->createInvoice($cashier, 'Glucosa');
+
+        $voided->update([
+            'issued_at' => Carbon::now('America/Tegucigalpa')->subDay(),
+            'status' => Invoice::STATUS_VOID,
+            'voided_by' => $this->supervisor()->id,
+            'voided_at' => Carbon::now('America/Tegucigalpa'),
+            'void_reason' => 'Correccion administrativa del dia',
+        ]);
+
+        $this->actingAs($this->admin())
+            ->getJson('/api/reports/today')
+            ->assertOk()
+            ->assertJsonPath('data.issued_count', 0)
+            ->assertJsonPath('data.billed', '0.00')
+            ->assertJsonPath('data.voided_count', 1)
+            ->assertJsonPath('data.voided_amount', $voided->total);
+    }
+
     public function test_today_report_reports_backup_pending(): void
     {
         $this->seedBillingBase();

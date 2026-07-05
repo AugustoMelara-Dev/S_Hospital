@@ -5047,3 +5047,26 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte mejora la calidad de auditoria sin cambiar reglas fiscales ni permitir anulaciones pagadas fuera del flujo de reversion.
+
+## 208. Fase 8 - Reporte de hoy cuenta anulaciones por fecha de anulacion
+
+Cambio aplicado:
+
+- `TodayReportService` ahora calcula `voided_count` y `voided_amount` con la fecha `voided_at`.
+- Las facturas emitidas en dias anteriores pero anuladas hoy aparecen en las anulaciones operativas del dia.
+- Los conteos de facturas emitidas y montos facturados siguen usando `issued_at`, para no inflar ventas del dia con facturas viejas.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter today_report_counts_invoices_voided_today_even_when_issued_earlier` | RED inicial correcto: la anulacion de hoy no se contaba si la factura fue emitida ayer; luego OK. |
+| `docker compose exec backend php artisan test --filter TodayReportTest` | OK: 9 tests pasan. |
+| `docker compose exec backend vendor/bin/pint --test --dirty` | OK: 0 files. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M --no-progress` | OK: sin errores. |
+| `git diff --check` | OK: sin errores de whitespace; Git aviso normal de LF en `docs/refactor-total-audit.md`. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte hace mas util el reporte diario de caja/admin para revisar anulaciones hechas durante el turno real.
