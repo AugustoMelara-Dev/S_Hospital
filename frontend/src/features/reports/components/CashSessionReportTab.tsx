@@ -248,6 +248,11 @@ export function CashSessionReportTab({
                 <div className="text-3xl font-bold text-destructive">
                   {moneyLabel(cashSession.cash_session.difference_amount)}
                 </div>
+                {cashSession.cash_session.closing_notes?.trim() ? (
+                  <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                    {cashSession.cash_session.closing_notes.trim()}
+                  </p>
+                ) : null}
               </CardContent>
             </Card>
           ) : null}

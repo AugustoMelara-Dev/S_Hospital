@@ -1487,6 +1487,7 @@ class ReportsTest extends TestCase
             ->assertJsonPath('data.cash_session.expected_amount', '517.25')
             ->assertJsonPath('data.cash_session.closing_amount', '518.00')
             ->assertJsonPath('data.cash_session.difference_amount', '0.75')
+            ->assertJsonPath('data.cash_session.closing_notes', 'Diferencia validada para reporte')
             ->assertJsonPath('data.total_cash', '17.25')
             ->assertJsonPath('data.total_card', '11.50')
             ->assertJsonPath('data.total_other', '0.00')

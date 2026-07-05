@@ -102,6 +102,38 @@ describe('CashSessionReportTab', () => {
     expect(screen.getByText(/aperturas, cierres y ajustes apareceran/i)).toBeInTheDocument();
   });
 
+  it('shows the closing note next to a cash difference', () => {
+    const base = buildCashSessionReport();
+    const cashSession = buildCashSessionReport({
+      cash_session: {
+        ...base.cash_session,
+        status: 'closed',
+        closing_amount: '518.00',
+        expected_amount: '517.25',
+        difference_amount: '0.75',
+        closing_notes: 'Diferencia validada para reporte',
+        closed_at: '2026-06-02T16:00:00.000000Z',
+      },
+    });
+
+    render(
+      <CashSessionReportTab
+        canExport={false}
+        cashSession={cashSession}
+        cashReportId="2"
+        loading={false}
+        error=""
+        onCashReportIdChange={() => undefined}
+        onExport={() => undefined}
+        onSubmit={() => undefined}
+      />,
+    );
+
+    expect(screen.getByText('Diferencia')).toBeInTheDocument();
+    expect(screen.getByText('L 0.75')).toBeInTheDocument();
+    expect(screen.getByText('Diferencia validada para reporte')).toBeInTheDocument();
+  });
+
   it('renders cash movement types and methods as human financial labels', () => {
     const cashSession = {
       cash_session: {
