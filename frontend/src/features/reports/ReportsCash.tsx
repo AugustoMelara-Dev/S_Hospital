@@ -2,15 +2,17 @@ import { useEffect, useState } from 'react';
 import { EmptyState } from '@/components/ui/states';
 import { OperationalBanner } from '@/components/shared';
 import { apiClient, type CashSession, userSafeErrorMessage } from '@/lib/api';
-import { downloadBlob } from '@/lib/download';
+import { downloadBlob, openBlobInNewTab } from '@/lib/download';
 import { CashSessionReportTab } from './components/CashSessionReportTab';
 
 type ReportsCashProps = {
+  canExport: boolean;
   canViewCash: boolean;
   canViewManagerial: boolean;
 };
 
 export function ReportsCash({
+  canExport,
   canViewCash,
   canViewManagerial,
 }: ReportsCashProps) {
@@ -18,7 +20,7 @@ export function ReportsCash({
   const [cashReportId, setCashReportId] = useState('');
   const [cashError, setCashError] = useState('');
   const [cashLoading, setCashLoading] = useState(false);
-  const [cashExporting, setCashExporting] = useState(false);
+  const [cashExporting, setCashExporting] = useState<'excel' | 'pdf' | null>(null);
   const [recentCashSessions, setRecentCashSessions] = useState<CashSession[]>([]);
   const [cashSessionsLoading, setCashSessionsLoading] = useState(false);
 
@@ -85,7 +87,7 @@ export function ReportsCash({
   }
 
   async function exportCashReport() {
-    if (!cashSessionReport || cashExporting) {
+    if (!cashSessionReport || cashExporting !== null) {
       return;
     }
 
@@ -95,7 +97,7 @@ export function ReportsCash({
 
     try {
       setCashError('');
-      setCashExporting(true);
+      setCashExporting('excel');
       const blob = await apiClient.downloadReportExport({
         date_from: dateFrom,
         date_to: dateTo,
@@ -105,7 +107,32 @@ export function ReportsCash({
     } catch (err) {
       setCashError(userSafeErrorMessage(err, 'No se pudo exportar la caja.'));
     } finally {
-      setCashExporting(false);
+      setCashExporting(null);
+    }
+  }
+
+  async function exportCashReportPdf() {
+    if (!cashSessionReport || cashExporting !== null) {
+      return;
+    }
+
+    const cashSessionId = cashSessionReport.cash_session.id;
+    const dateFrom = dateOnly(cashSessionReport.cash_session.opened_at);
+    const dateTo = dateOnly(cashSessionReport.cash_session.closed_at ?? cashSessionReport.cash_session.opened_at);
+
+    try {
+      setCashError('');
+      setCashExporting('pdf');
+      const blob = await apiClient.downloadReportPdf({
+        date_from: dateFrom,
+        date_to: dateTo,
+        cash_session_id: cashSessionId,
+      });
+      openBlobInNewTab(blob, `reporte-caja-${cashSessionId}.pdf`);
+    } catch (err) {
+      setCashError(userSafeErrorMessage(err, 'No se pudo abrir el PDF de caja.'));
+    } finally {
+      setCashExporting(null);
     }
   }
 
@@ -127,13 +154,14 @@ export function ReportsCash({
       />
 
       <CashSessionReportTab
-        canExport={canViewManagerial}
+        canExport={canExport}
         cashSession={cashSessionReport}
         cashReportId={cashReportId}
         recentCashSessions={recentCashSessions}
         sessionsLoading={cashSessionsLoading}
         loading={cashLoading}
-        exporting={cashExporting}
+        exporting={cashExporting !== null}
+        exportingType={cashExporting}
         error={cashError}
         onCashReportIdChange={(value) => {
           setCashReportId(value);
@@ -143,6 +171,9 @@ export function ReportsCash({
         }}
         onExport={() => {
           void exportCashReport();
+        }}
+        onExportPdf={() => {
+          void exportCashReportPdf();
         }}
         onSubmit={(event) => {
           event.preventDefault();

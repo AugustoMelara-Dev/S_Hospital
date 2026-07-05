@@ -1,5 +1,5 @@
 import { type FormEvent } from 'react';
-import { AlertTriangle, Download } from 'lucide-react';
+import { AlertTriangle, Download, FileText } from 'lucide-react';
 import { Button } from '../../../components/ui/button';
 import { Alert } from '../../../components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
@@ -20,9 +20,11 @@ interface CashSessionReportTabProps {
   sessionsLoading?: boolean;
   loading: boolean;
   exporting?: boolean;
+  exportingType?: 'excel' | 'pdf' | null;
   error: string;
   onCashReportIdChange: (value: string) => void;
   onExport: () => void;
+  onExportPdf: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }
 
@@ -125,9 +127,11 @@ export function CashSessionReportTab({
   sessionsLoading = false,
   loading,
   exporting = false,
+  exportingType = null,
   error,
   onCashReportIdChange,
   onExport,
+  onExportPdf,
   onSubmit,
 }: CashSessionReportTabProps) {
   const lookupLocked = loading || exporting;
@@ -310,15 +314,21 @@ export function CashSessionReportTab({
             </CardContent>
           </Card>
 
-          <div className="flex justify-end">
+          <div className="flex flex-wrap justify-end gap-2">
             {canExport ? (
-              <Button type="button" variant="outline" onClick={onExport} disabled={exporting}>
-                <Download className="mr-2 h-4 w-4" />
-                {exporting ? 'Exportando...' : 'Exportar Excel'}
-              </Button>
+              <>
+                <Button type="button" variant="outline" onClick={onExportPdf} disabled={exporting}>
+                  <FileText className="mr-2 h-4 w-4" />
+                  {exportingType === 'pdf' ? 'Abriendo PDF...' : 'PDF caja'}
+                </Button>
+                <Button type="button" variant="outline" onClick={onExport} disabled={exporting}>
+                  <Download className="mr-2 h-4 w-4" />
+                  {exportingType === 'excel' ? 'Exportando Excel...' : 'Exportar Excel'}
+                </Button>
+              </>
             ) : (
               <p className="text-sm text-muted-foreground">
-                Exportacion Excel requiere permiso de exportacion de reportes.
+                Exportar caja requiere permiso de exportacion de reportes.
               </p>
             )}
           </div>

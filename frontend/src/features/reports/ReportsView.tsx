@@ -162,7 +162,13 @@ function ReportsContent({
   subRoute: ReportSubRoute;
 }) {
   if (subRoute === 'cash') {
-    return <ReportsCash canViewCash={props.canViewCashSessionReport} canViewManagerial={props.canViewManagerial} />;
+    return (
+      <ReportsCash
+        canExport={props.canExport}
+        canViewCash={props.canViewCashSessionReport}
+        canViewManagerial={props.canViewManagerial}
+      />
+    );
   }
 
   if (subRoute === 'audit') {

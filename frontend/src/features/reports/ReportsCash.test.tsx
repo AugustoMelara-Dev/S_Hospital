@@ -12,16 +12,18 @@ vi.mock('@/lib/api', async () => {
       getCashSessions: vi.fn(),
       getCashSessionReport: vi.fn(),
       downloadReportExport: vi.fn(),
+      downloadReportPdf: vi.fn(),
     },
   };
 });
 
 vi.mock('@/lib/download', () => ({
   downloadBlob: vi.fn(),
+  openBlobInNewTab: vi.fn(),
 }));
 
 const { apiClient } = await import('@/lib/api');
-const { downloadBlob } = await import('@/lib/download');
+const { downloadBlob, openBlobInNewTab } = await import('@/lib/download');
 
 describe('ReportsCash', () => {
   beforeEach(() => {
@@ -32,7 +34,9 @@ describe('ReportsCash', () => {
       meta: { current_page: 1, per_page: 5, total: 0 },
     });
     vi.mocked(apiClient.downloadReportExport).mockReset();
+    vi.mocked(apiClient.downloadReportPdf).mockReset();
     vi.mocked(downloadBlob).mockReset();
+    vi.mocked(openBlobInNewTab).mockReset();
   });
 
   it('lets the cashier open a recent cash session report without typing an id', async () => {
@@ -42,7 +46,7 @@ describe('ReportsCash', () => {
     });
     vi.mocked(apiClient.getCashSessionReport).mockResolvedValue(buildCashSessionReport());
 
-    render(<ReportsCash canViewCash canViewManagerial={false} />);
+    render(<ReportsCash canViewCash canViewManagerial={false} canExport={false} />);
 
     const recentCashSelect = await screen.findByLabelText(/caja reciente/i);
     expect(recentCashSelect).toHaveValue('12');
@@ -61,7 +65,7 @@ describe('ReportsCash', () => {
   it('shows a loading state while cash session report is loading', async () => {
     vi.mocked(apiClient.getCashSessionReport).mockReturnValue(new Promise(() => undefined));
 
-    render(<ReportsCash canViewCash canViewManagerial={false} />);
+    render(<ReportsCash canViewCash canViewManagerial={false} canExport={false} />);
 
     await waitFor(() => expect(apiClient.getCashSessions).toHaveBeenCalled());
     fireEvent.change(screen.getByLabelText(/numero de caja/i), { target: { value: '12' } });
@@ -72,7 +76,7 @@ describe('ReportsCash', () => {
   });
 
   it('blocks invalid cash session numbers before requesting the report', async () => {
-    render(<ReportsCash canViewCash canViewManagerial={false} />);
+    render(<ReportsCash canViewCash canViewManagerial={false} canExport={false} />);
 
     await waitFor(() => expect(apiClient.getCashSessions).toHaveBeenCalled());
     fireEvent.change(screen.getByLabelText(/numero de caja/i), { target: { value: '0' } });
@@ -86,7 +90,7 @@ describe('ReportsCash', () => {
     vi.mocked(apiClient.getCashSessionReport).mockResolvedValue(buildCashSessionReport());
     vi.mocked(apiClient.downloadReportExport).mockResolvedValue(new Blob(['xlsx'], { type: 'application/vnd.ms-excel' }));
 
-    render(<ReportsCash canViewCash canViewManagerial />);
+    render(<ReportsCash canViewCash canViewManagerial canExport />);
 
     fireEvent.change(screen.getByLabelText(/numero de caja/i), { target: { value: '12' } });
     fireEvent.click(screen.getByRole('button', { name: /ver caja/i }));
@@ -104,11 +108,33 @@ describe('ReportsCash', () => {
     expect(downloadBlob).toHaveBeenCalledWith(expect.any(Blob), 'reporte-caja-12.xlsx');
   });
 
+  it('opens a printable cash session pdf for a cash report user with export permission', async () => {
+    vi.mocked(apiClient.getCashSessionReport).mockResolvedValue(buildCashSessionReport());
+    vi.mocked(apiClient.downloadReportPdf).mockResolvedValue(new Blob(['pdf'], { type: 'application/pdf' }));
+
+    render(<ReportsCash canViewCash canViewManagerial={false} canExport />);
+
+    fireEvent.change(screen.getByLabelText(/numero de caja/i), { target: { value: '12' } });
+    fireEvent.click(screen.getByRole('button', { name: /ver caja/i }));
+
+    const pdfButton = await screen.findByRole('button', { name: /pdf caja/i });
+    fireEvent.click(pdfButton);
+
+    await waitFor(() => {
+      expect(apiClient.downloadReportPdf).toHaveBeenCalledWith({
+        date_from: '2026-06-02',
+        date_to: '2026-06-02',
+        cash_session_id: 12,
+      });
+    });
+    expect(openBlobInNewTab).toHaveBeenCalledWith(expect.any(Blob), 'reporte-caja-12.pdf');
+  });
+
   it('locks the cash session lookup while exporting the loaded report', async () => {
     vi.mocked(apiClient.getCashSessionReport).mockResolvedValue(buildCashSessionReport());
     vi.mocked(apiClient.downloadReportExport).mockReturnValue(new Promise(() => undefined));
 
-    render(<ReportsCash canViewCash canViewManagerial />);
+    render(<ReportsCash canViewCash canViewManagerial canExport />);
 
     fireEvent.change(screen.getByLabelText(/numero de caja/i), { target: { value: '12' } });
     fireEvent.click(screen.getByRole('button', { name: /ver caja/i }));

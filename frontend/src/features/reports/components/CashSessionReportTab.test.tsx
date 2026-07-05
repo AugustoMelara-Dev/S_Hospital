@@ -14,6 +14,7 @@ describe('CashSessionReportTab', () => {
         error=""
         onCashReportIdChange={() => undefined}
         onExport={() => undefined}
+        onExportPdf={() => undefined}
         onSubmit={() => undefined}
       />,
     );
@@ -62,6 +63,7 @@ describe('CashSessionReportTab', () => {
         error=""
         onCashReportIdChange={() => undefined}
         onExport={() => undefined}
+        onExportPdf={() => undefined}
         onSubmit={() => undefined}
       />,
     );
@@ -90,6 +92,7 @@ describe('CashSessionReportTab', () => {
         error=""
         onCashReportIdChange={() => undefined}
         onExport={() => undefined}
+        onExportPdf={() => undefined}
         onSubmit={() => undefined}
       />,
     );
@@ -125,6 +128,7 @@ describe('CashSessionReportTab', () => {
         error=""
         onCashReportIdChange={() => undefined}
         onExport={() => undefined}
+        onExportPdf={() => undefined}
         onSubmit={() => undefined}
       />,
     );
@@ -210,6 +214,7 @@ describe('CashSessionReportTab', () => {
         error=""
         onCashReportIdChange={() => undefined}
         onExport={() => undefined}
+        onExportPdf={() => undefined}
         onSubmit={() => undefined}
       />,
     );
@@ -261,6 +266,7 @@ describe('CashSessionReportTab', () => {
         error=""
         onCashReportIdChange={() => undefined}
         onExport={() => undefined}
+        onExportPdf={() => undefined}
         onSubmit={() => undefined}
       />,
     );
@@ -347,6 +353,7 @@ describe('CashSessionReportTab', () => {
         error=""
         onCashReportIdChange={() => undefined}
         onExport={() => undefined}
+        onExportPdf={() => undefined}
         onSubmit={() => undefined}
       />,
     );
