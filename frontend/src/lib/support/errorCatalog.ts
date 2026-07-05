@@ -5,7 +5,7 @@ export type ClientIssueDescriptor = {
 };
 
 export const PERMISSION_DENIED_MESSAGE =
-  'Su usuario no tiene permiso para esta accion. Solicite a un supervisor que revise su rol; no repita la operacion varias veces.';
+  'Su usuario no tiene permiso para esta acción. Solicite a un supervisor que revise su rol; no repita la operación varias veces.';
 
 export function describeClientIssue(error: unknown): ClientIssueDescriptor {
   const status = error instanceof Error && 'status' in error && typeof error.status === 'number' ? error.status : null;

@@ -23,7 +23,7 @@ export function OperationalStatus({
   const cashLabel = cashSession?.status === 'open' ? `Caja #${cashSession.id}` : 'Sin caja abierta';
   const lanStatusTitle = isOnline
     ? `Red local disponible${lastCheck ? `. Ultima revision: ${lastCheck.toLocaleTimeString()}` : ''}`
-    : `Sin conexion al servidor local. Estado: ${status}`;
+    : `Sin conexión al servidor local. Estado: ${status}`;
 
   return (
     <div

@@ -9,6 +9,7 @@ import {
   CommandPanel,
   InfoPanel,
   OperationalBanner,
+  OfflineState,
   PageShell,
   PermissionBadge,
   PermissionState,
@@ -100,6 +101,22 @@ describe('v1.2 shared design system components', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Solo lectura');
     expect(screen.getByText('Abierta')).toBeInTheDocument();
     expect(screen.getByText('L 500.00')).toHaveClass('tabular-nums');
+  });
+
+  it('uses polished Spanish copy for shared permission and offline states', () => {
+    const { rerender } = render(<PermissionState state="denied" />);
+
+    expect(screen.getByRole('status')).toHaveTextContent('Tu usuario no tiene permiso para esta acción.');
+
+    rerender(<PermissionState state="readonly" />);
+    expect(screen.getByRole('status')).toHaveTextContent('Puedes revisar esta información, pero no modificarla.');
+
+    rerender(<PermissionState state="unavailable" />);
+    expect(screen.getByRole('status')).toHaveTextContent('Acción no disponible');
+    expect(screen.getByRole('status')).toHaveTextContent('La acción está bloqueada por el estado actual.');
+
+    rerender(<OfflineState />);
+    expect(screen.getByRole('alert')).toHaveTextContent('Verifique la conexión LAN con el servidor local antes de continuar.');
   });
 
   it('wraps receipt preview with print-safe hooks and format metadata', () => {

@@ -104,7 +104,7 @@ function conflictSafeMessage(message: string): string {
     return 'El respaldo cambio de estado. Actualice Respaldos y pida soporte antes de restaurar o repetir.';
   }
 
-  return 'La accion no se pudo completar porque el estado actual cambio. Actualice la pantalla e intente de nuevo.';
+  return 'La acción no se pudo completar porque el estado actual cambió. Actualice la pantalla e intente de nuevo.';
 }
 
 export function userSafeErrorMessage(error: unknown, fallback: string): string {

@@ -535,7 +535,7 @@ export function InfoPanel({
 export function OfflineState({
   action,
   className,
-  description = 'Verifique la conexion LAN con el servidor local antes de continuar.',
+  description = 'Verifique la conexión LAN con el servidor local antes de continuar.',
   title = 'Servidor local no disponible',
   ...props
 }: HTMLAttributes<HTMLDivElement> & { action?: ReactNode; description?: ReactNode; title?: ReactNode }) {
@@ -577,17 +577,17 @@ export function PermissionState({
     denied: {
       icon: AlertTriangle,
       title: 'Acceso restringido',
-      description: 'Tu usuario no tiene permiso para esta accion.',
+      description: 'Tu usuario no tiene permiso para esta acción.',
     },
     readonly: {
       icon: AlertTriangle,
       title: 'Solo lectura',
-      description: 'Puedes revisar esta informacion, pero no modificarla.',
+      description: 'Puedes revisar esta información, pero no modificarla.',
     },
     unavailable: {
       icon: AlertTriangle,
-      title: 'Accion no disponible',
-      description: 'La accion esta bloqueada por el estado actual.',
+      title: 'Acción no disponible',
+      description: 'La acción está bloqueada por el estado actual.',
     },
   }[state];
   const Icon = content.icon;

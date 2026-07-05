@@ -4782,3 +4782,27 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte mejora claridad para caja/supervision en acciones auditadas sin alterar datos fiscales ni flujos criticos.
+
+## 197. Fase 7 - Estados compartidos con copia operativa clara
+
+Cambio aplicado:
+
+- `PermissionState` y `OfflineState` ahora muestran copia pulida para permisos, solo lectura, acciones bloqueadas y conexion LAN.
+- Los mensajes centrales de conflicto en `api/base`, `i18n/es-HN`, soporte y estado operativo usan acentos correctos para `accion`, `cambio`, `operacion` y `conexion`.
+- Se agrego una regresion al design system para evitar que los estados compartidos vuelvan a texto sin acentos.
+- No se cambiaron permisos, roles, rutas, validaciones, mutaciones ni contratos API.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- design-system.test.tsx -t "polished Spanish copy"` | RED inicial correcto: `PermissionState` mostraba `accion`; luego OK: 1 test pasa. |
+| `docker compose exec frontend npm run test -- design-system.test.tsx base.test.ts errorCatalog.test.ts` | OK: 39 tests pasan. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte mejora mensajes que ven cajeros y administradores cuando una operacion queda bloqueada, sin alterar seguridad ni auditoria.
