@@ -1,5 +1,5 @@
 # ==============================================================================
-# Hospital Billing OS - Script de Instalación Deprecado
+# S_Hospital - Script de Instalación Deprecado
 # ==============================================================================
 # Este script ha sido reemplazado por el nuevo asistente de despliegue y
 # diagnóstico blindado setup.bat y scripts/deploy_hospital_lan.ps1.

@@ -5271,3 +5271,24 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte evita que QA manual contradiga la regla del producto: carta/media carta/A5 son el recibo principal; tickets quedan como compatibilidad secundaria.
+
+## 218. Fase 8 - Scripts de instalacion usan identidad S_Hospital
+
+Cambio aplicado:
+
+- Los banners, comentarios y descripciones de tareas PowerShell de instalacion/soporte dejan de mostrar el nombre interno heredado del producto.
+- `pre-commit-guard.ps1` ahora bloquea scripts PowerShell que vuelvan a exponer ese nombre heredado.
+- El autotest del instalador muestra `S_HOSPITAL` en su banner.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `scripts\pre-commit-guard.ps1` | RED inicial correcto: detecto 10 scripts con el nombre heredado; luego OK. |
+| `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\test_installer_diagnostics.ps1` | OK: 16 checks del instalador pasan. |
+| `Select-String -Path scripts\*.ps1,scripts\lib\*.ps1 -Pattern 'Hospital Billing OS' -SimpleMatch` | OK: 0 coincidencias en scripts PowerShell. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte evita que la instalacion local/offline entregue una identidad de producto distinta a S_Hospital.

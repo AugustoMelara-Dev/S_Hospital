@@ -1,5 +1,5 @@
 # ==============================================================================
-# Hospital Billing OS - Env Helpers Library
+# S_Hospital - Env Helpers Library
 # ==============================================================================
 # Contiene funciones reutilizables y seguras para manipulacion de archivos .env
 # de forma no destructiva y compatible con PowerShell de Windows sin emojis.

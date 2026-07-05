@@ -65,6 +65,25 @@ if (-not (Test-Path -LiteralPath $RepoRoot)) {
 $resolvedRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
 $errors = New-Object System.Collections.Generic.List[string]
 $warnings = New-Object System.Collections.Generic.List[string]
+$legacyProductName = "Hospital " + "Billing OS"
+
+$scriptRoot = Join-Path $resolvedRoot "scripts"
+if (Test-Path -LiteralPath $scriptRoot) {
+    $legacyScriptMatches = Get-ChildItem -LiteralPath $scriptRoot -Recurse -File -Filter "*.ps1" |
+        Select-String -SimpleMatch $legacyProductName |
+        Select-Object -ExpandProperty Path -Unique
+
+    foreach ($matchPath in $legacyScriptMatches) {
+        $rootPrefix = $resolvedRoot.TrimEnd("\", "/") + [System.IO.Path]::DirectorySeparatorChar
+        $relativePath = $matchPath
+        if ($matchPath.StartsWith($rootPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+            $relativePath = $matchPath.Substring($rootPrefix.Length)
+        }
+
+        $relativePath = Normalize-GitPath -Path $relativePath
+        $errors.Add("Installer/support script exposes legacy product name: $relativePath")
+    }
+}
 
 $stagedFiles = git -C $resolvedRoot diff --cached --name-only --diff-filter=ACMR
 

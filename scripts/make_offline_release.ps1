@@ -1,5 +1,5 @@
 # ==============================================================================
-# Hospital Billing OS - Generador de Paquete de Instalación Offline
+# S_Hospital - Generador de Paquete de Instalación Offline
 # ==============================================================================
 # Este script se ejecuta en una máquina con acceso a internet.
 # Compila e instala de forma local las imágenes Docker de producción y las exporta
@@ -12,7 +12,7 @@ Set-StrictMode -Version Latest
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
 Write-Host "======================================================================" -ForegroundColor Cyan
-Write-Host "     [HOSPITAL BILLING OS - CREADOR DE PAQUETE OFFLINE]              " -ForegroundColor Cyan -BackgroundColor DarkBlue
+Write-Host "     [S_HOSPITAL - CREADOR DE PAQUETE OFFLINE]                      " -ForegroundColor Cyan -BackgroundColor DarkBlue
 Write-Host "======================================================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -197,7 +197,7 @@ $totalSizeMB = [Math]::Round($totalSizeBytes / 1MB, 2)
 
 $manifestContent = @"
 ======================================================================
-     HOSPITAL BILLING OS - OFFLINE RELEASE MANIFEST
+S_HOSPITAL - OFFLINE RELEASE MANIFEST
 ======================================================================
 Fecha de Generacion : $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
 Rama Git            : $gitBranch

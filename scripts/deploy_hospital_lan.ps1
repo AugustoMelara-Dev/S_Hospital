@@ -1,5 +1,5 @@
 # ==============================================================================
-# Hospital Billing OS - Script de Instalacion y Despliegue Bulletproof LAN
+# S_Hospital - Script de Instalacion y Despliegue Bulletproof LAN
 # ==============================================================================
 # Asistente robusto de campo. Compatible con PowerShell 5.1, Windows 10/11/Server,
 # multiples tarjetas de red, WiFi/Ethernet/VPN/VirtualBox/Hyper-V/WSL,
@@ -378,7 +378,7 @@ if ($SelfTest) {
 if ($DiagnosticsOnly) {
     Write-Host ""
     Write-Host "======================================================================" -ForegroundColor Cyan
-    Write-Host "     [DIAGNOSTICO] Hospital Billing OS - Solo revision, no instala" -ForegroundColor Cyan
+    Write-Host "     [DIAGNOSTICO] S_Hospital - Solo revision, no instala" -ForegroundColor Cyan
     Write-Host "======================================================================" -ForegroundColor Cyan
     Write-Host ""
 
@@ -703,7 +703,7 @@ try {
     # ---- Banner ----
     Clear-Host
     Write-Host "======================================================================" -ForegroundColor Cyan
-    Write-Host "     [HOSPITAL BILLING OS - ASISTENTE DE DESPLIEGUE v2.0]             " -ForegroundColor Cyan -BackgroundColor DarkBlue
+    Write-Host "     [S_HOSPITAL - ASISTENTE DE DESPLIEGUE v2.0]                     " -ForegroundColor Cyan -BackgroundColor DarkBlue
     Write-Host "======================================================================" -ForegroundColor Cyan
     Write-Host "  Asistente robusto de campo para instalacion en red local LAN." -ForegroundColor White
     Write-Host "  Compatible con multiples configuraciones de red, Docker y Windows." -ForegroundColor White
@@ -1376,7 +1376,7 @@ try {
         # ==============================================================
         Write-Host ""
         Write-Host "======================================================================" -ForegroundColor Green
-        Write-Host " [SUCCESS] HOSPITAL BILLING OS - DESPLIEGUE COMPLETADO" -ForegroundColor Green -BackgroundColor DarkGreen
+        Write-Host " [SUCCESS] S_HOSPITAL - DESPLIEGUE COMPLETADO" -ForegroundColor Green -BackgroundColor DarkGreen
         Write-Host "======================================================================" -ForegroundColor Green
         Write-Host ""
         Write-Host " [RED] DIRECCIONES DE ACCESO:" -ForegroundColor Cyan

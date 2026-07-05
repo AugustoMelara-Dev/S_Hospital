@@ -1,5 +1,5 @@
 # ==============================================================================
-# Hospital Billing OS - Cargador de Imágenes Docker Offline
+# S_Hospital - Cargador de Imágenes Docker Offline
 # ==============================================================================
 # Este script se ejecuta en el servidor del hospital.
 # Busca y carga las imágenes Docker exportadas en la carpeta offline-images/.
@@ -11,7 +11,7 @@ Set-StrictMode -Version Latest
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
 Write-Host "======================================================================" -ForegroundColor Cyan
-Write-Host "     [HOSPITAL BILLING OS - INSTALADOR DE IMAGENES OFFLINE]          " -ForegroundColor Cyan -BackgroundColor DarkBlue
+Write-Host "     [S_HOSPITAL - INSTALADOR DE IMAGENES OFFLINE]                  " -ForegroundColor Cyan -BackgroundColor DarkBlue
 Write-Host "======================================================================" -ForegroundColor Cyan
 Write-Host ""
 

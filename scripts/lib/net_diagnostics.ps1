@@ -1,5 +1,5 @@
 # ==============================================================================
-# Hospital Billing OS - Librería Modular de Diagnósticos de Red Blindados
+# S_Hospital - Librería Modular de Diagnósticos de Red Blindados
 # ==============================================================================
 # Diseñada para Windows PowerShell 5.1. Seguro bajo StrictMode -Version Latest.
 
