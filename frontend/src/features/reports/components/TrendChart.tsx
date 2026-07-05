@@ -8,7 +8,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { formatLempirasUI } from '@/lib/moneyCents';
+import { finiteNumber, formatLempirasUI } from '@/lib/moneyCents';
 import { ChartCard } from '@/components/shared';
 import type { ExecutiveReport } from '@/lib/api';
 
@@ -35,6 +35,10 @@ function formatMoneyShort(value: number): string {
   if (abs >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
   if (abs >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
   return value.toFixed(0);
+}
+
+function safeTrendAmount(value: string): number {
+  return finiteNumber(value);
 }
 
 type TooltipPayloadEntry = { name?: string; value?: number; color?: string };
@@ -71,9 +75,9 @@ export function TrendChart({ report }: TrendChartProps) {
   const data = report.daily_trend.map((day) => ({
     date: day.date,
     day: formatDay(day.date),
-    Facturado: Number(day.billed),
-    Cobrado: Number(day.collected),
-    Pendiente: Number(day.pending),
+    Facturado: safeTrendAmount(day.billed),
+    Cobrado: safeTrendAmount(day.collected),
+    Pendiente: safeTrendAmount(day.pending),
   }));
 
   return (

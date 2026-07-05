@@ -4179,3 +4179,29 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, facturacion, caja operativa, catalogo, historial, recibos, respaldos ni usuarios.
 - Este corte endurece reportes utiles de caja sin alterar pagos, cierres reales, auditoria ni datos fiscales.
+
+## 173. Fase 15 - Tendencia diaria normaliza montos corruptos
+
+Cambio aplicado:
+
+- `TrendChart` ahora normaliza los montos diarios antes de construir la serie de Recharts.
+- Si `billed`, `collected` o `pending` llegan corruptos o no parseables, el grafico y la tabla accesible usan `0`/`L 0.00` en vez de propagar `NaN` o valores tecnicos.
+- Se agrego una regresion con `billed='no-numero'` y `collected='NaN'`, confirmando que la serie del grafico queda finita y que el DOM no expone texto tecnico.
+- No se cambian calculos backend, filtros, exportaciones, permisos ni contratos de reporte.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- TrendChart.test.tsx -t "normalizes malformed daily money values" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial correcto: la serie recibia `NaN` y al serializar quedaba `null`; luego OK: 1 test pasa. |
+| `npm run test -- TrendChart.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 1 test pasa. |
+| `npm run test -- ReportsExecutive.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 2 tests pasan. |
+| `npm run lint` | OK. |
+| `npm run typecheck` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, facturacion, caja operativa, catalogo, historial, recibos, respaldos ni usuarios.
+- Este corte mejora la confiabilidad visual del reporte ejecutivo sin alterar totales oficiales ni exportaciones server-side.
