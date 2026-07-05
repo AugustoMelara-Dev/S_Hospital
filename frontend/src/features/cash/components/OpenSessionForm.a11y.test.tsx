@@ -40,4 +40,10 @@ describe('OpenSessionForm accessibility', () => {
     expect(button).toBeInTheDocument();
     expect(button).toBeDisabled();
   });
+
+  it('prevents editing the opening amount while the cashbox is opening', () => {
+    render(<OpenSessionForm isSubmitting={true} onSubmit={() => undefined} />);
+
+    expect(screen.getByLabelText(/monto inicial/i)).toBeDisabled();
+  });
 });

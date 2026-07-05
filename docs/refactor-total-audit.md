@@ -4359,3 +4359,29 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, caja, catalogo, recibos, respaldos, reportes ni usuarios.
 - Este corte protege el historial de facturas ante URLs manipuladas o marcadores corruptos, manteniendo estable el contrato del API local.
+
+## 180. Fase 2 - Apertura de caja bloquea edicion durante envio
+
+Cambio aplicado:
+
+- `OpenSessionForm` ahora deshabilita el campo `Monto inicial` mientras `isSubmitting=true`.
+- Esto evita que el cajero modifique visualmente el monto de apertura despues de confirmar una solicitud que ya esta en curso.
+- Se agrego una regresion que confirma que el input queda bloqueado durante `Abriendo...`.
+- No se cambian permisos, idempotencia, payload de apertura, cierre de caja ni calculos de diferencia.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- OpenSessionForm.a11y.test.tsx -t "prevents editing the opening amount" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial correcto: el input seguia habilitado; luego OK: 1 test pasa. |
+| `npm run test -- OpenSessionForm.a11y.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 4 tests pasan. |
+| `npm run test -- CashBoxView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=45000` | OK: 11 tests pasan. |
+| `npm run lint` | OK. |
+| `npm run typecheck` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, facturacion, catalogo, historial, recibos, respaldos, reportes ni usuarios.
+- Este corte reduce confusion operativa en la apertura de caja y conserva la seriedad del flujo local de caja.

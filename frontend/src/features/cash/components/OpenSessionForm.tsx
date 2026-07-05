@@ -62,6 +62,7 @@ export function OpenSessionForm({ isSubmitting, onSubmit }: OpenSessionFormProps
                 inputMode="decimal"
                 placeholder="0.00"
                 className="font-mono text-lg tabular-nums"
+                disabled={isSubmitting}
                 aria-invalid={invalid}
                 aria-describedby={describedBy}
                 {...openingAmountRegistration}
