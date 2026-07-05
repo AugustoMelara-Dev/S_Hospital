@@ -165,6 +165,42 @@ describe('AboutView', () => {
     expect(useSystemStatusSnapshot).toHaveBeenCalledWith(true);
   });
 
+  it('marks the latest backup diagnostic for review when the file is not confirmed', async () => {
+    vi.mocked(useServerStatus).mockReturnValue({
+      checking: false,
+      isOnline: true,
+      lastCheck: new Date('2026-06-02T14:00:00.000Z'),
+      operationalHealth: null,
+      summary: {
+        description: 'Hay trabajos o respaldos con alerta.',
+        label: 'Requiere revision',
+        level: 'review',
+      },
+    });
+    vi.mocked(useSystemStatusSnapshot).mockReturnValue({
+      data: {
+        ...mockSystemStatus(),
+        backups: {
+          ...mockSystemStatus().backups,
+          last_success_file_exists: false,
+          last_success_checksum_matches: false,
+        },
+      },
+      isError: false,
+      error: null,
+      isPending: false,
+      isLoading: false,
+      isFetching: false,
+    } as unknown as ReturnType<typeof useSystemStatusSnapshot>);
+
+    render(<AboutView user={adminUser} onStatus={vi.fn()} />);
+
+    expect(await screen.findByRole('heading', { name: /diagnostico administrativo/i })).toBeInTheDocument();
+    expect(screen.getByText('Respaldo no confirmado')).toBeInTheDocument();
+    expect(screen.getByText('Revisar')).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/hospital-backup|checksum|sha/i);
+  });
+
   it('keeps the local diagnostic action callback without changing hooks', async () => {
     vi.useFakeTimers();
     const onStatus = vi.fn();

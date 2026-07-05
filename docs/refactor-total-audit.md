@@ -4980,3 +4980,26 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte convierte la verificacion backend de integridad de respaldos en una senal visible y accionable para la operacion monocomputadora.
+
+## 205. Fase 8 - Soporte no marca backups no confirmados como protegidos
+
+Cambio aplicado:
+
+- `AboutView` marca el diagnostico de ultimo respaldo como `Revisar` cuando el backend reporta archivo ausente o no coincidente.
+- `OperationalStatusSummary` muestra `Pendiente` y recomienda crear un respaldo nuevo si el ultimo respaldo no esta confirmado.
+- Las superficies de soporte no exponen nombre tecnico de archivo ni jerga de checksum.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- AboutView.test.tsx -t "marks the latest backup diagnostic for review"` | RED inicial correcto: el diagnostico seguia mostrando fecha como OK; luego OK. |
+| `docker compose exec frontend npm run test -- SupportCenterView.test.tsx -t "does not show an unconfirmed backup as protected"` | RED inicial correcto: el resumen seguia mostrando fecha protegida; luego OK. |
+| `docker compose exec frontend npm run test -- AboutView.test.tsx SupportCenterView.test.tsx` | OK: 11 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte evita senales contradictorias entre Respaldos, Acerca de y Soporte cuando el backup recuperable no esta confirmado.

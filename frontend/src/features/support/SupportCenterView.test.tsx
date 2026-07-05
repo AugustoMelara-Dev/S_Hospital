@@ -58,6 +58,25 @@ describe('SupportCenterView', () => {
     expect(getStatus).toHaveBeenCalledTimes(1);
   });
 
+  it('does not show an unconfirmed backup as protected in advanced metrics', async () => {
+    vi.spyOn(apiClient, 'getSystemStatusSummary').mockResolvedValue(systemStatusSummary({ label: 'Requiere revision', severity: 'warning', problem_count: 1 }));
+    vi.spyOn(apiClient, 'getSystemStatus').mockResolvedValue({
+      ...systemStatus(),
+      backups: {
+        ...systemStatus().backups,
+        last_success_file_exists: false,
+        last_success_checksum_matches: false,
+      },
+    });
+
+    render(<SupportCenterView user={supportUser} onStatus={vi.fn()} />);
+
+    expect(await screen.findByText('Pendiente')).toBeInTheDocument();
+    expect(screen.getByText(/cree un respaldo nuevo/i)).toBeInTheDocument();
+    expect(screen.queryByText(/fecha protegida mas reciente/i)).not.toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/hospital-backup|checksum|sha/i);
+  });
+
   it('renders an accessible error with retry and keeps support playbooks visible', async () => {
     const getSummary = vi
       .spyOn(apiClient, 'getSystemStatusSummary')

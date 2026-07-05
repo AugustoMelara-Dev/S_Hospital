@@ -223,6 +223,16 @@ function diagnosticLevelLabel(level: 'ok' | 'review' | 'error'): string {
 }
 
 function adminDiagnosticItems(status: SystemStatus): AdminDiagnosticItem[] {
+  const latestBackupConfirmed = status.backups.last_success_at
+    ? status.backups.last_success_file_exists !== false
+      && status.backups.last_success_checksum_matches !== false
+    : false;
+  const backupValue = !status.backups.last_success_at
+    ? 'Sin respaldo protegido reciente'
+    : latestBackupConfirmed
+      ? formatServerTime(status.backups.last_success_at)
+      : 'Respaldo no confirmado';
+
   return [
     {
       label: 'Backend',
@@ -241,8 +251,8 @@ function adminDiagnosticItems(status: SystemStatus): AdminDiagnosticItem[] {
     },
     {
       label: 'Ultimo respaldo',
-      value: status.backups.last_success_at ? formatServerTime(status.backups.last_success_at) : 'Sin respaldo protegido reciente',
-      level: status.backups.last_success_at ? 'ok' : 'review',
+      value: backupValue,
+      level: latestBackupConfirmed ? 'ok' : 'review',
     },
     {
       label: 'Cola de trabajos',

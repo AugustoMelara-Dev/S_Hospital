@@ -62,9 +62,16 @@ function statusLabelForSeverity(severity: PublicSystemStatusSummary['summary']['
 export function OperationalStatusSummary({ loading, summary, status, canViewAdvanced, onRefresh }: Props) {
   const severity = summary?.summary.severity ?? 'loading';
   const Icon = iconForSeverity(severity);
-  const lastBackupValue = status?.backups.last_success_at
+  const latestBackupConfirmed = status?.backups.last_success_at
+    ? status.backups.last_success_file_exists !== false
+      && status.backups.last_success_checksum_matches !== false
+    : false;
+  const lastBackupValue = status?.backups.last_success_at && latestBackupConfirmed
     ? new Date(status.backups.last_success_at).toLocaleString('es-HN')
     : 'Pendiente';
+  const lastBackupHelper = latestBackupConfirmed
+    ? 'Fecha protegida mas reciente'
+    : 'Cree un respaldo nuevo';
 
   if (loading && !summary) {
     return <LoadingState label="Cargando diagnostico operativo..." />;
@@ -126,8 +133,8 @@ export function OperationalStatusSummary({ loading, summary, status, canViewAdva
               icon={<HardDrive />}
               label="Ultimo respaldo"
               value={lastBackupValue}
-              helper="Fecha protegida mas reciente"
-              variant={status.backups.last_success_at ? 'success' : 'warning'}
+              helper={lastBackupHelper}
+              variant={latestBackupConfirmed ? 'success' : 'warning'}
             />
             <MetricCard
               icon={<Database />}
