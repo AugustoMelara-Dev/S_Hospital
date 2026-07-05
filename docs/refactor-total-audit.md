@@ -6140,3 +6140,25 @@ Pruebas ejecutadas:
 Decision:
 
 - La navegacion de reportes queda alineada con la autorizacion real del backend: datos de auditoria requieren `audit.view`, no solo reportes gerenciales.
+
+## 255. Fase 8/14 - Desactivar servicio exige motivo desde catalogo
+
+Cambio aplicado:
+
+- `CatalogView` usa el motivo obligatorio del `ConfirmDialog` al desactivar un servicio activo.
+- El payload frontend agrega `availability_change_reason`, alineado con la validacion backend para cambios de `active`, `visible_in_billing` o `is_billable`.
+- `ServicePayload` tipa `availability_change_reason`.
+- No se agregaron dependencias, migraciones, permisos ni cambios de endpoint.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- CatalogView --run -t "requires confirmation"` | RED inicial por boton habilitado sin motivo; luego OK: 1 test pasa. |
+| `docker compose exec frontend npm run test -- CatalogView --run` | OK: 19 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+Decision:
+
+- El operador ya no puede mandar una desactivacion que el backend rechazaria por falta de motivo. La razon queda disponible para auditoria de catalogo.

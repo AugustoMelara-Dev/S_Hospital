@@ -307,7 +307,11 @@ describe('CatalogView modernized structure', () => {
       await screen.findByRole('alertdialog', { name: /desactivar servicio/i }),
     ).toBeInTheDocument();
     expect(screen.getByText(/el servicio glucosa quedara oculto/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /desactivar servicio/i })).toBeDisabled();
 
+    fireEvent.change(screen.getByLabelText(/motivo/i), {
+      target: { value: 'Servicio retirado temporalmente de caja' },
+    });
     fireEvent.click(screen.getByRole('button', { name: /desactivar servicio/i }));
 
     await waitFor(() => {
@@ -315,6 +319,7 @@ describe('CatalogView modernized structure', () => {
         expect.objectContaining({
           active: false,
           aliases: 'azucar, laboratorio rapido',
+          availability_change_reason: 'Servicio retirado temporalmente de caja',
         }),
         1,
       );

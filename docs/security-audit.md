@@ -324,3 +324,16 @@ Pruebas relevantes:
 
 - `ReportsView.subroutes.test.tsx` cubre usuario gerencial sin `audit.view` y usuario audit-only.
 - `ReportsAudit.test.tsx`, `npm run typecheck` y `npm run lint` verifican el cambio frontend.
+
+## 18. Actualizacion 2026-07-05 - Catalogo envia motivo de disponibilidad
+
+Control agregado/verificado:
+
+- La desactivacion de servicios desde Catalogo exige motivo visible antes de confirmar.
+- El frontend envia `availability_change_reason` junto con `active: false`, alineado con la validacion backend y auditoria de catalogo.
+- La accion sigue sin borrar servicios ni tocar facturas historicas.
+
+Pruebas relevantes:
+
+- `CatalogView.test.tsx` cubre boton deshabilitado sin motivo y payload con `availability_change_reason`.
+- `npm run typecheck` y `npm run lint` verifican el contrato TypeScript.

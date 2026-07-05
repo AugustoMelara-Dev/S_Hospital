@@ -171,7 +171,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
     [onStatus, queryClient, refetchCatalogData],
   );
 
-  const confirmServiceDeactivation = useCallback(async () => {
+  const confirmServiceDeactivation = useCallback(async (reason: string | null) => {
     const service = serviceToDeactivate;
 
     if (!service) {
@@ -179,7 +179,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
     }
 
     try {
-      await apiClient.saveService(serviceStatusPayload(service, false), service.id);
+      await apiClient.saveService(serviceStatusPayload(service, false, reason), service.id);
       setServiceToDeactivate(null);
       void invalidateCatalogQueries(queryClient);
       void refetchCatalogData();
@@ -294,8 +294,11 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
             danger
             confirmLabel="Desactivar servicio"
             onCancel={() => setServiceToDeactivate(null)}
-            onConfirm={() => void confirmServiceDeactivation()}
+            onConfirm={(reason) => void confirmServiceDeactivation(reason)}
             open={serviceToDeactivate !== null}
+            reasonHelpText="Mínimo 5 caracteres. El motivo quedará registrado en auditoría del catálogo."
+            requireReasonMinLength={5}
+            requireReasonTextarea
             title="Desactivar servicio"
           >
             El servicio {serviceToDeactivate?.name ?? ''} quedara oculto para nuevos cobros. Las facturas historicas conservaran sus snapshots.
@@ -306,7 +309,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
   );
 }
 
-function serviceStatusPayload(service: Service, active: boolean) {
+function serviceStatusPayload(service: Service, active: boolean, availabilityChangeReason?: string | null) {
   return {
     category_id: service.category_id,
     area_id: service.area_id ?? undefined,
@@ -320,6 +323,7 @@ function serviceStatusPayload(service: Service, active: boolean) {
     active,
     visible_in_billing: service.visible_in_billing ?? true,
     is_billable: service.is_billable ?? true,
+    availability_change_reason: availabilityChangeReason?.trim() || undefined,
     special_rule_code: service.special_rule_code,
   };
 }

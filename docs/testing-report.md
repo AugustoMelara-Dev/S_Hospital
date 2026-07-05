@@ -216,3 +216,12 @@ verified.
 | `docker compose exec frontend npm run test -- ReportsView.subroutes ReportsAudit --run` | PASS, 17 tests. |
 | `docker compose exec frontend npm run typecheck` | PASS. |
 | `docker compose exec frontend npm run lint` | PASS. |
+
+### 2026-07-05 Catalog Availability Reason Gate
+
+| Command | Result |
+|---|---|
+| `docker compose exec frontend npm run test -- CatalogView --run -t "requires confirmation"` | RED first because deactivation could be confirmed without reason; then PASS, 1 focused test. |
+| `docker compose exec frontend npm run test -- CatalogView --run` | PASS, 19 tests. |
+| `docker compose exec frontend npm run typecheck` | PASS. |
+| `docker compose exec frontend npm run lint` | PASS. |
