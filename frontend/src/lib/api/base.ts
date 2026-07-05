@@ -11,6 +11,10 @@ let csrfCache: { fetchedAt: number; promise: Promise<void> } | null = null;
 const DEFAULT_GET_TIMEOUT_MS = 10_000;
 const DEFAULT_MUTATION_TIMEOUT_MS = 30_000;
 const DEFAULT_DOWNLOAD_TIMEOUT_MS = 60_000;
+const VALIDATION_FIELD_LABELS: Record<string, string> = {
+  cash_session: 'Caja',
+  cash_session_id: 'Caja',
+};
 
 type ApiRequestInit = RequestInit & {
   timeout?: number;
@@ -172,7 +176,7 @@ function formatValidationMessage(error: ApiError): string {
 
 function fieldLabel(field: string): string {
   if (!field.includes('.')) {
-    return humanizeFieldName(field);
+    return VALIDATION_FIELD_LABELS[field] ?? humanizeFieldName(field);
   }
 
   const [parent, child, ...rest] = field.split('.');

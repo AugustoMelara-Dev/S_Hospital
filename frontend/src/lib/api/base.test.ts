@@ -79,6 +79,18 @@ describe('resolveApiBaseUrl', () => {
     expect(message).not.toMatch(/items\.0\.quantity/);
   });
 
+  it('labels cash session validation errors as caja for cashiers', () => {
+    const message = userSafeErrorMessage(
+      new ApiError('Revise los datos del formulario.', 422, {
+        cash_session: ['Ya existe una caja abierta en esta terminal. Cierre la caja actual antes de abrir otra.'],
+      }),
+      'No se pudo abrir caja.',
+    );
+
+    expect(message).toMatch(/Caja: Ya existe una caja abierta/i);
+    expect(message).not.toMatch(/cash_session|cash session/i);
+  });
+
   it('falls back to a generic message when a 422 has no validation payload', () => {
     const message = userSafeErrorMessage(new ApiError('No se pudo guardar.', 422), 'fallback');
 

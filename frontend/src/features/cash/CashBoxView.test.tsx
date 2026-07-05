@@ -5,7 +5,7 @@ import { type ReactNode } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { App } from '../../App';
-import { apiClient, type CashSession } from '../../lib/api';
+import { ApiError, apiClient, type CashSession } from '../../lib/api';
 import { queryClient } from '../../lib/query-client';
 import { resetRequestChain } from '../../lib/api/base';
 import { CashBoxView } from './CashBoxView';
@@ -402,6 +402,30 @@ describe('CashBoxView', () => {
     await act(async () => {
       resolveOpen(opened);
     });
+  });
+
+  it('shows a clear local drawer conflict when another cash session is already open', async () => {
+    const onStatus = vi.fn();
+    const openCashSession = vi.spyOn(apiClient, 'openCashSession').mockRejectedValue(new ApiError(
+      'Revise los datos del formulario.',
+      422,
+      {
+        cash_session: ['Ya existe una caja abierta en esta terminal. Cierre la caja actual antes de abrir otra.'],
+      },
+    ));
+    vi.spyOn(apiClient, 'getCurrentCashSession').mockResolvedValue(null);
+
+    renderCashBox(<CashBoxView onStatus={onStatus} />);
+
+    expect(await screen.findByLabelText(/monto inicial/i)).toHaveValue('0.00');
+    fireEvent.click(screen.getByRole('button', { name: /abrir caja/i }));
+    fireEvent.click(within(await screen.findByRole('alertdialog', { name: /confirmar apertura de caja/i }))
+      .getByRole('button', { name: /^abrir caja$/i }));
+
+    await waitFor(() => expect(openCashSession).toHaveBeenCalledTimes(1));
+    expect(await screen.findByText(/Caja: Ya existe una caja abierta/i)).toBeInTheDocument();
+    expect(screen.queryByText(/caja lista para facturar/i)).not.toBeInTheDocument();
+    expect(onStatus).toHaveBeenLastCalledWith(expect.stringMatching(/Caja: Ya existe una caja abierta/i));
   });
 
   it('locks the open cash form while the opening confirmation is active', async () => {
