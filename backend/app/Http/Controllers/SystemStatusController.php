@@ -264,10 +264,12 @@ class SystemStatusController extends Controller
             'configured_host' => $host,
             'host_type' => $hostType,
             'lan_ready' => $hostType === 'lan',
-            'client_url' => $hostType === 'lan' ? "{$scheme}://{$host}{$port}" : null,
-            'guidance' => $hostType === 'lan'
-                ? 'Clientes deben entrar por esta direccion LAN.'
-                : 'Configure APP_URL con la IP o nombre LAN del servidor antes de validar clientes.',
+            'client_url' => in_array($hostType, ['lan', 'loopback'], true) ? "{$scheme}://{$host}{$port}" : null,
+            'guidance' => match ($hostType) {
+                'lan' => 'Clientes deben entrar por esta direccion LAN.',
+                'loopback' => 'Operacion local en este equipo. Use esta direccion solo en la computadora servidor.',
+                default => 'Configure APP_URL con la IP o nombre LAN del servidor antes de validar clientes.',
+            },
         ];
     }
 
@@ -669,12 +671,18 @@ class SystemStatusController extends Controller
         $appEnv = (string) Config::get('app.env');
         $appDebug = (bool) Config::get('app.debug');
         $runtime = $this->runtimeStatus();
+        $network = $this->networkStatus();
         $proofs = $this->physicalProofStatuses();
         $lanProof = $proofs[0];
         $printerProof = $proofs[1];
+        $localMode = ($network['host_type'] ?? null) === 'loopback';
 
         $blockers = [
-            [
+            $localMode ? [
+                'code' => 'LOCAL_ACCESS_CONFIGURED',
+                'label' => 'Acceso local configurado en este equipo',
+                'status' => 'validated',
+            ] : [
                 'code' => 'PENDING_LAN_CLIENT_VALIDATION',
                 'label' => 'Validacion desde segunda PC LAN',
                 'status' => $lanProof['status'] === 'validated' ? 'validated' : 'pending',
@@ -720,6 +728,7 @@ class SystemStatusController extends Controller
         $backups = $this->backupStatus();
         $runtime = $this->runtimeStatus();
         $physicalProofs = $this->physicalProofStatuses();
+        $localMode = ($network['host_type'] ?? null) === 'loopback';
 
         return [
             'production_checks' => [
@@ -766,9 +775,9 @@ class SystemStatusController extends Controller
                         : 'Falta ejecutar build de frontend antes de instalar',
                 ],
                 [
-                    'code' => 'LAN_APP_URL_CONFIGURED',
-                    'label' => 'Direccion LAN configurada',
-                    'status' => $network['lan_ready'] ? 'validated' : 'manual_required',
+                    'code' => $localMode ? 'LOCAL_APP_URL_CONFIGURED' : 'LAN_APP_URL_CONFIGURED',
+                    'label' => $localMode ? 'Direccion local configurada' : 'Direccion LAN configurada',
+                    'status' => $localMode || $network['lan_ready'] ? 'validated' : 'manual_required',
                     'detail' => $network['guidance'],
                 ],
                 [
@@ -808,12 +817,16 @@ class SystemStatusController extends Controller
                 ],
                 [
                     'path' => '/login',
-                    'expected' => 'Pantalla de ingreso abre desde otra computadora',
+                    'expected' => $localMode
+                        ? 'Pantalla de ingreso abre en este equipo'
+                        : 'Pantalla de ingreso abre desde otra computadora',
                     'status' => 'manual_required',
                 ],
                 [
                     'path' => '/verify-email',
-                    'expected' => 'Pantalla esperada abre desde la red local',
+                    'expected' => $localMode
+                        ? 'Pantalla esperada abre localmente'
+                        : 'Pantalla esperada abre desde la red local',
                     'status' => 'manual_required',
                 ],
             ],

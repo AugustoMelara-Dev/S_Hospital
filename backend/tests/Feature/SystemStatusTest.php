@@ -117,6 +117,37 @@ class SystemStatusTest extends TestCase
         $this->assertIsString($response->json('data.backups.oldest_pending_at'));
     }
 
+    public function test_loopback_app_url_is_treated_as_local_single_machine_mode(): void
+    {
+        $proofRoot = storage_path('framework/testing-local-mode-status');
+        File::deleteDirectory($proofRoot);
+        File::ensureDirectoryExists($proofRoot.'/frontend/dist/assets');
+        File::put($proofRoot.'/frontend/dist/index.html', '<div id="root"></div>');
+        File::put($proofRoot.'/frontend/dist/assets/index-test.js', 'console.log("ok");');
+        Config::set('hospital.project_root', $proofRoot);
+        Config::set('app.url', 'http://127.0.0.1:8081');
+
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $response = $this->actingAs($this->admin())
+            ->getJson('/api/system/status')
+            ->assertOk()
+            ->assertJsonPath('data.network.host_type', 'loopback')
+            ->assertJsonPath('data.network.lan_ready', false)
+            ->assertJsonPath('data.network.client_url', 'http://127.0.0.1:8081')
+            ->assertJsonPath('data.network.guidance', 'Operacion local en este equipo. Use esta direccion solo en la computadora servidor.')
+            ->assertJsonPath('data.preflight.public_routes.1.expected', 'Pantalla de ingreso abre en este equipo')
+            ->assertJsonPath('data.preflight.public_routes.2.expected', 'Pantalla esperada abre localmente');
+
+        $blockers = collect($response->json('data.readiness.blockers'));
+        $checks = collect($response->json('data.preflight.production_checks'));
+
+        $this->assertNull($blockers->firstWhere('code', 'PENDING_LAN_CLIENT_VALIDATION'));
+        $this->assertSame('validated', $blockers->firstWhere('code', 'LOCAL_ACCESS_CONFIGURED')['status'] ?? null);
+        $this->assertNull($checks->firstWhere('code', 'LAN_APP_URL_CONFIGURED'));
+        $this->assertSame('validated', $checks->firstWhere('code', 'LOCAL_APP_URL_CONFIGURED')['status'] ?? null);
+    }
+
     public function test_status_flags_stale_pending_backups_for_worker_diagnosis(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
@@ -343,6 +374,7 @@ class SystemStatusTest extends TestCase
         File::deleteDirectory($proofRoot);
         File::ensureDirectoryExists($proofRoot.'/qa');
         Config::set('hospital.project_root', $proofRoot);
+        Config::set('app.url', 'http://192.168.1.10:8000');
 
         File::put($proofRoot.'/qa/LAN_CLIENT_VALIDATION_PROOF.md', "# LAN proof\n\n- Date/time:\n- Responsible person:\n\n- [ ] `/up` responds from the client computer. Result/evidence:\n");
 
