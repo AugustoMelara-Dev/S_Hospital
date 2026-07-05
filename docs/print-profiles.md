@@ -6,7 +6,7 @@
 
 > El hospital elige el papel. El sistema resuelve márgenes, layout y CSS de impresión.
 
-El operador solo elige entre 5 perfiles pre-definidos. Los márgenes, tamaño, fuente y escala se calculan automáticamente desde el perfil. Los inputs manuales antiguos (ancho mm, alto mm, márgenes, fuente, escala) están **completamente fuera** del flujo normal y viven detrás de un modo soporte técnico que requiere el permiso explícito `receipt_settings.advanced`.
+El operador normal solo elige entre los perfiles institucionales principales: Carta, Media carta y A5. Los márgenes, tamaño, fuente y escala se calculan automáticamente desde el perfil. Los inputs manuales antiguos (ancho mm, alto mm, márgenes, fuente, escala) están **completamente fuera** del flujo normal y viven detrás de un modo soporte técnico que requiere el permiso explícito `receipt_settings.advanced`.
 
 ## 2. Perfiles cerrados
 
@@ -18,7 +18,7 @@ El operador solo elige entre 5 perfiles pre-definidos. Los márgenes, tamaño, f
 | `80mm` | Ticket 80 mm | 80 mm auto | n/a | 4 mm | SFMono / Cascadia Mono, 10 px | 1, 2 | Impresora térmica |
 | `58mm` | Ticket 58 mm | 58 mm auto | n/a | 3 mm | SFMono / Cascadia Mono, 9 px | 1, 2 | Impresora térmica compacta |
 
-Las tres primeras son **perfiles institucionales formales** (recomendadas para PDF/impresión legal). Las térmicas son **compatibilidad secundaria** (admiten sólo originales + 1 copia; no admiten ser el predeterminado global).
+Las tres primeras son **perfiles institucionales formales** y las únicas visibles en el flujo normal. Las térmicas son **compatibilidad secundaria** y quedan fuera del selector normal.
 
 ## 3. CSS de impresión (inmutable, vive en `styles.css`)
 
@@ -70,7 +70,7 @@ Cuando el operador pulsa **Imprimir prueba**, el PDF de respuesta lleva:
 El backend rechaza explícitamente cualquier intento de escribir los campos manuales sin el permiso `receipt_settings.advanced`:
 
 ```text
-PUT /api/receipts/profiles/{id}
+PATCH /api/settings/institutional-receipts/print-profiles/{profile}
 Body:
   - copies_mode           -> permitido a todos los editores de recibo
   - use_logo              -> permitido
@@ -101,11 +101,11 @@ Si llega con permiso → se acepta el cambio, se persiste, y se audita en `audit
 
 Solo se exponen:
 
-- Selector de perfil cerrado (`<PaperProfileSelector>` con 5 tarjetas).
+- Selector de perfil cerrado (`<PaperProfileSelector>`) con Carta, Media carta y A5.
 - Selector de **copias** (1, 2, 3).
 - Checkbox **Mostrar logo autorizado**.
 - Checkbox **Espacio para sello/firma**.
-- Botón **Imprimir prueba** (genera PDF con watermark, sin consumir correlativo).
+- Botón **Imprimir prueba** (genera PDF con watermark usando el perfil seleccionado, sin consumir correlativo).
 - Botón **Guardar perfil**.
 - Texto informativo: "Los márgenes y el tamaño se calculan automáticamente según el perfil seleccionado."
 - Vista previa real usando el mismo CSS de impresión.
@@ -116,16 +116,16 @@ Requerimientos:
 - Permiso `receipt_settings.advanced`.
 - Advertencia visible: "Cambiar márgenes o tamaño puede afectar recibos impresos."
 - Audit log automático.
-- Botón dedicado "Activar modo soporte" con `aria-controls` apuntando al `<AdvancedSettingsAccordion>`.
+- Bloque colapsable `<details>` con resumen **Activar modo soporte técnico**.
 
 Cuando se activa, muestra los 8 campos manuales antiguos (ancho, alto, 4 márgenes, fuente, escala) y la asignación por scope.
 
 ## 8. Pruebas
 
 - Unit/feature: `ReceiptPrintProfileTest` cubre el rechazo 403 sin permiso y el 200 con permiso.
-- Snapshot: `ReceiptPreview.snapshots.test.tsx` asegura que el HTML del recibo por cada perfil coincide con un baseline.
+- Frontend: `InstitutionalReceiptSettingsView.test.tsx` cubre flujo normal, soporte avanzado, prueba de impresión y rechazo visual de campos manuales.
 - e2e Playwright: `e2e/print-profiles.spec.ts` carga preview por perfil, hace screenshot y compara con baseline `qa/refactor/print-profiles/*.png`.
-- Manual: `docs/checklists/print-checklist.md` con casos imprimibles en cada perfil físico.
+- Manual: `docs/manual-qa-checklist.md` mantiene los casos imprimibles principales para Carta, Media carta y A5.
 
 ## 9. Compatibilidad
 

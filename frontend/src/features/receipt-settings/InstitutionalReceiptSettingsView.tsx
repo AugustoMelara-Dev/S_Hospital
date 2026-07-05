@@ -353,7 +353,7 @@ export function InstitutionalReceiptSettingsView({
   const testPrintMutation = useMutation({
     mutationFn: () =>
       apiClient.testPrintInstitutionalReceipt({
-        profile_code: PAPER_TO_RECEIPT_CODE[paper],
+        profile_code: selectedProfile?.code ?? PAPER_TO_RECEIPT_CODE[paper],
         payer_name: 'Paciente de prueba',
         concept: 'Servicios hospitalarios de prueba',
         amount: '25.00',

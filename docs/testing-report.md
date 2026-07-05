@@ -189,3 +189,12 @@ verified.
 | `docker compose exec frontend npm run test -- InstitutionalReceiptSettingsView --run` | PASS, 22 tests. |
 | `docker compose exec frontend npm run typecheck` | PASS. |
 | `docker compose exec frontend npm run lint` | PASS. |
+
+### 2026-07-05 Receipt Test Print Selected Profile Gate
+
+| Command | Result |
+|---|---|
+| `docker compose exec frontend npm run test -- InstitutionalReceiptSettingsView --run -t "generates a test print with the selected support profile"` | RED first on `profile_code: media_carta_horizontal`; then PASS, 1 focused test. |
+| `docker compose exec frontend npm run test -- InstitutionalReceiptSettingsView --run` | PASS, 23 tests. |
+| `docker compose exec frontend npm run typecheck` | PASS. |
+| `docker compose exec frontend npm run lint` | PASS. |

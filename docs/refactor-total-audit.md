@@ -6073,3 +6073,25 @@ Pruebas ejecutadas:
 Decision:
 
 - El permiso de soporte permite abrir controles tecnicos, pero no debe debilitar el flujo operativo normal. El hospital sigue eligiendo papel; el sistema activa el perfil institucional correspondiente.
+
+## 252. Fase 6 - Impresion de prueba respeta perfil de soporte
+
+Cambio aplicado:
+
+- `Imprimir prueba` ahora usa el `code` del perfil seleccionado en la pantalla, no el papel normal previo.
+- Si soporte selecciona `Recibo pequeno personalizado`, la prueba pide PDF con `profile_code: recibo_pequeno_personalizado`.
+- `docs/print-profiles.md` se actualizo para reflejar el endpoint actual, el selector normal de Carta/Media carta/A5 y el comportamiento de prueba con perfil seleccionado.
+- No se agregaron dependencias, migraciones, permisos ni cambios de endpoint.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- InstitutionalReceiptSettingsView --run -t "generates a test print with the selected support profile"` | RED inicial por `profile_code: media_carta_horizontal`; luego OK: 1 test pasa. |
+| `docker compose exec frontend npm run test -- InstitutionalReceiptSettingsView --run` | OK: 23 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+Decision:
+
+- La impresion de prueba debe probar exactamente el perfil que el usuario esta configurando. Esto evita falsos positivos de soporte cuando el PDF se genera con otro formato.

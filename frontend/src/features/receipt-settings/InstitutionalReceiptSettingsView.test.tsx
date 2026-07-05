@@ -444,6 +444,23 @@ describe('InstitutionalReceiptSettingsView', () => {
     });
   });
 
+  it('generates a test print with the selected support profile', async () => {
+    const { apiClient } = await import('@/lib/api');
+    renderView({ canAdvancedPrintSettings: true });
+
+    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
+    await activateTab('Papel y copias');
+    fireEvent.click(screen.getByText(/activar modo soporte t/i));
+    fireEvent.click(await screen.findByRole('button', { name: /recibo peque/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Imprimir prueba/ }));
+
+    await waitFor(() => {
+      expect(apiClient.testPrintInstitutionalReceipt).toHaveBeenCalledWith(expect.objectContaining({
+        profile_code: 'recibo_pequeno_personalizado',
+      }));
+    });
+  });
+
   it('locks normal paper profile controls while saving the profile', async () => {
     const { apiClient } = await import('@/lib/api');
     vi.mocked(apiClient.updateReceiptPrintProfile).mockImplementation(() => new Promise(() => undefined));
