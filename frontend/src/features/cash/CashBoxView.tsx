@@ -7,7 +7,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/states';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type CashSession, apiClient, userSafeErrorMessage } from '@/lib/api';
-import { createClientIdempotencyKey } from '@/lib/api/base';
+import { payloadScopedIdempotencyKey, resetPayloadScopedIdempotencyKey } from '@/lib/api/idempotency';
 import { formatLempirasUI, parseCents, toFloat } from '@/lib/money';
 import { getVisibleRefetchInterval } from '@/lib/query/polling';
 import { invalidateBillingQueries } from '@/lib/queryInvalidation';
@@ -56,6 +56,8 @@ export function CashBoxView({
   const closingSessionInFlightRef = useRef(false);
   const openSessionIdempotencyKeyRef = useRef<string | null>(null);
   const closeSessionIdempotencyKeyRef = useRef<string | null>(null);
+  const openSessionIdempotencySignatureRef = useRef<string | null>(null);
+  const closeSessionIdempotencySignatureRef = useRef<string | null>(null);
 
   const {
     data: session,
@@ -96,14 +98,18 @@ export function CashBoxView({
 
   const openSessionMutation = useMutation({
     mutationFn: (payload: { opening_amount: string; notes?: string | null }) => {
-      openSessionIdempotencyKeyRef.current ??= createClientIdempotencyKey();
+      const idempotencyKey = payloadScopedIdempotencyKey(
+        openSessionIdempotencyKeyRef,
+        openSessionIdempotencySignatureRef,
+        payload,
+      );
 
       return apiClient.openCashSession(payload, {
-        idempotencyKey: openSessionIdempotencyKeyRef.current,
+        idempotencyKey,
       });
     },
     onSuccess: async (opened) => {
-      openSessionIdempotencyKeyRef.current = null;
+      resetPayloadScopedIdempotencyKey(openSessionIdempotencyKeyRef, openSessionIdempotencySignatureRef);
       queryClient.setQueryData(queryKeys.cashSessions.current(), opened);
       await invalidateBillingQueries(queryClient);
       setClosingAmount('');
@@ -124,14 +130,18 @@ export function CashBoxView({
 
   const closeSessionMutation = useMutation({
     mutationFn: ({ id, payload }: { id: number; payload: { closing_amount: string; notes?: string | null } }) => {
-      closeSessionIdempotencyKeyRef.current ??= createClientIdempotencyKey();
+      const idempotencyKey = payloadScopedIdempotencyKey(
+        closeSessionIdempotencyKeyRef,
+        closeSessionIdempotencySignatureRef,
+        { id, payload },
+      );
 
       return apiClient.closeCashSession(id, payload, {
-        idempotencyKey: closeSessionIdempotencyKeyRef.current,
+        idempotencyKey,
       });
     },
     onSuccess: async () => {
-      closeSessionIdempotencyKeyRef.current = null;
+      resetPayloadScopedIdempotencyKey(closeSessionIdempotencyKeyRef, closeSessionIdempotencySignatureRef);
       queryClient.setQueryData(queryKeys.cashSessions.current(), null);
       await invalidateBillingQueries(queryClient);
       setClosingAmount('');

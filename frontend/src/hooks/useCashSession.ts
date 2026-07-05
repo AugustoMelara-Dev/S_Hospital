@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import { createClientIdempotencyKey } from '@/lib/api/base';
+import { payloadScopedIdempotencyKey, resetPayloadScopedIdempotencyKey } from '@/lib/api/idempotency';
 import { invalidateBillingQueries } from '@/lib/queryInvalidation';
 import { queryKeys } from '@/lib/queryKeys';
 
@@ -22,17 +22,18 @@ export function useCashSession(options: UseCashSessionOptions | boolean = {}) {
 export function useOpenCashSession() {
   const queryClient = useQueryClient();
   const idempotencyKeyRef = useRef<string | null>(null);
+  const idempotencySignatureRef = useRef<string | null>(null);
 
   return useMutation({
     mutationFn: (payload: { opening_amount: string; notes?: string | null }) => {
-      idempotencyKeyRef.current ??= createClientIdempotencyKey();
+      const idempotencyKey = payloadScopedIdempotencyKey(idempotencyKeyRef, idempotencySignatureRef, payload);
 
       return apiClient.openCashSession(payload, {
-        idempotencyKey: idempotencyKeyRef.current,
+        idempotencyKey,
       });
     },
     onSuccess: () => {
-      idempotencyKeyRef.current = null;
+      resetPayloadScopedIdempotencyKey(idempotencyKeyRef, idempotencySignatureRef);
       return invalidateBillingQueries(queryClient);
     },
   });
@@ -41,17 +42,18 @@ export function useOpenCashSession() {
 export function useCloseCashSession() {
   const queryClient = useQueryClient();
   const idempotencyKeyRef = useRef<string | null>(null);
+  const idempotencySignatureRef = useRef<string | null>(null);
 
   return useMutation({
     mutationFn: ({ id, payload }: { id: number; payload: { closing_amount: string; notes?: string | null } }) => {
-      idempotencyKeyRef.current ??= createClientIdempotencyKey();
+      const idempotencyKey = payloadScopedIdempotencyKey(idempotencyKeyRef, idempotencySignatureRef, { id, payload });
 
       return apiClient.closeCashSession(id, payload, {
-        idempotencyKey: idempotencyKeyRef.current,
+        idempotencyKey,
       });
     },
     onSuccess: () => {
-      idempotencyKeyRef.current = null;
+      resetPayloadScopedIdempotencyKey(idempotencyKeyRef, idempotencySignatureRef);
       return invalidateBillingQueries(queryClient);
     },
   });

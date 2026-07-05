@@ -5362,3 +5362,27 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte reduce trafico repetitivo en LAN cuando el navegador queda en segundo plano, sin perder actualizacion al volver a la ventana operativa.
+
+## 222. Fase 8 - Caja renueva idempotencia si cambia el payload
+
+Cambio aplicado:
+
+- Las mutaciones de abrir y cerrar caja mantienen la misma `Idempotency-Key` cuando se reintenta exactamente el mismo payload fallido.
+- Si el operador cambia el monto o notas despues de un fallo, se genera una clave nueva para evitar que el backend rechace una clave reutilizada con payload distinto.
+- `CashBoxView` y los hooks de caja usan el mismo helper de idempotencia por firma de payload.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- useCashSession.test.tsx -t "renews the .*failed payload changes"` | RED inicial correcto: reutilizaba la clave anterior; luego OK. |
+| `docker compose exec frontend npm run test -- useCashSession.test.tsx` | OK: 5 tests pasan. |
+| `docker compose exec frontend npm run test -- CashBoxView.test.tsx` | OK: 13 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `docker compose exec frontend npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte evita falsos rechazos durante reintentos reales de caja en LAN, sin debilitar la deduplicacion del backend.
