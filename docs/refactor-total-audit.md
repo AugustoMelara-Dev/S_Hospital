@@ -4562,3 +4562,28 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, facturacion, caja, catalogo, historial, respaldos, reportes ni usuarios.
 - Este corte reduce confusion en configuracion de impresion normal sin exponer margenes, fuentes, ancho, alto ni escala al flujo operativo.
+
+## 188. Fase 13 - Reset de clave bloquea campo temporal
+
+Cambio aplicado:
+
+- `PasswordResetDialog` ahora deshabilita `Nueva contrasena temporal` mientras `isSubmitting=true`.
+- Esto evita que administracion cambie visualmente la clave temporal despues de enviar `Restablecer clave` y antes de recibir respuesta del servidor local.
+- Se agrego una regresion desde `UsersView` con `resetUserPassword` pendiente que confirma que el campo sensible queda bloqueado y el boton muestra `Restableciendo...`.
+- No se cambian politica de contrasenas, permisos, menu de acciones, cierre del dialogo, contratos API ni auditoria backend.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- UsersView.test.tsx -t "locks the temporary password field" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial correcto: el input de nueva contrasena seguia habilitado durante el reset pendiente; luego OK: 1 test pasa. |
+| `npm run test -- UsersView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=60000` | OK: 27 tests pasan. |
+| `npm run lint` | OK. |
+| `npm run typecheck` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, facturacion, caja, catalogo, historial, recibos, respaldos ni reportes.
+- Este corte reduce confusion operativa en usuarios basicos sin ampliar la matriz RBAC ni relajar la validacion de contrasenas.

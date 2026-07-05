@@ -790,6 +790,25 @@ describe('UsersView', () => {
     await waitFor(() => expect(resetPassword).toHaveBeenCalledWith(adminUser.id, 'Password123!'));
   });
 
+  it('locks the temporary password field while resetting credentials', async () => {
+    const resetPassword = vi.spyOn(apiClient, 'resetUserPassword').mockReturnValue(new Promise<AuthUser>(() => undefined));
+
+    render(<UsersView onStatus={vi.fn()} canCreateUsers={true} canUpdateUsers canManageRoles={true} canAssignAdminRole />);
+
+    await openUserActions('Admin Hospital');
+    fireEvent.click(await screen.findByRole('menuitem', { name: /restablecer clave/i }));
+    const dialog = await screen.findByRole('dialog', { name: /restablecer clave para admin hospital/i });
+
+    const passwordField = within(dialog).getByLabelText(/nueva contrase/i);
+    fireEvent.change(passwordField, { target: { value: 'Password123!' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: /restablecer clave/i }));
+
+    await waitFor(() => expect(resetPassword).toHaveBeenCalledWith(adminUser.id, 'Password123!'));
+
+    expect(within(dialog).getByLabelText(/nueva contrase/i)).toBeDisabled();
+    expect(within(dialog).getByRole('button', { name: /restableciendo/i })).toBeDisabled();
+  });
+
   it('keeps the status confirmation locked while the request is pending', async () => {
     vi.mocked(apiClient.getUsers).mockResolvedValueOnce([
       adminUser,

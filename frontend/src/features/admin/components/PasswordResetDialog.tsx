@@ -83,6 +83,7 @@ export function PasswordResetDialog({
               aria-invalid={Boolean(errors.newPassword)}
               aria-describedby={errors.newPassword ? 'new-password-error' : undefined}
               className="pl-9"
+              disabled={isSubmitting}
               {...register('newPassword')}
             />
           </div>
