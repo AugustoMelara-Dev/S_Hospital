@@ -1,7 +1,7 @@
 # CI / CD
 
-This repository ships with two GitHub Actions workflows under
-[`.github/workflows/`](../workflows/):
+This repository currently ships with one GitHub Actions workflow under
+[`.github/workflows/`](../.github/workflows/):
 
 ## ci.yml — on every push and pull request
 
@@ -25,43 +25,32 @@ The MariaDB job validates behaviour that SQLite in-memory cannot:
 real `lockForUpdate` semantics, generated columns, JSON columns, and
 `utf8mb4_unicode_ci` collation.
 
-## release.yml — on every `v*` tag push
+## Release Workflow
 
-Validates the tag is releasable before creating the GitHub Release:
-
-- `docs/RELEASE_NOTES_<tag>.md` must exist.
-- All four physical evidence files under `qa/` must no longer
-  contain the string `PENDING`.
-- `qa/FINAL_PRODUCTION_HANDOFF_RESULT.md` must contain
-  `PRODUCTION_READY=YES`.
-
-If any check fails, the workflow fails and no release is created.
-The release body is the contents of the matching
-`docs/RELEASE_NOTES_*.md` file. Tags containing `-rc` or `-beta` are
-marked as pre-releases automatically.
+There is no `release.yml` workflow in the current repository. Do not document or
+depend on tag automation until that workflow is added and verified.
 
 ## Local equivalent
 
-`scripts/quality_gate.sh` runs the same gates locally:
+The current local Docker gate uses explicit commands. The older
+`scripts/quality_gate.sh`, `scripts/quality_gate_destructive.sh`, and
+`scripts/quality_gate_windows.ps1` wrappers are not present in this repository.
 
 ```bash
-docker compose up -d mysql
-./scripts/quality_gate.sh
+docker compose up -d
+docker compose exec backend composer validate --no-interaction
+docker compose exec backend composer audit --no-interaction
+docker compose exec backend php artisan test
+docker compose exec backend vendor/bin/pint --test
+docker compose exec backend vendor/bin/phpstan analyse --memory-limit=1G
+docker compose exec frontend npm run typecheck
+docker compose exec frontend npm run lint
+docker compose exec frontend npm run test:critical
+docker compose exec frontend npm run build
 ```
 
-`scripts/quality_gate_destructive.sh` adds a `migrate:fresh --seed`
-reset, gated by `HOSPITAL_ALLOW_DESTRUCTIVE_RESET=1`.
-
-On Windows hosts with limited memory, use the non-destructive PowerShell gate:
-
-```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\quality_gate_windows.ps1 -CriticalOnly
-```
-
-Use `-Full` to include the complete PHPUnit suite and serial full Vitest run.
-The critical gate is the RC fallback when a local full run is blocked by
-timeout/OOM; document the full-run failure and repeat it in CI or a larger
-machine before final release tagging.
+For Playwright, prefer the divided critical specs documented in
+`docs/testing-report.md` when the full historical matrix times out in Docker.
 
 ## Secrets in CI
 

@@ -7,8 +7,13 @@ Fecha de verificacion inicial: 2026-06-15
 Esta seccion corrige evidencia obsoleta sin declarar produccion lista.
 
 - Rama actual verificada: `codex/refactor-total`.
-- HEAD actual verificado: `1c66a4e4d3a0268631dcaeaafaa60d8ebbf1ae39`.
-- Ultimo commit verificado: `1c66a4e4 test(e2e): make button smoke qa reproducible`.
+- Este documento conserva secciones historicas de auditoria. Para evidencia
+  ejecutable vigente, usar `docs/testing-report.md`.
+- El objetivo actual es una release local monocomputadora. La prueba desde una
+  segunda PC LAN queda como validacion fisica para despliegues multi-PC, no como
+  siguiente blocker de ingenieria para el objetivo local.
+- No fijar un HEAD en esta seccion mientras el worktree siga avanzando por
+  fases; verificarlo con `git rev-parse HEAD` al cerrar cada commit.
 - `docker compose exec backend composer validate --no-interaction`: PASO, `./composer.json is valid`.
 - `docker compose exec backend composer audit --no-interaction`: PASO, `No security vulnerability advisories found.`
 - `composer validate/audit` ya no es un bloqueante cuando se ejecuta en el contenedor backend soportado.
@@ -18,7 +23,10 @@ Esta seccion corrige evidencia obsoleta sin declarar produccion lista.
 - Gate backend enfocado del nucleo (`InvoiceCreationTest`, `CashPaymentsReceiptTest`, `InvoiceHistoryReprintVoidTest`, `InvoiceReverseTest`, `ServiceCatalogTest`, `BackupWorkflowTest`, `UserManagementTest`, `ReportsTest`, `Reports/TodayReportTest`): PASO, 254 tests / 2032 aserciones.
 - `npm.cmd run e2e` ya no falla por password seed; ahora falla temprano por preflight si falta `backend/vendor/autoload.php` en el host. El camino containerizado de navegador tiene evidencia fresca en `docs/testing-report.md`.
 - `qa/production-audit/button-smoke-report.json` fue regenerado el 2026-07-05 con 79 resultados `passed`.
-- El estado global sigue siendo `NOT_READY`: faltan cierre del worktree, E2E host o equivalente final, evidencia fisica LAN/impresora/restore/backup worker, configuracion production real, admin real y paquete offline final.
+- El estado global sigue siendo `NOT_READY`: faltan cierre del worktree, E2E
+  host o equivalente final, evidencia de impresion institucional/restore/backup
+  worker, configuracion production real, admin real y paquete offline final. La
+  evidencia fisica LAN externa aplica cuando el despliegue sea multi-PC.
 
 ## 1. HEAD actual
 
@@ -126,8 +134,8 @@ Motivo:
 
 1. Worktree sucio con cambios no cerrados y archivos no rastreados.
 2. `npm.cmd run e2e` host requiere `backend/vendor/autoload.php`; el preflight indica correr `composer install` en `backend/` antes de ese gate.
-3. Falta prueba desde segunda PC LAN.
-4. Falta impresora fisica institucional.
+3. Falta prueba de impresion institucional/PDF final.
+4. Falta prueba desde segunda PC LAN si el despliegue final sera multi-PC.
 5. Falta restore final en servidor/base descartable final.
 6. Falta worker continuo de backups validado en servidor final.
 7. Falta configuracion production real (`APP_ENV=production`, `APP_DEBUG=false`, dominios/IP LAN reales, herramientas MySQL dump).
@@ -183,7 +191,8 @@ Orden recomendado:
 3. Regenerar paquete offline desde el commit final.
 4. Ejecutar guard de release limpio.
 5. En servidor final: configurar production real, admin real y worker continuo de backups.
-6. Ejecutar y documentar segunda PC LAN, impresora fisica, restore final y concurrencia final.
-7. Ejecutar `scripts/final_production_handoff.ps1` sin bypass y sin evidencia faltante.
+6. Ejecutar y documentar impresion institucional, restore final, concurrencia final y segunda PC LAN si el despliegue sera multi-PC.
+7. Ejecutar `scripts/production_readiness_preflight.ps1` sin bypass de evidencia
+   cuando existan todos los archivos de prueba requeridos.
 
 Solo despues de esos pasos se puede evaluar `PRODUCTION_READY`.

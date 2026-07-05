@@ -93,6 +93,10 @@ production approval.
 | 2026-07-05 | `docker compose exec frontend npm run test:critical` | PASS, 173 tests | Re-run after cash report recent-session selector; output clean without React `act(...)` warnings. |
 | 2026-07-05 | `docker compose exec frontend npm run typecheck` | PASS | TypeScript no emit after cash report selector. |
 | 2026-07-05 | `docker compose exec frontend npm run lint` | PASS | ESLint after cash report selector. |
+| 2026-07-05 | `docker compose exec frontend npx vitest run src/features/admin/UsersView.test.tsx src/features/admin/components/UserFormDialog.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism` | PASS, 44 tests | User management now keeps basic create/edit on role inheritance and moves exact direct permissions into the advanced accordion. |
+| 2026-07-05 | `docker compose exec frontend npm run test:critical` | PASS, 174 tests | Critical frontend gate after advanced exact-permission controls. |
+| 2026-07-05 | `docker compose exec frontend npm run typecheck` | PASS | TypeScript no emit after advanced exact-permission controls. |
+| 2026-07-05 | `docker compose exec frontend npm run lint` | PASS | ESLint after advanced exact-permission controls. |
 
 Recharts emits a known Playwright/Vite console warning about chart container
 dimensions in the mocked browser run. It does not currently fail the focused
@@ -123,13 +127,16 @@ typecheck/lint/build plus a focused backend business-critical test gate.
 The Docker stack, backend migrations/seeders, full backend PHPUnit, backend
 Unit suite, focused backend Feature suite, Pint, PHPStan with
 `--memory-limit=1G`, frontend lint, frontend typecheck, frontend Vitest,
-frontend build, and full Playwright are proven green for this pass.
+frontend build, and divided critical Playwright gates have green evidence in
+this report. The full historical Playwright matrix is not current green for the
+2026-07-05 pass because the Docker run timed out after about 900 seconds; use
+the divided critical E2E specs until that timeout is fixed.
 
 For Playwright in this container, use the system Chromium executable because the
 bundled browser cannot be downloaded reliably in offline/LAN-style conditions:
 
 ```bash
-docker compose exec -e PLAYWRIGHT_EXTERNAL_SERVER=1 -e PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser frontend npx playwright test --workers=2
+docker compose exec -e PLAYWRIGHT_EXTERNAL_SERVER=1 -e PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser frontend npx playwright test e2e/auth.spec.ts e2e/rbac.spec.ts e2e/new-invoice-flow.spec.ts e2e/cashbox.spec.ts e2e/invoice-history-flow.spec.ts e2e/reports-flow.spec.ts e2e/backups-flow.spec.ts e2e/settings-flow.spec.ts e2e/catalog-flow.spec.ts e2e/users-flow.spec.ts e2e/print-profiles.spec.ts e2e/pwa.spec.ts --workers=2 --reporter=list
 ```
 
 ## Backend Status
