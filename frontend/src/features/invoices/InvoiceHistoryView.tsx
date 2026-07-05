@@ -22,7 +22,7 @@ import { EmptyState, ErrorState, LoadingState } from '../../components/ui/states
 import { ReceiptPreview } from '../receipts/ReceiptPreview';
 import { Textarea } from '../../components/ui/textarea';
 import { institutionalReceiptPaperSize } from '../../lib/institutionalReceiptPaper';
-import { downloadBlob, openBlobInNewTab } from '../../lib/download';
+import { downloadBlob, institutionalReceiptPdfFilename, openBlobInNewTab } from '../../lib/download';
 import { formatLempirasUIFromCents, parseCents } from '../../lib/moneyCents';
 import { formatLocalizedDateTime } from '../../lib/format/formatDate';
 import { invalidateBillingQueries } from '@/lib/queryInvalidation';
@@ -273,7 +273,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     setLoadingActionInvoiceId(invoice.id);
     try {
       const blob = await apiClient.getInstitutionalReceiptPdf(institutionalReceipt.id);
-      downloadBlob(blob, `recibo-institucional-${institutionalReceipt.receipt_number_full}.pdf`);
+      downloadBlob(blob, institutionalReceiptPdfFilename(institutionalReceipt.receipt_number_full));
       onStatus(`PDF institucional ${institutionalReceipt.receipt_number_full} descargado.`);
     } catch (error) {
       onStatus(userSafeErrorMessage(error, 'No se pudo descargar el recibo institucional.'));
@@ -421,7 +421,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     const blob = reason?.trim()
       ? await apiClient.getInstitutionalReceiptPdf(receipt.id, reason, idempotencyKey ? { idempotencyKey } : undefined)
       : await apiClient.getInstitutionalReceiptPdf(receipt.id);
-    openBlobInNewTab(blob, `recibo-institucional-${receipt.receipt_number_full}.pdf`);
+    openBlobInNewTab(blob, institutionalReceiptPdfFilename(receipt.receipt_number_full));
   }
 
   const hasActiveFilters = !!(

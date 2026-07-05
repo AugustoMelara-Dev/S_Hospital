@@ -7,9 +7,14 @@ import { InvoiceHistoryView } from './InvoiceHistoryView';
 import { apiClient, type AuthUser, type Invoice, type ReceiptData } from '../../lib/api';
 import { openBlobInNewTab } from '../../lib/download';
 
-vi.mock('../../lib/download', () => ({
-  openBlobInNewTab: vi.fn(),
-}));
+vi.mock('../../lib/download', async () => {
+  const actual = await vi.importActual<typeof import('../../lib/download')>('../../lib/download');
+
+  return {
+    ...actual,
+    openBlobInNewTab: vi.fn(),
+  };
+});
 
 describe('InstitutionalReceiptFlow', () => {
   afterEach(() => {

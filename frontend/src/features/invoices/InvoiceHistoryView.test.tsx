@@ -9,10 +9,15 @@ import { apiClient, institutionalReceipts, type AuthUser, type InstitutionalRece
 import * as apiBase from '../../lib/api/base';
 import { downloadBlob, openBlobInNewTab } from '../../lib/download';
 
-vi.mock('../../lib/download', () => ({
-  downloadBlob: vi.fn(),
-  openBlobInNewTab: vi.fn(),
-}));
+vi.mock('../../lib/download', async () => {
+  const actual = await vi.importActual<typeof import('../../lib/download')>('../../lib/download');
+
+  return {
+    ...actual,
+    downloadBlob: vi.fn(),
+    openBlobInNewTab: vi.fn(),
+  };
+});
 
 function renderWithQueryClient(node: ReactNode, initialEntries = ['/']) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -887,6 +892,36 @@ describe('InvoiceHistoryView', () => {
     );
     expect(registerPrint).not.toHaveBeenCalled();
     expect(getReceipt).not.toHaveBeenCalled();
+  });
+
+  it('uses a safe institutional receipt pdf filename when the stored receipt number is malformed', async () => {
+    const paid = invoiceFixture({
+      id: 48,
+      invoice_number: '000-001-01-00000048',
+      patient_name: 'Paciente Recibo Alterado',
+      status: 'paid',
+      institutional_receipt: institutionalReceiptFixture({ id: 148, receipt_number_full: '../bad\r\nname"' }),
+    });
+    vi.spyOn(apiClient, 'getInstitutionalReceiptPdf')
+      .mockResolvedValue(new Blob(['%PDF-institutional'], { type: 'application/pdf' }));
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [paid],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+    vi.spyOn(apiClient, 'getInvoice').mockResolvedValue(paid);
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente Recibo Alterado')).toBeInTheDocument());
+    await openInvoiceMenu(paid.invoice_number);
+    fireEvent.click(await screen.findByRole('menuitem', { name: /Ver recibo/i }));
+
+    await waitFor(() => expect(apiClient.getInstitutionalReceiptPdf).toHaveBeenCalledWith(148));
+    expect(openBlobInNewTab).toHaveBeenCalledWith(
+      expect.any(Blob),
+      'recibo-institucional.pdf',
+    );
   });
 
   it('keeps the latest receipt selection when previous receipt requests finish late', async () => {

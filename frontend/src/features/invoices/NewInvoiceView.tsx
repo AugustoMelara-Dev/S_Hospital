@@ -7,7 +7,7 @@ import { newInvoiceReducer } from './state/reducer';
 import { getInitialNewInvoiceState } from './state/types';
 import { computeSimpleEstimate, isZeroMoney, parseLocalCents } from './state/posMath';
 import { NewInvoiceViewLayout } from './components/NewInvoiceViewLayout';
-import { openBlobInNewTab } from '@/lib/download';
+import { institutionalReceiptPdfFilename, openBlobInNewTab } from '@/lib/download';
 import { createClientIdempotencyKey } from '@/lib/api/base';
 import { payloadScopedIdempotencyKey, resetPayloadScopedIdempotencyKey } from '@/lib/api/idempotency';
 import { queryKeys } from '@/lib/queryKeys';
@@ -606,7 +606,7 @@ export function NewInvoiceView({
     if (trimmedReason) {
       receiptPdfIdempotencyKeyRef.current = null;
     }
-    openBlobInNewTab(blob, `recibo-institucional-${receipt.receipt_number_full}.pdf`);
+    openBlobInNewTab(blob, institutionalReceiptPdfFilename(receipt.receipt_number_full));
   }
 
   async function handlePrintIssuedReceipt() {
