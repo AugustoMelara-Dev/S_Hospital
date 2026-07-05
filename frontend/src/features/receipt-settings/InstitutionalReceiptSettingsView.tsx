@@ -421,6 +421,7 @@ export function InstitutionalReceiptSettingsView({
       : watchedProfile.copies_mode === 'original_first'
         ? '2'
         : '1';
+  const profileControlsDisabled = !canEdit || profileMutation.isPending;
   const visiblePrintProfiles = (settings?.print_profiles ?? []).filter(
     (profile) => canAdvancedPrintSettings || !SUPPORT_ONLY_PROFILE_CODES.has(profile.code),
   );
@@ -618,6 +619,7 @@ export function InstitutionalReceiptSettingsView({
                       aria-pressed={isActive}
                       variant={isActive ? 'secondary' : 'outline'}
                       className="h-auto w-full justify-between gap-3 p-3 text-left"
+                      disabled={profileControlsDisabled}
                       onClick={() => {
                         setSelectedCode(profile.code);
                         if (paperCode) setPaper(paperCode);
@@ -642,7 +644,7 @@ export function InstitutionalReceiptSettingsView({
                   const mapped = PAPER_TO_RECEIPT_CODE[code];
                   if (mapped) setSelectedCode(mapped);
                 }}
-                disabled={!canEdit}
+                disabled={profileControlsDisabled}
                 options={canAdvancedPrintSettings ? PAPER_PROFILES : NORMAL_RECEIPT_PAPER_OPTIONS}
                 helperText="Los márgenes se calculan automáticamente según el tipo de papel seleccionado."
               />
@@ -663,7 +665,7 @@ export function InstitutionalReceiptSettingsView({
                     <Select
                       value={profileForm.watch('copies_mode')}
                       onValueChange={(value) => profileForm.setValue('copies_mode', value as ProfileFormData['copies_mode'])}
-                      disabled={!canEdit}
+                      disabled={profileControlsDisabled}
                     >
                       <SelectTrigger id="copies_mode"><SelectValue /></SelectTrigger>
                       <SelectContent>
@@ -677,21 +679,21 @@ export function InstitutionalReceiptSettingsView({
                     id="profile_show_copy_legend"
                     label="Leyenda de copias"
                     checked={Boolean(profileForm.watch('show_copy_legend'))}
-                    disabled={!canEdit}
+                    disabled={profileControlsDisabled}
                     onChange={(value) => profileForm.setValue('show_copy_legend', value === true)}
                   />
                   <CheckboxField
                     id="profile_show_seal_space"
                     label="Espacio para sello/firma"
                     checked={Boolean(profileForm.watch('show_physical_seal_space'))}
-                    disabled={!canEdit}
+                    disabled={profileControlsDisabled}
                     onChange={(value) => profileForm.setValue('show_physical_seal_space', value === true)}
                   />
                   <CheckboxField
                     id="profile_use_logo"
                     label="Mostrar logo autorizado"
                     checked={Boolean(profileForm.watch('use_logo'))}
-                    disabled={!canEdit}
+                    disabled={profileControlsDisabled}
                     onChange={(value) => profileForm.setValue('use_logo', value === true)}
                   />
                   {canAdvancedPrintSettings && (
@@ -700,14 +702,14 @@ export function InstitutionalReceiptSettingsView({
                         id="profile_active"
                         label="Perfil activo"
                         checked={Boolean(profileForm.watch('active'))}
-                        disabled={!canEdit}
+                        disabled={profileControlsDisabled}
                         onChange={(value) => profileForm.setValue('active', value === true)}
                       />
                       <CheckboxField
                         id="profile_is_global_default"
                         label="Predeterminado global"
                         checked={Boolean(profileForm.watch('is_global_default'))}
-                        disabled={!canEdit}
+                        disabled={profileControlsDisabled}
                         onChange={(value) => profileForm.setValue('is_global_default', value === true)}
                       />
                     </>
@@ -715,7 +717,7 @@ export function InstitutionalReceiptSettingsView({
                 </div>
 
                 <div className="flex flex-wrap justify-end gap-2">
-                  <Button type="button" variant="secondary" disabled={testPrintMutation.isPending} onClick={() => testPrintMutation.mutate()}>
+                  <Button type="button" variant="secondary" disabled={profileControlsDisabled || testPrintMutation.isPending} onClick={() => testPrintMutation.mutate()}>
                     <Printer className="size-4" data-icon aria-hidden="true" />
                     Imprimir prueba
                   </Button>

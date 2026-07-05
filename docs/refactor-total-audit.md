@@ -4537,3 +4537,28 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, facturacion, caja, catalogo, recibos, respaldos, reportes ni usuarios.
 - Este corte mejora la claridad operativa del historial sin relajar auditoria ni permisos de reimpresion.
+
+## 187. Fase 6 - Recibos bloquean perfil mientras guarda
+
+Cambio aplicado:
+
+- `InstitutionalReceiptSettingsView` ahora bloquea perfiles disponibles, selector de papel, copias, logo/sello, controles normales y `Imprimir prueba` mientras `profileMutation.isPending=true`.
+- Esto evita que soporte o administracion cambien visualmente el papel o las copias despues de enviar `Guardar perfil` y antes de recibir respuesta del servidor local.
+- Se agrego una regresion con `updateReceiptPrintProfile` pendiente que confirma que los controles normales quedan deshabilitados durante el guardado.
+- No se cambian campos avanzados, validacion de motivo de soporte, serie/correlativo, generacion del PDF de prueba, permisos ni contratos API.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- InstitutionalReceiptSettingsView.test.tsx -t "locks normal paper profile controls" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial correcto: el boton de papel `Carta` seguia habilitado durante el guardado pendiente; luego OK: 1 test pasa. |
+| `npm run test -- InstitutionalReceiptSettingsView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=45000` | OK: 19 tests pasan. |
+| `npm run lint` | OK. |
+| `npm run typecheck` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, facturacion, caja, catalogo, historial, respaldos, reportes ni usuarios.
+- Este corte reduce confusion en configuracion de impresion normal sin exponer margenes, fuentes, ancho, alto ni escala al flujo operativo.

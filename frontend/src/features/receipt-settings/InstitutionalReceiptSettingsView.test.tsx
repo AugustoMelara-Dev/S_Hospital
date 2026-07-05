@@ -381,4 +381,23 @@ describe('InstitutionalReceiptSettingsView', () => {
     });
   });
 
+  it('locks normal paper profile controls while saving the profile', async () => {
+    const { apiClient } = await import('@/lib/api');
+    vi.mocked(apiClient.updateReceiptPrintProfile).mockImplementation(() => new Promise(() => undefined));
+    renderView();
+
+    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
+    await activateTab('Papel y copias');
+    fireEvent.click(screen.getByRole('button', { name: /guardar perfil/i }));
+
+    await waitFor(() => {
+      expect(apiClient.updateReceiptPrintProfile).toHaveBeenCalled();
+    });
+
+    expect(screen.getByRole('radio', { name: /^Carta\b/i })).toBeDisabled();
+    expect(screen.getByRole('combobox', { name: /copias/i })).toBeDisabled();
+    expect(screen.getByRole('checkbox', { name: /espacio para sello\/firma/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /imprimir prueba/i })).toBeDisabled();
+  });
+
 });
