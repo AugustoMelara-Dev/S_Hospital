@@ -145,13 +145,14 @@ const TONE_BORDER: Record<KpiTone, string> = {
 };
 
 function formatDelta(percentage: number | null): { label: string; icon: typeof ArrowUpRight; tone: string } | null {
-  if (percentage === null || Number.isNaN(percentage)) return null;
-  if (Math.abs(percentage) < 0.05) {
+  const safePercentage = typeof percentage === 'number' && Number.isFinite(percentage) ? percentage : null;
+  if (safePercentage === null) return null;
+  if (Math.abs(safePercentage) < 0.05) {
     return { label: 'sin cambio', icon: Minus, tone: 'text-muted-foreground' };
   }
-  const positive = percentage > 0;
+  const positive = safePercentage > 0;
   return {
-    label: `${positive ? '+' : ''}${percentage.toFixed(2)}%`,
+    label: `${positive ? '+' : ''}${safePercentage.toFixed(2)}%`,
     icon: positive ? ArrowUpRight : ArrowDownRight,
     tone: positive ? 'text-secondary' : 'text-destructive',
   };

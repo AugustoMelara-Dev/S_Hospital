@@ -4231,3 +4231,29 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, facturacion, caja operativa, catalogo, historial, recibos, respaldos ni usuarios.
 - Este corte endurece el reporte ejecutivo ante datos inconsistentes sin alterar la fuente de verdad server-side.
+
+## 175. Fase 15 - Resumen ejecutivo ignora deltas corruptos
+
+Cambio aplicado:
+
+- `ExecutiveSummary` ahora muestra badges de comparacion solo cuando el delta porcentual es un numero finito.
+- Si `delta_percentage` llega corrupto o no parseable, el resumen conserva los KPIs principales y omite el badge en vez de romper la pantalla con `toFixed`.
+- Se agrego una regresion con `delta_percentage='NaN'`, confirmando que el total facturado sigue visible y que el DOM no expone `NaN`.
+- No se cambian calculos backend, comparativos oficiales, filtros, exportaciones ni permisos.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- ExecutiveSummary.test.tsx -t "ignores malformed comparison deltas" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial correcto: `percentage.toFixed is not a function`; luego OK: 1 test pasa. |
+| `npm run test -- ExecutiveSummary.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 2 tests pasan. |
+| `npm run test -- ReportsExecutive.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 2 tests pasan. |
+| `npm run lint` | OK. |
+| `npm run typecheck` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, facturacion, caja operativa, catalogo, historial, recibos, respaldos ni usuarios.
+- Este corte protege la primera lectura gerencial del reporte ejecutivo sin alterar la autoridad del backend sobre metricas.
