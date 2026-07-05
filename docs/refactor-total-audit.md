@@ -5691,3 +5691,31 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte reduce confusion en caja: la cajera ve L.25.00 antes de cobrar y el backend sigue decidiendo el total final con la misma regla no gravable.
+
+## 235. Fase 13/14 - Usuarios filtra permisos inoperables de restore
+
+Cambio aplicado:
+
+- La pantalla de usuarios sanea roles y catalogo de permisos recibidos desde la API antes de renderizar formularios, matriz o payloads.
+- Si una instalacion heredada devuelve `backups.restore`, `receipts.void`, `users.assign_admin_role` o el marcador interno `system.exact_user_permissions`, esos permisos no se muestran como checkboxes ni se envian al crear/editar usuarios o roles.
+- El backend conserva la barrera real: esos permisos ya estan ocultos del catalogo oficial y se rechazan si llegan por payload.
+- No se tocaron migraciones, endpoints ni dependencias.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- UsersView.test.tsx -t "filters inoperable restore" --run` | RED inicial correcto: el formulario exponia `backups.restore`; luego OK. |
+| `docker compose exec frontend npm run test -- UsersView.test.tsx --run` | OK: 28 tests pasan. |
+| `docker compose exec frontend npm run test -- src/features/admin --run` | OK: 65 tests pasan; conserva advertencia `act(...)` preexistente en `UserFormDialog.test.tsx`. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `docker compose exec frontend npm run build` | OK. |
+| `docker compose exec backend php artisan test --filter=UserManagementTest::test_user_editor_rejects_inoperable_permissions_hidden_from_catalog` | OK: 1 test pasa, 6 aserciones. |
+| `git diff --check` | OK; solo aviso de normalizacion CRLF/LF en el test frontend. |
+| `powershell -ExecutionPolicy Bypass -File scripts\pre-commit-guard.ps1` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte mantiene la UI de usuarios enfocada en admin/cajero/roles operativos reales y evita que permisos de restauracion destructiva o marcadores internos reaparezcan por datos legados.

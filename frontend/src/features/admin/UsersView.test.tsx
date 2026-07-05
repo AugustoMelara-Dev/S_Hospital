@@ -475,6 +475,66 @@ describe('UsersView', () => {
     })));
   });
 
+  it('filters inoperable restore permissions from forms and user payloads if a legacy catalog returns them', async () => {
+    vi.mocked(apiClient.getRoles).mockResolvedValueOnce({
+      roles: [
+        {
+          id: 2,
+          name: 'cajero',
+          protected: false,
+          permissions: [
+            { name: 'cash.view', module: 'cash', label: 'Cash view' },
+            { name: 'backups.restore', module: 'backups', label: 'Restaurar respaldos' },
+          ],
+        },
+      ],
+      permissionCatalog: [
+        {
+          module: 'cash',
+          label: 'Caja',
+          permissions: [{ name: 'cash.view', module: 'cash', label: 'Cash view' }],
+        },
+        {
+          module: 'backups',
+          label: 'Respaldos',
+          permissions: [{ name: 'backups.restore', module: 'backups', label: 'Restaurar respaldos' }],
+        },
+      ],
+    });
+    const createUser = vi.spyOn(apiClient, 'createUser').mockResolvedValue({
+      ...adminUser,
+      id: 12,
+      name: 'Caja Sin Restore',
+      email: 'caja-sin-restore@hospital.test',
+      username: 'caja-sin-restore',
+      roles: ['cajero'],
+      direct_permissions: ['cash.view'],
+      permissions: ['cash.view'],
+      must_change_password: true,
+    });
+
+    render(<UsersView onStatus={vi.fn()} canCreateUsers={true} canUpdateUsers canManageRoles={true} canAssignAdminRole />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /crear usuario/i }));
+    const dialog = screen.getByRole('dialog', { name: /crear usuario/i });
+
+    expect(within(dialog).getByRole('checkbox', { name: /Cash view/i })).toBeChecked();
+    expect(within(dialog).queryByRole('checkbox', { name: /Restaurar respaldos/i })).not.toBeInTheDocument();
+    expect(within(dialog).queryByText(/backups\.restore/i)).not.toBeInTheDocument();
+
+    fireEvent.change(within(dialog).getByLabelText(/nombre completo/i), { target: { value: 'Caja Sin Restore' } });
+    fireEvent.change(within(dialog).getByLabelText(/correo electr/i), { target: { value: 'caja-sin-restore@hospital.test' } });
+    fireEvent.change(within(dialog).getByLabelText(/nombre de usuario/i), { target: { value: 'caja-sin-restore' } });
+    fireEvent.change(within(dialog).getByLabelText(/contrase/i), { target: { value: 'Password123!' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: /crear usuario/i }));
+
+    await waitFor(() => expect(createUser).toHaveBeenCalledWith(expect.objectContaining({
+      role: 'cajero',
+      permissions: ['cash.view'],
+    })));
+    expect(JSON.stringify(createUser.mock.calls)).not.toContain('backups.restore');
+  });
+
   it('sends selected module permissions when creating an operational user', async () => {
     const createUser = vi.spyOn(apiClient, 'createUser').mockResolvedValue({
       ...adminUser,

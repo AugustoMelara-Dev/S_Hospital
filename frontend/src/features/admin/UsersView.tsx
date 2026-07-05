@@ -32,6 +32,13 @@ type UsersViewProps = {
   currentUserId?: number;
 };
 
+const HIDDEN_PERMISSION_NAMES = new Set([
+  'system.exact_user_permissions',
+  'backups.restore',
+  'receipts.void',
+  'users.assign_admin_role',
+]);
+
 export function UsersView({
   onStatus,
   canCreateUsers,
@@ -93,8 +100,8 @@ export function UsersView({
         apiClient.getRoles(),
       ]);
       setUsers(data);
-      setRoles(roleData.roles);
-      setPermissionCatalog(roleData.permissionCatalog);
+      setRoles(sanitizeRoles(roleData.roles));
+      setPermissionCatalog(sanitizePermissionCatalog(roleData.permissionCatalog));
     } catch (err) {
       const msg = userSafeErrorMessage(err, 'No se pudieron cargar los usuarios.');
       setLoadError(msg);
@@ -146,6 +153,10 @@ export function UsersView({
   };
 
   const togglePermission = (permissionName: string, checked: boolean) => {
+    if (isHiddenPermission(permissionName)) {
+      return;
+    }
+
     setSelectedPermissions((current) => {
       if (checked) {
         return current.includes(permissionName) ? current : [...current, permissionName].sort();
@@ -155,6 +166,10 @@ export function UsersView({
   };
 
   const toggleUserPermission = (permissionName: string, checked: boolean) => {
+    if (isHiddenPermission(permissionName)) {
+      return;
+    }
+
     setSelectedUserPermissions((current) => {
       if (checked) {
         return current.includes(permissionName) ? current : [...current, permissionName].sort();
@@ -167,11 +182,12 @@ export function UsersView({
     setRoleGlobalError('');
 
     const normalizedName = data.name.trim();
+    const visiblePermissions = visiblePermissionNames(data.permissions);
     if (!/^[A-Za-z0-9_-]{3,80}$/.test(normalizedName)) {
       setRoleGlobalError('Use un nombre de rol entre 3 y 80 caracteres, solo letras, numeros, _ o -.');
       return;
     }
-    if (data.permissions.length === 0) {
+    if (visiblePermissions.length === 0) {
       setRoleGlobalError('Seleccione al menos un permiso para el rol.');
       return;
     }
@@ -183,16 +199,17 @@ export function UsersView({
 
     try {
       const saved = editingRole
-        ? await apiClient.updateRole(editingRole.id, { name: normalizedName, permissions: data.permissions })
-        : await apiClient.createRole({ name: normalizedName, permissions: data.permissions });
+        ? await apiClient.updateRole(editingRole.id, { name: normalizedName, permissions: visiblePermissions })
+        : await apiClient.createRole({ name: normalizedName, permissions: visiblePermissions });
+      const visibleSavedRole = sanitizeRole(saved);
 
       setRoles((current) => {
-        const exists = current.some((role) => role.id === saved.id);
-        return (exists ? current.map((role) => (role.id === saved.id ? saved : role)) : [...current, saved])
+        const exists = current.some((role) => role.id === visibleSavedRole.id);
+        return (exists ? current.map((role) => (role.id === visibleSavedRole.id ? visibleSavedRole : role)) : [...current, visibleSavedRole])
           .sort((a, b) => a.name.localeCompare(b.name));
       });
       setIsRoleModalOpen(false);
-      onStatus(`Rol ${saved.name} ${editingRole ? 'actualizado' : 'creado'} correctamente.`);
+      onStatus(`Rol ${visibleSavedRole.name} ${editingRole ? 'actualizado' : 'creado'} correctamente.`);
     } catch (err) {
       const msg = userSafeErrorMessage(err, 'No se pudo guardar el rol.');
       setRoleGlobalError(msg);
@@ -207,7 +224,7 @@ export function UsersView({
     setEditingUser(user);
     setSelectedUserPermissions(canManageRoles
       ? (user.uses_exact_permission_map
-        ? [...(user.direct_permissions ?? [])].sort()
+        ? visiblePermissionNames(user.direct_permissions ?? [])
         : permissionsForRole(user.roles[0] || defaultRoleName()))
       : []);
     setFormGlobalError('');
@@ -226,6 +243,7 @@ export function UsersView({
 
     onStatus('Guardando usuario...');
     try {
+      const visibleSelectedUserPermissions = visiblePermissionNames(selectedUserPermissions);
       if (editingUser) {
         const payload: Omit<UserPayload, 'password'> = {
           name: data.name,
@@ -234,7 +252,7 @@ export function UsersView({
           role: data.role,
         };
         if (canManageRoles) {
-          payload.permissions = selectedUserPermissions;
+          payload.permissions = visibleSelectedUserPermissions;
         }
         const updated = await apiClient.updateUser(editingUser.id, payload);
         setUsers((current) => current.map((u) => (u.id === editingUser.id ? updated : u)));
@@ -249,7 +267,7 @@ export function UsersView({
           active: true,
         };
         if (canManageRoles) {
-          payload.permissions = selectedUserPermissions;
+          payload.permissions = visibleSelectedUserPermissions;
         }
         const created = await apiClient.createUser(payload);
         setUsers((current) => [...current, created]);
@@ -540,4 +558,32 @@ export function UsersView({
 }
 function hasProtectedRole(user: AuthUser): boolean {
   return user.roles.some((role) => ['admin', 'root'].includes(role.toLowerCase()));
+}
+
+function isHiddenPermission(permissionName: string): boolean {
+  return HIDDEN_PERMISSION_NAMES.has(permissionName);
+}
+
+function visiblePermissionNames(permissions: string[]): string[] {
+  return [...new Set(permissions.filter((permission) => !isHiddenPermission(permission)))].sort();
+}
+
+function sanitizeRole(role: RoleDefinition): RoleDefinition {
+  return {
+    ...role,
+    permissions: role.permissions.filter((permission) => !isHiddenPermission(permission.name)),
+  };
+}
+
+function sanitizeRoles(roles: RoleDefinition[]): RoleDefinition[] {
+  return roles.map(sanitizeRole);
+}
+
+function sanitizePermissionCatalog(catalog: PermissionCatalogGroup[]): PermissionCatalogGroup[] {
+  return catalog
+    .map((group) => ({
+      ...group,
+      permissions: group.permissions.filter((permission) => !isHiddenPermission(permission.name)),
+    }))
+    .filter((group) => group.permissions.length > 0);
 }
