@@ -793,7 +793,7 @@ describe('InvoiceHistoryView', () => {
       Promise.resolve(receiptFixture(invoiceId === first.id ? first : second))
     ));
 
-    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
+    renderWithQueryClient(<InvoiceHistoryView user={legacyReceiptOperator()} onStatus={vi.fn()} />);
 
     await waitFor(() => expect(screen.getByText('Paciente Solicitud Lenta')).toBeInTheDocument());
     await openInvoiceMenu(first.invoice_number);
@@ -892,6 +892,32 @@ describe('InvoiceHistoryView', () => {
     await waitFor(() => expect(apiClient.getInstitutionalReceiptPdf).toHaveBeenCalledWith(96, 'Emisión manual de recibo faltante.', {
       idempotencyKey: 'history-generate-receipt-attempt-1',
     }));
+  });
+
+  it('does not offer legacy receipt actions when the cashier can generate the missing institutional receipt', async () => {
+    const paid = invoiceFixture({
+      id: 46,
+      invoice_number: '000-001-01-00000046',
+      patient_name: 'Paciente Recuperacion Institucional',
+      status: 'paid',
+      paid_amount: '17.25',
+      balance_due: '0.00',
+      institutional_receipt: null,
+    });
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [paid],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente Recuperacion Institucional')).toBeInTheDocument());
+    await openInvoiceMenu(paid.invoice_number);
+
+    expect(await screen.findByRole('menuitem', { name: /Generar PDF/i })).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /^Ver recibo$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /^Reimprimir$/i })).not.toBeInTheDocument();
   });
 
   it('requires a reprint reason before opening a previously printed institutional receipt from history', async () => {
@@ -1007,7 +1033,7 @@ describe('InvoiceHistoryView', () => {
     });
     vi.spyOn(apiClient, 'getInvoice').mockResolvedValue(paid);
 
-    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
+    renderWithQueryClient(<InvoiceHistoryView user={legacyReceiptOperator()} onStatus={vi.fn()} />);
 
     await waitFor(() => expect(screen.getByText('Paciente Reimpresion Legacy')).toBeInTheDocument());
     await openInvoiceMenu(paid.invoice_number);
@@ -1117,7 +1143,7 @@ describe('InvoiceHistoryView', () => {
     vi.spyOn(apiClient, 'getInvoice').mockResolvedValue(paid);
     vi.spyOn(apiClient, 'getReceipt').mockResolvedValue(receipt);
 
-    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
+    renderWithQueryClient(<InvoiceHistoryView user={legacyReceiptOperator()} onStatus={vi.fn()} />);
 
     await waitFor(() => expect(screen.getByText('Paciente Legacy')).toBeInTheDocument());
     await openInvoiceMenu(invoice.invoice_number);
@@ -1271,4 +1297,8 @@ function receiptViewerUser(): AuthUser {
     roles: ['auditor'],
     permissions: ['invoices.view', 'receipts.view'],
   };
+}
+
+function legacyReceiptOperator(): AuthUser {
+  return historyUser(['invoices.view', 'receipts.view', 'receipts.reprint', 'receipts.reprint_any']);
 }

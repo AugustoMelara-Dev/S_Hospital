@@ -118,8 +118,12 @@ export function InvoiceHistoryTable({
             && canOperateReceipt
             && (!hasInstitutionalPrintEvents(institutionalReceipt) || canReprint)
           : false;
+        const canIssueMissingInstitutionalReceipt = canIssueInstitutionalReceipt
+          && invoice.status === 'paid'
+          && !institutionalReceipt;
         const canOpenLegacyReceipt = canViewReceipt
           && !institutionalReceipt
+          && !canIssueMissingInstitutionalReceipt
           && (canReprintAny || isOwn);
         const canOpenReceipt = canOpenInstitutionalReceipt || canOpenLegacyReceipt;
         const groups: ActionMenuGroup[] = [];
@@ -150,7 +154,7 @@ export function InvoiceHistoryTable({
             onSelect: () => onDownloadInstitutionalReceipt(invoice),
           });
         }
-        if (canIssueInstitutionalReceipt && invoice.status === 'paid' && !institutionalReceipt) {
+        if (canIssueMissingInstitutionalReceipt) {
           primaryGroup.items.push({
             key: 'generate',
             label: 'Generar PDF',
@@ -159,7 +163,10 @@ export function InvoiceHistoryTable({
             onSelect: () => onGenerateInstitutionalReceipt(invoice.id),
           });
         }
-        const hasReprintableReceipt = Boolean(institutionalReceipt) || invoice.status === 'paid' || invoice.status === 'partial';
+        const canReprintLegacyReceipt = !canIssueMissingInstitutionalReceipt
+          && !institutionalReceipt
+          && (invoice.status === 'paid' || invoice.status === 'partial');
+        const hasReprintableReceipt = Boolean(institutionalReceipt) || canReprintLegacyReceipt;
         if (canReprint && (canReprintAny || isOwn) && hasReprintableReceipt) {
           primaryGroup.items.push({
             key: 'reprint',

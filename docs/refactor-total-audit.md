@@ -5207,3 +5207,26 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte evita que el formato secundario se use automaticamente como recibo principal cuando falla la emision institucional.
+
+## 215. Fase 8 - Historial prioriza recuperacion de recibo institucional
+
+Cambio aplicado:
+
+- `InvoiceHistoryTable` oculta `Ver recibo` y `Reimprimir` legacy cuando la factura pagada no tiene recibo institucional y el usuario puede generar el PDF institucional faltante.
+- El menu conserva `Generar PDF` como accion principal de recuperacion institucional desde Historial.
+- Los fallbacks legacy siguen cubiertos para perfiles sin permiso de generacion institucional.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- InvoiceHistoryView -t "does not offer legacy"` | RED inicial correcto: el menu aun mostraba `Ver recibo`; luego OK. |
+| `docker compose exec frontend npm run test -- InvoiceHistoryView` | OK: 35 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `docker compose exec frontend npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte alinea Historial con el flujo de pago: si falta el recibo principal, se recupera el institucional antes de entregar un comprobante.
