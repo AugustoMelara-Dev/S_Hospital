@@ -5164,3 +5164,22 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte reduce riesgo de drift monetario en reportes de area aunque el servicio sea legacy/no cableado actualmente.
+
+## 213. Fase 8 - Vistas Blade sin activos remotos
+
+Cambio aplicado:
+
+- Se removio la carga de Bunny Fonts del `welcome.blade.php` heredado de Laravel.
+- Se agrego `OfflineRuntimeAssetsTest` para impedir que vistas Blade carguen CSS, scripts, imagenes o imports desde HTTP(S).
+- La vista queda con fuentes de sistema/locales; no se agrega dependencia nueva ni servicio externo.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter OfflineRuntimeAssetsTest` | RED inicial correcto: detecto `https://fonts.bunny.net`; luego OK con 1 test y 16 assertions. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte refuerza la operacion offline LAN aun en vistas servidor heredadas o de fallback.
