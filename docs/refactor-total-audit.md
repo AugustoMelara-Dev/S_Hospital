@@ -4205,3 +4205,29 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, facturacion, caja operativa, catalogo, historial, recibos, respaldos ni usuarios.
 - Este corte mejora la confiabilidad visual del reporte ejecutivo sin alterar totales oficiales ni exportaciones server-side.
+
+## 174. Fase 15 - Metodos de pago toleran porcentajes corruptos
+
+Cambio aplicado:
+
+- `PaymentMethodPanel` ahora normaliza conteos y porcentajes de metodos de pago antes de renderizar barras y tabla.
+- Si `percentage` o `count` llegan corruptos o no parseables, el reporte muestra `0.00%` y `0 pagos` en vez de romper la pantalla o exponer valores tecnicos.
+- Se agrego una regresion con `percentage='NaN'` y `count='no-numero'`, confirmando que el panel no crashea ni muestra datos crudos.
+- No se cambian calculos backend, totales oficiales, filtros, exportaciones ni permisos.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- PaymentMethodPanel.test.tsx -t "normalizes malformed payment method percentages" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial correcto: `method.percentage.toFixed is not a function`; luego OK: 1 test pasa. |
+| `npm run test -- PaymentMethodPanel.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 3 tests pasan. |
+| `npm run test -- ReportsExecutive.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 2 tests pasan. |
+| `npm run lint` | OK. |
+| `npm run typecheck` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, facturacion, caja operativa, catalogo, historial, recibos, respaldos ni usuarios.
+- Este corte endurece el reporte ejecutivo ante datos inconsistentes sin alterar la fuente de verdad server-side.

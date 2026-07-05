@@ -1,4 +1,4 @@
-import { formatLempirasUI } from '@/lib/moneyCents';
+import { finiteNumber, formatLempirasUI } from '@/lib/moneyCents';
 import { ChartCard } from '@/components/shared';
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
 import type { ExecutiveReport } from '@/lib/api';
@@ -24,6 +24,14 @@ type PaymentMethodRow = {
   method: PaymentMethod['method'] | 'total';
   percentage: number;
 };
+
+function safePaymentCount(value: number | string | null | undefined): number {
+  return Math.max(0, Math.trunc(finiteNumber(value)));
+}
+
+function safePaymentPercentage(value: number | string | null | undefined): number {
+  return Math.max(0, Math.min(100, finiteNumber(value)));
+}
 
 const paymentMethodColumns: Array<DataTableColumn<PaymentMethodRow>> = [
   {
@@ -65,11 +73,16 @@ const paymentMethodColumns: Array<DataTableColumn<PaymentMethodRow>> = [
 
 export function PaymentMethodPanel({ report }: PaymentMethodPanelProps) {
   const totalCollectedCents = report.summary.collected_total_cents;
-  const totalPaymentCount = report.payment_methods.reduce((acc, method) => acc + method.count, 0);
+  const normalizedMethods = report.payment_methods.map((method) => ({
+    ...method,
+    count: safePaymentCount(method.count),
+    percentage: safePaymentPercentage(method.percentage),
+  }));
+  const totalPaymentCount = normalizedMethods.reduce((acc, method) => acc + method.count, 0);
   const paymentMethodRows: PaymentMethodRow[] =
-    report.payment_methods.length > 0
+    normalizedMethods.length > 0
       ? [
-          ...report.payment_methods.map((method) => ({
+          ...normalizedMethods.map((method) => ({
             amount: method.amount,
             count: method.count,
             key: method.method,
@@ -98,9 +111,9 @@ export function PaymentMethodPanel({ report }: PaymentMethodPanelProps) {
         <div className="grid gap-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] xl:items-start">
           <div className="rounded-md border border-operational-border bg-operational-panel p-4">
             <p className="text-sm font-semibold text-foreground">Participacion por metodo</p>
-            {report.payment_methods.length > 0 ? (
+            {normalizedMethods.length > 0 ? (
               <div className="mt-4 space-y-4" role="list" aria-label="Participacion por metodo de pago">
-                {report.payment_methods.map((method) => (
+                {normalizedMethods.map((method) => (
                   <div key={method.method} role="listitem" className="space-y-1.5">
                     <div className="flex items-center justify-between gap-3 text-sm">
                       <span className="font-medium text-foreground">
@@ -111,7 +124,7 @@ export function PaymentMethodPanel({ report }: PaymentMethodPanelProps) {
                       <div
                         className="h-full rounded-sm"
                         style={{
-                          width: `${Math.max(0, Math.min(100, method.percentage))}%`,
+                          width: `${method.percentage}%`,
                           background: METHOD_COLORS[method.method] ?? 'var(--color-muted-foreground)',
                         }}
                       />
