@@ -58,6 +58,11 @@ export function UsersTable({
       header: 'Rol',
       render: (user) => (
         <div className="flex flex-wrap gap-1">
+          {user.roles.length === 0 && (
+            <Badge variant="secondary" className="font-semibold text-muted-foreground">
+              Sin rol
+            </Badge>
+          )}
           {user.roles.map((role) => {
             const label = roleLabel(role);
             const showTechnicalName = label !== role;

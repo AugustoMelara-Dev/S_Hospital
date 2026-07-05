@@ -5527,3 +5527,26 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte mejora reportes ejecutivos utiles para operacion local, evitando que datos corruptos contaminen la vista normal o tecnologias de asistencia.
+
+## 229. Fase 8 - Usuarios muestra rol faltante de forma explicita
+
+Cambio aplicado:
+
+- La tabla de usuarios autorizados ya no deja vacia la columna de rol cuando una cuenta llega sin roles asignados.
+- El directorio muestra `Sin rol` con el mismo tratamiento visual de badges, evitando ambiguedad operativa al revisar accesos.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- UsersTable.test.tsx -t "shows an explicit role fallback"` | RED inicial correcto: la celda de rol quedaba vacia; luego OK. |
+| `docker compose exec frontend npm run test -- UsersTable.test.tsx` | OK: 4 tests pasan. |
+| `docker compose exec frontend npm run test -- src/features/admin` | OK: 64 tests pasan; conserva una advertencia `act(...)` preexistente en `UserFormDialog.test.tsx`. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `docker compose exec frontend npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte mejora la revision local de usuarios y permisos, haciendo visible un estado excepcional sin cambiar la politica del servidor.

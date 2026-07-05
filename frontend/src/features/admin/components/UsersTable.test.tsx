@@ -23,6 +23,15 @@ const customRoleUser: AuthUser = {
   roles: ['catalog_manager'],
 };
 
+const userWithoutRole: AuthUser = {
+  ...activeUser,
+  id: 3,
+  name: 'Usuario Sin Rol',
+  email: 'sinrol@hospital.test',
+  username: 'sinrol',
+  roles: [],
+};
+
 async function openUserActions(userName: string) {
   const trigger = await screen.findByRole('button', { name: new RegExp(`acciones de usuario ${userName}`, 'i') });
   trigger.focus();
@@ -87,5 +96,22 @@ describe('UsersTable', () => {
 
     expect(screen.getByText('Catalog Manager')).toBeInTheDocument();
     expect(screen.getByText('catalog_manager')).toHaveClass('text-muted-foreground');
+  });
+
+  it('shows an explicit role fallback when a user has no assigned roles', () => {
+    render(
+      <UsersTable
+        canAssignAdminRole={false}
+        canDisableUsers={false}
+        canUpdateUsers={false}
+        onEdit={vi.fn()}
+        onResetPassword={vi.fn()}
+        onToggleActive={vi.fn()}
+        searchTerm=""
+        users={[userWithoutRole]}
+      />,
+    );
+
+    expect(screen.getByText('Sin rol')).toBeInTheDocument();
   });
 });
