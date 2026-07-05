@@ -127,6 +127,27 @@ describe('BackupsView', () => {
     expect(pendingAlert).not.toHaveTextContent(/segunda computadora|concurrencia|80mm|58mm/i);
   });
 
+  it('does not downgrade local single-machine readiness only because LAN is not configured', async () => {
+    const status = systemStatusFixture();
+    vi.mocked(apiClient.getSystemStatus).mockResolvedValue({
+      ...status,
+      network: {
+        ...status.network,
+        configured_host: '127.0.0.1',
+        host_type: 'loopback',
+        lan_ready: false,
+        client_url: 'http://127.0.0.1:8081',
+        guidance: 'Operacion local en este equipo.',
+      },
+    });
+
+    renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
+
+    expect(await screen.findByText(/^Todo bien$/i)).toBeInTheDocument();
+    expect(screen.getByText(/respaldos y chequeos b.sicos est.n al d.a/i)).toBeInTheDocument();
+    expect(screen.queryByText(/falta completar respaldo reciente, validaci.n del recibo o configuraci.n final/i)).not.toBeInTheDocument();
+  });
+
   it('keeps the primary backup KPIs limited to last success, pending and failed backups', async () => {
     renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
 

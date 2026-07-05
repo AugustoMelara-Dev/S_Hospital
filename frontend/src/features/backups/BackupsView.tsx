@@ -175,7 +175,6 @@ function operationalSummary(status: SystemStatus): { level: OperationalStatus; l
   }
 
   const needsReview =
-    !status.network.lan_ready ||
     status.backups.pending_count > 0 ||
     status.readiness.blockers.some((blocker) => blocker.status !== 'validated') ||
     status.preflight.production_checks.some((check) => check.status !== 'validated') ||
