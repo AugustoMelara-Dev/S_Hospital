@@ -61,6 +61,7 @@ class InvoiceReverseTest extends TestCase
             'action' => 'invoice.reversed',
             'entity_type' => Invoice::class,
             'entity_id' => $invoiceId,
+            'reason' => 'Factura cobrada por error tras reimprimir muestra',
         ]);
 
         $this->assertSame(1, CashMovement::query()

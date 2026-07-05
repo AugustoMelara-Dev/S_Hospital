@@ -150,6 +150,7 @@ class ReverseInvoiceAction
                     'paid_amount_after' => (string) $reloaded->paid_amount,
                     'balance_due_after' => (string) $reloaded->balance_due,
                 ],
+                'reason' => $reason,
                 'created_at' => now(),
             ]);
 
