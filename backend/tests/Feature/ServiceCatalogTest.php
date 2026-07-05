@@ -786,6 +786,34 @@ class ServiceCatalogTest extends TestCase
             ->assertJsonValidationErrors('price');
     }
 
+    public function test_erythropoietin_catalog_rule_cannot_be_cleared_or_made_taxable(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $admin = $this->admin();
+        $service = Service::query()->where('name', 'Eritropoyetina')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->patchJson("/api/services/{$service->id}", [
+                'price' => '30.00',
+                'price_change_reason' => 'Intento de retirar regla fija',
+                'taxable' => true,
+                'tax_change_reason' => 'Intento de activar impuesto',
+                'special_rule_code' => null,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors([
+                'price',
+                'special_rule_code',
+                'taxable',
+            ]);
+
+        $service->refresh();
+
+        $this->assertSame('25.00', $service->price);
+        $this->assertFalse($service->taxable);
+        $this->assertSame(Service::ERYTHROPOIETIN_RULE, $service->special_rule_code);
+    }
+
     public function test_invalid_price_update_returns_validation_error_before_price_reason_check(): void
     {
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
