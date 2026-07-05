@@ -4688,3 +4688,29 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, facturacion, caja operativa, catalogo, historial, recibos, respaldos ni usuarios.
 - Este corte reduce errores operativos al exportar cierres de caja y conserva los datos del servidor como fuente de verdad.
+
+## 193. Fase 8 - Auditoria bloquea filtros mientras carga bitacora
+
+Cambio aplicado:
+
+- `ReportsAudit` ahora deshabilita accion, desde, hasta, buscar y limpiar mientras `getAuditLogs` esta consultando la bitacora.
+- Esto evita que administracion cambie visualmente filtros de anulaciones, reimpresiones o cierres mientras una busqueda auditada esta en curso.
+- Se agrego una regresion con `getAuditLogs` pendiente que confirma que todo el formulario de filtros queda bloqueado durante la carga.
+- Se ajusto la prueba de alias humanos para esperar la carga inicial antes de aplicar un filtro, reflejando el nuevo bloqueo operativo.
+- No se cambian alias de acciones, paginacion, permisos, resumen mensual, contratos API ni consulta backend.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- ReportsAudit.test.tsx -t "locks audit filters"` | RED inicial correcto: el campo `Accion` seguia habilitado durante la carga; luego OK: 1 test pasa. |
+| `docker compose exec frontend npm run test -- ReportsAudit.test.tsx` | OK: 7 tests pasan. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, facturacion, caja, catalogo, historial, recibos, respaldos ni usuarios.
+- Este corte reduce errores operativos al revisar auditoria y conserva el servidor como fuente de verdad para la bitacora.

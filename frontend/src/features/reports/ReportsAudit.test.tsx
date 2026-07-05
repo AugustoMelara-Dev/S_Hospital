@@ -62,8 +62,26 @@ describe('ReportsAudit', () => {
     expect(screen.getByLabelText(/^hasta$/i)).toBeInTheDocument();
   });
 
+  it('locks audit filters while audit logs are loading', async () => {
+    getAuditLogsMock.mockReturnValue(new Promise(() => undefined));
+
+    renderView();
+
+    expect(await screen.findByText(/cargando bitacora de auditoria/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^acci.n$/i)).toBeDisabled();
+    expect(screen.getByLabelText(/^desde$/i)).toBeDisabled();
+    expect(screen.getByLabelText(/^hasta$/i)).toBeDisabled();
+    expect(screen.getByRole('button', { name: /^buscar$/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /^limpiar$/i })).toBeDisabled();
+  });
+
   it('maps common human action filters to backend audit action codes', async () => {
     renderView();
+
+    await waitFor(() => {
+      expect(getAuditLogsMock).toHaveBeenCalledTimes(1);
+    });
+    getAuditLogsMock.mockClear();
 
     const actionInput = screen.getByLabelText(/^acci.n$/i);
     expect(actionInput).toHaveAttribute('placeholder', expect.stringMatching(/anulaci/i));

@@ -60,7 +60,7 @@ export function ReportsAudit({
     [applied],
   );
 
-  const { data, isLoading, isError, refetch } = useQuery<AuditLogPage>({
+  const { data, isLoading, isFetching, isError, refetch } = useQuery<AuditLogPage>({
     queryKey,
     queryFn: () =>
       system.getAuditLogs({
@@ -77,6 +77,7 @@ export function ReportsAudit({
     { date_from: summaryRange.from, date_to: summaryRange.to },
     canViewManagerial,
   );
+  const auditControlsLocked = isFetching;
 
   if (!canViewManagerial) {
     return (
@@ -145,6 +146,7 @@ export function ReportsAudit({
                 placeholder="Anulacion, reimpresion, cierre de caja..."
                 className="pl-9"
                 autoComplete="off"
+                disabled={auditControlsLocked}
               />
             </div>
           </div>
@@ -157,6 +159,7 @@ export function ReportsAudit({
               type="date"
               value={draft.from}
               onChange={(event) => setDraft((current) => ({ ...current, from: event.target.value }))}
+              disabled={auditControlsLocked}
             />
           </div>
           <div className="space-y-1">
@@ -168,13 +171,14 @@ export function ReportsAudit({
               type="date"
               value={draft.to}
               onChange={(event) => setDraft((current) => ({ ...current, to: event.target.value }))}
+              disabled={auditControlsLocked}
             />
           </div>
           <div className="flex items-end gap-2">
-            <Button type="submit" className="flex-1">
+            <Button type="submit" className="flex-1" disabled={auditControlsLocked}>
               Buscar
             </Button>
-            <Button type="button" variant="secondary" onClick={handleReset}>
+            <Button type="button" variant="secondary" onClick={handleReset} disabled={auditControlsLocked}>
               Limpiar
             </Button>
           </div>
