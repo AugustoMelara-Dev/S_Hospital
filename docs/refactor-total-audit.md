@@ -4613,3 +4613,28 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, facturacion, caja, historial, recibos, respaldos, reportes ni usuarios.
 - Este corte reduce errores operativos al administrar servicios y conserva la fuente de verdad de precios/reglas en backend.
+
+## 190. Fase 6 - Caja bloquea apertura mientras confirma monto
+
+Cambio aplicado:
+
+- `CashBoxView` ahora bloquea el formulario de apertura cuando el dialogo de confirmacion esta activo o la apertura esta en curso.
+- Esto evita que caja cambie visualmente el monto inicial despues de pedir confirmacion y antes de aceptar o cancelar la apertura auditada.
+- Se agrego una regresion con `openCashSession` controlado que confirma que el campo `Monto inicial` y el boton del formulario quedan bloqueados mientras se muestra `Confirmar apertura de caja`.
+- No se cambian payloads, idempotencia, permisos, cierre de caja, reportes, auditoria backend ni contratos API.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- CashBoxView.test.tsx -t "locks the open cash form"` | RED inicial correcto: el campo `Monto inicial` seguia habilitado durante la confirmacion; luego OK: 1 test pasa. |
+| `docker compose exec frontend npm run test -- CashBoxView.test.tsx` | OK: 13 tests pasan. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, facturacion, catalogo, historial, recibos, respaldos, reportes ni usuarios.
+- Este corte reduce confusion operativa al abrir caja y conserva el backend como fuente de verdad para la sesion auditada.

@@ -404,6 +404,21 @@ describe('CashBoxView', () => {
     });
   });
 
+  it('locks the open cash form while the opening confirmation is active', async () => {
+    vi.spyOn(apiClient, 'openCashSession').mockResolvedValue(cashSessionFixture({ id: 53, opening_amount: '75.00' }));
+    vi.spyOn(apiClient, 'getCurrentCashSession').mockResolvedValue(null);
+
+    renderCashBox(<CashBoxView onStatus={vi.fn()} />);
+
+    const amount = await screen.findByLabelText(/monto inicial/i);
+    fireEvent.change(amount, { target: { value: '75.00' } });
+    fireEvent.click(screen.getByRole('button', { name: /abrir caja/i }));
+
+    expect(await screen.findByRole('alertdialog', { name: /confirmar apertura de caja/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/monto inicial/i)).toBeDisabled();
+    expect(within(amount.closest('form')!).getByText(/abriendo/i).closest('button')).toBeDisabled();
+  });
+
   it('accepts a pasted opening amount with spaces and sends the trimmed value', async () => {
     const opened = cashSessionFixture({ id: 52, opening_amount: '100.00' });
     const openCashSession = vi.spyOn(apiClient, 'openCashSession').mockResolvedValue(opened);

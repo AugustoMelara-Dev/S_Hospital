@@ -165,6 +165,7 @@ export function CashBoxView({
   const pendingAmount = activeSession?.pending_amount ?? '0.00';
   const hasPendingBalance = pendingInvoiceCount > 0 || parseCents(pendingAmount) > 0;
   const canRenderOperationalState = Boolean(activeSession) || (!sessionLoadError && !isLoading);
+  const isOpenSessionFormLocked = pendingOpening !== null || openSessionMutation.isPending;
 
   useEffect(() => {
     if (isOpen) {
@@ -350,7 +351,7 @@ export function CashBoxView({
           </>
         ) : canRenderOperationalState && canOpenCash ? (
           <OpenSessionForm
-            isSubmitting={openSessionMutation.isPending}
+            isSubmitting={isOpenSessionFormLocked}
             onSubmit={handleOpenSession}
           />
         ) : canRenderOperationalState ? (
