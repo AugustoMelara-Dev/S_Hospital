@@ -164,7 +164,7 @@ export function DashboardView({
               {primaryAction.label}
             </Button>
           )}
-          {canCreateInvoices && cashIsOpen && (
+          {canCreateInvoices && canViewInvoices && cashIsOpen && (
             <Button asChild variant="outline" size="sm">
               <Link to="/invoices">Ver historial</Link>
             </Button>
@@ -219,19 +219,18 @@ export function DashboardView({
         </Alert>
       )}
 
-      <section className="rounded-panel border border-operational-border bg-operational-surface p-5 shadow-operational" aria-labelledby="recent-invoices-title">
-        <header className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      {canViewInvoices ? (
+        <section className="rounded-panel border border-operational-border bg-operational-surface p-5 shadow-operational" aria-labelledby="recent-invoices-title">
+          <header className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <h2 id="recent-invoices-title" className="text-base font-semibold text-foreground">
             Facturas recientes
           </h2>
-          {canViewInvoices && (
-            <Button asChild variant="ghost" size="sm">
-              <Link to="/invoices">Ver historial completo</Link>
-            </Button>
-          )}
-        </header>
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/invoices">Ver historial completo</Link>
+          </Button>
+          </header>
 
-        {loadingRecent ? (
+          {loadingRecent ? (
           <LoadingState label="Cargando facturas recientes..." />
         ) : showRecentInvoices ? (
           <Alert title="Sin facturas hoy">
@@ -250,7 +249,8 @@ export function DashboardView({
             emptyTitle="Sin facturas recientes"
           />
         )}
-      </section>
+        </section>
+      ) : null}
 
       {canViewFiscalSettings && (
         <SetupWizardDialog

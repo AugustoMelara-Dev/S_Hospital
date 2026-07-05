@@ -236,6 +236,22 @@ describe('DashboardView', () => {
     });
   });
 
+  it('hides recent invoices when the user cannot view invoice history', async () => {
+    const getInvoices = vi.spyOn(apiClient, 'getInvoices');
+
+    renderDashboard(
+      makeBaseProps({
+        canViewInvoices: false,
+        cashSession: makeCashSession({ id: 9 }),
+      }),
+    );
+
+    expect(await screen.findByText(/^caja$/i)).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /facturas recientes/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /ver historial/i })).not.toBeInTheDocument();
+    expect(getInvoices).not.toHaveBeenCalled();
+  });
+
   it('renders a setup card only when needs_setup is true', async () => {
     mockSetupStatus(true);
 
