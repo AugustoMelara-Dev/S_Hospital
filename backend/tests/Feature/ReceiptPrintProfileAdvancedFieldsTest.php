@@ -51,6 +51,97 @@ class ReceiptPrintProfileAdvancedFieldsTest extends TestCase
         ]);
     }
 
+    public function test_user_without_advanced_permission_cannot_change_technical_print_fields(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $this->seed(ReceiptPrintProfileSeeder::class);
+
+        $user = User::factory()->create();
+        $user->givePermissionTo('receipt_settings.update');
+
+        $profile = ReceiptPrintProfile::query()
+            ->where('code', ReceiptPrintProfile::CODE_HALF_LETTER)
+            ->firstOrFail();
+
+        $this->actingAs($user)
+            ->patchJson("/api/settings/institutional-receipts/print-profiles/{$profile->id}", [
+                'paper_kind' => 'custom_mm',
+                'orientation' => 'portrait',
+                'show_technical_fields' => true,
+            ])
+            ->assertStatus(403)
+            ->assertJsonValidationErrors('receipt_settings.advanced');
+
+        $profile->refresh();
+        $this->assertSame('half_letter_landscape', $profile->paper_kind);
+        $this->assertSame('landscape', $profile->orientation);
+        $this->assertFalse((bool) $profile->show_technical_fields);
+
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $user->id,
+            'action' => 'receipt_settings.advanced_denied',
+            'entity_type' => ReceiptPrintProfile::class,
+            'entity_id' => $profile->id,
+            'result' => 'denied',
+        ]);
+    }
+
+    public function test_user_without_advanced_permission_cannot_activate_support_only_profiles(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $this->seed(ReceiptPrintProfileSeeder::class);
+
+        $user = User::factory()->create();
+        $user->givePermissionTo('receipt_settings.update');
+
+        $profile = ReceiptPrintProfile::query()
+            ->where('code', ReceiptPrintProfile::CODE_THERMAL_80)
+            ->firstOrFail();
+
+        $this->actingAs($user)
+            ->patchJson("/api/settings/institutional-receipts/print-profiles/{$profile->id}", [
+                'active' => true,
+            ])
+            ->assertStatus(403)
+            ->assertJsonValidationErrors('receipt_settings.advanced');
+
+        $this->assertFalse((bool) $profile->refresh()->active);
+    }
+
+    public function test_standard_profile_normal_fields_remain_allowed_without_advanced_permission(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $this->seed(ReceiptPrintProfileSeeder::class);
+
+        $user = User::factory()->create();
+        $user->givePermissionTo('receipt_settings.update');
+
+        $profile = ReceiptPrintProfile::query()
+            ->where('code', ReceiptPrintProfile::CODE_A5)
+            ->firstOrFail();
+
+        $this->actingAs($user)
+            ->patchJson("/api/settings/institutional-receipts/print-profiles/{$profile->id}", [
+                'template_code' => 'institutional_classic',
+                'copies_mode' => 'original_first',
+                'show_copy_legend' => false,
+                'show_physical_seal_space' => true,
+                'use_logo' => true,
+                'active' => true,
+                'is_global_default' => true,
+            ])
+            ->assertOk();
+
+        $profile->refresh();
+        $this->assertSame('institutional_classic', $profile->template_code);
+        $this->assertSame('original_first', $profile->copies_mode);
+        $this->assertFalse((bool) $profile->show_copy_legend);
+        $this->assertTrue((bool) $profile->show_physical_seal_space);
+        $this->assertTrue((bool) $profile->use_logo);
+        $this->assertTrue((bool) $profile->active);
+        $this->assertTrue((bool) $profile->is_global_default);
+    }
+
     public function test_advanced_manual_fields_require_support_reason(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);

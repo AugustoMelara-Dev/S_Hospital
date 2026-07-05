@@ -184,7 +184,7 @@ class InstitutionalReceiptSettingsController extends Controller
                 'message' => 'Este cambio requiere el permiso receipt_settings.advanced.',
                 'errors' => [
                     'receipt_settings.advanced' => [
-                        'No tiene permiso para modificar margenes, tamano, fuente o escala del recibo. Solicite soporte tecnico.',
+                        'No tiene permiso para modificar papel, orientacion, margenes, tamano, fuente, escala o campos tecnicos del recibo. Solicite soporte tecnico.',
                     ],
                 ],
             ], 403);
