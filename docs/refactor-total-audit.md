@@ -5093,3 +5093,27 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte alinea el reporte ejecutivo con la lectura operativa de anulaciones por turno/rango real de autorizacion.
+
+## 210. Fase 8 - Reportes diario e ingreso cuentan anulaciones por fecha real
+
+Cambio aplicado:
+
+- `FinancialFactsService` calcula `total_voided` con `voided_at` en vez de la fecha de emision.
+- `DailyReportService` mantiene facturas emitidas por `issued_at`, pero calcula el estado `void` por `voided_at`.
+- `IncomeReportService` aplica la misma separacion para rangos, respetando filtros de usuario, caja, metodo, categoria, area y estado.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter daily_and_income_reports_count_voided_invoices_by_void_date` | RED inicial correcto: `total_voided` salia `0.00` para una factura emitida ayer y anulada hoy; luego OK. |
+| `docker compose exec backend php artisan test --filter FinancialFactsReportTest` | OK: 5 tests pasan. |
+| `docker compose exec backend php artisan test --filter "daily_report_calculates_collected_totals_methods_and_statuses_without_void_income|monthly_report_summarizes_financial_facts_by_day_without_void_income|income_report_respects_date_range_and_invalid_ranges_return_422"` | OK: 3 tests pasan. |
+| `docker compose exec backend vendor/bin/pint --test --dirty` | OK: 0 files. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M --no-progress` | OK: sin errores. |
+| `git diff --check` | OK: sin errores de whitespace; Git aviso normal de LF en `docs/refactor-total-audit.md`. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte alinea reportes de cierre diario y de ingresos con el momento real de autorizacion de anulaciones, sin inflar ventas emitidas.

@@ -113,6 +113,47 @@ class FinancialFactsReportTest extends TestCase
             ->assertJsonPath('data.payment_count', 2);
     }
 
+    public function test_daily_and_income_reports_count_voided_invoices_by_void_date(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $this->openSession($cashier, '100.00');
+        $voidedInvoice = $this->createInvoice($cashier, 'Glucosa');
+
+        Invoice::query()->whereKey($voidedInvoice)->update([
+            'issued_at' => now()->subDay(),
+            'status' => Invoice::STATUS_VOID,
+            'voided_by' => $this->supervisor()->id,
+            'voided_at' => now(),
+            'void_reason' => 'Anulada en cierre operativo de hoy',
+        ]);
+
+        $today = now()->toDateString();
+
+        $this->actingAs($this->supervisor())
+            ->getJson('/api/reports/daily?date='.$today)
+            ->assertOk()
+            ->assertJsonPath('data.invoice_count', 0)
+            ->assertJsonPath('data.total_billed', '0.00')
+            ->assertJsonPath('data.total_voided', '17.25')
+            ->assertJsonPath('data.invoices_by_status.void.count', 1)
+            ->assertJsonPath('data.invoices_by_status.void.total', '17.25');
+
+        $query = http_build_query([
+            'date_from' => $today,
+            'date_to' => $today,
+        ]);
+
+        $this->actingAs($this->admin())
+            ->getJson("/api/reports/income?{$query}")
+            ->assertOk()
+            ->assertJsonPath('data.invoice_count', 0)
+            ->assertJsonPath('data.total_billed', '0.00')
+            ->assertJsonPath('data.total_voided', '17.25')
+            ->assertJsonPath('data.invoices_by_status.void.count', 1)
+            ->assertJsonPath('data.invoices_by_status.void.total', '17.25');
+    }
+
     public function test_income_report_counts_unpaid_invoices_when_not_payment_scoped(): void
     {
         $this->seedBillingBase();

@@ -47,6 +47,7 @@ class DailyReportService
 
         Invoice::query()
             ->whereBetween('issued_at', [$start, $end])
+            ->where('status', '!=', Invoice::STATUS_VOID)
             ->groupBy('status')
             ->select('status', DB::raw('COUNT(*) as count'), DB::raw('COALESCE(SUM(total_cents), 0) as total_cents'))
             ->get()
@@ -56,6 +57,18 @@ class DailyReportService
                     'total' => $this->centsToMoney($row->total_cents),
                 ];
             });
+
+        $voided = Invoice::query()
+            ->where('status', Invoice::STATUS_VOID)
+            ->whereBetween('voided_at', [$start, $end])
+            ->selectRaw('COUNT(*) as count')
+            ->selectRaw('COALESCE(SUM(total_cents), 0) as total_cents')
+            ->first();
+
+        $statuses[Invoice::STATUS_VOID] = [
+            'count' => (int) ($voided->count ?? 0),
+            'total' => $this->centsToMoney($voided->total_cents ?? 0),
+        ];
 
         return [
             'date' => $date,
