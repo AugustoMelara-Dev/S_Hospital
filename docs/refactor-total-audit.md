@@ -4257,3 +4257,29 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, facturacion, caja operativa, catalogo, historial, recibos, respaldos ni usuarios.
 - Este corte protege la primera lectura gerencial del reporte ejecutivo sin alterar la autoridad del backend sobre metricas.
+
+## 176. Fase 10 - Ranking de servicios muestra cantidades como unidades
+
+Cambio aplicado:
+
+- `ServiceRanking` ahora formatea las columnas `Cantidad` como unidades con `formatQuantity`, no como moneda.
+- Los importes `Facturado` y `Cobrado` conservan `formatLempirasUI`, separando volumen operativo de valores financieros.
+- Se agrego una regresion que valida cantidades `12.00`, `18.00` y `7.00` sin prefijo `L`, manteniendo `L 1,200.00` para el total facturado.
+- No se cambian calculos backend, contratos API, filtros, exportaciones ni permisos.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- ServiceRanking.test.tsx -t "formats quantities as units" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial correcto: no encontraba `12.00` porque la cantidad se mostraba como `L 12.00`; luego OK: 1 test pasa. |
+| `npm run test -- ServiceRanking.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 3 tests pasan. |
+| `npm run test -- ReportsExecutive.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 2 tests pasan. |
+| `npm run lint` | OK. |
+| `npm run typecheck` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, facturacion, caja operativa, catalogo, historial, recibos, respaldos ni usuarios.
+- Este corte hace mas legible el reporte ejecutivo de servicios al evitar mezclar cantidades atendidas con montos financieros.

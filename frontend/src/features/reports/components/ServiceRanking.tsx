@@ -1,4 +1,4 @@
-import { formatLempirasUI } from '@/lib/moneyCents';
+import { formatLempirasUI, formatQuantity } from '@/lib/moneyCents';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -31,7 +31,7 @@ function ServiceRow({ index, service, showCollected = true }: { index: number; s
         </div>
       </TableCell>
       <TableCell className="text-right tabular-nums">{service.item_count}</TableCell>
-      <TableCell className="text-right font-mono tabular-nums">{formatLempirasUI(service.quantity)}</TableCell>
+      <TableCell className="text-right font-mono tabular-nums">{formatQuantity(service.quantity)}</TableCell>
       <TableCell className="text-right font-mono tabular-nums font-semibold">
         {formatLempirasUI(service.total)}
       </TableCell>
@@ -50,7 +50,7 @@ function CategoryRow({ index, row }: { index: number; row: CategoryRowData }) {
       <TableCell className="w-8 text-center text-muted-foreground">{index + 1}</TableCell>
       <TableCell className="font-semibold text-foreground">{row.category}</TableCell>
       <TableCell className="text-right tabular-nums">{row.item_count}</TableCell>
-      <TableCell className="text-right font-mono tabular-nums">{formatLempirasUI(row.quantity)}</TableCell>
+      <TableCell className="text-right font-mono tabular-nums">{formatQuantity(row.quantity)}</TableCell>
       <TableCell className="text-right font-mono tabular-nums font-semibold">
         {formatLempirasUI(row.total)}
       </TableCell>
@@ -67,7 +67,7 @@ function AreaRow({ index, row }: { index: number; row: AreaRowData }) {
       <TableCell className="w-8 text-center text-muted-foreground">{index + 1}</TableCell>
       <TableCell className="font-semibold text-foreground">{row.area}</TableCell>
       <TableCell className="text-right tabular-nums">{row.item_count}</TableCell>
-      <TableCell className="text-right font-mono tabular-nums">{formatLempirasUI(row.quantity)}</TableCell>
+      <TableCell className="text-right font-mono tabular-nums">{formatQuantity(row.quantity)}</TableCell>
       <TableCell className="text-right font-mono tabular-nums font-semibold">
         {formatLempirasUI(row.total)}
       </TableCell>
