@@ -5574,3 +5574,26 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte endurece la pantalla de respaldos para operacion local, mostrando lenguaje seguro cuando los metadatos del archivo quedan incompletos o corruptos.
+
+## 231. Fase 8 - Excel ejecutivo tolera numeros corruptos
+
+Cambio aplicado:
+
+- El exportador Excel ejecutivo ya no falla si un payload de reporte trae montos, cantidades, porcentajes o conteos no numericos.
+- Los valores corruptos degradan a cero en el XLSX, manteniendo el archivo descargable para revision operativa.
+- El escape de texto tipo formula se conserva independiente de la sanitizacion numerica.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter=test_executive_excel_sanitizes_malformed_numeric_payloads` | RED inicial correcto: el exportador lanzaba `ValidationException`; luego OK con 21 aserciones. |
+| `docker compose exec backend php artisan test --filter=ExecutiveExcelExportTest` | OK: 5 tests pasan, 64 aserciones. |
+| `docker compose exec backend vendor/bin/pint --test` | OK: 429 archivos. |
+| `docker compose exec backend vendor/bin/phpstan analyse` | Incompleto por limite de memoria PHPStan 128M. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M` | OK: sin errores. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte protege reportes utiles para cierre y supervision local: un dato danado no debe impedir descargar el Excel ejecutivo completo.

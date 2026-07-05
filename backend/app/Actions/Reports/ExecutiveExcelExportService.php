@@ -6,6 +6,7 @@ use App\Support\ExcelSafe;
 use App\Support\HospitalName;
 use App\Support\Money;
 use Illuminate\Support\Carbon;
+use Illuminate\Validation\ValidationException;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
@@ -97,12 +98,12 @@ class ExecutiveExcelExportService
             ['Saldo Pendiente', $this->moneyFloat($summary['pending_total'] ?? '0.00'), null],
             ['Anulado', $this->moneyFloat($summary['voided_total'] ?? '0.00'), null],
             ['Reversado', $this->moneyFloat($summary['reversed_total'] ?? '0.00'), null],
-            ['Facturas', (int) ($summary['invoice_count'] ?? 0), null],
-            ['Recibos', (int) ($summary['receipt_count'] ?? 0), null],
-            ['Pagadas', (int) ($summary['paid_count'] ?? 0), null],
-            ['Parciales', (int) ($summary['partial_count'] ?? 0), null],
-            ['Pendientes', (int) ($summary['pending_count'] ?? 0), null],
-            ['Anuladas', (int) ($summary['voided_count'] ?? 0), null],
+            ['Facturas', $this->safeCount($summary['invoice_count'] ?? 0), null],
+            ['Recibos', $this->safeCount($summary['receipt_count'] ?? 0), null],
+            ['Pagadas', $this->safeCount($summary['paid_count'] ?? 0), null],
+            ['Parciales', $this->safeCount($summary['partial_count'] ?? 0), null],
+            ['Pendientes', $this->safeCount($summary['pending_count'] ?? 0), null],
+            ['Anuladas', $this->safeCount($summary['voided_count'] ?? 0), null],
             ['Ticket Promedio', $this->moneyFloat($summary['average_ticket'] ?? '0.00'), null],
         ];
 
@@ -141,14 +142,14 @@ class ExecutiveExcelExportService
         foreach ($methods as $method) {
             $sheet->setCellValue("A{$row}", $this->safeText($method['label'] ?? $method['method'] ?? ''));
             $sheet->setCellValue("B{$row}", $this->moneyFloat($method['amount'] ?? '0.00'));
-            $sheet->setCellValue("C{$row}", (int) ($method['count'] ?? 0));
+            $sheet->setCellValue("C{$row}", $this->safeCount($method['count'] ?? 0));
             $sheet->setCellValue("D{$row}", $this->percentageValue($method['percentage'] ?? '0'));
             $row++;
         }
 
         $sheet->setCellValue("A{$row}", 'Total');
         $sheet->setCellValue("B{$row}", $totalCents / 100);
-        $sheet->setCellValue("C{$row}", array_sum(array_map(fn ($m) => (int) ($m['count'] ?? 0), $methods)));
+        $sheet->setCellValue("C{$row}", array_sum(array_map(fn ($m) => $this->safeCount($m['count'] ?? 0), $methods)));
         $sheet->setCellValue("D{$row}", 1);
         $this->applyBoldRow($sheet, "A{$row}:D{$row}");
 
@@ -175,8 +176,8 @@ class ExecutiveExcelExportService
             $sheet->setCellValue("B{$row}", $this->moneyFloat($day['billed'] ?? '0.00'));
             $sheet->setCellValue("C{$row}", $this->moneyFloat($day['collected'] ?? '0.00'));
             $sheet->setCellValue("D{$row}", $this->moneyFloat($day['pending'] ?? '0.00'));
-            $sheet->setCellValue("E{$row}", (int) ($day['voided_count'] ?? 0));
-            $sheet->setCellValue("F{$row}", (int) ($day['invoice_count'] ?? 0));
+            $sheet->setCellValue("E{$row}", $this->safeCount($day['voided_count'] ?? 0));
+            $sheet->setCellValue("F{$row}", $this->safeCount($day['invoice_count'] ?? 0));
             $row++;
         }
 
@@ -258,7 +259,7 @@ class ExecutiveExcelExportService
             $sheet->setCellValue("B{$row}", $this->quantityValue($cat['quantity'] ?? '0'));
             $sheet->setCellValue("C{$row}", $this->moneyFloat($cat['total'] ?? '0.00'));
             $sheet->setCellValue("D{$row}", $this->moneyFloat($cat['collected'] ?? '0.00'));
-            $sheet->setCellValue("E{$row}", (int) ($cat['item_count'] ?? 0));
+            $sheet->setCellValue("E{$row}", $this->safeCount($cat['item_count'] ?? 0));
             $row++;
         }
 
@@ -280,7 +281,7 @@ class ExecutiveExcelExportService
             $sheet->setCellValue("A{$row}", $this->safeText($area['area'] ?? ''));
             $sheet->setCellValue("B{$row}", $this->quantityValue($area['quantity'] ?? '0'));
             $sheet->setCellValue("C{$row}", $this->moneyFloat($area['total'] ?? '0.00'));
-            $sheet->setCellValue("D{$row}", (int) ($area['item_count'] ?? 0));
+            $sheet->setCellValue("D{$row}", $this->safeCount($area['item_count'] ?? 0));
             $row++;
         }
 
@@ -303,8 +304,8 @@ class ExecutiveExcelExportService
             $sheet->setCellValue("D{$row}", $this->moneyFloat($cashier['transfer'] ?? '0.00'));
             $sheet->setCellValue("E{$row}", $this->moneyFloat($cashier['card'] ?? '0.00'));
             $sheet->setCellValue("F{$row}", $this->moneyFloat($cashier['other'] ?? '0.00'));
-            $sheet->setCellValue("G{$row}", (int) ($cashier['payment_count'] ?? 0));
-            $sheet->setCellValue("H{$row}", (int) ($cashier['voided_count'] ?? 0));
+            $sheet->setCellValue("G{$row}", $this->safeCount($cashier['payment_count'] ?? 0));
+            $sheet->setCellValue("H{$row}", $this->safeCount($cashier['voided_count'] ?? 0));
             $sheet->setCellValue("I{$row}", $this->moneyFloat($cashier['difference_total'] ?? '0.00'));
             $row++;
         }
@@ -364,17 +365,17 @@ class ExecutiveExcelExportService
         ]);
 
         $sheet->setCellValue("A{$row}", '0 a 7 dias');
-        $sheet->setCellValue("B{$row}", (int) ($pending['0_7_days']['count'] ?? 0));
+        $sheet->setCellValue("B{$row}", $this->safeCount($pending['0_7_days']['count'] ?? 0));
         $sheet->setCellValue("C{$row}", $this->moneyFloat($pending['0_7_days']['amount'] ?? '0.00'));
         $row++;
 
         $sheet->setCellValue("A{$row}", '8 a 30 dias');
-        $sheet->setCellValue("B{$row}", (int) ($pending['8_30_days']['count'] ?? 0));
+        $sheet->setCellValue("B{$row}", $this->safeCount($pending['8_30_days']['count'] ?? 0));
         $sheet->setCellValue("C{$row}", $this->moneyFloat($pending['8_30_days']['amount'] ?? '0.00'));
         $row++;
 
         $sheet->setCellValue("A{$row}", '31 o mas dias');
-        $sheet->setCellValue("B{$row}", (int) ($pending['31_plus_days']['count'] ?? 0));
+        $sheet->setCellValue("B{$row}", $this->safeCount($pending['31_plus_days']['count'] ?? 0));
         $sheet->setCellValue("C{$row}", $this->moneyFloat($pending['31_plus_days']['amount'] ?? '0.00'));
         $row++;
 
@@ -396,7 +397,7 @@ class ExecutiveExcelExportService
             $sheet->setCellValue("A{$row}", $this->safeText($item['invoice_number'] ?? ''));
             $sheet->setCellValue("B{$row}", $this->safeText($item['patient'] ?? ''));
             $sheet->setCellValue("C{$row}", $this->safeText($item['issued_at'] ?? ''));
-            $sheet->setCellValue("D{$row}", (int) ($item['age_days'] ?? 0));
+            $sheet->setCellValue("D{$row}", $this->safeCount($item['age_days'] ?? 0));
             $sheet->setCellValue("E{$row}", $this->moneyFloat($item['total'] ?? '0.00'));
             $sheet->setCellValue("F{$row}", $this->moneyFloat($item['balance_due'] ?? '0.00'));
             $row++;
@@ -447,11 +448,11 @@ class ExecutiveExcelExportService
         $audit = $report['audit_summary'] ?? [];
 
         $rows = [
-            ['Eventos criticos', (int) ($audit['critical_events'] ?? 0)],
-            ['Reimpresiones', (int) ($audit['reprints'] ?? 0)],
-            ['Cambios fiscales', (int) ($audit['fiscal_changes'] ?? 0)],
-            ['Diferencias de caja', (int) ($audit['cash_differences'] ?? 0)],
-            ['Eventos de respaldo', (int) ($audit['backup_events'] ?? 0)],
+            ['Eventos criticos', $this->safeCount($audit['critical_events'] ?? 0)],
+            ['Reimpresiones', $this->safeCount($audit['reprints'] ?? 0)],
+            ['Cambios fiscales', $this->safeCount($audit['fiscal_changes'] ?? 0)],
+            ['Diferencias de caja', $this->safeCount($audit['cash_differences'] ?? 0)],
+            ['Eventos de respaldo', $this->safeCount($audit['backup_events'] ?? 0)],
         ];
 
         foreach ($rows as $r) {
@@ -618,12 +619,16 @@ class ExecutiveExcelExportService
 
     private function moneyFloat(mixed $value): float
     {
-        return Money::parseCents((string) ($value ?? 0), 'amount') / 100;
+        return $this->moneyToCents($value) / 100;
     }
 
     private function moneyToCents(mixed $value): int
     {
-        return Money::parseCents((string) ($value ?? 0), 'amount');
+        try {
+            return Money::parseCents((string) ($value ?? 0), 'amount');
+        } catch (ValidationException) {
+            return 0;
+        }
     }
 
     private function quantityValue(mixed $value): float
@@ -631,10 +636,16 @@ class ExecutiveExcelExportService
         $string = (string) ($value ?? '0');
 
         if (is_numeric($string)) {
-            return $string + 0;
+            $numeric = $string + 0;
+
+            return is_finite($numeric) ? (float) $numeric : 0.0;
         }
 
-        return Money::parseCents($string, 'quantity') / 100;
+        try {
+            return Money::parseCents($string, 'quantity') / 100;
+        } catch (ValidationException) {
+            return 0.0;
+        }
     }
 
     private function percentageValue(mixed $value): float
@@ -647,10 +658,33 @@ class ExecutiveExcelExportService
         $string = (string) ($value ?? '0');
 
         if (is_numeric($string)) {
-            return $string + 0;
+            $numeric = $string + 0;
+
+            return is_finite($numeric) ? (float) $numeric : 0.0;
         }
 
         return 0.0;
+    }
+
+    private function safeCount(mixed $value): int
+    {
+        if (is_int($value)) {
+            return max(0, $value);
+        }
+
+        if (is_float($value)) {
+            return is_finite($value) ? max(0, (int) $value) : 0;
+        }
+
+        $string = trim((string) ($value ?? '0'));
+
+        if ($string === '' || ! is_numeric($string)) {
+            return 0;
+        }
+
+        $numeric = $string + 0;
+
+        return is_finite($numeric) ? max(0, (int) $numeric) : 0;
     }
 
     private function pctLabel(mixed $value): ?string
@@ -659,8 +693,9 @@ class ExecutiveExcelExportService
             return null;
         }
 
-        $sign = $value > 0 ? '+' : '';
+        $percentage = $this->percentageFloat($value);
+        $sign = $percentage > 0 ? '+' : '';
 
-        return $sign.number_format($this->percentageFloat($value), 2).'%';
+        return $sign.number_format($percentage, 2).'%';
     }
 }
