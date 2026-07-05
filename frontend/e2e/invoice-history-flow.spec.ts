@@ -7,7 +7,7 @@ const invoiceUser = {
   username: 'historial.admin',
   active: true,
   roles: ['admin'],
-  permissions: ['invoices.view', 'invoices.void', 'receipts.view', 'receipts.reprint', 'receipts.reprint_any'],
+  permissions: ['invoices.view', 'invoices.void', 'invoices.operate_any', 'receipts.view', 'receipts.reprint', 'receipts.reprint_any'],
   must_change_password: false,
 };
 
@@ -43,6 +43,7 @@ const issuedInvoice = invoiceFixture({
   status: 'issued',
   total: '250.00',
   balance_due: '250.00',
+  cash_register_session_id: null,
 });
 
 const paidInvoice = invoiceFixture({

@@ -5810,3 +5810,25 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte refuerza una regla sensible de caja e impresion: si una factura cobrada se reversa, el recibo institucional asociado no queda vigente en historial.
+
+## 240. Fase 13/24 - Smoke E2E critico estable para caja e historial
+
+Cambio aplicado:
+
+- El E2E de cierre de caja ahora valida el mensaje real de nota obligatoria con minimo de 5 caracteres cuando hay diferencia.
+- El E2E de historial usa un usuario con alcance `invoices.operate_any` y una factura emitida sin sesion de caja para cubrir explicitamente la anulacion administrativa con motivo.
+- No se tocaron componentes de produccion, rutas reales, contratos API, permisos backend ni dependencias.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec -e PLAYWRIGHT_EXTERNAL_SERVER=1 -e PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser frontend npx playwright test e2e/cashbox.spec.ts e2e/invoice-history-flow.spec.ts --workers=2` | OK: 2 tests pasan. |
+| `docker compose exec -e PLAYWRIGHT_EXTERNAL_SERVER=1 -e PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser frontend npx playwright test e2e/new-invoice-flow.spec.ts e2e/cashbox.spec.ts e2e/invoice-history-flow.spec.ts e2e/backups-flow.spec.ts --workers=2` | OK: 4 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte estabiliza el smoke critico de navegador para facturacion, caja, historial/anulacion y backups sin debilitar reglas de negocio.

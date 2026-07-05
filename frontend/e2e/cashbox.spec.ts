@@ -65,7 +65,7 @@ test.describe('Cash session - critical mocked e2e', () => {
     await expect(dialog.getByText(/1\. resumen del turno/i)).toBeVisible();
     await expect(dialog.getByText(/2\. conteo de efectivo/i)).toBeVisible();
     await expect(dialog.getByText(/3\. confirmar cierre/i)).toBeVisible();
-    await expect(dialog.getByText(/la nota es obligatoria cuando hay diferencia/i)).toBeVisible();
+    await expect(dialog.getByText(/la nota es obligatoria.*al menos 5 caracteres.*diferencia/i)).toBeVisible();
     await expect(dialog.getByRole('button', { name: /^cerrar caja$/i })).toBeDisabled();
     await expect.poll(() => closePayload).toBeNull();
 
