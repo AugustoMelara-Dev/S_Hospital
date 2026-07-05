@@ -5853,3 +5853,25 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte no cierra el release E2E host, pero convierte el bloqueo actual en evidencia operativa clara y evita perder tiempo depurando un fatal de autoload.
+
+## 242. Fase 13/26 - Reporte button-smoke no puede quedar vacio
+
+Cambio aplicado:
+
+- La escritura de `button-smoke-report.json` se movio a un helper probado.
+- El helper rechaza `results: []` para que un smoke sin evidencia no deje un artefacto que parezca valido.
+- El mock admin de `all-buttons-smoke.spec.ts` ahora incluye `invoices.operate_any`, alineado con el flujo administrativo que abre la accion peligrosa `Reversar pago`.
+- No se tocaron componentes de produccion, rutas reales, contratos API, permisos backend ni dependencias.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npx vitest run scripts/button-smoke-report.test.mjs --pool=forks --maxWorkers=1 --no-file-parallelism` | OK: 2 tests pasan. |
+| `docker compose exec frontend npx eslint e2e/all-buttons-smoke.spec.ts scripts/button-smoke-report.mjs scripts/button-smoke-report.test.mjs` | OK. |
+| `docker compose exec -e PLAYWRIGHT_EXTERNAL_SERVER=1 -e PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser -e E2E_BUTTON_SMOKE_REPORT_PATH=/tmp/button-smoke-dangerous.json frontend npx playwright test e2e/all-buttons-smoke.spec.ts --grep "dangerous history" --workers=1 --reporter=list` | RED inicial: no aparecia `Reversar pago`; luego OK: 1 test pasa y escribe reporte temporal no vacio. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte mejora la confiabilidad de QA final: los reportes button-smoke vacios ahora fallan explicitamente en vez de convertirse en evidencia ambigua.

@@ -1,7 +1,7 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
 import axeCore from 'axe-core';
-import { mkdirSync, writeFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { resolve } from 'node:path';
+import { writeButtonSmokeReport } from '../scripts/button-smoke-report.mjs';
 
 const reportPath = resolve(process.env.E2E_BUTTON_SMOKE_REPORT_PATH ?? '../qa/production-audit/button-smoke-report.json');
 const smokeResults: Array<Record<string, unknown>> = [];
@@ -32,6 +32,7 @@ const adminUser = {
     'invoices.create',
     'invoices.void',
     'invoices.reverse',
+    'invoices.operate_any',
     'payments.create',
     'payments.view',
     'payments.void',
@@ -251,12 +252,7 @@ const smokeViewports = [
 ];
 
 test.afterAll(() => {
-  mkdirSync(dirname(reportPath), { recursive: true });
-  writeFileSync(reportPath, `${JSON.stringify({
-    generated_at: new Date().toISOString(),
-    mode: 'mocked-non-mutating-playwright',
-    results: smokeResults,
-  }, null, 2)}\n`);
+  writeButtonSmokeReport(reportPath, smokeResults);
 });
 
 for (const viewport of smokeViewports) {
