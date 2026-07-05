@@ -292,7 +292,7 @@ class CreateInvoiceAction
     {
         $serviceIds = collect($items)->pluck('service_id')->unique()->values();
         $services = Service::query()
-            ->with(['category:id,name', 'area:id,name,slug'])
+            ->with(['category:id,name,active', 'area:id,name,slug'])
             ->whereIn('id', $serviceIds)
             ->get()
             ->keyBy('id');
@@ -313,6 +313,12 @@ class CreateInvoiceAction
             if (! $service->active) {
                 throw ValidationException::withMessages([
                     $field => 'El servicio seleccionado esta inactivo.',
+                ]);
+            }
+
+            if (! $service->category?->active) {
+                throw ValidationException::withMessages([
+                    $field => 'La categoria del servicio seleccionado esta inactiva.',
                 ]);
             }
 

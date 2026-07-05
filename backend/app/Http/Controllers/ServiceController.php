@@ -40,7 +40,8 @@ class ServiceController extends Controller
             ->when($request->boolean('billing'), fn ($query) => $query
                 ->where('active', true)
                 ->where('visible_in_billing', true)
-                ->where('is_billable', true))
+                ->where('is_billable', true)
+                ->whereHas('category', fn ($category) => $category->where('active', true)))
             ->when($request->has('visible_in_billing'), fn ($query) => $query->where('visible_in_billing', $request->boolean('visible_in_billing')))
             ->when($request->has('is_billable'), fn ($query) => $query->where('is_billable', $request->boolean('is_billable')))
             ->orderBy('name');

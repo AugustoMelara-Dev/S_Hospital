@@ -966,6 +966,25 @@ class ServiceCatalogTest extends TestCase
         ]);
     }
 
+    public function test_billing_filter_excludes_services_from_inactive_categories(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $cashier = $this->cashier();
+        $glucose = Service::query()->where('name', 'Glucosa')->firstOrFail();
+
+        $glucose->category->forceFill(['active' => false])->save();
+
+        $this->actingAs($cashier)
+            ->getJson('/api/services?active=1&billing=1&search=Glucosa')
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+
+        $this->actingAs($cashier)
+            ->getJson('/api/services?active=1&search=Glucosa')
+            ->assertOk()
+            ->assertJsonFragment(['name' => 'Glucosa']);
+    }
+
     public function test_service_metadata_changes_are_audited_with_old_and_new_payloads(): void
     {
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);

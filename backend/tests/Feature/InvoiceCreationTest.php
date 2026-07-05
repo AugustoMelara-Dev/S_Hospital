@@ -235,6 +235,23 @@ class InvoiceCreationTest extends TestCase
             ->assertJsonValidationErrors('items.0.service_id');
     }
 
+    public function test_invoice_rejects_service_from_inactive_category(): void
+    {
+        $this->seedBillingBase();
+        $service = Service::query()->where('name', 'Glucosa')->firstOrFail();
+        $service->category->forceFill(['active' => false])->save();
+
+        $this->actingAs($this->cashier())
+            ->postJson('/api/invoices', [
+                'patient_name' => 'Maria Lopez',
+                'items' => [['service_id' => $service->id, 'quantity' => '1.00']],
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('items.0.service_id');
+
+        $this->assertSame(0, Invoice::query()->count());
+    }
+
     public function test_invoice_rejects_hidden_or_non_billable_services(): void
     {
         $this->seedBillingBase();
