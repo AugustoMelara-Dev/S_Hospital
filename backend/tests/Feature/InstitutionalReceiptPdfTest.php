@@ -344,6 +344,46 @@ class InstitutionalReceiptPdfTest extends TestCase
         ]);
     }
 
+    public function test_receipt_pdf_uses_safe_content_disposition_filename_when_receipt_number_is_tampered(): void
+    {
+        $context = $this->createIssuedReceiptContext();
+        $user = $context['user'];
+        $receipt = $context['receipt'];
+        $tamperedReceiptNumber = "../bad\r\nname\"";
+
+        $receipt->forceFill([
+            'receipt_number_full' => $tamperedReceiptNumber,
+        ])->save();
+
+        Pdf::shouldReceive('loadHTML')
+            ->once()
+            ->andReturn(tap(\Mockery::mock(DomPdfWrapper::class), function ($pdf): void {
+                $pdf->shouldReceive('setPaper')
+                    ->once()
+                    ->with([0, 0, 612, 396])
+                    ->andReturnSelf();
+                $pdf->shouldReceive('output')
+                    ->once()
+                    ->andReturn('%PDF-issued');
+            }));
+
+        $response = $this->actingAs($user)
+            ->get("/api/institutional-receipts/{$receipt->id}/pdf")
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf')
+            ->assertSee('%PDF-issued', false);
+
+        $contentDisposition = $response->headers->get('Content-Disposition');
+
+        $this->assertSame('inline; filename="recibo-institucional.pdf"', $contentDisposition);
+        $this->assertStringNotContainsString('bad', (string) $contentDisposition);
+        $this->assertStringNotContainsString("\r", (string) $contentDisposition);
+        $this->assertStringNotContainsString("\n", (string) $contentDisposition);
+        $this->assertStringNotContainsString('"name', (string) $contentDisposition);
+        $this->assertStringNotContainsString('..', (string) $contentDisposition);
+        $this->assertSame($tamperedReceiptNumber, $receipt->fresh()->receipt_number_full);
+    }
+
     public function test_cashier_cannot_stream_other_cashiers_receipt_pdf(): void
     {
         $context = $this->createIssuedReceiptContext();
