@@ -5314,3 +5314,26 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte alinea la prueba navegador con la regla actual: el recibo principal se configura en carta/media carta/A5; tickets son compatibilidad secundaria fuera del flujo normal.
+
+## 220. Fase 8 - Realtime carga Echo/Pusher solo si esta habilitado
+
+Cambio aplicado:
+
+- `frontend/src/lib/realtime/echo.ts` deja de importar `laravel-echo` y `pusher-js` de forma estatica.
+- `getEcho()` primero consulta `/api/system/echo-config`; si realtime esta deshabilitado, retorna `null` sin cargar los drivers.
+- La prueba de realtime cuenta las cargas de modulo para evitar regresiones que vuelvan a cargar Echo/Pusher en sesiones LAN sin broadcasting, y cubre el camino positivo cuando el backend si lo habilita.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- echo.test.ts -t "returns null"` | RED inicial correcto: importaba `laravel-echo` aunque realtime estaba deshabilitado; luego OK. |
+| `docker compose exec frontend npm run test -- echo.test.ts` | OK: 3 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `docker compose exec frontend npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte reduce trabajo inicial en la version monocomputadora/LAN cuando broadcasting no se usa, sin remover compatibilidad con Echo/Pusher si se habilita.

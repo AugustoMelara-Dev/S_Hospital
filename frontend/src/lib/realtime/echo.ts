@@ -1,17 +1,17 @@
-import Echo from 'laravel-echo';
-import Pusher from 'pusher-js';
-
 import { apiClient } from '../api/base';
 import type { EchoConfig } from './types';
 
-let echoInstance: Echo<'pusher'> | null = null;
+type EchoClient = import('laravel-echo').default<'pusher'>;
+type EchoConstructor = new (options: Record<string, unknown>) => EchoClient;
+
+let echoInstance: EchoClient | null = null;
 let configCache: EchoConfig | null = null;
 let configPromise: Promise<EchoConfig | null> | null = null;
 
 declare global {
   interface Window {
-    Pusher?: typeof Pusher;
-    Echo?: Echo<'pusher'>;
+    Pusher?: unknown;
+    Echo?: EchoClient;
   }
 }
 
@@ -64,16 +64,20 @@ async function fetchEchoConfig(): Promise<EchoConfig | null> {
  * The Echo singleton is bound to window.Echo during dev for console
  * debugging only; production does not rely on the global.
  */
-export async function getEcho(): Promise<Echo<'pusher'> | null> {
+export async function getEcho(): Promise<EchoClient | null> {
   if (echoInstance) return echoInstance;
   const config = await fetchEchoConfig();
   if (!config || !config.enabled) {
     return null;
   }
+  const [{ default: Echo }, { default: Pusher }] = await Promise.all([
+    import('laravel-echo'),
+    import('pusher-js'),
+  ]);
   if (typeof window !== 'undefined' && !window.Pusher) {
     window.Pusher = Pusher;
   }
-  echoInstance = new Echo<'pusher'>({
+  echoInstance = new (Echo as EchoConstructor)({
     broadcaster: 'pusher',
     key: config.key,
     cluster: config.cluster,
