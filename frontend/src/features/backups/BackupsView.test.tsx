@@ -148,6 +148,33 @@ describe('BackupsView', () => {
     expect(screen.queryByText(/falta completar respaldo reciente, validaci.n del recibo o configuraci.n final/i)).not.toBeInTheDocument();
   });
 
+  it('keeps support details aligned with local single-machine readiness', async () => {
+    const status = systemStatusFixture();
+    vi.mocked(apiClient.getSystemStatus).mockResolvedValue({
+      ...status,
+      network: {
+        ...status.network,
+        configured_host: '127.0.0.1',
+        host_type: 'loopback',
+        lan_ready: false,
+        client_url: 'http://127.0.0.1:8081',
+        guidance: 'Operacion local en este equipo.',
+      },
+    });
+
+    renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /ver detalle de soporte/i }));
+
+    const supportCardTitle = await screen.findByText(/servidor, datos y red local/i);
+    const supportCard = supportCardTitle.closest('[data-slot="card"]');
+
+    expect(supportCard).not.toBeNull();
+    expect(supportCard).toHaveTextContent(/acceso cliente:\s*http:\/\/127\.0\.0\.1:8081/i);
+    expect(supportCard).not.toHaveTextContent(/configurar ip lan/i);
+    expect(supportCard).toHaveClass('status-success');
+  });
+
   it('keeps the primary backup KPIs limited to last success, pending and failed backups', async () => {
     renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
 

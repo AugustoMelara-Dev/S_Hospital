@@ -220,6 +220,18 @@ function backupDownloadFilename(backup: BackupLog): string {
   return `respaldo-local-${date}-${backup.id}.sql.gz.enc`;
 }
 
+function localAccessIsReady(status: SystemStatus): boolean {
+  return status.network.lan_ready || status.network.host_type === 'loopback';
+}
+
+function localAccessLabel(status: SystemStatus): string {
+  if (localAccessIsReady(status)) {
+    return status.network.client_url ?? 'este equipo';
+  }
+
+  return 'configurar IP LAN';
+}
+
 export function BackupsView({ user, onStatus }: BackupsViewProps) {
   const [page, setPage] = useState(1);
   const [manualError, setManualError] = useState('');
@@ -468,7 +480,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
 
         {systemStatus && showAdvancedStatus ? (
           <div id={advancedStatusId} className="grid grid-cols-1 gap-4 xl:grid-cols-4">
-            <Card className={`${systemStatus.database.connected && systemStatus.frontend.dist_index_exists && systemStatus.frontend.assets_present && systemStatus.network.lan_ready ? 'status-success' : 'status-warning'} shadow-operational`}>
+            <Card className={`${systemStatus.database.connected && systemStatus.frontend.dist_index_exists && systemStatus.frontend.assets_present && localAccessIsReady(systemStatus) ? 'status-success' : 'status-warning'} shadow-operational`}>
               <CardContent className="pt-6">
                 <div className="flex items-start gap-3">
                   <div className="rounded-lg bg-background/80 p-2.5">
@@ -483,7 +495,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                       Interfaz: {systemStatus.frontend.dist_index_exists && systemStatus.frontend.assets_present ? 'lista' : 'requiere build'}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Acceso cliente: {systemStatus.network.lan_ready ? systemStatus.network.client_url : 'configurar IP LAN'}
+                      Acceso cliente: {localAccessLabel(systemStatus)}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {systemStatus.network.guidance}
