@@ -44,6 +44,7 @@ class UpdateServiceRequest extends FormRequest
             'price' => ['sometimes', 'required', 'decimal:0,2', 'gt:0'],
             'price_change_reason' => ['nullable', 'string', 'min:5', 'max:500'],
             'tax_change_reason' => ['nullable', 'string', 'min:5', 'max:500'],
+            'availability_change_reason' => ['nullable', 'string', 'min:5', 'max:500'],
             'scan_code' => ['nullable', 'string', 'max:120', Rule::unique('services', 'scan_code')->ignore($this->route('service'))],
             'barcode' => ['nullable', 'string', 'max:120', Rule::unique('services', 'barcode')->ignore($this->route('service'))],
             'qr_code' => ['nullable', 'string', 'max:120', Rule::unique('services', 'qr_code')->ignore($this->route('service'))],
@@ -112,6 +113,14 @@ class UpdateServiceRequest extends FormRequest
                     $validator->errors()->add('tax_change_reason', 'Indique el motivo del cambio de impuesto.');
                 }
 
+                if (
+                    ! $validator->errors()->has('availability_change_reason')
+                    && $this->availabilityChanged($service)
+                    && ! $this->filled('availability_change_reason')
+                ) {
+                    $validator->errors()->add('availability_change_reason', 'Indique el motivo del cambio de disponibilidad para caja.');
+                }
+
                 $this->validateErythropoietinRuleIntegrity($validator, $service);
                 $this->validateErythropoietinFixedPrice($validator, $service);
                 $this->validateGlobalCodes($validator, $service);
@@ -173,6 +182,13 @@ class UpdateServiceRequest extends FormRequest
     private function taxChanged(Service $service): bool
     {
         return $this->boolean('taxable') !== (bool) $service->taxable;
+    }
+
+    private function availabilityChanged(Service $service): bool
+    {
+        return ($this->has('active') && $this->boolean('active') !== (bool) $service->active)
+            || ($this->has('visible_in_billing') && $this->boolean('visible_in_billing') !== (bool) $service->visible_in_billing)
+            || ($this->has('is_billable') && $this->boolean('is_billable') !== (bool) $service->is_billable);
     }
 
     private function validateGlobalCodes(Validator $validator, Service $service): void

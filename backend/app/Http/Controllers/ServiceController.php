@@ -113,8 +113,12 @@ class ServiceController extends Controller
             $taxChangeReason = array_key_exists('tax_change_reason', $data)
                 ? trim((string) $data['tax_change_reason'])
                 : null;
+            $availabilityChangeReason = array_key_exists('availability_change_reason', $data)
+                ? trim((string) $data['availability_change_reason'])
+                : null;
             unset($data['price_change_reason']);
             unset($data['tax_change_reason']);
+            unset($data['availability_change_reason']);
 
             if (array_key_exists('name', $data)) {
                 $data['slug'] = Str::slug($data['name']);
@@ -136,6 +140,9 @@ class ServiceController extends Controller
                     match ($action) {
                         'service.price_updated' => ['price_change_reason' => $priceChangeReason],
                         'service.tax_updated' => ['tax_change_reason' => $taxChangeReason],
+                        'service.active_updated', 'service.visibility_updated', 'service.billability_updated' => [
+                            'availability_change_reason' => $availabilityChangeReason,
+                        ],
                         default => [],
                     },
                 );

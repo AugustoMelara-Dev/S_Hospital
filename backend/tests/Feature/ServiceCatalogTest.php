@@ -706,7 +706,10 @@ class ServiceCatalogTest extends TestCase
             ->assertOk();
 
         $this->actingAs($admin)
-            ->patchJson("/api/services/{$service->id}", ['active' => false])
+            ->patchJson("/api/services/{$service->id}", [
+                'active' => false,
+                'availability_change_reason' => 'Servicio retirado temporalmente de caja',
+            ])
             ->assertOk();
 
         $this->assertDatabaseHas('audit_logs', [
@@ -751,6 +754,57 @@ class ServiceCatalogTest extends TestCase
             'service_id' => $service->id,
             'new_price' => '30.00',
         ]);
+    }
+
+    public function test_billing_availability_change_requires_a_server_side_reason(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $admin = $this->admin();
+        $service = Service::query()->where('name', 'Glucosa')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->patchJson("/api/services/{$service->id}", ['visible_in_billing' => false])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('availability_change_reason');
+
+        $service->refresh();
+
+        $this->assertTrue($service->visible_in_billing);
+        $this->assertDatabaseMissing('audit_logs', [
+            'action' => 'service.visibility_updated',
+            'entity_type' => Service::class,
+            'entity_id' => $service->id,
+        ]);
+    }
+
+    public function test_billing_availability_change_with_reason_is_audited(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $admin = $this->admin();
+        $service = Service::query()->where('name', 'Glucosa')->firstOrFail();
+        $reason = 'Retirado temporalmente de caja por revision interna';
+
+        $this->actingAs($admin)
+            ->patchJson("/api/services/{$service->id}", [
+                'active' => false,
+                'visible_in_billing' => false,
+                'is_billable' => false,
+                'availability_change_reason' => $reason,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.active', false)
+            ->assertJsonPath('data.visible_in_billing', false)
+            ->assertJsonPath('data.is_billable', false);
+
+        foreach (['service.active_updated', 'service.visibility_updated', 'service.billability_updated'] as $action) {
+            $audit = AuditLog::query()
+                ->where('action', $action)
+                ->where('entity_type', Service::class)
+                ->where('entity_id', $service->id)
+                ->firstOrFail();
+
+            $this->assertSame($reason, $audit->new_values['availability_change_reason']);
+        }
     }
 
     public function test_erythropoietin_rule_requires_the_fixed_twenty_five_lempira_price(): void
@@ -861,13 +915,17 @@ class ServiceCatalogTest extends TestCase
         $hemogram = Service::query()->where('name', 'Hemograma Completo')->firstOrFail();
 
         $this->actingAs($admin)
-            ->patchJson("/api/services/{$glucose->id}", ['visible_in_billing' => false])
+            ->patchJson("/api/services/{$glucose->id}", [
+                'visible_in_billing' => false,
+                'availability_change_reason' => 'Servicio oculto temporalmente para caja',
+            ])
             ->assertOk();
 
         $this->actingAs($admin)
             ->patchJson("/api/services/{$hemogram->id}", [
                 'is_billable' => false,
                 'scan_code' => 'NO-BILL-HEMO',
+                'availability_change_reason' => 'Servicio no cobrable temporalmente en caja',
             ])
             ->assertOk();
 
