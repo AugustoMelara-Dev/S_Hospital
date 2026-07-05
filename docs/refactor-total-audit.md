@@ -5070,3 +5070,26 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte hace mas util el reporte diario de caja/admin para revisar anulaciones hechas durante el turno real.
+
+## 209. Fase 8 - Resumen ejecutivo cuenta anulaciones por fecha de anulacion
+
+Cambio aplicado:
+
+- `ExecutiveReportService` calcula `summary.voided_count`, `summary.voided_total` y `daily_trend.*.voided_count` usando `voided_at`.
+- Una factura emitida en un dia anterior pero anulada dentro del rango ejecutivo aparece en anulaciones y no infla facturas emitidas ni facturacion del rango.
+- La lista `voids_and_reversals` se mantiene alineada con el resumen operativo.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter executive_summary_counts_invoices_voided_in_range_even_when_issued_earlier` | RED inicial correcto: el resumen ejecutivo no contaba la factura vieja anulada hoy; luego OK. |
+| `docker compose exec backend php artisan test --filter ExecutiveReportTest` | OK: 11 tests pasan. |
+| `docker compose exec backend vendor/bin/pint --test --dirty` | OK: 0 files. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M --no-progress` | OK: sin errores. |
+| `git diff --check` | OK: sin errores de whitespace; Git aviso normal de LF en `docs/refactor-total-audit.md`. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte alinea el reporte ejecutivo con la lectura operativa de anulaciones por turno/rango real de autorizacion.

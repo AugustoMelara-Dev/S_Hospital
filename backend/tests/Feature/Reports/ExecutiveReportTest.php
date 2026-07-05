@@ -204,6 +204,36 @@ class ExecutiveReportTest extends TestCase
             ->assertJsonPath('data.payment_methods.0.count', 1);
     }
 
+    public function test_executive_summary_counts_invoices_voided_in_range_even_when_issued_earlier(): void
+    {
+        $this->seedBillingBase();
+        $admin = $this->admin();
+        $cashier = $this->cashier();
+        $voided = $this->createInvoice($cashier, 'Glucosa');
+
+        $voided->update([
+            'issued_at' => Carbon::now('America/Tegucigalpa')->subDay(),
+            'status' => Invoice::STATUS_VOID,
+            'voided_by' => $this->supervisor()->id,
+            'voided_at' => Carbon::now('America/Tegucigalpa'),
+            'void_reason' => 'Anulacion revisada en cierre diario',
+        ]);
+
+        $today = Carbon::now('America/Tegucigalpa')->toDateString();
+
+        $this->actingAs($admin)
+            ->getJson('/api/reports/executive?date_from='.$today.'&date_to='.$today)
+            ->assertOk()
+            ->assertJsonPath('data.summary.invoice_count', 0)
+            ->assertJsonPath('data.summary.billed_total', '0.00')
+            ->assertJsonPath('data.summary.voided_count', 1)
+            ->assertJsonPath('data.summary.voided_total', $voided->total)
+            ->assertJsonPath('data.daily_trend.0.invoice_count', 0)
+            ->assertJsonPath('data.daily_trend.0.voided_count', 1)
+            ->assertJsonPath('data.voids_and_reversals.0.kind', 'void')
+            ->assertJsonPath('data.voids_and_reversals.0.invoice_number', $voided->invoice_number);
+    }
+
     public function test_executive_payment_methods_separate_cash_from_others(): void
     {
         $this->seedBillingBase();

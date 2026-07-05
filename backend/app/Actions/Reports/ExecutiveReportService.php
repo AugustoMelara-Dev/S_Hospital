@@ -96,7 +96,8 @@ class ExecutiveReportService
         $billedCents = $this->moneyToCents($facts['total_billed']);
         $collectedCents = $this->moneyToCents($facts['total_collected']);
         $pendingCents = $this->moneyToCents($facts['total_pending']);
-        $voidedCents = $this->moneyToCents($facts['total_voided']);
+        $voidedStats = $this->voidedInvoiceStats($start, $end, $filters);
+        $voidedCents = $voidedStats['total_cents'];
 
         $invoiceCount = (int) ($facts['invoice_count'] ?? 0);
         $receiptCount = (int) DB::table('payments')
@@ -116,7 +117,7 @@ class ExecutiveReportService
         $paidCount = (int) ($statusCounts[Invoice::STATUS_PAID] ?? 0);
         $partialCount = (int) ($statusCounts[Invoice::STATUS_PARTIAL] ?? 0);
         $pendingCount = (int) ($statusCounts[Invoice::STATUS_ISSUED] ?? 0) + $partialCount;
-        $voidedCount = (int) ($statusCounts[Invoice::STATUS_VOID] ?? 0);
+        $voidedCount = $voidedStats['count'];
 
         $averageTicketCents = $invoiceCount > 0
             ? intdiv($billedCents, $invoiceCount)
@@ -194,11 +195,7 @@ class ExecutiveReportService
             $dayEnd = $cursor->copy()->endOfDay();
             $dayFacts = $this->financialFacts->forRange($dayStart, $dayEnd, $filters);
 
-            $voidedDay = (int) DB::table('invoices')
-                ->where('status', Invoice::STATUS_VOID)
-                ->whereBetween('issued_at', [$dayStart, $dayEnd])
-                ->tap(fn ($query) => $this->applyInvoiceFilters($query, $filters, $dayStart, $dayEnd))
-                ->count();
+            $voidedDay = $this->voidedInvoiceStats($dayStart, $dayEnd, $filters)['count'];
 
             $trend[] = [
                 'date' => $cursor->toDateString(),
@@ -212,6 +209,26 @@ class ExecutiveReportService
         }
 
         return $trend;
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return array{count: int, total_cents: int}
+     */
+    private function voidedInvoiceStats(Carbon $start, Carbon $end, array $filters): array
+    {
+        $row = DB::table('invoices')
+            ->where('status', Invoice::STATUS_VOID)
+            ->whereBetween('voided_at', [$start, $end])
+            ->tap(fn ($query) => $this->applyInvoiceFilters($query, $filters, $start, $end))
+            ->selectRaw('COUNT(*) as count')
+            ->selectRaw('COALESCE(SUM(total_cents), 0) as total_cents')
+            ->first();
+
+        return [
+            'count' => (int) ($row->count ?? 0),
+            'total_cents' => (int) ($row->total_cents ?? 0),
+        ];
     }
 
     /**
