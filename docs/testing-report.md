@@ -97,6 +97,16 @@ production approval.
 | 2026-07-05 | `docker compose exec frontend npm run test:critical` | PASS, 174 tests | Critical frontend gate after advanced exact-permission controls. |
 | 2026-07-05 | `docker compose exec frontend npm run typecheck` | PASS | TypeScript no emit after advanced exact-permission controls. |
 | 2026-07-05 | `docker compose exec frontend npm run lint` | PASS | ESLint after advanced exact-permission controls. |
+| 2026-07-05 | `docker compose exec backend php artisan test tests/Feature/CashPaymentsReceiptTest.php tests/Unit/OpenCashSessionActionConcurrencyTest.php tests/Feature/Payments/RegisterPaymentDoesNotMutateInvoiceTest.php` | PASS, 39 tests / 389 assertions | Cashbox now enforces one open local drawer globally and keeps payment-session immutability coverage. |
+| 2026-07-05 | `docker compose exec backend php artisan test tests/Feature/Reports/TodayReportTest.php tests/Feature/Reports/ExecutiveReportTest.php` | PASS, 20 tests / 246 assertions | Report helpers remain compatible with the single-open-drawer rule. |
+| 2026-07-05 | `docker compose exec backend php artisan test tests/Feature/ReportsTest.php --filter='cash_session|managerial_reports|CashSession'` | PASS, 8 tests / 103 assertions | Cash-session report coverage after the local drawer rule. |
+| 2026-07-05 | `docker compose exec backend php artisan test tests/Feature/InternalControlAuditTest.php` | PASS, 7 tests / 53 assertions | User deactivation audit now includes the required reason. |
+| 2026-07-05 | `docker compose exec frontend npm run test -- CashBoxView base.test` | PASS, 2 files / 47 tests | Frontend shows a human `Caja` validation message when another local cash session is already open. |
+| 2026-07-05 | `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=1G` | PASS | Static analysis after single-open-drawer backend change. |
+| 2026-07-05 | `docker compose exec frontend npm run typecheck` | PASS | TypeScript no emit after cashbox conflict message. |
+| 2026-07-05 | `docker compose exec frontend npm run lint` | PASS | ESLint after cashbox conflict message. |
+| 2026-07-05 | `docker compose exec backend php artisan test tests/Feature/BackupWorkflowTest.php` | PASS, 28 tests / 146 assertions | Backup listing no longer exposes internal filename/path/disk/checksum; download remains integrity checked and audited. |
+| 2026-07-05 | `docker compose exec frontend npm run test -- BackupsView useBackups backups.test` | PASS, 3 files / 43 tests | Frontend backup contract and UI remain green after removing technical filenames from normal payloads. |
 
 Recharts emits a known Playwright/Vite console warning about chart container
 dimensions in the mocked browser run. It does not currently fail the focused

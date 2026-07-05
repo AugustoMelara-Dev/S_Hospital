@@ -177,7 +177,6 @@ class BackupController extends Controller
     {
         $payload = [
             'id' => $backupLog->id,
-            'filename' => $backupLog->filename,
             'size_bytes' => $backupLog->size_bytes,
             'status' => $backupLog->status,
             'type' => $backupLog->type,

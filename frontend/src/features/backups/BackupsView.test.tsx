@@ -414,9 +414,9 @@ describe('BackupsView', () => {
   it('renders the table with caption, numeric size column and text status descriptions', async () => {
     vi.mocked(apiClient.getBackups).mockResolvedValue({
       data: [
-        backupFixture({ id: 1, status: 'pending', filename: 'hospital-backup-pending.sql.enc', checksum_sha256: null, completed_at: null }),
-        backupFixture({ id: 2, status: 'success', filename: 'hospital-backup-success.sql.enc' }),
-        backupFixture({ id: 3, status: 'failed', filename: 'hospital-backup-failed.sql.enc', error_message: 'SQLSTATE secret path' }),
+        backupFixture({ id: 1, status: 'pending', checksum_sha256: null, completed_at: null }),
+        backupFixture({ id: 2, status: 'success' }),
+        backupFixture({ id: 3, status: 'failed', error_message: 'SQLSTATE secret path' }),
       ],
       meta: { current_page: 1, per_page: 15, total: 3 },
     });
@@ -577,7 +577,6 @@ describe('BackupsView', () => {
     getBackups
       .mockResolvedValueOnce({
         data: [backupFixture({
-          filename: 'hospital-backup-visible-during-refetch.sql.enc',
           creator: { id: 9, name: 'Operador Visible', username: 'operador.visible' },
         })],
         meta: { current_page: 1, per_page: 15, total: 1 },
@@ -599,7 +598,7 @@ describe('BackupsView', () => {
 
     act(() => {
       resolveFilteredBackups({
-        data: [backupFixture({ id: 2, filename: 'hospital-backup-filtered.sql.enc' })],
+        data: [backupFixture({ id: 2 })],
         meta: { current_page: 1, per_page: 15, total: 1 },
       });
     });
@@ -628,7 +627,7 @@ describe('BackupsView', () => {
     });
 
     await act(async () => {
-      resolveCreate(backupFixture({ id: 2, filename: 'hospital-backup-new.sql.enc' }));
+      resolveCreate(backupFixture({ id: 2 }));
       await pendingCreate;
     });
 
@@ -639,7 +638,7 @@ describe('BackupsView', () => {
 
   it('reports manual backup completion without exposing checksum terminology', async () => {
     const onStatus = vi.fn();
-    vi.spyOn(apiClient, 'createBackup').mockResolvedValue(backupFixture({ id: 7, filename: 'hospital-backup-created.sql.enc' }));
+    vi.spyOn(apiClient, 'createBackup').mockResolvedValue(backupFixture({ id: 7 }));
 
     renderWithQueryClient(<BackupsView user={adminUser} onStatus={onStatus} />);
 
@@ -774,7 +773,6 @@ function normalizeLabel(value: string): string {
 function backupFixture(overrides: Partial<BackupLog> = {}): BackupLog {
   return {
     id: 1,
-    filename: 'hospital-backup-20260618-120000-test.sql.enc',
     size_bytes: 3_145_728,
     checksum_sha256: 'abc1234567890defabc1234567890defabc1234567890defabc1234567890def',
     status: 'success',

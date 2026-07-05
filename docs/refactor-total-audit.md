@@ -5962,3 +5962,92 @@ Decision:
 
 - Este corte refuerza la evidencia del nucleo operativo real: nueva factura, cobrar, imprimir/reimprimir, anular/reversar, cerrar caja con diferencia, catalogo/eritropoyetina, respaldos, usuarios basicos y reportes.
 - El proyecto sigue `NOT_READY`: faltan E2E host o equivalente final, cierre del worktree, evidencias fisicas LAN/impresora/restore/worker y paquete offline final.
+
+## 247. Fase 7/14 - Caja local monocomputadora con una sola apertura
+
+Cambio aplicado:
+
+- `OpenCashSessionAction` dejo de permitir una caja abierta por cajero y ahora valida una sola caja abierta global para la terminal local.
+- La apertura usa un lock nombrado de MySQL/MariaDB (`GET_LOCK`/`RELEASE_LOCK`) antes de la transaccion para serializar aperturas simultaneas entre usuarios distintos.
+- El mensaje funcional de backend queda orientado al operador: si ya existe una caja abierta, se debe cerrar la caja actual antes de abrir otra.
+- Las pruebas que necesitan sesiones historicas o fixtures cruzados crean fixtures explicitos, sin pasar por el endpoint operativo de apertura.
+- No se agregaron migraciones, dependencias ni cambios de schema.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test tests/Feature/CashPaymentsReceiptTest.php --filter='cashier_can_open_cash_session|only_one_cash_session|another_cashier_can_open'` | RED inicial confirmado para segunda caja global; luego OK: 3 tests pasan. |
+| `docker compose exec backend php artisan test tests/Feature/CashPaymentsReceiptTest.php tests/Unit/OpenCashSessionActionConcurrencyTest.php tests/Feature/Payments/RegisterPaymentDoesNotMutateInvoiceTest.php` | OK: 39 tests / 389 aserciones. |
+| `docker compose exec backend php artisan test tests/Feature/Reports/TodayReportTest.php tests/Feature/Reports/ExecutiveReportTest.php` | OK: 20 tests / 246 aserciones. |
+| `docker compose exec backend php artisan test tests/Feature/ReportsTest.php --filter='cash_session|managerial_reports|CashSession'` | OK: 8 tests / 103 aserciones. |
+| `docker compose exec backend php artisan test tests/Feature/InvoiceReverseTest.php tests/Feature/InvoiceHistoryReprintVoidTest.php` | OK: 29 tests / 175 aserciones. |
+| `docker compose exec backend php artisan test tests/Feature/Resilience/IdempotencyKeyTest.php tests/Feature/Resilience/DoublePaymentTest.php` | OK: 18 tests / 139 aserciones. |
+| `docker compose exec backend vendor/bin/pint --test --dirty` | OK. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=1G` | OK: sin errores. |
+
+Decision:
+
+- Para la entrega monocomputadora, la caja se trata como gaveta local unica. Esto reduce confusion operativa y evita turnos abiertos paralelos en la misma instalacion.
+- El proyecto conserva pruebas de escenarios historicos/cross-session donde hacen falta para reportes y pagos, pero esos escenarios ya no usan el endpoint normal de apertura.
+
+## 248. Fase 14 - Auditoria de desactivacion de usuario exige motivo
+
+Cambio aplicado:
+
+- `InternalControlAuditTest` ahora envia motivo al desactivar un usuario y verifica que `user.deactivated` lo audite.
+- No se tocaron controladores, requests, permisos, rutas ni migraciones; el test quedo alineado al contrato actual de seguridad.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test tests/Feature/InternalControlAuditTest.php` | RED por motivo faltante; luego OK: 7 tests / 53 aserciones. |
+| `docker compose exec backend vendor/bin/pint --test --dirty` | OK. |
+
+Decision:
+
+- Este corte mantiene coherencia con la regla de seguridad: acciones privilegiadas/destructivas deben dejar motivo auditable.
+
+## 249. Fase 7/16 - Mensaje claro cuando otra caja local ya esta abierta
+
+Cambio aplicado:
+
+- El frontend mapea los errores de validacion `cash_session` a la etiqueta humana `Caja`, sin exponer el nombre tecnico del campo.
+- `CashBoxView` cubre el caso donde la apertura falla porque ya existe una caja abierta: muestra alerta clara, conserva el formulario cerrado y no marca la caja como abierta.
+- No se agregaron dependencias ni cambios de API.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- CashBoxView base.test` | RED inicial por etiqueta `cash session`; luego OK: 2 archivos / 47 tests. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+Decision:
+
+- El bloqueo global de caja ya no queda como error tecnico ni mensaje ambiguo. La cajera ve una causa accionable en lenguaje operativo.
+
+## 250. Fase 12/14 - Respaldos no exponen nombre tecnico en API normal
+
+Cambio aplicado:
+
+- `GET /api/backups` y `POST /api/backups` dejaron de incluir `filename` en el payload normal de operador.
+- El backend conserva `filename`, `path`, `disk`, `size_bytes` y `checksum_sha256` internamente para integridad, descarga y auditoria, pero el listado normal solo entrega datos operativos.
+- El contrato TypeScript `BackupLog` se actualizo para reflejar que el nombre tecnico del archivo no forma parte de la UI/API normal.
+- No se agregaron migraciones, dependencias ni cambios de permisos.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test tests/Feature/BackupWorkflowTest.php --filter='list_backups_without_exposing_internal_file_details|filter_backups_by_status'` | RED inicial por `filename` presente; luego OK: 2 tests / 11 aserciones. |
+| `docker compose exec backend php artisan test tests/Feature/BackupWorkflowTest.php` | OK: 28 tests / 146 aserciones. |
+| `docker compose exec frontend npm run test -- BackupsView useBackups backups.test` | OK: 3 archivos / 43 tests. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+Decision:
+
+- La pantalla ya ocultaba el nombre tecnico, pero el API normal todavia lo entregaba. Este corte reduce exposicion innecesaria para una instalacion hospitalaria local sin afectar descarga auditada.

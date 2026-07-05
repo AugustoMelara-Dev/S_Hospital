@@ -62,7 +62,6 @@ describe('useBackups', () => {
       data: [
         {
           id: 1,
-          filename: 'b1.sql',
           size_bytes: 1024,
           status: 'pending',
           type: 'manual',
@@ -74,7 +73,6 @@ describe('useBackups', () => {
         },
         {
           id: 2,
-          filename: 'b2.sql',
           size_bytes: 2048,
           status: 'success',
           type: 'manual',
@@ -106,7 +104,6 @@ describe('useBackups', () => {
       data: [
         {
           id: 1,
-          filename: 'b1.sql',
           size_bytes: 1024,
           status: 'success',
           type: 'manual',
@@ -138,7 +135,6 @@ describe('useBackups', () => {
       data: [
         {
           id: 1,
-          filename: 'b1.sql',
           size_bytes: 1024,
           status: 'pending',
           type: 'manual',
@@ -243,7 +239,6 @@ describe('useCreateBackup', () => {
     mockedCreateClientIdempotencyKey.mockReturnValue('manual-backup-attempt-1');
     mockedCreateBackup.mockResolvedValue({
       id: 99,
-      filename: 'new.sql',
       size_bytes: 0,
       status: 'pending',
       type: 'manual',
@@ -275,7 +270,6 @@ describe('useCreateBackup', () => {
       .mockRejectedValueOnce(new Error('LAN timeout'))
       .mockResolvedValueOnce({
         id: 99,
-        filename: 'new.sql',
         size_bytes: 0,
         status: 'pending',
         type: 'manual',
@@ -308,7 +302,6 @@ describe('useCreateBackup', () => {
     mockedCreateBackup
       .mockResolvedValueOnce({
         id: 99,
-        filename: 'new.sql',
         size_bytes: 0,
         status: 'pending',
         type: 'manual',
@@ -320,7 +313,6 @@ describe('useCreateBackup', () => {
       })
       .mockResolvedValueOnce({
         id: 100,
-        filename: 'newer.sql',
         size_bytes: 0,
         status: 'pending',
         type: 'manual',

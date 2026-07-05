@@ -23,7 +23,7 @@ class BackupWorkflowTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_admin_can_list_backups_without_exposing_internal_paths(): void
+    public function test_admin_can_list_backups_without_exposing_internal_file_details(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
         $admin = $this->admin();
@@ -43,8 +43,8 @@ class BackupWorkflowTest extends TestCase
         $this->actingAs($admin)
             ->getJson('/api/backups')
             ->assertOk()
-            ->assertJsonPath('data.0.filename', 'hospital-backup.sql')
             ->assertJsonPath('data.0.creator.username', $admin->username)
+            ->assertJsonMissingPath('data.0.filename')
             ->assertJsonMissingPath('data.0.path')
             ->assertJsonMissingPath('data.0.disk')
             ->assertJsonMissingPath('data.0.checksum_sha256')
@@ -128,7 +128,7 @@ class BackupWorkflowTest extends TestCase
             ->getJson('/api/backups?status=failed&per_page=1')
             ->assertOk()
             ->assertJsonPath('meta.total', 1)
-            ->assertJsonPath('data.0.filename', 'failed.sql')
+            ->assertJsonMissingPath('data.0.filename')
             ->assertJsonPath('data.0.status', BackupLog::STATUS_FAILED);
     }
 

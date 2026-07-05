@@ -737,7 +737,6 @@ describe('App', () => {
         if (method === 'POST') {
           const newBackup = {
             id: 9,
-            filename: 'hospital-backup-20260517-101500-test.sql',
             size_bytes: 2048,
             checksum_sha256: 'a'.repeat(64),
             status: 'pending',
@@ -841,7 +840,6 @@ describe('App', () => {
             data: [
               {
                 id: 10,
-                filename: 'hospital-backup-20260517-101500-test.sql',
                 size_bytes: 2048,
                 checksum_sha256: 'b'.repeat(64),
                 status: 'success',
@@ -932,7 +930,6 @@ describe('App', () => {
             data: [
               {
                 id: 11,
-                filename: 'hospital-backup-20260602-090000-failed.sql',
                 size_bytes: null,
                 checksum_sha256: null,
                 status: 'failed',

@@ -22,7 +22,6 @@ describe('backups api client', () => {
     mockedRequest.mockResolvedValueOnce({
       data: {
         id: 99,
-        filename: 'hospital-backup.sql.enc',
         size_bytes: 0,
         status: 'pending',
         type: 'manual',

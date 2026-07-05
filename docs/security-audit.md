@@ -266,3 +266,34 @@ Controles finales confirmados:
 - Configuracion fiscal conserva sanitizacion de placeholders historicos antes de mostrar datos editables.
 - `php artisan test` paso con 746 pruebas y 12 omitidas; despues de formatear `FiscalSettingsTest.php`, `php artisan test tests/Feature/FiscalSettingsTest.php` paso 13 pruebas.
 - `vendor/bin/pint --test`, `vendor/bin/phpstan analyse`, `npm run lint`, `npm run test`, `npm run build` y `npm run visual:smoke` finalizaron OK.
+
+## 14. Actualizacion 2026-07-05 - Caja local y auditoria de usuarios
+
+Controles agregados/verificados:
+
+- La apertura de caja usa una regla backend de una sola caja abierta global para la instalacion monocomputadora.
+- `OpenCashSessionAction` serializa aperturas simultaneas con lock nombrado de MySQL/MariaDB antes de crear la sesion.
+- La segunda apertura devuelve error funcional controlado; no crea movimiento de apertura ni auditoria duplicada.
+- Desactivar usuarios sigue exigiendo motivo y el evento `user.deactivated` conserva ese motivo en `audit_logs.reason`.
+- El frontend traduce errores `cash_session` como `Caja` para el operador, pero la defensa real permanece en backend.
+
+Pruebas relevantes:
+
+- `CashPaymentsReceiptTest` cubre apertura unica global y reapertura despues de cierre.
+- `OpenCashSessionActionConcurrencyTest` cubre el lock nombrado y codigos de concurrencia DB.
+- `InternalControlAuditTest` cubre motivo auditado al desactivar usuario.
+- `CashBoxView.test.tsx` y `base.test.ts` cubren mensaje humano sin exponer `cash_session`.
+
+## 15. Actualizacion 2026-07-05 - Respaldos sin nombres tecnicos en payload normal
+
+Control agregado/verificado:
+
+- El listado normal de respaldos ya no devuelve `filename`, `path`, `disk` ni `checksum_sha256`.
+- El servidor conserva esos datos para descarga, integridad y auditoria interna; no se elimina evidencia tecnica necesaria.
+- La descarga sigue validando archivo registrado, ruta segura, tamano y SHA256 antes de entregar el archivo.
+- La UI genera un nombre de descarga humano desde fecha/id y no depende del nombre interno del archivo.
+
+Pruebas relevantes:
+
+- `BackupWorkflowTest` cubre listado sin detalles internos, descarga auditada, integridad alterada, path traversal y ausencia de endpoint restore.
+- `BackupsView.test.tsx`, `useBackups.test.tsx` y `backups.test.ts` cubren contrato frontend sin `filename` operativo.
