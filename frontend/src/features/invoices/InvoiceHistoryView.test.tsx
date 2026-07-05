@@ -1014,6 +1014,73 @@ describe('InvoiceHistoryView', () => {
     expect(reprintInvoice).not.toHaveBeenCalled();
   });
 
+  it('renews institutional reprint idempotency key when a failed receipt changes', async () => {
+    vi.spyOn(apiBase, 'createClientIdempotencyKey')
+      .mockReturnValueOnce('history-institutional-reprint-attempt-1')
+      .mockReturnValueOnce('history-institutional-reprint-attempt-2');
+    const firstPaid = invoiceFixture({
+      id: 41,
+      invoice_number: '000-001-01-00000041',
+      patient_name: 'Paciente Reimpresion Fallida',
+      status: 'paid',
+      institutional_receipt: institutionalReceiptFixture({ id: 141, receipt_number_full: 'REC-A-00000141' }),
+    });
+    const secondPaid = invoiceFixture({
+      id: 42,
+      invoice_number: '000-001-01-00000042',
+      patient_name: 'Paciente Reimpresion Nueva',
+      status: 'paid',
+      institutional_receipt: institutionalReceiptFixture({ id: 142, receipt_number_full: 'REC-A-00000142' }),
+    });
+    const onStatus = vi.fn();
+    const getPdf = vi.spyOn(apiClient, 'getInstitutionalReceiptPdf')
+      .mockRejectedValueOnce(new Error('pdf failed'))
+      .mockResolvedValueOnce(new Blob(['%PDF-reprint'], { type: 'application/pdf' }));
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [firstPaid, secondPaid],
+      meta: { current_page: 1, per_page: 10, total: 2 },
+    });
+    vi.spyOn(apiClient, 'getInvoice').mockImplementation(async (invoiceId) => {
+      if (invoiceId === firstPaid.id) return firstPaid;
+      if (invoiceId === secondPaid.id) return secondPaid;
+
+      throw new Error('invoice not found');
+    });
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={onStatus} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente Reimpresion Fallida')).toBeInTheDocument());
+    await openInvoiceMenu(firstPaid.invoice_number);
+    fireEvent.click(await screen.findByRole('menuitem', { name: /Reimprimir/i }));
+    fireEvent.change(screen.getByLabelText(/motivo de reimpresi/i), {
+      target: { value: 'Copia solicitada por auditoria interna' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /registrar reimpresi/i }));
+
+    await waitFor(() => expect(getPdf).toHaveBeenCalledWith(141, 'Copia solicitada por auditoria interna', {
+      idempotencyKey: 'history-institutional-reprint-attempt-1',
+    }));
+    await waitFor(() => expect(onStatus).toHaveBeenCalledWith('pdf failed'));
+
+    fireEvent.click(screen.getByRole('button', { name: /cancelar/i }));
+
+    await openInvoiceMenu(secondPaid.invoice_number);
+    fireEvent.click(await screen.findByRole('menuitem', { name: /Reimprimir/i }));
+    fireEvent.change(screen.getByLabelText(/motivo de reimpresi/i), {
+      target: { value: 'Copia solicitada por control interno' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /registrar reimpresi/i }));
+
+    await waitFor(() => expect(getPdf).toHaveBeenLastCalledWith(142, 'Copia solicitada por control interno', {
+      idempotencyKey: 'history-institutional-reprint-attempt-2',
+    }));
+    expect(openBlobInNewTab).toHaveBeenCalledWith(
+      expect.any(Blob),
+      'recibo-institucional-REC-A-00000142.pdf',
+    );
+  });
+
   it('reprints legacy receipts with a stable idempotency key from history', async () => {
     vi.spyOn(apiBase, 'createClientIdempotencyKey').mockReturnValue('history-legacy-reprint-attempt-1');
     const paid = invoiceFixture({

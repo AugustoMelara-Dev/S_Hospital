@@ -27,6 +27,7 @@ import { formatLempirasUIFromCents, parseCents } from '../../lib/moneyCents';
 import { formatLocalizedDateTime } from '../../lib/format/formatDate';
 import { invalidateBillingQueries } from '@/lib/queryInvalidation';
 import { createClientIdempotencyKey } from '../../lib/api/base';
+import { payloadScopedIdempotencyKey, resetPayloadScopedIdempotencyKey } from '../../lib/api/idempotency';
 import { InvoiceHistoryFilters } from './history/InvoiceHistoryFilters';
 import { InvoiceHistoryHeader } from './history/InvoiceHistoryHeader';
 import { InvoiceHistoryTable, issuedInstitutionalReceipt } from './history/InvoiceHistoryTable';
@@ -71,6 +72,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   const voidIdempotencyKeyRef = useRef<string | null>(null);
   const reverseIdempotencyKeyRef = useRef<string | null>(null);
   const reprintIdempotencyKeyRef = useRef<string | null>(null);
+  const reprintIdempotencySignatureRef = useRef<string | null>(null);
   const receiptGenerationIdempotencyKeyRef = useRef<string | null>(null);
   const actionRequestRef = useRef(0);
   const receiptRequestRef = useRef(0);
@@ -191,13 +193,19 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       return;
     }
 
+    const width = institutionalReceiptPaperSize(receipt.width);
+    const reason = 'Impresion desde vista de recibo.';
     const auditedReceipt = await apiClient.reprintInvoice(selectedInvoice.id, {
-      width: institutionalReceiptPaperSize(receipt.width),
-      reason: 'Impresion desde vista de recibo.',
+      width,
+      reason,
     }, {
-      idempotencyKey: reprintIdempotencyKeyRef.current ??= createClientIdempotencyKey(),
+      idempotencyKey: payloadScopedIdempotencyKey(reprintIdempotencyKeyRef, reprintIdempotencySignatureRef, {
+        invoiceId: selectedInvoice.id,
+        reason,
+        width,
+      }),
     });
-    reprintIdempotencyKeyRef.current = null;
+    resetPayloadScopedIdempotencyKey(reprintIdempotencyKeyRef, reprintIdempotencySignatureRef);
     const normalizedWidth = institutionalReceiptPaperSize(auditedReceipt.width);
     setReceiptWidth(normalizedWidth);
     setReceipt({ ...auditedReceipt, width: normalizedWidth });
@@ -323,7 +331,6 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     try {
       registeringReprintRef.current = true;
       setRegisteringReprint(true);
-      const idempotencyKey = reprintIdempotencyKeyRef.current ??= createClientIdempotencyKey();
       const invoice = await apiClient.getInvoice(reprintTarget.id);
       setSelectedInvoice(invoice);
       const institutionalReceipt = issuedInstitutionalReceipt(invoice);
@@ -338,21 +345,31 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
         }
 
         setReprintReasonError('');
+        const idempotencyKey = payloadScopedIdempotencyKey(reprintIdempotencyKeyRef, reprintIdempotencySignatureRef, {
+          reason,
+          receiptId: institutionalReceipt.id,
+        });
         await openInstitutionalReceiptPdf(institutionalReceipt, reason, idempotencyKey);
         queryClient.invalidateQueries({ queryKey: ['audit'] });
         onStatus(`PDF institucional ${institutionalReceipt.receipt_number_full} abierto.`);
         setReprintTarget(null);
         setReprintReason('');
-        reprintIdempotencyKeyRef.current = null;
+        resetPayloadScopedIdempotencyKey(reprintIdempotencyKeyRef, reprintIdempotencySignatureRef);
 
         return;
       }
 
       const requestedWidth = institutionalReceiptPaperSize(receiptWidth);
       setReprintReasonError('');
+      const reason = reprintReason.trim() || 'Reimpresión solicitada desde historial.';
+      const idempotencyKey = payloadScopedIdempotencyKey(reprintIdempotencyKeyRef, reprintIdempotencySignatureRef, {
+        invoiceId: reprintTarget.id,
+        reason,
+        width: requestedWidth,
+      });
       const nextReceipt = await apiClient.reprintInvoice(reprintTarget.id, {
         width: requestedWidth,
-        reason: reprintReason.trim() || 'Reimpresión solicitada desde historial.',
+        reason,
       }, {
         idempotencyKey,
       });
@@ -365,7 +382,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       setReceiptModalOpen(true);
       setReprintTarget(null);
       setReprintReason('');
-      reprintIdempotencyKeyRef.current = null;
+      resetPayloadScopedIdempotencyKey(reprintIdempotencyKeyRef, reprintIdempotencySignatureRef);
       onStatus(`Recibo ${invoice.invoice_number} listo para imprimir.`);
     } catch (error) {
       onStatus(userSafeErrorMessage(error, 'No se pudo reimprimir el recibo.'));

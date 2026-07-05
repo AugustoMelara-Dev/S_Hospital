@@ -5434,3 +5434,26 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte reduce falsos bloqueos en caja durante reintentos reales de cobro, sin debilitar la deduplicacion de pagos ante doble clic o cortes de red.
+
+## 225. Fase 8 - Reimpresion renueva idempotencia si cambia el recibo
+
+Cambio aplicado:
+
+- La reimpresion desde Historial conserva la misma `Idempotency-Key` al reintentar el mismo recibo institucional o legacy fallido.
+- Si el operador cambia a otro recibo, factura, tamano o motivo despues de un fallo, el frontend genera una clave nueva.
+- La impresion auditada desde vista de recibo usa la misma regla de firma de payload para evitar rechazos por claves reutilizadas con datos distintos.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- InvoiceHistoryView.test.tsx -t "renews institutional reprint idempotency key"` | RED inicial correcto: el segundo recibo reutilizaba `history-institutional-reprint-attempt-1`; luego OK. |
+| `docker compose exec frontend npm run test -- InvoiceHistoryView.test.tsx` | OK: 36 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `docker compose exec frontend npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte reduce falsos bloqueos durante reimpresiones reales desde Historial, manteniendo la deduplicacion para reintentos identicos.
