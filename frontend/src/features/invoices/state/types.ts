@@ -22,6 +22,7 @@ export interface NewInvoiceState {
   partialPaymentsEnabled: boolean;
   receipt: ReceiptData | null;
   institutionalReceipt: InstitutionalReceipt | null;
+  institutionalReceiptRecoveryMessage: string | null;
   pointOfSaleLoadError: string | null;
   alertMessage: string | null;
   warningMessage: string | null;
@@ -59,6 +60,7 @@ export type NewInvoiceAction =
   | { type: 'SET_PARTIAL_PAYMENTS_ENABLED'; payload: boolean }
   | { type: 'SET_RECEIPT'; payload: ReceiptData | null }
   | { type: 'SET_INSTITUTIONAL_RECEIPT'; payload: InstitutionalReceipt | null }
+  | { type: 'SET_INSTITUTIONAL_RECEIPT_RECOVERY_MESSAGE'; payload: string | null }
   | { type: 'SET_POINT_OF_SALE_LOAD_ERROR'; payload: string | null }
   | { type: 'SET_ALERT_MESSAGE'; payload: string | null }
   | { type: 'SET_WARNING_MESSAGE'; payload: string | null }
@@ -105,6 +107,7 @@ export function getInitialNewInvoiceState(cashSession: CashSession | null): NewI
     partialPaymentsEnabled: false,
     receipt: null,
     institutionalReceipt: null,
+    institutionalReceiptRecoveryMessage: null,
     pointOfSaleLoadError: null,
     alertMessage: null,
     warningMessage: null,

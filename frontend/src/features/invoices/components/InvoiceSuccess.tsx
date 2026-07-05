@@ -16,6 +16,7 @@ type InvoiceSuccessProps = {
   status: InvoiceStatus;
   canCollectPayment?: boolean;
   canPrintReceipt?: boolean;
+  receiptRecoveryMessage?: string;
   onCobrar: () => void;
   onImprimir: () => void;
   onNuevaFactura: () => void;
@@ -37,6 +38,7 @@ export function InvoiceSuccess({
   status,
   canCollectPayment = true,
   canPrintReceipt = true,
+  receiptRecoveryMessage,
   onCobrar,
   onImprimir,
   onNuevaFactura,
@@ -47,7 +49,7 @@ export function InvoiceSuccess({
   const successDescription =
     status === 'paid'
       ? `Factura ${invoiceNumber} pagada. ${
-          canPrintReceipt ? 'Recibo listo para imprimir.' : 'Impresion de recibo restringida por permisos.'
+          canPrintReceipt ? 'Recibo listo para imprimir.' : (receiptRecoveryMessage ?? 'Impresion de recibo restringida por permisos.')
         }`
       : `Factura ${invoiceNumber} creada. ${needsPayment ? 'Pendiente de pago.' : 'Pagada.'}`;
   const primaryActionRef = useRef<HTMLButtonElement | null>(null);
@@ -112,7 +114,7 @@ export function InvoiceSuccess({
         ) : (
           <div className="flex flex-col gap-3">
             <p className="text-sm text-muted-foreground text-center">
-              La factura ya fue pagada. Solicite a caja imprimir el recibo institucional.
+              {receiptRecoveryMessage ?? 'La factura ya fue pagada. Solicite a caja imprimir el recibo institucional.'}
             </p>
             <Button ref={primaryActionRef} type="button" size="lg" className="w-full font-semibold" onClick={onNuevaFactura}>
               Crear otra factura

@@ -5183,3 +5183,27 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte refuerza la operacion offline LAN aun en vistas servidor heredadas o de fallback.
+
+## 214. Fase 8 - Pago no imprime recibo legacy si falla recibo institucional
+
+Cambio aplicado:
+
+- `NewInvoiceView` deja de pedir el comprobante legacy cuando el backend registra el pago pero reporta error al emitir el recibo institucional.
+- El flujo cierra el modal de cobro, conserva la factura pagada y muestra recuperacion explicita desde Historial antes de entregar comprobante.
+- `InvoiceSuccess` acepta un mensaje de recuperacion y oculta el boton de imprimir recibo institucional cuando no existe recibo institucional emitido.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- NewInvoiceView -t "does not fall back"` | RED inicial correcto: llamaba `/api/invoices/61/receipt`; luego OK. |
+| `docker compose exec frontend npm run test -- NewInvoiceView` | OK: 21 tests pasan. |
+| `docker compose exec frontend npm run test -- InvoiceSuccess` | OK: 4 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `git diff --check` | OK: sin errores de whitespace; Git aviso normal de LF en `frontend/src/features/invoices/NewInvoiceView.test.tsx`. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte evita que el formato secundario se use automaticamente como recibo principal cuando falla la emision institucional.

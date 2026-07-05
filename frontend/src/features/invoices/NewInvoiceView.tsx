@@ -394,6 +394,7 @@ export function NewInvoiceView({
       dispatch({ type: 'SET_PAYMENT_AMOUNT', payload: '0.00' });
       dispatch({ type: 'SET_RECEIPT', payload: null });
       dispatch({ type: 'SET_INSTITUTIONAL_RECEIPT', payload: null });
+      dispatch({ type: 'SET_INSTITUTIONAL_RECEIPT_RECOVERY_MESSAGE', payload: null });
       dispatch({ type: 'SET_AUTO_PRINT_RECEIPT', payload: false });
       dispatch({ type: 'SET_CART_ITEMS', payload: [] });
       dispatch({ type: 'SET_PATIENT_NAME', payload: '' });
@@ -489,6 +490,7 @@ export function NewInvoiceView({
 
       if (result.institutional_receipt) {
         dispatch({ type: 'SET_INSTITUTIONAL_RECEIPT', payload: result.institutional_receipt });
+        dispatch({ type: 'SET_INSTITUTIONAL_RECEIPT_RECOVERY_MESSAGE', payload: null });
         dispatch({ type: 'SET_RECEIPT', payload: null });
         dispatch({ type: 'SET_AUTO_PRINT_RECEIPT', payload: false });
         dispatch({ type: 'SET_SHOW_RECEIPT', payload: false });
@@ -507,8 +509,19 @@ export function NewInvoiceView({
       }
 
       if (result.institutional_receipt_error) {
-        dispatch({ type: 'SET_WARNING_MESSAGE', payload: result.institutional_receipt_error });
-        onStatus(result.institutional_receipt_error);
+        const recoveryMessage = `Pago registrado, pero no se pudo emitir el recibo institucional: ${result.institutional_receipt_error} Genere el recibo institucional desde Historial antes de entregar comprobante.`;
+        dispatch({ type: 'SET_RECEIPT', payload: null });
+        dispatch({ type: 'SET_INSTITUTIONAL_RECEIPT', payload: null });
+        dispatch({ type: 'SET_INSTITUTIONAL_RECEIPT_RECOVERY_MESSAGE', payload: recoveryMessage });
+        dispatch({ type: 'SET_AUTO_PRINT_RECEIPT', payload: false });
+        dispatch({ type: 'SET_SHOW_PAYMENT', payload: false });
+        dispatch({ type: 'SET_SHOW_RECEIPT', payload: false });
+        dispatch({ type: 'SET_SHOW_SUCCESS', payload: true });
+        dispatch({ type: 'SET_ALERT_MESSAGE', payload: null });
+        dispatch({ type: 'SET_WARNING_MESSAGE', payload: recoveryMessage });
+        onStatus(`Pago registrado. Recibo institucional pendiente: ${result.institutional_receipt_error}`);
+
+        return;
       }
 
       let nextReceipt;
@@ -531,6 +544,7 @@ export function NewInvoiceView({
 
       dispatch({ type: 'SET_RECEIPT', payload: nextReceipt });
       dispatch({ type: 'SET_INSTITUTIONAL_RECEIPT', payload: null });
+      dispatch({ type: 'SET_INSTITUTIONAL_RECEIPT_RECOVERY_MESSAGE', payload: null });
       dispatch({ type: 'SET_RECEIPT_WIDTH', payload: nextReceipt.width });
       dispatch({ type: 'SET_AUTO_PRINT_RECEIPT', payload: true });
       dispatch({ type: 'SET_SHOW_PAYMENT', payload: false });

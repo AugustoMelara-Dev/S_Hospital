@@ -43,7 +43,13 @@ export function newInvoiceReducer(state: NewInvoiceState, action: NewInvoiceActi
     case 'SET_RECEIPT':
       return { ...state, receipt: action.payload };
     case 'SET_INSTITUTIONAL_RECEIPT':
-      return { ...state, institutionalReceipt: action.payload };
+      return {
+        ...state,
+        institutionalReceipt: action.payload,
+        institutionalReceiptRecoveryMessage: action.payload ? null : state.institutionalReceiptRecoveryMessage,
+      };
+    case 'SET_INSTITUTIONAL_RECEIPT_RECOVERY_MESSAGE':
+      return { ...state, institutionalReceiptRecoveryMessage: action.payload };
     case 'SET_POINT_OF_SALE_LOAD_ERROR':
       return { ...state, pointOfSaleLoadError: action.payload };
     case 'SET_ALERT_MESSAGE':
@@ -90,6 +96,7 @@ export function newInvoiceReducer(state: NewInvoiceState, action: NewInvoiceActi
         cartItems: nextCart,
         issuedInvoice: null,
         institutionalReceipt: null,
+        institutionalReceiptRecoveryMessage: null,
         patientError: undefined,
       };
     }
@@ -121,6 +128,7 @@ export function newInvoiceReducer(state: NewInvoiceState, action: NewInvoiceActi
         alertMessage: null,
         warningMessage: null,
         successMessage: null,
+        institutionalReceiptRecoveryMessage: null,
         pointOfSaleLoadError: null,
         search: '',
         scanCode: '',
