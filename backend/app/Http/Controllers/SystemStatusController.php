@@ -305,6 +305,9 @@ class SystemStatusController extends Controller
         $operationalMetrics = app(OperationalMetricsService::class)->snapshot();
         $queueStatus = $this->queueStatus();
         $workerRecentlyActive = (bool) ($operationalMetrics['backups']['worker_recently_active'] ?? false);
+        $lastSuccessFile = $this->backupFileStatus($lastSuccess);
+        $lastSuccessFileIsUsable = $lastSuccessFile['exists'] && $lastSuccessFile['checksum_matches'];
+        $workerRecentlyActive = $workerRecentlyActive && $lastSuccessFileIsUsable;
         $lastFailureIsUnresolved = $lastFailure !== null
             && (
                 $lastSuccess === null
@@ -314,6 +317,7 @@ class SystemStatusController extends Controller
             $schedulerHeartbeat = (string) ($queueStatus['scheduler_heartbeat']['status'] ?? 'never_run');
             $workerRecentlyActive =
                 $lastSuccess->completed_at->greaterThanOrEqualTo(now()->subDay())
+                && $lastSuccessFileIsUsable
                 && $pendingCount === 0
                 && $stalePendingCount === 0
                 && ! $lastFailureIsUnresolved
@@ -331,12 +335,61 @@ class SystemStatusController extends Controller
             'stale_pending_threshold_minutes' => $staleThresholdMinutes,
             'last_success_at' => $lastSuccess?->completed_at?->toJSON(),
             'last_success_filename' => $lastSuccess?->filename,
+            'last_success_file_exists' => $lastSuccessFile['exists'],
+            'last_success_checksum_matches' => $lastSuccessFile['checksum_matches'],
             'last_failure_at' => $lastFailure?->completed_at?->toJSON(),
             'last_failure_message' => OperationalMessageSanitizer::message($lastFailure?->error_message),
             'dump_binary' => $this->dumpBinaryStatus(),
             'storage' => $this->backupStorageStatus(),
             'queue' => $queueStatus,
         ];
+    }
+
+    /**
+     * @return array{exists: bool, checksum_matches: bool}
+     */
+    private function backupFileStatus(?BackupLog $backupLog): array
+    {
+        if (! $backupLog instanceof BackupLog || ! $this->isSafeBackupPath((string) $backupLog->path)) {
+            return [
+                'exists' => false,
+                'checksum_matches' => false,
+            ];
+        }
+
+        try {
+            $disk = Storage::disk((string) ($backupLog->disk ?: 'local'));
+            $path = (string) $backupLog->path;
+
+            if (! $disk->exists($path)) {
+                return [
+                    'exists' => false,
+                    'checksum_matches' => false,
+                ];
+            }
+
+            $absolutePath = $disk->path($path);
+            $checksum = is_file($absolutePath) ? hash_file('sha256', $absolutePath) : false;
+
+            return [
+                'exists' => true,
+                'checksum_matches' => is_string($checksum)
+                    && hash_equals((string) $backupLog->checksum_sha256, $checksum),
+            ];
+        } catch (Throwable) {
+            return [
+                'exists' => false,
+                'checksum_matches' => false,
+            ];
+        }
+    }
+
+    private function isSafeBackupPath(string $path): bool
+    {
+        return str_starts_with($path, 'backups/')
+            && ! str_contains($path, '..')
+            && ! str_starts_with($path, '/')
+            && ! preg_match('/^[A-Za-z]:[\\\\\/]/', $path);
     }
 
     /**

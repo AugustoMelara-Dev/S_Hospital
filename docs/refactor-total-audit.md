@@ -4933,3 +4933,27 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte alinea instalacion, runtime Docker, restore y documentacion con la clave dedicada de respaldos para evitar backups cifrados imposibles de generar o restaurar despues de una instalacion limpia.
+
+## 203. Fase 8 - Estado de sistema verifica archivo fisico de backup
+
+Cambio aplicado:
+
+- `SystemStatusController` ahora expone si el ultimo backup exitoso existe fisicamente y si su SHA256 coincide con `backup_logs`.
+- El check `BACKUP_WORKER_CONTINUOUS` ya no se valida solo por una fila reciente en `backup_logs`; tambien requiere archivo existente y checksum correcto.
+- La prueba positiva de worker activo crea un archivo real `.sql.gz.enc` con checksum verificable.
+- Se agrego regresion para backup reciente sin archivo fisico: el preflight queda en `manual_required`.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter recent_successful_backup_without_physical_file` | RED inicial correcto: faltaba `last_success_file_exists`; luego OK dentro del filtro `recent_successful_backup`. |
+| `docker compose exec backend php artisan test --filter "recent_successful_backup"` | OK: 2 tests pasan. |
+| `docker compose exec backend php artisan test --filter SystemStatusTest` | OK: 20 tests pasan. |
+| `docker compose exec backend vendor/bin/pint --test --dirty` | OK: 0 files. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M --no-progress` | OK: sin errores. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte evita que el panel de produccion declare sano el flujo de backups cuando solo existe el registro historico pero el archivo recuperable falta o fue alterado.

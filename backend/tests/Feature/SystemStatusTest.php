@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class SystemStatusTest extends TestCase
@@ -151,16 +152,20 @@ class SystemStatusTest extends TestCase
         Cache::put('hospital:scheduler:last_tick', now()->subSeconds(30)->toIso8601String(), 60);
         Cache::put('hospital:scheduler:last_result', 'ok', 60);
         $admin = $this->admin();
+        $path = 'backups/hospital-backup-recent.sql.gz.enc';
+        $contents = 'encrypted-backup-payload';
+
+        Storage::disk('local')->put($path, $contents);
 
         BackupLog::query()->create([
-            'filename' => 'hospital-backup-recent.sql.enc',
-            'path' => 'backups/hospital-backup-recent.sql.enc',
+            'filename' => 'hospital-backup-recent.sql.gz.enc',
+            'path' => $path,
             'disk' => 'local',
             'status' => BackupLog::STATUS_SUCCESS,
             'type' => BackupLog::TYPE_MANUAL,
             'created_by' => $admin->id,
-            'size_bytes' => 100,
-            'checksum_sha256' => str_repeat('b', 64),
+            'size_bytes' => strlen($contents),
+            'checksum_sha256' => hash('sha256', $contents),
             'completed_at' => now(),
         ]);
 
@@ -170,9 +175,42 @@ class SystemStatusTest extends TestCase
             ->assertJsonPath('data.backups.pending_count', 0)
             ->assertJsonPath('data.backups.queue.failed_jobs_count', 0)
             ->assertJsonPath('data.backups.queue.pending_backup_jobs', 0)
+            ->assertJsonPath('data.backups.last_success_file_exists', true)
+            ->assertJsonPath('data.backups.last_success_checksum_matches', true)
             ->assertJsonPath('data.backups.worker_recently_active', true)
             ->assertJsonPath('data.preflight.production_checks.8.code', 'BACKUP_WORKER_CONTINUOUS')
             ->assertJsonPath('data.preflight.production_checks.8.status', 'validated');
+    }
+
+    public function test_recent_successful_backup_without_physical_file_does_not_validate_worker(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        Config::set('queue.default', 'database');
+        Cache::put('hospital:scheduler:last_tick', now()->subSeconds(30)->toIso8601String(), 60);
+        Cache::put('hospital:scheduler:last_result', 'ok', 60);
+        $admin = $this->admin();
+
+        Storage::disk('local')->delete('backups/hospital-backup-missing.sql.gz.enc');
+
+        BackupLog::query()->create([
+            'filename' => 'hospital-backup-missing.sql.gz.enc',
+            'path' => 'backups/hospital-backup-missing.sql.gz.enc',
+            'disk' => 'local',
+            'status' => BackupLog::STATUS_SUCCESS,
+            'type' => BackupLog::TYPE_MANUAL,
+            'created_by' => $admin->id,
+            'size_bytes' => 100,
+            'checksum_sha256' => str_repeat('c', 64),
+            'completed_at' => now(),
+        ]);
+
+        $this->actingAs($admin)
+            ->getJson('/api/system/status')
+            ->assertOk()
+            ->assertJsonPath('data.backups.last_success_file_exists', false)
+            ->assertJsonPath('data.backups.worker_recently_active', false)
+            ->assertJsonPath('data.preflight.production_checks.8.code', 'BACKUP_WORKER_CONTINUOUS')
+            ->assertJsonPath('data.preflight.production_checks.8.status', 'manual_required');
     }
 
     public function test_database_queue_retry_after_exceeds_backup_worker_timeout(): void
