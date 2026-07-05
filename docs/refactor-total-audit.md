@@ -5550,3 +5550,27 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte mejora la revision local de usuarios y permisos, haciendo visible un estado excepcional sin cambiar la politica del servidor.
+
+## 230. Fase 8 - Respaldos oculta tamanos corruptos
+
+Cambio aplicado:
+
+- El historial de respaldos locales muestra `Tamaño no disponible` cuando el tamano recibido no es finito o es negativo.
+- La confirmacion de descarga usa el mismo fallback, evitando exponer `NaN` o `Infinity` al operador antes de descargar un respaldo.
+- Los tamanos validos conservan el formato existente en B, KB y MB.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- BackupsView.test.tsx -t "treats malformed backup sizes"` | RED inicial correcto: no aparecia el fallback y el tamano corrupto se exponia; luego OK. |
+| `docker compose exec frontend npm run test -- BackupsView.test.tsx` | OK: 27 tests pasan. |
+| `docker compose exec frontend npm run test -- src/features/backups` | OK: 30 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `docker compose exec frontend npm run build` | OK; conserva aviso informativo de tiempos de plugin de Vite/Rolldown. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte endurece la pantalla de respaldos para operacion local, mostrando lenguaje seguro cuando los metadatos del archivo quedan incompletos o corruptos.

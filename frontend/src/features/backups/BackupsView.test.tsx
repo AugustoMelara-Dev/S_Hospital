@@ -337,6 +337,26 @@ describe('BackupsView', () => {
     expect(screen.queryAllByText(/^-$|^â€”$/)).toHaveLength(0);
   });
 
+  it('treats malformed backup sizes as unavailable in history and download confirmation', async () => {
+    vi.mocked(apiClient.getBackups).mockResolvedValue({
+      data: [backupFixture({ status: 'success', size_bytes: Number.NaN })],
+      meta: { current_page: 1, per_page: 15, total: 1 },
+    });
+
+    renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
+
+    await screen.findByRole('table', { name: /historial de respaldos locales/i });
+
+    expect(screen.getByText(/tama.o no disponible/i)).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/\bNaN\b|Infinity/);
+
+    fireEvent.click(screen.getByRole('button', { name: /descargar respaldo del/i }));
+
+    const dialog = screen.getByRole('alertdialog');
+    expect(dialog).toHaveTextContent(/tama.o no disponible/i);
+    expect(dialog).not.toHaveTextContent(/\bNaN\b|Infinity/);
+  });
+
   it('renders a sanitized error and retries without exposing local secrets', async () => {
     const getBackups = vi.mocked(apiClient.getBackups);
     getBackups
