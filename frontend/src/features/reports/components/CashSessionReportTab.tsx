@@ -125,6 +125,7 @@ export function CashSessionReportTab({
   onExport,
   onSubmit,
 }: CashSessionReportTabProps) {
+  const lookupLocked = loading || exporting;
   const methodTotalRows = cashSession
     ? Object.entries(cashSession.totals_by_method).map(([method, total]) => ({ method, total }))
     : [];
@@ -144,12 +145,13 @@ export function CashSessionReportTab({
                 aria-describedby="cash-session-id-help"
                 value={cashReportId}
                 onChange={(event) => onCashReportIdChange(event.target.value)}
+                disabled={lookupLocked}
               />
               <p id="cash-session-id-help" className="mt-1 text-xs text-muted-foreground">
                 Use el numero que aparece en Caja al abrir o cerrar turno.
               </p>
             </div>
-            <Button type="submit" className="w-full sm:w-auto" disabled={loading}>
+            <Button type="submit" className="w-full sm:w-auto" disabled={lookupLocked}>
               {loading ? 'Consultando...' : 'Ver caja'}
             </Button>
           </form>

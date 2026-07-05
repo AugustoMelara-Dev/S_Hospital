@@ -4663,3 +4663,28 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, facturacion, caja, catalogo, historial, recibos, respaldos ni usuarios.
 - Este corte reduce errores operativos al generar reportes ejecutivos y mantiene el backend como fuente de verdad de los datos exportados.
+
+## 192. Fase 8 - Reporte de caja bloquea consulta mientras exporta
+
+Cambio aplicado:
+
+- `CashSessionReportTab` ahora deshabilita `Numero de Caja` y `Ver caja` mientras consulta o exporta el reporte cargado.
+- Esto evita que administracion cambie visualmente la caja seleccionada despues de solicitar `Exportar Excel` y antes de recibir el archivo local.
+- Se agrego una regresion en `ReportsCash` con `downloadReportExport` pendiente que confirma que la consulta y la exportacion quedan bloqueadas durante el archivo en curso.
+- No se cambian payloads, permisos de exportacion, nombre del archivo, totales de caja, movimientos, pagos ni contratos API.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- ReportsCash.test.tsx -t "locks the cash session lookup"` | RED inicial correcto: el campo `Numero de Caja` seguia habilitado durante la exportacion; luego OK: 1 test pasa. |
+| `docker compose exec frontend npm run test -- ReportsCash.test.tsx CashSessionReportTab.test.tsx` | OK: 10 tests pasan. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, facturacion, caja operativa, catalogo, historial, recibos, respaldos ni usuarios.
+- Este corte reduce errores operativos al exportar cierres de caja y conserva los datos del servidor como fuente de verdad.

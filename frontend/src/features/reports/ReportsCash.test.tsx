@@ -72,6 +72,26 @@ describe('ReportsCash', () => {
     });
     expect(downloadBlob).toHaveBeenCalledWith(expect.any(Blob), 'reporte-caja-12.xlsx');
   });
+
+  it('locks the cash session lookup while exporting the loaded report', async () => {
+    vi.mocked(apiClient.getCashSessionReport).mockResolvedValue(buildCashSessionReport());
+    vi.mocked(apiClient.downloadReportExport).mockReturnValue(new Promise(() => undefined));
+
+    render(<ReportsCash canViewCash canViewManagerial />);
+
+    fireEvent.change(screen.getByLabelText(/numero de caja/i), { target: { value: '12' } });
+    fireEvent.click(screen.getByRole('button', { name: /ver caja/i }));
+
+    const exportButton = await screen.findByRole('button', { name: /exportar excel/i });
+    fireEvent.click(exportButton);
+
+    await waitFor(() => {
+      expect(apiClient.downloadReportExport).toHaveBeenCalledTimes(1);
+    });
+    expect(screen.getByLabelText(/numero de caja/i)).toBeDisabled();
+    expect(screen.getByRole('button', { name: /ver caja/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /exportando/i })).toBeDisabled();
+  });
 });
 
 function buildCashSessionReport(): CashSessionReport {
