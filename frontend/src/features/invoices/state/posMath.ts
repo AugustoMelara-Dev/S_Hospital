@@ -113,7 +113,7 @@ export function computeSimpleEstimate(items: CartItem[], taxRate?: string): Invo
     const lineSubtotal = Math.trunc(((effectiveUnitPriceCents(item) * quantity) + 50) / 100);
     subtotal += lineSubtotal;
 
-    if (item.service.taxable && rateBasisPoints > 0) {
+    if (isTaxableForPreview(item) && rateBasisPoints > 0) {
       taxableSubtotal += lineSubtotal;
     }
   }
@@ -125,6 +125,11 @@ export function computeSimpleEstimate(items: CartItem[], taxRate?: string): Invo
     tax: formatCentsFromMoneyCents(tax),
     total: formatCentsFromMoneyCents(subtotal + tax),
   };
+}
+
+function isTaxableForPreview(item: CartItem): boolean {
+  return item.service.taxable
+    && item.service.special_rule_code !== 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION';
 }
 
 /**

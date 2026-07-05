@@ -5664,3 +5664,30 @@ Decision:
 - No se agregaron dependencias nuevas.
 - Este corte blinda una regla fiscal/operativa critica: el medicamento cuesta L.25 total, no L.25 mas ISV, y la receta de dialisis mantiene el beneficio de L.0 con permiso y auditoria.
 - Se elimino el cast `(float)` heredado del exportador Excel ejecutivo porque los reportes de cierre deben mantenerse sobre helpers cent-based y pasar el guard arquitectonico.
+
+## 234. Fase 4/5 - Preview POS conserva eritropoyetina sin ISV
+
+Cambio aplicado:
+
+- La previsualizacion local de nueva factura ahora trata cualquier servicio con regla `ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION` como no gravable, incluso si datos viejos del catalogo llegan con `taxable: true`.
+- La regla sigue siendo defensiva: el backend conserva la autoridad fiscal y de totales; el frontend solo evita mostrar un estimado inconsistente antes de emitir.
+- No se tocaron migraciones, permisos, endpoints ni dependencias.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- posMath.test.ts -t "keeps erythropoietin fixed" --run` | RED inicial correcto: el preview calculaba ISV L.3.75; luego OK. |
+| `docker compose exec frontend npm run test -- posMath.test.ts --run` | OK: 13 tests pasan. |
+| `docker compose exec frontend npm run test -- src/features/invoices --run` | OK: 138 tests pasan. |
+| `docker compose exec frontend npm run test -- NewInvoiceView.test.tsx InvoiceCart.test.tsx InvoiceConfirmation.test.tsx --run` | OK: 31 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `docker compose exec frontend npm run build` | OK. |
+| `git diff --check` | OK; solo aviso de normalizacion CRLF/LF en esta documentacion. |
+| `powershell -ExecutionPolicy Bypass -File scripts\pre-commit-guard.ps1` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte reduce confusion en caja: la cajera ve L.25.00 antes de cobrar y el backend sigue decidiendo el total final con la misma regla no gravable.
