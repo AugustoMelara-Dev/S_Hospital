@@ -149,7 +149,7 @@ function formatDate(value: string): string {
 }
 
 function formatBytes(size: number | null): string {
-  if (size === null) return 'Tamano no disponible';
+  if (size === null) return 'Tamaño no disponible';
   if (size < 1024) return `${size} B`;
   if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;

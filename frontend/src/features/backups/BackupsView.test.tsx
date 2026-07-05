@@ -315,7 +315,7 @@ describe('BackupsView', () => {
 
     await screen.findByRole('table', { name: /historial de respaldos locales/i });
 
-    expect(screen.getAllByText(/tamano no disponible/i)).toHaveLength(2);
+    expect(screen.getAllByText(/tamaño no disponible/i)).toHaveLength(2);
     expect(screen.queryAllByText(/^-$|^â€”$/)).toHaveLength(0);
   });
 
@@ -518,7 +518,8 @@ describe('BackupsView', () => {
     fireEvent.click(await screen.findByRole('button', { name: /descargar respaldo del/i }));
 
     const dialog = screen.getByRole('alertdialog');
-    expect(dialog).toHaveTextContent(/descargara el respaldo seleccionado/i);
+    expect(dialog).toHaveTextContent(/descargará el respaldo seleccionado/i);
+    expect(dialog).toHaveTextContent(/esta acción queda auditada/i);
     expect(dialog).toHaveTextContent(/3\.0 MB/i);
     expect(dialog).toHaveTextContent(/administradora hospital/i);
     expect(dialog).not.toHaveTextContent(/hospital-backup-.*\.sql\.enc/i);
@@ -548,7 +549,7 @@ describe('BackupsView', () => {
     fireEvent.click(await screen.findByRole('button', { name: /descargar respaldo del/i }));
 
     const dialog = screen.getByRole('alertdialog');
-    expect(dialog).toHaveTextContent(/tamano no disponible/i);
+    expect(dialog).toHaveTextContent(/tamaño no disponible/i);
     expect(dialog).not.toHaveTextContent(/^-$|^—$/);
   });
 });

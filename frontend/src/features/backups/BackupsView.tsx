@@ -28,7 +28,7 @@ type StatusFilter = 'all' | 'pending' | 'success' | 'failed';
 type OperationalStatus = 'ok' | 'review' | 'error';
 
 function formatBytes(size: number | null): string {
-  if (size === null) return 'Tamano no disponible';
+  if (size === null) return 'Tamaño no disponible';
   if (size < 1024) return `${size} B`;
   if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
@@ -764,7 +764,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
         title="¿Descargar respaldo?"
       >
         <div className="space-y-3 text-sm">
-          <p>Descargara el respaldo seleccionado. Esta accion queda auditada.</p>
+          <p>Descargará el respaldo seleccionado. Esta acción queda auditada.</p>
           {downloadTarget ? (
             <dl className="grid gap-2 rounded-md border border-border bg-muted/35 p-3 sm:grid-cols-2">
               <div>
@@ -772,7 +772,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                 <dd className="font-semibold">{formatDate(downloadTarget.completed_at ?? downloadTarget.created_at)}</dd>
               </div>
               <div>
-                <dt className="text-xs font-medium text-muted-foreground">Tamano</dt>
+                <dt className="text-xs font-medium text-muted-foreground">Tamaño</dt>
                 <dd className="font-semibold">{formatBytes(downloadTarget.size_bytes)}</dd>
               </div>
               <div className="sm:col-span-2">

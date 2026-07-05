@@ -4806,3 +4806,29 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte mejora mensajes que ven cajeros y administradores cuando una operacion queda bloqueada, sin alterar seguridad ni auditoria.
+
+## 198. Fase 6 - Descarga de respaldos con copia operativa clara
+
+Cambio aplicado:
+
+- `BackupsView` muestra copia acentuada en la confirmacion de descarga auditada para "descargara" y "esta accion".
+- El tamano no disponible en confirmacion y tabla de historial ahora se presenta como texto operativo correcto, sin guiones ni jerga tecnica.
+- Se ajustaron regresiones de descarga y tamano desconocido para evitar volver a la copia anterior.
+- No se cambiaron permisos, endpoint de descarga, nombre seguro del archivo, idempotencia, auditoria ni flujo de creacion de respaldos.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- BackupsView.test.tsx -t "confirms and reports backup downloads|explains unavailable backup size"` | RED inicial correcto: el dialogo mostraba `Descargara`, `Esta accion` y `Tamano`; luego OK: 3 tests pasan. |
+| `docker compose exec frontend npm run test -- BackupsView.test.tsx -t "explains unavailable backup sizes"` | RED inicial correcto: la tabla mostraba `Tamano no disponible`; luego OK: 1 test pasa. |
+| `docker compose exec frontend npm run test -- BackupsView.test.tsx` | OK: 24 tests pasan. |
+| `docker compose exec frontend npm run test -- useBackups.test.tsx` | OK: 10 tests pasan. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte mejora el flujo de descarga manual de respaldos locales sin tocar la seguridad ni la auditoria del archivo descargado.
