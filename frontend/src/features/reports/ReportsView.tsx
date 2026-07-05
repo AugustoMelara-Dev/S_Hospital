@@ -9,6 +9,7 @@ import { LineChart, ShieldCheck, WalletCards } from 'lucide-react';
 
 type ReportsViewProps = {
   canExport: boolean;
+  canViewAuditReports: boolean;
   canViewCashSessionReport: boolean;
   canViewManagerial: boolean;
   onStatus: (message: string) => void;
@@ -42,8 +43,15 @@ export function ReportsView(props: ReportsViewProps) {
   const requestedSubRoute =
     isRoot && subRoute === 'executive' && !props.canViewManagerial && props.canViewCashSessionReport
       ? 'cash'
+      : isRoot && subRoute === 'executive' && !props.canViewManagerial && !props.canViewCashSessionReport && props.canViewAuditReports
+        ? 'audit'
       : subRoute;
-  const activeSubRoute = permittedReportRoute(requestedSubRoute, props.canViewManagerial, props.canViewCashSessionReport);
+  const activeSubRoute = permittedReportRoute(
+    requestedSubRoute,
+    props.canViewManagerial,
+    props.canViewCashSessionReport,
+    props.canViewAuditReports,
+  );
 
   return (
     <div data-slot="reports-view" className="flex flex-col gap-5">
@@ -54,7 +62,12 @@ export function ReportsView(props: ReportsViewProps) {
           className="pb-4"
         />
       ) : null}
-      <ReportsNavigation active={activeSubRoute} canViewManagerial={props.canViewManagerial} canViewCash={props.canViewCashSessionReport} />
+      <ReportsNavigation
+        active={activeSubRoute}
+        canViewAuditReports={props.canViewAuditReports}
+        canViewManagerial={props.canViewManagerial}
+        canViewCash={props.canViewCashSessionReport}
+      />
       <ReportsContent {...props} subRoute={activeSubRoute} executiveTitleLevel={isRoot ? 2 : 1} />
     </div>
   );
@@ -78,13 +91,22 @@ function permittedReportRoute(
   requested: ReportSubRoute,
   canViewManagerial: boolean,
   canViewCash: boolean,
+  canViewAuditReports: boolean,
 ): ReportSubRoute {
-  if (canAccessReportRoute(requested, canViewManagerial, canViewCash)) {
+  if (canAccessReportRoute(requested, canViewManagerial, canViewCash, canViewAuditReports)) {
     return requested;
   }
 
   if (requested !== 'cash' && canViewCash) {
     return 'cash';
+  }
+
+  if (requested !== 'executive' && canViewManagerial) {
+    return 'executive';
+  }
+
+  if (requested !== 'audit' && canViewAuditReports) {
+    return 'audit';
   }
 
   return requested;
@@ -94,9 +116,14 @@ function canAccessReportRoute(
   route: ReportSubRoute,
   canViewManagerial: boolean,
   canViewCash: boolean,
+  canViewAuditReports: boolean,
 ): boolean {
   if (route === 'cash') {
     return canViewCash || canViewManagerial;
+  }
+
+  if (route === 'audit') {
+    return canViewAuditReports;
   }
 
   return canViewManagerial;
@@ -104,16 +131,19 @@ function canAccessReportRoute(
 
 function ReportsNavigation({
   active,
+  canViewAuditReports,
   canViewManagerial,
   canViewCash,
 }: {
   active: ReportSubRoute;
+  canViewAuditReports: boolean;
   canViewManagerial: boolean;
   canViewCash: boolean;
 }) {
   const basePath = '/reports';
   const visible = SUB_ROUTES.filter((route) => {
-    if (route.id === 'executive' || route.id === 'audit') return canViewManagerial;
+    if (route.id === 'executive') return canViewManagerial;
+    if (route.id === 'audit') return canViewAuditReports;
     if (route.id === 'cash') return canViewCash || canViewManagerial;
     return true;
   });
@@ -174,7 +204,7 @@ function ReportsContent({
   if (subRoute === 'audit') {
     return (
       <ReportsAudit
-        canViewManagerial={props.canViewManagerial}
+        canViewManagerial={props.canViewAuditReports}
         canExport={props.canExport}
         onStatus={props.onStatus}
       />

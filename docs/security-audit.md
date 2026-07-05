@@ -310,3 +310,17 @@ Pruebas relevantes:
 
 - `InstitutionalReceiptSettingsView.test.tsx` cubre el caso con `canAdvancedPrintSettings=true` y panel avanzado cerrado.
 - `npm run typecheck` y `npm run lint` verifican el cambio frontend sin errores.
+
+## 17. Actualizacion 2026-07-05 - Reportes de auditoria requieren audit.view en UI
+
+Control agregado/verificado:
+
+- La subruta `/reports/audit` ya no se expone solo por `reports.managerial.view`.
+- El frontend deriva `canViewAuditReports` desde `audit.view`, alineado con `/api/reports/operations` y `/api/system/audit-logs`.
+- Si una cuenta gerencial sin auditoria intenta abrir `/reports/audit`, la pantalla cae a un reporte permitido en lugar de mostrar una vista que terminaria en 403.
+- Una cuenta con solo `audit.view` puede entrar a Reportes y aterriza directamente en Auditoria.
+
+Pruebas relevantes:
+
+- `ReportsView.subroutes.test.tsx` cubre usuario gerencial sin `audit.view` y usuario audit-only.
+- `ReportsAudit.test.tsx`, `npm run typecheck` y `npm run lint` verifican el cambio frontend.

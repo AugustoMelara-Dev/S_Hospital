@@ -6116,3 +6116,27 @@ Pruebas ejecutadas:
 Decision:
 
 - La captura visual de respaldos vuelve a validar la regla actual: la vista normal muestra informacion operativa y oculta nombres tecnicos del archivo de respaldo.
+
+## 254. Fase 10/14 - Auditoria de reportes exige permiso audit.view en UI
+
+Cambio aplicado:
+
+- `useHospitalSession` deriva `canViewAuditReports` desde `audit.view`.
+- `AppRoutes` pasa ese permiso explicito a `ReportsView`.
+- `ReportsView` ya no muestra la subruta `Auditoria` solo por tener `reports.managerial.view`; si se solicita `/reports/audit` sin `audit.view`, cae a Caja si esta permitida o a Ejecutivo.
+- `audit.view` tambien permite entrar a Reportes y abre Auditoria desde `/reports` cuando es el unico reporte disponible.
+- No se agregaron dependencias, migraciones, permisos ni cambios de endpoint.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- ReportsView.subroutes --run -t "hides the audit report"` | RED inicial por enlace `Auditoria` visible; luego OK: 1 test pasa. |
+| `docker compose exec frontend npm run test -- ReportsView.subroutes --run -t "opens audit from root"` | RED inicial por Auditoria visible pero no activa; luego OK: 1 test pasa. |
+| `docker compose exec frontend npm run test -- ReportsView.subroutes ReportsAudit --run` | OK: 2 archivos / 17 tests. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+Decision:
+
+- La navegacion de reportes queda alineada con la autorizacion real del backend: datos de auditoria requieren `audit.view`, no solo reportes gerenciales.

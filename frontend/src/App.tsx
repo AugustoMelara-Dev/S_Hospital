@@ -131,6 +131,7 @@ function HospitalApp() {
           canViewReports={session.canViewReports}
           canViewManagerialReports={session.canViewManagerialReports}
           canViewCashSessionReports={session.canViewCashSessionReports}
+          canViewAuditReports={session.canViewAuditReports}
           canExportReports={session.canExportReports}
           canViewUsers={session.canViewUsers}
           canCreateUsers={session.canCreateUsers}

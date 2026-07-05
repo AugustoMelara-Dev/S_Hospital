@@ -43,6 +43,7 @@ function renderReports(
   initialPath: string,
   canViewManagerial = true,
   canViewCashSessionReport = true,
+  canViewAuditReports = canViewManagerial,
 ) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -57,6 +58,7 @@ function renderReports(
               <ReportsView
                 canExport
                 canViewCashSessionReport={canViewCashSessionReport}
+                canViewAuditReports={canViewAuditReports}
                 canViewManagerial={canViewManagerial}
                 onStatus={vi.fn()}
               />
@@ -68,6 +70,7 @@ function renderReports(
               <ReportsView
                 canExport
                 canViewCashSessionReport={canViewCashSessionReport}
+                canViewAuditReports={canViewAuditReports}
                 canViewManagerial={canViewManagerial}
                 onStatus={vi.fn()}
               />
@@ -126,6 +129,22 @@ describe('ReportsView (sub-routes)', () => {
     expect(screen.getByRole('link', { name: /caja/i })).toHaveAttribute('aria-current', 'page');
     expect(screen.getByText(/operacion de caja/i)).toBeInTheDocument();
     expect(screen.queryByText(/reporte de auditoria no disponible/i)).not.toBeInTheDocument();
+  });
+
+  it('hides the audit report when the user has managerial reports without audit permission', async () => {
+    renderReports('/reports/audit', true, true, false);
+
+    expect(screen.queryByRole('link', { name: /auditoria/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /caja/i })).toHaveAttribute('aria-current', 'page');
+    await waitFor(() => expect(apiClient.getCashSessions).toHaveBeenCalled());
+  });
+
+  it('opens audit from root when it is the only permitted report', () => {
+    renderReports('/reports', false, false, true);
+
+    expect(screen.getByRole('link', { name: /auditoria/i })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('heading', { name: /auditoria/i })).toBeInTheDocument();
+    expect(screen.queryByText(/reporte ejecutivo no disponible/i)).not.toBeInTheDocument();
   });
 
   it('falls back to executive when the report sub-route is unknown', () => {

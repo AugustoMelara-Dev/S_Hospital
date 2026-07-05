@@ -31,11 +31,13 @@ export function useHospitalSession() {
   const canViewReceipts = permissions.has('receipts.view');
   const canViewManagerialReports = permissions.has('reports.managerial.view');
   const canViewCashSessionReports = permissions.has('reports.cash_session.view');
+  const canViewAuditReports = permissions.has('audit.view');
   const canExportReports = permissions.has('reports.export');
   const canViewReports =
     permissions.has('reports.view') ||
     canViewManagerialReports ||
-    canViewCashSessionReports;
+    canViewCashSessionReports ||
+    canViewAuditReports;
   const canViewBackups = permissions.has('backups.view');
   const canViewSystemStatus = permissions.has('system.status.view');
   const canViewUsers = permissions.has('users.view');
@@ -206,6 +208,7 @@ export function useHospitalSession() {
     canViewReceipts,
     canViewManagerialReports,
     canViewCashSessionReports,
+    canViewAuditReports,
     canExportReports,
     canViewReports,
     canViewBackups,

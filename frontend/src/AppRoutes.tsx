@@ -35,6 +35,7 @@ type AppRoutesProps = {
   canViewReports: boolean;
   canViewManagerialReports: boolean;
   canViewCashSessionReports: boolean;
+  canViewAuditReports: boolean;
   canExportReports: boolean;
   canViewUsers: boolean;
   canCreateUsers: boolean;
@@ -65,6 +66,7 @@ export function AppRoutes({
   canViewReports,
   canViewManagerialReports,
   canViewCashSessionReports,
+  canViewAuditReports,
   canExportReports,
   canViewUsers: _canViewUsers,
   canCreateUsers,
@@ -169,6 +171,7 @@ export function AppRoutes({
             <Suspense fallback={<LoadingState label="Cargando reportes..." />}>
               <ReportsView
                 canExport={canExportReports}
+                canViewAuditReports={canViewAuditReports}
                 canViewCashSessionReport={canViewCashSessionReports || canViewManagerialReports}
                 canViewManagerial={canViewManagerialReports}
                 onStatus={onStatus}

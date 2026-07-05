@@ -206,3 +206,13 @@ verified.
 | `docker compose exec frontend npx playwright test e2e/rc-backup-screen.spec.ts --workers=1 --reporter=list` | RED first on stale login/mock contract; then PASS, 1 test. |
 | `docker compose exec frontend npx playwright test e2e/backups-flow.spec.ts --workers=1 --reporter=list` | PASS, 1 test. |
 | `docker compose exec frontend npm run lint` | PASS. |
+
+### 2026-07-05 Reports Audit Permission Gate
+
+| Command | Result |
+|---|---|
+| `docker compose exec frontend npm run test -- ReportsView.subroutes --run -t "hides the audit report"` | RED first because `Auditoria` stayed visible without `audit.view`; then PASS, 1 focused test. |
+| `docker compose exec frontend npm run test -- ReportsView.subroutes --run -t "opens audit from root"` | RED first because audit-only users did not land on Auditoria; then PASS, 1 focused test. |
+| `docker compose exec frontend npm run test -- ReportsView.subroutes ReportsAudit --run` | PASS, 17 tests. |
+| `docker compose exec frontend npm run typecheck` | PASS. |
+| `docker compose exec frontend npm run lint` | PASS. |
