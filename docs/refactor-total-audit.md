@@ -5140,3 +5140,27 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte completa la alineacion de reportes mensuales con la fecha real de autorizacion de anulaciones.
+
+## 212. Fase 8 - Reporte por area legacy usa columnas de centavos
+
+Cambio aplicado:
+
+- `AreaReportService` deja de recomputar centavos con `ROUND(... * 100)` y usa `payments.amount_cents` e `invoice_items.*_cents`.
+- El guard `PaymentCentsSqlGuardTest` ahora incluye `AreaReportService` para evitar regresiones si vuelve a cablearse o reutilizarse.
+- Se corrigio el fallback visible de area vacia a `Sin área`.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter report_services_do_not_recompute_invoice_cents_via_sql` | RED inicial correcto: `AreaReportService` usaba `ROUND(invoice_items.quantity * 100)`; luego OK. |
+| `docker compose exec backend php artisan test --filter PaymentCentsSqlGuardTest` | OK: 6 tests pasan. |
+| `rg -n "ROUND\\(invoice_items\\.(quantity|line_total|line_subtotal|tax_amount) \\* 100|payments\\.amount\\)|payments\\.amount,|collected_total|NULLIF\\(invoices\\.total," backend\\app\\Actions\\Reports` | OK: sin patrones peligrosos de recomputo decimal en acciones de reportes. |
+| `docker compose exec backend vendor/bin/pint --test --dirty` | OK: 0 files. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M --no-progress` | OK: sin errores. |
+| `git diff --check` | OK: sin errores de whitespace; Git aviso normal de LF en `docs/refactor-total-audit.md`. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte reduce riesgo de drift monetario en reportes de area aunque el servicio sea legacy/no cableado actualmente.

@@ -38,7 +38,7 @@ class AreaReportService
             })
             ->groupBy('payments.invoice_id')
             ->select('payments.invoice_id')
-            ->selectRaw('COALESCE(SUM(payments.amount), 0) as collected_total');
+            ->selectRaw('COALESCE(SUM(payments.amount_cents), 0) as collected_cents');
 
         $rows = DB::table('invoice_items')
             ->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
@@ -70,11 +70,11 @@ class AreaReportService
             ->select('invoice_items.service_area_id', 'invoice_items.service_area_name')
             ->selectRaw('COUNT(*) as item_count')
             ->selectRaw('COUNT(DISTINCT invoices.id) as invoice_count')
-            ->selectRaw('COALESCE(SUM(ROUND(invoice_items.quantity * 100)), 0) as quantity_cents')
-            ->selectRaw('COALESCE(SUM(ROUND(invoice_items.line_subtotal * 100)), 0) as subtotal_cents')
-            ->selectRaw('COALESCE(SUM(ROUND(invoice_items.tax_amount * 100)), 0) as tax_cents')
-            ->selectRaw('COALESCE(SUM(ROUND(invoice_items.line_total * 100)), 0) as total_cents')
-            ->selectRaw('COALESCE(SUM(ROUND(invoice_items.line_total * 100 * COALESCE(payment_totals.collected_total, 0) / NULLIF(invoices.total, 0))), 0) as collected_cents')
+            ->selectRaw('COALESCE(SUM(invoice_items.quantity_cents), 0) as quantity_cents')
+            ->selectRaw('COALESCE(SUM(invoice_items.line_subtotal_cents), 0) as subtotal_cents')
+            ->selectRaw('COALESCE(SUM(invoice_items.tax_amount_cents), 0) as tax_cents')
+            ->selectRaw('COALESCE(SUM(invoice_items.line_total_cents), 0) as total_cents')
+            ->selectRaw('COALESCE(SUM(ROUND(invoice_items.line_total_cents * COALESCE(payment_totals.collected_cents, 0) / NULLIF(invoices.total_cents, 0))), 0) as collected_cents')
             ->get()
             ->map(function (object $row): array {
                 $totalCents = (int) $row->total_cents;
@@ -82,7 +82,7 @@ class AreaReportService
 
                 return [
                     'area_id' => $row->service_area_id !== null ? (int) $row->service_area_id : null,
-                    'area' => $row->service_area_name ?? 'Sin area',
+                    'area' => $row->service_area_name ?? 'Sin área',
                     'item_count' => (int) $row->item_count,
                     'invoice_count' => (int) $row->invoice_count,
                     'quantity' => $this->centsToMoney($row->quantity_cents),
