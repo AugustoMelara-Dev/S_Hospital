@@ -4909,3 +4909,27 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte refuerza la regla no negociable de no borrar facturas desde el codigo de aplicacion; el camino operativo sigue siendo anulacion/reverso auditado.
+
+## 202. Fase 8 - Instalador conserva clave dedicada de respaldos
+
+Cambio aplicado:
+
+- `deploy_hospital_lan.ps1` ahora genera secretos con RNG criptografico y conserva `HOSPITAL_BACKUP_ENCRYPTION_KEY` si ya existe.
+- El instalador escribe `HOSPITAL_BACKUP_ENCRYPTION_KEY` tanto en despliegue Docker como en instalacion local.
+- `docker-compose.prod.yml` exige e inyecta la clave dedicada en backend, worker de backups y scheduler.
+- `restore_hospital_windows.ps1` acepta respaldos `.sql.gz.enc` y mantiene compatibilidad con `.sql.enc`, `.sql` y `.tar.gz`.
+- La documentacion de migracion y recuperacion de desastre apunta al formato nuevo `.sql.gz.enc` y reserva `APP_KEY` para respaldos legacy.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\deploy_hospital_lan.ps1 -SelfTest` | RED inicial correcto: faltaba `Get-EnvOrDefault`; luego OK: 36 checks pasan. |
+| `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\restore_hospital_windows.ps1 -SelfTest` | RED inicial correcto: faltaba validar `.sql.gz.enc`; luego OK. |
+| `docker compose -f docker-compose.prod.yml config` con variables dummy | OK: la clave aparece en los tres servicios Laravel. |
+| Parser PowerShell para `deploy_hospital_lan.ps1` y `restore_hospital_windows.ps1` | OK: sin errores de sintaxis. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte alinea instalacion, runtime Docker, restore y documentacion con la clave dedicada de respaldos para evitar backups cifrados imposibles de generar o restaurar despues de una instalacion limpia.

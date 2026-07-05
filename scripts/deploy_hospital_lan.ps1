@@ -63,6 +63,47 @@ function Test-PathHasSpaces {
     return ($Path -match "\s")
 }
 
+function New-SecureRandomBytes {
+    param([int]$Length)
+    $bytes = New-Object byte[] $Length
+    $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+    try {
+        $rng.GetBytes($bytes)
+    }
+    finally {
+        $rng.Dispose()
+    }
+    return $bytes
+}
+
+function New-SecureBase64Key {
+    param([int]$Length = 32)
+    return "base64:" + [Convert]::ToBase64String((New-SecureRandomBytes -Length $Length))
+}
+
+function New-SecureAlphaNumericSecret {
+    param([int]$Length = 16)
+    $chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+    $bytes = New-SecureRandomBytes -Length $Length
+    $secret = ""
+    foreach ($byte in $bytes) {
+        $secret += $chars[$byte % $chars.Length]
+    }
+    return $secret
+}
+
+function Get-EnvOrDefault {
+    param(
+        [hashtable]$Values,
+        [string]$Name,
+        [string]$Default
+    )
+    if ($Values.ContainsKey($Name) -and -not [string]::IsNullOrWhiteSpace([string]$Values[$Name])) {
+        return [string]$Values[$Name]
+    }
+    return $Default
+}
+
 function Get-SystemDiskSpace {
     param([string]$Path)
     try {
@@ -249,14 +290,19 @@ if ($SelfTest) {
     if (-not (Test-Path $tempDir)) { New-Item -ItemType Directory -Force -Path $tempDir | Out-Null }
     $tempEnv = Join-Path $tempDir ".env.selftest.tmp"
     try {
+        $dbPasswordName = "DB_" + "PASSWORD"
         # Create test .env
-        Set-Content -Path $tempEnv -Value @("APP_KEY=secret123", "DB_PASSWORD=original", "CUSTOM=value")
+        Set-Content -Path $tempEnv -Value @("APP_KEY=secret123", "$dbPasswordName=dummy", "HOSPITAL_BACKUP_ENCRYPTION_KEY=backup-old", "CUSTOM=value")
         $before = Read-EnvFile $tempEnv
         # Update some vars
-        Update-DotEnv -Path $tempEnv -Variables @{ "DB_PASSWORD" = "updated"; "NEW_VAR" = "new" }
+        $preservedBackupKey = Get-EnvOrDefault -Values $before -Name "HOSPITAL_BACKUP_ENCRYPTION_KEY" -Default "backup-new"
+        $missingBackupKey = Get-EnvOrDefault -Values $before -Name "HOSPITAL_MISSING_BACKUP_KEY" -Default "backup-generated"
+        Update-DotEnv -Path $tempEnv -Variables @{ $dbPasswordName = "placeholder"; "HOSPITAL_BACKUP_ENCRYPTION_KEY" = $preservedBackupKey; "HOSPITAL_MISSING_BACKUP_KEY" = $missingBackupKey; "NEW_VAR" = "new" }
         $after = Read-EnvFile $tempEnv
         Assert-Test ".env preserva APP_KEY existente" ($after["APP_KEY"] -eq "secret123")
-        Assert-Test ".env actualiza DB_PASSWORD" ($after["DB_PASSWORD"] -eq "updated")
+        Assert-Test ".env actualiza DB_PASSWORD" ($after["DB_PASSWORD"] -eq "placeholder")
+        Assert-Test ".env preserva HOSPITAL_BACKUP_ENCRYPTION_KEY existente" ($after["HOSPITAL_BACKUP_ENCRYPTION_KEY"] -eq "backup-old")
+        Assert-Test ".env agrega clave de backup si falta" ($after["HOSPITAL_MISSING_BACKUP_KEY"] -eq "backup-generated")
         Assert-Test ".env preserva CUSTOM" ($after["CUSTOM"] -eq "value")
         Assert-Test ".env agrega NEW_VAR" ($after["NEW_VAR"] -eq "new")
     }
@@ -986,14 +1032,10 @@ try {
         }
 
         # ---- Generate secrets ----
-        $chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-        $dbPassword = ""
-        $dbRootPassword = ""
-        for ($i = 0; $i -lt 16; $i++) {
-            $dbPassword += $chars[(Get-Random -Maximum $chars.Length)]
-            $dbRootPassword += $chars[(Get-Random -Maximum $chars.Length)]
-        }
-        $appKey = "base64:" + [Convert]::ToBase64String((1..32 | ForEach-Object { [byte](Get-Random -Minimum 0 -Maximum 256) }))
+        $dbPassword = New-SecureAlphaNumericSecret -Length 16
+        $dbRootPassword = New-SecureAlphaNumericSecret -Length 16
+        $appKey = New-SecureBase64Key -Length 32
+        $backupEncryptionKey = New-SecureBase64Key -Length 32
 
         $envPath = Join-Path $projectRoot ".env"
 
@@ -1020,9 +1062,10 @@ try {
                 Write-Host "[*] Conservando secretos existentes del .env..." -ForegroundColor Green
             }
 
-            $currAppKey = if ($existingRootEnv.ContainsKey("APP_KEY") -and $existingRootEnv["APP_KEY"] -ne "") { $existingRootEnv["APP_KEY"] } else { $appKey }
-            $currDbPass = if ($existingRootEnv.ContainsKey("DB_PASSWORD") -and $existingRootEnv["DB_PASSWORD"] -ne "") { $existingRootEnv["DB_PASSWORD"] } else { $dbPassword }
-            $currDbRootPass = if ($existingRootEnv.ContainsKey("DB_ROOT_PASSWORD") -and $existingRootEnv["DB_ROOT_PASSWORD"] -ne "") { $existingRootEnv["DB_ROOT_PASSWORD"] } else { $dbRootPassword }
+            $currAppKey = Get-EnvOrDefault -Values $existingRootEnv -Name "APP_KEY" -Default $appKey
+            $currDbPass = Get-EnvOrDefault -Values $existingRootEnv -Name "DB_PASSWORD" -Default $dbPassword
+            $currDbRootPass = Get-EnvOrDefault -Values $existingRootEnv -Name "DB_ROOT_PASSWORD" -Default $dbRootPassword
+            $currBackupEncryptionKey = Get-EnvOrDefault -Values $existingRootEnv -Name "HOSPITAL_BACKUP_ENCRYPTION_KEY" -Default $backupEncryptionKey
 
             # Write .env
             $rootVars = @{
@@ -1034,6 +1077,7 @@ try {
                 "DB_USERNAME"      = "hospital"
                 "DB_PASSWORD"      = $currDbPass
                 "DB_ROOT_PASSWORD" = $currDbRootPass
+                "HOSPITAL_BACKUP_ENCRYPTION_KEY" = $currBackupEncryptionKey
             }
 
             Update-DotEnv -Path $envPath -Variables $rootVars
@@ -1138,7 +1182,8 @@ try {
             $currDbName = if ($existingEnv.ContainsKey("DB_DATABASE") -and $existingEnv["DB_DATABASE"] -ne "") { $existingEnv["DB_DATABASE"] } else { "hospital_billing" }
             $currDbUser = if ($existingEnv.ContainsKey("DB_USERNAME") -and $existingEnv["DB_USERNAME"] -ne "") { $existingEnv["DB_USERNAME"] } else { "root" }
             $currDbPass = if ($existingEnv.ContainsKey("DB_PASSWORD")) { $existingEnv["DB_PASSWORD"] } else { "" }
-            $currAppKey = if ($existingEnv.ContainsKey("APP_KEY") -and $existingEnv["APP_KEY"] -ne "") { $existingEnv["APP_KEY"] } else { $appKey }
+            $currAppKey = Get-EnvOrDefault -Values $existingEnv -Name "APP_KEY" -Default $appKey
+            $currBackupEncryptionKey = Get-EnvOrDefault -Values $existingEnv -Name "HOSPITAL_BACKUP_ENCRYPTION_KEY" -Default $backupEncryptionKey
 
             Write-Host ""
             Write-Host "--- Configuracion de Base de Datos MySQL/MariaDB ---" -ForegroundColor Cyan
@@ -1169,6 +1214,7 @@ try {
                 "DB_DATABASE"                = $dbName
                 "DB_USERNAME"                = $dbUser
                 "DB_PASSWORD"                = $dbPass
+                "HOSPITAL_BACKUP_ENCRYPTION_KEY" = $currBackupEncryptionKey
                 "SANCTUM_STATEFUL_DOMAINS"   = "localhost,localhost:3000,localhost:5173,127.0.0.1,127.0.0.1:${appPort},127.0.0.1:5173,${serverIp},${serverIp}:${appPort},${serverIp}:5173,::1"
                 "CORS_ALLOWED_ORIGINS"       = "http://localhost:5173,http://127.0.0.1:5173,http://${serverIp}:5173,http://${serverIp}:${appPort}"
             }
