@@ -499,6 +499,28 @@ describe('CashBoxView', () => {
       { idempotencyKey: expect.any(String) },
     ));
   });
+
+  it('locks close cash fields while the close request is pending', async () => {
+    let resolveClose!: (session: CashSession) => void;
+    const closeCashSession = vi.spyOn(apiClient, 'closeCashSession')
+      .mockReturnValue(new Promise((resolve) => { resolveClose = resolve; }));
+    vi.spyOn(apiClient, 'getCurrentCashSession').mockResolvedValue(cashSessionFixture());
+
+    renderCashBox(<CashBoxView onStatus={vi.fn()} />);
+
+    fireEvent.change(await screen.findByLabelText(/monto contado/i), { target: { value: '100.00' } });
+    fireEvent.change(screen.getByLabelText(/nota de cierre/i), { target: { value: 'Turno contado' } });
+    fireEvent.click(screen.getByRole('button', { name: /^cerrar caja$/i }));
+    fireEvent.click((await screen.findAllByRole('button', { name: /^cerrar caja$/i })).at(-1)!);
+
+    await waitFor(() => expect(closeCashSession).toHaveBeenCalledTimes(1));
+    expect(screen.getByLabelText(/monto contado/i)).toBeDisabled();
+    expect(screen.getByLabelText(/nota de cierre/i)).toBeDisabled();
+
+    await act(async () => {
+      resolveClose(cashSessionFixture({ status: 'closed' }));
+    });
+  });
 });
 
 function renderCashBox(node: ReactNode) {

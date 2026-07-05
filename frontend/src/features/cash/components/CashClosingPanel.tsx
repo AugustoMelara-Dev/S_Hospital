@@ -73,6 +73,7 @@ export function CashClosingPanel({
                 onChange={(event) => onClosingAmountChange(event.target.value)}
                 placeholder="0.00"
                 autoComplete="off"
+                disabled={isSubmitting}
                 className="font-mono text-lg tabular-nums"
                 aria-invalid={invalid}
                 aria-describedby={describedBy}
@@ -106,6 +107,7 @@ export function CashClosingPanel({
                 onChange={(event) => onClosingNotesChange(event.target.value)}
                 placeholder={hasCashDifference ? 'Obligatoria si hay diferencia (sobrante/faltante).' : 'Nota opcional...'}
                 rows={2}
+                disabled={isSubmitting}
               />
             )}
           </FormField>

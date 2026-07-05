@@ -4461,3 +4461,28 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, facturacion, caja, catalogo, historial, recibos, respaldos ni reportes.
 - Este corte reduce confusion operativa al administrar usuarios basicos sin ampliar la matriz RBAC.
+
+## 184. Fase 7 - Caja bloquea conteo durante cierre pendiente
+
+Cambio aplicado:
+
+- `CashClosingPanel` ahora deshabilita `Monto contado` y `Nota de cierre` mientras `isSubmitting=true`.
+- Esto evita que el cajero modifique visualmente el conteo o la nota despues de confirmar el cierre y antes de recibir respuesta del servidor local.
+- Se agrego una regresion con `closeCashSession` pendiente que confirma que el cierre se envio una sola vez y ambos campos quedan bloqueados.
+- No se cambian calculo de diferencia, motivo obligatorio, idempotencia, permisos, payloads ni contratos API.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- CashBoxView.test.tsx -t "locks close cash fields" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial correcto: `Monto contado` seguia habilitado durante el cierre pendiente; luego OK: 1 test pasa. |
+| `npm run test -- CashBoxView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=60000` | OK: 12 tests pasan. |
+| `npm run lint` | OK. |
+| `npm run typecheck` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, facturacion, catalogo, historial, recibos, respaldos, reportes ni usuarios.
+- Este corte reduce confusion operativa en el cierre de caja sin alterar la validacion fiscal ni la auditoria del cierre.
