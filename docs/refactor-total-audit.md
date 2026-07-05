@@ -4410,3 +4410,28 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, facturacion, caja, historial, recibos, respaldos, reportes ni usuarios.
 - Este corte reduce confusion operativa en catalogo y mantiene protegidos los precios de servicios durante solicitudes pendientes.
+
+## 182. Fase 6 - Respaldos muestran fecha segura ante timestamp corrupto
+
+Cambio aplicado:
+
+- `BackupsView` ahora devuelve `Fecha no disponible` cuando la fecha relativa de un respaldo no se puede interpretar.
+- Esto evita que el KPI `Ultimo exitoso` muestre `hace NaNd` si el servidor local entrega un timestamp corrupto.
+- Se agrego una regresion con `last_success_at='fecha-danada'`, confirmando que no se filtra `NaN`, `fecha-danada` ni `invalid date` al DOM.
+- No se cambian creacion, descarga, permisos, auditoria ni contratos API de respaldos.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- BackupsView.test.tsx -t "shows a safe backup age" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial correcto: el KPI mostraba `hace NaNd`; luego OK: 1 test pasa. |
+| `npm run test -- BackupsView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=45000` | OK: 24 tests pasan. |
+| `npm run lint` | OK. |
+| `npm run typecheck` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, facturacion, caja, catalogo, historial, recibos, reportes ni usuarios.
+- Este corte mejora la resiliencia visual del panel de respaldos locales sin alterar la operacion de backup.

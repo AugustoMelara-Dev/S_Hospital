@@ -41,6 +41,10 @@ function formatDate(value: string): string {
 function formatRelativeTime(value: string): string {
   const now = new Date();
   const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return 'Fecha no disponible';
+  }
+
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);
   const diffHours = Math.floor(diffMins / 60);

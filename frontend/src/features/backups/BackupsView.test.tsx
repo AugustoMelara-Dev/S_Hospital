@@ -136,6 +136,28 @@ describe('BackupsView', () => {
     expect(within(kpis).getByText(/respaldo protegido mas reciente/i)).toBeInTheDocument();
   });
 
+  it('shows a safe backup age when the last successful timestamp is malformed', async () => {
+    const status = systemStatusFixture();
+    vi.mocked(apiClient.getSystemStatus).mockResolvedValue({
+      ...status,
+      backups: {
+        ...status.backups,
+        last_success_at: 'fecha-danada',
+      },
+    });
+
+    renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
+
+    const kpis = await screen.findByRole('region', { name: /indicadores principales de respaldos/i });
+    const lastSuccessLabel = within(kpis).getByText(/^ultimo exitoso$/i);
+    const lastSuccessCard = lastSuccessLabel.closest('[data-slot="stat-grid-item"]');
+
+    expect(lastSuccessCard).not.toBeNull();
+    await waitFor(() => expect(lastSuccessCard as HTMLElement).not.toHaveTextContent(/sin respaldo/i));
+    expect(within(lastSuccessCard as HTMLElement).getByText(/fecha no disponible/i)).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/NaN|fecha-danada|invalid date/i);
+  });
+
   it('keeps the pending KPI from server status even when the visible list is filtered', async () => {
     const status = systemStatusFixture();
     vi.mocked(apiClient.getSystemStatus).mockResolvedValue({
