@@ -5921,3 +5921,22 @@ Decision:
 
 - Composer sigue sin requerirse en PATH del host Windows para esta evidencia; el entorno soportado es el contenedor backend.
 - Este corte reduce un bloqueante de release sin declarar `PRODUCTION_READY`: todavia faltan audit npm vigente, E2E host o equivalente final, evidencias fisicas y cierre de worktree.
+
+## 245. Fase 13/29 - npm audit limpio en contenedor frontend
+
+Cambio aplicado:
+
+- Se ejecuto `npm audit --audit-level=high --json` dentro del contenedor frontend soportado.
+- La auditoria actual reporta 0 vulnerabilidades totales.
+- No se tocaron archivos de aplicacion, dependencias, lockfiles, contratos API, migraciones ni permisos.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm audit --audit-level=high --json` | OK: `high=0`, `critical=0`, `total=0`. |
+
+Decision:
+
+- `npm audit` deja de ser bloqueante en el entorno frontend containerizado.
+- El proyecto sigue `NOT_READY`: todavia faltan E2E host o equivalente final, cierre del worktree, evidencias fisicas y paquete offline final.

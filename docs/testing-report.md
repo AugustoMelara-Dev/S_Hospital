@@ -72,6 +72,7 @@ print validation.
 | 2026-07-05 | `docker compose exec -e PLAYWRIGHT_EXTERNAL_SERVER=1 frontend npx playwright test e2e/all-buttons-smoke.spec.ts --workers=1 --reporter=list` | PASS, 7 tests | Full button-smoke matrix passed in 4.7m and regenerated `qa/production-audit/button-smoke-report.json` with 79 passed results. |
 | 2026-07-05 | `docker compose exec backend composer validate --no-interaction` | PASS | Backend Composer manifest is valid inside the supported backend container. |
 | 2026-07-05 | `docker compose exec backend composer audit --no-interaction` | PASS | No Composer security vulnerability advisories found. |
+| 2026-07-05 | `docker compose exec frontend npm audit --audit-level=high --json` | PASS | npm audit reports 0 total vulnerabilities in the supported frontend container. |
 
 Recharts emits a known Playwright/Vite console warning about chart container
 dimensions in the mocked browser run. It does not currently fail the focused
