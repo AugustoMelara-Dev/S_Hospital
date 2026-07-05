@@ -60,6 +60,44 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertJsonValidationErrors('cash_session');
     }
 
+    public function test_only_one_cash_session_can_be_open_for_the_local_drawer(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $otherCashier = $this->cashier();
+
+        $this->openSession($cashier, '500.00');
+
+        $this->actingAs($otherCashier)
+            ->postJson('/api/cash-sessions/open', ['opening_amount' => '100.00'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('cash_session');
+
+        $this->assertSame(1, CashRegisterSession::query()->where('status', CashRegisterSession::STATUS_OPEN)->count());
+        $this->assertSame(1, CashMovement::query()->where('type', CashMovement::TYPE_OPENING)->count());
+        $this->assertSame(1, AuditLog::query()->where('action', 'cash_session.opened')->count());
+    }
+
+    public function test_another_cashier_can_open_the_local_drawer_after_previous_session_is_closed(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $otherCashier = $this->cashier();
+        $sessionId = $this->openSession($cashier, '500.00');
+
+        $this->actingAs($cashier)
+            ->postJson("/api/cash-sessions/{$sessionId}/close", ['closing_amount' => '500.00'])
+            ->assertOk()
+            ->assertJsonPath('data.status', CashRegisterSession::STATUS_CLOSED);
+
+        $this->actingAs($otherCashier)
+            ->postJson('/api/cash-sessions/open', ['opening_amount' => '100.00'])
+            ->assertCreated()
+            ->assertJsonPath('data.open_user_id', $otherCashier->id);
+
+        $this->assertSame(1, CashRegisterSession::query()->where('status', CashRegisterSession::STATUS_OPEN)->count());
+    }
+
     public function test_database_constraint_allows_only_one_open_cash_session_per_cashier(): void
     {
         $this->seedBillingBase();
@@ -286,8 +324,8 @@ class CashPaymentsReceiptTest extends TestCase
         $collector = User::factory()->create(['name' => 'Supervisor Caja']);
         $collector->assignRole('supervisor');
 
-        $this->openSession($issuer, '500.00');
-        $collectorSessionId = $this->openSession($collector, '500.00');
+        $this->createOpenSessionFixture($issuer, '500.00');
+        $collectorSessionId = $this->createOpenSessionFixture($collector, '500.00');
         $invoiceId = $this->createInvoice($issuer, 'Glucosa');
 
         $this->actingAs($collector)
@@ -332,7 +370,7 @@ class CashPaymentsReceiptTest extends TestCase
             ])
             ->assertUnprocessable();
 
-        $otherSessionId = $this->openSession($otherCashier, '100.00');
+        $otherSessionId = $this->createOpenSessionFixture($otherCashier, '100.00');
 
         $this->actingAs($cashier)
             ->postJson("/api/invoices/{$invoiceId}/payments", [
@@ -358,7 +396,7 @@ class CashPaymentsReceiptTest extends TestCase
         $cashier = $this->cashier();
         $otherCashier = $this->cashier();
         $sessionId = $this->openSession($cashier, '500.00');
-        $this->openSession($otherCashier, '500.00');
+        $this->createOpenSessionFixture($otherCashier, '500.00');
         $otherInvoiceId = $this->createInvoice($otherCashier, 'Glucosa');
 
         $this->actingAs($cashier)
@@ -1268,7 +1306,7 @@ class CashPaymentsReceiptTest extends TestCase
         $collector = User::factory()->create(['name' => 'Supervisor Caja']);
         $collector->assignRole('supervisor');
         $sessionId = $this->openSession($collector, '500.00');
-        $this->openSession($issuer, '500.00');
+        $this->createOpenSessionFixture($issuer, '500.00');
         $invoiceId = $this->createInvoice($issuer, 'Glucosa');
 
         $this->actingAs($collector)
@@ -1323,6 +1361,17 @@ class CashPaymentsReceiptTest extends TestCase
             ->postJson('/api/cash-sessions/open', ['opening_amount' => $openingAmount])
             ->assertCreated()
             ->json('data.id');
+    }
+
+    private function createOpenSessionFixture(User $cashier, string $openingAmount): int
+    {
+        return CashRegisterSession::query()->create([
+            'user_id' => $cashier->id,
+            'open_user_id' => $cashier->id,
+            'opening_amount' => $openingAmount,
+            'status' => CashRegisterSession::STATUS_OPEN,
+            'opened_at' => now(),
+        ])->id;
     }
 
     private function createInvoice(User $cashier, string $serviceName): int

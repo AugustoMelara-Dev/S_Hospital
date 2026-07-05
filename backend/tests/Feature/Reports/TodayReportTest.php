@@ -347,6 +347,25 @@ class TodayReportTest extends TestCase
 
     private function openSession(User $cashier): CashRegisterSession
     {
+        $existingSession = CashRegisterSession::query()
+            ->where('user_id', $cashier->id)
+            ->where('status', CashRegisterSession::STATUS_OPEN)
+            ->first();
+
+        if ($existingSession instanceof CashRegisterSession) {
+            return $existingSession;
+        }
+
+        if (CashRegisterSession::query()->where('status', CashRegisterSession::STATUS_OPEN)->exists()) {
+            return CashRegisterSession::query()->create([
+                'user_id' => $cashier->id,
+                'open_user_id' => $cashier->id,
+                'opening_amount' => '500.00',
+                'status' => CashRegisterSession::STATUS_OPEN,
+                'opened_at' => now(),
+            ]);
+        }
+
         return app(OpenCashSessionAction::class)
             ->execute(['opening_amount' => '500.00'], $cashier->fresh());
     }

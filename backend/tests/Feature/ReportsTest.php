@@ -1776,6 +1776,16 @@ class ReportsTest extends TestCase
             return $existingSession->id;
         }
 
+        if (CashRegisterSession::query()->where('status', CashRegisterSession::STATUS_OPEN)->exists()) {
+            return CashRegisterSession::query()->create([
+                'user_id' => $cashier->id,
+                'open_user_id' => $cashier->id,
+                'opening_amount' => '500.00',
+                'status' => CashRegisterSession::STATUS_OPEN,
+                'opened_at' => now(),
+            ])->id;
+        }
+
         return app(OpenCashSessionAction::class)
             ->execute(['opening_amount' => '500.00'], $cashier->fresh())
             ->id;
