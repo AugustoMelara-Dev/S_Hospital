@@ -46,6 +46,22 @@ vi.mock('./components/ServiceRanking', () => ({
   ServiceRanking: () => <div data-testid="service-ranking" />,
 }));
 
+vi.mock('./components/CashReconciliationPanel', () => ({
+  CashReconciliationPanel: () => <div data-testid="cash-reconciliation-panel" />,
+}));
+
+vi.mock('./components/PendingAgingPanel', () => ({
+  PendingAgingPanel: () => <div data-testid="pending-aging-panel" />,
+}));
+
+vi.mock('./components/VoidsReversalsPanel', () => ({
+  VoidsReversalsPanel: () => <div data-testid="voids-reversals-panel" />,
+}));
+
+vi.mock('./components/AuditSummaryPanel', () => ({
+  AuditSummaryPanel: () => <div data-testid="audit-summary-panel" />,
+}));
+
 const downloadExecutivePdf = vi.hoisted(() => vi.fn());
 
 vi.mock('@/lib/api', async () => {
@@ -60,7 +76,7 @@ vi.mock('@/lib/api', async () => {
 });
 
 describe('ReportsExecutive', () => {
-  it('renders operational alerts with the executive report content', () => {
+  it('renders the complete executive report panel sequence', () => {
     render(
       <ReportsExecutive
         canExport
@@ -69,8 +85,23 @@ describe('ReportsExecutive', () => {
       />,
     );
 
-    expect(screen.getByTestId('executive-summary')).toBeInTheDocument();
-    expect(screen.getByTestId('executive-alerts')).toBeInTheDocument();
+    const panelIds = [
+      'executive-summary',
+      'executive-alerts',
+      'cash-reconciliation-panel',
+      'pending-aging-panel',
+      'voids-reversals-panel',
+      'audit-summary-panel',
+      'payment-method-panel',
+      'trend-chart',
+      'service-ranking',
+    ];
+    const panels = panelIds.map((id) => screen.getByTestId(id));
+
+    panels.forEach((panel) => expect(panel).toBeInTheDocument());
+    panels.slice(1).forEach((panel, index) => {
+      expect(panels[index].compareDocumentPosition(panel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
   });
 
   it('shows export progress while an executive PDF is being prepared', async () => {
