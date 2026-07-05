@@ -62,15 +62,16 @@ frontend.
 3. Verificar que NO se ven: `Ancho mm`, `Alto mm`, `Fuente`, `Escala`,
    `Margen sup.`, `Margen der.`, `Margen inf.`, `Margen izq.`.
 4. Verificar que SI se ven:
-   - selector de papel: Carta, Media carta, A5, Ticket 80 mm, Ticket 58 mm;
+   - selector de papel institucional principal: Carta, Media carta, A5;
    - **Copias**;
    - **Mostrar logo autorizado**;
    - **Espacio para sello/firma**;
    - **Imprimir prueba**;
    - **Guardar perfil**;
    - vista previa.
-5. Imprimir prueba y verificar marca **PRUEBA - SIN VALIDEZ**.
-6. Confirmar que la prueba no consume correlativo fiscal.
+5. Confirmar que los formatos secundarios de ticket no aparecen en el flujo normal.
+6. Imprimir prueba y verificar marca **PRUEBA - SIN VALIDEZ**.
+7. Confirmar que la prueba no consume correlativo fiscal.
 
 ### 3.2 Soporte con `receipt_settings.advanced`
 

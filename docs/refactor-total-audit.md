@@ -5251,3 +5251,23 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte evita que la pantalla de respaldos mezcle estados tecnicos con lenguaje operativo de caja/admin local.
+
+## 217. Fase 8 - Checklist de impresion prioriza papel institucional
+
+Cambio aplicado:
+
+- `docs/manual-qa-checklist.md` deja de pedir Ticket 80/58 en el flujo normal de papel y copias.
+- El checklist normal queda alineado con Carta, Media carta y A5 como formatos principales del recibo institucional.
+- Se agrego un guard unitario para evitar que el checklist vuelva a exigir tickets termicos en la validacion normal.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter ManualQaChecklistTest` | RED inicial correcto: la seccion normal contenia `Ticket 80 mm`; luego OK con 1 test y 8 assertions. |
+| `docker compose exec frontend npm run test -- InstitutionalReceiptSettingsView -t "keeps thermal ticket compatibility"` | OK: confirma que la UI mantiene tickets termicos fuera del flujo institucional normal. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte evita que QA manual contradiga la regla del producto: carta/media carta/A5 son el recibo principal; tickets quedan como compatibilidad secundaria.
