@@ -235,6 +235,7 @@ export function ServiceSheet({
               <Select
                 value={String(categoryId)}
                 onValueChange={(val) => setValue('category_id', Number(val))}
+                disabled={isSubmitting}
               >
                 <SelectTrigger
                   id="category_id"
@@ -264,6 +265,7 @@ export function ServiceSheet({
               <Select
                 value={String(areaId)}
                 onValueChange={(val) => setValue('area_id', Number(val))}
+                disabled={isSubmitting}
               >
                 <SelectTrigger
                   id="area_id"
@@ -293,6 +295,7 @@ export function ServiceSheet({
             <Label htmlFor="name">Nombre *</Label>
             <Input
               id="name"
+              disabled={isSubmitting}
               {...register('name')}
               aria-invalid={Boolean(errors.name)}
               aria-describedby={errors.name ? 'service-name-error' : undefined}
@@ -334,6 +337,7 @@ export function ServiceSheet({
               <Label htmlFor="price_change_reason">Motivo del cambio de precio *</Label>
               <Input
                 id="price_change_reason"
+                disabled={isSubmitting}
                 {...register('price_change_reason')}
                 aria-invalid={Boolean(errors.price_change_reason)}
                 aria-describedby={
@@ -365,6 +369,7 @@ export function ServiceSheet({
                 <Input
                   id="scan_code"
                   placeholder="LAB-GLU-001"
+                  disabled={isSubmitting}
                   {...register('scan_code')}
                   aria-invalid={Boolean(errors.scan_code)}
                   aria-describedby={errors.scan_code ? 'service-scan-code-error' : undefined}
@@ -381,6 +386,7 @@ export function ServiceSheet({
                 <Label htmlFor="barcode">Código de barra</Label>
                 <Input
                   id="barcode"
+                  disabled={isSubmitting}
                   placeholder="Código de barra opcional"
                   {...register('barcode')}
                   aria-invalid={Boolean(errors.barcode)}
@@ -398,6 +404,7 @@ export function ServiceSheet({
                 <Label htmlFor="qr_code">Código QR</Label>
                 <Input
                   id="qr_code"
+                  disabled={isSubmitting}
                   placeholder="Código QR opcional"
                   {...register('qr_code')}
                   aria-invalid={Boolean(errors.qr_code)}
@@ -422,6 +429,7 @@ export function ServiceSheet({
             <Label htmlFor="special_rule_code">Regla especial</Label>
             <Select
               value={specialRuleCode ?? SPECIAL_RULE_NONE}
+              disabled={isSubmitting}
               onValueChange={(val) => {
                 setValue('special_rule_code', val === SPECIAL_RULE_NONE ? null : val);
                 if (val === SPECIAL_RULE_ERYTHROPOIETIN) {
@@ -453,6 +461,7 @@ export function ServiceSheet({
                   <Checkbox
                     id="taxable"
                     checked={field.value}
+                    disabled={isSubmitting}
                     onCheckedChange={field.onChange}
                   />
                 )}
@@ -467,6 +476,7 @@ export function ServiceSheet({
                 <Label htmlFor="tax_change_reason">Motivo del cambio de impuesto *</Label>
                 <Input
                   id="tax_change_reason"
+                  disabled={isSubmitting}
                   {...register('tax_change_reason')}
                   aria-invalid={Boolean(errors.tax_change_reason)}
                   aria-describedby={
@@ -501,6 +511,7 @@ export function ServiceSheet({
                   <Checkbox
                     id="active"
                     checked={field.value}
+                    disabled={isSubmitting}
                     onCheckedChange={field.onChange}
                   />
                 )}
@@ -518,6 +529,7 @@ export function ServiceSheet({
                   <Checkbox
                     id="visible_in_billing"
                     checked={field.value}
+                    disabled={isSubmitting}
                     onCheckedChange={field.onChange}
                   />
                 )}
@@ -535,6 +547,7 @@ export function ServiceSheet({
                   <Checkbox
                     id="is_billable"
                     checked={field.value}
+                    disabled={isSubmitting}
                     onCheckedChange={field.onChange}
                   />
                 )}

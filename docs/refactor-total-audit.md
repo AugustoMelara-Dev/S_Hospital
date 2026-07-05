@@ -4587,3 +4587,29 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, facturacion, caja, catalogo, historial, recibos, respaldos ni reportes.
 - Este corte reduce confusion operativa en usuarios basicos sin ampliar la matriz RBAC ni relajar la validacion de contrasenas.
+
+## 189. Fase 8 - Catalogo bloquea formulario mientras guarda servicio
+
+Cambio aplicado:
+
+- `ServiceSheet` ahora deshabilita categoria, area, nombre, motivos, codigos, regla especial, ISV, estado, visibilidad y facturable mientras `isSubmitting=true`.
+- Esto evita que administracion cambie visualmente datos del servicio despues de enviar `Crear` o `Actualizar` y antes de recibir respuesta del servidor local.
+- Se amplio la regresion existente para confirmar que nombre, precio, categoria, ISV y estado quedan bloqueados durante un `saveService` pendiente.
+- No se cambian reglas de eritropoyetina, precio fijo L.25, motivos obligatorios, payloads, permisos, auditoria backend ni contratos API.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- ServiceSheet.test.tsx -t "locks the service form" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial correcto: el campo `Nombre` seguia habilitado durante el guardado pendiente; luego OK: 1 test pasa. |
+| `npm run test -- ServiceSheet.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=60000` | OK: 17 tests pasan. |
+| `npm run test -- CatalogView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=60000` | OK: 19 tests pasan. |
+| `npm run lint` | OK. |
+| `npm run typecheck` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, facturacion, caja, historial, recibos, respaldos, reportes ni usuarios.
+- Este corte reduce errores operativos al administrar servicios y conserva la fuente de verdad de precios/reglas en backend.

@@ -746,7 +746,7 @@ describe('ServiceSheet contract preservation', () => {
     });
   });
 
-  it('locks the service price while the save request is pending', async () => {
+  it('locks the service form while the save request is pending', async () => {
     let resolveSave: () => void = () => undefined;
     vi.spyOn(apiClient, 'saveService').mockImplementation(
       () =>
@@ -785,7 +785,11 @@ describe('ServiceSheet contract preservation', () => {
     fireEvent.click(screen.getByRole('button', { name: /crear/i }));
 
     await waitFor(() => expect(screen.getByRole('button', { name: /guardando/i })).toBeDisabled());
+    expect(screen.getByLabelText(/^nombre/i)).toBeDisabled();
     expect(screen.getByLabelText(/precio/i)).toBeDisabled();
+    expect(screen.getByRole('combobox', { name: /categor/i })).toBeDisabled();
+    expect(screen.getByRole('checkbox', { name: /aplica isv/i })).toBeDisabled();
+    expect(screen.getByRole('checkbox', { name: /servicio activo/i })).toBeDisabled();
 
     await waitFor(() => {
       resolveSave();
