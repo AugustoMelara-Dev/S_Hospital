@@ -64,6 +64,8 @@ print validation.
 | 2026-07-02 | `docker compose exec -e PLAYWRIGHT_EXTERNAL_SERVER=1 -e PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser frontend npx playwright test e2e/production-readiness.spec.ts` | PASS, 4 tests | Production readiness workflow with resilient receipt paper selection. |
 | 2026-07-02 | `docker compose exec -e PLAYWRIGHT_EXTERNAL_SERVER=1 -e PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser frontend npx playwright test e2e/refactor-total.spec.ts` | PASS, 7 tests | Refactor-total a11y gates with synchronized backend login. |
 | 2026-07-02 | `docker compose exec -e PLAYWRIGHT_EXTERNAL_SERVER=1 -e PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser frontend npx playwright test --workers=2` | PASS, 73 passed / 2 skipped | Full Docker Playwright gate. Release mutation specs remain skipped unless `E2E_RELEASE_ALLOW_MUTATIONS=1`. A prior `--workers=4` run exposed resource-sensitive timeouts; `--workers=2` is the stable offline/container setting. |
+| 2026-07-05 | `npm.cmd run e2e` | FAIL, preflight | Host release E2E now fails early with an operator-safe message because `backend/vendor/autoload.php` is missing on the host. Run `composer install` in `backend/` before this host gate, or use the Docker mocked Playwright gates for containerized UI smoke. |
+| 2026-07-05 | `docker compose exec frontend npx vitest run scripts/release-e2e-preflight.test.mjs --pool=forks --maxWorkers=1 --no-file-parallelism` | PASS, 2 tests | Covers the release E2E preflight for present/missing Composer autoloader. |
 
 Recharts emits a known Playwright/Vite console warning about chart container
 dimensions in the mocked browser run. It does not currently fail the focused

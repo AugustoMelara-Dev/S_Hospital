@@ -5832,3 +5832,24 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte estabiliza el smoke critico de navegador para facturacion, caja, historial/anulacion y backups sin debilitar reglas de negocio.
+
+## 241. Fase 13/25 - Preflight claro para release E2E local
+
+Cambio aplicado:
+
+- `run-release-e2e.mjs` ahora valida antes de migrar que exista `backend/vendor/autoload.php` en el host que ejecuta `npm run e2e`.
+- El fallo local por dependencias Composer ausentes deja de aparecer como fatal de PHP y ahora explica que se debe correr `composer install` en `backend/`.
+- La guia del error aclara que no se deben copiar vendors desde contenedores como evidencia de release.
+- No se tocaron flujos de producto, contratos API, migraciones, permisos ni dependencias.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npx vitest run scripts/release-e2e-preflight.test.mjs --pool=forks --maxWorkers=1 --no-file-parallelism` | RED inicial por helper ausente; luego OK: 2 tests pasan. |
+| `npm.cmd run e2e` | Falla esperado por preflight: falta `backend/vendor/autoload.php` en host y se muestra instruccion accionable. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte no cierra el release E2E host, pero convierte el bloqueo actual en evidencia operativa clara y evita perder tiempo depurando un fatal de autoload.

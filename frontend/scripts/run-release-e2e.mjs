@@ -3,6 +3,7 @@ import { createWriteStream, mkdirSync, copyFileSync, existsSync, readdirSync, re
 import { createHash } from 'node:crypto';
 import { dirname, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { assertBackendVendorPresent } from './release-e2e-preflight.mjs';
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const frontendDir = resolve(scriptDir, '..');
@@ -44,6 +45,7 @@ let frontendProcess;
 let exitCode = 0;
 
 try {
+  assertBackendVendorPresent(backendDir);
   prepareGoldenDatabase();
   cloneGoldenDatabase();
 
