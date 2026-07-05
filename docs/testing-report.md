@@ -225,3 +225,12 @@ verified.
 | `docker compose exec frontend npm run test -- CatalogView --run` | PASS, 19 tests. |
 | `docker compose exec frontend npm run typecheck` | PASS. |
 | `docker compose exec frontend npm run lint` | PASS. |
+
+### 2026-07-05 Erythropoietin Catalog Lock Gate
+
+| Command | Result |
+|---|---|
+| `docker compose exec frontend npm run test -- ServiceSheet --run -t "locks erythropoietin"` | RED first because price/rule/tax stayed editable; then PASS, 1 focused test. |
+| `docker compose exec frontend npm run test -- ServiceSheet --run` | PASS, 18 tests. |
+| `docker compose exec frontend npm run typecheck` | PASS. |
+| `docker compose exec frontend npm run lint` | PASS. |

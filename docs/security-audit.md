@@ -337,3 +337,16 @@ Pruebas relevantes:
 
 - `CatalogView.test.tsx` cubre boton deshabilitado sin motivo y payload con `availability_change_reason`.
 - `npm run typecheck` y `npm run lint` verifican el contrato TypeScript.
+
+## 19. Actualizacion 2026-07-05 - Eritropoyetina bloqueada en edicion de catalogo
+
+Control agregado/verificado:
+
+- La edicion de un servicio existente con regla `ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION` bloquea precio, regla especial e ISV en el formulario.
+- La UI conserva el alta asistida: al seleccionar eritropoyetina se fija L.25.00 y sin ISV, pero la seleccion puede corregirse antes de guardar.
+- El control reduce cambios accidentales sobre campos regulados; la autoridad fiscal y de facturacion sigue estando en backend, snapshots historicos y validaciones server-side.
+
+Pruebas relevantes:
+
+- `ServiceSheet.test.tsx` cubre el bloqueo de regla/precio/ISV al editar eritropoyetina y la normalizacion al crear.
+- `npm run typecheck` y `npm run lint` verifican el contrato frontend.

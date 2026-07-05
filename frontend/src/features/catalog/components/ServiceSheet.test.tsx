@@ -459,6 +459,38 @@ describe('ServiceSheet contract preservation', () => {
     });
   });
 
+  it('locks erythropoietin rule, price and tax fields when editing an erythropoietin service', () => {
+    render(
+      <ServiceSheet
+        open
+        onOpenChange={noop}
+        service={{
+          id: 13,
+          category_id: 1,
+          area_id: 1,
+          name: 'Eritropoyetina 4000 UI',
+          price: '25.00',
+          scan_code: null,
+          barcode: null,
+          qr_code: null,
+          taxable: false,
+          active: true,
+          visible_in_billing: true,
+          is_billable: true,
+          special_rule_code: 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION',
+        }}
+        categories={[{ id: 1, name: 'Farmacia' }]}
+        areas={[{ id: 1, name: 'Farmacia' }]}
+        onSuccess={noop}
+      />,
+    );
+
+    expect(screen.getByLabelText(/precio/i)).toBeDisabled();
+    expect(screen.getByRole('combobox', { name: /regla especial/i })).toBeDisabled();
+    expect(screen.getByRole('checkbox', { name: /aplica isv/i })).toBeDisabled();
+    expect(screen.getByText(/eritropoyetina mantiene precio fijo/i)).toBeInTheDocument();
+  });
+
   it('submits the create payload with the same field names and category/area IDs', async () => {
     const saveService = vi.spyOn(apiClient, 'saveService').mockResolvedValue({
       id: 12,

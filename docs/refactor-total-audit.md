@@ -6162,3 +6162,25 @@ Pruebas ejecutadas:
 Decision:
 
 - El operador ya no puede mandar una desactivacion que el backend rechazaria por falta de motivo. La razon queda disponible para auditoria de catalogo.
+
+## 256. Fase 8 - Eritropoyetina bloquea regla/precio/ISV en edicion
+
+Cambio aplicado:
+
+- `ServiceSheet` bloquea precio, regla especial e ISV cuando se edita un servicio existente con regla `ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION`.
+- La creacion sigue usable: al seleccionar la regla se normaliza el precio a L.25.00 y `taxable=false`, pero el usuario aun puede corregir la seleccion antes de guardar.
+- El drawer muestra copy operativo que recuerda que la eritropoyetina mantiene precio fijo, sin ISV, y que el descuento por receta de dialisis se aplica al facturar.
+- No se agregaron dependencias, migraciones, permisos ni cambios de endpoint.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- ServiceSheet --run -t "locks erythropoietin"` | RED inicial por precio editable; luego OK: 1 test pasa. |
+| `docker compose exec frontend npm run test -- ServiceSheet --run` | OK: 18 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+Decision:
+
+- El catalogo evita cambios accidentales sobre campos regulados de eritropoyetina sin convertir la UI en fuente fiscal. El backend sigue siendo la autoridad para totales, precios historicos y regla aplicada al facturar.

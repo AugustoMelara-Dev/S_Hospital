@@ -112,6 +112,10 @@ export function ServiceSheet({
   const price = watch('price');
   const taxable = watch('taxable');
   const specialRuleCode = watch('special_rule_code');
+  const isErythropoietinRule = specialRuleCode === SPECIAL_RULE_ERYTHROPOIETIN;
+  const locksErythropoietinRule = Boolean(
+    isEditing && service?.special_rule_code === SPECIAL_RULE_ERYTHROPOIETIN,
+  );
   const requiresPriceChangeReason = Boolean(isEditing && service && priceValuesDiffer(service.price, price));
   const requiresTaxChangeReason = Boolean(isEditing && service && service.taxable !== taxable);
 
@@ -319,7 +323,7 @@ export function ServiceSheet({
               id="price"
               type="text"
               inputMode="decimal"
-              disabled={isSubmitting}
+              disabled={isSubmitting || locksErythropoietinRule}
               {...register('price')}
               aria-invalid={Boolean(errors.price)}
               aria-describedby={errors.price ? 'service-price-error' : undefined}
@@ -429,7 +433,7 @@ export function ServiceSheet({
             <Label htmlFor="special_rule_code">Regla especial</Label>
             <Select
               value={specialRuleCode ?? SPECIAL_RULE_NONE}
-              disabled={isSubmitting}
+              disabled={isSubmitting || locksErythropoietinRule}
               onValueChange={(val) => {
                 setValue('special_rule_code', val === SPECIAL_RULE_NONE ? null : val);
                 if (val === SPECIAL_RULE_ERYTHROPOIETIN) {
@@ -454,6 +458,11 @@ export function ServiceSheet({
                 </SelectItem>
               </SelectContent>
             </Select>
+            {isErythropoietinRule ? (
+              <p className="text-xs leading-5 text-muted-foreground">
+                La eritropoyetina mantiene precio fijo de L.25.00, sin ISV. El descuento por receta de dialisis se aplica al facturar.
+              </p>
+            ) : null}
           </div>
 
           <FieldGroup columns={2}>
@@ -465,7 +474,7 @@ export function ServiceSheet({
                   <Checkbox
                     id="taxable"
                     checked={field.value}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || locksErythropoietinRule}
                     onCheckedChange={field.onChange}
                   />
                 )}
