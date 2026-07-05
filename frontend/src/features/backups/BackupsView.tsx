@@ -136,10 +136,10 @@ function friendlyReadinessBlocker(code: string, fallback: string): string {
     APP_ENV_PRODUCTION: 'Completar modo de operación final',
     APP_DEBUG_OFF: 'Ocultar mensajes internos',
     APP_DEBUG_FALSE: 'Ocultar mensajes internos',
-    PENDING_LAN_CLIENT_VALIDATION: 'Validar acceso desde una segunda computadora',
-    PENDING_HARDWARE_VALIDATION: 'Validar recibo físico media carta/carta/A5/80mm/58mm',
+    PENDING_LAN_CLIENT_VALIDATION: 'Confirmar acceso local en este equipo',
+    PENDING_HARDWARE_VALIDATION: 'Validar recibo institucional carta, media carta o A5',
     PENDING_RESTORE_VALIDATION: 'Confirmar recuperacion con soporte',
-    PENDING_CONCURRENCY_VALIDATION: 'Validar concurrencia de caja',
+    PENDING_CONCURRENCY_VALIDATION: 'Confirmar flujo de caja local',
     PENDING_ENVIRONMENT_VALIDATION: 'Revisar configuración final del servidor',
     PENDING_DATABASE_MIGRATIONS: 'Actualizar base de datos con respaldo previo',
   };
@@ -187,7 +187,7 @@ function operationalSummary(status: SystemStatus): { level: OperationalStatus; l
     return {
       level: 'review',
       label: 'Requiere revisi\u00f3n',
-      description: 'Falta completar respaldo reciente, validación de red/impresora o configuración final antes de operar sin supervisión.',
+      description: 'Falta completar respaldo reciente, validación del recibo o configuración final antes de operar sin supervisión.',
       className: 'status-warning',
     };
   }

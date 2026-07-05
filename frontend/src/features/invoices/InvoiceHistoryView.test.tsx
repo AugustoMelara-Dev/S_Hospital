@@ -1349,11 +1349,11 @@ describe('InvoiceHistoryView', () => {
     expect(screen.getByText(/Reimprimir 000-001-01-00000033/i)).toBeInTheDocument();
   });
 
-  it('keeps legacy receipt preview fallback when invoice has no institutional receipt', async () => {
+  it('keeps a human receipt preview message when invoice has no institutional receipt', async () => {
     const invoice = invoiceFixture({
       id: 6,
       invoice_number: '000-001-01-00000006',
-      patient_name: 'Paciente Legacy',
+      patient_name: 'Paciente Recibo Anterior',
       status: 'paid',
       institutional_receipt: null,
     });
@@ -1370,11 +1370,12 @@ describe('InvoiceHistoryView', () => {
 
     renderWithQueryClient(<InvoiceHistoryView user={legacyReceiptOperator()} onStatus={vi.fn()} />);
 
-    await waitFor(() => expect(screen.getByText('Paciente Legacy')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Paciente Recibo Anterior')).toBeInTheDocument());
     await openInvoiceMenu(invoice.invoice_number);
     fireEvent.click(await screen.findByRole('menuitem', { name: /Ver recibo/i }));
 
-    await waitFor(() => expect(screen.getByText(/fallback legacy para facturas sin recibo institucional pdf/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/recibo disponible para esta factura/i)).toBeInTheDocument());
+    expect(screen.queryByText(/fallback|legacy/i)).not.toBeInTheDocument();
     expect(apiClient.getReceipt).toHaveBeenCalledWith(6, 'half_letter');
     expect(screen.queryByLabelText(/tama/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/cambiar el tama/i)).not.toBeInTheDocument();

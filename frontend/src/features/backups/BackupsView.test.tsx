@@ -90,6 +90,43 @@ describe('BackupsView', () => {
     expect(pendingAlert).not.toHaveTextContent(/restaur/i);
   });
 
+  it('keeps single-machine readiness blockers focused on local operation', async () => {
+    const status = systemStatusFixture();
+    vi.mocked(apiClient.getSystemStatus).mockResolvedValue({
+      ...status,
+      readiness: {
+        ...status.readiness,
+        blockers: [
+          {
+            code: 'PENDING_LAN_CLIENT_VALIDATION',
+            label: 'Validar acceso desde una segunda computadora',
+            status: 'pending',
+          },
+          {
+            code: 'PENDING_HARDWARE_VALIDATION',
+            label: 'Validar recibo fisico media carta/carta/A5/80mm/58mm',
+            status: 'pending',
+          },
+          {
+            code: 'PENDING_CONCURRENCY_VALIDATION',
+            label: 'Validar concurrencia de caja',
+            status: 'pending',
+          },
+        ],
+      },
+    });
+
+    renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
+
+    const pendingTitle = await screen.findByText(/pendientes antes de operar/i);
+    const pendingAlert = pendingTitle.closest('[data-slot="alert"]');
+
+    expect(pendingAlert).not.toBeNull();
+    expect(pendingAlert).toHaveTextContent(/acceso local en este equipo/i);
+    expect(pendingAlert).toHaveTextContent(/recibo institucional carta, media carta o A5/i);
+    expect(pendingAlert).not.toHaveTextContent(/segunda computadora|concurrencia|80mm|58mm/i);
+  });
+
   it('keeps the primary backup KPIs limited to last success, pending and failed backups', async () => {
     renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
 

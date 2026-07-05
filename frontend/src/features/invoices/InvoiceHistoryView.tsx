@@ -520,7 +520,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
         open={receiptModalOpen}
         onOpenChange={setReceiptModalOpen}
         title={`Comprobante de factura - ${selectedInvoice?.invoice_number ?? ''}`}
-        description="Fallback legacy para facturas sin recibo institucional PDF. Usa el perfil de papel configurado."
+        description="Recibo disponible para esta factura. Usa el perfil de papel configurado."
       >
         {receipt && selectedInvoice && (
           <div className="space-y-4">

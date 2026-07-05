@@ -19,6 +19,12 @@ contracts, RBAC visibility, payload shape, and accessible UI behavior. They do
 not replace real LAN, printer, backup scheduler, restore dry-run, or physical
 print validation.
 
+The current release target has been narrowed to a stable single-machine local
+installation. Multi-PC LAN proof is no longer treated as the next engineering
+blocker, but fiscal integrity, audit trails, institutional receipts, local
+backups, restore evidence and printer/PDF validation remain required before any
+production approval.
+
 ## Verified Commands
 
 | Date | Command | Result | Notes |
@@ -77,6 +83,11 @@ print validation.
 | 2026-07-05 | `docker compose exec frontend npm run lint` | PASS | Fresh frontend lint gate after QA container changes. |
 | 2026-07-05 | `docker compose exec frontend npm run build` | PASS | Fresh production build; largest chunks remain `vendor` 398.43 kB gzip 121.82 kB and `charts` 357.04 kB gzip 104.93 kB. |
 | 2026-07-05 | `docker compose exec backend php artisan test tests/Feature/InvoiceCreationTest.php tests/Feature/CashPaymentsReceiptTest.php tests/Feature/InvoiceHistoryReprintVoidTest.php tests/Feature/InvoiceReverseTest.php tests/Feature/ServiceCatalogTest.php tests/Feature/BackupWorkflowTest.php tests/Feature/UserManagementTest.php tests/Feature/ReportsTest.php tests/Feature/Reports/TodayReportTest.php` | PASS, 254 tests / 2032 assertions | Focused backend gate for billing, cashbox, receipts, history/void/reverse, catalog, backups, users, reports and today's report. |
+| 2026-07-05 | `docker compose exec -e PLAYWRIGHT_EXTERNAL_SERVER=1 frontend npx playwright test --workers=2 --reporter=list` | TIMEOUT | Timed out after about 900 seconds and left a Playwright worker alive. The process was stopped and partial QA artifacts/screenshots were discarded; use the divided critical E2E commands instead of this full historical matrix as a single gate. |
+| 2026-07-05 | `docker compose exec frontend npx vitest run src/features/backups/BackupsView.test.tsx src/features/invoices/InvoiceHistoryView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | PASS, 67 tests | TDD focused gate for single-machine backup readiness wording and human receipt-preview copy. |
+| 2026-07-05 | `docker compose exec frontend npm run test:critical` | PASS, 173 tests | Critical frontend gate for invoices, payment modal, receipts, history, backups, reports, dashboard and users after narrowing operator copy to local single-machine operation. |
+| 2026-07-05 | `docker compose exec frontend npm run typecheck` | PASS | TypeScript no emit after single-machine UI copy changes. |
+| 2026-07-05 | `docker compose exec frontend npm run lint` | PASS | ESLint after single-machine UI copy changes. |
 
 Recharts emits a known Playwright/Vite console warning about chart container
 dimensions in the mocked browser run. It does not currently fail the focused
