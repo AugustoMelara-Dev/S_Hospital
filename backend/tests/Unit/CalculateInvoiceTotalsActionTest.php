@@ -193,7 +193,7 @@ class CalculateInvoiceTotalsActionTest extends TestCase
         ], '15.00');
     }
 
-    public function test_item_snapshot_includes_service_details(): void
+    public function test_item_snapshot_includes_service_details_without_technical_codes(): void
     {
         $service = $this->createService(
             price: '25.00',
@@ -208,7 +208,9 @@ class CalculateInvoiceTotalsActionTest extends TestCase
 
         $item = $result['items'][0];
         $this->assertSame('Eritropoyetina', $item['service_name']);
-        $this->assertSame('EPO001', $item['scan_code']);
+        $this->assertNull($item['scan_code']);
+        $this->assertNull($item['barcode']);
+        $this->assertNull($item['qr_code']);
         $this->assertSame('1.00', $item['quantity']);
         $this->assertSame(100, $item['quantity_cents']);
         $this->assertSame('25.00', $item['unit_price']);

@@ -4737,3 +4737,23 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron frontend, caja, pagos, reportes, respaldos, usuarios ni recibos PDF.
 - Este corte reduce el riesgo de exponer codigos internos en historicos o salidas posteriores, manteniendo la factura como snapshot institucional y no como copia tecnica del catalogo.
+
+## 195. Fase 1 - Contrato unitario de snapshots sin codigos tecnicos
+
+Cambio aplicado:
+
+- `CalculateInvoiceTotalsActionTest` ahora valida que el snapshot calculado conserva datos institucionales del servicio sin copiar `scan_code`, `barcode` ni `qr_code`.
+- Se renombro el caso unitario para que la intencion quede explicita junto a los asserts de cantidad, precio, total y notas.
+- No se cambiaron acciones, controladores, migraciones, frontend, recibos, caja, reportes ni catalogo.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter=CalculateInvoiceTotalsActionTest` | RED inicial correcto: el test esperaba `EPO001`; luego OK: 12 tests pasan. |
+| `docker compose exec backend php artisan test --filter=InvoiceCreationTest` | OK: 30 tests pasan. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte deja alineada la prueba unitaria con la regla historica/fiscal: la factura guarda lo necesario para auditoria y recibos, no codigos tecnicos del catalogo.
