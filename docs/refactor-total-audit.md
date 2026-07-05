@@ -4885,3 +4885,27 @@ Decision:
 
 - No se agregaron dependencias nuevas; se usa OpenSSL/zlib disponibles en PHP.
 - Este corte separa la clave de respaldos de la clave general de Laravel y reduce el riesgo operativo ante rotacion de `APP_KEY`.
+
+## 201. Fase 1 - Facturas protegidas contra borrado Eloquent
+
+Cambio aplicado:
+
+- `Invoice` ahora bloquea cualquier `delete()` de Eloquent con un error de dominio: las facturas deben anularse con motivo y auditoria.
+- La regresion existente de factura con items deja de depender de la FK como unica defensa.
+- Se agrego una regresion para el caso peligroso donde alguien borra items primero y luego intenta borrar la factura.
+- La prueba de recibos historicos se alineo para esperar la defensa de dominio al borrar factura y conservar la restriccion FK para recibos con eventos.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter "invoice.*deleted"` | RED inicial correcto: con items fallaba por FK y sin items la factura se borraba; luego OK: 2 tests pasan. |
+| `docker compose exec backend php artisan test --filter InvoiceCreationTest` | OK: 31 tests pasan. |
+| `docker compose exec backend php artisan test --filter InstitutionalReceiptSettingsMigrationTest` | OK: 4 tests pasan. |
+| `docker compose exec backend vendor/bin/pint --test` | OK: 427 files. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M` | OK: sin errores. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte refuerza la regla no negociable de no borrar facturas desde el codigo de aplicacion; el camino operativo sigue siendo anulacion/reverso auditado.

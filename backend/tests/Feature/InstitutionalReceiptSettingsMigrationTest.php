@@ -16,6 +16,7 @@ use Database\Seeders\ReceiptPrintProfileSeeder;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
+use LogicException;
 use Tests\TestCase;
 
 class InstitutionalReceiptSettingsMigrationTest extends TestCase
@@ -171,8 +172,8 @@ class InstitutionalReceiptSettingsMigrationTest extends TestCase
         try {
             $invoice->delete();
             $this->fail('Deleting an invoice linked to an institutional receipt must be restricted.');
-        } catch (QueryException $exception) {
-            $this->assertNotSame('', $exception->getMessage());
+        } catch (LogicException $exception) {
+            $this->assertSame('Las facturas no se eliminan; deben anularse con motivo y auditoria.', $exception->getMessage());
         }
 
         try {

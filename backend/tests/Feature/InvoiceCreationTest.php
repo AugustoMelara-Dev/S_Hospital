@@ -13,8 +13,9 @@ use App\Models\ServiceArea;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
-use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use LogicException;
 use Tests\TestCase;
 
 class InvoiceCreationTest extends TestCase
@@ -380,13 +381,39 @@ class InvoiceCreationTest extends TestCase
             ->assertCreated()
             ->json('data.id');
 
-        $this->expectException(QueryException::class);
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('Las facturas no se eliminan; deben anularse con motivo y auditoria.');
 
         try {
             Invoice::query()->findOrFail($invoiceId)->delete();
         } finally {
             $this->assertDatabaseHas('invoices', ['id' => $invoiceId]);
             $this->assertDatabaseHas('invoice_items', ['invoice_id' => $invoiceId]);
+        }
+    }
+
+    public function test_invoice_cannot_be_deleted_even_if_items_were_removed_first(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+
+        $invoiceId = $this->actingAs($cashier)
+            ->postJson('/api/invoices', [
+                'patient_name' => 'Maria Lopez',
+                'items' => [$this->invoiceItem('Glucosa')],
+            ])
+            ->assertCreated()
+            ->json('data.id');
+
+        DB::table('invoice_items')->where('invoice_id', $invoiceId)->delete();
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('Las facturas no se eliminan; deben anularse con motivo y auditoria.');
+
+        try {
+            Invoice::query()->findOrFail($invoiceId)->delete();
+        } finally {
+            $this->assertDatabaseHas('invoices', ['id' => $invoiceId]);
         }
     }
 
