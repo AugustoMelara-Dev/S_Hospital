@@ -387,6 +387,22 @@ describe('BackupsView', () => {
     expect(screen.getByRole('button', { name: /completados/i })).toHaveAttribute('aria-pressed', 'true');
   });
 
+  it('labels failed backup filters for operators while preserving the API status contract', async () => {
+    const getBackups = vi.mocked(apiClient.getBackups);
+
+    renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
+
+    await screen.findByRole('table', { name: /historial de respaldos locales/i });
+    expect(screen.queryByRole('button', { name: /^error$/i })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /^fallidos$/i }));
+
+    await waitFor(() => {
+      expect(getBackups).toHaveBeenLastCalledWith({ page: 1, status: 'failed' });
+    });
+    expect(screen.getByRole('button', { name: /^fallidos$/i })).toHaveAttribute('aria-pressed', 'true');
+  });
+
   it('keeps the current backup history visible while a status filter refetch is pending', async () => {
     let resolveFilteredBackups!: (response: Awaited<ReturnType<typeof apiClient.getBackups>>) => void;
     const getBackups = vi.mocked(apiClient.getBackups);

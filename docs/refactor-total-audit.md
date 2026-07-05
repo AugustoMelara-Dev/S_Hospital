@@ -5230,3 +5230,24 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte alinea Historial con el flujo de pago: si falta el recibo principal, se recupera el institucional antes de entregar un comprobante.
+
+## 216. Fase 8 - Filtro de respaldos fallidos usa lenguaje operativo
+
+Cambio aplicado:
+
+- `BackupHistoryTable` muestra el filtro de respaldos fallidos como `Fallidos` en vez de `Error`.
+- El contrato interno del filtro se mantiene en `status: 'failed'` para no cambiar API ni backend.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- BackupsView -t "labels failed backup filters"` | RED inicial correcto: el boton visible decia `Error`; luego OK. |
+| `docker compose exec frontend npm run test -- BackupsView` | OK: 26 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte evita que la pantalla de respaldos mezcle estados tecnicos con lenguaje operativo de caja/admin local.

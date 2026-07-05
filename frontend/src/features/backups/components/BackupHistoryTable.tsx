@@ -140,7 +140,7 @@ export function BackupHistoryTable({
 function filterLabel(filter: BackupStatusFilter): string {
   if (filter === 'pending') return 'Pendientes';
   if (filter === 'success') return 'Completados';
-  if (filter === 'failed') return 'Error';
+  if (filter === 'failed') return 'Fallidos';
   return 'Todos';
 }
 
