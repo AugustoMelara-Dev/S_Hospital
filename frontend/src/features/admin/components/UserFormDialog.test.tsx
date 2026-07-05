@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { UserFormDialog, isPasswordPolicyCompliant } from './UserFormDialog';
 import { type AuthUser, type RoleDefinition } from '@/lib/api';
@@ -483,6 +483,8 @@ describe('UserFormDialog', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: /guardando/i })).toBeDisabled());
     expect(screen.getByLabelText(/correo electr/i)).toBeDisabled();
 
-    resolveSave();
+    await act(async () => {
+      resolveSave();
+    });
   });
 });

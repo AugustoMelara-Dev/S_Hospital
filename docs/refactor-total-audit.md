@@ -5719,3 +5719,28 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte mantiene la UI de usuarios enfocada en admin/cajero/roles operativos reales y evita que permisos de restauracion destructiva o marcadores internos reaparezcan por datos legados.
+
+## 236. Fase 13/21 - QA usuarios sin advertencia act
+
+Cambio aplicado:
+
+- El test de `UserFormDialog` que valida bloqueo de campos durante guardado resuelve la promesa pendiente dentro de `act`.
+- El paquete de pruebas de administracion deja de emitir la advertencia `An update to UserFormDialog inside a test was not wrapped in act(...)`.
+- No se tocaron componentes de produccion, contratos API, permisos, endpoints ni dependencias.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- UserFormDialog.test.tsx -t "locks user identity" --run` | OK: 1 test pasa sin advertencia `act(...)`. |
+| `docker compose exec frontend npm run test -- src/features/admin --run` | OK: 65 tests pasan sin advertencia `act(...)`. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `docker compose exec frontend npm run build` | OK. |
+| `git diff --check` | OK. |
+| `powershell -ExecutionPolicy Bypass -File scripts\pre-commit-guard.ps1` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte mejora la confiabilidad del gate de usuarios para la entrega monocomputadora: las advertencias de test ya no ocultan problemas reales en el flujo admin/cajero.
