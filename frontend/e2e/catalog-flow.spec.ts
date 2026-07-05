@@ -67,9 +67,13 @@ const hemogramService = serviceFixture({
 test.describe('Catalog - critical mocked e2e', () => {
   test('manager can search services and deactivate only after confirmation', async ({ page }) => {
     let deleteCalls = 0;
+    const patchPayloads: Array<Record<string, unknown>> = [];
     await installCatalogMocks(page, {
       onDeleteService: () => {
         deleteCalls += 1;
+      },
+      onPatchService: (payload) => {
+        patchPayloads.push(payload);
       },
     });
 
@@ -93,15 +97,24 @@ test.describe('Catalog - critical mocked e2e', () => {
 
     await expect(page.getByRole('alertdialog', { name: /desactivar servicio/i })).toBeVisible();
     await expect(page.getByText(/facturas historicas conservaran sus snapshots/i)).toBeVisible();
+    await page.getByLabel(/motivo/i).fill('Servicio retirado temporalmente de caja');
     await page.getByRole('button', { name: /desactivar servicio/i }).click();
 
-    await expect.poll(() => deleteCalls).toBe(1);
+    await expect.poll(() => patchPayloads.length).toBe(1);
+    expect(patchPayloads[0]).toEqual(expect.objectContaining({
+      active: false,
+      availability_change_reason: 'Servicio retirado temporalmente de caja',
+    }));
+    expect(deleteCalls).toBe(0);
     await expect(page.getByRole('alertdialog', { name: /desactivar servicio/i })).toHaveCount(0);
     await expect(page.getByRole('button', { name: /restaurar|eliminar/i })).toHaveCount(0);
   });
 });
 
-async function installCatalogMocks(page: Page, options: { onDeleteService?: () => void } = {}) {
+async function installCatalogMocks(page: Page, options: {
+  onDeleteService?: () => void;
+  onPatchService?: (payload: Record<string, unknown>) => void;
+} = {}) {
   await installCommonMocks(page, catalogAdminUser);
   await page.route(/\/api\/categories(?:[/?]|$)/, (route) => json(route, { data: [laboratoryCategory] }));
   await page.route(/\/api\/areas(?:[/?]|$)/, (route) => json(route, { data: [laboratoryArea] }));
@@ -117,10 +130,16 @@ async function installCatalogMocks(page: Page, options: { onDeleteService?: () =
 
     if (request.method() === 'DELETE') {
       options.onDeleteService?.();
-      return json(route, { data: { ...hemogramService, active: false } });
+      return json(route, { message: 'DELETE is not supported for service deactivation.' }, 405);
     }
 
-    if (request.method() === 'PATCH' || request.method() === 'POST') {
+    if (request.method() === 'PATCH') {
+      const payload = JSON.parse(request.postData() ?? '{}') as Record<string, unknown>;
+      options.onPatchService?.(payload);
+      return json(route, { data: { ...hemogramService, ...payload } });
+    }
+
+    if (request.method() === 'POST') {
       return json(route, { data: hemogramService });
     }
 

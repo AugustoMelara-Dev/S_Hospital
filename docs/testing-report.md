@@ -234,3 +234,13 @@ verified.
 | `docker compose exec frontend npm run test -- ServiceSheet --run` | PASS, 18 tests. |
 | `docker compose exec frontend npm run typecheck` | PASS. |
 | `docker compose exec frontend npm run lint` | PASS. |
+
+### 2026-07-05 Catalog Deactivation E2E Patch Gate
+
+| Command | Result |
+|---|---|
+| `docker compose exec frontend npx playwright test e2e/catalog-flow.spec.ts --workers=1 --reporter=list` | RED first because the spec still expected DELETE; then RED once against an old Vite bundle without the reason textarea; after `docker compose restart frontend`, PASS, 1 test. |
+| `docker compose exec frontend npm run test -- src/features/catalog/CatalogView.test.tsx --run -t "requires confirmation"` | PASS, 1 focused test. |
+| `docker compose exec frontend npm run test -- src/features/catalog/CatalogView.test.tsx --run` | PASS, 19 tests. |
+| `docker compose exec frontend npm run typecheck` | PASS. |
+| `docker compose exec frontend npm run lint` | PASS. |

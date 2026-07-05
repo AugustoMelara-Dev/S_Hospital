@@ -6184,3 +6184,27 @@ Pruebas ejecutadas:
 Decision:
 
 - El catalogo evita cambios accidentales sobre campos regulados de eritropoyetina sin convertir la UI en fuente fiscal. El backend sigue siendo la autoridad para totales, precios historicos y regla aplicada al facturar.
+
+## 257. Fase 8/20 - E2E de catalogo valida desactivacion por PATCH con motivo
+
+Cambio aplicado:
+
+- `frontend/e2e/catalog-flow.spec.ts` deja de tratar `DELETE /api/services/:id` como exito de desactivacion.
+- El mock E2E captura el payload de `PATCH /api/services/:id`, responde con el servicio actualizado y deja `DELETE` como ruta inesperada con 405.
+- El flujo E2E llena el motivo obligatorio y afirma `active: false` junto con `availability_change_reason`.
+- Se reinicio el servicio `frontend` del compose antes de repetir Playwright porque habia un Vite previo sirviendo bundle viejo en `127.0.0.1:5173`.
+- No se agregaron dependencias, migraciones, permisos ni cambios de endpoint.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npx playwright test e2e/catalog-flow.spec.ts --workers=1 --reporter=list` | RED inicial por esperar DELETE; luego RED por bundle viejo sin textarea; despues de `docker compose restart frontend`, OK: 1 test pasa. |
+| `docker compose exec frontend npm run test -- src/features/catalog/CatalogView.test.tsx --run -t "requires confirmation"` | OK: 1 test pasa. |
+| `docker compose exec frontend npm run test -- src/features/catalog/CatalogView.test.tsx --run` | OK: 19 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+Decision:
+
+- El E2E vuelve a cubrir la regla de negocio actual: desactivar un servicio no borra registros, exige motivo y usa el mismo contrato PATCH que valida/audita el backend.
