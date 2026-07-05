@@ -2,6 +2,7 @@ import { useMemo, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { apiClient, type BackupLog } from '@/lib/api';
 import { createClientIdempotencyKey } from '@/lib/api/base';
+import { getVisibleRefetchInterval } from '@/lib/query/polling';
 import { invalidateBackupQueries } from '@/lib/queryInvalidation';
 import { queryKeys } from '@/lib/queryKeys';
 
@@ -27,7 +28,7 @@ export function useBackups(filters: BackupsFilters = {}) {
     refetchInterval: (currentQuery) => {
       const backups = currentQuery.state.data?.data ?? [];
       return backups.some((backup: BackupLog) => backup.status === 'pending')
-        ? PENDING_POLL_INTERVAL_MS
+        ? getVisibleRefetchInterval(PENDING_POLL_INTERVAL_MS)
         : false;
     },
   });
@@ -40,7 +41,7 @@ export function useBackups(filters: BackupsFilters = {}) {
   return {
     ...query,
     hasPending,
-    pollIntervalMs: hasPending ? PENDING_POLL_INTERVAL_MS : false,
+    pollIntervalMs: hasPending ? getVisibleRefetchInterval(PENDING_POLL_INTERVAL_MS) : false,
   };
 }
 
@@ -84,7 +85,7 @@ export function useBackupWorkerHealth(enabled = true) {
       };
     },
     enabled,
-    refetchInterval: HEALTH_POLL_INTERVAL_MS,
+    refetchInterval: () => getVisibleRefetchInterval(HEALTH_POLL_INTERVAL_MS),
     staleTime: HEALTH_POLL_INTERVAL_MS / 2,
   });
 }

@@ -25,6 +25,7 @@ const mockedGetSystemHealth = vi.mocked(apiClient.getSystemHealth);
 const mockedCreateClientIdempotencyKey = vi.mocked(createClientIdempotencyKey);
 
 beforeEach(() => {
+  stubVisibilityState('visible');
   mockedGetBackups.mockReset();
   mockedCreateBackup.mockReset();
   mockedGetSystemHealth.mockReset();
@@ -46,6 +47,13 @@ function createWrapper() {
   return ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
+}
+
+function stubVisibilityState(value: DocumentVisibilityState) {
+  Object.defineProperty(document, 'visibilityState', {
+    configurable: true,
+    value,
+  });
 }
 
 describe('useBackups', () => {
@@ -121,6 +129,38 @@ describe('useBackups', () => {
     });
 
     expect(result.current.hasPending).toBe(false);
+    expect(result.current.pollIntervalMs).toBe(false);
+  });
+
+  it('does not poll pending backups while the tab is hidden', async () => {
+    stubVisibilityState('hidden');
+    mockedGetBackups.mockResolvedValue({
+      data: [
+        {
+          id: 1,
+          filename: 'b1.sql',
+          size_bytes: 1024,
+          status: 'pending',
+          type: 'manual',
+          created_by: 1,
+          completed_at: null,
+          created_at: '2026-06-01T00:00:00Z',
+          updated_at: '2026-06-01T00:00:00Z',
+          checksum_sha256: null,
+        },
+      ],
+      meta: { current_page: 1, per_page: 25, total: 1 },
+    });
+
+    const { result } = renderHook(() => useBackups(), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(result.current.hasPending).toBe(true);
     expect(result.current.pollIntervalMs).toBe(false);
   });
 });

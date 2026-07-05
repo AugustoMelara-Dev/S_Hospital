@@ -5337,3 +5337,28 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte reduce trabajo inicial en la version monocomputadora/LAN cuando broadcasting no se usa, sin remover compatibilidad con Echo/Pusher si se habilita.
+
+## 221. Fase 8 - Polling LAN se pausa en pestanas ocultas
+
+Cambio aplicado:
+
+- Se agrego `getVisibleRefetchInterval()` para centralizar la regla de no refrescar en segundo plano cuando `document.visibilityState` no esta visible.
+- Backups pendientes, salud del worker de backups, salud operativa, reporte de hoy y caja usan la misma regla.
+- Al volver al foco se conservan los refrescos existentes (`refetchOnWindowFocus`) donde ya estaban configurados.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- useBackups.test.tsx -t "does not poll pending backups"` | RED inicial correcto: devolvia `5000` con la pestana oculta; luego OK. |
+| `docker compose exec frontend npm run test -- useBackups.test.tsx` | OK: 11 tests pasan. |
+| `docker compose exec frontend npm run test -- useServerStatus.test.tsx` | OK: 4 tests pasan. |
+| `docker compose exec frontend npm run test -- CashBoxView.test.tsx` | OK: 13 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `docker compose exec frontend npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte reduce trafico repetitivo en LAN cuando el navegador queda en segundo plano, sin perder actualizacion al volver a la ventana operativa.

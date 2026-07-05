@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { ApiError, apiClient, type OperationalHealth, type SystemStatus } from '@/lib/api';
+import { getVisibleRefetchInterval } from '@/lib/query/polling';
 import { queryKeys } from '@/lib/queryKeys';
 
 export type ServerStatusSummary = {
@@ -18,11 +19,7 @@ const HEALTH_POLL_INTERVAL_MS = 30_000;
 const STATUS_STALE_TIME_MS = 60_000;
 
 function nextRefreshInterval() {
-  if (typeof document === 'undefined') {
-    return HEALTH_POLL_INTERVAL_MS;
-  }
-
-  return document.visibilityState === 'visible' ? HEALTH_POLL_INTERVAL_MS : false;
+  return getVisibleRefetchInterval(HEALTH_POLL_INTERVAL_MS);
 }
 
 export function useOperationalHealth(enabled = true) {

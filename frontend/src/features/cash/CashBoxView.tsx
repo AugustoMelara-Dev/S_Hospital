@@ -9,6 +9,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type CashSession, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { createClientIdempotencyKey } from '@/lib/api/base';
 import { formatLempirasUI, parseCents, toFloat } from '@/lib/money';
+import { getVisibleRefetchInterval } from '@/lib/query/polling';
 import { invalidateBillingQueries } from '@/lib/queryInvalidation';
 import { queryKeys } from '@/lib/queryKeys';
 import { SessionStatusCard } from './components/SessionStatusCard';
@@ -68,7 +69,7 @@ export function CashBoxView({
     // Multi-PC LAN: another cashier may close the box. Poll every
     // 10s so this UI shows "Sin caja" within the same window without
     // a manual refresh.
-    refetchInterval: 10_000,
+    refetchInterval: () => getVisibleRefetchInterval(10_000),
     refetchOnWindowFocus: true,
   });
 
@@ -85,7 +86,7 @@ export function CashBoxView({
         ? apiClient.getCashSessionReport(String(session.id)).then((report) => report.movements)
         : Promise.resolve([] as Awaited<ReturnType<typeof apiClient.getCashSessionReport>>['movements']),
     enabled: !!session?.id && canViewCashSessionReport,
-    refetchInterval: 15_000,
+    refetchInterval: () => getVisibleRefetchInterval(15_000),
   });
   const movements = movementsData ?? [];
   const sessionLoadError = sessionIsError ? userSafeErrorMessage(sessionError, 'No se pudo cargar caja.') : '';

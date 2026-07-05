@@ -1,12 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient, type ExecutiveReport, type ExecutiveReportFilters, type TodayReport } from '@/lib/api';
+import { getVisibleRefetchInterval } from '@/lib/query/polling';
 import { queryKeys } from '@/lib/queryKeys';
 
 export function useTodayReport() {
   return useQuery({
     queryKey: queryKeys.reports.today(),
     queryFn: () => apiClient.getTodayReport(),
-    refetchInterval: 60_000,
+    refetchInterval: () => getVisibleRefetchInterval(60_000),
     refetchOnWindowFocus: true,
     staleTime: 30_000,
   });
