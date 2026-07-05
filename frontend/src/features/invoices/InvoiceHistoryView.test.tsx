@@ -715,7 +715,7 @@ describe('InvoiceHistoryView', () => {
     await openInvoiceMenu(invoice.invoice_number);
     fireEvent.click(await screen.findByRole('menuitem', { name: /Reversar pago/i }));
     await waitFor(() => expect(screen.getByText(/Reversar factura 000-001-01-00000032/i)).toBeInTheDocument());
-    expect(within(screen.getByRole('alertdialog')).getByText(/minimo 5 caracteres/i)).toBeInTheDocument();
+    expect(within(screen.getByRole('alertdialog')).getByText(/mínimo 5 caracteres/i)).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText(/motivo de reversa/i), { target: { value: 'abc' } });
     const confirmButton = screen.getByRole('button', { name: /reversar factura/i });
@@ -1083,7 +1083,9 @@ describe('InvoiceHistoryView', () => {
     await openInvoiceMenu(invoice.invoice_number);
     fireEvent.click(await screen.findByRole('menuitem', { name: /Reimprimir/i }));
     await waitFor(() => expect(screen.getByText(/Reimprimir 000-001-01-00000033/i)).toBeInTheDocument());
-    expect(within(screen.getByRole('alertdialog')).getByText(/minimo 5 caracteres/i)).toBeInTheDocument();
+    const dialog = within(screen.getByRole('alertdialog'));
+    expect(dialog.getByText(/Esta acción queda auditada/i)).toBeInTheDocument();
+    expect(dialog.getByText(/mínimo 5 caracteres/i)).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText(/motivo de reimpresi/i), { target: { value: 'abc' } });
     const confirmButton = screen.getByRole('button', { name: /registrar reimpresi/i });

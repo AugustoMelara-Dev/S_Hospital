@@ -4757,3 +4757,28 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte deja alineada la prueba unitaria con la regla historica/fiscal: la factura guarda lo necesario para auditoria y recibos, no codigos tecnicos del catalogo.
+
+## 196. Fase 4 - Copia operativa correcta en reimpresiones
+
+Cambio aplicado:
+
+- `InvoiceHistoryView` muestra acentos correctos en ayudas de reversa y reimpresion auditada: `acción` y `mínimo`.
+- `ConfirmDialog` corrige la descripcion accesible, placeholder y ayuda por defecto para acciones criticas con motivo.
+- `ReceiptPreview.test` deja de contener una expectativa mojibakeada sobre `tamaño del recibo`.
+- No se cambiaron permisos, idempotencia, anulaciones, reversas, reimpresiones, PDF, recibos ni contratos API.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- InvoiceHistoryView.test.tsx -t "keeps institutional reprint confirmation open"` | RED inicial correcto: el dialogo mostraba `Esta accion` y `minimo`; luego OK: 1 test pasa. |
+| `docker compose exec frontend npm run test -- confirm-dialog.test.tsx ReceiptPreview.test.tsx` | OK: 12 tests pasan. |
+| `docker compose exec frontend npm run test -- InvoiceHistoryView.test.tsx` | OK: 34 tests pasan. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte mejora claridad para caja/supervision en acciones auditadas sin alterar datos fiscales ni flujos criticos.

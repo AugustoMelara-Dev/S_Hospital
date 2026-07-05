@@ -594,7 +594,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
               rows={3}
             />
             <p id="reverseReason-help" className="text-xs text-muted-foreground">
-              Reversa los pagos registrados, crea movimientos compensatorios y deja auditoría. Motivo minimo 5 caracteres.
+              Reversa los pagos registrados, crea movimientos compensatorios y deja auditoría. Motivo mínimo 5 caracteres.
             </p>
             {reverseReasonError ? (
               <p id="reverseReason-error" role="alert" className="text-xs font-medium text-destructive">
@@ -620,7 +620,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       >
         <div className="flex flex-col gap-3">
           <p>
-            Esta accion queda auditada. Registre un motivo claro antes de continuar.
+            Esta acción queda auditada. Registre un motivo claro antes de continuar.
           </p>
           <div className="space-y-2">
             <Label htmlFor="reprintReason">Motivo de reimpresión</Label>
@@ -640,7 +640,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
               rows={2}
             />
             <p id="reprintReason-help" className="text-xs text-muted-foreground">
-              Registre un motivo claro de minimo 5 caracteres para conservar la trazabilidad de reimpresiones.
+              Registre un motivo claro de mínimo 5 caracteres para conservar la trazabilidad de reimpresiones.
             </p>
             {reprintReasonError ? (
               <p id="reprintReason-error" role="alert" className="text-xs font-medium text-destructive">

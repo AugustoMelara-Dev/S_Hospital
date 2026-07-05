@@ -20,7 +20,7 @@ describe('ConfirmDialog with reason', () => {
         onCancel={() => {}}
         onConfirm={onConfirm}
       >
-        Esta accion es irreversible.
+        Esta acción es irreversible.
       </ConfirmDialog>,
     );
 

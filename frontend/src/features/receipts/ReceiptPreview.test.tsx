@@ -187,7 +187,7 @@ describe('ReceiptPreview', () => {
     expect(printable.getByRole('columnheader', { name: /importe/i })).toBeInTheDocument();
     expect(printable.getByRole('rowheader', { name: /^total$/i })).toBeInTheDocument();
     expect(printable.queryByRole('button', { name: /imprimir/i })).not.toBeInTheDocument();
-    expect(printable.queryByLabelText(/tamaÃ±o del recibo/i)).not.toBeInTheDocument();
+    expect(printable.queryByLabelText(/tamaño del recibo/i)).not.toBeInTheDocument();
     expect(printRoot?.textContent).not.toMatch(/qr|barcode|codigo interno|código interno/i);
   });
 

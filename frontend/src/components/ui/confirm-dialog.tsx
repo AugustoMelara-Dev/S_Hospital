@@ -63,7 +63,7 @@ export function ConfirmDialog({
                 {title}
               </AlertDialogPrimitive.Title>
               <AlertDialogPrimitive.Description data-slot="confirm-dialog-description" className="sr-only">
-                Revise la informacion del dialogo antes de confirmar esta accion.
+                Revise la información del diálogo antes de confirmar esta acción.
               </AlertDialogPrimitive.Description>
               <div className="text-sm text-muted-foreground">{children}</div>
             </div>
@@ -83,10 +83,10 @@ export function ConfirmDialog({
                   aria-required="true"
                   aria-describedby={`${reasonId}-help ${meetsLength ? '' : errorId}`.trim()}
                   aria-invalid={!meetsLength}
-                  placeholder="Describa el motivo de esta accion. Quedara registrado en auditoria."
+                  placeholder="Describa el motivo de esta acción. Quedará registrado en auditoría."
                 />
                 <p id={`${reasonId}-help`} className="text-xs leading-5 text-muted-foreground">
-                  {reasonHelpText ?? `Minimo ${requireReasonMinLength} caracteres. Esta accion no podra deshacerse.`}
+                  {reasonHelpText ?? `Mínimo ${requireReasonMinLength} caracteres. Esta acción no podrá deshacerse.`}
                 </p>
                 {!meetsLength ? (
                   <p id={errorId} role="alert" className="text-xs font-medium text-destructive">
