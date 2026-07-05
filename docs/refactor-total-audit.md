@@ -5025,3 +5025,25 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte mantiene limpios los snapshots que luego alimentan recibos institucionales y reimpresiones historicas.
+
+## 207. Fase 8 - Auditoria de anulacion pagada usa texto operativo correcto
+
+Cambio aplicado:
+
+- `VoidInvoiceAction` guarda en auditoria el mismo mensaje operativo en espanol que devuelve la API cuando se intenta anular una factura con pagos vigentes.
+- La prueba de anulación pagada ahora valida que el mensaje almacenado en `audit_logs.new_values.message` sea legible para revision humana.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter void_paid_invoice_is_blocked_and_does_not_delete_payments_or_items` | RED inicial correcto: auditoria guardaba `reversion` sin acento; luego OK. |
+| `docker compose exec backend php artisan test --filter InvoiceHistoryReprintVoidTest` | OK: 19 tests pasan. |
+| `docker compose exec backend vendor/bin/pint --test --dirty` | OK: 0 files. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M --no-progress` | OK: sin errores. |
+| `git diff --check` | OK: sin errores de whitespace; Git aviso normal de LF en `docs/refactor-total-audit.md`. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte mejora la calidad de auditoria sin cambiar reglas fiscales ni permitir anulaciones pagadas fuera del flujo de reversion.

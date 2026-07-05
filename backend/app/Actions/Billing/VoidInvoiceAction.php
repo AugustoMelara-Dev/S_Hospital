@@ -76,7 +76,7 @@ class VoidInvoiceAction
                         'posted_payments_count' => $lockedInvoice->posted_payments_count,
                     ],
                     'new_values' => [
-                        'message' => 'No se puede anular una factura con pagos registrados sin flujo de reversion.',
+                        'message' => 'No se puede anular una factura con pagos registrados sin flujo de reversión.',
                     ],
                     'reason' => $reason,
                     'created_at' => now(),

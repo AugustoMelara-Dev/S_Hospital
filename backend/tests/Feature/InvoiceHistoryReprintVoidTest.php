@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Actions\Billing\CreateInvoiceAction;
 use App\Actions\Billing\VoidInvoiceAction;
 use App\Actions\Cash\OpenCashSessionAction;
+use App\Models\AuditLog;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
@@ -468,6 +469,15 @@ class InvoiceHistoryReprintVoidTest extends TestCase
             'entity_type' => Invoice::class,
             'entity_id' => $invoiceId,
         ]);
+
+        $audit = AuditLog::query()
+            ->where('action', 'invoice.void_blocked_paid')
+            ->where('entity_id', $invoiceId)
+            ->firstOrFail();
+        $this->assertSame(
+            'No se puede anular una factura con pagos registrados sin flujo de reversión.',
+            $audit->new_values['message'] ?? null,
+        );
     }
 
     public function test_void_invoice_is_allowed_after_all_payments_are_reversed(): void
