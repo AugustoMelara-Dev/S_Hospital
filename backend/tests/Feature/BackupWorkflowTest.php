@@ -13,6 +13,7 @@ use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 use Tests\TestCase;
@@ -227,18 +228,24 @@ class BackupWorkflowTest extends TestCase
         $this->assertSame(64, strlen((string) $backup->checksum_sha256));
         $this->assertGreaterThan(0, $backup->size_bytes);
         $this->assertTrue(Storage::disk('local')->exists((string) $backup->path));
-        $this->assertStringEndsWith('.sql.enc', $backup->filename);
+        $this->assertStringEndsWith('.sql.gz.enc', $backup->filename);
 
         $encrypted = Storage::disk('local')->get((string) $backup->path);
         $this->assertStringNotContainsString('CREATE TABLE', $encrypted);
         $this->assertStringNotContainsString('INSERT INTO', $encrypted);
+        $encryptedLines = explode(PHP_EOL, (string) $encrypted);
+        $this->assertSame(EncryptBackupFileAction::CHUNK_MARKER, $encryptedLines[0] ?? null);
+        $firstPlainChunk = Crypt::decryptString($encryptedLines[1] ?? '');
+        $this->assertSame("\x1f\x8b", substr($firstPlainChunk, 0, 2));
         $decryptedPath = storage_path('framework/testing/decrypted-backup.sql');
         @unlink($decryptedPath);
         $this->artisan('hospital:decrypt-backup', [
             'input' => Storage::disk('local')->path((string) $backup->path),
             'output' => $decryptedPath,
         ])->assertExitCode(0);
-        $this->assertNotEmpty(file_get_contents($decryptedPath));
+        $decryptedSql = (string) file_get_contents($decryptedPath);
+        $this->assertStringContainsString('CREATE TABLE', $decryptedSql);
+        $this->assertStringContainsString('INSERT INTO', $decryptedSql);
 
         $this->assertDatabaseHas('audit_logs', [
             'user_id' => $admin->id,
@@ -619,13 +626,13 @@ class BackupWorkflowTest extends TestCase
     {
         $this->seed(RolesAndPermissionsSeeder::class);
         $admin = $this->admin();
-        $backup = $this->successfulBackupLog($admin, filename: "../bad\r\nname.sql.enc");
+        $backup = $this->successfulBackupLog($admin, filename: "../bad\r\nname.sql.gz.enc");
 
         $response = $this->actingAs($admin)
             ->get("/api/backups/{$backup->id}/download")
             ->assertOk();
 
-        $this->assertStringContainsString('filename=hospital-backup-download.sql.enc', $response->headers->get('Content-Disposition'));
+        $this->assertStringContainsString('filename=hospital-backup-download.sql.gz.enc', $response->headers->get('Content-Disposition'));
         $this->assertStringNotContainsString('bad', $response->headers->get('Content-Disposition'));
     }
 

@@ -212,7 +212,7 @@ function backupDownloadFilename(backup: BackupLog): string {
   const rawDate = backup.completed_at ?? backup.created_at;
   const date = rawDate.match(/^\d{4}-\d{2}-\d{2}/)?.[0] ?? 'sin-fecha';
 
-  return `respaldo-local-${date}-${backup.id}.sql.enc`;
+  return `respaldo-local-${date}-${backup.id}.sql.gz.enc`;
 }
 
 export function BackupsView({ user, onStatus }: BackupsViewProps) {

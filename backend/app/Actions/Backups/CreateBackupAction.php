@@ -32,7 +32,7 @@ class CreateBackupAction
             throw new RuntimeException('El tipo debe ser manual o scheduled.');
         }
 
-        $filename = 'hospital-backup-'.now()->format('Ymd-His').'-'.Str::lower(Str::random(8)).'.sql.enc';
+        $filename = 'hospital-backup-'.now()->format('Ymd-His').'-'.Str::lower(Str::random(8)).'.sql.gz.enc';
         $path = 'backups/'.$filename;
 
         $backupLog = BackupLog::query()
@@ -71,15 +71,19 @@ class CreateBackupAction
 
             $absolutePath = Storage::disk('local')->path((string) $backupLog->path);
             $temporaryDumpPath = $absolutePath.'.dump.tmp';
+            $temporaryCompressedPath = $absolutePath.'.gz.tmp';
             $temporaryEncryptedPath = $absolutePath.'.tmp';
 
             $this->removeAbsoluteFile($temporaryDumpPath);
+            $this->removeAbsoluteFile($temporaryCompressedPath);
             $this->removeAbsoluteFile($temporaryEncryptedPath);
 
             $this->databaseDumpWriter->dumpTo($temporaryDumpPath);
             @chmod($temporaryDumpPath, 0600);
-            $this->encryptBackupFile->execute($temporaryDumpPath, $temporaryEncryptedPath);
+            $this->compressDumpFile($temporaryDumpPath, $temporaryCompressedPath);
             $this->removeAbsoluteFile($temporaryDumpPath);
+            $this->encryptBackupFile->execute($temporaryCompressedPath, $temporaryEncryptedPath);
+            $this->removeAbsoluteFile($temporaryCompressedPath);
 
             if (! @rename($temporaryEncryptedPath, $absolutePath)) {
                 throw new RuntimeException('No se pudo publicar el archivo de respaldo local.');
@@ -108,6 +112,7 @@ class CreateBackupAction
         } catch (\Throwable $exception) {
             $this->removePartialFileIfSafe((string) $backupLog->path);
             $this->removePartialFileIfSafe((string) $backupLog->path.'.tmp');
+            $this->removePartialFileIfSafe((string) $backupLog->path.'.gz.tmp');
             $this->removePartialFileIfSafe((string) $backupLog->path.'.dump.tmp');
 
             $backupLog = $this->markFailed($backupLog, $this->safeErrorMessage($exception));
@@ -131,9 +136,53 @@ class CreateBackupAction
         if (
             $backupLog->disk !== 'local' ||
             ! $this->isSafeStoragePath($path) ||
-            ! preg_match('/\Abackups\/[A-Za-z0-9][A-Za-z0-9._-]{0,160}\.sql\.enc\z/', $path)
+            ! preg_match('/\Abackups\/[A-Za-z0-9][A-Za-z0-9._-]{0,160}\.sql\.gz\.enc\z/', $path)
         ) {
             throw new RuntimeException('Registro de respaldo local invalido.');
+        }
+    }
+
+    private function compressDumpFile(string $dumpPath, string $compressedPath): void
+    {
+        if (! function_exists('gzopen')) {
+            throw new RuntimeException('La extension zlib de PHP es requerida para comprimir backups locales.');
+        }
+
+        $input = @fopen($dumpPath, 'rb');
+        if ($input === false) {
+            throw new RuntimeException('No se pudo leer el dump temporal para comprimir el backup.');
+        }
+
+        $output = @gzopen($compressedPath, 'wb6');
+        if ($output === false) {
+            @fclose($input);
+
+            throw new RuntimeException('No se pudo escribir el backup comprimido.');
+        }
+
+        try {
+            while (! feof($input)) {
+                $chunk = fread($input, 1024 * 1024);
+                if ($chunk === false) {
+                    throw new RuntimeException('No se pudo leer el dump temporal para comprimir el backup.');
+                }
+
+                if ($chunk === '') {
+                    continue;
+                }
+
+                if (gzwrite($output, $chunk) === false) {
+                    throw new RuntimeException('No se pudo escribir el backup comprimido.');
+                }
+            }
+        } finally {
+            @fclose($input);
+            @gzclose($output);
+        }
+
+        @chmod($compressedPath, 0600);
+        if (@filesize($compressedPath) === 0) {
+            throw new RuntimeException('El backup comprimido quedo vacio.');
         }
     }
 

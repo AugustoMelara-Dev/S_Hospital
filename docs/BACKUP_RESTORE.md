@@ -213,7 +213,15 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\restore_hospital
 ```
 
 Para restaurar un backup en una base descartable usando las credenciales de
-`backend\.env` pero sin usar la base activa:
+`backend\.env` pero sin usar la base activa, primero descifrar y
+descomprimir el paquete a un SQL temporal:
+
+```powershell
+cd backend
+php artisan hospital:decrypt-backup C:\backups\hospital-backup.sql.gz.enc C:\backups\hospital-backup.sql
+```
+
+Luego alimentar ese SQL temporal al helper seguro:
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\restore_hospital_windows.ps1 -UseExistingEnv -TargetDatabase hospital_restore_validation -BackupFile C:\backups\hospital-backup.sql
@@ -234,7 +242,13 @@ Pasos para MySQL/MariaDB:
 Get-FileHash C:\backups\hospital-backup.sql.gz.enc -Algorithm SHA256
 ```
 
-3. Descifrar/descomprimir en una ubicacion temporal protegida del servidor de validacion. Borrar el `.sql` temporal al terminar.
+3. Descifrar/descomprimir en una ubicacion temporal protegida del servidor de validacion. Borrar el `.sql` temporal al terminar:
+
+```powershell
+cd backend
+php artisan hospital:decrypt-backup C:\backups\hospital-backup.sql.gz.enc C:\backups\hospital-backup.sql
+```
+
 4. Crear base de prueba limpia:
 
 ```powershell

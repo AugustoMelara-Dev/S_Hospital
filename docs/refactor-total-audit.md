@@ -4832,3 +4832,31 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte mejora el flujo de descarga manual de respaldos locales sin tocar la seguridad ni la auditoria del archivo descargado.
+
+## 199. Fase 8 - Respaldos comprimidos cifrados consistentes
+
+Cambio aplicado:
+
+- `CreateBackupAction` ahora genera backups nuevos como `.sql.gz.enc`: primero dump SQL, luego gzip local, luego cifrado por chunks.
+- `hospital:decrypt-backup` mantiene compatibilidad con respaldos legacy sin compresion y descomprime automaticamente paquetes gzip para entregar un `.sql` temporal de restore.
+- La descarga backend y el nombre seguro del navegador usan extension `.sql.gz.enc` sin exponer nombres tecnicos internos.
+- El runbook de restore muestra el paso explicito para descifrar/descomprimir antes de alimentar el helper o `mysql`.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter BackupWorkflowTest` | RED inicial correcto: backup nuevo seguia `.sql.enc` y fallback de descarga seguia `.sql.enc`; luego OK: 26 tests pasan. |
+| `docker compose exec frontend npm run test -- BackupsView.test.tsx -t "confirms and reports backup downloads"` | RED inicial correcto: el navegador descargaba `respaldo-local-2026-06-18-1.sql.enc`; luego OK: 1 test pasa. |
+| `docker compose exec backend vendor/bin/pint --test` | OK: 426 files. |
+| `docker compose exec frontend npm run test -- BackupsView.test.tsx` | OK: 24 tests pasan. |
+| `docker compose exec frontend npm run test -- useBackups.test.tsx` | OK: 10 tests pasan. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M` | OK: sin errores. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas; se usa zlib disponible en PHP para comprimir en streaming.
+- Este corte alinea codigo, pruebas y runbook para que el archivo respaldado sea realmente comprimido y cifrado antes de copiarse o restaurarse.

@@ -156,14 +156,14 @@ class BackupController extends Controller
 
     private function safeDownloadFilename(string $filename): string
     {
-        $safeFallback = 'hospital-backup-download.sql.enc';
+        $safeFallback = 'hospital-backup-download.sql.gz.enc';
         $normalized = str_replace('\\', '/', $filename);
 
         if (basename($normalized) !== $filename) {
             return $safeFallback;
         }
 
-        if (! preg_match('/\A[A-Za-z0-9][A-Za-z0-9._-]{0,160}\.sql(\.enc)?\z/', $filename)) {
+        if (! preg_match('/\A[A-Za-z0-9][A-Za-z0-9._-]{0,160}\.sql(\.enc|\.gz\.enc)?\z/', $filename)) {
             return $safeFallback;
         }
 
