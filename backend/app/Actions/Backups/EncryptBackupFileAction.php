@@ -2,7 +2,6 @@
 
 namespace App\Actions\Backups;
 
-use Illuminate\Support\Facades\Crypt;
 use RuntimeException;
 
 class EncryptBackupFileAction
@@ -10,6 +9,8 @@ class EncryptBackupFileAction
     public const CHUNK_MARKER = 'SHOSPITAL_BACKUP_CHUNKS_V1';
 
     private const CHUNK_BYTES = 1024 * 1024;
+
+    public function __construct(private readonly BackupFileCipher $cipher) {}
 
     public function execute(string $plainPath, string $encryptedPath): void
     {
@@ -40,7 +41,7 @@ class EncryptBackupFileAction
                     continue;
                 }
 
-                $encryptedChunk = Crypt::encryptString($plainChunk);
+                $encryptedChunk = $this->cipher->encryptString($plainChunk);
                 if (@fwrite($output, $encryptedChunk."\n") === false) {
                     throw new RuntimeException('No se pudo escribir el backup cifrado.');
                 }

@@ -20,7 +20,7 @@ The following values are treated as secrets:
 | `DB_ROOT_PASSWORD` | `backend/.env`, `docker-compose.prod.yml` env | `deploy_hospital_lan.ps1` random 16-char |
 | `HOSPITAL_INITIAL_ADMIN_PASSWORD` | env, not in repo | Operator via hidden prompt |
 | `HOSPITAL_LICENSE_SALT` | `backend/.env` | Operator (32+ chars random) |
-| Backup encryption key | `APP_KEY` via Laravel Crypt | `php artisan key:generate` / installer |
+| `HOSPITAL_BACKUP_ENCRYPTION_KEY` | `backend/.env` | Operator/installer, escrowed offline |
 
 ## Threat model
 
@@ -53,17 +53,19 @@ reading each other's network traffic in cleartext.
 
 ## APP_KEY rotation
 
-`APP_KEY` encrypts Sanctum tokens, session cookies, signed URLs, and the
-local license file. It also encrypts backup files (`*.sql.enc`) and stored
-idempotency responses. Rotating it invalidates:
+`APP_KEY` encrypts Sanctum tokens, session cookies, signed URLs, the local
+license file, and stored idempotency responses. Rotating it invalidates:
 
 - All active sessions (cashiers log in again)
 - All pending password reset tokens
 - All signed backup URLs
 - The signature on the local license file
 - The ability to decrypt older `idempotency_keys.response_body` payloads
-- The ability to decrypt backups created before rotation unless the old key was
-  escrowed offline by the hospital
+
+Backups created after the dedicated backup-key hardening use
+`HOSPITAL_BACKUP_ENCRYPTION_KEY`, not `APP_KEY`. Older legacy backups may still
+require the historical `APP_KEY`; keep any old key escrowed until those files
+are replaced by verified `.sql.gz.enc` backups made with the dedicated key.
 
 Procedure:
 

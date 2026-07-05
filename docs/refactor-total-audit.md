@@ -4860,3 +4860,28 @@ Decision:
 
 - No se agregaron dependencias nuevas; se usa zlib disponible en PHP para comprimir en streaming.
 - Este corte alinea codigo, pruebas y runbook para que el archivo respaldado sea realmente comprimido y cifrado antes de copiarse o restaurarse.
+
+## 200. Fase 8 - Respaldos usan clave dedicada
+
+Cambio aplicado:
+
+- Se agrego `BackupFileCipher` para cifrar chunks de respaldos con AES-256-GCM usando `HOSPITAL_BACKUP_ENCRYPTION_KEY`.
+- `EncryptBackupFileAction` deja de depender de `APP_KEY` para respaldos nuevos.
+- `hospital:decrypt-backup` descifra paquetes nuevos con la clave dedicada y mantiene compatibilidad con chunks legacy cifrados con `APP_KEY`.
+- Si la clave dedicada falta, el backup falla con mensaje operativo y no publica archivo.
+- `SECRETS.md` y el runbook de restore se actualizaron para no indicar que los respaldos nuevos dependen de `APP_KEY`.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter backup_runner_creates_success_log_checksum_and_audit_entry` | RED inicial correcto: el primer chunk aun se descifraba con `APP_KEY`; luego OK dentro de `BackupWorkflowTest`. |
+| `docker compose exec backend php artisan test --filter BackupWorkflowTest` | RED inicial correcto: sin clave dedicada el backup terminaba `success`; luego OK: 28 tests pasan. |
+| `docker compose exec backend php artisan test --filter BackupRestoreRoundtripTest` | OK: 4 tests pasan, 1 skip por falta de mysqldump en el ambiente. |
+| `docker compose exec backend vendor/bin/pint --test` | RED inicial por estilo; luego OK: 427 files. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M` | RED inicial por comparacion redundante; luego OK: sin errores. |
+
+Decision:
+
+- No se agregaron dependencias nuevas; se usa OpenSSL/zlib disponibles en PHP.
+- Este corte separa la clave de respaldos de la clave general de Laravel y reduce el riesgo operativo ante rotacion de `APP_KEY`.

@@ -11,6 +11,7 @@ use App\Models\AuditLog;
 use App\Models\BackupLog;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Crypt;
@@ -235,8 +236,13 @@ class BackupWorkflowTest extends TestCase
         $this->assertStringNotContainsString('INSERT INTO', $encrypted);
         $encryptedLines = explode(PHP_EOL, (string) $encrypted);
         $this->assertSame(EncryptBackupFileAction::CHUNK_MARKER, $encryptedLines[0] ?? null);
-        $firstPlainChunk = Crypt::decryptString($encryptedLines[1] ?? '');
-        $this->assertSame("\x1f\x8b", substr($firstPlainChunk, 0, 2));
+        try {
+            Crypt::decryptString($encryptedLines[1] ?? '');
+            $this->fail('El backup no debe descifrarse con APP_KEY.');
+        } catch (DecryptException) {
+            $this->assertTrue(true);
+        }
+
         $decryptedPath = storage_path('framework/testing/decrypted-backup.sql');
         @unlink($decryptedPath);
         $this->artisan('hospital:decrypt-backup', [
@@ -253,6 +259,43 @@ class BackupWorkflowTest extends TestCase
             'entity_type' => BackupLog::class,
             'entity_id' => $backup->id,
         ]);
+    }
+
+    public function test_backup_fails_operationally_when_backup_encryption_key_is_missing(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->admin();
+        Config::set('backups.encryption.key', null);
+
+        $backup = app(CreateBackupAction::class)->execute($admin, BackupLog::TYPE_MANUAL);
+
+        $this->assertSame(BackupLog::STATUS_FAILED, $backup->status);
+        $this->assertSame('Clave de cifrado de respaldos no configurada.', $backup->error_message);
+        $this->assertFalse(Storage::disk('local')->exists((string) $backup->path));
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $admin->id,
+            'action' => 'backup.failed',
+            'entity_type' => BackupLog::class,
+            'entity_id' => $backup->id,
+        ]);
+    }
+
+    public function test_decrypt_backup_command_supports_legacy_app_key_chunks(): void
+    {
+        $legacySql = 'CREATE TABLE legacy_backup_test (id integer);'.PHP_EOL.'INSERT INTO legacy_backup_test VALUES (1);';
+        $legacyPayload = EncryptBackupFileAction::CHUNK_MARKER.PHP_EOL.Crypt::encryptString((string) gzencode($legacySql)).PHP_EOL;
+        $legacyPath = Storage::disk('local')->path('backups/legacy-app-key.sql.gz.enc');
+        Storage::disk('local')->makeDirectory('backups');
+        file_put_contents($legacyPath, $legacyPayload);
+        $decryptedPath = storage_path('framework/testing/legacy-app-key-backup.sql');
+        @unlink($decryptedPath);
+
+        $this->artisan('hospital:decrypt-backup', [
+            'input' => $legacyPath,
+            'output' => $decryptedPath,
+        ])->assertExitCode(0);
+
+        $this->assertSame($legacySql, (string) file_get_contents($decryptedPath));
     }
 
     public function test_backup_prune_keeps_latest_successful_backups_and_never_prunes_failed_or_pending(): void

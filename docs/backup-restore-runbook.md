@@ -13,8 +13,9 @@ servidor LAN del hospital.
   tamano, SHA-256, tipo y usuario solicitante cuando aplica.
 - El archivo cifrado se guarda en el disco `local` de Laravel:
   `backend/storage/app/private/backups/`.
-- El cifrado usa Laravel Crypt, por tanto depende del `APP_KEY` vigente al
-  momento de crear el respaldo.
+- Los respaldos nuevos son `.sql.gz.enc`: SQL comprimido con gzip y cifrado
+  con `HOSPITAL_BACKUP_ENCRYPTION_KEY`. Los respaldos legacy creados antes de
+  esta regla pueden requerir el `APP_KEY` historico para descifrarse.
 
 ## 2. Crear un respaldo
 
@@ -62,19 +63,19 @@ Solo usuarios con `backups.download` pueden descargar respaldos exitosos.
 1. En `/backups`, seleccionar el respaldo `success`.
 2. Presionar el icono de descarga.
 3. Verificar que el archivo descargado conserve el nombre
-   `hospital-backup-YYYYMMDD-HHMMSS-xxxxxxxx.sql.enc`.
+   `hospital-backup-YYYYMMDD-HHMMSS-xxxxxxxx.sql.gz.enc`.
 4. Calcular SHA-256 localmente y compararlo con el valor registrado.
 
 Windows PowerShell:
 
 ```powershell
-Get-FileHash C:\backups\hospital-backup.sql.enc -Algorithm SHA256
+Get-FileHash C:\backups\hospital-backup.sql.gz.enc -Algorithm SHA256
 ```
 
 Linux:
 
 ```bash
-sha256sum /backups/hospital-backup.sql.enc
+sha256sum /backups/hospital-backup.sql.gz.enc
 ```
 
 ## 5. Restauracion: regla principal
@@ -88,8 +89,8 @@ Antes de cualquier restore:
 2. Detener temporalmente uso de caja/facturacion.
 3. Crear un respaldo nuevo del estado actual.
 4. Verificar espacio libre: minimo 2x el tamano del respaldo a restaurar.
-5. Verificar SHA-256 del archivo `.sql.enc`.
-6. Confirmar que se conserva el mismo `APP_KEY` usado para crear el backup.
+5. Verificar SHA-256 del archivo `.sql.gz.enc`.
+6. Confirmar que se conserva `HOSPITAL_BACKUP_ENCRYPTION_KEY` del servidor que creo el backup.
 
 ## 6. Restore de prueba en Windows
 
@@ -100,7 +101,7 @@ compatible:
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\restore_hospital_windows.ps1 `
   -UseExistingEnv `
   -TargetDatabase hospital_restore_validation `
-  -BackupFile C:\backups\hospital-backup.sql.enc `
+  -BackupFile C:\backups\hospital-backup.sql.gz.enc `
   -ExpectedSha256 <sha256>
 ```
 
@@ -110,7 +111,7 @@ Notas:
   `validation`, `disposable` o `proof`.
 - El script rechaza bases productivas salvo uso explicito de
   `-ForceProductionRestore`.
-- Para backups `.sql.enc`, el script llama internamente a
+- Para backups `.sql.gz.enc`, el script llama internamente a
   `php artisan hospital:decrypt-backup <input> <output>`.
 - Para ensayo sin escribir datos, usar `-WhatIf`.
 
@@ -121,7 +122,7 @@ Descifrar el backup a un SQL temporal:
 ```bash
 cd /var/www/s_hospital/backend
 php artisan hospital:decrypt-backup \
-  /backups/hospital-backup.sql.enc \
+  /backups/hospital-backup.sql.gz.enc \
   /tmp/hospital-backup-restore.sql
 chmod 600 /tmp/hospital-backup-restore.sql
 ```
@@ -208,7 +209,7 @@ escrita.
 | Riesgo | Mitigacion |
 |---|---|
 | Restaurar sobre datos mas recientes | Modo mantenimiento, autorizacion escrita y dump pre-restore obligatorio. |
-| APP_KEY perdida o cambiada | Sin el `APP_KEY` original no se puede descifrar el `.sql.enc`; respaldar la clave fuera del repositorio. |
+| Clave de backup perdida o cambiada | Sin `HOSPITAL_BACKUP_ENCRYPTION_KEY` no se puede descifrar el `.sql.gz.enc`; respaldar la clave fuera del repositorio. Backups legacy pueden requerir el `APP_KEY` historico. |
 | Correlativo fiscal duplicado | Validar ultima factura y correlativos en base descartable antes de tocar produccion. |
 | Disco lleno | Verificar espacio libre antes de descifrar y restaurar. |
 | SQL temporal expuesto | Crear con permisos restrictivos, usar ruta temporal local y eliminarlo al terminar. |

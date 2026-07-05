@@ -51,6 +51,7 @@ abstract class TestCase extends BaseTestCase
             'QUEUE_CONNECTION' => 'sync',
             'SANCTUM_STATEFUL_DOMAINS' => '',
             'SESSION_DRIVER' => 'array',
+            'HOSPITAL_BACKUP_ENCRYPTION_KEY' => 'testing-local-backup-encryption-key',
         ];
 
         if ($allowExternalTestDatabase) {

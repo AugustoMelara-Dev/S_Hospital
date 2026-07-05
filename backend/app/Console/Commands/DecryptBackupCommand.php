@@ -2,15 +2,20 @@
 
 namespace App\Console\Commands;
 
+use App\Actions\Backups\BackupFileCipher;
 use App\Actions\Backups\EncryptBackupFileAction;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Crypt;
 
 class DecryptBackupCommand extends Command
 {
     protected $signature = 'hospital:decrypt-backup {input : Archivo .sql.gz.enc} {output : Destino .sql temporal}';
 
     protected $description = 'Descifra un backup local cifrado para restore controlado.';
+
+    public function __construct(private readonly BackupFileCipher $cipher)
+    {
+        parent::__construct();
+    }
 
     public function handle(): int
     {
@@ -26,7 +31,7 @@ class DecryptBackupCommand extends Command
         try {
             $this->decryptToFile($input, $output);
         } catch (\Throwable) {
-            $this->error('No se pudo descifrar el backup con APP_KEY actual.');
+            $this->error('No se pudo descifrar el backup con la clave de respaldos configurada.');
 
             return self::FAILURE;
         }
@@ -85,7 +90,7 @@ class DecryptBackupCommand extends Command
                 throw new \RuntimeException('No se pudo leer el backup cifrado.');
             }
 
-            $plain = Crypt::decryptString($encrypted);
+            $plain = $this->cipher->decryptString($encrypted);
             if (@file_put_contents($output, $plain, LOCK_EX) === false) {
                 throw new \RuntimeException('No se pudo escribir el SQL temporal descifrado.');
             }
@@ -106,7 +111,7 @@ class DecryptBackupCommand extends Command
                     continue;
                 }
 
-                $plainChunk = Crypt::decryptString($encryptedChunk);
+                $plainChunk = $this->cipher->decryptString($encryptedChunk);
                 if (@fwrite($outputHandle, $plainChunk) === false) {
                     throw new \RuntimeException('No se pudo escribir el SQL temporal descifrado.');
                 }
