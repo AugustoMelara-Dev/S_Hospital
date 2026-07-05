@@ -1127,6 +1127,143 @@ describe('NewInvoiceView critical flows', () => {
     expect(onStatus).toHaveBeenCalledWith(expect.stringMatching(/no se pudo abrir el PDF/i));
   });
 
+  it('renews the payment idempotency key when a failed payment payload changes', async () => {
+    vi.spyOn(apiBase, 'createClientIdempotencyKey')
+      .mockReturnValueOnce('invoice-attempt-1')
+      .mockReturnValueOnce('payment-attempt-1')
+      .mockReturnValueOnce('payment-attempt-2');
+    const paymentIdempotencyKeys: Array<string | null> = [];
+    const fetchMock = globalThis.fetch as ReturnType<typeof vi.fn>;
+
+    fetchMock.mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url.includes('/api/cash-sessions/current')) {
+        return { ok: true, json: async () => ({ data: makeOpenCashSession() }) } as Response;
+      }
+      if (url.includes('/api/services')) {
+        return { ok: true, json: async () => ({ data: [makeService()] }) } as Response;
+      }
+      if (url.includes('/api/categories')) {
+        return { ok: true, json: async () => ({ data: [] }) } as Response;
+      }
+      if (url.includes('/api/settings/operational')) {
+        return {
+          ok: true,
+          json: async () => ({ data: { scanner_enabled: false, partial_payments_enabled: true } }),
+        } as Response;
+      }
+      if (url.endsWith('/api/invoices')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 63,
+              invoice_number: '000-001-01-00000063',
+              patient_name: 'Maria Lopez',
+              status: 'issued',
+              subtotal: '25.00',
+              tax_amount: '0.00',
+              discount_amount: '0.00',
+              total: '25.00',
+              paid_amount: '0.00',
+              balance_due: '25.00',
+              issued_at: '2026-05-17T09:20:00-06:00',
+              items: [],
+            },
+          }),
+        } as Response;
+      }
+      if (url.endsWith('/api/invoices/63/payments')) {
+        const headers = new Headers((init as RequestInit | undefined)?.headers);
+        paymentIdempotencyKeys.push(headers.get('Idempotency-Key'));
+
+        if (paymentIdempotencyKeys.length === 1) {
+          return {
+            ok: false,
+            status: 500,
+            json: async () => ({ message: 'Corte de red durante el cobro' }),
+          } as Response;
+        }
+
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              payment: {
+                id: 93,
+                invoice_id: 63,
+                cash_session_id: 7,
+                user_id: 2,
+                method: 'cash',
+                amount: '15.00',
+                reference: null,
+                status: 'posted',
+                paid_at: '2026-05-17T09:22:00-06:00',
+              },
+              invoice: {
+                id: 63,
+                invoice_number: '000-001-01-00000063',
+                patient_name: 'Maria Lopez',
+                status: 'partial',
+                subtotal: '25.00',
+                tax_amount: '0.00',
+                discount_amount: '0.00',
+                total: '25.00',
+                paid_amount: '15.00',
+                balance_due: '10.00',
+                issued_at: '2026-05-17T09:20:00-06:00',
+                items: [],
+              },
+              institutional_receipt: null,
+              institutional_receipt_error: null,
+            },
+          }),
+        } as Response;
+      }
+      if (url.includes('/api/invoices/63/receipt')) {
+        return {
+          ok: false,
+          status: 500,
+          json: async () => ({ message: 'Recibo pendiente' }),
+        } as Response;
+      }
+
+      return { ok: true, json: async () => ({ data: null }) } as Response;
+    });
+
+    renderNewInvoice();
+    await waitForPointOfSaleLoad();
+
+    fireEvent.change(screen.getByLabelText(/nombre del paciente/i), { target: { value: 'Maria Lopez' } });
+    fireEvent.change(screen.getByLabelText(/buscar por nombre/i), { target: { value: 'eritro' } });
+    await waitFor(() => {
+      expect(screen.getByText('Eritropoyetina')).toBeInTheDocument();
+    }, { timeout: 3000 });
+    fireEvent.click(screen.getByRole('button', { name: /agregar eritropoyetina/i }));
+    fireEvent.click(screen.getAllByRole('button', { name: /emitir/i })[0]);
+    await waitFor(() => {
+      expect(screen.getByRole('dialog', { name: /confirmar emis/i })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole('button', { name: /emitir y abrir cobro/i }));
+    await waitFor(() => {
+      expect(screen.getByRole('dialog', { name: /registrar pago/i })).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByLabelText(/monto recibido/i), { target: { value: '10.00' } });
+    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro e imprimir/i }));
+    await waitFor(() => {
+      expect(paymentIdempotencyKeys).toEqual(['payment-attempt-1']);
+    });
+    expect(screen.getByRole('dialog', { name: /registrar pago/i })).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText(/monto recibido/i), { target: { value: '15.00' } });
+    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro e imprimir/i }));
+
+    await waitFor(() => {
+      expect(paymentIdempotencyKeys).toEqual(['payment-attempt-1', 'payment-attempt-2']);
+    });
+  });
+
   it('does not let cashier proceed when cash session is closed', async () => {
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
       const url = String(input);

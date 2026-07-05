@@ -9,6 +9,7 @@ import { computeSimpleEstimate, isZeroMoney, parseLocalCents } from './state/pos
 import { NewInvoiceViewLayout } from './components/NewInvoiceViewLayout';
 import { openBlobInNewTab } from '@/lib/download';
 import { createClientIdempotencyKey } from '@/lib/api/base';
+import { payloadScopedIdempotencyKey, resetPayloadScopedIdempotencyKey } from '@/lib/api/idempotency';
 import { queryKeys } from '@/lib/queryKeys';
 
 
@@ -46,8 +47,10 @@ export function NewInvoiceView({
   const scannerInputRef = useRef<HTMLInputElement | null>(null);
   const submitInvoiceInFlightRef = useRef(false);
   const submitInvoiceIdempotencyKeyRef = useRef<string | null>(null);
+  const submitInvoiceIdempotencySignatureRef = useRef<string | null>(null);
   const submitPaymentInFlightRef = useRef(false);
   const submitPaymentIdempotencyKeyRef = useRef<string | null>(null);
+  const submitPaymentIdempotencySignatureRef = useRef<string | null>(null);
   const receiptPdfIdempotencyKeyRef = useRef<string | null>(null);
   const scanCodeInFlightRef = useRef(false);
   const skipInitialServiceSearchRef = useRef(true);
@@ -379,17 +382,22 @@ export function NewInvoiceView({
     try {
       const hasDialysis = canMarkDialysisPrescription && state.cartItems.some(item => item.dialysisPrescription);
       const patientName = state.patientName.trim();
-      const invoice = await apiClient.createInvoice({
+      const invoicePayload = {
         patient_name: patientName,
         dialysis_prescription: hasDialysis,
         items: state.cartItems.map((item) => ({
           service_id: item.service.id,
           quantity: item.quantity,
         })),
-      }, {
-        idempotencyKey: submitInvoiceIdempotencyKeyRef.current ??= createClientIdempotencyKey(),
+      };
+      const invoice = await apiClient.createInvoice(invoicePayload, {
+        idempotencyKey: payloadScopedIdempotencyKey(
+          submitInvoiceIdempotencyKeyRef,
+          submitInvoiceIdempotencySignatureRef,
+          invoicePayload,
+        ),
       });
-      submitInvoiceIdempotencyKeyRef.current = null;
+      resetPayloadScopedIdempotencyKey(submitInvoiceIdempotencyKeyRef, submitInvoiceIdempotencySignatureRef);
       dispatch({ type: 'SET_ISSUED_INVOICE', payload: invoice });
       dispatch({ type: 'SET_PAYMENT_AMOUNT', payload: '0.00' });
       dispatch({ type: 'SET_RECEIPT', payload: null });
@@ -470,15 +478,20 @@ export function NewInvoiceView({
     const sessionToUse = state.loadedCashSession;
     dispatch({ type: 'SET_PAYING', payload: true });
     try {
-      const result = await apiClient.registerPayment(invoiceToPay.id, {
+      const paymentPayload = {
         cash_session_id: sessionToUse.id,
         method: state.paymentMethod,
         amount: appliedAmount,
         reference: state.paymentReference.trim() || null,
-      }, {
-        idempotencyKey: submitPaymentIdempotencyKeyRef.current ??= createClientIdempotencyKey(),
+      };
+      const result = await apiClient.registerPayment(invoiceToPay.id, paymentPayload, {
+        idempotencyKey: payloadScopedIdempotencyKey(
+          submitPaymentIdempotencyKeyRef,
+          submitPaymentIdempotencySignatureRef,
+          { invoiceId: invoiceToPay.id, payload: paymentPayload },
+        ),
       });
-      submitPaymentIdempotencyKeyRef.current = null;
+      resetPayloadScopedIdempotencyKey(submitPaymentIdempotencyKeyRef, submitPaymentIdempotencySignatureRef);
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.invoices.all }),
         queryClient.invalidateQueries({ queryKey: queryKeys.cashSessions.current() }),
@@ -620,7 +633,7 @@ export function NewInvoiceView({
       return;
     }
     if (!nextOpen) {
-      submitPaymentIdempotencyKeyRef.current = null;
+      resetPayloadScopedIdempotencyKey(submitPaymentIdempotencyKeyRef, submitPaymentIdempotencySignatureRef);
     }
     dispatch({ type: 'SET_SHOW_PAYMENT', payload: nextOpen });
     if (!nextOpen && state.issuedInvoice && (state.issuedInvoice.status === 'issued' || state.issuedInvoice.status === 'partial')) {

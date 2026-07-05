@@ -5410,3 +5410,27 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte reduce ambiguedad operativa en caja: el pago queda registrado, el recibo institucional queda identificado y el cajero conserva un reintento visible sin entregar comprobantes secundarios.
+
+## 224. Fase 8 - Cobro renueva idempotencia si cambia el payload
+
+Cambio aplicado:
+
+- El flujo de nueva factura usa idempotencia por firma de payload al emitir factura y registrar pagos.
+- Si un cobro falla y el cajero reintenta el mismo payload, conserva la misma `Idempotency-Key`.
+- Si el cajero corrige el monto, metodo o referencia antes de reintentar, genera una clave nueva para evitar rechazo por payload distinto.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- NewInvoiceView.test.tsx -t "renews the payment idempotency key"` | RED inicial correcto: el segundo intento reutilizaba `payment-attempt-1`; luego OK. |
+| `docker compose exec frontend npm run test -- NewInvoiceView.test.tsx` | OK: 19 tests pasan. |
+| `docker compose exec frontend npm run test -- useCashSession.test.tsx` | OK: 5 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `docker compose exec frontend npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte reduce falsos bloqueos en caja durante reintentos reales de cobro, sin debilitar la deduplicacion de pagos ante doble clic o cortes de red.
