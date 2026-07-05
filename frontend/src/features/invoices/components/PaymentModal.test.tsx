@@ -206,6 +206,19 @@ describe('PaymentModal', () => {
     expect(onOpenChange).not.toHaveBeenCalled();
   });
 
+  it('ignores direct form submits while a payment is already being registered', () => {
+    const confirmSpy = vi.fn();
+
+    renderPaymentModal({
+      submitting: true,
+      onConfirm: confirmSpy,
+    });
+
+    fireEvent.submit(screen.getByLabelText(/monto recibido/i).closest('form')!);
+
+    expect(confirmSpy).not.toHaveBeenCalled();
+  });
+
   it('disables the Pay button when a non-cash amount exceeds the pending balance', () => {
     renderPaymentModal({
       invoiceNumber: '000-001-01-00000010',

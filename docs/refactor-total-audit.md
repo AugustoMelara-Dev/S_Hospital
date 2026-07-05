@@ -4309,3 +4309,28 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, facturacion, caja operativa, catalogo, historial, recibos, respaldos ni usuarios.
 - Este corte evita que el resumen ejecutivo muestre alertas tecnicas ante datos inconsistentes y mantiene el reporte legible para gerencia/caja.
+
+## 178. Fase 1 - Cobro ignora submits repetidos durante registro
+
+Cambio aplicado:
+
+- `PaymentModal` ahora ignora cualquier submit directo del formulario mientras `submitting=true`.
+- Esto mantiene bloqueado el contrato de cobro aunque el boton ya este deshabilitado y evita una segunda llamada a `onConfirm` por rutas programaticas o de teclado del navegador.
+- Se agrego una regresion que simula un submit directo durante `Cobrando...` y confirma que no se registra otro cobro.
+- No se cambian totales, validaciones de monto, cambio en efectivo, abonos parciales, impresion ni contratos API.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- PaymentModal.test.tsx -t "ignores direct form submits while a payment is already being registered" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial correcto: `onConfirm` se llamaba con `17.25`; luego OK: 1 test pasa. |
+| `npm run test -- PaymentModal.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 22 tests pasan. |
+| `npm run lint` | OK. |
+| `npm run typecheck` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, catalogo, historial, recibos, respaldos, reportes ni usuarios.
+- Este corte reduce riesgo de cobros duplicados en caja sin alterar la autoridad del backend ni el flujo principal de impresion institucional.

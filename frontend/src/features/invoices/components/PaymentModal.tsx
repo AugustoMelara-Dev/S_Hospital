@@ -118,6 +118,10 @@ export function PaymentModal({
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (submitting) {
+      return;
+    }
+
     const amountCents = parseMoneyCents(paymentAmount);
     if (amountCents === null || amountCents <= 0) {
       setError('Ingrese un monto válido');
