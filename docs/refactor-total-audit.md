@@ -5900,3 +5900,24 @@ Decision:
 
 - No se agregaron dependencias nuevas al runtime hospitalario; Chromium queda en la imagen local de QA/frontend para pruebas Playwright.
 - Este corte cierra evidencia fresca del smoke de botones: controles nombrados, axe serio/critico y cancelacion de accion peligrosa en historial.
+
+## 244. Fase 13/28 - Composer audit validado en contenedor backend
+
+Cambio aplicado:
+
+- Se ejecuto `composer validate` dentro del contenedor backend soportado por el proyecto.
+- Se ejecuto `composer audit --no-interaction` dentro del mismo contenedor.
+- El bloqueo historico de "Composer no instalado en PATH del host" queda reemplazado por evidencia containerizada valida.
+- No se tocaron archivos de aplicacion, dependencias, lockfiles, contratos API, migraciones ni permisos.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend composer validate --no-interaction` | OK: `./composer.json is valid`. |
+| `docker compose exec backend composer audit --no-interaction` | OK: `No security vulnerability advisories found.` |
+
+Decision:
+
+- Composer sigue sin requerirse en PATH del host Windows para esta evidencia; el entorno soportado es el contenedor backend.
+- Este corte reduce un bloqueante de release sin declarar `PRODUCTION_READY`: todavia faltan audit npm vigente, E2E host o equivalente final, evidencias fisicas y cierre de worktree.

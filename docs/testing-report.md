@@ -70,6 +70,8 @@ print validation.
 | 2026-07-05 | `docker compose exec -e PLAYWRIGHT_EXTERNAL_SERVER=1 -e E2E_BUTTON_SMOKE_REPORT_PATH=/tmp/button-smoke-dangerous.json frontend npx playwright test e2e/all-buttons-smoke.spec.ts --grep "dangerous history" --workers=1 --reporter=list` | PASS, 1 test | Validates the history reverse-cancel smoke and writes a non-empty temporary report. |
 | 2026-07-05 | `docker compose build frontend` | PASS | Builds the local frontend QA image with Alpine Chromium installed. |
 | 2026-07-05 | `docker compose exec -e PLAYWRIGHT_EXTERNAL_SERVER=1 frontend npx playwright test e2e/all-buttons-smoke.spec.ts --workers=1 --reporter=list` | PASS, 7 tests | Full button-smoke matrix passed in 4.7m and regenerated `qa/production-audit/button-smoke-report.json` with 79 passed results. |
+| 2026-07-05 | `docker compose exec backend composer validate --no-interaction` | PASS | Backend Composer manifest is valid inside the supported backend container. |
+| 2026-07-05 | `docker compose exec backend composer audit --no-interaction` | PASS | No Composer security vulnerability advisories found. |
 
 Recharts emits a known Playwright/Vite console warning about chart container
 dimensions in the mocked browser run. It does not currently fail the focused
