@@ -221,6 +221,35 @@ class ReportsTest extends TestCase
             ->assertJsonValidationErrors('month');
     }
 
+    public function test_monthly_report_counts_invoices_voided_in_month_even_when_issued_earlier(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $this->openSession($cashier);
+        $voidInvoice = $this->createInvoice($cashier, 'Glucosa');
+        $voidedAt = now()->startOfMonth()->addDays(4)->hour(10);
+
+        Invoice::query()->whereKey($voidInvoice)->update([
+            'status' => Invoice::STATUS_VOID,
+            'issued_at' => now()->startOfMonth()->subDay()->hour(15),
+            'voided_by' => $this->supervisor()->id,
+            'voided_at' => $voidedAt,
+            'void_reason' => 'Anulacion revisada en cierre mensual',
+        ]);
+
+        $this->actingAs($this->admin())
+            ->getJson('/api/reports/monthly?month='.$voidedAt->format('Y-m'))
+            ->assertOk()
+            ->assertJsonPath('data.invoice_count', 0)
+            ->assertJsonPath('data.total_billed', '0.00')
+            ->assertJsonPath('data.total_voided', '17.25')
+            ->assertJsonPath('data.invoices_by_status.void.count', 1)
+            ->assertJsonPath('data.invoices_by_status.void.total', '17.25')
+            ->assertJsonPath('data.daily_totals.0.date', $voidedAt->toDateString())
+            ->assertJsonPath('data.daily_totals.0.invoice_count', 0)
+            ->assertJsonPath('data.daily_totals.0.total_voided', '17.25');
+    }
+
     public function test_income_report_respects_date_range_and_invalid_ranges_return_422(): void
     {
         $this->seedBillingBase();

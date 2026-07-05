@@ -5117,3 +5117,26 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte alinea reportes de cierre diario y de ingresos con el momento real de autorizacion de anulaciones, sin inflar ventas emitidas.
+
+## 211. Fase 8 - Reporte mensual incluye anulaciones por fecha real
+
+Cambio aplicado:
+
+- `MonthlyReportService` calcula `invoices_by_status.void` con `voided_at`.
+- Las fechas activas de `daily_totals` ahora incluyen dias con facturas anuladas aunque hayan sido emitidas fuera del mes.
+- Las facturas emitidas fuera del mes pero anuladas dentro del mes no inflan `invoice_count` ni `total_billed`.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter monthly_report_counts_invoices_voided_in_month_even_when_issued_earlier` | RED inicial correcto: el total mensual anulaba bien, pero `invoices_by_status.void` quedaba en 0; luego OK. |
+| `docker compose exec backend php artisan test --filter "monthly_report_summarizes_financial_facts_by_day_without_void_income|monthly_report_counts_invoices_voided_in_month_even_when_issued_earlier"` | OK: 2 tests pasan. |
+| `docker compose exec backend vendor/bin/pint --test --dirty` | OK: 0 files. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M --no-progress` | OK: sin errores. |
+| `git diff --check` | OK: sin errores de whitespace; Git aviso normal de LF en `docs/refactor-total-audit.md`. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte completa la alineacion de reportes mensuales con la fecha real de autorizacion de anulaciones.
