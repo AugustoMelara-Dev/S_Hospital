@@ -89,6 +89,10 @@ production approval.
 | 2026-07-05 | `docker compose exec frontend npm run typecheck` | PASS | TypeScript no emit after single-machine UI copy changes. |
 | 2026-07-05 | `docker compose exec frontend npm run lint` | PASS | ESLint after single-machine UI copy changes. |
 | 2026-07-05 | `docker compose exec frontend npx vitest run src/features/help/HelpView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | PASS, 1 test | Help screen now keeps normal receipt guidance on carta/media carta/A5 and does not present second-PC/80mm/58mm as normal operation. |
+| 2026-07-05 | `docker compose exec frontend npx vitest run src/features/reports/ReportsCash.test.tsx src/features/reports/components/CashSessionReportTab.test.tsx src/features/reports/ReportsView.subroutes.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | PASS, 19 tests | Cash report now loads recent cash sessions so the cashier can open the latest report without typing an internal ID. |
+| 2026-07-05 | `docker compose exec frontend npm run test:critical` | PASS, 173 tests | Re-run after cash report recent-session selector; output clean without React `act(...)` warnings. |
+| 2026-07-05 | `docker compose exec frontend npm run typecheck` | PASS | TypeScript no emit after cash report selector. |
+| 2026-07-05 | `docker compose exec frontend npm run lint` | PASS | ESLint after cash report selector. |
 
 Recharts emits a known Playwright/Vite console warning about chart container
 dimensions in the mocked browser run. It does not currently fail the focused

@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { EmptyState } from '@/components/ui/states';
 import { OperationalBanner } from '@/components/shared';
-import { apiClient, userSafeErrorMessage } from '@/lib/api';
+import { apiClient, type CashSession, userSafeErrorMessage } from '@/lib/api';
 import { downloadBlob } from '@/lib/download';
 import { CashSessionReportTab } from './components/CashSessionReportTab';
 
@@ -19,6 +19,42 @@ export function ReportsCash({
   const [cashError, setCashError] = useState('');
   const [cashLoading, setCashLoading] = useState(false);
   const [cashExporting, setCashExporting] = useState(false);
+  const [recentCashSessions, setRecentCashSessions] = useState<CashSession[]>([]);
+  const [cashSessionsLoading, setCashSessionsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!canViewCash && !canViewManagerial) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadRecentCashSessions() {
+      try {
+        setCashSessionsLoading(true);
+        const response = await apiClient.getCashSessions({ page: 1, perPage: 5 });
+        if (cancelled) return;
+
+        const sessions = Array.isArray(response.data) ? response.data : [];
+        setRecentCashSessions(sessions);
+        setCashReportId((current) => current.trim() || (sessions[0]?.id ? String(sessions[0].id) : ''));
+      } catch {
+        if (!cancelled) {
+          setRecentCashSessions([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setCashSessionsLoading(false);
+        }
+      }
+    }
+
+    void loadRecentCashSessions();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [canViewCash, canViewManagerial]);
 
   async function loadCashReport() {
     if (cashLoading) {
@@ -94,6 +130,8 @@ export function ReportsCash({
         canExport={canViewManagerial}
         cashSession={cashSessionReport}
         cashReportId={cashReportId}
+        recentCashSessions={recentCashSessions}
+        sessionsLoading={cashSessionsLoading}
         loading={cashLoading}
         exporting={cashExporting}
         error={cashError}

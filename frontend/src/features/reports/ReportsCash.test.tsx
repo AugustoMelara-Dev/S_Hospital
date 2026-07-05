@@ -9,6 +9,7 @@ vi.mock('@/lib/api', async () => {
     ...actual,
     apiClient: {
       ...actual.apiClient,
+      getCashSessions: vi.fn(),
       getCashSessionReport: vi.fn(),
       downloadReportExport: vi.fn(),
     },
@@ -25,15 +26,44 @@ const { downloadBlob } = await import('@/lib/download');
 describe('ReportsCash', () => {
   beforeEach(() => {
     vi.mocked(apiClient.getCashSessionReport).mockReset();
+    vi.mocked(apiClient.getCashSessions).mockReset();
+    vi.mocked(apiClient.getCashSessions).mockResolvedValue({
+      data: [],
+      meta: { current_page: 1, per_page: 5, total: 0 },
+    });
     vi.mocked(apiClient.downloadReportExport).mockReset();
     vi.mocked(downloadBlob).mockReset();
   });
 
-  it('shows a loading state while cash session report is loading', () => {
+  it('lets the cashier open a recent cash session report without typing an id', async () => {
+    vi.mocked(apiClient.getCashSessions).mockResolvedValue({
+      data: [buildCashSessionReport().cash_session],
+      meta: { current_page: 1, per_page: 5, total: 1 },
+    });
+    vi.mocked(apiClient.getCashSessionReport).mockResolvedValue(buildCashSessionReport());
+
+    render(<ReportsCash canViewCash canViewManagerial={false} />);
+
+    const recentCashSelect = await screen.findByLabelText(/caja reciente/i);
+    expect(recentCashSelect).toHaveValue('12');
+    expect(screen.queryByText(/ingrese el numero de caja/i)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /ver caja/i }));
+
+    await waitFor(() => {
+      expect(apiClient.getCashSessionReport).toHaveBeenCalledWith('12');
+    });
+    await waitFor(() => {
+      expect(screen.getAllByText(/Caja Principal/i).length).toBeGreaterThan(0);
+    });
+  });
+
+  it('shows a loading state while cash session report is loading', async () => {
     vi.mocked(apiClient.getCashSessionReport).mockReturnValue(new Promise(() => undefined));
 
     render(<ReportsCash canViewCash canViewManagerial={false} />);
 
+    await waitFor(() => expect(apiClient.getCashSessions).toHaveBeenCalled());
     fireEvent.change(screen.getByLabelText(/numero de caja/i), { target: { value: '12' } });
     fireEvent.click(screen.getByRole('button', { name: /ver caja/i }));
 
@@ -44,6 +74,7 @@ describe('ReportsCash', () => {
   it('blocks invalid cash session numbers before requesting the report', async () => {
     render(<ReportsCash canViewCash canViewManagerial={false} />);
 
+    await waitFor(() => expect(apiClient.getCashSessions).toHaveBeenCalled());
     fireEvent.change(screen.getByLabelText(/numero de caja/i), { target: { value: '0' } });
     fireEvent.click(screen.getByRole('button', { name: /ver caja/i }));
 

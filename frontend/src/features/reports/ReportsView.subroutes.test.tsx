@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
@@ -10,6 +10,10 @@ vi.mock('@/lib/api', async () => {
     apiClient: {
       ...actual.apiClient,
       getExecutiveReport: vi.fn().mockRejectedValue(new Error('empty')),
+      getCashSessions: vi.fn().mockResolvedValue({
+        data: [],
+        meta: { current_page: 1, per_page: 5, total: 0 },
+      }),
       getCashSessionReport: vi.fn(),
       downloadExecutivePdf: vi.fn(),
       downloadExecutiveExcel: vi.fn(),
@@ -99,22 +103,25 @@ describe('ReportsView (sub-routes)', () => {
     );
   });
 
-  it('hides sub-routes when the user lacks managerial permission', () => {
+  it('hides sub-routes when the user lacks managerial permission', async () => {
     renderReports('/reports', false);
+    await waitFor(() => expect(apiClient.getCashSessions).toHaveBeenCalled());
     expect(screen.queryByRole('link', { name: /ejecutivo/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /auditoria/i })).not.toBeInTheDocument();
   });
 
-  it('opens the cash report from root when it is the only permitted report', () => {
+  it('opens the cash report from root when it is the only permitted report', async () => {
     renderReports('/reports', false, true);
+    await waitFor(() => expect(apiClient.getCashSessions).toHaveBeenCalled());
 
     expect(screen.getByRole('link', { name: /caja/i })).toHaveAttribute('aria-current', 'page');
     expect(screen.getByText(/operacion de caja/i)).toBeInTheDocument();
     expect(screen.queryByText(/reporte ejecutivo no disponible/i)).not.toBeInTheDocument();
   });
 
-  it('opens the cash report from a restricted report sub-route when it is the only permitted report', () => {
+  it('opens the cash report from a restricted report sub-route when it is the only permitted report', async () => {
     renderReports('/reports/audit', false, true);
+    await waitFor(() => expect(apiClient.getCashSessions).toHaveBeenCalled());
 
     expect(screen.getByRole('link', { name: /caja/i })).toHaveAttribute('aria-current', 'page');
     expect(screen.getByText(/operacion de caja/i)).toBeInTheDocument();

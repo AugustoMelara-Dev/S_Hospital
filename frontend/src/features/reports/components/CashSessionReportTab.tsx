@@ -6,15 +6,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui
 import { DataTable, type DataTableColumn } from '../../../components/ui/data-table';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
+import { NativeSelect } from '../../../components/ui/select';
 import { StatGrid } from '../../../components/shared';
 import { formatLocalizedDateTime } from '../../../lib/format/formatDate';
-import type { CashSessionReport } from '../../../lib/api/types';
+import type { CashSession, CashSessionReport } from '../../../lib/api/types';
 import { formatLempirasUIFromCents, parseCents } from '../../../lib/moneyCents';
 
 interface CashSessionReportTabProps {
   canExport: boolean;
   cashSession: CashSessionReport | null;
   cashReportId: string;
+  recentCashSessions?: CashSession[];
+  sessionsLoading?: boolean;
   loading: boolean;
   exporting?: boolean;
   error: string;
@@ -118,6 +121,8 @@ export function CashSessionReportTab({
   canExport,
   cashSession,
   cashReportId,
+  recentCashSessions = [],
+  sessionsLoading = false,
   loading,
   exporting = false,
   error,
@@ -126,6 +131,7 @@ export function CashSessionReportTab({
   onSubmit,
 }: CashSessionReportTabProps) {
   const lookupLocked = loading || exporting;
+  const hasRecentCashSessions = recentCashSessions.length > 0;
   const methodTotalRows = cashSession
     ? Object.entries(cashSession.totals_by_method).map(([method, total]) => ({ method, total }))
     : [];
@@ -136,20 +142,44 @@ export function CashSessionReportTab({
         <CardContent className="pt-6">
           <form onSubmit={onSubmit} className="grid gap-3 sm:grid-cols-[minmax(0,200px)_auto] sm:items-end">
             <div className="w-full">
-              <Label htmlFor="cash-session-id">Numero de Caja</Label>
-              <Input
-                id="cash-session-id"
-                type="text"
-                inputMode="numeric"
-                placeholder="Numero mostrado en caja"
-                aria-describedby="cash-session-id-help"
-                value={cashReportId}
-                onChange={(event) => onCashReportIdChange(event.target.value)}
-                disabled={lookupLocked}
-              />
-              <p id="cash-session-id-help" className="mt-1 text-xs text-muted-foreground">
-                Use el numero que aparece en Caja al abrir o cerrar turno.
-              </p>
+              {hasRecentCashSessions ? (
+                <>
+                  <Label htmlFor="cash-session-id">Caja reciente</Label>
+                  <NativeSelect
+                    id="cash-session-id"
+                    aria-describedby="cash-session-id-help"
+                    value={cashReportId}
+                    onChange={(event) => onCashReportIdChange(event.target.value)}
+                    disabled={lookupLocked || sessionsLoading}
+                  >
+                    {recentCashSessions.map((session) => (
+                      <option key={session.id} value={String(session.id)}>
+                        {cashSessionOptionLabel(session)}
+                      </option>
+                    ))}
+                  </NativeSelect>
+                  <p id="cash-session-id-help" className="mt-1 text-xs text-muted-foreground">
+                    Seleccione una caja reciente. La mas nueva queda lista para consultar.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <Label htmlFor="cash-session-id">Numero de Caja</Label>
+                  <Input
+                    id="cash-session-id"
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="Numero mostrado en caja"
+                    aria-describedby="cash-session-id-help"
+                    value={cashReportId}
+                    onChange={(event) => onCashReportIdChange(event.target.value)}
+                    disabled={lookupLocked}
+                  />
+                  <p id="cash-session-id-help" className="mt-1 text-xs text-muted-foreground">
+                    Use el numero que aparece en Caja al abrir o cerrar turno.
+                  </p>
+                </>
+              )}
             </div>
             <Button type="submit" className="w-full sm:w-auto" disabled={lookupLocked}>
               {loading ? 'Consultando...' : 'Ver caja'}
@@ -295,6 +325,14 @@ export function CashSessionReportTab({
 
 function methodLabel(method: string): string {
   return { cash: 'Efectivo', transfer: 'Transferencia', card: 'Tarjeta', other: 'Otro' }[method] ?? method;
+}
+
+function cashSessionOptionLabel(session: CashSession): string {
+  const cashier = session.user?.name?.trim() || 'Sin cajero';
+  const status = session.status === 'open' ? 'abierta' : 'cerrada';
+  const openedAt = formatDate(session.opened_at);
+
+  return `Caja #${session.id} - ${cashier} - ${status} - ${openedAt}`;
 }
 
 function movementTypeLabel(type: string): string {
