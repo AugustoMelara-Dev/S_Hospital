@@ -148,12 +148,18 @@ function friendlyReadinessBlocker(code: string, fallback: string): string {
 }
 
 function operationalSummary(status: SystemStatus): { level: OperationalStatus; label: string; description: string; className: string } {
+  const latestBackupNotConfirmed = status.backups.last_success_at !== null
+    && (
+      status.backups.last_success_file_exists === false ||
+      status.backups.last_success_checksum_matches === false
+    );
   const hasError =
     !status.database.connected ||
     !status.frontend.dist_index_exists ||
     !status.frontend.assets_present ||
     !status.backups.storage.writable ||
     !status.backups.dump_binary.available ||
+    latestBackupNotConfirmed ||
     !status.runtime.logs_writable ||
     !status.runtime.cache_writable ||
     (status.backups.queue.failed_jobs_count ?? 0) > 0 ||
@@ -256,6 +262,10 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
     ?? lastSuccessBackup?.created_at
     ?? null;
   const operationalStatus = systemStatus ? operationalSummary(systemStatus) : null;
+  const latestBackupNotConfirmed = systemStatus?.backups.last_success_at
+    ? systemStatus.backups.last_success_file_exists === false
+      || systemStatus.backups.last_success_checksum_matches === false
+    : false;
   const stalePendingCount = systemStatus?.backups.stale_pending_count ?? 0;
   const stalePendingThresholdMinutes = systemStatus?.backups.stale_pending_threshold_minutes ?? 15;
   const advancedStatusId = 'backups-advanced-status';
@@ -443,6 +453,12 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
               </Button>
             </CardContent>
           </Card>
+        ) : null}
+
+        {latestBackupNotConfirmed ? (
+          <Alert variant="warning" title="Respaldo reciente no confirmado">
+            El ultimo respaldo exitoso registrado no se puede confirmar en el servidor local. Cree un respaldo nuevo antes de confiar en la recuperacion.
+          </Alert>
         ) : null}
 
         {stalePendingCount > 0 ? (

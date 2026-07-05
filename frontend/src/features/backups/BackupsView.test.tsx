@@ -219,6 +219,24 @@ describe('BackupsView', () => {
     expect(within(failedCard as HTMLElement).getByText(/revise con soporte antes de confiar en respaldos/i)).toBeInTheDocument();
   });
 
+  it('warns when the latest successful backup cannot be confirmed on disk', async () => {
+    const status = systemStatusFixture();
+    vi.mocked(apiClient.getSystemStatus).mockResolvedValue({
+      ...status,
+      backups: {
+        ...status.backups,
+        last_success_file_exists: false,
+        last_success_checksum_matches: false,
+      },
+    });
+
+    renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
+
+    expect(await screen.findByText(/respaldo reciente no confirmado/i)).toBeInTheDocument();
+    expect(screen.getByText(/cree un respaldo nuevo antes de confiar en la recuperacion/i)).toBeInTheDocument();
+    expect(screen.queryByText(/hospital-backup-.*\.sql/i)).not.toBeInTheDocument();
+  });
+
   it('keeps support diagnostics collapsed behind a human support label', async () => {
     renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
 

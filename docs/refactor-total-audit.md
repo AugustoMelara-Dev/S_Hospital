@@ -4957,3 +4957,26 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte evita que el panel de produccion declare sano el flujo de backups cuando solo existe el registro historico pero el archivo recuperable falta o fue alterado.
+
+## 204. Fase 8 - UI advierte respaldo no confirmado
+
+Cambio aplicado:
+
+- `SystemStatus.backups` en TypeScript reconoce `last_success_file_exists` y `last_success_checksum_matches`.
+- La vista de Respaldos muestra una alerta humana cuando el ultimo respaldo exitoso no se puede confirmar en el servidor local.
+- El estado operativo de Respaldos pasa a error cuando el backend reporta respaldo reciente ausente o alterado.
+- La alerta no expone nombres tecnicos de archivo ni jerga de checksum al operador.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- BackupsView.test.tsx -t "warns when the latest successful backup cannot be confirmed on disk"` | RED inicial correcto: no existia alerta visible; luego OK. |
+| `docker compose exec frontend npm run test -- BackupsView.test.tsx` | OK: 25 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte convierte la verificacion backend de integridad de respaldos en una senal visible y accionable para la operacion monocomputadora.

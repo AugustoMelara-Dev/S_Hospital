@@ -433,6 +433,8 @@ export type SystemStatus = {
     stale_pending_threshold_minutes?: number;
     last_success_at: string | null;
     last_success_filename: string | null;
+    last_success_file_exists?: boolean;
+    last_success_checksum_matches?: boolean;
     last_failure_at: string | null;
     last_failure_message: string | null;
     dump_binary: {
