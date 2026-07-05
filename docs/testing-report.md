@@ -3,7 +3,7 @@
 Living verification report for the S_Hospital total refactor. This document is
 evidence for the current branch, not a production approval.
 
-Status date: 2026-07-02
+Status date: 2026-07-05
 Branch: `codex/refactor-total`
 Production approval: NO
 
@@ -47,6 +47,7 @@ print validation.
 | 2026-07-02 | `docker compose exec frontend npm run test -- src/components/keyboard-shortcuts-palette.test.tsx src/layout/AppShell.test.tsx src/layout/AppShell.a11y.test.tsx src/features/admin/components/RoleFormDialog.test.tsx` | PASS, 21 tests | Focused gate for keyboard shortcuts palette, AppShell/topbar accessibility, and role permission filtering. |
 | 2026-07-02 | `docker compose exec frontend npm run test -- ReportsAudit.test.tsx src/lib/api/system.test.ts` | PASS, 5 tests | Audit report UI now mocks executive summary plus audit-log register; system API client query-string contract covered. |
 | 2026-07-02 | `docker compose exec frontend npm run test` | PASS, 102 files / 562 tests | First rerun exposed one transient `src/lib/realtime/echo.test.ts` timeout; focused rerun passed, and full rerun passed. React `act(...)` and TanStack Query warnings remain test hygiene items. |
+| 2026-07-05 | `docker compose exec frontend npm run test -- --run` | PASS, 112 files / 737 tests | Fresh full Vitest rerun after test hygiene cleanup. The prior React `act(...)` and TanStack Query undefined-data warnings are no longer emitted. |
 | 2026-07-02 | `docker compose exec frontend npm run typecheck` | PASS | Re-run after audit register/API client tests. |
 | 2026-07-02 | `docker compose exec frontend npm run lint` | PASS | Re-run after audit register/API client tests. |
 | 2026-07-02 | `docker compose exec backend php artisan test --filter=AuditLogTest` | PASS, 7 tests | Covers audit-log persistence plus `/api/system/audit-logs` filtered listing and `audit.view` 403 gate. |
@@ -68,10 +69,9 @@ Recharts emits a known Playwright/Vite console warning about chart container
 dimensions in the mocked browser run. It does not currently fail the focused
 gates, but it remains a visual/performance review item for final QA.
 
-The containerized Vitest run also emits React `act(...)` warnings in invoice and
-settings tests plus TanStack Query warnings for mocked `cash-sessions` movements
-and executive reports data returning `undefined`. They do not fail the suite,
-but they remain cleanup targets before final acceptance.
+A fresh 2026-07-05 containerized Vitest run no longer emits the React
+`act(...)` warnings or TanStack Query undefined-data warnings that were tracked
+as test hygiene items in earlier runs.
 
 ## Focused E2E Coverage Added
 

@@ -5764,3 +5764,28 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte limpia otro warning de QA en configuracion operativa, reduciendo ruido antes del cierre final de Vitest.
+
+## 238. Fase 13/23 - Vitest completo sin advertencias act ni query
+
+Cambio aplicado:
+
+- `App.test.tsx` envuelve la activacion de tabs fiscales en `act`, evitando actualizaciones tardias de `FiscalSettingsView`/Radix al terminar el test.
+- El test de ruta activa de reportes ahora mockea `/api/reports/executive` como error explicito del escenario en vez de dejar que el fallback devuelva `undefined`.
+- No se tocaron componentes de produccion, rutas reales, contratos API, permisos ni dependencias.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- App.test.tsx -t "renders app shell and fiscal settings route" --run` | OK: 1 test pasa sin advertencia `act(...)`. |
+| `docker compose exec frontend npm run test -- App.test.tsx -t "renders only the active module" --run` | OK: 1 test pasa sin advertencia TanStack Query. |
+| `docker compose exec frontend npm run test -- App.test.tsx --run` | OK: 18 tests pasan sin stderr de `act(...)` ni query `undefined`. |
+| `docker compose exec frontend npm run test -- --run` | OK: 112 archivos / 737 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `docker compose exec frontend npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte deja el gate completo de Vitest con evidencia fresca y sin las advertencias React/TanStack que quedaban registradas como higiene pendiente.

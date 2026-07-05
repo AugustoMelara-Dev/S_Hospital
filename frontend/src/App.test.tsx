@@ -1,6 +1,6 @@
 ﻿/// <reference types="node" />
 import { readFileSync } from 'node:fs';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 import { apiClient } from './lib/api';
@@ -216,12 +216,14 @@ describe('App', () => {
     };
   }
 
-  function activateTab(name: RegExp) {
+  async function activateTab(name: RegExp) {
     const tab = screen.getByRole('tab', { name });
-    tab.focus();
-    fireEvent.pointerDown(tab, { button: 0, ctrlKey: false });
-    fireEvent.keyDown(tab, { key: 'Enter', code: 'Enter' });
-    fireEvent.click(tab);
+    await act(async () => {
+      tab.focus();
+      fireEvent.pointerDown(tab, { button: 0, ctrlKey: false });
+      fireEvent.keyDown(tab, { key: 'Enter', code: 'Enter' });
+      fireEvent.click(tab);
+    });
   }
 
   beforeEach(async () => {
@@ -388,11 +390,11 @@ describe('App', () => {
       expect(screen.getByRole('heading', { name: /configuraci[oó]n pendiente/i })).toBeInTheDocument();
     }, { timeout: 5000 });
     expect(screen.getByText(/datos temporales o de validaci[oó]n/i)).toBeInTheDocument();
-    activateTab(/^hospital$/i);
+    await activateTab(/^hospital$/i);
     expect(await screen.findByRole('heading', { name: /datos del hospital/i })).toBeInTheDocument();
     expect(screen.queryByDisplayValue(placeholderHospitalName)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /guardar datos del hospital/i })).toBeEnabled();
-    activateTab(/numeraci[oó]n/i);
+    await activateTab(/numeraci[oó]n/i);
     expect(await screen.findByRole('button', { name: /guardar numeraci[oó]n/i })).toBeEnabled();
     expect(screen.queryByDisplayValue(placeholderCai)).not.toBeInTheDocument();
   });
@@ -1211,6 +1213,14 @@ describe('App', () => {
               must_change_password: false,
             },
           }),
+        } as Response;
+      }
+
+      if (url.includes('/api/reports/executive')) {
+        return {
+          ok: false,
+          status: 503,
+          json: async () => ({ message: 'Reporte ejecutivo no disponible en este test.' }),
         } as Response;
       }
 
