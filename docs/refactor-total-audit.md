@@ -5789,3 +5789,24 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte deja el gate completo de Vitest con evidencia fresca y sin las advertencias React/TanStack que quedaban registradas como higiene pendiente.
+
+## 239. Fase 8/24 - Reverso protege recibo institucional emitido
+
+Cambio aplicado:
+
+- `InvoiceReverseTest` ahora cubre el caso de una factura pagada que ya tiene recibo institucional emitido antes del reverso consolidado.
+- La prueba verifica que el reverso deja el recibo institucional en estado `void`, conserva el motivo auditado y registra `institutional_receipt.voided`.
+- No se tocaron acciones, controladores, migraciones, rutas ni dependencias; la cobertura confirma el comportamiento existente via anulacion de pagos dentro del reverso.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter=InvoiceReverseTest::test_reverse_paid_invoice_voids_issued_institutional_receipt_with_audit` | OK: 1 test pasa; la cobertura confirma el contrato existente. |
+| `docker compose exec backend php artisan test --filter=InvoiceReverseTest` | OK: 9 tests / 51 aserciones. |
+| `docker compose exec backend php artisan test --filter=InstitutionalReceiptPaymentIntegrationTest` | OK: 9 tests / 110 aserciones. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte refuerza una regla sensible de caja e impresion: si una factura cobrada se reversa, el recibo institucional asociado no queda vigente en historial.
