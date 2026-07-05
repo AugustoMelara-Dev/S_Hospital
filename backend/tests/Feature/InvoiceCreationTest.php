@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Actions\Billing\CreateInvoiceAction;
 use App\Models\Area;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSequence;
@@ -309,6 +310,30 @@ class InvoiceCreationTest extends TestCase
             ->assertJsonPath('data.items.0.area_name', 'Laboratorio')
             ->assertJsonPath('data.items.0.unit_price', '15.00')
             ->assertJsonPath('data.items.0.line_total', '17.25');
+    }
+
+    public function test_invoice_item_notes_are_trimmed_and_blank_notes_are_not_snapshotted(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $glucose = Service::query()->where('name', 'Glucosa')->firstOrFail();
+        $hemogram = Service::query()->where('name', 'Hemograma Completo')->firstOrFail();
+
+        $invoice = app(CreateInvoiceAction::class)->execute([
+            'patient_name' => 'Maria Lopez',
+            'items' => [
+                ['service_id' => $glucose->id, 'quantity' => '1.00', 'notes' => '  En ayunas  '],
+                ['service_id' => $hemogram->id, 'quantity' => '1.00', 'notes' => '   '],
+            ],
+        ], $cashier);
+
+        $notes = DB::table('invoice_items')
+            ->where('invoice_id', $invoice->id)
+            ->orderBy('id')
+            ->pluck('notes')
+            ->all();
+
+        $this->assertSame(['En ayunas', null], $notes);
     }
 
     public function test_invoice_items_do_not_snapshot_scanner_or_barcode_codes(): void

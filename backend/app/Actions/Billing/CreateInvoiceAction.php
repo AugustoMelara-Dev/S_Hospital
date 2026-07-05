@@ -331,11 +331,22 @@ class CreateInvoiceAction
             $prepared[] = [
                 'service' => $service,
                 'quantity' => $item['quantity'],
-                'notes' => $item['notes'] ?? null,
+                'notes' => $this->normalizeItemNotes($item['notes'] ?? null),
             ];
         }
 
         return $prepared;
+    }
+
+    private function normalizeItemNotes(mixed $notes): ?string
+    {
+        if (! is_string($notes)) {
+            return null;
+        }
+
+        $normalized = trim($notes);
+
+        return $normalized === '' ? null : $normalized;
     }
 
     private function isZeroAmount(string $amount): bool

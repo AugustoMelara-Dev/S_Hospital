@@ -5003,3 +5003,25 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte evita senales contradictorias entre Respaldos, Acerca de y Soporte cuando el backup recuperable no esta confirmado.
+
+## 206. Fase 8 - Facturacion normaliza notas de items
+
+Cambio aplicado:
+
+- `CreateInvoiceAction` normaliza las notas de cada item antes de calcular y guardar snapshots de factura.
+- Las notas con espacios al inicio o final se guardan recortadas.
+- Las notas vacias o compuestas solo por espacios se guardan como `null`.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter invoice_item_notes_are_trimmed_and_blank_notes_are_not_snapshotted` | RED inicial correcto: el servicio guardaba notas con espacios exactos; luego OK. |
+| `docker compose exec backend php artisan test --filter InvoiceCreationTest` | OK: 32 tests pasan. |
+| `docker compose exec backend vendor/bin/pint --test --dirty` | OK: 0 files. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M --no-progress` | OK: sin errores. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte mantiene limpios los snapshots que luego alimentan recibos institucionales y reimpresiones historicas.
