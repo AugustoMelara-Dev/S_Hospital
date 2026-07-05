@@ -6051,3 +6051,25 @@ Pruebas ejecutadas:
 Decision:
 
 - La pantalla ya ocultaba el nombre tecnico, pero el API normal todavia lo entregaba. Este corte reduce exposicion innecesaria para una instalacion hospitalaria local sin afectar descarga auditada.
+
+## 251. Fase 6 - Papel normal guarda default aunque exista soporte avanzado
+
+Cambio aplicado:
+
+- `InstitutionalReceiptSettingsView` deja de usar el permiso `receipt_settings.advanced` como criterio para enviar `active` e `is_global_default` desde el flujo normal de papel.
+- Los perfiles institucionales principales (`Carta`, `Media carta`, `A5`) siempre se guardan como activos y predeterminados cuando se usa `Guardar perfil` en el flujo normal.
+- Los perfiles de soporte tecnico conservan sus banderas tecnicas solo cuando se seleccionan desde el modo soporte.
+- No se agregaron dependencias, migraciones, permisos ni cambios de API.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- InstitutionalReceiptSettingsView --run -t "saves a standard paper profile as the institutional default for support users in the normal flow"` | RED inicial por `is_global_default: false`; luego OK: 1 test pasa. |
+| `docker compose exec frontend npm run test -- InstitutionalReceiptSettingsView --run` | OK: 22 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+Decision:
+
+- El permiso de soporte permite abrir controles tecnicos, pero no debe debilitar el flujo operativo normal. El hospital sigue eligiendo papel; el sistema activa el perfil institucional correspondiente.

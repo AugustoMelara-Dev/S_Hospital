@@ -303,7 +303,8 @@ export function InstitutionalReceiptSettingsView({
   const profileMutation = useMutation({
     mutationFn: (payload: ProfileFormData) => {
       if (!selectedProfile) throw new Error('Seleccione un perfil de impresión.');
-      const normalPaperPayload = canAdvancedPrintSettings
+      const savesSupportProfile = SUPPORT_ONLY_PROFILE_CODES.has(selectedProfile.code);
+      const normalPaperPayload = savesSupportProfile
         ? payload
         : { ...payload, active: true, is_global_default: true };
 

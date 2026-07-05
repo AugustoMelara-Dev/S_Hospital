@@ -180,3 +180,12 @@ The focused mocked frontend gates are improving and currently green for the
 covered critical flows. The total refactor is not complete until the full
 backend, frontend, E2E, print, LAN/offline, and manual QA requirements above are
 verified.
+
+### 2026-07-05 Receipt Settings Normal Profile Gate
+
+| Command | Result |
+|---|---|
+| `docker compose exec frontend npm run test -- InstitutionalReceiptSettingsView --run -t "saves a standard paper profile as the institutional default for support users in the normal flow"` | RED first on `is_global_default: false`; then PASS, 1 focused test. |
+| `docker compose exec frontend npm run test -- InstitutionalReceiptSettingsView --run` | PASS, 22 tests. |
+| `docker compose exec frontend npm run typecheck` | PASS. |
+| `docker compose exec frontend npm run lint` | PASS. |

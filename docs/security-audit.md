@@ -297,3 +297,16 @@ Pruebas relevantes:
 
 - `BackupWorkflowTest` cubre listado sin detalles internos, descarga auditada, integridad alterada, path traversal y ausencia de endpoint restore.
 - `BackupsView.test.tsx`, `useBackups.test.tsx` y `backups.test.ts` cubren contrato frontend sin `filename` operativo.
+
+## 16. Actualizacion 2026-07-05 - Recibos normales con default institucional
+
+Control agregado/verificado:
+
+- El permiso `receipt_settings.advanced` ya no hace que el flujo normal de papel envie perfiles institucionales sin `is_global_default`.
+- `Carta`, `Media carta` y `A5` se guardan como perfiles activos/default desde `Guardar perfil`, incluso para cuentas de soporte/admin.
+- Los perfiles de soporte tecnico siguen separados y conservan sus banderas tecnicas dentro del modo soporte.
+
+Pruebas relevantes:
+
+- `InstitutionalReceiptSettingsView.test.tsx` cubre el caso con `canAdvancedPrintSettings=true` y panel avanzado cerrado.
+- `npm run typecheck` y `npm run lint` verifican el cambio frontend sin errores.
