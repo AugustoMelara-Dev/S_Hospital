@@ -4512,3 +4512,28 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, caja, catalogo, historial, recibos, respaldos, reportes ni usuarios.
 - Este corte mejora la consistencia operativa del cobro sin mover la fuente de verdad de totales fuera del backend.
+
+## 186. Fase 9 - Historial muestra progreso al registrar reimpresion
+
+Cambio aplicado:
+
+- El dialogo de reimpresion auditada ahora cambia su accion principal a `Registrando reimpresión...` mientras `registeringReprint=true`.
+- Esto deja claro que la solicitud de reimpresion ya esta en curso y evita dudas operativas durante la auditoria del PDF/recibo.
+- Se agrego una regresion con `getInvoice` pendiente que confirma que el boton queda deshabilitado con etiqueta de progreso.
+- No se cambian permisos, motivos minimos, idempotencia, apertura de PDF, fallback legacy ni contratos API.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- InvoiceHistoryView.test.tsx -t "shows progress while registering" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial correcto: el boton no mostraba progreso durante el registro; luego OK: 1 test pasa. |
+| `npm run test -- InvoiceHistoryView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=90000` | OK: 34 tests pasan. |
+| `npm run lint` | OK. |
+| `npm run typecheck` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, facturacion, caja, catalogo, recibos, respaldos, reportes ni usuarios.
+- Este corte mejora la claridad operativa del historial sin relajar auditoria ni permisos de reimpresion.

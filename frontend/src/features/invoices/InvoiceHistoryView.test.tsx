@@ -1026,6 +1026,39 @@ describe('InvoiceHistoryView', () => {
     expect(getPdf).not.toHaveBeenCalled();
   });
 
+  it('shows progress while registering an audited reprint from history', async () => {
+    let resolveInvoice!: (invoice: Invoice) => void;
+    const paid = invoiceFixture({
+      id: 39,
+      invoice_number: '000-001-01-00000039',
+      patient_name: 'Paciente Reimpresion Pendiente',
+      status: 'paid',
+      institutional_receipt: institutionalReceiptFixture({ id: 99, receipt_number_full: 'REC-A-00000099' }),
+    });
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [paid],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+    vi.spyOn(apiClient, 'getInvoice').mockReturnValue(new Promise((resolve) => { resolveInvoice = resolve; }));
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente Reimpresion Pendiente')).toBeInTheDocument());
+    await openInvoiceMenu(paid.invoice_number);
+    fireEvent.click(await screen.findByRole('menuitem', { name: /Reimprimir/i }));
+    fireEvent.change(screen.getByLabelText(/motivo de reimpresi/i), {
+      target: { value: 'Copia solicitada por auditoria interna' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /registrar reimpresi/i }));
+
+    expect(await screen.findByRole('button', { name: /registrando reimpresi/i })).toBeDisabled();
+
+    await act(async () => {
+      resolveInvoice(paid);
+    });
+  });
+
   it('keeps institutional reprint confirmation open when reason is too short', async () => {
     const paid = invoiceFixture({
       id: 33,

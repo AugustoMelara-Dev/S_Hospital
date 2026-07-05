@@ -606,7 +606,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       </ConfirmDialog>
 
       <ConfirmDialog
-        confirmLabel="Registrar reimpresión"
+        confirmLabel={registeringReprint ? 'Registrando reimpresión...' : 'Registrar reimpresión'}
         onCancel={() => {
           setReprintTarget(null);
           setReprintReason('');
