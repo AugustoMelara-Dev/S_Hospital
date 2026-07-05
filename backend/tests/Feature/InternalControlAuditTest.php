@@ -119,7 +119,9 @@ class InternalControlAuditTest extends TestCase
 
         $this->actingAs($admin)
             ->withHeader('User-Agent', 'Admin-LAN/2.0')
-            ->postJson("/api/admin/users/{$createdUserId}/toggle-active")
+            ->postJson("/api/admin/users/{$createdUserId}/toggle-active", [
+                'reason' => 'Cambio temporal de funciones',
+            ])
             ->assertOk()
             ->assertJsonPath('data.active', false);
 
@@ -144,6 +146,7 @@ class InternalControlAuditTest extends TestCase
             'entity_type' => User::class,
             'entity_id' => $createdUserId,
             'result' => 'success',
+            'reason' => 'Cambio temporal de funciones',
         ]);
 
         $updatedAudit = AuditLog::query()
