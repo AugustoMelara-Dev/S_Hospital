@@ -147,6 +147,14 @@ function friendlyReadinessBlocker(code: string, fallback: string): string {
   return labels[code] ?? sanitizeTechnicalText(fallback);
 }
 
+function isLocalAccessValidationNoise(code: string, localAccessReady: boolean): boolean {
+  return localAccessReady && (
+    code === 'PENDING_LAN_CLIENT_VALIDATION' ||
+    code === 'LAN_CLIENT_VALIDATION_PROOF' ||
+    code === 'PUBLIC_ROUTES_AVAILABLE'
+  );
+}
+
 function operationalSummary(status: SystemStatus): { level: OperationalStatus; label: string; description: string; className: string } {
   const latestBackupNotConfirmed = status.backups.last_success_at !== null
     && (
@@ -174,13 +182,20 @@ function operationalSummary(status: SystemStatus): { level: OperationalStatus; l
     };
   }
 
+  const localAccessReady = localAccessIsReady(status);
   const needsReview =
     status.backups.pending_count > 0 ||
-    status.readiness.blockers.some((blocker) => blocker.status !== 'validated') ||
-    status.preflight.production_checks.some((check) => check.status !== 'validated') ||
+    status.readiness.blockers.some((blocker) => (
+      blocker.status !== 'validated' && !isLocalAccessValidationNoise(blocker.code, localAccessReady)
+    )) ||
+    status.preflight.production_checks.some((check) => (
+      check.status !== 'validated' && !isLocalAccessValidationNoise(check.code, localAccessReady)
+    )) ||
     (status.runtime.pending_migration_count ?? 0) > 0 ||
-    status.preflight.public_routes.some((route) => route.status !== 'validated') ||
-    status.preflight.physical_proofs.some((proof) => proof.status !== 'validated');
+    (!localAccessReady && status.preflight.public_routes.some((route) => route.status !== 'validated')) ||
+    status.preflight.physical_proofs.some((proof) => (
+      proof.status !== 'validated' && !isLocalAccessValidationNoise(proof.code, localAccessReady)
+    ));
 
   if (needsReview) {
     return {

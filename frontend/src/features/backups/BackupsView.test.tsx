@@ -148,6 +148,69 @@ describe('BackupsView', () => {
     expect(screen.queryByText(/falta completar respaldo reciente, validaci.n del recibo o configuraci.n final/i)).not.toBeInTheDocument();
   });
 
+  it('does not downgrade loopback operation because second-PC LAN proofs are still manual', async () => {
+    const status = systemStatusFixture();
+    vi.mocked(apiClient.getSystemStatus).mockResolvedValue({
+      ...status,
+      network: {
+        ...status.network,
+        configured_host: '127.0.0.1',
+        host_type: 'loopback',
+        lan_ready: false,
+        client_url: 'http://127.0.0.1:8081',
+        guidance: 'Operacion local en este equipo.',
+      },
+      readiness: {
+        ...status.readiness,
+        blockers: [
+          {
+            code: 'PENDING_LAN_CLIENT_VALIDATION',
+            label: 'Validar acceso desde una segunda computadora',
+            status: 'pending',
+          },
+        ],
+      },
+      preflight: {
+        ...status.preflight,
+        production_checks: [
+          {
+            code: 'LOCAL_APP_URL_CONFIGURED',
+            label: 'URL local configurada',
+            status: 'validated',
+            detail: 'http://127.0.0.1:8081',
+          },
+          {
+            code: 'LOCAL_ACCESS_CONFIGURED',
+            label: 'Acceso local configurado',
+            status: 'validated',
+            detail: 'Operacion local validada.',
+          },
+        ],
+        public_routes: [
+          {
+            path: '/login',
+            expected: 'Abrir desde otra computadora en la LAN',
+            status: 'manual_required',
+          },
+        ],
+        physical_proofs: [
+          {
+            code: 'LAN_CLIENT_VALIDATION_PROOF',
+            label: 'Prueba desde segunda computadora',
+            required_file: 'lan-client-validation.png',
+            status: 'manual_required',
+            detail: 'Solo aplica cuando se habilita acceso por red LAN.',
+          },
+        ],
+      },
+    });
+
+    renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
+
+    expect(await screen.findByText(/^Todo bien$/i)).toBeInTheDocument();
+    expect(screen.queryByText(/^Requiere revisi.n$/i)).not.toBeInTheDocument();
+  });
+
   it('keeps support details aligned with local single-machine readiness', async () => {
     const status = systemStatusFixture();
     vi.mocked(apiClient.getSystemStatus).mockResolvedValue({
