@@ -101,6 +101,7 @@ export function ReportFiltersPanel({
   rangeError,
 }: ReportFiltersPanelProps) {
   const inferredPreset = useMemo(() => detectPreset(filters), [filters]);
+  const controlsDisabled = loading || exporting;
 
   function handlePresetChange(next: PresetKey) {
     onPresetChange(next);
@@ -141,6 +142,7 @@ export function ReportFiltersPanel({
               value={preset}
               onChange={(event) => handlePresetChange(event.target.value as PresetKey)}
               className="w-40"
+              disabled={controlsDisabled}
             >
               {(Object.keys(PRESET_LABELS) as PresetKey[]).map((key) => (
                 <option key={key} value={key}>
@@ -160,6 +162,7 @@ export function ReportFiltersPanel({
                 value={filters.date_from}
                 onChange={(event) => onChange({ ...filters, date_from: event.target.value })}
                 className="pl-8"
+                disabled={controlsDisabled}
               />
             </div>
           </div>
@@ -174,6 +177,7 @@ export function ReportFiltersPanel({
                 value={filters.date_to}
                 onChange={(event) => onChange({ ...filters, date_to: event.target.value })}
                 className="pl-8"
+                disabled={controlsDisabled}
               />
             </div>
           </div>

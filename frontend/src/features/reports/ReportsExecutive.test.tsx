@@ -91,5 +91,8 @@ describe('ReportsExecutive', () => {
     expect(exportingButtons.length).toBeGreaterThan(0);
     exportingButtons.forEach((button) => expect(button).toBeDisabled());
     expect(screen.getByRole('button', { name: /refrescar ejecutivo/i })).toBeDisabled();
+    expect(screen.getByLabelText(/periodo rapido/i)).toBeDisabled();
+    expect(screen.getByLabelText(/inicio ejecutivo/i)).toBeDisabled();
+    expect(screen.getByLabelText(/fin ejecutivo/i)).toBeDisabled();
   });
 });

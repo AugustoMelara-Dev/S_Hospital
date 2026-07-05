@@ -4638,3 +4638,28 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, facturacion, catalogo, historial, recibos, respaldos, reportes ni usuarios.
 - Este corte reduce confusion operativa al abrir caja y conserva el backend como fuente de verdad para la sesion auditada.
+
+## 191. Fase 8 - Reportes bloquean filtros mientras exporta ejecutivo
+
+Cambio aplicado:
+
+- `ReportFiltersPanel` ahora deshabilita periodo rapido, inicio y fin mientras el reporte ejecutivo esta cargando o exportando.
+- Esto evita que administracion cambie visualmente el rango despues de solicitar un PDF/Excel y antes de recibir el archivo del servidor local.
+- Se amplio la regresion de `ReportsExecutive` con `downloadExecutivePdf` pendiente para confirmar que los filtros quedan bloqueados junto a los botones de exportacion/refresco.
+- No se cambian payloads, permisos de exportacion, nombres de archivo, descarga PDF/Excel, resumen ejecutivo ni contratos API.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- ReportsExecutive.test.tsx -t "shows export progress"` | RED inicial correcto: el selector `Periodo rapido` seguia habilitado durante la exportacion; luego OK: 1 test pasa. |
+| `docker compose exec frontend npm run test -- ReportsExecutive.test.tsx ReportFiltersPanel.test.tsx` | OK: 4 tests pasan. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, facturacion, caja, catalogo, historial, recibos, respaldos ni usuarios.
+- Este corte reduce errores operativos al generar reportes ejecutivos y mantiene el backend como fuente de verdad de los datos exportados.
