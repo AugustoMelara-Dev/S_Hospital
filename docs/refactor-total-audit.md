@@ -5292,3 +5292,25 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte evita que la instalacion local/offline entregue una identidad de producto distinta a S_Hospital.
+
+## 219. Fase 8 - E2E de perfiles valida papel institucional normal
+
+Cambio aplicado:
+
+- `frontend/e2e/print-profiles.spec.ts` deja de esperar Ticket 80/58 como opciones visibles del flujo normal.
+- El spec mantiene perfiles termicos en el mock y confirma que la UI normal solo expone Carta, Media carta y A5.
+- El mismo E2E ahora valida copy operativo actual de margenes automaticos y ausencia de terminos tecnicos como fuente/layout o permisos internos.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec -e PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser frontend npx playwright test e2e/print-profiles.spec.ts --workers=1 --reporter=list` | RED inicial correcto: esperaba `Ticket 80 mm`; luego OK con 1 test. |
+| `docker compose exec frontend npm run test -- InstitutionalReceiptSettingsView -t "keeps thermal ticket compatibility"` | OK: 1 test focal pasa. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte alinea la prueba navegador con la regla actual: el recibo principal se configura en carta/media carta/A5; tickets son compatibilidad secundaria fuera del flujo normal.

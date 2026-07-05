@@ -34,9 +34,11 @@ test.describe('Print profiles - normal flow', () => {
     await page.getByRole('tab', { name: /papel y copias/i }).click();
 
     await expect(page.getByRole('radiogroup', { name: /tipo de papel del recibo/i })).toBeVisible();
-    for (const paper of [/^Carta\b/i, /^Media carta\b/i, /^A5\b/i, /^Ticket 80 mm\b/i, /^Ticket 58 mm\b/i]) {
+    for (const paper of [/^Carta\b/i, /^Media carta\b/i, /^A5\b/i]) {
       await expect(page.getByRole('radio', { name: paper })).toBeVisible();
     }
+    await expect(page.getByRole('radio', { name: /^Ticket 80 mm\b/i })).toHaveCount(0);
+    await expect(page.getByRole('radio', { name: /^Ticket 58 mm\b/i })).toHaveCount(0);
 
     await expect(page.getByLabel(/^copias$/i)).toBeVisible();
     await expect(page.getByLabel(/mostrar logo autorizado/i)).toBeVisible();
@@ -44,7 +46,8 @@ test.describe('Print profiles - normal flow', () => {
     await expect(page.getByRole('button', { name: /imprimir prueba/i })).toBeVisible();
     await expect(page.getByRole('button', { name: /guardar perfil/i })).toBeVisible();
     await expect(page.getByText(/vista previa/i)).toBeVisible();
-    await expect(page.getByText(/fuente y el layout se calculan autom/i)).toBeVisible();
+    await expect(page.getByText(/m.rgenes se calculan autom.ticamente/i)).toBeVisible();
+    await expect(page.getByText(/fuente|layout/i)).toHaveCount(0);
 
     for (const label of [
       'Ancho mm',
@@ -60,7 +63,7 @@ test.describe('Print profiles - normal flow', () => {
     }
 
     await expect(page.getByText('receipt_settings.advanced')).toHaveCount(0);
-    await expect(page.getByText(/ajustes avanzados restringidos/i)).toBeVisible();
+    await expect(page.getByText(/ajustes avanzados restringidos|modo soporte t.cnico/i)).toHaveCount(0);
   });
 });
 
