@@ -5480,3 +5480,26 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte evita falsos rechazos al corregir motivos de anulacion o reversa despues de un fallo, sin debilitar la deduplicacion de intentos identicos.
+
+## 227. Fase 8 - Generacion de recibo renueva idempotencia si cambia la factura
+
+Cambio aplicado:
+
+- La generacion manual de recibo institucional faltante conserva la misma `Idempotency-Key` para reintentar la misma factura fallida.
+- Si el operador intenta generar el recibo de otra factura despues de un fallo, el frontend genera una clave nueva.
+- El `store` del recibo y la apertura del PDF siguen compartiendo la misma clave dentro del mismo intento exitoso.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- InvoiceHistoryView.test.tsx -t "renews receipt generation idempotency key"` | RED inicial correcto: la segunda factura reutilizaba `history-generate-receipt-attempt-1`; luego OK. |
+| `docker compose exec frontend npm run test -- InvoiceHistoryView.test.tsx` | OK: 39 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `docker compose exec frontend npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte reduce bloqueos al recuperar recibos institucionales faltantes desde Historial, manteniendo deduplicacion para reintentos de la misma factura.

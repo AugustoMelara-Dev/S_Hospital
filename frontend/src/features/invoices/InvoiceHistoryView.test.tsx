@@ -991,6 +991,67 @@ describe('InvoiceHistoryView', () => {
     }));
   });
 
+  it('renews receipt generation idempotency key when a failed invoice changes', async () => {
+    vi.spyOn(apiBase, 'createClientIdempotencyKey')
+      .mockReturnValueOnce('history-generate-receipt-attempt-1')
+      .mockReturnValueOnce('history-generate-receipt-attempt-2');
+    const firstPaid = invoiceFixture({
+      id: 47,
+      invoice_number: '000-001-01-00000047',
+      patient_name: 'Paciente Generacion Fallida',
+      status: 'paid',
+      paid_amount: '17.25',
+      balance_due: '0.00',
+      institutional_receipt: null,
+    });
+    const secondPaid = invoiceFixture({
+      id: 48,
+      invoice_number: '000-001-01-00000048',
+      patient_name: 'Paciente Generacion Nueva',
+      status: 'paid',
+      paid_amount: '17.25',
+      balance_due: '0.00',
+      institutional_receipt: null,
+    });
+    const receipt = institutionalReceiptRecord({ id: 148, invoice_id: 48, receipt_number_full: 'REC-A-00000148' });
+    const onStatus = vi.fn();
+    const store = vi.spyOn(institutionalReceipts, 'store')
+      .mockRejectedValueOnce(new Error('store failed'))
+      .mockResolvedValueOnce(receipt);
+    vi.spyOn(apiClient, 'getInstitutionalReceiptPdf')
+      .mockResolvedValue(new Blob(['%PDF-generated'], { type: 'application/pdf' }));
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [firstPaid, secondPaid],
+      meta: { current_page: 1, per_page: 10, total: 2 },
+    });
+    vi.spyOn(apiClient, 'getInvoice').mockResolvedValue({
+      ...secondPaid,
+      institutional_receipt: institutionalReceiptFixture({ id: 148, receipt_number_full: 'REC-A-00000148' }),
+    });
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={onStatus} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente Generacion Fallida')).toBeInTheDocument());
+    await openInvoiceMenu(firstPaid.invoice_number);
+    fireEvent.click(await screen.findByRole('menuitem', { name: /Generar PDF/i }));
+
+    await waitFor(() => expect(store).toHaveBeenCalledWith({ invoice_id: 47 }, {
+      idempotencyKey: 'history-generate-receipt-attempt-1',
+    }));
+    await waitFor(() => expect(onStatus).toHaveBeenCalledWith('store failed'));
+
+    await openInvoiceMenu(secondPaid.invoice_number);
+    fireEvent.click(await screen.findByRole('menuitem', { name: /Generar PDF/i }));
+
+    await waitFor(() => expect(store).toHaveBeenLastCalledWith({ invoice_id: 48 }, {
+      idempotencyKey: 'history-generate-receipt-attempt-2',
+    }));
+    await waitFor(() => expect(apiClient.getInstitutionalReceiptPdf).toHaveBeenCalledWith(148, 'Emisión manual de recibo faltante.', {
+      idempotencyKey: 'history-generate-receipt-attempt-2',
+    }));
+  });
+
   it('does not offer legacy receipt actions when the cashier can generate the missing institutional receipt', async () => {
     const paid = invoiceFixture({
       id: 46,

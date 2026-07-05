@@ -26,7 +26,6 @@ import { downloadBlob, openBlobInNewTab } from '../../lib/download';
 import { formatLempirasUIFromCents, parseCents } from '../../lib/moneyCents';
 import { formatLocalizedDateTime } from '../../lib/format/formatDate';
 import { invalidateBillingQueries } from '@/lib/queryInvalidation';
-import { createClientIdempotencyKey } from '../../lib/api/base';
 import { payloadScopedIdempotencyKey, resetPayloadScopedIdempotencyKey } from '../../lib/api/idempotency';
 import { InvoiceHistoryFilters } from './history/InvoiceHistoryFilters';
 import { InvoiceHistoryHeader } from './history/InvoiceHistoryHeader';
@@ -76,6 +75,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   const reprintIdempotencyKeyRef = useRef<string | null>(null);
   const reprintIdempotencySignatureRef = useRef<string | null>(null);
   const receiptGenerationIdempotencyKeyRef = useRef<string | null>(null);
+  const receiptGenerationIdempotencySignatureRef = useRef<string | null>(null);
   const actionRequestRef = useRef(0);
   const receiptRequestRef = useRef(0);
 
@@ -226,7 +226,11 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     setLoadingActionInvoiceId(invoiceId);
     try {
       generatingInstitutionalReceiptRef.current = true;
-      const idempotencyKey = receiptGenerationIdempotencyKeyRef.current ??= createClientIdempotencyKey();
+      const idempotencyKey = payloadScopedIdempotencyKey(
+        receiptGenerationIdempotencyKeyRef,
+        receiptGenerationIdempotencySignatureRef,
+        { invoiceId },
+      );
       const receipt = await institutionalReceipts.store({ invoice_id: invoiceId }, { idempotencyKey });
       queryClient.invalidateQueries({ queryKey: ['audit'] });
       await invalidateBillingQueries(queryClient);
@@ -234,7 +238,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       const invoice = await apiClient.getInvoice(invoiceId);
       setSelectedInvoice(invoice);
       await openInstitutionalReceiptPdf(receipt, 'Emisión manual de recibo faltante.', idempotencyKey);
-      receiptGenerationIdempotencyKeyRef.current = null;
+      resetPayloadScopedIdempotencyKey(receiptGenerationIdempotencyKeyRef, receiptGenerationIdempotencySignatureRef);
       onStatus(`Recibo institucional ${receipt.receipt_number_full} generado exitosamente.`);
     } catch (error) {
       onStatus(userSafeErrorMessage(error, 'No se pudo generar el recibo institucional.'));
