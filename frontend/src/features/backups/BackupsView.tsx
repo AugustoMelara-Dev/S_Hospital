@@ -288,6 +288,11 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
     ?? lastSuccessBackup?.created_at
     ?? null;
   const operationalStatus = systemStatus ? operationalSummary(systemStatus) : null;
+  const visibleReadinessBlockers = systemStatus
+    ? systemStatus.readiness.blockers.filter((blocker) => (
+      !isLocalAccessValidationNoise(blocker.code, localAccessIsReady(systemStatus))
+    ))
+    : [];
   const latestBackupNotConfirmed = systemStatus?.backups.last_success_at
     ? systemStatus.backups.last_success_file_exists === false
       || systemStatus.backups.last_success_checksum_matches === false
@@ -598,9 +603,9 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
           </div>
         ) : null}
 
-        {systemStatus?.readiness.blockers.length ? (
+        {visibleReadinessBlockers.length ? (
           <Alert title="Pendientes antes de operar">
-            {systemStatus.readiness.blockers.map((blocker) => friendlyReadinessBlocker(blocker.code, blocker.label)).join(' - ')}
+            {visibleReadinessBlockers.map((blocker) => friendlyReadinessBlocker(blocker.code, blocker.label)).join(' - ')}
           </Alert>
         ) : null}
 

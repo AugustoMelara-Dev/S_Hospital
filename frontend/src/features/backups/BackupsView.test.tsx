@@ -122,9 +122,8 @@ describe('BackupsView', () => {
     const pendingAlert = pendingTitle.closest('[data-slot="alert"]');
 
     expect(pendingAlert).not.toBeNull();
-    expect(pendingAlert).toHaveTextContent(/acceso local en este equipo/i);
     expect(pendingAlert).toHaveTextContent(/recibo institucional carta, media carta o A5/i);
-    expect(pendingAlert).not.toHaveTextContent(/segunda computadora|concurrencia|80mm|58mm/i);
+    expect(pendingAlert).not.toHaveTextContent(/acceso local|segunda computadora|concurrencia|80mm|58mm/i);
   });
 
   it('does not downgrade local single-machine readiness only because LAN is not configured', async () => {
@@ -209,6 +208,7 @@ describe('BackupsView', () => {
 
     expect(await screen.findByText(/^Todo bien$/i)).toBeInTheDocument();
     expect(screen.queryByText(/^Requiere revisi.n$/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/pendientes antes de operar/i)).not.toBeInTheDocument();
   });
 
   it('keeps support details aligned with local single-machine readiness', async () => {
