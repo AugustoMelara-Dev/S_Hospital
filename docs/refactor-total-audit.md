@@ -5744,3 +5744,23 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte mejora la confiabilidad del gate de usuarios para la entrega monocomputadora: las advertencias de test ya no ocultan problemas reales en el flujo admin/cajero.
+
+## 237. Fase 13/22 - QA reglas operativas sin advertencia act
+
+Cambio aplicado:
+
+- El test de `OperationalRulesView` que guarda reglas operativas ahora espera el estado visible de guardado antes de terminar.
+- El paquete de pruebas de settings y configuracion de recibos deja de emitir la advertencia `An update to OperationalRulesView inside a test was not wrapped in act(...)`.
+- No se tocaron componentes de produccion, contratos API, endpoints, permisos ni dependencias.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- OperationalRulesView.test.tsx -t "submits the toggled flags" --run` | OK: 1 test pasa sin advertencia `act(...)`. |
+| `docker compose exec frontend npm run test -- src/features/settings src/features/receipt-settings --run` | OK: 41 tests pasan sin advertencia `act(...)`. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte limpia otro warning de QA en configuracion operativa, reduciendo ruido antes del cierre final de Vitest.

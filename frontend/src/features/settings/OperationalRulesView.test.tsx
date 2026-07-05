@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { OperationalRulesView } from './OperationalRulesView';
 import { apiClient, type FiscalSettings, type OperationalSettings } from '@/lib/api';
@@ -59,8 +59,9 @@ describe('OperationalRulesView', () => {
 
   it('submits the toggled flags', async () => {
     const updateOperationalSettings = vi.mocked(apiClient.updateOperationalSettings);
+    const onStatus = vi.fn();
 
-    render(<OperationalRulesView canEdit onStatus={vi.fn()} />);
+    render(<OperationalRulesView canEdit onStatus={onStatus} />);
 
     const scanner = await screen.findByLabelText(/scanner/i);
     fireEvent.click(scanner);
@@ -72,6 +73,7 @@ describe('OperationalRulesView', () => {
       partial_payments_enabled: false,
     });
     expect(apiClient.updateFiscalSettings).not.toHaveBeenCalled();
+    await waitFor(() => expect(onStatus).toHaveBeenCalledWith('Reglas operativas guardadas.'));
   });
 
   it('disables inputs without edit permission', async () => {
