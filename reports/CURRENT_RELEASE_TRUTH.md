@@ -14,9 +14,11 @@ Esta seccion corrige evidencia obsoleta sin declarar produccion lista.
 - `composer validate/audit` ya no es un bloqueante cuando se ejecuta en el contenedor backend soportado.
 - `docker compose exec frontend npm audit --audit-level=high --json`: PASO, 0 vulnerabilidades totales.
 - `npm audit` ya no es un bloqueante cuando se ejecuta en el contenedor frontend soportado.
+- `docker compose exec frontend npm run typecheck`, `npm run lint` y `npm run build`: PASO el 2026-07-05.
+- Gate backend enfocado del nucleo (`InvoiceCreationTest`, `CashPaymentsReceiptTest`, `InvoiceHistoryReprintVoidTest`, `InvoiceReverseTest`, `ServiceCatalogTest`, `BackupWorkflowTest`, `UserManagementTest`, `ReportsTest`, `Reports/TodayReportTest`): PASO, 254 tests / 2032 aserciones.
 - `npm.cmd run e2e` ya no falla por password seed; ahora falla temprano por preflight si falta `backend/vendor/autoload.php` en el host. El camino containerizado de navegador tiene evidencia fresca en `docs/testing-report.md`.
 - `qa/production-audit/button-smoke-report.json` fue regenerado el 2026-07-05 con 79 resultados `passed`.
-- El estado global sigue siendo `NOT_READY`: faltan `npm audit` vigente, cierre del worktree, evidencia fisica LAN/impresora/restore/backup worker, configuracion production real, admin real y paquete offline final.
+- El estado global sigue siendo `NOT_READY`: faltan cierre del worktree, E2E host o equivalente final, evidencia fisica LAN/impresora/restore/backup worker, configuracion production real, admin real y paquete offline final.
 
 ## 1. HEAD actual
 
@@ -118,7 +120,7 @@ Motivo:
 - No se puede declarar `PRODUCTION_READY`: faltan evidencias fisicas/finales requeridas.
 - No se puede declarar `PRODUCTION_CANDIDATE` limpio: `npm run e2e` host falla por preflight de dependencias Composer locales y el worktree esta sucio.
 - No se puede declarar `READY_FOR_REAL_LAN_OFFLINE_INSTALLATION_TEST` vigente: ese estado requiere gates actuales cerrados; el E2E actual falla.
-- El nucleo funcional tiene evidencia fuerte por backend full test, frontend tests, build, Pint y PHPStan pasando, pero el release actual no esta cerrado.
+- El nucleo funcional tiene evidencia fuerte por backend full test historico, backend gate enfocado fresco, frontend tests, build, Pint y PHPStan pasando, pero el release actual no esta cerrado.
 
 ## 9. Bloqueantes actuales
 

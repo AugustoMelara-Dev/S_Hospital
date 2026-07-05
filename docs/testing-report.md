@@ -73,6 +73,10 @@ print validation.
 | 2026-07-05 | `docker compose exec backend composer validate --no-interaction` | PASS | Backend Composer manifest is valid inside the supported backend container. |
 | 2026-07-05 | `docker compose exec backend composer audit --no-interaction` | PASS | No Composer security vulnerability advisories found. |
 | 2026-07-05 | `docker compose exec frontend npm audit --audit-level=high --json` | PASS | npm audit reports 0 total vulnerabilities in the supported frontend container. |
+| 2026-07-05 | `docker compose exec frontend npm run typecheck` | PASS | Fresh frontend TypeScript gate after QA container changes. |
+| 2026-07-05 | `docker compose exec frontend npm run lint` | PASS | Fresh frontend lint gate after QA container changes. |
+| 2026-07-05 | `docker compose exec frontend npm run build` | PASS | Fresh production build; largest chunks remain `vendor` 398.43 kB gzip 121.82 kB and `charts` 357.04 kB gzip 104.93 kB. |
+| 2026-07-05 | `docker compose exec backend php artisan test tests/Feature/InvoiceCreationTest.php tests/Feature/CashPaymentsReceiptTest.php tests/Feature/InvoiceHistoryReprintVoidTest.php tests/Feature/InvoiceReverseTest.php tests/Feature/ServiceCatalogTest.php tests/Feature/BackupWorkflowTest.php tests/Feature/UserManagementTest.php tests/Feature/ReportsTest.php tests/Feature/Reports/TodayReportTest.php` | PASS, 254 tests / 2032 assertions | Focused backend gate for billing, cashbox, receipts, history/void/reverse, catalog, backups, users, reports and today's report. |
 
 Recharts emits a known Playwright/Vite console warning about chart container
 dimensions in the mocked browser run. It does not currently fail the focused
@@ -80,7 +84,8 @@ gates, but it remains a visual/performance review item for final QA.
 
 A fresh 2026-07-05 containerized Vitest run no longer emits the React
 `act(...)` warnings or TanStack Query undefined-data warnings that were tracked
-as test hygiene items in earlier runs.
+as test hygiene items in earlier runs. The same date now has fresh frontend
+typecheck/lint/build plus a focused backend business-critical test gate.
 
 ## Focused E2E Coverage Added
 

@@ -5940,3 +5940,25 @@ Decision:
 
 - `npm audit` deja de ser bloqueante en el entorno frontend containerizado.
 - El proyecto sigue `NOT_READY`: todavia faltan E2E host o equivalente final, cierre del worktree, evidencias fisicas y paquete offline final.
+
+## 246. Fase 13/30 - Gate QA final enfocado del nucleo hospitalario
+
+Cambio aplicado:
+
+- Se ejecuto un gate frontend fresco en Docker: TypeScript, lint y build de produccion.
+- Se ejecuto un gate backend enfocado en los modulos obligatorios monocomputadora: facturacion, caja/cobros, recibos, historial/reimpresion/anulacion/reverso, catalogo, respaldos, usuarios y reportes.
+- No se tocaron archivos de aplicacion, dependencias, lockfiles, contratos API, migraciones ni permisos.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `docker compose exec frontend npm run build` | OK. |
+| `docker compose exec backend php artisan test tests/Feature/InvoiceCreationTest.php tests/Feature/CashPaymentsReceiptTest.php tests/Feature/InvoiceHistoryReprintVoidTest.php tests/Feature/InvoiceReverseTest.php tests/Feature/ServiceCatalogTest.php tests/Feature/BackupWorkflowTest.php tests/Feature/UserManagementTest.php tests/Feature/ReportsTest.php tests/Feature/Reports/TodayReportTest.php` | OK: 254 tests / 2032 aserciones. |
+
+Decision:
+
+- Este corte refuerza la evidencia del nucleo operativo real: nueva factura, cobrar, imprimir/reimprimir, anular/reversar, cerrar caja con diferencia, catalogo/eritropoyetina, respaldos, usuarios basicos y reportes.
+- El proyecto sigue `NOT_READY`: faltan E2E host o equivalente final, cierre del worktree, evidencias fisicas LAN/impresora/restore/worker y paquete offline final.
