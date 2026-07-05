@@ -454,8 +454,11 @@ class InvoiceCreationTest extends TestCase
             ])
             ->assertCreated()
             ->assertJsonPath('data.items.0.unit_price', '25.00')
+            ->assertJsonPath('data.items.0.tax_rate', '0.00')
+            ->assertJsonPath('data.items.0.tax_amount', '0.00')
             ->assertJsonPath('data.items.0.special_rule_applied', false)
-            ->assertJsonPath('data.total', '28.75');
+            ->assertJsonPath('data.tax_amount', '0.00')
+            ->assertJsonPath('data.total', '25.00');
     }
 
     public function test_erythropoietin_with_dialysis_prescription_is_free_and_snapshotted(): void

@@ -437,6 +437,10 @@ export function ServiceSheet({
                     shouldDirty: true,
                     shouldValidate: true,
                   });
+                  setValue('taxable', false, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  });
                 }
               }}
             >

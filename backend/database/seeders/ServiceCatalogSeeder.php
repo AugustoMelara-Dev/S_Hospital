@@ -74,6 +74,7 @@ class ServiceCatalogSeeder extends Seeder
                     })
                     ->firstOrNew();
 
+                $specialRuleCode = $this->specialRuleCode($row);
                 $serviceData = [
                     'source_key' => $serviceSourceKey,
                     'name' => $row['servicio'],
@@ -82,9 +83,11 @@ class ServiceCatalogSeeder extends Seeder
                     'slug' => $serviceSlug,
                     'source_hash' => $this->serviceSourceHash($row),
                     'price' => $row['precio_lps'],
-                    'taxable' => $this->truthy($row['taxable']),
+                    'taxable' => $specialRuleCode === Service::ERYTHROPOIETIN_RULE
+                        ? false
+                        : $this->truthy($row['taxable']),
                     'active' => true,
-                    'special_rule_code' => $this->specialRuleCode($row),
+                    'special_rule_code' => $specialRuleCode,
                 ];
 
                 if (isset(self::VALIDATION_CODES[$serviceSourceKey])) {

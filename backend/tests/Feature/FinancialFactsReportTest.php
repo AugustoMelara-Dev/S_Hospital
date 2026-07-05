@@ -43,9 +43,9 @@ class FinancialFactsReportTest extends TestCase
         $this->actingAs($this->supervisor())
             ->getJson('/api/reports/daily?date='.now()->toDateString())
             ->assertOk()
-            ->assertJsonPath('data.total_billed', '57.50')
+            ->assertJsonPath('data.total_billed', '53.75')
             ->assertJsonPath('data.total_collected', '22.25')
-            ->assertJsonPath('data.total_pending', '35.25')
+            ->assertJsonPath('data.total_pending', '31.50')
             ->assertJsonPath('data.total_partial', '11.50')
             ->assertJsonPath('data.total_voided', '17.25')
             ->assertJsonPath('data.payment_count', 2)
@@ -68,7 +68,7 @@ class FinancialFactsReportTest extends TestCase
         $this->assertDatabaseHas('invoices', [
             'id' => $issuedUnpaidInvoice,
             'status' => Invoice::STATUS_ISSUED,
-            'balance_due' => '28.75',
+            'balance_due' => '25.00',
         ]);
     }
 
@@ -84,7 +84,7 @@ class FinancialFactsReportTest extends TestCase
 
         $this->payInvoice($cashier, $paidInvoice, $sessionId, Payment::METHOD_CASH, '17.25');
         $this->payInvoice($cashier, $partialInvoice, $sessionId, Payment::METHOD_OTHER, '1.50');
-        $this->payInvoice($cashier, $voidInvoice, $sessionId, Payment::METHOD_CARD, '28.75');
+        $this->payInvoice($cashier, $voidInvoice, $sessionId, Payment::METHOD_CARD, '25.00');
 
         Invoice::query()->whereKey($voidInvoice)->update([
             'status' => Invoice::STATUS_VOID,
@@ -105,7 +105,7 @@ class FinancialFactsReportTest extends TestCase
             ->assertJsonPath('data.total_collected', '18.75')
             ->assertJsonPath('data.total_pending', '10.00')
             ->assertJsonPath('data.total_partial', '11.50')
-            ->assertJsonPath('data.total_voided', '28.75')
+            ->assertJsonPath('data.total_voided', '25.00')
             ->assertJsonPath('data.payments_by_method.cash', '17.25')
             ->assertJsonPath('data.payments_by_method.other', '1.50')
             ->assertJsonPath('data.payments_by_method.card', '0.00')
@@ -172,9 +172,9 @@ class FinancialFactsReportTest extends TestCase
         $this->actingAs($this->admin())
             ->getJson("/api/reports/income?{$query}")
             ->assertOk()
-            ->assertJsonPath('data.total_billed', '46.00')
+            ->assertJsonPath('data.total_billed', '42.25')
             ->assertJsonPath('data.total_collected', '17.25')
-            ->assertJsonPath('data.total_pending', '28.75')
+            ->assertJsonPath('data.total_pending', '25.00')
             ->assertJsonPath('data.invoice_count', 2)
             ->assertJsonPath('data.payment_count', 1);
     }

@@ -5620,3 +5620,47 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte corrige la configuracion operativa de impresion: el hospital elige papel y el sistema resuelve internamente el perfil activo sin exponer controles tecnicos.
+
+## 233. Fase 5/8 - Eritropoyetina conserva total fijo L.25
+
+Cambio aplicado:
+
+- El calculo backend trata cualquier servicio con regla `ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION` como no gravable, incluso si un dato historico o importado lo marcaba con ISV.
+- La eritropoyetina sin receta se factura a L.25.00 total; con receta de dialisis sigue quedando gratis y auditada.
+- El seeder del catalogo normaliza la eritropoyetina inicial como no gravable aunque el CSV heredado indique `taxable=si`.
+- El formulario de catalogo apaga `Aplica ISV` al seleccionar la regla especial y envia `taxable: false`.
+- Reportes, caja y recibos ajustan sus fixtures al nuevo total fijo, sin recalcular facturas historicas existentes.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter=CalculateInvoiceTotalsActionTest::test_erythropoietin_fixed_price_is_not_taxed_without_dialysis_prescription` | RED inicial correcto: calculaba ISV L.3.75; luego OK. |
+| `docker compose exec backend php artisan test --filter=InvoiceDialysisPrescriptionTest::test_erythropoietin_is_charged_when_dialysis_flag_absent` | RED inicial correcto: exponia tasa 15%; luego OK. |
+| `docker compose exec frontend npm run test -- ServiceSheet.test.tsx -t "normalizes erythropoietin" --run` | RED inicial correcto: el checkbox de ISV seguia marcado; luego OK. |
+| `docker compose exec backend php artisan test --filter=ServiceCatalogTest::test_service_catalog_seeder_loads_expected_categories_services_and_special_rule` | RED inicial correcto: el seeder dejaba EPO gravable; luego OK. |
+| `docker compose exec backend php artisan test --filter=CalculateInvoiceTotalsActionTest` | OK: 12 tests pasan. |
+| `docker compose exec backend php artisan test --filter=InvoiceCreationTest` | OK: 32 tests pasan. |
+| `docker compose exec backend php artisan test --filter=InvoiceDialysisPrescriptionTest` | OK: 5 tests pasan. |
+| `docker compose exec backend php artisan test --filter=ServiceCatalogTest` | OK: 35 tests pasan. |
+| `docker compose exec backend php artisan test --filter=FinancialFactsReportTest` | OK: 5 tests pasan. |
+| `docker compose exec backend php artisan test --filter=CashPaymentsReceiptTest` | OK: 32 tests pasan. |
+| `docker compose exec backend php artisan test --filter=ReportsTest` | OK: 53 tests pasan. |
+| `docker compose exec backend php artisan test --filter=ExecutiveReportTest` | OK: 11 tests pasan. |
+| `docker compose exec backend php artisan test --filter=TodayReportTest` | OK: 9 tests pasan. |
+| `docker compose exec frontend npm run test -- src/features/catalog --run` | OK: 50 tests pasan. |
+| `docker compose exec backend php artisan test` | Primer intento fallo por `ReportMoneyArchitectureTest`: `ExecutiveExcelExportService` contenia casts `(float)` heredados. Corregido; segundo intento OK: 793 tests pasan, 13 omitidos. |
+| `docker compose exec backend php artisan test --filter=ReportMoneyArchitectureTest` | OK: 1 test pasa, 106 aserciones. |
+| `docker compose exec backend php artisan test --filter=ExecutiveExcelExportTest` | OK: 5 tests pasan, 64 aserciones. |
+| `docker compose exec backend vendor/bin/pint --test` | OK: 429 archivos. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M` | OK: sin errores. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `docker compose exec frontend npm run test -- --run` | OK: 735 tests pasan; conserva advertencias `act(...)` preexistentes en tests frontend y un aviso de query mock indefinido. |
+| `docker compose exec frontend npm run build` | OK; conserva aviso informativo de tiempos de plugin de Vite/Rolldown. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte blinda una regla fiscal/operativa critica: el medicamento cuesta L.25 total, no L.25 mas ISV, y la receta de dialisis mantiene el beneficio de L.0 con permiso y auditoria.
+- Se elimino el cast `(float)` heredado del exportador Excel ejecutivo porque los reportes de cierre deben mantenerse sobre helpers cent-based y pasar el guard arquitectonico.

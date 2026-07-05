@@ -129,7 +129,7 @@ class ReportsTest extends TestCase
 
         $this->payInvoice($cashier, $cashInvoice, $sessionId, Payment::METHOD_CASH, '17.25');
         $this->payInvoice($cashier, $transferInvoice, $sessionId, Payment::METHOD_TRANSFER, '5.00');
-        $this->payInvoice($cashier, $voidInvoice, $sessionId, Payment::METHOD_CARD, '28.75');
+        $this->payInvoice($cashier, $voidInvoice, $sessionId, Payment::METHOD_CARD, '25.00');
 
         Invoice::query()->whereKey($voidInvoice)->update([
             'status' => Invoice::STATUS_VOID,
@@ -192,9 +192,9 @@ class ReportsTest extends TestCase
             ->getJson('/api/reports/monthly?month='.$dateOne->format('Y-m'))
             ->assertOk()
             ->assertJsonPath('data.month', $dateOne->format('Y-m'))
-            ->assertJsonPath('data.total_billed', '57.50')
+            ->assertJsonPath('data.total_billed', '53.75')
             ->assertJsonPath('data.total_collected', '22.25')
-            ->assertJsonPath('data.total_pending', '35.25')
+            ->assertJsonPath('data.total_pending', '31.50')
             ->assertJsonPath('data.total_partial', '11.50')
             ->assertJsonPath('data.total_voided', '17.25')
             ->assertJsonPath('data.payment_count', 2)
@@ -210,9 +210,9 @@ class ReportsTest extends TestCase
             ->assertJsonPath('data.daily_totals.0.total_billed', '17.25')
             ->assertJsonPath('data.daily_totals.0.total_collected', '17.25')
             ->assertJsonPath('data.daily_totals.1.date', $dateTwo->toDateString())
-            ->assertJsonPath('data.daily_totals.1.total_billed', '40.25')
+            ->assertJsonPath('data.daily_totals.1.total_billed', '36.50')
             ->assertJsonPath('data.daily_totals.1.total_collected', '5.00')
-            ->assertJsonPath('data.daily_totals.1.total_pending', '35.25')
+            ->assertJsonPath('data.daily_totals.1.total_pending', '31.50')
             ->assertJsonPath('data.daily_totals.1.total_voided', '17.25');
 
         $this->actingAs($this->admin())
@@ -658,7 +658,7 @@ class ReportsTest extends TestCase
         $laboratoryId = Service::query()->where('name', 'Glucosa')->firstOrFail()->category_id;
 
         $this->payInvoice($cashier, $glucoseInvoice, $sessionId, Payment::METHOD_CASH, '17.25');
-        $this->payInvoice($otherCashier, $erythropoietinInvoice, $otherSessionId, Payment::METHOD_CARD, '28.75');
+        $this->payInvoice($otherCashier, $erythropoietinInvoice, $otherSessionId, Payment::METHOD_CARD, '25.00');
 
         $filters = http_build_query([
             'date_from' => now()->toDateString(),
@@ -824,7 +824,7 @@ class ReportsTest extends TestCase
         $otherInvoice = $this->createInvoice($otherCashier, 'Eritropoyetina');
 
         $this->payInvoice($viewer, $viewerInvoice, $viewerSessionId, Payment::METHOD_CASH, '17.25');
-        $this->payInvoice($otherCashier, $otherInvoice, $otherSessionId, Payment::METHOD_CARD, '28.75');
+        $this->payInvoice($otherCashier, $otherInvoice, $otherSessionId, Payment::METHOD_CARD, '25.00');
 
         $query = 'date_from='.now()->toDateString().'&date_to='.now()->toDateString();
 
@@ -878,7 +878,7 @@ class ReportsTest extends TestCase
             ->assertCreated()
             ->json('data.id');
 
-        $this->payInvoice($cashier, $invoiceId, $sessionId, Payment::METHOD_CASH, '46.00');
+        $this->payInvoice($cashier, $invoiceId, $sessionId, Payment::METHOD_CASH, '42.25');
 
         $filters = http_build_query([
             'date_from' => now()->toDateString(),
@@ -982,13 +982,13 @@ class ReportsTest extends TestCase
             $this->assertSame('Monto', $sheet->getCell('C5')->getValue());
             $this->assertSame('Fuente', $sheet->getCell('D5')->getValue());
             $this->assertSame('Facturado', $sheet->getCell('B6')->getValue());
-            $this->assertSame(57.50, $sheet->getCell('C6')->getValue());
+            $this->assertSame(53.75, $sheet->getCell('C6')->getValue());
             $this->assertSame('Facturas no anuladas emitidas en el rango', $sheet->getCell('D6')->getValue());
             $this->assertSame('Cobrado', $sheet->getCell('B7')->getValue());
             $this->assertSame(22.25, $sheet->getCell('C7')->getValue());
             $this->assertSame('Pagos publicados no anulados en el rango', $sheet->getCell('D7')->getValue());
             $this->assertSame('Pendiente', $sheet->getCell('B8')->getValue());
-            $this->assertSame(35.25, $sheet->getCell('C8')->getValue());
+            $this->assertSame(31.50, $sheet->getCell('C8')->getValue());
             $this->assertSame('Saldo actual de facturas emitidas o parciales', $sheet->getCell('D8')->getValue());
             $this->assertSame('Parcial', $sheet->getCell('B9')->getValue());
             $this->assertSame(11.50, $sheet->getCell('C9')->getValue());
@@ -1453,7 +1453,7 @@ class ReportsTest extends TestCase
 
         $this->payInvoice($cashier, $cashInvoice, $sessionId, Payment::METHOD_CASH, '17.25');
         $this->payInvoice($cashier, $cardInvoice, $sessionId, Payment::METHOD_CARD, '11.50');
-        $this->payInvoice($cashier, $voidInvoice, $sessionId, Payment::METHOD_OTHER, '28.75');
+        $this->payInvoice($cashier, $voidInvoice, $sessionId, Payment::METHOD_OTHER, '25.00');
 
         Invoice::query()->whereKey($voidInvoice)->update([
             'status' => Invoice::STATUS_VOID,
@@ -1566,9 +1566,9 @@ class ReportsTest extends TestCase
             ->assertJsonPath('data.payments_total', '22.25')
             ->assertJsonPath('data.expected_cash_amount', '517.25')
             ->assertJsonPath('data.pending_invoice_count', 1)
-            ->assertJsonPath('data.pending_amount', '23.75')
+            ->assertJsonPath('data.pending_amount', '20.00')
             ->assertJsonPath('data.payments.1.invoice.status', Invoice::STATUS_PARTIAL)
-            ->assertJsonPath('data.payments.1.invoice.balance_due', '23.75');
+            ->assertJsonPath('data.payments.1.invoice.balance_due', '20.00');
     }
 
     public function test_cash_session_export_allows_cashier_scoped_permission_only_for_own_session(): void
@@ -1582,7 +1582,7 @@ class ReportsTest extends TestCase
         $otherInvoiceId = $this->createInvoice($otherCashier, 'Eritropoyetina');
 
         $this->payInvoice($cashier, $invoiceId, $sessionId, Payment::METHOD_CASH, '17.25');
-        $this->payInvoice($otherCashier, $otherInvoiceId, $otherSessionId, Payment::METHOD_CARD, '28.75');
+        $this->payInvoice($otherCashier, $otherInvoiceId, $otherSessionId, Payment::METHOD_CARD, '25.00');
 
         $this->grantPermissions($cashier,
             'reports.cash_session.view',
@@ -1877,13 +1877,13 @@ class ReportsTest extends TestCase
         $this->assertIsString($capturedHtml);
         $this->assertStringContainsString('Lectura Financiera del Dia', $capturedHtml);
         $this->assertStringContainsString('Facturado', $capturedHtml);
-        $this->assertStringContainsString('L. 57.50', $capturedHtml);
+        $this->assertStringContainsString('L. 53.75', $capturedHtml);
         $this->assertStringContainsString('Facturas no anuladas emitidas en el dia', $capturedHtml);
         $this->assertStringContainsString('Cobrado', $capturedHtml);
         $this->assertStringContainsString('L. 22.25', $capturedHtml);
         $this->assertStringContainsString('Pagos publicados no anulados en el dia', $capturedHtml);
         $this->assertStringContainsString('Pendiente', $capturedHtml);
-        $this->assertStringContainsString('L. 35.25', $capturedHtml);
+        $this->assertStringContainsString('L. 31.50', $capturedHtml);
         $this->assertStringContainsString('Saldo actual de facturas emitidas o parciales del dia', $capturedHtml);
         $this->assertStringContainsString('Parcial', $capturedHtml);
         $this->assertStringContainsString('L. 11.50', $capturedHtml);
@@ -2100,13 +2100,13 @@ class ReportsTest extends TestCase
         $this->assertStringNotContainsString('Cierre de Operaciones y Ventas', $capturedHtml);
         $this->assertStringContainsString('Lectura Financiera del Periodo', $capturedHtml);
         $this->assertStringContainsString('Facturado', $capturedHtml);
-        $this->assertStringContainsString('L. 57.50', $capturedHtml);
+        $this->assertStringContainsString('L. 53.75', $capturedHtml);
         $this->assertStringContainsString('Facturas no anuladas emitidas en el rango', $capturedHtml);
         $this->assertStringContainsString('Cobrado', $capturedHtml);
         $this->assertStringContainsString('L. 22.25', $capturedHtml);
         $this->assertStringContainsString('Pagos publicados no anulados en el rango', $capturedHtml);
         $this->assertStringContainsString('Pendiente', $capturedHtml);
-        $this->assertStringContainsString('L. 35.25', $capturedHtml);
+        $this->assertStringContainsString('L. 31.50', $capturedHtml);
         $this->assertStringContainsString('Saldo actual de facturas emitidas o parciales', $capturedHtml);
         $this->assertStringContainsString('Parcial', $capturedHtml);
         $this->assertStringContainsString('L. 11.50', $capturedHtml);

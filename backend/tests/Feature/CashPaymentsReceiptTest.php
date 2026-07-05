@@ -206,7 +206,7 @@ class CashPaymentsReceiptTest extends TestCase
         foreach ([
             ['service' => 'Glucosa', 'method' => Payment::METHOD_TRANSFER, 'amount' => '17.25'],
             ['service' => 'Hemograma Completo', 'method' => Payment::METHOD_CARD, 'amount' => '11.50'],
-            ['service' => 'Eritropoyetina', 'method' => Payment::METHOD_OTHER, 'amount' => '28.75'],
+            ['service' => 'Eritropoyetina', 'method' => Payment::METHOD_OTHER, 'amount' => '25.00'],
         ] as $paymentCase) {
             $invoiceId = $this->createInvoice($cashier, $paymentCase['service']);
 
@@ -270,7 +270,7 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertJsonPath('data.payments_by_method.card', '5.00')
             ->assertJsonPath('data.expected_cash_amount', '517.25')
             ->assertJsonPath('data.pending_invoice_count', 1)
-            ->assertJsonPath('data.pending_amount', '23.75');
+            ->assertJsonPath('data.pending_amount', '20.00');
 
         $this->actingAs($cashier)
             ->postJson("/api/cash-sessions/{$sessionId}/close", ['closing_amount' => '517.25'])

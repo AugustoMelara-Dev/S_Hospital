@@ -638,7 +638,7 @@ class ExecutiveExcelExportService
         if (is_numeric($string)) {
             $numeric = $string + 0;
 
-            return is_finite($numeric) ? (float) $numeric : 0.0;
+            return is_finite($numeric) ? $numeric + 0.0 : 0.0;
         }
 
         try {
@@ -660,7 +660,7 @@ class ExecutiveExcelExportService
         if (is_numeric($string)) {
             $numeric = $string + 0;
 
-            return is_finite($numeric) ? (float) $numeric : 0.0;
+            return is_finite($numeric) ? $numeric + 0.0 : 0.0;
         }
 
         return 0.0;

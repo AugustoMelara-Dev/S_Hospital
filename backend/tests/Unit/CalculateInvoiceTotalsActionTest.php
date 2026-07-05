@@ -136,7 +136,7 @@ class CalculateInvoiceTotalsActionTest extends TestCase
         $this->assertSame('0.00', $items[0]['line_total']);
     }
 
-    public function test_erythropoietin_rule_requires_dialysis_prescription(): void
+    public function test_erythropoietin_fixed_price_is_not_taxed_without_dialysis_prescription(): void
     {
         $erythropoietin = $this->createService(
             price: '25.00',
@@ -149,7 +149,10 @@ class CalculateInvoiceTotalsActionTest extends TestCase
         ], '15.00');
 
         $this->assertSame('25.00', $result['subtotal']);
-        $this->assertSame('3.75', $result['tax_amount']);
+        $this->assertSame('0.00', $result['tax_amount']);
+        $this->assertSame('25.00', $result['total']);
+        $this->assertSame('0.00', $result['items'][0]['tax_rate']);
+        $this->assertSame('0.00', $result['items'][0]['tax_amount']);
         $this->assertFalse($result['items'][0]['special_rule_applied']);
     }
 

@@ -46,6 +46,7 @@ class ServiceCatalogTest extends TestCase
             ->firstOrFail();
 
         $this->assertSame('25.00', $erythropoietin->price);
+        $this->assertFalse($erythropoietin->taxable);
         $this->assertSame(Service::ERYTHROPOIETIN_RULE, $erythropoietin->special_rule_code);
         $this->assertNotNull($erythropoietin->source_key);
         $this->assertNotNull($erythropoietin->source_hash);

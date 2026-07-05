@@ -403,7 +403,7 @@ describe('ServiceSheet contract preservation', () => {
     });
   });
 
-  it('normalizes erythropoietin services to the fixed L 25.00 catalog price', async () => {
+  it('normalizes erythropoietin services to the fixed L 25.00 untaxed catalog price', async () => {
     const saveService = vi.spyOn(apiClient, 'saveService').mockResolvedValue({
       id: 13,
       category_id: 1,
@@ -414,7 +414,7 @@ describe('ServiceSheet contract preservation', () => {
       scan_code: null,
       barcode: null,
       qr_code: null,
-      taxable: true,
+      taxable: false,
       active: true,
       special_rule_code: 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION',
     });
@@ -442,6 +442,7 @@ describe('ServiceSheet contract preservation', () => {
     fireEvent.click(await screen.findByRole('option', { name: /eritropoyetina con receta de di[aá]lisis/i }));
 
     expect(screen.getByLabelText(/precio/i)).toHaveValue('25.00');
+    expect(screen.getByRole('checkbox', { name: /aplica isv/i })).not.toBeChecked();
 
     fireEvent.click(screen.getByRole('button', { name: /crear/i }));
 
@@ -450,6 +451,7 @@ describe('ServiceSheet contract preservation', () => {
         expect.objectContaining({
           name: 'Eritropoyetina 4000 UI',
           price: '25.00',
+          taxable: false,
           special_rule_code: 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION',
         }),
         undefined,
