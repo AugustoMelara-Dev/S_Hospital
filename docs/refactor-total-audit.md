@@ -5597,3 +5597,26 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte protege reportes utiles para cierre y supervision local: un dato danado no debe impedir descargar el Excel ejecutivo completo.
+
+## 232. Fase 6 - Papel normal guarda el perfil institucional
+
+Cambio aplicado:
+
+- Al guardar el flujo normal de recibos, el papel seleccionado se envia como perfil activo y predeterminado institucional.
+- La UI sigue ocultando los controles tecnicos `Perfil activo` y `Predeterminado global` para usuarios sin modo soporte.
+- Los campos manuales de margenes, tamano, fuente y escala permanecen fuera del flujo normal.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- InstitutionalReceiptSettingsView.test.tsx --run` | RED inicial correcto: al elegir Carta se enviaba `is_global_default: false`; luego OK: 20 tests pasan. |
+| `docker compose exec frontend npm run test -- src/features/receipt-settings --run` | OK: 24 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `docker compose exec frontend npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte corrige la configuracion operativa de impresion: el hospital elige papel y el sistema resuelve internamente el perfil activo sin exponer controles tecnicos.

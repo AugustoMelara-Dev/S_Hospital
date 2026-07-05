@@ -240,6 +240,30 @@ describe('InstitutionalReceiptSettingsView', () => {
     expect(screen.queryByRole('checkbox', { name: /predeterminado global/i })).not.toBeInTheDocument();
   });
 
+  it('saves the selected normal paper profile as the institutional default without exposing technical controls', async () => {
+    const { apiClient } = await import('@/lib/api');
+    renderView({ canAdvancedPrintSettings: false });
+
+    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
+    await activateTab('Papel y copias');
+
+    fireEvent.click(screen.getByRole('radio', { name: /^Carta\b/i }));
+    fireEvent.click(screen.getByRole('button', { name: /guardar perfil/i }));
+
+    await waitFor(() => {
+      expect(apiClient.updateReceiptPrintProfile).toHaveBeenCalledWith(
+        4,
+        expect.objectContaining({
+          active: true,
+          is_global_default: true,
+          template_code: 'institutional_classic',
+        }),
+      );
+    });
+
+    expect(screen.queryByRole('checkbox', { name: /predeterminado global/i })).not.toBeInTheDocument();
+  });
+
   it('keeps support-only warnings hidden while a standard paper profile is selected', async () => {
     renderView({ canAdvancedPrintSettings: true });
 
