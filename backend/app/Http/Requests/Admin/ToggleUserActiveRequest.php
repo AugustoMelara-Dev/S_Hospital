@@ -24,7 +24,9 @@ class ToggleUserActiveRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [];
+        return [
+            'reason' => ['nullable', 'string', 'max:500'],
+        ];
     }
 
     public function withValidator(Validator $validator): void
@@ -34,6 +36,23 @@ class ToggleUserActiveRequest extends FormRequest
 
             if ($targetUser instanceof User && $targetUser->is($this->user())) {
                 $validator->errors()->add('active', 'No puedes desactivar tu propio usuario.');
+            }
+
+            if (! $targetUser instanceof User || ! $targetUser->active) {
+                return;
+            }
+
+            $reason = $this->input('reason');
+            $reasonText = is_string($reason) ? trim($reason) : '';
+
+            if ($reasonText === '') {
+                $validator->errors()->add('reason', 'Indique el motivo para desactivar el usuario.');
+
+                return;
+            }
+
+            if (mb_strlen($reasonText) < 5) {
+                $validator->errors()->add('reason', 'Indique al menos 5 caracteres explicando la desactivacion del usuario.');
             }
         });
     }

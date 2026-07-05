@@ -143,8 +143,8 @@ export const apiClient = {
     return users.updateUser(id, payload);
   },
 
-  async toggleUserActive(id: number): Promise<AuthUser> {
-    return users.toggleActive(id);
+  async toggleUserActive(id: number, reason?: string | null): Promise<AuthUser> {
+    return users.toggleActive(id, reason);
   },
 
   async resetUserPassword(id: number, password: string): Promise<AuthUser> {

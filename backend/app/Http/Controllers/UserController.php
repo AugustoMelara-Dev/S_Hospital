@@ -124,6 +124,7 @@ class UserController extends Controller
     {
         $oldValues = $this->auditPayload($user->loadMissing(['roles', 'permissions']));
         $newActiveState = ! $user->active;
+        $reason = trim((string) $request->input('reason', ''));
         if (! $newActiveState) {
             $this->assertProtectedUserCanBeDeactivated($user);
         }
@@ -137,7 +138,7 @@ class UserController extends Controller
             );
         }
 
-        DB::transaction(function () use ($user, $newActiveState, $auditLogger, $request, $oldValues): void {
+        DB::transaction(function () use ($user, $newActiveState, $auditLogger, $request, $oldValues, $reason): void {
             $user->update([
                 'active' => $newActiveState,
                 'deactivated_at' => $newActiveState ? null : now(),
@@ -151,7 +152,7 @@ class UserController extends Controller
                 request: $request,
                 oldValues: $oldValues,
                 newValues: $this->auditPayload($user),
-                reason: $request->input('reason'),
+                reason: $reason === '' ? null : $reason,
             );
         });
 

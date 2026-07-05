@@ -289,14 +289,17 @@ export function UsersView({
     setIsToggleDialogOpen(true);
   };
 
-  const handleConfirmToggle = async () => {
+  const handleConfirmToggle = async (reason: string | null) => {
     if (!targetToggleUser) return;
     if (toggleUserInFlightRef.current) return;
     toggleUserInFlightRef.current = true;
     setIsTogglingUser(true);
     onStatus('Cambiando estado de usuario...');
     try {
-      const updated = await apiClient.toggleUserActive(targetToggleUser.id);
+      const updated = await apiClient.toggleUserActive(
+        targetToggleUser.id,
+        targetToggleUser.active ? reason : null,
+      );
       setUsers((current) => current.map((u) => (u.id === targetToggleUser.id ? updated : u)));
       const action = updated.active ? 'activado' : 'desactivado';
       onStatus(`Usuario ${updated.name} ha sido ${action} con éxito.`);
@@ -542,6 +545,9 @@ export function UsersView({
         confirmDisabled={isTogglingUser}
         cancelDisabled={isTogglingUser}
         danger={targetToggleUser?.active}
+        requireReasonTextarea={targetToggleUser?.active}
+        requireReasonMinLength={5}
+        reasonHelpText="Explique por que se desactiva este usuario. Quedara registrado en auditoria."
         onCancel={() => {
           setIsToggleDialogOpen(false);
           setTargetToggleUser(null);

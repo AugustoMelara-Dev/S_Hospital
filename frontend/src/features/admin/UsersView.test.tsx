@@ -937,10 +937,14 @@ describe('UsersView', () => {
     const dialog = await screen.findByRole('alertdialog', { name: /desactivar usuario/i });
     const confirm = within(dialog).getByRole('button', { name: /desactivar/i });
 
+    fireEvent.change(within(dialog).getByLabelText(/motivo/i), {
+      target: { value: 'Baja operativa temporal' },
+    });
     fireEvent.click(confirm);
     fireEvent.click(confirm);
 
     await waitFor(() => expect(toggleUser).toHaveBeenCalledTimes(1));
+    expect(toggleUser).toHaveBeenCalledWith(adminUser.id, 'Baja operativa temporal');
     await waitFor(() => expect(within(dialog).getByRole('button', { name: /cambiando/i })).toBeDisabled());
     expect(within(dialog).getByRole('button', { name: /cancelar/i })).toBeDisabled();
 
@@ -950,5 +954,38 @@ describe('UsersView', () => {
     });
 
     await waitFor(() => expect(screen.queryByRole('alertdialog', { name: /desactivar usuario/i })).not.toBeInTheDocument());
+  });
+
+  it('requires an audit reason before deactivating a user', async () => {
+    vi.mocked(apiClient.getUsers).mockResolvedValueOnce([
+      adminUser,
+      {
+        ...adminUser,
+        id: 2,
+        name: 'Admin Respaldo',
+        email: 'admin-respaldo@hospital.test',
+        username: 'admin-respaldo',
+      },
+    ]);
+
+    const toggleUser = vi.spyOn(apiClient, 'toggleUserActive').mockResolvedValue({
+      ...adminUser,
+      active: false,
+    });
+
+    render(<UsersView onStatus={vi.fn()} canCreateUsers={true} canDisableUsers canManageRoles={true} canAssignAdminRole />);
+
+    await openUserActions('Admin Hospital');
+    fireEvent.click(await screen.findByRole('menuitem', { name: /^desactivar$/i }));
+    const dialog = await screen.findByRole('alertdialog', { name: /desactivar usuario/i });
+    const confirm = within(dialog).getByRole('button', { name: /desactivar/i });
+
+    expect(confirm).toBeDisabled();
+    fireEvent.change(within(dialog).getByLabelText(/motivo/i), {
+      target: { value: 'Baja de usuario operativo' },
+    });
+    fireEvent.click(confirm);
+
+    await waitFor(() => expect(toggleUser).toHaveBeenCalledWith(adminUser.id, 'Baja de usuario operativo'));
   });
 });

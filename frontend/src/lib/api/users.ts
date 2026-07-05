@@ -38,9 +38,11 @@ export const users = {
     return res.data;
   },
 
-  async toggleActive(id: number): Promise<AuthUser> {
+  async toggleActive(id: number, reason?: string | null): Promise<AuthUser> {
+    const trimmedReason = reason?.trim();
     const res = await apiClient.request<{ data: AuthUser }>(`/api/admin/users/${id}/toggle-active`, {
       method: 'POST',
+      body: trimmedReason ? JSON.stringify({ reason: trimmedReason }) : undefined,
     });
     return res.data;
   },

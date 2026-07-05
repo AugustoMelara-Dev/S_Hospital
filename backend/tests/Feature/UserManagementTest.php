@@ -91,7 +91,9 @@ class UserManagementTest extends TestCase
         $target->assignRole('cajero');
 
         $this->actingAs($admin)
-            ->postJson("/api/admin/users/{$target->id}/toggle-active")
+            ->postJson("/api/admin/users/{$target->id}/toggle-active", [
+                'reason' => 'Usuario operativo ya no trabaja en caja.',
+            ])
             ->assertOk()
             ->assertJsonPath('data.active', false);
 
@@ -104,6 +106,44 @@ class UserManagementTest extends TestCase
             ->assertJsonValidationErrors('active');
 
         $this->assertTrue($admin->refresh()->active);
+    }
+
+    public function test_deactivating_user_requires_reason(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->userWithRole('admin');
+        $target = $this->userWithRole('cajero');
+
+        $this->actingAs($admin)
+            ->postJson("/api/admin/users/{$target->id}/toggle-active")
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('reason');
+
+        $this->assertTrue($target->refresh()->active);
+    }
+
+    public function test_deactivating_user_stores_audit_reason(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->userWithRole('admin');
+        $target = $this->userWithRole('cajero');
+        $reason = 'Cajero removido de operacion diaria';
+
+        $this->actingAs($admin)
+            ->postJson("/api/admin/users/{$target->id}/toggle-active", [
+                'reason' => $reason,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.active', false);
+
+        $this->assertFalse($target->refresh()->active);
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $admin->id,
+            'action' => 'user.deactivated',
+            'entity_type' => User::class,
+            'entity_id' => $target->id,
+            'reason' => $reason,
+        ]);
     }
 
     public function test_toggle_user_active_requires_disable_permission(): void
@@ -854,7 +894,9 @@ class UserManagementTest extends TestCase
         $admin->assignRole('admin');
 
         $this->actingAs($operator)
-            ->postJson("/api/admin/users/{$admin->id}/toggle-active")
+            ->postJson("/api/admin/users/{$admin->id}/toggle-active", [
+                'reason' => 'Intento de desactivar ultimo administrador',
+            ])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('active');
 
