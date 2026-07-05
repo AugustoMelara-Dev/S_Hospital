@@ -240,6 +240,22 @@ describe('InstitutionalReceiptSettingsView', () => {
     expect(screen.queryByRole('checkbox', { name: /predeterminado global/i })).not.toBeInTheDocument();
   });
 
+  it('keeps support-only paper controls hidden from the normal flow even for support users', async () => {
+    renderView({ canAdvancedPrintSettings: true });
+
+    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
+    await activateTab('Papel y copias');
+
+    expect(screen.queryByRole('button', { name: /recibo peque/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('radio', { name: /ticket 80/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('radio', { name: /ticket 58/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: /perfil activo/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: /predeterminado global/i })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Ancho mm')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Fuente')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Escala')).not.toBeInTheDocument();
+  });
+
   it('saves the selected normal paper profile as the institutional default without exposing technical controls', async () => {
     const { apiClient } = await import('@/lib/api');
     renderView({ canAdvancedPrintSettings: false });
@@ -272,7 +288,7 @@ describe('InstitutionalReceiptSettingsView', () => {
 
     expect(screen.queryByText(/modo soporte no aplica/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/ajustes avanzados solo aplican/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/modo soporte t/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Ancho mm')).not.toBeInTheDocument();
   });
 
   it('explains sensitive receipt numbering before saving a series', async () => {
@@ -361,8 +377,8 @@ describe('InstitutionalReceiptSettingsView', () => {
 
     expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
     await activateTab('Papel y copias');
-    fireEvent.click(screen.getByRole('button', { name: /recibo peque/i }));
-    fireEvent.click(screen.getByText(/modo soporte t/i));
+    fireEvent.click(screen.getByText(/activar modo soporte t/i));
+    fireEvent.click(await screen.findByRole('button', { name: /recibo peque/i }));
 
     const reason = await screen.findByLabelText(/motivo de soporte/i);
     fireEvent.change(reason, { target: { value: '  Ajuste por prueba de impresora  ' } });
@@ -383,7 +399,6 @@ describe('InstitutionalReceiptSettingsView', () => {
 
     expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
     await activateTab('Papel y copias');
-    fireEvent.click(screen.getByRole('button', { name: /recibo peque/i }));
 
     expect(screen.getByText(/activar modo soporte t/i)).toBeInTheDocument();
     expect(screen.queryByLabelText('Ancho mm')).not.toBeInTheDocument();

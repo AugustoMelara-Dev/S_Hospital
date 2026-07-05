@@ -427,7 +427,10 @@ export function InstitutionalReceiptSettingsView({
         : '1';
   const profileControlsDisabled = !canEdit || profileMutation.isPending;
   const visiblePrintProfiles = (settings?.print_profiles ?? []).filter(
-    (profile) => canAdvancedPrintSettings || !SUPPORT_ONLY_PROFILE_CODES.has(profile.code),
+    (profile) => !SUPPORT_ONLY_PROFILE_CODES.has(profile.code),
+  );
+  const supportPrintProfiles = (settings?.print_profiles ?? []).filter(
+    (profile) => SUPPORT_ONLY_PROFILE_CODES.has(profile.code),
   );
 
   return (
@@ -649,7 +652,7 @@ export function InstitutionalReceiptSettingsView({
                   if (mapped) setSelectedCode(mapped);
                 }}
                 disabled={profileControlsDisabled}
-                options={canAdvancedPrintSettings ? PAPER_PROFILES : NORMAL_RECEIPT_PAPER_OPTIONS}
+                options={NORMAL_RECEIPT_PAPER_OPTIONS}
                 helperText="Los márgenes se calculan automáticamente según el tipo de papel seleccionado."
               />
 
@@ -700,7 +703,7 @@ export function InstitutionalReceiptSettingsView({
                     disabled={profileControlsDisabled}
                     onChange={(value) => profileForm.setValue('use_logo', value === true)}
                   />
-                  {canAdvancedPrintSettings && (
+                  {canAdvancedPrintSettings && advancedOpen && (
                     <>
                       <CheckboxField
                         id="profile_active"
@@ -732,7 +735,7 @@ export function InstitutionalReceiptSettingsView({
                 </div>
               </form>
 
-              {canAdvancedPrintSettings && advancedSupported && (
+              {canAdvancedPrintSettings && (
                 <details
                   id="receipt-advanced-panel"
                   className="mt-5 rounded-md border border-warning/40 bg-warning/10 p-3 text-sm"
@@ -749,8 +752,37 @@ export function InstitutionalReceiptSettingsView({
                     Estos ajustes modifican medidas manuales del recibo pequeño personalizado. Documente el motivo antes de continuar; el cambio queda auditado.
                   </p>
                   {advancedOpen && (
-                    <form
-                      className="mt-4 space-y-4"
+                    <div className="mt-4 space-y-4">
+                      <div className="space-y-2">
+                        <p className="text-xs font-semibold uppercase text-warning-foreground">Perfiles de soporte</p>
+                        <div className="grid gap-2 md:grid-cols-2">
+                          {supportPrintProfiles.map((profile) => {
+                            const paperCode = RECEIPT_PROFILE_TO_PAPER[profile.code];
+                            const isActive = selectedCode === profile.code;
+                            return (
+                              <Button
+                                key={profile.code}
+                                type="button"
+                                aria-pressed={isActive}
+                                variant={isActive ? 'secondary' : 'outline'}
+                                className="h-auto justify-between gap-3 p-3 text-left"
+                                disabled={profileControlsDisabled}
+                                onClick={() => {
+                                  setSelectedCode(profile.code);
+                                  if (paperCode) setPaper(paperCode);
+                                }}
+                              >
+                                <span>{profile.code === 'recibo_pequeno_personalizado' ? 'Recibo pequeño personalizado' : PAPER_LABELS[paperCode as PaperProfileCode] ?? profile.code}</span>
+                                <span className="text-xs font-normal">{profile.active ? 'Activo' : 'Disponible'}</span>
+                              </Button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {advancedSupported ? (
+                        <form
+                          className="space-y-4"
                       onSubmit={advancedForm.handleSubmit((data) =>
                         advancedSavingRef.current
                           ? undefined
@@ -800,7 +832,13 @@ export function InstitutionalReceiptSettingsView({
                           Guardar ajustes avanzados
                         </Button>
                       </div>
-                    </form>
+                        </form>
+                      ) : (
+                        <p className="text-xs text-warning-foreground">
+                          Seleccione un perfil de soporte para editar medidas manuales.
+                        </p>
+                      )}
+                    </div>
                   )}
                 </details>
               )}
