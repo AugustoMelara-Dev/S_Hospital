@@ -320,12 +320,12 @@ export function UsersView({
     setIsResetModalOpen(true);
   };
 
-  const onResetSubmit = async (data: { newPassword: string }) => {
+  const onResetSubmit = async (data: { newPassword: string; reason: string }) => {
     if (!targetResetUser) return;
     setResetGlobalError('');
     onStatus('Restableciendo contraseña...');
     try {
-      await apiClient.resetUserPassword(targetResetUser.id, data.newPassword);
+      await apiClient.resetUserPassword(targetResetUser.id, data.newPassword, data.reason);
       onStatus(`Contraseña restablecida con éxito para ${targetResetUser.name}. Se solicitará cambio de contraseña en su siguiente inicio de sesión.`);
       setIsResetModalOpen(false);
     } catch (err) {

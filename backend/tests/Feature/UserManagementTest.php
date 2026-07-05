@@ -37,6 +37,7 @@ class UserManagementTest extends TestCase
         $this->actingAs($admin)
             ->postJson("/api/admin/users/{$target->id}/reset-password", [
                 'password' => 'Temporary123!',
+                'reason' => 'Credencial temporal entregada al cajero titular.',
             ])
             ->assertOk()
             ->assertJsonPath('data.must_change_password', true);
@@ -57,6 +58,7 @@ class UserManagementTest extends TestCase
 
         $this->assertSame($admin->id, $audit->user_id);
         $this->assertSame('success', $audit->result);
+        $this->assertSame('Credencial temporal entregada al cajero titular.', $audit->reason);
         $this->assertSame(true, $audit->new_values['must_change_password'] ?? null);
         $this->assertArrayNotHasKey('password', $audit->new_values ?? []);
         $this->assertArrayNotHasKey('password', $audit->old_values ?? []);
@@ -196,6 +198,29 @@ class UserManagementTest extends TestCase
             ->assertJsonValidationErrors('password');
     }
 
+    public function test_reset_user_password_requires_reason(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->userWithRole('admin');
+        $target = $this->userWithRole('cajero');
+        $originalPassword = $target->password;
+
+        $this->actingAs($admin)
+            ->postJson("/api/admin/users/{$target->id}/reset-password", [
+                'password' => 'Temporary123!',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('reason');
+
+        $target->refresh();
+        $this->assertSame($originalPassword, $target->password);
+        $this->assertDatabaseMissing('audit_logs', [
+            'action' => 'user.password_reset',
+            'entity_type' => User::class,
+            'entity_id' => $target->id,
+        ]);
+    }
+
     public function test_reset_user_password_requires_users_update_permission(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
@@ -205,6 +230,7 @@ class UserManagementTest extends TestCase
         $this->actingAs($cashier)
             ->postJson("/api/admin/users/{$target->id}/reset-password", [
                 'password' => 'Temporary123!',
+                'reason' => 'Intento no autorizado de cambio de credencial.',
             ])
             ->assertForbidden();
     }
@@ -218,6 +244,7 @@ class UserManagementTest extends TestCase
         $this->actingAs($admin)
             ->postJson("/api/admin/users/{$admin->id}/reset-password", [
                 'password' => 'Temporary123!',
+                'reason' => 'Intento de restablecer la propia credencial.',
             ])
             ->assertForbidden();
 
@@ -526,6 +553,7 @@ class UserManagementTest extends TestCase
         $this->actingAs($manager)
             ->postJson("/api/admin/users/{$admin->id}/reset-password", [
                 'password' => 'Temporary123!',
+                'reason' => 'Intento no autorizado sobre usuario protegido.',
             ])
             ->assertForbidden();
 

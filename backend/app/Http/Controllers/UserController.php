@@ -184,6 +184,7 @@ class UserController extends Controller
                 request: $request,
                 oldValues: $oldValues,
                 newValues: ['must_change_password' => true],
+                reason: $validated['reason'],
             );
         });
 

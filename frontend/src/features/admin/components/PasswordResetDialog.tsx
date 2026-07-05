@@ -7,12 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Alert } from '@/components/ui/alert';
 import { InfoPanel } from '@/components/shared';
 import { type AuthUser } from '@/lib/api';
 import { isPasswordPolicyCompliant, passwordPolicyHint } from './UserFormDialog';
 
 const resetPasswordSchema = z.object({
+  reason: z.string().trim().min(5, 'Motivo debe tener al menos 5 caracteres.').max(500, 'Motivo maximo 500 caracteres.'),
   newPassword: z.string().refine(isPasswordPolicyCompliant, 'La contraseña debe tener al menos 12 caracteres e incluir mayúscula, minúscula, número y símbolo.'),
 });
 
@@ -40,12 +42,12 @@ export function PasswordResetDialog({
     formState: { errors, isSubmitting },
   } = useForm<ResetPasswordForm>({
     resolver: zodResolver(resetPasswordSchema),
-    defaultValues: { newPassword: '' },
+    defaultValues: { newPassword: '', reason: '' },
   });
 
   useEffect(() => {
     if (open && targetUser) {
-      reset({ newPassword: '' });
+      reset({ newPassword: '', reason: '' });
     }
   }, [open, targetUser, reset]);
 
@@ -90,6 +92,27 @@ export function PasswordResetDialog({
           {errors.newPassword && (
             <p id="new-password-error" role="alert" className="text-xs text-destructive">
               {errors.newPassword.message}
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-1">
+          <Label htmlFor="reset-password-reason">Motivo *</Label>
+          <Textarea
+            id="reset-password-reason"
+            rows={3}
+            placeholder="Ej. Solicitud del responsable de caja."
+            aria-invalid={Boolean(errors.reason)}
+            aria-describedby={errors.reason ? 'reset-password-reason-error reset-password-reason-help' : 'reset-password-reason-help'}
+            disabled={isSubmitting}
+            {...register('reason')}
+          />
+          <p id="reset-password-reason-help" className="text-xs text-muted-foreground">
+            Quedara registrado en auditoria junto al cambio de credencial.
+          </p>
+          {errors.reason && (
+            <p id="reset-password-reason-error" role="alert" className="text-xs text-destructive">
+              {errors.reason.message}
             </p>
           )}
         </div>

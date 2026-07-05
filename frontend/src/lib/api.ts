@@ -147,8 +147,8 @@ export const apiClient = {
     return users.toggleActive(id, reason);
   },
 
-  async resetUserPassword(id: number, password: string): Promise<AuthUser> {
-    return users.resetPassword(id, password);
+  async resetUserPassword(id: number, password: string, reason: string): Promise<AuthUser> {
+    return users.resetPassword(id, password, reason);
   },
 
   async getRoles(): Promise<{ roles: RoleDefinition[]; permissionCatalog: PermissionCatalogGroup[] }> {

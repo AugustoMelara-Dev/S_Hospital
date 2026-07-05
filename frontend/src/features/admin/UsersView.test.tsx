@@ -868,7 +868,7 @@ describe('UsersView', () => {
     await waitFor(() => expect(screen.queryByRole('dialog', { name: /crear usuario/i })).not.toBeInTheDocument());
   });
 
-  it('validates reset passwords with the same policy as Laravel', async () => {
+  it('validates reset passwords with the same policy as Laravel and requires an audit reason', async () => {
     const resetPassword = vi.spyOn(apiClient, 'resetUserPassword').mockResolvedValue({
       ...adminUser,
       must_change_password: true,
@@ -891,10 +891,24 @@ describe('UsersView', () => {
     fireEvent.change(within(dialog).getByLabelText(/nueva contraseña temporal/i), { target: { value: 'Password123!' } });
     fireEvent.click(within(dialog).getByRole('button', { name: /restablecer clave/i }));
 
-    await waitFor(() => expect(resetPassword).toHaveBeenCalledWith(adminUser.id, 'Password123!'));
+    await waitFor(() => {
+      expect(within(dialog).getByText(/motivo debe tener al menos 5 caracteres/i)).toBeInTheDocument();
+    });
+    expect(resetPassword).not.toHaveBeenCalled();
+
+    fireEvent.change(within(dialog).getByLabelText(/motivo/i), {
+      target: { value: 'Solicitud del responsable de caja' },
+    });
+    fireEvent.click(within(dialog).getByRole('button', { name: /restablecer clave/i }));
+
+    await waitFor(() => expect(resetPassword).toHaveBeenCalledWith(
+      adminUser.id,
+      'Password123!',
+      'Solicitud del responsable de caja',
+    ));
   });
 
-  it('locks the temporary password field while resetting credentials', async () => {
+  it('locks the temporary password and reason fields while resetting credentials', async () => {
     const resetPassword = vi.spyOn(apiClient, 'resetUserPassword').mockReturnValue(new Promise<AuthUser>(() => undefined));
 
     render(<UsersView onStatus={vi.fn()} canCreateUsers={true} canUpdateUsers canManageRoles={true} canAssignAdminRole />);
@@ -905,11 +919,19 @@ describe('UsersView', () => {
 
     const passwordField = within(dialog).getByLabelText(/nueva contrase/i);
     fireEvent.change(passwordField, { target: { value: 'Password123!' } });
+    fireEvent.change(within(dialog).getByLabelText(/motivo/i), {
+      target: { value: 'Solicitud del responsable de caja' },
+    });
     fireEvent.click(within(dialog).getByRole('button', { name: /restablecer clave/i }));
 
-    await waitFor(() => expect(resetPassword).toHaveBeenCalledWith(adminUser.id, 'Password123!'));
+    await waitFor(() => expect(resetPassword).toHaveBeenCalledWith(
+      adminUser.id,
+      'Password123!',
+      'Solicitud del responsable de caja',
+    ));
 
     expect(within(dialog).getByLabelText(/nueva contrase/i)).toBeDisabled();
+    expect(within(dialog).getByLabelText(/motivo/i)).toBeDisabled();
     expect(within(dialog).getByRole('button', { name: /restableciendo/i })).toBeDisabled();
   });
 
