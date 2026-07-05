@@ -201,6 +201,85 @@ describe('NewInvoiceView critical flows', () => {
     expect(invoiceCalls.length).toBeLessThanOrEqual(1);
   });
 
+  it('does not create duplicate invoices when the final confirmation is double-clicked', async () => {
+    vi.spyOn(apiBase, 'createClientIdempotencyKey').mockReturnValue('invoice-double-submit-1');
+    const fetchMock = globalThis.fetch as ReturnType<typeof vi.fn>;
+    const invoiceIdempotencyKeys: Array<string | null> = [];
+    let resolveInvoice!: (response: Response) => void;
+
+    fetchMock.mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url.includes('/api/cash-sessions/current')) {
+        return { ok: true, json: async () => ({ data: makeOpenCashSession() }) } as Response;
+      }
+      if (url.includes('/api/services')) {
+        return { ok: true, json: async () => ({ data: [makeService()] }) } as Response;
+      }
+      if (url.includes('/api/categories')) {
+        return { ok: true, json: async () => ({ data: [] }) } as Response;
+      }
+      if (url.includes('/api/settings/operational')) {
+        return {
+          ok: true,
+          json: async () => ({ data: { scanner_enabled: false, partial_payments_enabled: false } }),
+        } as Response;
+      }
+      if (url.endsWith('/api/invoices')) {
+        const headers = new Headers((init as RequestInit | undefined)?.headers);
+        invoiceIdempotencyKeys.push(headers.get('Idempotency-Key'));
+
+        return new Promise<Response>((resolve) => {
+          resolveInvoice = resolve;
+        });
+      }
+      return { ok: true, json: async () => ({ data: null }) } as Response;
+    });
+
+    renderNewInvoice();
+    await waitForPointOfSaleLoad();
+
+    fireEvent.change(screen.getByLabelText(/nombre del paciente/i), { target: { value: 'Maria Lopez' } });
+    fireEvent.change(screen.getByLabelText(/buscar por nombre/i), { target: { value: 'eritro' } });
+    await waitFor(() => expect(screen.getByText('Eritropoyetina')).toBeInTheDocument(), { timeout: 3000 });
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(2);
+    });
+    fireEvent.click(screen.getByRole('button', { name: /agregar eritropoyetina/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /^emitir y cobrar$/i }));
+
+    const confirmButton = await screen.findByRole('button', { name: /emitir y abrir cobro/i });
+    fireEvent.click(confirmButton);
+    fireEvent.click(confirmButton);
+
+    await waitFor(() => {
+      expect(invoiceIdempotencyKeys).toEqual(['invoice-double-submit-1']);
+    });
+
+    resolveInvoice({
+      ok: true,
+      json: async () => ({
+        data: {
+          id: 64,
+          invoice_number: '000-001-01-00000064',
+          patient_name: 'Maria Lopez',
+          status: 'issued',
+          subtotal: '25.00',
+          tax_amount: '0.00',
+          discount_amount: '0.00',
+          total: '25.00',
+          paid_amount: '0.00',
+          balance_due: '25.00',
+          issued_at: '2026-05-17T09:25:00-06:00',
+          items: [],
+        },
+      }),
+    } as Response);
+
+    await waitFor(() => {
+      expect(screen.getByRole('dialog', { name: /registrar pago/i })).toBeInTheDocument();
+    });
+  });
+
   it('preserves the cart after a 422 error from the backend', async () => {
     renderNewInvoice();
     await waitForPointOfSaleLoad();
