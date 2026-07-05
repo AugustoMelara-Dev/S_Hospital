@@ -262,7 +262,7 @@ export function PaymentModal({
         <section aria-label="Datos del pago" className="grid gap-4 rounded-panel border border-operational-border bg-card p-4">
           <div className="grid gap-1.5">
             <Label htmlFor="payment-method">Método de pago</Label>
-            <Select value={paymentMethod} onValueChange={(v) => onPaymentMethodChange(v as Payment['method'])}>
+            <Select value={paymentMethod} onValueChange={(v) => onPaymentMethodChange(v as Payment['method'])} disabled={submitting}>
               <SelectTrigger id="payment-method" aria-describedby="payment-method-help">
                 <SelectValue placeholder="Seleccione método" />
               </SelectTrigger>
@@ -291,6 +291,7 @@ export function PaymentModal({
                 onChange={(e) => handleAmountChange(e.target.value)}
                 onKeyDown={handleAmountKeyDown}
                 placeholder="0.00"
+                disabled={submitting}
                 aria-invalid={error ? 'true' : 'false'}
                 aria-describedby={amountDescribedBy || undefined}
                 className="min-h-12 pl-10 text-lg font-semibold tabular-nums"
@@ -318,6 +319,7 @@ export function PaymentModal({
                 id="payment-reference"
                 value={paymentReference}
                 onChange={(e) => onPaymentReferenceChange(e.target.value)}
+                disabled={submitting}
                 placeholder="Número de transacción o comprobante"
                 aria-describedby="payment-reference-help"
                 className="break-words"

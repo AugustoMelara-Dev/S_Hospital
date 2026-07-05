@@ -4486,3 +4486,29 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, facturacion, catalogo, historial, recibos, respaldos, reportes ni usuarios.
 - Este corte reduce confusion operativa en el cierre de caja sin alterar la validacion fiscal ni la auditoria del cierre.
+
+## 185. Fase 4 - Cobro bloquea datos mientras registra pago
+
+Cambio aplicado:
+
+- `PaymentModal` ahora deshabilita metodo de pago, monto recibido y referencia mientras `submitting=true`.
+- Esto evita que el cajero modifique visualmente los datos del cobro despues de confirmar `Registrar cobro e imprimir`.
+- Se agrego una regresion con `submitting=true` que confirma que los campos quedan bloqueados y el boton mantiene el estado `Cobrando...`.
+- No se cambian calculo de cambio, abonos parciales, validacion de saldo, impresion posterior, idempotencia ni contratos API.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- PaymentModal.test.tsx -t "locks payment fields" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial correcto: metodo de pago seguia habilitado durante `Cobrando...`; luego OK: 1 test pasa. |
+| `npm run test -- PaymentModal.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=60000` | OK: 23 tests pasan. |
+| `npm run test -- NewInvoiceView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=90000` | OK: 16 tests pasan. |
+| `npm run lint` | OK. |
+| `npm run typecheck` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, caja, catalogo, historial, recibos, respaldos, reportes ni usuarios.
+- Este corte mejora la consistencia operativa del cobro sin mover la fuente de verdad de totales fuera del backend.

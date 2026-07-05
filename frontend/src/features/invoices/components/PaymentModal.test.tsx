@@ -219,6 +219,20 @@ describe('PaymentModal', () => {
     expect(confirmSpy).not.toHaveBeenCalled();
   });
 
+  it('locks payment fields while a payment is already being registered', () => {
+    renderPaymentModal({
+      submitting: true,
+      paymentMethod: 'transfer',
+      paymentReference: 'TX-101',
+    });
+
+    expect(screen.getByRole('combobox', { name: /m.todo de pago/i })).toBeDisabled();
+    expect(screen.getByLabelText(/monto recibido/i)).toBeDisabled();
+    expect(screen.getByLabelText(/referencia de pago/i)).toBeDisabled();
+    expect(screen.getByText(/cobrando/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /confirmar cobro e imprimir/i })).toBeDisabled();
+  });
+
   it('disables the Pay button when a non-cash amount exceeds the pending balance', () => {
     renderPaymentModal({
       invoiceNumber: '000-001-01-00000010',
