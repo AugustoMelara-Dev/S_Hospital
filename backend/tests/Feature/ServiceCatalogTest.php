@@ -786,6 +786,29 @@ class ServiceCatalogTest extends TestCase
             ->assertJsonValidationErrors('price');
     }
 
+    public function test_erythropoietin_rule_requires_non_taxable_service_on_create(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $admin = $this->admin();
+        $service = Service::query()->where('name', 'Eritropoyetina')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->postJson('/api/services', [
+                'category_id' => $service->category_id,
+                'area_id' => $service->area_id,
+                'name' => 'Eritropoyetina gravada',
+                'price' => '25.00',
+                'taxable' => true,
+                'active' => true,
+                'visible_in_billing' => true,
+                'is_billable' => true,
+                'special_rule_code' => Service::ERYTHROPOIETIN_RULE,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('taxable')
+            ->assertJsonMissingValidationErrors('price');
+    }
+
     public function test_erythropoietin_catalog_rule_cannot_be_cleared_or_made_taxable(): void
     {
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);

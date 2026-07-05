@@ -80,6 +80,7 @@ class StoreServiceRequest extends FormRequest
                 }
 
                 $this->validateErythropoietinFixedPrice($validator);
+                $this->validateErythropoietinTaxStatus($validator);
                 $this->validateGlobalCodes($validator);
             },
         ];
@@ -93,6 +94,17 @@ class StoreServiceRequest extends FormRequest
 
         if (Money::parseCents((string) $this->input('price'), 'price') !== self::ERYTHROPOIETIN_PRICE_CENTS) {
             $validator->errors()->add('price', 'Eritropoyetina debe mantener precio fijo de L.25.00.');
+        }
+    }
+
+    private function validateErythropoietinTaxStatus(Validator $validator): void
+    {
+        if ($validator->errors()->has('taxable') || $this->input('special_rule_code') !== Service::ERYTHROPOIETIN_RULE) {
+            return;
+        }
+
+        if ($this->boolean('taxable', true)) {
+            $validator->errors()->add('taxable', 'Eritropoyetina debe registrarse sin impuesto.');
         }
     }
 
