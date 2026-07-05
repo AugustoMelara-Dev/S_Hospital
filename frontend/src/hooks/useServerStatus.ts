@@ -106,6 +106,18 @@ export function summarizeOperationalHealth(
   }
 
   if (
+    health.backups?.latest_success_file_exists === false ||
+    health.backups?.latest_success_checksum_matches === false
+  ) {
+    return {
+      level: 'review',
+      label: 'Requiere revision',
+      description:
+        'El ultimo respaldo exitoso no pudo validarse. Cree un respaldo manual y pida soporte antes del cierre diario.',
+    };
+  }
+
+  if (
     (health.queue?.pending ?? 0) > 0 ||
     (health.backups?.pending ?? 0) > 0 ||
     health.backups?.worker_recently_active === false ||

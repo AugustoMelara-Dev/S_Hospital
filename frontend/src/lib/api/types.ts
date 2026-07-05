@@ -839,6 +839,8 @@ export type OperationalHealth = {
     pending: number;
     success_last_24h: number;
     failed_last_24h: number;
+    latest_success_file_exists?: boolean | null;
+    latest_success_checksum_matches?: boolean | null;
     error?: string;
   };
   storage: {
