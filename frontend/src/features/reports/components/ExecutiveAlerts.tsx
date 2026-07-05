@@ -42,33 +42,45 @@ export function ExecutiveAlerts({ report }: ExecutiveAlertsProps) {
 function buildExecutiveAlerts(report: ExecutiveReport): ExecutiveAlert[] {
   const alerts: ExecutiveAlert[] = [];
   const oldPending = report.pending_aging['31_plus_days'];
+  const oldPendingCount = safeAlertCount(oldPending.count);
+  const cashDifferences = safeAlertCount(report.audit_summary.cash_differences);
+  const criticalEvents = safeAlertCount(report.audit_summary.critical_events);
 
-  if (oldPending.count > 0) {
+  if (oldPendingCount > 0) {
     alerts.push({
       key: 'old-pending',
       title: 'Pendientes antiguos',
-      detail: `${oldPending.count} ${oldPending.count === 1 ? 'factura tiene' : 'facturas tienen'} 31 o mas dias pendiente (${formatLempirasUI(oldPending.amount)}).`,
+      detail: `${oldPendingCount} ${oldPendingCount === 1 ? 'factura tiene' : 'facturas tienen'} 31 o mas dias pendiente (${formatLempirasUI(oldPending.amount)}).`,
       variant: 'warning',
     });
   }
 
-  if (report.audit_summary.cash_differences > 0) {
+  if (cashDifferences > 0) {
     alerts.push({
       key: 'cash-differences',
       title: 'Caja requiere revision',
-      detail: `${report.audit_summary.cash_differences} ${report.audit_summary.cash_differences === 1 ? 'cierre' : 'cierres'} con diferencia de caja.`,
+      detail: `${cashDifferences} ${cashDifferences === 1 ? 'cierre' : 'cierres'} con diferencia de caja.`,
       variant: 'warning',
     });
   }
 
-  if (report.audit_summary.critical_events > 0) {
+  if (criticalEvents > 0) {
     alerts.push({
       key: 'critical-events',
       title: 'Auditoria critica',
-      detail: `${report.audit_summary.critical_events} ${report.audit_summary.critical_events === 1 ? 'evento critico' : 'eventos criticos'} de auditoria.`,
+      detail: `${criticalEvents} ${criticalEvents === 1 ? 'evento critico' : 'eventos criticos'} de auditoria.`,
       variant: 'destructive',
     });
   }
 
   return alerts;
+}
+
+function safeAlertCount(value: number | string | null | undefined): number {
+  const parsed = typeof value === 'number' ? value : Number(value ?? 0);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return 0;
+  }
+
+  return Math.trunc(parsed);
 }

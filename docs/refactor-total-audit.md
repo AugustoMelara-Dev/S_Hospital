@@ -4283,3 +4283,29 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, facturacion, caja operativa, catalogo, historial, recibos, respaldos ni usuarios.
 - Este corte hace mas legible el reporte ejecutivo de servicios al evitar mezclar cantidades atendidas con montos financieros.
+
+## 177. Fase 15 - Alertas ejecutivas ignoran conteos tecnicos
+
+Cambio aplicado:
+
+- `ExecutiveAlerts` ahora normaliza los conteos de pendientes antiguos, diferencias de caja y eventos criticos antes de decidir si muestra una alerta.
+- Si un conteo llega como `Infinity`, `NaN`, negativo o no parseable, se trata como cero y no se muestra una alerta confusa.
+- Se agrego una regresion con conteos malformados, confirmando que no aparece el bloque de alertas ni se filtran textos tecnicos al DOM.
+- No se cambian calculos backend, umbrales oficiales, filtros, exportaciones ni permisos.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- ExecutiveAlerts.test.tsx -t "does not expose malformed alert counts" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial correcto: aparecia `Alertas operativas` con conteos tecnicos; luego OK: 1 test pasa. |
+| `npm run test -- ExecutiveAlerts.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 2 tests pasan. |
+| `npm run test -- ReportsExecutive.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 2 tests pasan. |
+| `npm run lint` | OK. |
+| `npm run typecheck` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, facturacion, caja operativa, catalogo, historial, recibos, respaldos ni usuarios.
+- Este corte evita que el resumen ejecutivo muestre alertas tecnicas ante datos inconsistentes y mantiene el reporte legible para gerencia/caja.
