@@ -37,6 +37,7 @@ type InvoiceHistoryViewProps = {
 };
 
 const today = localDateString();
+const HISTORY_REPRINT_REASON = 'Reimpresión solicitada desde historial.';
 
 function invoicePatientNameLabel(invoice: Invoice | null) {
   const patientName = invoice?.patient_name?.trim();
@@ -66,18 +67,14 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   const [receiptWidth, setReceiptWidth] = useState<ReceiptData['width']>('half_letter');
   const [voidReason, setVoidReason] = useState('');
   const [reverseReason, setReverseReason] = useState('');
-  const [reprintReason, setReprintReason] = useState('');
   const [voidReasonError, setVoidReasonError] = useState('');
   const [reverseReasonError, setReverseReasonError] = useState('');
-  const [reprintReasonError, setReprintReasonError] = useState('');
   const [confirmingVoid, setConfirmingVoid] = useState(false);
   const [confirmingReverse, setConfirmingReverse] = useState(false);
-  const [reprintTarget, setReprintTarget] = useState<Invoice | null>(null);
   const [receiptModalOpen, setReceiptModalOpen] = useState(false);
   const [loadingActionInvoiceId, setLoadingActionInvoiceId] = useState<number | null>(null);
   const [voidingInvoice, setVoidingInvoice] = useState(false);
   const [reversingInvoice, setReversingInvoice] = useState(false);
-  const [registeringReprint, setRegisteringReprint] = useState(false);
   const voidingInvoiceRef = useRef(false);
   const reversingInvoiceRef = useRef(false);
   const registeringReprintRef = useRef(false);
@@ -176,9 +173,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       const institutionalReceipt = issuedInstitutionalReceipt(invoice);
       if (institutionalReceipt) {
         if (hasInstitutionalPrintEvents(institutionalReceipt)) {
-          setReprintTarget(invoice);
-          setReprintReason('');
-          onStatus('Ingrese un motivo de reimpresión para abrir nuevamente el PDF institucional.');
+          await reprintInvoiceFromHistory(invoice);
 
           return;
         }
@@ -361,27 +356,18 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     }
   }
 
-  async function confirmReprintInvoice() {
+  async function reprintInvoiceFromHistory(reprintInvoice: Invoice) {
     if (registeringReprintRef.current) return;
-    if (!reprintTarget) return;
 
     try {
       registeringReprintRef.current = true;
-      setRegisteringReprint(true);
-      const invoice = await apiClient.getInvoice(reprintTarget.id);
+      setLoadingActionInvoiceId(reprintInvoice.id);
+      const invoice = await apiClient.getInvoice(reprintInvoice.id);
       setSelectedInvoice(invoice);
       const institutionalReceipt = issuedInstitutionalReceipt(invoice);
+      const reason = HISTORY_REPRINT_REASON;
+
       if (institutionalReceipt) {
-        const reason = reprintReason.trim();
-        if (reason.length < 5) {
-          const message = 'Ingrese un motivo de reimpresión de al menos 5 caracteres.';
-          setReprintReasonError(message);
-          onStatus(message);
-
-          return;
-        }
-
-        setReprintReasonError('');
         const idempotencyKey = payloadScopedIdempotencyKey(reprintIdempotencyKeyRef, reprintIdempotencySignatureRef, {
           reason,
           receiptId: institutionalReceipt.id,
@@ -389,43 +375,35 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
         await openInstitutionalReceiptPdf(institutionalReceipt, reason, idempotencyKey);
         queryClient.invalidateQueries({ queryKey: ['audit'] });
         onStatus(`PDF institucional ${institutionalReceipt.receipt_number_full} abierto.`);
-        setReprintTarget(null);
-        setReprintReason('');
         resetPayloadScopedIdempotencyKey(reprintIdempotencyKeyRef, reprintIdempotencySignatureRef);
 
         return;
       }
 
       const requestedWidth = institutionalReceiptPaperSize(receiptWidth);
-      setReprintReasonError('');
-      const reason = reprintReason.trim() || 'Reimpresión solicitada desde historial.';
       const idempotencyKey = payloadScopedIdempotencyKey(reprintIdempotencyKeyRef, reprintIdempotencySignatureRef, {
-        invoiceId: reprintTarget.id,
+        invoiceId: invoice.id,
         reason,
         width: requestedWidth,
       });
-      const nextReceipt = await apiClient.reprintInvoice(reprintTarget.id, {
+      const nextReceipt = await apiClient.reprintInvoice(invoice.id, {
         width: requestedWidth,
         reason,
       }, {
         idempotencyKey,
       });
-      // Reprint posts an audit log entry that other views (dashboard,
-      // cashier list) may display; let them refetch.
       queryClient.invalidateQueries({ queryKey: ['audit'] });
       const normalizedWidth = institutionalReceiptPaperSize(nextReceipt.width);
       setReceiptWidth(normalizedWidth);
       setReceipt({ ...nextReceipt, width: normalizedWidth });
       setReceiptModalOpen(true);
-      setReprintTarget(null);
-      setReprintReason('');
       resetPayloadScopedIdempotencyKey(reprintIdempotencyKeyRef, reprintIdempotencySignatureRef);
       onStatus(`Recibo ${invoice.invoice_number} listo para imprimir.`);
     } catch (error) {
       onStatus(userSafeErrorMessage(error, 'No se pudo reimprimir el recibo.'));
     } finally {
       registeringReprintRef.current = false;
-      setRegisteringReprint(false);
+      setLoadingActionInvoiceId(null);
     }
   }
 
@@ -520,7 +498,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
               onDownloadInstitutionalReceipt={(invoice) => void downloadInstitutionalReceipt(invoice)}
               onOpenReceipt={(invoiceId) => void openReceiptModal(invoiceId)}
               onPrepareInvoiceAction={(invoiceId, action) => void prepareInvoiceAction(invoiceId, action)}
-              onReprint={setReprintTarget}
+              onReprint={(invoice) => void reprintInvoiceFromHistory(invoice)}
             />
           </CardContent>
         </Card>
@@ -659,51 +637,6 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
         </div>
       </ConfirmDialog>
 
-      <ConfirmDialog
-        confirmLabel={registeringReprint ? 'Registrando reimpresión...' : 'Registrar reimpresión'}
-        onCancel={() => {
-          setReprintTarget(null);
-          setReprintReason('');
-          setReprintReasonError('');
-        }}
-        cancelDisabled={registeringReprint}
-        confirmDisabled={registeringReprint || reprintReason.trim().length < 5}
-        onConfirm={() => void confirmReprintInvoice()}
-        open={Boolean(reprintTarget)}
-        title={`¿Reimprimir ${reprintTarget?.invoice_number ?? 'recibo'}?`}
-      >
-        <div className="flex flex-col gap-3">
-          <p>
-            Esta acción queda auditada. Registre un motivo claro antes de continuar.
-          </p>
-          <div className="space-y-2">
-            <Label htmlFor="reprintReason">Motivo de reimpresión</Label>
-            <Textarea
-              id="reprintReason"
-              aria-describedby={reprintReasonError ? 'reprintReason-help reprintReason-error' : 'reprintReason-help'}
-              aria-invalid={Boolean(reprintReasonError)}
-              value={reprintReason}
-              disabled={registeringReprint}
-              onChange={(event) => {
-                setReprintReason(event.target.value);
-                if (reprintReasonError && event.target.value.trim().length >= 5) {
-                  setReprintReasonError('');
-                }
-              }}
-              placeholder="Ejemplo: copia solicitada por paciente"
-              rows={2}
-            />
-            <p id="reprintReason-help" className="text-xs text-muted-foreground">
-              Registre un motivo claro de mínimo 5 caracteres para conservar la trazabilidad de reimpresiones.
-            </p>
-            {reprintReasonError ? (
-              <p id="reprintReason-error" role="alert" className="text-xs font-medium text-destructive">
-                {reprintReasonError}
-              </p>
-            ) : null}
-          </div>
-        </div>
-      </ConfirmDialog>
     </section>
   );
 }
