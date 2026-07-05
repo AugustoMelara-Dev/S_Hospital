@@ -88,6 +88,7 @@ production approval.
 | 2026-07-05 | `docker compose exec frontend npm run test:critical` | PASS, 173 tests | Critical frontend gate for invoices, payment modal, receipts, history, backups, reports, dashboard and users after narrowing operator copy to local single-machine operation. |
 | 2026-07-05 | `docker compose exec frontend npm run typecheck` | PASS | TypeScript no emit after single-machine UI copy changes. |
 | 2026-07-05 | `docker compose exec frontend npm run lint` | PASS | ESLint after single-machine UI copy changes. |
+| 2026-07-05 | `docker compose exec frontend npx vitest run src/features/help/HelpView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | PASS, 1 test | Help screen now keeps normal receipt guidance on carta/media carta/A5 and does not present second-PC/80mm/58mm as normal operation. |
 
 Recharts emits a known Playwright/Vite console warning about chart container
 dimensions in the mocked browser run. It does not currently fail the focused

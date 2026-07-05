@@ -54,7 +54,7 @@ const guides = [
   {
     title: 'Imprimir recibo',
     icon: Printer,
-    steps: ['Abra la vista de recibo', 'Revise paciente, número, total y cajero', 'Use papel media carta, carta, A5, 80mm o 58mm', 'Entregue original y conserve copia si corresponde'],
+    steps: ['Abra la vista de recibo', 'Revise paciente, número, total y cajero', 'Use papel carta, media carta o A5', 'Entregue original y conserve copia si corresponde'],
   },
   {
     title: 'Reimprimir',
@@ -94,7 +94,7 @@ const incidentGuides = [
   },
   {
     title: 'Falla la red',
-    answer: 'Detenga nuevas facturas desde computadoras cliente. Use solo la computadora servidor si administración lo autoriza.',
+    answer: 'Detenga nuevas facturas hasta confirmar que el sistema local responde. Revise Caja e Historial antes de intentar de nuevo.',
   },
   {
     title: 'Se fue la luz o reinició la PC',
@@ -198,8 +198,8 @@ const delicateActions = [
     warning: 'No cierre para ocultar errores. Registre conteo real, motivo y pida revisión.',
   },
   {
-    title: 'Cambio de red o servidor',
-    warning: 'No cambie direcciones al azar. Valide acceso LAN desde una segunda computadora antes de operar.',
+    title: 'Cambio de equipo o servidor',
+    warning: 'No cambie direcciones al azar. Valide el acceso local y el recibo de prueba antes de operar.',
   },
 ];
 
