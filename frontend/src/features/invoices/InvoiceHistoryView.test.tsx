@@ -1007,7 +1007,7 @@ describe('InvoiceHistoryView', () => {
     fireEvent.click(generateButton);
     fireEvent.click(generateButton);
 
-    expect(store).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(store).toHaveBeenCalledTimes(1));
     expect(store).toHaveBeenCalledWith({ invoice_id: 36 }, {
       idempotencyKey: 'history-generate-receipt-attempt-1',
     });
@@ -1018,6 +1018,66 @@ describe('InvoiceHistoryView', () => {
 
     await waitFor(() => expect(apiClient.getInstitutionalReceiptPdf).toHaveBeenCalledWith(96, 'Emisión manual de recibo faltante.', {
       idempotencyKey: 'history-generate-receipt-attempt-1',
+    }));
+  });
+
+  it('generates a missing institutional receipt with the posted payment and cash session from invoice detail', async () => {
+    vi.spyOn(apiBase, 'createClientIdempotencyKey').mockReturnValue('history-generate-receipt-payment-1');
+    const paid = invoiceFixture({
+      id: 51,
+      invoice_number: '000-001-01-00000051',
+      patient_name: 'Paciente Caja Cerrada',
+      status: 'paid',
+      paid_amount: '17.25',
+      balance_due: '0.00',
+      institutional_receipt: null,
+    });
+    const receipt = institutionalReceiptRecord({
+      id: 151,
+      invoice_id: 51,
+      payment_id: 501,
+      cash_session_id: 71,
+      receipt_number_full: 'REC-A-00000151',
+    });
+    const store = vi.spyOn(institutionalReceipts, 'store').mockResolvedValue(receipt);
+    vi.spyOn(apiClient, 'getInstitutionalReceiptPdf')
+      .mockResolvedValue(new Blob(['%PDF-generated'], { type: 'application/pdf' }));
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [paid],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+    vi.spyOn(apiClient, 'getInvoice').mockResolvedValue({
+      ...paid,
+      payments: [{
+        id: 501,
+        invoice_id: 51,
+        cash_session_id: 71,
+        user_id: 1,
+        method: 'cash',
+        amount: '17.25',
+        reference: null,
+        status: 'posted',
+        paid_at: '2026-06-01T12:05:00.000000Z',
+      }],
+      institutional_receipt: institutionalReceiptFixture({ id: 151, receipt_number_full: 'REC-A-00000151' }),
+    });
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente Caja Cerrada')).toBeInTheDocument());
+    await openInvoiceMenu(paid.invoice_number);
+    fireEvent.click(await screen.findByRole('menuitem', { name: /Generar PDF/i }));
+
+    await waitFor(() => expect(store).toHaveBeenCalledWith({
+      invoice_id: 51,
+      payment_id: 501,
+      cash_session_id: 71,
+    }, {
+      idempotencyKey: 'history-generate-receipt-payment-1',
+    }));
+    await waitFor(() => expect(apiClient.getInstitutionalReceiptPdf).toHaveBeenCalledWith(151, 'Emisión manual de recibo faltante.', {
+      idempotencyKey: 'history-generate-receipt-payment-1',
     }));
   });
 

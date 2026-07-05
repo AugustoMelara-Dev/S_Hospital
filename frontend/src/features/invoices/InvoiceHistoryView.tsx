@@ -43,6 +43,20 @@ function invoicePatientNameLabel(invoice: Invoice | null) {
   return patientName ? patientName : 'Paciente sin nombre';
 }
 
+function latestPostedPayment(invoice: Invoice): NonNullable<Invoice['payments']>[number] | null {
+  const postedPayments = invoice.payments?.filter((payment) => payment.status === 'posted') ?? [];
+
+  return postedPayments
+    .sort((first, second) => {
+      const firstPaidAt = Date.parse(first.paid_at);
+      const secondPaidAt = Date.parse(second.paid_at);
+      const paidAtComparison = (Number.isNaN(secondPaidAt) ? 0 : secondPaidAt)
+        - (Number.isNaN(firstPaidAt) ? 0 : firstPaidAt);
+
+      return paidAtComparison !== 0 ? paidAtComparison : second.id - first.id;
+    })[0] ?? null;
+}
+
 export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
@@ -226,12 +240,21 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     setLoadingActionInvoiceId(invoiceId);
     try {
       generatingInstitutionalReceiptRef.current = true;
+      const invoiceDetail = await apiClient.getInvoice(invoiceId);
+      const selectedPayment = latestPostedPayment(invoiceDetail);
+      const receiptPayload = {
+        invoice_id: invoiceId,
+        ...(selectedPayment ? {
+          payment_id: selectedPayment.id,
+          cash_session_id: selectedPayment.cash_session_id,
+        } : {}),
+      };
       const idempotencyKey = payloadScopedIdempotencyKey(
         receiptGenerationIdempotencyKeyRef,
         receiptGenerationIdempotencySignatureRef,
-        { invoiceId },
+        receiptPayload,
       );
-      const receipt = await institutionalReceipts.store({ invoice_id: invoiceId }, { idempotencyKey });
+      const receipt = await institutionalReceipts.store(receiptPayload, { idempotencyKey });
       queryClient.invalidateQueries({ queryKey: ['audit'] });
       await invalidateBillingQueries(queryClient);
 
