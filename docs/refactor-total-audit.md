@@ -5875,3 +5875,28 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte mejora la confiabilidad de QA final: los reportes button-smoke vacios ahora fallan explicitamente en vez de convertirse en evidencia ambigua.
+
+## 243. Fase 13/27 - Button-smoke completo escribe evidencia en repo
+
+Cambio aplicado:
+
+- `docker-compose.yml` ahora construye una imagen frontend local con Chromium instalado en vez de depender de un `apk add` manual dentro del contenedor.
+- El servicio frontend monta `./qa:/qa`, de modo que el path por defecto del smoke de botones escribe evidencia real en `qa/production-audit/button-smoke-report.json`.
+- El entorno del servicio declara `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser`, evitando repetir la variable en cada comando containerizado.
+- Se regenero el reporte button-smoke con 79 resultados `passed`.
+- No se tocaron flujos de producto, contratos API, permisos backend ni dependencias de runtime de produccion.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose config --quiet` | OK. |
+| `docker compose build frontend` | OK: imagen local construida con Chromium. |
+| `docker compose up -d frontend` | OK: servicio recreado con montaje `./qa:/qa`. |
+| `docker compose exec -e PLAYWRIGHT_EXTERNAL_SERVER=1 frontend npx playwright test e2e/all-buttons-smoke.spec.ts --workers=1 --reporter=list` | OK: 7 tests pasan en 4.7m. |
+| Lectura de `qa/production-audit/button-smoke-report.json` | OK: 79 resultados, 0 fallos. |
+
+Decision:
+
+- No se agregaron dependencias nuevas al runtime hospitalario; Chromium queda en la imagen local de QA/frontend para pruebas Playwright.
+- Este corte cierra evidencia fresca del smoke de botones: controles nombrados, axe serio/critico y cancelacion de accion peligrosa en historial.
