@@ -5503,3 +5503,27 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte reduce bloqueos al recuperar recibos institucionales faltantes desde Historial, manteniendo deduplicacion para reintentos de la misma factura.
+
+## 228. Fase 8 - Tendencia de reportes oculta fechas danadas
+
+Cambio aplicado:
+
+- `TrendChart` ya no muestra fechas crudas no interpretables en la tabla accesible ni en los datos del grafico.
+- Cuando el backend entrega una fecha diaria danada, el reporte ejecutivo muestra `Fecha no disponible`.
+- El formato normal de fechas validas del eje diario se conserva como `MM-DD`.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- TrendChart.test.tsx -t "human fallback for malformed trend dates"` | RED inicial correcto: aparecia `fecha-danada`; luego OK. |
+| `docker compose exec frontend npm run test -- TrendChart.test.tsx` | OK: 2 tests pasan. |
+| `docker compose exec frontend npm run test -- src/features/reports` | OK: 53 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `docker compose exec frontend npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte mejora reportes ejecutivos utiles para operacion local, evitando que datos corruptos contaminen la vista normal o tecnologias de asistencia.

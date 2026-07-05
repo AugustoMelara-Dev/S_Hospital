@@ -27,7 +27,19 @@ const CHART_COLORS = {
 };
 
 function formatDay(date: string): string {
+  if (!isValidDate(date)) return 'Fecha no disponible';
+
   return date.slice(5);
+}
+
+function formatTableDate(date: string): string {
+  return isValidDate(date) ? date : 'Fecha no disponible';
+}
+
+function isValidDate(date: string): boolean {
+  const parsed = new Date(date);
+
+  return !Number.isNaN(parsed.getTime());
 }
 
 function formatMoneyShort(value: number): string {
@@ -73,7 +85,7 @@ function TrendTooltip({ active, payload, label }: TrendTooltipProps) {
 
 export function TrendChart({ report }: TrendChartProps) {
   const data = report.daily_trend.map((day) => ({
-    date: day.date,
+    date: formatTableDate(day.date),
     day: formatDay(day.date),
     Facturado: safeTrendAmount(day.billed),
     Cobrado: safeTrendAmount(day.collected),

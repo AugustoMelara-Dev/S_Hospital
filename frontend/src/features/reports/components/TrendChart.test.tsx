@@ -9,9 +9,9 @@ vi.mock('recharts', async () => {
   return {
     Area: ({ dataKey }: { dataKey: string }) => <div data-testid={`area-${dataKey}`} />,
     AreaChart: ({ children, data }: { children: React.ReactNode; data: Array<Record<string, unknown>> }) => (
-      <div data-testid="area-chart" data-chart={JSON.stringify(data)}>
+      <svg data-testid="area-chart" data-chart={JSON.stringify(data)}>
         {children}
-      </div>
+      </svg>
     ),
     CartesianGrid: () => <div />,
     Legend: () => <div />,
@@ -55,6 +55,41 @@ describe('TrendChart', () => {
           Facturado: 0,
           Cobrado: 0,
           Pendiente: 15.25,
+        },
+      ]),
+    );
+  });
+
+  it('uses a human fallback for malformed trend dates', () => {
+    render(
+      <TrendChart
+        report={buildExecutiveReport({
+          daily_trend: [
+            {
+              date: 'fecha-danada',
+              billed: '100.00',
+              collected: '90.00',
+              pending: '10.00',
+              voided_count: 0,
+              invoice_count: 1,
+            },
+          ],
+        })}
+      />,
+    );
+
+    expect(screen.getByRole('table', { name: /tendencia diaria del reporte ejecutivo/i })).toBeInTheDocument();
+    expect(document.body.textContent).toContain('Fecha no disponible');
+    expect(document.body.textContent).not.toContain('fecha-danada');
+    expect(screen.getByTestId('area-chart')).toHaveAttribute(
+      'data-chart',
+      JSON.stringify([
+        {
+          date: 'Fecha no disponible',
+          day: 'Fecha no disponible',
+          Facturado: 100,
+          Cobrado: 90,
+          Pendiente: 10,
         },
       ]),
     );
