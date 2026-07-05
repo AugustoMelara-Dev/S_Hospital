@@ -316,6 +316,7 @@ export function ServiceSheet({
               id="price"
               type="text"
               inputMode="decimal"
+              disabled={isSubmitting}
               {...register('price')}
               aria-invalid={Boolean(errors.price)}
               aria-describedby={errors.price ? 'service-price-error' : undefined}

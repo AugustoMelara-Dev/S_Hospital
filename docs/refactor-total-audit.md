@@ -4385,3 +4385,28 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, facturacion, catalogo, historial, recibos, respaldos, reportes ni usuarios.
 - Este corte reduce confusion operativa en la apertura de caja y conserva la seriedad del flujo local de caja.
+
+## 181. Fase 3 - Catalogo bloquea precio mientras guarda servicio
+
+Cambio aplicado:
+
+- `ServiceSheet` ahora deshabilita el campo `Precio` mientras `isSubmitting=true`.
+- Esto evita que el administrador modifique visualmente el precio vigente despues de enviar una creacion o actualizacion del servicio.
+- Se agrego una regresion con `saveService` pendiente que confirma que el boton muestra `Guardando...` y el precio queda bloqueado.
+- No se cambian reglas de eritropoyetina, motivos de cambio de precio/ISV, permisos, payloads ni contratos API.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- ServiceSheet.test.tsx -t "locks the service price while the save request is pending" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial correcto: el input de precio seguia habilitado durante `Guardando...`; luego OK: 1 test pasa. |
+| `npm run test -- ServiceSheet.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=45000` | OK: 17 tests pasan. |
+| `npm run lint` | OK. |
+| `npm run typecheck` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, facturacion, caja, historial, recibos, respaldos, reportes ni usuarios.
+- Este corte reduce confusion operativa en catalogo y mantiene protegidos los precios de servicios durante solicitudes pendientes.

@@ -746,6 +746,52 @@ describe('ServiceSheet contract preservation', () => {
     });
   });
 
+  it('locks the service price while the save request is pending', async () => {
+    let resolveSave: () => void = () => undefined;
+    vi.spyOn(apiClient, 'saveService').mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSave = () =>
+            resolve({
+              id: 1,
+              category_id: 1,
+              area_id: 1,
+              name: 'Consulta',
+              slug: 'consulta',
+              price: '50.00',
+              scan_code: null,
+              barcode: null,
+              qr_code: null,
+              taxable: true,
+              active: true,
+              special_rule_code: null,
+            });
+        }),
+    );
+
+    render(
+      <ServiceSheet
+        open
+        onOpenChange={noop}
+        service={null}
+        categories={[{ id: 1, name: 'Consulta externa' }]}
+        areas={[{ id: 1, name: 'Consulta externa' }]}
+        onSuccess={noop}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText(/^nombre/i), { target: { value: 'Consulta' } });
+    fireEvent.change(screen.getByLabelText(/precio/i), { target: { value: '50.00' } });
+    fireEvent.click(screen.getByRole('button', { name: /crear/i }));
+
+    await waitFor(() => expect(screen.getByRole('button', { name: /guardando/i })).toBeDisabled());
+    expect(screen.getByLabelText(/precio/i)).toBeDisabled();
+
+    await waitFor(() => {
+      resolveSave();
+    });
+  });
+
   it('does not expose delete or restore actions that are not part of the contract', () => {
     render(
       <ServiceSheet
