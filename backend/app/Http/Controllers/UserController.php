@@ -143,6 +143,9 @@ class UserController extends Controller
                 'active' => $newActiveState,
                 'deactivated_at' => $newActiveState ? null : now(),
             ]);
+            if (! $newActiveState) {
+                $user->tokens()->delete();
+            }
             $user->load(['roles', 'permissions']);
 
             $auditLogger->log(

@@ -146,6 +146,31 @@ class UserManagementTest extends TestCase
         ]);
     }
 
+    public function test_deactivating_user_revokes_existing_api_tokens(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->userWithRole('admin');
+        $target = $this->userWithRole('cajero');
+        $target->createToken('terminal-caja');
+
+        $this->assertDatabaseHas('personal_access_tokens', [
+            'tokenable_type' => User::class,
+            'tokenable_id' => $target->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->postJson("/api/admin/users/{$target->id}/toggle-active", [
+                'reason' => 'Usuario retirado de operacion diaria',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.active', false);
+
+        $this->assertDatabaseMissing('personal_access_tokens', [
+            'tokenable_type' => User::class,
+            'tokenable_id' => $target->id,
+        ]);
+    }
+
     public function test_toggle_user_active_requires_disable_permission(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
