@@ -683,9 +683,15 @@ function filtersFromSearchParams(searchParams: URLSearchParams): InvoiceFilters 
     status: (searchParams.get('status') ?? '') as InvoiceFilters['status'],
     patient: searchParams.get('patient') ?? '',
     invoice_number: searchParams.get('invoice_number') ?? '',
-    page: Number(searchParams.get('page') || '1'),
-    per_page: Number(searchParams.get('per_page') || '10'),
+    page: positiveIntegerFromSearchParam(searchParams.get('page'), 1),
+    per_page: positiveIntegerFromSearchParam(searchParams.get('per_page'), 10),
   };
+}
+
+function positiveIntegerFromSearchParam(value: string | null, fallback: number): number {
+  const parsed = Number(value);
+
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
 }
 
 function searchParamsFromFilters(filters: InvoiceFilters): Record<string, string> {

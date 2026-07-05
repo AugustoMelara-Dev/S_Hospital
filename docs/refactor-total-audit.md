@@ -4334,3 +4334,28 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, catalogo, historial, recibos, respaldos, reportes ni usuarios.
 - Este corte reduce riesgo de cobros duplicados en caja sin alterar la autoridad del backend ni el flujo principal de impresion institucional.
+
+## 179. Fase 4 - Historial sanea paginacion invalida desde URL
+
+Cambio aplicado:
+
+- `InvoiceHistoryView` ahora normaliza `page` y `per_page` al construir filtros desde `searchParams`.
+- Si la URL trae valores corruptos, cero o no numericos, el historial consulta con `page=1` y `per_page=10`.
+- Se agrego una regresion con `/invoices?page=abc&per_page=0`, confirmando que `getInvoices` no recibe `NaN` ni paginacion invalida.
+- No se cambian filtros de paciente, numero, fechas, estados, acciones de anulacion, reimpresion ni recibos.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- InvoiceHistoryView.test.tsx -t "sanitizes invalid pagination search params" --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial correcto: `getInvoices` recibia `page: NaN` y `per_page: 0`; luego OK: 1 test pasa. |
+| `npm run test -- InvoiceHistoryView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=45000` | OK: 33 tests pasan. |
+| `npm run lint` | OK. |
+| `npm run typecheck` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron backend, caja, catalogo, recibos, respaldos, reportes ni usuarios.
+- Este corte protege el historial de facturas ante URLs manipuladas o marcadores corruptos, manteniendo estable el contrato del API local.

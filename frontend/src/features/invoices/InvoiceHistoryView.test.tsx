@@ -208,6 +208,26 @@ describe('InvoiceHistoryView', () => {
     })));
   });
 
+  it('sanitizes invalid pagination search params before querying invoice history', async () => {
+    const getInvoices = vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [],
+      meta: { current_page: 1, per_page: 10, total: 0 },
+    });
+
+    renderWithQueryClient(
+      <InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />,
+      ['/invoices?page=abc&per_page=0'],
+    );
+
+    await waitFor(() => expect(getInvoices).toHaveBeenCalledWith(expect.objectContaining({
+      page: 1,
+      per_page: 10,
+    })));
+    expect(getInvoices).not.toHaveBeenCalledWith(expect.objectContaining({
+      page: Number.NaN,
+    }));
+  });
+
   it('treats advanced date changes as active filters in the empty state', async () => {
     const getInvoices = vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
       data: [],
