@@ -70,7 +70,9 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   const registeringReprintRef = useRef(false);
   const generatingInstitutionalReceiptRef = useRef(false);
   const voidIdempotencyKeyRef = useRef<string | null>(null);
+  const voidIdempotencySignatureRef = useRef<string | null>(null);
   const reverseIdempotencyKeyRef = useRef<string | null>(null);
+  const reverseIdempotencySignatureRef = useRef<string | null>(null);
   const reprintIdempotencyKeyRef = useRef<string | null>(null);
   const reprintIdempotencySignatureRef = useRef<string | null>(null);
   const receiptGenerationIdempotencyKeyRef = useRef<string | null>(null);
@@ -273,15 +275,19 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       voidingInvoiceRef.current = true;
       setVoidingInvoice(true);
       setVoidReasonError('');
-      const voided = await apiClient.voidInvoice(selectedInvoice.id, voidReason.trim(), {
-        idempotencyKey: voidIdempotencyKeyRef.current ??= createClientIdempotencyKey(),
+      const reason = voidReason.trim();
+      const voided = await apiClient.voidInvoice(selectedInvoice.id, reason, {
+        idempotencyKey: payloadScopedIdempotencyKey(voidIdempotencyKeyRef, voidIdempotencySignatureRef, {
+          invoiceId: selectedInvoice.id,
+          reason,
+        }),
       });
       await invalidateBillingQueries(queryClient);
       setSelectedInvoice(voided);
       setReceipt(null);
       setVoidReason('');
       setConfirmingVoid(false);
-      voidIdempotencyKeyRef.current = null;
+      resetPayloadScopedIdempotencyKey(voidIdempotencyKeyRef, voidIdempotencySignatureRef);
       onStatus(`Factura ${voided.invoice_number} anulada.`);
     } catch (error) {
       onStatus(userSafeErrorMessage(error, 'No se pudo anular la factura.'));
@@ -306,15 +312,19 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       reversingInvoiceRef.current = true;
       setReversingInvoice(true);
       setReverseReasonError('');
-      const reversed = await apiClient.reverseInvoice(selectedInvoice.id, reverseReason.trim(), {
-        idempotencyKey: reverseIdempotencyKeyRef.current ??= createClientIdempotencyKey(),
+      const reason = reverseReason.trim();
+      const reversed = await apiClient.reverseInvoice(selectedInvoice.id, reason, {
+        idempotencyKey: payloadScopedIdempotencyKey(reverseIdempotencyKeyRef, reverseIdempotencySignatureRef, {
+          invoiceId: selectedInvoice.id,
+          reason,
+        }),
       });
       await invalidateBillingQueries(queryClient);
       setSelectedInvoice(reversed);
       setReceipt(null);
       setReverseReason('');
       setConfirmingReverse(false);
-      reverseIdempotencyKeyRef.current = null;
+      resetPayloadScopedIdempotencyKey(reverseIdempotencyKeyRef, reverseIdempotencySignatureRef);
       onStatus(`Factura ${reversed.invoice_number} reversada.`);
     } catch (error) {
       onStatus(userSafeErrorMessage(error, 'No se pudo reversar la factura.'));

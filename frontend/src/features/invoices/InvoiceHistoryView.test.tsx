@@ -691,6 +691,53 @@ describe('InvoiceHistoryView', () => {
     }));
   });
 
+  it('renews void idempotency key when a failed reason changes', async () => {
+    vi.spyOn(apiBase, 'createClientIdempotencyKey')
+      .mockReturnValueOnce('history-void-attempt-1')
+      .mockReturnValueOnce('history-void-attempt-2');
+    const invoice = invoiceFixture({
+      id: 43,
+      invoice_number: '000-001-01-00000043',
+      patient_name: 'Paciente Anulacion Reintento',
+    });
+    const onStatus = vi.fn();
+    const voidInvoice = vi.spyOn(apiClient, 'voidInvoice')
+      .mockRejectedValueOnce(new Error('void failed'))
+      .mockResolvedValueOnce({ ...invoice, status: 'void' });
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [invoice],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+    vi.spyOn(apiClient, 'getInvoice').mockResolvedValue(invoice);
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={onStatus} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente Anulacion Reintento')).toBeInTheDocument());
+    await openInvoiceMenu(invoice.invoice_number);
+    fireEvent.click(await screen.findByRole('menuitem', { name: /Anular factura/i }));
+    await waitFor(() => expect(screen.getByText(/Anular factura 000-001-01-00000043/i)).toBeInTheDocument());
+
+    fireEvent.change(screen.getByLabelText(/motivo de anulaci/i), {
+      target: { value: 'Factura emitida con paciente equivocado' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /anular factura/i }));
+
+    await waitFor(() => expect(voidInvoice).toHaveBeenCalledWith(43, 'Factura emitida con paciente equivocado', {
+      idempotencyKey: 'history-void-attempt-1',
+    }));
+    await waitFor(() => expect(onStatus).toHaveBeenCalledWith('void failed'));
+
+    fireEvent.change(screen.getByLabelText(/motivo de anulaci/i), {
+      target: { value: 'Factura duplicada durante cierre de caja' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /anular factura/i }));
+
+    await waitFor(() => expect(voidInvoice).toHaveBeenLastCalledWith(43, 'Factura duplicada durante cierre de caja', {
+      idempotencyKey: 'history-void-attempt-2',
+    }));
+  });
+
   it('keeps reverse confirmation open when reason is too short', async () => {
     const invoice = invoiceFixture({
       id: 32,
@@ -725,6 +772,56 @@ describe('InvoiceHistoryView', () => {
     expect(reverseInvoice).not.toHaveBeenCalled();
     expect(onStatus).not.toHaveBeenCalledWith('Ingrese un motivo de reversa de al menos 5 caracteres.');
     expect(screen.getByText(/Reversar factura 000-001-01-00000032/i)).toBeInTheDocument();
+  });
+
+  it('renews reverse idempotency key when a failed reason changes', async () => {
+    vi.spyOn(apiBase, 'createClientIdempotencyKey')
+      .mockReturnValueOnce('history-reverse-attempt-1')
+      .mockReturnValueOnce('history-reverse-attempt-2');
+    const invoice = invoiceFixture({
+      id: 44,
+      invoice_number: '000-001-01-00000044',
+      patient_name: 'Paciente Reversa Reintento',
+      status: 'paid',
+      paid_amount: '17.25',
+      balance_due: '0.00',
+    });
+    const onStatus = vi.fn();
+    const reverseInvoice = vi.spyOn(apiClient, 'reverseInvoice')
+      .mockRejectedValueOnce(new Error('reverse failed'))
+      .mockResolvedValueOnce({ ...invoice, status: 'void' });
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [invoice],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+    vi.spyOn(apiClient, 'getInvoice').mockResolvedValue(invoice);
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={onStatus} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente Reversa Reintento')).toBeInTheDocument());
+    await openInvoiceMenu(invoice.invoice_number);
+    fireEvent.click(await screen.findByRole('menuitem', { name: /Reversar pago/i }));
+    await waitFor(() => expect(screen.getByText(/Reversar factura 000-001-01-00000044/i)).toBeInTheDocument());
+
+    fireEvent.change(screen.getByLabelText(/motivo de reversa/i), {
+      target: { value: 'Pago aplicado a factura equivocada' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /reversar factura/i }));
+
+    await waitFor(() => expect(reverseInvoice).toHaveBeenCalledWith(44, 'Pago aplicado a factura equivocada', {
+      idempotencyKey: 'history-reverse-attempt-1',
+    }));
+    await waitFor(() => expect(onStatus).toHaveBeenCalledWith('reverse failed'));
+
+    fireEvent.change(screen.getByLabelText(/motivo de reversa/i), {
+      target: { value: 'Pago duplicado por correccion de caja' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /reversar factura/i }));
+
+    await waitFor(() => expect(reverseInvoice).toHaveBeenLastCalledWith(44, 'Pago duplicado por correccion de caja', {
+      idempotencyKey: 'history-reverse-attempt-2',
+    }));
   });
 
   it('opens institutional receipt pdf from history when the invoice has one', async () => {

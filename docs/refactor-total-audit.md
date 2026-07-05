@@ -5457,3 +5457,26 @@ Decision:
 
 - No se agregaron dependencias nuevas.
 - Este corte reduce falsos bloqueos durante reimpresiones reales desde Historial, manteniendo la deduplicacion para reintentos identicos.
+
+## 226. Fase 8 - Anulacion y reversa renuevan idempotencia si cambia el motivo
+
+Cambio aplicado:
+
+- La anulacion desde Historial conserva la misma `Idempotency-Key` al reintentar el mismo motivo fallido.
+- Si el operador corrige el motivo antes de reintentar la anulacion, el frontend genera una clave nueva.
+- La reversa de pago aplica la misma regla por factura y motivo, evitando reutilizar claves con payload distinto.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- InvoiceHistoryView.test.tsx -t "renews (void|reverse) idempotency key"` | RED inicial correcto: el segundo intento reutilizaba la clave anterior; luego OK. |
+| `docker compose exec frontend npm run test -- InvoiceHistoryView.test.tsx` | OK: 38 tests pasan. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `docker compose exec frontend npm run build` | OK. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- Este corte evita falsos rechazos al corregir motivos de anulacion o reversa despues de un fallo, sin debilitar la deduplicacion de intentos identicos.
