@@ -94,6 +94,12 @@ class ReverseInvoiceAction
             /** @var Collection<int, Payment> $postedPayments */
             $postedPayments = $lockedInvoice->payments;
 
+            if ($postedPayments->isEmpty()) {
+                throw ValidationException::withMessages([
+                    'invoice' => 'No se puede reversar una factura sin pagos vigentes. Use anulacion normal.',
+                ]);
+            }
+
             $oldValues = [
                 'status' => $lockedInvoice->status,
                 'paid_amount' => (string) $lockedInvoice->paid_amount,
