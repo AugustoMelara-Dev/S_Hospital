@@ -4714,3 +4714,26 @@ Decision:
 - No se agregaron dependencias nuevas.
 - No se tocaron backend, facturacion, caja, catalogo, historial, recibos, respaldos ni usuarios.
 - Este corte reduce errores operativos al revisar auditoria y conserva el servidor como fuente de verdad para la bitacora.
+
+## 194. Fase 1 - Facturacion no guarda codigos tecnicos en items
+
+Cambio aplicado:
+
+- `CalculateInvoiceTotalsAction` ya no copia `scan_code`, `barcode` ni `qr_code` del catalogo hacia `invoice_items`.
+- Los items facturados conservan snapshots operativos/fiscales necesarios: servicio, categoria, area, cantidades, precios, impuestos, totales, notas y reglas especiales.
+- Se agrego una regresion que factura un servicio con codigos tecnicos y confirma que la fila historica queda sin esos valores.
+- No se eliminan columnas ni se cambia el contrato de facturacion, numeracion fiscal, caja, pagos, recibos ni catalogo.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter=invoice_items_do_not_snapshot_scanner_or_barcode_codes` | RED inicial correcto: `invoice_items` guardaba `SCAN-GLU-001`, `BAR-GLU-001` y `QR-GLU-001`; luego OK: 1 test pasa. |
+| `docker compose exec backend php artisan test --filter=InvoiceCreationTest` | OK: 30 tests pasan. |
+| `docker compose exec backend vendor/bin/pint --test` | OK: 426 archivos pasan. |
+
+Decision:
+
+- No se agregaron dependencias nuevas.
+- No se tocaron frontend, caja, pagos, reportes, respaldos, usuarios ni recibos PDF.
+- Este corte reduce el riesgo de exponer codigos internos en historicos o salidas posteriores, manteniendo la factura como snapshot institucional y no como copia tecnica del catalogo.

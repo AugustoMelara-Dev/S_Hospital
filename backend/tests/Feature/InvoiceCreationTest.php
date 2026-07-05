@@ -310,6 +310,34 @@ class InvoiceCreationTest extends TestCase
             ->assertJsonPath('data.items.0.line_total', '17.25');
     }
 
+    public function test_invoice_items_do_not_snapshot_scanner_or_barcode_codes(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $glucose = Service::query()->where('name', 'Glucosa')->firstOrFail();
+        $glucose->forceFill([
+            'scan_code' => 'SCAN-GLU-001',
+            'barcode' => 'BAR-GLU-001',
+            'qr_code' => 'QR-GLU-001',
+        ])->save();
+
+        $invoiceId = $this->actingAs($cashier)
+            ->postJson('/api/invoices', [
+                'patient_name' => 'Maria Lopez',
+                'items' => [['service_id' => $glucose->id, 'quantity' => '1.00']],
+            ])
+            ->assertCreated()
+            ->json('data.id');
+
+        $this->assertDatabaseHas('invoice_items', [
+            'invoice_id' => $invoiceId,
+            'service_name' => 'Glucosa',
+            'scan_code' => null,
+            'barcode' => null,
+            'qr_code' => null,
+        ]);
+    }
+
     public function test_invoice_items_keep_service_area_snapshot_when_catalog_area_changes_later(): void
     {
         $this->seedBillingBase();
