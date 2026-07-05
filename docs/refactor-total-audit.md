@@ -6208,3 +6208,27 @@ Pruebas ejecutadas:
 Decision:
 
 - El E2E vuelve a cubrir la regla de negocio actual: desactivar un servicio no borra registros, exige motivo y usa el mismo contrato PATCH que valida/audita el backend.
+
+## 258. Fase 10/14 - Exports de reportes ocultan auditoria sin audit.view
+
+Cambio aplicado:
+
+- `ReportController` marca los datos operativos exportados con `can_view_audit` y redacta anulaciones, reimpresiones, cambios de catalogo, reversos de pago y respaldos cuando el usuario no tiene `audit.view`.
+- `PremiumExcelExportService` conserva la hoja `Cajeros`, pero no crea la hoja `Auditoria` sin permiso de auditoria.
+- `PdfExportService` conserva el detalle operativo/servicios, pero omite el resumen y detalle de auditoria operativa sin `audit.view`.
+- No se agregaron dependencias, migraciones, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter=test_report_export_without_audit_view_omits_audit_sheet_but_keeps_cashier_summary` | RED inicial por hoja `Auditoria` visible; luego OK: 1 test pasa. |
+| `docker compose exec backend php artisan test --filter=test_period_closure_pdf_without_audit_view_omits_operational_audit_section` | RED inicial por seccion `Resumen de Auditoria`; luego OK: 1 test pasa. |
+| `docker compose exec backend php artisan test --filter=ReportsTest` | OK: 55 tests pasan. |
+| `docker compose exec backend vendor/bin/pint --test` | RED inicial por formato; luego OK despues de `vendor/bin/pint ...`. |
+| `docker compose exec backend vendor/bin/phpstan analyse` | Primer intento incompleto por limite de memoria 128M. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M` | OK: sin errores. |
+
+Decision:
+
+- Los exports gerenciales siguen funcionando para usuarios con `reports.export`, pero los datos auditados quedan bajo el mismo permiso `audit.view` que protege `/api/reports/operations`.

@@ -319,6 +319,7 @@ class PdfExportService
         $areas = $data['areas']['areas'] ?? [];
         $services = $data['services']['services'] ?? [];
         $operations = $data['operations'];
+        $canViewAudit = ($operations['can_view_audit'] ?? true) === true;
         $categoryAmountBasis = $data['categories']['amount_basis'] ?? ReportAmountBasis::BILLED;
         $areaAmountBasis = $data['areas']['amount_basis'] ?? ReportAmountBasis::BILLED;
         $serviceAmountBasis = $data['services']['amount_basis'] ?? ReportAmountBasis::BILLED;
@@ -347,6 +348,7 @@ class PdfExportService
         $rtnEsc = $this->e($rtn);
         $dateFromEsc = $this->e($dateFrom);
         $dateToEsc = $this->e($dateTo);
+        $operationalSubtitle = $canViewAudit ? 'Auditoria y Desempeno' : 'Desempeno operativo';
         $appliedFiltersHtml = $this->buildAppliedFiltersHtml($this->appliedFilterRows($data['filters'] ?? []));
 
         $html = "
@@ -647,7 +649,7 @@ class PdfExportService
         </div>
         <div>
             <h1 class='header-title'>DETALLE OPERATIVO Y SERVICIOS</h1>
-            <div class='header-subtitle'>Auditoría y Desempeño</div>
+            <div class='header-subtitle'>".$this->e($operationalSubtitle)."</div>
         </div>
         <div class='clear'></div>
     </div>
@@ -678,10 +680,12 @@ class PdfExportService
                 </tr>";
             }
         }
-        $html .= "
+        $html .= '
         </tbody>
-    </table>
+    </table>';
 
+        if ($canViewAudit) {
+            $html .= "
     <div class='section-title'>Resumen de Auditoría Operativa</div>
     <div style='margin-bottom: 15px;'>
         <table style='width: 100%; border: 1px solid #e2e8f0;'>
@@ -706,8 +710,8 @@ class PdfExportService
         </table>
     </div>";
 
-        if (! empty($operations['voids'])) {
-            $html .= "
+            if (! empty($operations['voids'])) {
+                $html .= "
             <div class='section-title'>Detalle de Anulaciones</div>
             <table>
                 <thead>
@@ -719,22 +723,22 @@ class PdfExportService
                     </tr>
                 </thead>
                 <tbody>";
-            foreach (array_slice($operations['voids'], 0, 5) as $void) {
-                $html .= '
+                foreach (array_slice($operations['voids'], 0, 5) as $void) {
+                    $html .= '
                     <tr>
                         <td>'.$this->e($void['invoice_number'] ?? 'N/A').'</td>
                         <td>'.$this->e($void['voided_at'] ?? 'N/A').'</td>
                         <td>'.$this->e($void['user'] ?? $void['voided_by_name'] ?? 'N/A').'</td>
                         <td>'.$this->e($void['reason'] ?? $void['void_reason'] ?? 'Sin motivo').'</td>
                     </tr>';
-            }
-            $html .= '
+                }
+                $html .= '
                 </tbody>
             </table>';
-        }
+            }
 
-        if (! empty($operations['payment_voids'])) {
-            $html .= "
+            if (! empty($operations['payment_voids'])) {
+                $html .= "
             <div class='section-title'>Detalle de Reversos de Pago</div>
             <table>
                 <thead>
@@ -747,8 +751,8 @@ class PdfExportService
                     </tr>
                 </thead>
                 <tbody>";
-            foreach (array_slice($operations['payment_voids'], 0, 5) as $paymentVoid) {
-                $html .= '
+                foreach (array_slice($operations['payment_voids'], 0, 5) as $paymentVoid) {
+                    $html .= '
                     <tr>
                         <td>'.$this->e($paymentVoid['invoice_number'] ?? 'N/A').'</td>
                         <td>'.$this->e($this->translateMethod((string) ($paymentVoid['method'] ?? '')))."</td>
@@ -756,10 +760,11 @@ class PdfExportService
                         <td>'.$this->e($paymentVoid['reason'] ?? 'Sin motivo').'</td>
                         <td>'.$this->e($paymentVoid['voided_by'] ?? 'N/A').'</td>
                     </tr>';
-            }
-            $html .= '
+                }
+                $html .= '
                 </tbody>
             </table>';
+            }
         }
 
         $html .= "

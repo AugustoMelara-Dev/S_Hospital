@@ -754,102 +754,104 @@ class PremiumExcelExportService
             $sheet4->getColumnDimension($col)->setAutoSize(true);
         }
 
-        // SHEET 5: Auditoría y Caja (Anulaciones y Reimpresiones)
-        $sheet5 = $spreadsheet->createSheet();
-        $sheet5->setTitle('Auditoría');
-        $sheet5->setShowGridlines(true);
+        if (($operations['can_view_audit'] ?? true) === true) {
+            // SHEET 5: Auditoría y Caja (Anulaciones y Reimpresiones)
+            $sheet5 = $spreadsheet->createSheet();
+            $sheet5->setTitle('Auditoría');
+            $sheet5->setShowGridlines(true);
 
-        // Voids section
-        $sheet5->setCellValue('B2', 'Historial de Facturas Anuladas');
-        $sheet5->getStyle('B2')->applyFromArray($titleStyle);
+            // Voids section
+            $sheet5->setCellValue('B2', 'Historial de Facturas Anuladas');
+            $sheet5->getStyle('B2')->applyFromArray($titleStyle);
 
-        $sheet5->setCellValue('B4', 'Nº Factura');
-        $sheet5->setCellValue('C4', 'Paciente');
-        $sheet5->setCellValue('D4', 'Monto');
-        $sheet5->setCellValue('E4', 'Motivo de Anulación');
-        $sheet5->setCellValue('F4', 'Anulado por');
-        $sheet5->getStyle('B4:F4')->applyFromArray($headerStyle);
-        $sheet5->getStyle('B4:F4')->getFill()->setStartColor(new Color('BE123C')); // Premium Crimson/Red for Voids
+            $sheet5->setCellValue('B4', 'Nº Factura');
+            $sheet5->setCellValue('C4', 'Paciente');
+            $sheet5->setCellValue('D4', 'Monto');
+            $sheet5->setCellValue('E4', 'Motivo de Anulación');
+            $sheet5->setCellValue('F4', 'Anulado por');
+            $sheet5->getStyle('B4:F4')->applyFromArray($headerStyle);
+            $sheet5->getStyle('B4:F4')->getFill()->setStartColor(new Color('BE123C')); // Premium Crimson/Red for Voids
 
-        $row = 5;
-        foreach ($operations['voids'] as $void) {
-            $sheet5->setCellValue('B'.$row, ExcelSafe::value($void['invoice_number']));
-            $sheet5->setCellValue('C'.$row, ExcelSafe::value($void['patient_name'] ?? 'N/A'));
-            $sheet5->setCellValue('D'.$row, $this->moneyFloat($void['total']));
-            $sheet5->setCellValue('E'.$row, ExcelSafe::value($void['reason'] ?? $void['void_reason'] ?? 'Sin motivo'));
-            $sheet5->setCellValue('F'.$row, ExcelSafe::value($void['user'] ?? $void['voided_by_name'] ?? 'N/A'));
+            $row = 5;
+            foreach ($operations['voids'] as $void) {
+                $sheet5->setCellValue('B'.$row, ExcelSafe::value($void['invoice_number']));
+                $sheet5->setCellValue('C'.$row, ExcelSafe::value($void['patient_name'] ?? 'N/A'));
+                $sheet5->setCellValue('D'.$row, $this->moneyFloat($void['total']));
+                $sheet5->setCellValue('E'.$row, ExcelSafe::value($void['reason'] ?? $void['void_reason'] ?? 'Sin motivo'));
+                $sheet5->setCellValue('F'.$row, ExcelSafe::value($void['user'] ?? $void['voided_by_name'] ?? 'N/A'));
 
+                $sheet5->getStyle('D'.$row)->getNumberFormat()->setFormatCode('\"L. \"#,##0.00;\"- L. \"#,##0.00');
+                $row++;
+            }
+
+            // Summary row for voids
+            $sheet5->setCellValue('B'.$row, 'Total Anulado');
+            $sheet5->setCellValue('D'.$row, '=SUM(D5:D'.($row - 1).')');
             $sheet5->getStyle('D'.$row)->getNumberFormat()->setFormatCode('\"L. \"#,##0.00;\"- L. \"#,##0.00');
+            $sheet5->getStyle('B'.$row.':F'.$row)->applyFromArray($boldRowStyle);
+            $sheet5->getStyle('B'.$row.':F'.$row)->getBorders()->getTop()->setBorderStyle(Border::BORDER_DOUBLE);
+
+            // Reprints section (below voids table)
+            $row += 3;
+            $sheet5->setCellValue('B'.$row, 'Historial de Reimpresiones Institucionales');
+            $sheet5->getStyle('B'.$row)->applyFromArray($titleStyle);
+
+            $row += 2;
+            $sheet5->setCellValue('B'.$row, 'Nº Factura');
+            $sheet5->setCellValue('C'.$row, 'Paciente');
+            $sheet5->setCellValue('D'.$row, 'Ancho de Papel');
+            $sheet5->setCellValue('E'.$row, 'Motivo');
+            $sheet5->setCellValue('F'.$row, 'Reimpreso por');
+            $sheet5->getStyle("B{$row}:F{$row}")->applyFromArray($headerStyle);
+            $sheet5->getStyle("B{$row}:F{$row}")->getFill()->setStartColor(new Color('B45309')); // Premium Amber/Bronze for reprints
+
             $row++;
-        }
+            foreach ($operations['reprints'] as $reprint) {
+                $sheet5->setCellValue('B'.$row, ExcelSafe::value($reprint['invoice_number']));
+                $sheet5->setCellValue('C'.$row, ExcelSafe::value($reprint['patient_name'] ?? 'N/A'));
+                $sheet5->setCellValue('D'.$row, $this->receiptWidthLabel($reprint['width'] ?? null));
+                $sheet5->setCellValue('E'.$row, ExcelSafe::value($reprint['reason'] ?? 'Sin motivo'));
+                $sheet5->setCellValue('F'.$row, ExcelSafe::value($reprint['user'] ?? $reprint['username'] ?? 'N/A'));
+                $row++;
+            }
 
-        // Summary row for voids
-        $sheet5->setCellValue('B'.$row, 'Total Anulado');
-        $sheet5->setCellValue('D'.$row, '=SUM(D5:D'.($row - 1).')');
-        $sheet5->getStyle('D'.$row)->getNumberFormat()->setFormatCode('\"L. \"#,##0.00;\"- L. \"#,##0.00');
-        $sheet5->getStyle('B'.$row.':F'.$row)->applyFromArray($boldRowStyle);
-        $sheet5->getStyle('B'.$row.':F'.$row)->getBorders()->getTop()->setBorderStyle(Border::BORDER_DOUBLE);
+            // Payment reversals section
+            $row += 3;
+            $sheet5->setCellValue('B'.$row, 'Historial de Reversos de Pago');
+            $sheet5->getStyle('B'.$row)->applyFromArray($titleStyle);
 
-        // Reprints section (below voids table)
-        $row += 3;
-        $sheet5->setCellValue('B'.$row, 'Historial de Reimpresiones Institucionales');
-        $sheet5->getStyle('B'.$row)->applyFromArray($titleStyle);
+            $row += 2;
+            $sheet5->setCellValue('B'.$row, 'Factura');
+            $sheet5->setCellValue('C'.$row, 'Paciente');
+            $sheet5->setCellValue('D'.$row, 'Método');
+            $sheet5->setCellValue('E'.$row, 'Monto');
+            $sheet5->setCellValue('F'.$row, 'Motivo');
+            $sheet5->setCellValue('G'.$row, 'Reversado por');
+            $sheet5->setCellValue('H'.$row, 'Fecha');
+            $sheet5->getStyle("B{$row}:H{$row}")->applyFromArray($headerStyle);
+            $sheet5->getStyle("B{$row}:H{$row}")->getFill()->setStartColor(new Color('6D28D9'));
 
-        $row += 2;
-        $sheet5->setCellValue('B'.$row, 'Nº Factura');
-        $sheet5->setCellValue('C'.$row, 'Paciente');
-        $sheet5->setCellValue('D'.$row, 'Ancho de Papel');
-        $sheet5->setCellValue('E'.$row, 'Motivo');
-        $sheet5->setCellValue('F'.$row, 'Reimpreso por');
-        $sheet5->getStyle("B{$row}:F{$row}")->applyFromArray($headerStyle);
-        $sheet5->getStyle("B{$row}:F{$row}")->getFill()->setStartColor(new Color('B45309')); // Premium Amber/Bronze for reprints
-
-        $row++;
-        foreach ($operations['reprints'] as $reprint) {
-            $sheet5->setCellValue('B'.$row, ExcelSafe::value($reprint['invoice_number']));
-            $sheet5->setCellValue('C'.$row, ExcelSafe::value($reprint['patient_name'] ?? 'N/A'));
-            $sheet5->setCellValue('D'.$row, $this->receiptWidthLabel($reprint['width'] ?? null));
-            $sheet5->setCellValue('E'.$row, ExcelSafe::value($reprint['reason'] ?? 'Sin motivo'));
-            $sheet5->setCellValue('F'.$row, ExcelSafe::value($reprint['user'] ?? $reprint['username'] ?? 'N/A'));
             $row++;
-        }
+            foreach ($operations['payment_voids'] ?? [] as $paymentVoid) {
+                $sheet5->setCellValue('B'.$row, ExcelSafe::value($paymentVoid['invoice_number'] ?? 'N/A'));
+                $sheet5->setCellValue('C'.$row, ExcelSafe::value($paymentVoid['patient_name'] ?? 'N/A'));
+                $sheet5->setCellValue('D'.$row, ExcelSafe::value($this->paymentMethodLabel($paymentVoid['method'] ?? '')));
+                $sheet5->setCellValue('E'.$row, $this->moneyFloat($paymentVoid['amount'] ?? 0));
+                $sheet5->setCellValue('F'.$row, ExcelSafe::value($paymentVoid['reason'] ?? 'Sin motivo'));
+                $sheet5->setCellValue('G'.$row, ExcelSafe::value($paymentVoid['voided_by'] ?? 'N/A'));
+                $sheet5->setCellValue('H'.$row, isset($paymentVoid['voided_at'])
+                    ? Carbon::parse($paymentVoid['voided_at'])->format('d/m/Y H:i')
+                    : 'N/A');
+                $sheet5->getStyle('E'.$row)->getNumberFormat()->setFormatCode('\"L. \"#,##0.00;\"- L. \"#,##0.00');
+                $row++;
+            }
 
-        // Payment reversals section
-        $row += 3;
-        $sheet5->setCellValue('B'.$row, 'Historial de Reversos de Pago');
-        $sheet5->getStyle('B'.$row)->applyFromArray($titleStyle);
+            // Freeze pane
+            $sheet5->freezePane('A5');
 
-        $row += 2;
-        $sheet5->setCellValue('B'.$row, 'Factura');
-        $sheet5->setCellValue('C'.$row, 'Paciente');
-        $sheet5->setCellValue('D'.$row, 'Método');
-        $sheet5->setCellValue('E'.$row, 'Monto');
-        $sheet5->setCellValue('F'.$row, 'Motivo');
-        $sheet5->setCellValue('G'.$row, 'Reversado por');
-        $sheet5->setCellValue('H'.$row, 'Fecha');
-        $sheet5->getStyle("B{$row}:H{$row}")->applyFromArray($headerStyle);
-        $sheet5->getStyle("B{$row}:H{$row}")->getFill()->setStartColor(new Color('6D28D9'));
-
-        $row++;
-        foreach ($operations['payment_voids'] ?? [] as $paymentVoid) {
-            $sheet5->setCellValue('B'.$row, ExcelSafe::value($paymentVoid['invoice_number'] ?? 'N/A'));
-            $sheet5->setCellValue('C'.$row, ExcelSafe::value($paymentVoid['patient_name'] ?? 'N/A'));
-            $sheet5->setCellValue('D'.$row, ExcelSafe::value($this->paymentMethodLabel($paymentVoid['method'] ?? '')));
-            $sheet5->setCellValue('E'.$row, $this->moneyFloat($paymentVoid['amount'] ?? 0));
-            $sheet5->setCellValue('F'.$row, ExcelSafe::value($paymentVoid['reason'] ?? 'Sin motivo'));
-            $sheet5->setCellValue('G'.$row, ExcelSafe::value($paymentVoid['voided_by'] ?? 'N/A'));
-            $sheet5->setCellValue('H'.$row, isset($paymentVoid['voided_at'])
-                ? Carbon::parse($paymentVoid['voided_at'])->format('d/m/Y H:i')
-                : 'N/A');
-            $sheet5->getStyle('E'.$row)->getNumberFormat()->setFormatCode('\"L. \"#,##0.00;\"- L. \"#,##0.00');
-            $row++;
-        }
-
-        // Freeze pane
-        $sheet5->freezePane('A5');
-
-        foreach (['B', 'C', 'D', 'E', 'F', 'G', 'H'] as $col) {
-            $sheet5->getColumnDimension($col)->setAutoSize(true);
+            foreach (['B', 'C', 'D', 'E', 'F', 'G', 'H'] as $col) {
+                $sheet5->getColumnDimension($col)->setAutoSize(true);
+            }
         }
 
         return $spreadsheet;

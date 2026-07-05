@@ -350,3 +350,17 @@ Pruebas relevantes:
 
 - `ServiceSheet.test.tsx` cubre el bloqueo de regla/precio/ISV al editar eritropoyetina y la normalizacion al crear.
 - `npm run typecheck` y `npm run lint` verifican el contrato frontend.
+
+## 20. Actualizacion 2026-07-05 - Exports de reportes respetan audit.view
+
+Control agregado/verificado:
+
+- `/api/reports/export` y `/api/reports/pdf` ya no exponen secciones derivadas de auditoria operativa a usuarios sin `audit.view`.
+- El XLSX conserva reportes financieros y hoja de cajeros, pero omite la hoja `Auditoria` sin permiso.
+- El PDF de periodo conserva servicios/detalle operativo, pero omite resumen de auditoria, anulaciones, reimpresiones, reversos, cambios de catalogo y respaldos sin permiso.
+- La respuesta JSON `/api/reports/operations` ya estaba protegida por `audit.view`; ahora los downloads quedan alineados con esa compuerta.
+
+Pruebas relevantes:
+
+- `ReportsTest` cubre export XLSX sin `audit.view`, PDF de periodo sin `audit.view`, y regresiones completas de reportes.
+- `pint --test` y `phpstan analyse --memory-limit=512M` verifican formato y analisis estatico backend.

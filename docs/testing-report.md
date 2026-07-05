@@ -244,3 +244,14 @@ verified.
 | `docker compose exec frontend npm run test -- src/features/catalog/CatalogView.test.tsx --run` | PASS, 19 tests. |
 | `docker compose exec frontend npm run typecheck` | PASS. |
 | `docker compose exec frontend npm run lint` | PASS. |
+
+### 2026-07-05 Report Export Audit Gate
+
+| Command | Result |
+|---|---|
+| `docker compose exec backend php artisan test --filter=test_report_export_without_audit_view_omits_audit_sheet_but_keeps_cashier_summary` | RED first because XLSX still included `Auditoria`; then PASS, 1 focused test. |
+| `docker compose exec backend php artisan test --filter=test_period_closure_pdf_without_audit_view_omits_operational_audit_section` | RED first because PDF still rendered audit summary; then PASS, 1 focused test. |
+| `docker compose exec backend php artisan test --filter=ReportsTest` | PASS, 55 tests. |
+| `docker compose exec backend vendor/bin/pint --test` | RED first on style; after `vendor/bin/pint ...`, PASS, 429 files. |
+| `docker compose exec backend vendor/bin/phpstan analyse` | Incomplete: PHPStan hit the configured 128M memory limit. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M` | PASS, no errors. |

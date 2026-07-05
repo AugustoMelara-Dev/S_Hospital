@@ -859,6 +859,46 @@ class ReportsTest extends TestCase
         $this->assertStringStartsWith("PK\x03\x04", $xlsx);
     }
 
+    public function test_report_export_without_audit_view_omits_audit_sheet_but_keeps_cashier_summary(): void
+    {
+        $this->seedBillingBase();
+        $viewer = User::factory()->create();
+        $this->grantPermissions($viewer, 'reports.view', 'reports.managerial.view', 'reports.export');
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+        $this->payInvoice($cashier, $invoiceId, $sessionId, Payment::METHOD_CASH, '17.25');
+
+        Invoice::query()->whereKey($invoiceId)->update([
+            'status' => Invoice::STATUS_VOID,
+            'voided_by' => $this->supervisor()->id,
+            'voided_at' => now(),
+            'void_reason' => 'Motivo reservado sin auditoria',
+        ]);
+
+        $xlsx = $this->actingAs($viewer)
+            ->get('/api/reports/export?date_from='.now()->toDateString().'&date_to='.now()->toDateString())
+            ->assertOk()
+            ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            ->streamedContent();
+
+        $path = tempnam(sys_get_temp_dir(), 'no-audit-export-');
+        file_put_contents($path, $xlsx);
+
+        try {
+            $spreadsheet = IOFactory::load($path);
+            $cashiersSheet = $spreadsheet->getSheetByName('Cajeros');
+
+            $this->assertNotNull($cashiersSheet);
+            $this->assertSame('Recaudaciones por Cajero', $cashiersSheet->getCell('B2')->getValue());
+            $this->assertNull($spreadsheet->getSheetByName('Auditoría'));
+        } finally {
+            if ($path !== false && file_exists($path)) {
+                unlink($path);
+            }
+        }
+    }
+
     public function test_category_filtered_collections_are_allocated_to_matching_items(): void
     {
         $this->seedBillingBase();
@@ -2240,6 +2280,51 @@ class ReportsTest extends TestCase
         $this->assertStringContainsString('Monto Facturado (LPS)', $servicesSection);
         $this->assertStringNotContainsString('Top Servicios Más Vendidos', $servicesSection);
         $this->assertStringNotContainsString('Total Recaudado (LPS)', $servicesSection);
+    }
+
+    public function test_period_closure_pdf_without_audit_view_omits_operational_audit_section(): void
+    {
+        $this->seedBillingBase();
+        $viewer = User::factory()->create();
+        $this->grantPermissions($viewer, 'reports.view', 'reports.managerial.view', 'reports.export');
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+        $this->payInvoice($cashier, $invoiceId, $sessionId, Payment::METHOD_CASH, '17.25');
+
+        Invoice::query()->whereKey($invoiceId)->update([
+            'status' => Invoice::STATUS_VOID,
+            'voided_by' => $this->supervisor()->id,
+            'voided_at' => now(),
+            'void_reason' => 'Motivo reservado sin auditoria',
+        ]);
+
+        $capturedHtml = null;
+        Pdf::shouldReceive('loadHTML')
+            ->once()
+            ->with(\Mockery::on(function (string $html) use (&$capturedHtml): bool {
+                $capturedHtml = $html;
+
+                return true;
+            }))
+            ->andReturn(tap(\Mockery::mock(DomPdfWrapper::class), function ($pdf): void {
+                $pdf->shouldReceive('output')
+                    ->once()
+                    ->andReturn('%PDF-no-audit-section');
+            }));
+
+        $date = now()->toDateString();
+        $this->actingAs($viewer)
+            ->get("/api/reports/pdf?date_from={$date}&date_to={$date}")
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf')
+            ->assertSee('%PDF-no-audit-section', false);
+
+        $this->assertIsString($capturedHtml);
+        $this->assertStringNotContainsString('Resumen de Auditor', $capturedHtml);
+        $this->assertStringNotContainsString('Detalle de Anulaciones', $capturedHtml);
+        $this->assertStringNotContainsString('Motivo reservado sin auditoria', $capturedHtml);
+        $this->assertStringContainsString('Servicios', $capturedHtml);
     }
 
     public function test_period_closure_pdf_labels_area_totals_as_billed_not_generic_income(): void

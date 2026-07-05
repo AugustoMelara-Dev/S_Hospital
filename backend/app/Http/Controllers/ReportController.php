@@ -29,6 +29,7 @@ use App\Http\Requests\Reports\ShowCashSessionReportRequest;
 use App\Http\Requests\Reports\TodayReportRequest;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSetting;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Carbon;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -121,7 +122,7 @@ class ReportController extends Controller
         $categories = $categoryReports->report($filters);
         $areas = $areaReports->report($filters);
         $services = $serviceReports->report($filters);
-        $operations = $operationReports->report($filters, $request->user()->can('backups.view'));
+        $operations = $this->operationsForExport($operationReports, $filters, $request->user());
 
         $excelService = new PremiumExcelExportService;
         $spreadsheet = $excelService->generate(
@@ -183,7 +184,7 @@ class ReportController extends Controller
         $categories = $categoryReports->report($filters);
         $areas = $areaReports->report($filters);
         $services = $servicesReports->report($filters);
-        $operations = $operationsReports->report($filters, $request->user()->can('backups.view'));
+        $operations = $this->operationsForExport($operationsReports, $filters, $request->user());
 
         $pdf = $pdfService->generateRangeClosurePdf([
             'income' => $income,
@@ -279,5 +280,46 @@ class ReportController extends Controller
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'Cache-Control' => 'max-age=0',
         ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return array<string, mixed>
+     */
+    private function operationsForExport(OperationsReportService $reports, array $filters, ?User $user): array
+    {
+        $operations = $reports->report($filters, $user?->can('backups.view') === true);
+
+        if ($user?->can('audit.view') === true) {
+            $operations['can_view_audit'] = true;
+
+            return $operations;
+        }
+
+        return $this->redactAuditOperations($operations);
+    }
+
+    /**
+     * @param  array<string, mixed>  $operations
+     * @return array<string, mixed>
+     */
+    private function redactAuditOperations(array $operations): array
+    {
+        $operations['can_view_audit'] = false;
+        $operations['summary'] = array_merge($operations['summary'] ?? [], [
+            'void_count' => 0,
+            'reprint_count' => 0,
+            'audit_event_count' => 0,
+            'service_change_count' => 0,
+            'payment_void_count' => 0,
+            'backup_count' => 0,
+            'failed_backup_count' => 0,
+        ]);
+
+        foreach (['voids', 'reprints', 'catalog_changes', 'payment_voids', 'backups'] as $key) {
+            $operations[$key] = [];
+        }
+
+        return $operations;
     }
 }
