@@ -70,6 +70,10 @@ async function openUserActions(userName: string) {
   fireEvent.click(trigger);
 }
 
+function openAdvancedUserPermissions(dialog: HTMLElement) {
+  fireEvent.click(within(dialog).getByText(/permisos exactos avanzados/i));
+}
+
 describe('UsersView', () => {
   beforeEach(() => {
     Element.prototype.scrollIntoView = vi.fn();
@@ -428,6 +432,7 @@ describe('UsersView', () => {
 
     fireEvent.click(within(dialog).getByRole('combobox', { name: /rol operativo/i }));
     fireEvent.click(await screen.findByRole('option', { name: /Catalog manager/i }));
+    openAdvancedUserPermissions(dialog);
 
     expect(within(dialog).getByRole('checkbox', { name: /Catalog view/i })).toBeChecked();
     expect(within(dialog).getByRole('checkbox', { name: /Catalog manage/i })).toBeChecked();
@@ -475,6 +480,41 @@ describe('UsersView', () => {
     })));
   });
 
+  it('keeps basic cashier creation on role inheritance even for role administrators', async () => {
+    const createUser = vi.spyOn(apiClient, 'createUser').mockResolvedValue({
+      ...adminUser,
+      id: 13,
+      name: 'Caja Basica',
+      email: 'caja-basica@hospital.test',
+      username: 'caja-basica',
+      roles: ['cajero'],
+      direct_permissions: [],
+      must_change_password: true,
+    });
+
+    render(<UsersView onStatus={vi.fn()} canCreateUsers={true} canUpdateUsers canManageRoles={true} canAssignAdminRole />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /crear usuario/i }));
+    const dialog = screen.getByRole('dialog', { name: /crear usuario/i });
+
+    expect(within(dialog).getByText(/heredara los modulos del rol seleccionado/i)).toBeInTheDocument();
+    expect(within(dialog).queryByRole('checkbox', { name: /Reports view/i })).not.toBeInTheDocument();
+    expect(within(dialog).queryByText(/reports\.view/i)).not.toBeInTheDocument();
+
+    fireEvent.change(within(dialog).getByLabelText(/nombre completo/i), { target: { value: 'Caja Basica' } });
+    fireEvent.change(within(dialog).getByLabelText(/correo electr/i), { target: { value: 'caja-basica@hospital.test' } });
+    fireEvent.change(within(dialog).getByLabelText(/nombre de usuario/i), { target: { value: 'caja-basica' } });
+    fireEvent.change(within(dialog).getByLabelText(/contrase/i), { target: { value: 'Password123!' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: /crear usuario/i }));
+
+    await waitFor(() => expect(createUser).toHaveBeenCalledWith(expect.objectContaining({
+      role: 'cajero',
+    })));
+    expect(createUser).toHaveBeenCalledWith(expect.not.objectContaining({
+      permissions: expect.any(Array),
+    }));
+  });
+
   it('filters inoperable restore permissions from forms and user payloads if a legacy catalog returns them', async () => {
     vi.mocked(apiClient.getRoles).mockResolvedValueOnce({
       roles: [
@@ -517,6 +557,7 @@ describe('UsersView', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: /crear usuario/i }));
     const dialog = screen.getByRole('dialog', { name: /crear usuario/i });
+    openAdvancedUserPermissions(dialog);
 
     expect(within(dialog).getByRole('checkbox', { name: /Cash view/i })).toBeChecked();
     expect(within(dialog).queryByRole('checkbox', { name: /Restaurar respaldos/i })).not.toBeInTheDocument();
@@ -551,6 +592,7 @@ describe('UsersView', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: /crear usuario/i }));
     const dialog = screen.getByRole('dialog', { name: /crear usuario/i });
+    openAdvancedUserPermissions(dialog);
 
     fireEvent.change(within(dialog).getByLabelText(/nombre completo/i), { target: { value: 'Reportes Turno' } });
     fireEvent.change(within(dialog).getByLabelText(/correo electr/i), { target: { value: 'reportes-turno@hospital.test' } });
@@ -605,6 +647,7 @@ describe('UsersView', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: /crear usuario/i }));
     const dialog = screen.getByRole('dialog', { name: /crear usuario/i });
+    openAdvancedUserPermissions(dialog);
     const cashOpen = within(dialog).getByRole('checkbox', { name: /Cash open/i });
 
     expect(cashOpen).toBeChecked();
@@ -647,6 +690,7 @@ describe('UsersView', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: /crear usuario/i }));
     const dialog = screen.getByRole('dialog', { name: /crear usuario/i });
+    openAdvancedUserPermissions(dialog);
     const cashView = within(dialog).getByRole('checkbox', { name: /Cash view/i });
 
     expect(cashView).toBeChecked();

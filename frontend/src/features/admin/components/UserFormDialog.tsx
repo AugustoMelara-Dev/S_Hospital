@@ -49,6 +49,8 @@ type UserFormDialogProps = {
   canAssignAdminRole?: boolean;
   protectedRoleLocked?: boolean;
   selectedUserPermissions: string[];
+  advancedPermissionMode?: boolean;
+  onAdvancedPermissionModeChange?: (enabled: boolean) => void;
   onToggleUserPermission: (permissionName: string, checked: boolean) => void;
   onRoleChange?: (roleName: string) => void;
   permissionCatalog: { module: string; label: string; permissions: { name: string; label: string }[] }[];
@@ -65,6 +67,8 @@ export function UserFormDialog({
   canAssignAdminRole = false,
   protectedRoleLocked = false,
   selectedUserPermissions,
+  advancedPermissionMode = false,
+  onAdvancedPermissionModeChange = () => undefined,
   onToggleUserPermission,
   onRoleChange,
   permissionCatalog,
@@ -83,7 +87,7 @@ export function UserFormDialog({
       canAssignAdminRole || !isElevatedRole(role) || role.name === editingRoleName
     ));
   }, [canAssignAdminRole, editingRoleName, protectedRoleLocked, roles]);
-  const hasSelectedCriticalPermission = selectedUserPermissions.some(isCriticalPermission);
+  const hasSelectedCriticalPermission = advancedPermissionMode && selectedUserPermissions.some(isCriticalPermission);
   const {
     register,
     unregister,
@@ -107,10 +111,10 @@ export function UserFormDialog({
   }, [open, editingUser, assignableRoles, reset, unregister]);
 
   useEffect(() => {
-    if (!hasSelectedCriticalPermission) {
+    if (!advancedPermissionMode || !hasSelectedCriticalPermission) {
       setCriticalAccessConfirmed(false);
     }
-  }, [hasSelectedCriticalPermission]);
+  }, [advancedPermissionMode, hasSelectedCriticalPermission]);
 
   const handleSafeSubmit = handleSubmit((data) => {
     if (hasSelectedCriticalPermission && !criticalAccessConfirmed) {
@@ -200,74 +204,86 @@ export function UserFormDialog({
           />
         </Field>
 
-        {canManageRoles && (
-          <div className="space-y-3 rounded-md border border-operational-border bg-operational-panel/45 p-3">
-            <div>
-              <h3 className="text-sm font-semibold text-foreground">Acceso por modulos</h3>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Ajuste los permisos directos de este usuario. El rol funciona como plantilla inicial.
-              </p>
-            </div>
-            {hasSelectedCriticalPermission && (
-              <div className="rounded-md border border-warning/40 bg-warning/10 p-3 text-sm text-warning-foreground">
-                <p className="font-semibold">Permisos criticos seleccionados</p>
-                <p className="mt-1 text-xs text-current/80">
-                  Estos accesos pueden modificar caja, recibos, anulaciones, respaldos o usuarios. Confirme que esta cuenta realmente los necesita.
-                </p>
-                <label htmlFor="critical-user-confirmation" className="mt-3 flex items-start gap-2">
-                  <Checkbox
-                    id="critical-user-confirmation"
-                    checked={criticalAccessConfirmed}
-                    disabled={isSubmitting}
-                    onCheckedChange={(value) => setCriticalAccessConfirmed(value === true)}
-                  />
-                  <span>Confirmo que este usuario necesita permisos criticos</span>
-                </label>
-              </div>
-            )}
-            <div className="max-h-[320px] space-y-3 overflow-y-auto">
-              {permissionCatalog.map((group) => (
-                <fieldset key={group.module} className="rounded-md border border-operational-border bg-operational-surface p-3">
-                  <legend className="px-1 text-sm font-semibold text-foreground">
-                    {group.label}
-                    <span className="ml-2 text-xs font-normal text-muted-foreground">
-                      {group.permissions.length} permiso{group.permissions.length === 1 ? '' : 's'}
-                    </span>
-                  </legend>
-                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                    {group.permissions.map((permission) => {
-                      const id = `user-permission-${permission.name.replace(/[^A-Za-z0-9_-]/g, '-')}`;
-                      const checked = selectedUserPermissions.includes(permission.name);
-                      const critical = isCriticalPermission(permission.name);
-                      return (
-                        <label key={permission.name} htmlFor={id} className="flex items-start gap-2 rounded-md p-2 text-sm hover:bg-muted/50">
-                          <Checkbox
-                            id={id}
-                            checked={checked}
-                            disabled={isSubmitting}
-                            onCheckedChange={(value) => onToggleUserPermission(permission.name, value === true)}
-                          />
-                          <span>
-                            <span className="flex flex-wrap items-center gap-2 font-medium text-foreground">
-                              {permission.label}
-                              {critical && <Badge variant="warning">Permiso critico</Badge>}
-                            </span>
-                            <span className="block text-xs text-muted-foreground">{permission.name}</span>
-                          </span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                </fieldset>
-              ))}
-            </div>
-          </div>
+        {(!canManageRoles || !advancedPermissionMode) && (
+          <p className="rounded-md border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
+            Este usuario heredara los modulos del rol seleccionado. Abra el panel avanzado solo cuando una cuenta necesite un acceso distinto a su rol operativo.
+          </p>
         )}
 
-        {!canManageRoles && (
-          <p className="rounded-md border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
-            Este usuario heredara los modulos del rol seleccionado. Solo una cuenta con permiso para administrar roles puede ajustar permisos directos.
-          </p>
+        {canManageRoles && (
+          <div className="space-y-3 rounded-md border border-operational-border bg-operational-panel/45 p-3">
+            <Button
+              type="button"
+              variant="secondary"
+              aria-expanded={advancedPermissionMode}
+              onClick={() => onAdvancedPermissionModeChange(!advancedPermissionMode)}
+            >
+              Permisos exactos avanzados
+            </Button>
+            {advancedPermissionMode && (
+              <div className="space-y-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground">Acceso por modulos</h3>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Ajuste los permisos directos de este usuario. El rol funciona como plantilla inicial.
+                  </p>
+                </div>
+                {hasSelectedCriticalPermission && (
+                  <div className="rounded-md border border-warning/40 bg-warning/10 p-3 text-sm text-warning-foreground">
+                    <p className="font-semibold">Permisos criticos seleccionados</p>
+                    <p className="mt-1 text-xs text-current/80">
+                      Estos accesos pueden modificar caja, recibos, anulaciones, respaldos o usuarios. Confirme que esta cuenta realmente los necesita.
+                    </p>
+                    <label htmlFor="critical-user-confirmation" className="mt-3 flex items-start gap-2">
+                      <Checkbox
+                        id="critical-user-confirmation"
+                        checked={criticalAccessConfirmed}
+                        disabled={isSubmitting}
+                        onCheckedChange={(value) => setCriticalAccessConfirmed(value === true)}
+                      />
+                      <span>Confirmo que este usuario necesita permisos criticos</span>
+                    </label>
+                  </div>
+                )}
+                <div className="max-h-[320px] space-y-3 overflow-y-auto">
+                  {permissionCatalog.map((group) => (
+                    <fieldset key={group.module} className="rounded-md border border-operational-border bg-operational-surface p-3">
+                      <legend className="px-1 text-sm font-semibold text-foreground">
+                        {group.label}
+                        <span className="ml-2 text-xs font-normal text-muted-foreground">
+                          {group.permissions.length} permiso{group.permissions.length === 1 ? '' : 's'}
+                        </span>
+                      </legend>
+                      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                        {group.permissions.map((permission) => {
+                          const id = `user-permission-${permission.name.replace(/[^A-Za-z0-9_-]/g, '-')}`;
+                          const checked = selectedUserPermissions.includes(permission.name);
+                          const critical = isCriticalPermission(permission.name);
+                          return (
+                            <label key={permission.name} htmlFor={id} className="flex items-start gap-2 rounded-md p-2 text-sm hover:bg-muted/50">
+                              <Checkbox
+                                id={id}
+                                checked={checked}
+                                disabled={isSubmitting}
+                                onCheckedChange={(value) => onToggleUserPermission(permission.name, value === true)}
+                              />
+                              <span>
+                                <span className="flex flex-wrap items-center gap-2 font-medium text-foreground">
+                                  {permission.label}
+                                  {critical && <Badge variant="warning">Permiso critico</Badge>}
+                                </span>
+                                <span className="block text-xs text-muted-foreground">{permission.name}</span>
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </fieldset>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         )}
 
         <div className="flex justify-end gap-2 pt-2">

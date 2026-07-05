@@ -67,6 +67,7 @@ export function UsersView({
   const saveRoleInFlightRef = useRef(false);
 
   const [selectedUserPermissions, setSelectedUserPermissions] = useState<string[]>([]);
+  const [advancedUserPermissionsMode, setAdvancedUserPermissionsMode] = useState(false);
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [targetResetUser, setTargetResetUser] = useState<AuthUser | null>(null);
   const [resetGlobalError, setResetGlobalError] = useState('');
@@ -134,6 +135,7 @@ export function UsersView({
     const role = defaultRoleName();
     setEditingUser(null);
     setSelectedUserPermissions(canManageRoles ? permissionsForRole(role) : []);
+    setAdvancedUserPermissionsMode(false);
     setFormGlobalError('');
     setIsUserModalOpen(true);
   };
@@ -227,6 +229,7 @@ export function UsersView({
         ? visiblePermissionNames(user.direct_permissions ?? [])
         : permissionsForRole(user.roles[0] || defaultRoleName()))
       : []);
+    setAdvancedUserPermissionsMode(Boolean(canManageRoles && user.uses_exact_permission_map));
     setFormGlobalError('');
     setIsUserModalOpen(true);
   };
@@ -234,7 +237,7 @@ export function UsersView({
   const onUserSubmit = async (data: UserFormData) => {
     setFormGlobalError('');
 
-    if (canManageRoles && selectedUserPermissions.length === 0 && editingUser?.active !== false) {
+    if (advancedUserPermissionsMode && selectedUserPermissions.length === 0 && editingUser?.active !== false) {
       const msg = 'Seleccione al menos un modulo para un usuario activo, o desactive el usuario antes de dejarlo sin acceso.';
       setFormGlobalError(msg);
       onStatus(msg);
@@ -251,7 +254,7 @@ export function UsersView({
           username: data.username,
           role: data.role,
         };
-        if (canManageRoles) {
+        if (advancedUserPermissionsMode) {
           payload.permissions = visibleSelectedUserPermissions;
         }
         const updated = await apiClient.updateUser(editingUser.id, payload);
@@ -266,7 +269,7 @@ export function UsersView({
           role: data.role,
           active: true,
         };
-        if (canManageRoles) {
+        if (advancedUserPermissionsMode) {
           payload.permissions = visibleSelectedUserPermissions;
         }
         const created = await apiClient.createUser(payload);
@@ -499,6 +502,8 @@ export function UsersView({
         canAssignAdminRole={canAssignAdminRole}
         protectedRoleLocked={editingUser ? onlyActiveProtectedUserIds.includes(editingUser.id) : false}
         selectedUserPermissions={selectedUserPermissions}
+        advancedPermissionMode={advancedUserPermissionsMode}
+        onAdvancedPermissionModeChange={setAdvancedUserPermissionsMode}
         onToggleUserPermission={toggleUserPermission}
         onRoleChange={(roleNameValue) => {
           if (canManageRoles) {

@@ -138,6 +138,8 @@ describe('UserFormDialog', () => {
         editingUser={baseUser}
         roles={roles}
         canManageRoles
+        advancedPermissionMode
+        onAdvancedPermissionModeChange={vi.fn()}
         selectedUserPermissions={['receipt_settings.advanced']}
         onToggleUserPermission={vi.fn()}
         permissionCatalog={[
@@ -171,6 +173,8 @@ describe('UserFormDialog', () => {
         editingUser={baseUser}
         roles={roles}
         canManageRoles
+        advancedPermissionMode
+        onAdvancedPermissionModeChange={vi.fn()}
         selectedUserPermissions={['receipt_settings.advanced']}
         onToggleUserPermission={vi.fn()}
         permissionCatalog={[
@@ -206,6 +210,8 @@ describe('UserFormDialog', () => {
         editingUser={baseUser}
         roles={roles}
         canManageRoles
+        advancedPermissionMode
+        onAdvancedPermissionModeChange={vi.fn()}
         selectedUserPermissions={['backups.download']}
         onToggleUserPermission={vi.fn()}
         permissionCatalog={[
@@ -242,6 +248,8 @@ describe('UserFormDialog', () => {
         editingUser={baseUser}
         roles={roles}
         canManageRoles
+        advancedPermissionMode
+        onAdvancedPermissionModeChange={vi.fn()}
         selectedUserPermissions={['reports.managerial.view', 'reports.export']}
         onToggleUserPermission={vi.fn()}
         permissionCatalog={[
@@ -282,6 +290,8 @@ describe('UserFormDialog', () => {
         editingUser={baseUser}
         roles={roles}
         canManageRoles
+        advancedPermissionMode
+        onAdvancedPermissionModeChange={vi.fn()}
         selectedUserPermissions={['audit.view']}
         onToggleUserPermission={vi.fn()}
         permissionCatalog={[
@@ -318,6 +328,8 @@ describe('UserFormDialog', () => {
         editingUser={baseUser}
         roles={roles}
         canManageRoles
+        advancedPermissionMode
+        onAdvancedPermissionModeChange={vi.fn()}
         selectedUserPermissions={['invoices.operate_any']}
         onToggleUserPermission={vi.fn()}
         permissionCatalog={[
@@ -354,6 +366,8 @@ describe('UserFormDialog', () => {
         editingUser={baseUser}
         roles={roles}
         canManageRoles
+        advancedPermissionMode
+        onAdvancedPermissionModeChange={vi.fn()}
         selectedUserPermissions={['fiscal.sequences.reset']}
         onToggleUserPermission={vi.fn()}
         permissionCatalog={[
@@ -390,6 +404,8 @@ describe('UserFormDialog', () => {
         editingUser={baseUser}
         roles={roles}
         canManageRoles
+        advancedPermissionMode
+        onAdvancedPermissionModeChange={vi.fn()}
         selectedUserPermissions={['users.disable']}
         onToggleUserPermission={vi.fn()}
         permissionCatalog={[
