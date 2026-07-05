@@ -340,6 +340,39 @@ class ExecutiveReportTest extends TestCase
             ->assertJsonPath('data.audit_summary.backup_events', 1);
     }
 
+    public function test_executive_without_audit_view_redacts_audit_details(): void
+    {
+        $this->seedBillingBase();
+        $viewer = User::factory()->create();
+        $this->grantDirectPermissions($viewer, [
+            'reports.view',
+            'reports.managerial.view',
+        ]);
+        $cashier = $this->cashier();
+        $voided = $this->createInvoice($cashier, 'Glucosa');
+
+        $voided->update([
+            'status' => Invoice::STATUS_VOID,
+            'voided_by' => $this->supervisor()->id,
+            'voided_at' => Carbon::now('America/Tegucigalpa'),
+            'void_reason' => 'Motivo ejecutivo reservado',
+        ]);
+
+        \DB::table('audit_logs')->insert([
+            ['action' => 'invoice.voided', 'entity_type' => Invoice::class, 'entity_id' => $voided->id, 'user_id' => $viewer->id, 'created_at' => now()],
+        ]);
+
+        $today = Carbon::now('America/Tegucigalpa')->toDateString();
+
+        $this->actingAs($viewer)
+            ->getJson('/api/reports/executive?date_from='.$today.'&date_to='.$today)
+            ->assertOk()
+            ->assertJsonPath('data.can_view_audit', false)
+            ->assertJsonCount(0, 'data.voids_and_reversals')
+            ->assertJsonPath('data.audit_summary.critical_events', 0)
+            ->assertJsonMissing(['reason' => 'Motivo ejecutivo reservado']);
+    }
+
     public function test_executive_cajero_without_managerial_permission_is_forbidden(): void
     {
         $this->seedBillingBase();

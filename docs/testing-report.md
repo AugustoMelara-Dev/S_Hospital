@@ -255,3 +255,14 @@ verified.
 | `docker compose exec backend vendor/bin/pint --test` | RED first on style; after `vendor/bin/pint ...`, PASS, 429 files. |
 | `docker compose exec backend vendor/bin/phpstan analyse` | Incomplete: PHPStan hit the configured 128M memory limit. |
 | `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M` | PASS, no errors. |
+
+### 2026-07-05 Executive Report Audit Gate
+
+| Command | Result |
+|---|---|
+| `docker compose exec backend php artisan test --filter=test_executive_without_audit_view_redacts_audit_details` | RED first because `can_view_audit` was absent and audit rows remained; then PASS, 1 focused test. |
+| `docker compose exec backend php artisan test --filter=test_executive_pdf_without_audit_view_omits_audit_sections` | RED first because PDF still rendered audit sections; then PASS, 1 focused test. |
+| `docker compose exec backend php artisan test --filter=test_executive_excel_without_audit_view_omits_audit_sheets` | RED first because XLSX still created audit sheets; then PASS, 1 focused test. |
+| `docker compose exec backend php artisan test tests/Feature/Reports/ExecutiveReportTest.php tests/Feature/Reports/ExecutivePdfExportTest.php tests/Feature/Reports/ExecutiveExcelExportTest.php` | PASS, 24 tests. |
+| `docker compose exec backend vendor/bin/pint --test` | PASS, 429 files. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M` | PASS, no errors. |

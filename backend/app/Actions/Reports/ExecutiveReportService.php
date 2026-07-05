@@ -54,8 +54,9 @@ class ExecutiveReportService
         $cashiers = $this->cashiers($start, $end, $filters);
         $cashSessions = $this->cashSessions($start, $end, $filters);
         $pendingAging = $this->pendingAging($start, $end, $filters);
-        $voidsAndReversals = $this->voidsAndReversals($start, $end, $filters);
-        $auditSummary = $this->auditSummary($start, $end, $filters);
+        $canViewAudit = $requester?->can('audit.view') === true;
+        $voidsAndReversals = $canViewAudit ? $this->voidsAndReversals($start, $end, $filters) : [];
+        $auditSummary = $canViewAudit ? $this->auditSummary($start, $end, $filters) : $this->emptyAuditSummary();
         $comparison = $this->comparison($start, $end, $filters);
 
         return [
@@ -83,6 +84,7 @@ class ExecutiveReportService
             'pending_aging' => $pendingAging,
             'voids_and_reversals' => $voidsAndReversals,
             'audit_summary' => $auditSummary,
+            'can_view_audit' => $canViewAudit,
         ];
     }
 
@@ -658,6 +660,20 @@ class ExecutiveReportService
             'reprints' => (int) ($invoiceAuditCounts['invoice.reprinted'] ?? 0),
             'fiscal_changes' => 0,
             'cash_differences' => (int) $cashDifferenceCount,
+            'backup_events' => 0,
+        ];
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    private function emptyAuditSummary(): array
+    {
+        return [
+            'critical_events' => 0,
+            'reprints' => 0,
+            'fiscal_changes' => 0,
+            'cash_differences' => 0,
             'backup_events' => 0,
         ];
     }

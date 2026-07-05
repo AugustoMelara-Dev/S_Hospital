@@ -97,6 +97,42 @@ class ExecutivePdfExportTest extends TestCase
         $this->assertStringContainsString('L. ', $html);
     }
 
+    public function test_executive_pdf_without_audit_view_omits_audit_sections(): void
+    {
+        $this->seedBillingBase();
+        $viewer = User::factory()->create();
+        $this->grantDirectPermissions($viewer, [
+            'reports.view',
+            'reports.managerial.view',
+            'reports.export',
+        ]);
+        $admin = $this->admin();
+        $cashier = $this->cashier();
+        $voided = $this->createInvoice($cashier, 'Glucosa');
+
+        $voided->update([
+            'status' => Invoice::STATUS_VOID,
+            'voided_by' => $admin->id,
+            'voided_at' => Carbon::now('America/Tegucigalpa'),
+            'void_reason' => 'Motivo ejecutivo reservado',
+        ]);
+
+        $today = Carbon::now('America/Tegucigalpa')->toDateString();
+        $fiscal = FiscalSetting::first();
+        $this->assertNotNull($fiscal);
+
+        $report = app(ExecutiveReportService::class)
+            ->report(['date_from' => $today, 'date_to' => $today], $viewer);
+
+        $html = app(ExecutivePdfExportService::class)
+            ->buildHtml($report, $fiscal->toArray(), 'Viewer Test', Carbon::now('America/Tegucigalpa'));
+
+        $this->assertStringContainsString('Resumen Ejecutivo', $html);
+        $this->assertStringNotContainsString('Anulaciones y Reversas', $html);
+        $this->assertStringNotContainsString('Resumen de Auditoria', $html);
+        $this->assertStringNotContainsString('Motivo ejecutivo reservado', $html);
+    }
+
     public function test_executive_pdf_requires_managerial_permission(): void
     {
         $this->seedBillingBase();

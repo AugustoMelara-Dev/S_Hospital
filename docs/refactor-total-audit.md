@@ -6232,3 +6232,27 @@ Pruebas ejecutadas:
 Decision:
 
 - Los exports gerenciales siguen funcionando para usuarios con `reports.export`, pero los datos auditados quedan bajo el mismo permiso `audit.view` que protege `/api/reports/operations`.
+
+## 259. Fase 10/14 - Reporte ejecutivo redacciona auditoria sin audit.view
+
+Cambio aplicado:
+
+- `ExecutiveReportService` agrega `can_view_audit` y vacia `voids_and_reversals`/`audit_summary` cuando el solicitante no tiene `audit.view`.
+- `ExecutivePdfExportService` omite las secciones `Anulaciones y Reversas` y `Resumen de Auditoria` si el payload viene sin permiso.
+- `ExecutiveExcelExportService` conserva hojas ejecutivas/financieras, pero no crea `Anulaciones y reversas` ni `Auditoria` sin permiso.
+- No se agregaron dependencias, migraciones, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter=test_executive_without_audit_view_redacts_audit_details` | RED inicial por falta de `can_view_audit`; luego OK: 1 test pasa. |
+| `docker compose exec backend php artisan test --filter=test_executive_pdf_without_audit_view_omits_audit_sections` | RED inicial por secciones auditadas visibles; luego OK: 1 test pasa. |
+| `docker compose exec backend php artisan test --filter=test_executive_excel_without_audit_view_omits_audit_sheets` | RED inicial por hojas auditadas visibles; luego OK: 1 test pasa. |
+| `docker compose exec backend php artisan test tests/Feature/Reports/ExecutiveReportTest.php tests/Feature/Reports/ExecutivePdfExportTest.php tests/Feature/Reports/ExecutiveExcelExportTest.php` | OK: 24 tests pasan. |
+| `docker compose exec backend vendor/bin/pint --test` | OK. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M` | OK: sin errores. |
+
+Decision:
+
+- Los KPIs ejecutivos agregados permanecen disponibles para supervision gerencial, pero las filas y resumen de auditoria quedan reservados para `audit.view`.

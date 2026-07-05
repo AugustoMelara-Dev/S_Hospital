@@ -364,3 +364,16 @@ Pruebas relevantes:
 
 - `ReportsTest` cubre export XLSX sin `audit.view`, PDF de periodo sin `audit.view`, y regresiones completas de reportes.
 - `pint --test` y `phpstan analyse --memory-limit=512M` verifican formato y analisis estatico backend.
+
+## 21. Actualizacion 2026-07-05 - Reporte ejecutivo respeta audit.view
+
+Control agregado/verificado:
+
+- El endpoint ejecutivo agrega `can_view_audit` y redacciona `voids_and_reversals`/`audit_summary` para usuarios sin `audit.view`.
+- El PDF ejecutivo omite secciones de anulaciones/reversas y resumen de auditoria cuando el payload no autoriza auditoria.
+- El XLSX ejecutivo omite las hojas `Anulaciones y reversas` y `Auditoria` sin `audit.view`, conservando resumen, cobros, servicios, cajeros, caja, pendientes y glosario.
+
+Pruebas relevantes:
+
+- `ExecutiveReportTest`, `ExecutivePdfExportTest` y `ExecutiveExcelExportTest` cubren redaccion sin `audit.view` y regresion completa con admin.
+- `pint --test` y `phpstan analyse --memory-limit=512M` pasan.

@@ -45,8 +45,10 @@ class ExecutiveExcelExportService
         $this->buildCashiersSheet($spreadsheet, $report, $hospitalName, $rtn);
         $this->buildCashSessionsSheet($spreadsheet, $report, $hospitalName, $rtn);
         $this->buildPendingSheet($spreadsheet, $report, $hospitalName, $rtn);
-        $this->buildVoidsSheet($spreadsheet, $report, $hospitalName, $rtn);
-        $this->buildAuditSheet($spreadsheet, $report, $hospitalName, $rtn);
+        if (($report['can_view_audit'] ?? true) === true) {
+            $this->buildVoidsSheet($spreadsheet, $report, $hospitalName, $rtn);
+            $this->buildAuditSheet($spreadsheet, $report, $hospitalName, $rtn);
+        }
         $this->buildGlossarySheet($spreadsheet, $hospitalName, $rtn);
 
         return $spreadsheet;

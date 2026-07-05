@@ -32,6 +32,7 @@ class ExecutivePdfExportService
         $cashiers = $report['cashiers'] ?? [];
         $cashSessions = $report['cash_sessions'] ?? [];
         $pendingAging = $report['pending_aging'] ?? [];
+        $canViewAudit = ($report['can_view_audit'] ?? true) === true;
         $voids = $report['voids_and_reversals'] ?? [];
         $audit = $report['audit_summary'] ?? [];
         $comparison = $report['comparison'] ?? [];
@@ -48,8 +49,8 @@ class ExecutivePdfExportService
             .$this->renderCashiers($cashiers)
             .$this->renderCashSessions($cashSessions)
             .$this->renderPendingAging($pendingAging)
-            .$this->renderVoidsAndReversals($voids)
-            .$this->renderAudit($audit)
+            .($canViewAudit ? $this->renderVoidsAndReversals($voids) : '')
+            .($canViewAudit ? $this->renderAudit($audit) : '')
             .$this->renderFooter($now),
             $hospitalName
         );

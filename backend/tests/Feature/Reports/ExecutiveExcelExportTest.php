@@ -132,6 +132,47 @@ class ExecutiveExcelExportTest extends TestCase
         $this->assertTrue((bool) array_filter($flat, fn ($line) => str_contains($line, 'Ticket Promedio')));
     }
 
+    public function test_executive_excel_without_audit_view_omits_audit_sheets(): void
+    {
+        $this->seedBillingBase();
+        $viewer = User::factory()->create();
+        $this->grantDirectPermissions($viewer, [
+            'reports.view',
+            'reports.managerial.view',
+            'reports.export',
+        ]);
+        $admin = $this->admin();
+        $cashier = $this->cashier();
+        $voided = $this->createInvoice($cashier, 'Glucosa');
+
+        $voided->update([
+            'status' => Invoice::STATUS_VOID,
+            'voided_by' => $admin->id,
+            'voided_at' => Carbon::now('America/Tegucigalpa'),
+            'void_reason' => 'Motivo ejecutivo reservado',
+        ]);
+
+        $today = Carbon::now('America/Tegucigalpa')->toDateString();
+        $report = app(ExecutiveReportService::class)
+            ->report(['date_from' => $today, 'date_to' => $today], $viewer);
+        $fiscal = FiscalSetting::first();
+
+        $spreadsheet = app(ExecutiveExcelExportService::class)->generate(
+            $report,
+            $fiscal->toArray(),
+            Carbon::createFromFormat('Y-m-d', $today),
+            Carbon::createFromFormat('Y-m-d', $today),
+            $viewer->name,
+        );
+
+        $sheetTitles = $spreadsheet->getSheetNames();
+
+        $this->assertContains('Resumen', $sheetTitles);
+        $this->assertContains('Glosario', $sheetTitles);
+        $this->assertNotContains('Anulaciones y reversas', $sheetTitles);
+        $this->assertNotContains('Auditoria', $sheetTitles);
+    }
+
     public function test_executive_excel_escapes_formula_like_text_from_report_payload(): void
     {
         $dangerousFormula = '=HYPERLINK("http://example.invalid")';
