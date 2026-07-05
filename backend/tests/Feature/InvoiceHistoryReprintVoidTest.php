@@ -9,10 +9,14 @@ use App\Models\AuditLog;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
+use App\Models\InstitutionalReceipt;
+use App\Models\InstitutionalReceiptSeries;
 use App\Models\Invoice;
 use App\Models\Payment;
+use App\Models\ReceiptPrintProfile;
 use App\Models\Service;
 use App\Models\User;
+use Database\Seeders\ReceiptPrintProfileSeeder;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -334,6 +338,58 @@ class InvoiceHistoryReprintVoidTest extends TestCase
 
         $this->actingAs($voidOnlyUser)
             ->getJson("/api/invoices/{$invoiceId}/receipt?width=half_letter")
+            ->assertForbidden();
+    }
+
+    public function test_invoice_void_permission_does_not_grant_unrelated_institutional_receipt_pdf_access(): void
+    {
+        $this->seedBillingBase();
+        $this->seed(ReceiptPrintProfileSeeder::class);
+        $cashier = $this->cashier();
+        $voidOnlyUser = User::factory()->create();
+        $voidOnlyUser->givePermissionTo(['receipts.view', 'invoices.void']);
+        $invoice = Invoice::query()->findOrFail($this->createInvoice($cashier, 'Maria Lopez', 'Glucosa'));
+        $series = InstitutionalReceiptSeries::query()->create([
+            'document_type' => InstitutionalReceiptSeries::DOCUMENT_TYPE,
+            'series' => 'REC-A',
+            'prefix' => 'RA',
+            'number_format' => '{series}-{number:08}',
+            'min_number' => 1,
+            'max_number' => 100,
+            'current_number' => 1,
+            'active' => true,
+        ]);
+        $profile = ReceiptPrintProfile::query()
+            ->where('code', ReceiptPrintProfile::CODE_HALF_LETTER)
+            ->firstOrFail();
+        $receipt = InstitutionalReceipt::query()->create([
+            'invoice_id' => $invoice->id,
+            'payment_id' => null,
+            'cash_session_id' => CashRegisterSession::query()->where('user_id', $cashier->id)->firstOrFail()->id,
+            'series_id' => $series->id,
+            'receipt_number' => 1,
+            'receipt_number_full' => 'REC-A-00000001',
+            'status' => InstitutionalReceipt::STATUS_ISSUED,
+            'amount' => $invoice->total,
+            'amount_cents' => 1725,
+            'issued_at' => now()->subDay(),
+            'issued_by' => $cashier->id,
+            'payer_name' => $invoice->patient_name,
+            'concept' => 'Servicios hospitalarios',
+            'amount_words' => 'DIECISIETE LEMPIRAS CON 25/100 CENTAVOS',
+            'template_code' => 'institutional_classic',
+            'print_profile_code' => $profile->code,
+            'copy_mode' => 'original_only',
+            'institution_snapshot' => ['hospital_name' => 'Hospital San Isidro'],
+            'series_snapshot' => ['series' => 'REC-A'],
+            'profile_snapshot' => ['code' => $profile->code, 'paper_kind' => $profile->paper_kind],
+            'invoice_snapshot' => ['id' => $invoice->id],
+            'payment_snapshot' => null,
+            'items_snapshot' => [],
+        ]);
+
+        $this->actingAs($voidOnlyUser)
+            ->get("/api/institutional-receipts/{$receipt->id}/pdf")
             ->assertForbidden();
     }
 

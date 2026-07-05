@@ -153,7 +153,7 @@ class InstitutionalReceiptPdfService
 
     private function authorizeReceiptView(User $user, InstitutionalReceipt $receipt, InvoiceAccess $invoiceAccess): void
     {
-        if ($user->can('receipts.reprint_any') || $user->can('invoices.void')) {
+        if ($user->can('receipts.reprint_any')) {
             return;
         }
 

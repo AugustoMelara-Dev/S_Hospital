@@ -112,7 +112,7 @@ export function InvoiceHistoryTable({
         const isOwn = isOwnInvoiceFromToday(invoice);
         const institutionalReceipt = issuedInstitutionalReceipt(invoice);
         const canOperateInvoice = canOperateAnyInvoice || isOwn;
-        const canOperateReceipt = canReprintAny || canVoid || canOperateAnyInvoice || isOwn;
+        const canOperateReceipt = canReprintAny || canOperateAnyInvoice || isOwn;
         const canOpenInstitutionalReceipt = institutionalReceipt
           ? canViewReceipt
             && canOperateReceipt
