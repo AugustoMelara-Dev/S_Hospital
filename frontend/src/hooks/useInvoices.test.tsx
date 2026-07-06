@@ -36,7 +36,7 @@ const payload = {
 
 describe('useInvoices', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
   });
 
   it('trims text filters before querying invoice history', async () => {
@@ -65,7 +65,7 @@ describe('useInvoices', () => {
 
 describe('useCreateInvoice', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
   });
 
   it('reuses the idempotency key for the same failed submit attempt', async () => {
@@ -90,6 +90,33 @@ describe('useCreateInvoice', () => {
       idempotencyKey: 'stable-submit-key',
     });
     expect(createClientIdempotencyKey).toHaveBeenCalledTimes(1);
+  });
+
+  it('renews the idempotency key when the failed invoice payload changes', async () => {
+    vi.mocked(createClientIdempotencyKey)
+      .mockReturnValueOnce('invoice-attempt-1')
+      .mockReturnValueOnce('invoice-attempt-2');
+    vi.mocked(apiClient.createInvoice)
+      .mockRejectedValueOnce(new Error('network'))
+      .mockResolvedValueOnce({ id: 2 } as Awaited<ReturnType<typeof apiClient.createInvoice>>);
+
+    const changedPayload = {
+      ...payload,
+      patient_name: 'Paciente cambiado',
+    };
+
+    const { result } = renderHook(() => useCreateInvoice(), { wrapper });
+
+    await expect(result.current.mutateAsync(payload)).rejects.toThrow('network');
+    await result.current.mutateAsync(changedPayload);
+
+    expect(apiClient.createInvoice).toHaveBeenNthCalledWith(1, payload, {
+      idempotencyKey: 'invoice-attempt-1',
+    });
+    expect(apiClient.createInvoice).toHaveBeenNthCalledWith(2, changedPayload, {
+      idempotencyKey: 'invoice-attempt-2',
+    });
+    expect(createClientIdempotencyKey).toHaveBeenCalledTimes(2);
   });
 
   it('clears the idempotency key after confirmed success', async () => {
