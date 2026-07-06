@@ -7954,3 +7954,24 @@ Pruebas ejecutadas:
 Decision:
 
 - En version monocomputadora, el pago puede quedar confirmado aunque falle la emision/apertura del recibo. La pantalla debe guiar a recuperacion del comprobante institucional antes de continuar, no insinuar que el problema se resuelve creando otra factura.
+
+## 332. Fase QA - Board V1.3 reconciliado con pruebas vigentes
+
+Cambio aplicado:
+
+- `docs/v1-3/COORDINATION_BOARD.md` deja de listar como P0 abiertos hallazgos ya corregidos de RBAC, CI pnpm y papel institucional del seed E2E.
+- El board conserva como pendientes reales el release E2E auth/session, gate MariaDB, prueba responsive/recibo, timeout de suite backend completa y evidencia final LAN/fisica.
+- Se registra que la recuperacion de recibo institucional pendiente ya tiene contrato backend y accion visible de Historial en frontend.
+- No se modifico codigo de aplicacion, migraciones, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test tests/Feature/UserManagementTest.php` | OK: 42 tests, 186 assertions. |
+| `docker compose exec backend php artisan test tests/Feature/RoleManagementTest.php` | OK: 11 tests, 56 assertions. |
+| `docker compose exec backend php artisan test tests/Feature/InstitutionalReceiptPaymentIntegrationTest.php --filter='paid_receipt_can_be_issued_after_cash_session_closed_when_payment_was_already_posted|paid_payment_response_issues_institutional_receipt_with_configured_number'` | OK: 2 tests, 25 assertions. |
+
+Decision:
+
+- La lista de riesgos debe guiar entrega real: mantener P0s ya cerrados en el board distrae del bloqueo activo de E2E release y evidencia final. La fuente de verdad sigue siendo codigo y pruebas; esta entrada solo alinea la coordinacion documental con esa evidencia.

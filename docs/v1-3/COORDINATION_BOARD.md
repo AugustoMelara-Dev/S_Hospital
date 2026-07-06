@@ -38,7 +38,7 @@ Local review date: 2026-06-28
 | Targeted billing test | PASS | `pnpm exec vitest run src/features/invoices/NewInvoiceView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000`, now 23 tests after invoice idempotency coverage. |
 | Frontend tests | PASS | `pnpm run test`, 83 files and 499 tests after stabilizing lazy route tests. |
 | Backend Docker baseline | PASS WITH ENV | Docker works when `DB_PASSWORD`, `DB_ROOT_PASSWORD`, and alternate `DB_PORT=33307` are supplied; host port 3306 is unavailable. |
-| Backend focused tests | PASS | `UserManagementTest`, `InstitutionalReceiptSeriesSeederTest`, `InstitutionalReceiptPdfTest`, `IdempotencyKeyTest`, and `EncryptLegacyIdempotencyKeysTest` pass in Docker with warnings from missing container `.env`. |
+| Backend focused tests | PASS | `UserManagementTest` (42 tests), `RoleManagementTest` (11 tests), `InstitutionalReceiptPaymentIntegrationTest` receipt recovery focus, `InstitutionalReceiptSeriesSeederTest`, `InstitutionalReceiptPdfTest`, `IdempotencyKeyTest`, and `EncryptLegacyIdempotencyKeysTest` pass in Docker with warnings from missing container `.env`. |
 | Backend Pint | PASS | `docker compose run --rm backend vendor/bin/pint --test`, 410 files. |
 | Backend PHPStan | PASS | `docker compose run --rm backend vendor/bin/phpstan analyse --memory-limit=1G --no-progress`. |
 | Backend full tests | BLOCKED | `php artisan test` and full Feature partition timed out at 10 minutes without final output. Unit partition exposes container mount failures for repo-root files such as `../nginx/default.conf`, `../.env.example`, `../.gitignore`, `../setup.bat`, and `../.github/workflows/ci.yml`. |
@@ -78,11 +78,11 @@ Local review date: 2026-06-28
 
 | Area | Severity | Finding | Next Slice |
 | --- | --- | --- | --- |
-| Users/Auth/RBAC | P0 | User managers with `users.create` or `users.update` can assign elevated non-admin roles such as `supervisor`; protected admin/root targets can be reset, deactivated, or demoted by lower permissions. | Add failing backend RBAC tests, enforce protected-target and assignable-role rules, wrap mutations in transactions, then update frontend row actions if contract exposes capabilities. |
-| QA/E2E | P0 | CI still assumes `npm ci` and `frontend/package-lock.json`, but frontend uses `pnpm-lock.yaml`; frontend CI install will fail. | Convert CI frontend setup to pnpm/frozen lockfile and use pnpm commands. |
+| Users/Auth/RBAC | RESOLVED | User managers with `users.create` or `users.update` could assign elevated roles or mutate protected admin/root targets. | Fixed in backend role/user contracts; verified on 2026-07-06 with `docker compose exec backend php artisan test tests/Feature/UserManagementTest.php` (42 tests) and `tests/Feature/RoleManagementTest.php` (11 tests). |
+| QA/E2E | RESOLVED | CI assumed `npm ci` and `frontend/package-lock.json` while frontend uses `pnpm-lock.yaml`. | `.github/workflows/ci.yml` now uses pnpm setup, `pnpm install --frozen-lockfile`, pnpm cache and pnpm frontend commands. |
 | QA/E2E | P0 | Release E2E is documented failing with expired session during admin/users access. | Re-run after auth/session investigation, fix session regression, and refresh evidence. |
 | QA/E2E | P1 | Release E2E still uses SQLite; golden DB hash invalidation for prep/auth/session is fixed. | Define MariaDB-backed release gate after the remaining auth/session failure is reproduced and repaired. |
-| QA/E2E | P1 | E2E seed defaults receipt paper to `80mm`, conflicting with institutional paper as primary. | Change E2E seed default to letter/half-letter institutional profile and update assertions. |
+| QA/E2E | RESOLVED | E2E seed defaulted receipt paper to `80mm`, conflicting with institutional paper as primary. | `PrepareE2eReleaseDataCommand` and validation seed now default to `half_letter`; institutional print profiles remain primary. |
 | QA/E2E | P1 | E2E seed used thermal paper as primary. | Fixed by defaulting release seed receipt paper to `half_letter`. |
 | Receipts/Settings | P0 | Seeded institutional receipt series exposed placeholder authorization `AUT-REC-LOCAL`. | Fixed by seeding `range_authorization` as null and adding seeder regression test. |
 | Billing/POS | P0 | POS invoice creation retried with a fresh idempotency key after lost LAN response, risking duplicate fiscal invoice. | Fixed by caller-managed invoice idempotency key reused across retry until success or payload changes. |
@@ -101,7 +101,7 @@ Local review date: 2026-06-28
    - RBAC protected-role and role-assignment hardening. DONE.
    - CI pnpm migration. DONE.
    - Release E2E session/golden DB repair. PARTIAL: golden DB hash now includes auth/bootstrap/prep inputs; session failure remains PENDING.
-   - Payment/receipt recovery semantics.
+   - Payment/receipt recovery semantics. DONE: backend returns explicit receipt error/recovery contract; frontend prioritizes Historial recovery when payment is registered but institutional receipt is pending.
    - Zero-total erythropoietin/dialysis prescription invoice semantics.
    - POS invoice retry idempotency. DONE.
    - Stale idempotency reservation rejection. DONE.
@@ -118,4 +118,4 @@ Local review date: 2026-06-28
 - The old V1.3 branch was divergent from current `main`; it has now been synced locally but not pushed yet.
 - The local Git pre-commit hook is stale and points at a missing script; quality gates must be run explicitly until hook hygiene is fixed.
 - Full V1.3 scope is larger than a single safe commit; implementation must proceed in slices with tests.
-- Payment receipt failure recovery contract, release E2E auth/session, reports mobile nav/receipt preview proof, backend full-test container mount/timeout, and realtime/polling LAN performance remain open.
+- Release E2E auth/session evidence, MariaDB-backed release gate, reports mobile nav/receipt preview proof, backend full-test container mount/timeout, and final LAN/physical evidence remain open.
