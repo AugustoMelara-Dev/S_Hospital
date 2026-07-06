@@ -133,6 +133,19 @@ class ExecutivePdfExportTest extends TestCase
         $this->assertStringNotContainsString('Motivo ejecutivo reservado', $html);
     }
 
+    public function test_executive_pdf_generic_reports_view_without_concrete_permission_is_forbidden(): void
+    {
+        $this->seedBillingBase();
+        $viewer = User::factory()->create();
+        $this->grantDirectPermissions($viewer, ['reports.view', 'reports.export']);
+
+        $today = Carbon::now('America/Tegucigalpa')->toDateString();
+
+        $this->actingAs($viewer)
+            ->getJson('/api/reports/executive/pdf?date_from='.$today.'&date_to='.$today)
+            ->assertForbidden();
+    }
+
     public function test_executive_pdf_requires_managerial_permission(): void
     {
         $this->seedBillingBase();

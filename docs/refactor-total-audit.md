@@ -7235,3 +7235,29 @@ Ejecuciones no concluyentes:
 Decision:
 
 - El reporte de auditoria es una capacidad critica, pero debe seguir protegido por `audit.view`. El E2E estaba desalineado con la politica actual y ahora prueba el flujo real autorizado.
+
+## 301. Fase 10/14 - Backend rechaza reporte ejecutivo con permiso generico
+
+Cambio aplicado:
+
+- `ExecutiveReportRequest` ya no autoriza el reporte ejecutivo con solo `reports.view`.
+- `ExecutivePdfExportRequest` ya no autoriza PDF ejecutivo con solo `reports.view` + `reports.export`.
+- El acceso ejecutivo queda alineado con la UI: requiere `reports.managerial.view`, o `reports.cash_session.view` cuando la consulta esta limitada por `cash_session_id`.
+- Se agregaron regresiones 403 para impedir que el backend dependa de la navegacion frontend como unica defensa.
+- No se agregaron migraciones, dependencias, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/Reports/ExecutiveReportTest.php --filter=generic_reports_view` | RED inicial correcto: devolvia 200 con `reports.view`; luego OK. |
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/Reports/ExecutivePdfExportTest.php --filter=generic_reports_view` | RED inicial correcto: devolvia 200 con `reports.view` + `reports.export`; luego OK. |
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/Reports/ExecutiveReportTest.php tests/Feature/Reports/ExecutivePdfExportTest.php` | OK: 20 tests, 203 assertions. |
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/Reports/ExecutiveReportTest.php tests/Feature/Reports/ExecutivePdfExportTest.php tests/Feature/ReportsTest.php --filter="generic_reports_view|executive|cash_session_report_user_cannot_export_managerial_daily_pdf"` | OK: 21 tests, 207 assertions. |
+| `docker exec s_hospital-backend-1 vendor/bin/pint --test` | OK: 431 files. |
+| `docker exec s_hospital-backend-1 vendor/bin/phpstan analyse --memory-limit=1G` | OK: no errors. |
+| `npm run test -- appNavigation useHospitalSession ReportsView.subroutes --run` | OK: 4 files, 24 tests. |
+
+Decision:
+
+- `reports.view` queda como permiso legado/generico, no como capacidad suficiente para ver reportes consolidados. La defensa real vive tambien en Laravel, no solo en el menu React.

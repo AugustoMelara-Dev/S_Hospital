@@ -373,6 +373,19 @@ class ExecutiveReportTest extends TestCase
             ->assertJsonMissing(['reason' => 'Motivo ejecutivo reservado']);
     }
 
+    public function test_executive_generic_reports_view_without_concrete_permission_is_forbidden(): void
+    {
+        $this->seedBillingBase();
+        $viewer = User::factory()->create();
+        $this->grantDirectPermissions($viewer, ['reports.view']);
+
+        $today = Carbon::now('America/Tegucigalpa')->toDateString();
+
+        $this->actingAs($viewer)
+            ->getJson('/api/reports/executive?date_from='.$today.'&date_to='.$today)
+            ->assertForbidden();
+    }
+
     public function test_executive_cajero_without_managerial_permission_is_forbidden(): void
     {
         $this->seedBillingBase();

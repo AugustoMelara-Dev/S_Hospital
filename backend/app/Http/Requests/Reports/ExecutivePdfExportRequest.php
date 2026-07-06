@@ -24,10 +24,6 @@ class ExecutivePdfExportRequest extends FormRequest
             return true;
         }
 
-        if ($user->can('reports.view')) {
-            return true;
-        }
-
         return $this->filled('cash_session_id')
             && $user->can('reports.cash_session.view');
     }

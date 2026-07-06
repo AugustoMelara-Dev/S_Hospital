@@ -17,10 +17,6 @@ class ExecutiveReportRequest extends FormRequest
             return true;
         }
 
-        if ($this->user()?->can('reports.view') === true) {
-            return true;
-        }
-
         return $this->filled('cash_session_id')
             && $this->user()?->can('reports.cash_session.view') === true;
     }
