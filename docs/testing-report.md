@@ -314,3 +314,12 @@ verified.
 | `npm run test -- NewInvoiceView --run` | PASS, 25 tests. |
 | `npm run typecheck` | PASS. |
 | `npm run lint` | PASS. |
+
+### 2026-07-05 Backup Scheduler Heartbeat UI Gate
+
+| Command | Result |
+|---|---|
+| `npm run test -- BackupsView --run -t "shows automatic backup heartbeat status"` | RED first because the heartbeat copy was hidden behind collapsed support details; then PASS, 1 focused test. |
+| `npm run test -- BackupsView --run` | PASS, 32 tests. |
+| `npm run typecheck` | PASS. |
+| `npm run lint` | PASS. |

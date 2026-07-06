@@ -6384,3 +6384,25 @@ Pruebas ejecutadas:
 Decision:
 
 - Las facturas en cero, incluyendo escenarios como eritropoyetina cubierta por receta de dialisis, siguen el mismo comprobante institucional que los cobros normales y no pueden imprimirse por el recibo secundario/legacy desde el flujo principal.
+
+## 266. Fase 12 - Estado de respaldos automaticos visible
+
+Cambio aplicado:
+
+- `SystemStatus` frontend reconoce `backups.queue.scheduler_heartbeat`, que ya es entregado por el backend.
+- `BackupsView` resume el estado de respaldos automaticos en la card normal de estado operativo con lenguaje humano.
+- El detalle de soporte conserva informacion operativa ampliada, pero la vista principal no expone el termino tecnico `scheduler`.
+- No se agregaron dependencias, migraciones, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- BackupsView --run -t "shows automatic backup heartbeat status"` | RED inicial porque el estado solo aparecia dentro del detalle colapsado; luego OK. |
+| `npm run test -- BackupsView --run` | OK: 32 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+
+Decision:
+
+- El operador puede detectar si los respaldos automaticos nunca se han ejecutado o requieren revision sin abrir soporte ni leer nombres de procesos del servidor.

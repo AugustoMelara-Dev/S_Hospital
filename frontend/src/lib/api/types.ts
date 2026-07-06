@@ -455,6 +455,16 @@ export type SystemStatus = {
       pending_backup_jobs: number | null;
       worker_command: string;
       scheduler_command: string;
+      scheduler_heartbeat?: {
+        status: 'never_run' | 'ok' | 'stale' | 'stuck' | 'invalid' | string;
+        last_tick_at: string | null;
+        last_result: string;
+        last_message: string;
+        age_seconds: number | null;
+        ticks_in_db: number;
+        ticks_last_24h: number;
+        expected: string;
+      };
     };
   };
   runtime: {

@@ -56,6 +56,36 @@ function formatRelativeTime(value: string): string {
   return `hace ${diffDays}d`;
 }
 
+function automaticBackupHeartbeatLabel(
+  heartbeat: SystemStatus['backups']['queue']['scheduler_heartbeat'],
+): { label: string; tone: 'muted' | 'success' | 'warning' } {
+  if (!heartbeat) {
+    return { label: 'Respaldos automaticos pendientes de revision', tone: 'warning' };
+  }
+
+  if (heartbeat.status === 'ok') {
+    return { label: 'Respaldos automaticos activos', tone: 'success' };
+  }
+
+  if (heartbeat.status === 'never_run') {
+    return { label: 'Respaldos automaticos sin ejecucion registrada', tone: 'warning' };
+  }
+
+  if (heartbeat.status === 'stale') {
+    return { label: 'Respaldos automaticos atrasados', tone: 'warning' };
+  }
+
+  if (heartbeat.status === 'stuck') {
+    return { label: 'Respaldos automaticos requieren revision del servidor', tone: 'warning' };
+  }
+
+  if (heartbeat.status === 'invalid') {
+    return { label: 'Respaldos automaticos con fecha no verificable', tone: 'warning' };
+  }
+
+  return { label: 'Respaldos automaticos pendientes de revision', tone: 'muted' };
+}
+
 function statusLabel(status: 'pending' | 'partial' | 'validated' | 'manual_required'): string {
   if (status === 'validated') return 'Validado';
   if (status === 'partial') return 'Parcial';
@@ -307,6 +337,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
     : false;
   const stalePendingCount = systemStatus?.backups.stale_pending_count ?? 0;
   const stalePendingThresholdMinutes = systemStatus?.backups.stale_pending_threshold_minutes ?? 15;
+  const automaticBackupHeartbeat = automaticBackupHeartbeatLabel(systemStatus?.backups.queue.scheduler_heartbeat);
   const advancedStatusId = 'backups-advanced-status';
 
   useEffect(() => {
@@ -479,6 +510,15 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                   </StatusBadge>
                 </div>
                 <p className="mt-1 max-w-3xl text-sm leading-6">{operationalStatus.description}</p>
+                <p className={`mt-2 text-xs ${
+                  automaticBackupHeartbeat.tone === 'success'
+                    ? 'text-success-foreground'
+                    : automaticBackupHeartbeat.tone === 'warning'
+                      ? 'text-warning'
+                      : 'text-muted-foreground'
+                }`}>
+                  {automaticBackupHeartbeat.label}
+                </p>
               </div>
               <Button
                 type="button"
@@ -575,6 +615,15 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                     </p>
                     <p className={stalePendingCount > 0 ? 'text-xs text-warning' : 'text-xs text-muted-foreground'}>
                       Atascados: {stalePendingCount}
+                    </p>
+                    <p className={`text-xs ${
+                      automaticBackupHeartbeat.tone === 'success'
+                        ? 'text-success-foreground'
+                        : automaticBackupHeartbeat.tone === 'warning'
+                          ? 'text-warning'
+                          : 'text-muted-foreground'
+                    }`}>
+                      {automaticBackupHeartbeat.label}
                     </p>
                   </div>
                 </div>

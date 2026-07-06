@@ -671,6 +671,34 @@ describe('BackupsView', () => {
     expect(screen.queryByText(/worker|scheduler/i)).not.toBeInTheDocument();
   });
 
+  it('shows automatic backup heartbeat status in human terms', async () => {
+    const status = systemStatusFixture();
+    vi.mocked(apiClient.getSystemStatus).mockResolvedValue({
+      ...status,
+      backups: {
+        ...status.backups,
+        queue: {
+          ...status.backups.queue,
+          scheduler_heartbeat: {
+            status: 'never_run',
+            last_tick_at: null,
+            last_result: 'unknown',
+            last_message: '',
+            age_seconds: null,
+            ticks_in_db: 0,
+            ticks_last_24h: 0,
+            expected: 'ticks_last_24h >= 1400',
+          },
+        },
+      },
+    });
+
+    renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
+
+    expect(await screen.findByText(/respaldos automaticos sin ejecucion registrada/i)).toBeInTheDocument();
+    expect(screen.queryByText(/scheduler/i)).not.toBeInTheDocument();
+  });
+
   it('prevents duplicate backup downloads while the file request is pending', async () => {
     let resolveDownload!: (blob: Blob) => void;
     const pendingDownload = new Promise<Blob>((resolve) => {
