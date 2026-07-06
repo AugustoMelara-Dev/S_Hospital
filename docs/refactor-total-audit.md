@@ -7679,3 +7679,24 @@ Pruebas ejecutadas:
 Decision:
 
 - El nombre del archivo de respaldo es detalle tecnico de almacenamiento. Los reportes operativos deben confirmar que hubo respaldos y su resultado sin mostrar nombres internos al flujo normal.
+
+## 320. Fase 4/QA - DELETE de servicio exige motivo de disponibilidad
+
+Cambio aplicado:
+
+- `DELETE /api/services/{service}` ahora valida `availability_change_reason` cuando el servicio no facturado puede desactivarse.
+- La desactivacion por DELETE conserva el comportamiento de no borrar la fila, pero registra el motivo en `service.deactivated`.
+- Los servicios ya facturados mantienen el conflicto 409 existente antes de pedir motivo, porque no pueden eliminarse por este camino.
+- Se actualiza la prueba de borrado/desactivacion para cubrir el rechazo sin motivo, la desactivacion con motivo y el audit log resultante.
+- No se agregaron dependencias, migraciones, roles, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test tests/Feature/ServiceCatalogTest.php --filter=deleting_unbilled_service_requires_reason` | Primero fallo por permitir DELETE sin motivo; luego OK: 1 test, 10 assertions. |
+| `docker compose exec backend php artisan test tests/Feature/ServiceCatalogTest.php` | Primero detecto que servicios facturados debian conservar 409; luego OK: 42 tests, 258 assertions. |
+
+Decision:
+
+- Ocultar un servicio de caja es un cambio operativo auditable aunque se haga desde el camino de DELETE. El sistema local puede ser mas simple, pero no debe permitir que catalogo cambie disponibilidad sin una razon humana.

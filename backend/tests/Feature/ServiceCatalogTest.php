@@ -1079,14 +1079,29 @@ class ServiceCatalogTest extends TestCase
             ->assertJsonCount(0, 'data');
     }
 
-    public function test_deleting_unbilled_service_deactivates_instead_of_removing_it(): void
+    public function test_deleting_unbilled_service_requires_reason_and_deactivates_instead_of_removing_it(): void
     {
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
         $admin = $this->admin();
         $service = Service::query()->where('name', 'Glucosa')->firstOrFail();
+        $reason = 'Servicio retirado temporalmente de caja por revision operativa';
 
         $this->actingAs($admin)
             ->deleteJson("/api/services/{$service->id}")
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('availability_change_reason');
+
+        $this->assertTrue($service->refresh()->active);
+        $this->assertDatabaseMissing('audit_logs', [
+            'action' => 'service.deactivated',
+            'entity_type' => Service::class,
+            'entity_id' => $service->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->deleteJson("/api/services/{$service->id}", [
+                'availability_change_reason' => $reason,
+            ])
             ->assertOk()
             ->assertJsonPath('data.id', $service->id)
             ->assertJsonPath('data.active', false);
@@ -1095,13 +1110,16 @@ class ServiceCatalogTest extends TestCase
             'id' => $service->id,
             'active' => false,
         ]);
-        $this->assertDatabaseHas('audit_logs', [
-            'user_id' => $admin->id,
-            'action' => 'service.deactivated',
-            'entity_type' => Service::class,
-            'entity_id' => $service->id,
-            'result' => 'success',
-        ]);
+
+        $audit = AuditLog::query()
+            ->where('user_id', $admin->id)
+            ->where('action', 'service.deactivated')
+            ->where('entity_type', Service::class)
+            ->where('entity_id', $service->id)
+            ->where('result', 'success')
+            ->firstOrFail();
+
+        $this->assertSame($reason, $audit->new_values['availability_change_reason']);
     }
 
     public function test_deleting_invoiced_service_returns_conflict_and_keeps_it_active(): void

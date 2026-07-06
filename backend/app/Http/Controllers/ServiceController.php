@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Catalog\DeleteServiceRequest;
 use App\Http\Requests\Catalog\IndexServiceRequest;
 use App\Http\Requests\Catalog\StoreServiceRequest;
 use App\Http\Requests\Catalog\UpdateServiceRequest;
@@ -168,7 +169,7 @@ class ServiceController extends Controller
         ]);
     }
 
-    public function destroy(Request $request, Service $service): JsonResponse
+    public function destroy(DeleteServiceRequest $request, Service $service): JsonResponse
     {
         Gate::authorize('delete', $service);
 
@@ -180,6 +181,7 @@ class ServiceController extends Controller
 
         $service = DB::transaction(function () use ($request, $service): Service {
             $oldValues = $this->auditPayload($service);
+            $availabilityChangeReason = trim((string) $request->validated('availability_change_reason'));
 
             if ($service->active) {
                 $service->forceFill([
@@ -189,7 +191,9 @@ class ServiceController extends Controller
                 $service->refresh();
             }
 
-            $this->audit($request, 'service.deactivated', $service, $oldValues);
+            $this->audit($request, 'service.deactivated', $service, $oldValues, [
+                'availability_change_reason' => $availabilityChangeReason,
+            ]);
 
             return $service;
         });
