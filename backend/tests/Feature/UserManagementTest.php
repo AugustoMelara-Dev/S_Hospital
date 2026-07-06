@@ -730,9 +730,9 @@ class UserManagementTest extends TestCase
             'email' => 'exact-access-user@hospital.local',
         ]);
         $target->assignRole('cajero');
-        $target->syncPermissions([User::EXACT_ACCESS_MARKER_PERMISSION, 'reports.view']);
+        $target->syncPermissions([User::EXACT_ACCESS_MARKER_PERMISSION, 'catalog.view']);
 
-        $this->assertTrue($target->can('reports.view'));
+        $this->assertTrue($target->can('catalog.view'));
         $this->assertFalse($target->can('cash.open'));
         $this->assertFalse($target->can('invoices.create'));
     }
@@ -842,7 +842,7 @@ class UserManagementTest extends TestCase
             'guard_name' => 'web',
         ]);
 
-        foreach (['backups.restore', 'receipts.void', 'users.assign_admin_role'] as $permission) {
+        foreach (['backups.restore', 'receipts.void', 'users.assign_admin_role', 'reports.view'] as $permission) {
             $permissionSlug = str_replace('.', '-', $permission);
             $this->actingAs($admin)
                 ->postJson('/api/admin/users', [

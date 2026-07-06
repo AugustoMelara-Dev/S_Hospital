@@ -7285,3 +7285,29 @@ Pruebas ejecutadas:
 Decision:
 
 - La version monocomputadora necesita usuarios basicos entendibles. `users.assign_admin_role` es una capacidad administrativa reservada para reglas internas y no debe aparecer ni aceptarse como permiso operativo directo en el editor de usuarios.
+
+## 303. Fase 13/14 - reports.view queda como permiso legado oculto
+
+Cambio aplicado:
+
+- `VisiblePermissions` ahora oculta `reports.view` junto a permisos internos, reservados o no operables desde UI.
+- La sesion `/api/auth/session` ya no expone `reports.view` aunque una instalacion heredada lo conserve asignado directamente.
+- El catalogo de roles ya no muestra `reports.view` en roles ni en `permission_catalog`; quedan visibles los permisos concretos de reportes.
+- El editor backend de usuarios rechaza `reports.view` como `permissions.0`, igual que los demas permisos ocultos.
+- No se agregaron migraciones, dependencias, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/AuthTest.php --filter=session_payload_does_not_expose` | RED inicial correcto: `reports.view` seguia en sesion; luego OK. |
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/RoleManagementTest.php --filter=permission_catalog_grouped` | RED inicial correcto: `reports.view` seguia en catalogo; luego OK. |
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/UserManagementTest.php --filter="inoperable_permissions_hidden|direct_module_permissions_override"` | RED inicial correcto: `reports.view` era aceptado por el editor; luego OK. |
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/AuthTest.php tests/Feature/RoleManagementTest.php tests/Feature/UserManagementTest.php` | OK: 71 tests, 316 assertions. |
+| `docker exec s_hospital-backend-1 vendor/bin/pint --test` | OK: 431 files. |
+| `docker exec s_hospital-backend-1 vendor/bin/phpstan analyse --memory-limit=1G` | OK: no errors. |
+| `npm run test -- UsersView UserFormDialog RoleFormDialog PermissionMatrix --run` | OK: 4 files, 65 tests. |
+
+Decision:
+
+- `reports.view` se conserva como dato historico/legado para no romper instalaciones existentes, pero la version monocomputadora debe guiar a permisos concretos: `reports.cash_session.view`, `reports.managerial.view` y `reports.export` segun el flujo.

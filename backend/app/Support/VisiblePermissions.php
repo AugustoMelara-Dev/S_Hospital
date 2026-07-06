@@ -11,6 +11,7 @@ class VisiblePermissions
         User::EXACT_ACCESS_MARKER_PERMISSION,
         'backups.restore',
         'receipts.void',
+        'reports.view',
         'users.assign_admin_role',
     ];
 

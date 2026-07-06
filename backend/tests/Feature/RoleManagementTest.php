@@ -35,6 +35,7 @@ class RoleManagementTest extends TestCase
 
         $this->assertStringNotContainsString(User::EXACT_ACCESS_MARKER_PERMISSION, $response->getContent());
         $this->assertStringNotContainsString('receipts.void', $response->getContent());
+        $this->assertStringNotContainsString('reports.view', $response->getContent());
     }
 
     public function test_permission_catalog_labels_operational_settings_as_human_configuration_rule(): void
