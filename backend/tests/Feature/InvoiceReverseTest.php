@@ -151,7 +151,7 @@ class InvoiceReverseTest extends TestCase
 
     public function test_reverse_paid_invoice_after_cash_session_close_is_rejected_without_mutating_closed_cash(): void
     {
-        $this->seedBillingBase();
+        $this->seedBillingBase(createInstitutionalReceiptSeries: true);
         $cashier = $this->cashier();
         $supervisor = $this->supervisor();
         $sessionId = $this->openSession($cashier);
@@ -162,7 +162,10 @@ class InvoiceReverseTest extends TestCase
                 'cash_session_id' => $sessionId,
                 'method' => Payment::METHOD_CASH,
                 'amount' => '17.25',
-            ])->assertCreated()->json('data.payment.id');
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.institutional_receipt.receipt_number_full', 'REC-A-00000001')
+            ->json('data.payment.id');
 
         $this->actingAs($cashier)
             ->postJson("/api/cash-sessions/{$sessionId}/close", [

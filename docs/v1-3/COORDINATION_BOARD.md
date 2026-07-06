@@ -41,7 +41,7 @@ Local review date: 2026-06-28
 | Backend focused tests | PASS | `UserManagementTest` (42 tests), `RoleManagementTest` (11 tests), `InstitutionalReceiptPaymentIntegrationTest` receipt recovery focus, `InstitutionalReceiptSeriesSeederTest`, `InstitutionalReceiptPdfTest`, `IdempotencyKeyTest`, and `EncryptLegacyIdempotencyKeysTest` pass in Docker with warnings from missing container `.env`. |
 | Backend Pint | PASS | `docker compose run --rm backend vendor/bin/pint --test`, 410 files. |
 | Backend PHPStan | PASS | `docker compose run --rm backend vendor/bin/phpstan analyse --memory-limit=1G --no-progress`. |
-| Backend full tests | BLOCKED | `php artisan test` and full Feature partition timed out at 10 minutes without final output. Unit partition exposes container mount failures for repo-root files such as `../nginx/default.conf`, `../.env.example`, `../.gitignore`, `../setup.bat`, and `../.github/workflows/ci.yml`. |
+| Backend full tests | PASS BY SUITE | Docker Unit passed (151 passed, 2 skipped), Feature passed (698 passed, 10 skipped) and Coverage suite reported its expected coverage-driver skip on 2026-07-06. The old repo-root mount failure no longer reproduces. |
 | Build | PASS | `pnpm run build`; largest chunks: `charts` 418.64 kB, `vendor` 394.78 kB, app index 223.43 kB. |
 | E2E | PASS WITH DOCKER/MARIADB | `scripts/run_release_e2e_mariadb.ps1` passed on 2026-07-06 against the live Docker MariaDB stack: cashier invoice/payment/institutional receipt/report flow plus RBAC user creation/navigation. Host SQLite runner still needs vendor/local evidence. |
 
@@ -118,4 +118,4 @@ Local review date: 2026-06-28
 - The old V1.3 branch was divergent from current `main`; it has now been synced locally but not pushed yet.
 - The local Git pre-commit hook is stale and points at a missing script; quality gates must be run explicitly until hook hygiene is fixed.
 - Full V1.3 scope is larger than a single safe commit; implementation must proceed in slices with tests.
-- Host release runner evidence, backend full-test container mount/timeout, and final LAN/physical evidence remain open.
+- Host release runner evidence and final LAN/physical evidence remain open.

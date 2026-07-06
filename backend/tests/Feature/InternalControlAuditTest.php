@@ -7,9 +7,11 @@ use App\Models\CashRegisterSession;
 use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
 use App\Models\Invoice;
+use App\Models\InstitutionalReceiptSeries;
 use App\Models\Payment;
 use App\Models\Service;
 use App\Models\User;
+use Database\Seeders\ReceiptPrintProfileSeeder;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -162,6 +164,7 @@ class InternalControlAuditTest extends TestCase
     public function test_cash_difference_creates_dedicated_audit_event_with_required_reason(): void
     {
         $this->seedBillingBase();
+        $this->enableInstitutionalReceiptIssuing();
         $cashier = $this->cashier();
         $sessionId = $this->openSession($cashier, '500.00');
         $invoiceId = $this->createInvoice($cashier, 'Glucosa');
@@ -172,7 +175,8 @@ class InternalControlAuditTest extends TestCase
                 'method' => Payment::METHOD_CASH,
                 'amount' => '17.25',
             ])
-            ->assertCreated();
+            ->assertCreated()
+            ->assertJsonPath('data.institutional_receipt.receipt_number_full', 'REC-A-00000001');
 
         $this->actingAs($cashier)
             ->withHeader('User-Agent', 'Caja-Cierre/1.0')
@@ -368,6 +372,32 @@ class InternalControlAuditTest extends TestCase
             'current_number' => 0,
             'cai' => 'REAL-CAI-2026',
             'valid_until' => now()->addYear()->toDateString(),
+            'active' => true,
+        ]);
+    }
+
+    private function enableInstitutionalReceiptIssuing(): void
+    {
+        $this->seed(ReceiptPrintProfileSeeder::class);
+        FiscalSetting::query()->update([
+            'receipt_template_mode' => 'institutional',
+            'receipt_paper_size' => 'half_letter',
+            'government_line' => 'Gobierno de Honduras',
+            'secretariat_line' => 'Secretaria de Salud',
+            'receipt_location' => 'Tocoa, Colon',
+            'receipt_footer_text' => 'Original: Oficina Recaudadora',
+        ]);
+        InstitutionalReceiptSeries::query()->create([
+            'document_type' => InstitutionalReceiptSeries::DOCUMENT_TYPE,
+            'series' => 'REC-A',
+            'prefix' => 'RA',
+            'number_format' => '{series}-{number:08}',
+            'min_number' => 1,
+            'max_number' => 100,
+            'current_number' => 0,
+            'range_authorization' => 'AUT-REC',
+            'legal_text' => 'CERTIFICA haber enterado en esta oficina la suma de',
+            'receipt_number_color' => '#b91c1c',
             'active' => true,
         ]);
     }

@@ -8052,3 +8052,24 @@ Pruebas ejecutadas:
 Decision:
 
 - El riesgo de 320px debe quedar como prueba automatizada focalizada, no como inspeccion manual suelta. Reportes y recibos institucionales son superficies de entrega diaria; si vuelven a desbordar en mobile, el gate E2E lo detecta.
+## 336. Fase QA/Backend - Unit y Feature verdes en Docker
+
+Cambio aplicado:
+
+- Se actualizan tres pruebas Feature que cerraban caja despues de registrar un pago sin recibo institucional emitido.
+- `InternalControlAuditTest`, `InvoiceReverseTest` y `DoublePaymentTest` ahora preparan emision institucional real en los escenarios que necesitan cerrar una caja pagada.
+- La correccion conserva la regla de negocio nueva: una caja con facturas pagadas sin recibo institucional sigue bloqueada por `CloseCashSessionAction`.
+- El board V1.3 deja de marcar backend full-test Docker como bloqueado por mounts/timeouts, porque Unit, Feature y Coverage ya se ejecutaron por suite en Docker.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --testsuite=Unit` | OK: 151 passed, 2 skipped. |
+| `docker compose exec backend php artisan test --testsuite=Feature` | RED inicial: 3 failures por cierre de caja con factura pagada sin recibo institucional; luego OK: 698 passed, 10 skipped. |
+| `docker compose exec backend php artisan test --testsuite=Coverage` | OK esperado: 1 skipped porque el coverage driver no esta habilitado. |
+| `docker compose exec backend php artisan test tests/Feature/InternalControlAuditTest.php tests/Feature/InvoiceReverseTest.php tests/Feature/Resilience/DoublePaymentTest.php` | OK: 23 passed. |
+
+Decision:
+
+- La fuente de verdad no cambia: el sistema debe impedir cerrar caja si falta recibo institucional. Las pruebas antiguas estaban modelando un estado invalido para los flujos que querian validar diferencia de caja, reverso posterior al cierre y doble cierre.
