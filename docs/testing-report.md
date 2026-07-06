@@ -381,3 +381,13 @@ verified.
 | `docker compose exec backend php artisan test tests/Feature/RoleManagementTest.php` | PASS, 10 tests. |
 | `docker compose exec backend vendor/bin/pint --test` | PASS, 430 files. |
 | `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M` | PASS, no errors. |
+
+### 2026-07-05 Operational Settings Route Gate
+
+| Command | Result |
+|---|---|
+| `npm run test -- appNavigation --run -t "operational settings editors"` | RED first because `/settings/fiscal` only accepted `settings.fiscal.view`; then PASS, 1 focused test. |
+| `npm run test -- FiscalSettingsView --run -t "does not request fiscal settings"` | RED first because the view stayed on fiscal summary and could not reach the scanner field; then PASS, 1 focused test. |
+| `npm run test -- appNavigation FiscalSettingsView App --run` | PASS, 48 tests across 8 files. |
+| `npm run typecheck` | PASS. |
+| `npm run lint` | PASS. |

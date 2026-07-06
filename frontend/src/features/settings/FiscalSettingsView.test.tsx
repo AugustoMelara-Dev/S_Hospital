@@ -38,6 +38,7 @@ function renderView(
   props: {
     canEdit?: boolean;
     canEditOperationalRules?: boolean;
+    canViewFiscalSettings?: boolean;
     onStatus?: (message: string) => void;
   } = {},
 ) {
@@ -46,6 +47,7 @@ function renderView(
       <FiscalSettingsView
         canEdit={props.canEdit ?? true}
         canEditOperationalRules={props.canEditOperationalRules ?? props.canEdit ?? true}
+        canViewFiscalSettings={props.canViewFiscalSettings ?? true}
         onStatus={props.onStatus ?? vi.fn()}
       />
     </MemoryRouter>,
@@ -152,5 +154,18 @@ describe('FiscalSettingsView (separated sections)', () => {
     expect(await screen.findByLabelText(/scanner/i)).not.toBeDisabled();
     expect(screen.getByRole('button', { name: /guardar reglas operativas/i })).not.toBeDisabled();
     expect(screen.getByText(/edici.n operativa/i)).toBeInTheDocument();
+  });
+
+  it('does not request fiscal settings when the user only edits operational rules', async () => {
+    renderView({ canEdit: false, canEditOperationalRules: true, canViewFiscalSettings: false });
+
+    expect(await screen.findByRole('heading', { level: 1, name: /^configuraci.n$/i })).toBeInTheDocument();
+    expect(await screen.findByLabelText(/scanner/i)).not.toBeDisabled();
+    expect(apiClient.getOperationalSettings).toHaveBeenCalledTimes(1);
+    expect(apiClient.getFiscalSettings).not.toHaveBeenCalled();
+    expect(apiClient.getFiscalSequences).not.toHaveBeenCalled();
+    expect(screen.queryByRole('tab', { name: /hospital/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: /numeraci.n/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: /^marca$/i })).not.toBeInTheDocument();
   });
 });

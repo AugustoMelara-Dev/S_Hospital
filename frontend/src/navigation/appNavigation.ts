@@ -160,9 +160,10 @@ export const appRoutes = {
     ],
     navigationGroup: 'administration',
     navigation: true,
-    navigationPermissions: ['settings.fiscal.view'],
-    requiredPermissions: ['settings.fiscal.view'],
-    deniedReason: 'Requiere permiso para consultar configuración fiscal.',
+    navigationPermissions: ['settings.fiscal.view', 'settings.operational.update'],
+    requiredPermissions: ['settings.fiscal.view', 'settings.operational.update'],
+    permissionMode: 'any',
+    deniedReason: 'Requiere permiso para consultar configuración fiscal o editar reglas operativas.',
   },
   receiptSettings: {
     id: 'receiptSettings',

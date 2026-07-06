@@ -18,16 +18,23 @@ import { Link } from 'react-router-dom';
 type FiscalSettingsViewProps = {
   canEdit: boolean;
   canEditOperationalRules: boolean;
+  canViewFiscalSettings: boolean;
   onStatus: (message: string) => void;
 };
 
-export function FiscalSettingsView({ canEdit, canEditOperationalRules, onStatus }: FiscalSettingsViewProps) {
-  const [activeTab, setActiveTab] = useState('resumen');
+export function FiscalSettingsView({ canEdit, canEditOperationalRules, canViewFiscalSettings, onStatus }: FiscalSettingsViewProps) {
+  const [activeTab, setActiveTab] = useState(() => (canViewFiscalSettings ? 'resumen' : 'operativa'));
   const [settings, setSettings] = useState<FiscalSettings | null>(null);
   const [sequence, setSequence] = useState<FiscalSequence | null>(null);
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
+    if (!canViewFiscalSettings) {
+      setSettings(null);
+      setSequence(null);
+      return;
+    }
+
     try {
       const [data, sequences] = await Promise.all([
         apiClient.getFiscalSettings(),
@@ -40,11 +47,17 @@ export function FiscalSettingsView({ canEdit, canEditOperationalRules, onStatus 
       setError(message);
       onStatus(message);
     }
-  }, [onStatus]);
+  }, [canViewFiscalSettings, onStatus]);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (!canViewFiscalSettings && activeTab !== 'operativa') {
+      setActiveTab('operativa');
+    }
+  }, [activeTab, canViewFiscalSettings]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -105,34 +118,42 @@ export function FiscalSettingsView({ canEdit, canEditOperationalRules, onStatus 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <div className="overflow-x-auto pb-1">
           <TabsList className="min-w-max border border-operational-border bg-operational-panel p-1">
-            <TabsTrigger value="resumen">Resumen</TabsTrigger>
-            <TabsTrigger value="hospital">Hospital</TabsTrigger>
-            <TabsTrigger value="numeracion">Numeración</TabsTrigger>
+            {canViewFiscalSettings ? <TabsTrigger value="resumen">Resumen</TabsTrigger> : null}
+            {canViewFiscalSettings ? <TabsTrigger value="hospital">Hospital</TabsTrigger> : null}
+            {canViewFiscalSettings ? <TabsTrigger value="numeracion">Numeración</TabsTrigger> : null}
             <TabsTrigger value="operativa">Operativa</TabsTrigger>
-            <TabsTrigger value="marca">Marca</TabsTrigger>
+            {canViewFiscalSettings ? <TabsTrigger value="marca">Marca</TabsTrigger> : null}
           </TabsList>
         </div>
 
-        <TabsContent value="resumen" className="mt-0 space-y-6">
-          <FiscalStatusCard settings={settings} sequence={sequence} />
-          <FiscalSummary settings={settings} sequence={sequence} />
-        </TabsContent>
+        {canViewFiscalSettings ? (
+          <TabsContent value="resumen" className="mt-0 space-y-6">
+            <FiscalStatusCard settings={settings} sequence={sequence} />
+            <FiscalSummary settings={settings} sequence={sequence} />
+          </TabsContent>
+        ) : null}
 
-        <TabsContent value="hospital" className="mt-0">
-          <HospitalSettingsView canEdit={canEdit} onStatus={onStatus} />
-        </TabsContent>
+        {canViewFiscalSettings ? (
+          <TabsContent value="hospital" className="mt-0">
+            <HospitalSettingsView canEdit={canEdit} onStatus={onStatus} />
+          </TabsContent>
+        ) : null}
 
-        <TabsContent value="numeracion" className="mt-0">
-          <FiscalNumerationView canEdit={canEdit} onStatus={onStatus} />
-        </TabsContent>
+        {canViewFiscalSettings ? (
+          <TabsContent value="numeracion" className="mt-0">
+            <FiscalNumerationView canEdit={canEdit} onStatus={onStatus} />
+          </TabsContent>
+        ) : null}
 
         <TabsContent value="operativa" className="mt-0">
           <OperationalRulesView canEdit={canEditOperationalRules} onStatus={onStatus} />
         </TabsContent>
 
-        <TabsContent value="marca" className="mt-0">
-          <BrandingView canEdit={canEdit} onStatus={onStatus} />
-        </TabsContent>
+        {canViewFiscalSettings ? (
+          <TabsContent value="marca" className="mt-0">
+            <BrandingView canEdit={canEdit} onStatus={onStatus} />
+          </TabsContent>
+        ) : null}
       </Tabs>
     </div>
   );

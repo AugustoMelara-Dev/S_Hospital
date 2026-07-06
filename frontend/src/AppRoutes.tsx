@@ -201,6 +201,7 @@ export function AppRoutes({
               <FiscalSettingsView
                 canEdit={canEditFiscalSettings}
                 canEditOperationalRules={canEditOperationalSettings}
+                canViewFiscalSettings={canViewFiscalSettings}
                 onStatus={onStatus}
               />
             </Suspense>

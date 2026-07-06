@@ -6529,3 +6529,26 @@ Pruebas ejecutadas:
 Decision:
 
 - La separacion de permisos operativos ahora llega hasta la administracion de roles con lenguaje claro para el hospital, sin esconder el identificador tecnico necesario para soporte.
+
+## 272. Fase 11/13 - Editores operativos pueden entrar a configuracion sin permiso fiscal
+
+Cambio aplicado:
+
+- La ruta `/settings/fiscal` acepta `settings.operational.update` como permiso suficiente para entrar al centro de configuracion.
+- `FiscalSettingsView` recibe `canViewFiscalSettings` y, cuando el usuario solo puede editar reglas operativas, inicia en la pestana `Operativa`.
+- En modo operativo puro, la pantalla no solicita `/api/settings/fiscal` ni secuencias fiscales, evitando un 403 evitable y ocultando secciones fiscales no autorizadas.
+- No se agregaron migraciones, dependencias, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- appNavigation --run -t "operational settings editors"` | RED inicial porque la ruta solo aceptaba `settings.fiscal.view`; luego OK. |
+| `npm run test -- FiscalSettingsView --run -t "does not request fiscal settings"` | RED inicial porque la pantalla quedaba en resumen fiscal y buscaba `scanner`; luego OK. |
+| `npm run test -- appNavigation FiscalSettingsView App --run` | OK: 48 tests pasan en 8 archivos. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+
+Decision:
+
+- La separacion operativa ya es usable por un rol basico sin entregar acceso fiscal completo. Los subagentes de auditoria priorizaron como siguientes P1: alinear el rol `cajero` con receta de dialisis y reportes de caja propia, y cortar el fallback legacy de recibos en pagos nuevos.

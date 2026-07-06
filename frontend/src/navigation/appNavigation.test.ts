@@ -53,7 +53,7 @@ describe('appNavigation', () => {
       { path: '/invoices', permissions: ['invoices.view'], mode: 'any' },
       { path: '/reports', permissions: ['reports.view', 'reports.managerial.view', 'reports.cash_session.view', 'audit.view'], mode: 'any' },
       { path: '/backups', permissions: ['backups.view'], mode: 'any' },
-      { path: '/settings/fiscal', permissions: ['settings.fiscal.view'], mode: 'any' },
+      { path: '/settings/fiscal', permissions: ['settings.fiscal.view', 'settings.operational.update'], mode: 'any' },
       { path: '/settings/institutional-receipts', permissions: ['receipt_settings.view'], mode: 'any' },
       { path: '/admin/users', permissions: ['users.view'], mode: 'any' },
       { path: '/help', permissions: [], mode: 'any' },
@@ -104,6 +104,14 @@ describe('appNavigation', () => {
     expect(canAccessRoute(appRoutes.reports, ['reports.cash_session.view'])).toBe(true);
     expect(canAccessRoute(appRoutes.reports, ['reports.managerial.view'])).toBe(true);
     expect(canAccessRoute(appRoutes.receiptSettings, ['receipt_settings.view'])).toBe(true);
+  });
+
+  it('lets operational settings editors reach the configuration route without fiscal write access', () => {
+    const operationalEditorPaths = getVisibleNavigation(['settings.operational.update']).map((item) => item.path);
+
+    expect(operationalEditorPaths).toContain('/settings/fiscal');
+    expect(canAccessRoute(appRoutes.fiscalSettings, ['settings.operational.update'])).toBe(true);
+    expect(canAccessPath('/settings/fiscal', ['settings.operational.update'])).toBe(true);
   });
 
   it('preserves visible routes by operational profile', () => {
