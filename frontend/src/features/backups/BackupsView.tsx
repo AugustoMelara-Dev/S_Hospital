@@ -235,6 +235,14 @@ function backupDownloadFilename(backup: BackupLog): string {
   return `respaldo-local-${date}-${backup.id}.sql.gz.enc`;
 }
 
+function backupIntegrityFingerprint(checksum: string | null | undefined): string {
+  if (!checksum || !/^[a-f0-9]{64}$/i.test(checksum)) {
+    return 'No disponible';
+  }
+
+  return checksum.slice(0, 12).toLowerCase();
+}
+
 function localAccessIsReady(status: SystemStatus): boolean {
   return status.network.lan_ready || status.network.host_type === 'loopback';
 }
@@ -821,6 +829,10 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
               <div>
                 <dt className="text-xs font-medium text-muted-foreground">Tamaño</dt>
                 <dd className="font-semibold">{formatBytes(downloadTarget.size_bytes)}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-medium text-muted-foreground">Verificacion</dt>
+                <dd className="font-semibold">{backupIntegrityFingerprint(downloadTarget.checksum_sha256)}</dd>
               </div>
               <div className="sm:col-span-2">
                 <dt className="text-xs font-medium text-muted-foreground">Usuario</dt>
