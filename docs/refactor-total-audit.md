@@ -7975,3 +7975,30 @@ Pruebas ejecutadas:
 Decision:
 
 - La lista de riesgos debe guiar entrega real: mantener P0s ya cerrados en el board distrae del bloqueo activo de E2E release y evidencia final. La fuente de verdad sigue siendo codigo y pruebas; esta entrada solo alinea la coordinacion documental con esa evidencia.
+
+## 333. Fase QA/E2E - Release specs pasan en Docker con Chromium del sistema
+
+Cambio aplicado:
+
+- `playwright.release.config.ts` ahora respeta `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`, igual que el config principal, para ejecutar gates release en entornos offline/contenedor sin descargar navegadores.
+- `release-gate.spec.ts` se alinea al flujo actual: cobro institucional directo, total de Glucosa con ISV (`17.25`) y dialogo final `Factura pagada`.
+- `release-rbac.spec.ts` se alinea al flujo release realista: admin crea un usuario cajero, valida permisos efectivos del rol, cambio obligatorio de contrasena y bloqueo de modulos administrativos.
+- El board V1.3 deja de tratar la falla auth/session como P0 abierta para Docker/live stack; conserva pendiente el runner host SQLite/MariaDB final.
+- No se agregaron dependencias, migraciones, endpoints ni permisos productivos.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan hospital:prepare-e2e-release-data --password=Password123! --json` | OK: usuarios E2E, caja abierta, servicio Glucosa y configuracion institucional preparados en entorno local. |
+| `docker compose exec -e E2E_RELEASE_ALLOW_MUTATIONS=1 -e E2E_RELEASE_BASE_URL=http://127.0.0.1:5173 -e E2E_RELEASE_API_BASE_URL=http://backend:8000 -e E2E_RELEASE_REPORT_PATH=/app/test-results/docker-release-e2e-report.json -e PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser frontend npx playwright test --config=playwright.release.config.ts --reporter=list` | RED inicial por browser no descargado; luego RED por selectors/spec drift; finalmente OK: 2 passed. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+
+Limitacion:
+
+- No se declara cerrado el runner host `npm run e2e` porque esta sesion no tiene `backend/vendor/autoload.php` en el host. La evidencia nueva cubre navegador real contra el stack Docker local y descarta la regresion auth/session observada.
+
+Decision:
+
+- Para la version monocomputadora, el gate release debe poder correr sin internet usando Chromium del sistema. El bloqueo restante ya no es sesion expirada en la app, sino empaquetar/ejecutar el runner final con dependencias host o una compuerta MariaDB equivalente.

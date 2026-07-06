@@ -7,6 +7,7 @@ const apiBaseUrl = (process.env.E2E_RELEASE_API_BASE_URL ?? 'http://127.0.0.1:18
 const login = process.env.E2E_RELEASE_LOGIN ?? 'cajero.e2e';
 const password = process.env.E2E_RELEASE_PASSWORD ?? 'Password123!';
 const serviceQuery = process.env.E2E_RELEASE_SERVICE_QUERY ?? 'Glucosa';
+const paymentAmount = process.env.E2E_RELEASE_PAYMENT_AMOUNT ?? '17.25';
 const allowMutations = process.env.E2E_RELEASE_ALLOW_MUTATIONS === '1';
 const reportPath = resolve(process.env.E2E_RELEASE_REPORT_PATH ?? 'test-results/release-e2e-report.json');
 const releaseResults: Array<Record<string, unknown>> = [];
@@ -61,22 +62,21 @@ test('release gate cashier can issue, collect, show receipt and surface reports'
   await page.getByRole('button', { name: /emitir y abrir cobro/i }).click();
 
   await expect(page.getByRole('heading', { name: /registrar pago/i })).toBeVisible();
-  await page.getByLabel(/ver preview antes de imprimir/i).check();
-  await page.getByLabel(/monto recibido/i).fill('17.25');
+  await page.getByLabel(/monto recibido/i).fill(paymentAmount);
   await Promise.all([
     page.waitForResponse((response) =>
       response.request().method() === 'POST' &&
       /\/api\/invoices\/\d+\/payments$/.test(new URL(response.url()).pathname) &&
       response.status() === 201,
     ),
-    page.getByRole('button', { name: /confirmar cobro y ver preview|registrar cobro y ver preview/i }).click(),
+    page.getByRole('button', { name: /confirmar cobro e imprimir|registrar cobro e imprimir/i }).click(),
   ]);
   await page.waitForResponse((response) =>
     response.request().method() === 'GET' &&
     /\/api\/institutional-receipts\/\d+\/pdf$/.test(new URL(response.url()).pathname) &&
     response.ok(),
   );
-  await expect(page.getByRole('heading', { name: /factura emitida exitosamente/i })).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByRole('heading', { name: /factura pagada/i })).toBeVisible({ timeout: 30_000 });
   await expect(page.getByRole('status').filter({ hasText: /pdf institucional/i }).first()).toBeVisible();
   await expect(page.getByText(patientName)).toBeVisible();
 
@@ -90,7 +90,7 @@ test('release gate cashier can issue, collect, show receipt and surface reports'
 
   const invoice = persisted.data?.find((item: { patient_name?: string }) => item.patient_name === patientName);
   expect(invoice?.status).toBe('paid');
-  expect(invoice?.total).toBe('17.25');
+  expect(invoice?.total).toBe(paymentAmount);
 
   const adminPage = await browser.newPage();
   try {
