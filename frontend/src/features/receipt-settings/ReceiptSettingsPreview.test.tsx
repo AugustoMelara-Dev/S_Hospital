@@ -79,7 +79,7 @@ describe('ReceiptSettingsPreview', () => {
     expect(document.body.textContent).toContain('Fecha: 03/07/2026');
     expect(screen.getByText('Espacio para sello/firma')).toBeInTheDocument();
     expect(document.body.textContent).toContain('ORIGINAL');
-    expect(document.body.textContent).not.toMatch(/CAI|barcode|qr_code|user_id|Estado/);
+    expect(document.body.textContent).not.toMatch(/CAI|barcode|qr_code|user_id|Estado|PDF final|servidor/);
   });
 
   it('does not invent optional institutional header lines when they are blank', () => {

@@ -7131,3 +7131,26 @@ Pruebas ejecutadas:
 Decision:
 
 - El cajero propietario de la sesion y el usuario que ejecuta el cierre son hechos auditables distintos. Los reportes deben conservar ambos para supervision y conciliacion posterior.
+
+## 297. Fase 6 - Vista previa de recibos usa copy operativo
+
+Cambio aplicado:
+
+- `ReceiptSettingsPreview` ya no describe la vista previa normal con terminos tecnicos como "PDF final" o "servidor".
+- El copy del preview se enfoca en papel, copias y prueba de impresion, manteniendo la pantalla normal libre de detalles de implementacion.
+- No se agregaron migraciones, dependencias, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- ReceiptSettingsPreview --run -t "classic institutional fields"` | RED inicial correcto: el preview aun mostraba "PDF final" y "servidor"; luego OK. |
+| `npm run test -- ReceiptSettingsPreview --run` | OK: 4 tests. |
+| `npm run test -- InstitutionalReceiptSettingsView --run` | OK: 24 tests. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- La configuracion normal de impresion debe hablar en terminos operativos del hospital. Los detalles sobre servidor/PDF interno pertenecen al sistema, no a la pantalla cotidiana del usuario.

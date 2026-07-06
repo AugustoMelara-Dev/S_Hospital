@@ -647,3 +647,14 @@ verified.
 | `docker exec s_hospital-backend-1 vendor/bin/pint --test` | PASS, 431 files. |
 | `docker exec s_hospital-backend-1 vendor/bin/phpstan analyse --memory-limit=512M` | First attempt timed out at 3 minutes; rerun PASS with no errors. |
 | `npm run typecheck` | PASS. |
+
+### 2026-07-06 Receipt Preview Operator Copy Gate
+
+| Command | Result |
+|---|---|
+| `npm run test -- ReceiptSettingsPreview --run -t "classic institutional fields"` | RED first because the normal preview still mentioned `PDF final` and `servidor`; then PASS. |
+| `npm run test -- ReceiptSettingsPreview --run` | PASS, 4 tests. |
+| `npm run test -- InstitutionalReceiptSettingsView --run` | PASS, 24 tests. |
+| `npm run typecheck` | PASS. |
+| `npm run lint` | PASS. |
+| `npm run build` | PASS. |

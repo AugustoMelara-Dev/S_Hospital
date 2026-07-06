@@ -53,7 +53,7 @@ export function ReceiptSettingsPreview({
     <PrintPreviewFrame
       data-testid="receipt-settings-preview"
       title="Vista previa institucional"
-      description="Representación visual de la configuración actual. El PDF final sigue siendo generado por el servidor."
+      description="Representación visual del papel y las copias configuradas para la prueba de impresión."
       className="bg-operational-panel"
     >
       <div className="space-y-4">
