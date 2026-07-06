@@ -7494,3 +7494,26 @@ Pruebas ejecutadas:
 Decision:
 
 - La version monocomputadora debe validar seriamente el recibo institucional principal, pero no bloquear salida por tickets 80mm/58mm que son compatibilidad secundaria.
+
+## 312. Fase 19/QA - Readiness LAN no exige realtime avanzado
+
+Cambio aplicado:
+
+- `SystemStatusController` deja de requerir `/api/system/echo-config`, WebSocket y Soketi como checks obligatorios de `LAN_CLIENT_VALIDATION_PROOF`.
+- La evidencia LAN sigue validando servidor, login, assets, caja, factura, pago, recibo, historial, reportes y respaldo.
+- La prueba existente ahora confirma que una validacion LAN sin realtime avanzado queda `validated` y que el payload operativo no vuelve a mencionar Echo/WebSocket/Soketi.
+- No se agregaron dependencias, migraciones, roles, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test tests/Feature/SystemStatusTest.php --filter=without_realtime_websocket` | OK: 1 test, 6 assertions. |
+| `docker compose exec backend php artisan test tests/Feature/SystemStatusTest.php` | OK: 22 tests, 152 assertions. |
+| `docker compose exec backend vendor/bin/pint --test` | OK: 431 files. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=1G` | OK: no errors. |
+| `git diff --check` | OK. |
+
+Decision:
+
+- Para entregar una version monocomputadora/LAN simple, realtime no debe ser requisito de preparacion final. La validacion debe probar el navegador y los flujos criticos, sin exigir infraestructura avanzada que no es necesaria para caja local.

@@ -365,15 +365,16 @@ class SystemStatusTest extends TestCase
             ->assertJsonPath('data.preflight.physical_proofs.1.detail', 'La evidencia local referenciada no existe: qa/evidence/printer-2026-05-19');
     }
 
-    public function test_status_rejects_lan_proof_without_realtime_websocket_evidence(): void
+    public function test_status_accepts_lan_proof_without_realtime_websocket_evidence(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
-        $proofRoot = storage_path('framework/testing-production-proofs-lan-websocket');
+        $proofRoot = storage_path('framework/testing-production-proofs-lan-basic');
 
         File::deleteDirectory($proofRoot);
         File::ensureDirectoryExists($proofRoot.'/qa');
         File::ensureDirectoryExists($proofRoot.'/qa/evidence/lan-client-2026-05-19');
         Config::set('hospital.project_root', $proofRoot);
+        $this->beforeApplicationDestroyed(fn () => File::deleteDirectory($proofRoot));
 
         $proofWithoutWebSocket = str_replace(
             [
@@ -385,11 +386,16 @@ class SystemStatusTest extends TestCase
         );
         File::put($proofRoot.'/qa/LAN_CLIENT_VALIDATION_PROOF.md', $proofWithoutWebSocket);
 
-        $this->actingAs($this->admin())
+        $response = $this->actingAs($this->admin())
             ->getJson('/api/system/status')
             ->assertOk()
-            ->assertJsonPath('data.preflight.physical_proofs.0.status', 'partial')
-            ->assertJsonPath('data.preflight.physical_proofs.0.detail', 'Faltan checks con evidencia: /api/system/echo-config, WebSocket, Soketi');
+            ->assertJsonPath('data.preflight.physical_proofs.0.status', 'validated')
+            ->assertJsonPath('data.preflight.physical_proofs.0.detail', 'Evidencia completada; el preflight final debe confirmarla sin bypass.');
+
+        $encoded = json_encode($response->json(), JSON_THROW_ON_ERROR);
+        $this->assertStringNotContainsString('/api/system/echo-config', $encoded);
+        $this->assertStringNotContainsString('WebSocket', $encoded);
+        $this->assertStringNotContainsString('Soketi', $encoded);
     }
 
     public function test_status_marks_template_physical_proof_files_as_partial(): void
