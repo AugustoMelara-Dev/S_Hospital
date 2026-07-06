@@ -3,7 +3,7 @@
 Living verification report for the S_Hospital total refactor. This document is
 evidence for the current branch, not a production approval.
 
-Status date: 2026-07-05
+Status date: 2026-07-06
 Branch: `codex/refactor-total`
 Production approval: NO
 
@@ -70,8 +70,8 @@ production approval.
 | 2026-07-02 | `docker compose exec -e PLAYWRIGHT_EXTERNAL_SERVER=1 -e PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser frontend npx playwright test e2e/production-readiness.spec.ts` | PASS, 4 tests | Production readiness workflow with resilient receipt paper selection. |
 | 2026-07-02 | `docker compose exec -e PLAYWRIGHT_EXTERNAL_SERVER=1 -e PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser frontend npx playwright test e2e/refactor-total.spec.ts` | PASS, 7 tests | Refactor-total a11y gates with synchronized backend login. |
 | 2026-07-02 | `docker compose exec -e PLAYWRIGHT_EXTERNAL_SERVER=1 -e PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser frontend npx playwright test --workers=2` | PASS, 73 passed / 2 skipped | Full Docker Playwright gate. Release mutation specs remain skipped unless `E2E_RELEASE_ALLOW_MUTATIONS=1`. A prior `--workers=4` run exposed resource-sensitive timeouts; `--workers=2` is the stable offline/container setting. |
-| 2026-07-05 | `npm.cmd run e2e` | FAIL, preflight | Host release E2E now fails early with an operator-safe message because `backend/vendor/autoload.php` is missing on the host. Run `composer install` in `backend/` before this host gate, or use the Docker mocked Playwright gates for containerized UI smoke. |
-| 2026-07-05 | `docker compose exec frontend npx vitest run scripts/release-e2e-preflight.test.mjs --pool=forks --maxWorkers=1 --no-file-parallelism` | PASS, 2 tests | Covers the release E2E preflight for present/missing Composer autoloader. |
+| 2026-07-06 | `npm.cmd run e2e` | FAIL, preflight | Host release E2E fails early because `backend/vendor/autoload.php` is missing on the host. The preflight now avoids a committed default E2E password and points to `scripts\\run_release_e2e_mariadb.ps1 -SeedPassword <secret>` as the validated Docker/MariaDB release gate. |
+| 2026-07-06 | `docker compose exec frontend npx vitest run scripts/release-e2e-preflight.test.mjs --pool=forks --maxWorkers=1 --no-file-parallelism` | PASS, 4 tests | Covers present/missing Composer autoloader, explicit E2E password requirement, MariaDB gate guidance, and no committed default password in the host runner. |
 | 2026-07-05 | `docker compose exec frontend npx vitest run scripts/button-smoke-report.test.mjs --pool=forks --maxWorkers=1 --no-file-parallelism` | PASS, 2 tests | Button-smoke report writer refuses empty evidence artifacts. |
 | 2026-07-05 | `docker compose exec -e PLAYWRIGHT_EXTERNAL_SERVER=1 -e E2E_BUTTON_SMOKE_REPORT_PATH=/tmp/button-smoke-dangerous.json frontend npx playwright test e2e/all-buttons-smoke.spec.ts --grep "dangerous history" --workers=1 --reporter=list` | PASS, 1 test | Validates the history reverse-cancel smoke and writes a non-empty temporary report. |
 | 2026-07-05 | `docker compose build frontend` | PASS | Builds the local frontend QA image with Alpine Chromium installed. |

@@ -8091,3 +8091,24 @@ Pruebas ejecutadas:
 Decision:
 
 - Para la version monocomputadora/LAN, realtime avanzado no es requisito. Mantener Echo/Pusher como carga diferida y pausar polling en pestanas ocultas reduce presion local sin eliminar compatibilidad futura.
+
+## 338. Fase QA/E2E - Host release runner sin password por defecto
+
+Cambio aplicado:
+
+- `frontend/scripts/run-release-e2e.mjs` deja de usar `Password123!` como credencial E2E por defecto.
+- `release-e2e-preflight.mjs` exige `E2E_RELEASE_PASSWORD` o `E2E_SEED_PASSWORD` para el runner host cuando las dependencias Composer locales existen.
+- El preflight de Composer ahora apunta al gate real `scripts\run_release_e2e_mariadb.ps1 -SeedPassword <secret>` en vez de sugerir un smoke mockeado.
+- El seeder host ya no se invoca con `--json`, evitando imprimir datos E2E sensibles en stdout/logs del runner.
+- El board y `docs/testing-report.md` documentan que el host runner sigue bloqueado en esta maquina por falta de `backend/vendor/autoload.php`, mientras Docker/MariaDB queda como gate automatizado validado actual.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npx vitest run scripts/release-e2e-preflight.test.mjs --pool=forks --maxWorkers=1 --no-file-parallelism` | RED inicial por lectura de `import.meta.url`; luego OK: 4 tests passed. |
+| `npm.cmd run e2e` desde `frontend/` | FALLO esperado: `backend/vendor/autoload.php is missing`; el mensaje recomienda `composer install` o el wrapper MariaDB con `-SeedPassword <secret>`. |
+
+Decision:
+
+- No se declara completo el runner host porque faltan dependencias Composer locales. Para la entrega monocomputadora, el gate Docker/MariaDB ya cubre el flujo real de base local; el runner host queda como evidencia adicional cuando se instale `backend/vendor` en host.

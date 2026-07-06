@@ -43,7 +43,7 @@ Local review date: 2026-06-28
 | Backend PHPStan | PASS | `docker compose run --rm backend vendor/bin/phpstan analyse --memory-limit=1G --no-progress`. |
 | Backend full tests | PASS BY SUITE | Docker Unit passed (151 passed, 2 skipped), Feature passed (698 passed, 10 skipped) and Coverage suite reported its expected coverage-driver skip on 2026-07-06. The old repo-root mount failure no longer reproduces. |
 | Build | PASS | `pnpm run build`; largest chunks: `charts` 418.64 kB, `vendor` 394.78 kB, app index 223.43 kB. |
-| E2E | PASS WITH DOCKER/MARIADB | `scripts/run_release_e2e_mariadb.ps1` passed on 2026-07-06 against the live Docker MariaDB stack: cashier invoice/payment/institutional receipt/report flow plus RBAC user creation/navigation. Host SQLite runner still needs vendor/local evidence. |
+| E2E | PASS WITH DOCKER/MARIADB | `scripts/run_release_e2e_mariadb.ps1` passed on 2026-07-06 against the live Docker MariaDB stack: cashier invoice/payment/institutional receipt/report flow plus RBAC user creation/navigation. Host SQLite runner still needs Composer vendor/local evidence, but its preflight now fails early without a default password and points operators to the MariaDB gate. |
 
 ## Research And Library Decisions
 
@@ -118,4 +118,4 @@ Local review date: 2026-06-28
 - The old V1.3 branch was divergent from current `main`; it has now been synced locally but not pushed yet.
 - The local Git pre-commit hook is stale and points at a missing script; quality gates must be run explicitly until hook hygiene is fixed.
 - Full V1.3 scope is larger than a single safe commit; implementation must proceed in slices with tests.
-- Host release runner evidence and final LAN/physical evidence remain open.
+- Host release runner evidence remains open because `backend/vendor/autoload.php` is absent on this host; the preflight is explicit and the Docker/MariaDB release gate is the current validated automated path. Final LAN/physical evidence also remains open.
