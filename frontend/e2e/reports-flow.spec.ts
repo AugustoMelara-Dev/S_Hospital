@@ -7,7 +7,7 @@ const reportUser = {
   username: 'reportes.supervisora',
   active: true,
   roles: ['supervisor'],
-  permissions: ['reports.view', 'reports.managerial.view', 'reports.cash_session.view', 'reports.export'],
+  permissions: ['reports.view', 'reports.managerial.view', 'reports.cash_session.view', 'reports.export', 'audit.view'],
   must_change_password: false,
 };
 

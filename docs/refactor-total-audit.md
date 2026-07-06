@@ -7204,3 +7204,34 @@ Pruebas ejecutadas:
 Decision:
 
 - Un permiso generico que no habilita ninguna subvista produce una pantalla vacia y confusa. La entrada a reportes debe depender de una capacidad concreta: ejecutivo, caja o auditoria.
+
+## 300. Fase 10/QA - E2E de auditoria usa permiso real
+
+Cambio aplicado:
+
+- `frontend/e2e/reports-flow.spec.ts` ahora incluye `audit.view` en el usuario mock de reportes.
+- El E2E de `/reports/audit` valida la pantalla de auditoria con el permiso concreto que la app exige, no con el permiso generico legado `reports.view`.
+- No se relajaron permisos ni rutas; la correccion mantiene la separacion entre reporte ejecutivo, reporte de caja y auditoria.
+- No se agregaron migraciones, dependencias, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker exec s_hospital-backend-1 vendor/bin/pint --test` | OK: 431 files. |
+| `docker exec s_hospital-backend-1 vendor/bin/phpstan analyse --memory-limit=1G` | OK: no errors. |
+| `npm run lint` | OK. |
+| `npm run typecheck` | OK. |
+| `npm run build` | OK. |
+| `docker exec s_hospital-backend-1 php artisan test --filter=InvoiceCreationTest` | OK: 33 tests, 136 assertions. |
+| `npm run test -- NewInvoiceView PaymentModal ReceiptPreview InvoiceHistoryView BackupsView ReportsView DashboardView UsersView --run` | OK: 11 files, 192 tests. |
+| `npx playwright test e2e/new-invoice-flow.spec.ts e2e/cashbox.spec.ts e2e/print-profiles.spec.ts e2e/reports-flow.spec.ts` | RED inicial: `/reports/audit` no mostraba auditoria con mock sin `audit.view`; luego OK al reejecutar `e2e/reports-flow.spec.ts`: 3 tests pasan. |
+| `npm run test -- ReportsView.subroutes ReportsAudit --run` | OK: 2 files, 18 tests. |
+
+Ejecuciones no concluyentes:
+
+- `docker exec s_hospital-backend-1 php artisan test`, `npm run test` completo y `npx playwright test` completo fueron interrumpidos por reanudacion automatica del hilo antes de producir salida verificable. No se declaran verdes en este corte.
+
+Decision:
+
+- El reporte de auditoria es una capacidad critica, pero debe seguir protegido por `audit.view`. El E2E estaba desalineado con la politica actual y ahora prueba el flujo real autorizado.
