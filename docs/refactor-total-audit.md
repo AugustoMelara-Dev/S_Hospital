@@ -7358,3 +7358,28 @@ Pruebas ejecutadas:
 Decision:
 
 - La descarga del PDF es una vista del documento, no evidencia de impresion fisica. La auditoria de impresion queda concentrada en el endpoint explicito `print-events` para evitar reimpresiones falsas cuando el operador solo abre o descarga el recibo.
+
+## 306. Fase 8/QA - API rechaza perfil termico para recibo principal
+
+Cambio aplicado:
+
+- `IssueInstitutionalReceiptAction` valida el perfil resuelto antes de reservar numero o crear recibo institucional.
+- La emision principal rechaza `thermal_80mm` y `thermal_58mm` cuando llegan por `profile_code`, `profile_id` o asignacion activa heredada.
+- El rechazo devuelve 422 sobre `profile_code`, `profile_id` o `print_profile` segun el origen, sin consumir correlativo ni crear recibo.
+- Carta, media carta y A5 siguen siendo los perfiles institucionales principales; los perfiles termicos quedan como compatibilidad secundaria fuera de esta emision principal.
+- No se agregaron migraciones, dependencias, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/InstitutionalReceiptIssueTest.php --filter=secondary_thermal_profile` | OK: 2 tests, 13 assertions. |
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/InstitutionalReceiptIssueTest.php` | OK: 10 tests, 75 assertions. |
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/InstitutionalReceiptIssueTest.php tests/Feature/InstitutionalReceiptPaymentIntegrationTest.php` | OK: 19 tests, 185 assertions. |
+| `docker exec s_hospital-backend-1 vendor/bin/pint --test` | OK: 431 files. |
+| `docker exec s_hospital-backend-1 vendor/bin/phpstan analyse --memory-limit=1G` | OK: no errors. |
+| `git diff --check` | OK. |
+
+Decision:
+
+- El recibo institucional principal no debe degradarse a ticket termico por una llamada API directa o por una asignacion de perfil heredada. La version monocomputadora reduce complejidad de despliegue, pero mantiene seriedad fiscal en recibos, correlativos e impresion.

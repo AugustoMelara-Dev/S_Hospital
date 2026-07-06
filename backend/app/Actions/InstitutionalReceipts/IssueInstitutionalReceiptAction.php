@@ -18,6 +18,11 @@ use Illuminate\Validation\ValidationException;
 
 class IssueInstitutionalReceiptAction
 {
+    private const SECONDARY_THERMAL_PAPER_KINDS = [
+        'thermal_80mm',
+        'thermal_58mm',
+    ];
+
     public function __construct(
         private readonly ReserveInstitutionalReceiptNumberAction $reserveNumber,
         private readonly BuildInstitutionalReceiptSnapshotAction $buildSnapshot,
@@ -71,6 +76,7 @@ class IssueInstitutionalReceiptAction
             $postCloseIssue = $cashSession->status === CashRegisterSession::STATUS_CLOSED;
 
             $profile = $this->resolveProfile($payload, $user, $cashSession);
+            $this->assertInstitutionalProfile($profile, $payload);
             $reservation = $this->reserveNumber->execute();
             $amountCents = $this->invoiceTotalCents($invoice);
             $snapshot = $this->buildSnapshot->execute(
@@ -291,6 +297,24 @@ class IssueInstitutionalReceiptAction
         }
 
         return $this->resolveProfile->execute($user, $cashSession);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function assertInstitutionalProfile(ReceiptPrintProfile $profile, array $payload): void
+    {
+        if (! in_array($profile->paper_kind, self::SECONDARY_THERMAL_PAPER_KINDS, true)) {
+            return;
+        }
+
+        $field = ! empty($payload['profile_id'])
+            ? 'profile_id'
+            : (! empty($payload['profile_code']) ? 'profile_code' : 'print_profile');
+
+        throw ValidationException::withMessages([
+            $field => 'El recibo institucional principal debe usar carta, media carta o A5. Los perfiles termicos son solo compatibilidad secundaria.',
+        ]);
     }
 
     private function invoiceTotalCents(Invoice $invoice): int
