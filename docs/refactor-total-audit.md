@@ -6406,3 +6406,26 @@ Pruebas ejecutadas:
 Decision:
 
 - El operador puede detectar si los respaldos automaticos nunca se han ejecutado o requieren revision sin abrir soporte ni leer nombres de procesos del servidor.
+
+## 267. Fase 10/14 - Auditoria no solicita resumen ejecutivo sin permiso
+
+Cambio aplicado:
+
+- `ReportsAudit` separa el permiso para ver bitacora de auditoria del permiso para solicitar el resumen ejecutivo mensual.
+- `ReportsView` pasa `canViewManagerial` como autorizacion del resumen ejecutivo y mantiene `audit.view` solo para la bitacora.
+- Usuarios con `audit.view` pueden abrir auditoria sin disparar una llamada a `getExecutiveReport` que el backend puede rechazar por falta de permiso gerencial.
+- No se agregaron dependencias, migraciones, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- ReportsAudit --run -t "does not fetch the executive summary"` | RED inicial porque auditoria llamaba `getExecutiveReport`; luego OK. |
+| `npm run test -- ReportsAudit --run` | OK: 8 tests pasan. |
+| `npm run test -- ReportsView.subroutes --run` | OK: 10 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+
+Decision:
+
+- El frontend ya no usa un permiso parcial de auditoria como sustituto de permisos gerenciales; el backend sigue siendo la defensa final para el endpoint ejecutivo.

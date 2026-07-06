@@ -323,3 +323,13 @@ verified.
 | `npm run test -- BackupsView --run` | PASS, 32 tests. |
 | `npm run typecheck` | PASS. |
 | `npm run lint` | PASS. |
+
+### 2026-07-05 Audit Report Executive Permission Gate
+
+| Command | Result |
+|---|---|
+| `npm run test -- ReportsAudit --run -t "does not fetch the executive summary"` | RED first because audit-only users still called `getExecutiveReport`; then PASS, 1 focused test. |
+| `npm run test -- ReportsAudit --run` | PASS, 8 tests. |
+| `npm run test -- ReportsView.subroutes --run` | PASS, 10 tests. |
+| `npm run typecheck` | PASS. |
+| `npm run lint` | PASS. |

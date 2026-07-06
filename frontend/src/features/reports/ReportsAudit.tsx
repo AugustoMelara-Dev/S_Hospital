@@ -42,11 +42,13 @@ const AUDIT_ACTION_ALIASES: Array<{ action: string; terms: string[] }> = [
 
 type ReportsAuditProps = {
   canExport: boolean;
+  canViewExecutiveSummary: boolean;
   canViewManagerial: boolean;
   onStatus: (message: string) => void;
 };
 
 export function ReportsAudit({
+  canViewExecutiveSummary,
   canViewManagerial,
   onStatus,
 }: ReportsAuditProps) {
@@ -75,7 +77,7 @@ export function ReportsAudit({
   });
   const { data: summary, isFetching: summaryLoading } = useExecutiveReport(
     { date_from: summaryRange.from, date_to: summaryRange.to },
-    canViewManagerial,
+    canViewExecutiveSummary,
   );
   const auditControlsLocked = isFetching;
 

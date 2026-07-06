@@ -24,11 +24,16 @@ const oneEntryAuditPage: AuditLogPage = {
 };
 
 const getAuditLogsMock = vi.fn<(filters?: Record<string, unknown>) => Promise<AuditLogPage>>();
+const getExecutiveReportMock = vi.fn();
 
 vi.mock('@/lib/api', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/api')>();
   return {
     ...actual,
+    apiClient: {
+      ...actual.apiClient,
+      getExecutiveReport: (filters: Record<string, unknown>) => getExecutiveReportMock(filters),
+    },
     system: {
       ...actual.system,
       getAuditLogs: (filters: Record<string, unknown> = {}) => getAuditLogsMock(filters),
@@ -40,7 +45,13 @@ function renderView(props: Partial<React.ComponentProps<typeof ReportsAudit>> = 
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={queryClient}>
-      <ReportsAudit canExport={true} canViewManagerial={true} onStatus={vi.fn()} {...props} />
+      <ReportsAudit
+        canExport={true}
+        canViewExecutiveSummary={true}
+        canViewManagerial={true}
+        onStatus={vi.fn()}
+        {...props}
+      />
     </QueryClientProvider>,
   );
 }
@@ -49,6 +60,8 @@ describe('ReportsAudit', () => {
   beforeEach(() => {
     getAuditLogsMock.mockReset();
     getAuditLogsMock.mockResolvedValue(emptyAuditPage);
+    getExecutiveReportMock.mockReset();
+    getExecutiveReportMock.mockRejectedValue(new Error('empty executive report'));
   });
 
   afterEach(() => {
@@ -100,6 +113,15 @@ describe('ReportsAudit', () => {
   it('renders the access denied message when the user lacks managerial permission', () => {
     renderView({ canViewManagerial: false });
     expect(screen.getByText(/sin permisos para auditor/i)).toBeInTheDocument();
+  });
+
+  it('does not fetch the executive summary for audit-only users', async () => {
+    renderView({ canViewManagerial: true, canViewExecutiveSummary: false });
+
+    await waitFor(() => {
+      expect(getAuditLogsMock).toHaveBeenCalledTimes(1);
+    });
+    expect(getExecutiveReportMock).not.toHaveBeenCalled();
   });
 
   it('blocks inverted audit date ranges before requesting logs', async () => {

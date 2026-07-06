@@ -205,6 +205,7 @@ function ReportsContent({
     return (
       <ReportsAudit
         canViewManagerial={props.canViewAuditReports}
+        canViewExecutiveSummary={props.canViewManagerial}
         canExport={props.canExport}
         onStatus={props.onStatus}
       />
