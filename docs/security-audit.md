@@ -8,7 +8,7 @@ Roles oficiales del sistema (definidos en `RolesAndPermissionsSeeder`):
 
 | Rol | Descripción |
 |---|---|
-| `admin` | Control total: usuarios, roles, configuración, respaldos, restauración. |
+| `admin` | Control operativo: usuarios, roles, configuración fiscal y respaldos; la restauración queda fuera de la app y se coordina desde servidor. |
 | `supervisor` | Operación ampliada: anulación, reversos, exportación, configuración fiscal, auditoría. |
 | `cajero` | Operación local: caja, facturación, cobros, reimpresión. |
 | `auditor` | Solo lectura de auditoría y reportes. |
@@ -91,7 +91,7 @@ Hasta entonces, **la restauración se hace desde el servidor** por personal auto
 - La tabla `idempotency_keys` conserva `user_id`, ruta, clave, fingerprint del body, status y respuesta 2xx cifrada.
 - Reintento con la misma clave y mismo payload reproduce la respuesta original con `Idempotent-Replay: true`.
 - Reintento con misma clave y payload distinto devuelve error de conflicto/validación.
-- El frontend conserva la clave por intento en factura, pago, apertura/cierre de caja y respaldo manual; solo la renueva cuando el backend confirma éxito.
+- El frontend conserva la clave para reintentar el mismo payload fallido en factura, pago, apertura/cierre de caja y respaldo manual; la renueva cuando el backend confirma éxito o cuando el payload cambia.
 
 ### 4.2 Anti-XSS en nombres
 
