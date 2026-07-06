@@ -7425,3 +7425,25 @@ Pruebas ejecutadas:
 Decision:
 
 - El fallback legacy existe solo para compatibilidad de historicos. No debe parecer factura fiscal ni exponer metadatos fiscales que el recibo institucional principal evita mostrar al paciente.
+## 309. Fase 13/QA - Permisos visibles usan etiquetas operativas
+
+Cambio aplicado:
+
+- `RoleController` ahora usa etiquetas humanas explicitas para permisos visibles del MVP monocomputadora.
+- Se reemplazan textos generados como `Cash - close any` por etiquetas operativas: cerrar/revisar cajas de otros cajeros, reportes ejecutivos, reporte de caja, soporte tecnico de impresion, usuarios y receta de dialisis.
+- No cambia ningun permiso interno, rol, endpoint ni regla RBAC; solo cambia el texto que ve administracion al asignar roles o permisos directos.
+- No se agregaron dependencias, migraciones, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/RoleManagementTest.php --filter=permission_catalog` | OK: 3 tests, 18 assertions. |
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/RoleManagementTest.php` | OK: 11 tests, 56 assertions. |
+| `npm run test -- UsersView UserFormDialog RoleFormDialog PermissionMatrix --run` | OK: 4 files, 65 tests. |
+| `docker exec s_hospital-backend-1 vendor/bin/pint --test` | OK: 431 files. |
+| `docker exec s_hospital-backend-1 vendor/bin/phpstan analyse --memory-limit=1G` | OK: no errors. |
+
+Decision:
+
+- Usuarios basicos no deben administrar una matriz gigante de strings tecnicos. Los codigos internos siguen visibles en gris para soporte, pero la decision principal se toma por etiquetas humanas y orientadas a caja hospitalaria.

@@ -58,6 +58,28 @@ class RoleManagementTest extends TestCase
         ], $settingsGroup['permissions'] ?? []);
     }
 
+    public function test_permission_catalog_uses_human_labels_for_operational_permissions(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->userWithRole('admin');
+
+        $catalog = collect($this->actingAs($admin)
+            ->getJson('/api/admin/roles')
+            ->assertOk()
+            ->json('permission_catalog'));
+
+        $permissions = $catalog
+            ->flatMap(fn (array $group): array => $group['permissions'] ?? [])
+            ->keyBy('name');
+
+        $this->assertSame('Cerrar o revisar cajas de otros cajeros', $permissions['cash.close_any']['label'] ?? null);
+        $this->assertSame('Ver reporte de caja', $permissions['reports.cash_session.view']['label'] ?? null);
+        $this->assertSame('Ver reportes ejecutivos', $permissions['reports.managerial.view']['label'] ?? null);
+        $this->assertSame('Soporte tecnico de impresion', $permissions['receipt_settings.advanced']['label'] ?? null);
+        $this->assertSame('Editar usuarios y roles', $permissions['users.update']['label'] ?? null);
+        $this->assertSame('Marcar receta de dialisis', $permissions['patients.mark_dialysis_prescription']['label'] ?? null);
+    }
+
     public function test_admin_can_create_custom_role_and_assign_it_to_user(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
