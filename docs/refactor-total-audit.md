@@ -7638,3 +7638,24 @@ Pruebas ejecutadas:
 Decision:
 
 - El boton de Excel/PDF de caja debe producir un cierre imprimible y exportable, no solo un reporte generico filtrado. Los agregados visibles para cierre salen del snapshot de caja para conservar evidencia contable.
+
+## 318. Fase 5/QA - Asignaciones de recibos ocultan identificadores tecnicos
+
+Cambio aplicado:
+
+- La respuesta normal de configuracion de recibos ya no expone `receipt_print_profile_id`, `profile_code` ni `profile_name` en asignaciones para usuarios sin `receipt_settings.advanced`.
+- Los perfiles de soporte siguen fuera del payload normal y el perfil embebido conserva solo los campos seguros que necesita el flujo operativo.
+- Los usuarios con permiso avanzado mantienen la respuesta completa para soporte tecnico.
+- Se actualiza la regresion existente de configuracion de recibos para confirmar que el payload normal no incluye los identificadores duplicados.
+- No se agregaron dependencias, migraciones, roles, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test tests/Feature/InstitutionalReceiptSettingsTest.php --filter=view_only_user_does_not_receive_technical_print_profile_fields` | Primero fallo por exponer identificadores tecnicos; luego OK: 1 test, 19 assertions. |
+| `docker compose exec backend php artisan test tests/Feature/InstitutionalReceiptSettingsTest.php tests/Feature/ReceiptPrintProfileAdvancedFieldsTest.php` | OK: 20 tests, 115 assertions. |
+
+Decision:
+
+- La configuracion normal de recibos debe operar con opciones humanas de papel, copias, logo y sello/firma. Los identificadores duplicados de perfiles quedan fuera del contrato normal para reducir exposicion tecnica sin afectar la impresion ni el soporte avanzado.

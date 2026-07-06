@@ -436,9 +436,6 @@ class InstitutionalReceiptSettingsController extends Controller
 
             $payload[] = [
                 'id' => $assignment->id,
-                'receipt_print_profile_id' => $assignment->receipt_print_profile_id,
-                'profile_code' => $profile instanceof ReceiptPrintProfile ? $profile->code : null,
-                'profile_name' => $profile instanceof ReceiptPrintProfile ? $profile->name : null,
                 'scope_type' => $assignment->scope_type,
                 'scope_id' => $assignment->scope_id,
                 'active' => $assignment->active,

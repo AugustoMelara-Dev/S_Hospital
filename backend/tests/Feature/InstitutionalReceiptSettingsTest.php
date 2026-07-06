@@ -119,14 +119,14 @@ class InstitutionalReceiptSettingsTest extends TestCase
         ], array_keys($payload['print_profiles'][0]));
         $this->assertSame([
             'id',
-            'receipt_print_profile_id',
-            'profile_code',
-            'profile_name',
             'scope_type',
             'scope_id',
             'active',
             'print_profile',
         ], array_keys($payload['assignments'][0]));
+        $this->assertArrayNotHasKey('receipt_print_profile_id', $payload['assignments'][0]);
+        $this->assertArrayNotHasKey('profile_code', $payload['assignments'][0]);
+        $this->assertArrayNotHasKey('profile_name', $payload['assignments'][0]);
     }
 
     public function test_institutional_receipt_settings_accept_missing_rtn_when_not_applicable(): void
