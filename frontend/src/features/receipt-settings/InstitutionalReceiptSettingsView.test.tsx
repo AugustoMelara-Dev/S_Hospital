@@ -219,6 +219,38 @@ describe('InstitutionalReceiptSettingsView', () => {
     expect(screen.queryByRole('radio', { name: /ticket 58/i })).not.toBeInTheDocument();
   });
 
+  it('renders normal paper settings from the safe backend payload without technical fields', async () => {
+    const { apiClient } = await import('@/lib/api');
+    const safeProfiles: ReceiptPrintProfile[] = mockData.profiles
+      .filter((profile) => profile.code !== 'recibo_pequeno_personalizado')
+      .map((profile) => ({
+        id: profile.id,
+        code: profile.code,
+        name: profile.name,
+        copies_mode: profile.copies_mode,
+        show_copy_legend: profile.show_copy_legend,
+        show_physical_seal_space: profile.show_physical_seal_space,
+        use_logo: profile.use_logo,
+        active: profile.active,
+        is_global_default: profile.is_global_default,
+      }));
+    vi.mocked(apiClient.getInstitutionalReceiptSettings).mockResolvedValueOnce({
+      ...mockData.settings,
+      print_profiles: safeProfiles,
+      resolved_profile: safeProfiles[0],
+    });
+
+    renderView({ canAdvancedPrintSettings: false });
+
+    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
+    await activateTab('Papel y copias');
+
+    expect(screen.getByRole('radio', { name: /^Media carta\b/i })).toBeInTheDocument();
+    expect(screen.queryByLabelText('Ancho mm')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Margen sup. (mm)')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /guardar perfil/i })).toBeEnabled();
+  });
+
   it('uses operational paper copy without print implementation terms', async () => {
     renderView({ canAdvancedPrintSettings: false });
 

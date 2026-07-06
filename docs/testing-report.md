@@ -524,3 +524,13 @@ verified.
 | `docker exec s_hospital-backend-1 php artisan test tests/Feature/InstitutionalReceiptSettingsTest.php tests/Feature/ReceiptPrintProfileAdvancedFieldsTest.php` | PASS, 20 tests and 111 assertions. |
 | `docker exec s_hospital-backend-1 vendor/bin/pint --test` | PASS, 430 files. |
 | `docker exec s_hospital-backend-1 vendor/bin/phpstan analyse --memory-limit=512M` | PASS, no errors. |
+
+### 2026-07-06 Receipt Settings Frontend Safe Payload Gate
+
+| Command | Result |
+|---|---|
+| `npm run typecheck` | RED first because `ReceiptPrintProfile` still required hidden technical fields from the normal backend payload; then PASS. |
+| `npm run test -- InstitutionalReceiptSettingsView --run -t "safe backend payload"` | PASS, 1 focused test. |
+| `npm run test -- InstitutionalReceiptSettingsView --run` | PASS, 24 tests. |
+| `npm run lint` | PASS. |
+| `npm run build` | PASS. |

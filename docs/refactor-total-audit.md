@@ -6852,3 +6852,26 @@ Pruebas ejecutadas:
 Decision:
 
 - Los perfiles termicos/personalizados son compatibilidad y soporte, no operacion normal. El backend ahora aplica la misma frontera aunque se intente forzar el `profile_code` desde la API.
+
+## 285. Fase 6 - Frontend acepta payload seguro de perfiles de recibo
+
+Cambio aplicado:
+
+- `ReceiptPrintProfile` en frontend marca como opcionales los campos tecnicos que el backend normal oculta sin `receipt_settings.advanced`.
+- `InstitutionalReceiptSettingsView` queda cubierto con una regresion que usa perfiles sin `paper_kind`, dimensiones, margenes, fuente, escala ni `show_technical_fields`.
+- La vista normal mantiene seleccion de papel, preview y boton `Guardar perfil` sin exponer controles tecnicos.
+- No se agregaron migraciones, dependencias, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run typecheck` | RED inicial correcto: `ReceiptPrintProfile` exigia `paper_kind`, `width_mm`, margenes y otros campos tecnicos; luego OK. |
+| `npm run test -- InstitutionalReceiptSettingsView --run -t "safe backend payload"` | OK: 1 focused test. |
+| `npm run test -- InstitutionalReceiptSettingsView --run` | OK: 24 tests. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- El contrato frontend ahora refleja el API real: operacion normal recibe datos seguros, mientras soporte avanzado puede recibir campos tecnicos completos.
