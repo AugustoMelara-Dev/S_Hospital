@@ -486,8 +486,8 @@ if ($AllowMissingPhysicalProof) {
         )
 
     Test-ProofFile `
-        -path (Join-Path $ProjectRoot "qa\THERMAL_PRINTER_PROOF.md") `
-        -proofName "physical thermal printer" `
+        -path (Join-Path $ProjectRoot "qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md") `
+        -proofName "primary institutional receipt printer" `
         -requiredFields @(
             "Date/time",
             "Responsible person",
@@ -497,8 +497,9 @@ if ($AllowMissingPhysicalProof) {
             "Browser/version",
             "Cashier computer",
             "Invoice used",
-            "80mm result",
-            "58mm result",
+            "Media carta result",
+            "Carta result",
+            "A5 result",
             "Reprint result",
             "Margins result",
             "Browser headers/footers result",
@@ -507,8 +508,9 @@ if ($AllowMissingPhysicalProof) {
             "Final conclusion"
         ) `
         -requiredChecks @(
-            "80mm",
-            "58mm",
+            "Media carta",
+            "Carta",
+            "A5",
             "Reprint",
             "headers/footers",
             "historical"

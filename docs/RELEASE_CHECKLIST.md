@@ -215,7 +215,7 @@ Para removerlas: `powershell.exe -ExecutionPolicy Bypass -File scripts\install_b
 - Para despliegue multi-PC, probar desde una segunda PC en LAN usando la IP fija o dominio LAN, nunca `localhost`.
 - Probar impresion institucional/PDF en carta, media carta o A5 desde la PC o cliente que imprimira. 80mm/58mm queda como compatibilidad secundaria si se habilita.
 - Para despliegue multi-PC, crear `qa/LAN_CLIENT_VALIDATION_PROOF.md` usando `qa/LAN_CLIENT_VALIDATION_PROOF.example.md`.
-- Crear evidencia de impresion institucional usando `qa/THERMAL_PRINTER_PROOF.example.md` mientras no exista una plantilla renombrada para papel institucional.
+- Crear evidencia de impresion institucional en `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` con media carta, carta y A5.
 - Crear `qa/FINAL_RESTORE_PROOF.md` usando `qa/FINAL_RESTORE_PROOF.example.md`.
 - Crear `qa/FINAL_CONCURRENCY_PROOF.md` usando `qa/FINAL_CONCURRENCY_PROOF.example.md`.
 - Desde la segunda PC cliente LAN, cuando el despliegue sea multi-PC, generar evidencia inicial de rutas:

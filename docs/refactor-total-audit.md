@@ -7836,3 +7836,24 @@ Pruebas ejecutadas:
 Decision:
 
 - Una caja no debe cerrar si ya cobro una factura pero el comprobante institucional principal quedo pendiente. La version monocomputadora reduce complejidad de despliegue, no la seriedad de caja, recibos y auditoria.
+## 327. Fase QA/Release - Preflight exige prueba de recibo institucional
+
+Cambio aplicado:
+
+- `production_readiness_preflight.ps1` deja de bloquear produccion por evidencia termica 80mm/58mm.
+- El gate fisico obligatorio ahora exige `qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` con media carta, carta y A5, mas reimpresion, margenes, encabezados/pies e historial.
+- La documentacion de instalacion/release apunta al recibo institucional principal; 80mm/58mm queda como compatibilidad secundaria si se habilita.
+- Se agrega una prueba local de consistencia para evitar que el preflight vuelva a pedir `qa\THERMAL_PRINTER_PROOF.md` o resultados 80mm/58mm como bloqueo primario.
+- No se agregaron dependencias, migraciones, roles, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test tests/Unit/ProductionPreflightProofTest.php` | RED inicial de harness: el contenedor backend no monta `scripts/`, por lo que el test se descarto y no se commitea. |
+| `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.test.ps1` | OK: confirma proof institucional y ausencia de proof termico 80mm/58mm en el preflight. |
+| `rg -n "THERMAL_PRINTER_PROOF|80mm result|58mm result|INSTITUTIONAL_RECEIPT_PRINT_PROOF|Media carta result|A5 result" scripts docs\INSTALL_SUMMARY.md docs\RELEASE_CHECKLIST.md` | OK: solo quedan referencias institucionales en el gate y docs tocadas; las cadenas termicas quedan solo como negaciones del test. |
+
+Decision:
+
+- La entrega local monocomputadora reduce complejidad de despliegue, pero el comprobante fiscal principal sigue siendo el recibo institucional en papel/PDF. La compatibilidad termica no debe bloquear el release normal si no es el flujo operativo del hospital.
