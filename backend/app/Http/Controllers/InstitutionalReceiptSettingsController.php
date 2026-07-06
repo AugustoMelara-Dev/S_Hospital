@@ -323,6 +323,10 @@ class InstitutionalReceiptSettingsController extends Controller
         $profile = $request->filled('profile_id') || $request->filled('profile_code')
             ? $this->profileFromRequest($request->validated())
             : $resolver->execute($user);
+        $deniedResponse = $this->denySupportOnlyTestProfileWithoutAdvanced($request, $profile);
+        if ($deniedResponse instanceof JsonResponse) {
+            return $deniedResponse;
+        }
 
         $series = InstitutionalReceiptSeries::query()
             ->where('document_type', InstitutionalReceiptSeries::DOCUMENT_TYPE)
@@ -368,6 +372,10 @@ class InstitutionalReceiptSettingsController extends Controller
         $profile = $request->filled('profile_id') || $request->filled('profile_code')
             ? $this->profileFromRequest($request->validated())
             : $resolver->execute($user);
+        $deniedResponse = $this->denySupportOnlyTestProfileWithoutAdvanced($request, $profile);
+        if ($deniedResponse instanceof JsonResponse) {
+            return $deniedResponse;
+        }
 
         $series = InstitutionalReceiptSeries::query()
             ->where('document_type', InstitutionalReceiptSeries::DOCUMENT_TYPE)
@@ -476,6 +484,37 @@ class InstitutionalReceiptSettingsController extends Controller
     private function isSupportOnlyProfile(ReceiptPrintProfile $profile): bool
     {
         return in_array($profile->code, self::SUPPORT_ONLY_PROFILE_CODES, true);
+    }
+
+    private function denySupportOnlyTestProfileWithoutAdvanced(
+        TestReceiptPreviewRequest $request,
+        ReceiptPrintProfile $profile,
+    ): ?JsonResponse {
+        if (! $this->isSupportOnlyProfile($profile) || $request->user()->can('receipt_settings.advanced')) {
+            return null;
+        }
+
+        AuditLogger::log(
+            action: 'receipt_settings.advanced_denied',
+            entity: $profile,
+            request: $request,
+            newValues: [
+                'attempted_fields' => ['profile_code'],
+                'profile_code' => $profile->code,
+                'flow' => str_contains($request->path(), 'test-print') ? 'test-print' : 'test-preview',
+            ],
+            reason: 'Intento de usar perfil de soporte en impresion de prueba sin permiso avanzado.',
+            result: 'denied',
+        );
+
+        return response()->json([
+            'message' => 'Este perfil requiere el permiso receipt_settings.advanced.',
+            'errors' => [
+                'receipt_settings.advanced' => [
+                    'Los perfiles de soporte tecnico solo pueden usarse con permiso receipt_settings.advanced.',
+                ],
+            ],
+        ], 403);
     }
 
     /**

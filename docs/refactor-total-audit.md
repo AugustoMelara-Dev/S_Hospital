@@ -6830,3 +6830,25 @@ Pruebas ejecutadas:
 Decision:
 
 - El hospital elige papel y opciones operativas; el detalle de layout pertenece al modo soporte con `receipt_settings.advanced`. El API normal queda alineado con esa separacion para que la UI no dependa de campos peligrosos.
+
+## 284. Fase 6/14 - Impresion de prueba bloquea perfiles soporte sin avanzado
+
+Cambio aplicado:
+
+- `test-preview` y `test-print` rechazan perfiles de soporte tecnico cuando el usuario no tiene `receipt_settings.advanced`.
+- La denegacion responde 403 con error `receipt_settings.advanced` y registra auditoria `receipt_settings.advanced_denied`.
+- Perfiles normales como `media_carta_horizontal` siguen disponibles para usuarios con `receipts.print_test`.
+- No se agregaron migraciones, dependencias, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker exec s_hospital-backend-1 php artisan test --filter=test_preview_and_print_reject_support_profiles_without_advanced_permission` | RED inicial correcto: `test-preview` aceptaba `thermal_80mm` con 200; luego OK. |
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/InstitutionalReceiptSettingsTest.php tests/Feature/ReceiptPrintProfileAdvancedFieldsTest.php` | OK: 20 tests, 111 assertions. |
+| `docker exec s_hospital-backend-1 vendor/bin/pint --test` | OK: 430 files. |
+| `docker exec s_hospital-backend-1 vendor/bin/phpstan analyse --memory-limit=512M` | OK: no errors. |
+
+Decision:
+
+- Los perfiles termicos/personalizados son compatibilidad y soporte, no operacion normal. El backend ahora aplica la misma frontera aunque se intente forzar el `profile_code` desde la API.

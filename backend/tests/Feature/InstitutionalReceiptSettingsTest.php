@@ -411,6 +411,35 @@ class InstitutionalReceiptSettingsTest extends TestCase
         ]);
     }
 
+    public function test_test_preview_and_print_reject_support_profiles_without_advanced_permission(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $this->seed(ReceiptPrintProfileSeeder::class);
+
+        $operator = User::factory()->create();
+        $operator->givePermissionTo('receipts.print_test');
+
+        foreach (['test-preview', 'test-print'] as $endpoint) {
+            $this->actingAs($operator)
+                ->postJson("/api/settings/institutional-receipts/{$endpoint}", [
+                    'profile_code' => ReceiptPrintProfile::CODE_THERMAL_80,
+                    'payer_name' => 'Paciente prueba',
+                    'amount' => '25.00',
+                ])
+                ->assertForbidden()
+                ->assertJsonValidationErrors('receipt_settings.advanced');
+        }
+
+        $this->actingAs($operator)
+            ->postJson('/api/settings/institutional-receipts/test-preview', [
+                'profile_code' => ReceiptPrintProfile::CODE_HALF_LETTER,
+                'payer_name' => 'Paciente prueba',
+                'amount' => '25.00',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.profile.code', ReceiptPrintProfile::CODE_HALF_LETTER);
+    }
+
     /**
      * @return array<string, mixed>
      */
