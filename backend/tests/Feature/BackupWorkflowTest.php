@@ -44,7 +44,7 @@ class BackupWorkflowTest extends TestCase
             ->getJson('/api/backups')
             ->assertOk()
             ->assertJsonPath('data.0.creator.username', $admin->username)
-            ->assertJsonPath('data.0.checksum_sha256', str_repeat('a', 64))
+            ->assertJsonMissingPath('data.0.checksum_sha256')
             ->assertJsonMissingPath('data.0.filename')
             ->assertJsonMissingPath('data.0.path')
             ->assertJsonMissingPath('data.0.disk')

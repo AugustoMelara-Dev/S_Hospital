@@ -7038,3 +7038,25 @@ Pruebas ejecutadas:
 Decision:
 
 - En caja hospitalaria, la UI debe revalidar estado operativo justo antes de una accion fiscal/caja. La autoridad final sigue siendo Laravel, pero el cajero recibe una alerta temprana y no pierde el carrito.
+
+## 293. Fase 12/14 - Listado de respaldos oculta checksum tecnico
+
+Cambio aplicado:
+
+- `GET /api/backups` ya no incluye `checksum_sha256` en el payload normal de listado.
+- El listado mantiene campos operativos: estado, tipo, tamano, fechas y usuario creador.
+- La integridad sigue registrada internamente y se sigue auditando al descargar; la descarga conserva validacion de tamano/checksum antes de servir el archivo.
+- No se agregaron migraciones, dependencias, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker exec s_hospital-backend-1 php artisan test --filter=admin_can_list_backups_without_exposing_internal_file_details` | RED inicial correcto: `data.0.checksum_sha256` estaba presente; luego OK. |
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/BackupWorkflowTest.php` | OK: 28 tests, 146 assertions. |
+| `docker exec s_hospital-backend-1 vendor/bin/pint --test` | OK: 430 files. |
+| `docker exec s_hospital-backend-1 vendor/bin/phpstan analyse --memory-limit=512M` | OK: no errors. |
+
+Decision:
+
+- El checksum es evidencia tecnica de integridad, no informacion necesaria en la vista normal de respaldos. Debe quedar disponible para validacion interna, auditoria y runbooks, no en el listado operacional.

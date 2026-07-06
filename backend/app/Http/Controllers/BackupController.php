@@ -191,10 +191,6 @@ class BackupController extends Controller
             $payload['error_message'] = OperationalMessageSanitizer::message($backupLog->error_message);
         }
 
-        if ($backupLog->status === BackupLog::STATUS_SUCCESS && is_string($backupLog->checksum_sha256)) {
-            $payload['checksum_sha256'] = $backupLog->checksum_sha256;
-        }
-
         return $payload;
     }
 }

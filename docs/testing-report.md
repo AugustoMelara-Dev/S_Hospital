@@ -606,3 +606,12 @@ verified.
 | `npm run typecheck` | PASS. |
 | `npm run lint` | PASS. |
 | `npm run build` | PASS. |
+
+### 2026-07-06 Backup List Safe Metadata Gate
+
+| Command | Result |
+|---|---|
+| `docker exec s_hospital-backend-1 php artisan test --filter=admin_can_list_backups_without_exposing_internal_file_details` | RED first because the normal backup list exposed `checksum_sha256`; then PASS. |
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/BackupWorkflowTest.php` | PASS, 28 tests and 146 assertions. |
+| `docker exec s_hospital-backend-1 vendor/bin/pint --test` | PASS, 430 files. |
+| `docker exec s_hospital-backend-1 vendor/bin/phpstan analyse --memory-limit=512M` | PASS, no errors. |
