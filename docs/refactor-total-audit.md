@@ -7857,3 +7857,29 @@ Pruebas ejecutadas:
 Decision:
 
 - La entrega local monocomputadora reduce complejidad de despliegue, pero el comprobante fiscal principal sigue siendo el recibo institucional en papel/PDF. La compatibilidad termica no debe bloquear el release normal si no es el flujo operativo del hospital.
+
+## 328. Fase 7/8/QA - Scope gerencial de reportes no depende de cierre de caja
+
+Cambio aplicado:
+
+- `reports.managerial.view` pasa a ser el permiso que habilita filtros gerenciales globales en reportes JSON/Excel ejecutivos y de rango.
+- Se elimina la dependencia escondida de `cash.close_any` para ver reportes de otros cajeros; ese permiso queda ligado a caja, no a lectura gerencial.
+- El rol `auditor` conserva lectura gerencial y auditoria sin poder cerrar cajas ajenas.
+- Los usuarios con solo `reports.cash_session.view` siguen limitados a una caja propia y deben enviar `cash_session_id`.
+- Los fixtures de cierre en `ReportsTest` ahora emiten recibos institucionales antes de cerrar caja, respetando el invariant nuevo de recibo principal.
+- No se agregaron dependencias, migraciones, roles, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test tests/Feature/ReportsTest.php --filter=auditor_managerial_reports_include_other_cashiers_without_close_permission` | RED inicial: el auditor recibia 0 categorias porque el request forzaba `user_id` propio; luego OK dentro del focused combinado. |
+| `docker compose exec backend php artisan test tests/Feature/ReportsTest.php --filter='auditor_managerial_reports_include_other_cashiers_without_close_permission\|cash_session_reports_without_managerial_are_scoped_to_own_activity'` | OK: 2 tests, 25 assertions. |
+| `docker compose exec backend php artisan test tests/Feature/Reports/ExecutiveReportTest.php` | OK: 13 tests, 172 assertions. |
+| `docker compose exec backend php artisan test tests/Feature/ReportsTest.php` | Primero fallo en 4 cierres por facturas pagadas sin recibo institucional; luego OK: 60 tests, 866 assertions. |
+| `docker compose exec backend vendor/bin/pint --test` | Primero fallo por estilo en `ReportsTest`; luego OK: 432 files. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M` | OK. |
+
+Decision:
+
+- Para usuarios basicos, `reports.cash_session.view` cubre caja propia. Para lectura gerencial/auditoria, `reports.managerial.view` debe expresar alcance global de lectura sin mezclarlo con permisos operativos de cierre de caja.

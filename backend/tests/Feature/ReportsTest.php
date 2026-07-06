@@ -12,7 +12,9 @@ use App\Models\CashRegisterSession;
 use App\Models\Category;
 use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
+use App\Models\InstitutionalReceipt;
 use App\Models\InstitutionalReceiptPrintEvent;
+use App\Models\InstitutionalReceiptSeries;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Service;
@@ -812,11 +814,36 @@ class ReportsTest extends TestCase
             ->assertJsonPath('data.services.0.total', '17.25');
     }
 
-    public function test_managerial_reports_without_close_any_are_scoped_to_own_activity(): void
+    public function test_auditor_managerial_reports_include_other_cashiers_without_close_permission(): void
+    {
+        $this->seedBillingBase();
+        $auditor = User::factory()->create();
+        $auditor->assignRole('auditor');
+        $auditor->refresh();
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $invoiceId = $this->createInvoice($cashier, 'Eritropoyetina');
+
+        $this->payInvoice($cashier, $invoiceId, $sessionId, Payment::METHOD_CARD, '25.00');
+
+        $query = 'date_from='.now()->toDateString().'&date_to='.now()->toDateString();
+
+        $this->assertTrue($auditor->can('reports.managerial.view'));
+        $this->assertFalse($auditor->can('cash.close_any'));
+
+        $this->actingAs($auditor)
+            ->getJson("/api/reports/categories?{$query}")
+            ->assertOk()
+            ->assertJsonCount(1, 'data.categories')
+            ->assertJsonPath('data.categories.0.category', 'Medicamentos')
+            ->assertJsonPath('data.categories.0.total', '25.00');
+    }
+
+    public function test_cash_session_reports_without_managerial_are_scoped_to_own_activity(): void
     {
         $this->seedBillingBase();
         $viewer = $this->cashier();
-        $this->grantPermissions($viewer, 'reports.view', 'reports.managerial.view', 'reports.export');
+        $this->grantPermissions($viewer, 'reports.cash_session.view', 'reports.export');
         $otherCashier = $this->cashier();
         $viewerSessionId = $this->openSession($viewer);
         $otherSessionId = $this->openSession($otherCashier);
@@ -827,23 +854,28 @@ class ReportsTest extends TestCase
         $this->payInvoice($otherCashier, $otherInvoice, $otherSessionId, Payment::METHOD_CARD, '25.00');
 
         $query = 'date_from='.now()->toDateString().'&date_to='.now()->toDateString();
+        $ownSessionQuery = $query.'&cash_session_id='.$viewerSessionId;
 
         $this->actingAs($viewer)
             ->getJson("/api/reports/categories?{$query}")
+            ->assertForbidden();
+
+        $this->actingAs($viewer)
+            ->getJson("/api/reports/categories?{$ownSessionQuery}")
             ->assertOk()
             ->assertJsonCount(1, 'data.categories')
             ->assertJsonPath('data.categories.0.category', 'Laboratorio')
             ->assertJsonPath('data.categories.0.total', '17.25');
 
         $this->actingAs($viewer)
-            ->getJson("/api/reports/services?{$query}")
+            ->getJson("/api/reports/services?{$ownSessionQuery}")
             ->assertOk()
             ->assertJsonCount(1, 'data.services')
             ->assertJsonPath('data.services.0.service', 'Glucosa')
             ->assertJsonPath('data.services.0.total', '17.25');
 
         $this->actingAs($viewer)
-            ->getJson("/api/reports/operations?{$query}")
+            ->getJson("/api/reports/operations?{$ownSessionQuery}")
             ->assertForbidden();
 
         $this->actingAs($viewer)
@@ -851,7 +883,7 @@ class ReportsTest extends TestCase
             ->assertForbidden();
 
         $xlsx = $this->actingAs($viewer)
-            ->get("/api/reports/export?{$query}")
+            ->get("/api/reports/export?{$ownSessionQuery}")
             ->assertOk()
             ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
             ->streamedContent();
@@ -1528,6 +1560,8 @@ class ReportsTest extends TestCase
         $this->payInvoice($cashier, $cashInvoice, $sessionId, Payment::METHOD_CASH, '17.25');
         $this->payInvoice($cashier, $cardInvoice, $sessionId, Payment::METHOD_CARD, '11.50');
         $this->payInvoice($cashier, $voidInvoice, $sessionId, Payment::METHOD_OTHER, '25.00');
+        $this->createIssuedInstitutionalReceipt($cashInvoice, $sessionId, $cashier);
+        $this->createIssuedInstitutionalReceipt($cardInvoice, $sessionId, $cashier);
 
         Invoice::query()->whereKey($voidInvoice)->update([
             'status' => Invoice::STATUS_VOID,
@@ -1614,6 +1648,8 @@ class ReportsTest extends TestCase
 
         $this->payInvoice($cashier, $cashInvoice, $sessionId, Payment::METHOD_CASH, '17.25');
         $this->payInvoice($cashier, $cardInvoice, $sessionId, Payment::METHOD_CARD, '11.50');
+        $this->createIssuedInstitutionalReceipt($cashInvoice, $sessionId, $cashier);
+        $this->createIssuedInstitutionalReceipt($cardInvoice, $sessionId, $cashier);
 
         $this->actingAs($cashier)
             ->postJson("/api/cash-sessions/{$sessionId}/close", [
@@ -1718,6 +1754,8 @@ class ReportsTest extends TestCase
 
         $this->payInvoice($cashier, $cashInvoice, $sessionId, Payment::METHOD_CASH, '17.25');
         $this->payInvoice($cashier, $cardInvoice, $sessionId, Payment::METHOD_CARD, '11.50');
+        $this->createIssuedInstitutionalReceipt($cashInvoice, $sessionId, $cashier);
+        $this->createIssuedInstitutionalReceipt($cardInvoice, $sessionId, $cashier);
 
         $this->actingAs($cashier)
             ->postJson("/api/cash-sessions/{$sessionId}/close", [
@@ -2135,6 +2173,8 @@ class ReportsTest extends TestCase
 
         $this->payInvoice($cashier, $cashInvoice, $sessionId, Payment::METHOD_CASH, '17.25');
         $this->payInvoice($cashier, $cardInvoice, $sessionId, Payment::METHOD_CARD, '11.50');
+        $this->createIssuedInstitutionalReceipt($cashInvoice, $sessionId, $cashier);
+        $this->createIssuedInstitutionalReceipt($cardInvoice, $sessionId, $cashier);
 
         $this->actingAs($cashier)
             ->postJson("/api/cash-sessions/{$sessionId}/close", [
@@ -2701,6 +2741,52 @@ class ReportsTest extends TestCase
         ]);
 
         return $cashier->refresh();
+    }
+
+    private function createIssuedInstitutionalReceipt(int $invoiceId, int $sessionId, User $cashier): void
+    {
+        $invoice = Invoice::query()->findOrFail($invoiceId);
+        $number = 90000000 + $invoice->id;
+        $series = InstitutionalReceiptSeries::query()->create([
+            'document_type' => InstitutionalReceiptSeries::DOCUMENT_TYPE,
+            'series' => 'REC-TST',
+            'prefix' => 'RT',
+            'number_format' => '{series}-{number:08}',
+            'min_number' => 1,
+            'max_number' => 99999999,
+            'current_number' => $number,
+            'active' => false,
+        ]);
+
+        InstitutionalReceipt::query()->create([
+            'invoice_id' => $invoice->id,
+            'payment_id' => Payment::query()
+                ->where('invoice_id', $invoice->id)
+                ->where('cash_session_id', $sessionId)
+                ->where('status', Payment::STATUS_POSTED)
+                ->value('id'),
+            'cash_session_id' => $sessionId,
+            'series_id' => $series->id,
+            'receipt_number' => $number,
+            'receipt_number_full' => 'REC-TST-'.str_pad((string) $number, 8, '0', STR_PAD_LEFT),
+            'status' => InstitutionalReceipt::STATUS_ISSUED,
+            'amount' => $invoice->total,
+            'amount_cents' => $invoice->total_cents,
+            'issued_at' => now(),
+            'issued_by' => $cashier->id,
+            'payer_name' => $invoice->patient_name,
+            'concept' => 'Servicios hospitalarios',
+            'amount_words' => 'Monto de prueba',
+            'template_code' => 'institutional_classic',
+            'print_profile_code' => 'half_letter',
+            'copy_mode' => 'original_only',
+            'institution_snapshot' => ['hospital_name' => 'Hospital San Isidro'],
+            'series_snapshot' => ['series' => 'REC-TST'],
+            'profile_snapshot' => ['code' => 'half_letter'],
+            'invoice_snapshot' => ['invoice_number' => $invoice->invoice_number],
+            'payment_snapshot' => null,
+            'items_snapshot' => [],
+        ]);
     }
 
     /**
