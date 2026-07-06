@@ -191,7 +191,7 @@ function Test-DisposableDatabaseName {
     $lower = $Database.ToLowerInvariant()
     
     if ($lower -in @('hospital_billing', 'hospital_billing_production')) {
-        return [bool]$ForceProduction
+        return $false
     }
     
     if ($lower -in @('mysql', 'information_schema', 'performance_schema', 'sys')) {
@@ -235,8 +235,8 @@ function Assert-SafeConnectionConfig {
     }
 
     if (-not (Test-DisposableDatabaseName -Database ([string]$Config.Database) -ForceProduction:$ForceProduction)) {
-        Write-Error "La base de datos '$($Config.Database)' no parece ser de prueba o no se uso el flag --ForceProductionRestore."
-        Write-Error "Use un nombre como 'hospital_billing_test' o 'hospital_restore_validation', o agregue -ForceProductionRestore si esta seguro."
+        Write-Error "La base de datos '$($Config.Database)' no parece ser descartable de prueba."
+        Write-Error "Use un nombre como 'hospital_billing_test' o 'hospital_restore_validation'. El helper no restaura sobre produccion."
         exit 1
     }
 }
@@ -271,6 +271,10 @@ function Invoke-SelfTest {
             Write-Error "Self-test fallo: base insegura aceptada: $db"
             exit 1
         }
+    }
+    if (Test-DisposableDatabaseName -Database "hospital_billing" -ForceProduction) {
+        Write-Error "Self-test fallo: ForceProductionRestore acepto la base activa."
+        exit 1
     }
 
     $safeConfig = @{
@@ -311,9 +315,13 @@ Write-Warning "ADVERTENCIA: Este proceso sobreescribe datos."
 Write-Warning "Usar SOLO en base de datos de prueba o desarrollo."
 Write-Host ""
 
+if ($ForceProductionRestore) {
+    Write-Error "-ForceProductionRestore ya no esta soportado. Use este helper solo con una base descartable; el restore productivo requiere el runbook manual con parada operativa."
+    exit 1
+}
 if (-not (Test-DisposableDatabaseName -Database $TargetDatabase -ForceProduction:$ForceProductionRestore)) {
     Write-Error "No se puede restaurar a '$TargetDatabase'."
-    Write-Error "Use una base descartable con nombre como 'hospital_billing_test' o 'hospital_restore_validation', o agregue -ForceProductionRestore si esta seguro."
+    Write-Error "Use una base descartable con nombre como 'hospital_billing_test' o 'hospital_restore_validation'. El helper no restaura sobre produccion."
     exit 1
 }
 

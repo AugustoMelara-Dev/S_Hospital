@@ -109,8 +109,7 @@ Notas:
 
 - `TargetDatabase` debe ser descartable y contener `test`, `restore`,
   `validation`, `disposable` o `proof`.
-- El script rechaza bases productivas salvo uso explicito de
-  `-ForceProductionRestore`.
+- El script rechaza bases productivas incluso si alguien intenta forzar el restore; produccion se restaura solo con el runbook manual y parada operativa.
 - Para backups `.sql.gz.enc`, el script llama internamente a
   `php artisan hospital:decrypt-backup <input> <output>`.
 - Para ensayo sin escribir datos, usar `-WhatIf`.

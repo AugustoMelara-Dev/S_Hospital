@@ -7883,3 +7883,25 @@ Pruebas ejecutadas:
 Decision:
 
 - Para usuarios basicos, `reports.cash_session.view` cubre caja propia. Para lectura gerencial/auditoria, `reports.managerial.view` debe expresar alcance global de lectura sin mezclarlo con permisos operativos de cierre de caja.
+
+## 329. Fase 6/QA - Restore seguro solo en base descartable
+
+Cambio aplicado:
+
+- `restore_hospital_windows.ps1` ya no permite que `-ForceProductionRestore` convierta `hospital_billing` o `hospital_billing_production` en destinos validos.
+- El helper aborta temprano si alguien intenta usar `-ForceProductionRestore`; el restore productivo queda reservado al runbook manual con parada operativa y backup previo.
+- El self-test del helper ahora valida explicitamente que el force flag no pueda aceptar la base activa.
+- La documentacion de restore en Windows recomienda checksum + helper seguro con `.sql.gz.enc`, `-ExpectedSha256` y base descartable; el helper descifra internamente a SQL temporal.
+- No se agregaron dependencias, migraciones, roles, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\restore_hospital_windows.ps1 -SelfTest` | RED inicial cuando `ForceProductionRestore` aceptaba `hospital_billing`; luego OK, sin tocar bases ni backups. |
+| `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\restore_hospital_windows.ps1 -ForceProductionRestore -TargetDatabase hospital_restore_validation` | Falla esperada antes de leer backup o conectar MySQL: el flag ya no esta soportado. |
+| `git diff --check` | OK; solo advertencia normal de line endings en el script PowerShell. |
+
+Decision:
+
+- La version local puede necesitar restaurar una base en emergencia, pero el helper incluido debe ser conservador: valida backups en bases descartables. Produccion se restaura solo con proceso manual, parada operativa, backup previo y evidencia escrita.
