@@ -98,4 +98,33 @@ describe('InvoiceSuccess', () => {
     expect(screen.getByText(/la factura ya fue pagada/i)).toBeInTheDocument();
     expect(screen.getByText(/solicite a caja imprimir el recibo institucional/i)).toBeInTheDocument();
   });
+
+  it('prioritizes history recovery when a paid invoice has a pending institutional receipt', () => {
+    render(
+      <MemoryRouter>
+        <InvoiceSuccess
+          open
+          onOpenChange={vi.fn()}
+          invoiceNumber="000-001-01-00000012"
+          patientName="Paciente Pendiente"
+          total="125.00"
+          status="paid"
+          canPrintReceipt={false}
+          receiptRecoveryMessage="Pago registrado, pero no se pudo emitir el recibo institucional. Genere el recibo institucional desde Historial antes de entregar comprobante."
+          onCobrar={vi.fn()}
+          onImprimir={vi.fn()}
+          onNuevaFactura={vi.fn()}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getAllByText(/pago registrado, pero no se pudo emitir el recibo institucional/i)).toHaveLength(2);
+    expect(screen.getByRole('link', { name: /resolver recibo en historial/i })).toHaveAttribute(
+      'href',
+      '/invoices?invoice_number=000-001-01-00000012',
+    );
+    expect(screen.getByRole('button', { name: /crear otra factura/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /imprimir recibo institucional/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^ver detalle$/i })).not.toBeInTheDocument();
+  });
 });

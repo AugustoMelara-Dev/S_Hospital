@@ -46,6 +46,8 @@ export function InvoiceSuccess({
   const needsPayment = status === 'issued' || status === 'partial';
   const canShowPaymentAction = needsPayment && canCollectPayment;
   const successTitle = status === 'paid' ? 'Factura pagada' : 'Factura emitida exitosamente';
+  const detailHref = `/invoices?invoice_number=${encodeURIComponent(invoiceNumber)}`;
+  const hasReceiptRecovery = Boolean(receiptRecoveryMessage?.trim());
   const successDescription =
     status === 'paid'
       ? `Factura ${invoiceNumber} pagada. ${
@@ -118,18 +120,36 @@ export function InvoiceSuccess({
           </div>
         ) : (
           <div className="flex flex-col gap-3">
-            <p className="text-sm text-muted-foreground text-center">
-              {receiptRecoveryMessage ?? 'La factura ya fue pagada. Solicite a caja imprimir el recibo institucional.'}
-            </p>
-            <Button ref={primaryActionRef} type="button" size="lg" className="w-full font-semibold" onClick={onNuevaFactura}>
-              Crear otra factura
-            </Button>
+            {hasReceiptRecovery ? (
+              <>
+                <p className="rounded-md border border-warning/30 bg-warning/10 p-3 text-sm text-warning-foreground">
+                  {receiptRecoveryMessage}
+                </p>
+                <Button asChild size="lg" className="w-full font-semibold">
+                  <Link to={detailHref}>Resolver recibo en Historial</Link>
+                </Button>
+                <Button ref={primaryActionRef} type="button" variant="secondary" className="w-full" onClick={onNuevaFactura}>
+                  Crear otra factura
+                </Button>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-muted-foreground text-center">
+                  La factura ya fue pagada. Solicite a caja imprimir el recibo institucional.
+                </p>
+                <Button ref={primaryActionRef} type="button" size="lg" className="w-full font-semibold" onClick={onNuevaFactura}>
+                  Crear otra factura
+                </Button>
+              </>
+            )}
           </div>
         )}
 
-        <Button asChild variant="ghost" className="w-full">
-          <Link to={`/invoices?invoice_number=${encodeURIComponent(invoiceNumber)}`}>Ver detalle</Link>
-        </Button>
+        {!hasReceiptRecovery || canPrintReceipt ? (
+          <Button asChild variant="ghost" className="w-full">
+            <Link to={detailHref}>Ver detalle</Link>
+          </Button>
+        ) : null}
       </div>
     </Dialog>
   );

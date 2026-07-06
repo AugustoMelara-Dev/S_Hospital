@@ -7932,3 +7932,25 @@ Limitacion:
 Decision:
 
 - Aunque el E2E real siga pendiente, la golden DB ya no debe quedarse obsoleta cuando cambian las piezas que causaron el fallo historico de sesion/auth. Este corte reduce falsos verdes y falsos rojos antes de reintentar el release gate completo.
+
+## 331. Fase Facturacion/Caja - Recuperacion visible de recibo institucional pendiente
+
+Cambio aplicado:
+
+- El dialogo de factura pagada ahora prioriza `Resolver recibo en Historial` cuando el pago quedo registrado pero no hay recibo institucional imprimible en la venta.
+- La accion `Crear otra factura` queda secundaria en ese estado para reducir el riesgo de entregar o cerrar la atencion sin comprobante institucional.
+- Se conserva el flujo normal de imprimir recibo institucional cuando el recibo existe y el flujo de permisos restringidos cuando no hay mensaje de recuperacion.
+- No se agregaron dependencias, migraciones, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- InvoiceSuccess --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial por asercion del mensaje duplicado; luego OK: 1 file, 5 tests. |
+| `docker compose exec frontend npm run test -- NewInvoiceView --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 3 files, 28 tests. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+
+Decision:
+
+- En version monocomputadora, el pago puede quedar confirmado aunque falle la emision/apertura del recibo. La pantalla debe guiar a recuperacion del comprobante institucional antes de continuar, no insinuar que el problema se resuelve creando otra factura.
