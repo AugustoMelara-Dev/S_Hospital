@@ -297,6 +297,9 @@ class FinancialFactsReportTest extends TestCase
                 'cash_session_id' => $sessionId,
                 'method' => $method,
                 'amount' => $amount,
+                'reference' => in_array($method, [Payment::METHOD_CARD, Payment::METHOD_TRANSFER], true)
+                    ? "REF-{$method}-{$invoiceId}"
+                    : null,
             ])
             ->assertCreated();
     }

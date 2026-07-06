@@ -86,6 +86,18 @@ class RegisterPaymentAction
                 ]);
             }
 
+            $reference = trim((string) ($payload['reference'] ?? ''));
+            $requiresReference = in_array($payload['method'], [
+                Payment::METHOD_CARD,
+                Payment::METHOD_TRANSFER,
+            ], true);
+
+            if ($requiresReference && $reference === '') {
+                throw ValidationException::withMessages([
+                    'reference' => 'Ingrese la referencia del comprobante.',
+                ]);
+            }
+
             $payment = Payment::query()->create([
                 'invoice_id' => $lockedInvoice->id,
                 'cash_session_id' => $cashSession->id,
@@ -93,7 +105,7 @@ class RegisterPaymentAction
                 'method' => $payload['method'],
                 'amount' => Money::formatCents($amountCents),
                 'amount_cents' => $amountCents,
-                'reference' => $payload['reference'] ?? null,
+                'reference' => $reference !== '' ? $reference : null,
                 'status' => Payment::STATUS_POSTED,
                 'paid_at' => now(),
             ]);

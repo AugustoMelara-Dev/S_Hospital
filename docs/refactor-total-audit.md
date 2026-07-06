@@ -6776,3 +6776,33 @@ Pruebas ejecutadas:
 Decision:
 
 - El modulo de respaldos normal debe funcionar para operadores autorizados a verlo aunque no puedan acceder al diagnostico tecnico del servidor. La vista de soporte queda tras `system.status.view`, sin relajar RBAC backend.
+
+## 282. Fase 4/5/14 - Referencia obligatoria para tarjeta y transferencia
+
+Cambio aplicado:
+
+- `StorePaymentRequest` exige `reference` cuando el metodo de pago es `card` o `transfer`.
+- `RegisterPaymentAction` aplica el mismo invariante de dominio, normaliza espacios y no permite crear pagos tarjeta/transferencia sin comprobante aunque se invoque la accion directamente.
+- `PaymentModal` bloquea la confirmacion de tarjeta/transferencia sin referencia, enfoca el campo y expone error accesible con `aria-invalid` y `role="alert"`.
+- Los helpers de reportes y pruebas de reversa agregan referencias reales/sinteticas para pagos no efectivo exitosos.
+- No se agregaron migraciones, dependencias, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker exec s_hospital-backend-1 php artisan test --filter=card_and_transfer_payments_require_a_reference` | RED inicial correcto: el endpoint devolvia 201; luego OK. |
+| `npm run test -- PaymentModal --run -t "requires a reference"` | RED inicial correcto: el campo referencia no tenia `aria-invalid`; luego OK. |
+| `docker exec s_hospital-backend-1 php artisan test --filter=it_requires_reference_for_transfer_and_card_payments` | RED inicial correcto: la accion creaba el pago; luego OK. |
+| `docker exec s_hospital-backend-1 php artisan test tests/Unit/Actions/RegisterPaymentTest.php tests/Feature/CashPaymentsReceiptTest.php tests/Feature/InvoiceReverseTest.php tests/Feature/FinancialFactsReportTest.php tests/Feature/Reports/TodayReportTest.php tests/Feature/Reports/ExecutiveReportTest.php` | OK: 75 tests, 767 assertions. |
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/ReportsTest.php` | OK: 56 tests, 810 assertions. |
+| `npm run test -- PaymentModal --run` | OK: 24 tests. |
+| `docker exec s_hospital-backend-1 vendor/bin/pint --test` | OK: 430 files. |
+| `docker exec s_hospital-backend-1 vendor/bin/phpstan analyse --memory-limit=512M` | OK: no errors. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- Tarjeta y transferencia necesitan una referencia operativa para conciliacion, soporte y auditoria. Efectivo y `other` siguen permitiendo referencia opcional para no bloquear cobros validos de caja.

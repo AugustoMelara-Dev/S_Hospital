@@ -242,8 +242,8 @@ class CashPaymentsReceiptTest extends TestCase
         $sessionId = $this->openSession($cashier, '500.00');
 
         foreach ([
-            ['service' => 'Glucosa', 'method' => Payment::METHOD_TRANSFER, 'amount' => '17.25'],
-            ['service' => 'Hemograma Completo', 'method' => Payment::METHOD_CARD, 'amount' => '11.50'],
+            ['service' => 'Glucosa', 'method' => Payment::METHOD_TRANSFER, 'amount' => '17.25', 'reference' => 'TRX-CASH-1'],
+            ['service' => 'Hemograma Completo', 'method' => Payment::METHOD_CARD, 'amount' => '11.50', 'reference' => 'CARD-CASH-1'],
             ['service' => 'Eritropoyetina', 'method' => Payment::METHOD_OTHER, 'amount' => '25.00'],
         ] as $paymentCase) {
             $invoiceId = $this->createInvoice($cashier, $paymentCase['service']);
@@ -253,6 +253,7 @@ class CashPaymentsReceiptTest extends TestCase
                     'cash_session_id' => $sessionId,
                     'method' => $paymentCase['method'],
                     'amount' => $paymentCase['amount'],
+                    'reference' => $paymentCase['reference'] ?? null,
                 ])
                 ->assertCreated();
         }
@@ -262,6 +263,32 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.expected_amount', '500.00')
             ->assertJsonPath('data.difference_amount', '0.00');
+    }
+
+    public function test_card_and_transfer_payments_require_a_reference(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier, '500.00');
+
+        foreach ([Payment::METHOD_CARD, Payment::METHOD_TRANSFER] as $method) {
+            $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+
+            $this->actingAs($cashier)
+                ->postJson("/api/invoices/{$invoiceId}/payments", [
+                    'cash_session_id' => $sessionId,
+                    'method' => $method,
+                    'amount' => '17.25',
+                    'reference' => '   ',
+                ])
+                ->assertUnprocessable()
+                ->assertJsonValidationErrors('reference');
+
+            $this->assertDatabaseMissing('payments', [
+                'invoice_id' => $invoiceId,
+                'method' => $method,
+            ]);
+        }
     }
 
     public function test_current_cash_session_exposes_reconciliation_without_counting_pending_as_cash(): void
@@ -287,6 +314,7 @@ class CashPaymentsReceiptTest extends TestCase
                 'cash_session_id' => $sessionId,
                 'method' => Payment::METHOD_TRANSFER,
                 'amount' => '11.50',
+                'reference' => 'TRX-CURRENT-1',
             ])
             ->assertCreated();
 
@@ -295,6 +323,7 @@ class CashPaymentsReceiptTest extends TestCase
                 'cash_session_id' => $sessionId,
                 'method' => Payment::METHOD_CARD,
                 'amount' => '5.00',
+                'reference' => 'CARD-CURRENT-1',
             ])
             ->assertCreated();
 

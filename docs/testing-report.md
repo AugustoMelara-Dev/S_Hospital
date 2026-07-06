@@ -490,3 +490,19 @@ verified.
 | `npm run typecheck` | PASS. |
 | `npm run lint` | PASS. |
 | `npm run build` | PASS. |
+
+### 2026-07-06 Payment Reference Gate
+
+| Command | Result |
+|---|---|
+| `docker exec s_hospital-backend-1 php artisan test --filter=card_and_transfer_payments_require_a_reference` | RED first because the payment endpoint returned 201 for blank transfer/card reference; then PASS, 1 focused test. |
+| `npm run test -- PaymentModal --run -t "requires a reference"` | RED first because the reference field did not expose `aria-invalid` and the modal could confirm; then PASS, 1 focused test. |
+| `docker exec s_hospital-backend-1 php artisan test --filter=it_requires_reference_for_transfer_and_card_payments` | RED first because `RegisterPaymentAction` created transfer/card payments without reference; then PASS, 1 focused test. |
+| `docker exec s_hospital-backend-1 php artisan test tests/Unit/Actions/RegisterPaymentTest.php tests/Feature/CashPaymentsReceiptTest.php tests/Feature/InvoiceReverseTest.php tests/Feature/FinancialFactsReportTest.php tests/Feature/Reports/TodayReportTest.php tests/Feature/Reports/ExecutiveReportTest.php` | PASS, 75 tests and 767 assertions. |
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/ReportsTest.php` | PASS, 56 tests and 810 assertions. |
+| `npm run test -- PaymentModal --run` | PASS, 24 tests. |
+| `docker exec s_hospital-backend-1 vendor/bin/pint --test` | PASS, 430 files. |
+| `docker exec s_hospital-backend-1 vendor/bin/phpstan analyse --memory-limit=512M` | PASS, no errors. |
+| `npm run typecheck` | PASS. |
+| `npm run lint` | PASS. |
+| `npm run build` | PASS. |

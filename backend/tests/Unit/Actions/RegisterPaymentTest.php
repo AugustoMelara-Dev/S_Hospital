@@ -140,6 +140,30 @@ class RegisterPaymentTest extends TestCase
         $this->action->execute($this->invoice, $payload, $this->cashier, $this->invoiceAccess);
     }
 
+    public function test_it_requires_reference_for_transfer_and_card_payments(): void
+    {
+        foreach ([Payment::METHOD_TRANSFER, Payment::METHOD_CARD] as $method) {
+            $payload = [
+                'cash_session_id' => $this->session->id,
+                'method' => $method,
+                'amount' => '50.00',
+                'reference' => '   ',
+            ];
+
+            try {
+                $this->action->execute($this->invoice, $payload, $this->cashier, $this->invoiceAccess);
+                $this->fail("{$method} payments without reference must be rejected.");
+            } catch (ValidationException $exception) {
+                $this->assertArrayHasKey('reference', $exception->errors());
+            }
+
+            $this->assertDatabaseMissing('payments', [
+                'invoice_id' => $this->invoice->id,
+                'method' => $method,
+            ]);
+        }
+    }
+
     public function test_it_blocks_payments_on_closed_cashbox(): void
     {
         $this->session->update(['status' => CashRegisterSession::STATUS_CLOSED]);

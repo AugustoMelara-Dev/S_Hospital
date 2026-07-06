@@ -55,8 +55,10 @@ export function PaymentModal({
   partialPaymentsEnabled = false,
 }: PaymentModalProps) {
   const [error, setError] = useState<string | null>(null);
+  const [referenceError, setReferenceError] = useState<string | null>(null);
   const [capNotice, setCapNotice] = useState<string | null>(null);
   const amountInputRef = useRef<HTMLInputElement | null>(null);
+  const referenceInputRef = useRef<HTMLInputElement | null>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
 
   const balanceCents = parseMoneyCents(balanceDue);
@@ -74,6 +76,7 @@ export function PaymentModal({
     : paymentCents;
   const needsAmount = paymentCents === null || paymentCents <= 0;
   const exceedsPending = !cashCanReturnChange && paymentCents !== null && balanceCents !== null && paymentCents > balanceCents;
+  const requiresReference = paymentMethod === 'card' || paymentMethod === 'transfer';
   const pendingAmountLabel = balanceCents !== null ? formatMoneyCents(balanceCents) : '0.00';
   const amountDescribedBy = [
     'payment-amount-help',
@@ -85,6 +88,7 @@ export function PaymentModal({
   useEffect(() => {
     if (open) {
       setError(null);
+      setReferenceError(null);
       setCapNotice(null);
       window.setTimeout(() => amountInputRef.current?.focus(), 0);
     }
@@ -116,6 +120,16 @@ export function PaymentModal({
     onPaymentAmountChange(normalizedValue);
   }
 
+  function handlePaymentMethodChange(method: Payment['method']) {
+    setReferenceError(null);
+    onPaymentMethodChange(method);
+  }
+
+  function handleReferenceChange(value: string) {
+    setReferenceError(null);
+    onPaymentReferenceChange(value);
+  }
+
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (submitting) {
@@ -138,7 +152,13 @@ export function PaymentModal({
       amountInputRef.current?.focus();
       return;
     }
+    if (requiresReference && paymentReference.trim() === '') {
+      setReferenceError('Ingrese la referencia del comprobante.');
+      referenceInputRef.current?.focus();
+      return;
+    }
     setError(null);
+    setReferenceError(null);
     onConfirm(formatMoneyCents(appliedAmountCents ?? amountCents));
   }
 
@@ -262,7 +282,7 @@ export function PaymentModal({
         <section aria-label="Datos del pago" className="grid gap-4 rounded-panel border border-operational-border bg-card p-4">
           <div className="grid gap-1.5">
             <Label htmlFor="payment-method">Método de pago</Label>
-            <Select value={paymentMethod} onValueChange={(v) => onPaymentMethodChange(v as Payment['method'])} disabled={submitting}>
+            <Select value={paymentMethod} onValueChange={(v) => handlePaymentMethodChange(v as Payment['method'])} disabled={submitting}>
               <SelectTrigger id="payment-method" aria-describedby="payment-method-help">
                 <SelectValue placeholder="Seleccione método" />
               </SelectTrigger>
@@ -316,17 +336,24 @@ export function PaymentModal({
             <div className="grid gap-1.5">
               <Label htmlFor="payment-reference">Referencia de pago</Label>
               <Input
+                ref={referenceInputRef}
                 id="payment-reference"
                 value={paymentReference}
-                onChange={(e) => onPaymentReferenceChange(e.target.value)}
+                onChange={(e) => handleReferenceChange(e.target.value)}
                 disabled={submitting}
                 placeholder="Número de transacción o comprobante"
-                aria-describedby="payment-reference-help"
+                aria-invalid={referenceError ? 'true' : 'false'}
+                aria-describedby={referenceError ? 'payment-reference-help payment-reference-error' : 'payment-reference-help'}
                 className="break-words"
               />
               <p id="payment-reference-help" className="text-xs text-muted-foreground">
                 Use la referencia real del comprobante cuando aplique.
               </p>
+              {referenceError ? (
+                <p id="payment-reference-error" className="text-sm text-destructive" role="alert">
+                  {referenceError}
+                </p>
+              ) : null}
             </div>
           ) : null}
         </section>

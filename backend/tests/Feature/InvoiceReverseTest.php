@@ -90,6 +90,7 @@ class InvoiceReverseTest extends TestCase
                 'cash_session_id' => $sessionId,
                 'method' => Payment::METHOD_CARD,
                 'amount' => '5.75',
+                'reference' => 'CARD-REV-1',
             ])->assertCreated()->json('data.payment.id');
 
         $this->actingAs($supervisor)

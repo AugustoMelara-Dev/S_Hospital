@@ -290,6 +290,24 @@ describe('PaymentModal', () => {
     expect(onPaymentReferenceChange).toHaveBeenCalledWith('DEP-2026-06');
   });
 
+  it('requires a reference before confirming card or transfer payments', () => {
+    const confirmSpy = vi.fn();
+
+    renderPaymentModal({
+      paymentMethod: 'transfer',
+      paymentAmount: '17.25',
+      paymentReference: '   ',
+      onConfirm: confirmSpy,
+    });
+
+    const referenceInput = screen.getByLabelText(/referencia de pago/i);
+    fireEvent.submit(referenceInput.closest('form')!);
+
+    expect(referenceInput).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByRole('alert')).toHaveTextContent(/ingrese la referencia/i);
+    expect(confirmSpy).not.toHaveBeenCalled();
+  });
+
   it('keeps partial payment blocked by default and allowed when the consumer enables it', async () => {
     const confirmSpy = vi.fn();
     const { rerender, props } = renderPaymentModal({
