@@ -438,3 +438,13 @@ verified.
 | `npm run typecheck` | PASS. |
 | `npm run lint` | PASS. |
 | `npm run build` | PASS. |
+
+### 2026-07-06 Executive Report Glossary Removal Gate
+
+| Command | Result |
+|---|---|
+| `npm run test -- ReportsExecutive --run -t "renders the complete executive report panel sequence"` | RED first because the `Definicion de metricas` button was still visible; then PASS, 1 focused test. |
+| `npm run test -- src/features/reports --run` | PASS, 60 tests across 14 files. |
+| `npm run typecheck` | PASS. |
+| `npm run lint` | PASS. |
+| `npm run build` | PASS. |

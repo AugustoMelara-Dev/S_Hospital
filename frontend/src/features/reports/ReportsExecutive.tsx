@@ -14,7 +14,6 @@ import { ExecutiveAlerts } from './components/ExecutiveAlerts';
 import { TrendChart } from './components/TrendChart';
 import { PaymentMethodPanel } from './components/PaymentMethodPanel';
 import { ServiceRanking } from './components/ServiceRanking';
-import { MetricsGlossary } from './components/MetricsGlossary';
 import { CashReconciliationPanel } from './components/CashReconciliationPanel';
 import { PendingAgingPanel } from './components/PendingAgingPanel';
 import { VoidsReversalsPanel } from './components/VoidsReversalsPanel';
@@ -47,7 +46,6 @@ export function ReportsExecutive({
     const initialRange = computePresetRange(canViewManagerial ? 'thisMonth' : 'today');
     return { date_from: initialRange.from, date_to: initialRange.to };
   });
-  const [glossaryOpen, setGlossaryOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const executiveRangeError = validateReportDateRange(
     filters.date_from,
@@ -202,10 +200,6 @@ export function ReportsExecutive({
           <ServiceRanking report={report} />
         </div>
       ) : null}
-
-      <div className="flex justify-end">
-        <MetricsGlossary open={glossaryOpen} onOpenChange={setGlossaryOpen} compact />
-      </div>
     </section>
   );
 }

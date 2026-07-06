@@ -6656,3 +6656,27 @@ Pruebas ejecutadas:
 Decision:
 
 - El reporte propio de caja debe ser visible de inmediato para operacion diaria LAN/offline. El usuario puede revisar su turno al abrir la pantalla, mientras las exportaciones permanecen reservadas a permisos explicitos.
+
+## 277. Fase 10/17 - Ejecutivo sin glosario modal
+
+Cambio aplicado:
+
+- `ReportsExecutive` deja de renderizar el boton/modal `Definicion de metricas`.
+- Se eliminaron `MetricsGlossary.tsx` y `MetricsGlossary.test.tsx`, que ya no tenian consumidores.
+- El reporte ejecutivo mantiene los paneles operativos en secuencia: resumen, alertas, caja, pendientes, anulaciones/reversos, auditoria, metodos, tendencia y ranking.
+- Se reduce ruido visual y codigo de reportes; el chunk `ReportsView` bajo de ~64.26 kB a ~60.71 kB en build local.
+- No se agregaron migraciones, dependencias, permisos, endpoints ni cambios backend.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- ReportsExecutive --run -t "renders the complete executive report panel sequence"` | RED inicial correcto: el boton `Definicion de metricas` seguia visible; luego OK. |
+| `npm run test -- src/features/reports --run` | OK: 60 tests en 14 archivos. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- Las definiciones contables extensas no deben competir con la lectura rapida del reporte diario. El reporte ejecutivo queda centrado en datos accionables y los terminos se sostienen por labels consistentes en pantalla/PDF/Excel.

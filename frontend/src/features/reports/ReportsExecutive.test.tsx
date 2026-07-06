@@ -102,6 +102,7 @@ describe('ReportsExecutive', () => {
     panels.slice(1).forEach((panel, index) => {
       expect(panels[index].compareDocumentPosition(panel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     });
+    expect(screen.queryByRole('button', { name: /definicion de metricas/i })).not.toBeInTheDocument();
   });
 
   it('shows export progress while an executive PDF is being prepared', async () => {
