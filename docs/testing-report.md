@@ -283,3 +283,11 @@ verified.
 | `npm run typecheck` | PASS. |
 | `npm run lint` | PASS. |
 | `git diff --check -- frontend/src/hooks/useInvoices.ts frontend/src/hooks/useInvoices.test.tsx` | PASS. |
+
+### 2026-07-05 Fiscal Numeration Reason Gate
+
+| Command | Result |
+|---|---|
+| `npm run test -- FiscalNumerationView --run` | RED first because the view had no fiscal reason field/message; then PASS, 4 tests. |
+| `npm run typecheck` | PASS. |
+| `npm run lint` | PASS. |

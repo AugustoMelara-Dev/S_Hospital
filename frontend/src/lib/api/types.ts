@@ -70,6 +70,7 @@ export type FiscalSequence = {
   cai: string;
   valid_until: string;
   active: boolean;
+  reason?: string;
 };
 
 export type Category = {

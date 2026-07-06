@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { FormField } from '@/components/ui/form-field';
 import { FormSection } from '@/components/ui/form-section';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { type FiscalSequence, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { safeClientMessage } from '@/lib/support/clientIssueLog';
 
@@ -23,6 +24,7 @@ const sequenceSchema = z.object({
   min_number: z.number().int().min(1, 'Debe ser mayor a 0'),
   max_number: z.number().int().min(1, 'Debe ser mayor a 0'),
   valid_until: z.string().min(1, 'La fecha de vencimiento es requerida'),
+  reason: z.string().max(500, 'Motivo muy largo').optional(),
 }).superRefine((data, ctx) => {
   if (data.max_number < data.min_number) {
     ctx.addIssue({
@@ -53,6 +55,7 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
       min_number: 1,
       max_number: 99999999,
       valid_until: '',
+      reason: '',
     },
   });
 
@@ -73,6 +76,7 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
         min_number: first?.min_number ?? 1,
         max_number: first?.max_number ?? 99999999,
         valid_until: first?.valid_until ?? '',
+        reason: '',
       });
     } catch (err) {
       const message = safeClientMessage(userSafeErrorMessage(err, 'No se pudo cargar la secuencia fiscal.'));
@@ -83,6 +87,16 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
   }
 
   async function onSubmit(data: SequenceFormData) {
+    const reason = data.reason?.trim() ?? '';
+    if (sequence?.id && reason.length < 5) {
+      form.setError('reason', {
+        type: 'manual',
+        message: 'Indique al menos 5 caracteres explicando el motivo del cambio fiscal.',
+      });
+      onStatus('Ingrese un motivo del cambio fiscal de al menos 5 caracteres.');
+      return;
+    }
+
     if (savingRef.current) return;
     savingRef.current = true;
     setError('');
@@ -98,6 +112,7 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
         current_number: sequence?.current_number ?? 0,
         valid_until: data.valid_until,
         active: true,
+        ...(sequence?.id ? { reason } : {}),
       });
       setSequence(saved);
       onStatus('Numeración fiscal guardada.');
@@ -223,6 +238,28 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
             </div>
           </CardContent>
         </Card>
+
+        {sequence?.id ? (
+          <FormField
+            id="reason"
+            label="Motivo del cambio fiscal"
+            required
+            hint="Obligatorio al guardar cambios de prefijo, CAI, rango, correlativo o vigencia."
+            error={form.formState.errors.reason?.message}
+          >
+            {({ id, invalid, describedBy }) => (
+              <Textarea
+                id={id}
+                {...form.register('reason')}
+                rows={3}
+                aria-invalid={invalid}
+                aria-describedby={describedBy}
+                disabled={!canEdit}
+                placeholder="Ej. Nuevo rango autorizado por SAR"
+              />
+            )}
+          </FormField>
+        ) : null}
 
         <div className="flex justify-end">
           <Button type="submit" disabled={!canEdit || form.formState.isSubmitting}>

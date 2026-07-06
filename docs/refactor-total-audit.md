@@ -6300,3 +6300,25 @@ Pruebas ejecutadas:
 Decision:
 
 - Un reintento recuperable conserva deduplicacion, pero si el operador corrige la factura despues del fallo, el frontend no presenta el nuevo intento como la misma emision logica.
+
+## 262. Fase 11/14 - Numeracion fiscal exige motivo antes de guardar
+
+Cambio aplicado:
+
+- `FiscalNumerationView` muestra `Motivo del cambio fiscal` cuando se edita una secuencia existente.
+- El formulario bloquea el envio si el motivo tiene menos de 5 caracteres y muestra error accesible antes de llamar al API.
+- El payload de `saveFiscalSequence` incluye `reason` en actualizaciones, alineado con `UpdateFiscalSequenceRequest`.
+- `FiscalSequence` admite `reason` opcional como campo de escritura.
+- No se agregaron dependencias, migraciones, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- FiscalNumerationView --run` | RED inicial por falta de campo/mensaje de motivo; luego OK: 4 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+
+Decision:
+
+- El backend seguia siendo la defensa final, pero la UI ya no invita al operador a enviar cambios fiscales que serian rechazados por falta de motivo auditado.

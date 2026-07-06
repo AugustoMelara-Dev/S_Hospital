@@ -43,8 +43,11 @@ describe('FiscalNumerationView', () => {
 
     const prefixInput = await screen.findByLabelText(/^prefijo$/i);
     fireEvent.change(prefixInput, { target: { value: 'B' } });
+    fireEvent.change(screen.getByLabelText(/motivo del cambio fiscal/i), {
+      target: { value: 'Nuevo rango autorizado por SAR' },
+    });
 
-    fireEvent.click(screen.getByRole('button', { name: /guardar numeraci[oó]n/i }));
+    fireEvent.click(screen.getByRole('button', { name: /guardar numeraci/i }));
 
     await waitFor(() => {
       expect(saveFiscalSequence).toHaveBeenCalledWith({
@@ -57,15 +60,30 @@ describe('FiscalNumerationView', () => {
         current_number: 10,
         valid_until: '2026-12-31',
         active: true,
+        reason: 'Nuevo rango autorizado por SAR',
       });
     });
+  });
+
+  it('requires a fiscal reason before saving changed fiscal sequence data', async () => {
+    const saveFiscalSequence = vi.mocked(apiClient.saveFiscalSequence);
+
+    render(<FiscalNumerationView canEdit onStatus={vi.fn()} />);
+
+    const prefixInput = await screen.findByLabelText(/^prefijo$/i);
+    fireEvent.change(prefixInput, { target: { value: 'B' } });
+
+    fireEvent.click(screen.getByRole('button', { name: /guardar numeraci/i }));
+
+    expect(await screen.findByText(/indique al menos 5 caracteres/i)).toBeInTheDocument();
+    expect(saveFiscalSequence).not.toHaveBeenCalled();
   });
 
   it('disables the save button without edit permission', async () => {
     render(<FiscalNumerationView canEdit={false} onStatus={vi.fn()} />);
 
     expect(
-      await screen.findByRole('button', { name: /guardar numeraci[oó]n/i }),
+      await screen.findByRole('button', { name: /guardar numeraci/i }),
     ).toBeDisabled();
   });
 });
