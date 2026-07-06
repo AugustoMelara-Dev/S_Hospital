@@ -615,3 +615,13 @@ verified.
 | `docker exec s_hospital-backend-1 php artisan test tests/Feature/BackupWorkflowTest.php` | PASS, 28 tests and 146 assertions. |
 | `docker exec s_hospital-backend-1 vendor/bin/pint --test` | PASS, 430 files. |
 | `docker exec s_hospital-backend-1 vendor/bin/phpstan analyse --memory-limit=512M` | PASS, no errors. |
+
+### 2026-07-06 Backup Normal View Restore Copy Gate
+
+| Command | Result |
+|---|---|
+| `npm run test -- BackupsView --run -t "concise backup guidance"` | RED first because the normal backups view still displayed restore guidance; then PASS. |
+| `npm run test -- BackupsView --run` | PASS, 33 tests. |
+| `npm run typecheck` | PASS. |
+| `npm run lint` | PASS. |
+| `npm run build` | PASS. |

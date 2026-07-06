@@ -7060,3 +7060,25 @@ Pruebas ejecutadas:
 Decision:
 
 - El checksum es evidencia tecnica de integridad, no informacion necesaria en la vista normal de respaldos. Debe quedar disponible para validacion interna, auditoria y runbooks, no en el listado operacional.
+
+## 294. Fase 12/14 - Vista normal de respaldos no menciona restauracion
+
+Cambio aplicado:
+
+- `BackupsView` ya no muestra el aviso principal "Restauracion no disponible desde la app" en la vista operacional de respaldos.
+- La pantalla normal conserva indicadores, historial, descarga y creacion de respaldos segun permisos, sin presentar restaurar como flujo visible.
+- No se agregaron migraciones, dependencias, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- BackupsView --run -t "concise backup guidance"` | RED inicial correcto: la vista aun mostraba el aviso de restauracion; luego OK. |
+| `npm run test -- BackupsView --run` | OK: 33 tests. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- La restauracion de respaldos es una operacion tecnica de recuperacion, no una accion normal de caja/administracion. La vista cotidiana debe enfocarse en crear, verificar estado y descargar respaldos autorizados.

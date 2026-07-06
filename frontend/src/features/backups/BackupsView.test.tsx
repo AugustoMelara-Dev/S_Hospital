@@ -43,8 +43,8 @@ describe('BackupsView', () => {
     renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
 
     expect(await screen.findByRole('heading', { level: 1, name: /respaldos/i })).toBeInTheDocument();
-    expect(screen.getByText(/restauraci.n no disponible desde la app/i)).toBeInTheDocument();
-    expect(screen.getByText(/solicite soporte/i)).toBeInTheDocument();
+    expect(screen.queryByText(/restauraci.n no disponible desde la app/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/restaurar|restauraci.n/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/^1\. crear$/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/^2\. verificar$/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/^3\. restaurar con prueba$/i)).not.toBeInTheDocument();

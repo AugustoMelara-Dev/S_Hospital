@@ -455,10 +455,6 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
       />
 
       <div className="space-y-6">
-        <Alert title="Restauración no disponible desde la app">
-          La restauración de un respaldo se realiza únicamente desde el servidor local por personal autorizado. Si necesita recuperar información, solicite soporte técnico.
-        </Alert>
-
         <section aria-label="Indicadores principales de respaldos">
           <StatGrid
             className="sm:grid-cols-2 xl:grid-cols-3"
