@@ -751,8 +751,8 @@ describe('BackupsView', () => {
     expect(dialog).toHaveTextContent(/esta acción queda auditada/i);
     expect(dialog).toHaveTextContent(/3\.0 MB/i);
     expect(dialog).toHaveTextContent(/administradora hospital/i);
-    expect(dialog).toHaveTextContent(/verificacion/i);
-    expect(dialog).toHaveTextContent(/abc123456789/i);
+    expect(dialog).not.toHaveTextContent(/verificacion|sha256|checksum|huella/i);
+    expect(dialog).not.toHaveTextContent(/abc123456789/i);
     expect(dialog).not.toHaveTextContent(/abc1234567890defabc1234567890def/i);
     expect(dialog).not.toHaveTextContent(/hospital-backup-.*\.sql\.enc/i);
 

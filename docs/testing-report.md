@@ -459,3 +459,13 @@ verified.
 | `npm run typecheck` | PASS. |
 | `npm run lint` | PASS. |
 | `npm run build` | PASS. |
+
+### 2026-07-06 Backup Download Normal Detail Gate
+
+| Command | Result |
+|---|---|
+| `npm run test -- BackupsView --run -t "confirms and reports backup downloads"` | RED first because the normal download dialog still exposed `Verificacion` and a checksum fingerprint; then PASS, 1 focused test. |
+| `npm run test -- BackupsView --run` | PASS, 32 tests. |
+| `npm run typecheck` | PASS. |
+| `npm run lint` | PASS. |
+| `npm run build` | PASS. |

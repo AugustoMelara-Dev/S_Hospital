@@ -6704,3 +6704,27 @@ Pruebas ejecutadas:
 Decision:
 
 - En operacion offline/LAN, un fallo de reporte debe orientar al operador hacia conexion/permisos/reintento, no dejar un texto generico que parece error interno.
+
+## 279. Fase 12/16 - Descarga de respaldo sin huella tecnica
+
+Cambio aplicado:
+
+- El dialogo normal de descarga de respaldos deja de mostrar la fila `Verificacion` y la huella parcial del checksum.
+- La confirmacion mantiene solo informacion operativa para el usuario: fecha, tamano, usuario y accion auditada.
+- Se elimino el helper frontend que formateaba la huella parcial, porque no tenia otro uso.
+- La tabla principal ya seguia sin exponer `sha256`, filename tecnico ni rutas locales.
+- No se agregaron migraciones, dependencias, permisos, endpoints ni cambios backend.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- BackupsView --run -t "confirms and reports backup downloads"` | RED inicial correcto: el dialogo mostraba `Verificacion` y `abc123456789`; luego OK. |
+| `npm run test -- BackupsView --run` | OK: 32 tests. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- La integridad criptografica es importante, pero la huella del checksum no debe aparecer en el flujo normal de descarga. Para operacion diaria monocomputadora basta confirmar fecha, tamano, usuario y auditoria; los detalles tecnicos quedan para soporte/servidor.
