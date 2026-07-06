@@ -65,9 +65,75 @@ test.describe('Print profiles - normal flow', () => {
     await expect(page.getByText('receipt_settings.advanced')).toHaveCount(0);
     await expect(page.getByText(/ajustes avanzados restringidos|modo soporte t.cnico/i)).toHaveCount(0);
   });
+
+  test('normal paper profile saves and test-prints without advanced layout fields', async ({ page }) => {
+    const testPrintPayloads: Array<Record<string, unknown>> = [];
+    const profilePatchPayloads: Array<Record<string, unknown>> = [];
+    const profilePatchPaths: string[] = [];
+    await installReceiptSettingsMocks(page, {
+      onTestPrint(payload) {
+        testPrintPayloads.push(payload);
+      },
+      onProfilePatch(path, payload) {
+        profilePatchPaths.push(path);
+        profilePatchPayloads.push(payload);
+      },
+    });
+
+    await page.goto('/settings/institutional-receipts');
+    await page.getByRole('tab', { name: /papel y copias/i }).click();
+    await page.getByRole('radio', { name: /^A5\b/i }).click();
+
+    await page.getByRole('button', { name: /imprimir prueba/i }).click();
+    await expect.poll(() => testPrintPayloads.length).toBe(1);
+    expect(testPrintPayloads[0]).toMatchObject({
+      profile_code: 'a5_horizontal',
+      payer_name: 'Paciente de prueba',
+      concept: 'Servicios hospitalarios de prueba',
+      amount: '25.00',
+    });
+
+    await page.getByRole('button', { name: /guardar perfil/i }).click();
+    await expect.poll(() => profilePatchPayloads.length).toBe(1);
+
+    expect(profilePatchPaths[0]).toBe('/api/settings/institutional-receipts/print-profiles/2');
+    expect(profilePatchPayloads[0]).toMatchObject({
+      active: true,
+      is_global_default: true,
+      template_code: 'institutional_classic',
+      copies_mode: 'original_only',
+      show_copy_legend: true,
+      show_physical_seal_space: true,
+      use_logo: true,
+    });
+
+    for (const field of [
+      'paper_kind',
+      'orientation',
+      'width_mm',
+      'height_mm',
+      'margin_top_mm',
+      'margin_right_mm',
+      'margin_bottom_mm',
+      'margin_left_mm',
+      'font_family',
+      'font_scale',
+      'show_technical_fields',
+      'support_reason',
+    ]) {
+      expect(profilePatchPayloads[0]).not.toHaveProperty(field);
+      expect(testPrintPayloads[0]).not.toHaveProperty(field);
+    }
+  });
 });
 
-async function installReceiptSettingsMocks(page: Page) {
+async function installReceiptSettingsMocks(
+  page: Page,
+  hooks: {
+    onTestPrint?: (payload: Record<string, unknown>) => void;
+    onProfilePatch?: (path: string, payload: Record<string, unknown>) => void;
+  } = {},
+) {
   await page.route('**/favicon.ico', (route) => route.fulfill({ status: 204 }));
   await page.route('**/sanctum/csrf-cookie', (route) => route.fulfill({ status: 204 }));
   await page.route((url) => url.pathname.startsWith('/api/'), async (route) => {
@@ -109,10 +175,12 @@ async function installReceiptSettingsMocks(page: Page) {
     }
 
     if (path === '/api/settings/institutional-receipts/test-print') {
+      hooks.onTestPrint?.(request.postDataJSON() as Record<string, unknown>);
       return route.fulfill({ status: 200, contentType: 'application/pdf', body: '%PDF-test' });
     }
 
     if (path.startsWith('/api/settings/institutional-receipts/print-profiles/') && method === 'PATCH') {
+      hooks.onProfilePatch?.(path, request.postDataJSON() as Record<string, unknown>);
       return json(route, { data: profiles[0] });
     }
 
