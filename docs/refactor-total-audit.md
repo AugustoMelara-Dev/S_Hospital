@@ -7311,3 +7311,25 @@ Pruebas ejecutadas:
 Decision:
 
 - `reports.view` se conserva como dato historico/legado para no romper instalaciones existentes, pero la version monocomputadora debe guiar a permisos concretos: `reports.cash_session.view`, `reports.managerial.view` y `reports.export` segun el flujo.
+
+## 304. Fase 13/14 - Frontend oculta reports.view legado en usuarios
+
+Cambio aplicado:
+
+- `UsersView` ahora filtra `reports.view` en la misma lista local de permisos ocultos que usa para permisos internos o inoperables.
+- Los formularios de usuarios y roles usan `reports.cash_session.view` como permiso visible de reportes en pruebas, dejando `reports.view` solo como dato legado filtrado.
+- Si un backend o mock heredado devuelve `reports.view` en roles o catalogo, la UI no lo muestra como checkbox y no lo reenvia en payloads de usuario.
+- No se agregaron dependencias, endpoints ni permisos nuevos.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- UsersView UserFormDialog RoleFormDialog PermissionMatrix --run` | OK: 4 files, 65 tests. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `git diff --check` | OK. |
+
+Decision:
+
+- El backend ya rechaza y oculta `reports.view`; el frontend tambien debe proteger al operador si recibe datos heredados, manteniendo visibles solo permisos concretos de reportes.

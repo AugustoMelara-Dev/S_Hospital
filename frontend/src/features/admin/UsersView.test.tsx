@@ -57,7 +57,7 @@ const roleCatalog = {
       module: 'reports',
       label: 'Reportes',
       permissions: [
-        { name: 'reports.view', module: 'reports', label: 'Reports view' },
+        { name: 'reports.cash_session.view', module: 'reports', label: 'Reports cash session view' },
       ],
     },
   ],
@@ -466,7 +466,7 @@ describe('UsersView', () => {
     fireEvent.click(await screen.findByRole('button', { name: /crear usuario/i }));
     const dialog = screen.getByRole('dialog', { name: /crear usuario/i });
 
-    expect(within(dialog).queryByRole('checkbox', { name: /Reports view/i })).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole('checkbox', { name: /Reports cash session view/i })).not.toBeInTheDocument();
     expect(within(dialog).getByText(/heredara los modulos del rol seleccionado/i)).toBeInTheDocument();
 
     fireEvent.change(within(dialog).getByLabelText(/nombre completo/i), { target: { value: 'Caja Rol' } });
@@ -498,7 +498,7 @@ describe('UsersView', () => {
     const dialog = screen.getByRole('dialog', { name: /crear usuario/i });
 
     expect(within(dialog).getByText(/heredara los modulos del rol seleccionado/i)).toBeInTheDocument();
-    expect(within(dialog).queryByRole('checkbox', { name: /Reports view/i })).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole('checkbox', { name: /Reports cash session view/i })).not.toBeInTheDocument();
     expect(within(dialog).queryByText(/reports\.view/i)).not.toBeInTheDocument();
 
     fireEvent.change(within(dialog).getByLabelText(/nombre completo/i), { target: { value: 'Caja Basica' } });
@@ -525,6 +525,7 @@ describe('UsersView', () => {
           permissions: [
             { name: 'cash.view', module: 'cash', label: 'Cash view' },
             { name: 'backups.restore', module: 'backups', label: 'Restaurar respaldos' },
+            { name: 'reports.view', module: 'reports', label: 'Reports view' },
           ],
         },
       ],
@@ -538,6 +539,11 @@ describe('UsersView', () => {
           module: 'backups',
           label: 'Respaldos',
           permissions: [{ name: 'backups.restore', module: 'backups', label: 'Restaurar respaldos' }],
+        },
+        {
+          module: 'reports',
+          label: 'Reportes',
+          permissions: [{ name: 'reports.view', module: 'reports', label: 'Reports view' }],
         },
       ],
     });
@@ -562,6 +568,8 @@ describe('UsersView', () => {
     expect(within(dialog).getByRole('checkbox', { name: /Cash view/i })).toBeChecked();
     expect(within(dialog).queryByRole('checkbox', { name: /Restaurar respaldos/i })).not.toBeInTheDocument();
     expect(within(dialog).queryByText(/backups\.restore/i)).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole('checkbox', { name: /Reports view/i })).not.toBeInTheDocument();
+    expect(within(dialog).queryByText(/reports\.view/i)).not.toBeInTheDocument();
 
     fireEvent.change(within(dialog).getByLabelText(/nombre completo/i), { target: { value: 'Caja Sin Restore' } });
     fireEvent.change(within(dialog).getByLabelText(/correo electr/i), { target: { value: 'caja-sin-restore@hospital.test' } });
@@ -574,6 +582,7 @@ describe('UsersView', () => {
       permissions: ['cash.view'],
     })));
     expect(JSON.stringify(createUser.mock.calls)).not.toContain('backups.restore');
+    expect(JSON.stringify(createUser.mock.calls)).not.toContain('reports.view');
   });
 
   it('sends selected module permissions when creating an operational user', async () => {
@@ -584,7 +593,7 @@ describe('UsersView', () => {
       email: 'reportes-turno@hospital.test',
       username: 'reportes-turno',
       roles: ['auditor'],
-      direct_permissions: ['reports.view'],
+      direct_permissions: ['reports.cash_session.view'],
       must_change_password: true,
     });
 
@@ -598,12 +607,12 @@ describe('UsersView', () => {
     fireEvent.change(within(dialog).getByLabelText(/correo electr/i), { target: { value: 'reportes-turno@hospital.test' } });
     fireEvent.change(within(dialog).getByLabelText(/nombre de usuario/i), { target: { value: 'reportes-turno' } });
     fireEvent.change(within(dialog).getByLabelText(/contrase/i), { target: { value: 'Password123!' } });
-    fireEvent.click(within(dialog).getByRole('checkbox', { name: /Reports view/i }));
+    fireEvent.click(within(dialog).getByRole('checkbox', { name: /Reports cash session view/i }));
     fireEvent.click(within(dialog).getByRole('button', { name: /crear usuario/i }));
 
     await waitFor(() => expect(createUser).toHaveBeenCalledWith(expect.objectContaining({
       role: 'cajero',
-      permissions: ['reports.view'],
+      permissions: ['reports.cash_session.view'],
     })));
   });
 
@@ -743,7 +752,7 @@ describe('UsersView', () => {
       id: 5,
       name: 'report_viewer',
       protected: false,
-      permissions: [{ name: 'reports.view', module: 'reports', label: 'Reports view' }],
+      permissions: [{ name: 'reports.cash_session.view', module: 'reports', label: 'Reports cash session view' }],
     });
 
     render(<UsersView onStatus={vi.fn()} canCreateUsers={true} canUpdateUsers canManageRoles={true} canAssignAdminRole />);
@@ -752,12 +761,12 @@ describe('UsersView', () => {
 
     const dialog = await screen.findByRole('dialog', { name: /nuevo rol/i });
     fireEvent.change(within(dialog).getByLabelText(/nombre del rol/i), { target: { value: 'report_viewer' } });
-    fireEvent.click(within(dialog).getByRole('checkbox', { name: /Reports view/i }));
+    fireEvent.click(within(dialog).getByRole('checkbox', { name: /Reports cash session view/i }));
     fireEvent.click(within(dialog).getByRole('button', { name: /crear rol/i }));
 
     await waitFor(() => expect(createRole).toHaveBeenCalledWith({
       name: 'report_viewer',
-      permissions: ['reports.view'],
+      permissions: ['reports.cash_session.view'],
     }));
   });
 
@@ -773,7 +782,7 @@ describe('UsersView', () => {
 
     const dialog = await screen.findByRole('dialog', { name: /nuevo rol/i });
     fireEvent.change(within(dialog).getByLabelText(/nombre del rol/i), { target: { value: 'report_viewer' } });
-    fireEvent.click(within(dialog).getByRole('checkbox', { name: /Reports view/i }));
+    fireEvent.click(within(dialog).getByRole('checkbox', { name: /Reports cash session view/i }));
 
     const submit = within(dialog).getByRole('button', { name: /crear rol/i });
     fireEvent.click(submit);
@@ -787,7 +796,7 @@ describe('UsersView', () => {
       id: 5,
       name: 'report_viewer',
       protected: false,
-      permissions: [{ name: 'reports.view', module: 'reports', label: 'Reports view' }],
+      permissions: [{ name: 'reports.cash_session.view', module: 'reports', label: 'Reports cash session view' }],
     });
 
     await waitFor(() => expect(screen.queryByRole('dialog', { name: /nuevo rol/i })).not.toBeInTheDocument());

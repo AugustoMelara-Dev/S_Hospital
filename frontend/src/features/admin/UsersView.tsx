@@ -36,6 +36,7 @@ const HIDDEN_PERMISSION_NAMES = new Set([
   'system.exact_user_permissions',
   'backups.restore',
   'receipts.void',
+  'reports.view',
   'users.assign_admin_role',
 ]);
 
