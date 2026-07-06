@@ -1,5 +1,5 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { UserFormDialog, isPasswordPolicyCompliant } from './UserFormDialog';
 import { type AuthUser, type RoleDefinition } from '@/lib/api';
 
@@ -56,6 +56,10 @@ describe('isPasswordPolicyCompliant', () => {
 });
 
 describe('UserFormDialog', () => {
+  beforeEach(() => {
+    Element.prototype.scrollIntoView = vi.fn();
+  });
+
   afterEach(() => {
     cleanup();
   });
@@ -200,6 +204,47 @@ describe('UserFormDialog', () => {
     fireEvent.click(screen.getByRole('checkbox', { name: /confirmo que este usuario necesita permisos criticos/i }));
 
     expect(submit).not.toBeDisabled();
+  });
+
+  it('requires explicit confirmation before saving an elevated operational role', async () => {
+    const onSubmit = vi.fn();
+
+    render(
+      <UserFormDialog
+        open
+        onOpenChange={vi.fn()}
+        editingUser={null}
+        roles={roles}
+        canManageRoles
+        canAssignAdminRole
+        selectedUserPermissions={['invoices.create']}
+        onToggleUserPermission={vi.fn()}
+        permissionCatalog={permissionCatalog}
+        globalError={null}
+        onSubmit={onSubmit}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('combobox', { name: /rol operativo/i }));
+    fireEvent.click(await screen.findByRole('option', { name: /^Admin/i }));
+
+    expect(screen.getByText(/rol critico/i)).toBeInTheDocument();
+    const submit = screen.getByRole('button', { name: /crear usuario/i });
+    expect(submit).toBeDisabled();
+
+    fireEvent.click(screen.getByRole('checkbox', { name: /confirmo que este usuario necesita rol administrativo/i }));
+
+    expect(submit).not.toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText(/nombre completo/i), { target: { value: 'Admin Turno' } });
+    fireEvent.change(screen.getByLabelText(/correo electr/i), { target: { value: 'admin.turno@hospital.org' } });
+    fireEvent.change(screen.getByLabelText(/nombre de usuario/i), { target: { value: 'admin_turno' } });
+    fireEvent.change(screen.getByLabelText(/contrase/i), { target: { value: 'Password123!' } });
+    fireEvent.click(submit);
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({
+      role: 'admin',
+    })));
   });
 
   it('requires explicit confirmation before saving a user that can download backups directly', () => {

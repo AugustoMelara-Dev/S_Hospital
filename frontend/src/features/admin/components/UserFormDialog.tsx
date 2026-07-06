@@ -93,12 +93,21 @@ export function UserFormDialog({
     unregister,
     handleSubmit,
     control,
+    watch,
     reset,
     formState: { errors, isSubmitting },
   } = useForm<UserFormData>({
     resolver: zodResolver(schema) as never,
     defaultValues: defaultValuesFor(editingUser, assignableRoles),
   });
+  const selectedRoleName = watch('role');
+  const selectedRole = assignableRoles.find((role) => role.name === selectedRoleName);
+  const hasSelectedElevatedRole = Boolean(
+    selectedRole
+      && isElevatedRole(selectedRole)
+      && selectedRole.name !== editingRoleName,
+  );
+  const requiresCriticalAccessConfirmation = hasSelectedCriticalPermission || hasSelectedElevatedRole;
 
   useEffect(() => {
     if (open) {
@@ -111,13 +120,13 @@ export function UserFormDialog({
   }, [open, editingUser, assignableRoles, reset, unregister]);
 
   useEffect(() => {
-    if (!advancedPermissionMode || !hasSelectedCriticalPermission) {
+    if (!requiresCriticalAccessConfirmation) {
       setCriticalAccessConfirmed(false);
     }
-  }, [advancedPermissionMode, hasSelectedCriticalPermission]);
+  }, [requiresCriticalAccessConfirmation]);
 
   const handleSafeSubmit = handleSubmit((data) => {
-    if (hasSelectedCriticalPermission && !criticalAccessConfirmed) {
+    if (requiresCriticalAccessConfirmation && !criticalAccessConfirmed) {
       return;
     }
     return onSubmit(data);
@@ -203,6 +212,27 @@ export function UserFormDialog({
             )}
           />
         </Field>
+
+        {hasSelectedElevatedRole && (
+          <div className="rounded-md border border-warning/40 bg-warning/10 p-3 text-sm text-warning-foreground">
+            <p className="flex flex-wrap items-center gap-2 font-semibold">
+              Rol administrativo seleccionado
+              <Badge variant="warning">Rol critico</Badge>
+            </p>
+            <p className="mt-1 text-xs text-current/80">
+              Este rol puede incluir acceso amplio a caja, facturacion, auditoria, reportes o administracion. Confirme que esta cuenta realmente lo necesita.
+            </p>
+            <label htmlFor="critical-user-role-confirmation" className="mt-3 flex items-start gap-2">
+              <Checkbox
+                id="critical-user-role-confirmation"
+                checked={criticalAccessConfirmed}
+                disabled={isSubmitting}
+                onCheckedChange={(value) => setCriticalAccessConfirmed(value === true)}
+              />
+              <span>Confirmo que este usuario necesita rol administrativo</span>
+            </label>
+          </div>
+        )}
 
         {(!canManageRoles || !advancedPermissionMode) && (
           <p className="rounded-md border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
@@ -290,7 +320,7 @@ export function UserFormDialog({
           <Button type="button" variant="secondary" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
             Cancelar
           </Button>
-          <Button type="submit" disabled={isSubmitting || (hasSelectedCriticalPermission && !criticalAccessConfirmed)}>
+          <Button type="submit" disabled={isSubmitting || (requiresCriticalAccessConfirmation && !criticalAccessConfirmed)}>
             <Save data-icon aria-hidden="true" />
             {isSubmitting ? 'Guardando...' : editingUser ? 'Guardar cambios' : 'Crear usuario'}
           </Button>

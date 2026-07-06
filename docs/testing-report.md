@@ -585,3 +585,14 @@ verified.
 | `docker exec s_hospital-backend-1 php artisan test tests/Feature/InvoiceHistoryReprintVoidTest.php` | PASS, 22 tests and 135 assertions. |
 | `docker exec s_hospital-backend-1 vendor/bin/pint --test` | PASS, 430 files. |
 | `docker exec s_hospital-backend-1 vendor/bin/phpstan analyse --memory-limit=512M` | PASS, no errors. |
+
+### 2026-07-06 Elevated User Role Confirmation Gate
+
+| Command | Result |
+|---|---|
+| `npm run test -- UserFormDialog --run -t "elevated operational role"` | RED first because selecting `admin` showed no `Rol critico` warning and did not require explicit confirmation; then PASS. |
+| `npm run test -- UserFormDialog --run` | PASS, 16 tests. |
+| `npm run test -- UsersView --run` | PASS, 30 tests. |
+| `npm run typecheck` | PASS. |
+| `npm run lint` | PASS. |
+| `npm run build` | PASS. |

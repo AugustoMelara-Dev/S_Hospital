@@ -6991,3 +6991,27 @@ Pruebas ejecutadas:
 Decision:
 
 - Poder anular una factura dentro del alcance operativo permitido no debe conceder por si solo busqueda o lectura de historico ajeno. La lectura historica amplia queda separada de la capacidad de anular.
+
+## 291. Fase 6/9 - Roles elevados requieren confirmacion visible
+
+Cambio aplicado:
+
+- `UserFormDialog` detecta cuando el rol operativo seleccionado pasa a ser elevado (`admin`, `supervisor`, `auditor`, `root` o rol protegido).
+- Crear o promover una cuenta a rol elevado muestra una advertencia con badge `Rol critico` y bloquea guardar hasta marcar confirmacion explicita.
+- Editar una cuenta que ya conserva el mismo rol elevado no queda bloqueado por esta confirmacion, evitando friccion innecesaria en mantenimiento de datos.
+- No se agregaron migraciones, dependencias, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- UserFormDialog --run -t "elevated operational role"` | RED inicial correcto: no habia badge `Rol critico` ni confirmacion para rol admin; luego OK. |
+| `npm run test -- UserFormDialog --run` | OK: 16 tests. |
+| `npm run test -- UsersView --run` | OK: 30 tests. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- La asignacion de un rol elevado completo debe tener la misma friccion operacional que los permisos directos criticos, aunque el backend ya valide `users.assign_admin_role`.
