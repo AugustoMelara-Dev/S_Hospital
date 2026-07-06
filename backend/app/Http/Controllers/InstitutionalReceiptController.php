@@ -37,10 +37,9 @@ class InstitutionalReceiptController extends Controller
 
         abort_unless($user instanceof User, 403);
 
-        $pdf = $pdfService->pdfForReceiptAndRecordPrintEvent(
+        $pdf = $pdfService->pdfForAuthorizedReceipt(
             $receipt,
             $user,
-            $this->reprintReason($request),
             $invoiceAccess,
         );
 

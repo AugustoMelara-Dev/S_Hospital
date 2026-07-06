@@ -7333,3 +7333,28 @@ Pruebas ejecutadas:
 Decision:
 
 - El backend ya rechaza y oculta `reports.view`; el frontend tambien debe proteger al operador si recibe datos heredados, manteniendo visibles solo permisos concretos de reportes.
+
+## 305. Fase 8/QA - PDF institucional no cuenta como impresion fisica
+
+Cambio aplicado:
+
+- `InstitutionalReceiptController::pdf` ahora genera PDF autorizado sin registrar eventos de impresion.
+- `InstitutionalReceiptPdfService` separa `pdfForAuthorizedReceipt` de `recordAuthorizedReceiptPrintEvent`.
+- Abrir, descargar o repetir la descarga del PDF ya no incrementa `reprint_count` ni crea `institutional_receipt_print_events`.
+- La ruta `POST /institutional-receipts/{receipt}/print-events` sigue siendo la unica que registra primera impresion o reimpresion fisica, con motivo obligatorio despues de la primera impresion.
+- No se agregaron migraciones, dependencias, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/InstitutionalReceiptPaymentIntegrationTest.php --filter="institutional_receipt_pdf_get|explicit_print_event|reprint_event_requires"` | OK: 3 tests, 36 assertions. |
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/InstitutionalReceiptPdfTest.php --filter="repeated_receipt_pdf|receipt_pdf_post_with_idempotency|locked_print_event"` | OK: 3 tests, 40 assertions. |
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/InstitutionalReceiptPaymentIntegrationTest.php tests/Feature/InstitutionalReceiptPdfTest.php` | OK: 24 tests, 302 assertions. |
+| `docker exec s_hospital-backend-1 vendor/bin/pint --test` | OK: 431 files. |
+| `docker exec s_hospital-backend-1 vendor/bin/phpstan analyse --memory-limit=1G` | OK: no errors. |
+| `git diff --check` | OK. |
+
+Decision:
+
+- La descarga del PDF es una vista del documento, no evidencia de impresion fisica. La auditoria de impresion queda concentrada en el endpoint explicito `print-events` para evitar reimpresiones falsas cuando el operador solo abre o descarga el recibo.
