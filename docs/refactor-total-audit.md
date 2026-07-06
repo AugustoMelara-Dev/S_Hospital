@@ -7659,3 +7659,23 @@ Pruebas ejecutadas:
 Decision:
 
 - La configuracion normal de recibos debe operar con opciones humanas de papel, copias, logo y sello/firma. Los identificadores duplicados de perfiles quedan fuera del contrato normal para reducir exposicion tecnica sin afectar la impresion ni el soporte avanzado.
+
+## 319. Fase 7/12/QA - Reporte operativo no expone nombre tecnico de respaldo
+
+Cambio aplicado:
+
+- `OperationsReportService` deja de incluir `filename` en las filas de respaldos del reporte operativo.
+- El reporte conserva datos utiles para auditoria diaria: estado, tipo, tamano, fechas y usuario creador.
+- La prueba existente de anulaciones, reimpresiones y respaldos ahora exige que el nombre tecnico del archivo no salga en el payload normal.
+- No se agregaron dependencias, migraciones, roles, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test tests/Feature/ReportsTest.php --filter=operations_report_lists_voids_reprints_and_backups` | Primero fallo por exponer `data.backups.0.filename`; luego OK: 1 test, 20 assertions. |
+| `docker compose exec backend php artisan test tests/Feature/ReportsTest.php --filter="operations.*backup|backup.*operations|operations_report_lists_voids"` | OK: 2 tests, 29 assertions. |
+
+Decision:
+
+- El nombre del archivo de respaldo es detalle tecnico de almacenamiento. Los reportes operativos deben confirmar que hubo respaldos y su resultado sin mostrar nombres internos al flujo normal.

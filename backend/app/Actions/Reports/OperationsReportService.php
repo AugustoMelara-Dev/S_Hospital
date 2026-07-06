@@ -321,7 +321,6 @@ class OperationsReportService
                 ->limit(25)
                 ->get()
                 ->map(fn (BackupLog $backup): array => [
-                    'filename' => $backup->filename,
                     'status' => $backup->status,
                     'type' => $backup->type,
                     'size_bytes' => $backup->size_bytes,
