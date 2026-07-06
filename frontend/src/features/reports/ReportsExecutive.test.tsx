@@ -1,16 +1,13 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ReportsExecutive } from './ReportsExecutive';
 import { buildExecutiveReport } from './components/testUtils';
 
+const useExecutiveReportMock = vi.hoisted(() => vi.fn());
+const downloadExecutivePdf = vi.hoisted(() => vi.fn());
+
 vi.mock('@/hooks/useExecutiveReport', () => ({
-  useExecutiveReport: () => ({
-    data: buildExecutiveReport(),
-    isFetching: false,
-    isError: false,
-    refetch: vi.fn(),
-    error: null,
-  }),
+  useExecutiveReport: useExecutiveReportMock,
 }));
 
 vi.mock('@/components/ui/toaster', () => ({
@@ -62,8 +59,6 @@ vi.mock('./components/AuditSummaryPanel', () => ({
   AuditSummaryPanel: () => <div data-testid="audit-summary-panel" />,
 }));
 
-const downloadExecutivePdf = vi.hoisted(() => vi.fn());
-
 vi.mock('@/lib/api', async () => {
   const actual = await vi.importActual<typeof import('@/lib/api')>('@/lib/api');
   return {
@@ -76,6 +71,18 @@ vi.mock('@/lib/api', async () => {
 });
 
 describe('ReportsExecutive', () => {
+  beforeEach(() => {
+    useExecutiveReportMock.mockReset();
+    useExecutiveReportMock.mockReturnValue({
+      data: buildExecutiveReport(),
+      isFetching: false,
+      isError: false,
+      refetch: vi.fn(),
+      error: null,
+    });
+    downloadExecutivePdf.mockReset();
+  });
+
   it('renders the complete executive report panel sequence', () => {
     render(
       <ReportsExecutive
@@ -103,6 +110,27 @@ describe('ReportsExecutive', () => {
       expect(panels[index].compareDocumentPosition(panel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     });
     expect(screen.queryByRole('button', { name: /definicion de metricas/i })).not.toBeInTheDocument();
+  });
+
+  it('shows a LAN-safe error message when the executive report fails without detail', () => {
+    useExecutiveReportMock.mockReturnValue({
+      data: null,
+      isFetching: false,
+      isError: true,
+      refetch: vi.fn(),
+      error: null,
+    });
+
+    render(
+      <ReportsExecutive
+        canExport
+        canViewManagerial
+        onStatus={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText(/revise la conexion LAN/i)).toBeInTheDocument();
+    expect(screen.queryByText(/error desconocido/i)).not.toBeInTheDocument();
   });
 
   it('shows export progress while an executive PDF is being prepared', async () => {

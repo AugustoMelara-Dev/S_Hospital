@@ -170,7 +170,7 @@ export function ReportsExecutive({
       {isError ? (
         <ErrorState
           title="No se pudo cargar el reporte ejecutivo"
-          description={userSafeErrorMessage(queryError, 'Error desconocido')}
+          description={userSafeErrorMessage(queryError, 'No se pudo cargar la informacion. Revise la conexion LAN y vuelva a intentar.')}
           action={
             <button
               type="button"

@@ -6680,3 +6680,27 @@ Pruebas ejecutadas:
 Decision:
 
 - Las definiciones contables extensas no deben competir con la lectura rapida del reporte diario. El reporte ejecutivo queda centrado en datos accionables y los terminos se sostienen por labels consistentes en pantalla/PDF/Excel.
+
+## 278. Fase 10/16 - Error ejecutivo con recuperacion LAN
+
+Cambio aplicado:
+
+- `ReportsExecutive` ya no usa `Error desconocido` como fallback visible cuando el reporte falla sin detalle seguro.
+- El estado de error ahora indica: `No se pudo cargar la informacion. Revise la conexion LAN y vuelva a intentar.`
+- Se mantiene `userSafeErrorMessage` para respetar mensajes seguros del backend cuando existan, sin exponer stack traces ni detalles tecnicos.
+- No se agregaron migraciones, dependencias, permisos, endpoints ni cambios backend.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- ReportsExecutive --run -t "LAN-safe error message"` | RED inicial correcto: el fallback LAN no aparecia y seguia `Error desconocido`; luego OK. |
+| `npm run test -- ReportsExecutive --run` | OK: 3 tests. |
+| `npm run test -- src/features/reports --run` | OK: 61 tests en 14 archivos. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- En operacion offline/LAN, un fallo de reporte debe orientar al operador hacia conexion/permisos/reintento, no dejar un texto generico que parece error interno.

@@ -448,3 +448,14 @@ verified.
 | `npm run typecheck` | PASS. |
 | `npm run lint` | PASS. |
 | `npm run build` | PASS. |
+
+### 2026-07-06 Executive Report LAN Error Gate
+
+| Command | Result |
+|---|---|
+| `npm run test -- ReportsExecutive --run -t "LAN-safe error message"` | RED first because the LAN recovery copy was missing and `Error desconocido` remained visible; then PASS, 1 focused test. |
+| `npm run test -- ReportsExecutive --run` | PASS, 3 tests. |
+| `npm run test -- src/features/reports --run` | PASS, 61 tests across 14 files. |
+| `npm run typecheck` | PASS. |
+| `npm run lint` | PASS. |
+| `npm run build` | PASS. |
