@@ -158,6 +158,7 @@ class SystemStatusController extends Controller
     {
         $fiscalSettings = FiscalSetting::query()->exists();
         $adminExists = User::query()
+            ->where('active', true)
             ->whereHas('roles', fn ($query) => $query
                 ->where('name', 'admin')
                 ->where('guard_name', 'web'))

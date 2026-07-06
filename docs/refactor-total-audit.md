@@ -7789,3 +7789,27 @@ Pruebas ejecutadas:
 Decision:
 
 - El recibo principal se considera entregado cuando queda evidencia de impresion. La venta no debe abrir PDFs institucionales sin registrar primero el evento que alimenta auditoria, historial y reportes.
+
+## 325. Fase 8/QA - Setup exige admin activo recuperable
+
+Cambio aplicado:
+
+- `/api/system/setup-status` ahora cuenta `admin_exists` solo cuando existe un usuario admin activo.
+- `auth:create-initial-admin` sigue rechazando crear otro admin si ya hay un admin activo, pero permite recuperar una instalacion donde solo quedo un admin inactivo.
+- Se agregan regresiones para setup con admin inactivo y recuperacion por comando inicial.
+- No se agregaron dependencias, migraciones, roles, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test tests/Feature/SystemStatusTest.php --filter=setup_status_does_not_count_inactive_admin_as_usable_setup` | Primero fallo porque `steps.admin_exists=true`; luego OK: 1 test, 3 assertions. |
+| `docker compose exec backend php artisan test tests/Feature/InitialAdminCommandTest.php --filter=initial_admin_command_allows_recovery_when_only_admin_is_inactive` | Primero fallo con exit code 1; luego OK: 1 test, 3 assertions. |
+| `docker compose exec backend php artisan test tests/Feature/SystemStatusTest.php` | OK: 23 tests, 155 assertions. |
+| `docker compose exec backend php artisan test tests/Feature/InitialAdminCommandTest.php` | OK: 6 tests, 14 assertions. |
+| `docker compose exec backend vendor/bin/pint --test` | Primero fallo por estilo/line endings tras editar tests; luego OK: 432 files. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M` | OK. El primer intento sin memoria explicita llego al limite configurado de 128M. |
+
+Decision:
+
+- Para una instalacion local real, “admin existe” debe significar que hay una cuenta admin activa capaz de iniciar sesion. Si solo queda un admin inactivo, setup no debe verse completo y el comando inicial debe permitir recuperacion controlada.

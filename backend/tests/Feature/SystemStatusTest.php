@@ -29,6 +29,21 @@ class SystemStatusTest extends TestCase
             ->assertJsonPath('steps.fiscal_sequence_exists', false);
     }
 
+    public function test_setup_status_does_not_count_inactive_admin_as_usable_setup(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $inactiveAdmin = User::factory()->create([
+            'active' => false,
+        ]);
+        $inactiveAdmin->assignRole('admin');
+
+        $this->getJson('/api/system/setup-status')
+            ->assertOk()
+            ->assertJsonPath('needs_setup', true)
+            ->assertJsonPath('steps.admin_exists', false);
+    }
+
     public function test_admin_can_view_operational_status_without_secret_values(): void
     {
         $proofRoot = storage_path('framework/testing-production-proofs-empty');
