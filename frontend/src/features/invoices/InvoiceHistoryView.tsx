@@ -179,7 +179,14 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
           return;
         }
 
+        const idempotencyKey = payloadScopedIdempotencyKey(reprintIdempotencyKeyRef, reprintIdempotencySignatureRef, {
+          action: 'first-print-from-history',
+          receiptId: institutionalReceipt.id,
+        });
+        await apiClient.registerInstitutionalReceiptPrintEvent(institutionalReceipt.id, undefined, { idempotencyKey });
         await openInstitutionalReceiptPdf(institutionalReceipt);
+        resetPayloadScopedIdempotencyKey(reprintIdempotencyKeyRef, reprintIdempotencySignatureRef);
+        queryClient.invalidateQueries({ queryKey: ['audit'] });
         onStatus(`PDF institucional ${institutionalReceipt.receipt_number_full} abierto.`);
 
         return;

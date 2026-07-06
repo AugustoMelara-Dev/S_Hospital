@@ -874,7 +874,8 @@ describe('InvoiceHistoryView', () => {
       institutional_receipt: institutionalReceiptFixture({ id: 90, receipt_number_full: 'REC-A-00000090' }),
     });
     const getReceipt = vi.spyOn(apiClient, 'getReceipt');
-    const registerPrint = vi.spyOn(apiClient, 'registerInstitutionalReceiptPrintEvent');
+    const registerPrint = vi.spyOn(apiClient, 'registerInstitutionalReceiptPrintEvent')
+      .mockResolvedValue({} as never);
     const getPdf = vi.spyOn(apiClient, 'getInstitutionalReceiptPdf')
       .mockResolvedValue(new Blob(['%PDF-institutional'], { type: 'application/pdf' }));
 
@@ -891,12 +892,15 @@ describe('InvoiceHistoryView', () => {
     await openInvoiceMenu(invoice.invoice_number);
     fireEvent.click(await screen.findByRole('menuitem', { name: /Ver recibo/i }));
 
-    await waitFor(() => expect(getPdf).toHaveBeenCalledWith(90));
+    await waitFor(() => expect(registerPrint).toHaveBeenCalledWith(90, undefined, {
+      idempotencyKey: expect.any(String),
+    }));
+    expect(getPdf).toHaveBeenCalledWith(90);
     expect(openBlobInNewTab).toHaveBeenCalledWith(
       expect.any(Blob),
       'recibo-institucional-REC-A-00000090.pdf',
     );
-    expect(registerPrint).not.toHaveBeenCalled();
+
     expect(getReceipt).not.toHaveBeenCalled();
   });
 
@@ -908,6 +912,8 @@ describe('InvoiceHistoryView', () => {
       status: 'paid',
       institutional_receipt: institutionalReceiptFixture({ id: 148, receipt_number_full: '../bad\r\nname"' }),
     });
+    const registerPrint = vi.spyOn(apiClient, 'registerInstitutionalReceiptPrintEvent')
+      .mockResolvedValue({} as never);
     vi.spyOn(apiClient, 'getInstitutionalReceiptPdf')
       .mockResolvedValue(new Blob(['%PDF-institutional'], { type: 'application/pdf' }));
 
@@ -923,7 +929,10 @@ describe('InvoiceHistoryView', () => {
     await openInvoiceMenu(paid.invoice_number);
     fireEvent.click(await screen.findByRole('menuitem', { name: /Ver recibo/i }));
 
-    await waitFor(() => expect(apiClient.getInstitutionalReceiptPdf).toHaveBeenCalledWith(148));
+    await waitFor(() => expect(registerPrint).toHaveBeenCalledWith(148, undefined, {
+      idempotencyKey: expect.any(String),
+    }));
+    expect(apiClient.getInstitutionalReceiptPdf).toHaveBeenCalledWith(148);
     expect(openBlobInNewTab).toHaveBeenCalledWith(
       expect.any(Blob),
       'recibo-institucional.pdf',

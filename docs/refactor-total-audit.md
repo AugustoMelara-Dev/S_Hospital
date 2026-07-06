@@ -7743,3 +7743,25 @@ Pruebas ejecutadas:
 Decision:
 
 - Historial es un punto operativo de reimpresion real. Si la copia institucional se entrega desde ahi, debe quedar auditada antes de abrir el PDF, igual que el flujo principal de recibos.
+
+## 323. Fase 5/QA - Primer PDF institucional desde historial registra impresion
+
+Cambio aplicado:
+
+- `Ver recibo` en historial registra un evento de impresion institucional antes de abrir el PDF cuando el recibo emitido aun no tenia eventos previos.
+- El registro usa idempotencia por recibo para evitar duplicados por doble clic o reintento del mismo primer print.
+- La descarga del PDF sigue usando el endpoint simple y conserva nombres seguros, incluso con numeros de recibo malformados.
+- No se agregaron dependencias, migraciones, roles, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `cd frontend && npm run test -- InvoiceHistoryView.test.tsx -t "opens institutional receipt pdf from history when the invoice has one" -- --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | Primero fallo porque `registerInstitutionalReceiptPrintEvent` no se llamaba; luego OK: 1 test, 41 skipped. |
+| `cd frontend && npm run test -- InvoiceHistoryView.test.tsx -- --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 42 tests. |
+| `cd frontend && npm run typecheck` | OK. |
+| `cd frontend && npm run lint` | OK. |
+
+Decision:
+
+- Abrir el recibo institucional desde historial representa una impresion operativa si aun no existe evento. El sistema debe convertir ese primer acceso en evidencia auditada antes de permitir reimpresiones con motivo.
