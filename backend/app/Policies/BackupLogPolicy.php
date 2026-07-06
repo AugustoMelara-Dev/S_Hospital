@@ -23,7 +23,7 @@ class BackupLogPolicy
 
     public function create(User $user): bool
     {
-        return $user->can('backups.create');
+        return $user->can('backups.view') && $user->can('backups.create');
     }
 
     public function download(User $user, BackupLog $backupLog): bool

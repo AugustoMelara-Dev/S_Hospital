@@ -7405,6 +7405,7 @@ Pruebas ejecutadas:
 Decision:
 
 - La version monocomputadora necesita reimpresiones simples, pero no motivos genericos. Cada copia posterior debe tener una razon humana registrada para que caja, auditoria y reportes expliquen por que se entrego otra copia.
+
 ## 308. Fase 6/QA - Preview legacy no expone CAI ni rango fiscal
 
 Cambio aplicado:
@@ -7425,6 +7426,7 @@ Pruebas ejecutadas:
 Decision:
 
 - El fallback legacy existe solo para compatibilidad de historicos. No debe parecer factura fiscal ni exponer metadatos fiscales que el recibo institucional principal evita mostrar al paciente.
+
 ## 309. Fase 13/QA - Permisos visibles usan etiquetas operativas
 
 Cambio aplicado:
@@ -7447,3 +7449,25 @@ Pruebas ejecutadas:
 Decision:
 
 - Usuarios basicos no deben administrar una matriz gigante de strings tecnicos. Los codigos internos siguen visibles en gris para soporte, pero la decision principal se toma por etiquetas humanas y orientadas a caja hospitalaria.
+
+## 310. Fase 14/QA - Crear respaldos exige ver el modulo
+
+Cambio aplicado:
+
+- `StoreBackupRequest` ahora requiere `backups.view` ademas de `backups.create` para crear respaldos manuales desde el API.
+- `BackupLogPolicy::create` queda alineada con la misma regla de permisos.
+- Se agrega cobertura para un usuario mal configurado que solo tiene `backups.create`: no puede disparar un respaldo invisible y no se crea ningun `backup_log`.
+- No se agregaron dependencias, migraciones, roles, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter=BackupWorkflowTest` | OK: 29 tests, 148 assertions. |
+| `docker compose exec backend vendor/bin/pint --test` | OK: 431 files. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=1G` | OK: no errors. |
+| `git diff --check` | OK. |
+
+Decision:
+
+- En la version monocomputadora, respaldar sigue siendo una accion administrativa sensible. Quien pueda crear respaldos debe poder ver el historial del modulo para confirmar estado, auditoria y descarga autorizada.

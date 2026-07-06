@@ -166,6 +166,19 @@ class BackupWorkflowTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_backup_creation_requires_view_and_create_permissions(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $misconfiguredUser = User::factory()->create();
+        $misconfiguredUser->givePermissionTo('backups.create');
+
+        $this->actingAs($misconfiguredUser)
+            ->postJson('/api/backups')
+            ->assertForbidden();
+
+        $this->assertSame(0, BackupLog::query()->count());
+    }
+
     public function test_manual_backup_endpoint_queues_local_backup(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
