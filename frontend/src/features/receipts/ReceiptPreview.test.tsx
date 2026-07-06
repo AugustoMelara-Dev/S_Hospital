@@ -163,11 +163,9 @@ describe('ReceiptPreview', () => {
     expect(screen.queryByRole('heading', { name: 'COMPROBANTE DE FACTURA' })).not.toBeInTheDocument();
     expect(screen.queryByText(/comprobante de compatibilidad/i)).not.toBeInTheDocument();
     expect(screen.getByText('Estado')).toBeInTheDocument();
-    expect(screen.getByText('CAI')).toBeInTheDocument();
-    expect(screen.getByText('Rango')).toBeInTheDocument();
-    expect(screen.getByText('Vence')).toBeInTheDocument();
-    expect(screen.getByText('TEST-CAI')).toBeInTheDocument();
-    expect(document.querySelector('[data-receipt-print-root]')).toBeInTheDocument();
+    const printRoot = document.querySelector('[data-receipt-print-root]');
+    expect(printRoot).toBeInTheDocument();
+    expect(printRoot?.textContent).not.toMatch(/\bCAI\b|Rango|Vence|TEST-CAI|000-001-01-99999999/i);
   });
 
   it('renders semantic receipt tables while keeping controls outside the printable document', () => {

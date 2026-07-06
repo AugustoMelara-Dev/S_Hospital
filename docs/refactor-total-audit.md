@@ -7405,3 +7405,23 @@ Pruebas ejecutadas:
 Decision:
 
 - La version monocomputadora necesita reimpresiones simples, pero no motivos genericos. Cada copia posterior debe tener una razon humana registrada para que caja, auditoria y reportes expliquen por que se entrego otra copia.
+## 308. Fase 6/QA - Preview legacy no expone CAI ni rango fiscal
+
+Cambio aplicado:
+
+- `ReceiptPreview` ya no renderiza CAI, vencimiento ni rango autorizado dentro del documento imprimible legacy.
+- El recibo mantiene datos operativos utiles: numero de factura, fecha, paciente, estado, cajero, servicios, totales, pagos y firma/sello.
+- La prueba del preview ahora asegura que el documento imprimible no contenga `CAI`, `Rango`, `Vence`, `TEST-CAI` ni el extremo del rango fiscal.
+- No se agregaron dependencias, migraciones, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- ReceiptPreview --run` | OK: 2 files, 11 tests. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+
+Decision:
+
+- El fallback legacy existe solo para compatibilidad de historicos. No debe parecer factura fiscal ni exponer metadatos fiscales que el recibo institucional principal evita mostrar al paciente.

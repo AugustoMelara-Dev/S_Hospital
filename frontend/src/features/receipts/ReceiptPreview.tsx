@@ -133,16 +133,6 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
                   <td colSpan={3}>{receipt.invoice.cashier}</td>
                 </tr>
               ) : null}
-              <tr>
-                <th scope="row">CAI</th>
-                <td>{receipt.fiscal.cai ?? 'Configuración pendiente'}</td>
-                <th scope="row">Vence</th>
-                <td>{receipt.fiscal.valid_until ? formatDate(receipt.fiscal.valid_until) : 'Configuración pendiente'}</td>
-              </tr>
-              <tr>
-                <th scope="row">Rango</th>
-                <td colSpan={3}>{receipt.fiscal.authorized_range ?? 'Configuración pendiente'}</td>
-              </tr>
             </tbody>
           </table>
 
