@@ -416,3 +416,15 @@ verified.
 | `npm run typecheck` | PASS. |
 | `npm run lint` | PASS. |
 | `npm run build` | PASS. |
+
+### 2026-07-06 Seeded Cashier Own Cash Report Gate
+
+| Command | Result |
+|---|---|
+| `docker compose exec backend php artisan test --filter=test_seeded_cashier_can_view_own_cash_session_report_only` | RED first because seeded `cajero` received 403 for its own cash session report; then PASS, 1 focused test. |
+| `docker compose exec backend php artisan test --filter="cash_session_report"` | PASS, 5 tests and 63 assertions. |
+| `docker compose exec backend php artisan test tests/Feature/AuthTest.php` | PASS, 19 tests and 80 assertions. |
+| `docker compose exec backend php artisan test --filter=test_reports_view_permission_is_required` | PASS, 1 test and 8 assertions. |
+| `npm run test -- ReportsCash ReportsView.subroutes --run` | PASS, 17 tests across 2 files. |
+| `docker compose exec backend vendor/bin/pint --test` | PASS, 430 files. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M` | PASS, no errors. |

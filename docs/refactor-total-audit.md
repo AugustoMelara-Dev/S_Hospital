@@ -6606,3 +6606,29 @@ Pruebas ejecutadas:
 Decision:
 
 - En cobros nuevos, el comprobante operativo debe ser institucional o quedar pendiente de emision institucional/reimpresion desde Historial. El recibo legacy queda limitado a compatibilidad historica, no al flujo diario de caja.
+
+## 275. Fase 10/7 - Cajero puede ver reporte de su propia caja
+
+Cambio aplicado:
+
+- El rol seeded `cajero` ahora incluye `reports.cash_session.view`.
+- El backend ya limitaba `GET /api/reports/cash-sessions/{cashSession}` a sesiones propias salvo usuarios con permiso gerencial; el corte activa ese flujo para instalaciones limpias.
+- Se agrego prueba para confirmar que un cajero seeded ve su propia caja, no ve la caja de otro cajero y no obtiene totales de pagos ajenos.
+- Se ajusto la prueba de permisos generales para que el usuario sin permisos siga recibiendo 403 en reporte de caja.
+- No se agregaron migraciones, dependencias, permisos nuevos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter=test_seeded_cashier_can_view_own_cash_session_report_only` | RED inicial correcto: 403 para caja propia por permiso faltante; luego OK. |
+| `docker compose exec backend php artisan test --filter="cash_session_report"` | OK: 5 tests, 63 assertions. |
+| `docker compose exec backend php artisan test tests/Feature/AuthTest.php` | OK: 19 tests, 80 assertions. |
+| `docker compose exec backend php artisan test --filter=test_reports_view_permission_is_required` | OK: 1 test, 8 assertions. |
+| `npm run test -- ReportsCash ReportsView.subroutes --run` | OK: 17 tests en 2 archivos. |
+| `docker compose exec backend vendor/bin/pint --test` | OK: 430 files. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M` | OK: no errors. |
+
+Decision:
+
+- Para una version monocomputadora estable, el cajero debe poder revisar su turno/cierre sin permiso gerencial. El alcance sigue protegido por propietario de caja, por lo que no se exponen sesiones de otros usuarios.

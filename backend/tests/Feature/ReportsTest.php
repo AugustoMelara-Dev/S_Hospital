@@ -73,7 +73,7 @@ class ReportsTest extends TestCase
             ->getJson("/api/reports/services?date_from={$date}&date_to={$date}")
             ->assertForbidden();
 
-        $this->actingAs($cashier)
+        $this->actingAs($user)
             ->getJson("/api/reports/cash-sessions/{$sessionId}")
             ->assertForbidden();
     }
@@ -1543,6 +1543,31 @@ class ReportsTest extends TestCase
             ->getJson("/api/reports/cash-sessions/{$sessionId}")
             ->assertOk()
             ->assertJsonPath('data.cash_session.id', $sessionId);
+    }
+
+    public function test_seeded_cashier_can_view_own_cash_session_report_only(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $otherCashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $otherSessionId = $this->openSession($otherCashier);
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+        $otherInvoiceId = $this->createInvoice($otherCashier, 'Eritropoyetina');
+
+        $this->payInvoice($cashier, $invoiceId, $sessionId, Payment::METHOD_CASH, '17.25');
+        $this->payInvoice($otherCashier, $otherInvoiceId, $otherSessionId, Payment::METHOD_CARD, '25.00');
+
+        $this->actingAs($cashier)
+            ->getJson("/api/reports/cash-sessions/{$sessionId}")
+            ->assertOk()
+            ->assertJsonPath('data.cash_session.id', $sessionId)
+            ->assertJsonPath('data.total_cash', '17.25')
+            ->assertJsonPath('data.total_card', '0.00');
+
+        $this->actingAs($cashier)
+            ->getJson("/api/reports/cash-sessions/{$otherSessionId}")
+            ->assertForbidden();
     }
 
     public function test_closed_cash_session_report_uses_close_snapshot_after_later_payment_correction(): void

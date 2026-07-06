@@ -128,6 +128,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'payments.view',
             'receipts.view',
             'receipts.reprint',
+            'reports.cash_session.view',
             'patients.mark_dialysis_prescription',
         ]));
 
