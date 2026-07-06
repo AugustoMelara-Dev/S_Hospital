@@ -6552,3 +6552,31 @@ Pruebas ejecutadas:
 Decision:
 
 - La separacion operativa ya es usable por un rol basico sin entregar acceso fiscal completo. Los subagentes de auditoria priorizaron como siguientes P1: alinear el rol `cajero` con receta de dialisis y reportes de caja propia, y cortar el fallback legacy de recibos en pagos nuevos.
+
+## 273. Fase 14 parcial - Cajero seeded puede aplicar receta de dialisis
+
+Cambio aplicado:
+
+- El rol seeded `cajero` ahora incluye `patients.mark_dialysis_prescription`.
+- La regla no negociable de eritropoyetina queda usable desde una instalacion limpia: el cajero puede marcar receta de dialisis y la linea de Eritropoyetina queda en L.0.00.
+- La prueba negativa se mantiene con un usuario emisor sin ese permiso directo para confirmar que el backend sigue rechazando `dialysis_prescription` con 422 y auditoria `invoice.dialysis_prescription_denied`.
+- Se limpiaron grants directos redundantes en pruebas antiguas de facturacion/pagos que ya pueden confiar en el rol seeded.
+- No se agregaron migraciones, dependencias, permisos nuevos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter=test_seeded_cashier_can_apply_dialysis_prescription_to_erythropoietin` | RED inicial correcto: 422 por falta de permiso en `cajero`; luego OK. |
+| `docker compose exec backend php artisan test tests/Feature/Billing/InvoiceDialysisPrescriptionTest.php` | OK: 6 tests, 45 assertions. |
+| `docker compose exec backend php artisan test tests/Feature/AuthTest.php` | OK: 19 tests, 80 assertions. |
+| `docker compose exec backend php artisan test tests/Feature/UserManagementTest.php --filter="direct_permissions|module_permissions|regular_direct_permissions"` | OK: 11 tests, 49 assertions. |
+| `docker compose exec backend php artisan test tests/Feature/InvoiceCreationTest.php --filter=erythropoietin` | OK: 2 tests, 12 assertions. |
+| `docker compose exec backend php artisan test tests/Feature/CashPaymentsReceiptTest.php --filter=dialysis_prescription` | OK: 1 test, 23 assertions. |
+| `docker compose exec backend vendor/bin/pint --test` | OK: 430 files. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M` | OK: no errors. |
+
+Decision:
+
+- La receta de dialisis no es un flujo administrativo raro sino parte de caja hospitalaria diaria; por eso el rol base `cajero` debe poder usarla sin depender de permisos manuales posteriores al seeding.
+- Hallazgo sidecar pendiente para el siguiente corte: el pago nuevo en frontend todavia intenta abrir recibo legacy cuando falta recibo institucional; debe cortarse con TDD sin afectar el fallback historico de facturas antiguas.

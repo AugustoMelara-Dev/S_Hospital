@@ -128,6 +128,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'payments.view',
             'receipts.view',
             'receipts.reprint',
+            'patients.mark_dialysis_prescription',
         ]));
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();

@@ -1214,12 +1214,6 @@ class CashPaymentsReceiptTest extends TestCase
     {
         $this->seedBillingBase();
         $cashier = $this->cashier();
-        // BUG-SEC-04: simulate the patient being pre-marked as
-        // dialysis-prescribed by clinical staff; in production the cashier
-        // would not have this permission. Granted here per-user so the
-        // broader security invariant (cajero role lacks the permission) is
-        // preserved for InvoiceDialysisPrescriptionTest.
-        $cashier->givePermissionTo('patients.mark_dialysis_prescription');
         $service = Service::query()->where('name', 'Eritropoyetina')->firstOrFail();
         $this->openSession($cashier, '0.00');
 

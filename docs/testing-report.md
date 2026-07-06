@@ -391,3 +391,16 @@ verified.
 | `npm run test -- appNavigation FiscalSettingsView App --run` | PASS, 48 tests across 8 files. |
 | `npm run typecheck` | PASS. |
 | `npm run lint` | PASS. |
+
+### 2026-07-06 Seeded Cashier Dialysis Prescription Gate
+
+| Command | Result |
+|---|---|
+| `docker compose exec backend php artisan test --filter=test_seeded_cashier_can_apply_dialysis_prescription_to_erythropoietin` | RED first because seeded `cajero` received 422 for `dialysis_prescription`; then PASS, 1 focused test. |
+| `docker compose exec backend php artisan test tests/Feature/Billing/InvoiceDialysisPrescriptionTest.php` | PASS, 6 tests and 45 assertions. |
+| `docker compose exec backend php artisan test tests/Feature/AuthTest.php` | PASS, 19 tests and 80 assertions. |
+| `docker compose exec backend php artisan test tests/Feature/UserManagementTest.php --filter="direct_permissions|module_permissions|regular_direct_permissions"` | PASS, 11 tests and 49 assertions. |
+| `docker compose exec backend php artisan test tests/Feature/InvoiceCreationTest.php --filter=erythropoietin` | PASS, 2 tests and 12 assertions. |
+| `docker compose exec backend php artisan test tests/Feature/CashPaymentsReceiptTest.php --filter=dialysis_prescription` | PASS, 1 test and 23 assertions. |
+| `docker compose exec backend vendor/bin/pint --test` | PASS, 430 files. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M` | PASS, no errors. |

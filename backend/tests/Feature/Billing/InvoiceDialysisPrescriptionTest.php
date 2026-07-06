@@ -55,6 +55,27 @@ class InvoiceDialysisPrescriptionTest extends TestCase
         $this->assertSame('Eritropoyetina', $audit->new_values['applied_items'][0]['service_name'] ?? null);
     }
 
+    public function test_seeded_cashier_can_apply_dialysis_prescription_to_erythropoietin(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $erythropoietin = Service::query()->where('name', 'Eritropoyetina')->firstOrFail();
+
+        $this->actingAs($cashier)
+            ->postJson('/api/invoices', [
+                'patient_name' => 'Maria Lopez',
+                'dialysis_prescription' => true,
+                'items' => [
+                    ['service_id' => $erythropoietin->id, 'quantity' => '1.00'],
+                ],
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.items.0.unit_price', '0.00')
+            ->assertJsonPath('data.items.0.special_rule_applied', true)
+            ->assertJsonPath('data.total', '0.00')
+            ->assertJsonPath('data.status', Invoice::STATUS_PAID);
+    }
+
     public function test_erythropoietin_is_charged_when_dialysis_flag_absent(): void
     {
         $this->seedBillingBase();
@@ -78,13 +99,13 @@ class InvoiceDialysisPrescriptionTest extends TestCase
             ->assertJsonPath('data.status', Invoice::STATUS_ISSUED);
     }
 
-    public function test_cashier_without_permission_cannot_toggle_dialysis_prescription(): void
+    public function test_user_without_permission_cannot_toggle_dialysis_prescription(): void
     {
         $this->seedBillingBase();
-        $cashier = $this->cashier();
+        $issuer = $this->invoiceIssuerWithoutDialysisPermission();
         $erythropoietin = Service::query()->where('name', 'Eritropoyetina')->firstOrFail();
 
-        $this->actingAs($cashier)
+        $this->actingAs($issuer)
             ->postJson('/api/invoices', [
                 'patient_name' => 'Maria Lopez',
                 'dialysis_prescription' => true,
@@ -98,11 +119,11 @@ class InvoiceDialysisPrescriptionTest extends TestCase
         $audit = AuditLog::query()
             ->where('action', 'invoice.dialysis_prescription_denied')
             ->where('entity_type', User::class)
-            ->where('entity_id', $cashier->id)
+            ->where('entity_id', $issuer->id)
             ->firstOrFail();
 
         $this->assertSame('failed', $audit->result);
-        $this->assertSame($cashier->id, $audit->user_id);
+        $this->assertSame($issuer->id, $audit->user_id);
         $this->assertTrue($audit->new_values['requested'] ?? false);
         $this->assertSame('missing_permission', $audit->new_values['reason'] ?? null);
         $this->assertSame('Maria Lopez', $audit->new_values['patient_name'] ?? null);
@@ -182,7 +203,7 @@ class InvoiceDialysisPrescriptionTest extends TestCase
 
     private function createDialysisPermission(): void
     {
-        $permission = Permission::query()
+        Permission::query()
             ->firstOrCreate(['name' => 'patients.mark_dialysis_prescription', 'guard_name' => 'web']);
     }
 
@@ -206,6 +227,21 @@ class InvoiceDialysisPrescriptionTest extends TestCase
         $user = User::factory()->create();
         $user->assignRole('cajero');
         $user->givePermissionTo('patients.mark_dialysis_prescription');
+        CashRegisterSession::query()->create([
+            'user_id' => $user->id,
+            'open_user_id' => $user->id,
+            'opening_amount' => '500.00',
+            'status' => CashRegisterSession::STATUS_OPEN,
+            'opened_at' => now(),
+        ]);
+
+        return $user->refresh();
+    }
+
+    private function invoiceIssuerWithoutDialysisPermission(): User
+    {
+        $user = User::factory()->create();
+        $user->givePermissionTo(['invoices.create', 'cash.view']);
         CashRegisterSession::query()->create([
             'user_id' => $user->id,
             'open_user_id' => $user->id,
