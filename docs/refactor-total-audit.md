@@ -6969,3 +6969,25 @@ Pruebas ejecutadas:
 Decision:
 
 - La validacion de paciente obligatorio debe tratar espacios como vacio en todos los caminos de emision, incluyendo el flujo rapido de teclado usado en caja.
+
+## 290. Fase 5/9 - Anulacion no concede lectura historica global
+
+Cambio aplicado:
+
+- `InvoiceAccess::canAccessAnyInvoice()` ya no trata `invoices.void` como permiso de lectura historica global.
+- El alcance global de lectura queda reservado para admin/supervisor, `invoices.operate_any`, `receipts.reprint_any` o `reports.managerial.view`.
+- Un usuario con `invoices.view` + `invoices.void`, sin alcance operativo global, no puede listar ni abrir detalle de facturas ajenas por filtros historicos.
+- No se agregaron migraciones, dependencias, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker exec s_hospital-backend-1 php artisan test --filter=invoice_void_permission_does_not_grant_historical_invoice_read_scope` | RED inicial correcto: el listado devolvia la factura ajena (`meta.total = 1`); luego OK. |
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/InvoiceHistoryReprintVoidTest.php` | OK: 22 tests, 135 assertions. |
+| `docker exec s_hospital-backend-1 vendor/bin/pint --test` | OK: 430 files. |
+| `docker exec s_hospital-backend-1 vendor/bin/phpstan analyse --memory-limit=512M` | OK: no errors. |
+
+Decision:
+
+- Poder anular una factura dentro del alcance operativo permitido no debe conceder por si solo busqueda o lectura de historico ajeno. La lectura historica amplia queda separada de la capacidad de anular.

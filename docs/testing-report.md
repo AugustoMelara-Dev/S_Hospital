@@ -576,3 +576,12 @@ verified.
 | `npm run typecheck` | PASS. |
 | `npm run lint` | PASS. |
 | `npm run build` | PASS. |
+
+### 2026-07-06 Invoice Void Historical Read Scope Gate
+
+| Command | Result |
+|---|---|
+| `docker exec s_hospital-backend-1 php artisan test --filter=invoice_void_permission_does_not_grant_historical_invoice_read_scope` | RED first because `invoices.void` exposed another cashier invoice in historical search; then PASS. |
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/InvoiceHistoryReprintVoidTest.php` | PASS, 22 tests and 135 assertions. |
+| `docker exec s_hospital-backend-1 vendor/bin/pint --test` | PASS, 430 files. |
+| `docker exec s_hospital-backend-1 vendor/bin/phpstan analyse --memory-limit=512M` | PASS, no errors. |

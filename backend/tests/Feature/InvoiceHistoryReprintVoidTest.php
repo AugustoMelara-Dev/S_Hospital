@@ -105,6 +105,27 @@ class InvoiceHistoryReprintVoidTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_invoice_void_permission_does_not_grant_historical_invoice_read_scope(): void
+    {
+        $this->seedBillingBase();
+        $voidUser = User::factory()->create();
+        $voidUser->givePermissionTo('invoices.view', 'invoices.void');
+        $otherCashier = $this->cashier();
+        $otherInvoiceId = $this->createInvoice($otherCashier, 'Other Patient', 'Hemograma Completo');
+
+        $response = $this->actingAs($voidUser)
+            ->getJson('/api/invoices?date_from='.now()->subDays(5)->toDateString().'&patient=Other')
+            ->assertOk()
+            ->assertJsonPath('meta.total', 0);
+
+        $ids = collect($response->json('data'))->pluck('id');
+        $this->assertFalse($ids->contains($otherInvoiceId));
+
+        $this->actingAs($voidUser)
+            ->getJson("/api/invoices/{$otherInvoiceId}")
+            ->assertForbidden();
+    }
+
     public function test_supervisor_and_admin_can_view_historical_invoices(): void
     {
         $this->seedBillingBase();
