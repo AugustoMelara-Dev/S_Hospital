@@ -145,7 +145,11 @@ export function InvoiceHistoryTable({
             onSelect: () => onOpenReceipt(invoice.id),
           });
         }
-        if (canOpenInstitutionalReceipt && institutionalReceipt) {
+        if (
+          canOpenInstitutionalReceipt
+          && institutionalReceipt
+          && !hasInstitutionalPrintEvents(institutionalReceipt)
+        ) {
           primaryGroup.items.push({
             key: 'download',
             label: 'Descargar',

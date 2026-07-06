@@ -6728,3 +6728,27 @@ Pruebas ejecutadas:
 Decision:
 
 - La integridad criptografica es importante, pero la huella del checksum no debe aparecer en el flujo normal de descarga. Para operacion diaria monocomputadora basta confirmar fecha, tamano, usuario y auditoria; los detalles tecnicos quedan para soporte/servidor.
+
+## 280. Fase 9/6/14 - Historial no descarga recibos ya impresos sin auditoria
+
+Cambio aplicado:
+
+- `InvoiceHistoryTable` deja de ofrecer `Descargar` cuando el recibo institucional ya tiene eventos de impresion.
+- Para recibos ya impresos, el operador debe usar `Reimprimir PDF`/`Reimprimir`, que pasa por el flujo con motivo por defecto e idempotencia.
+- La descarga directa se conserva para recibos institucionales emitidos sin eventos de impresion previos.
+- No se agregaron migraciones, dependencias, permisos, endpoints ni cambios backend.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- InvoiceHistoryView --run -t "previously printed institutional receipt"` | RED inicial correcto: el menu aun mostraba `Descargar` para recibo ya impreso; luego OK. |
+| `npm run test -- InvoiceHistoryView --run -t "downloads an issued institutional receipt pdf"` | OK: la descarga normal sigue disponible para recibo no impreso. |
+| `npm run test -- InvoiceHistoryView --run` | OK: 42 tests. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- Un recibo ya impreso no debe tener un atajo de descarga sin motivo, porque el backend exige trazabilidad de reimpresion. El historial queda alineado con auditoria y evita un fallo operativo justo en caja.

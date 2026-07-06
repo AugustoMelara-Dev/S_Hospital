@@ -1233,6 +1233,7 @@ describe('InvoiceHistoryView', () => {
     await waitFor(() => expect(screen.getByText('Paciente Recibo Ya Impreso')).toBeInTheDocument());
     await openInvoiceMenu(paid.invoice_number);
     expect(screen.queryByRole('menuitem', { name: /^Ver recibo$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /^Descargar$/i })).not.toBeInTheDocument();
     fireEvent.click(await screen.findByRole('menuitem', { name: /Reimprimir PDF/i }));
 
     await waitFor(() => expect(getPdf).toHaveBeenCalledWith(94, 'Reimpresión solicitada desde historial.', {

@@ -469,3 +469,14 @@ verified.
 | `npm run typecheck` | PASS. |
 | `npm run lint` | PASS. |
 | `npm run build` | PASS. |
+
+### 2026-07-06 Printed Receipt Download Gate
+
+| Command | Result |
+|---|---|
+| `npm run test -- InvoiceHistoryView --run -t "previously printed institutional receipt"` | RED first because `Descargar` was still offered for a previously printed institutional receipt; then PASS, 1 focused test. |
+| `npm run test -- InvoiceHistoryView --run -t "downloads an issued institutional receipt pdf"` | PASS, 1 focused compatibility test. |
+| `npm run test -- InvoiceHistoryView --run` | PASS, 42 tests. |
+| `npm run typecheck` | PASS. |
+| `npm run lint` | PASS. |
+| `npm run build` | PASS. |
