@@ -7383,3 +7383,25 @@ Pruebas ejecutadas:
 Decision:
 
 - El recibo institucional principal no debe degradarse a ticket termico por una llamada API directa o por una asignacion de perfil heredada. La version monocomputadora reduce complejidad de despliegue, pero mantiene seriedad fiscal en recibos, correlativos e impresion.
+
+## 307. Fase 9/QA - Historial exige motivo humano para reimpresion
+
+Cambio aplicado:
+
+- `InvoiceHistoryView` elimino el motivo fijo de reimpresion desde historial.
+- La accion Reimprimir abre un dialogo de confirmacion con textarea obligatorio y minimo de 5 caracteres antes de llamar al PDF institucional o al recibo legacy.
+- El motivo ingresado alimenta la idempotencia y la auditoria de reimpresion; si falla el PDF, el dialogo queda abierto para reintentar o cancelar sin perder el contexto.
+- Las vistas de PDF sin impresion previa siguen abriendo o descargando el documento sin registrar reimpresion.
+- No se agregaron dependencias, migraciones, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- InvoiceHistoryView --run` | OK: 1 file, 42 tests. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+
+Decision:
+
+- La version monocomputadora necesita reimpresiones simples, pero no motivos genericos. Cada copia posterior debe tener una razon humana registrada para que caja, auditoria y reportes expliquen por que se entrego otra copia.

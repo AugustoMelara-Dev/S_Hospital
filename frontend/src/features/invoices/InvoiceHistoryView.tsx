@@ -37,7 +37,6 @@ type InvoiceHistoryViewProps = {
 };
 
 const today = localDateString();
-const HISTORY_REPRINT_REASON = 'Reimpresión solicitada desde historial.';
 
 function invoicePatientNameLabel(invoice: Invoice | null) {
   const patientName = invoice?.patient_name?.trim();
@@ -71,10 +70,12 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   const [reverseReasonError, setReverseReasonError] = useState('');
   const [confirmingVoid, setConfirmingVoid] = useState(false);
   const [confirmingReverse, setConfirmingReverse] = useState(false);
+  const [confirmingReprint, setConfirmingReprint] = useState(false);
   const [receiptModalOpen, setReceiptModalOpen] = useState(false);
   const [loadingActionInvoiceId, setLoadingActionInvoiceId] = useState<number | null>(null);
   const [voidingInvoice, setVoidingInvoice] = useState(false);
   const [reversingInvoice, setReversingInvoice] = useState(false);
+  const [reprintingReceipt, setReprintingReceipt] = useState(false);
   const voidingInvoiceRef = useRef(false);
   const reversingInvoiceRef = useRef(false);
   const registeringReprintRef = useRef(false);
@@ -173,7 +174,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       const institutionalReceipt = issuedInstitutionalReceipt(invoice);
       if (institutionalReceipt) {
         if (hasInstitutionalPrintEvents(institutionalReceipt)) {
-          await reprintInvoiceFromHistory(invoice);
+          requestReprintInvoice(invoice);
 
           return;
         }
@@ -356,8 +357,29 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     }
   }
 
-  async function reprintInvoiceFromHistory(reprintInvoice: Invoice) {
+  function requestReprintInvoice(invoice: Invoice) {
     if (registeringReprintRef.current) return;
+
+    setSelectedInvoice(invoice);
+    setConfirmingReprint(true);
+  }
+
+  async function reprintSelectedInvoice(reason: string | null) {
+    if (!selectedInvoice || !reason?.trim()) return;
+
+    try {
+      setReprintingReceipt(true);
+      const completed = await reprintInvoiceFromHistory(selectedInvoice, reason.trim());
+      if (completed) {
+        setConfirmingReprint(false);
+      }
+    } finally {
+      setReprintingReceipt(false);
+    }
+  }
+
+  async function reprintInvoiceFromHistory(reprintInvoice: Invoice, reason: string): Promise<boolean> {
+    if (registeringReprintRef.current) return false;
 
     try {
       registeringReprintRef.current = true;
@@ -365,7 +387,6 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       const invoice = await apiClient.getInvoice(reprintInvoice.id);
       setSelectedInvoice(invoice);
       const institutionalReceipt = issuedInstitutionalReceipt(invoice);
-      const reason = HISTORY_REPRINT_REASON;
 
       if (institutionalReceipt) {
         const idempotencyKey = payloadScopedIdempotencyKey(reprintIdempotencyKeyRef, reprintIdempotencySignatureRef, {
@@ -377,7 +398,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
         onStatus(`PDF institucional ${institutionalReceipt.receipt_number_full} abierto.`);
         resetPayloadScopedIdempotencyKey(reprintIdempotencyKeyRef, reprintIdempotencySignatureRef);
 
-        return;
+        return true;
       }
 
       const requestedWidth = institutionalReceiptPaperSize(receiptWidth);
@@ -399,8 +420,12 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       setReceiptModalOpen(true);
       resetPayloadScopedIdempotencyKey(reprintIdempotencyKeyRef, reprintIdempotencySignatureRef);
       onStatus(`Recibo ${invoice.invoice_number} listo para imprimir.`);
+
+      return true;
     } catch (error) {
       onStatus(userSafeErrorMessage(error, 'No se pudo reimprimir el recibo.'));
+
+      return false;
     } finally {
       registeringReprintRef.current = false;
       setLoadingActionInvoiceId(null);
@@ -498,7 +523,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
               onDownloadInstitutionalReceipt={(invoice) => void downloadInstitutionalReceipt(invoice)}
               onOpenReceipt={(invoiceId) => void openReceiptModal(invoiceId)}
               onPrepareInvoiceAction={(invoiceId, action) => void prepareInvoiceAction(invoiceId, action)}
-              onReprint={(invoice) => void reprintInvoiceFromHistory(invoice)}
+              onReprint={requestReprintInvoice}
             />
           </CardContent>
         </Card>
@@ -540,6 +565,26 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
           </div>
         )}
       </Dialog>
+
+      <ConfirmDialog
+        confirmLabel={reprintingReceipt ? 'Reimprimiendo...' : 'Reimprimir'}
+        onCancel={() => setConfirmingReprint(false)}
+        cancelDisabled={reprintingReceipt}
+        confirmDisabled={reprintingReceipt}
+        onConfirm={(reason) => void reprintSelectedInvoice(reason)}
+        open={confirmingReprint}
+        requireReasonTextarea
+        requireReasonMinLength={5}
+        reasonHelpText="Explique por que se entrega otra copia. Quedara registrado en auditoria."
+        title={`Reimprimir ${selectedInvoice?.invoice_number ?? ''}`}
+      >
+        <div className="flex flex-col gap-2 text-sm">
+          <p>
+            <strong>Paciente:</strong> {invoicePatientNameLabel(selectedInvoice)}
+          </p>
+          <p>El motivo quedara asociado a la auditoria de impresion.</p>
+        </div>
+      </ConfirmDialog>
 
       <ConfirmDialog
         confirmLabel={voidingInvoice ? 'Anulando...' : 'Anular Factura'}
