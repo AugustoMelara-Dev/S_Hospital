@@ -1,6 +1,15 @@
 import { useEffect, useCallback, useMemo, useRef, useReducer } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { apiClient, type CashSession, type InstitutionalReceipt, type ReceiptData, type Service, userSafeErrorMessage } from '../../lib/api';
+import {
+  apiClient,
+  institutionalReceipts,
+  type CashSession,
+  type InstitutionalReceipt,
+  type Invoice,
+  type ReceiptData,
+  type Service,
+  userSafeErrorMessage,
+} from '../../lib/api';
 import { invoiceSchema } from '../../schemas/invoice.schema';
 import { useOperationalSettings } from '../../hooks/useFiscalSettings';
 import { newInvoiceReducer } from './state/reducer';
@@ -51,6 +60,8 @@ export function NewInvoiceView({
   const submitPaymentInFlightRef = useRef(false);
   const submitPaymentIdempotencyKeyRef = useRef<string | null>(null);
   const submitPaymentIdempotencySignatureRef = useRef<string | null>(null);
+  const receiptGenerationIdempotencyKeyRef = useRef<string | null>(null);
+  const receiptGenerationIdempotencySignatureRef = useRef<string | null>(null);
   const receiptPdfIdempotencyKeyRef = useRef<string | null>(null);
   const scanCodeInFlightRef = useRef(false);
   const skipInitialServiceSearchRef = useRef(true);
@@ -429,11 +440,7 @@ export function NewInvoiceView({
           onStatus(`Factura emitida ${invoice.invoice_number}. Recibo pendiente por permisos.`);
           return;
         }
-        const nextReceipt = await apiClient.getReceipt(invoice.id, state.receiptWidth);
-        dispatch({ type: 'SET_RECEIPT', payload: nextReceipt });
-        dispatch({ type: 'SET_RECEIPT_WIDTH', payload: nextReceipt.width });
-        dispatch({ type: 'SET_SHOW_RECEIPT', payload: true });
-        onStatus(`Factura emitida ${invoice.invoice_number}. Recibo listo para imprimir.`);
+        await issueInstitutionalReceiptForZeroTotalInvoice(invoice);
       } else {
         dispatch({ type: 'SET_SHOW_SUCCESS', payload: true });
         onStatus(`Factura emitida ${invoice.invoice_number}.`);
@@ -607,6 +614,63 @@ export function NewInvoiceView({
       receiptPdfIdempotencyKeyRef.current = null;
     }
     openBlobInNewTab(blob, institutionalReceiptPdfFilename(receipt.receipt_number_full));
+  }
+
+  async function issueInstitutionalReceiptForZeroTotalInvoice(invoice: Invoice) {
+    const receiptPayload = {
+      invoice_id: invoice.id,
+      ...(state.loadedCashSession ? { cash_session_id: state.loadedCashSession.id } : {}),
+    };
+
+    try {
+      const receipt = await institutionalReceipts.store(receiptPayload, {
+        idempotencyKey: payloadScopedIdempotencyKey(
+          receiptGenerationIdempotencyKeyRef,
+          receiptGenerationIdempotencySignatureRef,
+          receiptPayload,
+        ),
+      });
+      resetPayloadScopedIdempotencyKey(receiptGenerationIdempotencyKeyRef, receiptGenerationIdempotencySignatureRef);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.invoices.all }),
+        queryClient.invalidateQueries({ queryKey: ['audit'] }),
+      ]);
+
+      dispatch({ type: 'SET_INSTITUTIONAL_RECEIPT', payload: receipt });
+      dispatch({ type: 'SET_INSTITUTIONAL_RECEIPT_RECOVERY_MESSAGE', payload: null });
+      dispatch({ type: 'SET_RECEIPT', payload: null });
+      dispatch({ type: 'SET_AUTO_PRINT_RECEIPT', payload: false });
+      dispatch({ type: 'SET_SHOW_RECEIPT', payload: false });
+      dispatch({ type: 'SET_SHOW_SUCCESS', payload: true });
+      dispatch({ type: 'SET_ALERT_MESSAGE', payload: null });
+      dispatch({ type: 'SET_WARNING_MESSAGE', payload: null });
+
+      try {
+        await openInstitutionalReceiptPdf(receipt);
+        onStatus(`Factura emitida ${invoice.invoice_number}. PDF institucional ${receipt.receipt_number_full} abierto.`);
+      } catch (error) {
+        const message = userSafeErrorMessage(
+          error,
+          `Factura emitida. Recibo institucional ${receipt.receipt_number_full} emitido, pero no se pudo abrir el PDF.`,
+        );
+        const recoveryMessage = `Recibo institucional ${receipt.receipt_number_full} emitido, pero no se pudo abrir el PDF. Use Imprimir recibo institucional para intentar de nuevo o reimprima desde Historial.`;
+        dispatch({ type: 'SET_INSTITUTIONAL_RECEIPT_RECOVERY_MESSAGE', payload: recoveryMessage });
+        dispatch({ type: 'SET_WARNING_MESSAGE', payload: recoveryMessage });
+        onStatus(message);
+      }
+    } catch (error) {
+      const detail = userSafeErrorMessage(error, 'No se pudo emitir el recibo institucional.');
+      const recoveryMessage = `Factura emitida, pero no se pudo emitir el recibo institucional: ${detail} Genere el recibo institucional desde Historial antes de entregar comprobante.`;
+      dispatch({ type: 'SET_RECEIPT', payload: null });
+      dispatch({ type: 'SET_INSTITUTIONAL_RECEIPT', payload: null });
+      dispatch({ type: 'SET_INSTITUTIONAL_RECEIPT_RECOVERY_MESSAGE', payload: recoveryMessage });
+      dispatch({ type: 'SET_AUTO_PRINT_RECEIPT', payload: false });
+      dispatch({ type: 'SET_SHOW_RECEIPT', payload: false });
+      dispatch({ type: 'SET_SHOW_SUCCESS', payload: true });
+      dispatch({ type: 'SET_ALERT_MESSAGE', payload: null });
+      dispatch({ type: 'SET_WARNING_MESSAGE', payload: recoveryMessage });
+      onStatus(recoveryMessage);
+    }
   }
 
   async function handlePrintIssuedReceipt() {

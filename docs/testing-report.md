@@ -305,3 +305,12 @@ verified.
 | Command | Result |
 |---|---|
 | `npx playwright test e2e/new-invoice-flow.spec.ts --workers=1 --reporter=list` | PASS, 1 Chromium test in 6.3s. |
+
+### 2026-07-05 Zero-Total Institutional Receipt Gate
+
+| Command | Result |
+|---|---|
+| `npm run test -- NewInvoiceView --run -t "issues an institutional receipt for a paid zero-total invoice"` | RED first because zero-total invoices used the legacy receipt path; then PASS, 1 focused test. |
+| `npm run test -- NewInvoiceView --run` | PASS, 25 tests. |
+| `npm run typecheck` | PASS. |
+| `npm run lint` | PASS. |

@@ -6361,3 +6361,26 @@ Cobertura observada:
 Decision:
 
 - Esta verificacion reduce riesgo del core obligatorio, pero no sustituye el E2E completo ni la prueba fisica de impresion/caja del servidor final.
+
+## 265. Fase 4/6 - Factura cero emite recibo institucional
+
+Cambio aplicado:
+
+- `NewInvoiceView` deja de abrir el recibo legacy para facturas pagadas con total `0.00`.
+- El flujo de factura cero crea un recibo institucional con `institutionalReceipts.store`, usando idempotencia ligada al payload `{ invoice_id, cash_session_id }`.
+- Si el PDF institucional abre correctamente, el dialogo de exito conserva el boton de reimpresion institucional.
+- Si falla la emision o apertura del PDF, la factura queda emitida y se muestra una ruta recuperable para generar/reimprimir desde Historial, sin exponer comprobante legacy.
+- No se agregaron dependencias, migraciones, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- NewInvoiceView --run -t "issues an institutional receipt for a paid zero-total invoice"` | RED inicial porque no se llamaba `/api/institutional-receipts`; luego OK. |
+| `npm run test -- NewInvoiceView --run` | OK: 25 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+
+Decision:
+
+- Las facturas en cero, incluyendo escenarios como eritropoyetina cubierta por receta de dialisis, siguen el mismo comprobante institucional que los cobros normales y no pueden imprimirse por el recibo secundario/legacy desde el flujo principal.
