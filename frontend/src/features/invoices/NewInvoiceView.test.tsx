@@ -1074,10 +1074,13 @@ describe('NewInvoiceView critical flows', () => {
   it('issues an institutional receipt for a paid zero-total invoice instead of using the legacy receipt', async () => {
     vi.spyOn(apiBase, 'createClientIdempotencyKey')
       .mockReturnValueOnce('invoice-attempt-1')
-      .mockReturnValueOnce('zero-receipt-attempt-1');
+      .mockReturnValueOnce('zero-receipt-attempt-1')
+      .mockReturnValueOnce('zero-receipt-print-attempt-1');
     const getInstitutionalReceiptPdf = vi
       .spyOn(apiClient, 'getInstitutionalReceiptPdf')
       .mockResolvedValue(new Blob(['%PDF-1.4'], { type: 'application/pdf' }));
+    const registerPrint = vi.spyOn(apiClient, 'registerInstitutionalReceiptPrintEvent')
+      .mockResolvedValue({} as never);
     const institutionalReceiptRequests: Array<{
       body: unknown;
       idempotencyKey: string | null;
@@ -1185,8 +1188,11 @@ describe('NewInvoiceView critical flows', () => {
     });
 
     await waitFor(() => {
-      expect(getInstitutionalReceiptPdf).toHaveBeenCalledWith(98);
+      expect(registerPrint).toHaveBeenCalledWith(98, undefined, {
+        idempotencyKey: 'zero-receipt-print-attempt-1',
+      });
     });
+    expect(getInstitutionalReceiptPdf).toHaveBeenCalledWith(98);
     expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/api/invoices/64/receipt'))).toBe(false);
     expect(screen.queryByRole('dialog', { name: /comprobante de factura/i })).not.toBeInTheDocument();
     expect(await screen.findByRole('dialog', { name: /factura pagada/i })).toBeInTheDocument();
@@ -1198,6 +1204,8 @@ describe('NewInvoiceView critical flows', () => {
     const getInstitutionalReceiptPdf = vi
       .spyOn(apiClient, 'getInstitutionalReceiptPdf')
       .mockResolvedValue(new Blob(['%PDF-1.4'], { type: 'application/pdf' }));
+    const registerPrint = vi.spyOn(apiClient, 'registerInstitutionalReceiptPrintEvent')
+      .mockResolvedValue({} as never);
 
     renderNewInvoice();
     await waitForPointOfSaleLoad();
@@ -1322,8 +1330,12 @@ describe('NewInvoiceView critical flows', () => {
     fireEvent.click(screen.getByRole('button', { name: /confirmar cobro e imprimir/i }));
 
     await waitFor(() => {
-      expect(getInstitutionalReceiptPdf).toHaveBeenCalledTimes(1);
+      expect(registerPrint).toHaveBeenCalledWith(96, undefined, {
+        idempotencyKey: 'sale-reprint-attempt-1',
+      });
     });
+    expect(getInstitutionalReceiptPdf).toHaveBeenCalledWith(96);
+    registerPrint.mockClear();
     getInstitutionalReceiptPdf.mockClear();
 
     await waitFor(() => {
@@ -1332,12 +1344,13 @@ describe('NewInvoiceView critical flows', () => {
     fireEvent.click(screen.getByRole('button', { name: /imprimir recibo institucional/i }));
 
     await waitFor(() => {
-      expect(getInstitutionalReceiptPdf).toHaveBeenCalledWith(
+      expect(registerPrint).toHaveBeenCalledWith(
         96,
         'Reimpresion desde venta/cobro.',
         { idempotencyKey: 'sale-reprint-attempt-1' },
       );
     });
+    expect(getInstitutionalReceiptPdf).toHaveBeenCalledWith(96);
   });
 
   it('keeps a visible retry path when the institutional PDF fails to open after payment', async () => {
@@ -1345,6 +1358,8 @@ describe('NewInvoiceView critical flows', () => {
     const getInstitutionalReceiptPdf = vi
       .spyOn(apiClient, 'getInstitutionalReceiptPdf')
       .mockRejectedValue(new Error('No se pudo abrir el PDF institucional'));
+    const registerPrint = vi.spyOn(apiClient, 'registerInstitutionalReceiptPrintEvent')
+      .mockResolvedValue({} as never);
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
     });
@@ -1488,8 +1503,11 @@ describe('NewInvoiceView critical flows', () => {
     fireEvent.click(screen.getByRole('button', { name: /confirmar cobro e imprimir/i }));
 
     await waitFor(() => {
-      expect(getInstitutionalReceiptPdf).toHaveBeenCalledTimes(1);
+      expect(registerPrint).toHaveBeenCalledWith(97, undefined, {
+        idempotencyKey: expect.any(String),
+      });
     });
+    expect(getInstitutionalReceiptPdf).toHaveBeenCalledTimes(1);
 
     expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/api/invoices/62/receipt'))).toBe(false);
     expect(await screen.findByRole('dialog', { name: /factura pagada/i })).toBeInTheDocument();

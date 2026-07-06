@@ -7765,3 +7765,27 @@ Pruebas ejecutadas:
 Decision:
 
 - Abrir el recibo institucional desde historial representa una impresion operativa si aun no existe evento. El sistema debe convertir ese primer acceso en evidencia auditada antes de permitir reimpresiones con motivo.
+## 324. Fase 1/5/QA - Venta registra impresion institucional antes del PDF
+
+Cambio aplicado:
+
+- El flujo de nueva factura/cobro registra `institutional_receipt_print_events` antes de abrir el PDF institucional.
+- La primera impresion desde pago o factura cero se registra sin motivo; las reimpresiones desde venta/cobro se registran con motivo humano e idempotencia.
+- El PDF institucional vuelve a abrirse con el endpoint simple, evitando depender de parametros de motivo que el backend de PDF no usa.
+- Se actualiza el test de flujo institucional para confirmar que `Ver recibo` tambien registra el primer evento auditado.
+- No se agregaron dependencias, migraciones, roles, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `cd frontend && npm run test -- NewInvoiceView.test.tsx -t "issues an institutional receipt for a paid zero-total invoice" -- --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | Primero fallo porque no se llamaba `registerInstitutionalReceiptPrintEvent`; luego OK: 1 test, 23 skipped. |
+| `cd frontend && npm run test -- NewInvoiceView.test.tsx -t "reprints the institutional receipt from the sale flow" -- --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 1 test, 23 skipped. |
+| `cd frontend && npm run test -- NewInvoiceView.test.tsx -- --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 24 tests. |
+| `cd frontend && npm run test -- InstitutionalReceiptFlow.test.tsx -- --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 2 tests. |
+| `cd frontend && npm run typecheck` | OK. |
+| `cd frontend && npm run lint` | OK. |
+
+Decision:
+
+- El recibo principal se considera entregado cuando queda evidencia de impresion. La venta no debe abrir PDFs institucionales sin registrar primero el evento que alimenta auditoria, historial y reportes.

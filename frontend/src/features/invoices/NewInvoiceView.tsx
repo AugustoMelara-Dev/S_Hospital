@@ -616,15 +616,11 @@ export function NewInvoiceView({
 
   async function openInstitutionalReceiptPdf(receipt: InstitutionalReceipt, reason?: string) {
     const trimmedReason = reason?.trim();
-    const blob = trimmedReason
-      ? await apiClient.getInstitutionalReceiptPdf(receipt.id, trimmedReason, {
-          idempotencyKey: receiptPdfIdempotencyKeyRef.current ??= createClientIdempotencyKey(),
-        })
-      : await apiClient.getInstitutionalReceiptPdf(receipt.id);
+    const idempotencyKey = receiptPdfIdempotencyKeyRef.current ??= createClientIdempotencyKey();
+    await apiClient.registerInstitutionalReceiptPrintEvent(receipt.id, trimmedReason || undefined, { idempotencyKey });
+    const blob = await apiClient.getInstitutionalReceiptPdf(receipt.id);
 
-    if (trimmedReason) {
-      receiptPdfIdempotencyKeyRef.current = null;
-    }
+    receiptPdfIdempotencyKeyRef.current = null;
     openBlobInNewTab(blob, institutionalReceiptPdfFilename(receipt.receipt_number_full));
   }
 
