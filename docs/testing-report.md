@@ -506,3 +506,12 @@ verified.
 | `npm run typecheck` | PASS. |
 | `npm run lint` | PASS. |
 | `npm run build` | PASS. |
+
+### 2026-07-06 Receipt Settings Safe Payload Gate
+
+| Command | Result |
+|---|---|
+| `docker exec s_hospital-backend-1 php artisan test --filter=view_only_user_does_not_receive_technical_print_profile_fields` | RED first because the normal settings payload exposed `width_mm`, margins, font fields and thermal/support profiles; then PASS, 1 focused test. |
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/InstitutionalReceiptSettingsTest.php tests/Feature/ReceiptPrintProfileAdvancedFieldsTest.php` | PASS, 19 tests and 103 assertions. |
+| `docker exec s_hospital-backend-1 vendor/bin/phpstan analyse --memory-limit=512M` | PASS, no errors. |
+| `docker exec s_hospital-backend-1 vendor/bin/pint --test` | PASS, 430 files. |

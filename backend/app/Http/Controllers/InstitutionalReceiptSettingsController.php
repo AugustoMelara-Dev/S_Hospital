@@ -25,6 +25,12 @@ use Symfony\Component\HttpFoundation\Response;
 
 class InstitutionalReceiptSettingsController extends Controller
 {
+    private const SUPPORT_ONLY_PROFILE_CODES = [
+        ReceiptPrintProfile::CODE_CUSTOM_SMALL,
+        ReceiptPrintProfile::CODE_THERMAL_80,
+        ReceiptPrintProfile::CODE_THERMAL_58,
+    ];
+
     public function show(ViewReceiptSettingsRequest $request, ResolveReceiptPrintProfileAction $resolver): JsonResponse
     {
         try {
@@ -32,6 +38,15 @@ class InstitutionalReceiptSettingsController extends Controller
         } catch (ValidationException) {
             $resolvedProfile = null;
         }
+
+        $canViewAdvanced = $request->user()->can('receipt_settings.advanced');
+        $printProfiles = $this->profilesQuery()->get();
+        $assignments = ReceiptProfileAssignment::query()
+            ->with('printProfile')
+            ->orderBy('scope_type')
+            ->orderBy('scope_id')
+            ->orderByDesc('active')
+            ->get();
 
         return response()->json([
             'data' => [
@@ -41,14 +56,9 @@ class InstitutionalReceiptSettingsController extends Controller
                     ->where('active', true)
                     ->first(),
                 'series' => $this->seriesQuery()->get(),
-                'print_profiles' => $this->profilesQuery()->get(),
-                'assignments' => ReceiptProfileAssignment::query()
-                    ->with('printProfile')
-                    ->orderBy('scope_type')
-                    ->orderBy('scope_id')
-                    ->orderByDesc('active')
-                    ->get(),
-                'resolved_profile' => $resolvedProfile,
+                'print_profiles' => $this->serializePrintProfiles($printProfiles, $canViewAdvanced),
+                'assignments' => $this->serializeAssignments($assignments, $canViewAdvanced),
+                'resolved_profile' => $this->serializePrintProfile($resolvedProfile, $canViewAdvanced),
             ],
         ]);
     }
@@ -163,8 +173,10 @@ class InstitutionalReceiptSettingsController extends Controller
 
     public function printProfiles(ViewReceiptSettingsRequest $request): JsonResponse
     {
+        $canViewAdvanced = $request->user()->can('receipt_settings.advanced');
+
         return response()->json([
-            'data' => $this->profilesQuery()->get(),
+            'data' => $this->serializePrintProfiles($this->profilesQuery()->get(), $canViewAdvanced),
         ]);
     }
 
@@ -373,6 +385,100 @@ class InstitutionalReceiptSettingsController extends Controller
     }
 
     /**
+     * @param  iterable<ReceiptPrintProfile>  $profiles
+     * @return array<int, array<string, mixed>>
+     */
+    private function serializePrintProfiles(iterable $profiles, bool $canViewAdvanced): array
+    {
+        $payload = [];
+
+        foreach ($profiles as $profile) {
+            if (! $canViewAdvanced && $this->isSupportOnlyProfile($profile)) {
+                continue;
+            }
+
+            $serialized = $this->serializePrintProfile($profile, $canViewAdvanced);
+            if ($serialized !== null) {
+                $payload[] = $serialized;
+            }
+        }
+
+        return $payload;
+    }
+
+    /**
+     * @param  iterable<ReceiptProfileAssignment>  $assignments
+     * @return array<int, array<string, mixed>>
+     */
+    private function serializeAssignments(iterable $assignments, bool $canViewAdvanced): array
+    {
+        $payload = [];
+
+        foreach ($assignments as $assignment) {
+            $profile = $assignment->printProfile;
+            if (! $canViewAdvanced && $profile instanceof ReceiptPrintProfile && $this->isSupportOnlyProfile($profile)) {
+                continue;
+            }
+
+            if ($canViewAdvanced) {
+                $payload[] = $assignment->toArray();
+
+                continue;
+            }
+
+            $payload[] = [
+                'id' => $assignment->id,
+                'receipt_print_profile_id' => $assignment->receipt_print_profile_id,
+                'profile_code' => $profile instanceof ReceiptPrintProfile ? $profile->code : null,
+                'profile_name' => $profile instanceof ReceiptPrintProfile ? $profile->name : null,
+                'scope_type' => $assignment->scope_type,
+                'scope_id' => $assignment->scope_id,
+                'active' => $assignment->active,
+                'print_profile' => $profile instanceof ReceiptPrintProfile
+                    ? $this->serializePrintProfile($profile, false)
+                    : null,
+            ];
+        }
+
+        return $payload;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function serializePrintProfile(?ReceiptPrintProfile $profile, bool $canViewAdvanced): ?array
+    {
+        if (! $profile instanceof ReceiptPrintProfile) {
+            return null;
+        }
+
+        if ($canViewAdvanced) {
+            return $profile->toArray();
+        }
+
+        if ($this->isSupportOnlyProfile($profile)) {
+            return null;
+        }
+
+        return [
+            'id' => $profile->id,
+            'code' => $profile->code,
+            'name' => $profile->name,
+            'copies_mode' => $profile->copies_mode,
+            'show_copy_legend' => $profile->show_copy_legend,
+            'show_physical_seal_space' => $profile->show_physical_seal_space,
+            'use_logo' => $profile->use_logo,
+            'active' => $profile->active,
+            'is_global_default' => $profile->is_global_default,
+        ];
+    }
+
+    private function isSupportOnlyProfile(ReceiptPrintProfile $profile): bool
+    {
+        return in_array($profile->code, self::SUPPORT_ONLY_PROFILE_CODES, true);
+    }
+
+    /**
      * @return array<int, string>
      */
     private function institutionFields(): array
@@ -398,6 +504,9 @@ class InstitutionalReceiptSettingsController extends Controller
             ->orderByDesc('id');
     }
 
+    /**
+     * @return Builder<ReceiptPrintProfile>
+     */
     private function profilesQuery(): Builder
     {
         return ReceiptPrintProfile::query()

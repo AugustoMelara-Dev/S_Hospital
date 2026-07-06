@@ -7,6 +7,7 @@ use App\Models\FiscalSetting;
 use App\Models\InstitutionalReceipt;
 use App\Models\InstitutionalReceiptSeries;
 use App\Models\ReceiptPrintProfile;
+use App\Models\ReceiptProfileAssignment;
 use App\Models\User;
 use Database\Seeders\ReceiptPrintProfileSeeder;
 use Database\Seeders\RolesAndPermissionsSeeder;
@@ -58,6 +59,74 @@ class InstitutionalReceiptSettingsTest extends TestCase
             'action' => 'institutional_receipt.settings.created',
             'entity_type' => FiscalSetting::class,
         ]);
+    }
+
+    public function test_view_only_user_does_not_receive_technical_print_profile_fields(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $this->seed(ReceiptPrintProfileSeeder::class);
+
+        $user = User::factory()->create();
+        $user->givePermissionTo('receipt_settings.view');
+        $profile = ReceiptPrintProfile::query()
+            ->where('code', ReceiptPrintProfile::CODE_HALF_LETTER)
+            ->firstOrFail();
+
+        ReceiptProfileAssignment::query()->create([
+            'receipt_print_profile_id' => $profile->id,
+            'scope_type' => ReceiptProfileAssignment::SCOPE_GLOBAL,
+            'scope_id' => null,
+            'active' => true,
+            'created_by' => $user->id,
+            'updated_by' => $user->id,
+        ]);
+
+        $response = $this->actingAs($user)
+            ->getJson('/api/settings/institutional-receipts')
+            ->assertOk()
+            ->assertJsonPath('data.print_profiles.0.code', ReceiptPrintProfile::CODE_HALF_LETTER);
+
+        $payload = $response->json('data');
+        $encoded = json_encode($payload, JSON_THROW_ON_ERROR);
+
+        foreach ([
+            'width_mm',
+            'height_mm',
+            'margin_top_mm',
+            'margin_right_mm',
+            'margin_bottom_mm',
+            'margin_left_mm',
+            'font_family',
+            'font_scale',
+            'show_technical_fields',
+            ReceiptPrintProfile::CODE_THERMAL_80,
+            ReceiptPrintProfile::CODE_THERMAL_58,
+            ReceiptPrintProfile::CODE_CUSTOM_SMALL,
+        ] as $hiddenValue) {
+            $this->assertStringNotContainsString($hiddenValue, $encoded);
+        }
+
+        $this->assertSame([
+            'id',
+            'code',
+            'name',
+            'copies_mode',
+            'show_copy_legend',
+            'show_physical_seal_space',
+            'use_logo',
+            'active',
+            'is_global_default',
+        ], array_keys($payload['print_profiles'][0]));
+        $this->assertSame([
+            'id',
+            'receipt_print_profile_id',
+            'profile_code',
+            'profile_name',
+            'scope_type',
+            'scope_id',
+            'active',
+            'print_profile',
+        ], array_keys($payload['assignments'][0]));
     }
 
     public function test_institutional_receipt_settings_accept_missing_rtn_when_not_applicable(): void

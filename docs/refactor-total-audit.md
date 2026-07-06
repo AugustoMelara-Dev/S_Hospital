@@ -6806,3 +6806,27 @@ Pruebas ejecutadas:
 Decision:
 
 - Tarjeta y transferencia necesitan una referencia operativa para conciliacion, soporte y auditoria. Efectivo y `other` siguen permitiendo referencia opcional para no bloquear cobros validos de caja.
+
+## 283. Fase 6/14 - API normal de recibos sin campos tecnicos
+
+Cambio aplicado:
+
+- `GET /api/settings/institutional-receipts` transforma perfiles segun permiso.
+- Usuarios con solo `receipt_settings.view` reciben perfiles operativos sin `width_mm`, `height_mm`, margenes, fuente, escala ni `show_technical_fields`.
+- Perfiles de soporte (`thermal_80mm`, `thermal_58mm`, `recibo_pequeno_personalizado`) quedan fuera del payload normal.
+- `assignments.print_profile` y `resolved_profile` tambien usan la version segura para evitar fugas indirectas.
+- Usuarios con `receipt_settings.advanced` conservan el payload completo para soporte tecnico.
+- No se agregaron migraciones, dependencias, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker exec s_hospital-backend-1 php artisan test --filter=view_only_user_does_not_receive_technical_print_profile_fields` | RED inicial correcto: el payload incluia `width_mm`, margenes, fuente y perfiles termicos; luego OK. |
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/InstitutionalReceiptSettingsTest.php tests/Feature/ReceiptPrintProfileAdvancedFieldsTest.php` | OK: 19 tests, 103 assertions. |
+| `docker exec s_hospital-backend-1 vendor/bin/phpstan analyse --memory-limit=512M` | OK: no errors. |
+| `docker exec s_hospital-backend-1 vendor/bin/pint --test` | OK: 430 files. |
+
+Decision:
+
+- El hospital elige papel y opciones operativas; el detalle de layout pertenece al modo soporte con `receipt_settings.advanced`. El API normal queda alineado con esa separacion para que la UI no dependa de campos peligrosos.
