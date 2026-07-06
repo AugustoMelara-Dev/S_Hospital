@@ -36,6 +36,7 @@ test('administrator creates cashier user and navigation blocks administration mo
   await page.getByRole('button', { name: /^crear usuario$/i }).click();
   await expect(page.getByRole('status').filter({ hasText: /usuario cajero release e2e creado correctamente/i }).first()).toBeVisible();
   await expect(page.getByRole('dialog', { name: /crear usuario/i })).toBeHidden();
+  await page.getByLabel(/buscar usuarios/i).fill(username);
   await expect(page.getByRole('row', { name: new RegExp(username, 'i') })).toBeVisible();
 
   const createdPayload = await fetchJsonFromPage<{ data: Array<{ username: string; roles: string[]; permissions: string[] }> }>(

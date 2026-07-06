@@ -43,7 +43,7 @@ Local review date: 2026-06-28
 | Backend PHPStan | PASS | `docker compose run --rm backend vendor/bin/phpstan analyse --memory-limit=1G --no-progress`. |
 | Backend full tests | BLOCKED | `php artisan test` and full Feature partition timed out at 10 minutes without final output. Unit partition exposes container mount failures for repo-root files such as `../nginx/default.conf`, `../.env.example`, `../.gitignore`, `../setup.bat`, and `../.github/workflows/ci.yml`. |
 | Build | PASS | `pnpm run build`; largest chunks: `charts` 418.64 kB, `vendor` 394.78 kB, app index 223.43 kB. |
-| E2E | PASS WITH DOCKER | Release Playwright specs passed against the live Docker stack on 2026-07-06: cashier invoice/payment/institutional receipt/report flow plus RBAC user creation/navigation. Host SQLite runner still needs vendor/local evidence. |
+| E2E | PASS WITH DOCKER/MARIADB | `scripts/run_release_e2e_mariadb.ps1` passed on 2026-07-06 against the live Docker MariaDB stack: cashier invoice/payment/institutional receipt/report flow plus RBAC user creation/navigation. Host SQLite runner still needs vendor/local evidence. |
 
 ## Research And Library Decisions
 
@@ -80,8 +80,8 @@ Local review date: 2026-06-28
 | --- | --- | --- | --- |
 | Users/Auth/RBAC | RESOLVED | User managers with `users.create` or `users.update` could assign elevated roles or mutate protected admin/root targets. | Fixed in backend role/user contracts; verified on 2026-07-06 with `docker compose exec backend php artisan test tests/Feature/UserManagementTest.php` (42 tests) and `tests/Feature/RoleManagementTest.php` (11 tests). |
 | QA/E2E | RESOLVED | CI assumed `npm ci` and `frontend/package-lock.json` while frontend uses `pnpm-lock.yaml`. | `.github/workflows/ci.yml` now uses pnpm setup, `pnpm install --frozen-lockfile`, pnpm cache and pnpm frontend commands. |
-| QA/E2E | RESOLVED | Release E2E was documented failing with expired session during admin/users access. | Docker release specs passed on 2026-07-06 with no 401/419 session regression. Host SQLite runner remains separate evidence because this workspace lacks `backend/vendor/autoload.php`. |
-| QA/E2E | P1 | Release E2E still uses SQLite; golden DB hash invalidation for prep/auth/session is fixed. | Define MariaDB-backed release gate after the remaining auth/session failure is reproduced and repaired. |
+| QA/E2E | RESOLVED | Release E2E was documented failing with expired session during admin/users access. | Docker/MariaDB release specs passed on 2026-07-06 through `scripts/run_release_e2e_mariadb.ps1` with no 401/419 session regression. Host SQLite runner remains separate evidence because this workspace lacks `backend/vendor/autoload.php`. |
+| QA/E2E | RESOLVED | Release E2E needed a MariaDB-backed gate instead of only the host SQLite runner. | `scripts/run_release_e2e_mariadb.ps1` prepares non-production E2E users/cash/catalog data and runs the release specs against Docker MariaDB with container Chromium. |
 | QA/E2E | RESOLVED | E2E seed defaulted receipt paper to `80mm`, conflicting with institutional paper as primary. | `PrepareE2eReleaseDataCommand` and validation seed now default to `half_letter`; institutional print profiles remain primary. |
 | QA/E2E | P1 | E2E seed used thermal paper as primary. | Fixed by defaulting release seed receipt paper to `half_letter`. |
 | Receipts/Settings | P0 | Seeded institutional receipt series exposed placeholder authorization `AUT-REC-LOCAL`. | Fixed by seeding `range_authorization` as null and adding seeder regression test. |
@@ -100,7 +100,7 @@ Local review date: 2026-06-28
    - Backend/env test bootstrap and Docker baseline. PARTIAL: Docker works with explicit env and alternate host port.
    - RBAC protected-role and role-assignment hardening. DONE.
    - CI pnpm migration. DONE.
-   - Release E2E session/golden DB repair. DONE for Docker/live stack: golden DB hash includes auth/bootstrap/prep inputs, release config honors system Chromium, and release specs pass without session expiry. Host SQLite runner evidence remains pending because this workspace lacks backend vendor on host.
+   - Release E2E session/golden DB repair. DONE for Docker/MariaDB live stack: `scripts/run_release_e2e_mariadb.ps1` prepares non-production E2E data, release config honors system Chromium, and release specs pass without session expiry. Host SQLite runner evidence remains pending because this workspace lacks backend vendor on host.
    - Payment/receipt recovery semantics. DONE: backend returns explicit receipt error/recovery contract; frontend prioritizes Historial recovery when payment is registered but institutional receipt is pending.
    - Zero-total erythropoietin/dialysis prescription invoice semantics.
    - POS invoice retry idempotency. DONE.
@@ -118,4 +118,4 @@ Local review date: 2026-06-28
 - The old V1.3 branch was divergent from current `main`; it has now been synced locally but not pushed yet.
 - The local Git pre-commit hook is stale and points at a missing script; quality gates must be run explicitly until hook hygiene is fixed.
 - Full V1.3 scope is larger than a single safe commit; implementation must proceed in slices with tests.
-- Host release runner evidence, MariaDB-backed release gate, reports mobile nav/receipt preview proof, backend full-test container mount/timeout, and final LAN/physical evidence remain open.
+- Host release runner evidence, reports mobile nav/receipt preview proof, backend full-test container mount/timeout, and final LAN/physical evidence remain open.

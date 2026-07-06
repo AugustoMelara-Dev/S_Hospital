@@ -8002,3 +8002,31 @@ Limitacion:
 Decision:
 
 - Para la version monocomputadora, el gate release debe poder correr sin internet usando Chromium del sistema. El bloqueo restante ya no es sesion expirada en la app, sino empaquetar/ejecutar el runner final con dependencias host o una compuerta MariaDB equivalente.
+
+## 334. Fase QA/E2E - Gate release repetible contra Docker MariaDB
+
+Cambio aplicado:
+
+- Se agrega `scripts/run_release_e2e_mariadb.ps1` como wrapper repetible para preparar datos E2E no productivos y ejecutar las specs release contra el stack Docker/MariaDB local.
+- El script exige una contrasena explicita por `-SeedPassword`, `E2E_RELEASE_PASSWORD` o `E2E_SEED_PASSWORD`, oculta credenciales en la linea impresa y evita `--json` para no registrar la contrasena de seed en logs.
+- Se agrega `scripts/run_release_e2e_mariadb.test.ps1` como prueba estatica de las garantias del wrapper: mutaciones explicitas, Chromium del contenedor, reporte MariaDB y ausencia de contrasena de ejemplo.
+- `release-rbac.spec.ts` filtra el usuario creado antes de esperar su fila, estabilizando corridas repetidas cuando la tabla de usuarios ya acumula datos E2E.
+- El board V1.3 marca resuelto el gate MariaDB-backed y conserva separado el runner host SQLite, bloqueado en esta maquina por falta de `backend/vendor/autoload.php`.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run_release_e2e_mariadb.test.ps1` | OK. |
+| `docker compose exec -T -e E2E_RELEASE_ALLOW_MUTATIONS=1 -e E2E_RELEASE_BASE_URL=http://127.0.0.1:5173 -e E2E_RELEASE_API_BASE_URL=http://backend:8000 -e E2E_RELEASE_REPORT_PATH=/app/test-results/mariadb-release-e2e-report.json -e E2E_RELEASE_LOGIN=cajero.e2e -e E2E_RELEASE_ADMIN_LOGIN=admin.e2e -e E2E_RELEASE_PASSWORD=<E2E password> -e E2E_RELEASE_SERVICE_QUERY=Glucosa -e E2E_RELEASE_PAYMENT_AMOUNT=17.25 -e PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser frontend npx playwright test --config=playwright.release.config.ts --reporter=list -g "administrator creates cashier"` | OK: 1 passed. |
+| `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run_release_e2e_mariadb.ps1 -SeedPassword '<E2E password>'` | RED inicial por fila de usuario no visible tras muchas corridas; luego OK: 2 passed contra Docker/MariaDB. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+
+Limitacion:
+
+- Este wrapper usa el stack Docker/MariaDB local existente y muta datos E2E no productivos. No sustituye la evidencia fisica final de LAN/impresora ni el runner host `npm run e2e` cuando falten dependencias Composer en el host.
+
+Decision:
+
+- Para la version monocomputadora, la compuerta release debe validar el runtime real de base de datos local sin depender de SQLite ni de descargas de navegador. Este corte deja ese camino en un comando unico, repetible y apto para QA offline con Docker ya levantado.
