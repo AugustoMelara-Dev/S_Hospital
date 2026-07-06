@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Support\HospitalName;
 use App\Support\Money;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Carbon;
 
 class PdfExportService
 {
@@ -319,6 +320,8 @@ class PdfExportService
         $areas = $data['areas']['areas'] ?? [];
         $services = $data['services']['services'] ?? [];
         $operations = $data['operations'];
+        $cashSessionReport = $data['cash_session_report'] ?? null;
+        $cashSessionClosureHtml = $this->buildCashSessionClosureHtml(is_array($cashSessionReport) ? $cashSessionReport : null);
         $canViewAudit = ($operations['can_view_audit'] ?? true) === true;
         $categoryAmountBasis = $data['categories']['amount_basis'] ?? ReportAmountBasis::BILLED;
         $areaAmountBasis = $data['areas']['amount_basis'] ?? ReportAmountBasis::BILLED;
@@ -503,6 +506,7 @@ class PdfExportService
         <div class='clear'></div>
     </div>
 
+    {$cashSessionClosureHtml}
 
     <div class='section-title'>Lectura Financiera del Periodo</div>
     <table>
@@ -777,6 +781,95 @@ class PdfExportService
 ';
 
         return $html;
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $report
+     */
+    private function buildCashSessionClosureHtml(?array $report): string
+    {
+        if ($report === null) {
+            return '';
+        }
+
+        $cashSession = $report['cash_session'] ?? [];
+        $totalsByMethod = array_merge([
+            'cash' => '0.00',
+            'transfer' => '0.00',
+            'card' => '0.00',
+            'other' => '0.00',
+        ], is_array($report['totals_by_method'] ?? null) ? $report['totals_by_method'] : []);
+
+        $rows = '';
+        foreach ($totalsByMethod as $method => $total) {
+            $rows .= '
+            <tr>
+                <td><strong>'.$this->e($this->translateMethod((string) $method))."</strong></td>
+                <td class='text-right'>L. ".$this->money($total).'</td>
+            </tr>';
+        }
+
+        return "
+    <div class='section-title'>Cierre de Caja</div>
+    <table>
+        <tbody>
+            <tr>
+                <td><strong>Caja</strong></td>
+                <td>".$this->e($cashSession['id'] ?? '').'</td>
+                <td><strong>Estado</strong></td>
+                <td>'.$this->e($cashSession['status'] ?? '').'</td>
+            </tr>
+            <tr>
+                <td><strong>Cajero</strong></td>
+                <td>'.$this->e(data_get($cashSession, 'user.name', 'Sin asignar')).'</td>
+                <td><strong>Cerrada por</strong></td>
+                <td>'.$this->e(data_get($cashSession, 'closed_by.name', 'N/A')).'</td>
+            </tr>
+            <tr>
+                <td><strong>Apertura</strong></td>
+                <td>'.$this->e($this->dateTimeLabel($cashSession['opened_at'] ?? null)).'</td>
+                <td><strong>Cierre</strong></td>
+                <td>'.$this->e($this->dateTimeLabel($cashSession['closed_at'] ?? null))."</td>
+            </tr>
+            <tr>
+                <td><strong>Esperado en caja</strong></td>
+                <td class='text-right'>L. ".$this->money($report['expected_cash_amount'] ?? $cashSession['expected_amount'] ?? 0)."</td>
+                <td><strong>Contado al cierre</strong></td>
+                <td class='text-right'>L. ".$this->money($cashSession['closing_amount'] ?? 0)."</td>
+            </tr>
+            <tr>
+                <td><strong>Diferencia</strong></td>
+                <td class='text-right'>L. ".$this->money($cashSession['difference_amount'] ?? 0).'</td>
+                <td><strong>Pagos registrados</strong></td>
+                <td>'.$this->e($report['payments_count'] ?? 0)."</td>
+            </tr>
+            <tr>
+                <td><strong>Total cobrado</strong></td>
+                <td class='text-right'>L. ".$this->money($report['payments_total'] ?? 0)."</td>
+                <td><strong>Monto pendiente</strong></td>
+                <td class='text-right'>L. ".$this->money($report['pending_amount'] ?? 0)."</td>
+            </tr>
+        </tbody>
+    </table>
+    <table>
+        <thead>
+            <tr>
+                <th>Metodo de pago</th>
+                <th class='text-right'>Total de cierre</th>
+            </tr>
+        </thead>
+        <tbody>{$rows}
+        </tbody>
+    </table>";
+    }
+
+    private function dateTimeLabel(mixed $value): string
+    {
+        if ($value === null || $value === '') {
+            return 'N/A';
+        }
+
+        return Carbon::parse((string) $value)->format('d/m/Y H:i');
     }
 
     public function generateRangeClosurePdf(array $data, array $fiscal): string

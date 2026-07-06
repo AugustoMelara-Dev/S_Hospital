@@ -1706,6 +1706,54 @@ class ReportsTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_cash_session_export_includes_dedicated_close_sheet_from_snapshot(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $cashInvoice = $this->createInvoice($cashier, 'Glucosa');
+        $cardInvoice = $this->createInvoice($cashier, 'Hemograma Completo');
+
+        $this->payInvoice($cashier, $cashInvoice, $sessionId, Payment::METHOD_CASH, '17.25');
+        $this->payInvoice($cashier, $cardInvoice, $sessionId, Payment::METHOD_CARD, '11.50');
+
+        $this->actingAs($cashier)
+            ->postJson("/api/cash-sessions/{$sessionId}/close", [
+                'closing_amount' => '517.25',
+            ])
+            ->assertOk();
+
+        $this->grantPermissions($cashier, 'reports.cash_session.view', 'reports.export');
+
+        $xlsx = $this->actingAs($cashier)
+            ->get('/api/reports/export?date_from='.now()->toDateString().'&date_to='.now()->toDateString().'&cash_session_id='.$sessionId)
+            ->assertOk()
+            ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            ->streamedContent();
+
+        $path = tempnam(sys_get_temp_dir(), 'cash-session-close-sheet-');
+        file_put_contents($path, $xlsx);
+
+        try {
+            $spreadsheet = IOFactory::load($path);
+            $cashSheet = $spreadsheet->getSheetByName('Cierre de Caja');
+
+            $this->assertNotNull($cashSheet);
+            $this->assertSame('CIERRE DE CAJA', $cashSheet->getCell('B2')->getValue());
+            $this->assertSame($sessionId, $cashSheet->getCell('C5')->getValue());
+            $this->assertSame('closed', $cashSheet->getCell('C6')->getValue());
+            $this->assertSame(517.25, $cashSheet->getCell('C10')->getValue());
+            $this->assertSame(17.25, $cashSheet->getCell('C16')->getValue());
+            $this->assertSame(11.50, $cashSheet->getCell('C18')->getValue());
+            $this->assertSame(28.75, $cashSheet->getCell('C21')->getValue());
+            $this->assertSame(2, $cashSheet->getCell('C22')->getValue());
+        } finally {
+            if ($path !== false && file_exists($path)) {
+                unlink($path);
+            }
+        }
+    }
+
     public function test_cash_session_export_uses_cash_session_dates_even_when_request_range_is_wrong(): void
     {
         $this->seedBillingBase();
@@ -2073,6 +2121,55 @@ class ReportsTest extends TestCase
             $capturedHtml,
         );
         $this->assertStringContainsString('L. 17.25', $capturedHtml);
+    }
+
+    public function test_cash_session_period_pdf_includes_dedicated_close_snapshot_section(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $cashInvoice = $this->createInvoice($cashier, 'Glucosa');
+        $cardInvoice = $this->createInvoice($cashier, 'Hemograma Completo');
+
+        $this->payInvoice($cashier, $cashInvoice, $sessionId, Payment::METHOD_CASH, '17.25');
+        $this->payInvoice($cashier, $cardInvoice, $sessionId, Payment::METHOD_CARD, '11.50');
+
+        $this->actingAs($cashier)
+            ->postJson("/api/cash-sessions/{$sessionId}/close", [
+                'closing_amount' => '517.25',
+            ])
+            ->assertOk();
+
+        $this->grantPermissions($cashier, 'reports.cash_session.view', 'reports.export');
+
+        $capturedHtml = null;
+        Pdf::shouldReceive('loadHTML')
+            ->once()
+            ->with(\Mockery::on(function (string $html) use (&$capturedHtml): bool {
+                $capturedHtml = $html;
+
+                return true;
+            }))
+            ->andReturn(tap(\Mockery::mock(DomPdfWrapper::class), function ($pdf): void {
+                $pdf->shouldReceive('output')
+                    ->once()
+                    ->andReturn('%PDF-cash-session-close-snapshot');
+            }));
+
+        $this->actingAs($cashier)
+            ->get('/api/reports/pdf?date_from='.now()->toDateString().'&date_to='.now()->toDateString().'&cash_session_id='.$sessionId)
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf')
+            ->assertSee('%PDF-cash-session-close-snapshot', false);
+
+        $this->assertIsString($capturedHtml);
+        $this->assertStringContainsString('Cierre de Caja', $capturedHtml);
+        $this->assertStringContainsString('Esperado en caja', $capturedHtml);
+        $this->assertStringContainsString('L. 517.25', $capturedHtml);
+        $this->assertStringContainsString('Tarjeta', $capturedHtml);
+        $this->assertStringContainsString('L. 11.50', $capturedHtml);
+        $this->assertStringContainsString('Pagos registrados', $capturedHtml);
+        $this->assertStringContainsString('2', $capturedHtml);
     }
 
     public function test_period_closure_pdf_export_validates_range_filters(): void

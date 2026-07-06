@@ -116,6 +116,7 @@ class ReportController extends Controller
         AreaIncomeReportService $areaReports,
         ServiceSalesReportService $serviceReports,
         OperationsReportService $operationReports,
+        CashSessionReportService $cashSessionReports,
     ): StreamedResponse {
         $filters = $request->authorizedFilters();
         $income = $incomeReports->report($filters);
@@ -123,6 +124,12 @@ class ReportController extends Controller
         $areas = $areaReports->report($filters);
         $services = $serviceReports->report($filters);
         $operations = $this->operationsForExport($operationReports, $filters, $request->user());
+        $cashSessionReport = null;
+
+        if (! empty($filters['cash_session_id'])) {
+            $cashSession = CashRegisterSession::query()->findOrFail((int) $filters['cash_session_id']);
+            $cashSessionReport = $cashSessionReports->report($cashSession);
+        }
 
         $excelService = new PremiumExcelExportService;
         $spreadsheet = $excelService->generate(
@@ -132,7 +139,8 @@ class ReportController extends Controller
             $services,
             $operations,
             Carbon::parse($request->dateFrom()),
-            Carbon::parse($request->dateTo())
+            Carbon::parse($request->dateTo()),
+            $cashSessionReport
         );
 
         $writer = new Xlsx($spreadsheet);
@@ -159,6 +167,7 @@ class ReportController extends Controller
         AreaIncomeReportService $areaReports,
         ServiceSalesReportService $servicesReports,
         OperationsReportService $operationsReports,
+        CashSessionReportService $cashSessionReports,
         PdfExportService $pdfService
     ) {
         $fiscal = FiscalSetting::first() ?? new FiscalSetting([
@@ -185,6 +194,12 @@ class ReportController extends Controller
         $areas = $areaReports->report($filters);
         $services = $servicesReports->report($filters);
         $operations = $this->operationsForExport($operationsReports, $filters, $request->user());
+        $cashSessionReport = null;
+
+        if (! empty($filters['cash_session_id'])) {
+            $cashSession = CashRegisterSession::query()->findOrFail((int) $filters['cash_session_id']);
+            $cashSessionReport = $cashSessionReports->report($cashSession);
+        }
 
         $pdf = $pdfService->generateRangeClosurePdf([
             'income' => $income,
@@ -192,6 +207,7 @@ class ReportController extends Controller
             'areas' => $areas,
             'services' => $services,
             'operations' => $operations,
+            'cash_session_report' => $cashSessionReport,
             'filters' => $filters,
             'date_from' => $filters['date_from'],
             'date_to' => $filters['date_to'],

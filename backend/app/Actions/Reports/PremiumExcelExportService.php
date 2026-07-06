@@ -40,7 +40,8 @@ class PremiumExcelExportService
         array $services,
         array $operations,
         Carbon $from,
-        Carbon $to
+        Carbon $to,
+        ?array $cashSessionReport = null
     ): Spreadsheet {
         $spreadsheet = new Spreadsheet;
 
@@ -178,6 +179,18 @@ class PremiumExcelExportService
         // Auto widths
         foreach (['B', 'C'] as $col) {
             $sheet0->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        if ($cashSessionReport !== null) {
+            $this->addCashSessionClosureSheet(
+                $spreadsheet,
+                $cashSessionReport,
+                $headerStyle,
+                $titleStyle,
+                $subtitleStyle,
+                $boldRowStyle,
+                $borderStyle,
+            );
         }
 
         // SHEET 1: Resumen General
@@ -855,6 +868,111 @@ class PremiumExcelExportService
         }
 
         return $spreadsheet;
+    }
+
+    /**
+     * @param  array<string, mixed>  $report
+     * @param  array<string, mixed>  $headerStyle
+     * @param  array<string, mixed>  $titleStyle
+     * @param  array<string, mixed>  $subtitleStyle
+     * @param  array<string, mixed>  $boldRowStyle
+     * @param  array<string, mixed>  $borderStyle
+     */
+    private function addCashSessionClosureSheet(
+        Spreadsheet $spreadsheet,
+        array $report,
+        array $headerStyle,
+        array $titleStyle,
+        array $subtitleStyle,
+        array $boldRowStyle,
+        array $borderStyle,
+    ): void {
+        $sheet = $spreadsheet->createSheet();
+        $sheet->setTitle('Cierre de Caja');
+        $sheet->setShowGridlines(true);
+
+        $cashSession = $report['cash_session'] ?? [];
+        $totalsByMethod = array_merge([
+            'cash' => '0.00',
+            'transfer' => '0.00',
+            'card' => '0.00',
+            'other' => '0.00',
+        ], is_array($report['totals_by_method'] ?? null) ? $report['totals_by_method'] : []);
+
+        $sheet->mergeCells('B2:D2');
+        $sheet->setCellValue('B2', 'CIERRE DE CAJA');
+        $sheet->getStyle('B2:D2')->applyFromArray($titleStyle);
+        $sheet->setCellValue('B3', 'Resumen imprimible/exportable de la caja seleccionada');
+        $sheet->getStyle('B3')->applyFromArray($subtitleStyle);
+
+        $sheet->setCellValue('B5', 'Caja');
+        $sheet->setCellValue('C5', (int) ($cashSession['id'] ?? 0));
+        $sheet->setCellValue('B6', 'Estado');
+        $sheet->setCellValue('C6', ExcelSafe::value((string) ($cashSession['status'] ?? '')));
+        $sheet->setCellValue('B7', 'Cajero');
+        $sheet->setCellValue('C7', ExcelSafe::value((string) data_get($cashSession, 'user.name', 'Sin asignar')));
+        $sheet->setCellValue('B8', 'Abierta');
+        $sheet->setCellValue('C8', $this->dateTimeLabel($cashSession['opened_at'] ?? null));
+        $sheet->setCellValue('B9', 'Cerrada');
+        $sheet->setCellValue('C9', $this->dateTimeLabel($cashSession['closed_at'] ?? null));
+        $sheet->setCellValue('B10', 'Esperado en caja');
+        $sheet->setCellValue('C10', $this->moneyFloat($report['expected_cash_amount'] ?? $cashSession['expected_amount'] ?? 0));
+        $sheet->setCellValue('B11', 'Contado al cierre');
+        $sheet->setCellValue('C11', $this->moneyFloat($cashSession['closing_amount'] ?? 0));
+        $sheet->setCellValue('B12', 'Diferencia');
+        $sheet->setCellValue('C12', $this->moneyFloat($cashSession['difference_amount'] ?? 0));
+        $sheet->setCellValue('B13', 'Motivo / nota');
+        $sheet->setCellValue('C13', ExcelSafe::value((string) ($cashSession['closing_notes'] ?? 'Sin diferencia')));
+
+        $sheet->getStyle('B5:C13')->applyFromArray($borderStyle);
+        $sheet->getStyle('B5:B13')->applyFromArray($boldRowStyle);
+        $sheet->getStyle('C10:C12')->getNumberFormat()->setFormatCode('"L. "#,##0.00;"- L. "#,##0.00');
+
+        $sheet->setCellValue('B15', 'Metodo');
+        $sheet->setCellValue('C15', 'Total');
+        $sheet->getStyle('B15:C15')->applyFromArray($headerStyle);
+
+        $methodRows = [
+            ['Efectivo', $totalsByMethod['cash']],
+            ['Transferencia', $totalsByMethod['transfer']],
+            ['Tarjeta', $totalsByMethod['card']],
+            ['Otro', $totalsByMethod['other']],
+        ];
+        $row = 16;
+        foreach ($methodRows as [$label, $amount]) {
+            $sheet->setCellValue('B'.$row, $label);
+            $sheet->setCellValue('C'.$row, $this->moneyFloat($amount));
+            $sheet->getStyle('C'.$row)->getNumberFormat()->setFormatCode('"L. "#,##0.00;"- L. "#,##0.00');
+            $row++;
+        }
+
+        $sheet->setCellValue('B21', 'Total cobrado');
+        $sheet->setCellValue('C21', $this->moneyFloat($report['payments_total'] ?? 0));
+        $sheet->setCellValue('B22', 'Pagos');
+        $sheet->setCellValue('C22', (int) ($report['payments_count'] ?? 0));
+        $sheet->setCellValue('B23', 'Pendientes al cierre');
+        $sheet->setCellValue('C23', (int) ($report['pending_invoice_count'] ?? 0));
+        $sheet->setCellValue('B24', 'Monto pendiente');
+        $sheet->setCellValue('C24', $this->moneyFloat($report['pending_amount'] ?? 0));
+        $sheet->getStyle('B21:C24')->applyFromArray($borderStyle);
+        $sheet->getStyle('B21:B24')->applyFromArray($boldRowStyle);
+        $sheet->getStyle('C21:C21')->getNumberFormat()->setFormatCode('"L. "#,##0.00;"- L. "#,##0.00');
+        $sheet->getStyle('C24:C24')->getNumberFormat()->setFormatCode('"L. "#,##0.00;"- L. "#,##0.00');
+
+        $sheet->freezePane('A15');
+
+        foreach (['B', 'C', 'D'] as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+    }
+
+    private function dateTimeLabel(mixed $value): string
+    {
+        if ($value === null || $value === '') {
+            return 'N/A';
+        }
+
+        return Carbon::parse((string) $value)->format('d/m/Y H:i');
     }
 
     /**

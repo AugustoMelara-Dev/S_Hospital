@@ -7613,3 +7613,28 @@ Pruebas ejecutadas:
 Decision:
 
 - Una caja cerrada es evidencia contable. Las correcciones posteriores deben ir por flujos autorizados y auditados, no por mutaciones directas sobre la sesion o sus movimientos.
+
+## 317. Fase 7/QA - Exportes de caja incluyen cierre desde snapshot
+
+Cambio aplicado:
+
+- `ReportController` reutiliza `CashSessionReportService` cuando se exporta Excel o PDF con `cash_session_id`.
+- El Excel consolidado agrega una hoja dedicada `Cierre de Caja` con caja, estado, cajero, apertura/cierre, esperado, contado, diferencia, totales por metodo, pagos y pendientes.
+- El PDF consolidado agrega una seccion `Cierre de Caja` con los mismos totales de cierre, usando el payload de reporte de caja.
+- Las pruebas cubren que el Excel tenga la hoja dedicada y que el PDF renderice la seccion de cierre para una caja cerrada real con pagos en efectivo y tarjeta.
+- No se agregaron dependencias, migraciones, roles, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test tests/Feature/ReportsTest.php --filter=dedicated_close_sheet` | Primero fallo por falta de hoja; luego OK: 1 test, 15 assertions. |
+| `docker compose exec backend php artisan test tests/Feature/ReportsTest.php --filter=period_pdf_includes_dedicated_close_snapshot_section` | Primero fallo por falta de seccion; luego OK: 1 test, 17 assertions. |
+| `docker compose exec backend php artisan test tests/Feature/ReportsTest.php --filter="cash_session_export|cash_session_period_pdf"` | OK: 5 tests, 62 assertions. |
+| `docker compose exec backend vendor/bin/pint --test` | OK: 431 files. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=1G` | OK: no errors. |
+| `git diff --check` | OK. |
+
+Decision:
+
+- El boton de Excel/PDF de caja debe producir un cierre imprimible y exportable, no solo un reporte generico filtrado. Los agregados visibles para cierre salen del snapshot de caja para conservar evidencia contable.
