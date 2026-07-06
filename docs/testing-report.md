@@ -534,3 +534,15 @@ verified.
 | `npm run test -- InstitutionalReceiptSettingsView --run` | PASS, 24 tests. |
 | `npm run lint` | PASS. |
 | `npm run build` | PASS. |
+
+### 2026-07-06 Cash Close Fresh Reconciliation Gate
+
+| Command | Result |
+|---|---|
+| `npm run test -- CashBoxView --run -t "refreshes cash reconciliation"` | RED first because close confirmation opened from cached reconciliation after only one current-session fetch; then PASS. |
+| `npm run test -- CashBoxView --run -t "reconciliation refresh fails"` | RED first because the close confirmation opened even when the refresh failed; then PASS. |
+| `npm run test -- CashBoxView --run` | PASS, 16 tests. |
+| `npm run test -- src/features/cash --run` | PASS, 36 tests across 5 files. |
+| `npm run typecheck` | PASS. |
+| `npm run lint` | PASS. |
+| `npm run build` | PASS. |

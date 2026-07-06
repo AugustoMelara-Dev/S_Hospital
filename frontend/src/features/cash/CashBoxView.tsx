@@ -197,15 +197,11 @@ export function CashBoxView({
     setPendingOpening(null);
   }
 
-  function handleCloseConfirmation(event: FormEvent<HTMLFormElement>) {
+  async function handleCloseConfirmation(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!activeSession) return;
     if (!canCloseCash) {
       setFormAlert('Este usuario no tiene permiso para cerrar caja.');
-      return;
-    }
-    if (hasPendingBalance) {
-      setFormAlert(`No se puede cerrar caja con ${pendingInvoiceCount} factura(s) pendientes o parciales por ${formatLempirasUI(pendingAmount)}.`);
       return;
     }
     if (closingAmount.trim() === '') {
@@ -218,6 +214,21 @@ export function CashBoxView({
       setClosingAmountError('Ingrese un monto contado válido, por ejemplo 100.00.');
       setFormAlert(null);
       closingAmountRef.current?.focus();
+      return;
+    }
+    const refreshed = await refetch();
+    if (refreshed.isError) {
+      setClosingAmountError(null);
+      setFormAlert('No se pudo actualizar caja antes de cerrar. Revise la conexion LAN y vuelva a intentar.');
+      return;
+    }
+    const sessionForClose = refreshed.data ?? activeSession;
+    const refreshedPendingInvoiceCount = sessionForClose.pending_invoice_count ?? 0;
+    const refreshedPendingAmount = sessionForClose.pending_amount ?? '0.00';
+    const refreshedHasPendingBalance = refreshedPendingInvoiceCount > 0 || parseCents(refreshedPendingAmount) > 0;
+
+    if (refreshedHasPendingBalance) {
+      setFormAlert(`No se puede cerrar caja con ${refreshedPendingInvoiceCount} factura(s) pendientes o parciales por ${formatLempirasUI(refreshedPendingAmount)}.`);
       return;
     }
     setClosingAmountError(null);

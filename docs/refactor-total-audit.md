@@ -6875,3 +6875,29 @@ Pruebas ejecutadas:
 Decision:
 
 - El contrato frontend ahora refleja el API real: operacion normal recibe datos seguros, mientras soporte avanzado puede recibir campos tecnicos completos.
+
+## 286. Fase 7 - Cierre de caja refresca conciliacion antes de confirmar
+
+Cambio aplicado:
+
+- `CashBoxView` refresca `/api/cash-sessions/current` antes de abrir el dialogo de cierre cuando el monto contado ya es valido.
+- La UI bloquea el cierre si el refresco devuelve facturas pendientes o saldo pendiente nuevos, evitando que el cajero confirme con datos de conciliacion cacheados.
+- Si el refresco falla por red LAN/backend, la UI no abre la confirmacion y muestra un mensaje humano sin exponer errores SQL o tecnicos.
+- Las pruebas existentes de cierre esperan ahora el dialogo real antes de confirmar, reflejando el flujo asincrono.
+- No se agregaron migraciones, dependencias, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- CashBoxView --run -t "refreshes cash reconciliation"` | RED inicial correcto: solo habia 1 lectura de caja y el dialogo abria con cache; luego OK. |
+| `npm run test -- CashBoxView --run -t "reconciliation refresh fails"` | RED inicial correcto: el dialogo abria aunque el refresco fallara; luego OK. |
+| `npm run test -- CashBoxView --run` | OK: 16 tests. |
+| `npm run test -- src/features/cash --run` | OK: 36 tests en 5 archivos. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- El backend sigue siendo la autoridad final para cerrar caja, pero el frontend debe sincronizar el dato operativo justo antes de pedir confirmacion para evitar sorpresas evitables al cajero durante el cierre.
