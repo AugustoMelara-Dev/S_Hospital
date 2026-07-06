@@ -393,7 +393,8 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
           reason,
           receiptId: institutionalReceipt.id,
         });
-        await openInstitutionalReceiptPdf(institutionalReceipt, reason, idempotencyKey);
+        await apiClient.registerInstitutionalReceiptPrintEvent(institutionalReceipt.id, reason, { idempotencyKey });
+        await openInstitutionalReceiptPdf(institutionalReceipt);
         queryClient.invalidateQueries({ queryKey: ['audit'] });
         onStatus(`PDF institucional ${institutionalReceipt.receipt_number_full} abierto.`);
         resetPayloadScopedIdempotencyKey(reprintIdempotencyKeyRef, reprintIdempotencySignatureRef);

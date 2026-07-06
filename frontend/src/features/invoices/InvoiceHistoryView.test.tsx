@@ -1226,6 +1226,8 @@ describe('InvoiceHistoryView', () => {
     const onStatus = vi.fn();
     const getPdf = vi.spyOn(apiClient, 'getInstitutionalReceiptPdf')
       .mockResolvedValue(new Blob(['%PDF-reprint-history'], { type: 'application/pdf' }));
+    const registerPrint = vi.spyOn(apiClient, 'registerInstitutionalReceiptPrintEvent')
+      .mockResolvedValue({} as never);
     const getReceipt = vi.spyOn(apiClient, 'getReceipt');
 
     vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
@@ -1243,9 +1245,10 @@ describe('InvoiceHistoryView', () => {
     fireEvent.click(await screen.findByRole('menuitem', { name: /Reimprimir PDF/i }));
     await submitReprintReason('Copia solicitada por auditoria');
 
-    await waitFor(() => expect(getPdf).toHaveBeenCalledWith(94, 'Copia solicitada por auditoria', {
+    await waitFor(() => expect(registerPrint).toHaveBeenCalledWith(94, 'Copia solicitada por auditoria', {
       idempotencyKey: 'history-institutional-reprint-attempt-1',
     }));
+    expect(getPdf).toHaveBeenCalledWith(94);
     expect(screen.queryByText(/Reimprimir 000-001-01-00000034/i)).not.toBeInTheDocument();
     expect(getReceipt).not.toHaveBeenCalled();
     expect(onStatus).toHaveBeenCalledWith('PDF institucional REC-A-00000094 abierto.');
@@ -1283,11 +1286,11 @@ describe('InvoiceHistoryView', () => {
     fireEvent.click(await screen.findByRole('menuitem', { name: /Reimprimir/i }));
     await submitReprintReason('Copia solicitada por auditoria');
 
-    await waitFor(() => expect(getPdf).toHaveBeenCalledWith(91, 'Copia solicitada por auditoria', {
+    await waitFor(() => expect(registerPrint).toHaveBeenCalledWith(91, 'Copia solicitada por auditoria', {
       idempotencyKey: 'history-institutional-reprint-attempt-1',
     }));
+    expect(getPdf).toHaveBeenCalledWith(91);
     expect(screen.queryByText(/Reimprimir 000-001-01-00000005/i)).not.toBeInTheDocument();
-    expect(registerPrint).not.toHaveBeenCalled();
     expect(openBlobInNewTab).toHaveBeenCalledWith(
       expect.any(Blob),
       'recibo-institucional-REC-A-00000091.pdf',
@@ -1314,6 +1317,8 @@ describe('InvoiceHistoryView', () => {
       institutional_receipt: institutionalReceiptFixture({ id: 142, receipt_number_full: 'REC-A-00000142' }),
     });
     const onStatus = vi.fn();
+    const registerPrint = vi.spyOn(apiClient, 'registerInstitutionalReceiptPrintEvent')
+      .mockResolvedValue({} as never);
     const getPdf = vi.spyOn(apiClient, 'getInstitutionalReceiptPdf')
       .mockRejectedValueOnce(new Error('pdf failed'))
       .mockResolvedValueOnce(new Blob(['%PDF-reprint'], { type: 'application/pdf' }));
@@ -1336,9 +1341,10 @@ describe('InvoiceHistoryView', () => {
     fireEvent.click(await screen.findByRole('menuitem', { name: /Reimprimir/i }));
     await submitReprintReason('Copia solicitada por auditoria');
 
-    await waitFor(() => expect(getPdf).toHaveBeenCalledWith(141, 'Copia solicitada por auditoria', {
+    await waitFor(() => expect(registerPrint).toHaveBeenCalledWith(141, 'Copia solicitada por auditoria', {
       idempotencyKey: 'history-institutional-reprint-attempt-1',
     }));
+    expect(getPdf).toHaveBeenCalledWith(141);
     await waitFor(() => expect(onStatus).toHaveBeenCalledWith('pdf failed'));
     fireEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: /cancelar/i }));
 
@@ -1346,9 +1352,10 @@ describe('InvoiceHistoryView', () => {
     fireEvent.click(await screen.findByRole('menuitem', { name: /Reimprimir/i }));
     await submitReprintReason('Copia solicitada por auditoria');
 
-    await waitFor(() => expect(getPdf).toHaveBeenLastCalledWith(142, 'Copia solicitada por auditoria', {
+    await waitFor(() => expect(registerPrint).toHaveBeenLastCalledWith(142, 'Copia solicitada por auditoria', {
       idempotencyKey: 'history-institutional-reprint-attempt-2',
     }));
+    expect(getPdf).toHaveBeenLastCalledWith(142);
     expect(openBlobInNewTab).toHaveBeenCalledWith(
       expect.any(Blob),
       'recibo-institucional-REC-A-00000142.pdf',
@@ -1402,6 +1409,8 @@ describe('InvoiceHistoryView', () => {
     });
     const getPdf = vi.spyOn(apiClient, 'getInstitutionalReceiptPdf')
       .mockResolvedValue(new Blob(['%PDF-reprint'], { type: 'application/pdf' }));
+    const registerPrint = vi.spyOn(apiClient, 'registerInstitutionalReceiptPrintEvent')
+      .mockResolvedValue({} as never);
 
     vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
       data: [paid],
@@ -1430,9 +1439,10 @@ describe('InvoiceHistoryView', () => {
       resolveInvoice(paid);
     });
 
-    await waitFor(() => expect(getPdf).toHaveBeenCalledWith(99, 'Copia solicitada por auditoria', {
+    await waitFor(() => expect(registerPrint).toHaveBeenCalledWith(99, 'Copia solicitada por auditoria', {
       idempotencyKey: expect.any(String),
     }));
+    expect(getPdf).toHaveBeenCalledWith(99);
   });
 
   it('requires a manual reason before direct institutional reprint from history', async () => {
@@ -1446,6 +1456,8 @@ describe('InvoiceHistoryView', () => {
     const onStatus = vi.fn();
     const getPdf = vi.spyOn(apiClient, 'getInstitutionalReceiptPdf')
       .mockResolvedValue(new Blob(['%PDF-reprint'], { type: 'application/pdf' }));
+    const registerPrint = vi.spyOn(apiClient, 'registerInstitutionalReceiptPrintEvent')
+      .mockResolvedValue({} as never);
 
     vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
       data: [paid],
@@ -1460,9 +1472,10 @@ describe('InvoiceHistoryView', () => {
     fireEvent.click(await screen.findByRole('menuitem', { name: /Reimprimir/i }));
     await submitReprintReason('Copia solicitada por auditoria');
 
-    await waitFor(() => expect(getPdf).toHaveBeenCalledWith(93, 'Copia solicitada por auditoria', {
+    await waitFor(() => expect(registerPrint).toHaveBeenCalledWith(93, 'Copia solicitada por auditoria', {
       idempotencyKey: expect.any(String),
     }));
+    expect(getPdf).toHaveBeenCalledWith(93);
     expect(screen.queryByText(/Reimprimir 000-001-01-00000033/i)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/motivo de reimpresi/i)).not.toBeInTheDocument();
     expect(onStatus).toHaveBeenCalledWith('PDF institucional REC-A-00000093 abierto.');

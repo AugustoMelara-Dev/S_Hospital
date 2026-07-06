@@ -7721,3 +7721,25 @@ Pruebas ejecutadas:
 Decision:
 
 - El recibo principal del sistema es institucional. El KPI ejecutivo de reimpresiones debe reflejar copias institucionales reales, no solo eventos legacy de facturas.
+
+## 322. Fase 5/QA - Reimpresion institucional desde historial queda auditada
+
+Cambio aplicado:
+
+- La reimpresion de recibos institucionales desde historial registra primero `institutional_receipt_print_events` con motivo humano e idempotencia.
+- El PDF institucional se abre despues del registro auditado, usando la descarga simple del recibo ya emitido.
+- Los casos de historial ahora verifican que la reimpresion institucional no dependa de parametros ignorados por el endpoint de PDF.
+- No se agregaron dependencias, migraciones, roles, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `cd frontend && npm run test -- InvoiceHistoryView.test.tsx -t "reprinting a previously printed institutional receipt" -- --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | Primero fallo porque no se llamaba `registerInstitutionalReceiptPrintEvent`; luego OK: 1 test, 41 skipped. |
+| `cd frontend && npm run test -- InvoiceHistoryView.test.tsx -- --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 42 tests. |
+| `cd frontend && npm run typecheck` | OK. |
+| `cd frontend && npm run lint` | OK. |
+
+Decision:
+
+- Historial es un punto operativo de reimpresion real. Si la copia institucional se entrega desde ahi, debe quedar auditada antes de abrir el PDF, igual que el flujo principal de recibos.
