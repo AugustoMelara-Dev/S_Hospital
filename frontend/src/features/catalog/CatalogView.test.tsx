@@ -327,6 +327,51 @@ describe('CatalogView modernized structure', () => {
     expect(deleteService).not.toHaveBeenCalled();
   });
 
+  it('requires confirmation before activating an inactive service with an audit reason', async () => {
+    setupBasicMocks();
+    vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({
+      data: [serviceFixture({ active: false, aliases: 'azucar, laboratorio rapido' })],
+      meta: { current_page: 1, per_page: 15, total: 1 },
+    });
+    const saveService = vi
+      .spyOn(apiClient, 'saveService')
+      .mockResolvedValue(serviceFixture({ active: true }));
+    const onStatus = vi.fn();
+
+    renderWithQueryClient(
+      <CatalogView user={catalogUser(['catalog.view', 'catalog.manage'])} onStatus={onStatus} />,
+    );
+
+    const actionsButton = await screen.findByRole('button', { name: /acciones de servicio glucosa/i });
+    actionsButton.focus();
+    fireEvent.keyDown(actionsButton, { key: 'Enter' });
+    fireEvent.click(await screen.findByRole('menuitem', { name: /^activar$/i }));
+
+    expect(saveService).not.toHaveBeenCalled();
+    expect(
+      await screen.findByRole('alertdialog', { name: /activar servicio/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/volvera a estar disponible para nuevos cobros/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /activar servicio/i })).toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText(/motivo/i), {
+      target: { value: 'Servicio reactivado por administracion' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /activar servicio/i }));
+
+    await waitFor(() => {
+      expect(saveService).toHaveBeenCalledWith(
+        expect.objectContaining({
+          active: true,
+          aliases: 'azucar, laboratorio rapido',
+          availability_change_reason: 'Servicio reactivado por administracion',
+        }),
+        1,
+      );
+    });
+    expect(onStatus).toHaveBeenCalledWith('Servicio activado.');
+  });
+
   it('renders error sanitized message and exposes a retry callback on the table', async () => {
     setupBasicMocks();
     const getServicesPage = vi

@@ -41,7 +41,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [categorySheetOpen, setCategorySheetOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [serviceToDeactivate, setServiceToDeactivate] = useState<Service | null>(null);
+  const [servicePendingStatusChange, setServicePendingStatusChange] = useState<Service | null>(null);
 
   const canManageCatalog = useMemo(
     () => user.permissions.includes('catalog.manage'),
@@ -73,6 +73,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
   const services = servicesData?.data ?? [];
   const meta = servicesData?.meta ?? { current_page: 1, per_page: DEFAULT_PER_PAGE, total: 0 };
   const scannerEnabled = operationalSettingsQuery.data?.scanner_enabled === true;
+  const serviceStatusActionLabel = servicePendingStatusChange?.active ? 'Desactivar servicio' : 'Activar servicio';
   const loadError = errorMessageFromQueries(servicesQuery.error, categoriesQuery.error, areasQuery.error);
   const isLoading = servicesQuery.isLoading && !servicesData;
 
@@ -152,42 +153,29 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
     onStatus('Categoría guardada exitosamente.');
   }
 
-  const toggleServiceActive = useCallback(
-    async (service: Service) => {
-      if (service.active) {
-        setServiceToDeactivate(service);
-        return;
-      }
+  const toggleServiceActive = useCallback((service: Service) => {
+    setServicePendingStatusChange(service);
+  }, []);
 
-      try {
-        await apiClient.saveService(serviceStatusPayload(service, !service.active), service.id);
-        void invalidateCatalogQueries(queryClient);
-        void refetchCatalogData();
-        onStatus(service.active ? 'Servicio desactivado.' : 'Servicio activado.');
-      } catch {
-        onStatus('No se pudo cambiar el estado del servicio.');
-      }
-    },
-    [onStatus, queryClient, refetchCatalogData],
-  );
-
-  const confirmServiceDeactivation = useCallback(async (reason: string | null) => {
-    const service = serviceToDeactivate;
+  const confirmServiceStatusChange = useCallback(async (reason: string | null) => {
+    const service = servicePendingStatusChange;
 
     if (!service) {
       return;
     }
 
+    const nextActive = !service.active;
+
     try {
-      await apiClient.saveService(serviceStatusPayload(service, false, reason), service.id);
-      setServiceToDeactivate(null);
+      await apiClient.saveService(serviceStatusPayload(service, nextActive, reason), service.id);
+      setServicePendingStatusChange(null);
       void invalidateCatalogQueries(queryClient);
       void refetchCatalogData();
-      onStatus('Servicio desactivado.');
+      onStatus(nextActive ? 'Servicio activado.' : 'Servicio desactivado.');
     } catch {
       onStatus('No se pudo cambiar el estado del servicio.');
     }
-  }, [onStatus, queryClient, refetchCatalogData, serviceToDeactivate]);
+  }, [onStatus, queryClient, refetchCatalogData, servicePendingStatusChange]);
 
   function normalizeServiceForSheet(service: Service) {
     return {
@@ -291,17 +279,19 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
           />
 
           <ConfirmDialog
-            danger
-            confirmLabel="Desactivar servicio"
-            onCancel={() => setServiceToDeactivate(null)}
-            onConfirm={(reason) => void confirmServiceDeactivation(reason)}
-            open={serviceToDeactivate !== null}
-            reasonHelpText="Mínimo 5 caracteres. El motivo quedará registrado en auditoría del catálogo."
+            danger={servicePendingStatusChange?.active === true}
+            confirmLabel={serviceStatusActionLabel}
+            onCancel={() => setServicePendingStatusChange(null)}
+            onConfirm={(reason) => void confirmServiceStatusChange(reason)}
+            open={servicePendingStatusChange !== null}
+            reasonHelpText="Minimo 5 caracteres. El motivo quedara registrado en auditoria del catalogo."
             requireReasonMinLength={5}
             requireReasonTextarea
-            title="Desactivar servicio"
+            title={serviceStatusActionLabel}
           >
-            El servicio {serviceToDeactivate?.name ?? ''} quedara oculto para nuevos cobros. Las facturas historicas conservaran sus snapshots.
+            {servicePendingStatusChange?.active
+              ? `El servicio ${servicePendingStatusChange.name} quedara oculto para nuevos cobros. Las facturas historicas conservaran sus snapshots.`
+              : `El servicio ${servicePendingStatusChange?.name ?? ''} volvera a estar disponible para nuevos cobros. Las facturas historicas conservaran sus snapshots.`}
           </ConfirmDialog>
         </>
       ) : null}

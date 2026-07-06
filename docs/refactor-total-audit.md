@@ -7540,3 +7540,26 @@ Pruebas ejecutadas:
 Decision:
 
 - Cambiar si un servicio aparece o se cobra en caja es una decision operativa auditable, igual que precio e impuesto. El frontend no debe permitir un cambio que el backend rechaza o que quedaria sin motivo humano.
+
+## 314. Fase 8/QA - Reactivar servicios desde tabla exige motivo
+
+Cambio aplicado:
+
+- `CatalogView` usa el mismo dialogo con motivo obligatorio para activar y desactivar servicios desde la tabla.
+- Reactivar un servicio inactivo ya no llama directo al API sin `availability_change_reason`.
+- El payload conserva snapshots operativos del servicio y envia el motivo auditado al cambiar `active`.
+- La prueba de la vista cubre reactivacion con confirmacion, motivo minimo y payload esperado.
+- No se agregaron dependencias, migraciones, roles, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- CatalogView.test.tsx --run` | OK: 1 file, 20 tests. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `git diff --check` | OK. |
+
+Decision:
+
+- Activar un servicio vuelve a exponerlo en caja y debe quedar explicado con un motivo humano, no solo desactivar. La tabla no debe tener un camino rapido que omita la auditoria que exige el backend.
