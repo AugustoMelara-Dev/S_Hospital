@@ -39,6 +39,23 @@ describe('ReportsCash', () => {
     vi.mocked(openBlobInNewTab).mockReset();
   });
 
+  it('auto-loads the latest own cash session report for a non-managerial cashier', async () => {
+    vi.mocked(apiClient.getCashSessions).mockResolvedValue({
+      data: [buildCashSessionReport().cash_session],
+      meta: { current_page: 1, per_page: 5, total: 1 },
+    });
+    vi.mocked(apiClient.getCashSessionReport).mockResolvedValue(buildCashSessionReport());
+
+    render(<ReportsCash canViewCash canBrowseCashSessions canViewManagerial={false} canExport={false} />);
+
+    await waitFor(() => {
+      expect(apiClient.getCashSessionReport).toHaveBeenCalledWith('12');
+    });
+    expect((await screen.findAllByText(/Caja Principal/i)).length).toBeGreaterThan(0);
+    expect(screen.queryByRole('button', { name: /exportar excel/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /pdf caja/i })).not.toBeInTheDocument();
+  });
+
   it('lets the cashier open a recent cash session report without typing an id', async () => {
     vi.mocked(apiClient.getCashSessions).mockResolvedValue({
       data: [buildCashSessionReport().cash_session],

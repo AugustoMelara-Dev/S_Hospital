@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { EmptyState } from '@/components/ui/states';
 import { OperationalBanner } from '@/components/shared';
 import { apiClient, type CashSession, userSafeErrorMessage } from '@/lib/api';
@@ -26,6 +26,18 @@ export function ReportsCash({
   const [recentCashSessions, setRecentCashSessions] = useState<CashSession[]>([]);
   const [cashSessionsLoading, setCashSessionsLoading] = useState(false);
 
+  const loadCashReportById = useCallback(async (normalizedCashReportId: string) => {
+    try {
+      setCashError('');
+      setCashLoading(true);
+      setCashSessionReport(await apiClient.getCashSessionReport(normalizedCashReportId));
+    } catch (err) {
+      setCashError(userSafeErrorMessage(err, 'No se pudo cargar la caja.'));
+    } finally {
+      setCashLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (!canBrowseCashSessions) {
       return;
@@ -40,8 +52,12 @@ export function ReportsCash({
         if (cancelled) return;
 
         const sessions = Array.isArray(response.data) ? response.data : [];
+        const firstSessionId = sessions[0]?.id ? String(sessions[0].id) : '';
         setRecentCashSessions(sessions);
-        setCashReportId((current) => current.trim() || (sessions[0]?.id ? String(sessions[0].id) : ''));
+        setCashReportId((current) => current.trim() || firstSessionId);
+        if (firstSessionId) {
+          await loadCashReportById(firstSessionId);
+        }
       } catch {
         if (!cancelled) {
           setRecentCashSessions([]);
@@ -58,7 +74,7 @@ export function ReportsCash({
     return () => {
       cancelled = true;
     };
-  }, [canBrowseCashSessions]);
+  }, [canBrowseCashSessions, loadCashReportById]);
 
   async function loadCashReport() {
     if (cashLoading) {
@@ -77,15 +93,7 @@ export function ReportsCash({
       return;
     }
 
-    try {
-      setCashError('');
-      setCashLoading(true);
-      setCashSessionReport(await apiClient.getCashSessionReport(normalizedCashReportId));
-    } catch (err) {
-      setCashError(userSafeErrorMessage(err, 'No se pudo cargar la caja.'));
-    } finally {
-      setCashLoading(false);
-    }
+    await loadCashReportById(normalizedCashReportId);
   }
 
   async function exportCashReport() {

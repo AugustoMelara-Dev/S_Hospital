@@ -6632,3 +6632,27 @@ Pruebas ejecutadas:
 Decision:
 
 - Para una version monocomputadora estable, el cajero debe poder revisar su turno/cierre sin permiso gerencial. El alcance sigue protegido por propietario de caja, por lo que no se exponen sesiones de otros usuarios.
+
+## 276. Fase 10/7 - Reporte de caja carga el turno reciente
+
+Cambio aplicado:
+
+- `ReportsCash` ahora carga automaticamente el reporte de la caja reciente mas nueva despues de consultar `/api/cash-sessions`.
+- El cajero no gerencial entra a `/reports/cash` y ve su turno reciente sin tener que volver a presionar `Ver caja`.
+- El selector conserva la caja reciente como valor editable para consultas manuales.
+- Los botones de exportacion siguen ocultos cuando `canExport=false`; no se exponen PDF/XLSX a cajeros sin permiso.
+- No se agregaron migraciones, dependencias, permisos, endpoints ni cambios backend.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- ReportsCash --run -t "auto-loads the latest own cash session report"` | RED inicial correcto: `getCashSessionReport` no se llamaba al cargar sesiones recientes; luego OK. |
+| `npm run test -- ReportsCash ReportsView.subroutes --run` | OK: 18 tests en 2 archivos. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- El reporte propio de caja debe ser visible de inmediato para operacion diaria LAN/offline. El usuario puede revisar su turno al abrir la pantalla, mientras las exportaciones permanecen reservadas a permisos explicitos.

@@ -428,3 +428,13 @@ verified.
 | `npm run test -- ReportsCash ReportsView.subroutes --run` | PASS, 17 tests across 2 files. |
 | `docker compose exec backend vendor/bin/pint --test` | PASS, 430 files. |
 | `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M` | PASS, no errors. |
+
+### 2026-07-06 Cash Report Autoload Gate
+
+| Command | Result |
+|---|---|
+| `npm run test -- ReportsCash --run -t "auto-loads the latest own cash session report"` | RED first because `ReportsCash` selected the recent session but did not request its report; then PASS, 1 focused test. |
+| `npm run test -- ReportsCash ReportsView.subroutes --run` | PASS, 18 tests across 2 files. |
+| `npm run typecheck` | PASS. |
+| `npm run lint` | PASS. |
+| `npm run build` | PASS. |
