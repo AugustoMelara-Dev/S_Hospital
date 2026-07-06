@@ -6901,3 +6901,26 @@ Pruebas ejecutadas:
 Decision:
 
 - El backend sigue siendo la autoridad final para cerrar caja, pero el frontend debe sincronizar el dato operativo justo antes de pedir confirmacion para evitar sorpresas evitables al cajero durante el cierre.
+
+## 287. Fase 8/14 - Modelo impide borrar servicios facturados
+
+Cambio aplicado:
+
+- `Service` ahora tiene una relacion `invoiceItems()` y un guard `deleting`.
+- Si un servicio ya aparece en `invoice_items`, cualquier intento de borrarlo por Eloquent lanza `LogicException` y conserva el servicio activo y el vinculo historico.
+- El endpoint HTTP mantiene su comportamiento anterior: servicios no facturados se desactivan, servicios facturados devuelven 409.
+- No se agregaron migraciones, dependencias, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker exec s_hospital-backend-1 php artisan test --filter=invoiced_service_cannot_be_deleted_through_model` | RED inicial correcto: Eloquent borraba el servicio facturado; luego OK. |
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/ServiceCatalogTest.php --filter=deleting` | OK: 2 tests, 9 assertions. |
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/ServiceCatalogTest.php` | OK: 41 tests, 245 assertions. |
+| `docker exec s_hospital-backend-1 vendor/bin/pint --test` | OK: 430 files. |
+| `docker exec s_hospital-backend-1 vendor/bin/phpstan analyse --memory-limit=512M` | OK: no errors. |
+
+Decision:
+
+- La regla de negocio "desactivar en vez de borrar" ya no depende solo del controller. El modelo protege borrados internos por Eloquent y conserva la trazabilidad entre catalogo e historico facturado.

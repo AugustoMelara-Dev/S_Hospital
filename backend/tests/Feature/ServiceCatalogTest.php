@@ -16,6 +16,7 @@ use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
+use LogicException;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
@@ -1090,6 +1091,34 @@ class ServiceCatalogTest extends TestCase
             'action' => 'service.deactivated',
             'entity_type' => Service::class,
             'entity_id' => $service->id,
+        ]);
+    }
+
+    public function test_invoiced_service_cannot_be_deleted_through_model(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $admin = $this->admin();
+        $service = Service::query()->where('name', 'Glucosa')->firstOrFail();
+
+        $this->createIssuedInvoiceForService($service, $admin);
+
+        try {
+            $service->delete();
+            $this->fail('Deleting an invoiced service through Eloquent should be blocked.');
+        } catch (LogicException $exception) {
+            $this->assertSame(
+                'Los servicios facturados no se eliminan; deben desactivarse para conservar el historico.',
+                $exception->getMessage(),
+            );
+        }
+
+        $this->assertDatabaseHas('services', [
+            'id' => $service->id,
+            'active' => true,
+        ]);
+        $this->assertDatabaseHas('invoice_items', [
+            'service_id' => $service->id,
+            'service_name' => 'Glucosa',
         ]);
     }
 

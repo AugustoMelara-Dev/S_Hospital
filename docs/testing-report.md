@@ -546,3 +546,13 @@ verified.
 | `npm run typecheck` | PASS. |
 | `npm run lint` | PASS. |
 | `npm run build` | PASS. |
+
+### 2026-07-06 Catalog Invoiced Service Delete Guard
+
+| Command | Result |
+|---|---|
+| `docker exec s_hospital-backend-1 php artisan test --filter=invoiced_service_cannot_be_deleted_through_model` | RED first because Eloquent deleted an invoiced service; then PASS. |
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/ServiceCatalogTest.php --filter=deleting` | PASS, 2 tests and 9 assertions. |
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/ServiceCatalogTest.php` | PASS, 41 tests and 245 assertions. |
+| `docker exec s_hospital-backend-1 vendor/bin/pint --test` | PASS, 430 files. |
+| `docker exec s_hospital-backend-1 vendor/bin/phpstan analyse --memory-limit=512M` | PASS, no errors. |
