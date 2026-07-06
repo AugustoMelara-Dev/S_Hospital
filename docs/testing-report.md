@@ -596,3 +596,13 @@ verified.
 | `npm run typecheck` | PASS. |
 | `npm run lint` | PASS. |
 | `npm run build` | PASS. |
+
+### 2026-07-06 POS Cash Session Refresh Before Invoice Confirmation Gate
+
+| Command | Result |
+|---|---|
+| `npm run test -- NewInvoiceView --run -t "refreshes cash session"` | RED first because invoice confirmation opened with a stale open cash session; then PASS. |
+| `npm run test -- NewInvoiceView --run` | PASS, 28 tests across 3 files. |
+| `npm run typecheck` | PASS. |
+| `npm run lint` | PASS. |
+| `npm run build` | PASS. |

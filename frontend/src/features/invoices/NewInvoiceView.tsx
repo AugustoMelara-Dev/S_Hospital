@@ -54,6 +54,7 @@ export function NewInvoiceView({
   const patientInputRef = useRef<HTMLInputElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const scannerInputRef = useRef<HTMLInputElement | null>(null);
+  const emitConfirmationInFlightRef = useRef(false);
   const submitInvoiceInFlightRef = useRef(false);
   const submitInvoiceIdempotencyKeyRef = useRef<string | null>(null);
   const submitInvoiceIdempotencySignatureRef = useRef<string | null>(null);
@@ -374,10 +375,35 @@ export function NewInvoiceView({
     return true;
   }
 
-  function handleEmitClick() {
+  async function handleEmitClick() {
     dispatch({ type: 'SET_ALERT_MESSAGE', payload: null });
     if (!validateForm()) return;
-    dispatch({ type: 'SET_SHOW_CONFIRMATION', payload: true });
+    if (emitConfirmationInFlightRef.current) return;
+
+    emitConfirmationInFlightRef.current = true;
+    dispatch({ type: 'SET_SUBMITTING', payload: true });
+    try {
+      const currentCashSession = await apiClient.getCurrentCashSession();
+      const openCashSession = currentCashSession?.status === 'open' ? currentCashSession : null;
+      dispatch({ type: 'SET_LOADED_CASH_SESSION', payload: openCashSession });
+      onCashSessionChange?.(openCashSession);
+
+      if (!openCashSession) {
+        const message = 'Abra caja antes de emitir y cobrar una factura.';
+        dispatch({ type: 'SET_ALERT_MESSAGE', payload: message });
+        onStatus(message);
+        return;
+      }
+
+      dispatch({ type: 'SET_SHOW_CONFIRMATION', payload: true });
+    } catch (error) {
+      const message = userSafeErrorMessage(error, 'No se pudo validar la caja abierta antes de emitir.');
+      dispatch({ type: 'SET_ALERT_MESSAGE', payload: message });
+      onStatus(message);
+    } finally {
+      emitConfirmationInFlightRef.current = false;
+      dispatch({ type: 'SET_SUBMITTING', payload: false });
+    }
   }
 
   async function submitInvoice() {

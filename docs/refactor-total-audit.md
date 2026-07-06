@@ -7015,3 +7015,26 @@ Pruebas ejecutadas:
 Decision:
 
 - La asignacion de un rol elevado completo debe tener la misma friccion operacional que los permisos directos criticos, aunque el backend ya valide `users.assign_admin_role`.
+
+## 292. Fase 4/7 - POS revalida caja antes de confirmar emision
+
+Cambio aplicado:
+
+- `NewInvoiceView` refresca `/api/cash-sessions/current` justo antes de abrir la confirmacion de emision.
+- Si la caja se cerro o ya no hay sesion abierta, la UI bloquea la confirmacion, actualiza el estado visual a caja cerrada y conserva paciente/carrito para reintentar tras abrir caja.
+- El backend ya rechazaba emitir sin caja abierta; este corte reduce friccion operativa al detectar la carrera antes de pedir confirmacion al cajero.
+- No se agregaron migraciones, dependencias, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- NewInvoiceView --run -t "refreshes cash session"` | RED inicial correcto: la confirmacion abria con caja obsoleta; luego OK. |
+| `npm run test -- NewInvoiceView --run` | OK: 28 tests en 3 archivos. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- En caja hospitalaria, la UI debe revalidar estado operativo justo antes de una accion fiscal/caja. La autoridad final sigue siendo Laravel, pero el cajero recibe una alerta temprana y no pierde el carrito.

@@ -64,11 +64,15 @@ function makeOpenCashSession(): CashSession {
   };
 }
 
+function openCashSessionResponse(): Response {
+  return { ok: true, json: async () => ({ data: makeOpenCashSession() }) } as Response;
+}
+
 function mockFetchForOpenCashWithService(): ReturnType<typeof vi.fn> {
   return vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
     const url = String(input);
     if (url.includes('/api/cash-sessions/current')) {
-      return { ok: true, json: async () => ({ data: makeOpenCashSession() }) } as Response;
+      return openCashSessionResponse();
     }
     if (url.includes('/api/services')) {
       return { ok: true, json: async () => ({ data: [makeService()] }) } as Response;
@@ -304,6 +308,9 @@ describe('NewInvoiceView critical flows', () => {
 
     fetchMock.mockImplementation(async (input) => {
       const url = String(input);
+      if (url.includes('/api/cash-sessions/current')) {
+        return openCashSessionResponse();
+      }
       if (url.endsWith('/api/invoices')) {
         return {
           ok: false,
@@ -514,6 +521,9 @@ describe('NewInvoiceView critical flows', () => {
 
     fetchMock.mockImplementation(async (input) => {
       const url = String(input);
+      if (url.includes('/api/cash-sessions/current')) {
+        return openCashSessionResponse();
+      }
       if (url.endsWith('/api/invoices')) {
         return {
           ok: true,
@@ -589,6 +599,9 @@ describe('NewInvoiceView critical flows', () => {
 
     fetchMock.mockImplementation(async (input) => {
       const url = String(input);
+      if (url.includes('/api/cash-sessions/current')) {
+        return openCashSessionResponse();
+      }
       if (url.endsWith('/api/invoices')) {
         return {
           ok: true,
@@ -852,6 +865,9 @@ describe('NewInvoiceView critical flows', () => {
 
     fetchMock.mockImplementation(async (input) => {
       const url = String(input);
+      if (url.includes('/api/cash-sessions/current')) {
+        return openCashSessionResponse();
+      }
       if (url.endsWith('/api/invoices')) {
         return {
           ok: true,
@@ -982,6 +998,9 @@ describe('NewInvoiceView critical flows', () => {
 
     fetchMock.mockImplementation(async (input) => {
       const url = String(input);
+      if (url.includes('/api/cash-sessions/current')) {
+        return openCashSessionResponse();
+      }
       if (url.endsWith('/api/invoices')) {
         return {
           ok: true,
@@ -1080,6 +1099,9 @@ describe('NewInvoiceView critical flows', () => {
 
     fetchMock.mockImplementation(async (input, init) => {
       const url = String(input);
+      if (url.includes('/api/cash-sessions/current')) {
+        return openCashSessionResponse();
+      }
       if (url.endsWith('/api/invoices')) {
         return {
           ok: true,
@@ -1197,6 +1219,9 @@ describe('NewInvoiceView critical flows', () => {
 
     fetchMock.mockImplementation(async (input) => {
       const url = String(input);
+      if (url.includes('/api/cash-sessions/current')) {
+        return openCashSessionResponse();
+      }
       if (url.endsWith('/api/invoices')) {
         return {
           ok: true,
@@ -1357,6 +1382,9 @@ describe('NewInvoiceView critical flows', () => {
 
     fetchMock.mockImplementation(async (input) => {
       const url = String(input);
+      if (url.includes('/api/cash-sessions/current')) {
+        return openCashSessionResponse();
+      }
       if (url.endsWith('/api/invoices')) {
         return {
           ok: true,
@@ -1643,6 +1671,55 @@ describe('NewInvoiceView critical flows', () => {
         expect(button).toBeDisabled();
       });
     });
+  });
+
+  it('refreshes cash session before opening invoice confirmation', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch');
+    let currentSessionCalls = 0;
+
+    fetchMock.mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes('/api/cash-sessions/current')) {
+        currentSessionCalls += 1;
+        return {
+          ok: true,
+          json: async () => ({ data: currentSessionCalls === 1 ? makeOpenCashSession() : null }),
+        } as Response;
+      }
+      if (url.includes('/api/services')) {
+        return { ok: true, json: async () => ({ data: [makeService()] }) } as Response;
+      }
+      if (url.includes('/api/categories')) {
+        return { ok: true, json: async () => ({ data: [] }) } as Response;
+      }
+      if (url.includes('/api/settings/operational')) {
+        return {
+          ok: true,
+          json: async () => ({ data: { scanner_enabled: false, partial_payments_enabled: false } }),
+        } as Response;
+      }
+      return { ok: true, json: async () => ({ data: null }) } as Response;
+    });
+
+    renderNewInvoice();
+    await waitForPointOfSaleLoad();
+
+    fireEvent.change(screen.getByLabelText(/nombre del paciente/i), { target: { value: 'Maria Lopez' } });
+    fireEvent.change(screen.getByLabelText(/buscar por nombre/i), { target: { value: 'eritro' } });
+
+    await waitFor(() => {
+      expect(screen.getByText('Eritropoyetina')).toBeInTheDocument();
+    }, { timeout: 3000 });
+
+    fireEvent.click(screen.getByRole('button', { name: /agregar eritropoyetina/i }));
+    fetchMock.mockClear();
+
+    fireEvent.click(screen.getByRole('button', { name: /^emitir y cobrar$/i }));
+
+    expect(await screen.findByText(/abra caja antes de emitir y cobrar una factura/i)).toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: /confirmar emis/i })).not.toBeInTheDocument();
+    expect(fetchMock.mock.calls.some(([url]) => String(url).endsWith('/api/invoices'))).toBe(false);
+    expect(screen.getAllByText('Eritropoyetina').length).toBeGreaterThan(0);
   });
 
   it('does not allow emit when patient is missing even if cart has services (reducer-level)', () => {
