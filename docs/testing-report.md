@@ -299,3 +299,9 @@ verified.
 | `npm run test -- HelpView --run` | RED first because Help still presented restore as normal admin work; then PASS, 1 test. |
 | `npm run typecheck` | PASS. |
 | `npm run lint` | PASS. |
+
+### 2026-07-05 New Invoice Critical E2E Gate
+
+| Command | Result |
+|---|---|
+| `npx playwright test e2e/new-invoice-flow.spec.ts --workers=1 --reporter=list` | PASS, 1 Chromium test in 6.3s. |

@@ -6343,3 +6343,21 @@ Pruebas ejecutadas:
 Decision:
 
 - La UI normal puede orientar sobre respaldos y recuperacion, pero no debe sugerir que la restauracion se ejecuta desde la app ni como tarea operativa diaria.
+
+## 264. Fase 4/20 - E2E critico de nueva factura verificado
+
+Verificacion ejecutada:
+
+| Comando | Resultado |
+|---|---|
+| `npx playwright test e2e/new-invoice-flow.spec.ts --workers=1 --reporter=list` | OK: 1 test pasa en Chromium. |
+
+Cobertura observada:
+
+- El spec mockeado emite una factura desde una caja abierta.
+- Valida el payload de creacion de factura y el payload de pago registrado.
+- Mantiene evidencia focalizada del flujo principal factura -> pago mientras la suite E2E completa sigue pendiente para QA final.
+
+Decision:
+
+- Esta verificacion reduce riesgo del core obligatorio, pero no sustituye el E2E completo ni la prueba fisica de impresion/caja del servidor final.
