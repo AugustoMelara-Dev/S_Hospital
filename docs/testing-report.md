@@ -658,3 +658,14 @@ verified.
 | `npm run typecheck` | PASS. |
 | `npm run lint` | PASS. |
 | `npm run build` | PASS. |
+
+### 2026-07-06 Receipt Advanced Denial Audit Result Gate
+
+| Command | Result |
+|---|---|
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/ReceiptPrintProfileAdvancedFieldsTest.php --filter="without_advanced_permission"` | RED first because advanced denial audit rows used `result = denied`; then PASS. |
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/InstitutionalReceiptSettingsTest.php --filter=test_test_preview_and_print_reject_support_profiles_without_advanced_permission` | RED controlled for support-only preview/print because denial audit rows used `result = denied`; then PASS. |
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/ReceiptPrintProfileAdvancedFieldsTest.php` | PASS, 7 tests and 41 assertions. |
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/InstitutionalReceiptSettingsTest.php` | PASS, 13 tests and 71 assertions. |
+| `docker exec s_hospital-backend-1 vendor/bin/pint --test` | PASS, 431 files. |
+| `docker exec s_hospital-backend-1 vendor/bin/phpstan analyse --memory-limit=512M` | PASS, no errors. |

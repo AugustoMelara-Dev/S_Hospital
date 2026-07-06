@@ -47,7 +47,7 @@ class ReceiptPrintProfileAdvancedFieldsTest extends TestCase
             'action' => 'receipt_settings.advanced_denied',
             'entity_type' => ReceiptPrintProfile::class,
             'entity_id' => $profile->id,
-            'result' => 'denied',
+            'result' => 'failed',
         ]);
     }
 
@@ -82,7 +82,7 @@ class ReceiptPrintProfileAdvancedFieldsTest extends TestCase
             'action' => 'receipt_settings.advanced_denied',
             'entity_type' => ReceiptPrintProfile::class,
             'entity_id' => $profile->id,
-            'result' => 'denied',
+            'result' => 'failed',
         ]);
     }
 

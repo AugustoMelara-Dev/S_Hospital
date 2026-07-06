@@ -430,6 +430,13 @@ class InstitutionalReceiptSettingsTest extends TestCase
                 ->assertJsonValidationErrors('receipt_settings.advanced');
         }
 
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $operator->id,
+            'action' => 'receipt_settings.advanced_denied',
+            'entity_type' => ReceiptPrintProfile::class,
+            'result' => 'failed',
+        ]);
+
         $this->actingAs($operator)
             ->postJson('/api/settings/institutional-receipts/test-preview', [
                 'profile_code' => ReceiptPrintProfile::CODE_HALF_LETTER,

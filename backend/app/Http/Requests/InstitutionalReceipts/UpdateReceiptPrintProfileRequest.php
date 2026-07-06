@@ -56,7 +56,7 @@ class UpdateReceiptPrintProfileRequest extends FormRequest
             request: $this,
             newValues: ['attempted_fields' => $present],
             reason: 'Intento de modificar campos avanzados sin permiso.',
-            result: 'denied',
+            result: 'failed',
         );
 
         throw new HttpResponseException(new JsonResponse([

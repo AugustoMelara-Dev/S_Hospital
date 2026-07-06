@@ -189,7 +189,7 @@ class InstitutionalReceiptSettingsController extends Controller
                 request: $request,
                 newValues: ['attempted_fields' => $request->advancedFieldsPresent()],
                 reason: 'Intento de modificar campos avanzados sin permiso.',
-                result: 'denied',
+                result: 'failed',
             );
 
             return response()->json([
@@ -504,7 +504,7 @@ class InstitutionalReceiptSettingsController extends Controller
                 'flow' => str_contains($request->path(), 'test-print') ? 'test-print' : 'test-preview',
             ],
             reason: 'Intento de usar perfil de soporte en impresion de prueba sin permiso avanzado.',
-            result: 'denied',
+            result: 'failed',
         );
 
         return response()->json([

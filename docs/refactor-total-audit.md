@@ -7154,3 +7154,27 @@ Pruebas ejecutadas:
 Decision:
 
 - La configuracion normal de impresion debe hablar en terminos operativos del hospital. Los detalles sobre servidor/PDF interno pertenecen al sistema, no a la pantalla cotidiana del usuario.
+
+## 298. Fase 6/14 - Denegaciones avanzadas usan resultado compatible con constraints
+
+Cambio aplicado:
+
+- Los audit logs `receipt_settings.advanced_denied` ahora se guardan con `result = failed`, valor permitido por las constraints offline/MySQL.
+- Se conserva la accion `receipt_settings.advanced_denied` para trazabilidad, pero se evita que el 403 auditado falle por constraint de base de datos.
+- Se cubrieron tanto campos manuales avanzados como perfiles de soporte en prueba/preview.
+- No se agregaron migraciones, dependencias, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/ReceiptPrintProfileAdvancedFieldsTest.php --filter="without_advanced_permission"` | RED inicial correcto: audit log guardaba `result = denied`; luego OK. |
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/InstitutionalReceiptSettingsTest.php --filter=test_test_preview_and_print_reject_support_profiles_without_advanced_permission` | RED controlado correcto para perfil soporte: audit log guardaba `result = denied`; luego OK. |
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/ReceiptPrintProfileAdvancedFieldsTest.php` | OK: 7 tests, 41 assertions. |
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/InstitutionalReceiptSettingsTest.php` | OK: 13 tests, 71 assertions. |
+| `docker exec s_hospital-backend-1 vendor/bin/pint --test` | OK: 431 files. |
+| `docker exec s_hospital-backend-1 vendor/bin/phpstan analyse --memory-limit=512M` | OK: no errors. |
+
+Decision:
+
+- Las denegaciones siguen siendo auditables por accion, pero el campo `result` debe respetar el contrato persistente del sistema (`success`/`failed`) para no romper MariaDB local en produccion.
