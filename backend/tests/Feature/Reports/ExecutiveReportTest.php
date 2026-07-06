@@ -8,6 +8,7 @@ use App\Actions\Payments\RegisterPaymentAction;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
+use App\Models\InstitutionalReceiptPrintEvent;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Service;
@@ -330,12 +331,20 @@ class ExecutiveReportTest extends TestCase
             ['action' => 'backup.created', 'entity_type' => 'backup', 'entity_id' => 1, 'user_id' => $admin->id, 'created_at' => now()],
         ]);
 
+        InstitutionalReceiptPrintEvent::query()->create([
+            'institutional_receipt_id' => null,
+            'event_type' => InstitutionalReceiptPrintEvent::TYPE_REPRINT,
+            'reason' => 'Copia institucional solicitada',
+            'user_id' => $admin->id,
+            'created_at' => now(),
+        ]);
+
         $today = Carbon::now('America/Tegucigalpa')->toDateString();
 
         $this->actingAs($admin)
             ->getJson('/api/reports/executive?date_from='.$today.'&date_to='.$today)
             ->assertOk()
-            ->assertJsonPath('data.audit_summary.reprints', 1)
+            ->assertJsonPath('data.audit_summary.reprints', 2)
             ->assertJsonPath('data.audit_summary.critical_events', 1)
             ->assertJsonPath('data.audit_summary.backup_events', 1);
     }

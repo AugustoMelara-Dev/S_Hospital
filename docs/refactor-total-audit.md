@@ -7700,3 +7700,24 @@ Pruebas ejecutadas:
 Decision:
 
 - Ocultar un servicio de caja es un cambio operativo auditable aunque se haga desde el camino de DELETE. El sistema local puede ser mas simple, pero no debe permitir que catalogo cambie disponibilidad sin una razon humana.
+
+## 321. Fase 7/QA - Ejecutivo cuenta reimpresiones institucionales
+
+Cambio aplicado:
+
+- `ExecutiveReportService` suma eventos `institutional_receipt_print_events` de tipo `reprint` al KPI `audit_summary.reprints`.
+- Los reportes ejecutivos sin filtros cuentan todas las reimpresiones institucionales del rango.
+- Los reportes ejecutivos filtrados enlazan recibo institucional con factura para respetar los filtros existentes de caja, cajero, servicio, area, metodo y estado.
+- La prueba de resumen de auditoria ahora cubre una reimpresion legacy y una reimpresion institucional en el mismo periodo.
+- No se agregaron dependencias, migraciones, roles, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test tests/Feature/Reports/ExecutiveReportTest.php --filter=executive_includes_audit_summary_counts` | Primero fallo con `reprints=1`; luego OK: 1 test, 4 assertions. |
+| `docker compose exec backend php artisan test tests/Feature/Reports/ExecutiveReportTest.php` | OK: 13 tests, 172 assertions. |
+
+Decision:
+
+- El recibo principal del sistema es institucional. El KPI ejecutivo de reimpresiones debe reflejar copias institucionales reales, no solo eventos legacy de facturas.

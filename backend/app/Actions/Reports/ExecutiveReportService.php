@@ -4,6 +4,7 @@ namespace App\Actions\Reports;
 
 use App\Actions\Reports\Concerns\FormatsReportMoney;
 use App\Models\CashRegisterSession;
+use App\Models\InstitutionalReceiptPrintEvent;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\User;
@@ -606,7 +607,7 @@ class ExecutiveReportService
 
             return [
                 'critical_events' => (int) ($counts['invoice.voided'] ?? 0) + (int) ($counts['invoice.reversed'] ?? 0) + (int) ($counts['payment.voided'] ?? 0),
-                'reprints' => (int) ($counts['invoice.reprinted'] ?? 0),
+                'reprints' => (int) ($counts['invoice.reprinted'] ?? 0) + $this->institutionalReceiptReprintCount($start, $end, $filters),
                 'fiscal_changes' => (int) ($counts['fiscal.settings.updated'] ?? 0) + (int) ($counts['fiscal.sequence.updated'] ?? 0),
                 'cash_differences' => (int) ($counts['cash_session.closed_with_difference'] ?? 0) + (int) ($counts['cash_session.difference'] ?? 0),
                 'backup_events' => (int) ($counts['backup.created'] ?? 0) + (int) ($counts['backup.failed'] ?? 0),
@@ -657,11 +658,30 @@ class ExecutiveReportService
 
         return [
             'critical_events' => (int) ($invoiceAuditCounts['invoice.voided'] ?? 0) + (int) ($invoiceAuditCounts['invoice.reversed'] ?? 0) + (int) ($paymentAuditCounts['payment.voided'] ?? 0),
-            'reprints' => (int) ($invoiceAuditCounts['invoice.reprinted'] ?? 0),
+            'reprints' => (int) ($invoiceAuditCounts['invoice.reprinted'] ?? 0) + $this->institutionalReceiptReprintCount($start, $end, $filters),
             'fiscal_changes' => 0,
             'cash_differences' => (int) $cashDifferenceCount,
             'backup_events' => 0,
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     */
+    private function institutionalReceiptReprintCount(Carbon $start, Carbon $end, array $filters): int
+    {
+        $query = DB::table('institutional_receipt_print_events')
+            ->where('institutional_receipt_print_events.event_type', InstitutionalReceiptPrintEvent::TYPE_REPRINT)
+            ->whereBetween('institutional_receipt_print_events.created_at', [$start, $end]);
+
+        if ($this->hasScopedFilters($filters)) {
+            $query
+                ->join('institutional_receipts', 'institutional_receipt_print_events.institutional_receipt_id', '=', 'institutional_receipts.id')
+                ->join('invoices', 'institutional_receipts.invoice_id', '=', 'invoices.id')
+                ->tap(fn ($query) => $this->applyInvoiceFilters($query, $filters, $start, $end));
+        }
+
+        return (int) $query->count();
     }
 
     /**
