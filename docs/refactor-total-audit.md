@@ -7517,3 +7517,26 @@ Pruebas ejecutadas:
 Decision:
 
 - Para entregar una version monocomputadora/LAN simple, realtime no debe ser requisito de preparacion final. La validacion debe probar el navegador y los flujos criticos, sin exigir infraestructura avanzada que no es necesaria para caja local.
+
+## 313. Fase 8/QA - Catalogo pide motivo al cambiar disponibilidad
+
+Cambio aplicado:
+
+- `ServiceSheet` ahora detecta cambios en activo, visible en caja y facturable al editar un servicio.
+- El formulario muestra y exige `availability_change_reason` antes de guardar esos cambios, con el mismo minimo de 5 caracteres usado para motivos de precio e impuesto.
+- El payload enviado al API incluye el motivo de disponibilidad, y los errores de validacion del backend se enfocan en el campo correcto.
+- La prueba del formulario cubre ausencia de motivo, motivo corto y envio correcto del motivo junto con los flags de caja/facturacion.
+- No se agregaron dependencias, migraciones, roles, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- ServiceSheet.test.tsx --run` | OK: 1 file, 20 tests. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `git diff --check` | OK. |
+
+Decision:
+
+- Cambiar si un servicio aparece o se cobra en caja es una decision operativa auditable, igual que precio e impuesto. El frontend no debe permitir un cambio que el backend rechaza o que quedaria sin motivo humano.

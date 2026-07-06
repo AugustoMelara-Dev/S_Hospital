@@ -72,6 +72,9 @@ describe('ServiceSheet', () => {
     });
     fireEvent.click(screen.getByLabelText(/visible en caja/i));
     fireEvent.click(screen.getByLabelText(/^facturable$/i));
+    fireEvent.change(await screen.findByLabelText(/motivo del cambio de disponibilidad/i), {
+      target: { value: 'Servicio oculto temporalmente de caja' },
+    });
     fireEvent.click(screen.getByRole('button', { name: /actualizar/i }));
 
     await waitFor(() => {
@@ -82,6 +85,7 @@ describe('ServiceSheet', () => {
           price_change_reason: 'Ajuste aprobado por administracion',
           visible_in_billing: false,
           is_billable: false,
+          availability_change_reason: 'Servicio oculto temporalmente de caja',
         }),
         1,
       );
@@ -188,6 +192,130 @@ describe('ServiceSheet', () => {
     fireEvent.click(screen.getByRole('button', { name: /actualizar/i }));
 
     expect(await screen.findByText(/motivo del cambio de impuesto debe tener al menos 5 caracteres/i)).toBeInTheDocument();
+    expect(saveService).not.toHaveBeenCalled();
+  });
+
+  it('requires and sends a reason when changing service availability for billing', async () => {
+    const saveService = vi.spyOn(apiClient, 'saveService').mockResolvedValue({
+      id: 1,
+      category_id: 1,
+      area_id: 1,
+      name: 'Glucosa',
+      slug: 'glucosa',
+      price: '15.00',
+      scan_code: null,
+      barcode: null,
+      qr_code: null,
+      taxable: true,
+      active: false,
+      visible_in_billing: false,
+      is_billable: false,
+      special_rule_code: null,
+    });
+
+    render(
+      <ServiceSheet
+        open
+        onOpenChange={vi.fn()}
+        service={{
+          id: 1,
+          category_id: 1,
+          area_id: 1,
+          name: 'Glucosa',
+          price: '15.00',
+          scan_code: null,
+          barcode: null,
+          qr_code: null,
+          taxable: true,
+          active: true,
+          visible_in_billing: true,
+          is_billable: true,
+          special_rule_code: null,
+        }}
+        categories={[{ id: 1, name: 'Laboratorio' }]}
+        areas={[{ id: 1, name: 'Laboratorio' }]}
+        onSuccess={noop}
+      />,
+    );
+
+    expect(screen.queryByLabelText(/motivo del cambio de disponibilidad/i)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText(/servicio activo/i));
+    fireEvent.click(screen.getByLabelText(/visible en caja/i));
+    expect(await screen.findByLabelText(/motivo del cambio de disponibilidad/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /actualizar/i }));
+
+    expect(await screen.findByText(/indique el motivo del cambio de disponibilidad/i)).toBeInTheDocument();
+    expect(saveService).not.toHaveBeenCalled();
+
+    fireEvent.change(screen.getByLabelText(/motivo del cambio de disponibilidad/i), {
+      target: { value: 'Servicio retirado temporalmente de caja' },
+    });
+    fireEvent.click(screen.getByLabelText(/^facturable$/i));
+    fireEvent.click(screen.getByRole('button', { name: /actualizar/i }));
+
+    await waitFor(() => {
+      expect(saveService).toHaveBeenCalledWith(
+        expect.objectContaining({
+          active: false,
+          visible_in_billing: false,
+          is_billable: false,
+          availability_change_reason: 'Servicio retirado temporalmente de caja',
+        }),
+        1,
+      );
+    });
+  });
+
+  it('blocks short availability change reasons before saving', async () => {
+    const saveService = vi.spyOn(apiClient, 'saveService').mockResolvedValue({
+      id: 1,
+      category_id: 1,
+      area_id: 1,
+      name: 'Glucosa',
+      slug: 'glucosa',
+      price: '15.00',
+      scan_code: null,
+      barcode: null,
+      qr_code: null,
+      taxable: true,
+      active: false,
+      special_rule_code: null,
+    });
+
+    render(
+      <ServiceSheet
+        open
+        onOpenChange={vi.fn()}
+        service={{
+          id: 1,
+          category_id: 1,
+          area_id: 1,
+          name: 'Glucosa',
+          price: '15.00',
+          scan_code: null,
+          barcode: null,
+          qr_code: null,
+          taxable: true,
+          active: true,
+          visible_in_billing: true,
+          is_billable: true,
+          special_rule_code: null,
+        }}
+        categories={[{ id: 1, name: 'Laboratorio' }]}
+        areas={[{ id: 1, name: 'Laboratorio' }]}
+        onSuccess={noop}
+      />,
+    );
+
+    fireEvent.click(screen.getByLabelText(/servicio activo/i));
+    fireEvent.change(await screen.findByLabelText(/motivo del cambio de disponibilidad/i), {
+      target: { value: 'x' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /actualizar/i }));
+
+    expect(await screen.findByText(/motivo del cambio de disponibilidad debe tener al menos 5 caracteres/i)).toBeInTheDocument();
     expect(saveService).not.toHaveBeenCalled();
   });
 

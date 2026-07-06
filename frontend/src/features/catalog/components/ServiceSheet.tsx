@@ -22,6 +22,7 @@ const serviceSchema = z.object({
     .refine((value) => (priceCents(value) ?? 0) > 0, 'Precio debe ser mayor que cero'),
   price_change_reason: z.string().max(500, 'Motivo maximo 500 caracteres').nullable().optional(),
   tax_change_reason: z.string().max(500, 'Motivo maximo 500 caracteres').nullable().optional(),
+  availability_change_reason: z.string().max(500, 'Motivo maximo 500 caracteres').nullable().optional(),
   scan_code: z.string().nullable().optional(),
   barcode: z.string().nullable().optional(),
   qr_code: z.string().nullable().optional(),
@@ -65,6 +66,7 @@ const defaultValues: ServiceFormData = {
   price: '0.00',
   price_change_reason: null,
   tax_change_reason: null,
+  availability_change_reason: null,
   scan_code: null,
   barcode: null,
   qr_code: null,
@@ -117,7 +119,19 @@ export function ServiceSheet({
     isEditing && service?.special_rule_code === SPECIAL_RULE_ERYTHROPOIETIN,
   );
   const requiresPriceChangeReason = Boolean(isEditing && service && priceValuesDiffer(service.price, price));
+  const active = watch('active');
+  const visibleInBilling = watch('visible_in_billing');
+  const isBillable = watch('is_billable');
   const requiresTaxChangeReason = Boolean(isEditing && service && service.taxable !== taxable);
+  const requiresAvailabilityChangeReason = Boolean(
+    isEditing
+    && service
+    && (
+      service.active !== active
+      || (service.visible_in_billing ?? true) !== visibleInBilling
+      || (service.is_billable ?? true) !== isBillable
+    ),
+  );
 
   useEffect(() => {
     if (!open) {
@@ -132,6 +146,7 @@ export function ServiceSheet({
         price: service.price,
         price_change_reason: null,
         tax_change_reason: null,
+        availability_change_reason: null,
         scan_code: service.scan_code,
         barcode: service.barcode,
         qr_code: service.qr_code,
@@ -161,6 +176,7 @@ export function ServiceSheet({
 
     const priceChangeReason = optionalCode(data.price_change_reason);
     const taxChangeReason = optionalCode(data.tax_change_reason);
+    const availabilityChangeReason = optionalCode(data.availability_change_reason);
 
     if (requiresPriceChangeReason && priceChangeReason === null) {
       setError('price_change_reason', { type: 'manual', message: 'Indique el motivo del cambio de precio.' });
@@ -196,10 +212,35 @@ export function ServiceSheet({
       return;
     }
 
+    if (requiresAvailabilityChangeReason && availabilityChangeReason === null) {
+      setError('availability_change_reason', {
+        type: 'manual',
+        message: 'Indique el motivo del cambio de disponibilidad para caja.',
+      });
+      setFocus('availability_change_reason');
+
+      return;
+    }
+
+    if (
+      requiresAvailabilityChangeReason
+      && availabilityChangeReason !== null
+      && availabilityChangeReason.length < MIN_CHANGE_REASON_LENGTH
+    ) {
+      setError('availability_change_reason', {
+        type: 'manual',
+        message: 'El motivo del cambio de disponibilidad debe tener al menos 5 caracteres.',
+      });
+      setFocus('availability_change_reason');
+
+      return;
+    }
+
     const payload = {
       ...data,
       price_change_reason: priceChangeReason,
       tax_change_reason: taxChangeReason,
+      availability_change_reason: availabilityChangeReason,
       scan_code: optionalCode(data.scan_code),
       barcode: optionalCode(data.barcode),
       qr_code: optionalCode(data.qr_code),
@@ -569,6 +610,33 @@ export function ServiceSheet({
                 Facturable
               </Label>
             </div>
+
+            {requiresAvailabilityChangeReason && (
+              <div className="flex flex-col gap-2 md:col-span-2">
+                <Label htmlFor="availability_change_reason">
+                  Motivo del cambio de disponibilidad *
+                </Label>
+                <Input
+                  id="availability_change_reason"
+                  disabled={isSubmitting}
+                  {...register('availability_change_reason')}
+                  aria-invalid={Boolean(errors.availability_change_reason)}
+                  aria-describedby={
+                    errors.availability_change_reason ? 'service-availability-reason-error' : undefined
+                  }
+                  className={cn(errors.availability_change_reason && 'border-destructive')}
+                />
+                {errors.availability_change_reason && (
+                  <p
+                    id="service-availability-reason-error"
+                    role="alert"
+                    className="text-sm text-destructive"
+                  >
+                    {errors.availability_change_reason.message}
+                  </p>
+                )}
+              </div>
+            )}
           </FieldGroup>
         </FormSection>
 
@@ -593,7 +661,20 @@ function applyBackendErrors(
   validationErrors: Record<string, string[]>,
   setError: ReturnType<typeof useForm<ServiceFormData>>['setError'],
 ) {
-  (['category_id', 'area_id', 'name', 'price', 'price_change_reason', 'tax_change_reason', 'scan_code', 'barcode', 'qr_code'] as const).forEach((field) => {
+  (
+    [
+      'category_id',
+      'area_id',
+      'name',
+      'price',
+      'price_change_reason',
+      'tax_change_reason',
+      'availability_change_reason',
+      'scan_code',
+      'barcode',
+      'qr_code',
+    ] as const
+  ).forEach((field) => {
     const message = validationErrors[field]?.[0];
     if (message) {
       setError(field, { type: 'server', message });
@@ -605,7 +686,18 @@ function focusFirstServiceError(
   validationErrors: Record<string, string[]>,
   setFocus: ReturnType<typeof useForm<ServiceFormData>>['setFocus'],
 ) {
-  const firstFocusable = (['name', 'price', 'price_change_reason', 'tax_change_reason', 'scan_code', 'barcode', 'qr_code'] as const).find((field) => validationErrors[field]?.[0]);
+  const firstFocusable = (
+    [
+      'name',
+      'price',
+      'price_change_reason',
+      'tax_change_reason',
+      'availability_change_reason',
+      'scan_code',
+      'barcode',
+      'qr_code',
+    ] as const
+  ).find((field) => validationErrors[field]?.[0]);
   if (firstFocusable) {
     window.setTimeout(() => setFocus(firstFocusable), 0);
   }
