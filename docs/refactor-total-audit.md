@@ -6256,3 +6256,47 @@ Pruebas ejecutadas:
 Decision:
 
 - Los KPIs ejecutivos agregados permanecen disponibles para supervision gerencial, pero las filas y resumen de auditoria quedan reservados para `audit.view`.
+
+## 260. Fase 6/20 - E2E de perfiles normales guarda e imprime prueba
+
+Cambio aplicado:
+
+- `frontend/e2e/print-profiles.spec.ts` cubre el flujo normal de A5: seleccion de papel, `Imprimir prueba` y `Guardar perfil`.
+- El test captura el payload de `test-print` y confirma `profile_code: a5_horizontal` junto con datos de prueba seguros.
+- El test captura el `PATCH /api/settings/institutional-receipts/print-profiles/2` y confirma que el flujo normal envia campos operativos, pero no envia margenes, ancho, alto, orientacion, fuente, escala ni campos tecnicos.
+- No se agregaron dependencias, migraciones, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npx playwright test e2e/print-profiles.spec.ts` | OK: 2 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+
+Decision:
+
+- La suite E2E ahora protege que el operador normal siga eligiendo solo el papel y acciones operativas; la configuracion tecnica queda fuera del payload normal.
+
+## 261. Fase 5 - useCreateInvoice renueva idempotencia si cambia payload
+
+Cambio aplicado:
+
+- `useCreateInvoice` usa `payloadScopedIdempotencyKey` para conservar la misma clave en reintentos del mismo payload fallido y generar una nueva clave cuando el payload cambia.
+- El hook limpia clave y firma solo despues de exito confirmado.
+- `useInvoices.test.tsx` agrega cobertura roja/verde para el cambio de paciente despues de un fallo de red.
+- Los mocks del archivo se aislan con `vi.resetAllMocks()` para evitar colas de claves entre tests.
+- No se agregaron dependencias, migraciones, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- useInvoices.test.tsx` | RED inicial por segunda llamada con `invoice-attempt-1`; luego OK: 4 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `git diff --check -- frontend/src/hooks/useInvoices.ts frontend/src/hooks/useInvoices.test.tsx` | OK. |
+
+Decision:
+
+- Un reintento recuperable conserva deduplicacion, pero si el operador corrige la factura despues del fallo, el frontend no presenta el nuevo intento como la misma emision logica.

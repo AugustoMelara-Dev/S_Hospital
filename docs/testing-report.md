@@ -266,3 +266,20 @@ verified.
 | `docker compose exec backend php artisan test tests/Feature/Reports/ExecutiveReportTest.php tests/Feature/Reports/ExecutivePdfExportTest.php tests/Feature/Reports/ExecutiveExcelExportTest.php` | PASS, 24 tests. |
 | `docker compose exec backend vendor/bin/pint --test` | PASS, 429 files. |
 | `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M` | PASS, no errors. |
+
+### 2026-07-05 Print Profiles Normal E2E Gate
+
+| Command | Result |
+|---|---|
+| `npx playwright test e2e/print-profiles.spec.ts` | PASS, 2 tests. |
+| `npm run typecheck` | PASS. |
+| `npm run lint` | PASS. |
+
+### 2026-07-05 Invoice Submit Payload Idempotency Gate
+
+| Command | Result |
+|---|---|
+| `npm run test -- useInvoices.test.tsx` | RED first because changed payload reused `invoice-attempt-1`; then PASS, 4 tests. |
+| `npm run typecheck` | PASS. |
+| `npm run lint` | PASS. |
+| `git diff --check -- frontend/src/hooks/useInvoices.ts frontend/src/hooks/useInvoices.test.tsx` | PASS. |
