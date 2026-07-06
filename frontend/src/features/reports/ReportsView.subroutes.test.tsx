@@ -56,6 +56,7 @@ function renderReports(
             path="/reports/*"
             element={(
               <ReportsView
+                canBrowseCashSessions={canViewCashSessionReport}
                 canExport
                 canViewCashSessionReport={canViewCashSessionReport}
                 canViewAuditReports={canViewAuditReports}
@@ -68,6 +69,7 @@ function renderReports(
             path="/reports"
             element={(
               <ReportsView
+                canBrowseCashSessions={canViewCashSessionReport}
                 canExport
                 canViewCashSessionReport={canViewCashSessionReport}
                 canViewAuditReports={canViewAuditReports}

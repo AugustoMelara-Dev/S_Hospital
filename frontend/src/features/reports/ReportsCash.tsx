@@ -6,12 +6,14 @@ import { downloadBlob, openBlobInNewTab } from '@/lib/download';
 import { CashSessionReportTab } from './components/CashSessionReportTab';
 
 type ReportsCashProps = {
+  canBrowseCashSessions: boolean;
   canExport: boolean;
   canViewCash: boolean;
   canViewManagerial: boolean;
 };
 
 export function ReportsCash({
+  canBrowseCashSessions,
   canExport,
   canViewCash,
   canViewManagerial,
@@ -25,7 +27,7 @@ export function ReportsCash({
   const [cashSessionsLoading, setCashSessionsLoading] = useState(false);
 
   useEffect(() => {
-    if (!canViewCash && !canViewManagerial) {
+    if (!canBrowseCashSessions) {
       return;
     }
 
@@ -56,7 +58,7 @@ export function ReportsCash({
     return () => {
       cancelled = true;
     };
-  }, [canViewCash, canViewManagerial]);
+  }, [canBrowseCashSessions]);
 
   async function loadCashReport() {
     if (cashLoading) {

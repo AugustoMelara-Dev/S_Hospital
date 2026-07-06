@@ -170,6 +170,7 @@ export function AppRoutes({
           >
             <Suspense fallback={<LoadingState label="Cargando reportes..." />}>
               <ReportsView
+                canBrowseCashSessions={canViewCash}
                 canExport={canExportReports}
                 canViewAuditReports={canViewAuditReports}
                 canViewCashSessionReport={canViewCashSessionReports || canViewManagerialReports}

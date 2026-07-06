@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { LineChart, ShieldCheck, WalletCards } from 'lucide-react';
 
 type ReportsViewProps = {
+  canBrowseCashSessions: boolean;
   canExport: boolean;
   canViewAuditReports: boolean;
   canViewCashSessionReport: boolean;
@@ -194,6 +195,7 @@ function ReportsContent({
   if (subRoute === 'cash') {
     return (
       <ReportsCash
+        canBrowseCashSessions={props.canBrowseCashSessions}
         canExport={props.canExport}
         canViewCash={props.canViewCashSessionReport}
         canViewManagerial={props.canViewManagerial}

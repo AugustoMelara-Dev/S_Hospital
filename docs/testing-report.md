@@ -333,3 +333,13 @@ verified.
 | `npm run test -- ReportsView.subroutes --run` | PASS, 10 tests. |
 | `npm run typecheck` | PASS. |
 | `npm run lint` | PASS. |
+
+### 2026-07-05 Cash Report Session List Permission Gate
+
+| Command | Result |
+|---|---|
+| `npm run test -- ReportsCash --run -t "does not list recent cash sessions"` | RED first because cash report permission still called `getCashSessions`; then PASS, 1 focused test. |
+| `npm run test -- ReportsCash --run` | PASS, 7 tests. |
+| `npm run test -- ReportsView.subroutes --run` | PASS, 10 tests. |
+| `npm run typecheck` | PASS. |
+| `npm run lint` | PASS. |

@@ -6429,3 +6429,26 @@ Pruebas ejecutadas:
 Decision:
 
 - El frontend ya no usa un permiso parcial de auditoria como sustituto de permisos gerenciales; el backend sigue siendo la defensa final para el endpoint ejecutivo.
+
+## 268. Fase 10/14 - Reporte de caja no lista sesiones sin permiso de caja
+
+Cambio aplicado:
+
+- `ReportsCash` separa el permiso para consultar reportes de caja del permiso para listar cajas recientes.
+- `AppRoutes` pasa `canViewCash` como autorizacion para el listado de sesiones recientes.
+- Usuarios con `reports.cash_session.view` sin `cash.view` pueden ingresar manualmente el numero de caja y consultar el reporte sin llamar `getCashSessions`.
+- No se agregaron dependencias, migraciones, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- ReportsCash --run -t "does not list recent cash sessions"` | RED inicial porque el permiso de reporte llamaba `getCashSessions`; luego OK. |
+| `npm run test -- ReportsCash --run` | OK: 7 tests pasan. |
+| `npm run test -- ReportsView.subroutes --run` | OK: 10 tests pasan. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+
+Decision:
+
+- La UI evita un 403 evitable en el listado de cajas recientes y conserva el flujo manual de reporte para usuarios con permiso especifico de reportes.
