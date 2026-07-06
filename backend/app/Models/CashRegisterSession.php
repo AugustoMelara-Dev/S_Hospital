@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use LogicException;
 
 /**
  * @property int $id
@@ -72,6 +73,21 @@ class CashRegisterSession extends Model
             'opened_at' => 'datetime',
             'closed_at' => 'datetime',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::updating(function (CashRegisterSession $session): void {
+            if ($session->getOriginal('status') === self::STATUS_CLOSED) {
+                throw new LogicException('Las cajas cerradas no se modifican; use ajustes autorizados para correcciones posteriores.');
+            }
+        });
+
+        static::deleting(function (CashRegisterSession $session): void {
+            if ($session->status === self::STATUS_CLOSED) {
+                throw new LogicException('Las cajas cerradas no se eliminan; conserve el cierre para auditoria.');
+            }
+        });
     }
 
     public function user(): BelongsTo

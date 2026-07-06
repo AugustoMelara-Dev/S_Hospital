@@ -74,6 +74,15 @@ class CloseCashSessionAction
                 ]);
             }
 
+            CashMovement::query()->create([
+                'cash_session_id' => $lockedSession->id,
+                'user_id' => $user->id,
+                'type' => CashMovement::TYPE_CLOSING,
+                'method' => CashMovement::TYPE_CLOSING,
+                'amount' => Money::formatCents($closingCents),
+                'notes' => $notes === '' ? null : $notes,
+                'occurred_at' => now(),
+            ]);
             $lockedSession->forceFill([
                 'closing_amount' => Money::formatCents($closingCents),
                 'expected_amount' => Money::formatCents($expectedCents),
@@ -89,16 +98,6 @@ class CloseCashSessionAction
                 'closing_notes' => $notes === '' ? null : $notes,
                 'closed_at' => now(),
             ])->save();
-
-            CashMovement::query()->create([
-                'cash_session_id' => $lockedSession->id,
-                'user_id' => $user->id,
-                'type' => CashMovement::TYPE_CLOSING,
-                'method' => CashMovement::TYPE_CLOSING,
-                'amount' => Money::formatCents($closingCents),
-                'notes' => $notes === '' ? null : $notes,
-                'occurred_at' => now(),
-            ]);
 
             AuditLog::query()->create([
                 'user_id' => $user->id,

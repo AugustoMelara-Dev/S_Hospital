@@ -7587,3 +7587,29 @@ Pruebas ejecutadas:
 Decision:
 
 - Reejecutar seeders en una instalacion local no debe revertir ajustes reales de caja. El CSV inicial sirve para crear y actualizar metadatos, no para borrar decisiones operativas ya auditables.
+
+## 316. Fase 3/QA - Caja cerrada queda inmutable por modelo
+
+Cambio aplicado:
+
+- `CashRegisterSession` rechaza actualizaciones o eliminacion cuando la sesion ya estaba cerrada.
+- `CashMovement` rechaza crear, actualizar o eliminar movimientos asociados a una caja cerrada.
+- `CloseCashSessionAction` crea el movimiento de cierre antes de marcar la sesion como cerrada dentro de la misma transaccion, evitando abrir una excepcion especial post-cierre.
+- Se agrega una regresion que cierra una caja vacia y prueba que no se pueda mutar la sesion, mutar el movimiento de cierre ni crear un movimiento nuevo para esa caja cerrada.
+- No se agregaron dependencias, migraciones, roles, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test tests/Feature/Cash/CloseCashSessionTest.php --filter=immutable` | Primero fallo por permitir mutacion; luego OK: 1 test, 7 assertions. |
+| `docker compose exec backend php artisan test tests/Feature/Cash/CloseCashSessionTest.php` | OK: 5 tests, 22 assertions. |
+| `docker compose exec backend php artisan test tests/Feature/CashPaymentsReceiptTest.php` | OK: 36 tests, 382 assertions. |
+| `docker compose exec backend php artisan test tests/Feature/Payments/VoidPaymentAgainstClosedCashSessionTest.php` | OK: 2 tests, 10 assertions. |
+| `docker compose exec backend vendor/bin/pint --test` | OK: 431 files. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=1G` | OK: no errors. |
+| `git diff --check` | OK. |
+
+Decision:
+
+- Una caja cerrada es evidencia contable. Las correcciones posteriores deben ir por flujos autorizados y auditados, no por mutaciones directas sobre la sesion o sus movimientos.

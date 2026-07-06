@@ -13,6 +13,7 @@ use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
+use LogicException;
 use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
@@ -94,6 +95,57 @@ class CloseCashSessionTest extends TestCase
             'method' => CashMovement::TYPE_CLOSING,
             'amount' => '0.00',
         ]);
+    }
+
+    public function test_closed_cash_session_and_movements_are_immutable(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashierWithOpenSession('0.00');
+        $sessionId = $this->currentOpenSessionIdFor($cashier);
+
+        $this->actingAs($cashier)
+            ->postJson("/api/cash-sessions/{$sessionId}/close", [
+                'closing_amount' => '0.00',
+            ])
+            ->assertOk();
+
+        $session = CashRegisterSession::query()->findOrFail($sessionId);
+        $movement = CashMovement::query()
+            ->where('cash_session_id', $sessionId)
+            ->where('type', CashMovement::TYPE_CLOSING)
+            ->firstOrFail();
+
+        try {
+            $session->forceFill(['closing_amount' => '1.00'])->save();
+            $this->fail('Closed cash sessions must reject later mutations.');
+        } catch (LogicException $exception) {
+            $this->assertStringContainsString('cerradas no se modifican', $exception->getMessage());
+        }
+
+        try {
+            $movement->forceFill(['amount' => '1.00'])->save();
+            $this->fail('Cash movements from closed sessions must reject later mutations.');
+        } catch (LogicException $exception) {
+            $this->assertStringContainsString('caja cerrada no se modifican', $exception->getMessage());
+        }
+
+        try {
+            CashMovement::query()->create([
+                'cash_session_id' => $sessionId,
+                'user_id' => $cashier->id,
+                'type' => CashMovement::TYPE_PAYMENT,
+                'method' => 'cash',
+                'amount' => '1.00',
+                'occurred_at' => now(),
+            ]);
+            $this->fail('Closed cash sessions must reject new cash movements.');
+        } catch (LogicException $exception) {
+            $this->assertStringContainsString('caja cerrada no se modifican', $exception->getMessage());
+        }
+
+        $this->assertSame('0.00', $session->refresh()->closing_amount);
+        $this->assertSame('0.00', $movement->refresh()->amount);
+        $this->assertSame(1, CashMovement::query()->where('cash_session_id', $sessionId)->count());
     }
 
     public function test_close_any_permission_can_close_another_users_session_without_cash_close(): void
