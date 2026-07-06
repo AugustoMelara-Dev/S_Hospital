@@ -16,6 +16,7 @@ export const invoiceItemSchema = z.object({
 
 export const invoiceSchema = z.object({
   patient_name: z.string()
+    .trim()
     .min(1, 'Nombre del paciente es requerido')
     .max(PATIENT_NAME_MAX_LENGTH, `Nombre del paciente no puede superar ${PATIENT_NAME_MAX_LENGTH} caracteres`),
   dialysis_prescription: z.boolean().optional(),

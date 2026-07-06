@@ -336,6 +336,30 @@ describe('NewInvoiceView critical flows', () => {
     expect(screen.getByText(/patient name: requerido/i)).toBeInTheDocument();
   });
 
+  it('rejects whitespace-only patient names from keyboard emission', async () => {
+    renderNewInvoice();
+    await waitForPointOfSaleLoad();
+
+    const fetchMock = globalThis.fetch as ReturnType<typeof vi.fn>;
+
+    const patientInput = screen.getByLabelText(/nombre del paciente/i);
+    fireEvent.change(patientInput, { target: { value: '   ' } });
+    fireEvent.change(screen.getByLabelText(/buscar por nombre/i), { target: { value: 'eritro' } });
+
+    await waitFor(() => {
+      expect(screen.getByText('Eritropoyetina')).toBeInTheDocument();
+    }, { timeout: 3000 });
+
+    fireEvent.click(screen.getByRole('button', { name: /agregar eritropoyetina/i }));
+    fetchMock.mockClear();
+
+    fireEvent.keyDown(patientInput, { key: 'Enter', ctrlKey: true });
+
+    expect(await screen.findByText(/nombre del paciente es requerido/i)).toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: /confirmar emis/i })).not.toBeInTheDocument();
+    expect(fetchMock.mock.calls.some(([url]) => String(url).endsWith('/api/invoices'))).toBe(false);
+  });
+
   it('trims patient name before creating the invoice', async () => {
     const fetchMock = globalThis.fetch as ReturnType<typeof vi.fn>;
     let invoicePayload: unknown = null;

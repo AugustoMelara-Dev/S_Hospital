@@ -566,3 +566,13 @@ verified.
 | `docker exec s_hospital-backend-1 php artisan test tests/Feature/ReportsTest.php` | PASS, 57 tests and 824 assertions. |
 | `docker exec s_hospital-backend-1 vendor/bin/pint --test` | PASS, 430 files. |
 | `docker exec s_hospital-backend-1 vendor/bin/phpstan analyse --memory-limit=512M` | PASS, no errors. |
+
+### 2026-07-06 POS Whitespace Patient Validation Gate
+
+| Command | Result |
+|---|---|
+| `npm run test -- NewInvoiceView --run -t "whitespace-only patient"` | RED first because a whitespace-only patient name passed validation and could open invoice confirmation; then PASS. |
+| `npm run test -- NewInvoiceView --run` | PASS, 27 tests across 3 files. |
+| `npm run typecheck` | PASS. |
+| `npm run lint` | PASS. |
+| `npm run build` | PASS. |

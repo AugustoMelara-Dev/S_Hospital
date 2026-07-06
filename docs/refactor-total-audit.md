@@ -6946,3 +6946,26 @@ Pruebas ejecutadas:
 Decision:
 
 - Si el sistema exige motivo para cambiar impuesto, ese motivo debe quedar visible en auditoria operativa sin obligar al usuario a consultar filas crudas de `audit_logs`.
+
+## 289. Fase 4 - POS rechaza paciente en blanco por teclado
+
+Cambio aplicado:
+
+- `invoiceSchema` ahora normaliza `patient_name` con `trim()` antes de aplicar la regla requerida.
+- El flujo POS por teclado (`Ctrl+Enter`) rechaza nombres compuestos solo por espacios y no abre la confirmacion de emision.
+- El frontend sigue enviando nombres reales ya recortados; el backend continua siendo la autoridad final de facturacion y totales.
+- No se agregaron migraciones, dependencias, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- NewInvoiceView --run -t "whitespace-only patient"` | RED inicial correcto: un nombre con solo espacios pasaba la validacion y podia abrir la confirmacion; luego OK. |
+| `npm run test -- NewInvoiceView --run` | OK: 27 tests en 3 archivos. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- La validacion de paciente obligatorio debe tratar espacios como vacio en todos los caminos de emision, incluyendo el flujo rapido de teclado usado en caja.
