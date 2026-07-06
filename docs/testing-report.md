@@ -480,3 +480,13 @@ verified.
 | `npm run typecheck` | PASS. |
 | `npm run lint` | PASS. |
 | `npm run build` | PASS. |
+
+### 2026-07-06 Backup Status Permission Gate
+
+| Command | Result |
+|---|---|
+| `npm run test -- BackupsView --run -t "without system status permission"` | RED first because `BackupsView` called `getSystemStatus` for a user with only `backups.view`; then PASS, 1 focused test. |
+| `npm run test -- BackupsView --run` | PASS, 33 tests. |
+| `npm run typecheck` | PASS. |
+| `npm run lint` | PASS. |
+| `npm run build` | PASS. |

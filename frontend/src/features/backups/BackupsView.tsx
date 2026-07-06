@@ -289,9 +289,10 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
   const downloadingBackupRef = useRef<number | null>(null);
   const canCreate = user.permissions.includes('backups.create');
   const canDownload = user.permissions.includes('backups.download');
+  const canViewSystemStatus = user.permissions.includes('system.status.view');
   const backupsQuery = useBackups({ page, status: statusFilter });
   const createBackupMutation = useCreateBackup();
-  const systemStatusQuery = useSystemStatusSnapshot();
+  const systemStatusQuery = useSystemStatusSnapshot(canViewSystemStatus);
 
   const backupsList = Array.isArray(backupsQuery.data?.data) ? backupsQuery.data.data : [];
   const meta = backupsQuery.data?.meta ?? null;
@@ -360,7 +361,9 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
     setManualError('');
     onStatus('Actualizando respaldos locales...');
     void backupsQuery.refetch();
-    void systemStatusQuery.refetch();
+    if (canViewSystemStatus) {
+      void systemStatusQuery.refetch();
+    }
   }
 
   async function handleCreateBackup() {

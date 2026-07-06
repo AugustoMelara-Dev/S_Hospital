@@ -6752,3 +6752,27 @@ Pruebas ejecutadas:
 Decision:
 
 - Un recibo ya impreso no debe tener un atajo de descarga sin motivo, porque el backend exige trazabilidad de reimpresion. El historial queda alineado con auditoria y evita un fallo operativo justo en caja.
+
+## 281. Fase 12/14 - Respaldos no consulta diagnostico sin permiso
+
+Cambio aplicado:
+
+- `BackupsView` solo consulta `/api/system/status` cuando el usuario tiene `system.status.view`.
+- Usuarios con `backups.view` pueden ver historial/KPIs de respaldos sin recibir un error operativo falso por no tener permisos de soporte.
+- El boton `Actualizar` ya no intenta refrescar diagnostico de sistema si el usuario no tiene permiso para verlo.
+- El fixture admin de pruebas de respaldos se alineo con el rol real incluyendo `system.status.view`.
+- No se agregaron migraciones, dependencias, permisos, endpoints ni cambios backend.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- BackupsView --run -t "without system status permission"` | RED inicial correcto: `getSystemStatus` se llamaba con solo `backups.view`; luego OK. |
+| `npm run test -- BackupsView --run` | OK: 33 tests. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- El modulo de respaldos normal debe funcionar para operadores autorizados a verlo aunque no puedan acceder al diagnostico tecnico del servidor. La vista de soporte queda tras `system.status.view`, sin relajar RBAC backend.

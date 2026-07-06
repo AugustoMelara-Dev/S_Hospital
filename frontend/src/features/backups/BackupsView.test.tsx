@@ -12,7 +12,7 @@ const adminUser: AuthUser = {
   username: 'admin.hospital',
   active: true,
   roles: ['admin'],
-  permissions: ['backups.view', 'backups.create', 'backups.download'],
+  permissions: ['backups.view', 'backups.create', 'backups.download', 'system.status.view'],
   must_change_password: false,
 };
 
@@ -539,6 +539,22 @@ describe('BackupsView', () => {
     expect(screen.queryByRole('button', { name: /^crear respaldo$/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /descargar respaldo/i })).not.toBeInTheDocument();
     expect(apiClient.downloadBackup).not.toHaveBeenCalled();
+  });
+
+  it('does not request support status for backup viewers without system status permission', async () => {
+    const readonlyUser = {
+      ...adminUser,
+      permissions: ['backups.view'],
+    };
+    const getSystemStatus = vi.mocked(apiClient.getSystemStatus).mockRejectedValue(new Error('403'));
+
+    renderWithQueryClient(<BackupsView user={readonlyUser} onStatus={() => undefined} />);
+
+    await screen.findByRole('table', { name: /historial de respaldos locales/i });
+
+    expect(getSystemStatus).not.toHaveBeenCalled();
+    expect(screen.queryByText(/estado operativo no disponible/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/no se pudo cargar el estado operativo/i)).not.toBeInTheDocument();
   });
 
   it('keeps status filters controlled by the view without changing query params', async () => {
