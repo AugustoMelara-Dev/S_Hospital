@@ -769,7 +769,7 @@ class UserManagementTest extends TestCase
                 'active' => true,
             ])
             ->assertUnprocessable()
-            ->assertJsonValidationErrors('permissions');
+            ->assertJsonValidationErrors('permissions.0');
     }
 
     public function test_user_manager_without_role_management_permission_cannot_assign_any_direct_permissions(): void
@@ -842,7 +842,7 @@ class UserManagementTest extends TestCase
             'guard_name' => 'web',
         ]);
 
-        foreach (['backups.restore', 'receipts.void'] as $permission) {
+        foreach (['backups.restore', 'receipts.void', 'users.assign_admin_role'] as $permission) {
             $permissionSlug = str_replace('.', '-', $permission);
             $this->actingAs($admin)
                 ->postJson('/api/admin/users', [
@@ -857,6 +857,30 @@ class UserManagementTest extends TestCase
                 ->assertUnprocessable()
                 ->assertJsonValidationErrors('permissions.0');
         }
+    }
+
+    public function test_user_listing_hides_reserved_admin_assignment_direct_permission(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->userWithRole('admin');
+        $target = User::factory()->create([
+            'username' => 'reserved-direct-permission-user',
+            'email' => 'reserved-direct-permission-user@hospital.local',
+        ]);
+        $target->assignRole('cajero');
+        $target->syncPermissions([User::EXACT_ACCESS_MARKER_PERMISSION, 'users.assign_admin_role', 'catalog.view']);
+
+        $response = $this->actingAs($admin)
+            ->getJson('/api/admin/users')
+            ->assertOk();
+
+        $payload = collect($response->json('data'))
+            ->firstWhere('username', 'reserved-direct-permission-user');
+
+        $this->assertIsArray($payload);
+        $this->assertSame(['catalog.view'], $payload['direct_permissions']);
+        $this->assertSame(['catalog.view'], $payload['permissions']);
+        $this->assertStringNotContainsString('users.assign_admin_role', $response->getContent());
     }
 
     public function test_user_editor_rejects_legacy_custom_roles_with_reserved_admin_permissions(): void

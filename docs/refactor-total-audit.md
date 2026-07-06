@@ -7261,3 +7261,27 @@ Pruebas ejecutadas:
 Decision:
 
 - `reports.view` queda como permiso legado/generico, no como capacidad suficiente para ver reportes consolidados. La defensa real vive tambien en Laravel, no solo en el menu React.
+
+## 302. Fase 13/14 - Usuarios oculta permiso reservado de asignacion admin
+
+Cambio aplicado:
+
+- `VisiblePermissions` ahora oculta `users.assign_admin_role` junto a permisos internos o inoperables.
+- El listado de usuarios ya no expone `users.assign_admin_role` en permisos efectivos ni directos, incluso si una instalacion heredada lo tiene asignado directamente.
+- El editor backend de usuarios rechaza `users.assign_admin_role` como `permissions.0`, igual que otros permisos ocultos del catalogo operativo.
+- Roles protegidos y asignacion de roles elevados siguen controlados por las politicas y reglas existentes; no se agregaron permisos, migraciones, dependencias ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/UserManagementTest.php --filter="inoperable_permissions_hidden|reserved_admin_assignment"` | RED inicial correcto: el permiso reservado llegaba a validacion tardia y aparecia en listado; luego OK. |
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/UserManagementTest.php` | OK: 42 tests, 183 assertions. |
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/UserManagementTest.php tests/Feature/RoleManagementTest.php tests/Feature/PermissionAuditTest.php tests/Feature/AuthTest.php --filter="user|role|permission|session_payload"` | OK: 70 tests, 303 assertions. |
+| `docker exec s_hospital-backend-1 vendor/bin/pint --test` | OK: 431 files. |
+| `docker exec s_hospital-backend-1 vendor/bin/phpstan analyse --memory-limit=1G` | OK: no errors. |
+| `npm run test -- UsersView UserFormDialog RoleFormDialog PermissionMatrix --run` | OK: 4 files, 65 tests. |
+
+Decision:
+
+- La version monocomputadora necesita usuarios basicos entendibles. `users.assign_admin_role` es una capacidad administrativa reservada para reglas internas y no debe aparecer ni aceptarse como permiso operativo directo en el editor de usuarios.
