@@ -76,6 +76,21 @@ class InstitutionalReceiptPdfTest extends TestCase
         $this->assertStringContainsString('page-break-inside: avoid', $html);
     }
 
+    public function test_classic_receipt_keeps_totals_words_and_signatures_in_one_print_block(): void
+    {
+        $context = $this->createIssuedReceiptContext();
+        $html = app(InstitutionalReceiptPdfService::class)->htmlForReceipt($context['receipt']);
+
+        $this->assertMatchesRegularExpression(
+            '/\.receipt-closing-block\s*\{[^}]*page-break-inside:\s*avoid;[^}]*break-inside:\s*avoid;/s',
+            $html,
+        );
+        $this->assertMatchesRegularExpression(
+            '/<div class="receipt-closing-block">.*<table class="totals-table">.*Monto en letras.*<table class="signature-grid">.*<\/div>/s',
+            $html,
+        );
+    }
+
     public function test_receipt_html_escapes_patient_services_notes_and_reference_without_raw_snapshot_data(): void
     {
         $context = $this->createIssuedReceiptContext();

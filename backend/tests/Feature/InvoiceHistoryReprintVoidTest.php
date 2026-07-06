@@ -651,6 +651,38 @@ class InvoiceHistoryReprintVoidTest extends TestCase
         ]);
     }
 
+    public function test_reprint_with_same_idempotency_key_does_not_duplicate_audit_or_reprint_count(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $invoiceId = $this->createInvoice($cashier, 'Maria Lopez', 'Glucosa');
+        $payload = [
+            'width' => 'half_letter',
+            'reason' => 'Recibo original danado por impresora',
+        ];
+
+        $this->actingAs($cashier)
+            ->withHeaders(['Idempotency-Key' => 'invoice-reprint-'.$invoiceId])
+            ->postJson("/api/invoices/{$invoiceId}/reprint", $payload)
+            ->assertOk()
+            ->assertJsonPath('data.receipt.institutional.copy_label', 'Reimpresion #1')
+            ->assertJsonPath('data.audit.reprint_count', 1);
+
+        $this->actingAs($cashier)
+            ->withHeaders(['Idempotency-Key' => 'invoice-reprint-'.$invoiceId])
+            ->postJson("/api/invoices/{$invoiceId}/reprint", $payload)
+            ->assertOk()
+            ->assertHeader('Idempotent-Replay', 'true')
+            ->assertJsonPath('data.receipt.institutional.copy_label', 'Reimpresion #1')
+            ->assertJsonPath('data.audit.reprint_count', 1);
+
+        $this->assertSame(1, AuditLog::query()
+            ->where('entity_type', Invoice::class)
+            ->where('entity_id', $invoiceId)
+            ->where('action', 'invoice.reprinted')
+            ->count());
+    }
+
     private function seedBillingBase(): void
     {
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
