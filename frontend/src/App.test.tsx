@@ -551,7 +551,7 @@ describe('App', () => {
     expect(await screen.findByText(/estado operativo/i)).toBeInTheDocument();
     expect(await screen.findByRole('heading', { name: /requiere revisi/i })).toBeInTheDocument();
     expect(await screen.findByText(/completar modo de operaci[oó]n final/i)).toBeInTheDocument();
-    expect(await screen.findByText(/validar recibo f[ií]sico media carta\/carta\/A5\/80mm\/58mm/i)).toBeInTheDocument();
+    expect(await screen.findByText(/validar recibo institucional carta, media carta o A5/i)).toBeInTheDocument();
     expect(screen.queryByText(/APP_ENV=production/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/respaldos del hospital/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /^pendiente$/i })).not.toBeInTheDocument();

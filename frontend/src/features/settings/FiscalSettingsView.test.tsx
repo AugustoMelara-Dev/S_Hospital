@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FiscalSettingsView } from './FiscalSettingsView';
@@ -34,11 +34,18 @@ const fiscalSequence: FiscalSequence = {
   active: true,
 };
 
-function renderView(props: { canEdit?: boolean; onStatus?: (message: string) => void } = {}) {
+function renderView(
+  props: {
+    canEdit?: boolean;
+    canEditOperationalRules?: boolean;
+    onStatus?: (message: string) => void;
+  } = {},
+) {
   return render(
     <MemoryRouter>
       <FiscalSettingsView
         canEdit={props.canEdit ?? true}
+        canEditOperationalRules={props.canEditOperationalRules ?? props.canEdit ?? true}
         onStatus={props.onStatus ?? vi.fn()}
       />
     </MemoryRouter>,
@@ -49,8 +56,17 @@ describe('FiscalSettingsView (separated sections)', () => {
   beforeEach(() => {
     vi.spyOn(apiClient, 'getFiscalSettings').mockResolvedValue(fiscalSettings);
     vi.spyOn(apiClient, 'getFiscalSequences').mockResolvedValue([]);
+    vi.spyOn(apiClient, 'getOperationalSettings').mockResolvedValue({
+      default_tax_rate: '15.00',
+      scanner_enabled: false,
+      partial_payments_enabled: false,
+    });
     vi.spyOn(apiClient, 'getLogo').mockResolvedValue(null);
     vi.spyOn(apiClient, 'updateFiscalSettings').mockResolvedValue(fiscalSettings);
+    vi.spyOn(apiClient, 'updateOperationalSettings').mockResolvedValue({
+      scanner_enabled: true,
+      partial_payments_enabled: false,
+    });
     vi.spyOn(apiClient, 'saveFiscalSequence').mockResolvedValue({
       id: 1,
       document_type: 'invoice',
@@ -123,5 +139,18 @@ describe('FiscalSettingsView (separated sections)', () => {
     expect(screen.getByText('A-00000001 a A-00001000')).toBeInTheDocument();
     expect(screen.getByText('A-00000011')).toBeInTheDocument();
     expect(screen.queryByText(/CAI y prefijo fiscal/i)).not.toBeInTheDocument();
+  });
+
+  it('allows editing only operational rules with the operational settings permission', async () => {
+    renderView({ canEdit: false, canEditOperationalRules: true });
+
+    await screen.findByRole('heading', { level: 1, name: /^configuraci.n$/i });
+    const operationalTab = screen.getByRole('tab', { name: /operativa/i });
+    fireEvent.mouseDown(operationalTab);
+    fireEvent.click(operationalTab);
+
+    expect(await screen.findByLabelText(/scanner/i)).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: /guardar reglas operativas/i })).not.toBeDisabled();
+    expect(screen.getByText(/edici.n operativa/i)).toBeInTheDocument();
   });
 });

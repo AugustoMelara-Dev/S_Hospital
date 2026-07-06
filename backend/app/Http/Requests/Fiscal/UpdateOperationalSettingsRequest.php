@@ -8,7 +8,7 @@ class UpdateOperationalSettingsRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('settings.fiscal.update') === true;
+        return $this->user()?->can('settings.operational.update') === true;
     }
 
     /**

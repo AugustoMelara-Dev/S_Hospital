@@ -477,6 +477,45 @@ class FiscalSettingsTest extends TestCase
         ], $audit->new_values);
     }
 
+    public function test_operational_settings_update_uses_operational_permission_not_fiscal_update(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        FiscalSetting::query()->create([
+            ...$this->validPayload(),
+            'scanner_enabled' => false,
+            'partial_payments_enabled' => false,
+        ]);
+
+        $operator = User::factory()->create();
+        $operator->givePermissionTo('settings.operational.update');
+
+        $this->actingAs($operator)
+            ->putJson('/api/settings/fiscal', [
+                ...$this->validPayload(),
+                'hospital_name' => 'Nombre fiscal no autorizado',
+            ])
+            ->assertForbidden();
+
+        $this->actingAs($operator)
+            ->putJson('/api/settings/operational', [
+                'scanner_enabled' => true,
+                'partial_payments_enabled' => true,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.scanner_enabled', true)
+            ->assertJsonPath('data.partial_payments_enabled', true)
+            ->assertJsonMissingPath('data.rtn')
+            ->assertJsonMissingPath('data.hospital_name');
+
+        $this->assertDatabaseHas('fiscal_settings', [
+            'hospital_name' => 'Hospital San Miguel',
+            'rtn' => '08011999123456',
+            'scanner_enabled' => true,
+            'partial_payments_enabled' => true,
+        ]);
+    }
+
     public function test_supervisor_can_view_but_not_update_fiscal_settings(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);

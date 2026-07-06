@@ -24,6 +24,7 @@ type AppRoutesProps = {
   canCreateInvoices: boolean;
   canCreatePayments: boolean;
   canEditFiscalSettings: boolean;
+  canEditOperationalSettings: boolean;
   canOpenCash: boolean;
   canCloseCash: boolean;
   canViewBackups: boolean;
@@ -55,6 +56,7 @@ export function AppRoutes({
   canCreateInvoices,
   canCreatePayments,
   canEditFiscalSettings,
+  canEditOperationalSettings,
   canOpenCash,
   canCloseCash,
   canViewBackups,
@@ -196,7 +198,11 @@ export function AppRoutes({
         element={
           <PermissionGate allowed={canAccessRoute(appRoutes.fiscalSettings, user.permissions)} reason={appRoutes.fiscalSettings.deniedReason}>
             <Suspense fallback={<LoadingState label="Cargando configuracion fiscal..." />}>
-              <FiscalSettingsView canEdit={canEditFiscalSettings} onStatus={onStatus} />
+              <FiscalSettingsView
+                canEdit={canEditFiscalSettings}
+                canEditOperationalRules={canEditOperationalSettings}
+                onStatus={onStatus}
+              />
             </Suspense>
           </PermissionGate>
         }

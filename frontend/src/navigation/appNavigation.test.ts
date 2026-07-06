@@ -51,7 +51,7 @@ describe('appNavigation', () => {
       { path: '/cashbox', permissions: ['cash.view'], mode: 'any' },
       { path: '/catalog', permissions: ['catalog.view'], mode: 'any' },
       { path: '/invoices', permissions: ['invoices.view'], mode: 'any' },
-      { path: '/reports', permissions: ['reports.view', 'reports.managerial.view', 'reports.cash_session.view'], mode: 'any' },
+      { path: '/reports', permissions: ['reports.view', 'reports.managerial.view', 'reports.cash_session.view', 'audit.view'], mode: 'any' },
       { path: '/backups', permissions: ['backups.view'], mode: 'any' },
       { path: '/settings/fiscal', permissions: ['settings.fiscal.view'], mode: 'any' },
       { path: '/settings/institutional-receipts', permissions: ['receipt_settings.view'], mode: 'any' },

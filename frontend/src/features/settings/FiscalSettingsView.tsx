@@ -17,10 +17,11 @@ import { Link } from 'react-router-dom';
 
 type FiscalSettingsViewProps = {
   canEdit: boolean;
+  canEditOperationalRules: boolean;
   onStatus: (message: string) => void;
 };
 
-export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProps) {
+export function FiscalSettingsView({ canEdit, canEditOperationalRules, onStatus }: FiscalSettingsViewProps) {
   const [activeTab, setActiveTab] = useState('resumen');
   const [settings, setSettings] = useState<FiscalSettings | null>(null);
   const [sequence, setSequence] = useState<FiscalSequence | null>(null);
@@ -52,8 +53,8 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
         description="Datos del hospital, numeración fiscal, reglas operativas y marca."
         actions={
           <ActionBar align="end">
-            <StatusBadge status={canEdit ? 'success' : 'info'}>
-              {canEdit ? 'Edición habilitada' : 'Solo lectura'}
+            <StatusBadge status={canEdit || canEditOperationalRules ? 'success' : 'info'}>
+              {canEdit ? 'Edición habilitada' : canEditOperationalRules ? 'Edición operativa' : 'Solo lectura'}
             </StatusBadge>
           </ActionBar>
         }
@@ -126,7 +127,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
         </TabsContent>
 
         <TabsContent value="operativa" className="mt-0">
-          <OperationalRulesView canEdit={canEdit} onStatus={onStatus} />
+          <OperationalRulesView canEdit={canEditOperationalRules} onStatus={onStatus} />
         </TabsContent>
 
         <TabsContent value="marca" className="mt-0">

@@ -21,6 +21,7 @@ export function useHospitalSession() {
   const permissions = useMemo(() => new Set(user?.permissions ?? []), [user?.permissions]);
   const canViewFiscalSettings = permissions.has('settings.fiscal.view');
   const canEditFiscalSettings = permissions.has('settings.fiscal.update');
+  const canEditOperationalSettings = permissions.has('settings.operational.update');
   const canViewCatalog = permissions.has('catalog.view');
   const canCreateInvoices = permissions.has('invoices.create');
   const canViewInvoices = permissions.has('invoices.view');
@@ -198,6 +199,7 @@ export function useHospitalSession() {
     passwordSubmitting,
     canViewFiscalSettings,
     canEditFiscalSettings,
+    canEditOperationalSettings,
     canViewCatalog,
     canCreateInvoices,
     canViewInvoices,

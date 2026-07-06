@@ -343,3 +343,18 @@ verified.
 | `npm run test -- ReportsView.subroutes --run` | PASS, 10 tests. |
 | `npm run typecheck` | PASS. |
 | `npm run lint` | PASS. |
+
+### 2026-07-05 Operational Settings Permission Gate
+
+| Command | Result |
+|---|---|
+| `docker compose exec backend php artisan test --filter=test_operational_settings_update_uses_operational_permission_not_fiscal_update` | RED first because `settings.operational.update` did not exist; then PASS, 1 focused test. |
+| `npm run test -- FiscalSettingsView --run -t "allows editing only operational rules"` | RED first because operational rules still used the global fiscal edit flag; then PASS, 1 focused test. |
+| `docker compose exec backend php artisan test tests/Feature/FiscalSettingsTest.php` | PASS, 21 tests. |
+| `npm run test -- FiscalSettingsView --run` | PASS, 5 tests. |
+| `npm run test -- OperationalRulesView --run` | PASS, 4 tests. |
+| `npm run test -- App --run` | PASS, 41 tests across 7 files. |
+| `npm run typecheck` | PASS. |
+| `npm run lint` | PASS. |
+| `docker compose exec backend vendor/bin/pint --test` | PASS, 429 files. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M` | PASS, no errors. |

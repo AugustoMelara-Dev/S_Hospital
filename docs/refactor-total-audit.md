@@ -6452,3 +6452,32 @@ Pruebas ejecutadas:
 Decision:
 
 - La UI evita un 403 evitable en el listado de cajas recientes y conserva el flujo manual de reporte para usuarios con permiso especifico de reportes.
+
+## 269. Fase 11/14 - Reglas operativas usan permiso separado
+
+Cambio aplicado:
+
+- Se agrega el permiso `settings.operational.update` al seeder de roles y permisos.
+- `PUT /api/settings/operational` deja de exigir `settings.fiscal.update` y valida el permiso operativo separado.
+- Un usuario con permiso operativo puede cambiar `scanner_enabled` y `partial_payments_enabled` sin poder modificar datos fiscales.
+- `FiscalSettingsView` recibe `canEditOperationalRules` y habilita solo la pestana Operativa cuando no existe permiso fiscal de escritura.
+- No se agregaron migraciones, dependencias ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter=test_operational_settings_update_uses_operational_permission_not_fiscal_update` | RED inicial porque el permiso no existia; luego OK. |
+| `npm run test -- FiscalSettingsView --run -t "allows editing only operational rules"` | RED inicial porque la UI seguia usando `canEdit` fiscal global; luego OK. |
+| `docker compose exec backend php artisan test tests/Feature/FiscalSettingsTest.php` | OK: 21 tests pasan. |
+| `npm run test -- FiscalSettingsView --run` | OK: 5 tests pasan. |
+| `npm run test -- OperationalRulesView --run` | OK: 4 tests pasan. |
+| `npm run test -- App --run` | OK: 41 tests pasan en 7 archivos. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `docker compose exec backend vendor/bin/pint --test` | OK: 429 files. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M` | OK. |
+
+Decision:
+
+- La configuracion operativa queda separada de la fiscal sin relajar la defensa backend: editar scanner/abonos ya no requiere conceder permisos fiscales completos.

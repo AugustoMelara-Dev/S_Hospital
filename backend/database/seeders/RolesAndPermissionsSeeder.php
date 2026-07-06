@@ -12,6 +12,7 @@ class RolesAndPermissionsSeeder extends Seeder
     public const PERMISSIONS = [
         'settings.fiscal.view',
         'settings.fiscal.update',
+        'settings.operational.update',
         'catalog.view',
         'catalog.manage',
         'invoices.view',

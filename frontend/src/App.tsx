@@ -119,6 +119,7 @@ function HospitalApp() {
         <AppRoutes
           canCreateInvoices={session.canCreateInvoices}
           canEditFiscalSettings={session.canEditFiscalSettings}
+          canEditOperationalSettings={session.canEditOperationalSettings}
           canOpenCash={session.canOpenCash}
           canCloseCash={session.canCloseCash}
           canViewBackups={session.canViewBackups}
