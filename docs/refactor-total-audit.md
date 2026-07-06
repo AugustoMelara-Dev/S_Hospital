@@ -7471,3 +7471,26 @@ Pruebas ejecutadas:
 Decision:
 
 - En la version monocomputadora, respaldar sigue siendo una accion administrativa sensible. Quien pueda crear respaldos debe poder ver el historial del modulo para confirmar estado, auditoria y descarga autorizada.
+
+## 311. Fase 6/QA - Readiness fisico no exige tickets termicos
+
+Cambio aplicado:
+
+- `SystemStatusController` deja de requerir evidencia 80mm/58mm en `INSTITUTIONAL_RECEIPT_PRINT_PROOF`.
+- El blocker `PENDING_HARDWARE_VALIDATION` y la evidencia fisica quedan enfocados en recibo institucional media carta, carta y A5.
+- Se agrega una regresion que valida una evidencia completa sin campos ni checks termicos, y confirma que el payload no menciona 80mm/58mm.
+- La compatibilidad termica queda fuera del criterio normal de readiness fisico; no se agregan endpoints, migraciones, roles ni permisos.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test tests/Feature/SystemStatusTest.php --filter=primary_receipt_print_proof` | OK: 1 test, 7 assertions. |
+| `docker compose exec backend php artisan test tests/Feature/SystemStatusTest.php` | OK: 22 tests, 149 assertions. |
+| `docker compose exec backend vendor/bin/pint --test` | OK: 431 files. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=1G` | OK: no errors. |
+| `git diff --check` | OK. |
+
+Decision:
+
+- La version monocomputadora debe validar seriamente el recibo institucional principal, pero no bloquear salida por tickets 80mm/58mm que son compatibilidad secundaria.

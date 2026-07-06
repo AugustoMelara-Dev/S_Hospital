@@ -60,7 +60,7 @@ class SystemStatusController extends Controller
             ],
         ],
         'INSTITUTIONAL_RECEIPT_PRINT_PROOF' => [
-            'label' => 'Impresora institucional media carta/carta/A5/80mm/58mm',
+            'label' => 'Impresora institucional media carta/carta/A5',
             'required_file' => 'qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md',
             'fields' => [
                 'Date/time',
@@ -74,8 +74,6 @@ class SystemStatusController extends Controller
                 'Media carta result',
                 'Carta result',
                 'A5 result',
-                '80mm result',
-                '58mm result',
                 'Reprint result',
                 'Margins result',
                 'Browser headers/footers result',
@@ -87,8 +85,6 @@ class SystemStatusController extends Controller
                 'media carta',
                 'carta',
                 'A5',
-                '80mm',
-                '58mm',
                 'white background',
                 'Reprint',
                 'headers/footers',
@@ -689,7 +685,7 @@ class SystemStatusController extends Controller
             ],
             [
                 'code' => 'PENDING_HARDWARE_VALIDATION',
-                'label' => 'Impresora institucional fisica media carta/carta/A5/80mm/58mm',
+                'label' => 'Impresora institucional fisica media carta/carta/A5',
                 'status' => $printerProof['status'] === 'validated' ? 'validated' : 'pending',
             ],
             [

@@ -321,6 +321,32 @@ class SystemStatusTest extends TestCase
             ->assertJsonPath('data.preflight.physical_proofs.1.status', 'validated');
     }
 
+    public function test_status_accepts_primary_receipt_print_proof_without_thermal_ticket_evidence(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $proofRoot = storage_path('framework/testing-production-proofs-primary-receipt');
+
+        File::deleteDirectory($proofRoot);
+        File::ensureDirectoryExists($proofRoot.'/qa');
+        File::ensureDirectoryExists($proofRoot.'/qa/evidence/printer-primary-2026-05-19');
+        Config::set('hospital.project_root', $proofRoot);
+        $this->beforeApplicationDestroyed(fn () => File::deleteDirectory($proofRoot));
+
+        File::put($proofRoot.'/qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md', $this->primaryReceiptPrintProof());
+
+        $response = $this->actingAs($this->admin())
+            ->getJson('/api/system/status')
+            ->assertOk()
+            ->assertJsonPath('data.readiness.blockers.1.label', 'Impresora institucional fisica media carta/carta/A5')
+            ->assertJsonPath('data.readiness.blockers.1.status', 'validated')
+            ->assertJsonPath('data.preflight.physical_proofs.1.label', 'Impresora institucional media carta/carta/A5')
+            ->assertJsonPath('data.preflight.physical_proofs.1.status', 'validated');
+
+        $encoded = json_encode($response->json(), JSON_THROW_ON_ERROR);
+        $this->assertStringNotContainsString('80mm', $encoded);
+        $this->assertStringNotContainsString('58mm', $encoded);
+    }
+
     public function test_status_rejects_completed_physical_proof_when_local_evidence_reference_is_missing(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
@@ -561,6 +587,60 @@ MARKDOWN;
 ## Evidence
 
 - Photo path, printed-sample reference, or signed local note: qa/evidence/printer-2026-05-19/*.jpg
+- Notes: Validacion ejecutada con impresora fisica de caja.
+MARKDOWN;
+    }
+
+    private function primaryReceiptPrintProof(): string
+    {
+        return <<<'MARKDOWN'
+# Institutional printer proof
+
+## Environment
+
+- Date/time: 2026-05-19 14:35
+- Responsible person: Operador de caja
+- Printer brand/model: Impresora laser institucional
+- Printer driver: Windows printer driver
+- Connection type: USB compartida en caja
+- Browser/version: Chrome 125
+- Cashier computer: CAJA-01
+- Invoice used: FAC-000123
+- Evidence/photo reference: qa/evidence/printer-primary-2026-05-19
+- Final conclusion: Impresion fisica aprobada para recibos media carta, carta y A5 con reimpresion historica.
+
+## Media carta, carta and A5 physical print result
+
+- Media carta result: Legible a escala 100 por ciento, sin cortar totales.
+- Media carta evidence/reference: foto-media-carta-01.jpg y muestra firmada.
+- Media carta observations: Totales, paciente, cajero y CAI visibles.
+- Carta result: Legible a escala 100 por ciento.
+- Carta evidence/reference: foto-carta-01.jpg y muestra firmada.
+- Carta observations: Nombre de paciente largo ajusta correctamente.
+- A5 result: Legible a escala 100 por ciento.
+- A5 evidence/reference: foto-a5-01.jpg y muestra firmada.
+- A5 observations: Conceptos y sello visibles.
+
+## Reprint and browser print settings
+
+- Reprint result: Reimpresion desde historial conserva snapshots.
+- Margins result: Margenes minimos configurados.
+- Browser headers/footers result: Encabezados y pies del navegador desactivados.
+- Problems found: none found during physical validation.
+
+## Required checks
+
+- [x] Media carta receipt prints at 100 percent scale. Result/evidence: muestra fisica media-carta-01.
+- [x] Carta receipt prints at 100 percent scale. Result/evidence: muestra fisica carta-01.
+- [x] A5 receipt prints at 100 percent scale. Result/evidence: muestra fisica a5-01.
+- [x] Institutional receipt includes hospital name, RTN/CAI when configured, invoice number, patient, cashier, services and totals. Result/evidence: campos visibles en foto institucional-02.
+- [x] Institutional receipt has white background and no QR, barcode, internal codes or technical fields. Result/evidence: muestra sin codigos internos ni fondo oscuro.
+- [x] Reprint from invoice history prints with historical snapshots. Result/evidence: muestra reprint-01.
+- [x] Margins are minimal and no browser headers/footers appear. Result/evidence: revision visual de muestra impresa.
+
+## Evidence
+
+- Photo path, printed-sample reference, or signed local note: qa/evidence/printer-primary-2026-05-19/*.jpg
 - Notes: Validacion ejecutada con impresora fisica de caja.
 MARKDOWN;
     }
