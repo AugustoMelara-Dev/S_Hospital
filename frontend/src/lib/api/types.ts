@@ -207,6 +207,8 @@ export type CashSession = {
   id: number;
   user_id: number;
   user?: Pick<AuthUser, 'id' | 'name' | 'username'>;
+  closed_by_user_id?: number | null;
+  closed_by?: Pick<AuthUser, 'id' | 'name' | 'username'> | null;
   opening_amount: string;
   closing_amount: string | null;
   expected_amount: string | null;

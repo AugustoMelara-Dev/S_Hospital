@@ -7107,3 +7107,27 @@ Pruebas ejecutadas:
 Decision:
 
 - El cierre de caja debe dejar evidencia operativa disponible despues de confirmar, usando el payload autoritativo del backend. Imprimir/exportar no debe depender de mantener abierto el dialogo pre-cierre.
+
+## 296. Fase 5/7 - Cierre de caja registra usuario que cierra
+
+Cambio aplicado:
+
+- `cash_register_sessions` ahora guarda `closed_by_user_id` nullable con FK a `users`.
+- `CloseCashSessionAction` registra el usuario autenticado que ejecuta el cierre, incluyendo cierres autorizados de una caja ajena por supervisor.
+- La respuesta de cierre y el reporte de sesion de caja exponen `closed_by` separado del cajero dueño de la sesion.
+- Se actualizo el tipo frontend `CashSession` para aceptar `closed_by`/`closed_by_user_id`.
+- No se agregaron permisos, dependencias ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker exec s_hospital-backend-1 php artisan test --filter=supervisor_close_records_closing_user_in_session_and_report` | RED inicial correcto: `data.closed_by.id` era `null`; luego OK. |
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/CashPaymentsReceiptTest.php` | OK: 36 tests, 382 assertions. |
+| `docker exec s_hospital-backend-1 vendor/bin/pint --test` | OK: 431 files. |
+| `docker exec s_hospital-backend-1 vendor/bin/phpstan analyse --memory-limit=512M` | Primer intento excedio 3 minutos; segunda corrida OK sin errores. |
+| `npm run typecheck` | OK. |
+
+Decision:
+
+- El cajero propietario de la sesion y el usuario que ejecuta el cierre son hechos auditables distintos. Los reportes deben conservar ambos para supervision y conciliacion posterior.

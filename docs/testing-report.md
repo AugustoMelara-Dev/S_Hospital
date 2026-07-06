@@ -637,3 +637,13 @@ verified.
 | `npm run typecheck` | PASS. |
 | `npm run lint` | PASS. |
 | `npm run build` | PASS. |
+
+### 2026-07-06 Cash Close Closed By Audit Gate
+
+| Command | Result |
+|---|---|
+| `docker exec s_hospital-backend-1 php artisan test --filter=supervisor_close_records_closing_user_in_session_and_report` | RED first because `data.closed_by.id` was `null`; then PASS. |
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/CashPaymentsReceiptTest.php` | PASS, 36 tests and 382 assertions. |
+| `docker exec s_hospital-backend-1 vendor/bin/pint --test` | PASS, 431 files. |
+| `docker exec s_hospital-backend-1 vendor/bin/phpstan analyse --memory-limit=512M` | First attempt timed out at 3 minutes; rerun PASS with no errors. |
+| `npm run typecheck` | PASS. |

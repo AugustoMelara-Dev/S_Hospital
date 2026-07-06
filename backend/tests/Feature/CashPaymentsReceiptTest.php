@@ -178,6 +178,36 @@ class CashPaymentsReceiptTest extends TestCase
         ]);
     }
 
+    public function test_supervisor_close_records_closing_user_in_session_and_report(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $supervisor = User::factory()->create(['name' => 'Supervisor Cierre']);
+        $supervisor->assignRole('supervisor');
+        $sessionId = $this->openSession($cashier, '100.00');
+
+        $this->actingAs($supervisor)
+            ->postJson("/api/cash-sessions/{$sessionId}/close", ['closing_amount' => '100.00'])
+            ->assertOk()
+            ->assertJsonPath('data.status', CashRegisterSession::STATUS_CLOSED)
+            ->assertJsonPath('data.user.id', $cashier->id)
+            ->assertJsonPath('data.closed_by.id', $supervisor->id)
+            ->assertJsonPath('data.closed_by.name', 'Supervisor Cierre');
+
+        $this->assertDatabaseHas('cash_register_sessions', [
+            'id' => $sessionId,
+            'user_id' => $cashier->id,
+            'closed_by_user_id' => $supervisor->id,
+        ]);
+
+        $this->actingAs($supervisor)
+            ->getJson("/api/reports/cash-sessions/{$sessionId}")
+            ->assertOk()
+            ->assertJsonPath('data.cash_session.user.id', $cashier->id)
+            ->assertJsonPath('data.cash_session.closed_by.id', $supervisor->id)
+            ->assertJsonPath('data.cash_session.closed_by.name', 'Supervisor Cierre');
+    }
+
     public function test_closing_cash_session_calculates_expected_and_difference(): void
     {
         $this->seedBillingBase();

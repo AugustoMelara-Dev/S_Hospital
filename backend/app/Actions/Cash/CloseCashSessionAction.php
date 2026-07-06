@@ -85,6 +85,7 @@ class CloseCashSessionAction
                 'pending_amount_snapshot' => $reconciliation['pending_amount'],
                 'status' => CashRegisterSession::STATUS_CLOSED,
                 'open_user_id' => null,
+                'closed_by_user_id' => $user->id,
                 'closing_notes' => $notes === '' ? null : $notes,
                 'closed_at' => now(),
             ])->save();
@@ -114,6 +115,7 @@ class CloseCashSessionAction
                     'payments_count' => $reconciliation['payments_count'],
                     'pending_invoice_count' => $pendingInvoiceCount,
                     'pending_amount' => $reconciliation['pending_amount'],
+                    'closed_by_user_id' => $user->id,
                 ],
                 'reason' => $notes === '' ? null : $notes,
                 'ip_address' => $request?->ip(),
@@ -148,7 +150,7 @@ class CloseCashSessionAction
                 CashSessionChanged::dispatch($lockedSession->fresh(), 'closed');
             });
 
-            return $lockedSession->load('user:id,name,username');
+            return $lockedSession->load(['user:id,name,username', 'closedBy:id,name,username']);
         });
     }
 }

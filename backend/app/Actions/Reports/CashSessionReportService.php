@@ -13,7 +13,7 @@ class CashSessionReportService
 
     public function report(CashRegisterSession $session): array
     {
-        $session->load('user:id,name,username');
+        $session->load(['user:id,name,username', 'closedBy:id,name,username']);
         $reconciliation = $this->buildCashReconciliation->execute($session);
         $snapshot = $this->closedSnapshot($session);
         $methods = $snapshot['payments_by_method'] ?? $reconciliation['payments_by_method'];
@@ -57,6 +57,7 @@ class CashSessionReportService
                 'id' => $session->id,
                 'status' => $session->status,
                 'user' => $session->user,
+                'closed_by' => $session->closedBy,
                 'opening_amount' => (string) $session->opening_amount,
                 'expected_amount' => $session->expected_amount === null ? null : (string) $session->expected_amount,
                 'closing_amount' => $session->closing_amount === null ? null : (string) $session->closing_amount,

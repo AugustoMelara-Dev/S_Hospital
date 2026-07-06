@@ -20,7 +20,7 @@ class CashSessionController extends Controller
         BuildCashReconciliationAction $buildCashReconciliation,
     ): JsonResponse {
         $session = CashRegisterSession::query()
-            ->with('user:id,name,username')
+            ->with(['user:id,name,username', 'closedBy:id,name,username'])
             ->where('user_id', $request->user()->id)
             ->where('status', CashRegisterSession::STATUS_OPEN)
             ->latest('opened_at')
@@ -34,7 +34,7 @@ class CashSessionController extends Controller
     public function index(IndexCashSessionRequest $request): JsonResponse
     {
         $query = CashRegisterSession::query()
-            ->with('user:id,name,username')
+            ->with(['user:id,name,username', 'closedBy:id,name,username'])
             ->latest('opened_at');
 
         if (! $request->user()->can('cash.close_any')) {
