@@ -7,6 +7,10 @@ use App\Models\CashMovement;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
+use App\Models\InstitutionalReceipt;
+use App\Models\InstitutionalReceiptSeries;
+use App\Models\Invoice;
+use App\Models\Payment;
 use App\Models\Service;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
@@ -43,6 +47,8 @@ class CloseCashSessionTest extends TestCase
                 'amount' => '17.25',
             ])
             ->assertCreated();
+
+        $this->createIssuedInstitutionalReceipt($invoiceId, $sessionId, $cashier);
 
         Bus::fake([RunBackupJob::class]);
 
@@ -205,6 +211,52 @@ class CloseCashSessionTest extends TestCase
         ]);
 
         return $cashier->refresh();
+    }
+
+    private function createIssuedInstitutionalReceipt(int $invoiceId, int $sessionId, User $cashier): void
+    {
+        $invoice = Invoice::query()->findOrFail($invoiceId);
+        $number = 91000000 + $invoice->id;
+        $series = InstitutionalReceiptSeries::query()->create([
+            'document_type' => InstitutionalReceiptSeries::DOCUMENT_TYPE,
+            'series' => 'REC-CLOSE',
+            'prefix' => 'RC',
+            'number_format' => '{series}-{number:08}',
+            'min_number' => 1,
+            'max_number' => 99999999,
+            'current_number' => $number,
+            'active' => false,
+        ]);
+
+        InstitutionalReceipt::query()->create([
+            'invoice_id' => $invoice->id,
+            'payment_id' => Payment::query()
+                ->where('invoice_id', $invoice->id)
+                ->where('cash_session_id', $sessionId)
+                ->where('status', Payment::STATUS_POSTED)
+                ->value('id'),
+            'cash_session_id' => $sessionId,
+            'series_id' => $series->id,
+            'receipt_number' => $number,
+            'receipt_number_full' => 'REC-CLOSE-'.str_pad((string) $number, 8, '0', STR_PAD_LEFT),
+            'status' => InstitutionalReceipt::STATUS_ISSUED,
+            'amount' => $invoice->total,
+            'amount_cents' => $invoice->total_cents,
+            'issued_at' => now(),
+            'issued_by' => $cashier->id,
+            'payer_name' => $invoice->patient_name,
+            'concept' => 'Servicios hospitalarios',
+            'amount_words' => 'Monto de prueba',
+            'template_code' => 'institutional_classic',
+            'print_profile_code' => 'half_letter',
+            'copy_mode' => 'original_only',
+            'institution_snapshot' => ['hospital_name' => 'Hospital San Isidro'],
+            'series_snapshot' => ['series' => 'REC-CLOSE'],
+            'profile_snapshot' => ['code' => 'half_letter'],
+            'invoice_snapshot' => ['invoice_number' => $invoice->invoice_number],
+            'payment_snapshot' => null,
+            'items_snapshot' => [],
+        ]);
     }
 
     private function currentOpenSessionIdFor(User $cashier): int

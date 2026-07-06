@@ -7813,3 +7813,26 @@ Pruebas ejecutadas:
 Decision:
 
 - Para una instalacion local real, “admin existe” debe significar que hay una cuenta admin activa capaz de iniciar sesion. Si solo queda un admin inactivo, setup no debe verse completo y el comando inicial debe permitir recuperacion controlada.
+
+## 326. Fase 2/5/QA - Cierre de caja bloquea recibos institucionales pendientes
+
+Cambio aplicado:
+
+- La reconciliacion de caja ahora cuenta facturas pagadas de la sesion que no tienen recibo institucional emitido.
+- El cierre de caja rechaza cerrar cuando existe al menos una factura pagada sin recibo institucional, con mensaje operativo para generar el recibo pendiente.
+- Las pruebas de cierres exitosos declaran explicitamente recibos institucionales emitidos, alineando los escenarios con el recibo principal del sistema.
+- No se agregaron dependencias, migraciones, roles, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test tests/Feature/CashPaymentsReceiptTest.php --filter=cash_session_cannot_close_paid_invoice_without_institutional_receipt` | Primero fallo porque el cierre respondia 200; luego OK: 1 test, 10 assertions. |
+| `docker compose exec backend php artisan test tests/Feature/CashPaymentsReceiptTest.php` | OK: 37 tests, 392 assertions. |
+| `docker compose exec backend php artisan test tests/Feature/Cash/CloseCashSessionTest.php` | OK: 5 tests, 22 assertions. |
+| `docker compose exec backend vendor/bin/pint --test` | OK: 432 files. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M` | OK. |
+
+Decision:
+
+- Una caja no debe cerrar si ya cobro una factura pero el comprobante institucional principal quedo pendiente. La version monocomputadora reduce complejidad de despliegue, no la seriedad de caja, recibos y auditoria.

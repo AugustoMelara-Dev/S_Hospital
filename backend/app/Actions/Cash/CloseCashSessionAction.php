@@ -57,6 +57,14 @@ class CloseCashSessionAction
                 ]);
             }
 
+            $missingInstitutionalReceiptCount = $reconciliation['missing_institutional_receipt_count'];
+
+            if ($missingInstitutionalReceiptCount > 0) {
+                throw ValidationException::withMessages([
+                    'cash_session' => "No se puede cerrar la caja con {$missingInstitutionalReceiptCount} factura(s) pagadas sin recibo institucional emitido. Genere el recibo institucional pendiente antes de cerrar.",
+                ]);
+            }
+
             $expectedCents = Money::parseCents($reconciliation['expected_cash_amount'], 'expected_cash_amount');
             $closingCents = Money::parseCents($payload['closing_amount'], 'closing_amount');
             $differenceCents = $closingCents - $expectedCents;

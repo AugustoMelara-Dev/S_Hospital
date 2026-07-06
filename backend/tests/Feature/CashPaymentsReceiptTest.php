@@ -7,6 +7,8 @@ use App\Models\CashMovement;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
+use App\Models\InstitutionalReceipt;
+use App\Models\InstitutionalReceiptSeries;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Service;
@@ -223,6 +225,8 @@ class CashPaymentsReceiptTest extends TestCase
             ])
             ->assertCreated();
 
+        $this->createIssuedInstitutionalReceipt($invoiceId, $sessionId, $cashier);
+
         $this->actingAs($cashier)
             ->postJson("/api/cash-sessions/{$sessionId}/close", [
                 'closing_amount' => '520.00',
@@ -255,6 +259,8 @@ class CashPaymentsReceiptTest extends TestCase
             ])
             ->assertCreated();
 
+        $this->createIssuedInstitutionalReceipt($invoiceId, $sessionId, $cashier);
+
         $this->actingAs($cashier)
             ->postJson("/api/cash-sessions/{$sessionId}/close", ['closing_amount' => '520.00'])
             ->assertJsonValidationErrors('notes');
@@ -286,6 +292,8 @@ class CashPaymentsReceiptTest extends TestCase
                     'reference' => $paymentCase['reference'] ?? null,
                 ])
                 ->assertCreated();
+
+            $this->createIssuedInstitutionalReceipt($invoiceId, $sessionId, $cashier);
         }
 
         $this->actingAs($cashier)
@@ -753,6 +761,35 @@ class CashPaymentsReceiptTest extends TestCase
         ]);
     }
 
+    public function test_cash_session_cannot_close_paid_invoice_without_institutional_receipt(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier, '500.00');
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+
+        $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_CASH,
+                'amount' => '17.25',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.invoice.status', Invoice::STATUS_PAID)
+            ->assertJsonPath('data.institutional_receipt', null);
+
+        $this->actingAs($cashier)
+            ->postJson("/api/cash-sessions/{$sessionId}/close", ['closing_amount' => '517.25'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('cash_session')
+            ->assertJsonPath('errors.cash_session.0', 'No se puede cerrar la caja con 1 factura(s) pagadas sin recibo institucional emitido. Genere el recibo institucional pendiente antes de cerrar.');
+
+        $this->assertDatabaseHas('cash_register_sessions', [
+            'id' => $sessionId,
+            'status' => CashRegisterSession::STATUS_OPEN,
+        ]);
+    }
+
     public function test_payment_rejects_invalid_amounts_overpayment_void_and_paid_invoices(): void
     {
         $this->seedBillingBase();
@@ -1120,6 +1157,8 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertCreated()
             ->json('data.payment.id');
 
+        $this->createIssuedInstitutionalReceipt($invoiceId, $sessionId, $cashier);
+
         $this->actingAs($cashier)
             ->postJson("/api/cash-sessions/{$sessionId}/close", [
                 'closing_amount' => '517.25',
@@ -1441,6 +1480,52 @@ class CashPaymentsReceiptTest extends TestCase
             ])
             ->assertCreated()
             ->json('data.id');
+    }
+
+    private function createIssuedInstitutionalReceipt(int $invoiceId, int $sessionId, User $cashier): void
+    {
+        $invoice = Invoice::query()->findOrFail($invoiceId);
+        $number = 90000000 + $invoice->id;
+        $series = InstitutionalReceiptSeries::query()->create([
+            'document_type' => InstitutionalReceiptSeries::DOCUMENT_TYPE,
+            'series' => 'REC-TST',
+            'prefix' => 'RT',
+            'number_format' => '{series}-{number:08}',
+            'min_number' => 1,
+            'max_number' => 99999999,
+            'current_number' => $number,
+            'active' => false,
+        ]);
+
+        InstitutionalReceipt::query()->create([
+            'invoice_id' => $invoice->id,
+            'payment_id' => Payment::query()
+                ->where('invoice_id', $invoice->id)
+                ->where('cash_session_id', $sessionId)
+                ->where('status', Payment::STATUS_POSTED)
+                ->value('id'),
+            'cash_session_id' => $sessionId,
+            'series_id' => $series->id,
+            'receipt_number' => $number,
+            'receipt_number_full' => 'REC-TST-'.str_pad((string) $number, 8, '0', STR_PAD_LEFT),
+            'status' => InstitutionalReceipt::STATUS_ISSUED,
+            'amount' => $invoice->total,
+            'amount_cents' => $invoice->total_cents,
+            'issued_at' => now(),
+            'issued_by' => $cashier->id,
+            'payer_name' => $invoice->patient_name,
+            'concept' => 'Servicios hospitalarios',
+            'amount_words' => 'Monto de prueba',
+            'template_code' => 'institutional_classic',
+            'print_profile_code' => 'half_letter',
+            'copy_mode' => 'original_only',
+            'institution_snapshot' => ['hospital_name' => 'Hospital San Isidro'],
+            'series_snapshot' => ['series' => 'REC-TST'],
+            'profile_snapshot' => ['code' => 'half_letter'],
+            'invoice_snapshot' => ['invoice_number' => $invoice->invoice_number],
+            'payment_snapshot' => null,
+            'items_snapshot' => [],
+        ]);
     }
 
     private function ensureOpenSession(User $cashier): int
