@@ -124,6 +124,141 @@ interface CloseSessionDialogProps {
 
 const MIN_DIFFERENCE_NOTE_LENGTH = 5;
 
+type CashCloseSummarySession = CloseSessionDialogProps['session'];
+
+interface CashCloseSummaryPanelProps {
+  session: CashCloseSummarySession;
+  closingAmount: string;
+  closingNotes: string;
+  difference: number;
+}
+
+export function CashCloseSummaryPanel({
+  session,
+  closingAmount,
+  closingNotes,
+  difference,
+}: CashCloseSummaryPanelProps) {
+  const openingAmount = finiteNumber(session.opening_amount);
+  const expectedAmount = finiteNumber(session.expected_cash_amount ?? session.expected_amount ?? session.opening_amount);
+  const pendingAmount = finiteNumber(session.pending_amount);
+  const pendingInvoiceCount = session.pending_invoice_count ?? 0;
+  const methods = session.payments_by_method ?? {
+    cash: '0.00',
+    transfer: '0.00',
+    card: '0.00',
+    other: '0.00',
+  };
+
+  function exportCloseSummary() {
+    const csv = buildCloseSummaryCsv({
+      openingAmount,
+      expectedAmount,
+      methods,
+      pendingAmount,
+      pendingInvoiceCount,
+      closingAmount,
+      difference,
+      closingNotes,
+    });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `resumen-cierre-caja-${new Date().toISOString().slice(0, 10)}.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function printCloseSummary() {
+    const previousPrinting = document.body.dataset.printingCashClose;
+    document.body.dataset.printingCashClose = 'true';
+
+    try {
+      window.print();
+    } finally {
+      if (previousPrinting) {
+        document.body.dataset.printingCashClose = previousPrinting;
+      } else {
+        delete document.body.dataset.printingCashClose;
+      }
+    }
+  }
+
+  return (
+    <section
+      aria-labelledby="cash-close-confirmed-summary-title"
+      className="rounded-md border border-success/35 bg-success/10 p-4 text-sm shadow-sm"
+      data-cash-close-print-root
+    >
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 id="cash-close-confirmed-summary-title" className="text-base font-semibold text-foreground">
+            Resumen de cierre confirmado
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Conserve este resumen para impresion o archivo del turno cerrado.
+          </p>
+        </div>
+        <div className="print-hidden flex flex-wrap gap-2">
+          <Button type="button" variant="secondary" onClick={printCloseSummary}>
+            <Printer aria-hidden="true" className="size-4" />
+            Imprimir resumen
+          </Button>
+          <Button type="button" variant="secondary" onClick={exportCloseSummary}>
+            <Download aria-hidden="true" className="size-4" />
+            Exportar resumen
+          </Button>
+        </div>
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 gap-2 rounded-md border border-border bg-card/80 p-3 sm:grid-cols-2">
+        <div className="flex justify-between gap-3">
+          <span>Monto apertura:</span>
+          <strong>{formatLempirasUI(openingAmount)}</strong>
+        </div>
+        <div className="flex justify-between gap-3">
+          <span>Efectivo esperado:</span>
+          <strong>{formatLempirasUI(expectedAmount)}</strong>
+        </div>
+        <div className="flex justify-between gap-3">
+          <span>Monto contado:</span>
+          <strong>{formatLempirasUI(closingAmount || '0.00')}</strong>
+        </div>
+        <div className="flex justify-between gap-3">
+          <span>Diferencia:</span>
+          <strong className={cn(difference !== 0 ? 'text-destructive' : 'text-success-foreground')}>
+            {formatLempirasUI(difference)}
+          </strong>
+        </div>
+      </div>
+
+      <div className="mt-3 grid grid-cols-1 gap-2 text-xs sm:grid-cols-4">
+        <div className="flex justify-between gap-2 rounded border border-border bg-card/70 px-2 py-1">
+          <span>Efectivo</span>
+          <strong>{formatLempirasUI(methods.cash)}</strong>
+        </div>
+        <div className="flex justify-between gap-2 rounded border border-border bg-card/70 px-2 py-1">
+          <span>Transferencia</span>
+          <strong>{formatLempirasUI(methods.transfer)}</strong>
+        </div>
+        <div className="flex justify-between gap-2 rounded border border-border bg-card/70 px-2 py-1">
+          <span>Tarjeta</span>
+          <strong>{formatLempirasUI(methods.card)}</strong>
+        </div>
+        <div className="flex justify-between gap-2 rounded border border-border bg-card/70 px-2 py-1">
+          <span>Otros</span>
+          <strong>{formatLempirasUI(methods.other)}</strong>
+        </div>
+      </div>
+
+      <div className="mt-3 text-sm text-muted-foreground">
+        Nota: <span className="text-foreground">{closingNotes.trim() || 'Sin nota'}</span>
+      </div>
+    </section>
+  );
+}
+
 export function CloseSessionDialog({
   open,
   onOpenChange,
@@ -315,7 +450,7 @@ export function CloseSessionDialog({
   );
 }
 
-function buildCloseSummaryCsv({
+export function buildCloseSummaryCsv({
   openingAmount,
   expectedAmount,
   methods,

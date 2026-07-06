@@ -625,3 +625,15 @@ verified.
 | `npm run typecheck` | PASS. |
 | `npm run lint` | PASS. |
 | `npm run build` | PASS. |
+
+### 2026-07-06 Cash Close Confirmed Summary Gate
+
+| Command | Result |
+|---|---|
+| `npm run test -- CashBoxView --run -t "confirmed close summary"` | RED first because the UI discarded the closed-session payload and had no printable/exportable summary after closing; then PASS. |
+| `npm run test -- CashBoxView --run` | PASS, 17 tests. |
+| `npm run test -- CloseSessionDialog --run` | PASS, 8 tests. |
+| `npm run test -- src/features/cash --run` | PASS, 37 tests across 5 files. |
+| `npm run typecheck` | PASS. |
+| `npm run lint` | PASS. |
+| `npm run build` | PASS. |

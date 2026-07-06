@@ -24,6 +24,7 @@ describe('CashBoxView', () => {
 
   afterEach(async () => {
     cleanup();
+    vi.unstubAllGlobals();
     await queryClient.cancelQueries();
     queryClient.clear();
   });
@@ -496,6 +497,69 @@ describe('CashBoxView', () => {
       },
       { idempotencyKey: expect.any(String) },
     ));
+  });
+
+  it('keeps a confirmed close summary printable after the cash session closes', async () => {
+    const print = vi.fn(() => {
+      expect(document.body.dataset.printingCashClose).toBe('true');
+    });
+    vi.stubGlobal('print', print);
+    const createObjectURL = vi.fn((blob: Blob) => {
+      void blob;
+      return 'blob:cash-close-confirmed-summary';
+    });
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal('URL', {
+      ...URL,
+      createObjectURL,
+      revokeObjectURL,
+    });
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+    const closedSession = cashSessionFixture({
+      status: 'closed',
+      closing_amount: '101.00',
+      difference_amount: '1.00',
+      closing_notes: 'Sobrante confirmado',
+      closed_at: '2026-07-06T17:30:00-06:00',
+      payments_by_method: {
+        cash: '1.00',
+        transfer: '0.00',
+        card: '0.00',
+        other: '0.00',
+      },
+    });
+    const closeCashSession = vi.spyOn(apiClient, 'closeCashSession').mockResolvedValue(closedSession);
+    vi.spyOn(apiClient, 'getCurrentCashSession')
+      .mockResolvedValueOnce(cashSessionFixture({
+        expected_cash_amount: '100.00',
+        payments_by_method: closedSession.payments_by_method,
+      }))
+      .mockResolvedValueOnce(cashSessionFixture({
+        expected_cash_amount: '100.00',
+        payments_by_method: closedSession.payments_by_method,
+      }))
+      .mockResolvedValue(null);
+
+    renderCashBox(<CashBoxView onStatus={vi.fn()} />);
+
+    fireEvent.change(await screen.findByLabelText(/monto contado/i), { target: { value: '101.00' } });
+    fireEvent.change(screen.getByLabelText(/nota de cierre/i), { target: { value: 'Sobrante confirmado' } });
+    fireEvent.click(screen.getByRole('button', { name: /^cerrar caja$/i }));
+    const closeDialog = await screen.findByRole('alertdialog');
+    fireEvent.click(within(closeDialog).getByRole('button', { name: /^cerrar caja$/i }));
+
+    const confirmedSummary = await screen.findByRole('region', { name: /resumen de cierre confirmado/i });
+    expect(confirmedSummary).toHaveTextContent(/monto contado:\s*L 101\.00/i);
+    expect(confirmedSummary).toHaveTextContent(/diferencia:\s*L 1\.00/i);
+    expect(closeCashSession).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(within(confirmedSummary).getByRole('button', { name: /imprimir resumen/i }));
+    fireEvent.click(within(confirmedSummary).getByRole('button', { name: /exportar resumen/i }));
+
+    expect(print).toHaveBeenCalledTimes(1);
+    expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:cash-close-confirmed-summary');
+    expect(closeCashSession).toHaveBeenCalledTimes(1);
   });
 
   it('trims close difference notes before sending the audited payload', async () => {

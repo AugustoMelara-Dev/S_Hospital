@@ -7082,3 +7082,28 @@ Pruebas ejecutadas:
 Decision:
 
 - La restauracion de respaldos es una operacion tecnica de recuperacion, no una accion normal de caja/administracion. La vista cotidiana debe enfocarse en crear, verificar estado y descargar respaldos autorizados.
+
+## 295. Fase 5/7 - Caja conserva resumen confirmado tras cierre
+
+Cambio aplicado:
+
+- `CashBoxView` conserva la sesion cerrada devuelta por Laravel y muestra un resumen confirmado despues de cerrar caja.
+- El resumen post-cierre permite imprimir y exportar CSV sin volver a ejecutar la accion de cierre.
+- Al abrir una nueva caja se limpia el resumen del cierre anterior.
+- No se agregaron migraciones, dependencias, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- CashBoxView --run -t "confirmed close summary"` | RED inicial correcto: despues del cierre no existia resumen imprimible/exportable; luego OK. |
+| `npm run test -- CashBoxView --run` | OK: 17 tests. |
+| `npm run test -- CloseSessionDialog --run` | OK: 8 tests. |
+| `npm run test -- src/features/cash --run` | OK: 37 tests en 5 archivos. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- El cierre de caja debe dejar evidencia operativa disponible despues de confirmar, usando el payload autoritativo del backend. Imprimir/exportar no debe depender de mantener abierto el dialogo pre-cierre.

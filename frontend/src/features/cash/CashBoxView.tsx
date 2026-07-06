@@ -8,14 +8,14 @@ import { EmptyState, ErrorState, LoadingState } from '@/components/ui/states';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type CashSession, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { payloadScopedIdempotencyKey, resetPayloadScopedIdempotencyKey } from '@/lib/api/idempotency';
-import { formatLempirasUI, parseCents, toFloat } from '@/lib/money';
+import { finiteNumber, formatLempirasUI, parseCents, toFloat } from '@/lib/money';
 import { getVisibleRefetchInterval } from '@/lib/query/polling';
 import { invalidateBillingQueries } from '@/lib/queryInvalidation';
 import { queryKeys } from '@/lib/queryKeys';
 import { SessionStatusCard } from './components/SessionStatusCard';
 import { OpenSessionForm } from './components/OpenSessionForm';
 import { SessionSummary } from './components/SessionSummary';
-import { CloseSessionDialog } from './components/CloseSessionDialog';
+import { CashCloseSummaryPanel, CloseSessionDialog } from './components/CloseSessionDialog';
 import { CashMovementsTable } from './components/CashMovementsTable';
 import { CashClosingPanel } from './components/CashClosingPanel';
 import { CashMethodSummary } from './components/CashMethodSummary';
@@ -51,6 +51,7 @@ export function CashBoxView({
   const [closingAmountError, setClosingAmountError] = useState<string | null>(null);
   const [confirmingClose, setConfirmingClose] = useState(false);
   const [pendingOpening, setPendingOpening] = useState<{ opening_amount: string } | null>(null);
+  const [closedSummarySession, setClosedSummarySession] = useState<CashSession | null>(null);
   const closingAmountRef = useRef<HTMLInputElement | null>(null);
   const openingSessionInFlightRef = useRef(false);
   const closingSessionInFlightRef = useRef(false);
@@ -114,6 +115,7 @@ export function CashBoxView({
       await invalidateBillingQueries(queryClient);
       setClosingAmount('');
       setClosingNotes('');
+      setClosedSummarySession(null);
       setFormAlert(null);
       onSessionChange?.(opened);
       onStatus('Caja abierta.');
@@ -140,10 +142,11 @@ export function CashBoxView({
         idempotencyKey,
       });
     },
-    onSuccess: async () => {
+    onSuccess: async (closed) => {
       resetPayloadScopedIdempotencyKey(closeSessionIdempotencyKeyRef, closeSessionIdempotencySignatureRef);
       queryClient.setQueryData(queryKeys.cashSessions.current(), null);
       await invalidateBillingQueries(queryClient);
+      setClosedSummarySession(closed);
       setClosingAmount('');
       setClosingNotes('');
       setFormAlert(null);
@@ -308,6 +311,22 @@ export function CashBoxView({
               <strong>Pagos bloqueados.</strong> Abra caja antes de emitir y cobrar facturas.
             </div>
           </Alert>
+        ) : null}
+
+        {canRenderOperationalState && !isOpen && closedSummarySession ? (
+          <CashCloseSummaryPanel
+            session={{
+              opening_amount: closedSummarySession.opening_amount,
+              expected_cash_amount: closedSummarySession.expected_cash_amount ?? closedSummarySession.expected_amount ?? undefined,
+              expected_amount: closedSummarySession.expected_amount,
+              payments_by_method: closedSummarySession.payments_by_method,
+              pending_invoice_count: closedSummarySession.pending_invoice_count,
+              pending_amount: closedSummarySession.pending_amount,
+            }}
+            closingAmount={closedSummarySession.closing_amount ?? '0.00'}
+            closingNotes={closedSummarySession.closing_notes ?? ''}
+            difference={finiteNumber(closedSummarySession.difference_amount)}
+          />
         ) : null}
 
         {canRenderOperationalState && isOpen && activeSession ? (
