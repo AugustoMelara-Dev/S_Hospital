@@ -8073,3 +8073,21 @@ Pruebas ejecutadas:
 Decision:
 
 - La fuente de verdad no cambia: el sistema debe impedir cerrar caja si falta recibo institucional. Las pruebas antiguas estaban modelando un estado invalido para los flujos que querian validar diferencia de caja, reverso posterior al cierre y doble cierre.
+
+## 337. Fase QA/LAN - Performance LAN reconciliado en board
+
+Cambio aplicado:
+
+- Se actualiza el board V1.3 para cerrar el riesgo stale de `Performance/LAN` sobre carga estatica de Echo/Pusher y polling acumulado.
+- La evidencia queda atada a codigo existente: `frontend/src/lib/realtime/echo.ts` lazy-loads Echo/Pusher solo cuando el backend habilita broadcasting, y los hooks de polling usan intervalos dependientes de visibilidad.
+- No se cambia runtime; este corte solo reconcilia coordinacion documental con pruebas actuales.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- src/lib/realtime/echo.test.ts src/hooks/useBackups.test.tsx --run` | OK: 2 files passed, 14 tests passed. |
+
+Decision:
+
+- Para la version monocomputadora/LAN, realtime avanzado no es requisito. Mantener Echo/Pusher como carga diferida y pausar polling en pestanas ocultas reduce presion local sin eliminar compatibilidad futura.

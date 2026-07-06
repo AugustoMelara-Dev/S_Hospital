@@ -89,7 +89,7 @@ Local review date: 2026-06-28
 | API idempotency | P1 | Stale incomplete idempotency reservation could replay `200 {"data": null}`. | Fixed by returning 409 with recovery guidance when response is not replayable. |
 | A11y/Responsive | RESOLVED | Mobile buttons can be 36px; reports tabs and receipt preview need 320px usability tests. | Mobile button floor is fixed; `reports-flow.spec.ts` and `print-profiles.spec.ts` now cover report navigation and receipt preview containment at 320px. |
 | A11y/Responsive | RESOLVED | Small and icon buttons used sub-44px mobile targets. | Fixed in button foundations; 320px report navigation and receipt preview Playwright proof now pass. |
-| Performance/LAN | P1 | Echo/Pusher are statically imported and polling cadence may stack across many LAN clients. | Pending. |
+| Performance/LAN | RESOLVED | Echo/Pusher static load and polling cadence could add avoidable LAN/client pressure. | `frontend/src/lib/realtime/echo.ts` lazy-loads Echo/Pusher only when broadcasting is enabled, polling uses visibility-aware intervals, and `docker compose exec frontend npm run test -- src/lib/realtime/echo.test.ts src/hooks/useBackups.test.tsx --run` passed on 2026-07-06 (14 tests). |
 
 ## Implementation Queue
 
