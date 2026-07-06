@@ -14,6 +14,29 @@ use Spatie\Permission\PermissionRegistrar;
 
 class RoleController extends Controller
 {
+    private const MODULE_LABELS = [
+        'audit' => 'Auditoria',
+        'backups' => 'Respaldos',
+        'cash' => 'Caja',
+        'catalog' => 'Catalogo',
+        'fiscal' => 'Configuracion fiscal',
+        'invoices' => 'Facturacion',
+        'patients' => 'Pacientes',
+        'payments' => 'Pagos',
+        'receipt_settings' => 'Recibos',
+        'receipts' => 'Recibos',
+        'reports' => 'Reportes',
+        'settings' => 'Configuracion',
+        'system' => 'Sistema',
+        'users' => 'Usuarios',
+    ];
+
+    private const PERMISSION_LABELS = [
+        'settings.fiscal.view' => 'Ver configuracion fiscal',
+        'settings.fiscal.update' => 'Editar configuracion fiscal',
+        'settings.operational.update' => 'Editar reglas operativas',
+    ];
+
     public function index(Request $request): JsonResponse
     {
         abort_unless($request->user()?->can('users.view'), 403);
@@ -147,12 +170,12 @@ class RoleController extends Controller
 
     private function labelForModule(string $module): string
     {
-        return ucfirst(str_replace('_', ' ', $module));
+        return self::MODULE_LABELS[$module] ?? ucfirst(str_replace('_', ' ', $module));
     }
 
     private function labelForPermission(string $permission): string
     {
-        return ucfirst(str_replace(['.', '_'], [' - ', ' '], $permission));
+        return self::PERMISSION_LABELS[$permission] ?? ucfirst(str_replace(['.', '_'], [' - ', ' '], $permission));
     }
 
     /**

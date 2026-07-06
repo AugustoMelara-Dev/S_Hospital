@@ -6507,3 +6507,25 @@ Pruebas ejecutadas:
 Decision:
 
 - Cambiar reglas operativas afecta caja/facturacion, por lo que el permiso separado no queda como permiso administrativo liviano.
+
+## 271. Fase 13 - Catalogo de permisos usa etiquetas humanas para configuracion operativa
+
+Cambio aplicado:
+
+- `RoleController` agrega etiquetas humanas para modulos administrativos visibles en el catalogo de permisos.
+- `settings.operational.update` se muestra como `Editar reglas operativas` dentro de `Configuracion`.
+- El nombre tecnico del permiso se conserva en `name` para RBAC, auditoria y contratos API.
+- No se agregaron migraciones, dependencias, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test --filter=test_permission_catalog_labels_operational_settings_as_human_configuration_rule` | RED inicial porque el modulo salia como `Settings`; luego OK. |
+| `docker compose exec backend php artisan test tests/Feature/RoleManagementTest.php` | OK: 10 tests pasan. |
+| `docker compose exec backend vendor/bin/pint --test` | OK: 430 files. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M` | OK. |
+
+Decision:
+
+- La separacion de permisos operativos ahora llega hasta la administracion de roles con lenguaje claro para el hospital, sin esconder el identificador tecnico necesario para soporte.

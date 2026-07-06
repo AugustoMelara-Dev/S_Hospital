@@ -372,3 +372,12 @@ verified.
 | `npm run lint` | PASS. |
 | `docker compose exec backend vendor/bin/pint --test` | PASS, 430 files. |
 | `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M` | PASS, no errors. |
+
+### 2026-07-05 Operational Permission Catalog Label Gate
+
+| Command | Result |
+|---|---|
+| `docker compose exec backend php artisan test --filter=test_permission_catalog_labels_operational_settings_as_human_configuration_rule` | RED first because the permission catalog exposed `Settings`; then PASS, 1 focused test. |
+| `docker compose exec backend php artisan test tests/Feature/RoleManagementTest.php` | PASS, 10 tests. |
+| `docker compose exec backend vendor/bin/pint --test` | PASS, 430 files. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M` | PASS, no errors. |

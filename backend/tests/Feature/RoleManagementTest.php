@@ -37,6 +37,26 @@ class RoleManagementTest extends TestCase
         $this->assertStringNotContainsString('receipts.void', $response->getContent());
     }
 
+    public function test_permission_catalog_labels_operational_settings_as_human_configuration_rule(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->userWithRole('admin');
+
+        $response = $this->actingAs($admin)
+            ->getJson('/api/admin/roles')
+            ->assertOk()
+            ->json('permission_catalog');
+
+        $settingsGroup = collect($response)->firstWhere('module', 'settings');
+
+        $this->assertSame('Configuracion', $settingsGroup['label'] ?? null);
+        $this->assertContains([
+            'name' => 'settings.operational.update',
+            'module' => 'settings',
+            'label' => 'Editar reglas operativas',
+        ], $settingsGroup['permissions'] ?? []);
+    }
+
     public function test_admin_can_create_custom_role_and_assign_it_to_user(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
