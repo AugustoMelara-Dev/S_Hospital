@@ -669,3 +669,16 @@ verified.
 | `docker exec s_hospital-backend-1 php artisan test tests/Feature/InstitutionalReceiptSettingsTest.php` | PASS, 13 tests and 71 assertions. |
 | `docker exec s_hospital-backend-1 vendor/bin/pint --test` | PASS, 431 files. |
 | `docker exec s_hospital-backend-1 vendor/bin/phpstan analyse --memory-limit=512M` | PASS, no errors. |
+
+### 2026-07-06 Concrete Report Permission Gate
+
+| Command | Result |
+|---|---|
+| `npm run test -- appNavigation --run -t "generic reports.view"` | RED first because `/reports` was visible and accessible with only legacy `reports.view`; then PASS. |
+| `npm run test -- useHospitalSession --run -t "generic reports.view"` | RED first because the hook returned `reports=yes` and `operational=yes`; then PASS. |
+| `npm run test -- appNavigation --run` | PASS, 6 tests. |
+| `npm run test -- useHospitalSession --run` | PASS, 8 tests across 2 files. |
+| `npm run test -- ReportsView.subroutes --run` | PASS, 10 tests. |
+| `npm run typecheck` | PASS. |
+| `npm run lint` | PASS. |
+| `npm run build` | PASS. |

@@ -35,7 +35,6 @@ export function useHospitalSession() {
   const canViewAuditReports = permissions.has('audit.view');
   const canExportReports = permissions.has('reports.export');
   const canViewReports =
-    permissions.has('reports.view') ||
     canViewManagerialReports ||
     canViewCashSessionReports ||
     canViewAuditReports;

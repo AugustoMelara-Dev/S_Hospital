@@ -53,6 +53,16 @@ function LoginProbe() {
   );
 }
 
+function PermissionProbe() {
+  const session = useHospitalSession();
+
+  return (
+    <output>
+      {`${session.loading ? 'loading' : 'ready'}:reports=${session.canViewReports ? 'yes' : 'no'}:operational=${session.hasAnyOperationalPermission ? 'yes' : 'no'}`}
+    </output>
+  );
+}
+
 describe('useHospitalSession', () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -138,5 +148,22 @@ describe('useHospitalSession', () => {
         must_change_password: false,
       });
     });
+  });
+
+  it('does not treat generic reports.view as a usable report permission', async () => {
+    vi.spyOn(apiClient, 'session').mockResolvedValue({
+      id: 1,
+      name: 'Operador reportes legado',
+      email: 'reportes.legado@hospital.local',
+      username: 'reportes.legado',
+      active: true,
+      roles: ['operador'],
+      permissions: ['reports.view'],
+      must_change_password: false,
+    });
+
+    render(<PermissionProbe />, { wrapper: makeWrapper() });
+
+    await waitFor(() => expect(screen.getByText('ready:reports=no:operational=no')).toBeInTheDocument());
   });
 });

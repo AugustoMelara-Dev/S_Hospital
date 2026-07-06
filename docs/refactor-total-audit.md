@@ -7178,3 +7178,29 @@ Pruebas ejecutadas:
 Decision:
 
 - Las denegaciones siguen siendo auditables por accion, pero el campo `result` debe respetar el contrato persistente del sistema (`success`/`failed`) para no romper MariaDB local en produccion.
+
+## 299. Fase 10 - Reportes requieren permisos concretos
+
+Cambio aplicado:
+
+- La ruta y navegacion `/reports` ya no se habilitan con el permiso generico legado `reports.view`.
+- Reportes queda accesible solo con permisos que muestran contenido real: `reports.managerial.view`, `reports.cash_session.view` o `audit.view`.
+- `useHospitalSession` ya no cuenta `reports.view` como reportes operativos ni como permiso operacional por si solo.
+- No se agregaron migraciones, dependencias, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- appNavigation --run -t "generic reports.view"` | RED inicial correcto: `/reports` aparecia con solo `reports.view`; luego OK. |
+| `npm run test -- useHospitalSession --run -t "generic reports.view"` | RED inicial correcto: el hook marcaba `reports=yes` y `operational=yes`; luego OK. |
+| `npm run test -- appNavigation --run` | OK: 6 tests. |
+| `npm run test -- useHospitalSession --run` | OK: 8 tests en 2 archivos. |
+| `npm run test -- ReportsView.subroutes --run` | OK: 10 tests. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- Un permiso generico que no habilita ninguna subvista produce una pantalla vacia y confusa. La entrada a reportes debe depender de una capacidad concreta: ejecutivo, caja o auditoria.
