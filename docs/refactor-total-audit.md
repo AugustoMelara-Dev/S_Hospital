@@ -6481,3 +6481,29 @@ Pruebas ejecutadas:
 Decision:
 
 - La configuracion operativa queda separada de la fiscal sin relajar la defensa backend: editar scanner/abonos ya no requiere conceder permisos fiscales completos.
+
+## 270. Fase 13/14 - Permiso operativo clasificado como sensible
+
+Cambio aplicado:
+
+- `settings.operational.update` se marca como permiso critico en los formularios de roles.
+- `RoleCatalog` lo trata como permiso elevado para bloquear creacion o promocion de roles sensibles sin autorizacion de admin.
+- No se agregaron migraciones, dependencias, permisos ni endpoints adicionales.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- RoleFormDialog --run -t "operational settings updates"` | RED inicial porque el permiso no mostraba etiqueta critica; luego OK. |
+| `docker compose exec backend php artisan test tests/Unit/RoleCatalogTest.php` | RED inicial porque el permiso no era elevado; luego OK. |
+| `npm run test -- RoleFormDialog --run` | OK: 13 tests pasan. |
+| `docker compose exec backend php artisan test --filter=test_user_manager_without_admin_assignment_permission_cannot_create_elevated_operational_roles` | OK. |
+| `docker compose exec backend php artisan test --filter=test_user_manager_without_admin_assignment_permission_cannot_promote_user_to_elevated_operational_role` | OK. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `docker compose exec backend vendor/bin/pint --test` | OK: 430 files. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M` | OK. |
+
+Decision:
+
+- Cambiar reglas operativas afecta caja/facturacion, por lo que el permiso separado no queda como permiso administrativo liviano.

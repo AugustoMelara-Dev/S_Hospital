@@ -14,6 +14,7 @@ const CRITICAL_PERMISSION_NAMES = new Set([
   'reports.export',
   'reports.managerial.view',
   'settings.fiscal.update',
+  'settings.operational.update',
   'users.assign_admin_role',
   'users.disable',
   'users.update',

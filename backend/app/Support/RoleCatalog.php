@@ -29,6 +29,7 @@ class RoleCatalog
         'reports.export',
         'reports.managerial.view',
         'settings.fiscal.update',
+        'settings.operational.update',
         'users.disable',
         'users.update',
     ];

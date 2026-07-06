@@ -358,3 +358,17 @@ verified.
 | `npm run lint` | PASS. |
 | `docker compose exec backend vendor/bin/pint --test` | PASS, 429 files. |
 | `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M` | PASS, no errors. |
+
+### 2026-07-05 Operational Settings Critical Permission Gate
+
+| Command | Result |
+|---|---|
+| `npm run test -- RoleFormDialog --run -t "operational settings updates"` | RED first because `settings.operational.update` was not marked critical; then PASS, 1 focused test. |
+| `docker compose exec backend php artisan test tests/Unit/RoleCatalogTest.php` | RED first because `RoleCatalog` did not treat the permission as elevated; then PASS, 1 test. |
+| `npm run test -- RoleFormDialog --run` | PASS, 13 tests. |
+| `docker compose exec backend php artisan test --filter=test_user_manager_without_admin_assignment_permission_cannot_create_elevated_operational_roles` | PASS, 1 test. |
+| `docker compose exec backend php artisan test --filter=test_user_manager_without_admin_assignment_permission_cannot_promote_user_to_elevated_operational_role` | PASS, 1 test. |
+| `npm run typecheck` | PASS. |
+| `npm run lint` | PASS. |
+| `docker compose exec backend vendor/bin/pint --test` | PASS, 430 files. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M` | PASS, no errors. |

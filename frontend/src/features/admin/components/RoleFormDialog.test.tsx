@@ -202,6 +202,37 @@ describe('RoleFormDialog', () => {
     expect(submit).not.toBeDisabled();
   });
 
+  it('treats operational settings updates as critical permissions', () => {
+    render(
+      <RoleFormDialog
+        open
+        onOpenChange={vi.fn()}
+        editingRole={null}
+        permissionCatalog={[
+          {
+            module: 'settings',
+            label: 'Configuracion',
+            permissions: [
+              {
+                name: 'settings.operational.update',
+                label: 'Editar reglas operativas',
+              },
+            ],
+          },
+        ]}
+        selectedPermissions={['settings.operational.update']}
+        onTogglePermission={vi.fn()}
+        globalError={null}
+        onSubmit={vi.fn()}
+        isSaving={false}
+      />,
+    );
+
+    expect(screen.getByText(/settings\.operational\.update/i)).toBeInTheDocument();
+    expect(screen.getByText(/permiso critico/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /crear rol/i })).toBeDisabled();
+  });
+
   it('requires explicit confirmation before saving a role that can download backups', () => {
     render(
       <RoleFormDialog
