@@ -75,13 +75,16 @@ class ServiceCatalogSeeder extends Seeder
                     ->firstOrNew();
 
                 $specialRuleCode = $this->specialRuleCode($row);
-                $serviceData = [
+                $isNewService = ! $service->exists;
+                $metadataData = [
                     'source_key' => $serviceSourceKey,
                     'name' => $row['servicio'],
                     'category_id' => $category->id,
                     'area_id' => $areas[$this->areaSlugForCategory($row['categoria'])]->id ?? null,
                     'slug' => $serviceSlug,
                     'source_hash' => $this->serviceSourceHash($row),
+                ];
+                $operationalData = [
                     'price' => $row['precio_lps'],
                     'taxable' => $specialRuleCode === Service::ERYTHROPOIETIN_RULE
                         ? false
@@ -89,9 +92,16 @@ class ServiceCatalogSeeder extends Seeder
                     'active' => true,
                     'special_rule_code' => $specialRuleCode,
                 ];
+                $serviceData = $isNewService
+                    ? array_merge($metadataData, $operationalData)
+                    : $metadataData;
 
                 if (isset(self::VALIDATION_CODES[$serviceSourceKey])) {
-                    $serviceData = array_merge($serviceData, self::VALIDATION_CODES[$serviceSourceKey]);
+                    foreach (self::VALIDATION_CODES[$serviceSourceKey] as $field => $value) {
+                        if ($isNewService || blank($service->{$field})) {
+                            $serviceData[$field] = $value;
+                        }
+                    }
                 }
 
                 $service->fill($serviceData)->save();

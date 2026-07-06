@@ -7563,3 +7563,27 @@ Pruebas ejecutadas:
 Decision:
 
 - Activar un servicio vuelve a exponerlo en caja y debe quedar explicado con un motivo humano, no solo desactivar. La tabla no debe tener un camino rapido que omita la auditoria que exige el backend.
+
+## 315. Fase 8/QA - Seeder de catalogo no pisa cambios operativos
+
+Cambio aplicado:
+
+- `ServiceCatalogSeeder` conserva precio, ISV, estado activo, visibilidad/facturable y codigos locales cuando el servicio ya existe.
+- El seeder sigue creando servicios nuevos con los valores del CSV y sigue refrescando metadatos de origen como nombre, categoria, area, slug y hash.
+- Los codigos de validacion se asignan al crear o cuando el campo esta vacio, pero no reemplazan codigos locales ya configurados.
+- Se agrega una regresion que modifica un servicio sembrado, vuelve a ejecutar el seeder y confirma que los campos operativos locales no regresan al CSV.
+- No se agregaron dependencias, migraciones, roles, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test tests/Feature/ServiceCatalogTest.php --filter=preserves_existing_operational_service_changes` | Primero fallo por sobrescribir precio; luego OK: 1 test, 8 assertions. |
+| `docker compose exec backend php artisan test tests/Feature/ServiceCatalogTest.php` | OK: 42 tests, 253 assertions. |
+| `docker compose exec backend vendor/bin/pint --test` | OK: 431 files. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=1G` | OK: no errors. |
+| `git diff --check` | OK. |
+
+Decision:
+
+- Reejecutar seeders en una instalacion local no debe revertir ajustes reales de caja. El CSV inicial sirve para crear y actualizar metadatos, no para borrar decisiones operativas ya auditables.

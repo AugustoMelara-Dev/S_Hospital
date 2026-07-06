@@ -88,6 +88,37 @@ class ServiceCatalogTest extends TestCase
         $this->assertSame(122, Service::query()->count());
     }
 
+    public function test_service_catalog_seeder_preserves_existing_operational_service_changes(): void
+    {
+        $this->seed(ServiceCatalogSeeder::class);
+
+        $service = Service::query()
+            ->where('name', 'Glucosa')
+            ->firstOrFail();
+        $service->update([
+            'price' => '99.00',
+            'taxable' => false,
+            'active' => false,
+            'visible_in_billing' => false,
+            'is_billable' => false,
+            'scan_code' => 'LOCAL-GLU',
+            'barcode' => '7700000003999',
+            'qr_code' => 'QR-LOCAL-GLU',
+        ]);
+
+        $this->seed(ServiceCatalogSeeder::class);
+
+        $service->refresh();
+        $this->assertSame('99.00', $service->price);
+        $this->assertFalse($service->taxable);
+        $this->assertFalse($service->active);
+        $this->assertFalse($service->visible_in_billing);
+        $this->assertFalse($service->is_billable);
+        $this->assertSame('LOCAL-GLU', $service->scan_code);
+        $this->assertSame('7700000003999', $service->barcode);
+        $this->assertSame('QR-LOCAL-GLU', $service->qr_code);
+    }
+
     public function test_service_catalog_seeder_does_not_clear_existing_non_validation_codes(): void
     {
         $this->seed(ServiceCatalogSeeder::class);
