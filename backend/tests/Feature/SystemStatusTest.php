@@ -152,7 +152,11 @@ class SystemStatusTest extends TestCase
             ->assertJsonPath('data.network.client_url', 'http://127.0.0.1:8081')
             ->assertJsonPath('data.network.guidance', 'Operacion local en este equipo. Use esta direccion solo en la computadora servidor.')
             ->assertJsonPath('data.preflight.public_routes.1.expected', 'Pantalla de ingreso abre en este equipo')
-            ->assertJsonPath('data.preflight.public_routes.2.expected', 'Pantalla esperada abre localmente');
+            ->assertJsonPath('data.preflight.public_routes.2.expected', 'Pantalla esperada abre localmente')
+            ->assertJsonPath('data.preflight.physical_proofs.0.code', 'LOCAL_SERVER_VALIDATION_PROOF')
+            ->assertJsonPath('data.preflight.physical_proofs.0.label', 'Navegador local del servidor')
+            ->assertJsonPath('data.preflight.physical_proofs.0.required_file', 'qa/LOCAL_SERVER_VALIDATION_PROOF.md')
+            ->assertJsonPath('data.preflight.physical_proofs.0.status', 'pending');
 
         $blockers = collect($response->json('data.readiness.blockers'));
         $checks = collect($response->json('data.preflight.production_checks'));
@@ -321,6 +325,7 @@ class SystemStatusTest extends TestCase
         File::ensureDirectoryExists($proofRoot.'/qa/evidence/lan-client-2026-05-19');
         File::ensureDirectoryExists($proofRoot.'/qa/evidence/printer-2026-05-19');
         Config::set('hospital.project_root', $proofRoot);
+        Config::set('app.url', 'http://192.168.1.7:8000');
 
         File::put($proofRoot.'/qa/LAN_CLIENT_VALIDATION_PROOF.md', $this->completedLanProof());
         File::put($proofRoot.'/qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md', $this->completedReceiptPrintProof());
@@ -389,6 +394,7 @@ class SystemStatusTest extends TestCase
         File::ensureDirectoryExists($proofRoot.'/qa');
         File::ensureDirectoryExists($proofRoot.'/qa/evidence/lan-client-2026-05-19');
         Config::set('hospital.project_root', $proofRoot);
+        Config::set('app.url', 'http://192.168.1.7:8000');
         $this->beforeApplicationDestroyed(fn () => File::deleteDirectory($proofRoot));
 
         $proofWithoutWebSocket = str_replace(

@@ -8,18 +8,18 @@ No ejecutar `migrate:fresh` en el servidor real.
 1. Instalar PHP, extensiones requeridas y MySQL/MariaDB local.
 2. Copiar el proyecto aprobado con `backend/vendor` y `frontend/dist` ya generado.
 3. Crear `backend\.env` real fuera de Git con secretos locales.
-4. Configurar `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL=http://IP_DEL_SERVIDOR`, `SANCTUM_STATEFUL_DOMAINS=IP_DEL_SERVIDOR` y CORS con el host LAN final.
+4. Configurar `APP_ENV=production`, `APP_DEBUG=false` y la URL final: `APP_URL=http://127.0.0.1:PUERTO` para monocomputadora o `APP_URL=http://IP_DEL_SERVIDOR` para multi-PC. Ajustar `SANCTUM_STATEFUL_DOMAINS` y CORS al mismo host final.
 5. Configurar `HOSPITAL_DUMP_BINARY` si `mysqldump.exe` o `mariadb-dump.exe` no esta en PATH.
 6. Ejecutar `php artisan migrate --force`.
 7. Crear admin real con `php artisan auth:create-initial-admin`.
 8. Ejecutar `php artisan config:cache --no-ansi`.
 9. Registrar tareas Windows para backup worker y scheduler con `scripts\install_backup_tasks_windows.ps1`.
-10. Abrir la app como admin, entrar a Backups y revisar el checklist operativo: `APP_ENV=production`, `APP_DEBUG=false`, MySQL/MariaDB, dump tool, storage local, worker continuo, rutas `/up`, `/login`, `/verify-email` y evidencias LAN/impresora.
+10. Abrir la app como admin, entrar a Backups y revisar el checklist operativo: `APP_ENV=production`, `APP_DEBUG=false`, MySQL/MariaDB, dump tool, storage local, worker continuo, rutas `/up`, `/login`, `/verify-email` y evidencias local/impresora.
 11. Crear un backup manual y confirmar que cambia de `pending` a `success`.
-12. Preparar archivos de evidencia con `scripts\init_production_proofs.ps1`.
-13. Desde una segunda PC cliente, ejecutar `scripts\validate_lan_client.ps1 -BaseUrl http://IP_DEL_SERVIDOR -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md` y completar los checks manuales de login, caja, factura, pago, reportes y backup.
+12. Preparar archivos de evidencia copiando las plantillas `qa\LOCAL_SERVER_VALIDATION_PROOF.example.md`, `qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md` si existe, `qa\FINAL_RESTORE_PROOF.example.md` y `qa\FINAL_CONCURRENCY_PROOF.example.md` al nombre `.md` final que corresponda.
+13. Para monocomputadora, copiar `qa\LOCAL_SERVER_VALIDATION_PROOF.example.md` a `qa\LOCAL_SERVER_VALIDATION_PROOF.md` y completarlo desde el navegador local del servidor. Para multi-PC, ejecutar desde una segunda PC cliente `scripts\validate_lan_client.ps1 -BaseUrl http://IP_DEL_SERVIDOR -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md` y completar los checks manuales.
 14. Completar `qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` con la impresora fisica principal en media carta, carta y A5.
-15. Ejecutar `scripts\production_readiness_preflight.ps1 -BaseUrl http://IP_DEL_SERVIDOR` sin `-AllowMissingPhysicalProof` solo cuando ya existan las evidencias fisicas requeridas de LAN, recibo institucional y restore/concurrencia.
+15. Ejecutar `scripts\production_readiness_preflight.ps1 -BaseUrl http://127.0.0.1:PUERTO` para monocomputadora o `-BaseUrl http://IP_DEL_SERVIDOR` para multi-PC, sin `-AllowMissingPhysicalProof`, solo cuando ya existan las evidencias fisicas requeridas de navegador local/LAN, recibo institucional y restore/concurrencia.
 
 ## Preparación y Despliegue Automatizado (Recomendado)
 

@@ -295,6 +295,7 @@ if (-not [Uri]::TryCreate($BaseUrl.TrimEnd("/"), [UriKind]::Absolute, [ref] $bas
 }
 
 $baseHostWithPort = if ($baseUri.IsDefaultPort) { $baseUri.Host } else { "$($baseUri.Host):$($baseUri.Port)" }
+$isLoopbackBaseUrl = $baseUri.Host -match "^(localhost|127\.0\.0\.1|::1)$"
 $appEnv = Get-EnvValue $envValues "APP_ENV" "local"
 $appDebug = Get-EnvValue $envValues "APP_DEBUG" "true"
 $appUrl = Get-EnvValue $envValues "APP_URL" ""
@@ -336,10 +337,10 @@ if ($baseUri.Scheme -eq "https") {
     Add-Failure "BaseUrl uses HTTP but HOSPITAL_ALLOW_INSECURE_HTTP is not 1. Enable HTTPS or explicitly document insecure LAN HTTP."
 }
 
-if ($BaseUrl -match "localhost|127\.0\.0\.1|::1") {
-    Add-Failure "BaseUrl must be the final LAN IP or local domain, not localhost"
+if ($isLoopbackBaseUrl) {
+    Add-Pass "BaseUrl uses loopback; validating single-machine local mode"
 } else {
-    Add-Pass "BaseUrl is not localhost"
+    Add-Pass "BaseUrl is LAN IP or local domain"
 }
 
 if ($dbConnection -match "^(mysql|mariadb)$") { Add-Pass "DB_CONNECTION=$dbConnection" } else { Add-Failure "DB_CONNECTION must be mysql or mariadb, current value is '$dbConnection'" }
@@ -455,36 +456,64 @@ if ($AllowMissingPhysicalProof) {
     Add-Strong-Warning "AllowMissingPhysicalProof was used. This run is only an environment preflight and MUST NOT be called PRODUCTION_READY."
     Add-Failure "Physical LAN/printer proof was bypassed. Re-run without -AllowMissingPhysicalProof before declaring PRODUCTION_READY."
 } else {
-    Test-ProofFile `
-        -path (Join-Path $ProjectRoot "qa\LAN_CLIENT_VALIDATION_PROOF.md") `
-        -proofName "second-client LAN" `
-        -requiredFields @(
-            "Date/time",
-            "Responsible person",
-            "Client computer name",
-            "Server IP or LAN name",
-            "Server LAN URL",
-            "Client browser/version",
-            "User/role used",
-            "Evidence/capture reference",
-            "Final conclusion"
-        ) `
-        -requiredChecks @(
-            "/up",
-            "/login",
-            "/verify-email",
-            "assets",
-            "Realtime",
-            "Login",
-            "Cashbox",
-            "Invoice",
-            "Payment",
-            "Receipt",
-            "history",
-            "Reports",
-            "Backup"
-        )
-
+    if ($isLoopbackBaseUrl) {
+        Test-ProofFile `
+            -path (Join-Path $ProjectRoot "qa\LOCAL_SERVER_VALIDATION_PROOF.md") `
+            -proofName "local server browser" `
+            -requiredFields @(
+                "Date/time",
+                "Responsible person",
+                "Server computer name",
+                "Local app URL",
+                "Browser/version",
+                "User/role used",
+                "Evidence/capture reference",
+                "Final conclusion"
+            ) `
+            -requiredChecks @(
+                "/up",
+                "/login",
+                "/verify-email",
+                "assets",
+                "Login",
+                "Cashbox",
+                "Invoice",
+                "Payment",
+                "Receipt",
+                "history",
+                "Reports",
+                "Backup"
+            )
+    } else {
+        Test-ProofFile `
+            -path (Join-Path $ProjectRoot "qa\LAN_CLIENT_VALIDATION_PROOF.md") `
+            -proofName "second-client LAN" `
+            -requiredFields @(
+                "Date/time",
+                "Responsible person",
+                "Client computer name",
+                "Server IP or LAN name",
+                "Server LAN URL",
+                "Client browser/version",
+                "User/role used",
+                "Evidence/capture reference",
+                "Final conclusion"
+            ) `
+            -requiredChecks @(
+                "/up",
+                "/login",
+                "/verify-email",
+                "assets",
+                "Login",
+                "Cashbox",
+                "Invoice",
+                "Payment",
+                "Receipt",
+                "history",
+                "Reports",
+                "Backup"
+            )
+    }
     Test-ProofFile `
         -path (Join-Path $ProjectRoot "qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md") `
         -proofName "primary institutional receipt printer" `

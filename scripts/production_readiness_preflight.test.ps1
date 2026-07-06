@@ -15,6 +15,10 @@ function Assert-NotContains([string] $needle) {
     }
 }
 
+Assert-Contains "qa\LOCAL_SERVER_VALIDATION_PROOF.md"
+Assert-Contains "local server browser"
+Assert-Contains "BaseUrl uses loopback; validating single-machine local mode"
+Assert-NotContains "BaseUrl must be the final LAN IP or local domain, not localhost"
 Assert-Contains "qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md"
 Assert-Contains "primary institutional receipt printer"
 Assert-Contains "Media carta result"

@@ -56,6 +56,34 @@ class SystemStatusController extends Controller
                 'Backup',
             ],
         ],
+        'LOCAL_SERVER_VALIDATION_PROOF' => [
+            'label' => 'Navegador local del servidor',
+            'required_file' => 'qa/LOCAL_SERVER_VALIDATION_PROOF.md',
+            'fields' => [
+                'Date/time',
+                'Responsible person',
+                'Server computer name',
+                'Local app URL',
+                'Browser/version',
+                'User/role used',
+                'Evidence/capture reference',
+                'Final conclusion',
+            ],
+            'checks' => [
+                '/up',
+                '/login',
+                '/verify-email',
+                'assets',
+                'Login',
+                'Cashbox',
+                'Invoice',
+                'Payment',
+                'Receipt',
+                'history',
+                'Reports',
+                'Backup',
+            ],
+        ],
         'INSTITUTIONAL_RECEIPT_PRINT_PROOF' => [
             'label' => 'Impresora institucional media carta/carta/A5',
             'required_file' => 'qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md',
@@ -666,10 +694,10 @@ class SystemStatusController extends Controller
         $appDebug = (bool) Config::get('app.debug');
         $runtime = $this->runtimeStatus();
         $network = $this->networkStatus();
-        $proofs = $this->physicalProofStatuses();
+        $localMode = ($network['host_type'] ?? null) === 'loopback';
+        $proofs = $this->physicalProofStatuses($localMode);
         $lanProof = $proofs[0];
         $printerProof = $proofs[1];
-        $localMode = ($network['host_type'] ?? null) === 'loopback';
 
         $blockers = [
             $localMode ? [
@@ -721,8 +749,8 @@ class SystemStatusController extends Controller
         $network = $this->networkStatus();
         $backups = $this->backupStatus();
         $runtime = $this->runtimeStatus();
-        $physicalProofs = $this->physicalProofStatuses();
         $localMode = ($network['host_type'] ?? null) === 'loopback';
+        $physicalProofs = $this->physicalProofStatuses($localMode);
 
         return [
             'production_checks' => [
@@ -836,8 +864,15 @@ class SystemStatusController extends Controller
     /**
      * @return array<int, array{code: string, label: string, required_file: string, status: string, detail: string}>
      */
-    private function physicalProofStatuses(): array
+    private function physicalProofStatuses(bool $localMode = false): array
     {
+        $codes = array_values(array_filter(
+            array_keys(self::PHYSICAL_PROOFS),
+            fn (string $code): bool => $localMode
+                ? $code !== 'LAN_CLIENT_VALIDATION_PROOF'
+                : $code !== 'LOCAL_SERVER_VALIDATION_PROOF',
+        ));
+
         return array_map(function (string $code): array {
             $proof = self::PHYSICAL_PROOFS[$code];
             $result = $this->evaluateProofFile(
@@ -853,7 +888,7 @@ class SystemStatusController extends Controller
                 'status' => $result['status'],
                 'detail' => $result['detail'],
             ];
-        }, array_keys(self::PHYSICAL_PROOFS));
+        }, $codes);
     }
 
     /**

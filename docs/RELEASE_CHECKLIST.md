@@ -98,6 +98,9 @@ Preflight ejecutable en el servidor final:
 ```powershell
 cd C:\Projects\S_Hospital
 powershell.exe -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 `
+  -BaseUrl http://127.0.0.1:PUERTO  # monocomputadora
+# o, para multi-PC:
+powershell.exe -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 `
   -BaseUrl http://IP_DEL_SERVIDOR
 ```
 
@@ -105,13 +108,13 @@ Este preflight falla si el servidor no usa `APP_ENV=production`, si `APP_DEBUG`
 no es `false`, si falta `frontend/dist`, si faltan `mysql`/`mysqldump` o
 `mariadb-dump`, si las rutas publicas no responden, o si no existen las pruebas
 documentadas de impresion institucional, restore final, concurrencia final y
-cliente LAN cuando el despliegue sea multi-PC.
+navegador local cuando `BaseUrl` sea loopback, o cliente LAN cuando el despliegue sea multi-PC.
 
 En Windows tambien falla si no existen `HospitalBillingOS-BackupWorker` y
 `HospitalBillingOS-DailyBackup`, o si el worker continuo no esta `Running`.
 
 La evidencia fisica de impresion institucional es obligatoria por defecto. La
-evidencia LAN externa aplica a despliegues multi-PC. El flag
+evidencia local aplica a monocomputadora; evidencia LAN externa aplica a despliegues multi-PC. El flag
 `-AllowMissingPhysicalProof` solo permite una corrida parcial de entorno y deja
 un warning fuerte mas salida no cero: ese resultado no puede llamarse
 `PRODUCTION_READY` ni usarse como gate automatico de produccion.
@@ -139,11 +142,11 @@ descartable antes de ejecutarla.
 
 Evidencia Fase 11: ejecutado contra `http://192.168.1.7:8000` con `HOSPITAL_CONCURRENCY_TARGET_ENV=local` y `RUN_ID=concurrency-validation-20260517T20435`; valido doble apertura de caja, doble emision de factura y doble pago. Repetir en servidor/base final descartable antes de declarar produccion.
 
-LAN fisica:
+Validacion local/LAN fisica:
 
-- Desde otra computadora cliente, abrir `http://IP_DEL_SERVIDOR/login`.
+- En monocomputadora, abrir `http://127.0.0.1:PUERTO/login` en el servidor. En multi-PC, abrir `http://IP_DEL_SERVIDOR/login` desde otra computadora cliente.
 - Validar `/up`, `/login` y `/verify-email`.
-- Confirmar que los clientes no usan `localhost`.
+- Confirmar que el modo coincide con el alcance aprobado: loopback solo para monocomputadora; IP/dominio LAN para multi-PC.
 - Crear factura, cobrar, ver recibo y reporte desde navegador cliente.
 
 ## Analisis estatico opcional
@@ -214,11 +217,12 @@ Para removerlas: `powershell.exe -ExecutionPolicy Bypass -File scripts\install_b
 - Probar restore real en una base descartable del servidor final y guardar checksum/conteos.
 - Para despliegue multi-PC, probar desde una segunda PC en LAN usando la IP fija o dominio LAN, nunca `localhost`.
 - Probar impresion institucional/PDF en carta, media carta o A5 desde la PC o cliente que imprimira. 80mm/58mm queda como compatibilidad secundaria si se habilita.
+- Para monocomputadora, crear `qa/LOCAL_SERVER_VALIDATION_PROOF.md` usando `qa/LOCAL_SERVER_VALIDATION_PROOF.example.md`.
 - Para despliegue multi-PC, crear `qa/LAN_CLIENT_VALIDATION_PROOF.md` usando `qa/LAN_CLIENT_VALIDATION_PROOF.example.md`.
 - Crear evidencia de impresion institucional en `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` con media carta, carta y A5.
 - Crear `qa/FINAL_RESTORE_PROOF.md` usando `qa/FINAL_RESTORE_PROOF.example.md`.
 - Crear `qa/FINAL_CONCURRENCY_PROOF.md` usando `qa/FINAL_CONCURRENCY_PROOF.example.md`.
-- Desde la segunda PC cliente LAN, cuando el despliegue sea multi-PC, generar evidencia inicial de rutas:
+- Para multi-PC, generar evidencia inicial de rutas desde la segunda PC cliente LAN:
 
 ```powershell
 cd C:\Projects\S_Hospital

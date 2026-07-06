@@ -8112,3 +8112,23 @@ Pruebas ejecutadas:
 Decision:
 
 - No se declara completo el runner host porque faltan dependencias Composer locales. Para la entrega monocomputadora, el gate Docker/MariaDB ya cubre el flujo real de base local; el runner host queda como evidencia adicional cuando se instale `backend/vendor` en host.
+
+## 339. Fase QA/Offline - Readiness monocomputadora sin segunda PC obligatoria
+
+Cambio aplicado:
+
+- `SystemStatusController` selecciona `LOCAL_SERVER_VALIDATION_PROOF` cuando `APP_URL` es loopback/local, manteniendo `LAN_CLIENT_VALIDATION_PROOF` para despliegues multi-PC.
+- `production_readiness_preflight.ps1` acepta loopback como modo monocomputadora y exige `qa\LOCAL_SERVER_VALIDATION_PROOF.md` en ese caso.
+- Se agrega `qa/LOCAL_SERVER_VALIDATION_PROOF.example.md` con checks de login, caja, factura, pago, recibo, historial, reportes y backup desde el navegador local del servidor.
+- Docs de instalacion/checklist separan claramente monocomputadora de multi-PC sin relajar MySQL/MariaDB, backups, impresion institucional, restore ni concurrencia.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec backend php artisan test tests/Feature/SystemStatusTest.php --filter=loopback_app_url_is_treated_as_local_single_machine_mode` | RED inicial: devolvia `LAN_CLIENT_VALIDATION_PROOF`; luego OK: 1 passed, 15 assertions. |
+| `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.test.ps1` | RED inicial: faltaba `qa\LOCAL_SERVER_VALIDATION_PROOF.md`; luego OK. |
+
+Decision:
+
+- La entrega monocomputadora no debe quedar bloqueada por una segunda PC. La evidencia sigue siendo obligatoria, pero ahora valida el navegador local del servidor y conserva el gate LAN externo solo cuando el despliegue sea multi-PC.

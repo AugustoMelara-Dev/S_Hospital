@@ -132,14 +132,16 @@ Under `qa/`:
   restore evidence (PENDING until physical hardware).
 - **[qa/FINAL_CONCURRENCY_PROOF.md](../qa/FINAL_CONCURRENCY_PROOF.md)** -
   concurrency evidence (PENDING).
+- **[qa/LOCAL_SERVER_VALIDATION_PROOF.md](../qa/LOCAL_SERVER_VALIDATION_PROOF.md)** -
+  local single-machine browser evidence when `APP_URL` is loopback (PENDING).
 - **[qa/LAN_CLIENT_VALIDATION_PROOF.md](../qa/LAN_CLIENT_VALIDATION_PROOF.md)** -
-  LAN validation evidence (PENDING).
+  second-client LAN validation evidence for multi-PC deployments (PENDING).
 - **[qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md](../qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md)** -
   printer evidence (PENDING).
 
 The preflight script in `scripts/production_readiness_preflight.ps1`
-fails the release if any of the four PROOF files is still
-PENDING.
+fails the release if the required PROOF files for the selected mode are still
+PENDING. Single-machine mode requires local browser evidence; multi-PC LAN mode requires second-client LAN evidence.
 
 ## Script inventory
 
