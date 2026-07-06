@@ -7905,3 +7905,30 @@ Pruebas ejecutadas:
 Decision:
 
 - La version local puede necesitar restaurar una base en emergencia, pero el helper incluido debe ser conservador: valida backups en bases descartables. Produccion se restaura solo con proceso manual, parada operativa, backup previo y evidencia escrita.
+
+## 330. Fase QA/E2E - Golden release DB invalida cambios de auth y preparacion
+
+Cambio aplicado:
+
+- El hash de la golden SQLite de release E2E deja de depender solo de migraciones y seeders.
+- Se agrega `release-e2e-hash.mjs` para incluir migraciones, seeders, `PrepareE2eReleaseDataCommand`, rutas, auth controller, auth requests, middleware de cookies, bootstrap y config de session/Sanctum.
+- `run-release-e2e.mjs` usa el nuevo hash, de modo que cambios de preparacion/auth/session regeneran la golden DB en lugar de reutilizar una copia vieja.
+- Se agrega test unitario del hash para comprobar inputs incluidos y cambios de hash al modificar prep/auth.
+- Se actualiza el board V1.3: la invalidacion del hash queda corregida; el release E2E real y una compuerta MariaDB siguen pendientes.
+- No se agregaron dependencias, migraciones, roles, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker compose exec frontend npm run test -- release-e2e-hash release-e2e-preflight --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 2 files, 3 tests. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `git diff --check` | OK; solo advertencia normal de line endings en `run-release-e2e.mjs`. |
+
+Limitacion:
+
+- No se corrio `npm run e2e` completo porque el host de esta sesion no tiene `backend/vendor/autoload.php`; el preflight existente lo bloquearia antes de levantar Laravel. El contenedor backend si tiene vendor, pero el runner de release esta disenado para host.
+
+Decision:
+
+- Aunque el E2E real siga pendiente, la golden DB ya no debe quedarse obsoleta cuando cambian las piezas que causaron el fallo historico de sesion/auth. Este corte reduce falsos verdes y falsos rojos antes de reintentar el release gate completo.

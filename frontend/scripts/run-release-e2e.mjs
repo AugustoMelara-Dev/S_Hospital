@@ -1,9 +1,9 @@
 import { spawn, spawnSync } from 'node:child_process';
-import { createWriteStream, mkdirSync, copyFileSync, existsSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
-import { createHash } from 'node:crypto';
-import { dirname, relative, resolve, sep } from 'node:path';
+import { createWriteStream, mkdirSync, copyFileSync, existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { assertBackendVendorPresent } from './release-e2e-preflight.mjs';
+import { computeReleaseDatabaseHash } from './release-e2e-hash.mjs';
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const frontendDir = resolve(scriptDir, '..');
@@ -11,7 +11,7 @@ const repoRoot = resolve(frontendDir, '..');
 const backendDir = resolve(repoRoot, 'backend');
 const artifactDir = resolve(frontendDir, 'test-results', 'release-e2e');
 const testingDir = resolve(backendDir, 'storage', 'framework', 'testing');
-const migrationHash = computeMigrationHash(backendDir);
+const migrationHash = computeReleaseDatabaseHash(backendDir);
 const hashPrefix = migrationHash.slice(0, 12);
 const goldenSqlitePath = resolve(testingDir, `e2e-golden-${hashPrefix}.sqlite`);
 const sqlitePath = resolve(testingDir, `e2e-release-${hashPrefix}-${process.pid}.sqlite`);
@@ -181,45 +181,6 @@ function cleanupDisposableSqlite(databasePath) {
   rmSync(`${databasePath}-journal`, { force: true });
   rmSync(`${databasePath}-wal`, { force: true });
   rmSync(`${databasePath}-shm`, { force: true });
-}
-
-function computeMigrationHash(rootDir) {
-  const files = [
-    ...filesUnder(resolve(rootDir, 'database', 'migrations')),
-    ...filesUnder(resolve(rootDir, 'database', 'seeders')),
-  ];
-  const hash = createHash('sha256');
-
-  for (const file of files) {
-    const normalizedPath = relative(rootDir, file).split(sep).join('/');
-    hash.update(normalizedPath);
-    hash.update('\0');
-    hash.update(readFileSync(file));
-    hash.update('\0');
-  }
-
-  return hash.digest('hex');
-}
-
-function filesUnder(dir) {
-  if (!existsSync(dir)) {
-    return [];
-  }
-
-  return readdirSync(dir, { withFileTypes: true })
-    .flatMap((entry) => {
-      const fullPath = resolve(dir, entry.name);
-      if (entry.isDirectory()) {
-        return filesUnder(fullPath);
-      }
-      if (entry.isFile()) {
-        return [fullPath];
-      }
-
-      return [];
-    })
-    .filter((file) => statSync(file).isFile())
-    .sort((left, right) => left.localeCompare(right));
 }
 
 function run(command, args, cwd, env) {
