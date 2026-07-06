@@ -6322,3 +6322,24 @@ Pruebas ejecutadas:
 Decision:
 
 - El backend seguia siendo la defensa final, pero la UI ya no invita al operador a enviar cambios fiscales que serian rechazados por falta de motivo auditado.
+
+## 263. Fase 12/16 - Ayuda no presenta restore como operacion normal
+
+Cambio aplicado:
+
+- `HelpView` deja de describir restauraciones como tarea cotidiana del administrador.
+- La guia mantiene recuperacion de datos como proceso coordinado con soporte desde el servidor local.
+- El modo practica evita hablar de ensayar restauraciones sobre produccion y usa lenguaje de recuperacion de datos.
+- No se agregaron dependencias, migraciones, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- HelpView --run` | RED inicial porque la ayuda no tenia el copy de soporte y aun mostraba `respaldos y restauraciones`; luego OK: 1 test pasa. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+
+Decision:
+
+- La UI normal puede orientar sobre respaldos y recuperacion, pero no debe sugerir que la restauracion se ejecuta desde la app ni como tarea operativa diaria.

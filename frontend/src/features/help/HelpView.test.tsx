@@ -53,6 +53,10 @@ describe('HelpView', () => {
     expect(screen.getByRole('heading', { name: /^cajero$/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /^supervisor$/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /^administrador$/i })).toBeInTheDocument();
+    expect(screen.getByText(/gestiona usuarios, cat.logo, configuraci.n fiscal y respaldos/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/recuperaci.n de datos se coordina con soporte/i).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/respaldos y restauraciones/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/pruebas de restauraci.n/i)).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /checklist diario por rol/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /cajero - inicio de turno/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /antes de cerrar turno/i })).toBeInTheDocument();

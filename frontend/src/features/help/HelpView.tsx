@@ -110,7 +110,7 @@ const incidentGuides = [
   },
   {
     title: 'Respaldo fallido',
-    answer: 'No borre archivos ni repita restauraciones. Pida al administrador revisar espacio, cola de trabajos y último error.',
+    answer: 'No borre archivos ni intente recuperar datos desde la app. Pida al administrador revisar espacio, cola de trabajos y último error.',
   },
   {
     title: 'Base de datos necesita restaurarse',
@@ -141,7 +141,7 @@ const roleGuides = [
   },
   {
     title: 'Administrador',
-    answer: 'Gestiona usuarios, catálogo, configuración fiscal, respaldos y restauraciones. No use la base de producción para prácticas.',
+    answer: 'Gestiona usuarios, catálogo, configuración fiscal y respaldos. La recuperación de datos se coordina con soporte desde el servidor local.',
   },
 ];
 
@@ -477,14 +477,14 @@ export function HelpView() {
             <h3 className="text-sm font-semibold text-foreground">Checklist diario</h3>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
               Cajero: abrir caja, facturar, cobrar, imprimir y cerrar. Supervisor: revisar diferencias y anulaciones.
-              Administrador: revisar usuarios, respaldos, espacio y pruebas de restauración.
+              Administrador: revisar usuarios, respaldos, espacio y evidencia de respaldos; la recuperación de datos se coordina con soporte.
             </p>
           </div>
           <div className="rounded-md border border-warning/35 bg-warning/10 p-4">
             <h3 className="text-sm font-semibold text-warning-foreground">Modo práctica</h3>
             <p className="mt-2 text-sm leading-6 text-warning-foreground/90">
               Si no existe un entorno de práctica aislado, capacite en una instalación separada o una base descartable.
-              No use la base de producción para ensayar anulaciones, restauraciones o cobros ficticios.
+              No use la base de producción para ensayar anulaciones, recuperación de datos o cobros ficticios.
             </p>
           </div>
         </CardContent>

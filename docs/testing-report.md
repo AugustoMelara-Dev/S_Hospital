@@ -291,3 +291,11 @@ verified.
 | `npm run test -- FiscalNumerationView --run` | RED first because the view had no fiscal reason field/message; then PASS, 4 tests. |
 | `npm run typecheck` | PASS. |
 | `npm run lint` | PASS. |
+
+### 2026-07-05 Help Restore Wording Gate
+
+| Command | Result |
+|---|---|
+| `npm run test -- HelpView --run` | RED first because Help still presented restore as normal admin work; then PASS, 1 test. |
+| `npm run typecheck` | PASS. |
+| `npm run lint` | PASS. |
