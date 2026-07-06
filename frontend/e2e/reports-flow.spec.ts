@@ -81,6 +81,24 @@ test.describe('Reports - critical mocked e2e (3 sub-routes)', () => {
     await expect(page.getByText(/reimpresiones/i)).toBeVisible();
     await expect(page.getByText(/eventos de respaldo/i)).toBeVisible();
   });
+
+  test('mobile report navigation wraps without horizontal page overflow at 320px', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 720 });
+    await installReportsMocks(page);
+
+    await page.goto('/reports');
+
+    const navigation = page.getByRole('navigation', { name: /secciones de reportes/i });
+    await expect(navigation).toBeVisible();
+    await expect(page.getByRole('link', { name: /ejecutivo/i })).toHaveAttribute('aria-current', 'page');
+    await page.getByRole('link', { name: /caja/i }).click();
+    await expect(page.getByRole('link', { name: /caja/i })).toHaveAttribute('aria-current', 'page');
+    await expect(page.getByText(/operacion de caja/i).first()).toBeVisible();
+
+    await expectNoHorizontalPageOverflow(page);
+    const navOverflow = await navigation.evaluate((element) => element.scrollWidth - element.clientWidth);
+    expect(navOverflow).toBeLessThanOrEqual(1);
+  });
 });
 
 async function installReportsMocks(
@@ -313,6 +331,15 @@ async function installCommonMocks(page: Page) {
     },
   }));
   await page.route(/\/api\/cash-sessions\/current(?:[/?]|$)/, (route) => json(route, { data: null }));
+}
+
+async function expectNoHorizontalPageOverflow(page: Page) {
+  const metrics = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+
+  expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth + 1);
 }
 
 function json(route: Route, body: unknown, status = 200) {

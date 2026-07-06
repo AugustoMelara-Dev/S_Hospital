@@ -87,8 +87,8 @@ Local review date: 2026-06-28
 | Receipts/Settings | P0 | Seeded institutional receipt series exposed placeholder authorization `AUT-REC-LOCAL`. | Fixed by seeding `range_authorization` as null and adding seeder regression test. |
 | Billing/POS | P0 | POS invoice creation retried with a fresh idempotency key after lost LAN response, risking duplicate fiscal invoice. | Fixed by caller-managed invoice idempotency key reused across retry until success or payload changes. |
 | API idempotency | P1 | Stale incomplete idempotency reservation could replay `200 {"data": null}`. | Fixed by returning 409 with recovery guidance when response is not replayable. |
-| A11y/Responsive | P1 | Mobile buttons can be 36px; reports tabs and receipt preview need 320px usability tests. | Pending. |
-| A11y/Responsive | P1 | Small and icon buttons used sub-44px mobile targets. | Fixed in button foundations; responsive Playwright proof still pending. |
+| A11y/Responsive | RESOLVED | Mobile buttons can be 36px; reports tabs and receipt preview need 320px usability tests. | Mobile button floor is fixed; `reports-flow.spec.ts` and `print-profiles.spec.ts` now cover report navigation and receipt preview containment at 320px. |
+| A11y/Responsive | RESOLVED | Small and icon buttons used sub-44px mobile targets. | Fixed in button foundations; 320px report navigation and receipt preview Playwright proof now pass. |
 | Performance/LAN | P1 | Echo/Pusher are statically imported and polling cadence may stack across many LAN clients. | Pending. |
 
 ## Implementation Queue
@@ -118,4 +118,4 @@ Local review date: 2026-06-28
 - The old V1.3 branch was divergent from current `main`; it has now been synced locally but not pushed yet.
 - The local Git pre-commit hook is stale and points at a missing script; quality gates must be run explicitly until hook hygiene is fixed.
 - Full V1.3 scope is larger than a single safe commit; implementation must proceed in slices with tests.
-- Host release runner evidence, reports mobile nav/receipt preview proof, backend full-test container mount/timeout, and final LAN/physical evidence remain open.
+- Host release runner evidence, backend full-test container mount/timeout, and final LAN/physical evidence remain open.

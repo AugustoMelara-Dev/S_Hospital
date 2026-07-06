@@ -66,6 +66,29 @@ test.describe('Print profiles - normal flow', () => {
     await expect(page.getByText(/ajustes avanzados restringidos|modo soporte t.cnico/i)).toHaveCount(0);
   });
 
+  test('receipt settings preview remains contained at 320px', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 720 });
+    await installReceiptSettingsMocks(page);
+
+    await page.goto('/settings/institutional-receipts');
+    await page.getByRole('tab', { name: /papel y copias/i }).click();
+
+    await expect(page.getByRole('radio', { name: /^Media carta\b/i })).toBeVisible();
+    await expect(page.getByRole('radio', { name: /^Carta\b/i })).toBeVisible();
+    await expect(page.getByRole('radio', { name: /^A5\b/i })).toBeVisible();
+    await expectNoHorizontalPageOverflow(page);
+
+    await page.getByRole('tab', { name: /vista previa/i }).click();
+    const preview = page.getByTestId('receipt-settings-preview');
+    await expect(preview).toBeVisible();
+    await expect(page.getByRole('region', { name: /vista previa original del recibo institucional/i })).toBeVisible();
+    await expectNoHorizontalPageOverflow(page);
+
+    const previewBox = await preview.boundingBox();
+    expect(previewBox?.x ?? 0).toBeGreaterThanOrEqual(0);
+    expect((previewBox?.x ?? 0) + (previewBox?.width ?? 0)).toBeLessThanOrEqual(320);
+  });
+
   test('normal paper profile saves and test-prints without advanced layout fields', async ({ page }) => {
     const testPrintPayloads: Array<Record<string, unknown>> = [];
     const profilePatchPayloads: Array<Record<string, unknown>> = [];
@@ -190,6 +213,15 @@ async function installReceiptSettingsMocks(
 
     return json(route, { data: null });
   });
+}
+
+async function expectNoHorizontalPageOverflow(page: Page) {
+  const metrics = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+
+  expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth + 1);
 }
 
 function profile(

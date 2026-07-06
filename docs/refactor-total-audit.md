@@ -8030,3 +8030,25 @@ Limitacion:
 Decision:
 
 - Para la version monocomputadora, la compuerta release debe validar el runtime real de base de datos local sin depender de SQLite ni de descargas de navegador. Este corte deja ese camino en un comando unico, repetible y apto para QA offline con Docker ya levantado.
+
+## 335. Fase QA/Responsive - Reportes y recibos cubiertos a 320px
+
+Cambio aplicado:
+
+- `reports-flow.spec.ts` agrega cobertura mobile de 320px para la navegacion de reportes, cambio a Caja y ausencia de overflow horizontal de pagina/nav.
+- `print-profiles.spec.ts` agrega cobertura mobile de 320px para controles de papel institucional y la pestana de vista previa de recibo, verificando contencion del preview y ausencia de overflow horizontal.
+- El board V1.3 marca resuelto el riesgo de reportes mobile nav/receipt preview proof.
+- No se cambiaron reglas fiscales, endpoints, permisos, payloads ni estilos productivos.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| Browser plugin viewport 320 contra `http://127.0.0.1:5173/login` | Parcial: screenshot/evaluate OK, `domSnapshot()` no disponible por error del runtime `incrementalAriaSnapshot`; se uso Playwright del repo para la prueba reproducible. |
+| `docker compose exec frontend npx playwright test e2e/reports-flow.spec.ts e2e/print-profiles.spec.ts --reporter=list --workers=1` | RED inicial por selector de vista previa fuera de la pestana correcta; luego OK: 7 passed. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+
+Decision:
+
+- El riesgo de 320px debe quedar como prueba automatizada focalizada, no como inspeccion manual suelta. Reportes y recibos institucionales son superficies de entrega diaria; si vuelven a desbordar en mobile, el gate E2E lo detecta.
