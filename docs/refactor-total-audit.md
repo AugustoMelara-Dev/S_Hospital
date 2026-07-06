@@ -6580,3 +6580,29 @@ Decision:
 
 - La receta de dialisis no es un flujo administrativo raro sino parte de caja hospitalaria diaria; por eso el rol base `cajero` debe poder usarla sin depender de permisos manuales posteriores al seeding.
 - Hallazgo sidecar pendiente para el siguiente corte: el pago nuevo en frontend todavia intenta abrir recibo legacy cuando falta recibo institucional; debe cortarse con TDD sin afectar el fallback historico de facturas antiguas.
+
+## 274. Fase 6/4 - Pago nuevo no abre recibo legacy
+
+Cambio aplicado:
+
+- `NewInvoiceView.submitPayment` ya no llama `/api/invoices/{id}/receipt` cuando `registerPayment` responde sin `institutional_receipt` y sin `institutional_receipt_error`.
+- Si la factura queda pagada sin comprobante institucional en la respuesta, el flujo cierra el modal de cobro, abre `Factura pagada` y muestra recuperacion institucional: generar el recibo desde Historial antes de entregar comprobante.
+- Si el pago queda parcial, el flujo no intenta recibo legacy; deja el camino visible para seguir cobrando desde `Cobrar ahora`.
+- El fallback legacy se conserva en Historial/facturas antiguas y en pruebas especificas de compatibilidad.
+- No se agregaron migraciones, dependencias, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `npm run test -- NewInvoiceView --run -t "legacy receipt|partial payment"` | RED inicial correcto: el flujo nuevo aun llamaba `/receipt`; luego OK: 4 tests pasan. |
+| `npm run test -- src/features/invoices/NewInvoiceView.test.tsx -t "without requesting legacy receipt|partial payment|institutional receipt issuance fails"` | OK: 3 tests pasan. |
+| `npm run test -- src/features/invoices/InstitutionalReceiptFlow.test.tsx src/features/invoices/InvoiceHistoryView.test.tsx -t "legacy receipt|old invoices without institutional receipt|invoice has no institutional receipt"` | OK: 6 tests pasan, fallback historico intacto. |
+| `npm run test -- NewInvoiceView --run` | OK: 26 tests pasan en 3 archivos. |
+| `npm run typecheck` | OK. |
+| `npm run lint` | OK. |
+| `npm run build` | OK. |
+
+Decision:
+
+- En cobros nuevos, el comprobante operativo debe ser institucional o quedar pendiente de emision institucional/reimpresion desde Historial. El recibo legacy queda limitado a compatibilidad historica, no al flujo diario de caja.

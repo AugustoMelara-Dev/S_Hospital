@@ -551,34 +551,20 @@ export function NewInvoiceView({
         return;
       }
 
-      let nextReceipt;
-      try {
-        nextReceipt = await apiClient.getReceipt(result.invoice.id, state.receiptWidth);
-      } catch {
-        const message = 'Pago registrado, pero no se pudo generar el recibo. Reimprima desde Historial.';
-        dispatch({ type: 'SET_RECEIPT', payload: null });
-        dispatch({ type: 'SET_INSTITUTIONAL_RECEIPT', payload: null });
-        dispatch({ type: 'SET_AUTO_PRINT_RECEIPT', payload: false });
-        dispatch({ type: 'SET_SHOW_PAYMENT', payload: false });
-        dispatch({ type: 'SET_SHOW_RECEIPT', payload: false });
-        dispatch({ type: 'SET_SHOW_SUCCESS', payload: true });
-        dispatch({ type: 'SET_ALERT_MESSAGE', payload: null });
-        dispatch({ type: 'SET_WARNING_MESSAGE', payload: message });
-        onStatus(message);
+      const recoveryMessage = result.invoice.status === 'paid'
+        ? 'Pago registrado, pero no se recibio comprobante institucional. Genere el recibo institucional desde Historial antes de entregar comprobante.'
+        : null;
 
-        return;
-      }
-
-      dispatch({ type: 'SET_RECEIPT', payload: nextReceipt });
+      dispatch({ type: 'SET_RECEIPT', payload: null });
       dispatch({ type: 'SET_INSTITUTIONAL_RECEIPT', payload: null });
-      dispatch({ type: 'SET_INSTITUTIONAL_RECEIPT_RECOVERY_MESSAGE', payload: null });
-      dispatch({ type: 'SET_RECEIPT_WIDTH', payload: nextReceipt.width });
-      dispatch({ type: 'SET_AUTO_PRINT_RECEIPT', payload: true });
+      dispatch({ type: 'SET_INSTITUTIONAL_RECEIPT_RECOVERY_MESSAGE', payload: recoveryMessage });
+      dispatch({ type: 'SET_AUTO_PRINT_RECEIPT', payload: false });
       dispatch({ type: 'SET_SHOW_PAYMENT', payload: false });
-      dispatch({ type: 'SET_SHOW_RECEIPT', payload: true });
+      dispatch({ type: 'SET_SHOW_RECEIPT', payload: false });
+      dispatch({ type: 'SET_SHOW_SUCCESS', payload: true });
       dispatch({ type: 'SET_ALERT_MESSAGE', payload: null });
-      dispatch({ type: 'SET_WARNING_MESSAGE', payload: null });
-      onStatus(`Pago registrado. Recibo ${nextReceipt.invoice.invoice_number} enviado a impresión.`);
+      dispatch({ type: 'SET_WARNING_MESSAGE', payload: recoveryMessage });
+      onStatus(recoveryMessage ?? `Pago parcial registrado. Saldo pendiente ${result.invoice.balance_due}.`);
     } catch (error) {
       const message = userSafeErrorMessage(error, 'No se pudo registrar el pago.');
       dispatch({ type: 'SET_ALERT_MESSAGE', payload: message });

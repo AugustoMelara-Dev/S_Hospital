@@ -525,7 +525,7 @@ describe('NewInvoiceView critical flows', () => {
     expect(screen.queryByText(/permisos completos/i)).not.toBeInTheDocument();
   });
 
-  it('keeps payment registered when legacy receipt loading fails after collection', async () => {
+  it('keeps payment registered without requesting legacy receipt when institutional receipt is missing after collection', async () => {
     const onStatus = vi.fn();
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -624,9 +624,8 @@ describe('NewInvoiceView critical flows', () => {
       }
       if (url.includes('/api/invoices/57/receipt')) {
         return {
-          ok: false,
-          status: 500,
-          json: async () => ({ message: 'No se pudo generar PDF legacy' }),
+          ok: true,
+          json: async () => ({ data: null }),
         } as Response;
       }
       return { ok: true, json: async () => ({ data: null }) } as Response;
@@ -662,8 +661,131 @@ describe('NewInvoiceView critical flows', () => {
       expect(screen.queryByRole('dialog', { name: /registrar pago/i })).not.toBeInTheDocument();
     });
     expect(await screen.findByRole('dialog', { name: /factura pagada/i })).toBeInTheDocument();
-    expect(screen.getByText(/pago registrado/i)).toBeInTheDocument();
-    expect(screen.getByText(/no se pudo generar el recibo/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/pago registrado/i).length).toBeGreaterThan(0);
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/api/invoices/57/receipt'))).toBe(false);
+    expect(screen.queryByRole('dialog', { name: /comprobante de factura/i })).not.toBeInTheDocument();
+    expect(screen.getAllByText(/genere el recibo institucional desde historial/i).length).toBeGreaterThan(0);
+  });
+
+  it('does not request legacy receipt after partial payment', async () => {
+    vi.spyOn(apiBase, 'createClientIdempotencyKey')
+      .mockReturnValueOnce('partial-invoice-attempt-1')
+      .mockReturnValueOnce('partial-payment-attempt-1');
+    const fetchMock = globalThis.fetch as ReturnType<typeof vi.fn>;
+
+    fetchMock.mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes('/api/cash-sessions/current')) {
+        return { ok: true, json: async () => ({ data: makeOpenCashSession() }) } as Response;
+      }
+      if (url.includes('/api/services')) {
+        return { ok: true, json: async () => ({ data: [makeService()] }) } as Response;
+      }
+      if (url.includes('/api/categories')) {
+        return { ok: true, json: async () => ({ data: [] }) } as Response;
+      }
+      if (url.includes('/api/settings/operational')) {
+        return {
+          ok: true,
+          json: async () => ({ data: { scanner_enabled: false, partial_payments_enabled: true } }),
+        } as Response;
+      }
+      if (url.endsWith('/api/invoices')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 65,
+              invoice_number: '000-001-01-00000065',
+              patient_name: 'Maria Lopez',
+              status: 'issued',
+              subtotal: '25.00',
+              tax_amount: '0.00',
+              discount_amount: '0.00',
+              total: '25.00',
+              paid_amount: '0.00',
+              balance_due: '25.00',
+              issued_at: '2026-05-17T09:30:00-06:00',
+              items: [],
+            },
+          }),
+        } as Response;
+      }
+      if (url.endsWith('/api/invoices/65/payments')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              payment: {
+                id: 94,
+                invoice_id: 65,
+                cash_session_id: 7,
+                user_id: 2,
+                method: 'cash',
+                amount: '15.00',
+                reference: null,
+                status: 'posted',
+                paid_at: '2026-05-17T09:31:00-06:00',
+              },
+              invoice: {
+                id: 65,
+                invoice_number: '000-001-01-00000065',
+                patient_name: 'Maria Lopez',
+                status: 'partial',
+                subtotal: '25.00',
+                tax_amount: '0.00',
+                discount_amount: '0.00',
+                total: '25.00',
+                paid_amount: '15.00',
+                balance_due: '10.00',
+                issued_at: '2026-05-17T09:30:00-06:00',
+                items: [],
+              },
+              institutional_receipt: null,
+              institutional_receipt_error: null,
+            },
+          }),
+        } as Response;
+      }
+      if (url.includes('/api/invoices/65/receipt')) {
+        return {
+          ok: true,
+          json: async () => ({ data: null }),
+        } as Response;
+      }
+
+      return { ok: true, json: async () => ({ data: null }) } as Response;
+    });
+
+    renderNewInvoice();
+    await waitForPointOfSaleLoad();
+
+    fireEvent.change(screen.getByLabelText(/nombre del paciente/i), { target: { value: 'Maria Lopez' } });
+    fireEvent.change(screen.getByLabelText(/buscar por nombre/i), { target: { value: 'eritro' } });
+    await waitFor(() => {
+      expect(screen.getByText('Eritropoyetina')).toBeInTheDocument();
+    }, { timeout: 3000 });
+    fireEvent.click(screen.getByRole('button', { name: /agregar eritropoyetina/i }));
+    fireEvent.click(screen.getAllByRole('button', { name: /emitir/i })[0]);
+    await waitFor(() => {
+      expect(screen.getByRole('dialog', { name: /confirmar emis/i })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole('button', { name: /emitir y abrir cobro/i }));
+    await waitFor(() => {
+      expect(screen.getByRole('dialog', { name: /registrar pago/i })).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByLabelText(/monto recibido/i), { target: { value: '15.00' } });
+    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro e imprimir/i }));
+
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.some(([url]) => String(url).endsWith('/api/invoices/65/payments'))).toBe(true);
+    });
+
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/api/invoices/65/receipt'))).toBe(false);
+    expect(screen.queryByRole('dialog', { name: /comprobante de factura/i })).not.toBeInTheDocument();
+    expect(await screen.findByRole('dialog', { name: /factura emitida exitosamente/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /cobrar ahora/i })).toBeInTheDocument();
   });
 
   it('does not fall back to the legacy receipt when institutional receipt issuance fails after payment', async () => {

@@ -404,3 +404,15 @@ verified.
 | `docker compose exec backend php artisan test tests/Feature/CashPaymentsReceiptTest.php --filter=dialysis_prescription` | PASS, 1 test and 23 assertions. |
 | `docker compose exec backend vendor/bin/pint --test` | PASS, 430 files. |
 | `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M` | PASS, no errors. |
+
+### 2026-07-06 New Payment Institutional Receipt Gate
+
+| Command | Result |
+|---|---|
+| `npm run test -- NewInvoiceView --run -t "legacy receipt|partial payment"` | RED first because new payment still requested `/api/invoices/{id}/receipt`; then PASS, 4 tests. |
+| `npm run test -- src/features/invoices/NewInvoiceView.test.tsx -t "without requesting legacy receipt|partial payment|institutional receipt issuance fails"` | PASS, 3 tests. |
+| `npm run test -- src/features/invoices/InstitutionalReceiptFlow.test.tsx src/features/invoices/InvoiceHistoryView.test.tsx -t "legacy receipt|old invoices without institutional receipt|invoice has no institutional receipt"` | PASS, 6 tests. |
+| `npm run test -- NewInvoiceView --run` | PASS, 26 tests across 3 files. |
+| `npm run typecheck` | PASS. |
+| `npm run lint` | PASS. |
+| `npm run build` | PASS. |
