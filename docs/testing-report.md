@@ -556,3 +556,13 @@ verified.
 | `docker exec s_hospital-backend-1 php artisan test tests/Feature/ServiceCatalogTest.php` | PASS, 41 tests and 245 assertions. |
 | `docker exec s_hospital-backend-1 vendor/bin/pint --test` | PASS, 430 files. |
 | `docker exec s_hospital-backend-1 vendor/bin/phpstan analyse --memory-limit=512M` | PASS, no errors. |
+
+### 2026-07-06 Catalog Tax Reason Operations Report Gate
+
+| Command | Result |
+|---|---|
+| `docker exec s_hospital-backend-1 php artisan test --filter=operations_report_lists_catalog_tax_change_reason` | RED first because the operations report dropped `tax_change_reason`; then PASS. |
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/ReportsTest.php --filter=operations_report_lists_catalog` | PASS, 2 tests and 29 assertions. |
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/ReportsTest.php` | PASS, 57 tests and 824 assertions. |
+| `docker exec s_hospital-backend-1 vendor/bin/pint --test` | PASS, 430 files. |
+| `docker exec s_hospital-backend-1 vendor/bin/phpstan analyse --memory-limit=512M` | PASS, no errors. |

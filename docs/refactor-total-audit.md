@@ -6924,3 +6924,25 @@ Pruebas ejecutadas:
 Decision:
 
 - La regla de negocio "desactivar en vez de borrar" ya no depende solo del controller. El modelo protege borrados internos por Eloquent y conserva la trazabilidad entre catalogo e historico facturado.
+
+## 288. Fase 8/10 - Reporte operativo muestra motivo de cambio de impuesto
+
+Cambio aplicado:
+
+- `OperationsReportService::safeServiceValues()` ahora conserva `tax_change_reason` para auditoria operativa de `service.tax_updated`.
+- El reporte sigue ocultando IDs tecnicos (`entity_id`, `service_id`, `category_id`) y expone solo valores operativos seguros.
+- No se agregaron migraciones, dependencias, permisos ni endpoints.
+
+Pruebas ejecutadas:
+
+| Comando | Resultado |
+|---|---|
+| `docker exec s_hospital-backend-1 php artisan test --filter=operations_report_lists_catalog_tax_change_reason` | RED inicial correcto: `new_values.tax_change_reason` llegaba como `null`; luego OK. |
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/ReportsTest.php --filter=operations_report_lists_catalog` | OK: 2 tests, 29 assertions. |
+| `docker exec s_hospital-backend-1 php artisan test tests/Feature/ReportsTest.php` | OK: 57 tests, 824 assertions. |
+| `docker exec s_hospital-backend-1 vendor/bin/pint --test` | OK: 430 files. |
+| `docker exec s_hospital-backend-1 vendor/bin/phpstan analyse --memory-limit=512M` | OK: no errors. |
+
+Decision:
+
+- Si el sistema exige motivo para cambiar impuesto, ese motivo debe quedar visible en auditoria operativa sin obligar al usuario a consultar filas crudas de `audit_logs`.
