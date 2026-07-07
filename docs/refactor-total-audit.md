@@ -8151,3 +8151,25 @@ Decision:
 ### Decision
 
 La documentacion debe reflejar el alcance aprobado: menos complejidad de despliegue, misma seriedad en facturacion, caja, recibos, respaldos, restore, concurrencia y auditoria. Monocomputadora no significa instalar copias separadas ni saltarse la evidencia fisica; solo cambia la prueba de navegador de segunda PC LAN a navegador local del servidor cuando `APP_URL` es loopback.
+
+## 341. Fase UI/QA - Diagnostico admin reconoce monocomputadora
+
+### Cambios
+
+- `AboutView` deriva el modo de acceso desde `systemStatus.network.host_type`.
+- Cuando el backend reporta `loopback`, la tarjeta administrativa muestra `Modo monocomputadora`, `Direccion local configurada` y `Acceso local` en lugar de marcar falta de LAN.
+- El modo multi-PC conserva `Acceso LAN` y direccion LAN configurada.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- AboutView --run -t "loopback diagnostics"` | RED inicial: no aparecia `Modo monocomputadora`; luego OK. |
+| `docker compose exec frontend npm run test -- AboutView --run` | OK: 7 tests. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `git diff --check` | OK. |
+
+### Decision
+
+La pantalla de soporte no debe pedir una direccion LAN cuando el alcance aprobado es monocomputadora. La fuente de verdad sigue siendo el backend; frontend solo traduce el modo seleccionado a lenguaje operativo para admin/soporte.

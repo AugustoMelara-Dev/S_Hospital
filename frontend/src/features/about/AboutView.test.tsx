@@ -154,7 +154,7 @@ describe('AboutView', () => {
     expect(screen.getByText('Conectada')).toBeInTheDocument();
     expect(screen.getByText('Compilada y disponible')).toBeInTheDocument();
     expect(screen.getByText('Sin fallas registradas')).toBeInTheDocument();
-    expect(screen.getByText('Dirección LAN configurada')).toBeInTheDocument();
+    expect(screen.getByText('Direccion LAN configurada')).toBeInTheDocument();
     expect(screen.getByText('Base actualizada')).toBeInTheDocument();
     expect(screen.getByText(/192\.168\.1\.10:8000/i)).toBeInTheDocument();
     expect(screen.getByText(/America\/Tegucigalpa/i)).toBeInTheDocument();
@@ -163,6 +163,52 @@ describe('AboutView', () => {
     expect(document.body.textContent).not.toMatch(/queue:work|APP_KEY|DB_PASSWORD|\.env|C:\\\\/i);
     expect(useBackups).toHaveBeenCalledWith({ page: 1, perPage: 1, enabled: true });
     expect(useSystemStatusSnapshot).toHaveBeenCalledWith(true);
+  });
+
+  it('labels loopback diagnostics as single-machine local mode instead of missing LAN', async () => {
+    vi.mocked(useServerStatus).mockReturnValue({
+      checking: false,
+      isOnline: true,
+      lastCheck: new Date('2026-06-02T14:00:00.000Z'),
+      operationalHealth: null,
+      summary: {
+        description: 'Servidor local, base de datos y respaldos responden.',
+        label: 'Todo bien',
+        level: 'ok',
+      },
+    });
+    const baseStatus = mockSystemStatus();
+    vi.mocked(useSystemStatusSnapshot).mockReturnValue({
+      data: {
+        ...baseStatus,
+        environment: {
+          ...baseStatus.environment,
+          app_url: 'http://127.0.0.1:8000',
+        },
+        network: {
+          configured_host: '127.0.0.1',
+          host_type: 'loopback',
+          lan_ready: false,
+          client_url: 'http://127.0.0.1:8000',
+          guidance: 'Modo monocomputadora: valide desde el navegador local del servidor.',
+        },
+      },
+      isError: false,
+      error: null,
+      isPending: false,
+      isLoading: false,
+      isFetching: false,
+    } as unknown as ReturnType<typeof useSystemStatusSnapshot>);
+
+    render(<AboutView user={adminUser} onStatus={vi.fn()} />);
+
+    expect(await screen.findByRole('heading', { name: /diagnostico administrativo/i })).toBeInTheDocument();
+    expect(screen.getByText('Modo monocomputadora')).toBeInTheDocument();
+    expect(screen.getByText('Direccion local configurada')).toBeInTheDocument();
+    expect(screen.getByText(/Acceso local:/i)).toBeInTheDocument();
+    expect(screen.getByText(/127\.0\.0\.1:8000/i)).toBeInTheDocument();
+    expect(screen.queryByText('Falta direcciÃ³n LAN')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Acceso LAN:/i)).not.toBeInTheDocument();
   });
 
   it('marks the latest backup diagnostic for review when the file is not confirmed', async () => {

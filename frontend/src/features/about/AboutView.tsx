@@ -169,7 +169,7 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
                   </div>
                   <div className="flex items-start gap-2 rounded-md border border-border bg-card p-3">
                     <Network aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-secondary" />
-                    <span className="break-words">Acceso LAN: {systemStatus.network.client_url ?? 'pendiente de configurar'}</span>
+                    <span className="break-words">{networkAccessLabel(systemStatus)}: {networkAccessUrl(systemStatus)}</span>
                   </div>
                 </div>
               </>
@@ -265,9 +265,14 @@ function adminDiagnosticItems(status: SystemStatus): AdminDiagnosticItem[] {
       level: 'ok',
     },
     {
-      label: 'Red local',
-      value: status.network.lan_ready ? 'Dirección LAN configurada' : 'Falta dirección LAN',
-      level: status.network.lan_ready ? 'ok' : 'review',
+      label: 'Modo de acceso',
+      value: networkModeLabel(status),
+      level: networkLevel(status),
+    },
+    {
+      label: 'Direccion de acceso',
+      value: networkAddressLabel(status),
+      level: networkLevel(status),
     },
     {
       label: 'Migraciones',
@@ -275,6 +280,35 @@ function adminDiagnosticItems(status: SystemStatus): AdminDiagnosticItem[] {
       level: (status.runtime.pending_migration_count ?? 0) === 0 ? 'ok' : 'review',
     },
   ];
+}
+
+function isSingleMachineMode(status: SystemStatus): boolean {
+  return status.network.host_type === 'loopback';
+}
+
+function networkModeLabel(status: SystemStatus): string {
+  if (isSingleMachineMode(status)) return 'Modo monocomputadora';
+  if (status.network.lan_ready) return 'Modo multi-PC LAN';
+  return 'Modo pendiente de configurar';
+}
+
+function networkAddressLabel(status: SystemStatus): string {
+  if (isSingleMachineMode(status)) return 'Direccion local configurada';
+  if (status.network.lan_ready) return 'Direccion LAN configurada';
+  return 'Falta direccion de acceso';
+}
+
+function networkLevel(status: SystemStatus): 'ok' | 'review' {
+  if (isSingleMachineMode(status) || status.network.lan_ready) return 'ok';
+  return 'review';
+}
+
+function networkAccessLabel(status: SystemStatus): string {
+  return isSingleMachineMode(status) ? 'Acceso local' : 'Acceso LAN';
+}
+
+function networkAccessUrl(status: SystemStatus): string {
+  return status.network.client_url ?? status.environment.app_url ?? 'pendiente de configurar';
 }
 
 function queueLabel(status: SystemStatus): string {
