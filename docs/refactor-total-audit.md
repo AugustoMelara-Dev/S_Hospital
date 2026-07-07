@@ -8538,3 +8538,26 @@ El cierre de caja impreso/exportado debe servir como evidencia operativa del tur
 ### Decision
 
 Catalogo conserva sus reglas de caja/facturacion y auditoria, pero el formulario deja de concentrar UI, schema y secciones en un solo megacomponente.
+
+## 360. Fase Historial - Reimpresion institucional directa
+
+### Cambios
+
+- `Reimprimir PDF` desde historial deja de abrir un dialogo de motivo para recibos institucionales ya impresos.
+- El frontend registra el evento de impresion con motivo estandar `Reimpresión solicitada desde historial.` e idempotencia antes de abrir el PDF.
+- El E2E mockeado valida `print-events`, apertura del PDF institucional y ausencia de fallback legacy `/receipt` o `/reprint`.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- InvoiceHistoryView --run -t "reprints a previously printed institutional receipt from history without asking for a reason"` | RED inicial: no registraba reimpresion porque esperaba dialogo; luego OK: 1 test. |
+| `docker compose exec frontend npm run test -- InvoiceHistoryView --run` | OK: 42 tests. |
+| `docker compose exec frontend npx playwright test e2e/invoice-history-flow.spec.ts` | OK: 2 tests. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `git diff --check` | OK. |
+
+### Decision
+
+Historial prioriza recuperacion rapida del recibo institucional para caja monocomputadora. La reimpresion queda auditada con motivo estandar y sin exponer controles tecnicos ni rutas legacy.

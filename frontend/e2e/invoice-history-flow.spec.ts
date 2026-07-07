@@ -109,15 +109,19 @@ test.describe('Invoice history - critical mocked e2e', () => {
   });
 
   test('reprints an institutional receipt from history without legacy receipt fallback', async ({ page }) => {
-    let institutionalPdfPayload: Record<string, unknown> | null = null;
-    let institutionalPdfIdempotencyKey: string | null = null;
+    let institutionalPrintEventPayload: Record<string, unknown> | null = null;
+    let institutionalPrintEventIdempotencyKey: string | null = null;
+    let institutionalPdfRequests = 0;
     let legacyReceiptRequests = 0;
     let legacyReprintRequests = 0;
 
     await installInvoiceHistoryMocks(page, {
-      onInstitutionalPdf: (payload, idempotencyKey) => {
-        institutionalPdfPayload = payload;
-        institutionalPdfIdempotencyKey = idempotencyKey;
+      onInstitutionalPrintEvent: (payload, idempotencyKey) => {
+        institutionalPrintEventPayload = payload;
+        institutionalPrintEventIdempotencyKey = idempotencyKey;
+      },
+      onInstitutionalPdf: () => {
+        institutionalPdfRequests += 1;
       },
       onLegacyReceipt: () => {
         legacyReceiptRequests += 1;
@@ -133,10 +137,11 @@ test.describe('Invoice history - critical mocked e2e', () => {
     await page.getByRole('button', { name: /acciones de la factura A-0002/i }).click();
     await page.getByRole('menuitem', { name: /reimprimir pdf/i }).click();
 
-    await expect.poll(() => institutionalPdfPayload).toMatchObject({
+    await expect.poll(() => institutionalPrintEventPayload).toMatchObject({
       reason: 'Reimpresión solicitada desde historial.',
     });
-    expect(institutionalPdfIdempotencyKey).toMatch(/\S/);
+    expect(institutionalPrintEventIdempotencyKey).toMatch(/\S/);
+    await expect.poll(() => institutionalPdfRequests).toBe(1);
     expect(legacyReceiptRequests).toBe(0);
     expect(legacyReprintRequests).toBe(0);
   });
@@ -145,7 +150,8 @@ test.describe('Invoice history - critical mocked e2e', () => {
 async function installInvoiceHistoryMocks(
   page: Page,
   options: {
-    onInstitutionalPdf?: (payload: Record<string, unknown>, idempotencyKey: string | null) => void;
+    onInstitutionalPrintEvent?: (payload: Record<string, unknown>, idempotencyKey: string | null) => void;
+    onInstitutionalPdf?: () => void;
     onLegacyReceipt?: () => void;
     onLegacyReprint?: () => void;
     onVoid?: (payload: Record<string, unknown>) => void;
@@ -196,11 +202,17 @@ async function installInvoiceHistoryMocks(
     const id = Number(new URL(route.request().url()).pathname.split('/').at(-1));
     return json(route, { data: invoices.find((invoice) => invoice.id === id) ?? issuedInvoice });
   });
-  await page.route(/\/api\/institutional-receipts\/\d+\/pdf(?:[/?]|$)/, (route) => {
+  await page.route(/\/api\/institutional-receipts\/\d+\/print-events(?:[/?]|$)/, (route) => {
     const payload = route.request().postData()
       ? JSON.parse(route.request().postData() ?? '{}') as Record<string, unknown>
       : {};
-    options.onInstitutionalPdf?.(payload, route.request().headers()['idempotency-key'] ?? null);
+
+    options.onInstitutionalPrintEvent?.(payload, route.request().headers()['idempotency-key'] ?? null);
+
+    return json(route, { data: { receipt: paidInvoice.institutional_receipt } });
+  });
+  await page.route(/\/api\/institutional-receipts\/\d+\/pdf(?:[/?]|$)/, (route) => {
+    options.onInstitutionalPdf?.();
 
     return route.fulfill({
       status: 200,
