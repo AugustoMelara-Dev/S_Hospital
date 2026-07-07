@@ -8906,3 +8906,24 @@ Abrir caja es una accion operativa, no una lectura. La interfaz debe respetar el
 ### Decision
 
 La suite de app debe reflejar permisos reales y el flujo normal de respaldos. Restaurar sigue siendo trabajo de soporte fuera de la app, y el 404 autenticado debe probarse con un permiso operativo existente para no caer en `Sin permisos operativos`.
+
+## 376. Fase QA - Build frontend y suites criticas backend
+
+### Cambios
+
+- No hubo cambios de codigo en esta fase.
+- Se ejecuto verificacion de entrega sobre build frontend y grupos backend de facturacion, caja, pagos, recibos, historial y respaldos.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run build` | OK: `tsc --noEmit` y `vite build`. |
+| `docker compose exec backend php artisan test tests/Feature/InvoiceCreationTest.php tests/Feature/Billing/InvoiceDialysisPrescriptionTest.php tests/Unit/CalculateInvoiceTotalsActionTest.php tests/Unit/Actions/EritropoyetinaRuleTest.php` | OK: 53 tests. |
+| `docker compose exec backend php artisan test tests/Feature/Cash/CloseCashSessionTest.php tests/Feature/CloseCashSessionDifferenceTest.php tests/Feature/CashPaymentsReceiptTest.php tests/Feature/Payments/RegisterPaymentDoesNotMutateInvoiceTest.php tests/Unit/Actions/RegisterPaymentTest.php` | OK: 52 tests. |
+| `docker compose exec backend php artisan test tests/Feature/InstitutionalReceiptIssueTest.php tests/Feature/InstitutionalReceiptPaymentIntegrationTest.php tests/Feature/InstitutionalReceiptPdfTest.php tests/Feature/InvoiceHistoryReprintVoidTest.php tests/Feature/Resilience/ReprintDoesNotMutateTest.php` | OK: 58 tests. |
+| `docker compose exec backend php artisan test tests/Feature/BackupWorkflowTest.php tests/Feature/Resilience/BackupRestoreRoundtripTest.php` | OK: 33 tests, 1 skip documentado por simulacion MySQL. |
+
+### Decision
+
+Antes de seguir refactorizando, se confirma que los flujos criticos de entrega siguen verdes: emitir factura, eritropoyetina, cobrar, cerrar caja, recibo institucional, reimpresion/anulacion y respaldo local.
