@@ -9403,3 +9403,25 @@ En instalacion monocomputadora, una caja abierta por otro usuario no debe dejar 
 ### Decision
 
 Los controles avanzados siguen siendo solo soporte, pero la validacion compartida no puede ser mas permisiva que la vista real. Centralizar este schema reduce el riesgo de reintroducir perfiles tecnicos pequenos o sin justificacion mientras se mantiene el flujo normal limitado a carta, media carta y A5.
+
+## 399. Fase Navegacion - Topbar operativo compacto
+
+### Cambios
+
+- `OperationalStatus` deja de renderizar el reloj local como chip visible en la barra superior.
+- El topbar conserva los indicadores operativos utiles: conexion LAN y estado de caja.
+- `Topbar` elimina el temporizador de un minuto que solo alimentaba el reloj visible.
+- Se agrega prueba focalizada para impedir que vuelva a aparecer el chip de fecha/hora en el estado operativo.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- OperationalStatus` | RED inicial: el `<time>` del reloj era visible; luego cubierto por suite layout. |
+| `docker compose exec frontend npm run test -- OperationalStatus AppShell` | OK: 14 tests, incluye axe del shell autenticado. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+### Decision
+
+La barra superior no debe competir con la operacion diaria mostrando reloj, conexion, caja, usuario y acciones auxiliares al mismo tiempo. El reloj no decide ninguna accion critica; conexion local y caja si. Este corte reduce ruido visual sin quitar accesibilidad ni navegacion.

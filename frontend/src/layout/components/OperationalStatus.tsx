@@ -1,4 +1,4 @@
-import { Clock3, ServerCog, WalletCards, Wifi, WifiOff } from 'lucide-react';
+import { ServerCog, WalletCards, Wifi, WifiOff } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { type CashSession } from '../../lib/api';
 
@@ -6,8 +6,6 @@ type OperationalStatusProps = {
   cashSession: CashSession | null;
   isOnline: boolean;
   lastCheck: Date | null;
-  localTime: string;
-  now: Date;
   status: string;
 };
 
@@ -15,8 +13,6 @@ export function OperationalStatus({
   cashSession,
   isOnline,
   lastCheck,
-  localTime,
-  now,
   status,
 }: OperationalStatusProps) {
   const cashIsOpen = cashSession?.status === 'open';
@@ -54,14 +50,6 @@ export function OperationalStatus({
       >
         <WalletCards data-icon aria-hidden="true" />
         <span>{cashLabel}</span>
-      </div>
-
-      <div
-        className="hidden items-center gap-1.5 rounded-md border border-border bg-muted px-2.5 py-1.5 font-mono text-xs font-semibold tabular-nums text-muted-foreground xl:flex"
-        title="Fecha y hora local del equipo"
-      >
-        <Clock3 data-icon aria-hidden="true" />
-        <time dateTime={now.toISOString()}>{localTime}</time>
       </div>
 
       {!isOnline && (

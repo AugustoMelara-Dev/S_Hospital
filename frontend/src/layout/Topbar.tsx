@@ -1,5 +1,5 @@
 import { HelpCircle, Keyboard, Menu, Moon, PanelLeftClose, PanelLeftOpen, Sun } from 'lucide-react';
-import { type RefObject, useEffect, useState } from 'react';
+import { type RefObject } from 'react';
 import { Button } from '../components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
 import { usePublicBranding } from '../hooks/useFiscalSettings';
@@ -49,21 +49,11 @@ export function Topbar({
   const { setTheme, isDark } = useTheme();
   const { isOnline, lastCheck } = useServerStatus();
   const { data: fiscal } = usePublicBranding();
-  const [now, setNow] = useState(() => new Date());
   const hospitalName = displayHospitalName(fiscal?.hospital_name);
   const roleLabel = roleListLabel(user.roles);
   const currentCrumb = crumbs.at(-1);
   const currentTitle = currentCrumb?.label ?? 'Inicio';
-  const localTime = new Intl.DateTimeFormat('es-HN', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(now);
   const toggleTheme = () => setTheme(isDark ? 'light' : 'dark');
-
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(new Date()), 60_000);
-    return () => window.clearInterval(timer);
-  }, []);
 
   return (
     <TooltipProvider>
@@ -123,8 +113,6 @@ export function Topbar({
             cashSession={cashSession}
             isOnline={isOnline}
             lastCheck={lastCheck}
-            localTime={localTime}
-            now={now}
             status={status}
           />
         ) : null}
