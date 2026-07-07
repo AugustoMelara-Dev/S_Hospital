@@ -8331,3 +8331,21 @@ El hospital debe elegir papel una sola vez. Mantener un listado de perfiles norm
 ### Decision
 
 Reportes ya opera por subrutas Ejecutivo, Caja y Auditoria. Mantener nombres de tests tipo `tabs` y helpers locales muertos conserva ruido del modelo anterior y dificulta ver el siguiente refactor real de reportes.
+## 350. Fase Usuarios - Extraer helpers puros de UsersView
+
+### Cambios
+
+- Se crea `users-view.helpers.ts` para roles protegidos, permisos ocultos y sanitizacion de roles/catalogo.
+- `UsersView.tsx` queda como orquestador de pantalla y baja de 602 a 564 lineas sin cambiar flujos ni endpoints.
+- Se agrega una regresion de arquitectura para evitar que `UsersView` vuelva a crecer como megacomponente monolitico.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- UsersView.architecture --run` | RED inicial: 602 lineas, sobre el limite; luego OK. |
+| `docker compose exec frontend npm run test -- UsersView --run` | OK: 31 tests. |
+
+### Decision
+
+Las reglas sensibles de usuarios ya estan protegidas en backend; este corte reduce deuda frontend sin tocar seguridad, permisos ni auditoria. La siguiente fase puede extraer carga/cache o dialog orchestration con menor riesgo.

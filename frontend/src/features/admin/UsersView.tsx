@@ -21,6 +21,7 @@ import { PermissionMatrix } from './components/PermissionMatrix';
 import { PasswordResetDialog } from './components/PasswordResetDialog';
 import { UsersTable } from './components/UsersTable';
 import { roleLabel } from '@/lib/role-labels';
+import { hasProtectedRole, isHiddenPermission, sanitizePermissionCatalog, sanitizeRole, sanitizeRoles, visiblePermissionNames } from './users-view.helpers';
 
 type UsersViewProps = {
   onStatus: (message: string) => void;
@@ -32,13 +33,6 @@ type UsersViewProps = {
   currentUserId?: number;
 };
 
-const HIDDEN_PERMISSION_NAMES = new Set([
-  'system.exact_user_permissions',
-  'backups.restore',
-  'receipts.void',
-  'reports.view',
-  'users.assign_admin_role',
-]);
 
 export function UsersView({
   onStatus,
@@ -567,35 +561,4 @@ export function UsersView({
       </ConfirmDialog>
     </>
   );
-}
-function hasProtectedRole(user: AuthUser): boolean {
-  return user.roles.some((role) => ['admin', 'root'].includes(role.toLowerCase()));
-}
-
-function isHiddenPermission(permissionName: string): boolean {
-  return HIDDEN_PERMISSION_NAMES.has(permissionName);
-}
-
-function visiblePermissionNames(permissions: string[]): string[] {
-  return [...new Set(permissions.filter((permission) => !isHiddenPermission(permission)))].sort();
-}
-
-function sanitizeRole(role: RoleDefinition): RoleDefinition {
-  return {
-    ...role,
-    permissions: role.permissions.filter((permission) => !isHiddenPermission(permission.name)),
-  };
-}
-
-function sanitizeRoles(roles: RoleDefinition[]): RoleDefinition[] {
-  return roles.map(sanitizeRole);
-}
-
-function sanitizePermissionCatalog(catalog: PermissionCatalogGroup[]): PermissionCatalogGroup[] {
-  return catalog
-    .map((group) => ({
-      ...group,
-      permissions: group.permissions.filter((permission) => !isHiddenPermission(permission.name)),
-    }))
-    .filter((group) => group.permissions.length > 0);
 }
