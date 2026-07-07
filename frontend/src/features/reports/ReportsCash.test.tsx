@@ -1,5 +1,8 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const downloadCashSessionReportExcelMock = vi.hoisted(() => vi.fn());
+const downloadCashSessionReportPdfMock = vi.hoisted(() => vi.fn());
 import { ReportsCash } from './ReportsCash';
 import type { CashSessionReport } from '@/lib/api/types';
 
@@ -13,6 +16,8 @@ vi.mock('@/lib/api', async () => {
       getCashSessionReport: vi.fn(),
       downloadReportExport: vi.fn(),
       downloadReportPdf: vi.fn(),
+      downloadCashSessionReportExcel: downloadCashSessionReportExcelMock,
+      downloadCashSessionReportPdf: downloadCashSessionReportPdfMock,
     },
   };
 });
@@ -35,6 +40,8 @@ describe('ReportsCash', () => {
     });
     vi.mocked(apiClient.downloadReportExport).mockReset();
     vi.mocked(apiClient.downloadReportPdf).mockReset();
+    downloadCashSessionReportExcelMock.mockReset();
+    downloadCashSessionReportPdfMock.mockReset();
     vi.mocked(downloadBlob).mockReset();
     vi.mocked(openBlobInNewTab).mockReset();
   });
@@ -105,7 +112,7 @@ describe('ReportsCash', () => {
 
   it('exports the loaded cash session report with the selected cash box id', async () => {
     vi.mocked(apiClient.getCashSessionReport).mockResolvedValue(buildCashSessionReport());
-    vi.mocked(apiClient.downloadReportExport).mockResolvedValue(new Blob(['xlsx'], { type: 'application/vnd.ms-excel' }));
+    downloadCashSessionReportExcelMock.mockResolvedValue(new Blob(['xlsx'], { type: 'application/vnd.ms-excel' }));
 
     render(<ReportsCash canViewCash canBrowseCashSessions canViewManagerial canExport />);
 
@@ -116,7 +123,7 @@ describe('ReportsCash', () => {
     fireEvent.click(exportButton);
 
     await waitFor(() => {
-      expect(apiClient.downloadReportExport).toHaveBeenCalledWith(expect.objectContaining({
+      expect(downloadCashSessionReportExcelMock).toHaveBeenCalledWith(expect.objectContaining({
         date_from: '2026-06-02',
         date_to: '2026-06-02',
         cash_session_id: 12,
@@ -127,7 +134,7 @@ describe('ReportsCash', () => {
 
   it('opens a printable cash session pdf for a cash report user with export permission', async () => {
     vi.mocked(apiClient.getCashSessionReport).mockResolvedValue(buildCashSessionReport());
-    vi.mocked(apiClient.downloadReportPdf).mockResolvedValue(new Blob(['pdf'], { type: 'application/pdf' }));
+    downloadCashSessionReportPdfMock.mockResolvedValue(new Blob(['pdf'], { type: 'application/pdf' }));
 
     render(<ReportsCash canViewCash canBrowseCashSessions canViewManagerial={false} canExport />);
 
@@ -138,7 +145,7 @@ describe('ReportsCash', () => {
     fireEvent.click(pdfButton);
 
     await waitFor(() => {
-      expect(apiClient.downloadReportPdf).toHaveBeenCalledWith({
+      expect(downloadCashSessionReportPdfMock).toHaveBeenCalledWith({
         date_from: '2026-06-02',
         date_to: '2026-06-02',
         cash_session_id: 12,
@@ -149,7 +156,7 @@ describe('ReportsCash', () => {
 
   it('locks the cash session lookup while exporting the loaded report', async () => {
     vi.mocked(apiClient.getCashSessionReport).mockResolvedValue(buildCashSessionReport());
-    vi.mocked(apiClient.downloadReportExport).mockReturnValue(new Promise(() => undefined));
+    downloadCashSessionReportExcelMock.mockReturnValue(new Promise(() => undefined));
 
     render(<ReportsCash canViewCash canBrowseCashSessions canViewManagerial canExport />);
 
@@ -160,7 +167,7 @@ describe('ReportsCash', () => {
     fireEvent.click(exportButton);
 
     await waitFor(() => {
-      expect(apiClient.downloadReportExport).toHaveBeenCalledTimes(1);
+      expect(downloadCashSessionReportExcelMock).toHaveBeenCalledTimes(1);
     });
     expect(screen.getByLabelText(/numero de caja/i)).toBeDisabled();
     expect(screen.getByRole('button', { name: /ver caja/i })).toBeDisabled();

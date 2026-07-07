@@ -108,7 +108,7 @@ export function ReportsCash({
     try {
       setCashError('');
       setCashExporting('excel');
-      const blob = await apiClient.downloadReportExport({
+      const blob = await apiClient.downloadCashSessionReportExcel({
         date_from: dateFrom,
         date_to: dateTo,
         cash_session_id: cashSessionId,
@@ -133,7 +133,7 @@ export function ReportsCash({
     try {
       setCashError('');
       setCashExporting('pdf');
-      const blob = await apiClient.downloadReportPdf({
+      const blob = await apiClient.downloadCashSessionReportPdf({
         date_from: dateFrom,
         date_to: dateTo,
         cash_session_id: cashSessionId,

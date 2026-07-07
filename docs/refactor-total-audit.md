@@ -8430,3 +8430,25 @@ Un recibo institucional emitido es evidencia documental y fiscal. Debe sobrevivi
 ### Decision
 
 Los usuarios son parte de la trazabilidad de caja, facturacion, respaldos y auditoria. En la version monocomputadora tambien deben conservarse; retirar acceso significa desactivar con motivo, no borrar el registro historico.
+
+## 355. Fase Reportes - Helpers explicitos para exportar caja
+
+### Cambios
+
+- `reports` agrega `downloadCashSessionReportExcel` y `downloadCashSessionReportPdf` como wrappers explicitos de los endpoints existentes.
+- `apiClient` expone esos helpers para la pantalla de caja.
+- `ReportsCash` deja de llamar `downloadReportExport`/`downloadReportPdf` directamente para exportaciones de caja.
+- Las pruebas cubren URL final y `cash_session_id` para Excel/PDF de caja.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- ReportsCash reports.test --run` | RED inicial: helpers inexistentes y vista llamaba metodos genericos; luego OK: 12 tests. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `git diff --check` | OK. |
+
+### Decision
+
+La caja puede seguir usando los endpoints compartidos del backend, pero la frontera frontend debe nombrar la intencion operacional: exportar la caja seleccionada, no un reporte generico de periodo.

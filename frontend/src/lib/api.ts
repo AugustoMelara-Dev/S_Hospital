@@ -306,6 +306,13 @@ export const apiClient = {
     return reports.downloadPdf(filters);
   },
 
+  async downloadCashSessionReportExcel(filters: ReportFilters): Promise<Blob> {
+    return reports.downloadCashSessionReportExcel(filters);
+  },
+
+  async downloadCashSessionReportPdf(filters: ReportFilters): Promise<Blob> {
+    return reports.downloadCashSessionReportPdf(filters);
+  },
   async downloadExecutivePdf(filters: ExecutiveReportFilters): Promise<Blob> {
     return reports.downloadExecutivePdf(filters);
   },

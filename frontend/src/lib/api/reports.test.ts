@@ -60,4 +60,41 @@ describe('reports api client', () => {
     expect(params.has('status')).toBe(false);
     expect(params.has('user_id')).toBe(false);
   });
+  it('downloads cash session excel reports through the explicit cash-session helper', async () => {
+    const xlsx = new Blob(['xlsx']);
+    mockedDownload.mockResolvedValueOnce(xlsx);
+
+    await expect(reports.downloadCashSessionReportExcel({
+      date_from: '2026-06-02',
+      date_to: '2026-06-02',
+      cash_session_id: 12,
+    })).resolves.toBe(xlsx);
+
+    expect(mockedDownload).toHaveBeenCalledTimes(1);
+    const [path] = mockedDownload.mock.calls[0];
+    expect(path).toContain('/api/reports/export?');
+    const params = pdfSearchParams();
+    expect(params.get('date_from')).toBe('2026-06-02');
+    expect(params.get('date_to')).toBe('2026-06-02');
+    expect(params.get('cash_session_id')).toBe('12');
+  });
+
+  it('downloads cash session pdf reports through the explicit cash-session helper', async () => {
+    const pdf = new Blob(['pdf']);
+    mockedDownload.mockResolvedValueOnce(pdf);
+
+    await expect(reports.downloadCashSessionReportPdf({
+      date_from: '2026-06-02',
+      date_to: '2026-06-02',
+      cash_session_id: 12,
+    })).resolves.toBe(pdf);
+
+    expect(mockedDownload).toHaveBeenCalledTimes(1);
+    const [path] = mockedDownload.mock.calls[0];
+    expect(path).toContain('/api/reports/pdf?');
+    const params = pdfSearchParams();
+    expect(params.get('date_from')).toBe('2026-06-02');
+    expect(params.get('date_to')).toBe('2026-06-02');
+    expect(params.get('cash_session_id')).toBe('12');
+  });
 });

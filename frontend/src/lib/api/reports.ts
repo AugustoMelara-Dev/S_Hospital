@@ -70,6 +70,15 @@ export const reports = {
     return apiClient.download(`/api/reports/pdf?${params.toString()}`);
   },
 
+  async downloadCashSessionReportExcel(filters: ReportFilters): Promise<Blob> {
+    const params = buildReportParams(filters);
+    return apiClient.download(`/api/reports/export?${params.toString()}`);
+  },
+
+  async downloadCashSessionReportPdf(filters: ReportFilters): Promise<Blob> {
+    const params = buildReportParams(filters);
+    return apiClient.download(`/api/reports/pdf?${params.toString()}`);
+  },
   async downloadExecutivePdf(filters: import('./types').ExecutiveReportFilters): Promise<Blob> {
     const params = buildReportParams(filters);
     return apiClient.download(`/api/reports/executive/pdf?${params.toString()}`);
