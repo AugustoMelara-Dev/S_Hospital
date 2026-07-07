@@ -261,9 +261,10 @@ function safeBackupsErrorMessage(error: unknown, fallback: string): string {
 
 function backupDownloadFilename(backup: BackupLog): string {
   const rawDate = backup.completed_at ?? backup.created_at;
-  const date = rawDate.match(/^\d{4}-\d{2}-\d{2}/)?.[0] ?? 'sin-fecha';
+  const match = rawDate.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})/);
+  const date = match ? `${match[1]}-${match[2]}${match[3]}` : 'sin-fecha';
 
-  return `respaldo-local-${date}-${backup.id}.sql.gz.enc`;
+  return `respaldo-local-${date}.sql.gz.enc`;
 }
 
 function localAccessIsReady(status: SystemStatus): boolean {

@@ -8585,3 +8585,25 @@ Historial prioriza recuperacion rapida del recibo institucional para caja monoco
 ### Decision
 
 Auditoria gana una vista ejecutable para la operacion local sin duplicar agregaciones en frontend. El backend sigue siendo fuente de verdad y la pantalla solo presenta datos seguros para supervision hospitalaria.
+
+## 362. Fase Respaldos - Nombre de descarga sin ID tecnico
+
+### Cambios
+
+- La descarga local de respaldos usa un nombre sugerido con fecha y hora (`respaldo-local-YYYY-MM-DD-HHMM.sql.gz.enc`).
+- Se elimina el ID tecnico visible del nombre de archivo descargado.
+- La descarga sigue usando el ID internamente para pedir el archivo al backend y mantener auditoria.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- BackupsView.test.tsx --run -t "confirms and reports backup downloads without exposing the technical filename"` | RED inicial: el nombre incluia `-1`; luego OK: 1 test. |
+| `docker compose exec frontend npm run test -- BackupsView.test.tsx --run` | OK: 34 tests. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `git diff --check` | OK. |
+
+### Decision
+
+El operador puede guardar el respaldo con un nombre entendible y sin identificadores internos. La seguridad real permanece en backend: permisos, descarga registrada y archivo servido por registro existente.

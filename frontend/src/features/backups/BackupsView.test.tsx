@@ -814,8 +814,8 @@ describe('BackupsView', () => {
       expect(HTMLAnchorElement.prototype.click).toHaveBeenCalled();
     });
     const downloadAnchor = vi.mocked(HTMLAnchorElement.prototype.click).mock.contexts.at(-1) as HTMLAnchorElement;
-    expect(downloadAnchor.download).toBe('respaldo-local-2026-06-18-1.sql.gz.enc');
-    expect(downloadAnchor.download).not.toMatch(/hospital-backup|test/i);
+    expect(downloadAnchor.download).toBe('respaldo-local-2026-06-18-1201.sql.gz.enc');
+    expect(downloadAnchor.download).not.toMatch(/hospital-backup|test|\b1\b/i);
   });
 
   it('explains unavailable backup size in the download confirmation', async () => {
