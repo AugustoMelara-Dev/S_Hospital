@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use LogicException;
 
 /**
  * @property int $id
@@ -82,6 +83,13 @@ class InstitutionalReceipt extends Model
         'voided_at',
         'void_reason',
     ];
+
+    protected static function booted(): void
+    {
+        static::deleting(function (): never {
+            throw new LogicException('Los recibos institucionales emitidos no se eliminan; deben anularse con motivo y auditoria.');
+        });
+    }
 
     protected function casts(): array
     {

@@ -8388,3 +8388,24 @@ Reportes ya no presenta tabs legacy. Mantener un componente nombrado como `Tab` 
 ### Decision
 
 El endpoint diario sigue disponible y probado en backend para compatibilidad operativa y smoke tests, pero el frontend estable de reportes ya no debe cargar deuda de un hook sin pantalla consumidora.
+
+## 353. Fase Recibos - Bloquear borrado de recibos institucionales emitidos
+
+### Cambios
+
+- `InstitutionalReceipt` agrega guard de modelo para impedir `delete()` sobre recibos institucionales emitidos.
+- La prueba de integridad ahora cubre recibos sin eventos de impresion, evitando depender solo de claves foraneas posteriores.
+- La restriccion previa con evento de impresion queda alineada al mismo mensaje de dominio: anular con motivo y auditoria, no borrar.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec backend php artisan test --filter=test_issued_institutional_receipt_cannot_be_deleted_even_without_print_events` | RED inicial: el recibo se eliminaba; luego cubierto por la suite focal. |
+| `docker compose exec backend php artisan test --filter=InstitutionalReceiptSettingsMigrationTest` | OK: 5 tests / 34 assertions. |
+| `docker compose exec backend php artisan test --filter=InstitutionalReceiptIssueTest` | OK: 10 tests / 75 assertions. |
+| `docker compose exec backend vendor/bin/pint --test app/Models/InstitutionalReceipt.php tests/Feature/InstitutionalReceiptSettingsMigrationTest.php` | OK. |
+
+### Decision
+
+Un recibo institucional emitido es evidencia documental y fiscal. Debe sobrevivir aunque todavia no exista evento de impresion; la correccion operacional es anulacion auditada, nunca borrado directo.
