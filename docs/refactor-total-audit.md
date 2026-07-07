@@ -8313,3 +8313,21 @@ Los mensajes de error comunes deben pedir revisar el servidor local. LAN puede a
 ### Decision
 
 El hospital debe elegir papel una sola vez. Mantener un listado de perfiles normales junto al selector principal era redundante y aumentaba la carga cognitiva en el modulo donde la regla absoluta es ocultar complejidad tecnica.
+## 349. Fase Reportes - Subrutas sin helper legacy
+
+### Cambios
+
+- Se elimina `ReportsView.helpers.ts`, helper local sin consumidores despues de la consolidacion por subrutas.
+- `ReportsView.subroutes.test.tsx` deja de describir la navegacion como tabs y valida explicitamente que no exista `tablist` legacy.
+- Se agrega una regresion estrecha de arquitectura para impedir que vuelva el helper muerto de `ReportsView`.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- ReportsView.architecture --run` | RED inicial: `ReportsView.helpers.ts` existia; luego OK. |
+| `docker compose exec frontend npm run test -- ReportsView.subroutes --run` | OK: 10 tests. |
+
+### Decision
+
+Reportes ya opera por subrutas Ejecutivo, Caja y Auditoria. Mantener nombres de tests tipo `tabs` y helpers locales muertos conserva ruido del modelo anterior y dificulta ver el siguiente refactor real de reportes.

@@ -85,12 +85,13 @@ function renderReports(
 }
 
 describe('ReportsView (sub-routes)', () => {
-  it('renders the three sub-route tabs', () => {
+  it('renders the three report sub-route links without legacy tabs', () => {
     renderReports('/reports');
     expect(screen.getByRole('heading', { level: 1, name: /^reportes$/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /ejecutivo/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /caja/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /auditoria/i })).toBeInTheDocument();
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /control ejecutivo/i })).toBeInTheDocument();
   });
 
