@@ -973,7 +973,7 @@ class SystemStatusController extends Controller
 
     private function proofFieldValue(string $content, string $fieldLabel): ?string
     {
-        $pattern = '/^\s*-\s*'.preg_quote($fieldLabel, '/').'\s*:[ \t]*(?<value>[^\r\n]*)$/im';
+        $pattern = '/^\s*-\s*'.preg_quote($fieldLabel, '/').'\s*:[ \t]*(?<value>[^\r\n]*)\r?$/im';
 
         if (preg_match($pattern, $content, $matches) !== 1) {
             return null;
@@ -984,13 +984,13 @@ class SystemStatusController extends Controller
 
     private function proofHasCompletedCheckedItem(string $content, string $labelPattern): bool
     {
-        $linePattern = '/^\s*-\s*\[[xX]\]\s*.*'.preg_quote($labelPattern, '/').'.*$/im';
+        $linePattern = '/^\s*-\s*\[[xX]\]\s*.*'.preg_quote($labelPattern, '/').'.*\r?$/im';
 
         if (preg_match($linePattern, $content, $matches) !== 1) {
             return false;
         }
 
-        if (preg_match('/:[ \t]*(?<value>[^\r\n]*)$/', (string) $matches[0], $result) !== 1) {
+        if (preg_match('/:[ \t]*(?<value>[^\r\n]*)\r?$/', (string) $matches[0], $result) !== 1) {
             return false;
         }
 
@@ -1045,6 +1045,7 @@ class SystemStatusController extends Controller
             'database' => $this->databaseStatus(),
             'backups' => $this->backupStatus(),
             'runtime' => $this->runtimeStatus(),
+            'network' => $this->networkStatus(),
             'readiness' => $this->readinessStatus(),
             'preflight' => $this->preflightStatus(),
         ];

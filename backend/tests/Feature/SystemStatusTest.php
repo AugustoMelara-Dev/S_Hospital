@@ -478,7 +478,7 @@ class SystemStatusTest extends TestCase
             ->assertJsonPath('data.checks.1.code', 'DATABASE_CONNECTED')
             ->assertJsonPath('data.checks.2.code', 'FRONTEND_AVAILABLE')
             ->assertJsonPath('data.checks.2.status', 'validated')
-            ->assertJsonPath('data.checks.7.code', 'LAN_ACCESS')
+            ->assertJsonPath('data.checks.7.code', 'LOCAL_ACCESS')
             ->assertJsonPath('data.checks.7.status', 'manual_required')
             ->assertJsonPath('data.checks.8.code', 'INSTALLED_VERSION')
             ->assertJsonMissingPath('data.environment')
@@ -491,6 +491,40 @@ class SystemStatusTest extends TestCase
         foreach (['app_url', 'app_debug', 'php_version', 'worker_command', 'scheduler_command', 'APP_KEY', 'DB_PASSWORD', $proofRoot] as $forbidden) {
             $this->assertStringNotContainsString($forbidden, $json);
         }
+    }
+
+    public function test_public_summary_uses_local_server_proof_for_loopback_mode(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $proofRoot = storage_path('framework/testing-public-status-summary-local');
+
+        File::deleteDirectory($proofRoot);
+        File::ensureDirectoryExists($proofRoot.'/qa');
+        File::ensureDirectoryExists($proofRoot.'/qa/evidence/local-server-2026-07-06');
+        File::ensureDirectoryExists($proofRoot.'/frontend/dist');
+        File::put($proofRoot.'/frontend/dist/index.html', '<div id="root"></div>');
+        File::put($proofRoot.'/frontend/package.json', '{"version":"0.1.0"}');
+        File::put($proofRoot.'/qa/LOCAL_SERVER_VALIDATION_PROOF.md', $this->completedLocalProof());
+        Config::set('hospital.project_root', $proofRoot);
+        Config::set('app.url', 'http://127.0.0.1:8000');
+        $this->beforeApplicationDestroyed(fn () => File::deleteDirectory($proofRoot));
+
+        $user = User::factory()->create();
+        $user->assignRole('cajero');
+
+        $this->actingAs($this->admin())
+            ->getJson('/api/system/status')
+            ->assertOk()
+            ->assertJsonPath('data.preflight.physical_proofs.0.status', 'validated')
+            ->assertJsonPath('data.preflight.physical_proofs.0.detail', 'Evidencia completada; el preflight final debe confirmarla sin bypass.');
+
+        $this->actingAs($user)
+            ->getJson('/api/system/status-summary')
+            ->assertOk()
+            ->assertJsonPath('data.checks.7.code', 'LOCAL_ACCESS')
+            ->assertJsonPath('data.checks.7.label', 'Acceso local')
+            ->assertJsonPath('data.checks.7.status', 'validated')
+            ->assertJsonPath('data.checks.7.detail', 'Validado desde el navegador local del servidor.');
     }
 
     public function test_backups_permission_alone_cannot_view_operational_status(): void
@@ -510,6 +544,44 @@ class SystemStatusTest extends TestCase
         $admin->assignRole('admin');
 
         return $admin->refresh();
+    }
+
+    private function completedLocalProof(): string
+    {
+        return <<<'MARKDOWN'
+# Local server validation proof
+
+## Environment
+
+- Date/time: 2026-07-06 15:30
+- Responsible person: Operador principal
+- Server computer name: SERVIDOR-LOCAL
+- Local app URL: http://127.0.0.1:8000
+- Browser/version: Chrome local
+- User/role used: admin
+- Evidence/capture reference: captura-local-2026-07-06
+- Final conclusion: Monocomputadora validada desde el navegador local del servidor.
+
+## Required checks
+
+- [x] `/up` responds on the server computer. Result/evidence: captura local 01.
+- [x] `/login` loads on the server computer. Result/evidence: captura local 02.
+- [x] `/verify-email` loads the expected SPA route or documented response. Result/evidence: captura local 03.
+- [x] `/assets/*.js` loads as JavaScript from the local server. Result/evidence: devtools network local.
+- [x] Login completes without 419 or session-expired state. Result/evidence: sesion admin local estable.
+- [x] Cashbox opens. Result/evidence: caja abierta local.
+- [x] Invoice is created with patient name. Result/evidence: factura local Paciente Validado.
+- [x] Payment is registered. Result/evidence: pago local confirmado.
+- [x] Receipt preview opens. Result/evidence: recibo institucional visible.
+- [x] Invoice history and reprint work. Result/evidence: historial local filtra y reimprime.
+- [x] Reports load. Result/evidence: reporte del dia abre localmente.
+- [x] Backup request from UI changes from `pending` to `success`. Result/evidence: backup local completado.
+
+## Evidence
+
+- Screenshot/photo/log reference per step: qa/evidence/local-server-2026-07-06
+- Notes: Validacion local completa.
+MARKDOWN;
     }
 
     private function completedLanProof(): string

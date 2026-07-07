@@ -8194,3 +8194,24 @@ La pantalla de soporte no debe pedir una direccion LAN cuando el alcance aprobad
 ### Decision
 
 Configurar una IP LAN y completar la evidencia de segunda PC no son lo mismo. La version monocomputadora no exige segunda PC, pero si el despliegue es multi-PC, Backups/readiness debe seguir mostrando esa prueba como pendiente hasta que exista evidencia real.
+## 343. Fase Backend/QA - Resumen publico usa evidencia local
+
+### Cambios
+
+- `BuildOperationalStatusAction` selecciona `LOCAL_SERVER_VALIDATION_PROOF` para `APP_URL` loopback y mantiene `LAN_CLIENT_VALIDATION_PROOF` para multi-PC.
+- `SystemStatusController::baseStatus()` incluye `networkStatus()` para que el resumen publico pueda distinguir monocomputadora de LAN.
+- El parser de evidencias acepta CRLF en campos y checks, necesario para archivos `.md` editados en Windows.
+- Se agrega regresion para `/api/system/status-summary` con proof local completo.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec backend php artisan test tests/Feature/SystemStatusTest.php --filter=public_summary_uses_local_server_proof` | RED inicial: devolvia `LAN_ACCESS`; luego OK. |
+| `docker compose exec backend php artisan test tests/Feature/SystemStatusTest.php` | OK: 24 tests, 167 assertions. |
+| `docker compose exec backend vendor/bin/pint --test` | OK: 432 files. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=1G --no-progress` | OK. |
+
+### Decision
+
+El resumen publico de estado debe seguir el mismo modo seleccionado que el readiness completo. En monocomputadora no debe pedir prueba de segunda PC, y los archivos de evidencia creados en Windows deben validarse aunque usen CRLF.
