@@ -713,7 +713,7 @@ describe('BackupsView', () => {
     expect(screen.queryByText(/worker|scheduler/i)).not.toBeInTheDocument();
   });
 
-  it('shows automatic backup heartbeat status in human terms', async () => {
+  it('keeps automatic backup scheduler diagnostics behind support details', async () => {
     const status = systemStatusFixture();
     vi.mocked(apiClient.getSystemStatus).mockResolvedValue({
       ...status,
@@ -737,8 +737,14 @@ describe('BackupsView', () => {
 
     renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
 
-    expect(await screen.findByText(/respaldos automaticos sin ejecucion registrada/i)).toBeInTheDocument();
+    await screen.findByText(/^Todo bien$/i);
+
+    expect(screen.queryByText(/respaldos automaticos sin ejecucion registrada/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/scheduler/i)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /ver detalle de soporte/i }));
+
+    expect(await screen.findByText(/respaldos automaticos sin ejecucion registrada/i)).toBeInTheDocument();
   });
 
   it('prevents duplicate backup downloads while the file request is pending', async () => {

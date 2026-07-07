@@ -8474,3 +8474,23 @@ La caja puede seguir usando los endpoints compartidos del backend, pero la front
 ### Decision
 
 Usuarios deja de ser una pantalla monolitica. La vista principal coordina estado y reglas de acceso; la UI pesada vive en componentes por responsabilidad sin relajar seguridad ni auditoria.
+## 357. Fase Respaldos - Ocultar diagnostico automatico en vista normal
+
+### Cambios
+
+- La tarjeta principal de estado operativo deja de mostrar el diagnostico del programador de respaldos automaticos.
+- El mismo estado humano queda disponible dentro de `Ver detalle de soporte` para revision tecnica.
+- La vista normal conserva KPIs y alertas operativas sin exponer jerga de scheduler/worker al operador de caja.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- BackupsView.test.tsx --run` | RED inicial: el diagnostico automatico aparecia visible; luego OK: 34 tests. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `git diff --check` | OK. |
+
+### Decision
+
+Respaldos debe responder primero si el hospital puede confiar en copias recientes. Los detalles del programador automatico siguen disponibles para soporte, pero no compiten con el estado operativo normal.

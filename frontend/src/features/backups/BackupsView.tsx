@@ -502,15 +502,6 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                   </StatusBadge>
                 </div>
                 <p className="mt-1 max-w-3xl text-sm leading-6">{operationalStatus.description}</p>
-                <p className={`mt-2 text-xs ${
-                  automaticBackupHeartbeat.tone === 'success'
-                    ? 'text-success-foreground'
-                    : automaticBackupHeartbeat.tone === 'warning'
-                      ? 'text-warning'
-                      : 'text-muted-foreground'
-                }`}>
-                  {automaticBackupHeartbeat.label}
-                </p>
               </div>
               <Button
                 type="button"
