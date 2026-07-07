@@ -251,8 +251,10 @@ export const apiClient = {
     return billing.voidPayment(invoiceId, paymentId, { reason }, options);
   },
 
-  async getCurrentCashSession(): Promise<CashSession | null> {
-    return cash.getCurrentCashSession();
+  async getCurrentCashSession(
+    options: Parameters<typeof cash.getCurrentCashSession>[0] = {},
+  ): Promise<CashSession | null> {
+    return cash.getCurrentCashSession(options);
   },
 
   async getCashSessions(

@@ -19,10 +19,13 @@ class CashSessionController extends Controller
         CurrentCashSessionRequest $request,
         BuildCashReconciliationAction $buildCashReconciliation,
     ): JsonResponse {
+        $scope = (string) ($request->validated()['scope'] ?? 'own');
+        $canViewClosableSession = $scope === 'closable' && $request->user()->can('cash.close_any');
+
         $session = CashRegisterSession::query()
             ->with(['user:id,name,username', 'closedBy:id,name,username'])
-            ->where('user_id', $request->user()->id)
             ->where('status', CashRegisterSession::STATUS_OPEN)
+            ->when(! $canViewClosableSession, fn ($query) => $query->where('user_id', $request->user()->id))
             ->latest('opened_at')
             ->first();
 

@@ -19,8 +19,9 @@ export const cash = {
     return apiClient.request<{ data: CashSession[]; meta: PaginatedMeta }>(`/api/cash-sessions?${params.toString()}`);
   },
 
-  async getCurrentCashSession(): Promise<CashSession | null> {
-    const response = await apiClient.request<{ data?: CashSession | null }>('/api/cash-sessions/current');
+  async getCurrentCashSession(options: { scope?: 'own' | 'closable' } = {}): Promise<CashSession | null> {
+    const suffix = options.scope === 'closable' ? '?scope=closable' : '';
+    const response = await apiClient.request<{ data?: CashSession | null }>(`/api/cash-sessions/current${suffix}`);
     return response.data ?? null;
   },
 

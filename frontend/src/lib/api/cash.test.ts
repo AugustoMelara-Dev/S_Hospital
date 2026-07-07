@@ -24,6 +24,14 @@ describe('cash api client', () => {
     expect(mockedRequest).toHaveBeenCalledWith('/api/cash-sessions/current');
   });
 
+  it('can request the current closable cash session for supervisor rescue flow', async () => {
+    mockedRequest.mockResolvedValueOnce({ data: { id: 8, status: 'open' } });
+
+    await expect(cash.getCurrentCashSession({ scope: 'closable' })).resolves.toEqual({ id: 8, status: 'open' });
+
+    expect(mockedRequest).toHaveBeenCalledWith('/api/cash-sessions/current?scope=closable');
+  });
+
   it('allows opening cash session with a caller-managed idempotency key', async () => {
     mockedRequest.mockResolvedValueOnce({ data: { id: 7, status: 'open' } });
 

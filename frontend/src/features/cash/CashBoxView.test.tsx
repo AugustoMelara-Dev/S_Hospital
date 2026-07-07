@@ -353,6 +353,17 @@ describe('CashBoxView', () => {
     expect(getCurrentCashSession).toHaveBeenCalledTimes(1);
   });
 
+  it('requests a closable session when the operator can close any cashbox', async () => {
+    const getCurrentCashSession = vi.spyOn(apiClient, 'getCurrentCashSession').mockResolvedValue(cashSessionFixture({
+      user_id: 77,
+    }));
+
+    renderCashBox(<CashBoxView canCloseAnyCash onStatus={vi.fn()} />);
+
+    expect(await screen.findByRole('heading', { level: 1, name: /^caja$/i })).toBeInTheDocument();
+    expect(getCurrentCashSession).toHaveBeenCalledWith({ scope: 'closable' });
+  });
+
   it('shows a sanitized load error with retry and does not present a closed cashbox as loaded data', async () => {
     const getCurrentCashSession = vi.spyOn(apiClient, 'getCurrentCashSession')
       .mockRejectedValueOnce(new Error('SQLSTATE[40001]: Deadlock found in cash_register_sessions'))

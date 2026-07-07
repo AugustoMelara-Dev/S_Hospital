@@ -119,6 +119,7 @@ function HospitalApp() {
           canEditFiscalSettings={session.canEditFiscalSettings}
           canEditOperationalSettings={session.canEditOperationalSettings}
           canOpenCash={session.canOpenCash}
+          canCloseAnyCash={session.canCloseAnyCash}
           canCloseCash={session.canCloseCash}
           canViewBackups={session.canViewBackups}
           canViewCash={session.canViewCash}
@@ -156,6 +157,7 @@ function HospitalApp() {
       >
         <CashBoxView
           cashSession={cashSession ?? null}
+          canCloseAnyCash={session.canCloseAnyCash}
           canCloseCash={session.canCloseCash}
           canOpenCash={session.canOpenCash}
           canViewCashSessionReport={session.canViewCashSessionReports || session.canViewManagerialReports}

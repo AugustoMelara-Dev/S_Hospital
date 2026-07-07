@@ -9356,3 +9356,28 @@ La auditoria operativa debe identificar reimpresiones institucionales con el num
 ### Decision
 
 La pantalla de usuarios debe seguir siendo simple para admin/cajero basico, pero el contrato enviado al backend no debe quedar armado dentro del componente principal. Extraer el payload reduce riesgo al tocar permisos exactos sin exponer permisos tecnicos ni mezclar campos de creacion con campos de edicion.
+
+## 397. Fase Caja - Rescate de caja cerrable por supervisor
+
+### Cambios
+
+- `GET /api/cash-sessions/current` conserva el comportamiento de caja propia por defecto.
+- `GET /api/cash-sessions/current?scope=closable` permite a usuarios con `cash.close_any` ver la caja abierta que pueden cerrar.
+- El frontend distingue la cache de caja propia y caja cerrable para evitar mezclar POS con rescate supervisor.
+- `cash.close_any` habilita la accion de cierre en UI sin exigir `cash.close`.
+- `CashBoxView` pide `scope=closable` solo cuando recibe permiso explicito de cierre de cualquier caja.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec backend php artisan test --filter=CloseCashSessionTest::test_close_any_user_can_request_closable_current_cash_session_without_making_pos_current_global` | RED inicial: `scope=closable` devolvia `null`; luego OK. |
+| `docker compose exec backend php artisan test tests/Feature/Cash/CloseCashSessionTest.php` | OK: 6 tests, 27 assertions. |
+| `docker compose exec frontend npm run test -- cash.test CashBoxView useHospitalSession` | RED inicial: 3 fallas por API sin scope, vista sin prop y permiso no derivado; luego OK: 40 tests. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `docker compose exec backend vendor/bin/pint --test app/Http/Controllers/CashSessionController.php app/Http/Requests/Cash/CurrentCashSessionRequest.php tests/Feature/Cash/CloseCashSessionTest.php` | OK. |
+
+### Decision
+
+En instalacion monocomputadora, una caja abierta por otro usuario no debe dejar bloqueado el puesto si el supervisor tiene permiso de rescate. El cambio limita ese alcance a cierre/auditoria: la caja ajena se puede encontrar como cerrable, pero el flujo normal de POS y facturacion sigue consultando caja propia.

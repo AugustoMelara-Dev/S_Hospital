@@ -176,6 +176,29 @@ class CloseCashSessionTest extends TestCase
         $this->assertSame(CashRegisterSession::STATUS_CLOSED, CashRegisterSession::query()->findOrFail($sessionId)->status);
     }
 
+    public function test_close_any_user_can_request_closable_current_cash_session_without_making_pos_current_global(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashierWithOpenSession('0.00');
+        $sessionId = $this->currentOpenSessionIdFor($cashier);
+        $supervisor = User::factory()->create();
+        $supervisor->givePermissionTo([
+            Permission::findOrCreate('cash.view', 'web'),
+            Permission::findOrCreate('cash.close_any', 'web'),
+        ]);
+
+        $this->actingAs($supervisor)
+            ->getJson('/api/cash-sessions/current')
+            ->assertOk()
+            ->assertJsonPath('data', null);
+
+        $this->actingAs($supervisor)
+            ->getJson('/api/cash-sessions/current?scope=closable')
+            ->assertOk()
+            ->assertJsonPath('data.id', $sessionId)
+            ->assertJsonPath('data.user_id', $cashier->id);
+    }
+
     private function seedBillingBase(): void
     {
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);

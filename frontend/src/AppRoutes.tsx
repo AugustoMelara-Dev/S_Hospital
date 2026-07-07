@@ -26,6 +26,7 @@ type AppRoutesProps = {
   canEditFiscalSettings: boolean;
   canEditOperationalSettings: boolean;
   canOpenCash: boolean;
+  canCloseAnyCash: boolean;
   canCloseCash: boolean;
   canViewBackups: boolean;
   canViewCash: boolean;
@@ -57,6 +58,7 @@ export function AppRoutes({
   canEditFiscalSettings,
   canEditOperationalSettings,
   canOpenCash,
+  canCloseAnyCash,
   canCloseCash,
   canViewBackups,
   canViewCash,
@@ -130,6 +132,7 @@ export function AppRoutes({
           <PermissionGate allowed={canAccessRoute(appRoutes.cashbox, user.permissions)} reason={appRoutes.cashbox.deniedReason}>
             <CashBoxView
               cashSession={cashSession}
+              canCloseAnyCash={canCloseAnyCash}
               canCloseCash={canCloseCash}
               canOpenCash={canOpenCash}
               canViewCashSessionReport={canViewCashSessionReports || canViewManagerialReports}

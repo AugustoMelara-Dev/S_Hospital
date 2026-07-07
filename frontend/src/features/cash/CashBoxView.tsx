@@ -23,6 +23,7 @@ import { CashSessionHeader } from './components/CashSessionHeader';
 
 type CashBoxViewProps = {
   cashSession?: CashSession | null;
+  canCloseAnyCash?: boolean;
   canCloseCash?: boolean;
   canOpenCash?: boolean;
   canViewCashSessionReport?: boolean;
@@ -37,6 +38,7 @@ function centsToFloat(cents: number): number {
 
 export function CashBoxView({
   cashSession = null,
+  canCloseAnyCash = false,
   canCloseCash = true,
   canOpenCash = true,
   canViewCashSessionReport = false,
@@ -59,6 +61,7 @@ export function CashBoxView({
   const closeSessionIdempotencyKeyRef = useRef<string | null>(null);
   const openSessionIdempotencySignatureRef = useRef<string | null>(null);
   const closeSessionIdempotencySignatureRef = useRef<string | null>(null);
+  const currentSessionScope = canCloseAnyCash ? 'closable' : 'own';
 
   const {
     data: session,
@@ -67,8 +70,8 @@ export function CashBoxView({
     isLoading,
     refetch,
   } = useQuery({
-    queryKey: queryKeys.cashSessions.current(),
-    queryFn: () => apiClient.getCurrentCashSession(),
+    queryKey: queryKeys.cashSessions.current(currentSessionScope),
+    queryFn: () => apiClient.getCurrentCashSession(canCloseAnyCash ? { scope: 'closable' } : undefined),
     // Multi-PC LAN: another cashier may close the box. Poll every
     // 10s so this UI shows "Sin caja" within the same window without
     // a manual refresh.
