@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\AuditLog;
-use App\Models\CashRegisterSession;
 use App\Models\FiscalSetting;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
@@ -76,114 +75,25 @@ class FiscalSettingsTest extends TestCase
         ]);
     }
 
-    public function test_admin_can_save_institutional_and_thermal_receipt_paper_sizes(): void
+    public function test_fiscal_settings_update_rejects_legacy_receipt_paper_size_field(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
+
+        FiscalSetting::query()->create($this->validPayload());
 
         $admin = User::factory()->create();
         $admin->assignRole('admin');
 
-        foreach (['half_letter', 'letter', 'a5', '80mm', '58mm'] as $paperSize) {
-            $this->actingAs($admin)
-                ->putJson('/api/settings/fiscal', [
-                    ...$this->validPayload(),
-                    'receipt_paper_size' => $paperSize,
-                ])
-                ->assertOk()
-                ->assertJsonPath('data.receipt_paper_size', $paperSize);
-
-            $this->assertDatabaseHas('fiscal_settings', [
-                'receipt_paper_size' => $paperSize,
-            ]);
-        }
-
         $this->actingAs($admin)
             ->putJson('/api/settings/fiscal', [
-                ...$this->validPayload(),
-                'receipt_paper_size' => 'ticket-roll',
+                'receipt_paper_size' => 'letter',
             ])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('receipt_paper_size');
-    }
 
-    public function test_receipt_paper_size_update_returns_deprecation_warning(): void
-    {
-        $this->seed(RolesAndPermissionsSeeder::class);
-
-        $admin = User::factory()->create();
-        $admin->assignRole('admin');
-
-        $this->actingAs($admin)
-            ->putJson('/api/settings/fiscal', [
-                ...$this->validPayload(),
-                'receipt_paper_size' => 'letter',
-            ])
-            ->assertOk()
-            ->assertHeader(
-                'Warning',
-                '299 - "El campo receipt_paper_size en la configuracion fiscal esta obsoleto y se ha migrado a perfiles de impresion de recibos institucionales."',
-            )
-            ->assertJsonPath('warning', 'El campo receipt_paper_size en la configuración fiscal está obsoleto y se ha migrado a perfiles de impresión de recibos institucionales.')
-            ->assertJsonPath('_deprecated.receipt_paper_size', 'Migrado a perfiles de impresión de recibos institucionales.');
-    }
-
-    public function test_paper_size_change_with_open_cash_session_emits_mid_shift_warning(): void
-    {
-        $this->seed(RolesAndPermissionsSeeder::class);
-
-        FiscalSetting::query()->create($this->validPayload());
-
-        $admin = User::factory()->create();
-        $admin->assignRole('admin');
-
-        $cashier = User::factory()->create();
-        $cashier->assignRole('cajero');
-
-        $session = CashRegisterSession::query()->create([
-            'user_id' => $cashier->id,
-            'opening_amount' => '0.00',
-            'status' => CashRegisterSession::STATUS_OPEN,
-            'opened_at' => now(),
+        $this->assertDatabaseHas('fiscal_settings', [
+            'receipt_paper_size' => 'half_letter',
         ]);
-
-        $response = $this->actingAs($admin)
-            ->putJson('/api/settings/fiscal', [
-                ...$this->validPayload(),
-                'receipt_paper_size' => 'letter',
-            ])
-            ->assertOk();
-
-        $response->assertHeader('X-S-Hospital-Paper-Size-Warning', 'mid-shift-change');
-        $response->assertJsonPath('meta.paper_size_changed_mid_shift', true);
-        $response->assertJsonPath('meta.open_cash_session_id', $session->id);
-
-        $this->assertDatabaseHas('audit_logs', [
-            'user_id' => $admin->id,
-            'action' => 'fiscal_settings.paper_size_changed_mid_shift',
-            'entity_type' => 'App\\Models\\FiscalSetting',
-            'reason' => "Cambio de papel con caja abierta (#{$session->id}).",
-        ]);
-    }
-
-    public function test_paper_size_change_without_open_cash_session_does_not_warn(): void
-    {
-        $this->seed(RolesAndPermissionsSeeder::class);
-
-        FiscalSetting::query()->create($this->validPayload());
-
-        $admin = User::factory()->create();
-        $admin->assignRole('admin');
-
-        $response = $this->actingAs($admin)
-            ->putJson('/api/settings/fiscal', [
-                ...$this->validPayload(),
-                'receipt_paper_size' => 'letter',
-            ])
-            ->assertOk();
-
-        $response->assertJsonPath('meta.paper_size_changed_mid_shift', false);
-        $response->assertJsonPath('meta.open_cash_session_id', null);
-
         $this->assertDatabaseMissing('audit_logs', [
             'action' => 'fiscal_settings.paper_size_changed_mid_shift',
         ]);
@@ -642,7 +552,6 @@ class FiscalSettingsTest extends TestCase
             'hospital_name' => 'Hospital San Miguel',
             'rtn' => '08011999123456',
             'default_tax_rate' => '15.00',
-            'receipt_paper_size' => 'half_letter',
             'primary_color' => 'indigo',
             'address' => 'Barrio El Centro',
             'slogan' => 'Tu salud es nuestra prioridad',

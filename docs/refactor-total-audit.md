@@ -9096,3 +9096,28 @@ La compatibilidad historica no debe expandirse por seeders ni usuarios temporale
 ### Decision
 
 La separacion visual de configuracion debe estar respaldada por el contrato backend. Scanner y abonos parciales pertenecen a reglas operativas, no a la actualizacion fiscal/institucional normal.
+
+## 385. Fase Configuracion - Fiscal rechaza papel legacy
+
+### Cambios
+
+- `UpdateFiscalSettingsRequest` prohibe `receipt_paper_size`.
+- El endpoint fiscal deja de devolver warnings, headers y metadata de cambio de papel a mitad de caja.
+- El papel normal queda bajo perfiles de impresion institucionales; `fiscal_settings.receipt_paper_size` se conserva solo como fallback legacy.
+- La guia de migracion documenta que clientes legacy reciben 422 y deben migrar a `/settings/institutional-receipts`.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `Get-ChildItem backend/storage/app/private/backups` | OK: existen respaldos `.sql.gz.enc` recientes antes del cambio. |
+| `docker compose exec backend php artisan test tests/Feature/FiscalSettingsTest.php --filter=fiscal_settings_update_rejects_legacy_receipt_paper_size_field` | RED inicial: el endpoint fiscal aceptaba `receipt_paper_size`; luego OK: 1 test. |
+| `docker compose exec backend php artisan test tests/Feature/FiscalSettingsTest.php` | OK: 19 tests. |
+| `docker compose exec backend php artisan test tests/Feature/InvoiceCreationTest.php --filter=receipt_paper_size_uses_resolved_print_profile` | OK: 1 test. |
+| `docker compose exec backend php artisan test tests/Feature/ReceiptPrintProfileAdvancedFieldsTest.php tests/Feature/InstitutionalReceiptSettingsTest.php` | OK: 20 tests. |
+| `docker compose exec backend vendor/bin/pint --test app/Http/Requests/Fiscal/UpdateFiscalSettingsRequest.php app/Http/Controllers/FiscalSettingsController.php tests/Feature/FiscalSettingsTest.php` | OK. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=1G` | OK. |
+
+### Decision
+
+El tamano de papel no debe formar parte de la configuracion fiscal normal. Para entrega monocomputadora, la UI y el contrato backend deben guiar al operador hacia perfiles institucionales simples y evitar mezclar opciones tecnicas con datos fiscales.

@@ -14,10 +14,10 @@ antiguos.
 - `CreateInvoiceAction` resuelve el perfil con
   `ResolveReceiptPrintProfileAction` y guarda en `invoices.receipt_paper_size`
   un snapshot legacy normalizado para esa factura.
-- `fiscal_settings.receipt_paper_size` sigue existiendo como compatibilidad y
-  fallback operativo. No se debe eliminar todavia.
-- `PUT /api/settings/fiscal` todavia acepta `receipt_paper_size`, pero responde
-  con deprecacion cuando el campo viene en el payload.
+- `fiscal_settings.receipt_paper_size` sigue existiendo como fallback legacy
+  para datos antiguos. No se debe eliminar todavia.
+- `PUT /api/settings/fiscal` rechaza `receipt_paper_size`; el papel se cambia
+  solo desde perfiles de impresion institucionales.
 
 ## Mapeo de perfiles a snapshot legacy
 
@@ -47,24 +47,14 @@ Ruta:
 PUT /api/settings/fiscal
 ```
 
-Si el payload incluye `receipt_paper_size`, el backend:
-
-- valida contra `half_letter`, `letter`, `a5`, `80mm`, `58mm`;
-- guarda el valor por compatibilidad;
-- responde con `warning`;
-- responde con `_deprecated.receipt_paper_size`;
-- agrega el header HTTP `Warning: 299 - "...receipt_paper_size..."`;
-- si hay caja abierta y el valor cambio, agrega
-  `X-S-Hospital-Paper-Size-Warning: mid-shift-change`.
-
-Esto existe para clientes viejos y pruebas de compatibilidad, no para el flujo
-operativo normal.
+Si el payload incluye `receipt_paper_size`, el backend responde 422. Esto evita
+que clientes nuevos vuelvan a mezclar papel de recibo con configuracion fiscal.
+Los clientes antiguos deben migrar a perfiles de impresion institucionales.
 
 ### Configuracion operativa
 
-`GET /api/settings/operational` sigue devolviendo `receipt_paper_size` porque
-algunas pantallas lo usan como fallback/previsualizacion mientras el backend
-mantiene la fuente de verdad para la factura final.
+`GET /api/settings/operational` no devuelve `receipt_paper_size`; conserva solo
+la tasa por defecto y reglas de POS como scanner y abonos parciales.
 
 ### Perfiles institucionales
 
@@ -94,8 +84,8 @@ fuente y escala requieren `receipt_settings.advanced`.
    institucional.
 5. Mantener termicas como compatibilidad secundaria; no deben ser default
    global institucional.
-6. Mantener warnings para clientes que todavia escriben `receipt_paper_size` en
-   fiscal.
+6. Rechazar escrituras de `receipt_paper_size` en fiscal; la ruta normal es
+   `/settings/institutional-receipts`.
 
 ## Procedimiento para operadores
 
@@ -126,7 +116,7 @@ docker compose exec frontend npm run typecheck
 
 Pruebas clave esperadas:
 
-- `FiscalSettingsTest::test_receipt_paper_size_update_returns_deprecation_warning`
+- `FiscalSettingsTest::test_fiscal_settings_update_rejects_legacy_receipt_paper_size_field`
 - `InvoiceCreationTest::test_invoice_receipt_paper_size_uses_resolved_print_profile`
 - pruebas de `InstitutionalReceiptSettingsView` donde el usuario normal no ve
   campos avanzados y soporte con `receipt_settings.advanced` si puede verlos.
@@ -138,5 +128,5 @@ Pruebas clave esperadas:
 - `/settings/institutional-receipts` es el unico flujo normal para papel.
 - Una factura nueva guarda `invoices.receipt_paper_size` desde el perfil
   resuelto.
-- Clientes legacy reciben warning si mandan `receipt_paper_size` a fiscal.
+- Clientes legacy reciben 422 si mandan `receipt_paper_size` a fiscal.
 - Reimpresiones historicas siguen usando snapshots existentes.

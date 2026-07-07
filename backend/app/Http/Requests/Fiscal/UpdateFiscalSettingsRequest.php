@@ -3,7 +3,6 @@
 namespace App\Http\Requests\Fiscal;
 
 use App\Models\FiscalSetting;
-use App\Support\ReceiptPaperSize;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -37,7 +36,7 @@ class UpdateFiscalSettingsRequest extends FormRequest
             'scanner_enabled' => ['prohibited'],
             'partial_payments_enabled' => ['prohibited'],
             'receipt_template_mode' => ['sometimes', 'string', 'in:institutional'],
-            'receipt_paper_size' => ['sometimes', 'string', Rule::in(ReceiptPaperSize::values())],
+            'receipt_paper_size' => ['prohibited'],
             'government_line' => ['nullable', 'string', 'max:120'],
             'secretariat_line' => ['nullable', 'string', 'max:160'],
             'receipt_location' => ['nullable', 'string', 'max:160'],
