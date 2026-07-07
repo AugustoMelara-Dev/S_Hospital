@@ -165,6 +165,44 @@ describe('NewInvoiceView critical flows', () => {
 
     expect(screen.queryByRole('dialog', { name: /comprobante de factura/i })).not.toBeInTheDocument();
   });
+  it('uses local server wording when initial point-of-sale data cannot load', async () => {
+    const onStatus = vi.fn();
+    vi.mocked(globalThis.fetch).mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes('/api/settings/operational')) {
+        return {
+          ok: true,
+          json: async () => ({ data: { scanner_enabled: false, partial_payments_enabled: false } }),
+        } as Response;
+      }
+      throw new TypeError(`No connection for ${url}`);
+    });
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/billing/new']}>
+          <NewInvoiceView
+            cashSession={null}
+            canCreatePayments
+            canOpenCash
+            canViewCatalog
+            canViewReceipts
+            onOpenCash={vi.fn()}
+            onStatus={onStatus}
+          />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    await waitFor(() => {
+      expect(onStatus).toHaveBeenCalledWith(expect.stringMatching(/servidor local/i));
+    });
+    expect(onStatus).not.toHaveBeenCalledWith(expect.stringMatching(/servidor LAN/i));
+  });
 
   it('does not call emit twice when Emit button is double-clicked', async () => {
     renderNewInvoice();

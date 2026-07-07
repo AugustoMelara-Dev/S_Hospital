@@ -29,7 +29,7 @@ describe('ServiceCatalogTable', () => {
     rerender(
       <ServiceCatalogTable
         {...baseProps()}
-        loadError="El servidor LAN no pudo completar la operacion."
+        loadError="El servidor local no pudo completar la operacion."
         onRetry={onRetry}
       />,
     );

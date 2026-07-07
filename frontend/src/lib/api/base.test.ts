@@ -120,14 +120,15 @@ describe('resolveApiBaseUrl', () => {
       'fallback',
     );
 
-    expect(message).toMatch(/el servidor LAN no pudo completar la operación/i);
+    expect(message).toMatch(/el servidor local no pudo completar la operación/i);
+    expect(message).not.toMatch(/servidor LAN/i);
     expect(message).not.toMatch(/SQLSTATE/);
   });
 
-  it('stores safe local support evidence when the LAN server is unavailable', async () => {
+  it('stores safe local support evidence when the local server is unavailable', async () => {
     vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('failed to fetch DB_PASSWORD=secret'));
 
-    await expect(apiClient.request('/api/health')).rejects.toThrow(/servidor LAN/i);
+    await expect(apiClient.request('/api/health')).rejects.toThrow(/servidor local/i);
     await expect(apiClient.request('/api/health')).rejects.not.toThrow(/failed to fetch|DB_PASSWORD|secret/i);
 
     const stored = JSON.parse(window.localStorage.getItem('hospital_client_issue_log') ?? '[]') as Array<{
@@ -140,7 +141,8 @@ describe('resolveApiBaseUrl', () => {
       action: 'GET /api/health',
       module: 'api',
     });
-    expect(stored[0].safe_message).toMatch(/servidor LAN/i);
+    expect(stored[0].safe_message).toMatch(/servidor local/i);
+    expect(stored[0].safe_message).not.toMatch(/servidor LAN/i);
     expect(stored[0].safe_message).toMatch(/failed to fetch/i);
     expect(stored[0].safe_message).not.toMatch(/DB_PASSWORD|secret/i);
   });
@@ -158,7 +160,7 @@ describe('resolveApiBaseUrl', () => {
     });
 
     await expect(apiClient.request('/api/payments', { method: 'POST', body: JSON.stringify({ amount: '1.00' }) }))
-      .rejects.toThrow(/servidor LAN/i);
+      .rejects.toThrow(/servidor local/i);
 
     const stored = JSON.parse(window.localStorage.getItem('hospital_client_issue_log') ?? '[]') as Array<{
       action: string;

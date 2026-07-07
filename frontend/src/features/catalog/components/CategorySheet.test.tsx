@@ -172,7 +172,7 @@ describe('CategorySheet', () => {
     });
 
     expect(
-      await screen.findByText(/el servidor lan no pudo completar la operaci[oó]n/i),
+      await screen.findByText(/el servidor local no pudo completar la operaci[oó]n/i),
     ).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/SQLSTATE|storage\/logs|stack trace/);
     expect(onOpenChange).not.toHaveBeenCalledWith(false);

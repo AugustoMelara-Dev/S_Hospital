@@ -849,7 +849,7 @@ describe('ServiceSheet contract preservation', () => {
     });
 
     expect(
-      await screen.findByText(/el servidor lan no pudo completar la operaci[oó]n/i),
+      await screen.findByText(/el servidor local no pudo completar la operaci[oó]n/i),
     ).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/SQLSTATE|stack trace|storage\/logs/);
     expect(onOpenChange).not.toHaveBeenCalledWith(false);

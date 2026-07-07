@@ -116,7 +116,7 @@ describe('v1.2 shared design system components', () => {
     expect(screen.getByRole('status')).toHaveTextContent('La acción está bloqueada por el estado actual.');
 
     rerender(<OfflineState />);
-    expect(screen.getByRole('alert')).toHaveTextContent('Verifique la conexión LAN con el servidor local antes de continuar.');
+    expect(screen.getByRole('alert')).toHaveTextContent('Verifique la conexion local con el servidor antes de continuar.');
   });
 
   it('wraps receipt preview with print-safe hooks and format metadata', () => {

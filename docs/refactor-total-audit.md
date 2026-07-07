@@ -8272,3 +8272,24 @@ El acceso inicial debe tranquilizar al usuario sobre operacion local sin interne
 ### Decision
 
 El menu global debe describir el modo operativo local de la instalacion estable. LAN queda como capacidad de despliegue posterior, no como estado permanente del usuario.
+## 347. Fase Frontend/Monocomputadora - Errores usan servidor local
+
+### Cambios
+
+- `apiClient` y `userSafeErrorMessage` reemplazan los fallos genericos de `servidor LAN` por `servidor local`.
+- Nueva Factura cubre que el fallo inicial de caja/servicios no vuelva a guiar al cajero a un servidor LAN.
+- Catalogo, dashboard, ayuda, reportes y componentes compartidos actualizan mensajes y pruebas de error comun a conexion/servidor local.
+- `i18n` y el catalogo local de soporte quedan alineados con la terminologia monocomputadora.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- NewInvoiceView --run -t "local server wording"` | RED inicial: el sanitizador comun devolvia `servidor LAN`; luego OK. |
+| `docker compose exec frontend npm run test -- base NewInvoiceView --run` | OK: 62 tests. |
+| `docker compose exec frontend npm run test -- HelpView DashboardView ReportsExecutive design-system --run` | OK: 31 tests. |
+| `docker compose exec frontend npm run test -- CatalogView CategorySheet ServiceSheet ServiceCatalogTable --run` | OK: 54 tests. |
+
+### Decision
+
+Los mensajes de error comunes deben pedir revisar el servidor local. LAN puede aparecer como detalle saneado del navegador o como modo multi-PC explicito, pero no como instruccion base para la version monocomputadora.

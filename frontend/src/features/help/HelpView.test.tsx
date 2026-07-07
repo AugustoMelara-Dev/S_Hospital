@@ -13,7 +13,7 @@ describe('HelpView', () => {
       action: 'GET /api/health',
       module: 'api',
       route: '/help',
-      safe_message: 'No se pudo conectar con el servidor LAN.',
+      safe_message: 'No se pudo conectar con el servidor local.',
       technical_code: 'ApiError',
       occurred_at: '2026-05-31T12:00:00.000Z',
     }]));
@@ -75,11 +75,11 @@ describe('HelpView', () => {
     expect(evidenceButton).toHaveAttribute('aria-controls', 'support-evidence-details');
     fireEvent.click(screen.getByRole('button', { name: /preparar resumen/i }));
     expect((await screen.findByLabelText(/resumen seguro para soporte/i) as HTMLTextAreaElement).value).toContain('Resumen seguro para soporte');
-    await waitFor(() => expect(writeText).toHaveBeenCalledWith(expect.stringContaining('No se pudo conectar con el servidor LAN.')));
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith(expect.stringContaining('No se pudo conectar con el servidor local.')));
     expect(screen.getByRole('status')).toHaveTextContent(/resumen copiado/i);
     fireEvent.click(evidenceButton);
     expect(evidenceButton).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getAllByText(/no se pudo conectar con el servidor lan/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/no se pudo conectar con el servidor local/i).length).toBeGreaterThan(0);
     expect(screen.queryByText(/system\.status\.view|backups\.view|\/admin|\/settings/i)).not.toBeInTheDocument();
   });
 });

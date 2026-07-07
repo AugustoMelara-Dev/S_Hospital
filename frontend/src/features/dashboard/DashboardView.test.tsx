@@ -223,7 +223,7 @@ describe('DashboardView', () => {
 
     expect(await screen.findByText(/resumen no disponible/i)).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/SQLSTATE|stack trace|storage\/logs/i);
-    expect(onStatus).toHaveBeenCalledWith(expect.stringMatching(/servidor lan/i));
+    expect(onStatus).toHaveBeenCalledWith(expect.stringMatching(/servidor local/i));
   });
 
   it('does not request the dashboard report when the user lacks managerial reports permission', async () => {

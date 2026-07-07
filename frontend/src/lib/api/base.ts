@@ -129,7 +129,7 @@ export function userSafeErrorMessage(error: unknown, fallback: string): string {
   }
 
   if (error instanceof ApiError && error.status === 429) {
-    return 'Demasiados intentos. Por seguridad local LAN, su acceso ha sido bloqueado temporalmente. Por favor espere 60 segundos antes de intentar de nuevo.';
+    return 'Demasiados intentos. Por seguridad local, su acceso ha sido bloqueado temporalmente. Por favor espere 60 segundos antes de intentar de nuevo.';
   }
 
   if (error instanceof ApiError && error.status === 409) {
@@ -137,7 +137,7 @@ export function userSafeErrorMessage(error: unknown, fallback: string): string {
   }
 
   if (error instanceof ApiError && error.status >= 500) {
-    return 'El servidor LAN no pudo completar la operación. Revise el servidor local e intente de nuevo.';
+    return 'El servidor local no pudo completar la operación. Revise el servidor local e intente de nuevo.';
   }
 
   if (
@@ -250,7 +250,7 @@ export function resolveApiBaseUrl(
 }
 
 function networkError(error?: unknown): ApiError {
-  const baseMessage = 'No se pudo conectar con el servidor LAN. Revise que el servidor local este encendido y vuelva a intentar.';
+  const baseMessage = 'No se pudo conectar con el servidor local. Revise que el servidor local este encendido y vuelva a intentar.';
   const rawDetail = error instanceof Error ? error.message : error === undefined ? '' : String(error);
   const safeDetail = safeClientMessage(rawDetail);
   const supportMessage = safeDetail ? `${baseMessage} Detalle seguro del navegador: ${safeDetail}` : baseMessage;

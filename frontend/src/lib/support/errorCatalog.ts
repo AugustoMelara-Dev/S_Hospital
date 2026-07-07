@@ -24,7 +24,7 @@ export function describeClientIssue(error: unknown): ClientIssueDescriptor {
       return {
         severity: 'error',
         technicalCode: 'NETWORK_UNAVAILABLE',
-        message: 'No se pudo conectar con el servidor LAN.',
+        message: 'No se pudo conectar con el servidor local.',
       };
     }
 
@@ -48,7 +48,7 @@ export function describeClientIssue(error: unknown): ClientIssueDescriptor {
       return {
         severity: 'error',
         technicalCode: `HTTP_${status}`,
-        message: 'El servidor LAN no pudo completar la operacion.',
+        message: 'El servidor local no pudo completar la operacion.',
       };
     }
 

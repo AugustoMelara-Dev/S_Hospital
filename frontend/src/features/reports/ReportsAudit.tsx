@@ -200,7 +200,7 @@ export function ReportsAudit({
       {isError ? (
         <ErrorState
           title="No se pudo cargar la auditoria"
-          description="Verifique la conexion LAN o sus permisos."
+          description="Verifique la conexion local o sus permisos."
           action={
             <Button type="button" variant="secondary" onClick={() => void refetch()}>
               Reintentar

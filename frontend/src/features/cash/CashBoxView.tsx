@@ -222,7 +222,7 @@ export function CashBoxView({
     const refreshed = await refetch();
     if (refreshed.isError) {
       setClosingAmountError(null);
-      setFormAlert('No se pudo actualizar caja antes de cerrar. Revise la conexion LAN y vuelva a intentar.');
+      setFormAlert('No se pudo actualizar caja antes de cerrar. Revise la conexion local y vuelva a intentar.');
       return;
     }
     const sessionForClose = refreshed.data ?? activeSession;

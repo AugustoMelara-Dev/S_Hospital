@@ -129,7 +129,7 @@ describe('ReportsExecutive', () => {
       />,
     );
 
-    expect(screen.getByText(/revise la conexion LAN/i)).toBeInTheDocument();
+    expect(screen.getByText(/revise la conexion local/i)).toBeInTheDocument();
     expect(screen.queryByText(/error desconocido/i)).not.toBeInTheDocument();
   });
 

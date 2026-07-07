@@ -37,7 +37,7 @@ export const STRINGS = {
     changePasswordRequired: 'Debe cambiar su contraseña antes de operar.',
     sessionExpired: 'Sesión vencida. Vuelva a iniciar sesión para continuar.',
     permissionDenied: 'Su usuario no tiene permiso para esta acción. Solicite a un supervisor que revise su rol; no repita la operación varias veces.',
-    tooManyAttempts: 'Demasiados intentos. Por seguridad local LAN, su acceso ha sido bloqueado temporalmente. Por favor espere 60 segundos antes de intentar de nuevo.',
+    tooManyAttempts: 'Demasiados intentos. Por seguridad local, su acceso ha sido bloqueado temporalmente. Por favor espere 60 segundos antes de intentar de nuevo.',
   },
   pos: {
     title: 'Nueva factura',
@@ -74,8 +74,8 @@ export const STRINGS = {
     receipt: 'Recibo',
   },
   errors: {
-    serverUnavailable: 'No se pudo conectar con el servidor LAN. Revise que el servidor local este encendido y vuelva a intentar.',
-    serverError: 'El servidor LAN no pudo completar la operación. Revise el servidor local e intente de nuevo.',
+    serverUnavailable: 'No se pudo conectar con el servidor local. Revise que el servidor local este encendido y vuelva a intentar.',
+    serverError: 'El servidor local no pudo completar la operación. Revise el servidor local e intente de nuevo.',
     conflict: 'La acción no se pudo completar porque el estado actual cambió. Actualice la pantalla e intente de nuevo.',
     locked: 'Cuenta bloqueada por intentos fallidos. Espere 15 minutos o pida a un supervisor que reactive su usuario.',
   },

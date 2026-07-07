@@ -219,7 +219,7 @@ export function NewInvoiceView({
       });
       onCashSessionChange?.(currentCashSession);
     } catch (error) {
-      const message = userSafeErrorMessage(error, 'No se pudo cargar servicios y caja desde el servidor LAN.');
+      const message = userSafeErrorMessage(error, 'No se pudo cargar servicios y caja desde el servidor local.');
       dispatch({ type: 'SET_POINT_OF_SALE_LOAD_ERROR', payload: message });
       dispatch({ type: 'SET_ALERT_MESSAGE', payload: message });
       onStatus(message);

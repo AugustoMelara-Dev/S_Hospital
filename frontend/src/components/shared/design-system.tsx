@@ -535,7 +535,7 @@ export function InfoPanel({
 export function OfflineState({
   action,
   className,
-  description = 'Verifique la conexión LAN con el servidor local antes de continuar.',
+  description = 'Verifique la conexion local con el servidor antes de continuar.',
   title = 'Servidor local no disponible',
   ...props
 }: HTMLAttributes<HTMLDivElement> & { action?: ReactNode; description?: ReactNode; title?: ReactNode }) {
