@@ -12,10 +12,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { InfoPanel } from '@/components/shared';
-import { type AuthUser, type RoleDefinition, type UserPayload } from '@/lib/api';
+import { type AuthUser, type RoleDefinition, type RolePermission, type UserPayload } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { roleLabel } from '@/lib/role-labels';
-import { isCriticalPermission } from './critical-permissions';
+import { isCriticalPermission, permissionRiskLabel } from './permission-risk';
 
 const baseUserSchema = z.object({
   name: z.string().trim().min(1, 'El nombre es obligatorio.'),
@@ -53,10 +53,12 @@ type UserFormDialogProps = {
   onAdvancedPermissionModeChange?: (enabled: boolean) => void;
   onToggleUserPermission: (permissionName: string, checked: boolean) => void;
   onRoleChange?: (roleName: string) => void;
-  permissionCatalog: { module: string; label: string; permissions: { name: string; label: string }[] }[];
+  permissionCatalog: { module: string; label: string; permissions: PermissionOption[] }[];
   globalError: string | null;
   onSubmit: (data: UserFormData) => Promise<void> | void;
 };
+
+type PermissionOption = Pick<RolePermission, 'name' | 'label' | 'critical' | 'risk_level' | 'risk_label'>;
 
 export function UserFormDialog({
   open,
@@ -87,7 +89,11 @@ export function UserFormDialog({
       canAssignAdminRole || !isElevatedRole(role) || role.name === editingRoleName
     ));
   }, [canAssignAdminRole, editingRoleName, protectedRoleLocked, roles]);
-  const hasSelectedCriticalPermission = advancedPermissionMode && selectedUserPermissions.some(isCriticalPermission);
+  const permissionsByName = useMemo(() => {
+    return new Map(permissionCatalog.flatMap((group) => group.permissions.map((permission) => [permission.name, permission] as const)));
+  }, [permissionCatalog]);
+  const hasSelectedCriticalPermission = advancedPermissionMode
+    && selectedUserPermissions.some((permissionName) => isCriticalPermission(permissionsByName.get(permissionName)));
   const {
     register,
     unregister,
@@ -288,7 +294,8 @@ export function UserFormDialog({
                         {group.permissions.map((permission) => {
                           const id = `user-permission-${permission.name.replace(/[^A-Za-z0-9_-]/g, '-')}`;
                           const checked = selectedUserPermissions.includes(permission.name);
-                          const critical = isCriticalPermission(permission.name);
+                          const critical = isCriticalPermission(permission);
+                          const riskLabel = permissionRiskLabel(permission);
                           return (
                             <label key={permission.name} htmlFor={id} className="flex items-start gap-2 rounded-md p-2 text-sm hover:bg-muted/50">
                               <Checkbox
@@ -303,6 +310,9 @@ export function UserFormDialog({
                                   {critical && <Badge variant="warning">Permiso critico</Badge>}
                                 </span>
                                 <span className="block text-xs text-muted-foreground">{permission.name}</span>
+                                {critical && riskLabel && (
+                                  <span className="block text-xs text-warning-foreground">{riskLabel}</span>
+                                )}
                               </span>
                             </label>
                           );

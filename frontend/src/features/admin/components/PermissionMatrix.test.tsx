@@ -41,7 +41,16 @@ const catalog: PermissionCatalogGroup[] = [
   {
     module: 'audit',
     label: 'Auditoria',
-    permissions: [{ name: 'audit.view', module: 'audit', label: 'Ver auditoria' }],
+    permissions: [
+      {
+        name: 'audit.view',
+        module: 'audit',
+        label: 'Ver auditoria',
+        critical: true,
+        risk_level: 'critical',
+        risk_label: 'Permite revisar auditoria administrativa.',
+      },
+    ],
   },
 ];
 
@@ -100,6 +109,38 @@ describe('PermissionMatrix', () => {
     const auditPermission = screen.getByRole('rowheader', { name: /ver auditoria audit\.view/i });
 
     expect(within(auditPermission).getByText(/permiso critico/i)).toBeInTheDocument();
+  });
+
+  it('uses backend risk metadata when rendering critical labels', () => {
+    render(
+      <PermissionMatrix
+        roles={roles}
+        permissionCatalog={[
+          {
+            module: 'support',
+            label: 'Soporte',
+            permissions: [
+              {
+                name: 'support.remote_unlock',
+                module: 'support',
+                label: 'Desbloquear soporte remoto',
+                critical: true,
+                risk_level: 'critical',
+                risk_label: 'Permite habilitar soporte tecnico temporal.',
+              },
+            ],
+          },
+        ]}
+      />,
+    );
+    openPermissionMatrix();
+
+    const supportPermission = screen.getByRole('rowheader', {
+      name: /desbloquear soporte remoto support\.remote_unlock/i,
+    });
+
+    expect(within(supportPermission).getByText(/permiso critico/i)).toBeInTheDocument();
+    expect(within(supportPermission).getByText(/habilitar soporte tecnico temporal/i)).toBeInTheDocument();
   });
 
   it('returns null when no roles or catalog are provided', () => {

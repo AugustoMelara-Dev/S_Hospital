@@ -26,6 +26,16 @@ const permissionCatalog = [
   },
 ];
 
+function criticalPermission(name: string, label: string) {
+  return {
+    name,
+    label,
+    critical: true,
+    risk_level: 'critical',
+    risk_label: 'Permiso operativo sensible.',
+  };
+}
+
 const baseUser: AuthUser = {
   id: 1,
   name: 'Admin Demo',
@@ -151,10 +161,7 @@ describe('UserFormDialog', () => {
             module: 'receipts',
             label: 'Recibos',
             permissions: [
-              {
-                name: 'receipt_settings.advanced',
-                label: 'Modo soporte tecnico de recibos',
-              },
+              criticalPermission('receipt_settings.advanced', 'Modo soporte tecnico de recibos'),
             ],
           },
         ]}
@@ -167,6 +174,43 @@ describe('UserFormDialog', () => {
       screen.getByRole('checkbox', { name: /modo soporte tecnico de recibos/i }),
     ).toBeInTheDocument();
     expect(screen.getByText(/permiso critico/i)).toBeInTheDocument();
+  });
+
+  it('uses backend risk metadata for critical direct permissions outside the local catalog names', () => {
+    render(
+      <UserFormDialog
+        open
+        onOpenChange={vi.fn()}
+        editingUser={baseUser}
+        roles={roles}
+        canManageRoles
+        advancedPermissionMode
+        onAdvancedPermissionModeChange={vi.fn()}
+        selectedUserPermissions={['support.remote_unlock']}
+        onToggleUserPermission={vi.fn()}
+        permissionCatalog={[
+          {
+            module: 'support',
+            label: 'Soporte',
+            permissions: [
+              {
+                name: 'support.remote_unlock',
+                label: 'Desbloquear soporte remoto',
+                critical: true,
+                risk_level: 'critical',
+                risk_label: 'Permite habilitar soporte tecnico temporal.',
+              },
+            ],
+          },
+        ]}
+        globalError={null}
+        onSubmit={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText(/permiso critico/i)).toBeInTheDocument();
+    expect(screen.getByText(/habilitar soporte tecnico temporal/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /guardar cambios/i })).toBeDisabled();
   });
 
   it('requires explicit confirmation before saving a user with critical direct permissions', () => {
@@ -186,10 +230,7 @@ describe('UserFormDialog', () => {
             module: 'receipts',
             label: 'Recibos',
             permissions: [
-              {
-                name: 'receipt_settings.advanced',
-                label: 'Modo soporte tecnico de recibos',
-              },
+              criticalPermission('receipt_settings.advanced', 'Modo soporte tecnico de recibos'),
             ],
           },
         ]}
@@ -264,10 +305,7 @@ describe('UserFormDialog', () => {
             module: 'backups',
             label: 'Respaldos',
             permissions: [
-              {
-                name: 'backups.download',
-                label: 'Descargar respaldos',
-              },
+              criticalPermission('backups.download', 'Descargar respaldos'),
             ],
           },
         ]}
@@ -302,14 +340,8 @@ describe('UserFormDialog', () => {
             module: 'reports',
             label: 'Reportes',
             permissions: [
-              {
-                name: 'reports.managerial.view',
-                label: 'Ver reportes gerenciales',
-              },
-              {
-                name: 'reports.export',
-                label: 'Exportar reportes',
-              },
+              criticalPermission('reports.managerial.view', 'Ver reportes gerenciales'),
+              criticalPermission('reports.export', 'Exportar reportes'),
             ],
           },
         ]}
@@ -344,10 +376,7 @@ describe('UserFormDialog', () => {
             module: 'audit',
             label: 'Auditoria',
             permissions: [
-              {
-                name: 'audit.view',
-                label: 'Ver auditoria',
-              },
+              criticalPermission('audit.view', 'Ver auditoria'),
             ],
           },
         ]}
@@ -382,10 +411,7 @@ describe('UserFormDialog', () => {
             module: 'invoices',
             label: 'Facturacion',
             permissions: [
-              {
-                name: 'invoices.operate_any',
-                label: 'Operar cualquier factura',
-              },
+              criticalPermission('invoices.operate_any', 'Operar cualquier factura'),
             ],
           },
         ]}
@@ -420,10 +446,7 @@ describe('UserFormDialog', () => {
             module: 'fiscal',
             label: 'Fiscal',
             permissions: [
-              {
-                name: 'fiscal.sequences.reset',
-                label: 'Reiniciar correlativo fiscal',
-              },
+              criticalPermission('fiscal.sequences.reset', 'Reiniciar correlativo fiscal'),
             ],
           },
         ]}
@@ -458,10 +481,7 @@ describe('UserFormDialog', () => {
             module: 'users',
             label: 'Usuarios',
             permissions: [
-              {
-                name: 'users.disable',
-                label: 'Desactivar usuarios',
-              },
+              criticalPermission('users.disable', 'Desactivar usuarios'),
             ],
           },
         ]}

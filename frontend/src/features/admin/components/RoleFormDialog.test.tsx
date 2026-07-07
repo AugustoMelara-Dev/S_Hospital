@@ -10,6 +10,16 @@ const permissionCatalog = [
   },
 ];
 
+function criticalPermission(name: string, label: string) {
+  return {
+    name,
+    label,
+    critical: true,
+    risk_level: 'critical',
+    risk_label: 'Permiso operativo sensible.',
+  };
+}
+
 describe('RoleFormDialog', () => {
   it('renders the role name input and disables it for protected roles', () => {
     const { rerender } = render(
@@ -146,10 +156,7 @@ describe('RoleFormDialog', () => {
             module: 'receipts',
             label: 'Recibos',
             permissions: [
-              {
-                name: 'receipt_settings.advanced',
-                label: 'Modo soporte tecnico de recibos',
-              },
+              criticalPermission('receipt_settings.advanced', 'Modo soporte tecnico de recibos'),
             ],
           },
         ]}
@@ -168,6 +175,40 @@ describe('RoleFormDialog', () => {
     expect(screen.getByText(/permiso critico/i)).toBeInTheDocument();
   });
 
+  it('uses backend risk metadata for permissions outside the local catalog names', () => {
+    render(
+      <RoleFormDialog
+        open
+        onOpenChange={vi.fn()}
+        editingRole={null}
+        permissionCatalog={[
+          {
+            module: 'support',
+            label: 'Soporte',
+            permissions: [
+              {
+                name: 'support.remote_unlock',
+                label: 'Desbloquear soporte remoto',
+                critical: true,
+                risk_level: 'critical',
+                risk_label: 'Permite habilitar soporte tecnico temporal.',
+              },
+            ],
+          },
+        ]}
+        selectedPermissions={['support.remote_unlock']}
+        onTogglePermission={vi.fn()}
+        globalError={null}
+        onSubmit={vi.fn()}
+        isSaving={false}
+      />,
+    );
+
+    expect(screen.getByText(/permiso critico/i)).toBeInTheDocument();
+    expect(screen.getByText(/habilitar soporte tecnico temporal/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /crear rol/i })).toBeDisabled();
+  });
+
   it('requires explicit confirmation before saving a role with critical permissions', () => {
     render(
       <RoleFormDialog
@@ -179,10 +220,7 @@ describe('RoleFormDialog', () => {
             module: 'receipts',
             label: 'Recibos',
             permissions: [
-              {
-                name: 'receipt_settings.advanced',
-                label: 'Modo soporte tecnico de recibos',
-              },
+              criticalPermission('receipt_settings.advanced', 'Modo soporte tecnico de recibos'),
             ],
           },
         ]}
@@ -213,10 +251,7 @@ describe('RoleFormDialog', () => {
             module: 'settings',
             label: 'Configuracion',
             permissions: [
-              {
-                name: 'settings.operational.update',
-                label: 'Editar reglas operativas',
-              },
+              criticalPermission('settings.operational.update', 'Editar reglas operativas'),
             ],
           },
         ]}
@@ -244,10 +279,7 @@ describe('RoleFormDialog', () => {
             module: 'backups',
             label: 'Respaldos',
             permissions: [
-              {
-                name: 'backups.download',
-                label: 'Descargar respaldos',
-              },
+              criticalPermission('backups.download', 'Descargar respaldos'),
             ],
           },
         ]}
@@ -279,14 +311,8 @@ describe('RoleFormDialog', () => {
             module: 'reports',
             label: 'Reportes',
             permissions: [
-              {
-                name: 'reports.managerial.view',
-                label: 'Ver reportes gerenciales',
-              },
-              {
-                name: 'reports.export',
-                label: 'Exportar reportes',
-              },
+              criticalPermission('reports.managerial.view', 'Ver reportes gerenciales'),
+              criticalPermission('reports.export', 'Exportar reportes'),
             ],
           },
         ]}
@@ -318,10 +344,7 @@ describe('RoleFormDialog', () => {
             module: 'audit',
             label: 'Auditoria',
             permissions: [
-              {
-                name: 'audit.view',
-                label: 'Ver auditoria',
-              },
+              criticalPermission('audit.view', 'Ver auditoria'),
             ],
           },
         ]}
@@ -353,10 +376,7 @@ describe('RoleFormDialog', () => {
             module: 'invoices',
             label: 'Facturacion',
             permissions: [
-              {
-                name: 'invoices.operate_any',
-                label: 'Operar cualquier factura',
-              },
+              criticalPermission('invoices.operate_any', 'Operar cualquier factura'),
             ],
           },
         ]}
@@ -388,10 +408,7 @@ describe('RoleFormDialog', () => {
             module: 'fiscal',
             label: 'Fiscal',
             permissions: [
-              {
-                name: 'fiscal.sequences.reset',
-                label: 'Reiniciar correlativo fiscal',
-              },
+              criticalPermission('fiscal.sequences.reset', 'Reiniciar correlativo fiscal'),
             ],
           },
         ]}
@@ -423,10 +440,7 @@ describe('RoleFormDialog', () => {
             module: 'users',
             label: 'Usuarios',
             permissions: [
-              {
-                name: 'users.disable',
-                label: 'Desactivar usuarios',
-              },
+              criticalPermission('users.disable', 'Desactivar usuarios'),
             ],
           },
         ]}

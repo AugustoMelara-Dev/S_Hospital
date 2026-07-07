@@ -58,6 +58,7 @@ import type {
   ReceiptSeriesPayload,
   ReceiptTestPrintPayload,
   RoleDefinition,
+  RolePermission,
   PermissionCatalogGroup,
 } from './api/types';
 
@@ -120,6 +121,7 @@ export type {
   ReceiptSeriesPayload,
   ReceiptTestPrintPayload,
   RoleDefinition,
+  RolePermission,
   PermissionCatalogGroup,
   UserPayload,
   RolePayload,

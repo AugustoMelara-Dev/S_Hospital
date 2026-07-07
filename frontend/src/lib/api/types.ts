@@ -16,6 +16,9 @@ export type RolePermission = {
   name: string;
   module: string;
   label: string;
+  critical?: boolean;
+  risk_level?: 'critical' | 'standard' | string | null;
+  risk_label?: string | null;
 };
 
 export type RoleDefinition = {

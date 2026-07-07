@@ -51,11 +51,11 @@ class RoleManagementTest extends TestCase
         $settingsGroup = collect($response)->firstWhere('module', 'settings');
 
         $this->assertSame('Configuracion', $settingsGroup['label'] ?? null);
-        $this->assertContains([
-            'name' => 'settings.operational.update',
-            'module' => 'settings',
-            'label' => 'Editar reglas operativas',
-        ], $settingsGroup['permissions'] ?? []);
+        $permission = collect($settingsGroup['permissions'] ?? [])
+            ->firstWhere('name', 'settings.operational.update');
+
+        $this->assertSame('settings', $permission['module'] ?? null);
+        $this->assertSame('Editar reglas operativas', $permission['label'] ?? null);
     }
 
     public function test_permission_catalog_uses_human_labels_for_operational_permissions(): void
@@ -78,6 +78,30 @@ class RoleManagementTest extends TestCase
         $this->assertSame('Soporte tecnico de impresion', $permissions['receipt_settings.advanced']['label'] ?? null);
         $this->assertSame('Editar usuarios y roles', $permissions['users.update']['label'] ?? null);
         $this->assertSame('Marcar receta de dialisis', $permissions['patients.mark_dialysis_prescription']['label'] ?? null);
+    }
+
+    public function test_permission_catalog_marks_elevated_permissions_with_risk_metadata(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->userWithRole('admin');
+
+        $catalog = collect($this->actingAs($admin)
+            ->getJson('/api/admin/roles')
+            ->assertOk()
+            ->json('permission_catalog'));
+
+        $permissions = $catalog
+            ->flatMap(fn (array $group): array => $group['permissions'] ?? [])
+            ->keyBy('name');
+
+        $this->assertSame(true, $permissions['backups.download']['critical'] ?? null);
+        $this->assertSame('critical', $permissions['backups.download']['risk_level'] ?? null);
+        $this->assertSame('Permite descargar respaldos con datos hospitalarios.', $permissions['backups.download']['risk_label'] ?? null);
+
+        $this->assertSame(false, $permissions['cash.view']['critical'] ?? null);
+        $this->assertSame('standard', $permissions['cash.view']['risk_level'] ?? null);
+        $this->assertNull($permissions['cash.view']['risk_label'] ?? null);
+        $this->assertArrayNotHasKey('users.assign_admin_role', $permissions->all());
     }
 
     public function test_admin_can_create_custom_role_and_assign_it_to_user(): void

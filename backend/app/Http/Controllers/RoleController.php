@@ -158,6 +158,7 @@ class RoleController extends Controller
                 'name' => $permission->name,
                 'module' => $this->moduleForPermission($permission->name),
                 'label' => $this->labelForPermission($permission->name),
+                ...RoleCatalog::permissionRiskMetadata($permission->name),
             ];
         }
 
@@ -170,7 +171,7 @@ class RoleController extends Controller
     }
 
     /**
-     * @return list<array{module: string, label: string, permissions: list<array{name: string, module: string, label: string}>}>
+     * @return list<array{module: string, label: string, permissions: list<array{name: string, module: string, label: string, critical: bool, risk_level: 'critical'|'standard', risk_label: string|null}>}>
      */
     private function permissionCatalog(): array
     {
@@ -188,6 +189,7 @@ class RoleController extends Controller
                         'name' => $permission->name,
                         'module' => $module,
                         'label' => $this->labelForPermission($permission->name),
+                        ...RoleCatalog::permissionRiskMetadata($permission->name),
                     ])
                     ->values()
                     ->all(),

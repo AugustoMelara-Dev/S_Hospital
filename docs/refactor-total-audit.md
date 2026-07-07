@@ -8732,3 +8732,30 @@ La seguridad de impresion no depende solo de ocultar controles en frontend. Aunq
 ### Decision
 
 Reportes avanza hacia tres vistas claras: Ejecutivo para supervision rapida, Caja para conciliacion y Auditoria para control. Esto reduce ruido visual y evita que una ruta de resumen vuelva a convertirse en una pantalla con todos los detalles mezclados.
+
+## 368. Fase Usuarios - Metadata de riesgo desde backend
+
+### Cambios
+
+- `RoleCatalog` centraliza que permisos son operativamente sensibles y que texto de riesgo se muestra.
+- `/api/admin/roles` expone `critical`, `risk_level` y `risk_label` tanto en roles como en `permission_catalog`.
+- `RoleFormDialog`, `UserFormDialog` y `PermissionMatrix` dejan de depender de una lista local de permisos criticos.
+- La UI muestra el motivo de riesgo cuando el backend lo envia y mantiene confirmacion explicita para roles/permisos criticos.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec backend php artisan test --filter RoleManagementTest::test_permission_catalog_marks_elevated_permissions_with_risk_metadata` | RED inicial: `critical` era `null`; luego OK: 1 test. |
+| `docker compose exec frontend npm run test -- RoleFormDialog PermissionMatrix UserFormDialog --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED inicial: la UI ignoraba metadata nueva; luego OK: 38 tests. |
+| `docker compose exec backend php artisan test --filter RoleManagementTest` | OK: 12 tests. |
+| `docker compose exec backend php artisan test --filter RoleCatalogTest` | OK: 1 test. |
+| `docker compose exec frontend npm run test -- RoleFormDialog PermissionMatrix UserFormDialog UsersView --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 69 tests. |
+| `docker compose exec backend vendor/bin/pint --test app/Support/RoleCatalog.php app/Http/Controllers/RoleController.php tests/Feature/RoleManagementTest.php` | OK: 3 files. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M` | OK. |
+
+### Decision
+
+Usuarios y roles conservan una pantalla simple para monocomputadora, pero la clasificacion de permisos sensibles queda gobernada por backend. Asi se evita que futuras reglas de seguridad fiscal, respaldos o caja queden duplicadas en React.

@@ -8,8 +8,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { InfoPanel } from '@/components/shared';
-import { type RoleDefinition } from '@/lib/api';
-import { isCriticalPermission } from './critical-permissions';
+import { type RoleDefinition, type RolePermission } from '@/lib/api';
+import { isCriticalPermission, permissionRiskLabel } from './permission-risk';
 
 export type RoleFormPayload = {
   name: string;
@@ -20,13 +20,15 @@ type RoleFormDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   editingRole: RoleDefinition | null;
-  permissionCatalog: { module: string; label: string; permissions: { name: string; label: string }[] }[];
+  permissionCatalog: { module: string; label: string; permissions: PermissionOption[] }[];
   selectedPermissions: string[];
   onTogglePermission: (permissionName: string, checked: boolean) => void;
   globalError: string | null;
   onSubmit: (data: RoleFormPayload) => void;
   isSaving: boolean;
 };
+
+type PermissionOption = Pick<RolePermission, 'name' | 'label' | 'critical' | 'risk_level' | 'risk_label'>;
 
 export function RoleFormDialog({
   open,
@@ -43,7 +45,10 @@ export function RoleFormDialog({
   const [permissionFilter, setPermissionFilter] = useState('');
   const [criticalAccessConfirmed, setCriticalAccessConfirmed] = useState(false);
   const isProtected = editingRole?.protected === true;
-  const hasSelectedCriticalPermission = selectedPermissions.some(isCriticalPermission);
+  const permissionsByName = useMemo(() => {
+    return new Map(permissionCatalog.flatMap((group) => group.permissions.map((permission) => [permission.name, permission] as const)));
+  }, [permissionCatalog]);
+  const hasSelectedCriticalPermission = selectedPermissions.some((permissionName) => isCriticalPermission(permissionsByName.get(permissionName)));
 
   useEffect(() => {
     setRoleName(editingRole?.name ?? '');
@@ -180,7 +185,8 @@ export function RoleFormDialog({
                   {group.permissions.map((permission) => {
                     const id = `permission-${permission.name.replace(/[^A-Za-z0-9_-]/g, '-')}`;
                     const checked = selectedPermissions.includes(permission.name);
-                    const critical = isCriticalPermission(permission.name);
+                    const critical = isCriticalPermission(permission);
+                    const riskLabel = permissionRiskLabel(permission);
                     return (
                       <label key={permission.name} htmlFor={id} className="flex items-start gap-2 rounded-md p-2 text-sm hover:bg-muted/50">
                         <Checkbox
@@ -195,6 +201,9 @@ export function RoleFormDialog({
                             {critical && <Badge variant="warning">Permiso critico</Badge>}
                           </span>
                           <span className="block text-xs text-muted-foreground">{permission.name}</span>
+                          {critical && riskLabel && (
+                            <span className="block text-xs text-warning-foreground">{riskLabel}</span>
+                          )}
                         </span>
                       </label>
                     );
