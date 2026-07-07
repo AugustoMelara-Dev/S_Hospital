@@ -8409,3 +8409,24 @@ El endpoint diario sigue disponible y probado en backend para compatibilidad ope
 ### Decision
 
 Un recibo institucional emitido es evidencia documental y fiscal. Debe sobrevivir aunque todavia no exista evento de impresion; la correccion operacional es anulacion auditada, nunca borrado directo.
+
+## 354. Fase Usuarios - Bloquear borrado directo de usuarios
+
+### Cambios
+
+- `User` agrega guard de modelo para impedir `delete()` directo.
+- `UserManagementTest` cubre que un usuario cajero permanece en base de datos y que el flujo permitido es desactivacion auditada con motivo.
+- Se conserva el flujo existente de `/api/admin/users/{user}/toggle-active`, revocacion de tokens y auditoria de ciclo de vida.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec backend php artisan test --filter=test_user_cannot_be_deleted_and_must_be_deactivated` | RED inicial: el usuario se eliminaba; luego OK: 1 test / 5 assertions. |
+| `docker compose exec backend php artisan test --filter=UserManagementTest` | OK: 43 tests / 191 assertions. |
+| `docker compose exec backend php artisan test --filter=InternalControlAuditTest` | OK: 7 tests / 54 assertions. |
+| `docker compose exec backend vendor/bin/pint --test app/Models/User.php tests/Feature/UserManagementTest.php` | OK. |
+
+### Decision
+
+Los usuarios son parte de la trazabilidad de caja, facturacion, respaldos y auditoria. En la version monocomputadora tambien deben conservarse; retirar acceso significa desactivar con motivo, no borrar el registro historico.

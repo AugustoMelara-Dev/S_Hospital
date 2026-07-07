@@ -7,6 +7,7 @@ use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use LogicException;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
@@ -146,6 +147,34 @@ class UserManagementTest extends TestCase
             'entity_id' => $target->id,
             'reason' => $reason,
         ]);
+    }
+
+    public function test_user_cannot_be_deleted_and_must_be_deactivated(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->userWithRole('admin');
+        $target = $this->userWithRole('cajero');
+
+        try {
+            $target->delete();
+            $this->fail('Deleting a user must be blocked; use audited deactivation instead.');
+        } catch (LogicException $exception) {
+            $this->assertSame('Los usuarios no se eliminan; deben desactivarse con motivo y auditoria.', $exception->getMessage());
+        }
+
+        $this->assertDatabaseHas('users', [
+            'id' => $target->id,
+            'active' => true,
+        ]);
+
+        $this->actingAs($admin)
+            ->postJson("/api/admin/users/{$target->id}/toggle-active", [
+                'reason' => 'Usuario retirado de operacion diaria',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.active', false);
+
+        $this->assertFalse($target->refresh()->active);
     }
 
     public function test_deactivating_user_revokes_existing_api_tokens(): void
