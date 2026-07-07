@@ -37,7 +37,6 @@ type InvoiceHistoryViewProps = {
 };
 
 const today = localDateString();
-const HISTORY_INSTITUTIONAL_REPRINT_REASON = 'Reimpresión solicitada desde historial.';
 
 function invoicePatientNameLabel(invoice: Invoice | null) {
   const patientName = invoice?.patient_name?.trim();
@@ -175,7 +174,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       const institutionalReceipt = issuedInstitutionalReceipt(invoice);
       if (institutionalReceipt) {
         if (hasInstitutionalPrintEvents(institutionalReceipt)) {
-          await reprintInvoiceFromHistory(invoice, HISTORY_INSTITUTIONAL_REPRINT_REASON);
+          requestReprintInvoice(invoice);
 
           return;
         }

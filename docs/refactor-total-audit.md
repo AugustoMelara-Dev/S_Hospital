@@ -8800,3 +8800,22 @@ Catalogo mantiene la edicion rapida, pero ahora las modificaciones sensibles se 
 ### Decision
 
 La configuracion normal de recibos debe mostrar exactamente lo que el hospital imprimira. Si el perfil desactiva el espacio de sello/firma, la previsualizacion ya no mantiene un rastro visual contradictorio.
+
+## 371. Fase Historial - Motivo manual para reimprimir PDF institucional
+
+### Cambios
+
+- `Reimprimir PDF` en historial ya no registra una reimpresion institucional previamente impresa con un motivo fijo.
+- Cuando el recibo institucional ya tiene eventos de impresion, el flujo abre el mismo dialogo auditado de reimpresion y exige motivo minimo.
+- El backend sigue recibiendo el motivo escrito por el usuario junto con la llave de idempotencia del intento.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- src/features/invoices/InvoiceHistoryView.test.tsx --run -t "requires a manual reason before reprinting a previously printed institutional PDF"` | RED inicial: no aparecia dialogo y el backend recibia el motivo fijo; luego OK: 1 test. |
+| `docker compose exec frontend npm run test -- src/features/invoices/InvoiceHistoryView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 42 tests. |
+
+### Decision
+
+La reimpresion de un PDF institucional ya impreso es un evento auditado. El historial puede acelerar el acceso al PDF, pero no debe inventar el motivo: el cajero o supervisor debe escribirlo antes de abrir otra copia.

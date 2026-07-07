@@ -1218,7 +1218,7 @@ describe('InvoiceHistoryView', () => {
     expect(screen.queryByRole('menuitem', { name: /^Reimprimir$/i })).not.toBeInTheDocument();
   });
 
-  it('reprints a previously printed institutional receipt from history without asking for a reason', async () => {
+  it('requires a manual reason before reprinting a previously printed institutional PDF from history', async () => {
     vi.spyOn(apiBase, 'createClientIdempotencyKey').mockReturnValue('history-institutional-reprint-attempt-1');
     const paid = invoiceFixture({
       id: 34,
@@ -1253,11 +1253,16 @@ describe('InvoiceHistoryView', () => {
     expect(screen.queryByRole('menuitem', { name: /^Descargar$/i })).not.toBeInTheDocument();
     fireEvent.click(await screen.findByRole('menuitem', { name: /Reimprimir PDF/i }));
 
-    await waitFor(() => expect(registerPrint).toHaveBeenCalledWith(94, 'Reimpresión solicitada desde historial.', {
+    expect(await screen.findByRole('alertdialog', { name: /Reimprimir 000-001-01-00000034/i })).toBeInTheDocument();
+    expect(registerPrint).not.toHaveBeenCalled();
+    expect(getPdf).not.toHaveBeenCalled();
+
+    await submitReprintReason('Copia solicitada por auditoria');
+
+    await waitFor(() => expect(registerPrint).toHaveBeenCalledWith(94, 'Copia solicitada por auditoria', {
       idempotencyKey: 'history-institutional-reprint-attempt-1',
     }));
     expect(getPdf).toHaveBeenCalledWith(94);
-    expect(screen.queryByRole('alertdialog', { name: /Reimprimir 000-001-01-00000034/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/Reimprimir 000-001-01-00000034/i)).not.toBeInTheDocument();
     expect(getReceipt).not.toHaveBeenCalled();
     expect(onStatus).toHaveBeenCalledWith('PDF institucional REC-A-00000094 abierto.');
