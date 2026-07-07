@@ -8173,3 +8173,24 @@ La documentacion debe reflejar el alcance aprobado: menos complejidad de desplie
 ### Decision
 
 La pantalla de soporte no debe pedir una direccion LAN cuando el alcance aprobado es monocomputadora. La fuente de verdad sigue siendo el backend; frontend solo traduce el modo seleccionado a lenguaje operativo para admin/soporte.
+## 342. Fase Backups/QA - Validacion LAN visible solo en multi-PC
+
+### Cambios
+
+- `BackupsView` deja de ocultar `PENDING_LAN_CLIENT_VALIDATION` solo porque `APP_URL` ya tiene una IP LAN configurada.
+- La prueba de segunda PC LAN queda visible para despliegues multi-PC y se etiqueta como `Confirmar prueba desde segunda PC LAN`.
+- El modo loopback/monocomputadora sigue ignorando blockers heredados de segunda PC para no degradar readiness local.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- BackupsView --run -t "second-client LAN"` | RED inicial: no aparecia el aviso de pendientes; luego OK. |
+| `docker compose exec frontend npm run test -- BackupsView --run` | OK: 34 tests. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `git diff --check` | OK. |
+
+### Decision
+
+Configurar una IP LAN y completar la evidencia de segunda PC no son lo mismo. La version monocomputadora no exige segunda PC, pero si el despliegue es multi-PC, Backups/readiness debe seguir mostrando esa prueba como pendiente hasta que exista evidencia real.

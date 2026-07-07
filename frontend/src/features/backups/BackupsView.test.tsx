@@ -211,6 +211,32 @@ describe('BackupsView', () => {
     expect(screen.queryByText(/pendientes antes de operar/i)).not.toBeInTheDocument();
   });
 
+  it('keeps second-client LAN validation visible for multi-PC deployments', async () => {
+    const status = systemStatusFixture();
+    vi.mocked(apiClient.getSystemStatus).mockResolvedValue({
+      ...status,
+      readiness: {
+        ...status.readiness,
+        blockers: [
+          {
+            code: 'PENDING_LAN_CLIENT_VALIDATION',
+            label: 'Validar acceso desde una segunda computadora',
+            status: 'pending',
+          },
+        ],
+      },
+    });
+
+    renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
+
+    const pendingTitle = await screen.findByText(/pendientes antes de operar/i);
+    const pendingAlert = pendingTitle.closest('[data-slot="alert"]');
+
+    expect(pendingAlert).not.toBeNull();
+    expect(pendingAlert).toHaveTextContent(/segunda PC LAN/i);
+    expect(pendingAlert).not.toHaveTextContent(/acceso local/i);
+  });
+
   it('keeps support details aligned with local single-machine readiness', async () => {
     const status = systemStatusFixture();
     vi.mocked(apiClient.getSystemStatus).mockResolvedValue({

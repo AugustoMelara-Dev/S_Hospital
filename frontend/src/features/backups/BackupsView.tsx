@@ -166,7 +166,7 @@ function friendlyReadinessBlocker(code: string, fallback: string): string {
     APP_ENV_PRODUCTION: 'Completar modo de operación final',
     APP_DEBUG_OFF: 'Ocultar mensajes internos',
     APP_DEBUG_FALSE: 'Ocultar mensajes internos',
-    PENDING_LAN_CLIENT_VALIDATION: 'Confirmar acceso local en este equipo',
+    PENDING_LAN_CLIENT_VALIDATION: 'Confirmar prueba desde segunda PC LAN',
     PENDING_HARDWARE_VALIDATION: 'Validar recibo institucional carta, media carta o A5',
     PENDING_RESTORE_VALIDATION: 'Confirmar recuperacion con soporte',
     PENDING_CONCURRENCY_VALIDATION: 'Confirmar flujo de caja local',
@@ -177,8 +177,8 @@ function friendlyReadinessBlocker(code: string, fallback: string): string {
   return labels[code] ?? sanitizeTechnicalText(fallback);
 }
 
-function isLocalAccessValidationNoise(code: string, localAccessReady: boolean): boolean {
-  return localAccessReady && (
+function isLocalAccessValidationNoise(code: string, isSingleMachineMode: boolean): boolean {
+  return isSingleMachineMode && (
     code === 'PENDING_LAN_CLIENT_VALIDATION' ||
     code === 'LAN_CLIENT_VALIDATION_PROOF' ||
     code === 'PUBLIC_ROUTES_AVAILABLE'
@@ -213,18 +213,19 @@ function operationalSummary(status: SystemStatus): { level: OperationalStatus; l
   }
 
   const localAccessReady = localAccessIsReady(status);
+  const isSingleMachineMode = status.network.host_type === 'loopback';
   const needsReview =
     status.backups.pending_count > 0 ||
     status.readiness.blockers.some((blocker) => (
-      blocker.status !== 'validated' && !isLocalAccessValidationNoise(blocker.code, localAccessReady)
+      blocker.status !== 'validated' && !isLocalAccessValidationNoise(blocker.code, isSingleMachineMode)
     )) ||
     status.preflight.production_checks.some((check) => (
-      check.status !== 'validated' && !isLocalAccessValidationNoise(check.code, localAccessReady)
+      check.status !== 'validated' && !isLocalAccessValidationNoise(check.code, isSingleMachineMode)
     )) ||
     (status.runtime.pending_migration_count ?? 0) > 0 ||
     (!localAccessReady && status.preflight.public_routes.some((route) => route.status !== 'validated')) ||
     status.preflight.physical_proofs.some((proof) => (
-      proof.status !== 'validated' && !isLocalAccessValidationNoise(proof.code, localAccessReady)
+      proof.status !== 'validated' && !isLocalAccessValidationNoise(proof.code, isSingleMachineMode)
     ));
 
   if (needsReview) {
@@ -321,7 +322,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
   const operationalStatus = systemStatus ? operationalSummary(systemStatus) : null;
   const visibleReadinessBlockers = systemStatus
     ? systemStatus.readiness.blockers.filter((blocker) => (
-      !isLocalAccessValidationNoise(blocker.code, localAccessIsReady(systemStatus))
+      !isLocalAccessValidationNoise(blocker.code, systemStatus.network.host_type === 'loopback')
     ))
     : [];
   const latestBackupNotConfirmed = systemStatus?.backups.last_success_at
