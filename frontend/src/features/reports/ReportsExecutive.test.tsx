@@ -83,7 +83,7 @@ describe('ReportsExecutive', () => {
     downloadExecutivePdf.mockReset();
   });
 
-  it('renders the complete executive report panel sequence', () => {
+  it('keeps executive free of cash and audit detail panels', () => {
     render(
       <ReportsExecutive
         canExport
@@ -95,10 +95,7 @@ describe('ReportsExecutive', () => {
     const panelIds = [
       'executive-summary',
       'executive-alerts',
-      'cash-reconciliation-panel',
       'pending-aging-panel',
-      'voids-reversals-panel',
-      'audit-summary-panel',
       'payment-method-panel',
       'trend-chart',
       'service-ranking',
@@ -109,6 +106,9 @@ describe('ReportsExecutive', () => {
     panels.slice(1).forEach((panel, index) => {
       expect(panels[index].compareDocumentPosition(panel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     });
+    expect(screen.queryByTestId('cash-reconciliation-panel')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('voids-reversals-panel')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('audit-summary-panel')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /definicion de metricas/i })).not.toBeInTheDocument();
   });
 

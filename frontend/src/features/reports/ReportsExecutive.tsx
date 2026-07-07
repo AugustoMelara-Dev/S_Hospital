@@ -14,10 +14,7 @@ import { ExecutiveAlerts } from './components/ExecutiveAlerts';
 import { TrendChart } from './components/TrendChart';
 import { PaymentMethodPanel } from './components/PaymentMethodPanel';
 import { ServiceRanking } from './components/ServiceRanking';
-import { CashReconciliationPanel } from './components/CashReconciliationPanel';
 import { PendingAgingPanel } from './components/PendingAgingPanel';
-import { VoidsReversalsPanel } from './components/VoidsReversalsPanel';
-import { AuditSummaryPanel } from './components/AuditSummaryPanel';
 import {
   ReportFiltersPanel,
   computePresetRange,
@@ -191,10 +188,7 @@ export function ReportsExecutive({
         <div className="flex flex-col gap-5">
           <ExecutiveSummary report={report} />
           <ExecutiveAlerts report={report} />
-          <CashReconciliationPanel report={report} />
           <PendingAgingPanel report={report} />
-          <VoidsReversalsPanel report={report} />
-          <AuditSummaryPanel report={report} />
           <PaymentMethodPanel report={report} />
           <TrendChart report={report} />
           <ServiceRanking report={report} />

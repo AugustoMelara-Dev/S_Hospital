@@ -8710,3 +8710,25 @@ Respaldos mantiene la operacion normal clara para caja monocomputadora, mientras
 ### Decision
 
 La seguridad de impresion no depende solo de ocultar controles en frontend. Aunque un perfil termico o personalizado ya exista y este activo por soporte, un usuario normal de configuracion no puede asignarlo al flujo operativo sin permiso avanzado.
+
+## 367. Fase Reportes - Separar Ejecutivo de Caja y Auditoria
+
+### Cambios
+
+- `ReportsExecutive` deja de renderizar paneles de detalle de caja, anulaciones/reversos y auditoria.
+- El reporte ejecutivo conserva resumen, alertas, cartera pendiente, metodos de pago, tendencia y ranking de servicios.
+- `ReportsCash` y `ReportsAudit` quedan como rutas dueñas del detalle operativo correspondiente.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- src/features/reports/ReportsExecutive.test.tsx --run -t "keeps executive free"` | RED inicial: `cash-reconciliation-panel` seguia visible; luego OK: 1 test. |
+| `docker compose exec frontend npm run test -- ReportsExecutive ReportsCash ReportsAudit --run` | OK: 20 tests. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `git diff --check` | OK. |
+
+### Decision
+
+Reportes avanza hacia tres vistas claras: Ejecutivo para supervision rapida, Caja para conciliacion y Auditoria para control. Esto reduce ruido visual y evita que una ruta de resumen vuelva a convertirse en una pantalla con todos los detalles mezclados.
