@@ -10,6 +10,6 @@ describe('NewInvoiceView module architecture', () => {
     const source = readFileSync(join(moduleDir, 'NewInvoiceView.tsx'), 'utf8');
     const lines = source.split(/\r?\n/).length;
 
-    expect(lines).toBeLessThanOrEqual(720);
+    expect(lines).toBeLessThanOrEqual(710);
   });
 });

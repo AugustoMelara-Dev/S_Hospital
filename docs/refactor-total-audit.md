@@ -9268,3 +9268,26 @@ El backend sigue siendo la autoridad, pero la pantalla de caja debe anticipar bl
 ### Decision
 
 La administracion de usuarios necesita seguir usando permisos canonicos para seguridad y auditoria, pero la pantalla diaria no debe obligar al operador a leer identificadores tecnicos. Los componentes mantienen `permission.name` y `role.name` como datos internos, mientras la interfaz presenta nombres entendibles.
+
+## 393. Fase Facturacion - Payload de factura extraido
+
+### Cambios
+
+- La construccion del payload de nueva factura pasa a `buildInvoicePayload`.
+- El helper prueba que el nombre del paciente se envia trimmeado.
+- La receta de dialisis se mantiene como bandera de factura y nunca como dato por item.
+- `NewInvoiceView` conserva idempotencia y flujo de emision, pero reduce logica fiscal/contrato inline.
+- El guard arquitectonico de `NewInvoiceView` baja de 720 a 710 lineas.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- invoicePayload` | RED inicial: modulo inexistente; luego OK: 2 tests. |
+| `docker compose exec frontend npm run test -- invoicePayload NewInvoiceView` | OK: 33 tests. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+### Decision
+
+El backend sigue siendo la fuente de verdad para totales y reglas fiscales. Aun asi, el frontend debe formar un contrato limpio: paciente obligatorio como texto normalizado, items sin banderas especiales y receta de dialisis solo como autorizacion a nivel de factura.

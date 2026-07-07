@@ -18,6 +18,7 @@ import { NewInvoiceViewLayout } from './components/NewInvoiceViewLayout';
 import { useNewInvoiceScreenGuards } from './hooks/useNewInvoiceScreenGuards';
 import { useNewInvoiceShortcuts } from './hooks/useNewInvoiceShortcuts';
 import { useNewInvoiceValidation } from './hooks/useNewInvoiceValidation';
+import { buildInvoicePayload } from './invoicePayload';
 import { institutionalReceiptPdfFilename, openBlobInNewTab } from '@/lib/download';
 import { createClientIdempotencyKey } from '@/lib/api/base';
 import { payloadScopedIdempotencyKey, resetPayloadScopedIdempotencyKey } from '@/lib/api/idempotency';
@@ -354,16 +355,11 @@ export function NewInvoiceView({
     dispatch({ type: 'SET_ALERT_MESSAGE', payload: null });
     dispatch({ type: 'SET_WARNING_MESSAGE', payload: null });
     try {
-      const hasDialysis = canMarkDialysisPrescription && state.cartItems.some(item => item.dialysisPrescription);
-      const patientName = state.patientName.trim();
-      const invoicePayload = {
-        patient_name: patientName,
-        dialysis_prescription: hasDialysis,
-        items: state.cartItems.map((item) => ({
-          service_id: item.service.id,
-          quantity: item.quantity,
-        })),
-      };
+      const invoicePayload = buildInvoicePayload({
+        canMarkDialysisPrescription,
+        cartItems: state.cartItems,
+        patientName: state.patientName,
+      });
       const invoice = await apiClient.createInvoice(invoicePayload, {
         idempotencyKey: payloadScopedIdempotencyKey(
           submitInvoiceIdempotencyKeyRef,
