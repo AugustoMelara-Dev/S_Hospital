@@ -9141,3 +9141,24 @@ El tamano de papel no debe formar parte de la configuracion fiscal normal. Para 
 ### Decision
 
 Para una instalacion monocomputadora estable, las acciones principales deben ser recuperables con refrescar/volver y tener URLs canonicas. Reducir modales globales baja estado implicito y hace mas predecibles facturacion y caja.
+
+## 387. Fase Historial - Descargar recibo audita primera impresion
+
+### Cambios
+
+- `Descargar` en historial registra el primer evento de impresion institucional antes de pedir el PDF.
+- La descarga usa una llave idempotente propia por recibo para evitar duplicar auditoria en reintentos.
+- Despues de descargar correctamente, se invalidan auditoria y datos de facturacion para que la UI deje de tratar el recibo como primera impresion.
+- El flujo no pide motivo porque la accion solo aparece cuando el recibo aun no tiene eventos de impresion.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- InvoiceHistoryView -t "audits the first institutional receipt print before downloading from history"` | RED inicial: descarga no registraba evento; luego OK: 1 test. |
+| `docker compose exec frontend npm run test -- InvoiceHistoryView` | OK: 42 tests. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+
+### Decision
+
+Descargar el PDF institucional es una forma real de entregar o imprimir el recibo. La trazabilidad fiscal no debe depender de que el operador use especificamente `Ver recibo`; ambos caminos deben dejar auditoria antes de exponer el documento.

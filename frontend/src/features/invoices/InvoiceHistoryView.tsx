@@ -86,6 +86,8 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   const reverseIdempotencySignatureRef = useRef<string | null>(null);
   const reprintIdempotencyKeyRef = useRef<string | null>(null);
   const reprintIdempotencySignatureRef = useRef<string | null>(null);
+  const downloadReceiptIdempotencyKeyRef = useRef<string | null>(null);
+  const downloadReceiptIdempotencySignatureRef = useRef<string | null>(null);
   const receiptGenerationIdempotencyKeyRef = useRef<string | null>(null);
   const receiptGenerationIdempotencySignatureRef = useRef<string | null>(null);
   const actionRequestRef = useRef(0);
@@ -280,8 +282,23 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
 
     setLoadingActionInvoiceId(invoice.id);
     try {
+      const idempotencyKey = payloadScopedIdempotencyKey(
+        downloadReceiptIdempotencyKeyRef,
+        downloadReceiptIdempotencySignatureRef,
+        {
+          action: 'first-download-from-history',
+          receiptId: institutionalReceipt.id,
+        },
+      );
+      await apiClient.registerInstitutionalReceiptPrintEvent(institutionalReceipt.id, undefined, { idempotencyKey });
       const blob = await apiClient.getInstitutionalReceiptPdf(institutionalReceipt.id);
       downloadBlob(blob, institutionalReceiptPdfFilename(institutionalReceipt.receipt_number_full));
+      resetPayloadScopedIdempotencyKey(
+        downloadReceiptIdempotencyKeyRef,
+        downloadReceiptIdempotencySignatureRef,
+      );
+      queryClient.invalidateQueries({ queryKey: ['audit'] });
+      await invalidateBillingQueries(queryClient);
       onStatus(`PDF institucional ${institutionalReceipt.receipt_number_full} descargado.`);
     } catch (error) {
       onStatus(userSafeErrorMessage(error, 'No se pudo descargar el recibo institucional.'));

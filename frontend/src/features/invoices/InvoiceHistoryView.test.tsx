@@ -989,7 +989,8 @@ describe('InvoiceHistoryView', () => {
     expect(screen.queryByRole('dialog', { name: new RegExp(first.invoice_number) })).not.toBeInTheDocument();
   });
 
-  it('downloads an issued institutional receipt pdf without registering a reprint', async () => {
+  it('audits the first institutional receipt print before downloading from history', async () => {
+    vi.spyOn(apiBase, 'createClientIdempotencyKey').mockReturnValue('history-download-receipt-attempt-1');
     const paid = invoiceFixture({
       id: 41,
       invoice_number: '000-001-01-00000041',
@@ -997,6 +998,8 @@ describe('InvoiceHistoryView', () => {
       status: 'paid',
       institutional_receipt: institutionalReceiptFixture({ id: 141, receipt_number_full: 'REC-A-00000141' }),
     });
+    const registerPrint = vi.spyOn(apiClient, 'registerInstitutionalReceiptPrintEvent')
+      .mockResolvedValue({} as never);
     const getPdf = vi.spyOn(apiClient, 'getInstitutionalReceiptPdf')
       .mockResolvedValue(new Blob(['%PDF-download'], { type: 'application/pdf' }));
     const reprintInvoice = vi.spyOn(apiClient, 'reprintInvoice');
@@ -1012,6 +1015,9 @@ describe('InvoiceHistoryView', () => {
     await openInvoiceMenu(paid.invoice_number);
     fireEvent.click(await screen.findByRole('menuitem', { name: /Descargar/i }));
 
+    await waitFor(() => expect(registerPrint).toHaveBeenCalledWith(141, undefined, {
+      idempotencyKey: 'history-download-receipt-attempt-1',
+    }));
     await waitFor(() => expect(getPdf).toHaveBeenCalledWith(141));
     expect(downloadBlob).toHaveBeenCalledWith(
       expect.any(Blob),
