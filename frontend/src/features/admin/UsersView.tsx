@@ -3,7 +3,6 @@ import {
   type AuthUser,
   type PermissionCatalogGroup,
   type RoleDefinition,
-  type UserPayload,
   apiClient,
   userSafeErrorMessage,
 } from '@/lib/api';
@@ -16,7 +15,16 @@ import { PasswordResetDialog } from './components/PasswordResetDialog';
 import { UserRolesPanel } from './components/UserRolesPanel';
 import { UsersDirectoryPanel } from './components/UsersDirectoryPanel';
 import { UserStatusToggleDialog } from './components/UserStatusToggleDialog';
-import { hasProtectedRole, isHiddenPermission, sanitizePermissionCatalog, sanitizeRole, sanitizeRoles, visiblePermissionNames } from './users-view.helpers';
+import {
+  buildCreateUserPayload,
+  buildUpdateUserPayload,
+  hasProtectedRole,
+  isHiddenPermission,
+  sanitizePermissionCatalog,
+  sanitizeRole,
+  sanitizeRoles,
+  visiblePermissionNames,
+} from './users-view.helpers';
 
 type UsersViewProps = {
   onStatus: (message: string) => void;
@@ -234,32 +242,13 @@ export function UsersView({
 
     onStatus('Guardando usuario...');
     try {
-      const visibleSelectedUserPermissions = visiblePermissionNames(selectedUserPermissions);
       if (editingUser) {
-        const payload: Omit<UserPayload, 'password'> = {
-          name: data.name,
-          email: data.email,
-          username: data.username,
-          role: data.role,
-        };
-        if (advancedUserPermissionsMode) {
-          payload.permissions = visibleSelectedUserPermissions;
-        }
+        const payload = buildUpdateUserPayload(data, selectedUserPermissions, advancedUserPermissionsMode);
         const updated = await apiClient.updateUser(editingUser.id, payload);
         setUsers((current) => current.map((u) => (u.id === editingUser.id ? updated : u)));
         onStatus(`Usuario ${updated.name} actualizado correctamente.`);
       } else {
-        const payload: UserPayload = {
-          name: data.name,
-          email: data.email,
-          username: data.username,
-          password: data.password || '',
-          role: data.role,
-          active: true,
-        };
-        if (advancedUserPermissionsMode) {
-          payload.permissions = visibleSelectedUserPermissions;
-        }
+        const payload = buildCreateUserPayload(data, selectedUserPermissions, advancedUserPermissionsMode);
         const created = await apiClient.createUser(payload);
         setUsers((current) => [...current, created]);
         onStatus(`Usuario ${created.name} creado correctamente.`);

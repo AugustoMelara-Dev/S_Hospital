@@ -9334,3 +9334,25 @@ Abrir un PDF institucional desde historial equivale operativamente a entregar o 
 ### Decision
 
 La auditoria operativa debe identificar reimpresiones institucionales con el numero real del recibo aunque no venga `invoice_number` en el registro resumido. El backend ya envia `receipt_number_full`; el frontend debe preservarlo para trazabilidad visible.
+
+## 396. Fase Usuarios - Payload de usuario extraido
+
+### Cambios
+
+- La construccion del payload de crear/actualizar usuarios pasa a helpers testeados.
+- Crear usuario conserva `active: true` y password inicial, mientras actualizar excluye password y estado.
+- Los permisos directos solo se envian en modo avanzado y pasan por el filtro de permisos visibles.
+- El guard arquitectonico de `UsersView` baja de 440 a 430 lineas.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- users-view.helpers` | RED inicial: builders inexistentes; luego cubierto por la suite focalizada. |
+| `docker compose exec frontend npm run test -- users-view.helpers UsersView` | OK: 34 tests. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+### Decision
+
+La pantalla de usuarios debe seguir siendo simple para admin/cajero basico, pero el contrato enviado al backend no debe quedar armado dentro del componente principal. Extraer el payload reduce riesgo al tocar permisos exactos sin exponer permisos tecnicos ni mezclar campos de creacion con campos de edicion.
