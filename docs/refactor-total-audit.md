@@ -8819,3 +8819,24 @@ La configuracion normal de recibos debe mostrar exactamente lo que el hospital i
 ### Decision
 
 La reimpresion de un PDF institucional ya impreso es un evento auditado. El historial puede acelerar el acceso al PDF, pero no debe inventar el motivo: el cajero o supervisor debe escribirlo antes de abrir otra copia.
+
+## 372. Fase Respaldos - Bloquear respaldo manual si hay pendiente
+
+### Cambios
+
+- La pantalla de respaldos deshabilita `Crear respaldo` cuando el servidor reporta respaldos pendientes.
+- `BackupPageActions` muestra una razon operativa breve para esperar antes de solicitar otra copia.
+- Se cubre el flujo para evitar que el dialogo de creacion se abra mientras ya existe un respaldo pendiente.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- src/features/backups/BackupsView.test.tsx --run -t "blocks a new manual backup"` | RED inicial: el boton seguia activo; luego OK: 1 test. |
+| `docker compose exec frontend npm run test -- src/features/backups/BackupsView.test.tsx src/features/backups/BackupsView.architecture.test.ts --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 36 tests. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+### Decision
+
+En monocomputadora conviene evitar que el operador apile solicitudes de respaldo. Si ya hay una copia pendiente, la app prioriza esperar a que termine o revisar el estado del servidor antes de crear otra.

@@ -191,6 +191,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
           canCreate ? (
             <BackupPageActions
               busy={busy}
+              createDisabled={pendingCount > 0}
               creatingBackup={creatingBackup}
               onCreateRequest={() => setConfirmCreateOpen(true)}
               onRefresh={refreshOperationalStatus}
@@ -544,7 +545,6 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
 
         {showHistory && (
           <div className="space-y-4">
-
             <BackupHistoryTable
               backups={backupsList}
               canDownload={canDownload}

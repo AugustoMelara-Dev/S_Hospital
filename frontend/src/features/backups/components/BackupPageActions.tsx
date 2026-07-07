@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 
 type BackupPageActionsProps = {
   busy: boolean;
+  createDisabled?: boolean;
   creatingBackup: boolean;
   onCreateRequest: () => void;
   onRefresh: () => void;
@@ -11,12 +12,16 @@ type BackupPageActionsProps = {
 
 export function BackupPageActions({
   busy,
+  createDisabled = false,
   creatingBackup,
   onCreateRequest,
   onRefresh,
 }: BackupPageActionsProps) {
   return (
     <ActionBar align="end" fullWidthOnMobile>
+      {createDisabled ? (
+        <p className="text-sm text-muted-foreground">Espere a que termine el respaldo pendiente antes de crear otro.</p>
+      ) : null}
       <Button
         type="button"
         variant="outline"
@@ -33,7 +38,7 @@ export function BackupPageActions({
         size="sm"
         aria-busy={creatingBackup}
         onClick={onCreateRequest}
-        disabled={creatingBackup}
+        disabled={creatingBackup || createDisabled}
       >
         <Archive aria-hidden="true" className="h-4 w-4 mr-2" />
         {creatingBackup ? 'Creando...' : 'Crear respaldo'}

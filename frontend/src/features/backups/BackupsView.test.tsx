@@ -678,6 +678,32 @@ describe('BackupsView', () => {
     });
   });
 
+  it('blocks a new manual backup while another backup is pending on the server', async () => {
+    const status = systemStatusFixture();
+    vi.mocked(apiClient.getSystemStatus).mockResolvedValue({
+      ...status,
+      backups: {
+        ...status.backups,
+        pending_count: 1,
+      },
+    });
+    vi.mocked(apiClient.getBackups).mockResolvedValue({
+      data: [backupFixture({ status: 'pending', completed_at: null, checksum_sha256: null })],
+      meta: { current_page: 1, per_page: 15, total: 1 },
+    });
+    const createBackup = vi.spyOn(apiClient, 'createBackup');
+
+    renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
+
+    expect(await screen.findByText(/espere a que termine el respaldo pendiente/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^crear respaldo$/i })).toBeDisabled();
+
+    fireEvent.click(screen.getByRole('button', { name: /^crear respaldo$/i }));
+
+    expect(screen.queryByRole('alertdialog', { name: /crear respaldo local/i })).not.toBeInTheDocument();
+    expect(createBackup).not.toHaveBeenCalled();
+  });
+
   it('reports manual backup completion without exposing checksum terminology', async () => {
     const onStatus = vi.fn();
     vi.spyOn(apiClient, 'createBackup').mockResolvedValue(backupFixture({ id: 7 }));
