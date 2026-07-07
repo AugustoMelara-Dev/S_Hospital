@@ -10,12 +10,14 @@ import {
   type Service,
   userSafeErrorMessage,
 } from '../../lib/api';
-import { invoiceSchema } from '../../schemas/invoice.schema';
 import { useOperationalSettings } from '../../hooks/useFiscalSettings';
 import { newInvoiceReducer } from './state/reducer';
 import { getInitialNewInvoiceState } from './state/types';
 import { computeSimpleEstimate, isZeroMoney, parseLocalCents } from './state/posMath';
 import { NewInvoiceViewLayout } from './components/NewInvoiceViewLayout';
+import { useNewInvoiceScreenGuards } from './hooks/useNewInvoiceScreenGuards';
+import { useNewInvoiceShortcuts } from './hooks/useNewInvoiceShortcuts';
+import { useNewInvoiceValidation } from './hooks/useNewInvoiceValidation';
 import { institutionalReceiptPdfFilename, openBlobInNewTab } from '@/lib/download';
 import { createClientIdempotencyKey } from '@/lib/api/base';
 import { payloadScopedIdempotencyKey, resetPayloadScopedIdempotencyKey } from '@/lib/api/idempotency';
@@ -72,27 +74,12 @@ export function NewInvoiceView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    window.setTimeout(() => {
-      if (state.patientName.trim()) {
-        searchInputRef.current?.focus();
-        return;
-      }
-      patientInputRef.current?.focus();
-    }, 0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Dirty guard: warn if user tries to close tab/window with items in cart
-  useEffect(() => {
-    const isDirty = state.cartItems.length > 0;
-    if (!isDirty) return;
-    function handleBeforeUnload(e: BeforeUnloadEvent) {
-      e.preventDefault();
-    }
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [state.cartItems.length]);
+  useNewInvoiceScreenGuards({
+    cartItemsLength: state.cartItems.length,
+    patientInputRef,
+    patientName: state.patientName,
+    searchInputRef,
+  });
 
   useEffect(() => {
     if (!canViewCatalog) {
@@ -142,49 +129,35 @@ export function NewInvoiceView({
   );
   const canEmit = emitBlockReasons.length === 0;
 
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      const target = e.target as HTMLElement;
-      const isInsideDialog = Boolean(target.closest('[data-dialog-content], [role="dialog"], [role="alertdialog"]'));
-      const hasOpenOverlay = state.showConfirmation || state.showPayment || state.showSuccess || state.showReceipt || state.showClearConfirm;
+  const validateForm = useNewInvoiceValidation({
+    cartItems: state.cartItems,
+    dispatch,
+    loadedCashSession: state.loadedCashSession,
+    onStatus,
+    patientInputRef,
+    patientName: state.patientName,
+  });
 
-      if (e.ctrlKey && e.key.toLowerCase() === 'n') {
-        e.preventDefault();
-        patientInputRef.current?.focus();
-      }
-      if (e.ctrlKey && e.key.toLowerCase() === 'b') {
-        e.preventDefault();
-        searchInputRef.current?.focus();
-      }
-      if (e.ctrlKey && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        scannerInputRef.current?.focus();
-      }
-      if (e.key === 'Escape') {
-        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
-        if (state.showConfirmation || state.showPayment || state.showSuccess || state.showReceipt) return;
-        if (target.closest('[data-dialog-content]')) return;
-        if (state.patientName || state.search || state.scanCode || state.cartItems.length > 0) {
-          e.preventDefault();
-          dispatch({ type: 'SET_SHOW_CLEAR_CONFIRM', payload: true });
-        }
-      }
-      if (e.ctrlKey && e.key === 'Enter') {
-        e.preventDefault();
-        if (isInsideDialog || hasOpenOverlay) {
-          return;
-        }
-        if (canEmit) {
-          handleEmitClick();
-        } else {
-          validateForm();
-        }
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canEmit, state.cartItems.length, handleClearCart, state.patientName, state.scanCode, state.search, state.showClearConfirm, state.showConfirmation, state.showPayment, state.showReceipt, state.showSuccess]);
+  useNewInvoiceShortcuts({
+    canEmit,
+    dispatch,
+    onEmit: handleEmitClick,
+    onValidate: validateForm,
+    patientInputRef,
+    scannerInputRef,
+    searchInputRef,
+    state: {
+      patientName: state.patientName,
+      search: state.search,
+      scanCode: state.scanCode,
+      cartItemsLength: state.cartItems.length,
+      showConfirmation: state.showConfirmation,
+      showPayment: state.showPayment,
+      showSuccess: state.showSuccess,
+      showReceipt: state.showReceipt,
+      showClearConfirm: state.showClearConfirm,
+    },
+  });
 
   const preview = useMemo(() => {
     const sanitizedItems = canMarkDialysisPrescription
@@ -337,42 +310,6 @@ export function NewInvoiceView({
     }
     dispatch({ type: 'SET_PATIENT_ERROR', payload: undefined });
     searchInputRef.current?.focus();
-  }
-
-  function validateForm(): boolean {
-    if (!state.loadedCashSession) {
-      dispatch({ type: 'SET_ALERT_MESSAGE', payload: 'Abra caja antes de emitir y cobrar una factura.' });
-      onStatus('Abra caja antes de emitir y cobrar una factura.');
-      return false;
-    }
-    const validationResult = invoiceSchema.safeParse({
-      patient_name: state.patientName,
-      dialysis_prescription: state.cartItems.some(item => item.dialysisPrescription),
-      items: state.cartItems.map((item) => ({
-        service_id: item.service.id,
-        quantity: item.quantity,
-      })),
-    });
-    if (!validationResult.success) {
-      const formatted = validationResult.error.format();
-      if (formatted.patient_name) {
-        const errMsg = formatted.patient_name._errors[0] || 'Ingrese el nombre del paciente para emitir la factura.';
-        dispatch({ type: 'SET_PATIENT_ERROR', payload: errMsg });
-        patientInputRef.current?.focus();
-        return false;
-      }
-      if (formatted.items) {
-        const errMsg = formatted.items._errors?.[0] || 'Seleccione al menos un servicio para emitir la factura.';
-        dispatch({ type: 'SET_ALERT_MESSAGE', payload: errMsg });
-        onStatus(errMsg);
-        return false;
-      }
-      const fallbackMsg = validationResult.error.issues[0]?.message || 'Datos de factura inválidos';
-      dispatch({ type: 'SET_ALERT_MESSAGE', payload: fallbackMsg });
-      onStatus(fallbackMsg);
-      return false;
-    }
-    return true;
   }
 
   async function handleEmitClick() {

@@ -8607,3 +8607,27 @@ Auditoria gana una vista ejecutable para la operacion local sin duplicar agregac
 ### Decision
 
 El operador puede guardar el respaldo con un nombre entendible y sin identificadores internos. La seguridad real permanece en backend: permisos, descarga registrada y archivo servido por registro existente.
+
+## 363. Fase Facturacion - Separar orquestacion de nueva factura
+
+### Cambios
+
+- `NewInvoiceView` baja de 774 a 711 lineas y deja de contener el listener global de teclado.
+- Se agrega `useNewInvoiceShortcuts` para Ctrl+N, Ctrl+B, Ctrl+K, Escape y Ctrl+Enter.
+- Se agrega `useNewInvoiceScreenGuards` para foco inicial y advertencia al cerrar con carrito activo.
+- Se agrega `useNewInvoiceValidation` para mantener la validacion Zod fuera del megacomponente.
+- Se conserva el comportamiento existente de emision, cobro, recibo institucional y reglas de eritropoyetina.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- NewInvoiceView.architecture --run` | RED inicial: 774 lineas > 720; luego OK: 1 test. |
+| `docker compose exec frontend npm run test -- NewInvoiceView --run` | OK: 30 tests. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `git diff --check` | OK. |
+
+### Decision
+
+Nueva factura sigue siendo la pantalla principal de caja, pero la orquestacion repetible de teclado, foco y validacion vive en hooks dedicados. El backend continua como fuente de verdad para totales y pagos; este corte solo reduce el riesgo de seguir evolucionando el flujo.
