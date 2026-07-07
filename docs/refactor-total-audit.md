@@ -8253,3 +8253,22 @@ La barra global debe comunicar salud del servidor local sin convertir LAN/multi-
 ### Decision
 
 El acceso inicial debe tranquilizar al usuario sobre operacion local sin internet, pero no presentar LAN/multi-PC como requisito de la version monocomputadora estable.
+## 346. Fase Frontend/Monocomputadora - Menu lateral local
+
+### Cambios
+
+- El pie del menu lateral cambia de `Operacion LAN` a `Operacion local`.
+- AppShell cubre que el estado de caja, conexion local y alcance local sigan visibles sin reintroducir la etiqueta LAN.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- AppShell --run -t "local connection status"` | RED inicial: no encontraba `Operacion local`; luego OK. |
+| `docker compose exec frontend npm run test -- AppShell.a11y --run` | OK: 4 tests. |
+| `docker compose exec frontend npm run test -- AppShell --run` | OK: 13 tests. |
+| `rg -n "Operacion LAN|Sistema hospitalario LAN|clientes LAN|offline/LAN|LAN activa|Sin LAN|Red local disponible" frontend/src` | OK: solo queda la guardia negativa del test de login. |
+
+### Decision
+
+El menu global debe describir el modo operativo local de la instalacion estable. LAN queda como capacidad de despliegue posterior, no como estado permanente del usuario.

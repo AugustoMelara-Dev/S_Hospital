@@ -221,6 +221,8 @@ describe('AppShell', () => {
     expect(screen.getByRole('link', { name: /nueva factura/i })).toBeInTheDocument();
     expect(container.querySelector('[data-slot="topbar-operational-status"]')).toBeInTheDocument();
     expect(container.querySelector('[data-slot="sidebar-cash-status"]')).toBeInTheDocument();
+    expect(screen.getByText(/operacion local/i)).toBeInTheDocument();
+    expect(screen.queryByText(/operacion LAN/i)).not.toBeInTheDocument();
 
     document.documentElement.classList.remove('dark');
   });

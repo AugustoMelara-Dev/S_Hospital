@@ -153,7 +153,7 @@ export function SidebarContent({
           <Separator className="my-3 bg-sidebar-border" />
           <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/80">
             <span aria-hidden="true" className="size-1.5 rounded-full bg-success" />
-            <span>Operacion LAN</span>
+            <span>Operacion local</span>
           </div>
         </div>
       ) : null}
