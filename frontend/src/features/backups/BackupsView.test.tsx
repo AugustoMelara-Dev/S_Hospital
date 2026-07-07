@@ -90,6 +90,66 @@ describe('BackupsView', () => {
     expect(pendingAlert).not.toHaveTextContent(/restaur/i);
   });
 
+  it('shows recovery readiness as support guidance without exposing restore actions', async () => {
+    const status = systemStatusFixture();
+    vi.mocked(apiClient.getSystemStatus).mockResolvedValue({
+      ...status,
+      backups: {
+        ...status.backups,
+        last_success_filename: 'hospital-backup-20260707-083000-production.sql.enc',
+        last_success_file_exists: false,
+        last_success_checksum_matches: false,
+        last_failure_at: '2026-07-07T08:45:00.000Z',
+        last_failure_message: 'SQLSTATE[HY000] APP_SECRET_VALUE=REDACTED C:\\hospital\\.env',
+        queue: {
+          ...status.backups.queue,
+          worker_command: 'php artisan queue:work --queue=backups --tries=1 --timeout=600',
+          scheduler_command: 'php artisan schedule:run',
+        },
+      },
+      readiness: {
+        ...status.readiness,
+        blockers: [
+          {
+            code: 'PENDING_RESTORE_VALIDATION',
+            label: 'Restaurar hospital-backup-20260707-083000-production.sql.enc con soporte',
+            status: 'pending',
+          },
+        ],
+      },
+      preflight: {
+        ...status.preflight,
+        production_checks: [
+          {
+            code: 'RESTORE_DRILL_VALIDATION',
+            label: 'Restaurar desde C:\\hospital\\backups',
+            status: 'manual_required',
+            detail: 'SQLSTATE[HY000] php artisan backup:restore --file=hospital-backup-20260707-083000-production.sql.enc',
+          },
+        ],
+        commands: {
+          preflight: 'powershell.exe -File C:\\hospital\\scripts\\production_readiness_preflight.ps1',
+          backup_worker: 'php artisan queue:work --queue=backups --tries=1 --timeout=600',
+          scheduler: 'php artisan schedule:run',
+        },
+      },
+    });
+
+    renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
+
+    const supportPanel = await screen.findByRole('region', { name: /recuperacion con soporte/i });
+    expect(supportPanel).toHaveTextContent(/recuperacion con soporte/i);
+    expect(supportPanel).toHaveTextContent(/requiere soporte/i);
+    expect(supportPanel).toHaveTextContent(/validar una copia protegida/i);
+
+    fireEvent.click(screen.getByRole('button', { name: /ver detalle de soporte/i }));
+
+    expect(document.body).not.toHaveTextContent(/restaurar|eliminar|borrar/i);
+    expect(document.body).not.toHaveTextContent(/hospital-backup-20260707|\.sql\.enc|sha256|checksum|sqlstate/i);
+    expect(document.body).not.toHaveTextContent(/php artisan|queue:work|schedule:run|APP_SECRET_VALUE|REDACTED|C:\\hospital/i);
+    expect(screen.queryByRole('button', { name: /restaurar|eliminar|borrar/i })).not.toBeInTheDocument();
+  });
+
   it('keeps single-machine readiness blockers focused on local operation', async () => {
     const status = systemStatusFixture();
     vi.mocked(apiClient.getSystemStatus).mockResolvedValue({
@@ -534,7 +594,7 @@ describe('BackupsView', () => {
   it('renders a sanitized error and retries without exposing local secrets', async () => {
     const getBackups = vi.mocked(apiClient.getBackups);
     getBackups
-      .mockRejectedValueOnce(new Error('DB_PASSWORD=secret C:\\Users\\admin\\hospital\\.env'))
+      .mockRejectedValueOnce(new Error('APP_SECRET_VALUE=REDACTED C:\\Users\\admin\\hospital\\.env'))
       .mockResolvedValueOnce({
         data: [backupFixture()],
         meta: { current_page: 1, per_page: 15, total: 1 },
@@ -544,7 +604,7 @@ describe('BackupsView', () => {
 
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent(/no se pudieron cargar los respaldos/i);
-    expect(alert).not.toHaveTextContent(/db_password|secret|users|\.env/i);
+    expect(alert).not.toHaveTextContent(/app_secret_value|redacted|users|\.env/i);
 
     fireEvent.click(screen.getByRole('button', { name: /reintentar carga/i }));
 

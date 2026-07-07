@@ -1,36 +1,25 @@
-import { HardDrive, Server, ShieldAlert } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { StatGrid } from '@/components/shared';
 import { useBackups, useCreateBackup } from '@/hooks/useBackups';
 import { useSystemStatusSnapshot } from '@/hooks/useServerStatus';
-import { Button } from '../../components/ui/button';
 import { Alert } from '../../components/ui/alert';
 import { ConfirmDialog } from '../../components/ui/confirm-dialog';
 import { PaginationControls } from '../../components/ui/pagination';
 import { PageHeader } from '../../components/ui/page-header';
-import { Card, CardContent } from '../../components/ui/card';
 import { ErrorState, LoadingState } from '../../components/ui/states';
-import { StatusBadge } from '../../components/ui/status-badge';
 import { BackupEmptyState } from './components/BackupExplanationCard';
 import { BackupHistoryTable } from './components/BackupHistoryTable';
 import { BackupPageActions } from './components/BackupPageActions';
+import { BackupSupportStatusPanel } from './components/BackupSupportStatusPanel';
 import {
-  automaticBackupHeartbeatLabel,
   backupDownloadFilename,
   formatBytes,
   formatDate,
   formatRelativeTime,
-  friendlyProductionCheck,
-  friendlyProductionDetail,
   friendlyReadinessBlocker,
   isLocalAccessValidationNoise,
-  localAccessIsReady,
-  localAccessLabel,
-  operationalStatusBadge,
   operationalSummary,
   safeBackupsErrorMessage,
-  statusClass,
-  statusLabel,
   type BackupStatusFilter,
 } from './backupPresentation';
 import { type AuthUser, type BackupLog, apiClient } from '../../lib/api';
@@ -40,6 +29,7 @@ type BackupsViewProps = {
   user: AuthUser;
   onStatus: (message: string) => void;
 };
+
 export function BackupsView({ user, onStatus }: BackupsViewProps) {
   const [page, setPage] = useState(1);
   const [manualError, setManualError] = useState('');
@@ -50,6 +40,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
   const [downloadingBackupId, setDownloadingBackupId] = useState<number | null>(null);
   const creatingBackupRef = useRef(false);
   const downloadingBackupRef = useRef<number | null>(null);
+
   const canCreate = user.permissions.includes('backups.create');
   const canDownload = user.permissions.includes('backups.download');
   const canViewSystemStatus = user.permissions.includes('system.status.view');
@@ -70,12 +61,11 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
     ? safeBackupsErrorMessage(systemStatusQuery.error, 'No se pudo cargar el estado operativo del servidor.')
     : '';
   const error = manualError || backupsQueryError;
-  const visiblePendingCount = backupsList.filter(b => b.status === 'pending').length;
+  const visiblePendingCount = backupsList.filter((backup) => backup.status === 'pending').length;
   const pendingCount = systemStatus?.backups.pending_count ?? visiblePendingCount;
-  const visibleFailedCount = backupsList.filter(b => b.status === 'failed').length;
+  const visibleFailedCount = backupsList.filter((backup) => backup.status === 'failed').length;
   const failedCount = systemStatus?.backups.failed_count ?? visibleFailedCount;
-
-  const lastSuccessBackup = backupsList.find(b => b.status === 'success');
+  const lastSuccessBackup = backupsList.find((backup) => backup.status === 'success');
   const lastSuccessAt = systemStatus?.backups.last_success_at
     ?? lastSuccessBackup?.completed_at
     ?? lastSuccessBackup?.created_at
@@ -92,7 +82,6 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
     : false;
   const stalePendingCount = systemStatus?.backups.stale_pending_count ?? 0;
   const stalePendingThresholdMinutes = systemStatus?.backups.stale_pending_threshold_minutes ?? 15;
-  const automaticBackupHeartbeat = automaticBackupHeartbeatLabel(systemStatus?.backups.queue.scheduler_heartbeat);
   const advancedStatusId = 'backups-advanced-status';
 
   useEffect(() => {
@@ -207,9 +196,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
             items={[
               {
                 label: 'Ultimo exitoso',
-                value: lastSuccessAt
-                  ? formatRelativeTime(lastSuccessAt)
-                  : 'Sin respaldo',
+                value: lastSuccessAt ? formatRelativeTime(lastSuccessAt) : 'Sin respaldo',
                 helper: lastSuccessAt ? 'Respaldo protegido mas reciente' : 'Cree un respaldo local protegido',
                 tone: lastSuccessAt ? 'success' : 'warning',
               },
@@ -235,31 +222,16 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
           </Alert>
         ) : null}
 
-        {operationalStatus ? (
-          <Card className={`${operationalStatus.className} shadow-operational`}>
-            <CardContent className="flex flex-col gap-3 pt-6 md:flex-row md:items-center md:justify-between">
-              <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-normal">Estado operativo</p>
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <h3 className="text-xl font-semibold">{operationalStatus.label}</h3>
-                  <StatusBadge status={operationalStatusBadge(operationalStatus.level)}>
-                    {operationalStatus.level === 'ok' ? 'Correcto' : operationalStatus.level === 'error' ? 'Error' : 'Atencion'}
-                  </StatusBadge>
-                </div>
-                <p className="mt-1 max-w-3xl text-sm leading-6">{operationalStatus.description}</p>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                aria-controls={advancedStatusId}
-                aria-expanded={showAdvancedStatus}
-                onClick={() => setShowAdvancedStatus((current) => !current)}
-              >
-                {showAdvancedStatus ? 'Ocultar detalle de soporte' : 'Ver detalle de soporte'}
-              </Button>
-            </CardContent>
-          </Card>
+        {systemStatus && operationalStatus ? (
+          <BackupSupportStatusPanel
+            advancedStatusId={advancedStatusId}
+            latestBackupNotConfirmed={latestBackupNotConfirmed}
+            onToggleAdvancedStatus={() => setShowAdvancedStatus((current) => !current)}
+            operationalStatus={operationalStatus}
+            showAdvancedStatus={showAdvancedStatus}
+            stalePendingCount={stalePendingCount}
+            systemStatus={systemStatus}
+          />
         ) : null}
 
         {latestBackupNotConfirmed ? (
@@ -274,120 +246,6 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
           </Alert>
         ) : null}
 
-        {systemStatus && showAdvancedStatus ? (
-          <div id={advancedStatusId} className="grid grid-cols-1 gap-4 xl:grid-cols-4">
-            <Card className={`${systemStatus.database.connected && systemStatus.frontend.dist_index_exists && systemStatus.frontend.assets_present && localAccessIsReady(systemStatus) ? 'status-success' : 'status-warning'} shadow-operational`}>
-              <CardContent className="pt-6">
-                <div className="flex items-start gap-3">
-                  <div className="rounded-lg bg-background/80 p-2.5">
-                    <Server aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
-                  </div>
-                  <div className="min-w-0 space-y-1">
-                    <p className="text-sm font-semibold">Servidor, datos y red local</p>
-                    <p className="text-xs text-muted-foreground">
-                      Base de datos: {systemStatus.database.connected ? 'conectada' : 'pendiente'}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Interfaz: {systemStatus.frontend.dist_index_exists && systemStatus.frontend.assets_present ? 'lista' : 'requiere build'}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Acceso cliente: {localAccessLabel(systemStatus)}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {systemStatus.network.guidance}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className={`${systemStatus.backups.dump_binary.available && systemStatus.backups.storage.writable ? 'status-success' : 'status-warning'} shadow-operational`}>
-              <CardContent className="pt-6">
-                <div className="flex items-start gap-3">
-                  <div className="rounded-lg bg-background/80 p-2.5">
-                    <HardDrive aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
-                  </div>
-                  <div className="min-w-0 space-y-1">
-                    <p className="text-sm font-semibold">Preparación de respaldos</p>
-                    <p className="text-xs text-muted-foreground">
-                      Creación de archivos: {systemStatus.backups.dump_binary.available ? 'lista' : 'pendiente'}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Carpeta de respaldo: {systemStatus.backups.storage.writable ? 'lista' : 'pendiente'} · libre {formatBytes(systemStatus.backups.storage.free_bytes)}
-                    </p>
-                    {systemStatus.backups.last_success_at ? (
-                      <p className="text-xs text-muted-foreground">
-                        Último protegido: {formatRelativeTime(systemStatus.backups.last_success_at)}
-                      </p>
-                    ) : (
-                      <p className="text-xs text-warning">Sin respaldo protegido registrado.</p>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className={`${systemStatus.backups.pending_count > 0 ? 'status-warning' : 'bg-muted/30'} shadow-operational`}>
-              <CardContent className="pt-6">
-                <div className="flex items-start gap-3">
-                  <div className="rounded-lg bg-background/80 p-2.5">
-                    <Server aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
-                  </div>
-                  <div className="min-w-0 space-y-1">
-                    <p className="text-sm font-semibold">Proceso de respaldo</p>
-                    <p className="text-xs text-muted-foreground">
-                      Respaldos esperando: {systemStatus.backups.queue.pending_backup_jobs ?? 'pendiente de revisión'}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      En proceso registrados: {systemStatus.backups.pending_count}
-                    </p>
-                    <p className={stalePendingCount > 0 ? 'text-xs text-warning' : 'text-xs text-muted-foreground'}>
-                      Atascados: {stalePendingCount}
-                    </p>
-                    <p className={`text-xs ${
-                      automaticBackupHeartbeat.tone === 'success'
-                        ? 'text-success-foreground'
-                        : automaticBackupHeartbeat.tone === 'warning'
-                          ? 'text-warning'
-                          : 'text-muted-foreground'
-                    }`}>
-                      {automaticBackupHeartbeat.label}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="status-info shadow-operational">
-              <CardContent className="pt-6">
-                <div className="flex items-start gap-3">
-                  <div className="rounded-lg bg-background/80 p-2.5">
-                    <ShieldAlert aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
-                  </div>
-                  <div className="min-w-0 space-y-1">
-                    <p className="text-sm font-semibold">Estado general</p>
-                    <p className="text-xs text-muted-foreground">
-                      Instalación: {systemStatus.readiness.production_ready ? 'lista para operar' : 'con pendientes'}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Hora del servidor: {formatDate(systemStatus.environment.server_time)}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Versión instalada: {systemStatus.environment.app_version}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Zona horaria: {systemStatus.environment.timezone}
-                    </p>
-                    <p className="text-xs text-info">
-                      {systemStatus.readiness.production_ready ? 'Sin pendientes críticos' : 'Faltan pruebas finales'}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        ) : null}
-
         {visibleReadinessBlockers.length ? (
           <Alert title="Pendientes antes de operar">
             {visibleReadinessBlockers.map((blocker) => friendlyReadinessBlocker(blocker.code, blocker.label)).join(' - ')}
@@ -396,139 +254,6 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
 
         {initialLoading ? (
           <LoadingState label="Cargando respaldos locales..." />
-        ) : null}
-
-        {systemStatus && showAdvancedStatus ? (
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-            <Card className="border-operational-border bg-operational-surface shadow-operational">
-              <CardContent className="pt-6">
-                <div className="mb-4 flex items-start justify-between gap-3">
-                  <div>
-                    <h3 className="text-sm font-semibold">Checklist operativo</h3>
-                    <p className="text-xs text-muted-foreground">
-                      Estos puntos ayudan a confirmar que los respaldos y la instalación están listos.
-                    </p>
-                  </div>
-                  <span className="rounded-md border border-info/30 bg-info/10 px-2 py-1 text-xs font-semibold text-info">
-                    {systemStatus.readiness.production_ready ? 'Listo' : 'Pendiente'}
-                  </span>
-                </div>
-                <div className="grid gap-2 md:grid-cols-2">
-                  {systemStatus.preflight.production_checks.map((check) => (
-                    <div key={check.code} className="rounded-md border border-border p-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <p className="text-sm font-medium">{friendlyProductionCheck(check.code, check.label)}</p>
-                        <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusClass(check.status)}`}>
-                          {statusLabel(check.status)}
-                        </span>
-                      </div>
-                      <p className="mt-1 break-words text-xs text-muted-foreground">{friendlyProductionDetail(check.code, check.detail)}</p>
-                    </div>
-                  ))}
-                  <div className="rounded-md border border-border p-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <p className="text-sm font-medium">Estado de datos</p>
-                      <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
-                        systemStatus.runtime.pending_migration_count === null
-                          ? 'border-warning/30 bg-warning/10 text-warning'
-                          : systemStatus.runtime.pending_migration_count > 0
-                            ? 'border-destructive/30 bg-destructive/10 text-destructive'
-                            : 'border-success/30 bg-success/10 text-success-foreground'
-                      }`}>
-                        {systemStatus.runtime.pending_migration_count === null
-                          ? 'Sin dato'
-                          : systemStatus.runtime.pending_migration_count > 0
-                            ? 'Requiere revisión'
-                            : 'Actualizada'}
-                      </span>
-                    </div>
-                    <p className="mt-1 break-words text-xs text-muted-foreground">
-                      {systemStatus.runtime.pending_migration_count === null
-                        ? 'No se pudo verificar el estado de la base de datos.'
-                        : systemStatus.runtime.pending_migration_count > 0
-                          ? 'Haga respaldo y pida soporte para actualizar antes de revisar reportes.'
-                          : `Migraciones aplicadas: ${systemStatus.runtime.migration_count ?? 0}.`}
-                    </p>
-                  </div>
-                  <div className="rounded-md border border-border p-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <p className="text-sm font-medium">Tareas con problema</p>
-                      <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${systemStatus.backups.queue.failed_jobs_count ? 'border-warning/30 bg-warning/10 text-warning' : 'border-success/30 bg-success/10 text-success-foreground'}`}>
-                        {systemStatus.backups.queue.failed_jobs_count ?? 'Sin dato'}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Si aparece un número mayor a cero, revise el último respaldo con error.
-                    </p>
-                  </div>
-                  <div className="rounded-md border border-border p-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <p className="text-sm font-medium">Registro operativo</p>
-                      <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${systemStatus.runtime.laravel_log.exists ? 'border-info/30 bg-info/10 text-info' : 'border-warning/30 bg-warning/10 text-warning'}`}>
-                        {systemStatus.runtime.laravel_log.exists ? formatBytes(systemStatus.runtime.laravel_log.size_bytes) : 'no existe'}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Última actividad: {systemStatus.runtime.laravel_log.modified_at ? formatDate(systemStatus.runtime.laravel_log.modified_at) : 'sin registro'}
-                    </p>
-                  </div>
-                  <div className="rounded-md border border-border p-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <p className="text-sm font-medium">Actividad de respaldos</p>
-                      <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${systemStatus.runtime.backup_automation_log.exists ? 'border-info/30 bg-info/10 text-info' : 'border-warning/30 bg-warning/10 text-warning'}`}>
-                        {systemStatus.runtime.backup_automation_log.exists ? formatBytes(systemStatus.runtime.backup_automation_log.size_bytes) : 'no existe'}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Si no hay actividad reciente, pida revisar los respaldos automáticos.
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-operational-border bg-operational-surface shadow-operational">
-              <CardContent className="pt-6">
-                <h3 className="text-sm font-semibold">Pruebas de campo obligatorias</h3>
-                <div className="mt-3 space-y-3">
-                  <div>
-                    <p className="text-xs font-semibold uppercase text-muted-foreground">Prueba en red local</p>
-                    <ul className="mt-2 space-y-2">
-                      {systemStatus.preflight.public_routes.map((route) => (
-                        <li key={route.path} className="flex items-start justify-between gap-3 rounded-md border border-border p-2">
-                          <span>
-                            <span className="block text-sm font-medium">
-                              {route.path === '/up' ? 'Servidor responde' : route.path === '/login' ? 'Pantalla de ingreso abre' : 'Pantalla de verificación abre'}
-                            </span>
-                            <span className="text-xs text-muted-foreground">{route.expected}</span>
-                          </span>
-                          <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusClass(route.status)}`}>
-                            {statusLabel(route.status)}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase text-muted-foreground">Pruebas físicas</p>
-                    <ul className="mt-2 space-y-2">
-                      {systemStatus.preflight.physical_proofs.map((proof) => (
-                        <li key={proof.code} className="rounded-md border border-border p-2">
-                          <div className="flex items-start justify-between gap-3">
-                            <span className="text-sm font-medium">{proof.label}</span>
-                            <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusClass(proof.status)}`}>
-                              {statusLabel(proof.status)}
-                            </span>
-                          </div>
-                          <p className="mt-1 text-xs text-muted-foreground">{proof.detail}</p>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
         ) : null}
 
         {error ? (
@@ -543,7 +268,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
           />
         ) : null}
 
-        {showHistory && (
+        {showHistory ? (
           <div className="space-y-4">
             <BackupHistoryTable
               backups={backupsList}
@@ -561,12 +286,13 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
               <PaginationControls loading={busy} meta={meta} onPageChange={setPage} />
             ) : null}
           </div>
-        )}
+        ) : null}
 
-        {isEmpty && (
+        {isEmpty ? (
           <BackupEmptyState canCreate={canCreate} />
-        )}
+        ) : null}
       </div>
+
       <ConfirmDialog
         confirmDisabled={creatingBackup}
         cancelDisabled={creatingBackup}
@@ -581,6 +307,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
       >
         Se creará una copia de seguridad local. Confirme que aparezca como protegida antes de cerrar esta pantalla.
       </ConfirmDialog>
+
       <ConfirmDialog
         confirmDisabled={downloadTarget ? downloadingBackupId === downloadTarget.id : false}
         cancelDisabled={downloadTarget ? downloadingBackupId === downloadTarget.id : false}

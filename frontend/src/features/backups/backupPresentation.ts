@@ -94,6 +94,7 @@ export function friendlyProductionCheck(code: string, fallback: string): string 
     PUBLIC_ROUTES_AVAILABLE: 'Acceso desde la red local',
     SERVER_LOGS_WRITABLE: 'Registro operativo disponible',
     APP_CACHE_WRITABLE: 'Archivos temporales del sistema listos',
+    RESTORE_DRILL_VALIDATION: 'Recuperacion con soporte',
   };
 
   return labels[code] ?? sanitizeTechnicalText(fallback);
@@ -101,7 +102,11 @@ export function friendlyProductionCheck(code: string, fallback: string): string 
 
 export function sanitizeTechnicalText(value: string): string {
   return value
-    .replace(/APP_ENV|APP_DEBUG|debug|mysqldump|mariadb-dump|php artisan|queue:work|--queue=backups|--tries=1|--timeout=600|HTTP 200|SPA cargada/gi, '')
+    .replace(/[A-Z_]*(?:PASSWORD|SECRET|TOKEN)[A-Z_]*\s*=\s*\S+/gi, '')
+    .replace(/SQLSTATE\[[^\]]+\]/gi, '')
+    .replace(/[A-Za-z]:\\[^\s]+/g, '')
+    .replace(/\b\S*\.sql(?:\.gz)?(?:\.enc)?\b/gi, '')
+    .replace(/APP_ENV|APP_DEBUG|debug|mysqldump|mariadb-dump|php artisan|queue:work|schedule:run|backup:restore|--file=\S+|--queue=backups|--tries=1|--timeout=600|HTTP 200|SPA cargada|restaurar|eliminar|borrar/gi, '')
     .replace(/\s+/g, ' ')
     .trim() || 'Pendiente de revision.';
 }
@@ -135,6 +140,10 @@ export function friendlyProductionDetail(code: string, fallback: string): string
 
   if (code === 'SERVER_LOGS_WRITABLE' || code === 'APP_CACHE_WRITABLE') {
     return fallback.includes('disponible') ? 'Listo para operar.' : 'Requiere revision tecnica.';
+  }
+
+  if (code === 'RESTORE_DRILL_VALIDATION') {
+    return 'Validar una copia protegida con soporte antes de operar sin supervision.';
   }
 
   return sanitizeTechnicalText(fallback);

@@ -9162,3 +9162,25 @@ Para una instalacion monocomputadora estable, las acciones principales deben ser
 ### Decision
 
 Descargar el PDF institucional es una forma real de entregar o imprimir el recibo. La trazabilidad fiscal no debe depender de que el operador use especificamente `Ver recibo`; ambos caminos deben dejar auditoria antes de exponer el documento.
+
+## 388. Fase Respaldos - Recuperacion queda como guia de soporte
+
+### Cambios
+
+- `BackupsView` extrae el estado operativo y detalles de soporte a `BackupSupportStatusPanel`.
+- La vista normal muestra recuperacion como guia de soporte, sin acciones de restaurar, eliminar o borrar.
+- Los textos de soporte sanitizan nombres reales de respaldo, rutas locales, comandos artisan, `SQLSTATE` y secretos antes de mostrarse.
+- El limite arquitectonico de `BackupsView` baja a 360 lineas para sostener la separacion entre orquestacion y presentacion.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- BackupsView -t "shows recovery readiness as support guidance without exposing restore actions"` | OK: 1 test. |
+| `docker compose exec frontend npm run test -- BackupsView` | OK: 37 tests. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+### Decision
+
+La version monocomputadora necesita respaldos simples y visibles, pero la recuperacion completa no debe convertirse en una accion diaria peligrosa. El operador puede crear y descargar respaldos; la restauracion queda como proceso guiado con soporte y sin exponer detalles tecnicos crudos.

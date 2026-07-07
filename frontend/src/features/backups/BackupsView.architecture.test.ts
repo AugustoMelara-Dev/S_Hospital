@@ -10,6 +10,6 @@ describe('BackupsView module architecture', () => {
     const source = readFileSync(join(moduleDir, 'BackupsView.tsx'), 'utf8');
     const lines = source.split(/\r?\n/).length;
 
-    expect(lines).toBeLessThanOrEqual(620);
+    expect(lines).toBeLessThanOrEqual(360);
   });
 });
