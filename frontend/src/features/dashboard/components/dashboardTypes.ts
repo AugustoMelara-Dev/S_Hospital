@@ -37,9 +37,7 @@ export type SetupStatus = {
 export type DashboardNextActionContext = {
   cashSession: { id: number } | null;
   canCreateInvoices: boolean;
-  canViewCash: boolean;
-  onQuickCash: () => void;
-  onQuickInvoice: () => void;
+  canOpenCash: boolean;
 };
 
 export type DashboardMetricsContext = {
