@@ -12,7 +12,7 @@ import { apiClient, system } from '@/lib/api';
 import type { AuditLogPage, OperationsReport } from '@/lib/api/types';
 import { useExecutiveReport } from '@/hooks/useExecutiveReport';
 import { AuditSummaryPanel } from './components/AuditSummaryPanel';
-import { computePresetRange } from './components/ReportFiltersPanel';
+import { computePresetRange } from './components/reportDateRanges';
 
 type AuditLogFilters = {
   action: string;

@@ -13,4 +13,8 @@ describe('ReportsView module architecture', () => {
     expect(existsSync(join(moduleDir, 'components', 'CashSessionReportTab.tsx'))).toBe(false);
     expect(existsSync(join(moduleDir, 'components', 'CashSessionReportTab.test.tsx'))).toBe(false);
   });
+  it('does not keep generic report filter components after executive route consolidation', () => {
+    expect(existsSync(join(moduleDir, 'components', 'ReportFiltersPanel.tsx'))).toBe(false);
+    expect(existsSync(join(moduleDir, 'components', 'ReportFiltersPanel.test.tsx'))).toBe(false);
+  });
 });

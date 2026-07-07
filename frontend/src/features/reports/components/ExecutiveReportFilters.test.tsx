@@ -1,15 +1,15 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ReportFiltersPanel } from './ReportFiltersPanel';
+import { ExecutiveReportFilters } from './ExecutiveReportFilters';
 
-describe('ReportFiltersPanel', () => {
+describe('ExecutiveReportFilters', () => {
   afterEach(() => {
     vi.useRealTimers();
   });
 
   it('describes report refresh without implementation language', () => {
     render(
-      <ReportFiltersPanel
+      <ExecutiveReportFilters
         filters={{ date_from: '2026-07-01', date_to: '2026-07-02' }}
         preset="custom"
         onPresetChange={vi.fn()}
@@ -34,7 +34,7 @@ describe('ReportFiltersPanel', () => {
     const onChange = vi.fn();
 
     render(
-      <ReportFiltersPanel
+      <ExecutiveReportFilters
         filters={{ date_from: '2026-07-01', date_to: '2026-07-02' }}
         preset="custom"
         onPresetChange={onPresetChange}

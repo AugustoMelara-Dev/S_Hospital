@@ -6,8 +6,13 @@ import { Label } from '@/components/ui/label';
 import { NativeSelect } from '@/components/ui/select';
 import { CommandPanel } from '@/components/shared';
 import type { ExecutiveReportFilters } from '@/lib/api';
+import {
+  PRESET_LABELS,
+  computePresetRange,
+  type PresetKey,
+} from './reportDateRanges';
 
-type ReportFiltersPanelProps = {
+type ExecutiveReportFiltersProps = {
   filters: ExecutiveReportFilters;
   preset: PresetKey;
   onPresetChange: (preset: PresetKey) => void;
@@ -22,60 +27,12 @@ type ReportFiltersPanelProps = {
   rangeError?: string | null;
 };
 
-export type PresetKey = 'today' | 'yesterday' | 'last7' | 'thisMonth' | 'lastMonth' | 'custom';
-
-export const PRESET_LABELS: Record<PresetKey, string> = {
-  today: 'Hoy',
-  yesterday: 'Ayer',
-  last7: '7 dias',
-  thisMonth: 'Este mes',
-  lastMonth: 'Mes anterior',
-  custom: 'Personalizado',
-};
-
-function formatDate(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-export function computePresetRange(preset: PresetKey): { from: string; to: string } {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const yesterday = new Date(today);
-  yesterday.setDate(today.getDate() - 1);
-  const startOfWeek = new Date(today);
-  startOfWeek.setDate(today.getDate() - 6);
-  const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-  const startOfLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-  const endOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
-
-  switch (preset) {
-    case 'today':
-      return { from: formatDate(today), to: formatDate(today) };
-    case 'yesterday':
-      return { from: formatDate(yesterday), to: formatDate(yesterday) };
-    case 'last7':
-      return { from: formatDate(startOfWeek), to: formatDate(today) };
-    case 'thisMonth':
-      return { from: formatDate(startOfMonth), to: formatDate(today) };
-    case 'lastMonth':
-      return { from: formatDate(startOfLastMonth), to: formatDate(endOfLastMonth) };
-    case 'custom':
-    default:
-      return { from: formatDate(startOfMonth), to: formatDate(today) };
-  }
-}
-
 function detectPreset(filters: ExecutiveReportFilters): PresetKey {
   const { from } = computePresetRange('today');
   if (filters.date_from === filters.date_to) {
     if (filters.date_from === from) return 'today';
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yKey = formatDate(yesterday);
-    if (filters.date_from === yKey) return 'yesterday';
+    const yesterday = computePresetRange('yesterday');
+    if (filters.date_from === yesterday.from) return 'yesterday';
   }
   const week = computePresetRange('last7');
   if (filters.date_from === week.from && filters.date_to === week.to) return 'last7';
@@ -86,7 +43,7 @@ function detectPreset(filters: ExecutiveReportFilters): PresetKey {
   return 'custom';
 }
 
-export function ReportFiltersPanel({
+export function ExecutiveReportFilters({
   filters,
   preset,
   onPresetChange,
@@ -99,7 +56,7 @@ export function ReportFiltersPanel({
   exporting,
   titleLevel,
   rangeError,
-}: ReportFiltersPanelProps) {
+}: ExecutiveReportFiltersProps) {
   const inferredPreset = useMemo(() => detectPreset(filters), [filters]);
   const controlsDisabled = loading || exporting;
 

@@ -8969,3 +8969,26 @@ La configuracion diaria de impresion debe mantenerse estricta. La leyenda de cop
 ### Decision
 
 Ocultar un control no basta si el request todavia lo modifica. El flujo normal de impresion debe enviar solo lo que el operador realmente decide, dejando detalles de plantilla fuera de la operacion diaria.
+
+## 379. Fase Reportes - Filtros ejecutivos sin panel generico
+
+### Cambios
+
+- `ReportFiltersPanel` se retiro como nombre generico del modulo de reportes.
+- El control de periodo/exportacion queda como `ExecutiveReportFilters`, acotado al reporte ejecutivo.
+- `computePresetRange`, `PresetKey` y etiquetas de periodos pasan a `reportDateRanges`, helper compartido por ejecutivo y auditoria.
+- La prueba de arquitectura bloquea el regreso de archivos `ReportFiltersPanel`.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- src/features/reports/ReportsView.architecture.test.ts --run -t "generic report filter"` | RED inicial: existian `ReportFiltersPanel.tsx` y `ReportFiltersPanel.test.tsx`; luego OK: 1 test. |
+| `docker compose exec frontend npm run test -- src/features/reports/components/ExecutiveReportFilters.test.tsx --run` | OK: 2 tests. |
+| `docker compose exec frontend npm run test -- src/features/reports --run --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 15 files, 65 tests. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+### Decision
+
+El modulo ya no conserva un filtro transversal con nombre de arquitectura vieja. Auditoria comparte solo el calculo de rangos; la UI de filtros pertenece explicitamente al reporte ejecutivo consolidado.

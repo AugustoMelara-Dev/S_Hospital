@@ -3,7 +3,7 @@ import { Alert } from '@/components/ui/alert';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/states';
 import { notify } from '@/components/ui/toaster';
 import {
-  type ExecutiveReportFilters,
+  type ExecutiveReportFilters as ExecutiveReportFilterState,
   apiClient,
   userSafeErrorMessage,
 } from '@/lib/api';
@@ -15,11 +15,8 @@ import { TrendChart } from './components/TrendChart';
 import { PaymentMethodPanel } from './components/PaymentMethodPanel';
 import { ServiceRanking } from './components/ServiceRanking';
 import { PendingAgingPanel } from './components/PendingAgingPanel';
-import {
-  ReportFiltersPanel,
-  computePresetRange,
-  type PresetKey,
-} from './components/ReportFiltersPanel';
+import { ExecutiveReportFilters } from './components/ExecutiveReportFilters';
+import { computePresetRange, type PresetKey } from './components/reportDateRanges';
 
 type ReportsExecutiveProps = {
   canExport: boolean;
@@ -35,11 +32,11 @@ export function ReportsExecutive({
   titleLevel = 1,
 }: ReportsExecutiveProps) {
   const [preset, setPreset] = useState<PresetKey>(canViewManagerial ? 'thisMonth' : 'today');
-  const [filters, setFilters] = useState<ExecutiveReportFilters>(() => {
+  const [filters, setFilters] = useState<ExecutiveReportFilterState>(() => {
     const initialRange = computePresetRange(canViewManagerial ? 'thisMonth' : 'today');
     return { date_from: initialRange.from, date_to: initialRange.to };
   });
-  const [appliedFilters, setAppliedFilters] = useState<ExecutiveReportFilters>(() => {
+  const [appliedFilters, setAppliedFilters] = useState<ExecutiveReportFilterState>(() => {
     const initialRange = computePresetRange(canViewManagerial ? 'thisMonth' : 'today');
     return { date_from: initialRange.from, date_to: initialRange.to };
   });
@@ -143,7 +140,7 @@ export function ReportsExecutive({
 
   return (
     <section className="flex flex-col gap-5" aria-label="Reporte ejecutivo">
-      <ReportFiltersPanel
+      <ExecutiveReportFilters
         filters={filters}
         preset={preset}
         onPresetChange={setPreset}
@@ -223,13 +220,13 @@ function validateReportDateRange(dateFrom: string, dateTo: string, maxDays: numb
   return null;
 }
 
-function sameFilters(left: ExecutiveReportFilters, right: ExecutiveReportFilters): boolean {
+function sameFilters(left: ExecutiveReportFilterState, right: ExecutiveReportFilterState): boolean {
   return left.date_from === right.date_from && left.date_to === right.date_to;
 }
 
 async function runExecutiveExport<T>(
-  task: (filters: ExecutiveReportFilters) => Promise<T>,
-  filters: ExecutiveReportFilters,
+  task: (filters: ExecutiveReportFilterState) => Promise<T>,
+  filters: ExecutiveReportFilterState,
   onSuccess: (value: T) => void,
   onError: (err: unknown) => void,
   finalize: () => void,
