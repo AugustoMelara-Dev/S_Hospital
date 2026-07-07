@@ -8781,3 +8781,22 @@ Usuarios y roles conservan una pantalla simple para monocomputadora, pero la cla
 ### Decision
 
 Catalogo mantiene la edicion rapida, pero ahora las modificaciones sensibles se ven como un resumen auditado antes de guardar. Esto reduce riesgo operativo cuando se cambian precios, impuestos o visibilidad sin agregar otra confirmacion pesada.
+
+## 370. Fase Recibos - Vista previa respeta sello/firma
+
+### Cambios
+
+- `ReceiptSettingsPreview` oculta el bloque completo de sello/firma cuando el perfil desactiva `show_physical_seal_space`.
+- La vista previa conserva la firma del enterante y adapta la grilla para que el operador no vea un espacio institucional que no se imprimira.
+- Se agrega una prueba enfocada para evitar regresiones entre el control de perfil y la previsualizacion.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- src/features/receipt-settings/ReceiptSettingsPreview.test.tsx --run -t "hides the seal"` | RED inicial: el texto `Espacio para sello/firma` seguia visible; luego OK: 1 test. |
+| `docker compose exec frontend npm run test -- src/features/receipt-settings/ReceiptSettingsPreview.test.tsx src/features/receipt-settings/InstitutionalReceiptSettingsView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 30 tests. |
+
+### Decision
+
+La configuracion normal de recibos debe mostrar exactamente lo que el hospital imprimira. Si el perfil desactiva el espacio de sello/firma, la previsualizacion ya no mantiene un rastro visual contradictorio.

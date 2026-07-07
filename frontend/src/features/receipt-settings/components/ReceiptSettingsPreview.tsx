@@ -48,6 +48,7 @@ export function ReceiptSettingsPreview({
   const labels = copyLabels(profile?.copies_mode);
   const receiptColor = series?.receipt_number_color ?? '#b91c1c';
   const previewDate = formatDate(new Date());
+  const showSealSpace = profile?.show_physical_seal_space !== false;
 
   return (
     <PrintPreviewFrame
@@ -123,14 +124,14 @@ export function ReceiptSettingsPreview({
                 </tbody>
               </table>
 
-              <div className="mt-auto grid grid-cols-2 gap-8 pt-8 text-center text-xs">
+              <div className={cn('mt-auto grid gap-8 pt-8 text-center text-xs', showSealSpace ? 'grid-cols-2' : 'grid-cols-1')}>
                 <div className="border-t border-black pt-1">Firma del enterante</div>
-                <div>
-                  {profile?.show_physical_seal_space !== false ? (
+                {showSealSpace ? (
+                  <div>
                     <div className="mx-auto mb-1 h-12 w-3/4 border border-black" />
-                  ) : null}
-                  <div className="border-t border-black pt-1">Espacio para sello/firma</div>
-                </div>
+                    <div className="border-t border-black pt-1">Espacio para sello/firma</div>
+                  </div>
+                ) : null}
               </div>
 
               {profile?.show_copy_legend !== false ? (

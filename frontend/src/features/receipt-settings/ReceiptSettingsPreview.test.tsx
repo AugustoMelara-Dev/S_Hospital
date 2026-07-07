@@ -118,6 +118,23 @@ describe('ReceiptSettingsPreview', () => {
     expect(screen.getByText(/SEGUNDA COPIA/)).toBeInTheDocument();
   });
 
+  it('hides the seal and signature space when the profile disables it', () => {
+    render(
+      <ReceiptSettingsPreview
+        hospitalName="Hospital San Isidro"
+        governmentLine="Gobierno de Honduras"
+        secretariatLine="Secretaria de Salud"
+        location="Tocoa, Colon"
+        footerText="Original: Oficina Recaudadora"
+        series={series}
+        profile={{ ...profile, show_physical_seal_space: false }}
+      />,
+    );
+
+    expect(screen.getByText('Firma del enterante')).toBeInTheDocument();
+    expect(screen.queryByText('Espacio para sello/firma')).not.toBeInTheDocument();
+  });
+
   it('uses the A5 paper proportion for A5 receipt previews', () => {
     render(
       <ReceiptSettingsPreview
