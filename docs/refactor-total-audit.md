@@ -8657,3 +8657,27 @@ Nueva factura sigue siendo la pantalla principal de caja, pero la orquestacion r
 ### Decision
 
 Caja monocomputadora gana velocidad sin pago automatico: el cajero sigue confirmando el cobro, pero el monto exacto ya viene desde la factura emitida por el backend. La UI no recalcula impuestos ni totales; solo reutiliza el saldo oficial y permite sobrescribirlo.
+
+## 365. Fase Respaldos - Separar presentacion operativa
+
+### Cambios
+
+- `BackupsView` baja de 877 a 620 lineas y deja de concentrar formatos, sanitizacion y resumen operativo.
+- Se agrega `backupPresentation` como fuente compartida para nombres seguros, formatos de tamano/fecha, etiquetas humanas y estado operativo.
+- `BackupHistoryTable` reutiliza el mismo formato de tamano que el resto de respaldos.
+- Se agrega `BackupPageActions` para separar la accion primaria de crear respaldo y la accion secundaria de actualizar.
+- Se conserva la vista normal sin restauracion, sin SHA256/checksum y sin rutas tecnicas visibles.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- BackupsView.architecture --run` | RED inicial: 877 lineas > 620; luego OK: 1 test. |
+| `docker compose exec frontend npm run test -- BackupsView --run` | OK: 35 tests. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `git diff --check` | OK. |
+
+### Decision
+
+Respaldos mantiene la operacion normal clara para caja monocomputadora, mientras la logica de soporte queda fuera del componente principal. Esto reduce riesgo para seguir limpiando estado avanzado sin exponer datos tecnicos al operador.

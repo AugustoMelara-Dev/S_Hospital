@@ -1,9 +1,8 @@
-import { RefreshCw, Archive, HardDrive, Server, ShieldAlert } from 'lucide-react';
+import { HardDrive, Server, ShieldAlert } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { StatGrid } from '@/components/shared';
 import { useBackups, useCreateBackup } from '@/hooks/useBackups';
 import { useSystemStatusSnapshot } from '@/hooks/useServerStatus';
-import { ActionBar } from '../../components/ui/action-bar';
 import { Button } from '../../components/ui/button';
 import { Alert } from '../../components/ui/alert';
 import { ConfirmDialog } from '../../components/ui/confirm-dialog';
@@ -14,276 +13,38 @@ import { ErrorState, LoadingState } from '../../components/ui/states';
 import { StatusBadge } from '../../components/ui/status-badge';
 import { BackupEmptyState } from './components/BackupExplanationCard';
 import { BackupHistoryTable } from './components/BackupHistoryTable';
-import { type AuthUser, type BackupLog, type SystemStatus, apiClient, userSafeErrorMessage } from '../../lib/api';
-import { formatLocalizedDateTime } from '../../lib/format/formatDate';
+import { BackupPageActions } from './components/BackupPageActions';
+import {
+  automaticBackupHeartbeatLabel,
+  backupDownloadFilename,
+  formatBytes,
+  formatDate,
+  formatRelativeTime,
+  friendlyProductionCheck,
+  friendlyProductionDetail,
+  friendlyReadinessBlocker,
+  isLocalAccessValidationNoise,
+  localAccessIsReady,
+  localAccessLabel,
+  operationalStatusBadge,
+  operationalSummary,
+  safeBackupsErrorMessage,
+  statusClass,
+  statusLabel,
+  type BackupStatusFilter,
+} from './backupPresentation';
+import { type AuthUser, type BackupLog, apiClient } from '../../lib/api';
 import { downloadBlob } from '../../lib/download';
-import { safeClientMessage } from '../../lib/support/clientIssueLog';
 
 type BackupsViewProps = {
   user: AuthUser;
   onStatus: (message: string) => void;
 };
-
-type StatusFilter = 'all' | 'pending' | 'success' | 'failed';
-type OperationalStatus = 'ok' | 'review' | 'error';
-
-function formatBytes(size: number | null): string {
-  if (size === null || !Number.isFinite(size) || size < 0) return 'Tamaño no disponible';
-  if (size < 1024) return `${size} B`;
-  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
-  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function formatDate(value: string): string {
-  return formatLocalizedDateTime(value);
-}
-
-function formatRelativeTime(value: string): string {
-  const now = new Date();
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return 'Fecha no disponible';
-  }
-
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMins / 60);
-  const diffDays = Math.floor(diffHours / 24);
-
-  if (diffMins < 1) return 'ahora';
-  if (diffMins < 60) return `hace ${diffMins}m`;
-  if (diffHours < 24) return `hace ${diffHours}h`;
-  return `hace ${diffDays}d`;
-}
-
-function automaticBackupHeartbeatLabel(
-  heartbeat: SystemStatus['backups']['queue']['scheduler_heartbeat'],
-): { label: string; tone: 'muted' | 'success' | 'warning' } {
-  if (!heartbeat) {
-    return { label: 'Respaldos automaticos pendientes de revision', tone: 'warning' };
-  }
-
-  if (heartbeat.status === 'ok') {
-    return { label: 'Respaldos automaticos activos', tone: 'success' };
-  }
-
-  if (heartbeat.status === 'never_run') {
-    return { label: 'Respaldos automaticos sin ejecucion registrada', tone: 'warning' };
-  }
-
-  if (heartbeat.status === 'stale') {
-    return { label: 'Respaldos automaticos atrasados', tone: 'warning' };
-  }
-
-  if (heartbeat.status === 'stuck') {
-    return { label: 'Respaldos automaticos requieren revision del servidor', tone: 'warning' };
-  }
-
-  if (heartbeat.status === 'invalid') {
-    return { label: 'Respaldos automaticos con fecha no verificable', tone: 'warning' };
-  }
-
-  return { label: 'Respaldos automaticos pendientes de revision', tone: 'muted' };
-}
-
-function statusLabel(status: 'pending' | 'partial' | 'validated' | 'manual_required'): string {
-  if (status === 'validated') return 'Validado';
-  if (status === 'partial') return 'Parcial';
-  if (status === 'manual_required') return 'Requiere prueba';
-  return 'Pendiente';
-}
-
-function statusClass(status: 'pending' | 'partial' | 'validated' | 'manual_required'): string {
-  if (status === 'validated') return 'status-success';
-  if (status === 'partial') return 'status-info';
-  if (status === 'manual_required') return 'status-warning';
-  return 'border-destructive/30 bg-destructive/10 text-destructive';
-}
-
-function friendlyProductionCheck(code: string, fallback: string): string {
-  const labels: Record<string, string> = {
-    APP_ENV_PRODUCTION: 'Modo de operación final',
-    APP_DEBUG_OFF: 'Mensajes internos ocultos',
-    APP_DEBUG_FALSE: 'Mensajes internos ocultos',
-    MYSQL_FAMILY: 'Base de datos local correcta',
-    MYSQL_FAMILY_DATABASE: 'Base de datos local correcta',
-    DUMP_BINARY_AVAILABLE: 'Creación de respaldos disponible',
-    STORAGE_WRITABLE: 'Carpeta de respaldos lista',
-    BACKUP_STORAGE_WRITABLE: 'Carpeta de respaldos lista',
-    BACKUP_WORKER_CONTINUOUS: 'Respaldos automáticos activos',
-    DATABASE_MIGRATIONS_CURRENT: 'Base de datos actualizada',
-    PUBLIC_ROUTES_AVAILABLE: 'Acceso desde la red local',
-    SERVER_LOGS_WRITABLE: 'Registro operativo disponible',
-    APP_CACHE_WRITABLE: 'Archivos temporales del sistema listos',
-  };
-
-  return labels[code] ?? sanitizeTechnicalText(fallback);
-}
-
-function sanitizeTechnicalText(value: string): string {
-  return value
-    .replace(/APP_ENV|APP_DEBUG|debug|mysqldump|mariadb-dump|php artisan|queue:work|--queue=backups|--tries=1|--timeout=600|HTTP 200|SPA cargada/gi, '')
-    .replace(/\s+/g, ' ')
-    .trim() || 'Pendiente de revisión.';
-}
-
-function friendlyProductionDetail(code: string, fallback: string): string {
-  if (code === 'BACKUP_WORKER_CONTINUOUS') {
-    return 'Debe estar activo para que los respaldos pendientes se completen.';
-  }
-
-  if (code === 'DATABASE_MIGRATIONS_CURRENT') {
-    return fallback.includes('pendientes')
-      ? 'Requiere respaldo y actualización segura antes de operar reportes.'
-      : 'Base de datos actualizada.';
-  }
-
-  if (code === 'DUMP_BINARY_AVAILABLE') {
-    return 'El servidor puede generar archivos de respaldo.';
-  }
-
-  if (code === 'APP_ENV_PRODUCTION' || code === 'APP_DEBUG_OFF' || code === 'APP_DEBUG_FALSE') {
-    return 'Este punto se revisa durante la instalación final.';
-  }
-
-  if (code === 'MYSQL_FAMILY_DATABASE') {
-    return fallback.includes('detectada') ? 'Base de datos local detectada.' : 'Base de datos local pendiente.';
-  }
-
-  if (code === 'BACKUP_STORAGE_WRITABLE') {
-    return fallback.includes('Disponible') ? 'Carpeta de respaldos lista.' : 'Carpeta de respaldos pendiente.';
-  }
-
-  if (code === 'SERVER_LOGS_WRITABLE' || code === 'APP_CACHE_WRITABLE') {
-    return fallback.includes('disponible') ? 'Listo para operar.' : 'Requiere revisión técnica.';
-  }
-
-  return sanitizeTechnicalText(fallback);
-}
-
-function friendlyReadinessBlocker(code: string, fallback: string): string {
-  const labels: Record<string, string> = {
-    APP_ENV_PRODUCTION: 'Completar modo de operación final',
-    APP_DEBUG_OFF: 'Ocultar mensajes internos',
-    APP_DEBUG_FALSE: 'Ocultar mensajes internos',
-    PENDING_LAN_CLIENT_VALIDATION: 'Confirmar prueba desde segunda PC LAN',
-    PENDING_HARDWARE_VALIDATION: 'Validar recibo institucional carta, media carta o A5',
-    PENDING_RESTORE_VALIDATION: 'Confirmar recuperacion con soporte',
-    PENDING_CONCURRENCY_VALIDATION: 'Confirmar flujo de caja local',
-    PENDING_ENVIRONMENT_VALIDATION: 'Revisar configuración final del servidor',
-    PENDING_DATABASE_MIGRATIONS: 'Actualizar base de datos con respaldo previo',
-  };
-
-  return labels[code] ?? sanitizeTechnicalText(fallback);
-}
-
-function isLocalAccessValidationNoise(code: string, isSingleMachineMode: boolean): boolean {
-  return isSingleMachineMode && (
-    code === 'PENDING_LAN_CLIENT_VALIDATION' ||
-    code === 'LAN_CLIENT_VALIDATION_PROOF' ||
-    code === 'PUBLIC_ROUTES_AVAILABLE'
-  );
-}
-
-function operationalSummary(status: SystemStatus): { level: OperationalStatus; label: string; description: string; className: string } {
-  const latestBackupNotConfirmed = status.backups.last_success_at !== null
-    && (
-      status.backups.last_success_file_exists === false ||
-      status.backups.last_success_checksum_matches === false
-    );
-  const hasError =
-    !status.database.connected ||
-    !status.frontend.dist_index_exists ||
-    !status.frontend.assets_present ||
-    !status.backups.storage.writable ||
-    !status.backups.dump_binary.available ||
-    latestBackupNotConfirmed ||
-    !status.runtime.logs_writable ||
-    !status.runtime.cache_writable ||
-    (status.backups.queue.failed_jobs_count ?? 0) > 0 ||
-    status.backups.last_failure_at !== null;
-
-  if (hasError) {
-    return {
-      level: 'error',
-      label: 'Error',
-      description: 'Hay un problema que puede afectar respaldos o continuidad. Pida soporte si no puede resolverlo.',
-      className: 'border-destructive/30 bg-destructive/10 text-destructive',
-    };
-  }
-
-  const localAccessReady = localAccessIsReady(status);
-  const isSingleMachineMode = status.network.host_type === 'loopback';
-  const needsReview =
-    status.backups.pending_count > 0 ||
-    status.readiness.blockers.some((blocker) => (
-      blocker.status !== 'validated' && !isLocalAccessValidationNoise(blocker.code, isSingleMachineMode)
-    )) ||
-    status.preflight.production_checks.some((check) => (
-      check.status !== 'validated' && !isLocalAccessValidationNoise(check.code, isSingleMachineMode)
-    )) ||
-    (status.runtime.pending_migration_count ?? 0) > 0 ||
-    (!localAccessReady && status.preflight.public_routes.some((route) => route.status !== 'validated')) ||
-    status.preflight.physical_proofs.some((proof) => (
-      proof.status !== 'validated' && !isLocalAccessValidationNoise(proof.code, isSingleMachineMode)
-    ));
-
-  if (needsReview) {
-    return {
-      level: 'review',
-      label: 'Requiere revisi\u00f3n',
-      description: 'Falta completar respaldo reciente, validación del recibo o configuración final antes de operar sin supervisión.',
-      className: 'status-warning',
-    };
-  }
-
-  return {
-    level: 'ok',
-    label: 'Todo bien',
-    description: 'Respaldos y chequeos básicos están al día. Mantenga el cierre diario y los respaldos protegidos.',
-    className: 'status-success',
-  };
-}
-
-function operationalStatusBadge(level: OperationalStatus): 'success' | 'pending' | 'failed' {
-  if (level === 'ok') return 'success';
-  if (level === 'error') return 'failed';
-  return 'pending';
-}
-
-function safeBackupsErrorMessage(error: unknown, fallback: string): string {
-  const message = safeClientMessage(userSafeErrorMessage(error, fallback));
-
-  return message.includes('[redacted]') || message.includes('[ruta-local]') || message.includes('[detalle-tecnico]')
-    ? fallback
-    : message || fallback;
-}
-
-function backupDownloadFilename(backup: BackupLog): string {
-  const rawDate = backup.completed_at ?? backup.created_at;
-  const match = rawDate.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})/);
-  const date = match ? `${match[1]}-${match[2]}${match[3]}` : 'sin-fecha';
-
-  return `respaldo-local-${date}.sql.gz.enc`;
-}
-
-function localAccessIsReady(status: SystemStatus): boolean {
-  return status.network.lan_ready || status.network.host_type === 'loopback';
-}
-
-function localAccessLabel(status: SystemStatus): string {
-  if (localAccessIsReady(status)) {
-    return status.network.client_url ?? 'este equipo';
-  }
-
-  return 'configurar IP LAN';
-}
-
 export function BackupsView({ user, onStatus }: BackupsViewProps) {
   const [page, setPage] = useState(1);
   const [manualError, setManualError] = useState('');
   const [showAdvancedStatus, setShowAdvancedStatus] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [statusFilter, setStatusFilter] = useState<BackupStatusFilter>('all');
   const [confirmCreateOpen, setConfirmCreateOpen] = useState(false);
   const [downloadTarget, setDownloadTarget] = useState<BackupLog | null>(null);
   const [downloadingBackupId, setDownloadingBackupId] = useState<number | null>(null);
@@ -309,7 +70,6 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
     ? safeBackupsErrorMessage(systemStatusQuery.error, 'No se pudo cargar el estado operativo del servidor.')
     : '';
   const error = manualError || backupsQueryError;
-
   const visiblePendingCount = backupsList.filter(b => b.status === 'pending').length;
   const pendingCount = systemStatus?.backups.pending_count ?? visiblePendingCount;
   const visibleFailedCount = backupsList.filter(b => b.status === 'failed').length;
@@ -429,29 +189,12 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
         description="Copias de seguridad de facturación, caja y reportes"
         actions={
           canCreate ? (
-            <ActionBar align="end" fullWidthOnMobile>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={refreshOperationalStatus}
-                disabled={busy}
-                aria-label="Actualizar respaldos y estado operativo"
-              >
-                <RefreshCw aria-hidden="true" className="h-4 w-4 mr-2" />
-                Actualizar
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                aria-busy={creatingBackup}
-                onClick={() => setConfirmCreateOpen(true)}
-                disabled={creatingBackup}
-              >
-                <Archive aria-hidden="true" className="h-4 w-4 mr-2" />
-                {creatingBackup ? 'Creando...' : 'Crear respaldo'}
-              </Button>
-            </ActionBar>
+            <BackupPageActions
+              busy={busy}
+              creatingBackup={creatingBackup}
+              onCreateRequest={() => setConfirmCreateOpen(true)}
+              onRefresh={refreshOperationalStatus}
+            />
           ) : undefined
         }
       />

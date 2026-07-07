@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
 import type { BackupLog } from '@/lib/api';
 import { formatLocalizedDateTime } from '@/lib/format/formatDate';
+import { formatBytes } from '../backupPresentation';
 import { BackupStatusBadge, getStatusDescription } from './BackupStatusBadge';
 
 type BackupStatusFilter = 'all' | 'pending' | 'success' | 'failed';
@@ -146,11 +147,4 @@ function filterLabel(filter: BackupStatusFilter): string {
 
 function formatDate(value: string): string {
   return formatLocalizedDateTime(value);
-}
-
-function formatBytes(size: number | null): string {
-  if (size === null || !Number.isFinite(size) || size < 0) return 'Tamaño no disponible';
-  if (size < 1024) return `${size} B`;
-  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
-  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
