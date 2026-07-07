@@ -1028,7 +1028,9 @@ describe('InvoiceHistoryView', () => {
   });
 
   it('generates a missing institutional receipt only once while the request is pending', async () => {
-    vi.spyOn(apiBase, 'createClientIdempotencyKey').mockReturnValue('history-generate-receipt-attempt-1');
+    vi.spyOn(apiBase, 'createClientIdempotencyKey')
+      .mockReturnValueOnce('history-generate-receipt-attempt-1')
+      .mockReturnValueOnce('history-generate-print-attempt-1');
     const paid = invoiceFixture({
       id: 36,
       invoice_number: '000-001-01-00000036',
@@ -1042,6 +1044,8 @@ describe('InvoiceHistoryView', () => {
     let resolveStore!: (receipt: InstitutionalReceipt) => void;
     const store = vi.spyOn(institutionalReceipts, 'store')
       .mockReturnValue(new Promise((resolve) => { resolveStore = resolve; }));
+    const registerPrint = vi.spyOn(apiClient, 'registerInstitutionalReceiptPrintEvent')
+      .mockResolvedValue({} as never);
     vi.spyOn(apiClient, 'getInstitutionalReceiptPdf')
       .mockResolvedValue(new Blob(['%PDF-generated'], { type: 'application/pdf' }));
 
@@ -1075,10 +1079,15 @@ describe('InvoiceHistoryView', () => {
     await waitFor(() => expect(apiClient.getInstitutionalReceiptPdf).toHaveBeenCalledWith(96, 'Emisión manual de recibo faltante.', {
       idempotencyKey: 'history-generate-receipt-attempt-1',
     }));
+    await waitFor(() => expect(registerPrint).toHaveBeenCalledWith(96, undefined, {
+      idempotencyKey: 'history-generate-print-attempt-1',
+    }));
   });
 
   it('generates a missing institutional receipt with the posted payment and cash session from invoice detail', async () => {
-    vi.spyOn(apiBase, 'createClientIdempotencyKey').mockReturnValue('history-generate-receipt-payment-1');
+    vi.spyOn(apiBase, 'createClientIdempotencyKey')
+      .mockReturnValueOnce('history-generate-receipt-payment-1')
+      .mockReturnValueOnce('history-generate-print-payment-1');
     const paid = invoiceFixture({
       id: 51,
       invoice_number: '000-001-01-00000051',
@@ -1096,6 +1105,8 @@ describe('InvoiceHistoryView', () => {
       receipt_number_full: 'REC-A-00000151',
     });
     const store = vi.spyOn(institutionalReceipts, 'store').mockResolvedValue(receipt);
+    const registerPrint = vi.spyOn(apiClient, 'registerInstitutionalReceiptPrintEvent')
+      .mockResolvedValue({} as never);
     vi.spyOn(apiClient, 'getInstitutionalReceiptPdf')
       .mockResolvedValue(new Blob(['%PDF-generated'], { type: 'application/pdf' }));
 
@@ -1135,12 +1146,16 @@ describe('InvoiceHistoryView', () => {
     await waitFor(() => expect(apiClient.getInstitutionalReceiptPdf).toHaveBeenCalledWith(151, 'Emisión manual de recibo faltante.', {
       idempotencyKey: 'history-generate-receipt-payment-1',
     }));
+    await waitFor(() => expect(registerPrint).toHaveBeenCalledWith(151, undefined, {
+      idempotencyKey: 'history-generate-print-payment-1',
+    }));
   });
 
   it('renews receipt generation idempotency key when a failed invoice changes', async () => {
     vi.spyOn(apiBase, 'createClientIdempotencyKey')
       .mockReturnValueOnce('history-generate-receipt-attempt-1')
-      .mockReturnValueOnce('history-generate-receipt-attempt-2');
+      .mockReturnValueOnce('history-generate-receipt-attempt-2')
+      .mockReturnValueOnce('history-generate-print-attempt-2');
     const firstPaid = invoiceFixture({
       id: 47,
       invoice_number: '000-001-01-00000047',
@@ -1164,6 +1179,8 @@ describe('InvoiceHistoryView', () => {
     const store = vi.spyOn(institutionalReceipts, 'store')
       .mockRejectedValueOnce(new Error('store failed'))
       .mockResolvedValueOnce(receipt);
+    const registerPrint = vi.spyOn(apiClient, 'registerInstitutionalReceiptPrintEvent')
+      .mockResolvedValue({} as never);
     vi.spyOn(apiClient, 'getInstitutionalReceiptPdf')
       .mockResolvedValue(new Blob(['%PDF-generated'], { type: 'application/pdf' }));
 
@@ -1195,6 +1212,9 @@ describe('InvoiceHistoryView', () => {
     }));
     await waitFor(() => expect(apiClient.getInstitutionalReceiptPdf).toHaveBeenCalledWith(148, 'Emisión manual de recibo faltante.', {
       idempotencyKey: 'history-generate-receipt-attempt-2',
+    }));
+    await waitFor(() => expect(registerPrint).toHaveBeenCalledWith(148, undefined, {
+      idempotencyKey: 'history-generate-print-attempt-2',
     }));
   });
 

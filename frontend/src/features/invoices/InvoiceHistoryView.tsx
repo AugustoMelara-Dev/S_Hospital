@@ -90,6 +90,8 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   const downloadReceiptIdempotencySignatureRef = useRef<string | null>(null);
   const receiptGenerationIdempotencyKeyRef = useRef<string | null>(null);
   const receiptGenerationIdempotencySignatureRef = useRef<string | null>(null);
+  const receiptGenerationPrintIdempotencyKeyRef = useRef<string | null>(null);
+  const receiptGenerationPrintIdempotencySignatureRef = useRef<string | null>(null);
   const actionRequestRef = useRef(0);
   const receiptRequestRef = useRef(0);
 
@@ -468,9 +470,29 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     reason?: string,
     idempotencyKey?: string,
   ) {
-    const blob = reason?.trim()
-      ? await apiClient.getInstitutionalReceiptPdf(receipt.id, reason, idempotencyKey ? { idempotencyKey } : undefined)
+    const trimmedReason = reason?.trim();
+    const blob = trimmedReason
+      ? await apiClient.getInstitutionalReceiptPdf(receipt.id, trimmedReason, idempotencyKey ? { idempotencyKey } : undefined)
       : await apiClient.getInstitutionalReceiptPdf(receipt.id);
+
+    if (trimmedReason && idempotencyKey) {
+      const printIdempotencyKey = payloadScopedIdempotencyKey(
+        receiptGenerationPrintIdempotencyKeyRef,
+        receiptGenerationPrintIdempotencySignatureRef,
+        {
+          action: 'generated-receipt-first-print',
+          receiptId: receipt.id,
+        },
+      );
+      await apiClient.registerInstitutionalReceiptPrintEvent(receipt.id, undefined, {
+        idempotencyKey: printIdempotencyKey,
+      });
+      resetPayloadScopedIdempotencyKey(
+        receiptGenerationPrintIdempotencyKeyRef,
+        receiptGenerationPrintIdempotencySignatureRef,
+      );
+    }
+
     openBlobInNewTab(blob, institutionalReceiptPdfFilename(receipt.receipt_number_full));
   }
 

@@ -9291,3 +9291,25 @@ La administracion de usuarios necesita seguir usando permisos canonicos para seg
 ### Decision
 
 El backend sigue siendo la fuente de verdad para totales y reglas fiscales. Aun asi, el frontend debe formar un contrato limpio: paciente obligatorio como texto normalizado, items sin banderas especiales y receta de dialisis solo como autorizacion a nivel de factura.
+
+## 394. Fase Historial - Generar PDF audita primera impresion
+
+### Cambios
+
+- `Generar PDF` para facturas pagadas sin recibo institucional ahora registra `registerInstitutionalReceiptPrintEvent` antes de abrir el PDF.
+- La creacion del recibo y el evento de impresion usan llaves de idempotencia separadas.
+- El PDF se obtiene como blob y solo se abre despues de que la auditoria de impresion institucional fue aceptada.
+- Las pruebas de historial cubren generacion pendiente, generacion con pago/caja y reintento tras fallo de creacion.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- InvoiceHistoryView -t "generates a missing institutional receipt"` | RED inicial: 2 fallas por evento no registrado; luego OK: 2 tests. |
+| `docker compose exec frontend npm run test -- InvoiceHistoryView` | OK: 42 tests. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+### Decision
+
+Abrir un PDF institucional desde historial equivale operativamente a entregar o imprimir una copia. La generacion manual de un recibo faltante debe quedar trazada igual que descarga, primera impresion y reimpresion, sin mezclar la idempotencia de creacion del recibo con la del evento auditable.
