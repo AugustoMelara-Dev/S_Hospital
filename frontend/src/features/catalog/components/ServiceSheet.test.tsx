@@ -93,6 +93,45 @@ describe('ServiceSheet', () => {
     expect(onSuccess).toHaveBeenCalled();
   });
 
+  it('summarizes audited catalog changes before saving', async () => {
+    render(
+      <ServiceSheet
+        open
+        onOpenChange={vi.fn()}
+        service={{
+          id: 1,
+          category_id: 1,
+          area_id: 1,
+          name: 'Glucosa',
+          price: '15.00',
+          scan_code: null,
+          barcode: null,
+          qr_code: null,
+          taxable: true,
+          active: true,
+          visible_in_billing: true,
+          is_billable: true,
+          special_rule_code: null,
+        }}
+        categories={[{ id: 1, name: 'Laboratorio' }]}
+        areas={[{ id: 1, name: 'Laboratorio' }]}
+        onSuccess={noop}
+      />,
+    );
+
+    expect(screen.queryByText(/cambios auditados/i)).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText(/precio/i), { target: { value: '20.00' } });
+    fireEvent.click(screen.getByLabelText(/aplica isv/i));
+    fireEvent.click(screen.getByLabelText(/visible en caja/i));
+
+    expect(await screen.findByText(/cambios auditados/i)).toBeInTheDocument();
+    expect(screen.getByText(/precio: l\. 15\.00 -> l\. 20\.00/i)).toBeInTheDocument();
+    expect(screen.getByText(/isv: aplica -> no aplica/i)).toBeInTheDocument();
+    expect(screen.getByText(/visible en caja: si -> no/i)).toBeInTheDocument();
+    expect(screen.getByText(/el backend exigira motivo y guardara auditoria/i)).toBeInTheDocument();
+  });
+
   it('blocks short price change reasons before saving', async () => {
     const saveService = vi.spyOn(apiClient, 'saveService').mockResolvedValue({
       id: 1,

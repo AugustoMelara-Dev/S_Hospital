@@ -8759,3 +8759,25 @@ Reportes avanza hacia tres vistas claras: Ejecutivo para supervision rapida, Caj
 ### Decision
 
 Usuarios y roles conservan una pantalla simple para monocomputadora, pero la clasificacion de permisos sensibles queda gobernada por backend. Asi se evita que futuras reglas de seguridad fiscal, respaldos o caja queden duplicadas en React.
+
+## 369. Fase Catalogo - Resumen de cambios auditados
+
+### Cambios
+
+- `ServiceSheet` muestra un resumen compacto cuando el operador cambia precio, ISV o disponibilidad de caja.
+- El resumen enumera valores anterior/nuevo antes de guardar para que el riesgo sea visible sin texto largo.
+- `ServiceAuditedChangesSummary` concentra el render y los helpers de comparacion para mantener `ServiceSheet` como orquestador.
+- Se conserva el contrato backend existente: los motivos siguen siendo obligatorios y auditados por Laravel.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- src/features/catalog/components/ServiceSheet.test.tsx --run -t "summarizes audited catalog changes"` | RED inicial: no existia el resumen; luego OK: 1 test. |
+| `docker compose exec frontend npm run test -- ServiceSheet ServiceCatalogTable CatalogView --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | RED intermedio: `ServiceSheet` excedia 520 lineas; luego OK: 48 tests. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+### Decision
+
+Catalogo mantiene la edicion rapida, pero ahora las modificaciones sensibles se ven como un resumen auditado antes de guardar. Esto reduce riesgo operativo cuando se cambian precios, impuestos o visibilidad sin agregar otra confirmacion pesada.

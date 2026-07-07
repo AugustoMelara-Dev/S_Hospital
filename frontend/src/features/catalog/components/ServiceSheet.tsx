@@ -14,13 +14,13 @@ import { ServiceSheetFooter } from './ServiceSheetFooter';
 import { ServiceSheetBasicSection } from './ServiceSheetBasicSection';
 import { ServiceSheetPriceSection } from './ServiceSheetPriceSection';
 import { ServiceSheetScannerSection } from './ServiceSheetScannerSection';
+import { ServiceAuditedChangesSummary, auditedServiceChanges, priceValuesDiffer } from './ServiceAuditedChangesSummary';
 import {
   ERYTHROPOIETIN_FIXED_PRICE,
   MIN_CHANGE_REASON_LENGTH,
   SPECIAL_RULE_ERYTHROPOIETIN,
   SPECIAL_RULE_NONE,
   defaultServiceFormValues,
-  priceCents,
   serviceSchema,
   type ServiceFormData,
 } from './serviceSheetTypes';
@@ -100,6 +100,15 @@ export function ServiceSheet({
       || (service.is_billable ?? true) !== isBillable
     ),
   );
+  const auditedChanges = service
+    ? auditedServiceChanges(service, {
+      active,
+      is_billable: isBillable,
+      price,
+      taxable,
+      visible_in_billing: visibleInBilling,
+    })
+    : [];
 
   useEffect(() => {
     if (!open) {
@@ -438,6 +447,10 @@ export function ServiceSheet({
           </FieldGroup>
         </FormSection>
 
+        {auditedChanges.length > 0 && (
+          <ServiceAuditedChangesSummary changes={auditedChanges} />
+        )}
+
         {submitError && (
           <Alert variant="destructive" title="Error al guardar">
             {submitError}
@@ -499,11 +512,4 @@ function focusFirstServiceError(
   if (firstFocusable) {
     window.setTimeout(() => setFocus(firstFocusable), 0);
   }
-}
-
-function priceValuesDiffer(current: string, next: string): boolean {
-  const currentCents = priceCents(current);
-  const nextCents = priceCents(next);
-
-  return currentCents !== null && nextCents !== null && currentCents !== nextCents;
 }
