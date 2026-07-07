@@ -820,6 +820,7 @@ export type OperationsReport = {
   reprints: Array<{
     invoice_number?: string | null;
     receipt_number?: string | null;
+    receipt_number_full?: string | null;
     reason: string | null;
     user: string | null;
     source?: string | null;

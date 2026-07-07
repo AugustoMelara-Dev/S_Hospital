@@ -190,6 +190,14 @@ describe('ReportsAudit', () => {
           source: 'institutional_receipt',
           created_at: '2026-07-15T10:00:00.000000Z',
         },
+        {
+          invoice_number: null,
+          receipt_number_full: 'REC-A-00000009',
+          reason: 'Copia solicitada por caja',
+          user: 'Cajero Demo',
+          source: 'institutional_receipt',
+          created_at: '2026-07-15T10:03:00.000000Z',
+        } as never,
       ],
       catalog_changes: [],
       payment_voids: [
@@ -222,6 +230,8 @@ describe('ReportsAudit', () => {
     expect(screen.getByText(/pagos anulados/i)).toBeInTheDocument();
     expect(screen.getAllByText('1')).toHaveLength(2);
     expect(screen.getByText(/cobro registrado por error/i)).toBeInTheDocument();
+    expect(screen.getByText(/Reimpresion REC-A-00000009/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Reimpresion institucional/i)).not.toBeInTheDocument();
     expect(screen.getByText(/respaldo fallido/i)).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/hospital-backup|checksum|sha256|98765/);
   });

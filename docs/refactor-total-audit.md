@@ -9313,3 +9313,24 @@ El backend sigue siendo la fuente de verdad para totales y reglas fiscales. Aun 
 ### Decision
 
 Abrir un PDF institucional desde historial equivale operativamente a entregar o imprimir una copia. La generacion manual de un recibo faltante debe quedar trazada igual que descarga, primera impresion y reimpresion, sin mezclar la idempotencia de creacion del recibo con la del evento auditable.
+
+## 395. Fase Reportes - Auditoria muestra numero de recibo institucional
+
+### Cambios
+
+- `OperationsReport.reprints` reconoce `receipt_number_full` enviado por backend.
+- `ReportsAudit` usa `invoice_number`, luego `receipt_number_full`, luego `receipt_number` antes de caer al texto generico `institucional`.
+- El snapshot de operaciones cubre una reimpresion institucional sin factura asociada visible.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- ReportsAudit -t "operations snapshot"` | RED inicial: mostraba `Reimpresion institucional`; luego OK: 1 test. |
+| `docker compose exec frontend npm run test -- ReportsAudit` | OK: 9 tests. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+### Decision
+
+La auditoria operativa debe identificar reimpresiones institucionales con el numero real del recibo aunque no venga `invoice_number` en el registro resumido. El backend ya envia `receipt_number_full`; el frontend debe preservarlo para trazabilidad visible.

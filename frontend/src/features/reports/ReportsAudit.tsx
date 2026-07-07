@@ -271,11 +271,15 @@ function OperationsSnapshot({ report }: { report: OperationsReport }) {
       label: `Anulacion ${item.invoice_number}`,
       detail: item.reason || 'Sin motivo registrado',
     })),
-    ...report.reprints.slice(0, 2).map((item) => ({
-      key: `reprint-${item.invoice_number ?? item.receipt_number ?? ''}-${item.created_at ?? ''}`,
-      label: `Reimpresion ${item.invoice_number ?? item.receipt_number ?? 'institucional'}`,
-      detail: item.reason || 'Sin motivo registrado',
-    })),
+    ...report.reprints.slice(0, 2).map((item) => {
+      const reference = item.invoice_number ?? item.receipt_number_full ?? item.receipt_number ?? 'institucional';
+
+      return {
+        key: `reprint-${reference}-${item.created_at ?? ''}`,
+        label: `Reimpresion ${reference}`,
+        detail: item.reason || 'Sin motivo registrado',
+      };
+    }),
     ...report.payment_voids.slice(0, 2).map((item) => ({
       key: `payment-void-${item.invoice_number}-${item.created_at ?? ''}`,
       label: `Pago anulado ${item.invoice_number}`,
