@@ -8368,3 +8368,23 @@ Las reglas sensibles de usuarios ya estan protegidas en backend; este corte redu
 ### Decision
 
 Reportes ya no presenta tabs legacy. Mantener un componente nombrado como `Tab` en caja confundia la arquitectura y escondia deuda pequena; el rename conserva la superficie funcional y hace visible que la pantalla es un panel de subruta.
+
+## 352. Fase Reportes - Eliminar hook TodayReport frontend sin consumidores
+
+### Cambios
+
+- `useExecutiveReport.ts` queda limitado al query ejecutivo que consumen Reportes Ejecutivo y Auditoria.
+- Se elimina `useTodayReport`, que no tenia consumidores en el frontend actual.
+- `TodayReportService` conserva el contrato del endpoint `/api/reports/today`, pero su comentario deja de apuntar a un hook eliminado.
+- Se agrega regresion de arquitectura para impedir que el hook muerto vuelva al modulo ejecutivo.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- useExecutiveReport.architecture --run` | RED inicial: el modulo contenia `useTodayReport`; luego OK: 1 test. |
+| `docker compose exec frontend npm run test -- ReportsExecutive ReportsAudit ReportsView.subroutes --run` | OK: 21 tests. |
+
+### Decision
+
+El endpoint diario sigue disponible y probado en backend para compatibilidad operativa y smoke tests, pero el frontend estable de reportes ya no debe cargar deuda de un hook sin pantalla consumidora.

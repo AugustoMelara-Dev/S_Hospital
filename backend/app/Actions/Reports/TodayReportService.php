@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\DB;
  * (America/Tegucigalpa) so the cashier never sees data from
  * another day even near midnight.
  *
- * The shape is stable and consumed by frontend/src/hooks/useTodayReport
+ * The shape remains stable for API clients and release smoke mocks
  * (see HOSPITAL FRONTEND CONTRACTS).
  */
 class TodayReportService
