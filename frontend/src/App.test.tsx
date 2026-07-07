@@ -694,6 +694,45 @@ describe('App', () => {
     expect(screen.queryByRole('button', { name: /crear respaldo/i })).not.toBeInTheDocument();
   });
 
+  it('does not promote opening cash from dashboard when the user can only view cash', async () => {
+    window.history.pushState({}, '', '/dashboard');
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 2,
+              name: 'Supervisor Consulta',
+              email: 'supervisor.consulta@hospital-san-isidro.local',
+              username: 'supervisor.consulta',
+              active: true,
+              roles: ['supervisor'],
+              permissions: ['cash.view'],
+              must_change_password: false,
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/cash-sessions/current')) {
+        return {
+          ok: true,
+          json: async () => ({ data: null }),
+        } as Response;
+      }
+
+      return { ok: true, json: async () => ({ data: null }) } as Response;
+    });
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: /centro de mando/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^caja$/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /abrir caja desde el centro de mando/i })).not.toBeInTheDocument();
+  });
+
   it('creates a manual backup from the admin backups view', async () => {
     window.history.pushState({}, '', '/backups');
     const backupList: unknown[] = [];

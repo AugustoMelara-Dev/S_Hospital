@@ -8859,3 +8859,28 @@ En monocomputadora conviene evitar que el operador apile solicitudes de respaldo
 ### Decision
 
 El ejecutivo debe responder rapido que servicios explican la facturacion del periodo. Los cortes por volumen, categoria o area pueden vivir en reportes dedicados, pero no deben competir con la lectura principal de caja/gerencia.
+
+## 374. Fase Dashboard - No promover apertura de caja sin permiso
+
+### Cambios
+
+- `DashboardView` recibe `canOpenCash` y usa ese permiso para mostrar la accion principal `Abrir caja`.
+- `cash.view` queda como permiso de consulta/navegacion: permite entrar a Caja, pero no promociona una apertura desde el centro de mando.
+- `AppRoutes` pasa el permiso real `cash.open` al dashboard y se elimina el contrato viejo basado en `canViewCash`.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- src/App.test.tsx --run -t "does not promote opening cash"` | RED inicial: el dashboard mostraba `Abrir caja` con solo `cash.view`; luego OK: 1 test. |
+| `docker compose exec frontend npm run test -- src/features/dashboard/DashboardView.test.tsx --run` | OK: 15 tests. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+### Nota
+
+El intento amplio `docker compose exec frontend npm run test -- AppRoutes App DashboardView --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` fallo en dos pruebas existentes de `App.test.tsx` (`renders backups view actions for an admin` y `renders not found for an unknown authenticated route`). El nuevo caso de permisos de caja y el dashboard completo quedaron verdes.
+
+### Decision
+
+Abrir caja es una accion operativa, no una lectura. La interfaz debe respetar el mismo limite que ya aplican `CashBoxView` y el backend: consultar caja requiere `cash.view`, abrir caja requiere `cash.open`.

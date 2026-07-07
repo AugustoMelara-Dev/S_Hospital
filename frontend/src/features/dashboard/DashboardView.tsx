@@ -18,8 +18,8 @@ import { type SetupStatus } from './components/dashboardTypes';
 
 type DashboardViewProps = {
   canCreateInvoices: boolean;
+  canOpenCash: boolean;
   canViewBackups: boolean;
-  canViewCash: boolean;
   canViewCatalog: boolean;
   canViewFiscalSettings: boolean;
   canViewInvoices: boolean;
@@ -33,7 +33,7 @@ type DashboardViewProps = {
 
 export function DashboardView({
   canCreateInvoices,
-  canViewCash,
+  canOpenCash,
   canViewFiscalSettings,
   canViewInvoices,
   canViewManagerialReports,
@@ -99,7 +99,7 @@ export function DashboardView({
 
   const primaryAction = cashIsOpen && canCreateInvoices
     ? { label: 'Nueva factura', icon: <ReceiptText aria-hidden="true" className="size-4" />, onClick: onQuickInvoice, ariaLabel: 'Crear nueva factura desde el centro de mando' }
-    : canViewCash
+    : canOpenCash
       ? { label: 'Abrir caja', icon: <WalletCards aria-hidden="true" className="size-4" />, onClick: onQuickCash, ariaLabel: 'Abrir caja desde el centro de mando' }
       : null;
 

@@ -25,8 +25,8 @@ function makeCashSession(overrides: Partial<CashSession> = {}): CashSession {
 function makeBaseProps(overrides: Partial<React.ComponentProps<typeof DashboardView>> = {}) {
   return {
     canCreateInvoices: true,
+    canOpenCash: true,
     canViewBackups: true,
-    canViewCash: true,
     canViewCatalog: true,
     canViewFiscalSettings: true,
     canViewInvoices: true,
@@ -155,6 +155,13 @@ describe('DashboardView', () => {
     expect(screen.queryByRole('button', { name: /crear nueva factura/i })).not.toBeInTheDocument();
   });
 
+  it('hides the open-cash quick action when cash access is read only', async () => {
+    renderDashboard(makeBaseProps({ canOpenCash: false, cashSession: null }));
+
+    expect(await screen.findByText(/^caja$/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /abrir caja desde el centro de mando/i })).not.toBeInTheDocument();
+  });
+
   it('exposes the new-invoice quick action when there is a cash session', async () => {
     renderDashboard(makeBaseProps({ cashSession: makeCashSession({ id: 3 }) }));
 
@@ -190,7 +197,7 @@ describe('DashboardView', () => {
     renderDashboard(
       makeBaseProps({
         canCreateInvoices: false,
-        canViewCash: false,
+        canOpenCash: false,
         cashSession: null,
       }),
     );
@@ -204,7 +211,7 @@ describe('DashboardView', () => {
     renderDashboard(
       makeBaseProps({
         canCreateInvoices: false,
-        canViewCash: false,
+        canOpenCash: false,
         cashSession: null,
       }),
     );

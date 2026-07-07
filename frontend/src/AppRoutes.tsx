@@ -93,8 +93,8 @@ export function AppRoutes({
           <Suspense fallback={<LoadingState label="Cargando módulo..." />}>
             <DashboardView
               canCreateInvoices={canCreateInvoices}
+              canOpenCash={canOpenCash}
               canViewBackups={canViewBackups}
-              canViewCash={canViewCash}
               canViewCatalog={canViewCatalog}
               canViewFiscalSettings={canViewFiscalSettings}
               canViewInvoices={canViewInvoices}
