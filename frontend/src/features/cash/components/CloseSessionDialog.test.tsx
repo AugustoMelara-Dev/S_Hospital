@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { CloseSessionDialog } from './CloseSessionDialog';
+import { CashCloseSummaryPanel, CloseSessionDialog } from './CloseSessionDialog';
 
 describe('CloseSessionDialog', () => {
   afterEach(() => {
@@ -202,6 +202,44 @@ describe('CloseSessionDialog', () => {
     const exportedText = await readBlobText(exportedBlob);
     expect(exportedText).toContain('"Nota","Sin nota"');
     expect(exportedText).not.toContain('"Nota","-"');
+  });
+
+  it('exports confirmed close metadata for audit filing', async () => {
+    const createObjectURL = vi.fn((blob: Blob) => {
+      void blob;
+      return 'blob:cash-close-confirmed-summary';
+    });
+    vi.stubGlobal('URL', {
+      ...URL,
+      createObjectURL,
+      revokeObjectURL: vi.fn(),
+    });
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+
+    render(
+      <CashCloseSummaryPanel
+        session={{
+          id: 12,
+          opening_amount: '100.00',
+          expected_cash_amount: '125.00',
+          payments_by_method: { cash: '25.00', transfer: '0.00', card: '0.00', other: '0.00' },
+          pending_invoice_count: 0,
+          pending_amount: '0.00',
+          closed_at: '2026-07-06T17:30:00-06:00',
+        }}
+        closingAmount="125.00"
+        closingNotes="Turno entregado"
+        difference={0}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /exportar resumen/i }));
+
+    const exportedBlob = createObjectURL.mock.calls[0]?.[0] as Blob;
+    const exportedText = await readBlobText(exportedBlob);
+    expect(exportedText).toContain('"Caja","Caja #12"');
+    expect(exportedText).toContain('"Cerrada","06/07/2026');
+    expect(exportedText).toContain('"Nota","Turno entregado"');
   });
 
   it('does not allow confirming close while invoices are pending', () => {

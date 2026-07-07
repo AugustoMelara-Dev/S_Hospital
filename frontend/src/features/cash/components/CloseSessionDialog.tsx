@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { finiteNumber, formatLempirasUI } from '@/lib/money';
 import { cn } from '@/lib/utils';
+import { formatDateTimeEs } from '@/lib/format/formatDate';
 
 interface AlertDialogContentProps {
   children: ReactNode;
@@ -107,12 +108,14 @@ interface CloseSessionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   session: {
+    id?: number;
     opening_amount: string;
     expected_cash_amount?: string | null;
     expected_amount?: string | null;
     payments_by_method?: { cash: string; transfer: string; card: string; other: string };
     pending_invoice_count?: number;
     pending_amount?: string | null;
+    closed_at?: string | null;
   };
   closingAmount: string;
   closingNotes: string;
@@ -143,6 +146,7 @@ export function CashCloseSummaryPanel({
   const expectedAmount = finiteNumber(session.expected_cash_amount ?? session.expected_amount ?? session.opening_amount);
   const pendingAmount = finiteNumber(session.pending_amount);
   const pendingInvoiceCount = session.pending_invoice_count ?? 0;
+  const closedAtLabel = session.closed_at ? formatDateTimeEs(session.closed_at) : null;
   const methods = session.payments_by_method ?? {
     cash: '0.00',
     transfer: '0.00',
@@ -152,6 +156,8 @@ export function CashCloseSummaryPanel({
 
   function exportCloseSummary() {
     const csv = buildCloseSummaryCsv({
+      cashSessionId: session.id,
+      closedAt: session.closed_at,
       openingAmount,
       expectedAmount,
       methods,
@@ -213,6 +219,18 @@ export function CashCloseSummaryPanel({
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-2 rounded-md border border-border bg-card/80 p-3 sm:grid-cols-2">
+        {session.id ? (
+          <div className="flex justify-between gap-3">
+            <span>Caja:</span>
+            <strong>Caja #{session.id}</strong>
+          </div>
+        ) : null}
+        {closedAtLabel ? (
+          <div className="flex justify-between gap-3">
+            <span>Cerrada:</span>
+            <strong>{closedAtLabel}</strong>
+          </div>
+        ) : null}
         <div className="flex justify-between gap-3">
           <span>Monto apertura:</span>
           <strong>{formatLempirasUI(openingAmount)}</strong>
@@ -294,6 +312,8 @@ export function CloseSessionDialog({
 
   function exportCloseSummary() {
     const csv = buildCloseSummaryCsv({
+      cashSessionId: session.id,
+      closedAt: session.closed_at,
       openingAmount,
       expectedAmount,
       methods,
@@ -451,6 +471,8 @@ export function CloseSessionDialog({
 }
 
 export function buildCloseSummaryCsv({
+  cashSessionId,
+  closedAt,
   openingAmount,
   expectedAmount,
   methods,
@@ -460,6 +482,8 @@ export function buildCloseSummaryCsv({
   difference,
   closingNotes,
 }: {
+  cashSessionId?: number;
+  closedAt?: string | null;
   openingAmount: number;
   expectedAmount: number;
   methods: { cash: string; transfer: string; card: string; other: string };
@@ -471,6 +495,8 @@ export function buildCloseSummaryCsv({
 }): string {
   const rows = [
     ['Campo', 'Valor'],
+    ...(cashSessionId ? [['Caja', `Caja #${cashSessionId}`]] : []),
+    ...(closedAt ? [['Cerrada', formatDateTimeEs(closedAt)]] : []),
     ['Monto apertura', formatLempirasUI(openingAmount)],
     ['Efectivo esperado', formatLempirasUI(expectedAmount)],
     ['Efectivo', formatLempirasUI(methods.cash)],

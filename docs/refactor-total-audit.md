@@ -8494,3 +8494,24 @@ Usuarios deja de ser una pantalla monolitica. La vista principal coordina estado
 ### Decision
 
 Respaldos debe responder primero si el hospital puede confiar en copias recientes. Los detalles del programador automatico siguen disponibles para soporte, pero no compiten con el estado operativo normal.
+## 358. Fase Caja - Trazabilidad en resumen de cierre
+
+### Cambios
+
+- El resumen confirmado de cierre muestra numero de caja y fecha de cierre cuando el backend devuelve la sesion cerrada.
+- La exportacion CSV del resumen incluye `Caja` y `Cerrada` para archivo/auditoria del turno.
+- `CashBoxView` pasa metadata de la sesion cerrada sin cambiar el payload de cierre ni recalcular totales en frontend.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- CashBoxView --run` | RED inicial: el resumen confirmado no mostraba caja/fecha; luego OK: 17 tests. |
+| `docker compose exec frontend npm run test -- CloseSessionDialog --run` | RED inicial: el CSV no exportaba caja/fecha; luego OK: 9 tests. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `git diff --check` | OK. |
+
+### Decision
+
+El cierre de caja impreso/exportado debe servir como evidencia operativa del turno. Agregar numero de sesion y fecha de cierre mejora archivo y auditoria sin tocar calculos monetarios ni contratos fiscales.

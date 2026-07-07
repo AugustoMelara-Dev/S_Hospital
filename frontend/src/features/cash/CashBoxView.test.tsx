@@ -516,6 +516,7 @@ describe('CashBoxView', () => {
     });
     vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
     const closedSession = cashSessionFixture({
+      id: 12,
       status: 'closed',
       closing_amount: '101.00',
       difference_amount: '1.00',
@@ -549,6 +550,8 @@ describe('CashBoxView', () => {
     fireEvent.click(within(closeDialog).getByRole('button', { name: /^cerrar caja$/i }));
 
     const confirmedSummary = await screen.findByRole('region', { name: /resumen de cierre confirmado/i });
+    expect(confirmedSummary).toHaveTextContent(/caja:\s*caja #12/i);
+    expect(confirmedSummary).toHaveTextContent(/cerrada:\s*06\/07\/2026/i);
     expect(confirmedSummary).toHaveTextContent(/monto contado:\s*L 101\.00/i);
     expect(confirmedSummary).toHaveTextContent(/diferencia:\s*L 1\.00/i);
     expect(closeCashSession).toHaveBeenCalledTimes(1);

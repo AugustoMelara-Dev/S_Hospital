@@ -316,12 +316,14 @@ export function CashBoxView({
         {canRenderOperationalState && !isOpen && closedSummarySession ? (
           <CashCloseSummaryPanel
             session={{
+              id: closedSummarySession.id,
               opening_amount: closedSummarySession.opening_amount,
               expected_cash_amount: closedSummarySession.expected_cash_amount ?? closedSummarySession.expected_amount ?? undefined,
               expected_amount: closedSummarySession.expected_amount,
               payments_by_method: closedSummarySession.payments_by_method,
               pending_invoice_count: closedSummarySession.pending_invoice_count,
               pending_amount: closedSummarySession.pending_amount,
+              closed_at: closedSummarySession.closed_at,
             }}
             closingAmount={closedSummarySession.closing_amount ?? '0.00'}
             closingNotes={closedSummarySession.closing_notes ?? ''}
