@@ -4,7 +4,7 @@ import { ServiceRanking } from './ServiceRanking';
 import { buildExecutiveReport } from './testUtils';
 
 describe('ServiceRanking', () => {
-  it('shows service, category and area rankings without nested tabs', () => {
+  it('focuses executive service ranking on top billed services without secondary tables', () => {
     const report = buildExecutiveReport({
       services: {
         top_by_amount: [
@@ -50,14 +50,14 @@ describe('ServiceRanking', () => {
     render(<ServiceRanking report={report} />);
 
     expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /top por monto/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /top por cantidad/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /por categoria/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /por area/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /servicios facturados/i })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /top por cantidad/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /por categoria/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /por area/i })).not.toBeInTheDocument();
     expect(screen.getByText('Hemograma completo')).toBeInTheDocument();
-    expect(screen.getByText('Consulta general')).toBeInTheDocument();
-    expect(screen.getAllByText('Laboratorio').length).toBeGreaterThan(0);
-    expect(screen.getByText('Emergencia')).toBeInTheDocument();
+    expect(screen.queryByText('Consulta general')).not.toBeInTheDocument();
+    expect(screen.queryByText('Emergencia')).not.toBeInTheDocument();
+    expect(screen.queryByText(/lectura/i)).not.toBeInTheDocument();
   });
 
   it('formats quantities as units instead of money', () => {
@@ -98,8 +98,8 @@ describe('ServiceRanking', () => {
     render(<ServiceRanking report={report} />);
 
     expect(screen.getAllByText('12.00').length).toBeGreaterThan(0);
-    expect(screen.getByText('18.00')).toBeInTheDocument();
-    expect(screen.getByText('7.00')).toBeInTheDocument();
+    expect(screen.queryByText('18.00')).not.toBeInTheDocument();
+    expect(screen.queryByText('7.00')).not.toBeInTheDocument();
     expect(document.body.textContent).not.toContain('L 12.00');
     expect(document.body.textContent).not.toContain('L 18.00');
     expect(document.body.textContent).not.toContain('L 7.00');

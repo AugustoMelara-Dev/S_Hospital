@@ -8840,3 +8840,22 @@ La reimpresion de un PDF institucional ya impreso es un evento auditado. El hist
 ### Decision
 
 En monocomputadora conviene evitar que el operador apile solicitudes de respaldo. Si ya hay una copia pendiente, la app prioriza esperar a que termine o revisar el estado del servidor antes de crear otra.
+
+## 373. Fase Reportes - Ejecutivo enfoca servicios principales
+
+### Cambios
+
+- `ServiceRanking` deja de mostrar rankings secundarios por cantidad, categoria y area dentro del ejecutivo.
+- El bloque se concentra en el top de servicios por monto, con facturado y cobrado visibles en una sola tabla.
+- Se elimina el chip explicativo `Lectura` para reducir ruido visual en el reporte ejecutivo.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- src/features/reports/components/ServiceRanking.test.tsx --run -t "focuses executive service ranking"` | RED inicial: seguian visibles `Top por cantidad`, `Por categoria` y `Por area`; luego OK: 1 test. |
+| `docker compose exec frontend npm run test -- ServiceRanking ReportsExecutive ReportsView --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 18 tests. |
+
+### Decision
+
+El ejecutivo debe responder rapido que servicios explican la facturacion del periodo. Los cortes por volumen, categoria o area pueden vivir en reportes dedicados, pero no deben competir con la lectura principal de caja/gerencia.
