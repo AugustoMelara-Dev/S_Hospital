@@ -507,7 +507,7 @@ describe('App', () => {
               username: 'admin.validacion',
               active: true,
               roles: ['admin'],
-              permissions: ['backups.view', 'backups.create', 'backups.download'],
+              permissions: ['backups.view', 'backups.create', 'backups.download', 'system.status.view'],
               must_change_password: false,
             },
           }),
@@ -547,7 +547,8 @@ describe('App', () => {
     render(<App />);
 
     expect(await screen.findByRole('heading', { name: /^respaldos$/i })).toBeInTheDocument();
-    expect(await screen.findByText(/restauraci[oó]n no disponible desde la app/i)).toBeInTheDocument();
+    expect(screen.queryByText(/restauraci[oó]n no disponible desde la app/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /restaurar/i })).not.toBeInTheDocument();
     expect(await screen.findByText(/estado operativo/i)).toBeInTheDocument();
     expect(await screen.findByRole('heading', { name: /requiere revisi/i })).toBeInTheDocument();
     expect(await screen.findByText(/completar modo de operaci[oó]n final/i)).toBeInTheDocument();
@@ -1200,7 +1201,7 @@ describe('App', () => {
               username: 'admin.validacion',
               active: true,
               roles: ['admin'],
-              permissions: ['reports.view'],
+              permissions: ['reports.managerial.view'],
               must_change_password: false,
             },
           }),

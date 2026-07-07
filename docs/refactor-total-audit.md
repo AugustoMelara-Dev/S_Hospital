@@ -8884,3 +8884,25 @@ El intento amplio `docker compose exec frontend npm run test -- AppRoutes App Da
 ### Decision
 
 Abrir caja es una accion operativa, no una lectura. La interfaz debe respetar el mismo limite que ya aplican `CashBoxView` y el backend: consultar caja requiere `cash.view`, abrir caja requiere `cash.open`.
+
+## 375. Fase QA - Recuperar suite App.test
+
+### Cambios
+
+- `App.test.tsx` alinea el caso de respaldos con la vista normal actual: no debe mostrar restauracion ni boton de restaurar.
+- El mock de admin de respaldos recibe `system.status.view` cuando el test exige estado operativo y detalle de soporte.
+- El caso de ruta desconocida usa `reports.managerial.view`, un permiso operativo vigente, en lugar del permiso obsoleto `reports.view`.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- src/App.test.tsx --run -t "renders backups view actions for an admin"` | RED inicial: esperaba texto de restauracion y luego `estado operativo` sin permiso; luego OK: 1 test. |
+| `docker compose exec frontend npm run test -- src/App.test.tsx --run -t "renders not found for an unknown authenticated route"` | RED inicial: `reports.view` no habilitaba modulo operativo; luego OK: 1 test. |
+| `docker compose exec frontend npm run test -- src/App.test.tsx --run --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | OK: 19 tests. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+### Decision
+
+La suite de app debe reflejar permisos reales y el flujo normal de respaldos. Restaurar sigue siendo trabajo de soporte fuera de la app, y el 404 autenticado debe probarse con un permiso operativo existente para no caer en `Sin permisos operativos`.
