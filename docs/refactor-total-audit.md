@@ -9074,3 +9074,25 @@ El registro de deuda debe reflejar el codigo actual. Mantener una deuda cerrada 
 ### Decision
 
 La compatibilidad historica no debe expandirse por seeders ni usuarios temporales nuevos. Para una instalacion monocomputadora, los roles predeterminados deben usar permisos concretos y visibles: reportes gerenciales, reporte de caja y exportacion.
+
+## 384. Fase Configuracion - Fiscal no muta reglas operativas
+
+### Cambios
+
+- `UpdateFiscalSettingsRequest` prohibe `scanner_enabled` y `partial_payments_enabled`.
+- Las reglas operativas quedan exclusivamente en `/api/settings/operational` con permiso `settings.operational.update`.
+- `FiscalSettingsTest` cubre que un request fiscal con esos campos sea 422 y no audite ni mute datos.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec backend php artisan test tests/Feature/FiscalSettingsTest.php --filter=fiscal_settings_update_rejects_operational_rule_fields` | RED inicial: el endpoint fiscal aceptaba y mutaba reglas operativas; luego OK: 1 test. |
+| `docker compose exec backend php artisan test tests/Feature/FiscalSettingsTest.php --filter=operational_settings` | OK: 3 tests. |
+| `docker compose exec backend php artisan test tests/Feature/FiscalSettingsTest.php` | OK: 22 tests. |
+| `docker compose exec backend vendor/bin/pint --test app/Http/Requests/Fiscal/UpdateFiscalSettingsRequest.php tests/Feature/FiscalSettingsTest.php` | OK. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=1G` | OK. |
+
+### Decision
+
+La separacion visual de configuracion debe estar respaldada por el contrato backend. Scanner y abonos parciales pertenecen a reglas operativas, no a la actualizacion fiscal/institucional normal.

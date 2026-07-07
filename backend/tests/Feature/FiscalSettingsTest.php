@@ -477,6 +477,37 @@ class FiscalSettingsTest extends TestCase
         ], $audit->new_values);
     }
 
+    public function test_fiscal_settings_update_rejects_operational_rule_fields(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        FiscalSetting::query()->create([
+            ...$this->validPayload(),
+            'scanner_enabled' => false,
+            'partial_payments_enabled' => false,
+        ]);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin)
+            ->putJson('/api/settings/fiscal', [
+                'scanner_enabled' => true,
+                'partial_payments_enabled' => true,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['scanner_enabled', 'partial_payments_enabled']);
+
+        $this->assertDatabaseHas('fiscal_settings', [
+            'hospital_name' => 'Hospital San Miguel',
+            'scanner_enabled' => false,
+            'partial_payments_enabled' => false,
+        ]);
+        $this->assertDatabaseMissing('audit_logs', [
+            'action' => 'fiscal_settings.updated',
+        ]);
+    }
+
     public function test_operational_settings_update_uses_operational_permission_not_fiscal_update(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
