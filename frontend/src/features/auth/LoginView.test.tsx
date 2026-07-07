@@ -29,11 +29,12 @@ describe('LoginView', () => {
     expect(screen.getByRole('button', { name: /iniciar sesión/i })).toBeInTheDocument();
   });
 
-  it('renders institutional LAN reassurance without changing the login controls', () => {
+  it('renders local institutional reassurance without changing the login controls', () => {
     render(<LoginView {...defaultProps} />, { wrapper: Wrapper });
 
-    expect(screen.getAllByText(/sistema hospitalario lan/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/sistema hospitalario local/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/conexion local/i)).toBeInTheDocument();
+    expect(document.body).not.toHaveTextContent(/clientes LAN|sistema hospitalario LAN|offline\/LAN/i);
     expect(screen.getByLabelText(/usuario o correo/i)).toHaveAttribute('autocomplete', 'username');
     expect(screen.getByLabelText(/^contrase/i)).toHaveAttribute('autocomplete', 'current-password');
   });

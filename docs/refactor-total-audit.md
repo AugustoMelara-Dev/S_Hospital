@@ -8234,3 +8234,22 @@ El resumen publico de estado debe seguir el mismo modo seleccionado que el readi
 ### Decision
 
 La barra global debe comunicar salud del servidor local sin convertir LAN/multi-PC en requisito visual. `Conexion local` conserva el sentido operativo y evita confundir el alcance monocomputadora.
+## 345. Fase Frontend/Monocomputadora - Login con identidad local
+
+### Cambios
+
+- La pantalla de login deja de presentarse como `Sistema hospitalario LAN` y usa `Sistema hospitalario local`.
+- El texto institucional explica operacion en esta computadora o servidor local, sin requerir clientes LAN para el flujo inicial.
+- La prueba de LoginView impide reintroducir `clientes LAN`, `Sistema hospitalario LAN` u `offline/LAN` en la pantalla inicial.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- LoginView --run -t "local institutional"` | RED inicial: seguia mostrando `Sistema hospitalario LAN`; luego OK. |
+| `docker compose exec frontend npm run test -- LoginView.a11y --run` | OK: 3 tests. |
+| `docker compose exec frontend npm run test -- LoginView --run` | OK: 14 tests. |
+
+### Decision
+
+El acceso inicial debe tranquilizar al usuario sobre operacion local sin internet, pero no presentar LAN/multi-PC como requisito de la version monocomputadora estable.

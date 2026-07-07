@@ -103,7 +103,7 @@ export function LoginView({
             )}
             <div>
               <p className="text-sm font-semibold">{hospitalName}</p>
-              <p className="text-xs text-sidebar-foreground/70">Sistema hospitalario LAN</p>
+              <p className="text-xs text-sidebar-foreground/70">Sistema hospitalario local</p>
             </div>
           </div>
 
@@ -114,7 +114,7 @@ export function LoginView({
               </p>
               <h2 className="text-4xl font-semibold leading-tight">Acceso institucional para caja y administracion</h2>
               <p className="mt-4 max-w-sm text-sm leading-6 text-sidebar-foreground/75">
-                Facturacion, cobros, reportes y recibos preparados para trabajar dentro de la red del hospital.
+                Facturacion, cobros, reportes y recibos preparados para trabajar en el servidor local del hospital.
               </p>
             </div>
             <div className="grid gap-3 text-sm">
@@ -122,7 +122,7 @@ export function LoginView({
                 <MonitorCheck data-icon="inline-start" aria-hidden="true" className="mt-0.5" />
                 <span>
                   <strong className="block">Operable sin internet</strong>
-                  <span className="text-sidebar-foreground/72">El flujo principal trabaja en servidor local y clientes LAN.</span>
+                  <span className="text-sidebar-foreground/72">El flujo principal trabaja en esta computadora o servidor local.</span>
                 </span>
               </div>
               <div className="flex items-start gap-3 rounded-md border border-sidebar-border bg-sidebar-accent p-3">
@@ -137,7 +137,7 @@ export function LoginView({
 
           <div className="flex items-center gap-2 rounded-md border border-sidebar-border bg-sidebar-accent px-3 py-2 text-xs text-sidebar-foreground/75">
             <WifiOff aria-hidden="true" className="size-4" />
-            <span>Preparado para operacion offline/LAN</span>
+            <span>Preparado para operacion local sin internet</span>
           </div>
         </section>
 
@@ -150,7 +150,7 @@ export function LoginView({
                 </div>
                 <div>
                   <p className="text-sm font-semibold">{hospitalName}</p>
-                  <p className="text-xs text-muted-foreground">Sistema hospitalario LAN</p>
+                  <p className="text-xs text-muted-foreground">Sistema hospitalario local</p>
                 </div>
               </div>
               <CardDescription className="text-xs font-semibold uppercase tracking-normal text-primary">
