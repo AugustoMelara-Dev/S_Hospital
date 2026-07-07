@@ -66,6 +66,18 @@ describe('PaymentModal', () => {
     expect(screen.getByText('Paciente no especificado')).toBeInTheDocument();
   });
 
+  it('selects the prefilled amount when opened for quick overwrite', async () => {
+    renderPaymentModal({ paymentAmount: '17.25' });
+
+    const amountInput = screen.getByLabelText(/monto recibido/i) as HTMLInputElement;
+
+    await waitFor(() => {
+      expect(amountInput).toHaveFocus();
+      expect(amountInput.selectionStart).toBe(0);
+      expect(amountInput.selectionEnd).toBe(amountInput.value.length);
+    });
+  });
+
   it('applies received cash as balance due and keeps change visible', async () => {
     const confirmSpy = vi.fn();
 

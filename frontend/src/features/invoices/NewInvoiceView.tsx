@@ -373,7 +373,7 @@ export function NewInvoiceView({
       });
       resetPayloadScopedIdempotencyKey(submitInvoiceIdempotencyKeyRef, submitInvoiceIdempotencySignatureRef);
       dispatch({ type: 'SET_ISSUED_INVOICE', payload: invoice });
-      dispatch({ type: 'SET_PAYMENT_AMOUNT', payload: '0.00' });
+      dispatch({ type: 'SET_PAYMENT_AMOUNT', payload: invoice.balance_due });
       dispatch({ type: 'SET_RECEIPT', payload: null });
       dispatch({ type: 'SET_INSTITUTIONAL_RECEIPT', payload: null });
       dispatch({ type: 'SET_INSTITUTIONAL_RECEIPT_RECOVERY_MESSAGE', payload: null });
@@ -430,7 +430,7 @@ export function NewInvoiceView({
     dispatch({ type: 'SET_SHOW_SUCCESS', payload: false });
     dispatch({ type: 'SET_WARNING_MESSAGE', payload: null });
     if (!state.paymentAmount || Number(state.paymentAmount) <= 0) {
-      dispatch({ type: 'SET_PAYMENT_AMOUNT', payload: '0.00' });
+      dispatch({ type: 'SET_PAYMENT_AMOUNT', payload: state.issuedInvoice.balance_due });
     }
     dispatch({ type: 'SET_SHOW_PAYMENT', payload: true });
   }

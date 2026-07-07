@@ -90,7 +90,10 @@ export function PaymentModal({
       setError(null);
       setReferenceError(null);
       setCapNotice(null);
-      window.setTimeout(() => amountInputRef.current?.focus(), 0);
+      window.setTimeout(() => {
+        amountInputRef.current?.focus();
+        amountInputRef.current?.select();
+      }, 0);
     }
   }, [open, invoiceNumber]);
 

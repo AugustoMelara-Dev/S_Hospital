@@ -469,6 +469,111 @@ describe('NewInvoiceView critical flows', () => {
     })));
   });
 
+  it('prefills payment amount from issued invoice balance and submits exact cash with Ctrl+Enter', async () => {
+    const fetchMock = globalThis.fetch as ReturnType<typeof vi.fn>;
+    let paymentPayload: unknown = null;
+
+    fetchMock.mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url.includes('/api/cash-sessions/current')) {
+        return { ok: true, json: async () => ({ data: makeOpenCashSession() }) } as Response;
+      }
+      if (url.includes('/api/services')) {
+        return { ok: true, json: async () => ({ data: [makeService({ taxable: false })] }) } as Response;
+      }
+      if (url.includes('/api/categories')) {
+        return { ok: true, json: async () => ({ data: [] }) } as Response;
+      }
+      if (url.includes('/api/settings/operational')) {
+        return {
+          ok: true,
+          json: async () => ({ data: { scanner_enabled: false, partial_payments_enabled: false } }),
+        } as Response;
+      }
+      if (url.endsWith('/api/invoices')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 70,
+              invoice_number: '000-001-01-00000070',
+              patient_name: 'Maria Lopez',
+              status: 'issued',
+              subtotal: '25.00',
+              tax_amount: '0.00',
+              discount_amount: '0.00',
+              total: '25.00',
+              paid_amount: '0.00',
+              balance_due: '25.00',
+              issued_at: '2026-05-17T09:10:00-06:00',
+              items: [],
+            },
+          }),
+        } as Response;
+      }
+      if (url.endsWith('/api/invoices/70/payments')) {
+        paymentPayload = JSON.parse(String(init?.body ?? '{}'));
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              payment: {
+                id: 107,
+                invoice_id: 70,
+                cash_session_id: 7,
+                user_id: 2,
+                method: 'cash',
+                amount: '25.00',
+                reference: null,
+                status: 'posted',
+                paid_at: '2026-05-17T09:11:00-06:00',
+              },
+              invoice: {
+                id: 70,
+                invoice_number: '000-001-01-00000070',
+                patient_name: 'Maria Lopez',
+                status: 'paid',
+                subtotal: '25.00',
+                tax_amount: '0.00',
+                discount_amount: '0.00',
+                total: '25.00',
+                paid_amount: '25.00',
+                balance_due: '0.00',
+                issued_at: '2026-05-17T09:10:00-06:00',
+                items: [],
+              },
+              institutional_receipt: null,
+              institutional_receipt_error: null,
+            },
+          }),
+        } as Response;
+      }
+      return { ok: true, json: async () => ({ data: null }) } as Response;
+    });
+
+    renderNewInvoice();
+    await waitForPointOfSaleLoad();
+
+    fireEvent.change(screen.getByLabelText(/nombre del paciente/i), { target: { value: 'Maria Lopez' } });
+    fireEvent.change(screen.getByLabelText(/buscar por nombre/i), { target: { value: 'eritro' } });
+    await waitFor(() => expect(screen.getByText('Eritropoyetina')).toBeInTheDocument(), { timeout: 3000 });
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(2);
+    });
+    fireEvent.click(screen.getByRole('button', { name: /agregar eritropoyetina/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /^emitir y cobrar$/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /emitir y abrir cobro/i }));
+
+    const amountInput = await screen.findByLabelText(/monto recibido/i);
+    expect(amountInput).toHaveValue('25.00');
+
+    fireEvent.keyDown(amountInput, { key: 'Enter', code: 'Enter', ctrlKey: true });
+
+    await waitFor(() => {
+      expect(paymentPayload).toEqual(expect.objectContaining({ amount: '25.00' }));
+    });
+  });
+
   it('sends dialysis prescription only as an invoice-level flag', async () => {
     const erythropoietin = makeService({ special_rule_code: 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION' });
     const fetchMock = globalThis.fetch as ReturnType<typeof vi.fn>;

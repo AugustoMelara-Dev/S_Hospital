@@ -114,7 +114,8 @@ test.describe('New invoice - critical mocked e2e', () => {
     await expect(paymentDialog).toContainText('000-001-01-00000077');
     await expect(paymentDialog).toContainText('Maria Lopez');
 
-    await page.getByLabel(/monto recibido/i).fill('17.25');
+    const paymentAmountInput = page.getByLabel(/monto recibido/i);
+    await expect(paymentAmountInput).toHaveValue('17.25');
     await page.getByRole('button', { name: /confirmar cobro e imprimir/i }).click();
 
     await expect.poll(() => paymentPayload).toEqual({
@@ -217,6 +218,14 @@ async function installNewInvoiceMocks(
       },
     }, 201);
   });
+  await page.route(/\/api\/institutional-receipts\/77\/print-events(?:[/?]|$)/, (route) => json(route, {
+    data: {
+      id: 77,
+      institutional_receipt_id: 77,
+      reason: null,
+      created_at: '2026-07-02T08:15:02-06:00',
+    },
+  }, 201));
   await page.route(/\/api\/institutional-receipts\/77\/pdf(?:[/?]|$)/, (route) => {
     options.onReceiptPdf?.();
     return route.fulfill({ status: 200, contentType: 'application/pdf', body: '%PDF-receipt' });

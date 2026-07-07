@@ -8631,3 +8631,29 @@ El operador puede guardar el respaldo con un nombre entendible y sin identificad
 ### Decision
 
 Nueva factura sigue siendo la pantalla principal de caja, pero la orquestacion repetible de teclado, foco y validacion vive en hooks dedicados. El backend continua como fuente de verdad para totales y pagos; este corte solo reduce el riesgo de seguir evolucionando el flujo.
+
+## 364. Fase Facturacion - Precargar cobro exacto
+
+### Cambios
+
+- Al emitir una factura con saldo, el modal de cobro abre con `balance_due` devuelto por backend como monto recibido.
+- El boton `Cobrar` de una factura pendiente tambien usa el saldo pendiente vigente si el monto estaba vacio o en cero.
+- `PaymentModal` enfoca y selecciona el monto al abrir para confirmar rapido o sobrescribir sin pasos extra.
+- El E2E de nueva factura valida el monto precargado antes de registrar el pago y mockea el evento auditado de impresion.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- NewInvoiceView --run -t "prefills payment amount"` | RED inicial: el monto abria en `0.00`; luego OK: 1 test. |
+| `docker compose exec frontend npm run test -- PaymentModal --run` | OK: 25 tests. |
+| `docker compose exec frontend npm run test -- NewInvoiceView PaymentModal --run` | OK: 56 tests. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `docker compose exec frontend npx playwright test e2e/new-invoice-flow.spec.ts` | OK: 1 test. |
+| `docker compose exec frontend npm run build` | OK. |
+| `git diff --check` | OK. |
+
+### Decision
+
+Caja monocomputadora gana velocidad sin pago automatico: el cajero sigue confirmando el cobro, pero el monto exacto ya viene desde la factura emitida por el backend. La UI no recalcula impuestos ni totales; solo reutiliza el saldo oficial y permite sobrescribirlo.
