@@ -427,9 +427,6 @@ export function InstitutionalReceiptSettingsView({
         ? '2'
         : '1';
   const profileControlsDisabled = !canEdit || profileMutation.isPending;
-  const visiblePrintProfiles = (settings?.print_profiles ?? []).filter(
-    (profile) => !SUPPORT_ONLY_PROFILE_CODES.has(profile.code),
-  );
   const supportPrintProfiles = (settings?.print_profiles ?? []).filter(
     (profile) => SUPPORT_ONLY_PROFILE_CODES.has(profile.code),
   );
@@ -611,42 +608,12 @@ export function InstitutionalReceiptSettingsView({
         </TabsContent>
 
         <TabsContent value="papel" className="space-y-6">
-          <div className="grid gap-6 lg:grid-cols-[0.85fr_1.15fr]">
-            <SectionCard
-              title="Perfiles disponibles"
-              description="Carta, media carta y A5 son los perfiles institucionales principales."
-            >
-              <div className="space-y-3">
-                {visiblePrintProfiles.map((profile) => {
-                  const paperCode = RECEIPT_PROFILE_TO_PAPER[profile.code];
-                  const isActive = selectedCode === profile.code;
-                  return (
-                    <Button
-                      key={profile.code}
-                      type="button"
-                      aria-pressed={isActive}
-                      variant={isActive ? 'secondary' : 'outline'}
-                      className="h-auto w-full justify-between gap-3 p-3 text-left"
-                      disabled={profileControlsDisabled}
-                      onClick={() => {
-                        setSelectedCode(profile.code);
-                        if (paperCode) setPaper(paperCode);
-                      }}
-                    >
-                      <span>{profile.code === 'recibo_pequeno_personalizado' ? 'Recibo pequeño personalizado' : PAPER_LABELS[paperCode as PaperProfileCode] ?? profile.code}</span>
-                      <span className="text-xs font-normal">{profile.active ? 'Activo' : 'Disponible'}</span>
-                    </Button>
-                  );
-                })}
-              </div>
-            </SectionCard>
-
-            <SectionCard
-              title="Tipo de papel institucional"
-              description="El hospital elige el papel. El sistema prepara una impresión segura para ese formato."
-            >
-              <PaperProfileSelector
-                value={paper}
+          <SectionCard
+            title="Tipo de papel institucional"
+            description="El hospital elige el papel. El sistema prepara una impresión segura para ese formato."
+          >
+            <PaperProfileSelector
+              value={paper}
                 onChange={(code) => {
                   setPaper(code);
                   const mapped = PAPER_TO_RECEIPT_CODE[code];
@@ -845,7 +812,6 @@ export function InstitutionalReceiptSettingsView({
               )}
 
             </SectionCard>
-          </div>
         </TabsContent>
 
         <TabsContent value="vista">

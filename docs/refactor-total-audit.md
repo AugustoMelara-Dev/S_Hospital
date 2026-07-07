@@ -8293,3 +8293,23 @@ El menu global debe describir el modo operativo local de la instalacion estable.
 ### Decision
 
 Los mensajes de error comunes deben pedir revisar el servidor local. LAN puede aparecer como detalle saneado del navegador o como modo multi-PC explicito, pero no como instruccion base para la version monocomputadora.
+## 348. Fase Recibos/Impresion - Selector unico de papel normal
+
+### Cambios
+
+- La pantalla normal de `Papel y copias` elimina el bloque duplicado `Perfiles disponibles`.
+- El flujo normal queda centrado en un unico selector de papel institucional: Carta, Media carta y A5.
+- Se conserva el modo soporte tecnico en `<details>` para perfiles avanzados, sin exponerlo al usuario normal.
+- Se agrega regresion para impedir que vuelvan botones duplicados de Carta/Media carta/A5 junto al selector principal.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- InstitutionalReceiptSettingsView --run -t "one paper selector"` | RED inicial: aparecia `Perfiles disponibles`; luego OK. |
+| `docker compose exec frontend npm run test -- InstitutionalReceiptSettingsView --run` | OK: 25 tests. |
+| `docker compose exec frontend npm run test -- ReceiptSettingsPreview --run` | OK: 4 tests. |
+
+### Decision
+
+El hospital debe elegir papel una sola vez. Mantener un listado de perfiles normales junto al selector principal era redundante y aumentaba la carga cognitiva en el modulo donde la regla absoluta es ocultar complejidad tecnica.

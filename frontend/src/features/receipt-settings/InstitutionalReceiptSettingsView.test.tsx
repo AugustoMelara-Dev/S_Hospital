@@ -219,6 +219,21 @@ describe('InstitutionalReceiptSettingsView', () => {
     expect(screen.queryByRole('radio', { name: /ticket 58/i })).not.toBeInTheDocument();
   });
 
+  it('keeps the normal print flow to one paper selector instead of duplicate profile buttons', async () => {
+    renderView({ canAdvancedPrintSettings: false });
+
+    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
+    await activateTab('Papel y copias');
+
+    expect(screen.queryByText('Perfiles disponibles')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('radio', { name: /^Carta\b/i })).toHaveLength(1);
+    expect(screen.getAllByRole('radio', { name: /^Media carta\b/i })).toHaveLength(1);
+    expect(screen.getAllByRole('radio', { name: /^A5\b/i })).toHaveLength(1);
+    expect(screen.queryByRole('button', { name: /^Carta\b/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Media carta\b/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^A5\b/i })).not.toBeInTheDocument();
+  });
+
   it('renders normal paper settings from the safe backend payload without technical fields', async () => {
     const { apiClient } = await import('@/lib/api');
     const safeProfiles: ReceiptPrintProfile[] = mockData.profiles
