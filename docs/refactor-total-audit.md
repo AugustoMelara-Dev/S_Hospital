@@ -8948,3 +8948,24 @@ Antes de seguir refactorizando, se confirma que los flujos criticos de entrega s
 ### Decision
 
 La configuracion diaria de impresion debe mantenerse estricta. La leyenda de copias es un detalle de implementacion del perfil, no una decision operativa que el hospital deba ajustar durante caja.
+
+## 378. Fase Recibos - Payload normal sin campo oculto de leyenda
+
+### Cambios
+
+- El guardado normal de perfil de recibo ya no envia `show_copy_legend` cuando el control no existe en pantalla.
+- El payload normal queda limitado a campos visibles: copias, logo, sello/firma y los flags internos necesarios para activar el perfil institucional.
+- El modo soporte avanzado conserva su ruta separada para ajustes auditados.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- src/features/receipt-settings/InstitutionalReceiptSettingsView.test.tsx --run -t "saves the selected normal paper profile"` | RED inicial: `show_copy_legend` viajaba en el payload oculto; luego OK: 1 test. |
+| `docker compose exec frontend npm run test -- src/features/receipt-settings/InstitutionalReceiptSettingsView.test.tsx --run` | OK: 26 tests. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+### Decision
+
+Ocultar un control no basta si el request todavia lo modifica. El flujo normal de impresion debe enviar solo lo que el operador realmente decide, dejando detalles de plantilla fuera de la operacion diaria.

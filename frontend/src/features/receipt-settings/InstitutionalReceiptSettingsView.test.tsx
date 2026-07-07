@@ -339,6 +339,8 @@ describe('InstitutionalReceiptSettingsView', () => {
       );
     });
 
+    const [, payload] = vi.mocked(apiClient.updateReceiptPrintProfile).mock.calls.at(-1) ?? [];
+    expect(payload).not.toHaveProperty('show_copy_legend');
     expect(screen.queryByRole('checkbox', { name: /predeterminado global/i })).not.toBeInTheDocument();
   });
 

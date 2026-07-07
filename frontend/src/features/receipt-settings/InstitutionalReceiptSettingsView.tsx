@@ -306,7 +306,13 @@ export function InstitutionalReceiptSettingsView({
       const savesSupportProfile = SUPPORT_ONLY_PROFILE_CODES.has(selectedProfile.code);
       const normalPaperPayload = savesSupportProfile
         ? payload
-        : { ...payload, active: true, is_global_default: true };
+        : {
+            copies_mode: payload.copies_mode,
+            show_physical_seal_space: payload.show_physical_seal_space,
+            use_logo: payload.use_logo,
+            active: true,
+            is_global_default: true,
+          };
 
       return apiClient.updateReceiptPrintProfile(selectedProfile.id, {
         ...normalPaperPayload,
