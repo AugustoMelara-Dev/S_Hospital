@@ -8349,3 +8349,22 @@ Reportes ya opera por subrutas Ejecutivo, Caja y Auditoria. Mantener nombres de 
 ### Decision
 
 Las reglas sensibles de usuarios ya estan protegidas en backend; este corte reduce deuda frontend sin tocar seguridad, permisos ni auditoria. La siguiente fase puede extraer carga/cache o dialog orchestration con menor riesgo.
+
+## 351. Fase Reportes - Renombrar panel de caja sin tab legacy
+
+### Cambios
+
+- `CashSessionReportTab` pasa a `CashSessionReportPanel` para alinear el nombre con la navegacion por subrutas.
+- `ReportsCash` importa y renderiza el panel renombrado sin cambiar props ni comportamiento de caja.
+- Se agrega regresion de arquitectura para impedir que vuelvan archivos `CashSessionReportTab` despues de eliminar el modelo visual legacy.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- ReportsView.architecture --run` | RED inicial: existia `CashSessionReportTab.tsx`; luego OK: 2 tests. |
+| `docker compose exec frontend npm run test -- ReportsCash CashSessionReportPanel --run` | OK: 15 tests. |
+
+### Decision
+
+Reportes ya no presenta tabs legacy. Mantener un componente nombrado como `Tab` en caja confundia la arquitectura y escondia deuda pequena; el rename conserva la superficie funcional y hace visible que la pantalla es un panel de subruta.

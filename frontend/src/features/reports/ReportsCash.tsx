@@ -3,7 +3,7 @@ import { EmptyState } from '@/components/ui/states';
 import { OperationalBanner } from '@/components/shared';
 import { apiClient, type CashSession, userSafeErrorMessage } from '@/lib/api';
 import { downloadBlob, openBlobInNewTab } from '@/lib/download';
-import { CashSessionReportTab } from './components/CashSessionReportTab';
+import { CashSessionReportPanel } from './components/CashSessionReportPanel';
 
 type ReportsCashProps = {
   canBrowseCashSessions: boolean;
@@ -163,7 +163,7 @@ export function ReportsCash({
         description="Sesiones, cajeros, metodos de pago y diferencias de caja."
       />
 
-      <CashSessionReportTab
+      <CashSessionReportPanel
         canExport={canExport}
         cashSession={cashSessionReport}
         cashReportId={cashReportId}

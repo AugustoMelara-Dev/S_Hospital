@@ -12,7 +12,7 @@ import { formatLocalizedDateTime } from '../../../lib/format/formatDate';
 import type { CashSession, CashSessionReport } from '../../../lib/api/types';
 import { formatLempirasUIFromCents, parseCents } from '../../../lib/moneyCents';
 
-interface CashSessionReportTabProps {
+interface CashSessionReportPanelProps {
   canExport: boolean;
   cashSession: CashSessionReport | null;
   cashReportId: string;
@@ -119,7 +119,7 @@ const movementColumns: Array<DataTableColumn<CashMovement>> = [
   },
 ];
 
-export function CashSessionReportTab({
+export function CashSessionReportPanel({
   canExport,
   cashSession,
   cashReportId,
@@ -133,7 +133,7 @@ export function CashSessionReportTab({
   onExport,
   onExportPdf,
   onSubmit,
-}: CashSessionReportTabProps) {
+}: CashSessionReportPanelProps) {
   const lookupLocked = loading || exporting;
   const hasRecentCashSessions = recentCashSessions.length > 0;
   const methodTotalRows = cashSession

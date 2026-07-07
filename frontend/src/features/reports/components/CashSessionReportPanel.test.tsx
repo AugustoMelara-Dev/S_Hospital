@@ -1,12 +1,12 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { CashSessionReportTab } from './CashSessionReportTab';
+import { CashSessionReportPanel } from './CashSessionReportPanel';
 import type { CashSessionReport } from '../../../lib/api/types';
 
-describe('CashSessionReportTab', () => {
+describe('CashSessionReportPanel', () => {
   it('asks for a cash turn without exposing raw numeric examples', () => {
     render(
-      <CashSessionReportTab
+      <CashSessionReportPanel
         canExport={false}
         cashSession={null}
         cashReportId=""
@@ -55,7 +55,7 @@ describe('CashSessionReportTab', () => {
     } satisfies CashSessionReport;
 
     render(
-      <CashSessionReportTab
+      <CashSessionReportPanel
         canExport={false}
         cashSession={cashSession}
         cashReportId="2"
@@ -84,7 +84,7 @@ describe('CashSessionReportTab', () => {
     });
 
     render(
-      <CashSessionReportTab
+      <CashSessionReportPanel
         canExport={false}
         cashSession={cashSession}
         cashReportId="2"
@@ -120,7 +120,7 @@ describe('CashSessionReportTab', () => {
     });
 
     render(
-      <CashSessionReportTab
+      <CashSessionReportPanel
         canExport={false}
         cashSession={cashSession}
         cashReportId="2"
@@ -206,7 +206,7 @@ describe('CashSessionReportTab', () => {
     } satisfies CashSessionReport;
 
     render(
-      <CashSessionReportTab
+      <CashSessionReportPanel
         canExport={false}
         cashSession={cashSession}
         cashReportId="3"
@@ -258,7 +258,7 @@ describe('CashSessionReportTab', () => {
     });
 
     render(
-      <CashSessionReportTab
+      <CashSessionReportPanel
         canExport={false}
         cashSession={cashSession}
         cashReportId="2"
@@ -345,7 +345,7 @@ describe('CashSessionReportTab', () => {
     } satisfies CashSessionReport;
 
     render(
-      <CashSessionReportTab
+      <CashSessionReportPanel
         canExport={false}
         cashSession={cashSession}
         cashReportId="1"
