@@ -96,16 +96,10 @@ describe('BackupsView', () => {
       ...status,
       backups: {
         ...status.backups,
-        last_success_filename: 'hospital-backup-20260707-083000-production.sql.enc',
         last_success_file_exists: false,
         last_success_checksum_matches: false,
         last_failure_at: '2026-07-07T08:45:00.000Z',
         last_failure_message: 'SQLSTATE[HY000] APP_SECRET_VALUE=REDACTED C:\\hospital\\.env',
-        queue: {
-          ...status.backups.queue,
-          worker_command: 'php artisan queue:work --queue=backups --tries=1 --timeout=600',
-          scheduler_command: 'php artisan schedule:run',
-        },
       },
       readiness: {
         ...status.readiness,
@@ -127,11 +121,6 @@ describe('BackupsView', () => {
             detail: 'SQLSTATE[HY000] php artisan backup:restore --file=hospital-backup-20260707-083000-production.sql.enc',
           },
         ],
-        commands: {
-          preflight: 'powershell.exe -File C:\\hospital\\scripts\\production_readiness_preflight.ps1',
-          backup_worker: 'php artisan queue:work --queue=backups --tries=1 --timeout=600',
-          scheduler: 'php artisan schedule:run',
-        },
       },
     });
 
@@ -991,7 +980,6 @@ function systemStatusFixture(): SystemStatus {
       stale_pending_count: 0,
       stale_pending_threshold_minutes: 15,
       last_success_at: '2026-06-18T12:01:00.000Z',
-      last_success_filename: 'hospital-backup-20260618-120000-test.sql.enc',
       last_failure_at: null,
       last_failure_message: null,
       dump_binary: { configured: true, available: true, name: 'mariadb-dump' },
@@ -1002,8 +990,6 @@ function systemStatusFixture(): SystemStatus {
         failed_jobs_table_available: true,
         failed_jobs_count: 0,
         pending_backup_jobs: 0,
-        worker_command: 'php artisan queue:work --queue=backups --tries=1 --timeout=600',
-        scheduler_command: 'php artisan schedule:run',
       },
     },
     runtime: {
@@ -1027,11 +1013,6 @@ function systemStatusFixture(): SystemStatus {
       production_checks: [],
       public_routes: [],
       physical_proofs: [],
-      commands: {
-        preflight: 'powershell.exe -ExecutionPolicy Bypass -File scripts\\production_readiness_preflight.ps1',
-        backup_worker: 'php artisan queue:work --queue=backups --tries=1 --timeout=600',
-        scheduler: 'php artisan schedule:run',
-      },
     },
   };
 }

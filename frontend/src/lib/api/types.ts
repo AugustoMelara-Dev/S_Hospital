@@ -439,7 +439,6 @@ export type SystemStatus = {
     stale_pending_count?: number;
     stale_pending_threshold_minutes?: number;
     last_success_at: string | null;
-    last_success_filename: string | null;
     last_success_file_exists?: boolean;
     last_success_checksum_matches?: boolean;
     last_failure_at: string | null;
@@ -459,8 +458,6 @@ export type SystemStatus = {
       failed_jobs_table_available: boolean;
       failed_jobs_count: number | null;
       pending_backup_jobs: number | null;
-      worker_command: string;
-      scheduler_command: string;
       scheduler_heartbeat?: {
         status: 'never_run' | 'ok' | 'stale' | 'stuck' | 'invalid' | string;
         last_tick_at: string | null;
@@ -524,11 +521,6 @@ export type SystemStatus = {
       status: 'pending' | 'partial' | 'validated' | 'manual_required';
       detail: string;
     }>;
-    commands: {
-      preflight: string;
-      backup_worker: string;
-      scheduler: string;
-    };
   };
 };
 

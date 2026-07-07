@@ -9448,3 +9448,28 @@ La barra superior no debe competir con la operacion diaria mostrando reloj, cone
 ### Decision
 
 La consolidacion de reportes debe dejar Ejecutivo, Caja y Auditoria con responsabilidades separadas. Mantener paneles ejecutivos viejos de caja/anulaciones confundia el inventario y prolongaba tests obsoletos. El guardrail evita que el reporte ejecutivo vuelva a absorber detalles que pertenecen a subrutas dedicadas.
+
+## 401. Fase Respaldos - Estado del sistema sin comandos tecnicos
+
+### Cambios
+
+- `/api/system/status` deja de enviar `last_success_filename` en el bloque de respaldos.
+- El bloque de cola ya no expone `worker_command` ni `scheduler_command`.
+- `preflight.commands` sale del payload normal de estado del sistema.
+- `SystemStatus` en frontend se alinea con el contrato reducido.
+- Fixtures de Respaldos, Soporte y Acerca de dejan de fabricar comandos y nombres tecnicos que el navegador normal no debe recibir.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec backend php artisan test --filter=SystemStatusTest::test_admin_can_view_operational_status_without_secret_values` | RED inicial: `last_success_filename` seguia presente; luego cubierto por suite completa. |
+| `docker compose exec backend php artisan test --filter=SystemStatusTest` | OK: 24 tests, 174 assertions. |
+| `docker compose exec frontend npm run test -- BackupsView.test.tsx SupportCenterView.test.tsx AboutView.test.tsx` | OK: 48 tests. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `docker compose exec backend vendor/bin/pint --test app/Http/Controllers/SystemStatusController.php tests/Feature/SystemStatusTest.php` | OK. |
+
+### Decision
+
+La vista normal de respaldos ya evitaba mostrar rutas, hashes y comandos, pero el endpoint de estado todavia los enviaba al navegador. Para una instalacion monocomputadora estable, el operador necesita estado y orientacion, no comandos `php artisan` ni nombres tecnicos de archivos. El soporte puede conservar runbooks fuera del payload operativo normal.

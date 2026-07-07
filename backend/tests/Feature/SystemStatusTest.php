@@ -98,10 +98,11 @@ class SystemStatusTest extends TestCase
             ->assertJsonPath('data.backups.worker_recently_active', false)
             ->assertJsonPath('data.backups.stale_pending_count', 0)
             ->assertJsonPath('data.backups.stale_pending_threshold_minutes', 15)
-            ->assertJsonPath('data.backups.last_success_filename', 'hospital-backup-ok.sql')
+            ->assertJsonMissingPath('data.backups.last_success_filename')
             ->assertJsonPath('data.backups.last_failure_message', 'Error tecnico registrado. Revise el paquete de soporte.')
             ->assertJsonPath('data.backups.queue.jobs_table_available', true)
-            ->assertJsonPath('data.backups.queue.worker_command', 'php artisan queue:work --queue=backups --tries=1 --timeout=600')
+            ->assertJsonMissingPath('data.backups.queue.worker_command')
+            ->assertJsonMissingPath('data.backups.queue.scheduler_command')
             ->assertJsonPath('data.runtime.logs_writable', true)
             ->assertJsonPath('data.runtime.cache_writable', true)
             ->assertJsonPath('data.runtime.pending_migration_count', 0)
@@ -121,7 +122,7 @@ class SystemStatusTest extends TestCase
             ->assertJsonPath('data.preflight.physical_proofs.0.required_file', 'qa/LAN_CLIENT_VALIDATION_PROOF.md')
             ->assertJsonPath('data.preflight.physical_proofs.0.status', 'pending')
             ->assertJsonPath('data.preflight.physical_proofs.0.detail', 'Archivo de evidencia no existe todavia.')
-            ->assertJsonPath('data.preflight.commands.backup_worker', 'php artisan queue:work --queue=backups --tries=1 --timeout=600')
+            ->assertJsonMissingPath('data.preflight.commands')
             ->assertJsonMissingPath('data.database.password');
 
         $this->assertStringNotContainsString('password', json_encode($response->json(), JSON_THROW_ON_ERROR));
@@ -129,6 +130,16 @@ class SystemStatusTest extends TestCase
         $this->assertStringNotContainsString('soporte:supersecret', json_encode($response->json(), JSON_THROW_ON_ERROR));
         $this->assertStringNotContainsString('SQLSTATE', json_encode($response->json(), JSON_THROW_ON_ERROR));
         $this->assertStringNotContainsString($proofRoot, json_encode($response->json(), JSON_THROW_ON_ERROR));
+        foreach ([
+            'hospital-backup-ok.sql',
+            'worker_command',
+            'scheduler_command',
+            'php artisan',
+            'queue:work',
+            'schedule:run',
+        ] as $forbidden) {
+            $this->assertStringNotContainsString($forbidden, json_encode($response->json(), JSON_THROW_ON_ERROR));
+        }
         $this->assertIsString($response->json('data.backups.oldest_pending_at'));
     }
 

@@ -175,7 +175,6 @@ function systemStatus(): SystemStatus {
       pending_count: 0,
       worker_recently_active: true,
       last_success_at: '2026-06-02T13:00:00.000Z',
-      last_success_filename: 'hospital-backup.sql',
       last_failure_at: null,
       last_failure_message: null,
       dump_binary: { configured: true, available: true, name: 'mariadb-dump' },
@@ -186,8 +185,6 @@ function systemStatus(): SystemStatus {
         failed_jobs_table_available: true,
         failed_jobs_count: 0,
         pending_backup_jobs: 0,
-        worker_command: 'php artisan queue:work --queue=backups --tries=1 --timeout=600',
-        scheduler_command: 'php artisan schedule:run',
       },
     },
     runtime: {
@@ -211,11 +208,6 @@ function systemStatus(): SystemStatus {
       production_checks: [],
       public_routes: [],
       physical_proofs: [],
-      commands: {
-        preflight: 'powershell.exe -ExecutionPolicy Bypass -File scripts\\production_readiness_preflight.ps1',
-        backup_worker: 'php artisan queue:work --queue=backups --tries=1 --timeout=600',
-        scheduler: 'php artisan schedule:run',
-      },
     },
   };
 }

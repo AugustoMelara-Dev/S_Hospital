@@ -358,7 +358,6 @@ class SystemStatusController extends Controller
             'stale_pending_count' => $stalePendingCount,
             'stale_pending_threshold_minutes' => $staleThresholdMinutes,
             'last_success_at' => $lastSuccess?->completed_at?->toJSON(),
-            'last_success_filename' => $lastSuccess?->filename,
             'last_success_file_exists' => $lastSuccessFile['exists'],
             'last_success_checksum_matches' => $lastSuccessFile['checksum_matches'],
             'last_failure_at' => $lastFailure?->completed_at?->toJSON(),
@@ -635,8 +634,6 @@ class SystemStatusController extends Controller
             'failed_jobs_table_available' => Schema::hasTable('failed_jobs'),
             'failed_jobs_count' => Schema::hasTable('failed_jobs') ? DB::table('failed_jobs')->count() : null,
             'pending_backup_jobs' => $pendingJobs,
-            'worker_command' => 'php artisan queue:work --queue=backups --tries=1 --timeout=600',
-            'scheduler_command' => 'php artisan schedule:run',
             'scheduler_heartbeat' => $heartbeat,
         ];
     }
@@ -853,11 +850,6 @@ class SystemStatusController extends Controller
                 ],
             ],
             'physical_proofs' => $physicalProofs,
-            'commands' => [
-                'preflight' => 'powershell.exe -ExecutionPolicy Bypass -File scripts\\production_readiness_preflight.ps1 -BaseUrl http://IP_DEL_SERVIDOR',
-                'backup_worker' => $backups['queue']['worker_command'],
-                'scheduler' => $backups['queue']['scheduler_command'],
-            ],
         ];
     }
 
