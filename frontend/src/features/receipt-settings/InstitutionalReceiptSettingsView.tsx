@@ -651,13 +651,6 @@ export function InstitutionalReceiptSettingsView({
                     </Select>
                   </Field>
                   <CheckboxField
-                    id="profile_show_copy_legend"
-                    label="Leyenda de copias"
-                    checked={Boolean(profileForm.watch('show_copy_legend'))}
-                    disabled={profileControlsDisabled}
-                    onChange={(value) => profileForm.setValue('show_copy_legend', value === true)}
-                  />
-                  <CheckboxField
                     id="profile_show_seal_space"
                     label="Espacio para sello/firma"
                     checked={Boolean(profileForm.watch('show_physical_seal_space'))}

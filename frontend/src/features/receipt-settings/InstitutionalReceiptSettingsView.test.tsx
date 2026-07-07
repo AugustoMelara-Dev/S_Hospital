@@ -234,6 +234,21 @@ describe('InstitutionalReceiptSettingsView', () => {
     expect(screen.queryByRole('button', { name: /^A5\b/i })).not.toBeInTheDocument();
   });
 
+  it('keeps normal print controls limited to paper copies logo seal preview and save', async () => {
+    renderView({ canAdvancedPrintSettings: false });
+
+    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
+    await activateTab('Papel y copias');
+
+    expect(screen.getByRole('radiogroup', { name: /tipo de papel/i })).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: /copias/i })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /espacio para sello\/firma/i })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /mostrar logo autorizado/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /imprimir prueba/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /guardar perfil/i })).toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: /leyenda de copias/i })).not.toBeInTheDocument();
+  });
+
   it('renders normal paper settings from the safe backend payload without technical fields', async () => {
     const { apiClient } = await import('@/lib/api');
     const safeProfiles: ReceiptPrintProfile[] = mockData.profiles

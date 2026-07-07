@@ -8927,3 +8927,24 @@ La suite de app debe reflejar permisos reales y el flujo normal de respaldos. Re
 ### Decision
 
 Antes de seguir refactorizando, se confirma que los flujos criticos de entrega siguen verdes: emitir factura, eritropoyetina, cobrar, cerrar caja, recibo institucional, reimpresion/anulacion y respaldo local.
+
+## 377. Fase Recibos - Flujo normal sin leyenda tecnica de copias
+
+### Cambios
+
+- `InstitutionalReceiptSettingsView` deja de mostrar el control `Leyenda de copias` en el flujo normal de papel y copias.
+- El flujo normal queda limitado a papel, cantidad de copias, logo, sello/firma, imprimir prueba y guardar perfil.
+- El valor interno de `show_copy_legend` se conserva desde el perfil para no migrar ni romper recibos existentes.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- src/features/receipt-settings/InstitutionalReceiptSettingsView.test.tsx --run -t "keeps normal print controls limited"` | RED inicial: el checkbox `Leyenda de copias` seguia visible; luego OK: 1 test. |
+| `docker compose exec frontend npm run test -- src/features/receipt-settings/InstitutionalReceiptSettingsView.test.tsx --run` | OK: 26 tests. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+### Decision
+
+La configuracion diaria de impresion debe mantenerse estricta. La leyenda de copias es un detalle de implementacion del perfil, no una decision operativa que el hospital deba ajustar durante caja.
