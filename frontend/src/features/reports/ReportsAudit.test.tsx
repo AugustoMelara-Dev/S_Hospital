@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ReportsAudit } from './ReportsAudit';
-import type { AuditLogPage } from '@/lib/api/types';
+import type { AuditLogPage, OperationsReport } from '@/lib/api/types';
 
 const emptyAuditPage: AuditLogPage = {
   data: [],
@@ -25,6 +25,7 @@ const oneEntryAuditPage: AuditLogPage = {
 
 const getAuditLogsMock = vi.fn<(filters?: Record<string, unknown>) => Promise<AuditLogPage>>();
 const getExecutiveReportMock = vi.fn();
+const getOperationsReportMock = vi.fn<(filters: Record<string, unknown>) => Promise<OperationsReport>>();
 
 vi.mock('@/lib/api', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/api')>();
@@ -33,6 +34,7 @@ vi.mock('@/lib/api', async (importOriginal) => {
     apiClient: {
       ...actual.apiClient,
       getExecutiveReport: (filters: Record<string, unknown>) => getExecutiveReportMock(filters),
+      getOperationsReport: (filters: Record<string, unknown>) => getOperationsReportMock(filters),
     },
     system: {
       ...actual.system,
@@ -62,6 +64,8 @@ describe('ReportsAudit', () => {
     getAuditLogsMock.mockResolvedValue(emptyAuditPage);
     getExecutiveReportMock.mockReset();
     getExecutiveReportMock.mockRejectedValue(new Error('empty executive report'));
+    getOperationsReportMock.mockReset();
+    getOperationsReportMock.mockRejectedValue(new Error('empty operations report'));
   });
 
   afterEach(() => {
@@ -160,5 +164,65 @@ describe('ReportsAudit', () => {
     await waitFor(() => {
       expect(screen.getByText(/no hay entradas/i)).toBeInTheDocument();
     });
+  });
+
+  it('renders the operations snapshot without exposing backup internals', async () => {
+    getOperationsReportMock.mockResolvedValue({
+      date_from: '2026-07-01',
+      date_to: '2026-07-31',
+      filters: {},
+      summary: {
+        void_count: 0,
+        reprint_count: 2,
+        audit_event_count: 2,
+        service_change_count: 0,
+        payment_void_count: 1,
+        backup_count: 1,
+        failed_backup_count: 1,
+        cashier_count: 0,
+      },
+      voids: [],
+      reprints: [
+        {
+          invoice_number: '000-001-01-00000044',
+          reason: 'Reimpresion para expediente administrativo',
+          user: 'Cajero Demo',
+          source: 'institutional_receipt',
+          created_at: '2026-07-15T10:00:00.000000Z',
+        },
+      ],
+      catalog_changes: [],
+      payment_voids: [
+        {
+          invoice_number: '000-001-01-00000045',
+          method: 'cash',
+          amount: '17.25',
+          reason: 'Cobro registrado por error',
+          voided_by: 'Supervisor',
+          created_at: '2026-07-15T10:05:00.000000Z',
+        },
+      ],
+      backups: [
+        {
+          status: 'failed',
+          type: 'manual',
+          completed_at: '2026-07-15T10:10:00.000000Z',
+          filename: 'hospital-backup-technical.sql',
+          checksum_sha256: 'sha256-secret-value',
+          id: 98765,
+        } as never,
+      ],
+      cashiers: [],
+    });
+
+    renderView();
+
+    expect(await screen.findByText(/operaciones del periodo/i)).toBeInTheDocument();
+    expect(screen.getByText(/respaldos fallidos/i)).toBeInTheDocument();
+    expect(screen.getByText(/pagos anulados/i)).toBeInTheDocument();
+    expect(screen.getAllByText('1')).toHaveLength(2);
+    expect(screen.getByText(/cobro registrado por error/i)).toBeInTheDocument();
+    expect(screen.getByText(/respaldo fallido/i)).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/hospital-backup|checksum|sha256|98765/);
   });
 });

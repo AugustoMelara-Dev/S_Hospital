@@ -4,6 +4,8 @@ import type {
   ReportFilters,
   PdfReportFilters,
   DashboardReport,
+  OperationsReport,
+  OperationsReportFilters,
 } from './types';
 
 function buildReportParams(filters: ReportFilters): URLSearchParams {
@@ -38,6 +40,14 @@ export const reports = {
     const params = buildReportParams(filters);
     const response = await apiClient.request<{ data: import('./types').ExecutiveReport }>(
       `/api/reports/executive?${params.toString()}`,
+    );
+    return response.data;
+  },
+
+  async getOperationsReport(filters: OperationsReportFilters): Promise<OperationsReport> {
+    const params = buildReportParams(filters);
+    const response = await apiClient.request<{ data: OperationsReport }>(
+      `/api/reports/operations?${params.toString()}`,
     );
     return response.data;
   },

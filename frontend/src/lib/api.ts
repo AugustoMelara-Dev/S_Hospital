@@ -46,6 +46,8 @@ import type {
   TodayReport,
   ExecutiveReport,
   ExecutiveReportFilters,
+  OperationsReport,
+  OperationsReportFilters,
   InstitutionalReceiptSettings,
   InstitutionalReceipt,
   InstitutionalReceiptSeries,
@@ -124,6 +126,8 @@ export type {
   TodayReport,
   ExecutiveReport,
   ExecutiveReportFilters,
+  OperationsReport,
+  OperationsReportFilters,
 };
 
 
@@ -280,6 +284,10 @@ export const apiClient = {
 
   async getExecutiveReport(filters: ExecutiveReportFilters): Promise<ExecutiveReport> {
     return reports.getExecutiveReport(filters);
+  },
+
+  async getOperationsReport(filters: OperationsReportFilters): Promise<OperationsReport> {
+    return reports.getOperationsReport(filters);
   },
 
   async getCashSessionReport(id: string): Promise<CashSessionReport> {

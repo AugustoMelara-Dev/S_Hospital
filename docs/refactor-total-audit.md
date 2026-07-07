@@ -8561,3 +8561,27 @@ Catalogo conserva sus reglas de caja/facturacion y auditoria, pero el formulario
 ### Decision
 
 Historial prioriza recuperacion rapida del recibo institucional para caja monocomputadora. La reimpresion queda auditada con motivo estandar y sin exponer controles tecnicos ni rutas legacy.
+
+## 361. Fase Reportes - Snapshot operativo en auditoria
+
+### Cambios
+
+- `ReportsAudit` consume `/api/reports/operations` para mostrar un panel de operaciones del periodo mensual.
+- Se agregan tipos y helper `getOperationsReport` en la capa API frontend.
+- El panel muestra conteos de anulaciones, reimpresiones, pagos anulados y respaldos fallidos, mas filas recientes con datos humanos.
+- La UI no expone filename, checksum, id tecnico ni rutas internas de respaldos aunque lleguen en el payload.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- ReportsAudit.test.tsx --run -t "renders the operations snapshot without exposing backup internals"` | RED inicial: no existia panel de operaciones; luego OK: 1 test. |
+| `docker compose exec frontend npm run test -- ReportsAudit.test.tsx reports.test --run` | OK: 14 tests. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `docker compose exec backend php artisan test --filter=ReportsTest` | OK: 60 tests. |
+| `git diff --check` | OK. |
+
+### Decision
+
+Auditoria gana una vista ejecutable para la operacion local sin duplicar agregaciones en frontend. El backend sigue siendo fuente de verdad y la pantalla solo presenta datos seguros para supervision hospitalaria.

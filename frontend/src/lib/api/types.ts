@@ -780,6 +780,79 @@ export type ExecutiveReport = {
   };
 };
 
+export type OperationsReportFilters = {
+  date_from: string;
+  date_to: string;
+  cash_session_id?: number;
+  user_id?: number;
+  category_id?: number;
+  area_id?: number;
+  method?: 'cash' | 'transfer' | 'card' | 'other';
+  status?: 'issued' | 'partial' | 'paid' | 'void';
+};
+
+export type OperationsReport = {
+  date_from: string;
+  date_to: string;
+  filters: Partial<Record<keyof OperationsReportFilters, string | number | null>>;
+  summary: {
+    void_count: number;
+    reprint_count: number;
+    audit_event_count: number;
+    service_change_count: number;
+    payment_void_count: number;
+    backup_count: number;
+    failed_backup_count: number;
+    cashier_count: number;
+  };
+  voids: Array<{
+    invoice_number: string;
+    amount?: string;
+    reason: string | null;
+    user: string | null;
+    voided_by?: string | null;
+    created_at: string | null;
+  }>;
+  reprints: Array<{
+    invoice_number?: string | null;
+    receipt_number?: string | null;
+    reason: string | null;
+    user: string | null;
+    source?: string | null;
+    created_at: string | null;
+  }>;
+  catalog_changes: Array<{
+    action: string;
+    service: string | null;
+    user: string | null;
+    reason?: string | null;
+    created_at: string | null;
+    old_values?: Record<string, unknown>;
+    new_values?: Record<string, unknown>;
+  }>;
+  payment_voids: Array<{
+    invoice_number: string;
+    method: string | null;
+    amount: string;
+    reason: string | null;
+    voided_by: string | null;
+    created_at: string | null;
+  }>;
+  backups: Array<{
+    status: string;
+    type: string | null;
+    completed_at: string | null;
+    created_at?: string | null;
+  }>;
+  cashiers: Array<{
+    cashier: string;
+    username?: string | null;
+    cash_session_count: number;
+    invoice_count: number;
+    total_collected: string;
+  }>;
+};
+
 export type DashboardReport = {
   last_7_days: Array<{
     date: string;

@@ -8,8 +8,8 @@ import { Input } from '@/components/ui/input';
 import { PageHeader } from '@/components/ui/page-header';
 import { AuditLogList, type AuditLogEntry } from '@/components/ui/audit-log-list';
 import { InfoPanel } from '@/components/shared';
-import { system } from '@/lib/api';
-import type { AuditLogPage } from '@/lib/api/types';
+import { apiClient, system } from '@/lib/api';
+import type { AuditLogPage, OperationsReport } from '@/lib/api/types';
 import { useExecutiveReport } from '@/hooks/useExecutiveReport';
 import { AuditSummaryPanel } from './components/AuditSummaryPanel';
 import { computePresetRange } from './components/ReportFiltersPanel';
@@ -79,6 +79,15 @@ export function ReportsAudit({
     { date_from: summaryRange.from, date_to: summaryRange.to },
     canViewExecutiveSummary,
   );
+  const { data: operationsReport } = useQuery<OperationsReport>({
+    queryKey: ['reports', 'operations', summaryRange] as const,
+    queryFn: () => apiClient.getOperationsReport({
+      date_from: summaryRange.from,
+      date_to: summaryRange.to,
+    }),
+    enabled: canViewManagerial,
+    staleTime: 30_000,
+  });
   const auditControlsLocked = isFetching;
 
   if (!canViewManagerial) {
@@ -123,6 +132,8 @@ export function ReportsAudit({
       {!summary && summaryLoading ? (
         <LoadingState label="Cargando resumen de auditoria..." />
       ) : null}
+
+      {operationsReport ? <OperationsSnapshot report={operationsReport} /> : null}
 
       <form
         onSubmit={(event) => {
@@ -251,6 +262,84 @@ export function ReportsAudit({
       ) : null}
     </section>
   );
+}
+
+function OperationsSnapshot({ report }: { report: OperationsReport }) {
+  const recentRows = [
+    ...report.voids.slice(0, 2).map((item) => ({
+      key: `void-${item.invoice_number}-${item.created_at ?? ''}`,
+      label: `Anulacion ${item.invoice_number}`,
+      detail: item.reason || 'Sin motivo registrado',
+    })),
+    ...report.reprints.slice(0, 2).map((item) => ({
+      key: `reprint-${item.invoice_number ?? item.receipt_number ?? ''}-${item.created_at ?? ''}`,
+      label: `Reimpresion ${item.invoice_number ?? item.receipt_number ?? 'institucional'}`,
+      detail: item.reason || 'Sin motivo registrado',
+    })),
+    ...report.payment_voids.slice(0, 2).map((item) => ({
+      key: `payment-void-${item.invoice_number}-${item.created_at ?? ''}`,
+      label: `Pago anulado ${item.invoice_number}`,
+      detail: item.reason || item.amount,
+    })),
+    ...report.backups.slice(0, 2).map((item, index) => ({
+      key: `backup-${index}-${item.completed_at ?? item.created_at ?? ''}`,
+      label: item.status === 'failed' ? 'Respaldo fallido' : 'Respaldo completado',
+      detail: item.type ? backupTypeLabel(item.type) : 'Respaldo local',
+    })),
+  ].slice(0, 6);
+
+  return (
+    <section className="rounded-md border border-operational-border bg-operational-surface p-4 shadow-sm" aria-labelledby="operations-snapshot-title">
+      <header className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h2 id="operations-snapshot-title" className="text-sm font-semibold text-foreground">
+            Operaciones del periodo
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            {report.date_from} a {report.date_to}
+          </p>
+        </div>
+      </header>
+
+      <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Metric label="Anulaciones" value={report.summary.void_count} />
+        <Metric label="Reimpresiones" value={report.summary.reprint_count} />
+        <Metric label="Pagos anulados" value={report.summary.payment_void_count} />
+        <Metric label="Respaldos fallidos" value={report.summary.failed_backup_count} />
+      </dl>
+
+      {recentRows.length > 0 ? (
+        <ul className="mt-4 divide-y divide-operational-border rounded-md border border-operational-border bg-operational-panel/20">
+          {recentRows.map((row) => (
+            <li key={row.key} className="flex flex-col gap-1 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+              <span className="text-sm font-medium text-foreground">{row.label}</span>
+              <span className="text-xs text-muted-foreground">{row.detail}</span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-4 rounded-md border border-dashed border-operational-border bg-operational-panel/20 p-3 text-sm text-muted-foreground">
+          Sin eventos operativos relevantes en el periodo.
+        </p>
+      )}
+    </section>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-md border border-operational-border bg-card p-3">
+      <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
+      <dd className="mt-1 text-xl font-semibold tabular-nums text-foreground">{value}</dd>
+    </div>
+  );
+}
+
+function backupTypeLabel(type: string): string {
+  if (type === 'automatic') return 'Respaldo automatico';
+  if (type === 'manual') return 'Respaldo manual';
+
+  return 'Respaldo local';
 }
 
 function validateAuditDateRange(from: string, to: string): string {
