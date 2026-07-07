@@ -510,6 +510,22 @@ describe('CashBoxView', () => {
     ));
   });
 
+  it('shows an accessible live difference while counting cash before opening the close dialog', async () => {
+    vi.spyOn(apiClient, 'getCurrentCashSession').mockResolvedValue(cashSessionFixture({
+      expected_cash_amount: '125.00',
+    }));
+
+    renderCashBox(<CashBoxView onStatus={vi.fn()} />);
+
+    fireEvent.change(await screen.findByLabelText(/monto contado/i), {
+      target: { value: '120.00' },
+    });
+
+    expect(screen.getByRole('status', { name: /diferencia en vivo/i }))
+      .toHaveTextContent(/- L 5\.00/i);
+    expect(screen.queryByRole('alertdialog', { name: /cerrar caja/i })).not.toBeInTheDocument();
+  });
+
   it('keeps a confirmed close summary printable after the cash session closes', async () => {
     const print = vi.fn(() => {
       expect(document.body.dataset.printingCashClose).toBe('true');

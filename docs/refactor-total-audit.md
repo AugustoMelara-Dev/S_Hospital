@@ -9515,3 +9515,25 @@ La eritropoyetina es una regla fiscal y operativa cerrada: precio fijo L.25.00, 
 ### Decision
 
 El backend ya protege la emision de recibos institucionales por acceso operativo. El frontend debe reflejar esa misma regla para que el operador no vea acciones que parecen disponibles y fallan despues. En monocomputadora estable, menos acciones falsas significa menos friccion en caja e historial.
+
+## 404. Fase Caja - Cierre guiado con diferencia viva
+
+### Cambios
+
+- `CashClosingPanel` deja de usar `Card` como contenedor y pasa a un panel sobrio de cierre guiado.
+- El panel muestra una salida accesible `Diferencia en vivo` mientras el cajero cuenta efectivo, antes de abrir el dialogo final.
+- Se conserva el flujo existente: alerta de diferencia, nota obligatoria en el dialogo, impresion/exportacion del resumen y bloqueo backend si falta motivo.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- CashBoxView.test.tsx -t "shows an accessible live difference"` | RED inicial: no existia un `status` accesible nombrado para la diferencia; luego OK. |
+| `docker compose exec frontend npm run test -- CashBoxView.test.tsx CloseSessionDialog.test.tsx cashCloseSummary.test.ts` | OK: 31 tests. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `docker compose exec backend php artisan test --filter=CloseCashSessionDifferenceTest` | OK: 3 tests, 11 assertions. |
+
+### Decision
+
+El cierre de caja debe guiar el conteo antes de pedir confirmacion. Mostrar la diferencia en vivo reduce errores operativos y evita que el cajero descubra el faltante o sobrante solo dentro del dialogo de cierre. El backend sigue siendo la defensa final para motivo obligatorio y auditoria.
