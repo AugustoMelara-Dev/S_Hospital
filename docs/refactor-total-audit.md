@@ -9184,3 +9184,24 @@ Descargar el PDF institucional es una forma real de entregar o imprimir el recib
 ### Decision
 
 La version monocomputadora necesita respaldos simples y visibles, pero la recuperacion completa no debe convertirse en una accion diaria peligrosa. El operador puede crear y descargar respaldos; la restauracion queda como proceso guiado con soporte y sin exponer detalles tecnicos crudos.
+
+## 389. Fase Caja - Resumen de cierre extraido
+
+### Cambios
+
+- La construccion y descarga del CSV de cierre de caja pasan a `cashCloseSummary`.
+- `CloseSessionDialog` y `CashCloseSummaryPanel` comparten el mismo helper para evitar duplicacion.
+- El helper queda probado de forma aislada para BOM UTF-8, valores auditables, comillas escapadas, descarga y liberacion de URL.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- cashCloseSummary` | RED inicial: modulo inexistente; luego OK: 2 tests. |
+| `docker compose exec frontend npm run test -- cashCloseSummary CloseSessionDialog CashBoxView` | OK: 28 tests. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+### Decision
+
+El cierre de caja debe seguir siendo un flujo guiado, pero la logica de archivo/exportacion no pertenece al dialogo visual. Extraerla permite probar el resumen auditable sin montar toda la UI y reduce el peso del componente critico de caja.
