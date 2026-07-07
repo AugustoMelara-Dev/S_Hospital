@@ -9473,3 +9473,24 @@ La consolidacion de reportes debe dejar Ejecutivo, Caja y Auditoria con responsa
 ### Decision
 
 La vista normal de respaldos ya evitaba mostrar rutas, hashes y comandos, pero el endpoint de estado todavia los enviaba al navegador. Para una instalacion monocomputadora estable, el operador necesita estado y orientacion, no comandos `php artisan` ni nombres tecnicos de archivos. El soporte puede conservar runbooks fuera del payload operativo normal.
+
+## 402. Fase Catalogo - Regla de eritropoyetina sin impuesto en actualizaciones
+
+### Cambios
+
+- `UpdateServiceRequest` valida el impuesto resultante cuando se asigna la regla especial de eritropoyetina.
+- Un servicio normal ya no puede convertirse a eritropoyetina si conserva `taxable=true` por omitir el campo `taxable` en el payload.
+- Se agrega prueba feature para cubrir la conversion desde un servicio gravado y confirmar que no persiste la regla especial.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec backend php artisan test --filter=ServiceCatalogTest::test_erythropoietin_rule_requires_non_taxable_service_on_update` | RED inicial: el endpoint aceptaba la conversion con status 200; luego OK. |
+| `docker compose exec backend php artisan test --filter=ServiceCatalogTest --testsuite=Feature` | OK: 43 tests, 264 assertions. |
+| `docker compose exec backend vendor/bin/pint --test app/Http/Requests/Catalog/UpdateServiceRequest.php tests/Feature/ServiceCatalogTest.php` | OK. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M` | OK. |
+
+### Decision
+
+La eritropoyetina es una regla fiscal y operativa cerrada: precio fijo L.25.00, sin ISV y gratis solo al marcar receta de dialisis en facturacion. La validacion de actualizacion debe proteger el estado final completo del servicio, no solo los campos enviados por la UI.

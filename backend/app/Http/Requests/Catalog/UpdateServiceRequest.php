@@ -138,7 +138,11 @@ class UpdateServiceRequest extends FormRequest
             $validator->errors()->add('special_rule_code', 'No se puede retirar la regla de Eritropoyetina.');
         }
 
-        if ($usesRule && $this->has('taxable') && $this->boolean('taxable')) {
+        $requestedTaxable = $this->has('taxable')
+            ? $this->boolean('taxable')
+            : (bool) $service->taxable;
+
+        if ($usesRule && $requestedTaxable) {
             $validator->errors()->add('taxable', 'Eritropoyetina debe mantenerse sin impuesto.');
         }
     }
