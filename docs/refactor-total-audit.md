@@ -9425,3 +9425,26 @@ Los controles avanzados siguen siendo solo soporte, pero la validacion compartid
 ### Decision
 
 La barra superior no debe competir con la operacion diaria mostrando reloj, conexion, caja, usuario y acciones auxiliares al mismo tiempo. El reloj no decide ninguna accion critica; conexion local y caja si. Este corte reduce ruido visual sin quitar accesibilidad ni navegacion.
+
+## 400. Fase Reportes - Eliminar paneles muertos del ejecutivo
+
+### Cambios
+
+- Se eliminan `CashReconciliationPanel` y su test; Caja ya vive en la subruta de reporte de caja.
+- Se eliminan `VoidsReversalsPanel` y su test; Auditoria ya vive en la subruta de auditoria.
+- `ReportsExecutive.test` deja de mockear componentes muertos.
+- `ReportsView.architecture.test` agrega un guardrail para impedir que esos paneles vuelvan tras la consolidacion por subrutas.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- ReportsView.architecture.test.ts` | RED inicial: los archivos muertos existian; luego OK dentro de suite focalizada. |
+| `docker compose exec frontend npm run test -- ReportsView.architecture.test.ts ReportsExecutive.test.tsx` | OK: 7 tests. |
+| `rg -n "CashReconciliationPanel|VoidsReversalsPanel" frontend/src/features/reports` | OK: solo quedan referencias en el guardrail de arquitectura. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+### Decision
+
+La consolidacion de reportes debe dejar Ejecutivo, Caja y Auditoria con responsabilidades separadas. Mantener paneles ejecutivos viejos de caja/anulaciones confundia el inventario y prolongaba tests obsoletos. El guardrail evita que el reporte ejecutivo vuelva a absorber detalles que pertenecen a subrutas dedicadas.

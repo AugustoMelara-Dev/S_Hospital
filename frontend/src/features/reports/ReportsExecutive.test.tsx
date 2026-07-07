@@ -43,16 +43,8 @@ vi.mock('./components/ServiceRanking', () => ({
   ServiceRanking: () => <div data-testid="service-ranking" />,
 }));
 
-vi.mock('./components/CashReconciliationPanel', () => ({
-  CashReconciliationPanel: () => <div data-testid="cash-reconciliation-panel" />,
-}));
-
 vi.mock('./components/PendingAgingPanel', () => ({
   PendingAgingPanel: () => <div data-testid="pending-aging-panel" />,
-}));
-
-vi.mock('./components/VoidsReversalsPanel', () => ({
-  VoidsReversalsPanel: () => <div data-testid="voids-reversals-panel" />,
 }));
 
 vi.mock('./components/AuditSummaryPanel', () => ({

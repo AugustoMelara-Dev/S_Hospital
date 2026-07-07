@@ -17,4 +17,10 @@ describe('ReportsView module architecture', () => {
     expect(existsSync(join(moduleDir, 'components', 'ReportFiltersPanel.tsx'))).toBe(false);
     expect(existsSync(join(moduleDir, 'components', 'ReportFiltersPanel.test.tsx'))).toBe(false);
   });
+  it('does not keep executive-owned cash or audit panels after sub-route consolidation', () => {
+    expect(existsSync(join(moduleDir, 'components', 'CashReconciliationPanel.tsx'))).toBe(false);
+    expect(existsSync(join(moduleDir, 'components', 'CashReconciliationPanel.test.tsx'))).toBe(false);
+    expect(existsSync(join(moduleDir, 'components', 'VoidsReversalsPanel.tsx'))).toBe(false);
+    expect(existsSync(join(moduleDir, 'components', 'VoidsReversalsPanel.test.tsx'))).toBe(false);
+  });
 });
