@@ -144,7 +144,7 @@ Existen componentes reutilizables para acciones, menus, alertas, dialogos, tabla
 
 ### 5.3 Modulos criticos inventariados
 
-- Reportes: `ReportsView`, `ReportsExecutive`, `ReportsCash`, `ReportsAudit`, `ExecutiveSummary`, `TrendChart`, `PaymentMethodPanel`, `ServiceRanking`, `AuditSummaryPanel`, `CashSessionReportTab`, `CashReconciliationPanel`, `ReportFiltersPanel`, `MetricsGlossary`.
+- Reportes: `ReportsView`, `ReportsExecutive`, `ReportsCash`, `ReportsAudit`, `ExecutiveReportFilters`, `ExecutiveSummary`, `TrendChart`, `PaymentMethodPanel`, `ServiceRanking`, `AuditSummaryPanel`, `CashSessionReportPanel`, `CashReconciliationPanel`.
 - Facturacion: `NewInvoiceView`, `PatientStep`, `ServiceSearch`, `InvoiceCart`, `PaymentModal`, `InvoiceConfirmation`, `InvoiceSuccess`, estado POS y tests.
 - Historial: `InvoiceHistoryView`, `InvoiceHistoryTable`, `InvoiceHistoryHeader`, `InvoiceHistoryFilters`.
 - Dashboard: `DashboardView`, `SetupWizardDialog`, `DashboardSetupStatusCard`.
@@ -160,7 +160,7 @@ Existen componentes reutilizables para acciones, menus, alertas, dialogos, tabla
 
 ### UX/UI
 
-- Reportes ya tiene 3 subrutas visibles (`executive`, `cash`, `audit`), pero aun usa `ReportFiltersPanel` y `MetricsGlossary`. No se puede sostener que esos componentes hayan sido eliminados.
+- Reportes ya tiene 3 subrutas visibles (`executive`, `cash`, `audit`) y los paneles principales quedaron nombrados por su responsabilidad actual.
 - Se elimino `frontend/src/routes.ts`, archivo obsoleto no importado que conservaba etiquetas historicas `Fase 12A`.
 - Algunos modulos siguen usando `SectionCard`/cards funcionales; hay que auditar visualmente si son operativas o decorativas.
 - Hay 6 tests `it.skip`, principalmente en usuarios y cobertura reemplazada por componentes extraidos. Deben revisarse antes de declarar cobertura final.
@@ -8992,3 +8992,22 @@ Ocultar un control no basta si el request todavia lo modifica. El flujo normal d
 ### Decision
 
 El modulo ya no conserva un filtro transversal con nombre de arquitectura vieja. Auditoria comparte solo el calculo de rangos; la UI de filtros pertenece explicitamente al reporte ejecutivo consolidado.
+
+## 380. Fase Reportes - Referencias de QA alineadas a nombres vivos
+
+### Cambios
+
+- El inventario vivo de reportes reemplaza `CashSessionReportTab`, `ReportFiltersPanel` y `MetricsGlossary` por los componentes actuales.
+- `docs/testing-report.md` actualiza el comando reutilizable de reportes de caja para apuntar a `CashSessionReportPanel.test.tsx`.
+- El comentario del helper de fechas referencia `CashSessionReportPanel` y `ReportsAudit`.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `rg --files frontend/src/features/reports \| rg "MetricsGlossary\|CashSessionReport\|ExecutiveReportFilters\|ReportFiltersPanel"` | OK: solo existen `ExecutiveReportFilters` y `CashSessionReportPanel`. |
+| `rg -n "CashSessionReportTab\|ReportFiltersPanel\|MetricsGlossary" frontend/src docs/testing-report.md -S` | OK: sin referencias vivas fuera de pruebas de arquitectura que bloquean regresiones. |
+
+### Decision
+
+La trazabilidad de QA debe apuntar a archivos ejecutables actuales. Las entradas historicas del changelog se conservan como historia, pero el inventario y comandos vivos no deben sugerir rutas eliminadas.
