@@ -9494,3 +9494,24 @@ La vista normal de respaldos ya evitaba mostrar rutas, hashes y comandos, pero e
 ### Decision
 
 La eritropoyetina es una regla fiscal y operativa cerrada: precio fijo L.25.00, sin ISV y gratis solo al marcar receta de dialisis en facturacion. La validacion de actualizacion debe proteger el estado final completo del servicio, no solo los campos enviados por la UI.
+
+## 403. Fase Historial - Generacion de PDF solo con acceso operativo
+
+### Cambios
+
+- `InvoiceHistoryTable` exige acceso operativo a la factura antes de ofrecer `Generar PDF` para recibos institucionales faltantes.
+- Se agrega prueba de historial para una factura pagada ajena, sin recibo institucional, con permisos de recibo y pago pero sin alcance operativo.
+- La UI deja de mostrar una accion que el backend bloquearia con 403, manteniendo el historial consistente para uso de caja.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- InvoiceHistoryView.test.tsx -t "does not offer missing receipt generation for invoices outside operational access"` | RED inicial: el menu de acciones aparecia para una factura ajena; luego OK. |
+| `docker compose exec frontend npm run test -- InvoiceHistoryView.test.tsx` | OK: 43 tests. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+### Decision
+
+El backend ya protege la emision de recibos institucionales por acceso operativo. El frontend debe reflejar esa misma regla para que el operador no vea acciones que parecen disponibles y fallan despues. En monocomputadora estable, menos acciones falsas significa menos friccion en caja e historial.

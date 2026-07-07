@@ -369,6 +369,33 @@ describe('InvoiceHistoryView', () => {
     expect(screen.queryByRole('button', { name: `Acciones de la factura ${paid.invoice_number}` })).not.toBeInTheDocument();
   });
 
+  it('does not offer missing receipt generation for invoices outside operational access', async () => {
+    const paid = invoiceFixture({
+      id: 49,
+      invoice_number: '000-001-01-00000049',
+      patient_name: 'Paciente PDF Ajeno',
+      status: 'paid',
+      issued_at: '2026-06-01T12:00:00.000000Z',
+      paid_amount: '17.25',
+      balance_due: '0.00',
+      issuer: { id: 9, name: 'Otra Caja', username: 'otra-caja' },
+      institutional_receipt: null,
+    });
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [paid],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+
+    renderWithQueryClient(
+      <InvoiceHistoryView user={historyUser(['invoices.view', 'receipts.view', 'payments.create'])} onStatus={vi.fn()} />,
+    );
+
+    await waitFor(() => expect(screen.getByText('Paciente PDF Ajeno')).toBeInTheDocument());
+
+    expect(screen.queryByRole('button', { name: `Acciones de la factura ${paid.invoice_number}` })).not.toBeInTheDocument();
+  });
+
   it('does not let invoice void permission open unrelated institutional receipts', async () => {
     const paid = invoiceFixture({
       id: 45,

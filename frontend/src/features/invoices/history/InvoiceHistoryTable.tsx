@@ -119,6 +119,7 @@ export function InvoiceHistoryTable({
             && (!hasInstitutionalPrintEvents(institutionalReceipt) || canReprint)
           : false;
         const canIssueMissingInstitutionalReceipt = canIssueInstitutionalReceipt
+          && canOperateInvoice
           && invoice.status === 'paid'
           && !institutionalReceipt;
         const canOpenLegacyReceipt = canViewReceipt
