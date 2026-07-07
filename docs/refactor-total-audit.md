@@ -9559,3 +9559,24 @@ El cierre de caja debe guiar el conteo antes de pedir confirmacion. Mostrar la d
 ### Decision
 
 Un rol personalizado puede tener nombre operativo normal pero permisos de alto impacto. La UI debe seguir la metadata de riesgo del backend, no solo nombres fijos como `admin` o `auditor`, para evitar que un operador ofrezca accesos criticos desde el formulario equivocado.
+
+## 406. Fase Usuarios - Busqueda de permisos sin slugs tecnicos
+
+### Cambios
+
+- `RoleFormDialog` deja de buscar permisos por `permission.name` en el buscador normal.
+- La busqueda conserva coincidencias por etiqueta visible, grupo visible y descripcion de riesgo.
+- El placeholder del buscador aclara que opera sobre nombre visible, no sobre identificadores internos.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- RoleFormDialog.test.tsx -t "does not match technical permission slugs"` | RED inicial: `settings.operational.update` encontraba el permiso; luego OK. |
+| `docker compose exec frontend npm run test -- RoleFormDialog.test.tsx` | OK: 15 tests. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+### Decision
+
+Los permisos deben administrarse por lenguaje humano en la interfaz normal. Los slugs siguen siendo el contrato interno para enviar payloads correctos, pero no deben convertirse en una forma visible de navegar la matriz diaria de roles.

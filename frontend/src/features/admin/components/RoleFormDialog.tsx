@@ -73,14 +73,17 @@ export function RoleFormDialog({
       return permissionCatalog;
     }
     return permissionCatalog
-      .map((group) => ({
-        ...group,
-        permissions: group.permissions.filter(
-          (permission) =>
-            permission.label.toLowerCase().includes(query) ||
-            permission.name.toLowerCase().includes(query),
-        ),
-      }))
+      .map((group) => {
+        const groupMatches = group.label.toLowerCase().includes(query);
+        return {
+          ...group,
+          permissions: group.permissions.filter((permission) => (
+            groupMatches
+            || permission.label.toLowerCase().includes(query)
+            || permission.risk_label?.toLowerCase().includes(query)
+          )),
+        };
+      })
       .filter((group) => group.permissions.length > 0);
   }, [permissionCatalog, permissionFilter]);
 
@@ -159,7 +162,7 @@ export function RoleFormDialog({
             type="search"
             value={permissionFilter}
             onChange={(event) => setPermissionFilter(event.target.value)}
-            placeholder="Buscar permiso por nombre o descripción..."
+            placeholder="Buscar permiso por nombre visible o descripcion..."
             aria-label="Buscar permiso"
             className="pl-9"
             disabled={isSaving}

@@ -145,6 +145,39 @@ describe('RoleFormDialog', () => {
     expect(screen.getByText(/no se encontraron permisos/i)).toBeInTheDocument();
   });
 
+  it('does not match technical permission slugs from the normal search box', () => {
+    render(
+      <RoleFormDialog
+        open
+        onOpenChange={vi.fn()}
+        editingRole={null}
+        permissionCatalog={[
+          {
+            module: 'settings',
+            label: 'Configuracion',
+            permissions: [
+              criticalPermission('settings.operational.update', 'Editar reglas operativas'),
+            ],
+          },
+        ]}
+        selectedPermissions={[]}
+        onTogglePermission={vi.fn()}
+        globalError={null}
+        onSubmit={vi.fn()}
+        isSaving={false}
+      />,
+    );
+
+    expect(screen.getByRole('checkbox', { name: /editar reglas operativas/i })).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText(/buscar permiso/i), {
+      target: { value: 'settings.operational.update' },
+    });
+
+    expect(screen.queryByRole('checkbox', { name: /editar reglas operativas/i })).not.toBeInTheDocument();
+    expect(screen.getByText(/no se encontraron permisos/i)).toBeInTheDocument();
+  });
+
   it('marks critical permissions with a visible risk label', () => {
     render(
       <RoleFormDialog
