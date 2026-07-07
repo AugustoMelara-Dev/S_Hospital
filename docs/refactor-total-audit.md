@@ -163,7 +163,7 @@ Existen componentes reutilizables para acciones, menus, alertas, dialogos, tabla
 - Reportes ya tiene 3 subrutas visibles (`executive`, `cash`, `audit`) y los paneles principales quedaron nombrados por su responsabilidad actual.
 - Se elimino `frontend/src/routes.ts`, archivo obsoleto no importado que conservaba etiquetas historicas `Fase 12A`.
 - Algunos modulos siguen usando `SectionCard`/cards funcionales; hay que auditar visualmente si son operativas o decorativas.
-- Hay 6 tests `it.skip`, principalmente en usuarios y cobertura reemplazada por componentes extraidos. Deben revisarse antes de declarar cobertura final.
+- No quedan tests frontend/backend saltados con `it.skip`, `test.skip` o `describe.skip` en el inventario vivo.
 
 ### Seguridad
 
@@ -9011,3 +9011,20 @@ El modulo ya no conserva un filtro transversal con nombre de arquitectura vieja.
 ### Decision
 
 La trazabilidad de QA debe apuntar a archivos ejecutables actuales. Las entradas historicas del changelog se conservan como historia, pero el inventario y comandos vivos no deben sugerir rutas eliminadas.
+
+## 381. Fase QA - Inventario sin tests saltados vivos
+
+### Cambios
+
+- El inventario vivo deja de listar seis `it.skip` como deuda abierta.
+- Se documenta que no quedan `it.skip`, `test.skip` ni `describe.skip` en frontend o backend.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `rg -n "\b(it\|test\|describe)\.skip\b|\.skip\(" frontend/src backend/tests -S` | OK: sin resultados. |
+
+### Decision
+
+El registro de deuda debe reflejar el codigo actual. Mantener una deuda cerrada en el inventario final distrae del QA pendiente real: gates E2E completos, evidencia fisica/LAN cuando aplique y verificacion final de release.
