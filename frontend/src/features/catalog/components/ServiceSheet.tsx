@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
-import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ApiError, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { Alert } from '@/components/ui/alert';
@@ -12,28 +11,19 @@ import { Sheet } from '@/components/ui/sheet';
 import { FieldGroup, FormSection } from '@/components/ui/form-section';
 import { cn } from '@/lib/utils';
 import { ServiceSheetFooter } from './ServiceSheetFooter';
-
-const serviceSchema = z.object({
-  category_id: z.number().min(1, 'Seleccione una categoria'),
-  area_id: z.number().min(1, 'Seleccione un area'),
-  name: z.string().trim().min(1, 'El nombre es requerido'),
-  price: z.string()
-    .regex(/^\d+(\.\d{1,2})?$/, 'Precio debe ser un número válido')
-    .refine((value) => (priceCents(value) ?? 0) > 0, 'Precio debe ser mayor que cero'),
-  price_change_reason: z.string().max(500, 'Motivo maximo 500 caracteres').nullable().optional(),
-  tax_change_reason: z.string().max(500, 'Motivo maximo 500 caracteres').nullable().optional(),
-  availability_change_reason: z.string().max(500, 'Motivo maximo 500 caracteres').nullable().optional(),
-  scan_code: z.string().nullable().optional(),
-  barcode: z.string().nullable().optional(),
-  qr_code: z.string().nullable().optional(),
-  taxable: z.boolean(),
-  active: z.boolean(),
-  visible_in_billing: z.boolean(),
-  is_billable: z.boolean(),
-  special_rule_code: z.string().nullable().optional(),
-});
-
-type ServiceFormData = z.infer<typeof serviceSchema>;
+import { ServiceSheetBasicSection } from './ServiceSheetBasicSection';
+import { ServiceSheetPriceSection } from './ServiceSheetPriceSection';
+import { ServiceSheetScannerSection } from './ServiceSheetScannerSection';
+import {
+  ERYTHROPOIETIN_FIXED_PRICE,
+  MIN_CHANGE_REASON_LENGTH,
+  SPECIAL_RULE_ERYTHROPOIETIN,
+  SPECIAL_RULE_NONE,
+  defaultServiceFormValues,
+  priceCents,
+  serviceSchema,
+  type ServiceFormData,
+} from './serviceSheetTypes';
 
 type ServiceSheetProps = {
   open: boolean;
@@ -59,28 +49,6 @@ type ServiceSheetProps = {
   onSuccess: () => void;
 };
 
-const defaultValues: ServiceFormData = {
-  category_id: 0,
-  area_id: 0,
-  name: '',
-  price: '0.00',
-  price_change_reason: null,
-  tax_change_reason: null,
-  availability_change_reason: null,
-  scan_code: null,
-  barcode: null,
-  qr_code: null,
-  taxable: true,
-  active: true,
-  visible_in_billing: true,
-  is_billable: true,
-  special_rule_code: null,
-};
-
-const SPECIAL_RULE_NONE = 'none';
-const SPECIAL_RULE_ERYTHROPOIETIN = 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION';
-const ERYTHROPOIETIN_FIXED_PRICE = '25.00';
-const MIN_CHANGE_REASON_LENGTH = 5;
 
 export function ServiceSheet({
   open,
@@ -106,7 +74,7 @@ export function ServiceSheet({
     formState: { errors, isSubmitting },
   } = useForm<ServiceFormData>({
     resolver: zodResolver(serviceSchema),
-    defaultValues,
+    defaultValues: defaultServiceFormValues,
   });
 
   const categoryId = watch('category_id');
@@ -161,7 +129,7 @@ export function ServiceSheet({
     }
 
     reset({
-      ...defaultValues,
+      ...defaultServiceFormValues,
       category_id: categories[0]?.id || 0,
       area_id: areas[0]?.id || 0,
     });
@@ -251,7 +219,7 @@ export function ServiceSheet({
       await apiClient.saveService(payload, service?.id);
       onSuccess();
       onOpenChange(false);
-      reset(defaultValues);
+      reset(defaultServiceFormValues);
     } catch (error) {
       if (error instanceof ApiError && error.validationErrors) {
         applyBackendErrors(error.validationErrors, setError);
@@ -270,202 +238,32 @@ export function ServiceSheet({
       description={isEditing ? 'Modifique los datos del servicio.' : 'Agregue un nuevo servicio al catálogo.'}
     >
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
-        <FormSection
-          title="Datos básicos"
-          description="Categoría, área y nombre visible para el cajero."
-        >
-          <FieldGroup columns={2}>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="category_id">Categoría *</Label>
-              <Select
-                value={String(categoryId)}
-                onValueChange={(val) => setValue('category_id', Number(val))}
-                disabled={isSubmitting}
-              >
-                <SelectTrigger
-                  id="category_id"
-                  aria-invalid={Boolean(errors.category_id)}
-                  aria-describedby={errors.category_id ? 'service-category-error' : undefined}
-                  className={cn(errors.category_id && 'border-destructive')}
-                >
-                  <SelectValue placeholder="Seleccione una categoria" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat.id} value={String(cat.id)}>
-                      {cat.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.category_id && (
-                <p id="service-category-error" role="alert" className="text-sm text-destructive">
-                  {errors.category_id.message}
-                </p>
-              )}
-            </div>
+        <ServiceSheetBasicSection
+          areaId={areaId}
+          areas={areas}
+          categoryId={categoryId}
+          categories={categories}
+          errors={errors}
+          isSubmitting={isSubmitting}
+          register={register}
+          setValue={setValue}
+        />
 
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="area_id">Área *</Label>
-              <Select
-                value={String(areaId)}
-                onValueChange={(val) => setValue('area_id', Number(val))}
-                disabled={isSubmitting}
-              >
-                <SelectTrigger
-                  id="area_id"
-                  aria-invalid={Boolean(errors.area_id)}
-                  aria-describedby={errors.area_id ? 'service-area-error' : undefined}
-                  className={cn(errors.area_id && 'border-destructive')}
-                >
-                  <SelectValue placeholder="Seleccione un area" />
-                </SelectTrigger>
-                <SelectContent>
-                  {areas.map((area) => (
-                    <SelectItem key={area.id} value={String(area.id)}>
-                      {area.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.area_id && (
-                <p id="service-area-error" role="alert" className="text-sm text-destructive">
-                  {errors.area_id.message}
-                </p>
-              )}
-            </div>
-          </FieldGroup>
-
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="name">Nombre *</Label>
-            <Input
-              id="name"
-              disabled={isSubmitting}
-              {...register('name')}
-              aria-invalid={Boolean(errors.name)}
-              aria-describedby={errors.name ? 'service-name-error' : undefined}
-              className={cn(errors.name && 'border-destructive')}
-            />
-            {errors.name && (
-              <p id="service-name-error" role="alert" className="text-sm text-destructive">
-                {errors.name.message}
-              </p>
-            )}
-          </div>
-        </FormSection>
-
-        <FormSection
-          title="Precio"
-          description="Precio vigente y motivo del cambio. El cambio de precio siempre queda auditado."
-        >
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="price">Precio (L.) *</Label>
-            <Input
-              id="price"
-              type="text"
-              inputMode="decimal"
-              disabled={isSubmitting || locksErythropoietinRule}
-              {...register('price')}
-              aria-invalid={Boolean(errors.price)}
-              aria-describedby={errors.price ? 'service-price-error' : undefined}
-              className={cn(errors.price && 'border-destructive')}
-            />
-            {errors.price && (
-              <p id="service-price-error" role="alert" className="text-sm text-destructive">
-                {errors.price.message}
-              </p>
-            )}
-          </div>
-
-          {requiresPriceChangeReason && (
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="price_change_reason">Motivo del cambio de precio *</Label>
-              <Input
-                id="price_change_reason"
-                disabled={isSubmitting}
-                {...register('price_change_reason')}
-                aria-invalid={Boolean(errors.price_change_reason)}
-                aria-describedby={
-                  errors.price_change_reason ? 'service-price-reason-error' : undefined
-                }
-                className={cn(errors.price_change_reason && 'border-destructive')}
-              />
-              {errors.price_change_reason && (
-                <p
-                  id="service-price-reason-error"
-                  role="alert"
-                  className="text-sm text-destructive"
-                >
-                  {errors.price_change_reason.message}
-                </p>
-              )}
-            </div>
-          )}
-        </FormSection>
+        <ServiceSheetPriceSection
+          errors={errors}
+          isSubmitting={isSubmitting}
+          locksErythropoietinRule={locksErythropoietinRule}
+          register={register}
+          requiresPriceChangeReason={requiresPriceChangeReason}
+        />
 
         {scannerEnabled && (
-          <FormSection
-            title="Códigos de escaneo"
-            description="Identificadores opcionales que se utilizan al escanear productos en caja."
-          >
-            <FieldGroup columns={3}>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="scan_code">Código de escáner</Label>
-                <Input
-                  id="scan_code"
-                  placeholder="LAB-GLU-001"
-                  disabled={isSubmitting}
-                  {...register('scan_code')}
-                  aria-invalid={Boolean(errors.scan_code)}
-                  aria-describedby={errors.scan_code ? 'service-scan-code-error' : undefined}
-                  className={cn(errors.scan_code && 'border-destructive')}
-                />
-                {errors.scan_code && (
-                  <p id="service-scan-code-error" role="alert" className="text-sm text-destructive">
-                    {errors.scan_code.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="barcode">Código de barra</Label>
-                <Input
-                  id="barcode"
-                  disabled={isSubmitting}
-                  placeholder="Código de barra opcional"
-                  {...register('barcode')}
-                  aria-invalid={Boolean(errors.barcode)}
-                  aria-describedby={errors.barcode ? 'service-barcode-error' : undefined}
-                  className={cn(errors.barcode && 'border-destructive')}
-                />
-                {errors.barcode && (
-                  <p id="service-barcode-error" role="alert" className="text-sm text-destructive">
-                    {errors.barcode.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="qr_code">Código QR</Label>
-                <Input
-                  id="qr_code"
-                  disabled={isSubmitting}
-                  placeholder="Código QR opcional"
-                  {...register('qr_code')}
-                  aria-invalid={Boolean(errors.qr_code)}
-                  aria-describedby={errors.qr_code ? 'service-qr-code-error' : undefined}
-                  className={cn(errors.qr_code && 'border-destructive')}
-                />
-                {errors.qr_code && (
-                  <p id="service-qr-code-error" role="alert" className="text-sm text-destructive">
-                    {errors.qr_code.message}
-                  </p>
-                )}
-              </div>
-            </FieldGroup>
-          </FormSection>
+          <ServiceSheetScannerSection
+            errors={errors}
+            isSubmitting={isSubmitting}
+            register={register}
+          />
         )}
-
         <FormSection
           title="Reglas"
           description="Regla especial e ISV aplicable al servicio."
@@ -708,14 +506,4 @@ function priceValuesDiffer(current: string, next: string): boolean {
   const nextCents = priceCents(next);
 
   return currentCents !== null && nextCents !== null && currentCents !== nextCents;
-}
-
-function priceCents(value: string): number | null {
-  const match = value.trim().match(/^(\d+)(?:\.(\d{1,2}))?$/);
-
-  if (!match) {
-    return null;
-  }
-
-  return Number(match[1]) * 100 + Number((match[2] ?? '').padEnd(2, '0'));
 }

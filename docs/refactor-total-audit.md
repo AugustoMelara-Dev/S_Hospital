@@ -8515,3 +8515,26 @@ Respaldos debe responder primero si el hospital puede confiar en copias reciente
 ### Decision
 
 El cierre de caja impreso/exportado debe servir como evidencia operativa del turno. Agregar numero de sesion y fecha de cierre mejora archivo y auditoria sin tocar calculos monetarios ni contratos fiscales.
+
+## 359. Fase Catalogo - Separar secciones del formulario de servicio
+
+### Cambios
+
+- `ServiceSheet` baja de 722 a 510 lineas y queda como orquestador de estado, validacion y mutacion.
+- Se extraen `ServiceSheetBasicSection`, `ServiceSheetPriceSection` y `ServiceSheetScannerSection`.
+- El schema, defaults y constantes del formulario viven en `serviceSheetTypes`.
+- Se conservan reglas existentes: motivo por precio/impuesto/disponibilidad, eritropoyetina fija, payloads y bloqueo de duplicados.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- ServiceSheet.architecture --run` | RED inicial: 722 lineas > 520; luego OK: 1 test. |
+| `docker compose exec frontend npm run test -- CatalogView ServiceCatalogTable ServiceSheet --run` | OK: 47 tests. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `git diff --check` | OK. |
+
+### Decision
+
+Catalogo conserva sus reglas de caja/facturacion y auditoria, pero el formulario deja de concentrar UI, schema y secciones en un solo megacomponente.
