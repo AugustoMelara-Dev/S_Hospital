@@ -216,6 +216,43 @@ class ReceiptProfileAssignmentTest extends TestCase
             ->assertJsonValidationErrors('profile_id');
     }
 
+    public function test_user_without_advanced_permission_cannot_assign_support_only_profile_and_is_audited(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $this->seed(ReceiptPrintProfileSeeder::class);
+
+        $user = User::factory()->create();
+        $user->givePermissionTo('receipt_settings.update');
+
+        $profile = ReceiptPrintProfile::query()
+            ->where('code', ReceiptPrintProfile::CODE_THERMAL_80)
+            ->firstOrFail();
+        $profile->update(['active' => true]);
+
+        $this->actingAs($user)
+            ->putJson('/api/settings/institutional-receipts/assignments', [
+                'profile_code' => $profile->code,
+                'scope_type' => ReceiptProfileAssignment::SCOPE_GLOBAL,
+                'active' => true,
+            ])
+            ->assertStatus(403)
+            ->assertJsonValidationErrors('receipt_settings.advanced');
+
+        $this->assertFalse(
+            ReceiptProfileAssignment::query()
+                ->where('receipt_print_profile_id', $profile->id)
+                ->where('active', true)
+                ->exists()
+        );
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $user->id,
+            'action' => 'receipt_settings.advanced_denied',
+            'entity_type' => ReceiptPrintProfile::class,
+            'entity_id' => $profile->id,
+            'result' => 'failed',
+        ]);
+    }
+
     public function test_active_assignment_prevents_deactivating_print_profile(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);

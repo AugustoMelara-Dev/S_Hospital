@@ -48,6 +48,12 @@ class ReceiptPrintProfile extends Model
 
     public const CODE_THERMAL_58 = 'thermal_58mm';
 
+    public const SUPPORT_ONLY_CODES = [
+        self::CODE_CUSTOM_SMALL,
+        self::CODE_THERMAL_80,
+        self::CODE_THERMAL_58,
+    ];
+
     protected $fillable = [
         'code',
         'name',
@@ -98,5 +104,10 @@ class ReceiptPrintProfile extends Model
     public function receipts(): HasMany
     {
         return $this->hasMany(InstitutionalReceipt::class, 'print_profile_code', 'code');
+    }
+
+    public function isSupportOnly(): bool
+    {
+        return in_array($this->code, self::SUPPORT_ONLY_CODES, true);
     }
 }

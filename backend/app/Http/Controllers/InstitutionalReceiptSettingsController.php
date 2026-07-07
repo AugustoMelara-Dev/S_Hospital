@@ -25,12 +25,6 @@ use Symfony\Component\HttpFoundation\Response;
 
 class InstitutionalReceiptSettingsController extends Controller
 {
-    private const SUPPORT_ONLY_PROFILE_CODES = [
-        ReceiptPrintProfile::CODE_CUSTOM_SMALL,
-        ReceiptPrintProfile::CODE_THERMAL_80,
-        ReceiptPrintProfile::CODE_THERMAL_58,
-    ];
-
     public function show(ViewReceiptSettingsRequest $request, ResolveReceiptPrintProfileAction $resolver): JsonResponse
     {
         try {
@@ -480,7 +474,7 @@ class InstitutionalReceiptSettingsController extends Controller
 
     private function isSupportOnlyProfile(ReceiptPrintProfile $profile): bool
     {
-        return in_array($profile->code, self::SUPPORT_ONLY_PROFILE_CODES, true);
+        return $profile->isSupportOnly();
     }
 
     private function denySupportOnlyTestProfileWithoutAdvanced(

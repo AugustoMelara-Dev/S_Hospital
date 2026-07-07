@@ -8681,3 +8681,32 @@ Caja monocomputadora gana velocidad sin pago automatico: el cajero sigue confirm
 ### Decision
 
 Respaldos mantiene la operacion normal clara para caja monocomputadora, mientras la logica de soporte queda fuera del componente principal. Esto reduce riesgo para seguir limpiando estado avanzado sin exponer datos tecnicos al operador.
+
+## 366. Fase Seguridad/Recibos - Bloquear asignacion de perfiles de soporte
+
+### Cambios
+
+- `ReceiptPrintProfile` centraliza los codigos de perfiles solo soporte y expone `isSupportOnly()`.
+- `UpsertReceiptProfileAssignmentRequest` rechaza con 403 la asignacion activa de perfiles solo soporte si el usuario no tiene `receipt_settings.advanced`.
+- El intento denegado queda auditado como `receipt_settings.advanced_denied` con resultado `failed`.
+- `InstitutionalReceiptSettingsController` reutiliza el metodo del modelo para evitar listas duplicadas.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec backend php artisan test --filter=test_user_without_advanced_permission_cannot_assign_support_only_profile_and_is_audited` | RED inicial: devolvia 200; luego OK: 1 test. |
+| `docker compose exec backend php artisan test --filter=ReceiptProfileAssignmentTest` | OK: 11 tests. |
+| `docker compose exec backend php artisan test --filter=ReceiptPrintProfileAdvancedFieldsTest` | OK: 7 tests. |
+| `docker compose exec backend php artisan test --filter=InstitutionalReceiptSettingsTest` | OK: 13 tests. |
+| `docker compose exec backend vendor/bin/pint --test app/Models/ReceiptPrintProfile.php app/Http/Requests/InstitutionalReceipts/UpsertReceiptProfileAssignmentRequest.php app/Http/Controllers/InstitutionalReceiptSettingsController.php tests/Feature/ReceiptProfileAssignmentTest.php` | OK: 4 files. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=512M` | OK: no errors. |
+| `git diff --check` | OK. |
+
+### Nota de baseline
+
+`docker compose exec backend vendor/bin/pint --test` global sigue fallando por un estilo preexistente en `app/Actions/Reports/TodayReportService.php` (`line_ending`, `unary_operator_spaces`). No se corrige en este commit para no mezclar reportes con seguridad de recibos.
+
+### Decision
+
+La seguridad de impresion no depende solo de ocultar controles en frontend. Aunque un perfil termico o personalizado ya exista y este activo por soporte, un usuario normal de configuracion no puede asignarlo al flujo operativo sin permiso avanzado.
