@@ -629,6 +629,26 @@ describe('CashBoxView', () => {
     expect(closeCashSession).not.toHaveBeenCalled();
   });
 
+  it('blocks close after refresh when paid invoices are missing institutional receipts', async () => {
+    const getCurrentCashSession = vi.spyOn(apiClient, 'getCurrentCashSession')
+      .mockResolvedValueOnce(cashSessionFixture())
+      .mockResolvedValueOnce(cashSessionFixture({
+        expected_cash_amount: '125.00',
+        missing_institutional_receipt_count: 1,
+      } as Partial<CashSession>));
+    const closeCashSession = vi.spyOn(apiClient, 'closeCashSession').mockResolvedValue(cashSessionFixture({ status: 'closed' }));
+
+    renderCashBox(<CashBoxView onStatus={vi.fn()} />);
+
+    fireEvent.change(await screen.findByLabelText(/monto contado/i), { target: { value: '100.00' } });
+    fireEvent.click(screen.getByRole('button', { name: /^cerrar caja$/i }));
+
+    await waitFor(() => expect(getCurrentCashSession).toHaveBeenCalledTimes(2), { timeout: 250 });
+    expect(screen.queryByRole('alertdialog', { name: /confirmar cierre de caja/i })).not.toBeInTheDocument();
+    expect(await screen.findByText(/recibo institucional pendiente/i)).toBeInTheDocument();
+    expect(closeCashSession).not.toHaveBeenCalled();
+  });
+
   it('does not open close confirmation when the reconciliation refresh fails', async () => {
     const getCurrentCashSession = vi.spyOn(apiClient, 'getCurrentCashSession')
       .mockResolvedValueOnce(cashSessionFixture())

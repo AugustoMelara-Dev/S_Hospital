@@ -9226,3 +9226,24 @@ El cierre de caja debe seguir siendo un flujo guiado, pero la logica de archivo/
 ### Decision
 
 El reporte ejecutivo debe servir durante el turno, no solo despues de cerrar caja. Para cajas abiertas, el efectivo esperado se deriva de pagos vivos; para cajas cerradas se respeta el snapshot auditado.
+
+## 391. Fase Caja - Cierre bloquea recibos institucionales pendientes
+
+### Cambios
+
+- `CashSession` frontend reconoce `missing_institutional_receipt_count`.
+- `CashBoxView` refresca caja antes de cerrar y bloquea el dialogo si hay facturas pagadas sin recibo institucional emitido.
+- El mensaje indica al cajero generar el recibo institucional antes de cerrar, sin duplicar la logica fiscal del backend.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- CashBoxView -t "blocks close after refresh when paid invoices are missing institutional receipts"` | RED inicial: abria el dialogo; luego OK: 1 test. |
+| `docker compose exec frontend npm run test -- CashBoxView` | OK: 18 tests. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+### Decision
+
+El backend sigue siendo la autoridad, pero la pantalla de caja debe anticipar bloqueos conocidos despues del refresco de conciliacion. Esto evita que el cajero avance hasta el dialogo de cierre para descubrir un error que ya estaba calculado por el servidor.

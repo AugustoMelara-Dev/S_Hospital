@@ -229,9 +229,14 @@ export function CashBoxView({
     const refreshedPendingInvoiceCount = sessionForClose.pending_invoice_count ?? 0;
     const refreshedPendingAmount = sessionForClose.pending_amount ?? '0.00';
     const refreshedHasPendingBalance = refreshedPendingInvoiceCount > 0 || parseCents(refreshedPendingAmount) > 0;
+    const missingInstitutionalReceiptCount = sessionForClose.missing_institutional_receipt_count ?? 0;
 
     if (refreshedHasPendingBalance) {
       setFormAlert(`No se puede cerrar caja con ${refreshedPendingInvoiceCount} factura(s) pendientes o parciales por ${formatLempirasUI(refreshedPendingAmount)}.`);
+      return;
+    }
+    if (missingInstitutionalReceiptCount > 0) {
+      setFormAlert(`No se puede cerrar caja con ${missingInstitutionalReceiptCount} recibo institucional pendiente. Genere el recibo antes de cerrar.`);
       return;
     }
     setClosingAmountError(null);
