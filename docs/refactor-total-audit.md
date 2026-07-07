@@ -8132,3 +8132,22 @@ Pruebas ejecutadas:
 Decision:
 
 - La entrega monocomputadora no debe quedar bloqueada por una segunda PC. La evidencia sigue siendo obligatoria, pero ahora valida el navegador local del servidor y conserva el gate LAN externo solo cuando el despliegue sea multi-PC.
+
+## 340. Fase QA/Docs - Evidencia monocomputadora reconciliada
+
+### Cambios
+
+- `docs/INSTALL_SUMMARY.md` ahora describe el modo monocomputadora aprobado y deja el modo multi-PC como opcion posterior, sin permitir bases separadas ni correlativos duplicados.
+- `docs/testing-report.md`, `docs/00_README.md` y `docs/v1-3/COORDINATION_BOARD.md` cambian el bloqueo generico de LAN por evidencia de navegador segun modo seleccionado.
+- `docs/RELEASE_CHECKLIST.md` evita decir que el flujo de factura/pago/recibo/reporte siempre debe ejecutarse desde un cliente LAN.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.test.ps1` | OK: el preflight test sigue validando prueba local/loopback e impresion institucional. |
+| `git diff --check` | OK: sin whitespace conflictivo. |
+
+### Decision
+
+La documentacion debe reflejar el alcance aprobado: menos complejidad de despliegue, misma seriedad en facturacion, caja, recibos, respaldos, restore, concurrencia y auditoria. Monocomputadora no significa instalar copias separadas ni saltarse la evidencia fisica; solo cambia la prueba de navegador de segunda PC LAN a navegador local del servidor cuando `APP_URL` es loopback.

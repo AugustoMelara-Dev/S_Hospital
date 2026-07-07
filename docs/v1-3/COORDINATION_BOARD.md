@@ -118,4 +118,4 @@ Local review date: 2026-06-28
 - The old V1.3 branch was divergent from current `main`; it has now been synced locally but not pushed yet.
 - The local Git pre-commit hook is stale and points at a missing script; quality gates must be run explicitly until hook hygiene is fixed.
 - Full V1.3 scope is larger than a single safe commit; implementation must proceed in slices with tests.
-- Host release runner evidence remains open because `backend/vendor/autoload.php` is absent on this host; the preflight is explicit and the Docker/MariaDB release gate is the current validated automated path. Final LAN/physical evidence also remains open.
+- Host release runner evidence remains open because `backend/vendor/autoload.php` is absent on this host; the preflight is explicit and the Docker/MariaDB release gate is the current validated automated path. Final selected-mode browser and physical evidence also remain open; second-client LAN evidence is only required for multi-PC deployments.

@@ -147,7 +147,7 @@ Validacion local/LAN fisica:
 - En monocomputadora, abrir `http://127.0.0.1:PUERTO/login` en el servidor. En multi-PC, abrir `http://IP_DEL_SERVIDOR/login` desde otra computadora cliente.
 - Validar `/up`, `/login` y `/verify-email`.
 - Confirmar que el modo coincide con el alcance aprobado: loopback solo para monocomputadora; IP/dominio LAN para multi-PC.
-- Crear factura, cobrar, ver recibo y reporte desde navegador cliente.
+- Crear factura, cobrar, ver recibo y reporte desde el navegador validado.
 
 ## Analisis estatico opcional
 

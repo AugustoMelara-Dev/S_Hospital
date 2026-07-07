@@ -16,8 +16,8 @@ the frontend lint/typecheck/test/build path.
 
 The focused Playwright gates remain mocked and non-mutating. They prove frontend
 contracts, RBAC visibility, payload shape, and accessible UI behavior. They do
-not replace real LAN, printer, backup scheduler, restore dry-run, or physical
-print validation.
+not replace selected-mode browser validation, printer, backup scheduler,
+restore dry-run, or physical print validation.
 
 The current release target has been narrowed to a stable single-machine local
 installation. Multi-PC LAN proof is no longer treated as the next engineering
@@ -166,7 +166,7 @@ Backend verification is stronger but not production-final:
 
 ## Manual/Physical QA Still Required
 
-- real LAN login and route access by server IP;
+- selected-mode browser proof: local server browser for monocomputadora, or server IP access from a second LAN client only for multi-PC deployments;
 - real MySQL/MariaDB migrations and seeders from zero;
 - physical or PDF print checks for Carta, Media carta and A5;
 - backup worker/scheduler behavior on the server;
@@ -178,8 +178,18 @@ Backend verification is stronger but not production-final:
 
 The focused mocked frontend gates are improving and currently green for the
 covered critical flows. The total refactor is not complete until the full
-backend, frontend, E2E, print, LAN/offline, and manual QA requirements above are
+backend, frontend, E2E, print, local/offline, and manual QA requirements above are
 verified.
+
+### 2026-07-06 Single-Machine Readiness Gate
+
+| Command | Result |
+|---|---|
+| `docker compose exec backend php artisan test tests/Feature/SystemStatusTest.php --filter=loopback_app_url_is_treated_as_local_single_machine_mode` | RED first because loopback still requested `LAN_CLIENT_VALIDATION_PROOF`; then PASS, 1 test / 15 assertions. |
+| `docker compose exec backend php artisan test tests/Feature/SystemStatusTest.php` | PASS, 23 tests / 159 assertions. |
+| `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.test.ps1` | PASS. Confirms local server proof is required for loopback and thermal proof is not a primary release blocker. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=1G --no-progress` | PASS. |
+| `docker compose exec backend vendor/bin/pint --test` | PASS after formatting stale receipt-guard test imports in a separate style cut. |
 
 ### 2026-07-05 Receipt Settings Normal Profile Gate
 
