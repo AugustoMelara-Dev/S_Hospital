@@ -8452,3 +8452,25 @@ Los usuarios son parte de la trazabilidad de caja, facturacion, respaldos y audi
 ### Decision
 
 La caja puede seguir usando los endpoints compartidos del backend, pero la frontera frontend debe nombrar la intencion operacional: exportar la caja seleccionada, no un reporte generico de periodo.
+
+## 356. Fase Usuarios - Separar paneles de gestion
+
+### Cambios
+
+- `UsersView` baja de 565 a 436 lineas y queda como orquestador de datos, permisos y mutaciones.
+- Se extraen `UserManagementOverview`, `UserRolesPanel`, `UsersDirectoryPanel` y `UserStatusToggleDialog`.
+- Se conservan los dialogos y tablas existentes para no cambiar contratos API, RBAC, auditoria ni reglas de usuarios protegidos.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- UsersView.architecture --run` | RED inicial: 565 lineas > limite; luego OK: 1 test. |
+| `docker compose exec frontend npm run test -- UsersView UserFormDialog RoleFormDialog UsersTable PermissionMatrix --run` | OK: 70 tests. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+| `git diff --check` | OK. |
+
+### Decision
+
+Usuarios deja de ser una pantalla monolitica. La vista principal coordina estado y reglas de acceso; la UI pesada vive en componentes por responsabilidad sin relajar seguridad ni auditoria.

@@ -10,6 +10,6 @@ describe('UsersView module architecture', () => {
     const source = readFileSync(join(moduleDir, 'UsersView.tsx'), 'utf8');
     const lines = source.split(/\r?\n/).length;
 
-    expect(lines).toBeLessThanOrEqual(575);
+    expect(lines).toBeLessThanOrEqual(440);
   });
 });

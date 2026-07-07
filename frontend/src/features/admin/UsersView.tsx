@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Search, UserCog, UserPlus, Users } from 'lucide-react';
 import {
   type AuthUser,
   type PermissionCatalogGroup,
@@ -9,18 +8,14 @@ import {
   userSafeErrorMessage,
 } from '@/lib/api';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { ErrorState, LoadingState } from '@/components/ui/states';
-import { Input } from '@/components/ui/input';
-import { OperationalBanner, PermissionState, StatGrid } from '@/components/shared';
-import { Badge } from '@/components/ui/badge';
 import { UserFormDialog, type UserFormData } from './components/UserFormDialog';
+import { UserManagementOverview } from './components/UserManagementOverview';
 import { RoleFormDialog } from './components/RoleFormDialog';
-import { PermissionMatrix } from './components/PermissionMatrix';
 import { PasswordResetDialog } from './components/PasswordResetDialog';
-import { UsersTable } from './components/UsersTable';
-import { roleLabel } from '@/lib/role-labels';
+import { UserRolesPanel } from './components/UserRolesPanel';
+import { UsersDirectoryPanel } from './components/UsersDirectoryPanel';
+import { UserStatusToggleDialog } from './components/UserStatusToggleDialog';
 import { hasProtectedRole, isHiddenPermission, sanitizePermissionCatalog, sanitizeRole, sanitizeRoles, visiblePermissionNames } from './users-view.helpers';
 
 type UsersViewProps = {
@@ -32,8 +27,6 @@ type UsersViewProps = {
   canAssignAdminRole?: boolean;
   currentUserId?: number;
 };
-
-
 export function UsersView({
   onStatus,
   canCreateUsers,
@@ -353,144 +346,38 @@ export function UsersView({
 
   return (
     <>
-      <OperationalBanner
-        title="Usuarios y permisos"
-        meta="Administracion segura"
-        description="Administre cuentas individuales, roles operativos y permisos por modulo sin cambiar la politica de acceso del servidor."
-        status={(
-          <Badge variant="info">
-            <Users data-icon aria-hidden="true" />
-            RBAC activo
-          </Badge>
-        )}
-        actions={canCreateUsers ? (
-          <Button onClick={handleOpenCreateModal}>
-            <UserPlus data-icon aria-hidden="true" />
-            Crear usuario
-          </Button>
-        ) : undefined}
+      <UserManagementOverview
+        activeUsersCount={activeUsersCount}
+        editableRolesCount={editableRolesCount}
+        onCreateUser={handleOpenCreateModal}
+        pendingPasswordUsersCount={pendingPasswordUsersCount}
+        showCreateAction={canCreateUsers}
+        totalRolesCount={roles.length}
+        totalUsersCount={users.length}
+      />
+      <UserRolesPanel
+        canAssignAdminRole={canAssignAdminRole}
+        canManageRoles={canManageRoles}
+        onCreateRole={handleOpenCreateRole}
+        onEditRole={handleOpenEditRole}
+        permissionCatalog={permissionCatalog}
+        roles={roles}
       />
 
-      <StatGrid
-        className="xl:grid-cols-3"
-        items={[
-          {
-            label: 'Usuarios activos',
-            value: activeUsersCount,
-            helper: `${users.length} cuenta${users.length === 1 ? '' : 's'} registrada${users.length === 1 ? '' : 's'}`,
-            icon: <Users aria-hidden="true" className="size-4" />,
-            tone: 'success',
-          },
-          {
-            label: 'Cambio pendiente',
-            value: pendingPasswordUsersCount,
-            helper: 'Usuarios que deberan cambiar clave al ingresar.',
-            tone: pendingPasswordUsersCount > 0 ? 'warning' : 'neutral',
-          },
-          {
-            label: 'Roles editables',
-            value: editableRolesCount,
-            helper: `${roles.length} rol${roles.length === 1 ? '' : 'es'} disponible${roles.length === 1 ? '' : 's'} en total.`,
-            icon: <UserCog aria-hidden="true" className="size-4" />,
-          },
-        ]}
+      <UsersDirectoryPanel
+        canAssignAdminRole={canAssignAdminRole}
+        canDisableUsers={canDisableUsers}
+        canUpdateUsers={canUpdateUsers}
+        currentUserId={currentUserId}
+        onEdit={handleOpenEditModal}
+        onResetPassword={handleOpenResetModal}
+        onSearchTermChange={setSearchTerm}
+        onToggleActive={handleOpenToggleDialog}
+        onlyActiveProtectedUserIds={onlyActiveProtectedUserIds}
+        readOnly={!canUpdateUsers && !canDisableUsers}
+        searchTerm={searchTerm}
+        users={filteredUsers}
       />
-
-      {canManageRoles && (
-        <Card className="border border-operational-border bg-operational-surface shadow-operational">
-          <CardContent className="space-y-4 p-4">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div>
-                <h2 className="text-base font-semibold text-foreground">Roles y modulos</h2>
-                <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-                  Defina que modulos puede usar cada tipo de usuario. Los roles base protegidos se conservan para no perder acceso administrativo.
-                </p>
-              </div>
-              <Button type="button" variant="outline" onClick={handleOpenCreateRole}>
-                Nuevo rol
-              </Button>
-            </div>
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {roles.map((role) => (
-                <div key={role.id} className="rounded-md border border-operational-border bg-operational-panel/55 p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-semibold text-foreground">{roleLabel(role.name)}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {role.permissions.length} permiso{role.permissions.length === 1 ? '' : 's'}
-                      </p>
-                    </div>
-                    <Badge variant={role.protected ? 'warning' : 'secondary'}>
-                      {role.protected ? 'Base' : 'Editable'}
-                    </Badge>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    className="mt-3 w-full"
-                    onClick={() => handleOpenEditRole(role)}
-                    disabled={role.protected}
-                    aria-label={`Editar permisos de ${roleLabel(role.name)}`}
-                  >
-                    Editar permisos
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {canManageRoles && canAssignAdminRole && (
-        <PermissionMatrix
-          roles={roles}
-          permissionCatalog={permissionCatalog}
-        />
-      )}
-
-      {!canManageRoles && (
-        <PermissionState
-          state="readonly"
-          className="mb-6"
-          title="Roles en modo consulta"
-          description="Su usuario puede revisar cuentas autorizadas, pero la asignacion directa de permisos requiere permiso de administracion de roles."
-        />
-      )}
-
-      {!canUpdateUsers && !canDisableUsers && (
-        <p className="text-sm text-muted-foreground">Solo lectura</p>
-      )}
-
-      <Card className="border border-operational-border bg-operational-surface shadow-operational">
-        <CardContent className="space-y-4 p-4">
-          <div className="relative max-w-xl">
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-            <Input
-              aria-label="Buscar usuarios"
-              placeholder="Buscar por nombre, correo o usuario..."
-              className="pl-9"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-        </CardContent>
-        <CardContent className="p-0">
-          <UsersTable
-            canAssignAdminRole={canAssignAdminRole}
-            canDisableUsers={canDisableUsers}
-            canUpdateUsers={canUpdateUsers}
-            currentUserId={currentUserId}
-            onlyActiveProtectedUserIds={onlyActiveProtectedUserIds}
-            onEdit={handleOpenEditModal}
-            onResetPassword={handleOpenResetModal}
-            onToggleActive={handleOpenToggleDialog}
-            searchTerm={searchTerm}
-            users={filteredUsers}
-          />
-        </CardContent>
-      </Card>
-
       <UserFormDialog
         open={isUserModalOpen}
         onOpenChange={setIsUserModalOpen}
@@ -533,32 +420,16 @@ export function UsersView({
         onSubmit={onResetSubmit}
       />
 
-      <ConfirmDialog
+      <UserStatusToggleDialog
         open={isToggleDialogOpen}
-        title={targetToggleUser?.active ? '¿Desactivar usuario?' : '¿Activar usuario?'}
-        confirmLabel={isTogglingUser ? 'Cambiando...' : targetToggleUser?.active ? 'Desactivar' : 'Activar'}
-        confirmDisabled={isTogglingUser}
-        cancelDisabled={isTogglingUser}
-        danger={targetToggleUser?.active}
-        requireReasonTextarea={targetToggleUser?.active}
-        requireReasonMinLength={5}
-        reasonHelpText="Explique por que se desactiva este usuario. Quedara registrado en auditoria."
+        isToggling={isTogglingUser}
+        targetUser={targetToggleUser}
         onCancel={() => {
           setIsToggleDialogOpen(false);
           setTargetToggleUser(null);
         }}
         onConfirm={handleConfirmToggle}
-      >
-        {targetToggleUser?.active ? (
-          <p>
-            Al desactivar a <strong>{targetToggleUser?.name}</strong>, este no podrá iniciar sesión ni operar en el sistema. Las transacciones y reportes de caja históricos del usuario permanecerán intactos para fines de auditoría.
-          </p>
-        ) : (
-          <p>
-            Al reactivar a <strong>{targetToggleUser?.name}</strong>, el usuario volverá a tener acceso operativo al sistema con sus credenciales habituales.
-          </p>
-        )}
-      </ConfirmDialog>
+      />
     </>
   );
 }
