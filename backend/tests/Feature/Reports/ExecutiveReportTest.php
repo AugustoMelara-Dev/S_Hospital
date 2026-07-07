@@ -14,6 +14,7 @@ use App\Models\Payment;
 use App\Models\Service;
 use App\Models\User;
 use App\Support\InvoiceAccess;
+use App\Support\Money;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -318,6 +319,33 @@ class ExecutiveReportTest extends TestCase
             ->assertJsonPath('data.cash_sessions.0.status', 'closed')
             ->assertJsonPath('data.cash_sessions.0.difference', '-5.00')
             ->assertJsonPath('data.cash_sessions.0.closure_note', 'Faltante de 5 lempiras');
+    }
+
+    public function test_executive_cash_sessions_show_live_expected_cash_for_open_sessions(): void
+    {
+        $this->seedBillingBase();
+        $admin = $this->admin();
+        $cashier = $this->cashier();
+        $session = $this->openSession($cashier);
+
+        $invoice = $this->createInvoice($cashier, 'Glucosa');
+        $this->payInvoice($cashier, $invoice->id, $session->id, Payment::METHOD_CASH, $invoice->total);
+
+        $expectedCash = Money::formatCents(
+            Money::parseCents($session->opening_amount, 'opening_amount')
+            + Money::parseCents($invoice->total, 'invoice_total'),
+        );
+        $today = Carbon::now('America/Tegucigalpa')->toDateString();
+
+        $this->actingAs($admin)
+            ->getJson('/api/reports/executive?date_from='.$today.'&date_to='.$today)
+            ->assertOk()
+            ->assertJsonPath('data.cash_sessions.0.id', $session->id)
+            ->assertJsonPath('data.cash_sessions.0.status', CashRegisterSession::STATUS_OPEN)
+            ->assertJsonPath('data.cash_sessions.0.opening_amount', '500.00')
+            ->assertJsonPath('data.cash_sessions.0.expected_cash', $expectedCash)
+            ->assertJsonPath('data.cash_sessions.0.counted_cash', null)
+            ->assertJsonPath('data.cash_sessions.0.difference', null);
     }
 
     public function test_executive_includes_audit_summary_counts(): void

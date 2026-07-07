@@ -436,7 +436,9 @@ class ExecutiveReportService
             ->get()
             ->map(function (CashRegisterSession $session): array {
                 $openingCents = $this->signedCents($session->opening_amount);
-                $expectedCents = $this->signedCents($session->expected_amount ?? '0');
+                $expectedCents = $session->status === CashRegisterSession::STATUS_OPEN
+                    ? $this->liveExpectedCashCents($session)
+                    : $this->signedCents($session->expected_amount ?? '0');
                 $countedCents = $session->closing_amount !== null
                     ? $this->signedCents($session->closing_amount)
                     : 0;
@@ -456,6 +458,19 @@ class ExecutiveReportService
                 ];
             })
             ->all();
+    }
+
+    private function liveExpectedCashCents(CashRegisterSession $session): int
+    {
+        $cashCents = (int) Payment::query()
+            ->join('invoices', 'payments.invoice_id', '=', 'invoices.id')
+            ->where('payments.cash_session_id', $session->id)
+            ->where('payments.status', Payment::STATUS_POSTED)
+            ->where('payments.method', Payment::METHOD_CASH)
+            ->where('invoices.status', '!=', Invoice::STATUS_VOID)
+            ->sum('payments.amount_cents');
+
+        return Money::parseCents((string) $session->opening_amount, 'opening_amount') + $cashCents;
     }
 
     /**

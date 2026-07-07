@@ -9205,3 +9205,24 @@ La version monocomputadora necesita respaldos simples y visibles, pero la recupe
 ### Decision
 
 El cierre de caja debe seguir siendo un flujo guiado, pero la logica de archivo/exportacion no pertenece al dialogo visual. Extraerla permite probar el resumen auditable sin montar toda la UI y reduce el peso del componente critico de caja.
+
+## 390. Fase Reportes - Caja abierta muestra efectivo esperado vivo
+
+### Cambios
+
+- `ExecutiveReportService` calcula `expected_cash` en sesiones abiertas como apertura + pagos en efectivo posted no anulados.
+- Las sesiones cerradas conservan su snapshot `expected_amount`, `closing_amount` y `difference_amount`.
+- `ExecutiveReportTest` cubre que una caja abierta pagada en efectivo aparezca con efectivo esperado vivo y sin conteo/diferencia.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec backend php artisan test tests/Feature/Reports/ExecutiveReportTest.php --filter=executive_cash_sessions_show_live_expected_cash_for_open_sessions` | RED inicial: devolvia `0.00`; luego OK: 1 test. |
+| `docker compose exec backend php artisan test tests/Feature/Reports/ExecutiveReportTest.php` | OK: 14 tests. |
+| `docker compose exec backend vendor/bin/pint --test app/Actions/Reports/ExecutiveReportService.php tests/Feature/Reports/ExecutiveReportTest.php` | OK. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=1G` | OK. |
+
+### Decision
+
+El reporte ejecutivo debe servir durante el turno, no solo despues de cerrar caja. Para cajas abiertas, el efectivo esperado se deriva de pagos vivos; para cajas cerradas se respeta el snapshot auditado.
