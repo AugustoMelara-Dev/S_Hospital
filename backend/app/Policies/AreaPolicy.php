@@ -7,15 +7,14 @@ use App\Models\User;
 
 /**
  * Authorization for areas (departments). Areas are used in the
- * catalog and in reports; the controller is protected by
- * `catalog.view` / `catalog.manage`. The policy centralises
- * the check.
+ * catalog and managerial reports. The policy centralises the
+ * read/manage checks used by resource gates.
  */
 class AreaPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->can('catalog.view') || $user->can('reports.view');
+        return $user->can('catalog.view') || $user->can('reports.managerial.view');
     }
 
     public function view(User $user, Area $area): bool

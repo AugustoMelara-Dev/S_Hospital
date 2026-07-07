@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Actions\Reports\OperationalMetricsService;
+use App\Models\Area;
 use App\Models\BackupLog;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
@@ -216,6 +217,21 @@ class PermissionAuditTest extends TestCase
         $this->assertFalse(Gate::forUser($updater)->allows('resetPassword', $updater));
         $this->assertTrue(Gate::forUser($disabler)->allows('toggleActive', $target));
         $this->assertFalse(Gate::forUser($disabler)->allows('toggleActive', $disabler));
+    }
+
+    public function test_area_policy_uses_managerial_report_permission_not_legacy_reports_view(): void
+    {
+        $catalogViewer = User::factory()->create();
+        $managerialReporter = User::factory()->create();
+        $legacyReporter = User::factory()->create();
+
+        $catalogViewer->givePermissionTo('catalog.view');
+        $managerialReporter->givePermissionTo('reports.managerial.view');
+        $legacyReporter->givePermissionTo('reports.view');
+
+        $this->assertTrue(Gate::forUser($catalogViewer)->allows('viewAny', Area::class));
+        $this->assertTrue(Gate::forUser($managerialReporter)->allows('viewAny', Area::class));
+        $this->assertFalse(Gate::forUser($legacyReporter)->allows('viewAny', Area::class));
     }
 
     public function test_backup_restore_is_not_seeded_or_authorizable_from_the_app(): void

@@ -9028,3 +9028,25 @@ La trazabilidad de QA debe apuntar a archivos ejecutables actuales. Las entradas
 ### Decision
 
 El registro de deuda debe reflejar el codigo actual. Mantener una deuda cerrada en el inventario final distrae del QA pendiente real: gates E2E completos, evidencia fisica/LAN cuando aplique y verificacion final de release.
+
+## 382. Fase Permisos - AreaPolicy usa permiso gerencial vigente
+
+### Cambios
+
+- `AreaPolicy` deja de autorizar lectura con el permiso legado `reports.view`.
+- La lectura por Gate queda alineada con `IndexAreaRequest`: `catalog.view` o `reports.managerial.view`.
+- `PermissionAuditTest` cubre que un usuario solo con `reports.view` no pueda pasar `viewAny` de areas.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec backend php artisan test tests/Feature/PermissionAuditTest.php --filter=area_policy_uses_managerial_report_permission` | RED inicial: `reports.managerial.view` no autorizaba la policy; luego OK: 1 test. |
+| `docker compose exec backend php artisan test tests/Feature/ServiceCatalogTest.php --filter=area_options_are_available` | OK: 1 test. |
+| `docker compose exec backend php artisan test tests/Feature/PermissionAuditTest.php` | OK: 9 tests. |
+| `docker compose exec backend vendor/bin/pint --test app/Policies/AreaPolicy.php tests/Feature/PermissionAuditTest.php` | OK. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=1G` | OK. |
+
+### Decision
+
+`reports.view` puede existir como compatibilidad historica, pero no debe ser el permiso operativo para nuevas autorizaciones. Las policies deben seguir los permisos concretos que ve el administrador en la version monocomputadora.
