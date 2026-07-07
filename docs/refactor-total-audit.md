@@ -9537,3 +9537,25 @@ El backend ya protege la emision de recibos institucionales por acceso operativo
 ### Decision
 
 El cierre de caja debe guiar el conteo antes de pedir confirmacion. Mostrar la diferencia en vivo reduce errores operativos y evita que el cajero descubra el faltante o sobrante solo dentro del dialogo de cierre. El backend sigue siendo la defensa final para motivo obligatorio y auditoria.
+
+## 405. Fase Usuarios - Roles personalizados criticos ocultos sin autorizacion
+
+### Cambios
+
+- `UserFormDialog` considera elevado cualquier rol con permisos marcados como `critical` o `risk_level=critical`.
+- Los creadores de usuarios sin permiso para asignar roles administrativos ya no ven roles personalizados que incluyan accesos sensibles como descarga de respaldos.
+- La regla conserva la excepcion existente para editar el rol actual de una cuenta y mantiene el flujo de confirmacion explicita para operadores autorizados.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- UserFormDialog.test.tsx -t "hides custom roles with critical permissions"` | RED inicial: `Backup Operator` aparecia en el selector; luego OK. |
+| `docker compose exec frontend npm run test -- UserFormDialog.test.tsx` | OK: 19 tests. |
+| `docker compose exec frontend npm run test -- UserFormDialog.test.tsx UsersView.test.tsx` | OK: 49 tests. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+### Decision
+
+Un rol personalizado puede tener nombre operativo normal pero permisos de alto impacto. La UI debe seguir la metadata de riesgo del backend, no solo nombres fijos como `admin` o `auditor`, para evitar que un operador ofrezca accesos criticos desde el formulario equivocado.

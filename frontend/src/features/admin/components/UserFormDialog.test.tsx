@@ -29,6 +29,7 @@ const permissionCatalog = [
 function criticalPermission(name: string, label: string) {
   return {
     name,
+    module: name.split('.')[0],
     label,
     critical: true,
     risk_level: 'critical',
@@ -318,6 +319,39 @@ describe('UserFormDialog', () => {
     await waitFor(() => expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({
       role: 'admin',
     })));
+  });
+
+  it('hides custom roles with critical permissions from user creators without admin assignment permission', async () => {
+    render(
+      <UserFormDialog
+        open
+        onOpenChange={vi.fn()}
+        editingUser={null}
+        roles={[
+          ...roles,
+          {
+            id: 3,
+            name: 'backup_operator',
+            protected: false,
+            permissions: [
+              criticalPermission('backups.download', 'Descargar respaldos'),
+            ],
+          },
+        ]}
+        canManageRoles
+        canAssignAdminRole={false}
+        selectedUserPermissions={['invoices.create']}
+        onToggleUserPermission={vi.fn()}
+        permissionCatalog={permissionCatalog}
+        globalError={null}
+        onSubmit={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('combobox', { name: /rol operativo/i }));
+
+    expect(await screen.findByRole('option', { name: /^Cajero/i })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /^Backup Operator/i })).not.toBeInTheDocument();
   });
 
   it('requires explicit confirmation before saving a user that can download backups directly', () => {

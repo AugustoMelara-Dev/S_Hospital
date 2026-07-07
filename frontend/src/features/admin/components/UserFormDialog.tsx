@@ -404,5 +404,6 @@ function isElevatedRole(role: RoleDefinition): boolean {
     || normalized === 'admin'
     || normalized === 'root'
     || normalized === 'supervisor'
-    || normalized === 'auditor';
+    || normalized === 'auditor'
+    || role.permissions.some((permission) => isCriticalPermission(permission));
 }
