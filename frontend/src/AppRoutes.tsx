@@ -47,7 +47,6 @@ type AppRoutesProps = {
   cashSession: CashSession | null;
   defaultAuthenticatedRoute: string;
   onQuickCash: () => void;
-  onQuickInvoice: () => void;
   onStatus: (message: string) => void;
   user: AuthUser;
 };
@@ -79,7 +78,6 @@ export function AppRoutes({
   cashSession,
   defaultAuthenticatedRoute,
   onQuickCash,
-  onQuickInvoice,
   onStatus,
   user,
 }: AppRoutesProps) {
@@ -101,8 +99,6 @@ export function AppRoutes({
               canViewManagerialReports={canViewManagerialReports}
               canViewReports={canViewReports}
               cashSession={cashSession}
-              onQuickCash={onQuickCash}
-              onQuickInvoice={onQuickInvoice}
               onStatus={onStatus}
             />
           </Suspense>

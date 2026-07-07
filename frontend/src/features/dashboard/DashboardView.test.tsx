@@ -1,4 +1,4 @@
-import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -33,8 +33,6 @@ function makeBaseProps(overrides: Partial<React.ComponentProps<typeof DashboardV
     canViewManagerialReports: true,
     canViewReports: true,
     cashSession: null,
-    onQuickCash: vi.fn(),
-    onQuickInvoice: vi.fn(),
     onStatus: vi.fn(),
     ...overrides,
   };
@@ -147,50 +145,27 @@ describe('DashboardView', () => {
     expect((await screen.findAllByText(/cerrada/i)).length).toBeGreaterThan(0);
   });
 
-  it('exposes the open-cash quick action when there is no cash session', async () => {
+  it('links the open-cash primary action to the canonical cashbox route when there is no cash session', async () => {
     renderDashboard(makeBaseProps({ cashSession: null }));
 
-    const openCash = await screen.findByRole('button', { name: /abrir caja desde el centro de mando/i });
-    expect(openCash).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /crear nueva factura/i })).not.toBeInTheDocument();
+    const openCash = await screen.findByRole('link', { name: /abrir caja/i });
+    expect(openCash).toHaveAttribute('href', '/cashbox');
+    expect(screen.queryByRole('link', { name: /nueva factura/i })).not.toBeInTheDocument();
   });
 
   it('hides the open-cash quick action when cash access is read only', async () => {
     renderDashboard(makeBaseProps({ canOpenCash: false, cashSession: null }));
 
     expect(await screen.findByText(/^caja$/i)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /abrir caja desde el centro de mando/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /abrir caja/i })).not.toBeInTheDocument();
   });
 
-  it('exposes the new-invoice quick action when there is a cash session', async () => {
+  it('links the new-invoice primary action to the canonical billing route when there is a cash session', async () => {
     renderDashboard(makeBaseProps({ cashSession: makeCashSession({ id: 3 }) }));
 
-    const newInvoice = await screen.findByRole('button', { name: /crear nueva factura/i });
-    expect(newInvoice).toBeInTheDocument();
-  });
-
-  it('invokes the onQuickCash callback from the open-cash quick action', async () => {
-    const onQuickCash = vi.fn();
-
-    renderDashboard(makeBaseProps({ onQuickCash, cashSession: null }));
-
-    const openCash = await screen.findByRole('button', { name: /abrir caja desde el centro de mando/i });
-    await act(async () => {
-      openCash.click();
-    });
-    expect(onQuickCash).toHaveBeenCalledTimes(1);
-  });
-
-  it('invokes the onQuickInvoice callback from the new-invoice quick action', async () => {
-    const onQuickInvoice = vi.fn();
-
-    renderDashboard(makeBaseProps({ onQuickInvoice, cashSession: makeCashSession({ id: 1 }) }));
-
-    const newInvoice = await screen.findByRole('button', { name: /crear nueva factura/i });
-    await act(async () => {
-      newInvoice.click();
-    });
-    expect(onQuickInvoice).toHaveBeenCalledTimes(1);
+    const newInvoice = await screen.findByRole('link', { name: /nueva factura/i });
+    expect(newInvoice).toHaveAttribute('href', '/billing/new');
+    expect(screen.queryByRole('link', { name: /abrir caja/i })).not.toBeInTheDocument();
   });
 
   it('hides both quick actions when the user cannot open cash or invoice', async () => {
@@ -203,8 +178,8 @@ describe('DashboardView', () => {
     );
 
     expect(await screen.findByText(/^caja$/i)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /abrir caja desde el inicio/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /crear nueva factura/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /abrir caja/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /nueva factura/i })).not.toBeInTheDocument();
   });
 
   it('does not announce a fake primary action when no dashboard action is available', async () => {

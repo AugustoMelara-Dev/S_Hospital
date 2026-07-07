@@ -26,8 +26,6 @@ type DashboardViewProps = {
   canViewManagerialReports: boolean;
   canViewReports: boolean;
   cashSession: CashSession | null;
-  onQuickCash: () => void;
-  onQuickInvoice: () => void;
   onStatus: (message: string) => void;
 };
 
@@ -38,8 +36,6 @@ export function DashboardView({
   canViewInvoices,
   canViewManagerialReports,
   cashSession,
-  onQuickCash,
-  onQuickInvoice,
   onStatus,
 }: DashboardViewProps) {
   const [setupStatus, setSetupStatus] = useState<SetupStatus | null>(null);
@@ -98,9 +94,9 @@ export function DashboardView({
   };
 
   const primaryAction = cashIsOpen && canCreateInvoices
-    ? { label: 'Nueva factura', icon: <ReceiptText aria-hidden="true" className="size-4" />, onClick: onQuickInvoice, ariaLabel: 'Crear nueva factura desde el centro de mando' }
+    ? { label: 'Nueva factura', icon: <ReceiptText aria-hidden="true" className="size-4" />, to: '/billing/new' }
     : canOpenCash
-      ? { label: 'Abrir caja', icon: <WalletCards aria-hidden="true" className="size-4" />, onClick: onQuickCash, ariaLabel: 'Abrir caja desde el centro de mando' }
+      ? { label: 'Abrir caja', icon: <WalletCards aria-hidden="true" className="size-4" />, to: '/cashbox' }
       : null;
 
   const showTodayBilled = todaySnapshot?.total_billed !== null && todaySnapshot?.total_billed !== undefined;
@@ -159,9 +155,11 @@ export function DashboardView({
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {primaryAction && (
-            <Button type="button" onClick={primaryAction.onClick} aria-label={primaryAction.ariaLabel}>
-              {primaryAction.icon}
-              {primaryAction.label}
+            <Button asChild>
+              <Link to={primaryAction.to}>
+                {primaryAction.icon}
+                {primaryAction.label}
+              </Link>
             </Button>
           )}
           {canCreateInvoices && canViewInvoices && cashIsOpen && (

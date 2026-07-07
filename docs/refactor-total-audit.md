@@ -9121,3 +9121,23 @@ La separacion visual de configuracion debe estar respaldada por el contrato back
 ### Decision
 
 El tamano de papel no debe formar parte de la configuracion fiscal normal. Para entrega monocomputadora, la UI y el contrato backend deben guiar al operador hacia perfiles institucionales simples y evitar mezclar opciones tecnicas con datos fiscales.
+
+## 386. Fase Inicio - Acciones primarias usan rutas canonicas
+
+### Cambios
+
+- El Dashboard deja de abrir la factura rapida mediante estado global.
+- La accion primaria `Nueva factura` navega a `/billing/new`.
+- La accion primaria `Abrir caja` navega a `/cashbox`.
+- `App.tsx` elimina el modal global de factura rapida; la caja compacta sigue disponible para la ruta normal de facturacion cuando se necesita abrir caja.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- DashboardView` | OK: 13 tests. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+
+### Decision
+
+Para una instalacion monocomputadora estable, las acciones principales deben ser recuperables con refrescar/volver y tener URLs canonicas. Reducir modales globales baja estado implicito y hace mas predecibles facturacion y caja.

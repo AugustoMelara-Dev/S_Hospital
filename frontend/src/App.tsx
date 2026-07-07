@@ -11,7 +11,6 @@ import { EmptyState, LoadingState } from './components/ui/states';
 import { LoginView } from './features/auth/LoginView';
 import { PasswordChangeView } from './features/auth/PasswordChangeView';
 import { CashBoxView } from './features/cash/CashBoxView';
-import { NewInvoiceView } from './features/invoices/NewInvoiceView';
 import { AppShell } from './layout/AppShell';
 import { queryClient } from './lib/query-client';
 import { apiClient } from './lib/api';
@@ -34,7 +33,6 @@ export function App() {
 function HospitalApp() {
   const session = useHospitalSession();
   const navigate = useNavigate();
-  const [quickInvoiceOpen, setQuickInvoiceOpen] = useState(false);
   const [quickCashOpen, setQuickCashOpen] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const shouldLoadCashSession = Boolean(
@@ -143,32 +141,11 @@ function HospitalApp() {
           cashSession={cashSession ?? null}
           defaultAuthenticatedRoute={session.defaultAuthenticatedRoute}
           onQuickCash={() => setQuickCashOpen(true)}
-          onQuickInvoice={() => setQuickInvoiceOpen(true)}
           onStatus={handleStatus}
           user={session.user}
         />
       )}
 
-      <Dialog
-        open={quickInvoiceOpen}
-        onOpenChange={setQuickInvoiceOpen}
-        size="fullscreen"
-        title="Emitir factura"
-        description="Facturación rápida sin abandonar la pantalla actual."
-      >
-        <NewInvoiceView
-          cashSession={cashSession ?? null}
-          canCreatePayments={session.canCreatePayments}
-          canViewCatalog={session.canViewCatalog}
-          canViewReceipts={session.canViewReceipts}
-          canMarkDialysisPrescription={session.canMarkDialysisPrescription}
-          onOpenCash={() => {
-            setQuickInvoiceOpen(false);
-            setQuickCashOpen(true);
-          }}
-          onStatus={handleStatus}
-        />
-      </Dialog>
 
       <Dialog
         open={quickCashOpen}
