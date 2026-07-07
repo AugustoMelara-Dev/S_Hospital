@@ -155,7 +155,6 @@ function PermissionGroup({
           >
             <div className="flex flex-col">
               <span className="font-medium">{permission.label}</span>
-              <span className="font-mono text-[10px] text-muted-foreground">{permission.name}</span>
               {isCriticalPermission(permission) && (
                 <span className="mt-1 w-fit rounded-sm border border-warning/40 bg-warning/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-warning-foreground">
                   Permiso critico

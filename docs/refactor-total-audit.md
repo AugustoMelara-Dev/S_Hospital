@@ -9247,3 +9247,24 @@ El reporte ejecutivo debe servir durante el turno, no solo despues de cerrar caj
 ### Decision
 
 El backend sigue siendo la autoridad, pero la pantalla de caja debe anticipar bloqueos conocidos despues del refresco de conciliacion. Esto evita que el cajero avance hasta el dialogo de cierre para descubrir un error que ya estaba calculado por el servidor.
+
+## 392. Fase Usuarios - Ocultar slugs tecnicos visibles
+
+### Cambios
+
+- `PermissionMatrix` muestra permisos por nombre humano y conserva los slugs solo como claves internas.
+- `UserFormDialog` y `RoleFormDialog` dejan de imprimir slugs de permisos en las listas de seleccion, sin cambiar los valores enviados a callbacks/API.
+- `UsersTable` muestra nombres humanos de roles sin exponer slugs secundarios como `catalog_manager`.
+- El texto de ayuda de roles deja de presentar los nombres tecnicos como parte normal de la operacion.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- PermissionMatrix UserFormDialog RoleFormDialog UsersTable` | RED inicial: 6 fallas por slugs visibles; luego OK: 43 tests. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+### Decision
+
+La administracion de usuarios necesita seguir usando permisos canonicos para seguridad y auditoria, pero la pantalla diaria no debe obligar al operador a leer identificadores tecnicos. Los componentes mantienen `permission.name` y `role.name` como datos internos, mientras la interfaz presenta nombres entendibles.

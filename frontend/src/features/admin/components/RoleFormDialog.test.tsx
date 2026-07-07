@@ -171,7 +171,7 @@ describe('RoleFormDialog', () => {
     expect(
       screen.getByRole('checkbox', { name: /modo soporte tecnico de recibos/i }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/receipt_settings\.advanced/i)).toBeInTheDocument();
+    expect(screen.queryByText(/receipt_settings\.advanced/i)).not.toBeInTheDocument();
     expect(screen.getByText(/permiso critico/i)).toBeInTheDocument();
   });
 
@@ -241,6 +241,8 @@ describe('RoleFormDialog', () => {
   });
 
   it('treats operational settings updates as critical permissions', () => {
+    const onTogglePermission = vi.fn();
+
     render(
       <RoleFormDialog
         open
@@ -256,16 +258,19 @@ describe('RoleFormDialog', () => {
           },
         ]}
         selectedPermissions={['settings.operational.update']}
-        onTogglePermission={vi.fn()}
+        onTogglePermission={onTogglePermission}
         globalError={null}
         onSubmit={vi.fn()}
         isSaving={false}
       />,
     );
 
-    expect(screen.getByText(/settings\.operational\.update/i)).toBeInTheDocument();
+    expect(screen.queryByText(/settings\.operational\.update/i)).not.toBeInTheDocument();
     expect(screen.getByText(/permiso critico/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /crear rol/i })).toBeDisabled();
+
+    fireEvent.click(screen.getByRole('checkbox', { name: /editar reglas operativas/i }));
+    expect(onTogglePermission).toHaveBeenCalledWith('settings.operational.update', false);
   });
 
   it('requires explicit confirmation before saving a role that can download backups', () => {

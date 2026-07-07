@@ -80,7 +80,7 @@ describe('UsersTable', () => {
     expect(screen.queryByRole('button', { name: /acciones de usuario caja principal/i })).not.toBeInTheDocument();
   });
 
-  it('shows human role names and keeps technical role names secondary', () => {
+  it('shows human role names without exposing technical role slugs', () => {
     render(
       <UsersTable
         canAssignAdminRole={false}
@@ -95,7 +95,7 @@ describe('UsersTable', () => {
     );
 
     expect(screen.getByText('Catalog Manager')).toBeInTheDocument();
-    expect(screen.getByText('catalog_manager')).toHaveClass('text-muted-foreground');
+    expect(screen.queryByText('catalog_manager')).not.toBeInTheDocument();
   });
 
   it('shows an explicit role fallback when a user has no assigned roles', () => {

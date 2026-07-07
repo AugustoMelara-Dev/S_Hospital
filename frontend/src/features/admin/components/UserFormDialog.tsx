@@ -309,7 +309,6 @@ export function UserFormDialog({
                                   {permission.label}
                                   {critical && <Badge variant="warning">Permiso critico</Badge>}
                                 </span>
-                                <span className="block text-xs text-muted-foreground">{permission.name}</span>
                                 {critical && riskLabel && (
                                   <span className="block text-xs text-warning-foreground">{riskLabel}</span>
                                 )}

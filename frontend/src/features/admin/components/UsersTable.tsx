@@ -65,7 +65,6 @@ export function UsersTable({
           )}
           {user.roles.map((role) => {
             const label = roleLabel(role);
-            const showTechnicalName = label !== role;
 
             return (
               <Badge
@@ -74,11 +73,6 @@ export function UsersTable({
                 className="font-semibold"
               >
                 <span>{label}</span>
-                {showTechnicalName && (
-                  <span className="ml-1 text-[10px] font-normal normal-case text-muted-foreground">
-                    {role}
-                  </span>
-                )}
               </Badge>
             );
           })}

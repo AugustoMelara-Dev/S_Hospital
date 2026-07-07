@@ -213,6 +213,38 @@ describe('UserFormDialog', () => {
     expect(screen.getByRole('button', { name: /guardar cambios/i })).toBeDisabled();
   });
 
+  it('does not render technical permission slugs while toggling the real permission value', () => {
+    const onToggleUserPermission = vi.fn();
+
+    render(
+      <UserFormDialog
+        open
+        onOpenChange={vi.fn()}
+        editingUser={baseUser}
+        roles={roles}
+        canManageRoles
+        advancedPermissionMode
+        onAdvancedPermissionModeChange={vi.fn()}
+        selectedUserPermissions={['audit.view']}
+        onToggleUserPermission={onToggleUserPermission}
+        permissionCatalog={[
+          {
+            module: 'audit',
+            label: 'Auditoria',
+            permissions: [{ name: 'audit.view', label: 'Ver auditoria' }],
+          },
+        ]}
+        globalError={null}
+        onSubmit={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByText('audit.view')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('checkbox', { name: /ver auditoria/i }));
+    expect(onToggleUserPermission).toHaveBeenCalledWith('audit.view', false);
+  });
+
   it('requires explicit confirmation before saving a user with critical direct permissions', () => {
     render(
       <UserFormDialog

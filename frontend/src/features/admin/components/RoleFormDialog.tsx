@@ -111,7 +111,7 @@ export function RoleFormDialog({
 
         <InfoPanel
           title="Permisos por modulo"
-          description="Seleccione exactamente los accesos que tendra el rol. Los nombres tecnicos se muestran solo para trazabilidad administrativa."
+          description="Seleccione exactamente los accesos que tendra el rol. Use permisos entendibles por modulo para evitar asignaciones accidentales."
           tone="info"
         />
 
@@ -200,7 +200,6 @@ export function RoleFormDialog({
                             {permission.label}
                             {critical && <Badge variant="warning">Permiso critico</Badge>}
                           </span>
-                          <span className="block text-xs text-muted-foreground">{permission.name}</span>
                           {critical && riskLabel && (
                             <span className="block text-xs text-warning-foreground">{riskLabel}</span>
                           )}

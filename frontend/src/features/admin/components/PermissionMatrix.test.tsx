@@ -77,7 +77,8 @@ describe('PermissionMatrix', () => {
 
     openPermissionMatrix();
 
-    expect(screen.getByRole('rowheader', { name: /crear facturas invoices\.create/i })).toBeInTheDocument();
+    expect(screen.getByRole('rowheader', { name: /^crear facturas$/i })).toBeInTheDocument();
+    expect(screen.queryByText('invoices.create')).not.toBeInTheDocument();
   });
 
   it('marks granted and denied permissions with text, not color alone', () => {
@@ -106,9 +107,10 @@ describe('PermissionMatrix', () => {
     render(<PermissionMatrix roles={roles} permissionCatalog={catalog} />);
     openPermissionMatrix();
 
-    const auditPermission = screen.getByRole('rowheader', { name: /ver auditoria audit\.view/i });
+    const auditPermission = screen.getByRole('rowheader', { name: /^ver auditoria\b/i });
 
     expect(within(auditPermission).getByText(/permiso critico/i)).toBeInTheDocument();
+    expect(screen.queryByText('audit.view')).not.toBeInTheDocument();
   });
 
   it('uses backend risk metadata when rendering critical labels', () => {
@@ -135,12 +137,11 @@ describe('PermissionMatrix', () => {
     );
     openPermissionMatrix();
 
-    const supportPermission = screen.getByRole('rowheader', {
-      name: /desbloquear soporte remoto support\.remote_unlock/i,
-    });
+    const supportPermission = screen.getByRole('rowheader', { name: /^desbloquear soporte remoto\b/i });
 
     expect(within(supportPermission).getByText(/permiso critico/i)).toBeInTheDocument();
     expect(within(supportPermission).getByText(/habilitar soporte tecnico temporal/i)).toBeInTheDocument();
+    expect(screen.queryByText('support.remote_unlock')).not.toBeInTheDocument();
   });
 
   it('returns null when no roles or catalog are provided', () => {
