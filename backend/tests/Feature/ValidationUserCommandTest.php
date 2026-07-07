@@ -54,6 +54,7 @@ class ValidationUserCommandTest extends TestCase
         $this->assertTrue($user->hasRole('cajero'));
         $this->assertTrue($user->usesExactDirectPermissionMap());
         $this->assertTrue($user->can('audit.view'));
+        $this->assertFalse($user->can('reports.view'));
         $this->assertTrue($user->can('reports.managerial.view'));
         $this->assertTrue($user->can('reports.export'));
         $this->assertFalse($user->can('users.assign_admin_role'));

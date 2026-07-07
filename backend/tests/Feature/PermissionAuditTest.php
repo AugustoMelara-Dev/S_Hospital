@@ -187,6 +187,21 @@ class PermissionAuditTest extends TestCase
         $this->assertFalse($supervisor->can('catalog.manage'));
     }
 
+    public function test_default_non_admin_roles_do_not_receive_legacy_reports_view(): void
+    {
+        foreach (['supervisor', 'auditor', 'cajero', 'soporte_tecnico'] as $roleName) {
+            $user = User::factory()->create([
+                'username' => $roleName.'-without-legacy-reports-view',
+                'email' => $roleName.'-without-legacy-reports-view@hospital.local',
+                'password' => Hash::make('Password123!'),
+                'must_change_password' => false,
+                'active' => true,
+            ])->assignRole($roleName);
+
+            $this->assertFalse($user->can('reports.view'), $roleName.' should not receive reports.view');
+        }
+    }
+
     public function test_user_policy_uses_seeded_user_management_permissions_only(): void
     {
         $target = User::factory()->create([

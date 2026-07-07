@@ -9050,3 +9050,27 @@ El registro de deuda debe reflejar el codigo actual. Mantener una deuda cerrada 
 ### Decision
 
 `reports.view` puede existir como compatibilidad historica, pero no debe ser el permiso operativo para nuevas autorizaciones. Las policies deben seguir los permisos concretos que ve el administrador en la version monocomputadora.
+
+## 383. Fase Permisos - Roles operativos sin reports.view legado
+
+### Cambios
+
+- `RolesAndPermissionsSeeder` conserva `reports.view` en el catalogo de permisos, pero ya no lo asigna a `supervisor` ni `auditor`.
+- El comando `hospital:validation-user` ya no incluye `reports.view` en permisos exactos por defecto.
+- `PermissionAuditTest` valida que roles no-admin no reciban `reports.view`.
+- `ValidationUserCommandTest` valida que el usuario temporal de validacion conserve reportes concretos sin el permiso oculto legado.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec backend php artisan test tests/Feature/PermissionAuditTest.php --filter=default_non_admin_roles_do_not_receive_legacy_reports_view` | RED inicial: `supervisor` recibia `reports.view`; luego OK: 1 test. |
+| `docker compose exec backend php artisan test tests/Feature/ValidationUserCommandTest.php --filter=creates_non_admin_exact_permission_validation_user` | RED inicial: el usuario temporal recibia `reports.view`; luego OK: 1 test. |
+| `docker compose exec backend php artisan test tests/Feature/PermissionAuditTest.php tests/Feature/ValidationUserCommandTest.php` | OK: 15 tests. |
+| `docker compose exec backend php artisan test tests/Feature/Reports/TodayReportTest.php tests/Feature/Reports/ExecutiveReportTest.php` | OK: 22 tests. |
+| `docker compose exec backend vendor/bin/pint --test app/Console/Commands/ManageFinalValidationUserCommand.php database/seeders/RolesAndPermissionsSeeder.php tests/Feature/PermissionAuditTest.php tests/Feature/ValidationUserCommandTest.php` | OK. |
+| `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=1G` | OK. |
+
+### Decision
+
+La compatibilidad historica no debe expandirse por seeders ni usuarios temporales nuevos. Para una instalacion monocomputadora, los roles predeterminados deben usar permisos concretos y visibles: reportes gerenciales, reporte de caja y exportacion.
