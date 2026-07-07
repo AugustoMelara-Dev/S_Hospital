@@ -56,17 +56,15 @@ export const receiptProfileSchema = z.object({
 });
 
 export const receiptProfileAdvancedSchema = z.object({
-  width_mm: z.number().min(1).max(500),
-  height_mm: z.number().min(1).max(500),
+  width_mm: z.number().min(80).max(300),
+  height_mm: z.number().min(50).max(220),
   margin_top_mm: z.number().min(0).max(50),
   margin_right_mm: z.number().min(0).max(50),
   margin_bottom_mm: z.number().min(0).max(50),
   margin_left_mm: z.number().min(0).max(50),
   font_family: z.string().max(120).optional().nullable(),
   font_scale: z.number().min(0.7).max(1.3),
-  paper_kind: z.string().min(1).max(64),
-  orientation: z.enum(['landscape', 'portrait']),
-  template_code: z.string().min(1).max(80),
+  support_reason: z.string().trim().min(5, 'Indique el motivo del ajuste.').max(500),
 });
 
 export type ReceiptInstitutionForm = z.infer<typeof receiptInstitutionSchema>;

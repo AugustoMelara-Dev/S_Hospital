@@ -9381,3 +9381,25 @@ La pantalla de usuarios debe seguir siendo simple para admin/cajero basico, pero
 ### Decision
 
 En instalacion monocomputadora, una caja abierta por otro usuario no debe dejar bloqueado el puesto si el supervisor tiene permiso de rescate. El cambio limita ese alcance a cierre/auditoria: la caja ajena se puede encontrar como cerrable, pero el flujo normal de POS y facturacion sigue consultando caja propia.
+
+## 398. Fase Recibos - Schema avanzado compartido para soporte
+
+### Cambios
+
+- `receiptProfileAdvancedSchema` ahora exige dimensiones compatibles con el flujo soporte: ancho 80-300 mm y alto 50-220 mm.
+- El schema avanzado requiere `support_reason` de al menos 5 caracteres.
+- `InstitutionalReceiptSettingsView` deja de duplicar el schema avanzado y de perfil; usa los schemas compartidos.
+- El test del schema cubre que un ancho de 45 mm y un ajuste sin motivo no sean aceptados.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- receiptSettings.schema` | RED inicial: el schema aceptaba ancho 45 sin motivo; luego cubierto por suite focalizada. |
+| `docker compose exec frontend npm run test -- receiptSettings.schema InstitutionalReceiptSettingsView` | OK: 27 tests. |
+| `docker compose exec frontend npm run typecheck` | OK. |
+| `docker compose exec frontend npm run lint` | OK. |
+
+### Decision
+
+Los controles avanzados siguen siendo solo soporte, pero la validacion compartida no puede ser mas permisiva que la vista real. Centralizar este schema reduce el riesgo de reintroducir perfiles tecnicos pequenos o sin justificacion mientras se mantiene el flujo normal limitado a carta, media carta y A5.

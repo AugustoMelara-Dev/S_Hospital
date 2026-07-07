@@ -20,6 +20,12 @@ import { ReceiptSettingsPreview } from './components/ReceiptSettingsPreview';
 import { type InstitutionalReceiptSeries, type ReceiptPrintProfile, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { downloadBlob } from '@/lib/download';
 import { queryKeys } from '@/lib/queryKeys';
+import {
+  receiptProfileAdvancedSchema,
+  receiptProfileSchema,
+  type ReceiptProfileAdvancedForm,
+  type ReceiptProfileForm,
+} from './receiptSettings.schema';
 
 type InstitutionalReceiptSettingsViewProps = {
   canAdvancedPrintSettings: boolean;
@@ -99,31 +105,10 @@ const seriesSchema = z.object({
   message: 'El siguiente recibo debe quedar dentro del rango autorizado.',
 });
 
-const profileSchema = z.object({
-  copies_mode: z.enum(['original_only', 'original_first', 'original_first_second']),
-  show_copy_legend: z.boolean(),
-  show_physical_seal_space: z.boolean(),
-  use_logo: z.boolean(),
-  active: z.boolean(),
-  is_global_default: z.boolean(),
-});
-
-const advancedSchema = z.object({
-  width_mm: z.number().min(80).max(300),
-  height_mm: z.number().min(50).max(220),
-  margin_top_mm: z.number().min(0).max(50),
-  margin_right_mm: z.number().min(0).max(50),
-  margin_bottom_mm: z.number().min(0).max(50),
-  margin_left_mm: z.number().min(0).max(50),
-  font_family: z.string().max(120).nullable(),
-  font_scale: z.number().min(0.7).max(1.3),
-  support_reason: z.string().trim().min(5, 'Indique el motivo del ajuste.').max(500),
-});
-
 type InstitutionFormData = z.infer<typeof institutionSchema>;
 type SeriesFormData = z.infer<typeof seriesSchema>;
-type ProfileFormData = z.infer<typeof profileSchema>;
-type AdvancedFormData = z.infer<typeof advancedSchema>;
+type ProfileFormData = ReceiptProfileForm;
+type AdvancedFormData = ReceiptProfileAdvancedForm;
 
 function asMoney(value: string | number): string {
   return Number(value).toFixed(2);
@@ -191,12 +176,12 @@ export function InstitutionalReceiptSettingsView({
   });
 
   const profileForm = useForm<ProfileFormData>({
-    resolver: zodResolver(profileSchema),
+    resolver: zodResolver(receiptProfileSchema),
     defaultValues: PROFILE_FORM_DEFAULTS,
   });
 
   const advancedForm = useForm<AdvancedFormData>({
-    resolver: zodResolver(advancedSchema),
+    resolver: zodResolver(receiptProfileAdvancedSchema),
     defaultValues: {
       width_mm: 215.9,
       height_mm: 139.7,
