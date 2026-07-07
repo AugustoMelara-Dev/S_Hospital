@@ -212,12 +212,12 @@ describe('AppShell', () => {
     expect(await screen.findByRole('dialog', { name: /guía rápida del sistema/i })).toBeInTheDocument();
   });
 
-  it('keeps operational cash and LAN status visible without changing dark-mode logic', () => {
+  it('keeps operational cash and local connection status visible without changing dark-mode logic', () => {
     document.documentElement.classList.add('dark');
     const { container } = renderShell({ user: fullCashierUser });
 
     expect(screen.getAllByText(/caja #12/i).length).toBeGreaterThan(0);
-    expect(screen.getByLabelText(/red local disponible/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/conexion local disponible/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /nueva factura/i })).toBeInTheDocument();
     expect(container.querySelector('[data-slot="topbar-operational-status"]')).toBeInTheDocument();
     expect(container.querySelector('[data-slot="sidebar-cash-status"]')).toBeInTheDocument();

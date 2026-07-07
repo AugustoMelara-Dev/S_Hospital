@@ -21,9 +21,9 @@ export function OperationalStatus({
 }: OperationalStatusProps) {
   const cashIsOpen = cashSession?.status === 'open';
   const cashLabel = cashSession?.status === 'open' ? `Caja #${cashSession.id}` : 'Sin caja abierta';
-  const lanStatusTitle = isOnline
-    ? `Red local disponible${lastCheck ? `. Ultima revision: ${lastCheck.toLocaleTimeString()}` : ''}`
-    : `Sin conexión al servidor local. Estado: ${status}`;
+  const localConnectionStatusTitle = isOnline
+    ? `Conexion local disponible${lastCheck ? `. Ultima revision: ${lastCheck.toLocaleTimeString()}` : ''}`
+    : `Sin conexion al servidor local. Estado: ${status}`;
 
   return (
     <div
@@ -38,11 +38,11 @@ export function OperationalStatus({
             ? 'border-success/45 bg-success/10 text-foreground'
             : 'border-destructive/40 bg-destructive/10 text-destructive',
         )}
-        title={lanStatusTitle}
-        aria-label={lanStatusTitle}
+        title={localConnectionStatusTitle}
+        aria-label={localConnectionStatusTitle}
       >
         {isOnline ? <Wifi data-icon aria-hidden="true" /> : <WifiOff data-icon aria-hidden="true" />}
-        <span className="sr-only sm:not-sr-only sm:ml-1.5">{isOnline ? 'LAN activa' : 'Sin LAN'}</span>
+        <span className="sr-only sm:not-sr-only sm:ml-1.5">{isOnline ? 'Conexion local activa' : 'Sin conexion'}</span>
       </div>
 
       <div

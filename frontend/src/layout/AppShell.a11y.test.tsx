@@ -113,7 +113,7 @@ describe('AppShell accessibility', () => {
     renderShell();
 
     expect(screen.getByRole('status')).toHaveTextContent('Servidor local disponible');
-    expect(screen.getByLabelText(/red local disponible/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/conexion local disponible/i)).toBeInTheDocument();
   });
 });
 

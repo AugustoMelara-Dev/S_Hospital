@@ -8215,3 +8215,22 @@ Configurar una IP LAN y completar la evidencia de segunda PC no son lo mismo. La
 ### Decision
 
 El resumen publico de estado debe seguir el mismo modo seleccionado que el readiness completo. En monocomputadora no debe pedir prueba de segunda PC, y los archivos de evidencia creados en Windows deben validarse aunque usen CRLF.
+## 344. Fase Frontend/Monocomputadora - Indicador de conexion local
+
+### Cambios
+
+- El indicador operativo superior deja de anunciar `LAN activa` como estado global y usa `Conexion local activa`.
+- El texto accesible cambia de `Red local disponible` a `Conexion local disponible`, valido para monocomputadora y para LAN sin imponer una segunda PC.
+- Las regresiones de AppShell y accesibilidad cubren el nuevo contrato de texto.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `docker compose exec frontend npm run test -- AppShell --run -t "local connection status"` | RED inicial: seguia anunciando `Red local disponible`; luego OK. |
+| `docker compose exec frontend npm run test -- AppShell --run` | OK: 13 tests. |
+| `docker compose exec frontend npm run test -- AppShell.a11y --run` | OK: 4 tests. |
+
+### Decision
+
+La barra global debe comunicar salud del servidor local sin convertir LAN/multi-PC en requisito visual. `Conexion local` conserva el sentido operativo y evita confundir el alcance monocomputadora.
