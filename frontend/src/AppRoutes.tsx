@@ -214,7 +214,6 @@ export function AppRoutes({
             <Suspense fallback={<LoadingState label="Cargando recibos institucionales..." />}>
               <InstitutionalReceiptSettingsView
                 canEdit={user.permissions.includes('receipt_settings.update')}
-                canAdvancedPrintSettings={user.permissions.includes('receipt_settings.advanced')}
                 onStatus={onStatus}
               />
             </Suspense>

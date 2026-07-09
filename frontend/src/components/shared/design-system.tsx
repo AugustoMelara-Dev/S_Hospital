@@ -911,18 +911,16 @@ export function PrintPreviewFrame({
 }
 
 export type PaperProfile = {
-  code: 'carta' | 'media_carta' | 'a5' | '80mm' | '58mm';
+  code: 'carta' | 'media_carta' | 'a5';
   description: string;
   label: string;
   size: string;
 };
 
 export const PAPER_PROFILES: readonly PaperProfile[] = [
-  { code: 'carta', label: 'Carta', size: 'US Letter 8.5 × 11 in', description: 'Formal, vertical' },
-  { code: 'media_carta', label: 'Media carta', size: '8.5 × 5.5 in', description: 'Recomendado por defecto' },
-  { code: 'a5', label: 'A5', size: '148 × 210 mm', description: 'Folleto apaisado' },
-  { code: '80mm', label: 'Ticket 80 mm', size: '80 mm auto', description: 'Termica' },
-  { code: '58mm', label: 'Ticket 58 mm', size: '58 mm auto', description: 'Termica compacta' },
+  { code: 'carta', label: 'Carta', size: '216 × 279 mm', description: 'Documento completo' },
+  { code: 'media_carta', label: 'Media carta', size: '216 × 140 mm', description: 'Recibo institucional' },
+  { code: 'a5', label: 'A5', size: '148 × 210 mm', description: 'Formato compacto' },
 ] as const;
 
 type PaperProfileSelectorProps = Omit<HTMLAttributes<HTMLDivElement>, 'onChange'> & {

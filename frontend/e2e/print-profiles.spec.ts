@@ -125,7 +125,6 @@ test.describe('Print profiles - normal flow', () => {
       is_global_default: true,
       template_code: 'institutional_classic',
       copies_mode: 'original_only',
-      show_copy_legend: true,
       show_physical_seal_space: true,
       use_logo: true,
     });
@@ -141,6 +140,7 @@ test.describe('Print profiles - normal flow', () => {
       'margin_left_mm',
       'font_family',
       'font_scale',
+      'show_copy_legend',
       'show_technical_fields',
       'support_reason',
     ]) {

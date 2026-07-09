@@ -94,7 +94,7 @@ vi.mock('@/lib/download', () => ({
   downloadBlob: vi.fn(),
 }));
 
-function renderView({ canAdvancedPrintSettings = false } = {}) {
+function renderView() {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
@@ -106,7 +106,6 @@ function renderView({ canAdvancedPrintSettings = false } = {}) {
     <QueryClientProvider client={queryClient}>
       <InstitutionalReceiptSettingsView
         canEdit
-        canAdvancedPrintSettings={canAdvancedPrintSettings}
         onStatus={vi.fn()}
       />
     </QueryClientProvider>,
@@ -196,7 +195,7 @@ describe('InstitutionalReceiptSettingsView', () => {
   });
 
   it('keeps technical support profiles out of the normal paper flow', async () => {
-    renderView({ canAdvancedPrintSettings: false });
+    renderView();
 
     expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
     await activateTab('Papel y copias');
@@ -207,7 +206,7 @@ describe('InstitutionalReceiptSettingsView', () => {
   });
 
   it('keeps thermal ticket compatibility out of the normal institutional paper choices', async () => {
-    renderView({ canAdvancedPrintSettings: false });
+    renderView();
 
     expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
     await activateTab('Papel y copias');
@@ -220,7 +219,7 @@ describe('InstitutionalReceiptSettingsView', () => {
   });
 
   it('keeps the normal print flow to one paper selector instead of duplicate profile buttons', async () => {
-    renderView({ canAdvancedPrintSettings: false });
+    renderView();
 
     expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
     await activateTab('Papel y copias');
@@ -235,7 +234,7 @@ describe('InstitutionalReceiptSettingsView', () => {
   });
 
   it('keeps normal print controls limited to paper copies logo seal preview and save', async () => {
-    renderView({ canAdvancedPrintSettings: false });
+    renderView();
 
     expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
     await activateTab('Papel y copias');
@@ -270,7 +269,7 @@ describe('InstitutionalReceiptSettingsView', () => {
       resolved_profile: safeProfiles[0],
     });
 
-    renderView({ canAdvancedPrintSettings: false });
+    renderView();
 
     expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
     await activateTab('Papel y copias');
@@ -282,7 +281,7 @@ describe('InstitutionalReceiptSettingsView', () => {
   });
 
   it('uses operational paper copy without print implementation terms', async () => {
-    renderView({ canAdvancedPrintSettings: false });
+    renderView();
 
     expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
     await activateTab('Papel y copias');
@@ -293,7 +292,7 @@ describe('InstitutionalReceiptSettingsView', () => {
   });
 
   it('does not expose profile activation controls in the normal print flow', async () => {
-    renderView({ canAdvancedPrintSettings: false });
+    renderView();
 
     expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
     await activateTab('Papel y copias');
@@ -303,7 +302,7 @@ describe('InstitutionalReceiptSettingsView', () => {
   });
 
   it('keeps support-only paper controls hidden from the normal flow even for support users', async () => {
-    renderView({ canAdvancedPrintSettings: true });
+    renderView();
 
     expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
     await activateTab('Papel y copias');
@@ -318,9 +317,24 @@ describe('InstitutionalReceiptSettingsView', () => {
     expect(screen.queryByLabelText('Escala')).not.toBeInTheDocument();
   });
 
+  it('never exposes technical print mode to application users', async () => {
+    renderView();
+
+    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
+    await activateTab('Papel y copias');
+
+    expect(screen.getAllByRole('radio')).toHaveLength(3);
+    expect(screen.queryByText(/activar modo soporte/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/ajustes avanzados/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/ancho mm/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/margen/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/fuente/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/escala/i)).not.toBeInTheDocument();
+  });
+
   it('saves the selected normal paper profile as the institutional default without exposing technical controls', async () => {
     const { apiClient } = await import('@/lib/api');
-    renderView({ canAdvancedPrintSettings: false });
+    renderView();
 
     expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
     await activateTab('Papel y copias');
@@ -346,7 +360,7 @@ describe('InstitutionalReceiptSettingsView', () => {
 
   it('saves a standard paper profile as the institutional default for support users in the normal flow', async () => {
     const { apiClient } = await import('@/lib/api');
-    renderView({ canAdvancedPrintSettings: true });
+    renderView();
 
     expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
     await activateTab('Papel y copias');
@@ -369,7 +383,7 @@ describe('InstitutionalReceiptSettingsView', () => {
   });
 
   it('keeps support-only warnings hidden while a standard paper profile is selected', async () => {
-    renderView({ canAdvancedPrintSettings: true });
+    renderView();
 
     expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
     await activateTab('Papel y copias');
@@ -459,40 +473,6 @@ describe('InstitutionalReceiptSettingsView', () => {
     });
   });
 
-  it('sends a documented support reason with advanced manual print settings', async () => {
-    const { apiClient } = await import('@/lib/api');
-    renderView({ canAdvancedPrintSettings: true });
-
-    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
-    await activateTab('Papel y copias');
-    fireEvent.click(screen.getByText(/activar modo soporte t/i));
-    fireEvent.click(await screen.findByRole('button', { name: /recibo peque/i }));
-
-    const reason = await screen.findByLabelText(/motivo de soporte/i);
-    fireEvent.change(reason, { target: { value: '  Ajuste por prueba de impresora  ' } });
-    fireEvent.click(screen.getByRole('button', { name: /guardar ajustes avanzados/i }));
-
-    await waitFor(() => {
-      expect(apiClient.updateReceiptPrintProfile).toHaveBeenCalledWith(
-        1,
-        expect.objectContaining({
-          support_reason: 'Ajuste por prueba de impresora',
-        }),
-      );
-    });
-  });
-
-  it('labels the collapsed advanced panel as an explicit support activation', async () => {
-    renderView({ canAdvancedPrintSettings: true });
-
-    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
-    await activateTab('Papel y copias');
-
-    expect(screen.getByText(/activar modo soporte t/i)).toBeInTheDocument();
-    expect(screen.queryByLabelText('Ancho mm')).not.toBeInTheDocument();
-    expect(screen.queryByLabelText('Margen sup. (mm)')).not.toBeInTheDocument();
-  });
-
   it('generates a test print without leaving the settings screen', async () => {
     const { apiClient } = await import('@/lib/api');
     renderView();
@@ -504,23 +484,6 @@ describe('InstitutionalReceiptSettingsView', () => {
     await waitFor(() => {
       expect(apiClient.testPrintInstitutionalReceipt).toHaveBeenCalledWith(expect.objectContaining({
         profile_code: 'media_carta_horizontal',
-      }));
-    });
-  });
-
-  it('generates a test print with the selected support profile', async () => {
-    const { apiClient } = await import('@/lib/api');
-    renderView({ canAdvancedPrintSettings: true });
-
-    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
-    await activateTab('Papel y copias');
-    fireEvent.click(screen.getByText(/activar modo soporte t/i));
-    fireEvent.click(await screen.findByRole('button', { name: /recibo peque/i }));
-    fireEvent.click(screen.getByRole('button', { name: /Imprimir prueba/ }));
-
-    await waitFor(() => {
-      expect(apiClient.testPrintInstitutionalReceipt).toHaveBeenCalledWith(expect.objectContaining({
-        profile_code: 'recibo_pequeno_personalizado',
       }));
     });
   });

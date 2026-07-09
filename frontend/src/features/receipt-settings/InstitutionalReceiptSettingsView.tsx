@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, Printer, Save, Settings2 } from 'lucide-react';
+import { Printer, Save } from 'lucide-react';
 import { type ReactElement, ReactNode, cloneElement, isValidElement, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -21,47 +21,37 @@ import { type InstitutionalReceiptSeries, type ReceiptPrintProfile, apiClient, u
 import { downloadBlob } from '@/lib/download';
 import { queryKeys } from '@/lib/queryKeys';
 import {
-  receiptProfileAdvancedSchema,
   receiptProfileSchema,
-  type ReceiptProfileAdvancedForm,
   type ReceiptProfileForm,
 } from './receiptSettings.schema';
 
 type InstitutionalReceiptSettingsViewProps = {
-  canAdvancedPrintSettings: boolean;
   canEdit: boolean;
   onStatus: (message: string) => void;
 };
 
-type PaperProfileCode = 'carta' | 'media_carta' | 'a5' | '80mm' | '58mm';
+type PaperProfileCode = 'carta' | 'media_carta' | 'a5';
 
 const PAPER_LABELS: Record<PaperProfileCode, string> = {
   carta: 'Carta',
   media_carta: 'Media carta',
   a5: 'A5',
-  '80mm': 'Ticket 80 mm',
-  '58mm': 'Ticket 58 mm',
 };
 
 const RECEIPT_PROFILE_TO_PAPER: Record<string, PaperProfileCode> = {
   carta_horizontal: 'carta',
   media_carta_horizontal: 'media_carta',
   a5_horizontal: 'a5',
-  thermal_80mm: '80mm',
-  thermal_58mm: '58mm',
 };
 
 const PAPER_TO_RECEIPT_CODE: Record<PaperProfileCode, ReceiptPrintProfile['code']> = {
   carta: 'carta_horizontal',
   media_carta: 'media_carta_horizontal',
   a5: 'a5_horizontal',
-  '80mm': 'thermal_80mm',
-  '58mm': 'thermal_58mm',
 };
 
 const PRIMARY_PAPER_PROFILE_CODES = new Set<PaperProfileCode>(['carta', 'media_carta', 'a5']);
 const NORMAL_RECEIPT_PAPER_OPTIONS = PAPER_PROFILES.filter((profile) => PRIMARY_PAPER_PROFILE_CODES.has(profile.code));
-const SUPPORT_ONLY_PROFILE_CODES = new Set(['recibo_pequeno_personalizado', 'thermal_80mm', 'thermal_58mm']);
 
 const PROFILE_FORM_DEFAULTS = {
   copies_mode: 'original_only',
@@ -108,14 +98,7 @@ const seriesSchema = z.object({
 type InstitutionFormData = z.infer<typeof institutionSchema>;
 type SeriesFormData = z.infer<typeof seriesSchema>;
 type ProfileFormData = ReceiptProfileForm;
-type AdvancedFormData = ReceiptProfileAdvancedForm;
-
-function asMoney(value: string | number): string {
-  return Number(value).toFixed(2);
-}
-
 export function InstitutionalReceiptSettingsView({
-  canAdvancedPrintSettings,
   canEdit,
   onStatus,
 }: InstitutionalReceiptSettingsViewProps) {
@@ -123,12 +106,9 @@ export function InstitutionalReceiptSettingsView({
   const [paper, setPaper] = useState<PaperProfileCode>('media_carta');
   const [selectedCode, setSelectedCode] = useState<string>('media_carta_horizontal');
   const [error, setError] = useState('');
-  const [advancedOpen, setAdvancedOpen] = useState(false);
-  const [advancedSupported, setAdvancedSupported] = useState(false);
   const institutionSavingRef = useRef(false);
   const seriesSavingRef = useRef(false);
   const profileSavingRef = useRef(false);
-  const advancedSavingRef = useRef(false);
 
   const settingsQuery = useQuery({
     queryKey: queryKeys.settings.institutionalReceipts(),
@@ -180,21 +160,6 @@ export function InstitutionalReceiptSettingsView({
     defaultValues: PROFILE_FORM_DEFAULTS,
   });
 
-  const advancedForm = useForm<AdvancedFormData>({
-    resolver: zodResolver(receiptProfileAdvancedSchema),
-    defaultValues: {
-      width_mm: 215.9,
-      height_mm: 139.7,
-      margin_top_mm: 6,
-      margin_right_mm: 6,
-      margin_bottom_mm: 6,
-      margin_left_mm: 6,
-      font_family: 'Arial, sans-serif',
-      font_scale: 1,
-      support_reason: '',
-    },
-  });
-
   useEffect(() => {
     if (!settings) return;
 
@@ -241,19 +206,7 @@ export function InstitutionalReceiptSettingsView({
       active: selectedProfile.active ?? PROFILE_FORM_DEFAULTS.active,
       is_global_default: selectedProfile.is_global_default ?? PROFILE_FORM_DEFAULTS.is_global_default,
     });
-    advancedForm.reset({
-      width_mm: Number(selectedProfile.width_mm ?? 215.9),
-      height_mm: Number(selectedProfile.height_mm ?? 139.7),
-      margin_top_mm: Number(selectedProfile.margin_top_mm ?? 6),
-      margin_right_mm: Number(selectedProfile.margin_right_mm ?? 6),
-      margin_bottom_mm: Number(selectedProfile.margin_bottom_mm ?? 6),
-      margin_left_mm: Number(selectedProfile.margin_left_mm ?? 6),
-      font_family: selectedProfile.font_family ?? 'Arial, sans-serif',
-      font_scale: Number(selectedProfile.font_scale ?? 1),
-      support_reason: '',
-    });
-    setAdvancedSupported(selectedProfile.code === 'recibo_pequeno_personalizado');
-  }, [selectedProfile, profileForm, advancedForm]);
+  }, [selectedProfile, profileForm]);
 
   const invalidate = () =>
     queryClient.invalidateQueries({ queryKey: queryKeys.settings.institutionalReceipts() });
@@ -288,19 +241,12 @@ export function InstitutionalReceiptSettingsView({
   const profileMutation = useMutation({
     mutationFn: (payload: ProfileFormData) => {
       if (!selectedProfile) throw new Error('Seleccione un perfil de impresión.');
-      const savesSupportProfile = SUPPORT_ONLY_PROFILE_CODES.has(selectedProfile.code);
-      const normalPaperPayload = savesSupportProfile
-        ? payload
-        : {
-            copies_mode: payload.copies_mode,
-            show_physical_seal_space: payload.show_physical_seal_space,
-            use_logo: payload.use_logo,
-            active: true,
-            is_global_default: true,
-          };
-
       return apiClient.updateReceiptPrintProfile(selectedProfile.id, {
-        ...normalPaperPayload,
+        copies_mode: payload.copies_mode,
+        show_physical_seal_space: payload.show_physical_seal_space,
+        use_logo: payload.use_logo,
+        active: true,
+        is_global_default: true,
         template_code: 'institutional_classic',
       });
     },
@@ -311,33 +257,6 @@ export function InstitutionalReceiptSettingsView({
     onError: (err) => setError(userSafeErrorMessage(err, 'No se pudo guardar el perfil de impresión.')),
     onSettled: () => {
       profileSavingRef.current = false;
-    },
-  });
-
-  const advancedMutation = useMutation({
-    mutationFn: (payload: AdvancedFormData) => {
-      if (!selectedProfile) throw new Error('Seleccione un perfil de impresión.');
-      return apiClient.updateReceiptPrintProfile(selectedProfile.id, {
-        ...profileForm.watch(),
-        width_mm: asMoney(payload.width_mm),
-        height_mm: asMoney(payload.height_mm),
-        margin_top_mm: asMoney(payload.margin_top_mm),
-        margin_right_mm: asMoney(payload.margin_right_mm),
-        margin_bottom_mm: asMoney(payload.margin_bottom_mm),
-        margin_left_mm: asMoney(payload.margin_left_mm),
-        font_family: payload.font_family,
-        font_scale: asMoney(payload.font_scale),
-        support_reason: payload.support_reason.trim(),
-        template_code: 'institutional_classic',
-      });
-    },
-    onSuccess: async () => {
-      await invalidate();
-      onStatus('Ajustes avanzados del perfil guardados.');
-    },
-    onError: (err) => setError(userSafeErrorMessage(err, 'No se pudo guardar el perfil avanzado.')),
-    onSettled: () => {
-      advancedSavingRef.current = false;
     },
   });
 
@@ -383,7 +302,6 @@ export function InstitutionalReceiptSettingsView({
     ? { ...activeSeries, ...seriesValues }
     : null;
   const watchedProfile = profileForm.watch();
-  const watchedAdvanced = advancedForm.watch();
   const baseProfile = selectedProfile
     ? {
         ...selectedProfile,
@@ -395,21 +313,7 @@ export function InstitutionalReceiptSettingsView({
         is_global_default: watchedProfile.is_global_default,
       }
     : null;
-  const previewProfile = ((): ReceiptPrintProfile | null => {
-    if (!baseProfile) return null;
-    if (!canAdvancedPrintSettings || !advancedOpen) return baseProfile;
-    return {
-      ...baseProfile,
-      width_mm: asMoney(watchedAdvanced.width_mm),
-      height_mm: asMoney(watchedAdvanced.height_mm),
-      margin_top_mm: asMoney(watchedAdvanced.margin_top_mm),
-      margin_right_mm: asMoney(watchedAdvanced.margin_right_mm),
-      margin_bottom_mm: asMoney(watchedAdvanced.margin_bottom_mm),
-      margin_left_mm: asMoney(watchedAdvanced.margin_left_mm),
-      font_family: watchedAdvanced.font_family ?? null,
-      font_scale: asMoney(watchedAdvanced.font_scale),
-    };
-  })();
+  const previewProfile: ReceiptPrintProfile | null = baseProfile;
 
   const copiesCount =
     watchedProfile.copies_mode === 'original_first_second'
@@ -418,9 +322,6 @@ export function InstitutionalReceiptSettingsView({
         ? '2'
         : '1';
   const profileControlsDisabled = !canEdit || profileMutation.isPending;
-  const supportPrintProfiles = (settings?.print_profiles ?? []).filter(
-    (profile) => SUPPORT_ONLY_PROFILE_CODES.has(profile.code),
-  );
 
   return (
     <>
@@ -655,24 +556,6 @@ export function InstitutionalReceiptSettingsView({
                     disabled={profileControlsDisabled}
                     onChange={(value) => profileForm.setValue('use_logo', value === true)}
                   />
-                  {canAdvancedPrintSettings && advancedOpen && (
-                    <>
-                      <CheckboxField
-                        id="profile_active"
-                        label="Perfil activo"
-                        checked={Boolean(profileForm.watch('active'))}
-                        disabled={profileControlsDisabled}
-                        onChange={(value) => profileForm.setValue('active', value === true)}
-                      />
-                      <CheckboxField
-                        id="profile_is_global_default"
-                        label="Predeterminado global"
-                        checked={Boolean(profileForm.watch('is_global_default'))}
-                        disabled={profileControlsDisabled}
-                        onChange={(value) => profileForm.setValue('is_global_default', value === true)}
-                      />
-                    </>
-                  )}
                 </div>
 
                 <div className="flex flex-wrap justify-end gap-2">
@@ -686,114 +569,6 @@ export function InstitutionalReceiptSettingsView({
                   </Button>
                 </div>
               </form>
-
-              {canAdvancedPrintSettings && (
-                <details
-                  id="receipt-advanced-panel"
-                  className="mt-5 rounded-md border border-warning/40 bg-warning/10 p-3 text-sm"
-                  open={advancedOpen}
-                  onToggle={(event) => setAdvancedOpen((event.currentTarget as HTMLDetailsElement).open)}
-                >
-                  <summary className="cursor-pointer font-semibold text-warning-foreground">
-                    <span className="inline-flex items-center gap-2">
-                      <AlertTriangle className="size-4" aria-hidden="true" />
-                      Activar modo soporte técnico
-                    </span>
-                  </summary>
-                  <p className="mt-2 text-current/85">
-                    Estos ajustes modifican medidas manuales del recibo pequeño personalizado. Documente el motivo antes de continuar; el cambio queda auditado.
-                  </p>
-                  {advancedOpen && (
-                    <div className="mt-4 space-y-4">
-                      <div className="space-y-2">
-                        <p className="text-xs font-semibold uppercase text-warning-foreground">Perfiles de soporte</p>
-                        <div className="grid gap-2 md:grid-cols-2">
-                          {supportPrintProfiles.map((profile) => {
-                            const paperCode = RECEIPT_PROFILE_TO_PAPER[profile.code];
-                            const isActive = selectedCode === profile.code;
-                            return (
-                              <Button
-                                key={profile.code}
-                                type="button"
-                                aria-pressed={isActive}
-                                variant={isActive ? 'secondary' : 'outline'}
-                                className="h-auto justify-between gap-3 p-3 text-left"
-                                disabled={profileControlsDisabled}
-                                onClick={() => {
-                                  setSelectedCode(profile.code);
-                                  if (paperCode) setPaper(paperCode);
-                                }}
-                              >
-                                <span>{profile.code === 'recibo_pequeno_personalizado' ? 'Recibo pequeño personalizado' : PAPER_LABELS[paperCode as PaperProfileCode] ?? profile.code}</span>
-                                <span className="text-xs font-normal">{profile.active ? 'Activo' : 'Disponible'}</span>
-                              </Button>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      {advancedSupported ? (
-                        <form
-                          className="space-y-4"
-                      onSubmit={advancedForm.handleSubmit((data) =>
-                        advancedSavingRef.current
-                          ? undefined
-                          : (() => {
-                              advancedSavingRef.current = true;
-                              advancedMutation.mutate(data);
-                            })(),
-                      )}
-                    >
-                      <Field
-                        label="Motivo de soporte"
-                        id="adv_support_reason"
-                        error={advancedForm.formState.errors.support_reason?.message}
-                        hint="Explique la prueba fisica o ajuste solicitado."
-                      >
-                        <Textarea id="adv_support_reason" disabled={!canEdit} {...advancedForm.register('support_reason')} />
-                      </Field>
-                      <div className="grid gap-4 md:grid-cols-4">
-                        <Field label="Ancho mm" id="adv_width" hint="Solo recibo pequeño personalizado.">
-                          <Input id="adv_width" type="number" step="0.01" disabled={!canEdit} {...advancedForm.register('width_mm', { valueAsNumber: true })} />
-                        </Field>
-                        <Field label="Alto mm" id="adv_height" hint="Solo recibo pequeño personalizado.">
-                          <Input id="adv_height" type="number" step="0.01" disabled={!canEdit} {...advancedForm.register('height_mm', { valueAsNumber: true })} />
-                        </Field>
-                        <Field label="Fuente" id="adv_font_family">
-                          <Input id="adv_font_family" disabled={!canEdit} {...advancedForm.register('font_family')} />
-                        </Field>
-                        <Field label="Escala" id="adv_font_scale">
-                          <Input id="adv_font_scale" type="number" step="0.05" disabled={!canEdit} {...advancedForm.register('font_scale', { valueAsNumber: true })} />
-                        </Field>
-                        <Field label="Margen sup. (mm)" id="adv_margin_top">
-                          <Input id="adv_margin_top" type="number" step="0.01" disabled={!canEdit} {...advancedForm.register('margin_top_mm', { valueAsNumber: true })} />
-                        </Field>
-                        <Field label="Margen der. (mm)" id="adv_margin_right">
-                          <Input id="adv_margin_right" type="number" step="0.01" disabled={!canEdit} {...advancedForm.register('margin_right_mm', { valueAsNumber: true })} />
-                        </Field>
-                        <Field label="Margen inf. (mm)" id="adv_margin_bottom">
-                          <Input id="adv_margin_bottom" type="number" step="0.01" disabled={!canEdit} {...advancedForm.register('margin_bottom_mm', { valueAsNumber: true })} />
-                        </Field>
-                        <Field label="Margen izq. (mm)" id="adv_margin_left">
-                          <Input id="adv_margin_left" type="number" step="0.01" disabled={!canEdit} {...advancedForm.register('margin_left_mm', { valueAsNumber: true })} />
-                        </Field>
-                      </div>
-                      <div className="flex justify-end">
-                        <Button type="submit" variant="danger" disabled={!canEdit || advancedMutation.isPending}>
-                          <Settings2 className="size-4" data-icon aria-hidden="true" />
-                          Guardar ajustes avanzados
-                        </Button>
-                      </div>
-                        </form>
-                      ) : (
-                        <p className="text-xs text-warning-foreground">
-                          Seleccione un perfil de soporte para editar medidas manuales.
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </details>
-              )}
 
             </SectionCard>
         </TabsContent>

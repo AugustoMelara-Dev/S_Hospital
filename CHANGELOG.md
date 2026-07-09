@@ -1,5 +1,23 @@
 # Changelog - Sistema de Caja Hospitalaria
 
+## 2026-07-09 - Reescritura total, Fase 1: contrato de impresión
+
+- Elimina `autoPrint`, su temporizador, estado del reducer y dispatches; un
+  recibo solo puede imprimirse mediante una acción explícita.
+- Crea `modules/receipts/paperPolicy` como frontera inicial de la nueva
+  arquitectura modular.
+- Limita el selector público a Carta, Media carta y A5.
+- Retira de la aplicación el modo soporte técnico, medidas, márgenes, fuente y
+  escala, incluso para usuarios con permisos heredados.
+- Conserva perfiles térmicos y personalizados únicamente como compatibilidad
+  histórica del backend y de snapshots existentes.
+- Reescribe `docs/print-profiles.md` para describir el contrato operativo real.
+- Aísla Playwright en el puerto 4173 con `strictPort` y desactiva la
+  reutilización silenciosa de servidores ajenos.
+- Verificación fresca: 124 archivos / 833 pruebas frontend, cobertura V8 de
+  79.31% líneas / 78.03% funciones / 73.89% ramas / 77.71% sentencias,
+  typecheck, lint y build en verde; 3 E2E de perfiles pasan en Chromium.
+
 ## 2026-06-15 - v1.1 Critical Hardening post-OFFLINE
 
 Cherry-picked from `hardening-audit-complete-2026-06-15` (commits 680e7d2e + 6cecb4af) sobre la base OFF-A..OFF-E. Ademas del merge, esta ronda agrega:

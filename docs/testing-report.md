@@ -3,11 +3,18 @@
 Living verification report for the S_Hospital total refactor. This document is
 evidence for the current branch, not a production approval.
 
-Status date: 2026-07-06
+Status date: 2026-07-09
 Branch: `codex/refactor-total`
 Production approval: NO
 
 ## Current Focus
+
+Phase 1 of the approved total rewrite closes the printing contract. Receipt
+printing is now explicit-only: the legacy automatic-print property, reducer
+state and dispatch paths were removed. The application offers exactly Carta,
+Media carta and A5 and no longer renders manual dimensions, margins, fonts,
+scale or the former technical-support mode. Historical thermal profile values
+remain database/API compatibility data and are not operator choices.
 
 The latest verification pass moved from local frontend-only evidence to the
 Docker stack. It confirmed the containerized Laravel, MySQL/MariaDB and
@@ -29,6 +36,13 @@ production approval.
 
 | Date | Command | Result | Notes |
 |---|---|---|---|
+| 2026-07-09 | `npm.cmd run test:coverage:check` | PASS, 124 files / 833 tests | Full V8 coverage: 79.31% lines, 78.03% functions, 73.89% branches and 77.71% statements; exceeds 65/60/60/65 thresholds. |
+| 2026-07-09 | `npx.cmd playwright test e2e/print-profiles.spec.ts --workers=1 --reporter=list` | PASS, 3 tests | Real Chromium gate on dedicated port 4173: desktop controls, 320 px containment and save/test-print payload without technical fields. |
+| 2026-07-09 | `npx.cmd vitest run playwright.config.test.ts --pool=forks --maxWorkers=1 --no-file-parallelism` | PASS, 1 test | Prevents Playwright from silently reusing an unrelated service on port 5173. |
+| 2026-07-09 | `npm.cmd run test -- --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000` | PASS, 123 files / 832 tests | Complete frontend suite after removing auto-print and all technical receipt controls; superseded for final Phase 1 counts by the coverage gate after adding the Playwright config regression test. |
+| 2026-07-09 | `npm.cmd run typecheck` | PASS | TypeScript no-emit gate after the Phase 1 receipt policy rewrite. |
+| 2026-07-09 | `npm.cmd run lint` | PASS | ESLint gate after the Phase 1 receipt policy rewrite. |
+| 2026-07-09 | `npm.cmd run build` | PASS | Vite production build; receipt settings chunk reduced to 21.58 kB (6.42 kB gzip). Largest chunks remain vendor 398.43 kB and charts 357.04 kB. |
 | 2026-07-02 | `npm run test` | PASS, 100 files / 552 tests | Local Vitest run from `frontend`; not Docker. |
 | 2026-07-02 | `npm run build` | PASS | Local production build: `tsc --noEmit && vite build`; largest chunks `vendor` 398.37 kB gzip 121.92 kB and `charts` 357.04 kB gzip 104.93 kB. |
 | 2026-07-02 | `npx playwright test e2e/accessibility.spec.ts e2e/new-invoice-flow.spec.ts e2e/reports-flow.spec.ts e2e/cashbox.spec.ts e2e/invoice-history-flow.spec.ts` | PASS, 8 tests | Fresh focused gate for accessibility, invoice/payment, reports, cashbox close and invoice voiding. |

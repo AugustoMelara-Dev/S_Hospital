@@ -1,7 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const useExternalServer = process.env.PLAYWRIGHT_EXTERNAL_SERVER === '1';
-const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:5173';
+const playwrightPort = process.env.PLAYWRIGHT_PORT ?? '4173';
+const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? `http://127.0.0.1:${playwrightPort}`;
 const chromiumExecutablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
 
 export default defineConfig({
@@ -26,9 +27,9 @@ export default defineConfig({
   webServer: useExternalServer
     ? undefined
     : {
-        command: 'npm run dev',
+        command: `npm run dev -- --host 127.0.0.1 --port ${playwrightPort} --strictPort`,
         url: baseURL,
-        reuseExistingServer: !process.env.CI,
+        reuseExistingServer: false,
         timeout: 120_000,
       },
   projects: [

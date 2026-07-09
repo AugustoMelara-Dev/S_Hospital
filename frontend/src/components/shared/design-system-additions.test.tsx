@@ -38,11 +38,14 @@ describe('StatCard', () => {
 describe('PaperProfileSelector', () => {
   const profiles = PAPER_PROFILES;
 
-  it('renders 5 radio options with the active one marked', () => {
+  it('renders only the three institutional paper options with the active one marked', () => {
     render(<PaperProfileSelector value="media_carta" onChange={() => {}} />);
 
     const radios = screen.getAllByRole('radio');
-    expect(radios).toHaveLength(profiles.length);
+    expect(radios).toHaveLength(3);
+    expect(profiles).toHaveLength(3);
+    expect(screen.queryByRole('radio', { name: /ticket 80/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('radio', { name: /ticket 58/i })).not.toBeInTheDocument();
 
     const activeRadio = screen.getByRole('radio', { checked: true });
     expect(activeRadio).toHaveTextContent('Media carta');
@@ -51,7 +54,7 @@ describe('PaperProfileSelector', () => {
   it('exposes accessible label and helper text', () => {
     render(
       <PaperProfileSelector
-        value="80mm"
+        value="media_carta"
         onChange={() => {}}
         helperText="Los margenes y el tamano se calculan automaticamente."
       />,
