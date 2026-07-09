@@ -58,8 +58,6 @@ export function newInvoiceReducer(state: NewInvoiceState, action: NewInvoiceActi
       return { ...state, warningMessage: action.payload };
     case 'SET_SUCCESS_MESSAGE':
       return { ...state, successMessage: action.payload };
-    case 'SET_AUTO_PRINT_RECEIPT':
-      return { ...state, autoPrintReceipt: action.payload };
     case 'SET_SHOW_CONFIRMATION':
       return { ...state, showConfirmation: action.payload };
     case 'SET_SHOW_PAYMENT':

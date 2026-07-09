@@ -47,7 +47,6 @@ function renderLayout(overrides: Partial<React.ComponentProps<typeof NewInvoiceV
         onReceiptOpenChange={noop}
         onClearCart={noop}
         onClearConfirmChange={noop}
-        onAutoPrintChange={noop}
         patientInputRef={createRef<HTMLInputElement>()}
         searchInputRef={createRef<HTMLInputElement>()}
         scannerInputRef={createRef<HTMLInputElement>()}

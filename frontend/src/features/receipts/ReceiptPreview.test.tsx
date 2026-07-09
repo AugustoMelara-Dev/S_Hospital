@@ -26,6 +26,26 @@ describe('ReceiptPreview', () => {
     vi.useRealTimers();
   });
 
+  it('does not auto print when a legacy autoPrint prop is present', async () => {
+    vi.useFakeTimers();
+    const onPrint = vi.fn();
+
+    render(
+      <ReceiptPreview
+        {...({
+          receipt: receiptFixture(),
+          autoPrint: true,
+          onPrint,
+        } as unknown as React.ComponentProps<typeof ReceiptPreview>)}
+      />,
+    );
+
+    await vi.advanceTimersByTimeAsync(500);
+
+    expect(onPrint).not.toHaveBeenCalled();
+    expect(printSpy).not.toHaveBeenCalled();
+  });
+
   it('waits for audited print callback before printing', async () => {
     const events: string[] = [];
     const onPrint = vi.fn(async () => {

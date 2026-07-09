@@ -56,7 +56,6 @@ export type NewInvoiceLayoutProps = {
   onReceiptOpenChange: (val: boolean) => void;
   onClearCart: () => void;
   onClearConfirmChange: (val: boolean) => void;
-  onAutoPrintChange: (val: boolean) => void;
   patientInputRef: RefObject<HTMLInputElement | null>;
   searchInputRef: RefObject<HTMLInputElement | null>;
   scannerInputRef: RefObject<HTMLInputElement | null>;
@@ -99,7 +98,6 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
     onReceiptOpenChange,
     onClearCart,
     onClearConfirmChange,
-    onAutoPrintChange,
     patientInputRef,
     searchInputRef,
     scannerInputRef,
@@ -321,10 +319,8 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
       >
         {state.receipt ? (
           <ReceiptPreview
-            autoPrint={state.autoPrintReceipt}
             receipt={state.receipt}
             onNewInvoice={onNuevaFactura}
-            onPrint={() => onAutoPrintChange(false)}
           />
         ) : null}
       </Dialog>

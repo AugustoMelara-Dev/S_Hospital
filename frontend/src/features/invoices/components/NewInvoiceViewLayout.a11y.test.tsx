@@ -55,7 +55,6 @@ describe('NewInvoiceViewLayout accessibility', () => {
           onReceiptOpenChange={() => {}}
           onClearCart={() => {}}
           onClearConfirmChange={() => {}}
-          onAutoPrintChange={() => {}}
           patientInputRef={{ current: null }}
           searchInputRef={{ current: null }}
           scannerInputRef={{ current: null }}

@@ -10,15 +10,13 @@ import { formatLempirasFromCents, parseCents } from '../../lib/moneyCents';
 import { formatLocalizedDateTime } from '../../lib/format/formatDate';
 
 type ReceiptPreviewProps = {
-  autoPrint?: boolean;
   onNewInvoice?: () => void;
   onPrint?: () => void | Promise<void>;
   receipt: ReceiptData;
 };
 
-export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, receipt }: ReceiptPreviewProps) {
+export function ReceiptPreview({ onNewInvoice, onPrint, receipt }: ReceiptPreviewProps) {
   const receiptRef = useRef<HTMLDivElement>(null);
-  const autoPrintedReceiptRef = useRef<string | null>(null);
   const [printError, setPrintError] = useState('');
   const receiptWidth = institutionalReceiptPaperSize(receipt.width);
   const receiptWidthClass = receiptWidth.replace('_', '-');
@@ -55,16 +53,8 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
   }
 
   useEffect(() => {
-    if (!autoPrint || autoPrintedReceiptRef.current === receipt.invoice.invoice_number) {
-      return;
-    }
-
-    autoPrintedReceiptRef.current = receipt.invoice.invoice_number;
-    window.setTimeout(() => {
-      void handlePrintClick();
-    }, 150);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoPrint, receipt.invoice.invoice_number]);
+    setPrintError('');
+  }, [receipt.invoice.invoice_number]);
 
   const location = receipt.institutional?.location ?? receipt.hospital.address;
   const taxLabel = `${receipt.invoice.tax_label ?? 'ISV'}${receipt.invoice.tax_rate ? ` ${receipt.invoice.tax_rate}%` : ''}`;

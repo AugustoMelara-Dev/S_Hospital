@@ -27,7 +27,6 @@ export interface NewInvoiceState {
   alertMessage: string | null;
   warningMessage: string | null;
   successMessage: string | null;
-  autoPrintReceipt: boolean;
   showConfirmation: boolean;
   showPayment: boolean;
   showSuccess: boolean;
@@ -65,7 +64,6 @@ export type NewInvoiceAction =
   | { type: 'SET_ALERT_MESSAGE'; payload: string | null }
   | { type: 'SET_WARNING_MESSAGE'; payload: string | null }
   | { type: 'SET_SUCCESS_MESSAGE'; payload: string | null }
-  | { type: 'SET_AUTO_PRINT_RECEIPT'; payload: boolean }
   | { type: 'SET_SHOW_CONFIRMATION'; payload: boolean }
   | { type: 'SET_SHOW_PAYMENT'; payload: boolean }
   | { type: 'SET_SHOW_SUCCESS'; payload: boolean }
@@ -112,7 +110,6 @@ export function getInitialNewInvoiceState(cashSession: CashSession | null): NewI
     alertMessage: null,
     warningMessage: null,
     successMessage: null,
-    autoPrintReceipt: false,
     showConfirmation: false,
     showPayment: false,
     showSuccess: false,
