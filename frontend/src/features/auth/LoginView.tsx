@@ -89,11 +89,11 @@ export function LoginView({
   const loginDisabled = submitting || countdown > 0;
 
   return (
-    <main className="min-h-[100dvh] overflow-x-hidden bg-operational-bg text-foreground">
-      <div className="mx-auto grid min-h-[100dvh] w-full max-w-7xl lg:grid-cols-[minmax(20rem,1fr)_minmax(24rem,0.78fr)]">
-        <section className="order-1 flex min-w-0 items-center bg-operational-surface px-5 py-8 sm:px-10 lg:order-2 lg:px-14">
+    <main className="min-h-[100dvh] overflow-x-hidden bg-[#0c2733] text-foreground">
+      <div className="mx-auto grid min-h-[100dvh] w-full max-w-[1600px] lg:grid-cols-[minmax(22rem,1.05fr)_minmax(26rem,0.75fr)]">
+        <section className="order-1 flex min-w-0 items-center bg-[#f4f8f7] px-5 py-8 sm:px-10 lg:order-2 lg:rounded-l-[2rem] lg:px-16">
           <div className="mx-auto w-full max-w-md">
-            <div className="flex items-center gap-3 border-b border-operational-border pb-6">
+            <div className="flex items-center gap-3 pb-6">
               {logoUrl ? (
                 <img
                   src={logoUrl}
@@ -101,7 +101,7 @@ export function LoginView({
                   className="size-11 shrink-0 rounded-md border border-border bg-white object-contain p-1"
                 />
               ) : (
-                <span className="flex size-11 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#0c2733] text-[#80dfd0] shadow-lg">
                   <Building2 aria-hidden="true" className="size-5" />
                 </span>
               )}
@@ -115,7 +115,7 @@ export function LoginView({
               </span>
             </div>
 
-            <header className="pb-6 pt-8">
+            <header className="border-t border-operational-border pb-7 pt-8">
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">Acceso operativo</p>
               <h1 className="mt-2 text-3xl font-semibold tracking-tight">Iniciar sesión</h1>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
@@ -181,7 +181,7 @@ export function LoginView({
                 )}
               </FormField>
 
-              <Button type="submit" disabled={loginDisabled} className="mt-1 min-h-12 w-full">
+              <Button type="submit" disabled={loginDisabled} className="mt-1 min-h-12 w-full bg-[#0c2733] text-white shadow-lg hover:bg-[#123f52]">
                 {submitting ? 'Validando acceso...' : countdown > 0 ? `Bloqueado (${countdown}s)` : 'Iniciar sesión'}
               </Button>
             </form>
@@ -198,20 +198,21 @@ export function LoginView({
           </div>
         </section>
 
-        <section className="order-2 flex min-w-0 items-center bg-sidebar px-6 py-10 text-sidebar-foreground sm:px-10 lg:order-1 lg:min-h-[100dvh] lg:px-14">
-          <div className="max-w-xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/65">
+        <section className="relative order-2 flex min-w-0 items-center overflow-hidden bg-[#0c2733] px-6 py-12 text-white sm:px-10 lg:order-1 lg:min-h-[100dvh] lg:px-16">
+          <div className="absolute -left-40 -top-40 size-[32rem] rounded-full border border-[#55d3bf]/15 bg-[#55d3bf]/5" aria-hidden="true" />
+          <div className="relative max-w-xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#80dfd0]">
               Consola clínica
             </p>
-            <h2 className="mt-4 text-3xl font-semibold leading-tight sm:text-4xl">
+            <h2 className="mt-5 text-4xl font-semibold leading-[1.08] tracking-[-0.045em] sm:text-5xl">
               Caja y administración en un entorno institucional seguro.
             </h2>
-            <div className="mt-8 border-l border-sidebar-border pl-5 text-sm leading-6 text-sidebar-foreground/75">
-              <p className="flex items-start gap-3 py-2">
+            <div className="mt-10 grid gap-3 text-sm leading-6 text-white/70 sm:grid-cols-2">
+              <p className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/5 p-4">
                 <ShieldCheck aria-hidden="true" className="mt-0.5 size-5 shrink-0" />
                 El acceso por rol muestra solo los módulos autorizados.
               </p>
-              <p className="flex items-start gap-3 py-2">
+              <p className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/5 p-4">
                 <WifiOff aria-hidden="true" className="mt-0.5 size-5 shrink-0" />
                 La operación principal continúa sin internet dentro de la red local.
               </p>

@@ -115,9 +115,10 @@ export function FiscalSettingsView({ canEdit, canEditOperationalRules, canViewFi
         </Alert>
       ) : null}
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <div className="overflow-x-auto pb-1">
-          <TabsList className="min-w-max border border-operational-border bg-operational-panel p-1">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="grid items-start gap-5 lg:grid-cols-[15rem_minmax(0,1fr)]">
+        <div className="overflow-x-auto rounded-xl border border-operational-border bg-operational-surface p-2 shadow-operational lg:sticky lg:top-24 lg:overflow-visible">
+          <p className="hidden px-3 pb-3 pt-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground lg:block">Secciones</p>
+          <TabsList className="min-w-max border-0 bg-transparent p-0 lg:flex lg:min-w-0 lg:flex-col lg:items-stretch lg:gap-1">
             {canViewFiscalSettings ? <TabsTrigger value="resumen">Resumen</TabsTrigger> : null}
             {canViewFiscalSettings ? <TabsTrigger value="hospital">Hospital</TabsTrigger> : null}
             {canViewFiscalSettings ? <TabsTrigger value="numeracion">Numeración</TabsTrigger> : null}
@@ -127,30 +128,30 @@ export function FiscalSettingsView({ canEdit, canEditOperationalRules, canViewFi
         </div>
 
         {canViewFiscalSettings ? (
-          <TabsContent value="resumen" className="mt-0 space-y-6">
+          <TabsContent value="resumen" className="mt-0 min-w-0 space-y-6">
             <FiscalStatusCard settings={settings} sequence={sequence} />
             <FiscalSummary settings={settings} sequence={sequence} />
           </TabsContent>
         ) : null}
 
         {canViewFiscalSettings ? (
-          <TabsContent value="hospital" className="mt-0">
+          <TabsContent value="hospital" className="mt-0 min-w-0">
             <HospitalSettingsView canEdit={canEdit} onStatus={onStatus} />
           </TabsContent>
         ) : null}
 
         {canViewFiscalSettings ? (
-          <TabsContent value="numeracion" className="mt-0">
+          <TabsContent value="numeracion" className="mt-0 min-w-0">
             <FiscalNumerationView canEdit={canEdit} onStatus={onStatus} />
           </TabsContent>
         ) : null}
 
-        <TabsContent value="operativa" className="mt-0">
+        <TabsContent value="operativa" className="mt-0 min-w-0">
           <OperationalRulesView canEdit={canEditOperationalRules} onStatus={onStatus} />
         </TabsContent>
 
         {canViewFiscalSettings ? (
-          <TabsContent value="marca" className="mt-0">
+          <TabsContent value="marca" className="mt-0 min-w-0">
             <BrandingView canEdit={canEdit} onStatus={onStatus} />
           </TabsContent>
         ) : null}

@@ -29,7 +29,7 @@ export function CashMethodSummary({
   return (
     <section
       aria-labelledby="cash-method-summary-title"
-      className="overflow-hidden rounded-lg border border-operational-border bg-operational-surface"
+      className="overflow-hidden rounded-2xl border border-operational-border bg-operational-surface shadow-operational"
     >
       <div className="border-b border-border px-4 pb-4 pt-5 sm:px-5">
         <h2 id="cash-method-summary-title" className="text-lg font-semibold tracking-tight text-foreground">
@@ -40,11 +40,11 @@ export function CashMethodSummary({
         </p>
       </div>
 
-      <dl className="divide-y divide-border">
+      <dl className="grid gap-px bg-border sm:grid-cols-2">
         {methodMeta.map(({ key, label, detail, icon: Icon }) => (
-          <div key={key} className="grid min-h-16 grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-4 py-3 sm:px-5">
+          <div key={key} className="grid min-h-28 grid-cols-[minmax(0,1fr)_auto] items-center gap-4 bg-operational-surface px-4 py-4 transition-colors hover:bg-accent/35 sm:px-5">
             <dt className="flex min-w-0 items-center gap-3">
-              <span className="flex size-9 shrink-0 items-center justify-center rounded bg-muted text-secondary">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#0c2733] text-[#80dfd0]">
                 <Icon data-icon aria-hidden="true" className="size-4" />
               </span>
               <span className="min-w-0">
@@ -52,7 +52,7 @@ export function CashMethodSummary({
                 <span className="block text-xs leading-relaxed text-muted-foreground">{detail}</span>
               </span>
             </dt>
-            <dd className="font-semibold tabular-nums text-foreground">{formatLempirasUI(paymentsByMethod[key])}</dd>
+            <dd className="text-lg font-semibold tracking-tight tabular-nums text-foreground">{formatLempirasUI(paymentsByMethod[key])}</dd>
           </div>
         ))}
       </dl>

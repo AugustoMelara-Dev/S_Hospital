@@ -340,7 +340,7 @@ export function HelpView() {
         }
       />
 
-      <div className="rounded-panel border border-border bg-card p-4 shadow-sm">
+      <div className="rounded-xl border border-border bg-card p-5 shadow-operational">
         <label htmlFor="help-task-search" className="text-sm font-semibold text-foreground">¿Qué necesita hacer?</label>
         <div className="relative mt-2 max-w-2xl">
           <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -358,12 +358,12 @@ export function HelpView() {
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {visibleGuides.map((guide) => {
+      <div className="grid gap-4 md:grid-cols-2">
+        {visibleGuides.map((guide, guideIndex) => {
           const Icon = guide.icon;
 
           return (
-            <Card key={guide.title} className="overflow-hidden">
+            <Card key={guide.title} className={guideIndex === 0 ? 'overflow-hidden md:col-span-2' : 'overflow-hidden'}>
               <CardHeader>
                 <div className="flex items-center gap-3">
                   <div className="flex size-10 items-center justify-center rounded-md bg-secondary/10 text-secondary">

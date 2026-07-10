@@ -347,9 +347,10 @@ export function InstitutionalReceiptSettingsView({
         </Alert>
       )}
 
-      <Tabs defaultValue="papel" className="space-y-6">
-        <div className="overflow-x-auto pb-1">
-          <TabsList className="min-w-max border border-operational-border bg-operational-panel p-1">
+      <Tabs defaultValue="papel" className="grid items-start gap-5 lg:grid-cols-[15rem_minmax(0,1fr)]">
+        <div className="overflow-x-auto rounded-xl border border-operational-border bg-operational-surface p-2 shadow-operational lg:sticky lg:top-24 lg:overflow-visible">
+          <p className="hidden px-3 pb-3 pt-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground lg:block">Configurar recibo</p>
+          <TabsList className="min-w-max border-0 bg-transparent p-0 lg:flex lg:min-w-0 lg:flex-col lg:items-stretch lg:gap-1">
             <TabsTrigger value="institucion">Institución</TabsTrigger>
             <TabsTrigger value="serie">Serie</TabsTrigger>
             <TabsTrigger value="papel">Papel y copias</TabsTrigger>
@@ -357,7 +358,7 @@ export function InstitutionalReceiptSettingsView({
           </TabsList>
         </div>
 
-        <TabsContent value="institucion" className="space-y-6">
+        <TabsContent value="institucion" className="mt-0 min-w-0 space-y-6">
           <SectionCard
             title="Datos del recibo"
             description="Encabezado, ubicación y leyenda del documento institucional."

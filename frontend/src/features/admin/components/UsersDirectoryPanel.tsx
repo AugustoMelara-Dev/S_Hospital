@@ -43,9 +43,13 @@ export function UsersDirectoryPanel({
         <p className="text-sm text-muted-foreground">Solo lectura</p>
       )}
 
-      <Card className="border border-operational-border bg-operational-surface shadow-operational">
-        <CardContent className="space-y-4 p-4">
-          <div className="relative max-w-xl">
+      <Card className="overflow-hidden border border-operational-border bg-operational-surface shadow-operational">
+        <div className="flex flex-col gap-3 border-b border-border bg-muted/35 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight">Directorio de usuarios</h2>
+            <p className="text-xs text-muted-foreground">Identidades, acceso y estado operativo de cada cuenta.</p>
+          </div>
+          <div className="relative w-full sm:max-w-md">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
             <Input
               aria-label="Buscar usuarios"
@@ -55,7 +59,7 @@ export function UsersDirectoryPanel({
               onChange={(event) => onSearchTermChange(event.target.value)}
             />
           </div>
-        </CardContent>
+        </div>
         <CardContent className="p-0">
           <UsersTable
             canAssignAdminRole={canAssignAdminRole}

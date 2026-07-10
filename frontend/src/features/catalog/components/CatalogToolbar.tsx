@@ -26,9 +26,13 @@ export function CatalogToolbar({
   statusFilter,
 }: CatalogToolbarProps) {
   return (
-    <Card className="border-operational-border bg-operational-surface shadow-operational">
-      <CardContent className="pt-6">
-        <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_220px_170px_auto]">
+    <Card className="overflow-hidden border-operational-border bg-operational-surface shadow-operational">
+      <div className="border-b border-border bg-muted/35 px-5 py-3">
+        <p className="text-sm font-semibold">Explorar catálogo</p>
+        <p className="text-xs text-muted-foreground">Busque por nombre y refine por categoría o disponibilidad.</p>
+      </div>
+      <CardContent className="p-5">
+        <div className="grid gap-4 lg:grid-cols-[minmax(18rem,1fr)_minmax(24rem,.9fr)] lg:items-end">
           <SearchInput
             id={searchInputId}
             name="catalog_search"
@@ -39,6 +43,7 @@ export function CatalogToolbar({
             className="min-w-[200px]"
           />
 
+          <div className="grid gap-4 rounded-xl bg-muted/45 p-4 sm:grid-cols-[1fr_11rem_auto] sm:items-end">
           <div className="flex flex-col gap-2">
             <label htmlFor="catalog-category" className="text-sm font-medium">
               Categoría
@@ -91,6 +96,7 @@ export function CatalogToolbar({
               <RotateCcw aria-hidden="true" className="h-4 w-4" />
               Limpiar
             </Button>
+          </div>
           </div>
         </div>
       </CardContent>

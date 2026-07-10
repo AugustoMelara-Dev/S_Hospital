@@ -172,7 +172,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
   const showHistory = !initialLoading && !error && (backupsList.length > 0 || statusFilter !== 'all');
 
   return (
-    <section id="backups" aria-labelledby="backups-title">
+    <section id="backups" aria-labelledby="backups-title" className="flex flex-col gap-6">
       <PageHeader
         title="Respaldos"
         description="Copias de seguridad de facturación, caja y reportes"
@@ -269,7 +269,11 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
         ) : null}
 
         {showHistory ? (
-          <div className="space-y-4">
+          <div className="overflow-hidden rounded-xl border border-operational-border bg-operational-surface p-4 shadow-operational sm:p-5">
+            <div className="mb-4">
+              <h2 className="text-lg font-semibold tracking-tight">Historial de respaldos</h2>
+              <p className="text-sm text-muted-foreground">Ejecuciones locales, estado y descarga autorizada.</p>
+            </div>
             <BackupHistoryTable
               backups={backupsList}
               canDownload={canDownload}

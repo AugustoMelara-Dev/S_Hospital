@@ -154,7 +154,7 @@ function ReportsNavigation({
   }
 
   return (
-    <nav aria-label="Secciones de reportes" className="flex flex-wrap gap-2">
+    <nav aria-label="Secciones de reportes" className="grid gap-3 md:grid-cols-3">
       {visible.map((route) => {
         const isActive = active === route.id;
         const Icon = route.icon;
@@ -166,16 +166,16 @@ function ReportsNavigation({
             aria-current={isActive ? 'page' : undefined}
             aria-describedby={descriptionId}
             className={cn(
-              'inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+              'group flex min-h-20 items-center gap-3 rounded-xl border px-4 py-3 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
               isActive
-                ? 'border-hospital-primary bg-hospital-primary/10 text-foreground shadow-sm'
-                : 'border-operational-border bg-operational-surface text-muted-foreground hover:border-hospital-primary/45 hover:text-foreground',
+                ? 'border-[#0c2733] bg-[#0c2733] text-white shadow-operational'
+                : 'border-operational-border bg-operational-surface text-muted-foreground shadow-sm hover:border-hospital-primary/45 hover:bg-accent/30 hover:text-foreground',
             )}
           >
-            <Icon aria-hidden="true" className="size-4" />
-            <span>{route.label}</span>
-            <span id={descriptionId} className="sr-only">
-              {route.description}
+            <span className={cn('flex size-10 shrink-0 items-center justify-center rounded-lg', isActive ? 'bg-white/10 text-[#80dfd0]' : 'bg-muted text-secondary')}><Icon aria-hidden="true" className="size-5" /></span>
+            <span className="min-w-0">
+              <span className="block font-semibold">{route.label}</span>
+              <span id={descriptionId} className={cn('mt-0.5 block text-xs font-normal leading-relaxed', isActive ? 'text-white/60' : 'text-muted-foreground')}>{route.description}</span>
             </span>
           </Link>
         );

@@ -30,21 +30,21 @@ export function SessionSummary({ session, closingAmount, difference }: SessionSu
   return (
     <section
       aria-labelledby="cash-reconciliation-title"
-      className="overflow-hidden rounded-lg border border-operational-border bg-operational-surface"
+      className="overflow-hidden rounded-2xl border border-operational-border bg-operational-surface shadow-operational"
     >
-      <div className="flex flex-col gap-1 border-b border-border px-4 pb-4 pt-5 sm:px-5">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+      <div className="flex flex-col gap-1 border-b border-white/10 bg-[#0c2733] px-5 pb-5 pt-6 text-white sm:px-6">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#80dfd0]">
           Libro operacional
         </p>
-        <h2 id="cash-reconciliation-title" className="text-xl font-semibold tracking-tight text-foreground">
+        <h2 id="cash-reconciliation-title" className="text-2xl font-semibold tracking-[-0.03em] text-white">
           Conciliación de caja
         </h2>
-        <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
+        <p className="max-w-2xl text-sm leading-relaxed text-white/65">
           Compare el efectivo que el sistema espera con el conteo físico antes de cerrar el turno.
         </p>
       </div>
 
-      <div className="grid divide-y divide-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+      <div className="grid divide-y divide-border sm:grid-cols-3 sm:divide-x sm:divide-y-0 [&>div:first-child]:bg-accent/35">
         <LedgerValue
           label="Efectivo esperado"
           value={formatLempirasUI(expectedAmount)}
@@ -95,11 +95,11 @@ function LedgerValue({
   valueClassName?: string;
 }) {
   return (
-    <div className="min-w-0 px-4 py-5 sm:px-5">
+    <div className="min-w-0 px-5 py-6 sm:px-6">
       <p className="text-xs font-semibold text-muted-foreground">{label}</p>
       <p
         aria-describedby={describedBy}
-        className={cn('mt-2 text-2xl font-semibold tracking-tight tabular-nums text-foreground', valueClassName)}
+        className={cn('mt-3 text-3xl font-semibold tracking-[-0.04em] tabular-nums text-foreground', valueClassName)}
       >
         {value}
       </p>
