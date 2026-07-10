@@ -238,7 +238,7 @@ describe('RoleFormDialog', () => {
     );
 
     expect(screen.getByText(/permiso critico/i)).toBeInTheDocument();
-    expect(screen.getByText(/habilitar soporte tecnico temporal/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/habilitar soporte tecnico temporal/i).length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: /crear rol/i })).toBeDisabled();
   });
 
@@ -271,6 +271,54 @@ describe('RoleFormDialog', () => {
     fireEvent.click(screen.getByRole('checkbox', { name: /confirmo que este rol necesita permisos criticos/i }));
 
     expect(submit).not.toBeDisabled();
+  });
+
+  it('enumerates critical permissions added and removed before confirmation', () => {
+    render(
+      <RoleFormDialog
+        open
+        onOpenChange={vi.fn()}
+        editingRole={{
+          id: 7,
+          name: 'supervision_turno',
+          protected: false,
+          permissions: [{
+            name: 'cash.close_any',
+            module: 'cash',
+            label: 'Cerrar cualquier caja',
+            critical: true,
+            risk_level: 'critical',
+            risk_label: 'Puede cerrar cajas de otros usuarios.',
+          }],
+        }}
+        permissionCatalog={[
+          {
+            module: 'cash',
+            label: 'Caja',
+            permissions: [
+              criticalPermission('cash.close_any', 'Cerrar cualquier caja'),
+              {
+                ...criticalPermission('cash.open', 'Abrir caja'),
+                risk_label: 'Permite iniciar una nueva sesión de caja.',
+              },
+            ],
+          },
+        ]}
+        selectedPermissions={['cash.open']}
+        onTogglePermission={vi.fn()}
+        globalError={null}
+        onSubmit={vi.fn()}
+        isSaving={false}
+      />,
+    );
+
+    const added = screen.getByRole('region', { name: /permisos cr[ií]ticos añadidos/i });
+    const removed = screen.getByRole('region', { name: /permisos cr[ií]ticos retirados/i });
+    expect(added).toHaveTextContent(/abrir caja/i);
+    expect(added).toHaveTextContent(/iniciar una nueva sesi[oó]n/i);
+    expect(removed).toHaveTextContent(/cerrar cualquier caja/i);
+    expect(removed).toHaveTextContent(/cerrar cajas de otros usuarios/i);
+    expect(screen.getByRole('button', { name: /guardar rol/i })).toBeDisabled();
   });
 
   it('treats operational settings updates as critical permissions', () => {

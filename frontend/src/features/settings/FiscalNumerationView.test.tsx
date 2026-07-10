@@ -112,6 +112,55 @@ describe('FiscalNumerationView', () => {
     expect(screen.getByText(/vigente hasta/i)).toBeInTheDocument();
   });
 
+  it('starts a new high fiscal range immediately before its minimum number', async () => {
+    const saveFiscalSequence = vi.mocked(apiClient.saveFiscalSequence);
+    vi.mocked(apiClient.getFiscalSequences).mockResolvedValue([]);
+    saveFiscalSequence.mockImplementation(async (payload) => ({ id: 8, ...payload }));
+
+    render(<FiscalNumerationView canEdit onStatus={vi.fn()} />);
+
+    fireEvent.change(await screen.findByLabelText(/^prefijo$/i), { target: { value: '001-002-03' } });
+    fireEvent.change(screen.getByLabelText(/^cai$/i), { target: { value: 'CAI-NUEVO-RANGO' } });
+    fireEvent.change(screen.getByLabelText(/desde el n[uú]mero/i), { target: { value: '10000001' } });
+    fireEvent.change(screen.getByLabelText(/hasta el n[uú]mero/i), { target: { value: '10000100' } });
+    fireEvent.change(screen.getByLabelText(/v[aá]lido hasta/i), { target: { value: '2027-12-31' } });
+    fireEvent.click(screen.getByRole('button', { name: /guardar numeraci/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /confirmar y guardar/i }));
+
+    await waitFor(() => expect(saveFiscalSequence).toHaveBeenCalledWith({
+      document_type: 'invoice',
+      prefix: '001-002-03',
+      cai: 'CAI-NUEVO-RANGO',
+      min_number: 10000001,
+      max_number: 10000100,
+      current_number: 10000000,
+      valid_until: '2027-12-31',
+      active: true,
+    }));
+  });
+
+  it('compares every critical fiscal field before saving', async () => {
+    render(<FiscalNumerationView canEdit onStatus={vi.fn()} />);
+
+    fireEvent.change(await screen.findByLabelText(/^prefijo$/i), { target: { value: 'B' } });
+    fireEvent.change(screen.getByLabelText(/^cai$/i), { target: { value: 'CAI-RENOVADO' } });
+    fireEvent.change(screen.getByLabelText(/desde el n[uú]mero/i), { target: { value: '11' } });
+    fireEvent.change(screen.getByLabelText(/hasta el n[uú]mero/i), { target: { value: '1100' } });
+    fireEvent.change(screen.getByLabelText(/v[aá]lido hasta/i), { target: { value: '2027-06-30' } });
+    fireEvent.change(screen.getByLabelText(/motivo del cambio fiscal/i), { target: { value: 'Renovacion fiscal autorizada' } });
+    fireEvent.click(screen.getByRole('button', { name: /guardar numeraci/i }));
+
+    const dialog = await screen.findByRole('alertdialog', { name: /revisar cambio fiscal/i });
+    expect(dialog).toHaveTextContent(/CAI actual/i);
+    expect(dialog).toHaveTextContent('CAI-TEST');
+    expect(dialog).toHaveTextContent(/CAI nuevo/i);
+    expect(dialog).toHaveTextContent('CAI-RENOVADO');
+    expect(dialog).toHaveTextContent(/1.*1[,.]000/);
+    expect(dialog).toHaveTextContent(/11.*1[,.]100/);
+    expect(dialog).toHaveTextContent('2026-12-31');
+    expect(dialog).toHaveTextContent('2027-06-30');
+  });
+
   it('requires a fiscal reason before saving changed fiscal sequence data', async () => {
     const saveFiscalSequence = vi.mocked(apiClient.saveFiscalSequence);
 

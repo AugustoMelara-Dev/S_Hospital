@@ -23,8 +23,8 @@ type FiscalNumerationViewProps = {
 const sequenceSchema = z.object({
   prefix: z.string().min(1, 'El prefijo es requerido').max(32, 'Prefijo muy largo'),
   cai: z.string().min(1, 'El CAI es requerido').max(128, 'CAI muy largo'),
-  min_number: z.number().int().min(1, 'Debe ser mayor a 0'),
-  max_number: z.number().int().min(1, 'Debe ser mayor a 0'),
+  min_number: z.number().int().min(1, 'Debe ser mayor a 0').max(Number.MAX_SAFE_INTEGER, 'Número fuera del rango permitido'),
+  max_number: z.number().int().min(1, 'Debe ser mayor a 0').max(Number.MAX_SAFE_INTEGER, 'Número fuera del rango permitido'),
   valid_until: z.string().min(1, 'La fecha de vencimiento es requerida'),
   reason: z.string().max(500, 'Motivo muy largo').optional(),
 }).superRefine((data, ctx) => {
@@ -113,13 +113,13 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
     onStatus('Guardando numeración fiscal...');
     try {
       const saved = await apiClient.saveFiscalSequence({
-        id: sequence?.id,
+        ...(sequence?.id ? { id: sequence.id } : {}),
         document_type: 'invoice',
         prefix: data.prefix,
         cai: data.cai,
         min_number: data.min_number,
         max_number: data.max_number,
-        current_number: sequence?.current_number ?? 0,
+        current_number: sequence?.current_number ?? data.min_number - 1,
         valid_until: data.valid_until,
         active: true,
         ...(sequence?.id ? { reason } : {}),
@@ -336,17 +336,35 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
           <div className="space-y-3">
             {error ? <Alert variant="destructive" title="No se pudo guardar">{error}</Alert> : null}
             <p>Este cambio afecta la numeración de las próximas facturas y quedará auditado.</p>
-            <dl className="grid gap-2 rounded-md border border-operational-border bg-operational-panel p-3 sm:grid-cols-2">
+            <dl className="grid gap-3 rounded-md border border-operational-border bg-operational-panel p-3 sm:grid-cols-2">
               <div>
                 <dt className="text-xs font-medium">Prefijo</dt>
                 <dd className="font-mono tabular-nums">{sequence?.prefix ?? '—'} → {pendingChange.prefix}</dd>
               </div>
               <div>
-                <dt className="text-xs font-medium">Rango autorizado</dt>
+                <dt className="text-xs font-medium">CAI actual</dt>
+                <dd className="break-all font-mono">{sequence?.cai || 'Sin configurar'}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-medium">CAI nuevo</dt>
+                <dd className="break-all font-mono">{pendingChange.cai}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-medium">Rango actual</dt>
+                <dd className="font-mono tabular-nums">
+                  {sequence ? `${sequence.min_number.toLocaleString('es-HN')} – ${sequence.max_number.toLocaleString('es-HN')}` : 'Sin configurar'}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs font-medium">Rango nuevo</dt>
                 <dd className="font-mono tabular-nums">{pendingChange.min_number.toLocaleString('es-HN')} – {pendingChange.max_number.toLocaleString('es-HN')}</dd>
               </div>
               <div>
-                <dt className="text-xs font-medium">Vigencia</dt>
+                <dt className="text-xs font-medium">Vigencia actual</dt>
+                <dd>{sequence?.valid_until || 'Sin configurar'}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-medium">Vigencia nueva</dt>
                 <dd>{pendingChange.valid_until}</dd>
               </div>
               <div>

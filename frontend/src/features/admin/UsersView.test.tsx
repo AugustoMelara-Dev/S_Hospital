@@ -244,6 +244,44 @@ describe('UsersView', () => {
     expect(screen.getByRole('menuitem', { name: /^desactivar$/i })).toBeInTheDocument();
   });
 
+  it('allows self identity edits without sending role or permission changes', async () => {
+    const updateUser = vi.spyOn(apiClient, 'updateUser').mockResolvedValue({
+      ...adminUser,
+      name: 'Administracion General',
+      email: 'administracion@hospital.test',
+      username: 'administracion',
+    });
+
+    render(
+      <UsersView
+        onStatus={vi.fn()}
+        canCreateUsers={false}
+        canUpdateUsers
+        canManageRoles
+        canAssignAdminRole
+        currentUserId={adminUser.id}
+      />,
+    );
+
+    await openUserActions('Admin Hospital');
+    fireEvent.click(await screen.findByRole('menuitem', { name: /^editar$/i }));
+
+    const dialog = await screen.findByRole('dialog', { name: /editar usuario/i });
+    expect(within(dialog).getByRole('combobox', { name: /rol operativo/i })).toBeDisabled();
+    expect(within(dialog).queryByRole('button', { name: /permisos exactos avanzados/i })).not.toBeInTheDocument();
+    fireEvent.change(within(dialog).getByLabelText(/nombre completo/i), { target: { value: 'Administracion General' } });
+    fireEvent.change(within(dialog).getByLabelText(/correo electr/i), { target: { value: 'administracion@hospital.test' } });
+    fireEvent.change(within(dialog).getByLabelText(/nombre de usuario/i), { target: { value: 'administracion' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: /guardar cambios/i }));
+
+    await waitFor(() => expect(updateUser).toHaveBeenCalledWith(adminUser.id, {
+      name: 'Administracion General',
+      email: 'administracion@hospital.test',
+      username: 'administracion',
+      role: 'admin',
+    }));
+  });
+
   it('does not expose protected user actions without admin assignment permission', async () => {
     vi.mocked(apiClient.getUsers).mockResolvedValueOnce([
       adminUser,

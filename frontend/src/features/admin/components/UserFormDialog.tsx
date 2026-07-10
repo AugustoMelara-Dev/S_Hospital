@@ -48,6 +48,7 @@ type UserFormDialogProps = {
   canManageRoles: boolean;
   canAssignAdminRole?: boolean;
   protectedRoleLocked?: boolean;
+  identityOnly?: boolean;
   selectedUserPermissions: string[];
   advancedPermissionMode?: boolean;
   onAdvancedPermissionModeChange?: (enabled: boolean) => void;
@@ -68,6 +69,7 @@ export function UserFormDialog({
   canManageRoles,
   canAssignAdminRole = false,
   protectedRoleLocked = false,
+  identityOnly = false,
   selectedUserPermissions,
   advancedPermissionMode = false,
   onAdvancedPermissionModeChange = () => undefined,
@@ -198,12 +200,13 @@ export function UserFormDialog({
             render={({ field }) => (
               <Select
                 value={field.value}
+                disabled={identityOnly}
                 onValueChange={(value) => {
                   field.onChange(value);
                   onRoleChange?.(value);
                 }}
               >
-                <SelectTrigger id="role">
+                <SelectTrigger id="role" disabled={identityOnly}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -218,6 +221,12 @@ export function UserFormDialog({
             )}
           />
         </Field>
+
+        {identityOnly ? (
+          <p className="rounded-md border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
+            Por seguridad, no puede cambiar su propio rol ni sus permisos. Puede actualizar únicamente sus datos de identidad.
+          </p>
+        ) : null}
 
         {hasSelectedElevatedRole && (
           <div className="rounded-md border border-warning/40 bg-warning/10 p-3 text-sm text-warning-foreground">
@@ -246,7 +255,7 @@ export function UserFormDialog({
           </p>
         )}
 
-        {canManageRoles && (
+        {canManageRoles && !identityOnly && (
           <div className="space-y-3 rounded-md border border-operational-border bg-operational-panel/45 p-3">
             <Button
               type="button"

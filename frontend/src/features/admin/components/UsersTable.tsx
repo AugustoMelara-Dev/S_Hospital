@@ -6,6 +6,7 @@ import { UserActionMenu } from './UserActionMenu';
 import { roleLabel } from '@/lib/role-labels';
 import { Button } from '@/components/ui/button';
 import { Eye } from 'lucide-react';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 
 type UsersTableProps = {
   canAssignAdminRole: boolean;
@@ -34,6 +35,7 @@ export function UsersTable({
   searchTerm,
   users,
 }: UsersTableProps) {
+  const isMobile = useMediaQuery('(max-width: 767px)');
   const columns: Array<DataTableColumn<AuthUser>> = [
     {
       key: 'name',
@@ -130,6 +132,55 @@ export function UsersTable({
     },
   ];
 
+  if (isMobile) {
+    return (
+      <ul className="grid gap-3" aria-label="Usuarios autorizados">
+        {users.map((user) => {
+          const capabilities = userActionCapabilities(user, {
+            canAssignAdminRole,
+            canDisableUsers,
+            canUpdateUsers,
+            currentUserId,
+            onlyActiveProtectedUserIds,
+          });
+          return (
+            <li key={user.id} className="rounded-md border border-border bg-card p-4 shadow-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate font-semibold text-foreground">{user.name}</p>
+                  <p className="truncate text-sm text-muted-foreground">{user.email}</p>
+                  <p className="mt-1 font-mono text-xs text-muted-foreground">{user.username}</p>
+                </div>
+                <StatusBadge status={user.active ? 'active' : 'closed'}>
+                  {user.active ? 'Activo' : 'Inactivo'}
+                </StatusBadge>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-1">
+                {user.roles.length > 0 ? user.roles.map((role) => (
+                  <Badge key={role} variant={role === 'admin' ? 'destructive' : 'secondary'}>{roleLabel(role)}</Badge>
+                )) : <Badge variant="secondary">Sin rol</Badge>}
+              </div>
+              <div className="mt-4 flex items-center justify-end gap-2">
+                <Button type="button" variant="secondary" className="min-h-11" aria-label={`Ver detalle de ${user.name}`} onClick={() => onViewDetail(user)}>
+                  <Eye data-icon aria-hidden="true" /> Ver detalle
+                </Button>
+                <UserActionMenu
+                  canDisableUsers={capabilities.canDisable}
+                  canResetPassword={capabilities.canReset}
+                  canUpdateUsers={capabilities.canUpdate}
+                  onEdit={onEdit}
+                  onResetPassword={onResetPassword}
+                  onToggleActive={onToggleActive}
+                  user={user}
+                />
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    );
+  }
+
   return (
     <DataTable
       containerLabel="Usuarios autorizados"
@@ -144,4 +195,21 @@ export function UsersTable({
 
 function hasProtectedRole(user: AuthUser): boolean {
   return user.roles.some((role) => ['admin', 'root'].includes(role.toLowerCase()));
+}
+
+function userActionCapabilities(user: AuthUser, options: {
+  canAssignAdminRole: boolean;
+  canDisableUsers: boolean;
+  canUpdateUsers: boolean;
+  currentUserId?: number;
+  onlyActiveProtectedUserIds: number[];
+}) {
+  const isCurrentUser = options.currentUserId !== undefined && user.id === options.currentUserId;
+  const canManageProtectedTarget = !hasProtectedRole(user) || options.canAssignAdminRole;
+  const isOnlyActiveProtectedUser = options.onlyActiveProtectedUserIds.includes(user.id);
+  return {
+    canDisable: options.canDisableUsers && canManageProtectedTarget && !isCurrentUser && !isOnlyActiveProtectedUser,
+    canReset: options.canUpdateUsers && canManageProtectedTarget && !isCurrentUser,
+    canUpdate: options.canUpdateUsers && canManageProtectedTarget,
+  };
 }

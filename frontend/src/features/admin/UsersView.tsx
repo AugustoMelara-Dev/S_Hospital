@@ -232,8 +232,9 @@ export function UsersView({
 
   const onUserSubmit = async (data: UserFormData) => {
     setFormGlobalError('');
+    const editingSelf = Boolean(editingUser && currentUserId === editingUser.id);
 
-    if (advancedUserPermissionsMode && selectedUserPermissions.length === 0 && editingUser?.active !== false) {
+    if (!editingSelf && advancedUserPermissionsMode && selectedUserPermissions.length === 0 && editingUser?.active !== false) {
       const msg = 'Seleccione al menos un modulo para un usuario activo, o desactive el usuario antes de dejarlo sin acceso.';
       setFormGlobalError(msg);
       onStatus(msg);
@@ -243,7 +244,7 @@ export function UsersView({
     onStatus('Guardando usuario...');
     try {
       if (editingUser) {
-        const payload = buildUpdateUserPayload(data, selectedUserPermissions, advancedUserPermissionsMode);
+        const payload = buildUpdateUserPayload(data, selectedUserPermissions, editingSelf ? false : advancedUserPermissionsMode);
         const updated = await apiClient.updateUser(editingUser.id, payload);
         setUsers((current) => current.map((u) => (u.id === editingUser.id ? updated : u)));
         onStatus(`Usuario ${updated.name} actualizado correctamente.`);
@@ -375,6 +376,7 @@ export function UsersView({
         canManageRoles={canManageRoles}
         canAssignAdminRole={canAssignAdminRole}
         protectedRoleLocked={editingUser ? onlyActiveProtectedUserIds.includes(editingUser.id) : false}
+        identityOnly={Boolean(editingUser && currentUserId === editingUser.id)}
         selectedUserPermissions={selectedUserPermissions}
         advancedPermissionMode={advancedUserPermissionsMode}
         onAdvancedPermissionModeChange={setAdvancedUserPermissionsMode}

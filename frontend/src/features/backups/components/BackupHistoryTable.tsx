@@ -6,6 +6,7 @@ import type { BackupLog } from '@/lib/api';
 import { formatLocalizedDateTime } from '@/lib/format/formatDate';
 import { formatBytes } from '../backupPresentation';
 import { BackupStatusBadge, getStatusDescription } from './BackupStatusBadge';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 
 type BackupStatusFilter = 'all' | 'pending' | 'success' | 'failed';
 
@@ -28,6 +29,7 @@ export function BackupHistoryTable({
   onStatusFilterChange,
   statusFilter,
 }: BackupHistoryTableProps) {
+  const isMobile = useMediaQuery('(max-width: 767px)');
   const columns: Array<DataTableColumn<BackupLog>> = [
     {
       key: 'date',
@@ -113,7 +115,43 @@ export function BackupHistoryTable({
         ))}
       </div>
 
-      <DataTable
+      {isMobile ? (
+        backups.length > 0 ? (
+          <ul className="grid gap-3" aria-label="Historial de respaldos locales">
+            {backups.map((backup) => (
+              <li key={backup.id} className="rounded-md border border-border bg-card p-4 shadow-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold text-foreground">{formatDate(backup.completed_at ?? backup.created_at)}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{backup.creator?.name ?? 'Sistema'} · {formatBytes(backup.size_bytes)}</p>
+                  </div>
+                  <BackupStatusBadge status={backup.status} />
+                </div>
+                <p className="mt-3 text-sm text-muted-foreground">{getStatusDescription(backup.status)}</p>
+                <div className="mt-4 flex justify-end">
+                  {canDownload && backup.status === 'success' ? (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="min-h-11"
+                      aria-label={`Descargar respaldo del ${formatDate(backup.completed_at ?? backup.created_at)}`}
+                      disabled={downloadingBackupId !== null}
+                      onClick={() => onDownloadRequest(backup)}
+                    >
+                      <Download data-icon aria-hidden="true" /> Descargar
+                    </Button>
+                  ) : <span className="text-sm text-muted-foreground">Sin descarga</span>}
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="rounded-md border border-dashed border-border p-6 text-center">
+            <p className="font-semibold">{statusFilter === 'all' ? 'No hay respaldos registrados' : 'No hay respaldos con este estado'}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{statusFilter === 'all' ? 'Cree un respaldo local para proteger la operación.' : 'Quite el filtro para revisar todo el historial.'}</p>
+          </div>
+        )
+      ) : <DataTable
         caption="Historial de respaldos locales con fecha, tamano, estado, usuario y acciones disponibles."
         columns={columns}
         containerLabel="Historial de respaldos locales"
@@ -133,7 +171,7 @@ export function BackupHistoryTable({
         getRowKey={(backup) => backup.id}
         rows={backups}
         tableClassName="min-w-[960px]"
-      />
+      />}
     </div>
   );
 }

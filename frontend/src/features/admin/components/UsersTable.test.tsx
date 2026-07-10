@@ -40,6 +40,40 @@ async function openUserActions(userName: string) {
 }
 
 describe('UsersTable', () => {
+  it.each([320, 375])('renders an actionable mobile directory at %ipx without the desktop table', (width) => {
+    vi.spyOn(window, 'matchMedia').mockImplementation((query) => ({
+      matches: query.includes('max-width') && width <= 767,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+    const onViewDetail = vi.fn();
+
+    render(
+      <UsersTable
+        canAssignAdminRole={false}
+        canDisableUsers
+        canUpdateUsers
+        onEdit={vi.fn()}
+        onResetPassword={vi.fn()}
+        onToggleActive={vi.fn()}
+        onViewDetail={onViewDetail}
+        searchTerm=""
+        users={[activeUser]}
+      />,
+    );
+
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    expect(screen.getByRole('list', { name: /usuarios autorizados/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /ver detalle de caja principal/i }));
+    expect(onViewDetail).toHaveBeenCalledWith(activeUser);
+    expect(screen.getByRole('button', { name: /acciones de usuario caja principal/i })).toBeInTheDocument();
+  });
+
   it('renders authorized row actions through the shared action menu', async () => {
     render(
       <UsersTable
