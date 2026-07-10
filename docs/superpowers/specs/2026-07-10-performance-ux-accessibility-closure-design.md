@@ -1,5 +1,10 @@
 # Cierre de rendimiento, UX y accesibilidad de S_Hospital
 
+> **SUPERSEDIDO el 2026-07-10.** La decisión de producto posterior exige un
+> rediseño visual total. No implementar este documento. La especificación
+> vigente es
+> [`2026-07-10-clinical-operations-console-total-redesign-design.md`](./2026-07-10-clinical-operations-console-total-redesign-design.md).
+
 Fecha: 2026-07-10
 Estado: diseño derivado del alcance aprobado de reescritura total
 Producto: S_Hospital offline para caja, facturación, recibos, reportes y administración
@@ -176,4 +181,3 @@ presupuesto, se conserva el código y no se inventa una optimización.
 - árbol Git limpio y changelog actualizado;
 - aceptación física de LAN e impresora separada y no presentada como prueba
   automatizada.
-

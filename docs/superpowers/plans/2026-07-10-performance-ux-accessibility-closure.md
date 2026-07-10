@@ -1,5 +1,10 @@
 # S_Hospital Performance, UX and Accessibility Closure Implementation Plan
 
+> **SUPERSEDIDO el 2026-07-10.** No ejecutar este plan. El usuario rechazó su
+> enfoque conservador y aprobó un rediseño visual total. La especificación
+> vigente es
+> [`../specs/2026-07-10-clinical-operations-console-total-redesign-design.md`](../specs/2026-07-10-clinical-operations-console-total-redesign-design.md).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Hacer que S_Hospital responda más rápido y requiera menos esfuerzo operativo sin reabrir los dominios de dinero, fiscalidad, auditoría o impresión ya cerrados.
