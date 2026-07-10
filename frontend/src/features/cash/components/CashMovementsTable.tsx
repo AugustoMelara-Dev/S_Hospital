@@ -71,8 +71,8 @@ export function CashMovementsTable({ canViewInvoices = false, movements }: CashM
     : column), [canViewInvoices]);
 
   return (
-    <section className="space-y-3">
-      <div>
+    <section className="overflow-hidden rounded-2xl border border-operational-border bg-operational-surface shadow-operational">
+      <div className="border-b border-border bg-muted/35 px-5 py-4">
         <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Trazabilidad</p>
         <h2 id="cash-movements-title" className="mt-1 text-lg font-semibold leading-tight">
           Movimientos de caja
@@ -82,6 +82,7 @@ export function CashMovementsTable({ canViewInvoices = false, movements }: CashM
         </p>
       </div>
 
+      <div className="p-4 sm:p-5">
       {movements.length === 0 ? (
         <DataTable
           caption="Movimientos registrados para la sesión de caja actual."
@@ -105,11 +106,11 @@ export function CashMovementsTable({ canViewInvoices = false, movements }: CashM
             />
           </div>
 
-          <ol className="divide-y divide-border rounded-lg border border-border bg-card md:hidden" aria-label="Movimientos de caja en móvil">
+          <ol className="space-y-2 md:hidden" aria-label="Movimientos de caja en móvil">
             {movements.map((movement) => {
               const direction = movementDirection(movement.type);
               return (
-                <li key={movement.id} className="grid gap-3 px-4 py-4">
+                <li key={movement.id} className="grid gap-3 rounded-xl border border-border bg-card px-4 py-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex min-w-0 flex-col gap-1">
                       <Badge className="w-fit" variant={movementBadgeVariant(direction)}>{movementLabel(movement.type)}</Badge>
@@ -125,6 +126,7 @@ export function CashMovementsTable({ canViewInvoices = false, movements }: CashM
           </ol>
         </>
       )}
+      </div>
     </section>
   );
 }

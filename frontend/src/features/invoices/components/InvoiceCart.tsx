@@ -65,7 +65,7 @@ export function InvoiceCart({
 
   return (
     <section className="flex h-full min-w-0 flex-col" aria-labelledby="invoice-cart-title" aria-busy={submitting ? 'true' : undefined}>
-      <div className="mb-4 flex items-start gap-3">
+      <div className="mb-4 flex items-start gap-3 border-b border-operational-border pb-4">
         <div className="min-w-0">
           <Label id="invoice-cart-title" className="text-base font-semibold text-foreground">Cuenta actual</Label>
           <p className="text-xs leading-relaxed text-muted-foreground">
@@ -81,12 +81,12 @@ export function InvoiceCart({
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         {isEmpty ? (
-          <div className="border-y border-operational-border px-2 py-10 text-center text-muted-foreground" role="status" aria-live="polite">
+          <div className="rounded-xl border border-dashed border-operational-border bg-muted/30 px-4 py-10 text-center text-muted-foreground" role="status" aria-live="polite">
             <p className="text-sm font-semibold text-foreground">No hay servicios agregados</p>
             <p className="mt-1 max-w-56 text-xs">Busque por nombre, area o categoria para comenzar.</p>
           </div>
         ) : (
-          <div className="divide-y divide-operational-border border-y border-operational-border pr-1" role="list" aria-label="Servicios agregados a la factura">
+          <div className="space-y-2 pr-1" role="list" aria-label="Servicios agregados a la factura">
             {items.map((item, index) => {
               const isErythropoietin = item.service.special_rule_code === ERYTHROPOIETIN_RULE;
               const isFree = item.dialysisPrescription && isErythropoietin;
@@ -97,7 +97,7 @@ export function InvoiceCart({
                 <div
                   key={`${item.service.id}-${index}`}
                   role="listitem"
-                  className="flex flex-col gap-3 py-4"
+                  className="flex flex-col gap-3 rounded-xl border border-operational-border bg-card p-4 shadow-sm"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
@@ -192,8 +192,8 @@ export function InvoiceCart({
         )}
       </div>
 
-      <div className="sticky bottom-0 mt-4 border-t border-operational-border bg-operational-surface/95 pt-4">
-        <dl className="mb-4 rounded-md border border-operational-border bg-operational-panel/80 p-3">
+      <div className="sticky bottom-0 mt-4 border-t border-operational-border bg-operational-surface/95 pt-4 backdrop-blur">
+        <dl className="mb-4 rounded-xl border border-secondary/25 bg-accent/40 p-4 shadow-sm">
           <div className="mb-3 flex items-center justify-between gap-3">
             <dt className="flex items-center gap-2 text-sm font-semibold text-foreground">
               <ReceiptText className="size-4 text-secondary" aria-hidden="true" />
@@ -216,7 +216,7 @@ export function InvoiceCart({
               <Banknote className="size-4 text-secondary" aria-hidden="true" />
               Total estimado:
             </dt>
-            <dd className="font-mono text-xl font-bold tabular-nums text-secondary">{moneyLabel(preview.total)}</dd>
+            <dd className="font-mono text-2xl font-bold tracking-tight tabular-nums text-secondary">{moneyLabel(preview.total)}</dd>
           </div>
         </dl>
 

@@ -109,7 +109,7 @@ export function PaymentMethodPanel({ report }: PaymentMethodPanelProps) {
       caption="Las barras muestran participacion relativa; la tabla contiene los valores exactos."
     >
         <div className="grid gap-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] xl:items-start">
-          <div className="rounded-md border border-operational-border bg-operational-panel p-4">
+          <div className="rounded-xl border border-operational-border bg-operational-panel/55 p-5">
             <p className="text-sm font-semibold text-foreground">Participacion por metodo</p>
             {normalizedMethods.length > 0 ? (
               <div className="mt-4 space-y-4" role="list" aria-label="Participacion por metodo de pago">
@@ -120,9 +120,9 @@ export function PaymentMethodPanel({ report }: PaymentMethodPanelProps) {
                         {method.label} - {method.percentage.toFixed(2)}%
                       </span>
                     </div>
-                    <div className="h-2.5 overflow-hidden rounded-sm bg-muted" aria-hidden="true">
+                    <div className="h-3 overflow-hidden rounded-full bg-muted" aria-hidden="true">
                       <div
-                        className="h-full rounded-sm"
+                        className="h-full rounded-full"
                         style={{
                           width: `${method.percentage}%`,
                           background: METHOD_COLORS[method.method] ?? 'var(--color-muted-foreground)',

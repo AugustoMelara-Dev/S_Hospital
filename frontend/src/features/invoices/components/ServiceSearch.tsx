@@ -192,7 +192,7 @@ export function ServiceSearch({
 
   return (
     <div className="flex flex-col gap-4 lg:h-full lg:overflow-hidden">
-      <div className="flex flex-col gap-3 rounded-panel border border-operational-border bg-operational-panel/70 p-4 lg:shrink-0">
+      <div className="flex flex-col gap-4 rounded-xl border border-operational-border bg-muted/35 p-4 lg:shrink-0">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
             <p className="text-sm font-semibold text-foreground">Busqueda de servicios</p>
@@ -372,7 +372,7 @@ export function ServiceSearch({
             ))}
           </div>
         ) : !hasIntent ? (
-          <div className="flex flex-col items-center justify-center gap-2 rounded-md border border-dashed border-border bg-muted/35 px-4 py-10 text-center text-muted-foreground" role="status" aria-live="polite">
+            <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-muted/35 px-4 py-10 text-center text-muted-foreground" role="status" aria-live="polite">
             <span className="font-medium text-foreground">Busque o elija una categoría</span>
             <span className="max-w-sm text-sm">
               {scannerEnabled
@@ -381,18 +381,18 @@ export function ServiceSearch({
             </span>
           </div>
         ) : filteredServices.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-2 rounded-md border border-dashed border-border bg-muted/35 px-4 py-10 text-center text-muted-foreground" role="status" aria-live="polite">
+            <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-muted/35 px-4 py-10 text-center text-muted-foreground" role="status" aria-live="polite">
             <span className="font-medium text-foreground">Sin servicios encontrados</span>
             <span className="max-w-sm text-sm">Revise la búsqueda o quite filtros para consultar todo el catálogo activo.</span>
           </div>
         ) : (
           <>
-            <div className="divide-y divide-operational-border border-y border-operational-border" role="list" aria-label="Servicios facturables disponibles">
+            <div className="grid gap-2 sm:grid-cols-2" role="list" aria-label="Servicios facturables disponibles">
               {visibleServices.map((service) => {
                 const isErythropoietin = service.special_rule_code === ERYTHROPOIETIN_RULE;
 
                 return (
-                  <div key={service.id} role="listitem" className="grid min-w-0 gap-3 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+                  <div key={service.id} role="listitem" className="flex min-w-0 flex-col justify-between gap-3 rounded-xl border border-operational-border bg-card p-4 shadow-sm transition hover:border-secondary/35 hover:shadow-operational">
                     <div className="min-w-0">
                       <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
                         <p className="min-w-0 break-words text-sm font-semibold leading-tight text-foreground">{service.name}</p>
@@ -422,7 +422,7 @@ export function ServiceSearch({
                     <Button
                       type="button"
                       aria-label={`Agregar ${service.name}`}
-                      className="min-h-11 w-full shrink-0 sm:w-auto"
+                      className="min-h-11 w-full shrink-0"
                       onClick={() => handleAddService(service)}
                     >
                       <Plus className="size-4" aria-hidden="true" />

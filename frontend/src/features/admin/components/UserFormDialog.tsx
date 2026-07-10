@@ -150,7 +150,7 @@ export function UserFormDialog({
       title={editingUser ? 'Editar usuario' : 'Crear usuario'}
       description="Configure nombre, acceso y rol operativo."
     >
-      <form onSubmit={handleSafeSubmit} className="space-y-4">
+      <form onSubmit={handleSafeSubmit} className="space-y-5">
         {globalError && (
           <Alert variant="destructive" title="No se pudo guardar">
             {globalError}
@@ -223,7 +223,7 @@ export function UserFormDialog({
         </Field>
 
         {identityOnly ? (
-          <p className="rounded-md border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
+          <p className="rounded-xl border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
             Por seguridad, no puede cambiar su propio rol ni sus permisos. Puede actualizar únicamente sus datos de identidad.
           </p>
         ) : null}
@@ -256,7 +256,7 @@ export function UserFormDialog({
         )}
 
         {canManageRoles && !identityOnly && (
-          <div className="space-y-3 rounded-md border border-operational-border bg-operational-panel/45 p-3">
+          <div className="space-y-4 rounded-xl border border-operational-border bg-operational-panel/45 p-4">
             <Button
               type="button"
               variant="secondary"
@@ -292,7 +292,7 @@ export function UserFormDialog({
                 )}
                 <div className="max-h-[320px] space-y-3 overflow-y-auto">
                   {permissionCatalog.map((group) => (
-                    <fieldset key={group.module} className="rounded-md border border-operational-border bg-operational-surface p-3">
+                    <fieldset key={group.module} className="rounded-xl border border-operational-border bg-operational-surface p-4 shadow-sm">
                       <legend className="px-1 text-sm font-semibold text-foreground">
                         {group.label}
                         <span className="ml-2 text-xs font-normal text-muted-foreground">
@@ -306,7 +306,7 @@ export function UserFormDialog({
                           const critical = isCriticalPermission(permission);
                           const riskLabel = permissionRiskLabel(permission);
                           return (
-                            <label key={permission.name} htmlFor={id} className="flex items-start gap-2 rounded-md p-2 text-sm hover:bg-muted/50">
+                            <label key={permission.name} htmlFor={id} className="flex items-start gap-3 rounded-lg border border-transparent p-3 text-sm transition hover:border-border hover:bg-muted/50">
                               <Checkbox
                                 id={id}
                                 checked={checked}
