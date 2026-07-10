@@ -237,6 +237,10 @@ Preflight del servidor:
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 -BaseUrl http://IP-DEL-SERVIDOR:8000
 ```
 
+El preflight detecta la instalacion Docker oficial y valida que `mysql`,
+`backend`, `nginx`, `queue-worker` y `scheduler` esten corriendo. Para una pila
+aislada use tambien `-EnvFile RUTA_ENV -RuntimeMode Docker -DockerProject NOMBRE`.
+
 Las pruebas automatizadas no sustituyen estas aceptaciones en sitio:
 
 - abrir el sistema desde una segunda PC de la LAN;

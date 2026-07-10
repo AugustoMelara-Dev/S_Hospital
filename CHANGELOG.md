@@ -17,6 +17,9 @@
   fue provisionada.
 - Endurece respaldos ante respuestas malformadas para evitar que un payload
   invalido derribe la pantalla completa.
+- Corrige el preflight de Windows para instalaciones Docker: lee el entorno
+  efectivo del backend y valida worker/scheduler como contenedores en vez de
+  exigir tareas programadas que no pertenecen al despliegue oficial.
 - Regenera matrices de accesibilidad y capturas con los flujos vigentes para
   seis viewports, desde 320x640 hasta 1920x1080.
 - Verificacion final: Laravel 860 pruebas / 5641 aserciones (13 skips de

@@ -30,5 +30,13 @@ Assert-Contains "A5"
 Assert-NotContains "qa\THERMAL_PRINTER_PROOF.md"
 Assert-NotContains "80mm result"
 Assert-NotContains "58mm result"
+Assert-Contains '[string] $EnvFile = ""'
+Assert-Contains '[ValidateSet("Auto", "Docker", "WindowsTasks")]'
+Assert-Contains '[string] $DockerProject = ""'
+Assert-Contains 'Test-DockerRuntimeServices'
+Assert-Contains 'Read-DockerRuntimeEnv'
+Assert-Contains 'Join-Path $ProjectRoot ".env"'
+Assert-Contains '@("mysql", "backend", "nginx", "queue-worker", "scheduler")'
+Assert-Contains 'Docker runtime service ''$requiredService'' is running'
 
-Write-Host "[ OK ] production readiness preflight requires institutional receipt proof"
+Write-Host "[ OK ] production readiness preflight requires receipt proof and validates Docker workers"
