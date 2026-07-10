@@ -15,7 +15,19 @@ vi.mock('recharts', async () => {
     ),
     CartesianGrid: () => <div />,
     Legend: () => <div />,
-    ResponsiveContainer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    ResponsiveContainer: ({
+      children,
+      height,
+      minWidth,
+    }: {
+      children: React.ReactNode;
+      height?: number | string;
+      minWidth?: number;
+    }) => (
+      <div data-testid="responsive-chart" data-height={height} data-min-width={minWidth}>
+        {children}
+      </div>
+    ),
     Tooltip: () => <div />,
     XAxis: () => <div />,
     YAxis: () => <div />,
@@ -23,6 +35,13 @@ vi.mock('recharts', async () => {
 });
 
 describe('TrendChart', () => {
+  it('gives Recharts a stable measurable height and non-negative minimum width', () => {
+    render(<TrendChart report={buildExecutiveReport()} />);
+
+    expect(screen.getByTestId('responsive-chart')).toHaveAttribute('data-height', '320');
+    expect(screen.getByTestId('responsive-chart')).toHaveAttribute('data-min-width', '0');
+  });
+
   it('normalizes malformed daily money values before rendering chart data', () => {
     render(
       <TrendChart

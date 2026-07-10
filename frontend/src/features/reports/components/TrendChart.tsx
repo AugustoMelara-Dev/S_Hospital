@@ -122,11 +122,11 @@ export function TrendChart({ report }: TrendChartProps) {
         </table>
       </div>
       <div
-        className="h-80 w-full"
+        className="h-80 min-w-0 w-full"
         role="img"
         aria-label="Grafico de tendencia diaria; la tabla oculta para lectores de pantalla contiene los valores exactos."
       >
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height={320} minWidth={0}>
           <AreaChart data={data} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="billed-fill" x1="0" y1="0" x2="0" y2="1">

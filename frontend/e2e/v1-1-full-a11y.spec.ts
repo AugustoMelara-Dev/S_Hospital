@@ -30,6 +30,7 @@ const adminUser = {
     'cash.close_any',
     'invoices.view',
     'invoices.create',
+    'invoices.operate_any',
     'invoices.void',
     'invoices.reverse',
     'payments.create',
@@ -133,6 +134,7 @@ const invoice = {
   balance_due: '0.00',
   status: 'paid',
   issued_at: issuedAt,
+  issuer: adminUser,
   items: [
     {
       id: 1,
@@ -341,7 +343,7 @@ test('dangerous history actions open a confirmation path that can be cancelled',
   await page.getByRole('button', { name: /acciones de la factura/i }).click();
   await page.getByRole('menuitem', { name: /reversar pago/i }).click();
   await expect(page.getByRole('alertdialog', { name: /reversar factura/i })).toBeVisible();
-  await expect(page.getByRole('alertdialog', { name: /reversar factura/i })).toHaveAccessibleDescription(/revise la informacion/i);
+  await expect(page.getByRole('alertdialog', { name: /reversar factura/i })).toHaveAccessibleDescription(/revise la informaci.n/i);
   await page.getByRole('button', { name: /cancelar/i }).click();
   await expect(page.getByRole('alertdialog', { name: /reversar factura/i })).toBeHidden();
 
