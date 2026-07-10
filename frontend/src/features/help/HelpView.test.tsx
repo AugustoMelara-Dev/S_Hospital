@@ -82,4 +82,16 @@ describe('HelpView', () => {
     expect(screen.getAllByText(/no se pudo conectar con el servidor local/i).length).toBeGreaterThan(0);
     expect(screen.queryByText(/system\.status\.view|backups\.view|\/admin|\/settings/i)).not.toBeInTheDocument();
   });
+
+  it('filtra tareas por lenguaje operativo sin exigir términos técnicos', () => {
+    render(<HelpView />);
+
+    fireEvent.change(screen.getByRole('searchbox', { name: /qué necesita hacer/i }), {
+      target: { value: 'cobrar' },
+    });
+
+    expect(screen.getByRole('heading', { name: /^cobrar$/i })).toBeVisible();
+    expect(screen.queryByRole('heading', { name: /abrir el sistema/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent(/guía relacionada/i);
+  });
 });

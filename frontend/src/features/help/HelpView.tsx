@@ -22,6 +22,7 @@ import { PageHeader } from '../../components/ui/page-header';
 import { ActionBar } from '../../components/ui/action-bar';
 import { Button } from '../../components/ui/button';
 import { Textarea } from '../../components/ui/textarea';
+import { Input } from '../../components/ui/input';
 import { type ShortcutScope, shortcutLabel, shortcutsByScope } from '../../lib/shortcuts';
 import { buildClientIssueSupportSummary, getClientIssues } from '../../lib/support/clientIssueLog';
 
@@ -316,6 +317,16 @@ function SupportEvidenceCard() {
 }
 
 export function HelpView() {
+  const [taskQuery, setTaskQuery] = useState('');
+  const normalizedQuery = normalizeHelpText(taskQuery);
+  const visibleGuides = normalizedQuery
+    ? guides.filter((guide) => normalizeHelpText(`${guide.title} ${guide.steps.join(' ')}`).includes(normalizedQuery))
+    : guides;
+  const visibleIncidents = normalizedQuery
+    ? incidentGuides.filter((guide) => normalizeHelpText(`${guide.title} ${guide.answer}`).includes(normalizedQuery))
+    : incidentGuides;
+  const resultCount = visibleGuides.length + visibleIncidents.length;
+
   return (
     <section className="space-y-6" aria-labelledby="help-title">
       <PageHeader
@@ -329,8 +340,26 @@ export function HelpView() {
         }
       />
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {guides.map((guide) => {
+      <div className="rounded-panel border border-border bg-card p-4 shadow-sm">
+        <label htmlFor="help-task-search" className="text-sm font-semibold text-foreground">¿Qué necesita hacer?</label>
+        <div className="relative mt-2 max-w-2xl">
+          <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            id="help-task-search"
+            type="search"
+            value={taskQuery}
+            onChange={(event) => setTaskQuery(event.target.value)}
+            placeholder="Buscar: cobrar, cerrar caja, imprimir, respaldo…"
+            className="min-h-11 pl-9"
+          />
+        </div>
+        <p className="mt-2 text-sm text-muted-foreground" role={normalizedQuery ? 'status' : undefined} aria-live="polite">
+          {normalizedQuery ? `${resultCount} guía${resultCount === 1 ? '' : 's'} relacionada${resultCount === 1 ? '' : 's'}.` : 'Seleccione una tarea o busque el problema visible en pantalla.'}
+        </p>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {visibleGuides.map((guide) => {
           const Icon = guide.icon;
 
           return (
@@ -400,7 +429,7 @@ export function HelpView() {
           <CardDescription>Acciones seguras antes de continuar facturando.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3 md:grid-cols-2">
-          {incidentGuides.map((item) => (
+          {visibleIncidents.map((item) => (
             <div key={item.title} className="rounded-md border border-border bg-muted/30 p-4">
               <h3 className="text-sm font-semibold text-foreground">{item.title}</h3>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">{item.answer}</p>
@@ -493,4 +522,8 @@ export function HelpView() {
       <SupportEvidenceCard />
     </section>
   );
+}
+
+function normalizeHelpText(value: string): string {
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 }
