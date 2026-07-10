@@ -216,7 +216,6 @@ class CashPaymentsReceiptTest extends TestCase
         $cashier = $this->cashier();
         $sessionId = $this->openSession($cashier, '500.00');
         $invoiceId = $this->createInvoice($cashier, 'Glucosa');
-
         $this->actingAs($cashier)
             ->postJson("/api/invoices/{$invoiceId}/payments", [
                 'cash_session_id' => $sessionId,
@@ -767,6 +766,9 @@ class CashPaymentsReceiptTest extends TestCase
         $cashier = $this->cashier();
         $sessionId = $this->openSession($cashier, '500.00');
         $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+        $cashier->syncRoles([]);
+        $cashier->syncPermissions(['payments.create', 'cash.close']);
+        $cashier->refresh();
 
         $this->actingAs($cashier)
             ->postJson("/api/invoices/{$invoiceId}/payments", [
@@ -776,7 +778,17 @@ class CashPaymentsReceiptTest extends TestCase
             ])
             ->assertCreated()
             ->assertJsonPath('data.invoice.status', Invoice::STATUS_PAID)
-            ->assertJsonPath('data.institutional_receipt', null);
+            ->assertJsonPath('data.receipt_outcome', 'recovery_required')
+            ->assertJsonPath('data.institutional_receipt', null)
+            ->assertJsonPath(
+                'data.institutional_receipt_error',
+                'Pago registrado. Un usuario autorizado debe emitir el recibo institucional desde Facturas.',
+            );
+
+        $this->assertDatabaseHas('payments', [
+            'invoice_id' => $invoiceId,
+            'status' => Payment::STATUS_POSTED,
+        ]);
 
         $this->actingAs($cashier)
             ->postJson("/api/cash-sessions/{$sessionId}/close", ['closing_amount' => '517.25'])

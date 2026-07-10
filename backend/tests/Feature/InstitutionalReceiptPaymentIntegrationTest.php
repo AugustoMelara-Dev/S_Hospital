@@ -39,6 +39,7 @@ class InstitutionalReceiptPaymentIntegrationTest extends TestCase
             ])
             ->assertCreated()
             ->assertJsonPath('data.invoice.status', 'paid')
+            ->assertJsonPath('data.receipt_outcome', 'issued')
             ->assertJsonPath('data.institutional_receipt.receipt_number', 1)
             ->assertJsonPath('data.institutional_receipt.receipt_number_full', 'REC-A-00000001')
             ->assertJsonPath('data.institutional_receipt.print_profile_code', 'media_carta_horizontal')
@@ -80,6 +81,7 @@ class InstitutionalReceiptPaymentIntegrationTest extends TestCase
             ])
             ->assertCreated()
             ->assertJsonPath('data.invoice.status', 'partial')
+            ->assertJsonPath('data.receipt_outcome', 'not_required')
             ->assertJsonPath('data.institutional_receipt', null)
             ->assertJsonPath('data.institutional_receipt_error', null);
 
@@ -94,6 +96,7 @@ class InstitutionalReceiptPaymentIntegrationTest extends TestCase
             ])
             ->assertCreated()
             ->assertJsonPath('data.invoice.status', 'paid')
+            ->assertJsonPath('data.receipt_outcome', 'issued')
             ->assertJsonPath('data.institutional_receipt.receipt_number_full', 'REC-A-00000001');
 
         $this->assertDatabaseCount('institutional_receipts', 1);
@@ -367,6 +370,7 @@ class InstitutionalReceiptPaymentIntegrationTest extends TestCase
             ])
             ->assertCreated()
             ->assertJsonPath('data.invoice.status', 'paid')
+            ->assertJsonPath('data.receipt_outcome', 'recovery_required')
             ->assertJsonPath('data.institutional_receipt', null)
             ->assertJsonPath('data.institutional_receipt_error', 'No hay una serie activa para recibos institucionales.')
             ->json('data.payment.id');
