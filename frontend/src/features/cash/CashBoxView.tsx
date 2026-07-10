@@ -1,5 +1,4 @@
 import { type FormEvent, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { AlertTriangle } from 'lucide-react';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -12,7 +11,6 @@ import { finiteNumber, formatLempirasUI, parseCents, toFloat } from '@/lib/money
 import { getVisibleRefetchInterval } from '@/lib/query/polling';
 import { invalidateBillingQueries } from '@/lib/queryInvalidation';
 import { queryKeys } from '@/lib/queryKeys';
-import { SessionStatusCard } from './components/SessionStatusCard';
 import { OpenSessionForm } from './components/OpenSessionForm';
 import { SessionSummary } from './components/SessionSummary';
 import { CashCloseSummaryPanel, CloseSessionDialog } from './components/CloseSessionDialog';
@@ -90,7 +88,19 @@ export function CashBoxView({
     queryKey: queryKeys.cashSessions.movements(session?.id),
     queryFn: () =>
       session?.id && canViewCashSessionReport
-        ? apiClient.getCashSessionReport(String(session.id)).then((report) => report.movements)
+        ? apiClient.getCashSessionReport(String(session.id)).then((report) => {
+          const paymentsById = new Map(report.payments.map((payment) => [payment.id, payment]));
+
+          return report.movements.map((movement) => {
+            const payment = movement.payment_id ? paymentsById.get(movement.payment_id) : undefined;
+
+            return {
+              ...movement,
+              invoice_id: payment?.invoice_id ?? null,
+              invoice_number: payment?.invoice?.invoice_number ?? null,
+            };
+          });
+        })
         : Promise.resolve([] as Awaited<ReturnType<typeof apiClient.getCashSessionReport>>['movements']),
     enabled: !!session?.id && canViewCashSessionReport,
     refetchInterval: () => getVisibleRefetchInterval(15_000),
@@ -271,6 +281,7 @@ export function CashBoxView({
     <section id="caja" className={compact ? 'flex flex-col gap-4' : 'cash-layout'} aria-label="Caja">
       <div className="flex flex-col gap-6">
         <CashSessionHeader
+          canCloseAnyCash={canCloseAnyCash}
           isLoading={isLoading}
           onRefresh={() => void refetch()}
           session={activeSession ?? null}
@@ -298,20 +309,9 @@ export function CashBoxView({
           <LoadingState label="Cargando estado de caja..." />
         ) : null}
 
-        {canRenderOperationalState ? (
-          <SessionStatusCard session={activeSession ?? null} />
-        ) : null}
-
         {canRenderOperationalState && isOpen ? (
           <Alert variant="success" title="Caja lista para facturar">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <span className="flex-1">
-                La caja está abierta. Puede pasar directamente al POS para crear y cobrar facturas.
-              </span>
-              <Button asChild size="sm">
-                <Link to="/billing/new">Nueva factura</Link>
-              </Button>
-            </div>
+            La caja está abierta. La acción principal para crear y cobrar una factura está disponible en la cabecera.
           </Alert>
         ) : null}
 
@@ -349,13 +349,20 @@ export function CashBoxView({
               difference={difference}
             />
 
-            <CashMethodSummary
-              paymentsByMethod={activeSession.payments_by_method}
-              paymentsCount={activeSession.payments_count}
-              pendingAmount={activeSession.pending_amount}
-            />
+            <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(20rem,0.75fr)] xl:items-start">
+              <CashMethodSummary
+                paymentsByMethod={activeSession.payments_by_method}
+                paymentsCount={activeSession.payments_count}
+                pendingAmount={activeSession.pending_amount}
+              />
 
-            <AccountingControlPanel reconciliation={activeSession} />
+              <AccountingControlPanel
+                reconciliation={{
+                  ...activeSession,
+                  difference_amount: difference,
+                }}
+              />
+            </div>
 
             <CashClosingPanel
               canCloseCash={canCloseCash}

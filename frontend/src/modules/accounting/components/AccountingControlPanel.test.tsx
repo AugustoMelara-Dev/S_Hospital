@@ -8,11 +8,14 @@ describe('AccountingControlPanel', () => {
     render(
       <MemoryRouter>
         <AccountingControlPanel reconciliation={{
+          payments_total: '216.35',
           pending_invoice_count: 2,
           pending_amount: '35.50',
           missing_institutional_receipt_count: 1,
           reversed_payments_count: 3,
           reversed_payments_total: '42.75',
+          status: 'open',
+          difference_amount: '-5.00',
         }} />
       </MemoryRouter>,
     );
@@ -23,8 +26,12 @@ describe('AccountingControlPanel', () => {
     expect(screen.getByText(/1 recibo institucional pendiente/i)).toBeInTheDocument();
     expect(screen.getByText('L 42.75')).toBeInTheDocument();
     expect(screen.getByText(/3 pagos reversados/i)).toBeInTheDocument();
-    expect(screen.getByText(/egresos operativos no estan modelados/i)).toBeInTheDocument();
+    expect(screen.getByText('L 216.35')).toBeInTheDocument();
+    expect(screen.getByText('- L 5.00')).toHaveAccessibleDescription(/faltante/i);
+    expect(screen.getByText(/cierre en preparación/i)).toBeInTheDocument();
+    expect(screen.getByText(/egresos operativos no est[aá]n modelados/i)).toBeInTheDocument();
     expect(screen.queryByText(/egresos.*L 0\.00/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /registrar egreso/i })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /resolver en historial/i })).toHaveAttribute('href', '/invoices');
   });
 

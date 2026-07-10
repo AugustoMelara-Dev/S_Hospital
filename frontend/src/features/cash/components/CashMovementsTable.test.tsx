@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 import { CashMovementsTable, type CashMovement } from './CashMovementsTable';
 
 describe('CashMovementsTable', () => {
@@ -54,8 +55,33 @@ describe('CashMovementsTable', () => {
       />,
     );
 
-    expect(screen.getByText(/hora no disponible/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/hora no disponible/i).length).toBeGreaterThan(0);
     expect(document.body.textContent).not.toMatch(/fecha-danada|invalid date/i);
+  });
+
+  it('links an auditable movement to its invoice and identifies its payment', () => {
+    render(
+      <MemoryRouter>
+        <CashMovementsTable
+          movements={[
+            movement({
+              id: 30,
+              payment_id: 81,
+              invoice_id: 22,
+              invoice_number: 'FAC-000022',
+              type: 'payment',
+              method: 'cash',
+              amount: '68.40',
+            }),
+          ]}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getAllByRole('link', { name: /factura FAC-000022/i })[0])
+      .toHaveAttribute('href', '/invoices?invoice=22');
+    expect(screen.getAllByText(/pago #81/i).length).toBeGreaterThan(0);
+    expect(screen.getByRole('list', { name: /movimientos de caja en móvil/i })).toBeInTheDocument();
   });
 });
 

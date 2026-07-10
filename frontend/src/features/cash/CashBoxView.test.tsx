@@ -89,7 +89,7 @@ describe('CashBoxView', () => {
 
     render(<App />);
 
-    expect(await screen.findByRole('link', { name: /caja/i })).toHaveAttribute('href', '/cashbox');
+    expect((await screen.findAllByRole('link', { name: /caja/i }))[0]).toHaveAttribute('href', '/cashbox');
     expect(screen.queryByRole('link', { name: /backups/i })).not.toBeInTheDocument();
     expect((await screen.findAllByRole('heading', { name: /^caja$/i })).length).toBeGreaterThan(0);
     expect(await screen.findByText(/no hay una caja abierta actualmente/i)).toBeInTheDocument();

@@ -1,9 +1,41 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { SessionSummary } from './SessionSummary';
 import type { CashSession } from '@/lib/api';
 
 describe('SessionSummary', () => {
+  it('presents expected, counted and difference as one accessible reconciliation ledger', () => {
+    render(
+      <SessionSummary
+        session={cashSessionFixture({ expected_cash_amount: '100.00' })}
+        closingAmount="95.00"
+        difference={-5}
+      />,
+    );
+
+    const ledger = screen.getByRole('region', { name: 'Conciliación de caja' });
+    expect(within(ledger).getByText('Efectivo esperado')).toBeVisible();
+    expect(within(ledger).getByText('Monto contado')).toBeVisible();
+    expect(within(ledger).getByText('Diferencia')).toBeVisible();
+    const expectedLine = within(ledger).getByText('Efectivo esperado').parentElement;
+    expect(expectedLine).not.toBeNull();
+    expect(within(expectedLine!).getByText('L 100.00')).toBeVisible();
+    expect(within(ledger).getByText('L 95.00')).toBeVisible();
+    expect(within(ledger).getByText('- L 5.00')).toHaveAccessibleDescription(/faltante/i);
+  });
+
+  it('names a positive difference as a surplus instead of relying on color', () => {
+    render(
+      <SessionSummary
+        session={cashSessionFixture()}
+        closingAmount="105.00"
+        difference={5}
+      />,
+    );
+
+    expect(screen.getByText('+ L 5.00')).toHaveAccessibleDescription(/sobrante/i);
+  });
+
   it('renders malformed session amounts and invalid differences as safe financial labels', () => {
     render(
       <SessionSummary
@@ -19,7 +51,7 @@ describe('SessionSummary', () => {
       />,
     );
 
-    expect(screen.getByText('Monto Apertura')).toBeInTheDocument();
+    expect(screen.getByText(/monto de apertura/i)).toBeInTheDocument();
     expect(document.body.textContent).toContain('L 0.00');
     expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-numero|undefined/);
   });
@@ -33,7 +65,7 @@ describe('SessionSummary', () => {
       />,
     );
 
-    expect(screen.getByText('L +25.00')).toBeInTheDocument();
+    expect(screen.getByText('+ L 25.00')).toBeInTheDocument();
   });
 
   it('labels a balanced cash count as no difference', () => {

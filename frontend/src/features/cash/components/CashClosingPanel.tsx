@@ -48,13 +48,20 @@ export function CashClosingPanel({
       : difference === 0
         ? 'Sin diferencia'
         : formatLempirasUI(difference);
+  const differenceDescription = difference === null
+    ? 'Conteo pendiente'
+    : difference === 0
+      ? 'Sin diferencia'
+      : difference > 0
+        ? 'Sobrante frente al efectivo esperado'
+        : 'Faltante frente al efectivo esperado';
 
   return (
     <section
       aria-labelledby="cash-close-guided-title"
-      className="rounded-md border border-border bg-background p-4"
+      className="overflow-hidden rounded-lg border border-operational-border bg-operational-surface"
     >
-      <div className="border-b border-border pb-4">
+      <div className="border-b border-border px-4 pb-4 pt-5 sm:px-5">
         <div className="flex items-start gap-3">
           <span className="flex size-10 shrink-0 items-center justify-center rounded bg-muted text-secondary ring-1 ring-border">
             <ClipboardCheck data-icon aria-hidden="true" className="size-5" />
@@ -64,13 +71,13 @@ export function CashClosingPanel({
               Cierre guiado
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Cuente efectivo, revise diferencia y confirme.
+              Cuente el efectivo, revise la diferencia y confirme el cierre auditado.
             </p>
           </div>
         </div>
       </div>
 
-      <form onSubmit={onSubmit} className="flex flex-col gap-4 pt-5" aria-busy={isSubmitting}>
+      <form onSubmit={onSubmit} className="flex flex-col gap-4 px-4 pb-5 pt-5 sm:px-5" aria-busy={isSubmitting}>
         <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(13rem,0.45fr)]">
           <FormField
             id="closing_amount"
@@ -104,17 +111,21 @@ export function CashClosingPanel({
             <output
               aria-live="polite"
               aria-label="Diferencia en vivo"
+              aria-describedby="cash-closing-difference-description"
               className="mt-2 block text-lg font-semibold tabular-nums text-foreground"
             >
               {liveDifferenceLabel}
             </output>
+            <p id="cash-closing-difference-description" className="mt-1 text-xs text-muted-foreground">
+              {differenceDescription}
+            </p>
           </div>
         </div>
 
         {hasCashDifference ? (
           <Alert variant="warning" icon={<AlertTriangle data-icon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />}>
             <div>
-              Hay una diferencia de <strong>{formatLempirasUI(difference)}</strong>. Se requerira una nota explicativa al cerrar.
+              Hay una diferencia de <strong>{formatLempirasUI(difference)}</strong>. La nota de cierre es obligatoria para dejar el motivo auditado.
             </div>
           </Alert>
         ) : null}
@@ -136,7 +147,11 @@ export function CashClosingPanel({
           </Alert>
         ) : null}
 
-        <FormField id="closing_notes" label="Nota de cierre">
+        <FormField
+          id="closing_notes"
+          label={hasCashDifference ? 'Nota de cierre *' : 'Nota de cierre'}
+          hint={hasCashDifference ? 'Nota obligatoria: explique el faltante o sobrante antes de confirmar.' : 'Opcional cuando el conteo coincide.'}
+        >
           {({ id }) => (
             <Textarea
               id={id}
@@ -145,6 +160,7 @@ export function CashClosingPanel({
               onChange={(event) => onClosingNotesChange(event.target.value)}
               placeholder={hasCashDifference ? 'Obligatoria si hay diferencia (sobrante/faltante).' : 'Nota opcional...'}
               rows={2}
+              required={hasCashDifference}
               disabled={isSubmitting}
             />
           )}
@@ -154,6 +170,7 @@ export function CashClosingPanel({
           <Button
             type="submit"
             variant="default"
+            className="min-h-11"
             disabled={isSubmitting || !canCloseCash || hasPendingBalance || missingInstitutionalReceiptCount > 0}
           >
             {isSubmitting ? 'Cerrando...' : 'Cerrar caja'}

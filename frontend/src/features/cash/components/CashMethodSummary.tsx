@@ -1,6 +1,4 @@
-import { CreditCard, HandCoins, Landmark, ReceiptText, WalletCards } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { MetricCard } from '@/components/ui/metric-card';
+import { CreditCard, HandCoins, Landmark, WalletCards } from 'lucide-react';
 import { formatLempirasUI } from '@/lib/money';
 
 type CashMethodSummaryProps = {
@@ -14,71 +12,54 @@ type CashMethodSummaryProps = {
   pendingAmount?: string;
 };
 
+const methodMeta = [
+  { key: 'cash', label: 'Efectivo', detail: 'Aumenta el efectivo esperado', icon: HandCoins },
+  { key: 'transfer', label: 'Transferencia', detail: 'Conciliación bancaria separada', icon: Landmark },
+  { key: 'card', label: 'Tarjeta', detail: 'No aumenta el efectivo en gaveta', icon: CreditCard },
+  { key: 'other', label: 'Otros', detail: 'Método no efectivo registrado', icon: WalletCards },
+] as const;
+
 export function CashMethodSummary({
   paymentsByMethod,
   paymentsCount = 0,
   pendingAmount = '0.00',
 }: CashMethodSummaryProps) {
-  if (!paymentsByMethod) {
-    return null;
-  }
+  if (!paymentsByMethod) return null;
 
   return (
-    <section className="flex flex-col gap-3" aria-labelledby="cash-method-summary-title">
-      <Card className="border-operational-border bg-operational-surface">
-        <CardContent className="p-4 sm:p-5">
-          <div className="flex flex-col gap-1 border-b border-border pb-4">
-            <h2 id="cash-method-summary-title" className="text-lg font-semibold text-foreground">
-              Resumen por método de pago
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Efectivo entra al efectivo esperado. Transferencias, tarjetas y otros métodos quedan separados para conciliación.
-            </p>
+    <section
+      aria-labelledby="cash-method-summary-title"
+      className="overflow-hidden rounded-lg border border-operational-border bg-operational-surface"
+    >
+      <div className="border-b border-border px-4 pb-4 pt-5 sm:px-5">
+        <h2 id="cash-method-summary-title" className="text-lg font-semibold tracking-tight text-foreground">
+          Métodos de pago
+        </h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {paymentsCount} pagos registrados · {formatLempirasUI(pendingAmount)} pendiente
+        </p>
+      </div>
+
+      <dl className="divide-y divide-border">
+        {methodMeta.map(({ key, label, detail, icon: Icon }) => (
+          <div key={key} className="grid min-h-16 grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-4 py-3 sm:px-5">
+            <dt className="flex min-w-0 items-center gap-3">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded bg-muted text-secondary">
+                <Icon data-icon aria-hidden="true" className="size-4" />
+              </span>
+              <span className="min-w-0">
+                <span className="block font-medium text-foreground">{label}</span>
+                <span className="block text-xs leading-relaxed text-muted-foreground">{detail}</span>
+              </span>
+            </dt>
+            <dd className="font-semibold tabular-nums text-foreground">{formatLempirasUI(paymentsByMethod[key])}</dd>
           </div>
-          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6">
-            <MetricCard
-              icon={<HandCoins />}
-              label="Efectivo"
-              value={formatLempirasUI(paymentsByMethod.cash)}
-              helper="Suma al efectivo esperado"
-              variant="success"
-            />
-            <MetricCard
-              icon={<Landmark />}
-              label="Transferencia"
-              value={formatLempirasUI(paymentsByMethod.transfer)}
-              helper="Conciliación separada"
-              variant="info"
-            />
-            <MetricCard
-              icon={<CreditCard />}
-              label="Tarjeta"
-              value={formatLempirasUI(paymentsByMethod.card)}
-              helper="No aumenta gaveta"
-              variant="info"
-            />
-            <MetricCard
-              icon={<WalletCards />}
-              label="Otros"
-              value={formatLempirasUI(paymentsByMethod.other)}
-              helper="Método no efectivo"
-            />
-            <MetricCard
-              icon={<ReceiptText />}
-              label="Pagos"
-              value={paymentsCount}
-              helper="Pagos registrados"
-            />
-            <MetricCard
-              icon={<ReceiptText />}
-              label="Pendiente"
-              value={formatLempirasUI(pendingAmount)}
-              helper="Facturas emitidas o parciales"
-              variant={pendingAmount === '0.00' ? 'neutral' : 'warning'}
-            />
-          </div>
-        </CardContent>
-      </Card>
+        ))}
+      </dl>
+
+      <p className="border-t border-border bg-muted/25 px-4 py-3 text-xs leading-relaxed text-muted-foreground sm:px-5">
+        El sistema no recibe conteos separados por método. El cierre compara únicamente el efectivo físico con el efectivo esperado.
+      </p>
     </section>
   );
 }

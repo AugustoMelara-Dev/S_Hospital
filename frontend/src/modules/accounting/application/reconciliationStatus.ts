@@ -1,11 +1,14 @@
 import { parseCents } from '../../../lib/money';
 
 export type ReconciliationInput = {
+  payments_total?: string;
   pending_invoice_count?: number;
   pending_amount?: string;
   missing_institutional_receipt_count?: number;
   reversed_payments_count?: number;
   reversed_payments_total?: string;
+  status?: 'open' | 'closed';
+  difference_amount?: string | number | null;
 };
 
 export type ReconciliationBlocker =
