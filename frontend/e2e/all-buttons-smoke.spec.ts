@@ -227,7 +227,7 @@ const executiveReport = {
   audit_summary: { critical_events: 0, reprints: 1, fiscal_changes: 0, cash_differences: 0, backup_events: 1 },
 };
 const routeExpectations = [
-  { path: '/dashboard', heading: /centro de mando/i },
+  { path: '/dashboard', heading: /continuar operaci[oó]n/i },
   { path: '/billing/new', heading: /nueva factura/i },
   { path: '/cashbox', heading: /^caja$/i },
   { path: '/catalog', heading: /catalogo|cat.logo/i },
@@ -252,11 +252,11 @@ const smokeViewports = [
 ];
 
 test.afterAll(() => {
-  writeButtonSmokeReport(reportPath, smokeResults);
+  if (smokeResults.length > 0) writeButtonSmokeReport(reportPath, smokeResults);
 });
 
 for (const viewport of smokeViewports) {
-  test(`main screens expose named controls and have no serious axe issues at ${viewport.name}`, async ({ page }) => {
+  test(`main screens expose named controls and have no serious axe issues at ${viewport.name}`, async ({ page }, testInfo) => {
     const consoleIssues: string[] = [];
     captureConsoleIssues(page, consoleIssues);
     await installApiMocks(page);
@@ -268,9 +268,20 @@ for (const viewport of smokeViewports) {
       await waitForScreen(page, route.heading);
       const unnamedControls = await findVisibleUnnamedControls(page);
       const axeViolations = await seriousAxeViolations(page);
+      const viewportMetrics = await page.evaluate(() => ({
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+        headings: document.querySelectorAll('main h1').length,
+      }));
 
       expect(unnamedControls, `${viewport.name} ${route.path} unnamed controls`).toEqual([]);
       expect(axeViolations, `${viewport.name} ${route.path} serious axe violations`).toEqual([]);
+      expect(viewportMetrics.scrollWidth, `${viewport.name} ${route.path} horizontal overflow`).toBeLessThanOrEqual(viewportMetrics.clientWidth + 1);
+      expect(viewportMetrics.headings, `${viewport.name} ${route.path} should expose one main h1`).toBe(1);
+      await page.screenshot({
+        path: testInfo.outputPath(`${route.path.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'root'}-${viewport.name}.png`),
+        fullPage: true,
+      });
 
       smokeResults.push({
         name: 'screen controls and axe smoke',
@@ -307,7 +318,7 @@ async function login(page: Page) {
   await page.locator('#login-input').fill('admin.validacion');
   await page.locator('#password-input').fill('Password123!');
   await page.getByRole('button', { name: /entrar|iniciar/i }).click();
-  await waitForScreen(page, /centro de mando/i);
+  await waitForScreen(page, /continuar operaci[oó]n/i);
 }
 
 async function waitForScreen(page: Page, heading: RegExp) {

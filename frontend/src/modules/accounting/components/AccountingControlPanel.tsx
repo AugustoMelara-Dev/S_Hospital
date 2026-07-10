@@ -148,7 +148,7 @@ function Fact({
       >
         {detail}
       </dd>
-      {detailDescription ? <span id={detailId} className="sr-only">{detailDescription}</span> : null}
+      {detailDescription ? <dd id={detailId} className="sr-only">{detailDescription}</dd> : null}
     </div>
   );
 }

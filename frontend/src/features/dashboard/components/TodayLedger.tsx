@@ -33,7 +33,7 @@ export function TodayLedger({ items }: TodayLedgerProps) {
           >
             <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">{item.label}</dt>
             <dd className="mt-2 min-h-8 text-xl font-semibold tabular-nums text-foreground">{item.value}</dd>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">{item.note}</p>
+            <dd className="mt-1 text-xs leading-5 text-muted-foreground">{item.note}</dd>
           </div>
         ))}
       </dl>
