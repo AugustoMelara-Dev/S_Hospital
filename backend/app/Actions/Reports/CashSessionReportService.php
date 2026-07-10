@@ -76,6 +76,9 @@ class CashSessionReportService
             'expected_cash_amount' => $expectedCashAmount,
             'pending_invoice_count' => $pendingInvoiceCount,
             'pending_amount' => $pendingAmount,
+            'missing_institutional_receipt_count' => $reconciliation['missing_institutional_receipt_count'],
+            'reversed_payments_count' => $reconciliation['reversed_payments_count'],
+            'reversed_payments_total' => $reconciliation['reversed_payments_total'],
             'payments' => $payments,
             'movements' => $movements,
         ];

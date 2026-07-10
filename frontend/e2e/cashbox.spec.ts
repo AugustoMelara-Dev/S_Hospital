@@ -30,6 +30,9 @@ const openSession = {
   },
   pending_invoice_count: 0,
   pending_amount: '0.00',
+  missing_institutional_receipt_count: 0,
+  reversed_payments_count: 0,
+  reversed_payments_total: '0.00',
   status: 'open',
   opening_notes: null,
   closing_amount: null,
@@ -80,14 +83,42 @@ test.describe('Cash session - critical mocked e2e', () => {
     });
     await expect(page.getByRole('alertdialog', { name: /cerrar caja/i })).toHaveCount(0);
     await expect(page.getByRole('heading', { name: /^caja cerrada$/i })).toBeVisible();
+    const confirmedSummary = page.locator('[data-cash-close-print-root]');
+    await expect(confirmedSummary).toContainText('Resumen de cierre confirmado');
+    await expect(confirmedSummary).toContainText('Efectivo');
+    await expect(confirmedSummary).toContainText('L 25.00');
+  });
+
+  test('blocks close before posting when a paid invoice is missing its receipt', async ({ page }) => {
+    let closeRequests = 0;
+    await installCashboxMocks(page, {
+      initialSession: {
+        ...openSession,
+        missing_institutional_receipt_count: 1,
+      },
+      onClose: () => {
+        closeRequests += 1;
+      },
+    });
+
+    await page.goto('/cashbox');
+
+    await expect(page.getByRole('heading', { name: /control contable de caja/i })).toBeVisible();
+    await expect(page.getByText(/1 recibo institucional pendiente/i)).toBeVisible();
+    await expect(page.getByRole('link', { name: /resolver en historial/i })).toHaveAttribute('href', '/invoices');
+    await expect(page.getByRole('button', { name: /^cerrar caja$/i })).toBeDisabled();
+    await expect.poll(() => closeRequests).toBe(0);
   });
 });
 
 async function installCashboxMocks(
   page: Page,
-  options: { onClose?: (payload: Record<string, unknown>) => void } = {},
+  options: {
+    initialSession?: typeof openSession;
+    onClose?: (payload: Record<string, unknown>) => void;
+  } = {},
 ) {
-  let currentSession: typeof openSession | null = openSession;
+  let currentSession: typeof openSession | null = options.initialSession ?? openSession;
 
   await installCommonMocks(page, cashierUser);
   await page.route(/\/api\/cash-sessions\/current(?:[/?]|$)/, (route) => json(route, { data: currentSession }));

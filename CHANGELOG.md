@@ -1,5 +1,24 @@
 # Changelog - Sistema de Caja Hospitalaria
 
+## 2026-07-09 - Reescritura total, Fase 3: conciliacion de caja
+
+- Unifica el contrato publico de caja abierta, cierre confirmado y reporte de
+  sesion con los mismos nombres y totales calculados por el servidor.
+- Corrige el resumen posterior al cierre para conservar pagos y metodos del
+  snapshot; ya no puede mostrar ceros por una diferencia de forma en la API.
+- Separa pagos posteados de pagos reversados y expone cantidad y monto de
+  reversos sin sumarlos al cobrado ni al efectivo esperado.
+- Agrega `modules/accounting` con un interprete puro y un panel reutilizable de
+  control contable para pendientes, recibos faltantes y reversos.
+- Bloquea visualmente el cierre cuando ya se conocen facturas o recibos
+  pendientes, manteniendo la actualizacion previa y el bloqueo transaccional
+  del backend como controles definitivos.
+- Declara que los egresos operativos no estan modelados; no muestra un cero que
+  pueda confundirse con ausencia de gastos.
+- Verificacion fresca: 103 pruebas backend / 1308 aserciones, 53 pruebas
+  frontend de caja/reportes, 206 pruebas frontend criticas, 2 E2E de caja,
+  PHPStan 216/216, Pint, lint, typecheck y build en verde.
+
 ## 2026-07-09 - Reescritura total, Fase 2: resultado seguro de cobro
 
 - Agrega al contrato de pagos `receipt_outcome` con estados cerrados:

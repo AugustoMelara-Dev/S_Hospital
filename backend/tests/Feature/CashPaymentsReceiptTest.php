@@ -936,7 +936,9 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertJsonPath('data.payments_by_method.transfer', '7.25')
             ->assertJsonPath('data.expected_cash_amount', '500.00')
             ->assertJsonPath('data.pending_invoice_count', 1)
-            ->assertJsonPath('data.pending_amount', '10.00');
+            ->assertJsonPath('data.pending_amount', '10.00')
+            ->assertJsonPath('data.reversed_payments_count', 1)
+            ->assertJsonPath('data.reversed_payments_total', '10.00');
 
         $this->actingAs($supervisor)
             ->getJson('/api/reports/daily?date='.now()->toDateString())
@@ -951,6 +953,8 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertJsonPath('data.total_cash', '0.00')
             ->assertJsonPath('data.total_transfer', '7.25')
             ->assertJsonPath('data.payments_count', 1)
+            ->assertJsonPath('data.reversed_payments_count', 1)
+            ->assertJsonPath('data.reversed_payments_total', '10.00')
             ->assertJsonCount(4, 'data.movements')
             ->assertJsonPath('data.movements.3.type', CashMovement::TYPE_PAYMENT_VOID)
             ->assertJsonPath('data.movements.3.amount', '-10.00');

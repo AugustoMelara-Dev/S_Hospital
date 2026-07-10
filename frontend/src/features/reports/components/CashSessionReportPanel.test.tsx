@@ -50,6 +50,9 @@ describe('CashSessionReportPanel', () => {
       expected_cash_amount: '517.25',
       pending_invoice_count: 1,
       pending_amount: '23.75',
+      missing_institutional_receipt_count: 1,
+      reversed_payments_count: 1,
+      reversed_payments_total: '10.00',
       payments: [],
       movements: [],
     } satisfies CashSessionReport;
@@ -73,6 +76,10 @@ describe('CashSessionReportPanel', () => {
     expect(document.body.textContent).toContain('Pendiente');
     expect(document.body.textContent).toContain('1 factura');
     expect(document.body.textContent).toContain('L 23.75');
+    expect(screen.getByRole('heading', { name: /control contable de caja/i })).toBeInTheDocument();
+    expect(screen.getByText(/1 recibo institucional pendiente/i)).toBeInTheDocument();
+    expect(screen.getByText(/1 pago reversado/i)).toBeInTheDocument();
+    expect(screen.getByText(/egresos operativos no estan modelados/i)).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/L 0\.00(?:\s*)Contado/);
   });
 
@@ -164,6 +171,9 @@ describe('CashSessionReportPanel', () => {
       expected_cash_amount: '517.25',
       pending_invoice_count: 0,
       pending_amount: '0.00',
+      missing_institutional_receipt_count: 0,
+      reversed_payments_count: 1,
+      reversed_payments_total: '10.00',
       payments: [],
       movements: [
         {
@@ -306,6 +316,9 @@ describe('CashSessionReportPanel', () => {
       expected_cash_amount: 'no-numero',
       pending_invoice_count: 1,
       pending_amount: 'NaN',
+      missing_institutional_receipt_count: 1,
+      reversed_payments_count: 0,
+      reversed_payments_total: 'NaN',
       payments: [
         {
           id: 10,
@@ -391,6 +404,9 @@ function buildCashSessionReport(overrides: Partial<CashSessionReport> = {}): Cas
     expected_cash_amount: '517.25',
     pending_invoice_count: 1,
     pending_amount: '23.75',
+    missing_institutional_receipt_count: 0,
+    reversed_payments_count: 0,
+    reversed_payments_total: '0.00',
     payments: [],
     movements: [],
     ...overrides,

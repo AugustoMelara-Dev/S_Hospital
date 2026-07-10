@@ -672,8 +672,24 @@ describe('CashBoxView', () => {
 
     await waitFor(() => expect(getCurrentCashSession).toHaveBeenCalledTimes(2), { timeout: 250 });
     expect(screen.queryByRole('alertdialog', { name: /confirmar cierre de caja/i })).not.toBeInTheDocument();
-    expect(await screen.findByText(/recibo institucional pendiente/i)).toBeInTheDocument();
+    expect((await screen.findAllByText(/recibo institucional pendiente/i)).length).toBeGreaterThan(0);
     expect(closeCashSession).not.toHaveBeenCalled();
+  });
+
+  it('shows known receipt blockers before the cashier attempts to close', async () => {
+    vi.spyOn(apiClient, 'getCurrentCashSession').mockResolvedValue(cashSessionFixture({
+      missing_institutional_receipt_count: 2,
+      reversed_payments_count: 1,
+      reversed_payments_total: '10.00',
+    }));
+
+    renderCashBox(<CashBoxView onStatus={vi.fn()} />);
+
+    expect(await screen.findByRole('heading', { name: /control contable de caja/i })).toBeInTheDocument();
+    expect(screen.getByText(/2 recibos institucionales pendientes/i)).toBeInTheDocument();
+    expect(screen.getByText(/1 pago reversado/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^cerrar caja$/i })).toBeDisabled();
+    expect(screen.getByRole('link', { name: /resolver en historial/i })).toHaveAttribute('href', '/invoices');
   });
 
   it('does not open close confirmation when the reconciliation refresh fails', async () => {

@@ -228,6 +228,8 @@ export type CashSession = {
   pending_invoice_count?: number;
   pending_amount?: string;
   missing_institutional_receipt_count?: number;
+  reversed_payments_count?: number;
+  reversed_payments_total?: string;
 };
 
 export type Payment = {
@@ -363,6 +365,9 @@ export type CashSessionReport = {
   expected_cash_amount: string;
   pending_invoice_count: number;
   pending_amount: string;
+  missing_institutional_receipt_count: number;
+  reversed_payments_count: number;
+  reversed_payments_total: string;
   payments: Array<Payment & {
     invoice?: Pick<
       Invoice,

@@ -56,7 +56,17 @@ class CloseCashSessionTest extends TestCase
             ->postJson("/api/cash-sessions/{$sessionId}/close", [
                 'closing_amount' => '517.25',
             ])
-            ->assertOk();
+            ->assertOk()
+            ->assertJsonPath('data.payments_count', 1)
+            ->assertJsonPath('data.payments_total', '17.25')
+            ->assertJsonPath('data.payments_by_method.cash', '17.25')
+            ->assertJsonPath('data.payments_by_method.transfer', '0.00')
+            ->assertJsonPath('data.expected_cash_amount', '517.25')
+            ->assertJsonPath('data.pending_invoice_count', 0)
+            ->assertJsonPath('data.pending_amount', '0.00')
+            ->assertJsonPath('data.missing_institutional_receipt_count', 0)
+            ->assertJsonPath('data.reversed_payments_count', 0)
+            ->assertJsonPath('data.reversed_payments_total', '0.00');
 
         Bus::assertNotDispatched(RunBackupJob::class);
     }

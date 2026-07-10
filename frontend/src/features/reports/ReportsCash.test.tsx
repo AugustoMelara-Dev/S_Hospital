@@ -217,6 +217,9 @@ function buildCashSessionReport(): CashSessionReport {
     expected_cash_amount: '517.25',
     pending_invoice_count: 0,
     pending_amount: '0.00',
+    missing_institutional_receipt_count: 0,
+    reversed_payments_count: 0,
+    reversed_payments_total: '0.00',
     payments: [],
     movements: [],
   };

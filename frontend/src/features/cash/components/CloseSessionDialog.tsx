@@ -116,6 +116,7 @@ interface CloseSessionDialogProps {
     payments_by_method?: { cash: string; transfer: string; card: string; other: string };
     pending_invoice_count?: number;
     pending_amount?: string | null;
+    missing_institutional_receipt_count?: number;
     closed_at?: string | null;
   };
   closingAmount: string;
@@ -287,6 +288,7 @@ export function CloseSessionDialog({
   const expectedAmount = finiteNumber(session.expected_cash_amount ?? session.expected_amount ?? session.opening_amount);
   const pendingAmount = finiteNumber(session.pending_amount);
   const pendingInvoiceCount = session.pending_invoice_count ?? 0;
+  const missingInstitutionalReceiptCount = session.missing_institutional_receipt_count ?? 0;
   const hasPendingBalance = pendingInvoiceCount > 0 || pendingAmount > 0;
   const isDifference = difference !== 0;
   const trimmedClosingNotes = closingNotes.trim();
@@ -385,6 +387,11 @@ export function CloseSessionDialog({
                   Hay saldo pendiente en esta caja. Revise Historial antes de cerrar.
                 </div>
               ) : null}
+              {missingInstitutionalReceiptCount > 0 ? (
+                <div className="rounded-md border border-warning/35 bg-warning/10 p-3 text-xs font-medium text-warning-foreground">
+                  Hay {missingInstitutionalReceiptCount} recibo(s) institucional(es) pendiente(s). El servidor no permitira cerrar hasta emitirlos.
+                </div>
+              ) : null}
               <h3 className="text-xs font-semibold text-foreground">
                 2. Conteo de efectivo
               </h3>
@@ -441,7 +448,7 @@ export function CloseSessionDialog({
             Exportar resumen
           </Button>
           <AlertDialogCancel>Cancelar</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm} disabled={isSubmitting || hasPendingBalance || !hasValidDifferenceNote}>
+          <AlertDialogAction onClick={onConfirm} disabled={isSubmitting || hasPendingBalance || missingInstitutionalReceiptCount > 0 || !hasValidDifferenceNote}>
             {isSubmitting ? 'Cerrando...' : 'Cerrar caja'}
           </AlertDialogAction>
         </AlertDialogFooter>

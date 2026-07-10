@@ -1604,6 +1604,9 @@ class ReportsTest extends TestCase
             ->assertJsonPath('data.expected_cash_amount', '517.25')
             ->assertJsonPath('data.pending_invoice_count', 0)
             ->assertJsonPath('data.pending_amount', '0.00')
+            ->assertJsonPath('data.missing_institutional_receipt_count', 0)
+            ->assertJsonPath('data.reversed_payments_count', 0)
+            ->assertJsonPath('data.reversed_payments_total', '0.00')
             ->assertJsonCount(2, 'data.payments')
             ->assertJsonCount(5, 'data.movements');
 
@@ -1703,6 +1706,9 @@ class ReportsTest extends TestCase
             ->assertJsonPath('data.expected_cash_amount', '517.25')
             ->assertJsonPath('data.pending_invoice_count', 1)
             ->assertJsonPath('data.pending_amount', '20.00')
+            ->assertJsonPath('data.missing_institutional_receipt_count', 1)
+            ->assertJsonPath('data.reversed_payments_count', 0)
+            ->assertJsonPath('data.reversed_payments_total', '0.00')
             ->assertJsonPath('data.payments.1.invoice.status', Invoice::STATUS_PARTIAL)
             ->assertJsonPath('data.payments.1.invoice.balance_due', '20.00');
     }

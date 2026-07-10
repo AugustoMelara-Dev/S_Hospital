@@ -11,6 +11,7 @@ import { StatGrid } from '../../../components/shared';
 import { formatLocalizedDateTime } from '../../../lib/format/formatDate';
 import type { CashSession, CashSessionReport } from '../../../lib/api/types';
 import { formatLempirasUIFromCents, parseCents } from '../../../lib/moneyCents';
+import { AccountingControlPanel } from '../../../modules/accounting/components/AccountingControlPanel';
 
 interface CashSessionReportPanelProps {
   canExport: boolean;
@@ -239,6 +240,8 @@ export function CashSessionReportPanel({
               },
             ]}
           />
+
+          <AccountingControlPanel reconciliation={cashSession} />
 
           {cashSession.cash_session.difference_amount && (parseCents(cashSession.cash_session.difference_amount) ?? 0) !== 0 ? (
             <Card className="border-destructive">

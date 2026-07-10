@@ -20,6 +20,7 @@ import { CashMovementsTable } from './components/CashMovementsTable';
 import { CashClosingPanel } from './components/CashClosingPanel';
 import { CashMethodSummary } from './components/CashMethodSummary';
 import { CashSessionHeader } from './components/CashSessionHeader';
+import { AccountingControlPanel } from '@/modules/accounting/components/AccountingControlPanel';
 
 type CashBoxViewProps = {
   cashSession?: CashSession | null;
@@ -180,6 +181,7 @@ export function CashBoxView({
   const isOpen = activeSession?.status === 'open';
   const pendingInvoiceCount = activeSession?.pending_invoice_count ?? 0;
   const pendingAmount = activeSession?.pending_amount ?? '0.00';
+  const missingInstitutionalReceiptCount = activeSession?.missing_institutional_receipt_count ?? 0;
   const hasPendingBalance = pendingInvoiceCount > 0 || parseCents(pendingAmount) > 0;
   const canRenderOperationalState = Boolean(activeSession) || (!sessionLoadError && !isLoading);
   const isOpenSessionFormLocked = pendingOpening !== null || openSessionMutation.isPending;
@@ -353,6 +355,8 @@ export function CashBoxView({
               pendingAmount={activeSession.pending_amount}
             />
 
+            <AccountingControlPanel reconciliation={activeSession} />
+
             <CashClosingPanel
               canCloseCash={canCloseCash}
               closingAmount={closingAmount}
@@ -362,6 +366,7 @@ export function CashBoxView({
               difference={difference}
               hasCashDifference={hasCashDifference}
               hasPendingBalance={hasPendingBalance}
+              missingInstitutionalReceiptCount={missingInstitutionalReceiptCount}
               isSubmitting={closeSessionMutation.isPending}
               onClosingAmountChange={(value) => {
                 setClosingAmount(value);
@@ -421,6 +426,7 @@ export function CashBoxView({
           payments_by_method: activeSession?.payments_by_method,
           pending_invoice_count: activeSession?.pending_invoice_count,
           pending_amount: activeSession?.pending_amount,
+          missing_institutional_receipt_count: activeSession?.missing_institutional_receipt_count,
         }}
         closingAmount={closingAmount}
         closingNotes={closingNotes}

@@ -19,7 +19,9 @@ class BuildCashReconciliationAction
      *     expected_cash_amount: string,
      *     pending_invoice_count: int,
      *     pending_amount: string,
-     *     missing_institutional_receipt_count: int
+     *     missing_institutional_receipt_count: int,
+     *     reversed_payments_count: int,
+     *     reversed_payments_total: string
      * }
      */
     public function execute(CashRegisterSession $session): array
@@ -93,6 +95,13 @@ class BuildCashReconciliationAction
             })
             ->count();
 
+        $reversedPaymentsQuery = Payment::query()
+            ->where('cash_session_id', $session->id)
+            ->where('status', Payment::STATUS_VOID)
+            ->whereNotNull('amount_cents');
+        $reversedPaymentsCount = (clone $reversedPaymentsQuery)->count();
+        $reversedPaymentsTotalCents = (int) (clone $reversedPaymentsQuery)->sum('amount_cents');
+
         $openingCents = Money::parseCents((string) $session->opening_amount, 'opening_amount');
         $cashCents = Money::parseCents($paymentsByMethod[Payment::METHOD_CASH], 'cash_payments');
         $expectedCents = $openingCents + $cashCents;
@@ -105,6 +114,8 @@ class BuildCashReconciliationAction
             'pending_invoice_count' => (int) ($pendingRow?->invoice_count ?? 0),
             'pending_amount' => Money::formatCents((int) ($pendingRow?->total_cents ?? 0)),
             'missing_institutional_receipt_count' => (int) $missingInstitutionalReceiptCount,
+            'reversed_payments_count' => $reversedPaymentsCount,
+            'reversed_payments_total' => Money::formatCents($reversedPaymentsTotalCents),
         ];
     }
 

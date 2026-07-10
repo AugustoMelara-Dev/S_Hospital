@@ -9,13 +9,12 @@ Production approval: NO
 
 ## Current Focus
 
-Phases 1 and 2 of the approved total rewrite close the printing policy and the
-payment-to-receipt outcome contract. Receipt printing is explicit-only and the
-operator chooses only Carta, Media carta or A5. A payment response now states
-whether the institutional receipt was issued, is not yet required for a partial
-payment, or requires recovery after a confirmed charge. The UI no longer
-infers that result from nullable fields and never tells the cashier to repeat a
-successful payment.
+Phases 1 through 3 of the approved total rewrite close printing policy, payment
+outcomes and cash reconciliation. Receipt printing is explicit-only and the
+operator chooses only Carta, Media carta or A5. Payment responses distinguish
+issued, partial and recovery-required receipts. Live cash, close response and
+cash-session reports now share the same server-owned totals; pending invoices,
+missing receipts and reversed payments remain separate operational facts.
 
 The latest verification pass moved from local frontend-only evidence to the
 Docker stack. It confirmed the containerized Laravel, MySQL/MariaDB and
@@ -37,6 +36,13 @@ production approval.
 
 | Date | Command | Result | Notes |
 |---|---|---|---|
+| 2026-07-09 | `docker compose exec -T backend php artisan test --compact tests/Feature/Cash/CloseCashSessionTest.php tests/Feature/CashPaymentsReceiptTest.php tests/Feature/ReportsTest.php` | PASS, 103 tests / 1308 assertions | Reconciliation, normalized close snapshot, pending/receipt blockers, reversals, cash reports and permissions. |
+| 2026-07-09 | `npm.cmd run test -- CashBoxView CloseSessionDialog CashSessionReportPanel ReportsCash reconciliationStatus AccountingControlPanel cashCloseSummary ...` | PASS, 7 files / 53 tests | Live cash, close dialogs, accounting control panel and cash-session reports. |
+| 2026-07-09 | `npm.cmd run test:critical` | PASS, 15 files / 206 tests | Cross-module critical frontend regression gate after the accounting module integration. |
+| 2026-07-09 | `npx.cmd playwright test e2e/cashbox.spec.ts` | PASS, 2 tests | Clean close with preserved method totals and pre-submit blocking for a missing institutional receipt. |
+| 2026-07-09 | `docker compose exec -T backend vendor/bin/phpstan analyse --memory-limit=1G` | PASS, 216/216 files | No errors after replacing ambiguous aggregate model properties with typed count/sum queries. |
+| 2026-07-09 | `docker compose exec -T backend vendor/bin/pint --test ...` | PASS, 6 files | Formatting gate for all Phase 3 backend files. |
+| 2026-07-09 | `npm.cmd run lint`, `npm.cmd run typecheck`, `npm.cmd run build` | PASS | Phase 3 frontend quality and production build gates. |
 | 2026-07-09 | `npm.cmd run test:coverage:check` | PASS, 125 files / 837 tests | Phase 2 full V8 coverage: 79.33% lines, 78.04% functions, 73.92% branches and 77.73% statements; exceeds 65/60/60/65 thresholds. |
 | 2026-07-09 | `docker compose exec -T backend php artisan test --compact tests/Feature/CashPaymentsReceiptTest.php tests/Feature/InstitutionalReceiptPaymentIntegrationTest.php` | PASS, 46 tests / 509 assertions | Covers paid, partial, issued receipt and recovery-required payment outcomes, including a cashier without receipt permission. |
 | 2026-07-09 | `npx.cmd playwright test e2e/new-invoice-flow.spec.ts` | PASS, 2 tests | Chromium proves normal issue/pay/PDF and recovery-required flow with one payment request and no PDF request. |

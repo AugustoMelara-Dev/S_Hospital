@@ -16,6 +16,7 @@ type CashClosingPanelProps = {
   difference: number | null;
   hasCashDifference: boolean;
   hasPendingBalance: boolean;
+  missingInstitutionalReceiptCount: number;
   isSubmitting: boolean;
   onClosingAmountChange: (value: string) => void;
   onClosingNotesChange: (value: string) => void;
@@ -33,6 +34,7 @@ export function CashClosingPanel({
   difference,
   hasCashDifference,
   hasPendingBalance,
+  missingInstitutionalReceiptCount,
   isSubmitting,
   onClosingAmountChange,
   onClosingNotesChange,
@@ -126,6 +128,14 @@ export function CashClosingPanel({
           </Alert>
         ) : null}
 
+        {missingInstitutionalReceiptCount > 0 ? (
+          <Alert variant="warning" icon={<AlertTriangle data-icon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />}>
+            <div>
+              Hay <strong>{missingInstitutionalReceiptCount}</strong> recibo(s) institucional(es) pendiente(s). Genere los recibos antes de cerrar.
+            </div>
+          </Alert>
+        ) : null}
+
         <FormField id="closing_notes" label="Nota de cierre">
           {({ id }) => (
             <Textarea
@@ -144,7 +154,7 @@ export function CashClosingPanel({
           <Button
             type="submit"
             variant="default"
-            disabled={isSubmitting || !canCloseCash || hasPendingBalance}
+            disabled={isSubmitting || !canCloseCash || hasPendingBalance || missingInstitutionalReceiptCount > 0}
           >
             {isSubmitting ? 'Cerrando...' : 'Cerrar caja'}
           </Button>
