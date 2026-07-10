@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use LogicException;
 
 /**
  * @property int $id
@@ -58,6 +59,14 @@ class AuditLog extends Model
     {
         static::creating(function (AuditLog $auditLog): void {
             $auditLog->created_at ??= now();
+        });
+
+        static::updating(function (): never {
+            throw new LogicException('Los registros de auditoria son de solo anexos y no se pueden modificar.');
+        });
+
+        static::deleting(function (): never {
+            throw new LogicException('Los registros de auditoria son de solo anexos y no se pueden eliminar.');
         });
     }
 

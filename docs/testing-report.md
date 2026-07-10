@@ -9,12 +9,12 @@ Production approval: NO
 
 ## Current Focus
 
-Phases 1 through 4 of the approved total rewrite close printing, payment
-outcomes, cash reconciliation and executive-report semantics. Live cash,
-closed snapshots and reports share server-owned totals. Executive UI/PDF/Excel
-now state that voids and reversals are already excluded from active totals and
-must not be subtracted twice. Invoice-history actions come from one tested
-state/permission policy.
+Phases 1 through 5 of the approved total rewrite close printing, payment
+outcomes, cash reconciliation, report semantics and administrative integrity.
+Audit records are append-only at model and MariaDB layers. Role permission
+changes and their audit event are one transaction. Backup and user-management
+security gates remain covered while final installation/release E2E work stays
+open for Phase 6.
 
 The latest verification pass moved from local frontend-only evidence to the
 Docker stack. It confirmed the containerized Laravel, MySQL/MariaDB and
@@ -36,6 +36,12 @@ production approval.
 
 | Date | Command | Result | Notes |
 |---|---|---|---|
+| 2026-07-09 | `docker compose exec -T backend php artisan test --compact tests/Feature/AuditLogTest.php tests/Feature/RoleManagementTest.php tests/Feature/UserManagementTest.php tests/Feature/BackupWorkflowTest.php tests/Feature/PruneCommandsTest.php` | PASS, 100 tests / 450 assertions, 1 skipped | Append-only audit, atomic role changes, user guards, encrypted backups, safe downloads and privileged pruning. |
+| 2026-07-09 | `npm.cmd run test -- UsersView PermissionMatrix RoleFormDialog UserFormDialog BackupsView BackupHistoryTable backupPresentation ...` | PASS, 7 files / 109 tests | Users, risk-labelled permissions and backup operator UI. |
+| 2026-07-09 | `npx.cmd playwright test e2e/production-readiness.spec.ts` | FAIL, 2 passed / 2 failed | Historical mocked suite drift: legacy receipt-preview expectations conflict with the new institutional outcome, and its current-session mock omitted `scope=closable`. Assigned to Phase 6; this is not production approval. |
+| 2026-07-09 | `docker compose exec -T backend vendor/bin/phpstan analyse --memory-limit=1G` | PASS, 216/216 files | Phase 5 static analysis. |
+| 2026-07-09 | `docker compose exec -T backend vendor/bin/pint --test ...` | PASS, 4 files | Phase 5 backend formatting gate after ordered-import correction. |
+| 2026-07-09 | `npm.cmd run lint`, `npm.cmd run typecheck`, `npm.cmd run build` | PASS | Phase 5 frontend quality and production build gates. |
 | 2026-07-09 | `docker compose exec -T backend php artisan test --compact tests/Feature/Reports/ExecutiveReportTest.php tests/Feature/Reports/ExecutivePdfExportTest.php tests/Feature/Reports/ExecutiveExcelExportTest.php` | PASS, 27 tests / 292 assertions | API accounting policy plus matching UI-source, PDF and Excel semantics. |
 | 2026-07-09 | `docker compose exec -T backend php artisan test --compact tests/Feature/ServiceCatalogTest.php tests/Feature/FiscalSettingsTest.php --filter=...` | PASS, 8 tests / 49 assertions | Price/fiscal reasons, audit and fixed erythropoietin invariants. |
 | 2026-07-09 | `npm.cmd run test -- InvoiceHistoryView ReportsExecutive ExecutiveSummary AccountingPolicyPanel invoiceActionPolicy CatalogView ServiceSheet FiscalSettingsView ...` | PASS, 9 files / 102 tests | History action policy, accounting definitions, catalog and fiscal UI regression gate. |

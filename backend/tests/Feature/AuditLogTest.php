@@ -11,6 +11,7 @@ use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use LogicException;
 use Tests\TestCase;
 
 class AuditLogTest extends TestCase
@@ -58,6 +59,36 @@ class AuditLogTest extends TestCase
         $entry = AuditLog::query()->where('action', 'user.toggled')->firstOrFail();
         $this->assertSame(['active' => true], $entry->old_values);
         $this->assertSame(['active' => false], $entry->new_values);
+    }
+
+    public function test_audit_log_is_append_only_through_eloquent(): void
+    {
+        $entry = AuditLog::query()->create([
+            'user_id' => null,
+            'action' => 'security.append_only',
+            'entity_type' => 'system',
+            'entity_id' => null,
+            'reason' => 'Original',
+        ]);
+
+        try {
+            $entry->forceFill(['reason' => 'Alterado'])->save();
+            $this->fail('Audit logs must reject updates.');
+        } catch (LogicException $exception) {
+            $this->assertStringContainsString('solo anexos', $exception->getMessage());
+        }
+
+        try {
+            $entry->delete();
+            $this->fail('Audit logs must reject deletes.');
+        } catch (LogicException $exception) {
+            $this->assertStringContainsString('solo anexos', $exception->getMessage());
+        }
+
+        $this->assertDatabaseHas('audit_logs', [
+            'id' => $entry->id,
+            'reason' => 'Original',
+        ]);
     }
 
     public function test_audit_log_surfaces_in_recent_errors_when_action_contains_failed(): void

@@ -1,5 +1,21 @@
 # Changelog - Sistema de Caja Hospitalaria
 
+## 2026-07-09 - Reescritura total, Fase 5: integridad administrativa
+
+- Refuerza `AuditLog` como modelo append-only: Eloquent rechaza actualizaciones
+  y borrados, ademas de los triggers ya existentes en MariaDB.
+- Mantiene la poda como comando tecnico privilegiado por query builder, sin
+  abrir borrado operativo en UI o API.
+- Hace atomicas la creacion y edicion de roles con su evento de auditoria; si
+  falla la auditoria, se revierten nombre, rol y permisos.
+- Agrega pruebas de rollback deliberado para evitar cambios de privilegios sin
+  trazabilidad.
+- Reconfirma controles de ultimo administrador, autoacciones, roles elevados,
+  contrasenas temporales, payloads de respaldo seguros, cifrado, idempotencia,
+  rutas, descargas y auditoria.
+- Verificacion fresca: 100 pruebas backend / 450 aserciones (1 skip de entorno),
+  109 pruebas frontend, PHPStan 216/216, Pint, lint, typecheck y build en verde.
+
 ## 2026-07-09 - Reescritura total, Fase 4: semantica de reportes y acciones
 
 - Publica `accounting_policy` en el reporte ejecutivo para declarar alcance de

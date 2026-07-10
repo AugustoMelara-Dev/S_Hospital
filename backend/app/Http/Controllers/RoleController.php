@@ -8,6 +8,7 @@ use App\Support\AuditLogger;
 use App\Support\RoleCatalog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
@@ -92,23 +93,26 @@ class RoleController extends Controller
     {
         $validated = $request->validated();
 
-        $role = Role::query()->create([
-            'name' => $validated['name'],
-            'guard_name' => 'web',
-        ]);
-        $role->syncPermissions($validated['permissions']);
+        $role = DB::transaction(function () use ($validated, $auditLogger, $request): Role {
+            $role = Role::query()->create([
+                'name' => $validated['name'],
+                'guard_name' => 'web',
+            ]);
+            $role->syncPermissions($validated['permissions']);
+            $role->load('permissions');
+
+            $auditLogger->log(
+                action: 'role.created',
+                entity: $role,
+                user: $request->user(),
+                request: $request,
+                newValues: $this->auditPayload($role),
+            );
+
+            return $role;
+        });
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
-
-        $role->load('permissions');
-
-        $auditLogger->log(
-            action: 'role.created',
-            entity: $role,
-            user: $request->user(),
-            request: $request,
-            newValues: $this->auditPayload($role),
-        );
 
         return response()->json([
             'data' => $this->transformRole($role),
@@ -119,26 +123,27 @@ class RoleController extends Controller
     {
         $validated = $request->validated();
 
-        $oldValues = $this->auditPayload($role->load('permissions'));
+        DB::transaction(function () use ($role, $validated, $auditLogger, $request): void {
+            $oldValues = $this->auditPayload($role->load('permissions'));
 
-        $role->forceFill([
-            'name' => $validated['name'],
-            'guard_name' => 'web',
-        ])->save();
-        $role->syncPermissions($validated['permissions']);
+            $role->forceFill([
+                'name' => $validated['name'],
+                'guard_name' => 'web',
+            ])->save();
+            $role->syncPermissions($validated['permissions']);
+            $role->load('permissions');
+
+            $auditLogger->log(
+                action: 'role.updated',
+                entity: $role,
+                user: $request->user(),
+                request: $request,
+                oldValues: $oldValues,
+                newValues: $this->auditPayload($role),
+            );
+        });
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
-
-        $role->load('permissions');
-
-        $auditLogger->log(
-            action: 'role.updated',
-            entity: $role,
-            user: $request->user(),
-            request: $request,
-            oldValues: $oldValues,
-            newValues: $this->auditPayload($role),
-        );
 
         return response()->json([
             'data' => $this->transformRole($role),

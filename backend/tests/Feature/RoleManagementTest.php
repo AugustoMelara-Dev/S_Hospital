@@ -2,9 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Models\AuditLog;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use RuntimeException;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
@@ -133,6 +135,52 @@ class RoleManagementTest extends TestCase
         $created = User::query()->where('username', 'gestora-catalogo')->firstOrFail();
         $this->assertTrue($created->can('catalog.manage'));
         $this->assertFalse($created->can('invoices.create'));
+    }
+
+    public function test_role_creation_rolls_back_when_audit_write_fails(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->userWithRole('admin');
+        AuditLog::creating(static function (): never {
+            throw new RuntimeException('simulated audit failure');
+        });
+
+        $this->actingAs($admin)
+            ->postJson('/api/admin/roles', [
+                'name' => 'rollback_role_create',
+                'permissions' => ['catalog.view'],
+            ])
+            ->assertServerError();
+
+        $this->assertDatabaseMissing('roles', [
+            'name' => 'rollback_role_create',
+            'guard_name' => 'web',
+        ]);
+    }
+
+    public function test_role_update_rolls_back_when_audit_write_fails(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->userWithRole('admin');
+        $role = Role::query()->create([
+            'name' => 'rollback_role_original',
+            'guard_name' => 'web',
+        ]);
+        $role->syncPermissions(['catalog.view']);
+        AuditLog::creating(static function (): never {
+            throw new RuntimeException('simulated audit failure');
+        });
+
+        $this->actingAs($admin)
+            ->patchJson("/api/admin/roles/{$role->id}", [
+                'name' => 'rollback_role_changed',
+                'permissions' => ['catalog.manage'],
+            ])
+            ->assertServerError();
+
+        $role->refresh()->load('permissions');
+        $this->assertSame('rollback_role_original', $role->name);
+        $this->assertSame(['catalog.view'], $role->permissions->pluck('name')->sort()->values()->all());
     }
 
     public function test_user_manager_without_admin_assignment_permission_cannot_manage_roles(): void
