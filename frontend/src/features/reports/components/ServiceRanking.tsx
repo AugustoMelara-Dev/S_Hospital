@@ -48,7 +48,7 @@ function RankingSection({
   children: React.ReactNode;
 }) {
   return (
-    <section className="space-y-3 rounded-md border border-operational-border bg-operational-panel/45 p-3" aria-labelledby={sectionId(title)}>
+    <section className="space-y-3 rounded-xl border border-operational-border bg-operational-panel/45 p-4" aria-labelledby={sectionId(title)}>
       <div>
         <h3 id={sectionId(title)} className="text-sm font-semibold text-foreground">
           {title}
@@ -79,7 +79,7 @@ export function ServiceRanking({ report }: ServiceRankingProps) {
 
   if (topServices.length === 0) {
     return (
-      <Card className="rounded-panel border-operational-border bg-operational-surface shadow-operational">
+      <Card className="overflow-hidden rounded-2xl border-operational-border bg-operational-surface shadow-operational">
         <CardHeader>
           <CardTitle className="text-base">Servicios facturados</CardTitle>
         </CardHeader>
@@ -91,8 +91,8 @@ export function ServiceRanking({ report }: ServiceRankingProps) {
   }
 
   return (
-    <Card className="rounded-panel border-operational-border bg-operational-surface shadow-operational">
-      <CardHeader>
+    <Card className="overflow-hidden rounded-2xl border-operational-border bg-operational-surface shadow-operational">
+      <CardHeader className="border-b border-border bg-muted/35">
         <div className="flex flex-col gap-1">
           <CardTitle className="text-base">Servicios facturados</CardTitle>
           <p className="text-xs text-muted-foreground">

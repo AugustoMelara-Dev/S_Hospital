@@ -71,14 +71,14 @@ export function PendingAgingPanel({ report }: PendingAgingPanelProps) {
   });
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="overflow-hidden rounded-2xl border-operational-border shadow-operational">
+      <CardHeader className="border-b border-border bg-muted/35">
         <CardTitle className="text-base">Pendientes y antiguedad</CardTitle>
         <p className="text-xs text-muted-foreground">
           Facturas con saldo abierto, agrupadas por dias desde la emision.
         </p>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-5">
         <StatGrid className="mb-4 sm:grid-cols-3 xl:grid-cols-3" items={bucketItems} />
 
         <DataTable

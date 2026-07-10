@@ -23,7 +23,16 @@ export function ServiceCatalogTable({
   const columns = createServiceColumns({ canManage, onRowActions });
 
   return (
-    <DataTable
+    <section className="overflow-hidden rounded-xl border border-operational-border bg-operational-surface shadow-operational" aria-labelledby="service-catalog-results-title">
+      <header className="flex flex-col gap-1 border-b border-border bg-muted/35 px-5 py-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 id="service-catalog-results-title" className="text-lg font-semibold tracking-tight">Servicios disponibles</h2>
+          <p className="text-xs text-muted-foreground">Precio vigente, disponibilidad en caja y reglas especiales.</p>
+        </div>
+        <span className="font-mono text-xs text-muted-foreground tabular-nums">{services.length} en esta vista</span>
+      </header>
+      <div className="p-4 sm:p-5">
+      <DataTable
       columns={columns}
       containerLabel="Listado de servicios del catálogo"
       emptyAction={
@@ -47,7 +56,9 @@ export function ServiceCatalogTable({
       loadingLabel="Cargando servicios del catálogo..."
       onRetry={onRetry}
       rows={isEmpty ? [] : services}
-    />
+      />
+      </div>
+    </section>
   );
 }
 
