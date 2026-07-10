@@ -99,10 +99,10 @@ describe('AppRoutes lazy-loading', () => {
     const routesSource = readFileSync(resolve(__dirname, 'AppRoutes.tsx'), 'utf8');
     const appSource = readFileSync(resolve(__dirname, 'App.tsx'), 'utf8');
 
-    expect(routesSource).toContain('canCreateInvoices={canCreateInvoices}');
+    expect(routesSource).toContain('canCreateInvoices={canAccessRoute(appRoutes.newInvoice, user.permissions)}');
     expect(routesSource).toContain('canViewInvoices={canViewInvoices}');
     expect(routesSource).toContain('currentUserId={user.id}');
-    expect(appSource).toContain('canCreateInvoices={session.canCreateInvoices}');
+    expect(appSource).toContain('canCreateInvoices={canAccessRoute(appRoutes.newInvoice, session.user.permissions)}');
     expect(appSource).toContain('canViewInvoices={session.canViewInvoices}');
     expect(appSource).toContain('currentUserId={session.user.id}');
   });

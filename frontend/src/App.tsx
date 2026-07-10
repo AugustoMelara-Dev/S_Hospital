@@ -17,6 +17,7 @@ import { apiClient } from './lib/api';
 import { MotionProvider } from './design-system/motion/MotionProvider';
 import { ClinicalToaster, notify } from './design-system/primitives/Toaster';
 import { isErrorMessage } from './lib/api/user-error';
+import { appRoutes, canAccessRoute } from './navigation/appNavigation';
 
 export function App() {
   return (
@@ -163,7 +164,7 @@ function HospitalApp() {
           cashSession={cashSession ?? null}
           canCloseAnyCash={session.canCloseAnyCash}
           canCloseCash={session.canCloseCash}
-          canCreateInvoices={session.canCreateInvoices}
+          canCreateInvoices={canAccessRoute(appRoutes.newInvoice, session.user.permissions)}
           canOpenCash={session.canOpenCash}
           canViewInvoices={session.canViewInvoices}
           canViewCashSessionReport={session.canViewCashSessionReports || session.canViewManagerialReports}

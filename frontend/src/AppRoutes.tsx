@@ -138,7 +138,7 @@ export function AppRoutes({
               cashSession={cashSession}
               canCloseAnyCash={canCloseAnyCash}
               canCloseCash={canCloseCash}
-              canCreateInvoices={canCreateInvoices}
+              canCreateInvoices={canAccessRoute(appRoutes.newInvoice, user.permissions)}
               canOpenCash={canOpenCash}
               canViewInvoices={canViewInvoices}
               canViewCashSessionReport={canViewCashSessionReports || canViewManagerialReports}

@@ -107,8 +107,9 @@ describe('CashBoxView', () => {
       ).toBe(true);
     });
     expect((await screen.findAllByText(/caja abierta/i)).length).toBeGreaterThan(0);
-    expect(await screen.findByText(/caja lista para facturar/i)).toBeInTheDocument();
-    expect(screen.getAllByRole('link', { name: /nueva factura/i }).length).toBeGreaterThan(0);
+    expect(await screen.findByText(/caja abierta en modo consulta/i)).toBeInTheDocument();
+    expect(screen.queryByText(/caja lista para facturar/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /nueva factura/i })).not.toBeInTheDocument();
   });
 
   it('keeps close-session difference hidden until counted amount is entered', async () => {
