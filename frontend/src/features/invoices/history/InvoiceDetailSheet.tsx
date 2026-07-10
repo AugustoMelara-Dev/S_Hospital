@@ -125,9 +125,30 @@ export function InvoiceDetailSheet({
             {invoice.payments?.length ? (
               <ul className="mt-3 divide-y divide-border rounded-md border border-border">
                 {invoice.payments.map((payment) => (
-                  <li key={payment.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
-                    <span>{paymentLabels[payment.method]}{payment.reference ? ` · ${payment.reference}` : ''}</span>
-                    <span className="font-semibold tabular-nums">{moneyLabel(payment.amount)}</span>
+                  <li key={payment.id} className="grid gap-2 px-4 py-3 text-sm sm:grid-cols-[minmax(0,1fr)_auto]">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-medium">{paymentLabels[payment.method]}</span>
+                        <StatusBadge status={payment.status === 'void' ? 'void' : 'paid'}>
+                          {payment.status === 'void' ? 'Pago anulado' : 'Pago registrado'}
+                        </StatusBadge>
+                      </div>
+                      <p className="mt-1 text-xs tabular-nums text-muted-foreground">
+                        {formatDateTimeEs(payment.paid_at)} · Caja #{payment.cash_session_id}
+                        {payment.reference ? ` · Ref. ${payment.reference}` : ''}
+                      </p>
+                      {payment.status === 'void' && payment.void_reason ? (
+                        <p className="mt-1 text-xs text-muted-foreground">Motivo: {payment.void_reason}</p>
+                      ) : null}
+                    </div>
+                    <span
+                      aria-label={payment.status === 'void' ? `Monto anulado ${moneyLabel(payment.amount)}` : undefined}
+                      className={payment.status === 'void'
+                        ? 'font-semibold tabular-nums text-muted-foreground line-through'
+                        : 'font-semibold tabular-nums text-foreground'}
+                    >
+                      {moneyLabel(payment.amount)}
+                    </span>
                   </li>
                 ))}
               </ul>

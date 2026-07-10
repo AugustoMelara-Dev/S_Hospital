@@ -99,6 +99,10 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   const actionRequestRef = useRef(0);
   const receiptRequestRef = useRef(0);
   const detailRequestRef = useRef(0);
+  const detailRequestedInvoiceIdRef = useRef(0);
+  const detailReturnFocusRef = useRef<HTMLElement | null>(null);
+  const detailReturnFocusInvoiceIdRef = useRef<number | null>(null);
+  const historySectionRef = useRef<HTMLElement | null>(null);
 
   const canReprint = user.permissions.includes('receipts.reprint');
   const canReprintAny = user.permissions.includes('receipts.reprint_any');
@@ -129,7 +133,17 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   }, [searchParams]);
 
   useEffect(() => {
-    if (!detailInvoiceId || detailInvoice?.id === detailInvoiceId || detailLoading) return;
+    if (!detailInvoiceId) {
+      if (detailRequestedInvoiceIdRef.current !== 0) {
+        detailRequestRef.current += 1;
+        detailRequestedInvoiceIdRef.current = 0;
+        setDetailInvoice(null);
+        setDetailError('');
+        setDetailLoading(false);
+      }
+      return;
+    }
+    if (detailRequestedInvoiceIdRef.current === detailInvoiceId) return;
 
     const summary = invoicesList.find((invoice) => invoice.id === detailInvoiceId) ?? null;
     void openInvoiceDetail(summary ?? detailInvoiceId, false);
@@ -166,10 +180,19 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     // Refetch is automatic via the filters key.
   }
 
-  async function openInvoiceDetail(invoice: Invoice | number, updateUrl = true) {
+  async function openInvoiceDetail(
+    invoice: Invoice | number,
+    updateUrl = true,
+    returnFocus: HTMLElement | null = null,
+  ) {
     const invoiceId = typeof invoice === 'number' ? invoice : invoice.id;
+    const previousRequestedInvoiceId = detailRequestedInvoiceIdRef.current;
     const requestId = detailRequestRef.current + 1;
     detailRequestRef.current = requestId;
+    detailRequestedInvoiceIdRef.current = invoiceId;
+    if (updateUrl) detailReturnFocusRef.current = returnFocus;
+    if (updateUrl) detailReturnFocusInvoiceIdRef.current = invoiceId;
+    else if (previousRequestedInvoiceId !== invoiceId) detailReturnFocusRef.current = null;
     setDetailInvoice(typeof invoice === 'number' ? null : invoice);
     setDetailError('');
     setDetailLoading(true);
@@ -193,13 +216,33 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   }
 
   function closeInvoiceDetail() {
+    const returnInvoiceId = detailReturnFocusInvoiceIdRef.current;
+    const originalFocusTarget = detailReturnFocusRef.current;
     detailRequestRef.current += 1;
+    detailRequestedInvoiceIdRef.current = 0;
     setDetailInvoice(null);
     setDetailError('');
     setDetailLoading(false);
     const next = new URLSearchParams(searchParams);
     next.delete('invoice');
     setSearchParams(next);
+    detailReturnFocusRef.current = null;
+    detailReturnFocusInvoiceIdRef.current = null;
+    window.setTimeout(() => {
+      const currentTrigger = returnInvoiceId
+        ? document.querySelector<HTMLElement>(`[data-invoice-detail-trigger="${returnInvoiceId}"]`)
+        : null;
+      const focusTarget = currentTrigger
+        ?? (originalFocusTarget?.isConnected ? originalFocusTarget : historySectionRef.current);
+      focusTarget?.focus();
+    }, 100);
+  }
+
+  function synchronizeDetailInvoice(invoice: Invoice) {
+    if (detailRequestedInvoiceIdRef.current === invoice.id) {
+      setDetailInvoice(invoice);
+      setDetailError('');
+    }
   }
 
   async function prepareInvoiceAction(invoiceId: number, action: 'void' | 'reverse') {
@@ -327,6 +370,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
 
       const invoice = await apiClient.getInvoice(invoiceId);
       setSelectedInvoice(invoice);
+      synchronizeDetailInvoice(invoice);
       await openInstitutionalReceiptPdf(receipt, 'Emisión manual de recibo faltante.', idempotencyKey);
       resetPayloadScopedIdempotencyKey(receiptGenerationIdempotencyKeyRef, receiptGenerationIdempotencySignatureRef);
       onStatus(`Recibo institucional ${receipt.receipt_number_full} generado exitosamente.`);
@@ -393,6 +437,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       });
       await invalidateBillingQueries(queryClient);
       setSelectedInvoice(voided);
+      synchronizeDetailInvoice(voided);
       setReceipt(null);
       setVoidReason('');
       setConfirmingVoid(false);
@@ -430,6 +475,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       });
       await invalidateBillingQueries(queryClient);
       setSelectedInvoice(reversed);
+      synchronizeDetailInvoice(reversed);
       setReceipt(null);
       setReverseReason('');
       setConfirmingReverse(false);
@@ -567,7 +613,13 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   const isEmpty = invoicesList.length === 0;
 
   return (
-    <section id="historial" className="flex flex-col gap-5" aria-label="Historial de facturas">
+    <section
+      ref={historySectionRef}
+      id="historial"
+      className="flex flex-col gap-5"
+      aria-label="Historial de facturas"
+      tabIndex={-1}
+    >
       <InvoiceHistoryHeader loading={loading} meta={meta} />
       <InvoiceHistoryFilters
         filters={filters}
@@ -629,7 +681,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
               onGenerateInstitutionalReceipt={(invoiceId) => void generateInstitutionalReceipt(invoiceId)}
               onDownloadInstitutionalReceipt={(invoice) => void downloadInstitutionalReceipt(invoice)}
               onOpenReceipt={(invoiceId) => void openReceiptModal(invoiceId)}
-              onOpenDetail={(invoice) => void openInvoiceDetail(invoice)}
+              onOpenDetail={(invoice, trigger) => void openInvoiceDetail(invoice, true, trigger)}
               onPrepareInvoiceAction={(invoiceId, action) => void prepareInvoiceAction(invoiceId, action)}
               onReprint={requestReprintInvoice}
             />

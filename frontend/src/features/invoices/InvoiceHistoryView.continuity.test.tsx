@@ -1,13 +1,29 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MemoryRouter, useLocation } from 'react-router-dom';
+import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { apiClient, type AuthUser, type Invoice } from '../../lib/api';
+import { apiClient, institutionalReceipts, type AuthUser, type Invoice } from '../../lib/api';
 import { InvoiceHistoryView } from './InvoiceHistoryView';
+
+vi.mock('../../lib/download', async () => {
+  const actual = await vi.importActual<typeof import('../../lib/download')>('../../lib/download');
+  return { ...actual, openBlobInNewTab: vi.fn(), downloadBlob: vi.fn() };
+});
 
 function LocationProbe() {
   const location = useLocation();
   return <output aria-label="Ubicacion actual">{`${location.pathname}${location.search}`}</output>;
+}
+
+function HistoryNavigation() {
+  const navigate = useNavigate();
+  return (
+    <div>
+      <button type="button" onClick={() => navigate('/invoices?status=issued&invoice=71')}>Ir a factura 71</button>
+      <button type="button" onClick={() => navigate('/invoices?status=issued&invoice=72')}>Ir a factura 72</button>
+      <button type="button" onClick={() => navigate('/invoices?status=issued')}>Cerrar enlace de factura</button>
+    </div>
+  );
 }
 
 function renderHistory(initialEntry: string, user = historyUser()) {
@@ -18,6 +34,7 @@ function renderHistory(initialEntry: string, user = historyUser()) {
       <MemoryRouter initialEntries={[initialEntry]}>
         <InvoiceHistoryView user={user} onStatus={vi.fn()} />
         <LocationProbe />
+        <HistoryNavigation />
       </MemoryRouter>
     </QueryClientProvider>,
   );
@@ -59,7 +76,8 @@ describe('InvoiceHistoryView continuity', () => {
     await waitFor(() => {
       expect(apiClient.getInvoices).toHaveBeenCalledWith(expect.objectContaining({ status: 'issued', patient: 'Ana' }));
     });
-    fireEvent.click(await screen.findByRole('button', { name: /ver detalle de la factura 000-001-01-00000071/i }));
+    const detailTrigger = await screen.findByRole('button', { name: /ver detalle de la factura 000-001-01-00000071/i });
+    fireEvent.click(detailTrigger);
 
     expect(await screen.findByRole('dialog', { name: /factura 000-001-01-00000071/i })).toBeInTheDocument();
     expect(screen.getByText('Hemograma completo al emitir')).toBeInTheDocument();
@@ -71,6 +89,7 @@ describe('InvoiceHistoryView continuity', () => {
     fireEvent.click(screen.getByRole('button', { name: /cerrar panel/i }));
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('button', { name: /ver detalle de la factura 000-001-01-00000071/i })).toHaveFocus());
     expect(screen.getByLabelText('Ubicacion actual')).toHaveTextContent('/invoices?status=issued&q=Ana');
     expect(screen.getByLabelText(/paciente/i)).toHaveValue('Ana');
   });
@@ -154,6 +173,133 @@ describe('InvoiceHistoryView continuity', () => {
     expect(await screen.findByText('Factura no encontrada')).toBeInTheDocument();
     expect(screen.queryByText('Acciones autorizadas')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /anular|reversar|reimprimir|descargar/i })).not.toBeInTheDocument();
+  });
+
+  it('descarta una respuesta vieja cuando el deep-link cambia durante la carga', async () => {
+    const first = invoiceFixture({ id: 71, patient_name: 'Paciente anterior' });
+    const second = invoiceFixture({ id: 72, invoice_number: '000-001-01-00000072', patient_name: 'Paciente vigente' });
+    let resolveFirst!: (invoice: Invoice) => void;
+    let resolveSecond!: (invoice: Invoice) => void;
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [first, second],
+      meta: { current_page: 1, per_page: 10, total: 2 },
+    });
+    vi.spyOn(apiClient, 'getInvoice').mockImplementation((id) => new Promise((resolve) => {
+      if (id === 71) resolveFirst = resolve;
+      if (id === 72) resolveSecond = resolve;
+    }));
+
+    renderHistory('/invoices?status=issued&invoice=71');
+    await waitFor(() => expect(apiClient.getInvoice).toHaveBeenCalledWith(71));
+    fireEvent.click(screen.getByText('Ir a factura 72'));
+    await waitFor(() => expect(apiClient.getInvoice).toHaveBeenCalledWith(72));
+
+    await act(async () => resolveFirst(first));
+    expect(within(screen.getByRole('dialog')).queryByText('Paciente anterior')).not.toBeInTheDocument();
+    await act(async () => resolveSecond(second));
+
+    expect(await screen.findByRole('dialog', { name: /000-001-01-00000072/ })).toBeInTheDocument();
+    expect(within(screen.getByRole('dialog')).getByText('Paciente vigente')).toBeInTheDocument();
+  });
+
+  it('sincroniza el detalle después de anular y elimina acciones obsoletas', async () => {
+    const issued = invoiceFixture();
+    const voided = invoiceFixture({ status: 'void', void_reason: 'Registro duplicado' });
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({ data: [issued], meta: { current_page: 1, per_page: 10, total: 1 } });
+    vi.spyOn(apiClient, 'getInvoice').mockResolvedValue(issued);
+    vi.spyOn(apiClient, 'voidInvoice').mockResolvedValue(voided);
+    renderHistory('/invoices?invoice=71', historyAdministrator());
+
+    fireEvent.click(await screen.findByRole('button', { name: /anular factura/i }));
+    fireEvent.change(await screen.findByLabelText(/motivo de anulaci/i), { target: { value: 'Registro duplicado' } });
+    fireEvent.click(screen.getByRole('button', { name: /anular factura/i }));
+
+    await waitFor(() => expect(apiClient.voidInvoice).toHaveBeenCalled());
+    expect(await screen.findByText('Anulada')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /anular factura/i })).not.toBeInTheDocument();
+  });
+
+  it('sincroniza el detalle después de reversar y elimina acciones obsoletas', async () => {
+    const paid = invoiceFixture({ status: 'paid', paid_amount: '275.00', balance_due: '0.00' });
+    const reversed = invoiceFixture({ status: 'void', paid_amount: '0.00', balance_due: '275.00', void_reason: 'Pago equivocado' });
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({ data: [paid], meta: { current_page: 1, per_page: 10, total: 1 } });
+    vi.spyOn(apiClient, 'getInvoice').mockResolvedValue(paid);
+    vi.spyOn(apiClient, 'reverseInvoice').mockResolvedValue(reversed);
+    renderHistory('/invoices?invoice=71', historyAdministrator());
+
+    fireEvent.click(await screen.findByRole('button', { name: /reversar pago/i }));
+    fireEvent.change(await screen.findByLabelText(/motivo de reversa/i), { target: { value: 'Pago aplicado a otra factura' } });
+    fireEvent.click(screen.getByRole('button', { name: /reversar factura/i }));
+
+    await waitFor(() => expect(apiClient.reverseInvoice).toHaveBeenCalled());
+    expect(await screen.findByText('Anulada')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /reversar pago/i })).not.toBeInTheDocument();
+  });
+
+  it('sincroniza el recibo recién generado y retira Generar PDF', async () => {
+    const paid = invoiceFixture({ status: 'paid', paid_amount: '275.00', balance_due: '0.00', institutional_receipt: null });
+    const withReceipt = invoiceFixture({
+      status: 'paid', paid_amount: '275.00', balance_due: '0.00',
+      institutional_receipt: { id: 14, receipt_number_full: 'REC-A-00000014', status: 'issued', issued_at: '2026-07-10T14:35:00Z', reprint_count: 0, print_events_count: 0, has_print_events: false },
+    });
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({ data: [paid], meta: { current_page: 1, per_page: 10, total: 1 } });
+    vi.spyOn(apiClient, 'getInvoice')
+      .mockResolvedValueOnce(paid)
+      .mockResolvedValueOnce(paid)
+      .mockResolvedValueOnce(withReceipt);
+    vi.spyOn(institutionalReceipts, 'store').mockResolvedValue({ id: 14, receipt_number_full: 'REC-A-00000014' } as never);
+    vi.spyOn(apiClient, 'getInstitutionalReceiptPdf').mockResolvedValue(new Blob(['pdf'], { type: 'application/pdf' }));
+    vi.spyOn(apiClient, 'registerInstitutionalReceiptPrintEvent').mockResolvedValue({} as never);
+    renderHistory('/invoices?invoice=71', historyAdministrator());
+
+    fireEvent.click(await screen.findByRole('button', { name: /generar pdf/i }));
+
+    await waitFor(() => expect(institutionalReceipts.store).toHaveBeenCalled());
+    await waitFor(() => expect(screen.queryByRole('button', { name: /generar pdf/i })).not.toBeInTheDocument());
+    expect(screen.getByRole('button', { name: /ver recibo|reimprimir pdf/i })).toBeInTheDocument();
+  });
+
+  it('presenta pagos registrados y anulados con fecha y caja sin sumarlos como vigentes', async () => {
+    const detail = invoiceFixture({
+      status: 'paid', paid_amount: '200.00', balance_due: '75.00',
+      payments: [
+        { id: 1, invoice_id: 71, cash_session_id: 12, user_id: 8, method: 'cash', amount: '200.00', reference: null, status: 'posted', paid_at: '2026-07-10T14:35:00Z' },
+        { id: 2, invoice_id: 71, cash_session_id: 13, user_id: 8, method: 'card', amount: '75.00', reference: 'POS-81', status: 'void', paid_at: '2026-07-10T14:40:00Z', void_reason: 'Cobro duplicado' },
+      ],
+    });
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({ data: [detail], meta: { current_page: 1, per_page: 10, total: 1 } });
+    vi.spyOn(apiClient, 'getInvoice').mockResolvedValue(detail);
+    renderHistory('/invoices?invoice=71');
+
+    expect(await screen.findByText('Pago registrado')).toBeInTheDocument();
+    expect(screen.getByText('Pago anulado')).toBeInTheDocument();
+    expect(screen.getByText(/Caja #12/)).toBeInTheDocument();
+    expect(screen.getByText(/Caja #13/)).toBeInTheDocument();
+    expect(screen.getByLabelText('Monto anulado L 75.00')).toBeInTheDocument();
+  });
+
+  it('devuelve foco al historial al cerrar un deep-link sin disparador', async () => {
+    const invoice = invoiceFixture();
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({ data: [invoice], meta: { current_page: 1, per_page: 10, total: 1 } });
+    vi.spyOn(apiClient, 'getInvoice').mockResolvedValue(invoice);
+    renderHistory('/invoices?invoice=71');
+
+    fireEvent.click(await screen.findByRole('button', { name: /cerrar panel/i }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.getByLabelText('Historial de facturas')).toHaveFocus());
+  });
+
+  it('usa una presentación móvil sin ancho mínimo de escritorio ni overflow interno de celdas', async () => {
+    const invoice = invoiceFixture();
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({ data: [invoice], meta: { current_page: 1, per_page: 10, total: 1 } });
+    renderHistory('/invoices');
+
+    const table = await screen.findByRole('table', { name: /facturas filtradas/i });
+    expect(table).toHaveClass('min-w-0');
+    expect(table).toHaveClass('md:min-w-[980px]');
+    expect(table).toHaveClass('max-md:block');
+    expect(table.className).toContain('max-md:[&_td]:min-w-0');
   });
 });
 

@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MemoryRouter, useLocation } from 'react-router-dom';
+import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { apiClient, type AuthUser, type Service } from '../../lib/api';
 import { CatalogView } from './CatalogView';
@@ -8,6 +8,20 @@ import { CatalogView } from './CatalogView';
 function LocationProbe() {
   const location = useLocation();
   return <output aria-label="Ubicacion actual">{`${location.pathname}${location.search}`}</output>;
+}
+
+function CatalogNavigation() {
+  const navigate = useNavigate();
+  return (
+    <div>
+      <button type="button" onClick={() => navigate('/catalog?q=eritropoyetina')}>Catálogo sin panel</button>
+      <button type="button" onClick={() => navigate('/catalog?q=eritropoyetina&service=4')}>Editar servicio por URL</button>
+      <button type="button" onClick={() => navigate('/catalog?q=eritropoyetina&panel=new-service')}>Nuevo servicio por URL</button>
+      <button type="button" onClick={() => navigate('/catalog?q=eritropoyetina&panel=new-category')}>Nueva categoría por URL</button>
+      <button type="button" onClick={() => navigate(-1)}>Atrás en catálogo</button>
+      <button type="button" onClick={() => navigate(1)}>Adelante en catálogo</button>
+    </div>
+  );
 }
 
 describe('CatalogView continuity', () => {
@@ -32,6 +46,7 @@ describe('CatalogView continuity', () => {
         <MemoryRouter initialEntries={['/catalog?q=eritropoyetina']}>
           <CatalogView user={catalogManager()} onStatus={vi.fn()} />
           <LocationProbe />
+          <CatalogNavigation />
         </MemoryRouter>
       </QueryClientProvider>,
     );
@@ -63,6 +78,47 @@ describe('CatalogView continuity', () => {
     fireEvent.click(screen.getByRole('button', { name: /cerrar panel/i }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(screen.getByLabelText('Ubicacion actual')).toHaveTextContent('/catalog?q=eritropoyetina');
+  });
+
+  it('hidrata y cierra sheets al navegar por la URL completa', async () => {
+    vi.spyOn(apiClient, 'getCategories').mockResolvedValue([
+      { id: 2, name: 'Medicamentos', slug: 'medicamentos', active: true, sort_order: 1 },
+    ]);
+    vi.spyOn(apiClient, 'getAreas').mockResolvedValue([{ id: 3, name: 'Farmacia', slug: 'farmacia', active: true }]);
+    vi.spyOn(apiClient, 'getOperationalSettings').mockResolvedValue(null);
+    vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({ data: [erythropoietinFixture()], meta: { current_page: 1, per_page: 15, total: 1 } });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter initialEntries={['/catalog?q=eritropoyetina&panel=new-service']}>
+          <CatalogView user={catalogManager()} onStatus={vi.fn()} />
+          <LocationProbe />
+          <CatalogNavigation />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByRole('dialog', { name: /nuevo servicio/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Catálogo sin panel'));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    fireEvent.click(screen.getByText('Atrás en catálogo'));
+    expect(await screen.findByRole('dialog', { name: /nuevo servicio/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Adelante en catálogo'));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+
+    fireEvent.click(screen.getByText('Editar servicio por URL'));
+    expect(await screen.findByRole('dialog', { name: /editar servicio/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Catálogo sin panel'));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    fireEvent.click(screen.getByText('Atrás en catálogo'));
+    expect(await screen.findByRole('dialog', { name: /editar servicio/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Adelante en catálogo'));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+
+    fireEvent.click(screen.getByText('Nueva categoría por URL'));
+    expect(await screen.findByRole('dialog', { name: /nueva categor/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /cerrar panel/i }));
+    await waitFor(() => expect(screen.getByLabelText('Ubicacion actual')).toHaveTextContent('/catalog?q=eritropoyetina'));
   });
 });
 

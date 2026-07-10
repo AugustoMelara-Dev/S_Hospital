@@ -117,23 +117,37 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
 
   useEffect(() => {
     const serviceId = positiveUrlInteger(searchParams.get('service'), 0);
-    if (!serviceId) return;
-    const service = services.find((candidate) => candidate.id === serviceId);
-    if (service && editingService?.id !== serviceId) {
-      setEditingService(service);
-      setServiceSheetOpen(true);
-    }
-  }, [editingService?.id, searchParams, services]);
-
-  useEffect(() => {
     const categoryId = positiveUrlInteger(searchParams.get('edit_category'), 0);
-    if (!categoryId) return;
-    const category = categories.find((candidate) => candidate.id === categoryId);
-    if (category && editingCategory?.id !== categoryId) {
-      setEditingCategory(category);
-      setCategorySheetOpen(true);
+    const panel = searchParams.get('panel');
+
+    if (serviceId) {
+      const service = services.find((candidate) => candidate.id === serviceId);
+      if (service) {
+        setEditingService(service);
+        setServiceSheetOpen(true);
+      }
+    } else if (panel === 'new-service') {
+      setEditingService(null);
+      setServiceSheetOpen(true);
+    } else {
+      setEditingService(null);
+      setServiceSheetOpen(false);
     }
-  }, [categories, editingCategory?.id, searchParams]);
+
+    if (categoryId) {
+      const category = categories.find((candidate) => candidate.id === categoryId);
+      if (category) {
+        setEditingCategory(category);
+        setCategorySheetOpen(true);
+      }
+    } else if (panel === 'new-category') {
+      setEditingCategory(null);
+      setCategorySheetOpen(true);
+    } else {
+      setEditingCategory(null);
+      setCategorySheetOpen(false);
+    }
+  }, [categories, searchParams, services]);
 
   useEffect(() => {
     if (loadError) {

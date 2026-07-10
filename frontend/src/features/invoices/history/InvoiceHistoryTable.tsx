@@ -24,7 +24,7 @@ type InvoiceHistoryTableProps = {
   onDownloadInstitutionalReceipt: (invoice: Invoice) => void;
   onGenerateInstitutionalReceipt: (invoiceId: number) => void;
   onOpenReceipt: (invoiceId: number) => void;
-  onOpenDetail: (invoice: Invoice) => void;
+  onOpenDetail: (invoice: Invoice, trigger: HTMLButtonElement) => void;
   onPrepareInvoiceAction: (invoiceId: number, action: 'void' | 'reverse') => void;
   onReprint: (invoice: Invoice) => void;
 };
@@ -58,16 +58,17 @@ export function InvoiceHistoryTable({
     {
       key: 'invoice_number',
       header: 'Factura',
-      cellClassName: 'max-w-56 break-words text-sm font-semibold tabular-nums',
+      cellClassName: "max-w-56 break-words text-sm font-semibold tabular-nums max-md:col-span-2 max-md:flex max-md:items-center max-md:gap-2 max-md:before:text-xs max-md:before:font-normal max-md:before:text-muted-foreground max-md:before:content-['Factura']",
       hideable: false,
       render: (invoice) => (
         <div className="flex items-start gap-2">
           <ReceiptText data-icon aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-secondary" />
           <button
             type="button"
+            data-invoice-detail-trigger={invoice.id}
             className="min-h-11 rounded-sm text-left font-semibold text-foreground underline-offset-4 hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:min-h-9"
             aria-label={`Ver detalle de la factura ${invoice.invoice_number}`}
-            onClick={() => onOpenDetail(invoice)}
+            onClick={(event) => onOpenDetail(invoice, event.currentTarget)}
           >
             {invoice.invoice_number}
           </button>
@@ -77,13 +78,13 @@ export function InvoiceHistoryTable({
     {
       key: 'issued_at',
       header: 'Fecha',
-      cellClassName: 'whitespace-nowrap',
+      cellClassName: "whitespace-nowrap max-md:flex max-md:flex-col max-md:before:text-xs max-md:before:text-muted-foreground max-md:before:content-['Fecha']",
       render: (invoice) => formatDate(invoice.issued_at),
     },
     {
       key: 'patient_name',
       header: 'Paciente',
-      cellClassName: 'max-w-60 break-words font-medium',
+      cellClassName: "max-w-60 break-words font-medium max-md:col-span-2 max-md:flex max-md:flex-col max-md:before:text-xs max-md:before:font-normal max-md:before:text-muted-foreground max-md:before:content-['Paciente']",
       hideable: false,
       render: (invoice) => (
         <div className="flex items-start gap-2">
@@ -92,12 +93,13 @@ export function InvoiceHistoryTable({
         </div>
       ),
     },
-    { key: 'total', header: 'Total', numeric: true, render: (invoice) => moneyLabel(invoice.total) },
-    { key: 'paid_amount', header: 'Pagado', numeric: true, render: (invoice) => moneyLabel(invoice.paid_amount) },
+    { key: 'total', header: 'Total', numeric: true, cellClassName: "max-md:flex max-md:flex-col max-md:items-start max-md:text-left max-md:before:text-xs max-md:before:text-muted-foreground max-md:before:content-['Total']", render: (invoice) => moneyLabel(invoice.total) },
+    { key: 'paid_amount', header: 'Pagado', numeric: true, cellClassName: "max-md:flex max-md:flex-col max-md:items-start max-md:text-left max-md:before:text-xs max-md:before:text-muted-foreground max-md:before:content-['Pagado']", render: (invoice) => moneyLabel(invoice.paid_amount) },
     {
       key: 'balance_due',
       header: 'Saldo',
       numeric: true,
+      cellClassName: "max-md:flex max-md:flex-col max-md:items-start max-md:text-left max-md:before:text-xs max-md:before:text-muted-foreground max-md:before:content-['Saldo']",
       render: (invoice) => (
         <span className={invoice.status === 'partial' || invoice.status === 'issued' ? 'font-semibold text-warning-foreground' : undefined}>
           {moneyLabel(invoice.balance_due)}
@@ -107,19 +109,20 @@ export function InvoiceHistoryTable({
     {
       key: 'status',
       header: 'Estado',
+      cellClassName: "max-md:flex max-md:flex-col max-md:items-start max-md:before:text-xs max-md:before:text-muted-foreground max-md:before:content-['Estado']",
       render: (invoice) => <InvoiceStatusBadge status={invoice.status} />,
     },
     {
       key: 'receipt',
       header: 'Recibo',
-      cellClassName: 'max-w-48 break-words text-xs',
+      cellClassName: "max-w-48 break-words text-xs max-md:col-span-2 max-md:flex max-md:flex-col max-md:before:text-xs max-md:before:text-muted-foreground max-md:before:content-['Recibo']",
       render: (invoice) => <ReceiptTrace invoice={invoice} />,
     },
     {
       key: 'actions',
       header: 'Acciones',
       headerClassName: 'text-right',
-      cellClassName: 'text-right',
+      cellClassName: "text-right max-md:col-span-2 max-md:flex max-md:justify-end",
       hideable: false,
       render: (invoice) => {
         const isOwn = isOwnInvoiceFromToday(invoice);
@@ -224,7 +227,7 @@ export function InvoiceHistoryTable({
     <DataTable
       caption="Facturas filtradas con estado, montos y acciones autorizadas."
       containerLabel="Listado de facturas"
-      tableClassName="min-w-[980px]"
+      tableClassName="w-full min-w-0 md:min-w-[980px] max-md:block max-md:[&_thead]:sr-only max-md:[&_tbody]:grid max-md:[&_tbody]:gap-3 max-md:[&_tr]:grid max-md:[&_tr]:grid-cols-2 max-md:[&_tr]:rounded-md max-md:[&_tr]:border max-md:[&_tr]:border-border max-md:[&_tr]:bg-card max-md:[&_tr]:p-3 max-md:[&_td]:min-w-0 max-md:[&_td]:border-0 max-md:[&_td]:p-1.5"
       rows={invoices}
       columns={columns}
       getRowKey={(invoice) => invoice.id}
