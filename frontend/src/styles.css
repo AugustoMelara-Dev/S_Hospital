@@ -34,6 +34,10 @@ html.dark {
     -webkit-font-smoothing: antialiased;
     -webkit-tap-highlight-color: transparent;
     color-scheme: light;
+    background-image:
+      radial-gradient(circle at 88% 2%, rgb(8 127 113 / 0.07), transparent 24rem),
+      linear-gradient(180deg, #f4f8f7 0, var(--color-background) 22rem);
+    background-attachment: fixed;
   }
 
   html.dark body {
@@ -48,7 +52,7 @@ html.dark {
   }
 
   :where(h1, h2, h3) {
-    letter-spacing: 0;
+    letter-spacing: -0.025em;
     text-wrap: balance;
   }
 
@@ -76,6 +80,45 @@ html.dark {
     outline: 2px solid var(--color-ring);
     outline-offset: 2px;
   }
+
+  [data-slot="page-header"] {
+    position: relative;
+    overflow: hidden;
+    border: 0;
+    border-radius: 1rem;
+    background: linear-gradient(125deg, #103746 0%, #164b59 62%, #0d6b67 125%);
+    color: #f5fbfa;
+    padding: 1.25rem 1.35rem 1.4rem;
+    box-shadow: 0 22px 50px -38px rgb(7 28 36 / 0.75);
+  }
+
+  [data-slot="page-header"]::after {
+    position: absolute;
+    inset: auto -3rem -5rem auto;
+    width: 14rem;
+    height: 14rem;
+    border: 1px solid rgb(116 225 207 / 0.2);
+    border-radius: 999px;
+    content: "";
+  }
+
+  [data-slot="page-header-title"] { color: #ffffff; }
+  [data-slot="page-header-description"] { color: #c9dcda; }
+  [data-slot="page-header-actions"], [data-slot="page-header-secondary"], [data-slot="page-header-top"] { position: relative; z-index: 1; }
+
+  [data-slot="card"] {
+    border-color: rgb(203 216 213 / 0.82);
+    box-shadow: var(--shadow-panel);
+    transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+  }
+
+  [data-slot="card"]:hover { border-color: rgb(8 127 113 / 0.28); box-shadow: 0 22px 48px -36px rgb(12 39 51 / 0.48); }
+  [data-slot="card-title"] { letter-spacing: -0.02em; }
+  [data-slot="button"] { transition: transform 120ms ease, background-color 160ms ease, border-color 160ms ease, color 160ms ease; }
+  [data-slot="button"]:active { transform: translateY(1px) scale(0.985); }
+  :where(table) thead { background: color-mix(in srgb, var(--color-muted) 72%, transparent); }
+  :where(table) tbody tr { transition: background-color 140ms ease; }
+  :where(table) tbody tr:hover { background: color-mix(in srgb, var(--color-accent) 58%, transparent); }
 
   .status-success {
     border-color: color-mix(in srgb, var(--color-success) 35%, transparent);

@@ -33,11 +33,11 @@ export function ClinicalRail({ activeItem, collapsed, hospitalName, logoUrl, nav
       data-testid="clinical-rail"
       data-collapsed={collapsed ? 'true' : 'false'}
       className={cn(
-        'print-hidden hidden border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:fixed lg:inset-y-0 lg:z-20 lg:flex lg:flex-col',
-        collapsed ? 'lg:w-[72px]' : 'lg:w-[248px]',
+        'print-hidden hidden border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-[12px_0_40px_-28px_rgba(4,20,28,.9)] transition-[width] duration-200 lg:fixed lg:inset-y-0 lg:z-30 lg:flex lg:flex-col',
+        collapsed ? 'lg:w-[76px]' : 'lg:w-[264px]',
       )}
     >
-      <div className={cn('flex min-h-20 items-center border-b border-sidebar-border', collapsed ? 'justify-center px-2' : 'gap-3 px-4')}>
+      <div className={cn('flex min-h-24 items-center border-b border-sidebar-border', collapsed ? 'justify-center px-2' : 'gap-3 px-5')}>
         {logoUrl ? (
           <img src={logoUrl} alt={hospitalName} title={collapsed ? hospitalName : undefined} className="size-11 rounded-md border border-sidebar-border bg-card object-contain p-1" />
         ) : (
@@ -45,7 +45,7 @@ export function ClinicalRail({ activeItem, collapsed, hospitalName, logoUrl, nav
             role="img"
             aria-label={hospitalName}
             title={collapsed ? hospitalName : undefined}
-            className="flex size-11 shrink-0 items-center justify-center rounded-md border border-sidebar-primary/30 text-sidebar-primary"
+            className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-sidebar-primary text-sidebar-primary-foreground shadow-lg"
           >
             {collapsed ? (
               <span className="text-[10px] font-bold tracking-tight" aria-hidden="true">{hospitalInitials(hospitalName)}</span>
@@ -57,13 +57,13 @@ export function ClinicalRail({ activeItem, collapsed, hospitalName, logoUrl, nav
         {!collapsed ? (
           <div className="min-w-0">
             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/70">Consola clínica</p>
-            <p data-testid="clinical-desktop-identity" className="truncate text-sm font-semibold" title={hospitalName}>{hospitalName}</p>
+            <p data-testid="clinical-desktop-identity" className="mt-1 truncate text-sm font-semibold text-white" title={hospitalName}>{hospitalName}</p>
           </div>
         ) : null}
       </div>
 
       {sections.length > 0 ? (
-        <nav aria-label="Navegación principal" className="min-h-0 flex-1 overflow-y-auto px-2 py-4">
+        <nav aria-label="Navegación principal" className="min-h-0 flex-1 overflow-y-auto px-3 py-5">
           <TooltipProvider>
             {sections.map((section) => (
               <section key={section.id} aria-labelledby={`clinical-rail-${section.id}`} className="mb-5">
@@ -80,11 +80,11 @@ export function ClinicalRail({ activeItem, collapsed, hospitalName, logoUrl, nav
                         aria-current={active ? 'page' : undefined}
                         data-active={active ? 'true' : 'false'}
                         className={cn(
-                          'flex min-h-11 items-center rounded-md border border-transparent text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-sidebar-ring',
+                          'group relative flex min-h-11 items-center rounded-lg border border-transparent text-sm font-medium outline-none transition-all focus-visible:ring-2 focus-visible:ring-sidebar-ring',
                           collapsed ? 'justify-center px-2' : 'gap-3 px-3',
                           active
-                            ? 'border-sidebar-primary/35 bg-sidebar-primary/15 font-semibold text-sidebar-primary'
-                            : 'text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
+                            ? 'border-sidebar-primary/20 bg-sidebar-primary/15 font-semibold text-white shadow-[inset_3px_0_0_var(--color-sidebar-primary)]'
+                            : 'text-sidebar-foreground/70 hover:translate-x-0.5 hover:bg-sidebar-accent hover:text-white',
                         )}
                       >
                         <Icon className="size-5 shrink-0" aria-hidden="true" />
@@ -116,7 +116,7 @@ export function ClinicalRail({ activeItem, collapsed, hospitalName, logoUrl, nav
 
       <div className="mt-auto border-t border-sidebar-border p-3">
         {!collapsed ? (
-          <div className="mb-3 min-w-0 rounded-md bg-sidebar-accent/70 p-3">
+          <div className="mb-3 min-w-0 rounded-xl border border-sidebar-border bg-sidebar-accent/75 p-3">
             <p className="truncate text-sm font-semibold">{user.name}</p>
             <p className="truncate text-xs text-sidebar-foreground/70">{roleListLabel(user.roles)}</p>
           </div>

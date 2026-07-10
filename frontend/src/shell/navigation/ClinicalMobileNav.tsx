@@ -22,7 +22,7 @@ export function ClinicalMobileNav({ activeItem, navigation, onOpenChange, open }
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <nav
         aria-label="Accesos móviles"
-        className="print-hidden fixed inset-x-0 bottom-0 z-30 flex min-h-16 items-stretch border-t border-border bg-card px-1 pb-[env(safe-area-inset-bottom)] lg:hidden"
+        className="print-hidden fixed inset-x-0 bottom-0 z-30 flex min-h-16 items-stretch border-t border-white/10 bg-[#0c2733] px-1 text-white shadow-[0_-12px_30px_-24px_rgba(4,20,28,.9)] pb-[env(safe-area-inset-bottom)] lg:hidden"
       >
         {dockItems.length === 0 ? (
           <p className="flex flex-1 items-center justify-center px-4 text-center text-xs text-muted-foreground">
@@ -37,7 +37,7 @@ export function ClinicalMobileNav({ activeItem, navigation, onOpenChange, open }
               key={item.id}
               to={item.path}
               aria-current={active ? 'page' : undefined}
-              className={cn('flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-md px-1 py-2 text-[10px] font-medium', active ? 'text-secondary' : 'text-muted-foreground')}
+              className={cn('flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-lg px-1 py-2 text-[10px] font-medium', active ? 'bg-[#55d3bf]/15 text-[#7fe3d4]' : 'text-white/60')}
             >
               <Icon className="size-5" aria-hidden="true" />
               <span className="max-w-full truncate">{item.label}</span>
@@ -46,7 +46,7 @@ export function ClinicalMobileNav({ activeItem, navigation, onOpenChange, open }
         })}
         {remainingItems.length > 0 ? (
           <DialogPrimitive.Trigger asChild>
-            <button ref={moreButtonRef} type="button" className="flex min-w-14 flex-col items-center justify-center gap-1 rounded-md px-2 py-2 text-[10px] font-medium text-muted-foreground" aria-label="Más destinos">
+            <button ref={moreButtonRef} type="button" className="flex min-w-14 flex-col items-center justify-center gap-1 rounded-lg px-2 py-2 text-[10px] font-medium text-white/60" aria-label="Más destinos">
               <Menu className="size-5" aria-hidden="true" />
               <span>Más</span>
             </button>
