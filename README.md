@@ -197,6 +197,11 @@ npm run e2e
 
 El E2E de MariaDB limpio esta en `scripts\run_release_e2e_mariadb.ps1` y exige `-SeedPassword` o `E2E_RELEASE_PASSWORD`.
 
+La matriz administrativa `e2e/refactor-total.spec.ts` solo se habilita contra
+un servidor real cuando se provisionan `REFACTOR_TOTAL_E2E_USERNAME` y
+`REFACTOR_TOTAL_E2E_PASSWORD` con una cuenta temporal. No contiene credenciales
+predeterminadas y se omite con una razon explicita si faltan esas variables.
+
 ## Build y operacion productiva
 
 Construir y arrancar manualmente desde fuentes:

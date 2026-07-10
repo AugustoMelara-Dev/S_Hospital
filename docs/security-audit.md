@@ -13,13 +13,13 @@ Roles oficiales del sistema (definidos en `RolesAndPermissionsSeeder`):
 | `cajero` | Operación local: caja, facturación, cobros, reimpresión. |
 | `auditor` | Solo lectura de auditoría y reportes. |
 | `catalog` | Gestión de catálogo de servicios. |
-| `soporte` | Soporte técnico, incluye `receipt_settings.advanced`. |
+| `soporte` | Diagnóstico técnico local; puede conservar permisos legacy de compatibilidad, pero no obtiene controles manuales de impresión en la UI. |
 
 Permisos clave (no exhaustivo):
 
 - `users.assign_admin_role` — solo admin y root.
 - `backups.restore` - no operativo: no se siembra, se oculta si existe como legado y ninguna policy lo autoriza desde la app.
-- `receipt_settings.advanced` — soporte (nuevo en este refactor) — desbloquea los 8 campos manuales de impresión.
+- `receipt_settings.advanced` — permiso legacy conservado para compatibilidad y auditoría de API; no desbloquea campos manuales en la UI vigente.
 - `fiscal.sequences.reset` — admin (nuevo) — para reiniciar correlativo fiscal cuando no hay facturas emitidas.
 - `settings.fiscal.update`, `receipts.void`, `invoices.reverse`, `payments.void`, `cash.close_any`, `invoices.operate_any` — supervisor/admin (consolidado en `RoleCatalog::ELEVATED_ROLE_PERMISSIONS`).
 

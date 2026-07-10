@@ -118,8 +118,8 @@ Pruebas clave esperadas:
 
 - `FiscalSettingsTest::test_fiscal_settings_update_rejects_legacy_receipt_paper_size_field`
 - `InvoiceCreationTest::test_invoice_receipt_paper_size_uses_resolved_print_profile`
-- pruebas de `InstitutionalReceiptSettingsView` donde el usuario normal no ve
-  campos avanzados y soporte con `receipt_settings.advanced` si puede verlos.
+- pruebas de `InstitutionalReceiptSettingsView` donde ningun rol ve campos
+  avanzados y el papel operativo se limita a Carta, Media carta y A5.
 
 ## Criterios de aceptacion
 

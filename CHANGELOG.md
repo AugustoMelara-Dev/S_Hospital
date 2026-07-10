@@ -1,5 +1,31 @@
 # Changelog - Sistema de Caja Hospitalaria
 
+## 2026-07-09 - Reescritura total, Fase 6: instalacion y cierre de liberacion
+
+- Reemplaza el instalador legado por un flujo PowerShell reproducible para
+  Docker, produccion LAN y paquetes offline, sin contrasenas predeterminadas.
+- Empaqueta y valida versiones exactas de backend, worker, scheduler, Nginx,
+  MariaDB y Soketi; el cargador offline falla de forma cerrada si falta una
+  imagen o etiqueta requerida.
+- Documenta variables de entorno, migraciones, seeders, administrador inicial,
+  desarrollo, pruebas, build, produccion, LAN, respaldos y aceptacion de sitio.
+- Migra los recorridos E2E antiguos al resultado de cobro y PDF institucional;
+  una factura pendiente no ofrece recibo y toda reimpresion exige motivo
+  auditado.
+- Retira credenciales fijas del E2E administrativo: solo acepta una cuenta
+  temporal inyectada por entorno y omite el gate con una razon explicita si no
+  fue provisionada.
+- Endurece respaldos ante respuestas malformadas para evitar que un payload
+  invalido derribe la pantalla completa.
+- Regenera matrices de accesibilidad y capturas con los flujos vigentes para
+  seis viewports, desde 320x640 hasta 1920x1080.
+- Verificacion final: Laravel 860 pruebas / 5641 aserciones (13 skips de
+  entorno); frontend 129 archivos / 852 pruebas; cobertura 79.45% lineas,
+  78.17% funciones, 74.11% ramas y 77.86% sentencias; 53 E2E mock aprobados,
+  22 matrices E2E de accesibilidad aprobadas y 2 E2E reales sobre MariaDB;
+  Pint, PHPStan, lint, typecheck, build, auditorias de dependencias e instalador
+  en verde.
+
 ## 2026-07-09 - Reescritura total, Fase 5: integridad administrativa
 
 - Refuerza `AuditLog` como modelo append-only: Eloquent rechaza actualizaciones

@@ -5,37 +5,45 @@ evidence for the current branch, not a production approval.
 
 Status date: 2026-07-09
 Branch: `codex/refactor-total`
-Production approval: NO
+Engineering release candidate: YES
+Hospital production approval: PENDING SITE ACCEPTANCE
 
 ## Current Focus
 
-Phases 1 through 5 of the approved total rewrite close printing, payment
-outcomes, cash reconciliation, report semantics and administrative integrity.
-Audit records are append-only at model and MariaDB layers. Role permission
-changes and their audit event are one transaction. Backup and user-management
-security gates remain covered while final installation/release E2E work stays
-open for Phase 6.
+Phases 1 through 6 of the total rewrite are closed as an engineering release
+candidate. Printing exposes only Carta, Media carta and A5; payment outcomes,
+cash reconciliation, report semantics, audit integrity, RBAC, backups and the
+offline LAN installer are covered by automated gates. Audit records are
+append-only at model and MariaDB layers, and privilege changes commit together
+with their audit event.
 
-The latest verification pass moved from local frontend-only evidence to the
-Docker stack. It confirmed the containerized Laravel, MySQL/MariaDB and
-frontend services can boot, migrate, seed, run focused backend gates, and pass
-the frontend lint/typecheck/test/build path.
+Fresh verification includes a clean production migration/seed on MariaDB, the
+complete Laravel suite, the complete frontend coverage suite, a real
+MariaDB/Nginx browser journey, the mocked browser regression suite, three full
+accessibility matrices, dependency audits, the production build and installer
+contract/self-tests. The generated reports and screenshots under `qa/` are the
+reviewable evidence for this candidate.
 
-The focused Playwright gates remain mocked and non-mutating. They prove frontend
-contracts, RBAC visibility, payload shape, and accessible UI behavior. They do
-not replace selected-mode browser validation, printer, backup scheduler,
-restore dry-run, or physical print validation.
-
-The current release target has been narrowed to a stable single-machine local
-installation. Multi-PC LAN proof is no longer treated as the next engineering
-blocker, but fiscal integrity, audit trails, institutional receipts, local
-backups, restore evidence and printer/PDF validation remain required before any
-production approval.
+This is not a claim that an unknown hospital printer or LAN topology has been
+physically accepted. Before cutover, the hospital must execute the documented
+site checklist with its real printer, server IP, client computers and restore
+media. That operational sign-off is external to the source-code gates and is
+the only reason hospital production approval remains pending.
 
 ## Verified Commands
 
 | Date | Command | Result | Notes |
 |---|---|---|---|
+| 2026-07-09 | `npm run test:coverage` | PASS, 129 files / 852 tests | Final V8 coverage: 79.45% lines, 78.17% functions, 74.11% branches and 77.86% statements. |
+| 2026-07-09 | `npm run lint`, `npm run typecheck`, `npm run build` | PASS | Final ESLint, strict TypeScript and Vite production build; 2729 modules transformed. |
+| 2026-07-09 | `npx playwright test <mocked specs> --workers=1` | PASS, 53 passed / 9 skipped | Complete self-contained browser regression gate. Skips are explicit real-environment gates requiring temporary credentials or mutation opt-in. |
+| 2026-07-09 | `npx playwright test e2e/v1-1-full-a11y.spec.ts e2e/v1-2-full-a11y.spec.ts e2e/v1-2-visible-ui-a11y.spec.ts --workers=1` | PASS, 22 tests | Three complete accessibility/UI matrices across six viewports plus dangerous-action cancellation and final screenshot evidence. Reports contain 79, 85 and 79 passed checks. |
+| 2026-07-09 | `powershell -File scripts/run_release_e2e_mariadb.ps1 ...` | PASS, 2 tests | Real Nginx + Laravel + MariaDB journey: invoice, payment, institutional PDF, persistence, reports and RBAC. |
+| 2026-07-09 | `docker compose exec -T backend php artisan test` | PASS, 860 passed / 13 skipped | 5641 assertions across the complete Laravel suite. |
+| 2026-07-09 | `docker compose exec -T backend vendor/bin/pint --test`; `vendor/bin/phpstan analyse --memory-limit=1G` | PASS | 432 formatted files; static analysis completed without errors. |
+| 2026-07-09 | clean isolated production install | PASS | Fresh MariaDB volumes migrated and seeded in production mode; backend healthy, 122 services, 3 paper profiles and 1 active receipt series. No default production user was seeded. |
+| 2026-07-09 | `powershell -File scripts/offline_release_contract.test.ps1`; installer self-test | PASS | Offline image manifest/loader contract and 36/36 installer checks. |
+| 2026-07-09 | dependency and secret guards | PASS | npm production audit: 0 vulnerabilities; Composer audit: no advisories; offline dependency audit: 0 critical/0 info; pre-commit secret guard passed. |
 | 2026-07-09 | `docker compose exec -T backend php artisan test --compact tests/Feature/AuditLogTest.php tests/Feature/RoleManagementTest.php tests/Feature/UserManagementTest.php tests/Feature/BackupWorkflowTest.php tests/Feature/PruneCommandsTest.php` | PASS, 100 tests / 450 assertions, 1 skipped | Append-only audit, atomic role changes, user guards, encrypted backups, safe downloads and privileged pruning. |
 | 2026-07-09 | `npm.cmd run test -- UsersView PermissionMatrix RoleFormDialog UserFormDialog BackupsView BackupHistoryTable backupPresentation ...` | PASS, 7 files / 109 tests | Users, risk-labelled permissions and backup operator UI. |
 | 2026-07-09 | `npx.cmd playwright test e2e/production-readiness.spec.ts` | FAIL, 2 passed / 2 failed | Historical mocked suite drift: legacy receipt-preview expectations conflict with the new institutional outcome, and its current-session mock omitted `scope=closable`. Assigned to Phase 6; this is not production approval. |

@@ -1,5 +1,8 @@
 # Refactor UX/UI - cierre final de aceptacion
 
+> Registro historico de la ronda 2026-07-01. El estado vigente de la
+> reescritura total esta en `docs/testing-report.md` y `CHANGELOG.md`.
+
 Fecha de cierre: 2026-07-01  
 Branch: `refactor/ux-system-overhaul`  
 Base usada para comparacion: `main` en `C:\tmp\S_Hospital_main_baseline`
@@ -29,7 +32,7 @@ Base usada para comparacion: `main` en `C:\tmp\S_Hospital_main_baseline`
 | Backend tests | `php artisan test` | OK, 744 passed, 12 skipped, 4835 assertions |
 | PruneCommandsTest | `php artisan test --filter=PruneCommandsTest` | OK, 6 passed, 1 skipped, 11 assertions |
 | CloseCashSessionTest | `php artisan test --filter=CloseCashSessionTest` | OK, 3 passed, 11 assertions |
-| Receipt advanced fields | `php artisan test --filter=ReceiptPrintProfileAdvancedFieldsTest` | OK, 3 passed, 17 assertions |
+| Compatibilidad backend de perfiles historicos | `php artisan test --filter=ReceiptPrintProfileAdvancedFieldsTest` | OK, 3 passed, 17 assertions; estos campos no se exponen en la UI vigente. |
 | Fiscal sequences | `php artisan test --filter=FiscalSequenceTest` | OK, 12 passed, 38 assertions |
 | Fiscal reason/reset | `php artisan test --filter=UpdateFiscalSequenceReasonTest` | OK, 2 passed, 8 assertions |
 | Route list | `php artisan route:list` | OK, 112 routes listed |
@@ -51,8 +54,8 @@ Evidencia local: `C:\tmp\baseline-main-NewInvoiceView.txt`, `C:\tmp\baseline-mai
 
 - `frontend/src/features/invoices/NewInvoiceView.test.tsx`: pasa aislado; cubre no emitir sin paciente, no emitir sin servicios, prevencion de doble emision, error 422 sin perder carrito, y pantalla de exito con numero, paciente, total, estado, `Imprimir`, `Nueva factura`, `Ver detalle`.
 - `frontend/src/features/invoices/components/NewInvoiceViewLayout.test.tsx`: valida layout sin boton flotante que tape contenido y texto de confirmacion correcto.
-- `frontend/src/features/receipt-settings/InstitutionalReceiptSettingsView.test.tsx`: valida que usuario normal no renderiza campos manuales y que solo soporte con `receipt_settings.advanced` abre el acordeon avanzado.
-- `backend/tests/Feature/ReceiptPrintProfileAdvancedFieldsTest.php`: request forzado con campos manuales sin permiso devuelve 403; con permiso guarda y audita.
+- `frontend/src/features/receipt-settings/InstitutionalReceiptSettingsView.test.tsx`: valida que la interfaz solo ofrece opciones operativas de papel y no renderiza campos manuales para ningun rol.
+- `backend/tests/Feature/ReceiptPrintProfileAdvancedFieldsTest.php`: conserva proteccion y auditoria para payloads historicos de compatibilidad; la UI vigente no los emite.
 - `backend/tests/Feature/Cash/CloseCashSessionTest.php` y `backend/tests/Feature/CloseCashSessionDifferenceTest.php`: cierre con diferencia exige motivo y audita.
 - `backend/tests/Feature/FiscalSequenceTest.php` y `backend/tests/Feature/UpdateFiscalSequenceReasonTest.php`: cambios fiscales criticos exigen motivo/permiso/auditoria.
 
@@ -63,6 +66,7 @@ Screenshots guardados en `qa/refactor/screenshots/`:
 - `dashboard.png`
 - `billing-new-empty.png`
 - `billing-new-cart.png`
+- `billing-payment.png`
 - `billing-success.png`
 - `cashbox-closed.png`
 - `cashbox-open.png`
@@ -77,7 +81,7 @@ Screenshots guardados en `qa/refactor/screenshots/`:
 - `backups.png`
 - `settings-fiscal.png`
 - `receipt-settings-normal.png`
-- `receipt-settings-advanced.png`
+- `receipt-settings-a5.png`
 - `admin-users.png`
 
 `/admin/roles` no tiene ruta SPA separada en esta rama; roles se gestionan dentro de `/admin/users`, por eso no se genero `admin-roles.png`.
@@ -87,7 +91,7 @@ Screenshots guardados en `qa/refactor/screenshots/`:
 | Area | Estado final |
 |---|---|
 | Facturacion | OK: transaccion backend, idempotencia, snapshot de precio/nombre/impuesto, servicio inactivo bloqueado, doble submit bloqueado en UI y backend. |
-| Recibos/impresion | OK: usuario normal no ve campos manuales; backend bloquea payload avanzado sin permiso; soporte ve acordeon avanzado; test print no consume correlativo. |
+| Recibos/impresion | OK: ningun rol configura medidas, margenes, fuente o escala; el usuario elige Carta, Media carta o A5 y el perfil institucional resuelve el diseño; test print no consume correlativo. |
 | Caja | OK: abrir/cerrar cubierto; diferencia exige motivo; doble cierre/error claro cubierto por tests de dominio. |
 | Reportes | OK: maximo 3 vistas (`Ejecutivo`, `Caja`, `Auditoria`); exportaciones pasan por permisos y filtros. |
 | Catalogo | OK: tabla compacta; cambio de precio exige motivo, historial y audit; servicio facturado no se elimina como flujo normal. |
