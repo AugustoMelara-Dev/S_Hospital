@@ -128,8 +128,10 @@ foreach ($line in Get-StagedAddedLines -Root $resolvedRoot) {
 
     if ($line -match "(?i)\bHOSPITAL_INITIAL_ADMIN_PASSWORD\s*=\s*(.+)$") {
         $value = $Matches[1].Trim()
+        $isRuntimeValue = $value -match '^\$[A-Za-z_][A-Za-z0-9_]*$' -or
+            $value -match '^\[Runtime\.InteropServices\.Marshal\]::PtrToStringBSTR\('
 
-        if (-not (Is-PlaceholderValue -Value $value)) {
+        if (-not (Is-PlaceholderValue -Value $value) -and -not $isRuntimeValue) {
             $errors.Add("Staged diff contains HOSPITAL_INITIAL_ADMIN_PASSWORD.")
         }
     }

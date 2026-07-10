@@ -1019,14 +1019,27 @@ try {
         else {
             Write-Host " [1] Docker (no disponible actualmente)" -ForegroundColor DarkGray
         }
-        Write-Host " [2] Bare-Metal Windows (PHP 8.2+ y MySQL/MariaDB locales)" -ForegroundColor White
+        if (-not $isOfflineMode) {
+            Write-Host " [2] Bare-Metal Windows (requiere el repositorio completo, PHP 8.2+ y MySQL/MariaDB)" -ForegroundColor White
+        }
+        else {
+            Write-Host "     El paquete offline admite unicamente la instalacion Docker incluida." -ForegroundColor Gray
+        }
         Write-Host "----------------------------------------------------------------------" -ForegroundColor Gray
 
         $installChoice = ""
-        while ($installChoice -notin @("1", "2")) {
-            $installChoice = Read-Host "Ingrese una opcion [1-2]"
+        $validInstallChoices = if ($isOfflineMode) { @("1") } else { @("1", "2") }
+        $installPrompt = if ($isOfflineMode) { "Ingrese la opcion [1]" } else { "Ingrese una opcion [1-2]" }
+        while ($installChoice -notin $validInstallChoices) {
+            $installChoice = Read-Host $installPrompt
             if ($installChoice -eq "1" -and -not $dockerReady) {
-                Write-Host "  Docker no esta listo. Inicie Docker Desktop o elija opcion 2." -ForegroundColor Yellow
+                $dockerGuidance = if ($isOfflineMode) {
+                    "Docker no esta listo. Inicie Docker Desktop para instalar el paquete offline."
+                }
+                else {
+                    "Docker no esta listo. Inicie Docker Desktop o elija opcion 2."
+                }
+                Write-Host "  $dockerGuidance" -ForegroundColor Yellow
                 $installChoice = ""
             }
         }
@@ -1036,6 +1049,9 @@ try {
         $dbRootPassword = New-SecureAlphaNumericSecret -Length 16
         $appKey = New-SecureBase64Key -Length 32
         $backupEncryptionKey = New-SecureBase64Key -Length 32
+        $pusherAppId = New-SecureAlphaNumericSecret -Length 16
+        $pusherAppKey = New-SecureAlphaNumericSecret -Length 32
+        $pusherAppSecret = New-SecureAlphaNumericSecret -Length 48
 
         $envPath = Join-Path $projectRoot ".env"
 
@@ -1066,6 +1082,9 @@ try {
             $currDbPass = Get-EnvOrDefault -Values $existingRootEnv -Name "DB_PASSWORD" -Default $dbPassword
             $currDbRootPass = Get-EnvOrDefault -Values $existingRootEnv -Name "DB_ROOT_PASSWORD" -Default $dbRootPassword
             $currBackupEncryptionKey = Get-EnvOrDefault -Values $existingRootEnv -Name "HOSPITAL_BACKUP_ENCRYPTION_KEY" -Default $backupEncryptionKey
+            $currPusherAppId = Get-EnvOrDefault -Values $existingRootEnv -Name "PUSHER_APP_ID" -Default $pusherAppId
+            $currPusherAppKey = Get-EnvOrDefault -Values $existingRootEnv -Name "PUSHER_APP_KEY" -Default $pusherAppKey
+            $currPusherAppSecret = Get-EnvOrDefault -Values $existingRootEnv -Name "PUSHER_APP_SECRET" -Default $pusherAppSecret
 
             # Write .env
             $rootVars = @{
@@ -1078,6 +1097,14 @@ try {
                 "DB_PASSWORD"      = $currDbPass
                 "DB_ROOT_PASSWORD" = $currDbRootPass
                 "HOSPITAL_BACKUP_ENCRYPTION_KEY" = $currBackupEncryptionKey
+                "APP_SCHEME"       = "http"
+                "HOSPITAL_ALLOW_INSECURE_HTTP" = "1"
+                "SESSION_SECURE_COOKIE" = "false"
+                "PUSHER_APP_ID"    = $currPusherAppId
+                "PUSHER_APP_KEY"   = $currPusherAppKey
+                "PUSHER_APP_SECRET" = $currPusherAppSecret
+                "PUSHER_APP_CLUSTER" = "mt1"
+                "SOKETI_PORT"      = "6001"
             }
 
             Update-DotEnv -Path $envPath -Variables $rootVars
@@ -1129,8 +1156,9 @@ try {
             # Migrations
             Write-Host "[*] Ejecutando migraciones y seeders..." -ForegroundColor Yellow
             & docker compose -f $composeProdPath exec -T backend php artisan migrate --force
-            & docker compose -f $composeProdPath exec -T backend php artisan db:seed --class=RolesAndPermissionsSeeder --force
-            & docker compose -f $composeProdPath exec -T backend php artisan db:seed --class=ServiceCatalogSeeder --force
+            if ($LASTEXITCODE -ne 0) { throw "Las migraciones de produccion fallaron." }
+            & docker compose -f $composeProdPath exec -T backend php artisan db:seed --force
+            if ($LASTEXITCODE -ne 0) { throw "Los seeders base de produccion fallaron." }
         }
         # ==============================================================
         # BARE-METAL MODE
@@ -1321,19 +1349,58 @@ try {
         }
 
         $adminPassword = ""
-        while ($adminPassword.Length -lt 8) {
-            $adminPassword = Read-Host "Contrasena Temporal (minimo 8 caracteres)"
+        while (
+            $adminPassword.Length -lt 12 -or
+            $adminPassword -cnotmatch '[a-z]' -or
+            $adminPassword -cnotmatch '[A-Z]' -or
+            $adminPassword -notmatch '\d' -or
+            $adminPassword -notmatch '[^A-Za-z0-9]'
+        ) {
+            $secureAdminPassword = Read-Host "Contrasena temporal (12+ caracteres, mayuscula, minuscula, numero y simbolo)" -AsSecureString
+            $passwordPointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secureAdminPassword)
+            try {
+                $adminPassword = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($passwordPointer)
+            }
+            finally {
+                [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($passwordPointer)
+            }
+
+            if (
+                $adminPassword.Length -lt 12 -or
+                $adminPassword -cnotmatch '[a-z]' -or
+                $adminPassword -cnotmatch '[A-Z]' -or
+                $adminPassword -notmatch '\d' -or
+                $adminPassword -notmatch '[^A-Za-z0-9]'
+            ) {
+                Write-Host "La contrasena temporal no cumple la politica minima." -ForegroundColor Yellow
+            }
         }
 
         Write-Host "[*] Registrando administrador..." -ForegroundColor Yellow
-        if ($installChoice -eq "1") {
-            $composeProdPath = Join-Path $projectRoot "docker-compose.prod.yml"
-            & docker compose -f $composeProdPath exec -T backend php artisan auth:create-initial-admin --username="$adminUsername" --email="$adminEmail" --password="$adminPassword" --name="Administrador de Hospital"
+        $previousInitialAdminPassword = [Environment]::GetEnvironmentVariable('HOSPITAL_INITIAL_ADMIN_PASSWORD', 'Process')
+        try {
+            $env:HOSPITAL_INITIAL_ADMIN_PASSWORD = $adminPassword
+            if ($installChoice -eq "1") {
+                $composeProdPath = Join-Path $projectRoot "docker-compose.prod.yml"
+                & docker compose -f $composeProdPath exec -T -e HOSPITAL_INITIAL_ADMIN_PASSWORD backend php artisan auth:create-initial-admin --username="$adminUsername" --email="$adminEmail" --name="Administrador de Hospital"
+            }
+            else {
+                Push-Location (Join-Path $projectRoot "backend")
+                try {
+                    & $phpPath artisan auth:create-initial-admin --username="$adminUsername" --email="$adminEmail" --name="Administrador de Hospital"
+                }
+                finally {
+                    Pop-Location
+                }
+            }
+
+            if ($LASTEXITCODE -ne 0) {
+                throw "No se pudo crear el administrador inicial. Revise si ya existe un administrador activo."
+            }
         }
-        else {
-            Push-Location (Join-Path $projectRoot "backend")
-            & $phpPath artisan auth:create-initial-admin --username="$adminUsername" --email="$adminEmail" --password="$adminPassword" --name="Administrador de Hospital"
-            Pop-Location
+        finally {
+            $adminPassword = $null
+            [Environment]::SetEnvironmentVariable('HOSPITAL_INITIAL_ADMIN_PASSWORD', $previousInitialAdminPassword, 'Process')
         }
 
         # ==============================================================

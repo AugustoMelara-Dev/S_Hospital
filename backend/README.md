@@ -1,59 +1,34 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# API de S_Hospital
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Backend Laravel del sistema hospitalario offline/LAN. La guia de instalacion, produccion y comandos completos esta en el [README principal](../README.md).
 
-## About Laravel
+## Responsabilidades
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- Autenticacion local con Sanctum, roles, permisos y cambio obligatorio de clave.
+- Facturacion, snapshots de items, reglas fiscales y eritropoyetina.
+- Pagos, caja, reversos, anulaciones y conciliacion transaccional.
+- Recibos institucionales PDF, correlativos y eventos de impresion auditados.
+- Reportes, exportaciones y respaldos cifrados.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Comandos en Docker
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+```powershell
+docker compose exec backend php artisan migrate --seed
+docker compose exec backend php artisan test
+docker compose exec backend vendor/bin/pint --test
+docker compose exec backend vendor/bin/phpstan analyse
+```
 
-## Learning Laravel
+## Seed de produccion
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+En `APP_ENV=production`, `DatabaseSeeder` carga solamente datos base reproducibles: roles/permisos, perfiles de papel institucional, serie de recibos y catalogo. Las cuentas `*.validacion` se limitan a `local/testing`.
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+El administrador de produccion no tiene contraseña predeterminada. Se crea con `php artisan auth:create-initial-admin` y la clave temporal debe llegar por `HOSPITAL_INITIAL_ADMIN_PASSWORD`; el primer login exige cambiarla.
 
-## Laravel Sponsors
+## Reglas de contribucion
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
-
-### Premium Partners
-
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
-
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+- Controllers delgados; validacion en Form Requests y autorizacion en Policies/Gates.
+- Facturas, pagos, cierres, anulaciones y correlativos dentro de transacciones.
+- Dinero sin `float`; no recalcular facturas historicas desde el catalogo.
+- No borrar facturas ni modificar/eliminar auditoria por Eloquent.
+- Agregar Feature tests para endpoints y Unit tests para reglas de dominio.

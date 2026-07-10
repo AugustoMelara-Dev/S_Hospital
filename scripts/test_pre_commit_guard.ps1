@@ -55,6 +55,20 @@ $secretResult = Invoke-Guard -RepoRoot $secretRepo
 Assert-True ($secretResult.ExitCode -ne 0) "real APP_KEY is blocked"
 Assert-True ($secretResult.Output -match "APP_KEY") "APP_KEY failure is explained"
 
+$adminPasswordVariable = "HOSPITAL_INITIAL_ADMIN_" + "PASSWORD"
+$dynamicAdminRepo = New-TestRepo
+Set-Content -LiteralPath (Join-Path $dynamicAdminRepo "installer.ps1") -Value "`$env:${adminPasswordVariable}=`$temporaryPassword" -Encoding UTF8
+git -C $dynamicAdminRepo add installer.ps1
+$dynamicAdminResult = Invoke-Guard -RepoRoot $dynamicAdminRepo
+Assert-True ($dynamicAdminResult.ExitCode -eq 0) "runtime initial admin password assignment passes"
+
+$literalAdminRepo = New-TestRepo
+Set-Content -LiteralPath (Join-Path $literalAdminRepo "leak.txt") -Value "${adminPasswordVariable}=DoNotCommit123!" -Encoding UTF8
+git -C $literalAdminRepo add leak.txt
+$literalAdminResult = Invoke-Guard -RepoRoot $literalAdminRepo
+Assert-True ($literalAdminResult.ExitCode -ne 0) "literal initial admin password is blocked"
+Assert-True ($literalAdminResult.Output -match "INITIAL_ADMIN_PASSWORD") "initial admin password failure is explained"
+
 $envRepo = New-TestRepo
 Set-Content -LiteralPath (Join-Path $envRepo ".env") -Value ("DB_" + "PASSWORD=placeholder") -Encoding UTF8
 git -C $envRepo add .env
