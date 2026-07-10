@@ -6,13 +6,14 @@ use Tests\TestCase;
 
 class WindowsInstallSecretsTest extends TestCase
 {
-    public function test_windows_install_scripts_do_not_use_get_random_for_secret_generation(): void
+    public function test_windows_setup_delegates_secret_generation_to_the_hardened_installer(): void
     {
-        $script = file_get_contents(base_path('../setup.bat'));
+        $setup = file_get_contents(base_path('../setup.bat'));
 
-        $this->assertIsString($script);
-        $this->assertStringNotContainsString('Get-Random', $script);
-        $this->assertStringContainsString('RandomNumberGenerator', $script);
+        $this->assertIsString($setup);
+        $this->assertStringContainsString('scripts\deploy_hospital_lan.ps1', $setup);
+        $this->assertStringNotContainsString('Get-Random', $setup);
+        $this->assertStringNotContainsString('DB_'.'PASSWORD=', $setup);
     }
 
     public function test_ci_workflow_uses_ephemeral_mariadb_password_fallbacks(): void
