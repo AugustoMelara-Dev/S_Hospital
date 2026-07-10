@@ -1,5 +1,23 @@
 # Changelog - Sistema de Caja Hospitalaria
 
+## 2026-07-09 - Reescritura total, Fase 2: resultado seguro de cobro
+
+- Agrega al contrato de pagos `receipt_outcome` con estados cerrados:
+  `issued`, `not_required` y `recovery_required`.
+- El backend confirma de forma explicita si emitio el recibo, si el pago parcial
+  aun no lo requiere o si el pago quedo registrado y el recibo debe recuperarse.
+- Evita que el frontend deduzca el resultado desde campos nulos o sugiera repetir
+  un cobro que ya fue confirmado.
+- Extrae la interpretacion del resultado a
+  `modules/billing/application/paymentOutcome` y conserva una ruta visible hacia
+  Historial cuando la emision del recibo falla.
+- Agrega cobertura backend para pagos sin permiso de recibos y cobertura E2E que
+  demuestra un solo cargo, cero solicitudes de PDF y recuperacion operativa.
+- Verificacion fresca: 125 archivos / 837 pruebas frontend; cobertura V8 de
+  79.33% lineas / 78.04% funciones / 73.92% ramas / 77.73% sentencias; lint,
+  typecheck y build en verde; PHPStan 216/216; Pint; 46 pruebas backend / 509
+  aserciones y 2 E2E del flujo emitir-cobrar-recuperar.
+
 ## 2026-07-09 - Reescritura total, Fase 1: contrato de impresión
 
 - Elimina `autoPrint`, su temporizador, estado del reducer y dispatches; un

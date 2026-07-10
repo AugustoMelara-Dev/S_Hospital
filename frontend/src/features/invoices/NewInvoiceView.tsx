@@ -23,6 +23,7 @@ import { institutionalReceiptPdfFilename, openBlobInNewTab } from '@/lib/downloa
 import { createClientIdempotencyKey } from '@/lib/api/base';
 import { payloadScopedIdempotencyKey, resetPayloadScopedIdempotencyKey } from '@/lib/api/idempotency';
 import { queryKeys } from '@/lib/queryKeys';
+import { interpretPaymentOutcome } from '@/modules/billing/application/paymentOutcome';
 
 
 const POS_SERVICE_PAGE_SIZE = 24;
@@ -466,8 +467,10 @@ export function NewInvoiceView({
       dispatch({ type: 'SET_ISSUED_INVOICE', payload: result.invoice });
       dispatch({ type: 'SET_PAYMENT_AMOUNT', payload: result.invoice.balance_due });
 
-      if (result.institutional_receipt) {
-        dispatch({ type: 'SET_INSTITUTIONAL_RECEIPT', payload: result.institutional_receipt });
+      const paymentOutcome = interpretPaymentOutcome(result);
+
+      if (paymentOutcome.kind === 'receipt_ready') {
+        dispatch({ type: 'SET_INSTITUTIONAL_RECEIPT', payload: paymentOutcome.receipt });
         dispatch({ type: 'SET_INSTITUTIONAL_RECEIPT_RECOVERY_MESSAGE', payload: null });
         dispatch({ type: 'SET_RECEIPT', payload: null });
         dispatch({ type: 'SET_SHOW_RECEIPT', payload: false });
@@ -477,14 +480,14 @@ export function NewInvoiceView({
         dispatch({ type: 'SET_SHOW_PAYMENT', payload: false });
         dispatch({ type: 'SET_SHOW_SUCCESS', payload: true });
         try {
-          await openInstitutionalReceiptPdf(result.institutional_receipt);
-          onStatus(`Pago registrado. PDF institucional ${result.institutional_receipt.receipt_number_full} abierto.`);
+          await openInstitutionalReceiptPdf(paymentOutcome.receipt);
+          onStatus(`Pago registrado. PDF institucional ${paymentOutcome.receipt.receipt_number_full} abierto.`);
         } catch (error) {
           const message = userSafeErrorMessage(
             error,
-            `Pago registrado. Recibo institucional ${result.institutional_receipt.receipt_number_full} emitido, pero no se pudo abrir el PDF.`,
+            `Pago registrado. Recibo institucional ${paymentOutcome.receipt.receipt_number_full} emitido, pero no se pudo abrir el PDF.`,
           );
-          const recoveryMessage = `Recibo institucional ${result.institutional_receipt.receipt_number_full} emitido, pero no se pudo abrir el PDF. Use Imprimir recibo institucional para intentar de nuevo o reimprima desde Historial.`;
+          const recoveryMessage = `Recibo institucional ${paymentOutcome.receipt.receipt_number_full} emitido, pero no se pudo abrir el PDF. Use Imprimir recibo institucional para intentar de nuevo o reimprima desde Historial.`;
           dispatch({ type: 'SET_INSTITUTIONAL_RECEIPT_RECOVERY_MESSAGE', payload: recoveryMessage });
           dispatch({ type: 'SET_WARNING_MESSAGE', payload: recoveryMessage });
           onStatus(message);
@@ -492,8 +495,8 @@ export function NewInvoiceView({
         return;
       }
 
-      if (result.institutional_receipt_error) {
-        const recoveryMessage = `Pago registrado, pero no se pudo emitir el recibo institucional: ${result.institutional_receipt_error} Genere el recibo institucional desde Historial antes de entregar comprobante.`;
+      if (paymentOutcome.kind === 'receipt_recovery') {
+        const recoveryMessage = paymentOutcome.message;
         dispatch({ type: 'SET_RECEIPT', payload: null });
         dispatch({ type: 'SET_INSTITUTIONAL_RECEIPT', payload: null });
         dispatch({ type: 'SET_INSTITUTIONAL_RECEIPT_RECOVERY_MESSAGE', payload: recoveryMessage });
@@ -502,24 +505,20 @@ export function NewInvoiceView({
         dispatch({ type: 'SET_SHOW_SUCCESS', payload: true });
         dispatch({ type: 'SET_ALERT_MESSAGE', payload: null });
         dispatch({ type: 'SET_WARNING_MESSAGE', payload: recoveryMessage });
-        onStatus(`Pago registrado. Recibo institucional pendiente: ${result.institutional_receipt_error}`);
+        onStatus(recoveryMessage);
 
         return;
       }
 
-      const recoveryMessage = result.invoice.status === 'paid'
-        ? 'Pago registrado, pero no se recibio comprobante institucional. Genere el recibo institucional desde Historial antes de entregar comprobante.'
-        : null;
-
       dispatch({ type: 'SET_RECEIPT', payload: null });
       dispatch({ type: 'SET_INSTITUTIONAL_RECEIPT', payload: null });
-      dispatch({ type: 'SET_INSTITUTIONAL_RECEIPT_RECOVERY_MESSAGE', payload: recoveryMessage });
+      dispatch({ type: 'SET_INSTITUTIONAL_RECEIPT_RECOVERY_MESSAGE', payload: null });
       dispatch({ type: 'SET_SHOW_PAYMENT', payload: false });
       dispatch({ type: 'SET_SHOW_RECEIPT', payload: false });
       dispatch({ type: 'SET_SHOW_SUCCESS', payload: true });
       dispatch({ type: 'SET_ALERT_MESSAGE', payload: null });
-      dispatch({ type: 'SET_WARNING_MESSAGE', payload: recoveryMessage });
-      onStatus(recoveryMessage ?? `Pago parcial registrado. Saldo pendiente ${result.invoice.balance_due}.`);
+      dispatch({ type: 'SET_WARNING_MESSAGE', payload: null });
+      onStatus(paymentOutcome.message);
     } catch (error) {
       const message = userSafeErrorMessage(error, 'No se pudo registrar el pago.');
       dispatch({ type: 'SET_ALERT_MESSAGE', payload: message });

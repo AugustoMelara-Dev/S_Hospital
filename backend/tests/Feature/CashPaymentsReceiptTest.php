@@ -782,7 +782,7 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertJsonPath('data.institutional_receipt', null)
             ->assertJsonPath(
                 'data.institutional_receipt_error',
-                'Pago registrado. Un usuario autorizado debe emitir el recibo institucional desde Facturas.',
+                'Pago registrado. Un usuario autorizado debe emitir el recibo institucional desde Historial de facturas.',
             );
 
         $this->assertDatabaseHas('payments', [

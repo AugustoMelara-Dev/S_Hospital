@@ -544,6 +544,7 @@ describe('NewInvoiceView critical flows', () => {
               },
               institutional_receipt: null,
               institutional_receipt_error: null,
+              receipt_outcome: 'recovery_required',
             },
           }),
         } as Response;
@@ -798,6 +799,7 @@ describe('NewInvoiceView critical flows', () => {
               },
               institutional_receipt: null,
               institutional_receipt_error: null,
+              receipt_outcome: 'recovery_required',
             },
           }),
         } as Response;
@@ -844,7 +846,7 @@ describe('NewInvoiceView critical flows', () => {
     expect(screen.getAllByText(/pago registrado/i).length).toBeGreaterThan(0);
     expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/api/invoices/57/receipt'))).toBe(false);
     expect(screen.queryByRole('dialog', { name: /comprobante de factura/i })).not.toBeInTheDocument();
-    expect(screen.getAllByText(/genere el recibo institucional desde historial/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/revise la factura en historial/i).length).toBeGreaterThan(0);
   });
 
   it('does not request legacy receipt after partial payment', async () => {
@@ -923,6 +925,7 @@ describe('NewInvoiceView critical flows', () => {
               },
               institutional_receipt: null,
               institutional_receipt_error: null,
+              receipt_outcome: 'not_required',
             },
           }),
         } as Response;
@@ -1064,6 +1067,7 @@ describe('NewInvoiceView critical flows', () => {
               },
               institutional_receipt: null,
               institutional_receipt_error: 'No hay una serie activa para recibos institucionales.',
+              receipt_outcome: 'recovery_required',
             },
           }),
         } as Response;
@@ -1120,8 +1124,8 @@ describe('NewInvoiceView critical flows', () => {
     expect(screen.queryByRole('dialog', { name: /comprobante de factura/i })).not.toBeInTheDocument();
     expect(await screen.findByRole('dialog', { name: /factura pagada/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /imprimir recibo institucional/i })).not.toBeInTheDocument();
-    expect(screen.getAllByText(/genere el recibo institucional desde historial/i).length).toBeGreaterThan(0);
-    expect(onStatus).toHaveBeenCalledWith(expect.stringMatching(/recibo institucional pendiente/i));
+    expect(screen.getAllByText(/revise la factura en historial/i).length).toBeGreaterThan(0);
+    expect(onStatus).toHaveBeenCalledWith(expect.stringMatching(/recibo institucional esta pendiente/i));
   });
 
   it('does not fetch or show a receipt for a paid zero-total invoice when receipts are not allowed', async () => {
@@ -1449,6 +1453,7 @@ describe('NewInvoiceView critical flows', () => {
                 void_reason: null,
               },
               institutional_receipt_error: null,
+              receipt_outcome: 'issued',
             },
           }),
         } as Response;
@@ -1619,6 +1624,7 @@ describe('NewInvoiceView critical flows', () => {
                 void_reason: null,
               },
               institutional_receipt_error: null,
+              receipt_outcome: 'issued',
             },
           }),
         } as Response;
@@ -1749,6 +1755,7 @@ describe('NewInvoiceView critical flows', () => {
               },
               institutional_receipt: null,
               institutional_receipt_error: null,
+              receipt_outcome: 'not_required',
             },
           }),
         } as Response;

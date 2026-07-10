@@ -9,12 +9,13 @@ Production approval: NO
 
 ## Current Focus
 
-Phase 1 of the approved total rewrite closes the printing contract. Receipt
-printing is now explicit-only: the legacy automatic-print property, reducer
-state and dispatch paths were removed. The application offers exactly Carta,
-Media carta and A5 and no longer renders manual dimensions, margins, fonts,
-scale or the former technical-support mode. Historical thermal profile values
-remain database/API compatibility data and are not operator choices.
+Phases 1 and 2 of the approved total rewrite close the printing policy and the
+payment-to-receipt outcome contract. Receipt printing is explicit-only and the
+operator chooses only Carta, Media carta or A5. A payment response now states
+whether the institutional receipt was issued, is not yet required for a partial
+payment, or requires recovery after a confirmed charge. The UI no longer
+infers that result from nullable fields and never tells the cashier to repeat a
+successful payment.
 
 The latest verification pass moved from local frontend-only evidence to the
 Docker stack. It confirmed the containerized Laravel, MySQL/MariaDB and
@@ -36,6 +37,12 @@ production approval.
 
 | Date | Command | Result | Notes |
 |---|---|---|---|
+| 2026-07-09 | `npm.cmd run test:coverage:check` | PASS, 125 files / 837 tests | Phase 2 full V8 coverage: 79.33% lines, 78.04% functions, 73.92% branches and 77.73% statements; exceeds 65/60/60/65 thresholds. |
+| 2026-07-09 | `docker compose exec -T backend php artisan test --compact tests/Feature/CashPaymentsReceiptTest.php tests/Feature/InstitutionalReceiptPaymentIntegrationTest.php` | PASS, 46 tests / 509 assertions | Covers paid, partial, issued receipt and recovery-required payment outcomes, including a cashier without receipt permission. |
+| 2026-07-09 | `npx.cmd playwright test e2e/new-invoice-flow.spec.ts` | PASS, 2 tests | Chromium proves normal issue/pay/PDF and recovery-required flow with one payment request and no PDF request. |
+| 2026-07-09 | `docker compose exec -T backend vendor/bin/phpstan analyse --memory-limit=1G` | PASS, 216/216 files | No static-analysis errors after the payment outcome contract. |
+| 2026-07-09 | `docker compose exec -T backend vendor/bin/pint --test app/Http/Controllers/PaymentController.php tests/Feature/CashPaymentsReceiptTest.php` | PASS, 2 files | Formatting gate for the touched backend files. |
+| 2026-07-09 | `npm.cmd run lint && npm.cmd run typecheck && npm.cmd run build` | PASS | Phase 2 frontend quality and production build gates; commands were executed independently. |
 | 2026-07-09 | `npm.cmd run test:coverage:check` | PASS, 124 files / 833 tests | Full V8 coverage: 79.31% lines, 78.03% functions, 73.89% branches and 77.71% statements; exceeds 65/60/60/65 thresholds. |
 | 2026-07-09 | `npx.cmd playwright test e2e/print-profiles.spec.ts --workers=1 --reporter=list` | PASS, 3 tests | Real Chromium gate on dedicated port 4173: desktop controls, 320 px containment and save/test-print payload without technical fields. |
 | 2026-07-09 | `npx.cmd vitest run playwright.config.test.ts --pool=forks --maxWorkers=1 --no-file-parallelism` | PASS, 1 test | Prevents Playwright from silently reusing an unrelated service on port 5173. |

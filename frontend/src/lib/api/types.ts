@@ -332,11 +332,14 @@ export type InstitutionalReceipt = {
   void_reason: string | null;
 };
 
+export type PaymentReceiptOutcome = 'issued' | 'not_required' | 'recovery_required';
+
 export type PaymentRegistrationResult = {
   payment: Payment;
   invoice: Invoice;
   institutional_receipt: InstitutionalReceipt | null;
   institutional_receipt_error: string | null;
+  receipt_outcome: PaymentReceiptOutcome;
 };
 
 export type MoneyByMethod = {

@@ -120,7 +120,7 @@ class PaymentController extends Controller
         if (! ($user instanceof User) || ! $user->can('receipts.view')) {
             return [
                 'receipt' => null,
-                'error' => 'Pago registrado. Un usuario autorizado debe emitir el recibo institucional desde Facturas.',
+                'error' => 'Pago registrado. Un usuario autorizado debe emitir el recibo institucional desde Historial de facturas.',
                 'outcome' => 'recovery_required',
             ];
         }

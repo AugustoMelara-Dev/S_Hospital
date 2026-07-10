@@ -128,6 +128,40 @@ test.describe('New invoice - critical mocked e2e', () => {
     await expect(page.getByRole('dialog', { name: /factura pagada/i })).toBeVisible();
     await expect(page.getByRole('contentinfo').getByText(/REC-A-00000077/i)).toBeVisible();
   });
+
+  test('keeps a completed payment recoverable when receipt issuance fails', async ({ page }) => {
+    let paymentRequests = 0;
+    let receiptPdfRequests = 0;
+
+    await installNewInvoiceMocks(page, {
+      receiptOutcome: 'recovery_required',
+      onRegisterPayment: () => {
+        paymentRequests += 1;
+      },
+      onReceiptPdf: () => {
+        receiptPdfRequests += 1;
+      },
+    });
+
+    await page.goto('/billing/new');
+    await page.getByLabel(/nombre del paciente/i).fill('Maria Lopez');
+    await page.getByLabel(/buscar por nombre/i).fill('glucosa');
+    await page.getByRole('button', { name: /agregar glucosa basal/i }).click();
+    await page.getByRole('button', { name: /^emitir y cobrar$/i }).click();
+    await page.getByRole('dialog', { name: /confirmar emisi/i })
+      .getByRole('button', { name: /emitir y abrir cobro/i })
+      .click();
+    await page.getByRole('dialog', { name: /registrar pago/i })
+      .getByRole('button', { name: /confirmar cobro e imprimir/i })
+      .click();
+
+    await expect(page.getByRole('dialog', { name: /factura pagada/i })).toBeVisible();
+    await expect(page.getByText(/revise la factura en historial/i).first()).toBeVisible();
+    await expect(page.getByRole('link', { name: /resolver recibo en historial/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /imprimir recibo institucional/i })).toHaveCount(0);
+    await expect.poll(() => paymentRequests).toBe(1);
+    await expect.poll(() => receiptPdfRequests).toBe(0);
+  });
 });
 
 async function installNewInvoiceMocks(
@@ -136,6 +170,7 @@ async function installNewInvoiceMocks(
     onCreateInvoice?: (payload: unknown) => void;
     onRegisterPayment?: (payload: unknown) => void;
     onReceiptPdf?: () => void;
+    receiptOutcome?: 'issued' | 'recovery_required';
   } = {},
 ) {
   await page.addInitScript(() => {
@@ -175,6 +210,7 @@ async function installNewInvoiceMocks(
   });
   await page.route(/\/api\/invoices\/77\/payments(?:[/?]|$)/, async (route) => {
     const payload = await route.request().postDataJSON();
+    const receiptIssued = options.receiptOutcome !== 'recovery_required';
     options.onRegisterPayment?.(payload);
     return json(route, {
       data: {
@@ -190,7 +226,7 @@ async function installNewInvoiceMocks(
           paid_at: '2026-07-02T08:15:00-06:00',
         },
         invoice: { ...issuedInvoice('Maria Lopez'), paid_amount: '17.25', balance_due: '0.00', status: 'paid' },
-        institutional_receipt: {
+        institutional_receipt: receiptIssued ? {
           id: 77,
           invoice_id: 77,
           payment_id: 90,
@@ -213,8 +249,9 @@ async function installNewInvoiceMocks(
           voided_by: null,
           voided_at: null,
           void_reason: null,
-        },
-        institutional_receipt_error: null,
+        } : null,
+        institutional_receipt_error: receiptIssued ? null : 'No hay una serie activa para recibos institucionales.',
+        receipt_outcome: receiptIssued ? 'issued' : 'recovery_required',
       },
     }, 201);
   });

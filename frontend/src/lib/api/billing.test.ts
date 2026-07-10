@@ -88,13 +88,20 @@ describe('billing api client', () => {
   it('allows payment registration to reuse a caller-managed idempotency key', async () => {
     const payment = { id: 44, status: 'posted' } as Payment;
     const invoice = { id: 12, status: 'paid' } as Invoice;
-    mockedRequest.mockResolvedValueOnce({ data: { payment, invoice } });
+    const result = {
+      payment,
+      invoice,
+      institutional_receipt: null,
+      institutional_receipt_error: 'Serie institucional no configurada.',
+      receipt_outcome: 'recovery_required' as const,
+    };
+    mockedRequest.mockResolvedValueOnce({ data: result });
 
     await expect(billing.registerPayment(
       12,
       { cash_session_id: 7, method: 'cash', amount: '17.25', reference: null },
       { idempotencyKey: 'payment-attempt-1' },
-    )).resolves.toEqual({ payment, invoice });
+    )).resolves.toEqual(result);
 
     expect(mockedRequest).toHaveBeenCalledWith('/api/invoices/12/payments', {
       method: 'POST',
