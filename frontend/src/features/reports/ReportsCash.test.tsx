@@ -217,6 +217,30 @@ describe('ReportsCash', () => {
     expect(screen.getByRole('button', { name: /exportando/i })).toBeDisabled();
   });
 
+  it('shows a contextual export error and allows a safe retry', async () => {
+    vi.mocked(apiClient.getCashSessionReport).mockResolvedValue(buildCashSessionReport());
+    downloadCashSessionReportExcelMock
+      .mockRejectedValueOnce(new Error('fallo temporal'))
+      .mockResolvedValueOnce(new Blob(['xlsx'], { type: 'application/vnd.ms-excel' }));
+
+    renderCash({ canExport: true });
+    fireEvent.change(screen.getByLabelText(/numero de caja/i), { target: { value: '12' } });
+    fireEvent.click(screen.getByRole('button', { name: /^ver caja$/i }));
+
+    const exportButton = await screen.findByRole('button', { name: /exportar excel/i });
+    fireEvent.click(exportButton);
+
+    expect(await screen.findByText(/no se pudo exportar excel/i)).toBeInTheDocument();
+    expect(screen.queryByText(/no se pudo cargar la caja/i)).not.toBeInTheDocument();
+    expect(exportButton).toBeEnabled();
+
+    fireEvent.click(exportButton);
+
+    await waitFor(() => expect(downloadCashSessionReportExcelMock).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(downloadBlob).toHaveBeenCalledWith(expect.any(Blob), 'reporte-caja-12.xlsx'));
+    expect(screen.queryByText(/no se pudo exportar excel/i)).not.toBeInTheDocument();
+  });
+
   it('does not list recent cash sessions for cash report users without cashbox access', async () => {
     vi.mocked(apiClient.getCashSessionReport).mockResolvedValue(buildCashSessionReport());
 

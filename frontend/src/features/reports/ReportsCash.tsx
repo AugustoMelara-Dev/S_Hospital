@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { EmptyState } from '@/components/ui/states';
+import { Alert } from '@/components/ui/alert';
 import { OperationalBanner } from '@/components/shared';
 import { apiClient, type CashSession, userSafeErrorMessage } from '@/lib/api';
 import { downloadBlob, openBlobInNewTab } from '@/lib/download';
@@ -12,6 +13,11 @@ type ReportsCashProps = {
   canExport: boolean;
   canViewCash: boolean;
   canViewManagerial: boolean;
+};
+
+type CashExportError = {
+  message: string;
+  title: string;
 };
 
 export function ReportsCash({
@@ -28,6 +34,7 @@ export function ReportsCash({
   const [cashError, setCashError] = useState('');
   const [cashLoading, setCashLoading] = useState(false);
   const [cashExporting, setCashExporting] = useState<'excel' | 'pdf' | null>(null);
+  const [cashExportError, setCashExportError] = useState<CashExportError | null>(null);
   const [recentCashSessions, setRecentCashSessions] = useState<CashSession[]>([]);
   const [cashSessionsLoading, setCashSessionsLoading] = useState(false);
   const requestSequence = useRef(0);
@@ -42,6 +49,7 @@ export function ReportsCash({
     const requestId = ++requestSequence.current;
     try {
       setCashError('');
+      setCashExportError(null);
       setCashLoading(true);
       setCashSessionReport(null);
       const report = await apiClient.getCashSessionReport(normalizedCashReportId);
@@ -151,7 +159,7 @@ export function ReportsCash({
   }
 
   async function exportCashReport() {
-    if (!visibleCashSessionReport || cashLoading || cashError || cashExporting !== null) {
+    if (!visibleCashSessionReport || cashLoading || cashExporting !== null) {
       return;
     }
 
@@ -160,7 +168,7 @@ export function ReportsCash({
     const dateTo = dateOnly(visibleCashSessionReport.cash_session.closed_at ?? visibleCashSessionReport.cash_session.opened_at);
 
     try {
-      setCashError('');
+      setCashExportError(null);
       setCashExporting('excel');
       const blob = await apiClient.downloadCashSessionReportExcel({
         date_from: dateFrom,
@@ -169,14 +177,17 @@ export function ReportsCash({
       });
       downloadBlob(blob, `reporte-caja-${cashSessionId}.xlsx`);
     } catch (err) {
-      setCashError(userSafeErrorMessage(err, 'No se pudo exportar la caja.'));
+      setCashExportError({
+        title: 'No se pudo exportar Excel',
+        message: userSafeErrorMessage(err, 'No se pudo exportar el reporte de caja en Excel. Intente nuevamente.'),
+      });
     } finally {
       setCashExporting(null);
     }
   }
 
   async function exportCashReportPdf() {
-    if (!visibleCashSessionReport || cashLoading || cashError || cashExporting !== null) {
+    if (!visibleCashSessionReport || cashLoading || cashExporting !== null) {
       return;
     }
 
@@ -185,7 +196,7 @@ export function ReportsCash({
     const dateTo = dateOnly(visibleCashSessionReport.cash_session.closed_at ?? visibleCashSessionReport.cash_session.opened_at);
 
     try {
-      setCashError('');
+      setCashExportError(null);
       setCashExporting('pdf');
       const blob = await apiClient.downloadCashSessionReportPdf({
         date_from: dateFrom,
@@ -194,7 +205,10 @@ export function ReportsCash({
       });
       openBlobInNewTab(blob, `reporte-caja-${cashSessionId}.pdf`);
     } catch (err) {
-      setCashError(userSafeErrorMessage(err, 'No se pudo abrir el PDF de caja.'));
+      setCashExportError({
+        title: 'No se pudo abrir el PDF de caja',
+        message: userSafeErrorMessage(err, 'No se pudo abrir el reporte PDF de caja. Intente nuevamente.'),
+      });
     } finally {
       setCashExporting(null);
     }
@@ -226,6 +240,12 @@ export function ReportsCash({
         />
       ) : null}
 
+      {cashExportError ? (
+        <Alert variant="destructive" title={cashExportError.title}>
+          {cashExportError.message}
+        </Alert>
+      ) : null}
+
       <CashSessionReportPanel
         canExport={canExport}
         cashSession={visibleCashSessionReport}
@@ -238,6 +258,7 @@ export function ReportsCash({
         error={cashError}
         onCashReportIdChange={(value) => {
           requestSequence.current += 1;
+          setCashExportError(null);
           setCashReportId(value);
           if (String(cashSessionReport?.cash_session.id ?? '') !== value.trim()) {
             setCashSessionReport(null);
