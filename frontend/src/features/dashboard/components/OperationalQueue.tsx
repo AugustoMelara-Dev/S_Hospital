@@ -21,15 +21,15 @@ const priorityClass = {
 
 export function OperationalQueue({ items }: OperationalQueueProps) {
   return (
-    <section aria-labelledby="operational-queue-title" className="min-w-0 border border-operational-border bg-operational-surface">
-      <header className="border-b border-operational-border px-5 py-4">
+    <section aria-labelledby="operational-queue-title" className="min-w-0 overflow-hidden rounded-xl border border-operational-border bg-operational-surface shadow-operational">
+      <header className="border-b border-operational-border bg-muted/35 px-5 py-4">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Prioridad del turno</p>
         <h2 id="operational-queue-title" className="mt-1 text-lg font-semibold">Próxima acción</h2>
       </header>
-      <ol className="divide-y divide-operational-border">
+      <ol className="space-y-2 p-3">
         {items.map((item, index) => (
-          <li key={item.id} className="flex min-w-0 items-start gap-3 px-5 py-4">
-            <span className={`mt-0.5 flex size-8 shrink-0 items-center justify-center ${priorityClass[item.priority]}`}>
+          <li key={item.id} className="flex min-w-0 items-start gap-3 rounded-xl border border-transparent px-4 py-4 transition hover:border-operational-border hover:bg-muted/30">
+            <span className={`mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted ${priorityClass[item.priority]}`}>
               {index === 0 ? <CircleAlert aria-hidden="true" className="size-5" /> : <span aria-hidden="true" className="text-xs font-semibold tabular-nums">{index + 1}</span>}
             </span>
             <div className="min-w-0 flex-1">
