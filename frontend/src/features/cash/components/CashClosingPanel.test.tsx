@@ -30,6 +30,7 @@ describe('CashClosingPanel', () => {
       .toHaveAccessibleDescription(/faltante/i);
     expect(screen.getByText(/nota obligatoria/i)).toBeVisible();
     expect(screen.getByRole('button', { name: /^cerrar caja$/i })).toHaveClass('min-h-11');
+    expect(screen.getByLabelText(/monto contado/i)).toHaveClass('min-h-11');
     expect(screen.queryByRole('button', { name: /registrar egreso/i })).not.toBeInTheDocument();
   });
 });

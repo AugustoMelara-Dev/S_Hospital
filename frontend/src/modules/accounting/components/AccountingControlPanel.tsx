@@ -9,11 +9,13 @@ import {
 } from '../application/reconciliationStatus';
 
 type AccountingControlPanelProps = {
+  canViewInvoices?: boolean;
   reconciliation: ReconciliationInput;
   historyHref?: string;
 };
 
 export function AccountingControlPanel({
+  canViewInvoices = false,
   reconciliation,
   historyHref = '/invoices',
 }: AccountingControlPanelProps) {
@@ -96,9 +98,15 @@ export function AccountingControlPanel({
           <Alert variant="warning" title="Cierre bloqueado por conciliación pendiente">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <span className="flex-1">Resuelva las facturas o recibos indicados antes de cerrar la caja.</span>
-              <Button asChild size="sm" variant="secondary">
-                <Link to={historyHref}>Resolver en Historial</Link>
-              </Button>
+              {canViewInvoices ? (
+                <Button asChild size="sm" variant="secondary">
+                  <Link to={historyHref}>Resolver en Historial</Link>
+                </Button>
+              ) : (
+                <span className="text-xs font-medium">
+                  Solicite apoyo a un usuario con acceso al Historial.
+                </span>
+              )}
             </div>
           </Alert>
         ) : (

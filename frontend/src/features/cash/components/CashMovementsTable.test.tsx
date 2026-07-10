@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { CashMovementsTable, type CashMovement } from './CashMovementsTable';
@@ -9,7 +9,7 @@ describe('CashMovementsTable', () => {
       <CashMovementsTable
         movements={[
           movement({ id: 1, type: 'payment', method: 'cash', amount: '51.75' }),
-          movement({ id: 2, type: 'payment_void', method: 'cash', amount: '17.25' }),
+          movement({ id: 2, type: 'payment_void', method: 'cash', amount: '-17.25' }),
           movement({ id: 3, type: 'closing', method: 'closing', amount: '134.50' }),
         ]}
       />,
@@ -17,6 +17,7 @@ describe('CashMovementsTable', () => {
 
     expect(rowFor('Pago')).toHaveTextContent('+ L 51.75');
     expect(rowFor('Reverso de pago')).toHaveTextContent('- L 17.25');
+    expect(rowFor('Reverso de pago')).not.toHaveTextContent('- -');
     expect(rowFor('Cierre')).toHaveTextContent('L 134.50');
     expect(rowFor('Cierre')).not.toHaveTextContent('- L 134.50');
     expect(screen.queryByText('payment_void')).not.toBeInTheDocument();
@@ -63,6 +64,7 @@ describe('CashMovementsTable', () => {
     render(
       <MemoryRouter>
         <CashMovementsTable
+          canViewInvoices
           movements={[
             movement({
               id: 30,
@@ -72,6 +74,7 @@ describe('CashMovementsTable', () => {
               type: 'payment',
               method: 'cash',
               amount: '68.40',
+              notes: 'Cobro validado en ventanilla',
             }),
           ]}
         />
@@ -81,7 +84,33 @@ describe('CashMovementsTable', () => {
     expect(screen.getAllByRole('link', { name: /factura FAC-000022/i })[0])
       .toHaveAttribute('href', '/invoices?invoice=22');
     expect(screen.getAllByText(/pago #81/i).length).toBeGreaterThan(0);
+    const desktopTable = screen.getByRole('table', { name: /movimientos registrados/i });
+    expect(within(desktopTable).getByRole('columnheader', { name: /detalle auditado/i })).toBeVisible();
+    expect(within(desktopTable).getByText(/cobro validado en ventanilla/i)).toBeVisible();
     expect(screen.getByRole('list', { name: /movimientos de caja en móvil/i })).toBeInTheDocument();
+  });
+
+  it('shows the invoice reference as text when invoices.view is missing', () => {
+    render(
+      <MemoryRouter>
+        <CashMovementsTable
+          canViewInvoices={false}
+          movements={[
+            movement({
+              id: 31,
+              payment_id: 82,
+              invoice_id: 23,
+              invoice_number: 'FAC-000023',
+              notes: 'Reverso autorizado por supervisión',
+            }),
+          ]}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getAllByText(/factura FAC-000023/i).length).toBeGreaterThan(0);
+    expect(screen.queryByRole('link', { name: /factura FAC-000023/i })).not.toBeInTheDocument();
+    expect(screen.getAllByText(/reverso autorizado por supervisión/i).length).toBeGreaterThan(0);
   });
 });
 

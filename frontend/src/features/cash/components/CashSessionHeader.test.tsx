@@ -5,11 +5,13 @@ import type { CashSession } from '@/lib/api';
 import { CashSessionHeader } from './CashSessionHeader';
 
 describe('CashSessionHeader', () => {
-  it('identifies the cashier and supervisor ownership without changing permissions', () => {
+  it('identifies a supervised foreign cashbox without offering invoice creation', () => {
     render(
       <MemoryRouter>
         <CashSessionHeader
           canCloseAnyCash
+          canCreateInvoices
+          isOwnSession={false}
           isLoading={false}
           onRefresh={vi.fn()}
           session={sessionFixture()}
@@ -19,7 +21,7 @@ describe('CashSessionHeader', () => {
 
     expect(screen.getByText(/maría fernanda lópez/i)).toBeVisible();
     expect(screen.getByText(/supervisión habilitada/i)).toBeVisible();
-    expect(screen.getByRole('link', { name: /nueva factura/i })).toHaveAttribute('href', '/billing/new');
+    expect(screen.queryByRole('link', { name: /nueva factura/i })).not.toBeInTheDocument();
   });
 
   it('labels the own-session scope for a regular cashier', () => {
@@ -27,6 +29,8 @@ describe('CashSessionHeader', () => {
       <MemoryRouter>
         <CashSessionHeader
           canCloseAnyCash={false}
+          canCreateInvoices
+          isOwnSession
           isLoading={false}
           onRefresh={vi.fn()}
           session={sessionFixture()}
@@ -36,6 +40,25 @@ describe('CashSessionHeader', () => {
 
     expect(screen.getByText(/caja propia/i)).toBeVisible();
     expect(screen.queryByText(/supervisión habilitada/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /nueva factura/i })).toHaveAttribute('href', '/billing/new');
+  });
+
+  it('does not offer invoice creation without invoices.create even on the own cashbox', () => {
+    render(
+      <MemoryRouter>
+        <CashSessionHeader
+          canCloseAnyCash={false}
+          canCreateInvoices={false}
+          isOwnSession
+          isLoading={false}
+          onRefresh={vi.fn()}
+          session={sessionFixture()}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText(/caja propia/i)).toBeVisible();
+    expect(screen.queryByRole('link', { name: /nueva factura/i })).not.toBeInTheDocument();
   });
 });
 

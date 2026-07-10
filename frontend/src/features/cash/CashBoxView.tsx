@@ -24,9 +24,12 @@ type CashBoxViewProps = {
   cashSession?: CashSession | null;
   canCloseAnyCash?: boolean;
   canCloseCash?: boolean;
+  canCreateInvoices?: boolean;
   canOpenCash?: boolean;
+  canViewInvoices?: boolean;
   canViewCashSessionReport?: boolean;
   compact?: boolean;
+  currentUserId?: number;
   onStatus: (message: string) => void;
   onSessionChange?: (session: CashSession | null) => void;
 };
@@ -39,9 +42,12 @@ export function CashBoxView({
   cashSession = null,
   canCloseAnyCash = false,
   canCloseCash = true,
+  canCreateInvoices = false,
   canOpenCash = true,
+  canViewInvoices = false,
   canViewCashSessionReport = false,
   compact = false,
+  currentUserId,
   onStatus,
   onSessionChange,
 }: CashBoxViewProps) {
@@ -189,6 +195,7 @@ export function CashBoxView({
     : null;
   const hasCashDifference = difference !== null && difference !== 0;
   const isOpen = activeSession?.status === 'open';
+  const isOwnSession = Boolean(activeSession && currentUserId === activeSession.user_id);
   const pendingInvoiceCount = activeSession?.pending_invoice_count ?? 0;
   const pendingAmount = activeSession?.pending_amount ?? '0.00';
   const missingInstitutionalReceiptCount = activeSession?.missing_institutional_receipt_count ?? 0;
@@ -282,6 +289,8 @@ export function CashBoxView({
       <div className="flex flex-col gap-6">
         <CashSessionHeader
           canCloseAnyCash={canCloseAnyCash}
+          canCreateInvoices={canCreateInvoices}
+          isOwnSession={isOwnSession}
           isLoading={isLoading}
           onRefresh={() => void refetch()}
           session={activeSession ?? null}
@@ -309,9 +318,17 @@ export function CashBoxView({
           <LoadingState label="Cargando estado de caja..." />
         ) : null}
 
-        {canRenderOperationalState && isOpen ? (
+        {canRenderOperationalState && isOpen && isOwnSession && canCreateInvoices ? (
           <Alert variant="success" title="Caja lista para facturar">
             La caja está abierta. La acción principal para crear y cobrar una factura está disponible en la cabecera.
+          </Alert>
+        ) : canRenderOperationalState && isOpen && !isOwnSession ? (
+          <Alert variant="warning" title="Caja abierta en supervisión">
+            Esta sesión pertenece a otro cajero. Puede revisar y cerrar según sus permisos, pero no crear facturas desde esta caja.
+          </Alert>
+        ) : canRenderOperationalState && isOpen ? (
+          <Alert title="Caja abierta en modo consulta">
+            La sesión está activa, pero este usuario no tiene permiso para crear facturas.
           </Alert>
         ) : null}
 
@@ -357,6 +374,7 @@ export function CashBoxView({
               />
 
               <AccountingControlPanel
+                canViewInvoices={canViewInvoices}
                 reconciliation={{
                   ...activeSession,
                   difference_amount: difference,
@@ -409,7 +427,7 @@ export function CashBoxView({
             ) : null}
 
             {canViewCashSessionReport && movements && movements.length > 0 ? (
-              <CashMovementsTable movements={movements} />
+              <CashMovementsTable canViewInvoices={canViewInvoices} movements={movements} />
             ) : null}
           </>
         ) : canRenderOperationalState && canOpenCash ? (

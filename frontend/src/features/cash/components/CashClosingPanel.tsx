@@ -97,7 +97,7 @@ export function CashClosingPanel({
                 placeholder="0.00"
                 autoComplete="off"
                 disabled={isSubmitting}
-                className="font-mono text-lg tabular-nums"
+                className="min-h-11 font-mono text-lg tabular-nums"
                 aria-invalid={invalid}
                 aria-describedby={describedBy}
               />

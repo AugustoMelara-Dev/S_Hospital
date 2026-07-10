@@ -7,7 +7,7 @@ describe('AccountingControlPanel', () => {
   it('shows every operational accounting fact without inventing expenses', () => {
     render(
       <MemoryRouter>
-        <AccountingControlPanel reconciliation={{
+        <AccountingControlPanel canViewInvoices reconciliation={{
           payments_total: '216.35',
           pending_invoice_count: 2,
           pending_amount: '35.50',
@@ -43,6 +43,20 @@ describe('AccountingControlPanel', () => {
     );
 
     expect(screen.getByText(/sin pendientes que bloqueen el cierre/i)).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /resolver en historial/i })).not.toBeInTheDocument();
+  });
+
+  it('explains blockers without a history action when invoices.view is missing', () => {
+    render(
+      <MemoryRouter>
+        <AccountingControlPanel
+          canViewInvoices={false}
+          reconciliation={{ pending_invoice_count: 1, pending_amount: '20.00' }}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText(/solicite apoyo a un usuario con acceso al historial/i)).toBeVisible();
     expect(screen.queryByRole('link', { name: /resolver en historial/i })).not.toBeInTheDocument();
   });
 });

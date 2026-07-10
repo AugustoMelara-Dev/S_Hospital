@@ -7,12 +7,21 @@ import type { CashSession } from '@/lib/api';
 
 type CashSessionHeaderProps = {
   canCloseAnyCash: boolean;
+  canCreateInvoices: boolean;
+  isOwnSession: boolean;
   isLoading: boolean;
   onRefresh: () => void;
   session: CashSession | null;
 };
 
-export function CashSessionHeader({ canCloseAnyCash, isLoading, onRefresh, session }: CashSessionHeaderProps) {
+export function CashSessionHeader({
+  canCloseAnyCash,
+  canCreateInvoices,
+  isOwnSession,
+  isLoading,
+  onRefresh,
+  session,
+}: CashSessionHeaderProps) {
   const isOpen = session?.status === 'open';
   const cashier = session
     ? session.user?.name ?? session.user?.username ?? `Cajero #${session.user_id}`
@@ -38,14 +47,18 @@ export function CashSessionHeader({ canCloseAnyCash, isLoading, onRefresh, sessi
             <p className="text-muted-foreground">
               <span className="font-medium text-foreground">{cashier}</span>
               {' · '}
-              {canCloseAnyCash ? 'Supervisión habilitada' : 'Caja propia'}
+              {isOwnSession
+                ? 'Caja propia'
+                : canCloseAnyCash
+                  ? 'Supervisión habilitada'
+                  : 'Sesión de otro cajero'}
             </p>
           ) : null}
         </div>
       )}
       actions={(
         <>
-          {isOpen ? (
+          {isOpen && isOwnSession && canCreateInvoices ? (
             <Button asChild size="sm">
               <Link to="/billing/new">Nueva factura</Link>
             </Button>

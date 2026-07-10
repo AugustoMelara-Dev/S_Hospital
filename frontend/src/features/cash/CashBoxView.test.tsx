@@ -59,7 +59,7 @@ describe('CashBoxView', () => {
               username: 'cajero.validacion',
               active: true,
               roles: ['cajero'],
-              permissions: ['cash.view', 'cash.open', 'cash.close'],
+              permissions: ['cash.view', 'cash.open', 'cash.close', 'invoices.create'],
               must_change_password: false,
             },
           }),
@@ -358,10 +358,25 @@ describe('CashBoxView', () => {
       user_id: 77,
     }));
 
-    renderCashBox(<CashBoxView canCloseAnyCash onStatus={vi.fn()} />);
+    renderCashBox(<CashBoxView canCloseAnyCash currentUserId={2} onStatus={vi.fn()} />);
 
     expect(await screen.findByRole('heading', { level: 1, name: /^caja$/i })).toBeInTheDocument();
     expect(getCurrentCashSession).toHaveBeenCalledWith({ scope: 'closable' });
+    expect(await screen.findByText(/cajero #77/i)).toBeVisible();
+    expect(screen.queryByRole('link', { name: /nueva factura/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/caja lista para facturar/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/supervisión habilitada/i)).toBeVisible();
+  });
+
+  it('offers billing only for the own session with invoices.create', async () => {
+    vi.spyOn(apiClient, 'getCurrentCashSession').mockResolvedValue(cashSessionFixture({ user_id: 2 }));
+
+    renderCashBox(
+      <CashBoxView canCreateInvoices currentUserId={2} onStatus={vi.fn()} />,
+    );
+
+    expect(await screen.findByRole('link', { name: /nueva factura/i })).toHaveAttribute('href', '/billing/new');
+    expect(screen.getByText(/caja lista para facturar/i)).toBeVisible();
   });
 
   it('shows a sanitized load error with retry and does not present a closed cashbox as loaded data', async () => {
@@ -683,7 +698,7 @@ describe('CashBoxView', () => {
       reversed_payments_total: '10.00',
     }));
 
-    renderCashBox(<CashBoxView onStatus={vi.fn()} />);
+    renderCashBox(<CashBoxView canViewInvoices onStatus={vi.fn()} />);
 
     expect(await screen.findByRole('heading', { name: /control contable de caja/i })).toBeInTheDocument();
     expect(screen.getByText(/2 recibos institucionales pendientes/i)).toBeInTheDocument();

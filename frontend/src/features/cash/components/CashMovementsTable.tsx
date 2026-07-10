@@ -1,7 +1,8 @@
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
-import { formatLempirasUI } from '@/lib/money';
+import { finiteNumber, formatLempirasUI } from '@/lib/money';
 import { cn } from '@/lib/utils';
 
 export type CashMovement = {
@@ -19,6 +20,7 @@ export type CashMovement = {
 };
 
 interface CashMovementsTableProps {
+  canViewInvoices?: boolean;
   movements: CashMovement[];
 }
 
@@ -40,12 +42,19 @@ const movementColumns: Array<DataTableColumn<CashMovement>> = [
   {
     key: 'reference',
     header: 'Referencia',
-    render: (movement) => <MovementReference movement={movement} />,
+    render: (movement) => <MovementReference canViewInvoices={false} movement={movement} />,
   },
   {
     key: 'method',
     header: 'Método',
     render: (movement) => methodLabel(movement.method),
+  },
+  {
+    key: 'notes',
+    header: 'Detalle auditado',
+    render: (movement) => movement.notes
+      ? <span className="text-sm text-foreground">{movement.notes}</span>
+      : <span className="text-sm text-muted-foreground">Sin nota registrada</span>,
   },
   {
     key: 'amount',
@@ -56,7 +65,11 @@ const movementColumns: Array<DataTableColumn<CashMovement>> = [
   },
 ];
 
-export function CashMovementsTable({ movements }: CashMovementsTableProps) {
+export function CashMovementsTable({ canViewInvoices = false, movements }: CashMovementsTableProps) {
+  const columns = useMemo(() => movementColumns.map((column) => column.key === 'reference'
+    ? { ...column, render: (movement: CashMovement) => <MovementReference canViewInvoices={canViewInvoices} movement={movement} /> }
+    : column), [canViewInvoices]);
+
   return (
     <section className="space-y-3">
       <div>
@@ -72,7 +85,7 @@ export function CashMovementsTable({ movements }: CashMovementsTableProps) {
       {movements.length === 0 ? (
         <DataTable
           caption="Movimientos registrados para la sesión de caja actual."
-          columns={movementColumns}
+          columns={columns}
           containerLabel="Movimientos de caja"
           emptyDescription="Entradas, salidas y ajustes aparecerán cuando la sesión tenga actividad."
           emptyTitle="Sin movimientos de caja"
@@ -84,7 +97,7 @@ export function CashMovementsTable({ movements }: CashMovementsTableProps) {
           <div className="hidden md:block">
             <DataTable
               caption="Movimientos registrados para la sesión de caja actual."
-              columns={movementColumns}
+              columns={columns}
               containerLabel="Movimientos de caja"
               getRowKey={(movement) => movement.id}
               rows={movements}
@@ -104,7 +117,7 @@ export function CashMovementsTable({ movements }: CashMovementsTableProps) {
                     </div>
                     <MovementAmount movement={movement} />
                   </div>
-                  <MovementReference movement={movement} />
+                  <MovementReference canViewInvoices={canViewInvoices} movement={movement} />
                   {movement.notes ? <p className="text-xs leading-relaxed text-muted-foreground">{movement.notes}</p> : null}
                 </li>
               );
@@ -116,7 +129,13 @@ export function CashMovementsTable({ movements }: CashMovementsTableProps) {
   );
 }
 
-function MovementReference({ movement }: { movement: CashMovement }) {
+function MovementReference({
+  canViewInvoices,
+  movement,
+}: {
+  canViewInvoices: boolean;
+  movement: CashMovement;
+}) {
   const invoiceLabel = movement.invoice_number ?? (movement.invoice_id ? `#${movement.invoice_id}` : null);
 
   if (!movement.payment_id && !movement.invoice_id) {
@@ -125,13 +144,15 @@ function MovementReference({ movement }: { movement: CashMovement }) {
 
   return (
     <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-      {movement.invoice_id ? (
+      {movement.invoice_id && canViewInvoices ? (
         <Link
           className="min-h-11 content-center font-medium text-hospital-primary underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:min-h-0"
           to={`/invoices?invoice=${movement.invoice_id}`}
         >
           Factura {invoiceLabel}
         </Link>
+      ) : movement.invoice_id ? (
+        <span className="font-medium text-foreground">Factura {invoiceLabel}</span>
       ) : null}
       {movement.payment_id ? <span className="text-muted-foreground">Pago #{movement.payment_id}</span> : null}
     </span>
@@ -141,6 +162,9 @@ function MovementReference({ movement }: { movement: CashMovement }) {
 function MovementAmount({ movement }: { movement: CashMovement }) {
   const direction = movementDirection(movement.type);
   const sign = direction === 'positive' ? '+' : direction === 'negative' ? '-' : '';
+  const amount = direction === 'neutral'
+    ? formatLempirasUI(movement.amount)
+    : formatLempirasUI(Math.abs(finiteNumber(movement.amount)));
 
   return (
     <span
@@ -151,7 +175,7 @@ function MovementAmount({ movement }: { movement: CashMovement }) {
         direction === 'neutral' && 'text-muted-foreground',
       )}
     >
-      {sign ? `${sign} ` : ''}{formatLempirasUI(movement.amount)}
+      {sign ? `${sign} ` : ''}{amount}
     </span>
   );
 }

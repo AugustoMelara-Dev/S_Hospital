@@ -163,8 +163,11 @@ function HospitalApp() {
           cashSession={cashSession ?? null}
           canCloseAnyCash={session.canCloseAnyCash}
           canCloseCash={session.canCloseCash}
+          canCreateInvoices={session.canCreateInvoices}
           canOpenCash={session.canOpenCash}
+          canViewInvoices={session.canViewInvoices}
           canViewCashSessionReport={session.canViewCashSessionReports || session.canViewManagerialReports}
+          currentUserId={session.user.id}
           onStatus={handleStatus}
           compact
         />

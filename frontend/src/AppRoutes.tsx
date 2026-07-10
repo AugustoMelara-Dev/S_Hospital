@@ -138,8 +138,11 @@ export function AppRoutes({
               cashSession={cashSession}
               canCloseAnyCash={canCloseAnyCash}
               canCloseCash={canCloseCash}
+              canCreateInvoices={canCreateInvoices}
               canOpenCash={canOpenCash}
+              canViewInvoices={canViewInvoices}
               canViewCashSessionReport={canViewCashSessionReports || canViewManagerialReports}
+              currentUserId={user.id}
               onStatus={onStatus}
             />
           </PermissionGate>
