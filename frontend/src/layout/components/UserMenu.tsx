@@ -34,10 +34,10 @@ export function UserMenu({
         <Button
           type="button"
           variant="ghost"
-          className="h-auto gap-2 border border-transparent px-2 py-1.5 hover:border-operational-border hover:bg-operational-panel"
+          className="h-auto gap-2 border border-white/10 px-2 py-1.5 text-white hover:border-white/20 hover:bg-white/10 hover:text-white"
           aria-label="Abrir menu de usuario"
         >
-          <div className="flex size-8 items-center justify-center rounded-md border border-secondary/35 bg-secondary/10 text-xs font-bold text-secondary">
+          <div className="flex size-8 items-center justify-center rounded-lg border border-[#80dfd0]/30 bg-[#80dfd0]/10 text-xs font-bold text-[#80dfd0]">
             {user.name.charAt(0).toUpperCase()}
           </div>
           <span className="hidden max-w-[10rem] truncate text-xs lg:inline" title={user.name}>

@@ -67,7 +67,7 @@ export function ClinicalRail({ activeItem, collapsed, hospitalName, logoUrl, nav
           <TooltipProvider>
             {sections.map((section) => (
               <section key={section.id} aria-labelledby={`clinical-rail-${section.id}`} className="mb-5">
-                <h2 id={`clinical-rail-${section.id}`} className={cn('mb-2 px-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-sidebar-foreground/60', collapsed && 'sr-only')}>
+                <h2 id={`clinical-rail-${section.id}`} className={cn('mb-2 px-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-sidebar-foreground/85', collapsed && 'sr-only')}>
                   {section.label}
                 </h2>
                 <ul className="space-y-1">
@@ -83,8 +83,8 @@ export function ClinicalRail({ activeItem, collapsed, hospitalName, logoUrl, nav
                           'group relative flex min-h-11 items-center rounded-lg border border-transparent text-sm font-medium outline-none transition-all focus-visible:ring-2 focus-visible:ring-sidebar-ring',
                           collapsed ? 'justify-center px-2' : 'gap-3 px-3',
                           active
-                            ? 'border-sidebar-primary/20 bg-sidebar-primary/15 font-semibold text-white shadow-[inset_3px_0_0_var(--color-sidebar-primary)]'
-                            : 'text-sidebar-foreground/70 hover:translate-x-0.5 hover:bg-sidebar-accent hover:text-white',
+                            ? 'border-sidebar-primary/35 bg-sidebar-primary/25 font-semibold text-white shadow-[inset_3px_0_0_var(--color-sidebar-primary)]'
+                            : 'text-sidebar-foreground/80 hover:translate-x-0.5 hover:bg-sidebar-accent hover:text-white',
                         )}
                       >
                         <Icon className="size-5 shrink-0" aria-hidden="true" />

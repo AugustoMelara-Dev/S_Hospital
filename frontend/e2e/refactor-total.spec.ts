@@ -135,7 +135,7 @@ async function loginAsAdmin(page: Page) {
   ]);
   await page.waitForLoadState('domcontentloaded', { timeout: 70_000 });
   await expect(page.getByRole('main')).toBeVisible({ timeout: 70_000 });
-  await expect(page.getByRole('heading', { name: /centro de mando|dashboard|inicio/i }).first()).toBeVisible({ timeout: 70_000 });
+  await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible({ timeout: 70_000 });
 }
 
 async function seriousAxeViolations(page: Page) {

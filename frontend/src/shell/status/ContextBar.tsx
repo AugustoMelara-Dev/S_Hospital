@@ -38,7 +38,10 @@ export function ContextBar({ cashSession, commandButtonRef, crumbs, hospitalName
             {hospitalName}
           </p>
           <p className="truncate text-lg font-semibold tracking-tight">{currentTitle}</p>
-          <AppBreadcrumbs crumbs={crumbs} className="mt-1 hidden sm:block" />
+          <AppBreadcrumbs
+            crumbs={crumbs}
+            className="mt-1 hidden text-white/65 sm:block [&_[data-slot=breadcrumb-link]]:text-white/70 [&_[data-slot=breadcrumb-page]]:text-white [&_[data-slot=breadcrumb-separator]]:text-white/40"
+          />
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
@@ -60,7 +63,7 @@ export function ContextBar({ cashSession, commandButtonRef, crumbs, hospitalName
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button type="button" variant="ghost" size="icon" className="hidden sm:inline-flex" onClick={onOpenShortcuts} aria-label="Ver atajos de teclado">
+            <Button type="button" variant="ghost" size="icon" className="hidden text-white hover:bg-white/10 hover:text-white sm:inline-flex" onClick={onOpenShortcuts} aria-label="Ver atajos de teclado">
               <Keyboard aria-hidden="true" />
             </Button>
           </TooltipTrigger>
@@ -68,7 +71,7 @@ export function ContextBar({ cashSession, commandButtonRef, crumbs, hospitalName
         </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button type="button" variant="ghost" size="icon" className="hidden sm:inline-flex" onClick={onOpenGuide} aria-label="Abrir ayuda">
+            <Button type="button" variant="ghost" size="icon" className="hidden text-white hover:bg-white/10 hover:text-white sm:inline-flex" onClick={onOpenGuide} aria-label="Abrir ayuda">
               <CircleHelp aria-hidden="true" />
             </Button>
           </TooltipTrigger>
@@ -76,7 +79,7 @@ export function ContextBar({ cashSession, commandButtonRef, crumbs, hospitalName
         </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button type="button" variant="ghost" size="icon" className="hidden sm:inline-flex" onClick={toggleTheme} aria-label={isDark ? 'Cambiar a claro' : 'Cambiar a oscuro'}>
+            <Button type="button" variant="ghost" size="icon" className="hidden text-white hover:bg-white/10 hover:text-white sm:inline-flex" onClick={toggleTheme} aria-label={isDark ? 'Cambiar a claro' : 'Cambiar a oscuro'}>
               {isDark ? <Sun aria-hidden="true" /> : <Moon aria-hidden="true" />}
             </Button>
           </TooltipTrigger>
