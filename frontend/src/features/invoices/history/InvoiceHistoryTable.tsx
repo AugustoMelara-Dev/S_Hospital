@@ -3,6 +3,10 @@ import { ActionMenu, type ActionMenuGroup } from '../../../components/ui/action-
 import { DataTable, type DataTableColumn } from '../../../components/ui/data-table';
 import { StatusBadge } from '../../../components/ui/status-badge';
 import type { Invoice } from '../../../lib/api';
+import {
+  getIssuedInstitutionalReceipt,
+  invoiceActionPolicy,
+} from '../../../modules/invoices/application/invoiceActionPolicy';
 
 type InvoiceHistoryTableProps = {
   canIssueInstitutionalReceipt: boolean;
@@ -111,45 +115,35 @@ export function InvoiceHistoryTable({
       render: (invoice) => {
         const isOwn = isOwnInvoiceFromToday(invoice);
         const institutionalReceipt = issuedInstitutionalReceipt(invoice);
-        const canOperateInvoice = canOperateAnyInvoice || isOwn;
-        const canOperateReceipt = canReprintAny || canOperateAnyInvoice || isOwn;
-        const canOpenInstitutionalReceipt = institutionalReceipt
-          ? canViewReceipt
-            && canOperateReceipt
-            && (!hasInstitutionalPrintEvents(institutionalReceipt) || canReprint)
-          : false;
-        const canIssueMissingInstitutionalReceipt = canIssueInstitutionalReceipt
-          && canOperateInvoice
-          && invoice.status === 'paid'
-          && !institutionalReceipt;
-        const canOpenLegacyReceipt = canViewReceipt
-          && !institutionalReceipt
-          && !canIssueMissingInstitutionalReceipt
-          && (canReprintAny || isOwn);
-        const canOpenReceipt = canOpenInstitutionalReceipt || canOpenLegacyReceipt;
+        const actions = invoiceActionPolicy(invoice, {
+          canIssueInstitutionalReceipt,
+          canOperateAnyInvoice,
+          canReprint,
+          canReprintAny,
+          canReverse,
+          canViewReceipt,
+          canVoid,
+          isOwnInvoiceFromToday: isOwn,
+        });
         const groups: ActionMenuGroup[] = [];
 
         const primaryGroup: ActionMenuGroup = {
           key: 'receipt',
           items: [],
         };
-        if (canOpenReceipt) {
-          const opensAuditedReprint = institutionalReceipt
-            ? hasInstitutionalPrintEvents(institutionalReceipt)
-            : false;
+        if (actions.openReceipt) {
           primaryGroup.items.push({
             key: 'view',
-            label: opensAuditedReprint ? 'Reimprimir PDF' : 'Ver recibo',
-            icon: opensAuditedReprint
+            label: actions.auditedOpen ? 'Reimprimir PDF' : 'Ver recibo',
+            icon: actions.auditedOpen
               ? <Printer aria-hidden="true" className="size-4" />
               : <Receipt aria-hidden="true" className="size-4" />,
             onSelect: () => onOpenReceipt(invoice.id),
           });
         }
         if (
-          canOpenInstitutionalReceipt
+          actions.downloadInstitutionalReceipt
           && institutionalReceipt
-          && !hasInstitutionalPrintEvents(institutionalReceipt)
         ) {
           primaryGroup.items.push({
             key: 'download',
@@ -159,7 +153,7 @@ export function InvoiceHistoryTable({
             onSelect: () => onDownloadInstitutionalReceipt(invoice),
           });
         }
-        if (canIssueMissingInstitutionalReceipt) {
+        if (actions.generateInstitutionalReceipt) {
           primaryGroup.items.push({
             key: 'generate',
             label: 'Generar PDF',
@@ -168,11 +162,7 @@ export function InvoiceHistoryTable({
             onSelect: () => onGenerateInstitutionalReceipt(invoice.id),
           });
         }
-        const canReprintLegacyReceipt = !canIssueMissingInstitutionalReceipt
-          && !institutionalReceipt
-          && (invoice.status === 'paid' || invoice.status === 'partial');
-        const hasReprintableReceipt = Boolean(institutionalReceipt) || canReprintLegacyReceipt;
-        if (canReprint && (canReprintAny || isOwn) && hasReprintableReceipt) {
+        if (actions.reprint) {
           primaryGroup.items.push({
             key: 'reprint',
             label: 'Reimprimir',
@@ -185,7 +175,7 @@ export function InvoiceHistoryTable({
         }
 
         const dangerGroup: ActionMenuGroup = { key: 'danger', items: [] };
-        if (canReverse && canOperateInvoice && (invoice.status === 'paid' || invoice.status === 'partial')) {
+        if (actions.reverse) {
           dangerGroup.items.push({
             key: 'reverse',
             label: 'Reversar pago',
@@ -194,7 +184,7 @@ export function InvoiceHistoryTable({
             onSelect: () => onPrepareInvoiceAction(invoice.id, 'reverse'),
           });
         }
-        if (canVoid && canOperateInvoice && invoice.status === 'issued') {
+        if (actions.void) {
           dangerGroup.items.push({
             key: 'void',
             label: 'Anular factura',
@@ -235,11 +225,7 @@ export function InvoiceHistoryTable({
 }
 
 export function issuedInstitutionalReceipt(invoice: Invoice): NonNullable<Invoice['institutional_receipt']> | null {
-  return invoice.institutional_receipt?.status === 'issued' ? invoice.institutional_receipt : null;
-}
-
-function hasInstitutionalPrintEvents(receipt: NonNullable<Invoice['institutional_receipt']>): boolean {
-  return receipt.has_print_events === true || (receipt.print_events_count ?? 0) > 0;
+  return getIssuedInstitutionalReceipt(invoice);
 }
 
 const statusConfig = {

@@ -91,6 +91,13 @@ class ExecutiveReportTest extends TestCase
                         'days',
                     ],
                     'filters',
+                    'accounting_policy' => [
+                        'scope',
+                        'expenses_supported',
+                        'exclusions_already_applied',
+                        'billed_definition',
+                        'collected_definition',
+                    ],
                     'comparison' => [
                         'billed' => ['current', 'previous', 'delta_cents', 'delta_percentage'],
                         'collected' => ['current', 'previous', 'delta_cents', 'delta_percentage'],
@@ -168,7 +175,10 @@ class ExecutiveReportTest extends TestCase
                         'backup_events',
                     ],
                 ],
-            ]);
+            ])
+            ->assertJsonPath('data.accounting_policy.scope', 'operational_cash')
+            ->assertJsonPath('data.accounting_policy.expenses_supported', false)
+            ->assertJsonPath('data.accounting_policy.exclusions_already_applied', true);
     }
 
     public function test_executive_summary_excludes_voided_invoices_from_billed(): void

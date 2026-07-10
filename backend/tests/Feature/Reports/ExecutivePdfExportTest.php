@@ -92,7 +92,8 @@ class ExecutivePdfExportTest extends TestCase
         $this->assertStringContainsString('Anulaciones y Reversas', $html);
         $this->assertStringContainsString('Resumen de Auditoria', $html);
         $this->assertStringContainsString('Documento generado por S_Hospital', $html);
-        $this->assertStringContainsString('Los montos anulados y reversados no forman parte del ingreso neto', $html);
+        $this->assertStringContainsString('Los montos anulados y reversados ya estan excluidos de los totales activos', $html);
+        $this->assertStringNotContainsString('facturado menos anulado y reversado', $html);
 
         $this->assertStringContainsString('L. ', $html);
     }

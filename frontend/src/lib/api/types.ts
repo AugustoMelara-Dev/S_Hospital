@@ -649,6 +649,13 @@ export type ExecutiveReport = {
     method: string | null;
     status: string | null;
   };
+  accounting_policy: {
+    scope: 'operational_cash';
+    expenses_supported: false;
+    exclusions_already_applied: true;
+    billed_definition: string;
+    collected_definition: string;
+  };
   comparison: {
     billed: {
       current: string;

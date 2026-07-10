@@ -1,5 +1,24 @@
 # Changelog - Sistema de Caja Hospitalaria
 
+## 2026-07-09 - Reescritura total, Fase 4: semantica de reportes y acciones
+
+- Publica `accounting_policy` en el reporte ejecutivo para declarar alcance de
+  caja operativa, egresos no soportados y exclusiones ya aplicadas.
+- Alinea UI, PDF y glosario Excel: facturas anuladas ya estan fuera de
+  Facturado y pagos reversados ya estan fuera de Cobrado; no se restan otra vez.
+- Elimina la formula incorrecta `facturado - anulado - reversado` del glosario
+  y la reemplaza por la definicion de cobrado neto operativo.
+- Agrega un panel de criterio contable reutilizable al reporte ejecutivo.
+- Extrae la elegibilidad de acciones de Historial a
+  `modules/invoices/application/invoiceActionPolicy`, cubriendo estado,
+  propiedad, permisos, primera apertura, descarga, reimpresion, recuperacion,
+  anulacion y reverso.
+- Reconfirma por pruebas que catalogo y fiscal exigen motivos auditados y que
+  la regla fija de eritropoyetina permanece protegida.
+- Verificacion fresca: 27 pruebas backend ejecutivas / 292 aserciones, 8
+  pruebas catalogo/fiscal / 49 aserciones, 102 pruebas frontend, 4 E2E de
+  reportes, PHPStan 216/216, Pint, lint, typecheck y build en verde.
+
 ## 2026-07-09 - Reescritura total, Fase 3: conciliacion de caja
 
 - Unifica el contrato publico de caja abierta, cierre confirmado y reporte de

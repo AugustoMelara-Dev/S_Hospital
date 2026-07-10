@@ -9,12 +9,12 @@ Production approval: NO
 
 ## Current Focus
 
-Phases 1 through 3 of the approved total rewrite close printing policy, payment
-outcomes and cash reconciliation. Receipt printing is explicit-only and the
-operator chooses only Carta, Media carta or A5. Payment responses distinguish
-issued, partial and recovery-required receipts. Live cash, close response and
-cash-session reports now share the same server-owned totals; pending invoices,
-missing receipts and reversed payments remain separate operational facts.
+Phases 1 through 4 of the approved total rewrite close printing, payment
+outcomes, cash reconciliation and executive-report semantics. Live cash,
+closed snapshots and reports share server-owned totals. Executive UI/PDF/Excel
+now state that voids and reversals are already excluded from active totals and
+must not be subtracted twice. Invoice-history actions come from one tested
+state/permission policy.
 
 The latest verification pass moved from local frontend-only evidence to the
 Docker stack. It confirmed the containerized Laravel, MySQL/MariaDB and
@@ -36,6 +36,13 @@ production approval.
 
 | Date | Command | Result | Notes |
 |---|---|---|---|
+| 2026-07-09 | `docker compose exec -T backend php artisan test --compact tests/Feature/Reports/ExecutiveReportTest.php tests/Feature/Reports/ExecutivePdfExportTest.php tests/Feature/Reports/ExecutiveExcelExportTest.php` | PASS, 27 tests / 292 assertions | API accounting policy plus matching UI-source, PDF and Excel semantics. |
+| 2026-07-09 | `docker compose exec -T backend php artisan test --compact tests/Feature/ServiceCatalogTest.php tests/Feature/FiscalSettingsTest.php --filter=...` | PASS, 8 tests / 49 assertions | Price/fiscal reasons, audit and fixed erythropoietin invariants. |
+| 2026-07-09 | `npm.cmd run test -- InvoiceHistoryView ReportsExecutive ExecutiveSummary AccountingPolicyPanel invoiceActionPolicy CatalogView ServiceSheet FiscalSettingsView ...` | PASS, 9 files / 102 tests | History action policy, accounting definitions, catalog and fiscal UI regression gate. |
+| 2026-07-09 | `npx.cmd playwright test e2e/reports-flow.spec.ts` | PASS, 4 tests | Executive accounting policy, exports, cash report, audit route and mobile report navigation. |
+| 2026-07-09 | `docker compose exec -T backend vendor/bin/phpstan analyse --memory-limit=1G` | PASS, 216/216 files | Phase 4 static analysis. |
+| 2026-07-09 | `docker compose exec -T backend vendor/bin/pint --test ...` | PASS, 6 files | Phase 4 backend formatting gate. |
+| 2026-07-09 | `npm.cmd run lint`, `npm.cmd run typecheck`, `npm.cmd run build` | PASS | Phase 4 frontend quality and production build gates. |
 | 2026-07-09 | `docker compose exec -T backend php artisan test --compact tests/Feature/Cash/CloseCashSessionTest.php tests/Feature/CashPaymentsReceiptTest.php tests/Feature/ReportsTest.php` | PASS, 103 tests / 1308 assertions | Reconciliation, normalized close snapshot, pending/receipt blockers, reversals, cash reports and permissions. |
 | 2026-07-09 | `npm.cmd run test -- CashBoxView CloseSessionDialog CashSessionReportPanel ReportsCash reconciliationStatus AccountingControlPanel cashCloseSummary ...` | PASS, 7 files / 53 tests | Live cash, close dialogs, accounting control panel and cash-session reports. |
 | 2026-07-09 | `npm.cmd run test:critical` | PASS, 15 files / 206 tests | Cross-module critical frontend regression gate after the accounting module integration. |

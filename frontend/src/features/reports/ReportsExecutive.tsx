@@ -17,6 +17,7 @@ import { ServiceRanking } from './components/ServiceRanking';
 import { PendingAgingPanel } from './components/PendingAgingPanel';
 import { ExecutiveReportFilters } from './components/ExecutiveReportFilters';
 import { computePresetRange, type PresetKey } from './components/reportDateRanges';
+import { AccountingPolicyPanel } from '@/modules/reports/components/AccountingPolicyPanel';
 
 type ReportsExecutiveProps = {
   canExport: boolean;
@@ -184,6 +185,7 @@ export function ReportsExecutive({
       {report ? (
         <div className="flex flex-col gap-5">
           <ExecutiveSummary report={report} />
+          <AccountingPolicyPanel policy={report.accounting_policy} />
           <ExecutiveAlerts report={report} />
           <PendingAgingPanel report={report} />
           <PaymentMethodPanel report={report} />

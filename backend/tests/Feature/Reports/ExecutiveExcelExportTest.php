@@ -92,6 +92,16 @@ class ExecutiveExcelExportTest extends TestCase
         $this->assertContains('Auditoria', $sheetTitles);
         $this->assertContains('Glosario', $sheetTitles);
 
+        $glossary = $loaded->getSheetByName('Glosario');
+        $this->assertNotNull($glossary);
+        $glossaryText = implode(' ', array_map(
+            static fn (array $row): string => implode(' ', array_map('strval', $row)),
+            $glossary->toArray(),
+        ));
+        $this->assertStringContainsString('Cobrado neto operativo', $glossaryText);
+        $this->assertStringContainsString('ya estan excluidos', $glossaryText);
+        $this->assertStringNotContainsString('Total facturado menos anulado y reversado', $glossaryText);
+
         @unlink($tempFile);
     }
 

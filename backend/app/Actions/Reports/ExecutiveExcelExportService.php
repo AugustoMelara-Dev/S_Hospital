@@ -481,15 +481,15 @@ class ExecutiveExcelExportService
             ['Facturado', 'Total de facturas emitidas en el periodo, excluyendo anuladas.'],
             ['Cobrado', 'Total de pagos registrados y no anulados, en facturas no anuladas.'],
             ['Pendiente', 'Saldo abierto de facturas emitidas o parciales.'],
-            ['Anulado', 'Facturas anuladas. NO forma parte del ingreso neto.'],
-            ['Reversado', 'Pagos revertidos con auditoria. NO forma parte del ingreso neto.'],
+            ['Anulado', 'Dato de control. Ya esta excluido de Facturado; no se resta otra vez.'],
+            ['Reversado', 'Dato de control. Ya esta excluido de Cobrado; no se resta otra vez.'],
             ['Efectivo esperado', 'Efectivo inicial + pagos en efectivo del turno.'],
             ['Efectivo contado', 'Efectivo fisico reportado por el cajero al cierre.'],
             ['Diferencia de caja', 'Contado menos esperado. Positivo = sobrante. Negativo = faltante.'],
             ['Ticket promedio', 'Total facturado / numero de facturas.'],
             ['Factura parcial', 'Factura con pagos parciales que mantiene saldo pendiente.'],
             ['Reimpresion', 'Nueva emision de un comprobante ya emitido. Se audita con motivo.'],
-            ['Ingreso neto', 'Total facturado menos anulado y reversado.'],
+            ['Cobrado neto operativo', 'Pagos posteados no reversados en facturas no anuladas. Anulaciones y reversos ya estan excluidos.'],
         ];
 
         foreach ($definitions as $definition) {

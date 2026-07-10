@@ -34,8 +34,10 @@ test.describe('Reports - critical mocked e2e (3 sub-routes)', () => {
     await page.goto('/reports/executive');
 
     await expect(page.getByRole('heading', { level: 1, name: /control ejecutivo/i })).toBeVisible();
-    await expect(page.getByText(/total facturado/i)).toBeVisible();
+    await expect(page.getByText('Total facturado', { exact: true })).toBeVisible();
     await expect(page.getByText(/glucosa basal/i)).toBeVisible();
+    await expect(page.getByRole('heading', { name: /criterio contable operativo/i })).toBeVisible();
+    await expect(page.getByText(/no se restan otra vez/i)).toBeVisible();
 
     await page.getByLabel(/inicio ejecutivo/i).fill(reportPeriod.from);
     await page.getByLabel(/fin ejecutivo/i).fill(reportPeriod.to);
@@ -138,6 +140,13 @@ function executiveReport(from: string, to: string) {
   return {
     period: { from, to, days: from === to ? 1 : 2, timezone: 'America/Tegucigalpa' },
     filters: { cash_session_id: null, user_id: null, category_id: null, area_id: null, method: null, status: null },
+    accounting_policy: {
+      scope: 'operational_cash',
+      expenses_supported: false,
+      exclusions_already_applied: true,
+      billed_definition: 'Facturas emitidas no anuladas. Las anulaciones ya estan excluidas.',
+      collected_definition: 'Pagos posteados no reversados. Los reversos ya estan excluidos.',
+    },
     comparison: {
       billed: { current: '340.00', previous: '250.00', delta_cents: 9000, delta_percentage: 36 },
       collected: { current: '315.00', previous: '250.00', delta_cents: 6500, delta_percentage: 26 },

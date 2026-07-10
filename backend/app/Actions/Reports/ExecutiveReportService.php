@@ -75,6 +75,13 @@ class ExecutiveReportService
                 'method' => $filters['method'] ?? null,
                 'status' => $filters['status'] ?? null,
             ],
+            'accounting_policy' => [
+                'scope' => 'operational_cash',
+                'expenses_supported' => false,
+                'exclusions_already_applied' => true,
+                'billed_definition' => 'Facturas emitidas no anuladas. Las facturas anuladas ya estan excluidas.',
+                'collected_definition' => 'Pagos posteados no reversados en facturas no anuladas. Reversos y anulaciones ya estan excluidos.',
+            ],
             'comparison' => $comparison,
             'summary' => $summary,
             'payment_methods' => $paymentMethods,

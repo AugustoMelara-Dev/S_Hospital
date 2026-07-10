@@ -56,7 +56,7 @@ const KPI_SPECS: KpiSpec[] = [
   {
     key: 'voided_total',
     label: 'Anulado',
-    helper: 'Facturas anuladas. Fuera del ingreso neto.',
+    helper: 'Facturas anuladas. Ya excluidas del total facturado.',
     tone: 'danger',
     value: (r) => r.summary.voided_total,
     context: (r) => `${r.summary.voided_count} facturas anuladas`,
@@ -102,7 +102,7 @@ const KPI_SPECS: KpiSpec[] = [
   {
     key: 'voided_count',
     label: 'Anulaciones',
-    helper: 'Cantidad de facturas anuladas. Fuera del ingreso neto.',
+    helper: 'Cantidad de facturas anuladas; no se resta otra vez.',
     tone: 'danger',
     value: (r) => String(r.summary.voided_count),
     context: (r) => `Monto anulado: ${formatLempirasUI(r.summary.voided_total)}`,
@@ -110,7 +110,7 @@ const KPI_SPECS: KpiSpec[] = [
   {
     key: 'reversed_total',
     label: 'Reversado',
-    helper: 'Operaciones revertidas. Fuera del ingreso neto.',
+    helper: 'Pagos reversados. Ya excluidos del total cobrado.',
     tone: 'danger',
     value: (r) => r.summary.reversed_total,
     context: () => 'Pagos reversados con auditoria',
