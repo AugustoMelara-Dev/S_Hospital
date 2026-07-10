@@ -59,11 +59,11 @@ export function CashClosingPanel({
   return (
     <section
       aria-labelledby="cash-close-guided-title"
-      className="overflow-hidden rounded-lg border border-operational-border bg-operational-surface"
+      className="overflow-hidden rounded-2xl border border-operational-border bg-operational-surface shadow-operational"
     >
-      <div className="border-b border-border px-4 pb-4 pt-5 sm:px-5">
+      <div className="border-b border-border bg-muted/35 px-5 pb-5 pt-6 sm:px-6">
         <div className="flex items-start gap-3">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded bg-muted text-secondary ring-1 ring-border">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#0c2733] text-[#80dfd0] shadow-lg">
             <ClipboardCheck data-icon aria-hidden="true" className="size-5" />
           </span>
           <div className="min-w-0">
@@ -77,7 +77,7 @@ export function CashClosingPanel({
         </div>
       </div>
 
-      <form onSubmit={onSubmit} className="flex flex-col gap-4 px-4 pb-5 pt-5 sm:px-5" aria-busy={isSubmitting}>
+      <form onSubmit={onSubmit} className="flex flex-col gap-5 px-5 pb-6 pt-5 sm:px-6" aria-busy={isSubmitting}>
         <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(13rem,0.45fr)]">
           <FormField
             id="closing_amount"
@@ -104,7 +104,7 @@ export function CashClosingPanel({
             )}
           </FormField>
 
-          <div className="rounded-md border border-border bg-card p-3">
+          <div className="rounded-xl border border-secondary/25 bg-accent/35 p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
               Diferencia
             </p>

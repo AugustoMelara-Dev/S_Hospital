@@ -70,15 +70,15 @@ export function InvoiceDetailSheet({
       {!loading && error ? <ErrorState title="No se pudo cargar el detalle" description={error} /> : null}
       {!loading && !error && invoice ? (
         <div className="flex flex-col gap-6">
-          <section aria-label="Resumen de factura" className="border-b border-border pb-5">
+          <section aria-label="Resumen de factura" className="rounded-xl bg-[#0c2733] p-5 text-white shadow-operational">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Paciente</p>
-                <p className="mt-1 text-xl font-semibold text-foreground">{patientName(invoice)}</p>
-                <p className="mt-1 text-sm text-muted-foreground">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#80dfd0]">Paciente</p>
+                <p className="mt-1 text-xl font-semibold text-white">{patientName(invoice)}</p>
+                <p className="mt-1 text-sm text-white/60">
                   Emitida por {invoice.issuer?.name ?? 'Usuario no disponible'}
                 </p>
-                <p className="mt-1 text-sm tabular-nums text-muted-foreground">
+                <p className="mt-1 text-sm tabular-nums text-white/60">
                   {formatDateTimeEs(invoice.issued_at)}
                 </p>
               </div>
@@ -90,7 +90,7 @@ export function InvoiceDetailSheet({
 
           <section aria-labelledby="invoice-detail-totals">
             <h3 id="invoice-detail-totals" className="text-sm font-semibold text-foreground">Resumen financiero</h3>
-            <dl className="mt-3 divide-y divide-border rounded-md border border-border bg-muted/20 px-4">
+            <dl className="mt-3 divide-y divide-border rounded-xl border border-border bg-muted/25 px-4">
               <AmountRow label="Subtotal" value={moneyLabel(invoice.subtotal)} />
               <AmountRow label="ISV" value={moneyLabel(invoice.tax_amount)} />
               <AmountRow label="Descuento" value={moneyLabel(invoice.discount_amount)} />

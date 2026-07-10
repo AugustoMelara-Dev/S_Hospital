@@ -179,14 +179,14 @@ export function ExecutiveSummary({ report }: ExecutiveSummaryProps) {
   return (
     <section
       aria-labelledby="executive-summary-title"
-      className="flex flex-col gap-4 rounded-panel border border-operational-border bg-operational-surface p-panel shadow-operational"
+      className="flex flex-col gap-5 overflow-hidden rounded-2xl border border-operational-border bg-operational-surface p-5 shadow-operational sm:p-6"
     >
-      <header className="flex flex-col gap-3 border-b border-operational-border pb-4 lg:flex-row lg:items-end lg:justify-between">
+      <header className="-mx-5 -mt-5 flex flex-col gap-3 border-b border-white/10 bg-[#0c2733] p-5 text-white sm:-mx-6 sm:-mt-6 sm:p-6 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">
-        <p id="executive-summary-title" className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+        <p id="executive-summary-title" className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#80dfd0]">
           Resumen ejecutivo
         </p>
-        <h2 className="text-base font-semibold text-foreground">
+        <h2 className="text-lg font-semibold text-white">
           Lectura de facturacion, cobros y caja
         </h2>
         <p className="text-xs text-muted-foreground">
@@ -215,7 +215,7 @@ export function ExecutiveSummary({ report }: ExecutiveSummaryProps) {
           {report.summary.pending_count} factura{report.summary.pending_count === 1 ? '' : 's'} con saldo abierto
         </p>
       </div>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {KPI_SPECS.map((spec) => {
           const value = spec.value(report);
           const context = spec.context(report);

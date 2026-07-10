@@ -248,21 +248,21 @@ export function PaymentModal({
       >
         <section
           aria-label="Resumen de factura"
-          className="rounded-panel border border-operational-border bg-operational-panel/70 p-4"
+          className="overflow-hidden rounded-xl border border-white/10 bg-[#0c2733] p-5 text-white shadow-operational"
         >
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
-              <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-[#80dfd0]">
                 <ReceiptText className="size-3.5 text-secondary" aria-hidden="true" />
                 Factura
               </p>
-              <p className="break-words font-semibold tabular-nums text-foreground">{invoiceNumber}</p>
-              <p className="mt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Paciente</p>
-              <p className="break-words font-medium text-foreground">{patientLabel}</p>
+              <p className="break-words font-semibold tabular-nums text-white">{invoiceNumber}</p>
+              <p className="mt-2 text-xs font-medium uppercase tracking-wide text-white/55">Paciente</p>
+              <p className="break-words font-medium text-white">{patientLabel}</p>
             </div>
-            <div className="grid gap-1 rounded-md border border-secondary/25 bg-secondary/10 px-3 py-2 text-sm sm:min-w-44 sm:text-right">
-              <span className="text-muted-foreground">Saldo pendiente</span>
-              <MoneyText emphasis="strong" className="text-xl">
+            <div className="grid gap-1 rounded-xl border border-[#80dfd0]/25 bg-[#80dfd0]/10 px-4 py-3 text-sm sm:min-w-48 sm:text-right">
+              <span className="text-white/60">Saldo pendiente</span>
+              <MoneyText emphasis="strong" className="text-xl text-white">
                 {moneyLabel(balanceDue)}
               </MoneyText>
             </div>
@@ -270,34 +270,34 @@ export function PaymentModal({
           <Separator className="my-4" />
           <dl className="grid gap-2 text-sm sm:grid-cols-2">
             <div className="flex justify-between gap-3 sm:block">
-              <dt className="text-muted-foreground">Total:</dt>
+              <dt className="text-white/55">Total:</dt>
               <dd className="font-medium">
-                <MoneyText>{moneyLabel(total)}</MoneyText>
+                <MoneyText className="text-white">{moneyLabel(total)}</MoneyText>
               </dd>
             </div>
             <div className="flex justify-between gap-3 sm:block sm:text-right">
-              <dt className="text-muted-foreground">Pago aplicado:</dt>
+              <dt className="text-white/55">Pago aplicado:</dt>
               <dd className="font-medium">
                 {appliedAmountCents !== null && appliedAmountCents > 0 ? (
-                  <MoneyText>{moneyLabelFromCents(appliedAmountCents)}</MoneyText>
+                  <MoneyText className="text-white">{moneyLabelFromCents(appliedAmountCents)}</MoneyText>
                 ) : (
-                  <span className="tabular-nums text-muted-foreground">L 0.00</span>
+                  <span className="tabular-nums text-white/55">L 0.00</span>
                 )}
               </dd>
             </div>
             {changeCents !== null ? (
               <div className="flex justify-between gap-3 sm:block">
-                <dt className="text-muted-foreground">Cambio:</dt>
+                <dt className="text-white/55">Cambio:</dt>
                 <dd className="font-semibold">
-                  <MoneyText tone="success">{moneyLabelFromCents(changeCents)}</MoneyText>
+                  <MoneyText tone="success" className="text-[#80dfd0]">{moneyLabelFromCents(changeCents)}</MoneyText>
                 </dd>
               </div>
             ) : null}
             {remainingBalanceCents !== null ? (
               <div className="flex justify-between gap-3 sm:block sm:text-right">
-                <dt className="text-muted-foreground">Saldo pendiente:</dt>
+                <dt className="text-white/55">Saldo pendiente:</dt>
                 <dd className="font-semibold">
-                  <MoneyText tone="warning">{moneyLabelFromCents(remainingBalanceCents)}</MoneyText>
+                  <MoneyText tone="warning" className="text-[#ffd38a]">{moneyLabelFromCents(remainingBalanceCents)}</MoneyText>
                 </dd>
               </div>
             ) : null}
@@ -330,7 +330,7 @@ export function PaymentModal({
           ) : null}
         </div>
 
-        <section aria-label="Datos del pago" className="grid gap-4 rounded-panel border border-operational-border bg-card p-4">
+        <section aria-label="Datos del pago" className="grid gap-5 rounded-xl border border-operational-border bg-card p-5 shadow-operational">
           <fieldset className="grid gap-1.5">
             <legend className="text-sm font-medium">Método de pago</legend>
             <div
@@ -338,7 +338,7 @@ export function PaymentModal({
               aria-label="Método de pago"
               aria-describedby="payment-method-help"
               tabIndex={-1}
-              className="grid grid-cols-2 gap-2 sm:grid-cols-4"
+              className="grid grid-cols-2 gap-2 rounded-xl bg-muted/45 p-2 sm:grid-cols-4"
               onKeyDown={handlePaymentMethodKeyDown}
             >
               {paymentMethods.map((method) => (

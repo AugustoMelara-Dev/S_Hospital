@@ -36,8 +36,8 @@ export function UserRolesPanel({
 
   return (
     <>
-      <Card className="border border-operational-border bg-operational-surface shadow-operational">
-        <CardContent className="space-y-4 p-4">
+      <Card className="overflow-hidden border border-operational-border bg-operational-surface shadow-operational">
+        <CardContent className="space-y-5 p-5">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
               <h2 className="text-base font-semibold text-foreground">Roles y modulos</h2>
@@ -51,7 +51,7 @@ export function UserRolesPanel({
           </div>
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {roles.map((role) => (
-              <div key={role.id} className="rounded-md border border-operational-border bg-operational-panel/55 p-4">
+              <div key={role.id} className="relative overflow-hidden rounded-xl border border-operational-border bg-operational-panel/45 p-5 before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-secondary/65">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="font-semibold text-foreground">{roleLabel(role.name)}</p>
