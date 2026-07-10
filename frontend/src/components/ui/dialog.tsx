@@ -46,11 +46,11 @@ export function Dialog({
                 {title}
               </DialogPrimitive.Title>
               <DialogPrimitive.Description data-slot="dialog-description" className={description ? 'mt-1 text-sm text-muted-foreground' : 'sr-only'}>
-                {description ?? `Ventana de dialogo: ${title}`}
+                {description ?? `Ventana de diálogo: ${title}`}
               </DialogPrimitive.Description>
             </div>
             <DialogPrimitive.Close asChild>
-              <Button type="button" variant="ghost" size="sm" aria-label="Cerrar modal">
+              <Button type="button" variant="ghost" size="sm" className="size-11 sm:size-11" aria-label="Cerrar modal">
                 <X data-icon aria-hidden="true" />
               </Button>
             </DialogPrimitive.Close>

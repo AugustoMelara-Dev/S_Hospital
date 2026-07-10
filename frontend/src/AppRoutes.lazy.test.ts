@@ -1,6 +1,52 @@
+import { createElement, type ComponentProps } from 'react';
+import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { AppRoutes } from './AppRoutes';
+
+const appRoutesProps: ComponentProps<typeof AppRoutes> = {
+  canCreateInvoices: false,
+  canCreatePayments: false,
+  canEditFiscalSettings: false,
+  canEditOperationalSettings: false,
+  canManageCatalog: false,
+  canOpenCash: false,
+  canCloseAnyCash: false,
+  canCloseCash: false,
+  canViewBackups: false,
+  canViewCash: false,
+  canViewCatalog: false,
+  canViewReceipts: false,
+  canViewFiscalSettings: false,
+  canViewInvoices: false,
+  canViewReports: false,
+  canViewManagerialReports: false,
+  canViewCashSessionReports: false,
+  canViewAuditReports: false,
+  canExportReports: false,
+  canViewUsers: false,
+  canCreateUsers: false,
+  canUpdateUsers: false,
+  canDisableUsers: false,
+  canManageRoles: false,
+  canMarkDialysisPrescription: false,
+  cashSession: null,
+  defaultAuthenticatedRoute: '/dashboard',
+  onQuickCash: () => undefined,
+  onStatus: () => undefined,
+  user: {
+    id: 1,
+    name: 'Cajero',
+    email: 'cajero@hospital.local',
+    username: 'cajero',
+    active: true,
+    roles: ['cajero'],
+    permissions: [],
+    must_change_password: false,
+  },
+};
 
 /**
  * Smoke test that guarantees the heavy routes stay lazy-loaded so the
@@ -40,5 +86,25 @@ describe('AppRoutes lazy-loading', () => {
     );
 
     expect(source).toMatch(/Suspense[^>]*fallback=/);
+  });
+
+  it('propaga capacidades de setup distintas al Dashboard', () => {
+    const source = readFileSync(resolve(__dirname, 'AppRoutes.tsx'), 'utf8');
+
+    expect(source).toContain('canEditFiscalSettings={canEditFiscalSettings}');
+    expect(source).toContain('canManageCatalog={canManageCatalog}');
+  });
+
+  it('resuelve el wildcard al montar AppRoutes completo y conserva navegación a Inicio', () => {
+    render(
+      createElement(
+        MemoryRouter,
+        { initialEntries: ['/ruta/desconocida'] },
+        createElement(AppRoutes, appRoutesProps),
+      ),
+    );
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Ruta no encontrada' })).toBeVisible();
+    expect(screen.getByRole('link', { name: 'Ir al inicio' })).toHaveAttribute('href', '/dashboard');
   });
 });

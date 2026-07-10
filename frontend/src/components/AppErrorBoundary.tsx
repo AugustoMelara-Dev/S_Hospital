@@ -1,8 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
-import { AlertTriangle, LifeBuoy, RefreshCw } from 'lucide-react';
-import { Alert } from './ui/alert';
-import { Button } from './ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { LifeBuoy } from 'lucide-react';
+import { RouteState } from '../design-system/patterns/RouteState';
 import { logClientIssue } from '../lib/support/clientIssueLog';
 
 type AppErrorBoundaryProps = {
@@ -40,39 +38,25 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
     }
 
     return (
-      <main className="flex min-h-screen items-center justify-center bg-background p-6 text-foreground">
-        <Card className="w-full max-w-xl">
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-md bg-destructive/10 text-destructive">
-                <AlertTriangle aria-hidden="true" />
-              </div>
-              <div>
-                <CardTitle>La pantalla no pudo cargarse</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  El sistema siguio activo, pero esta vista tuvo un error de interfaz.
-                </p>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            <Alert variant="destructive" title="Error controlado">
-              Recargue la pantalla. Si vuelve a ocurrir, abra Ayuda, prepare el resumen seguro y avise a supervisor o soporte. El detalle tecnico quedo guardado en este navegador.
-            </Alert>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <Button type="button" onClick={() => window.location.reload()}>
-                <RefreshCw data-icon="inline-start" aria-hidden="true" />
-                Recargar pantalla
-              </Button>
-              <Button asChild variant="outline">
-                <a href="/help">
-                  <LifeBuoy data-icon="inline-start" aria-hidden="true" />
-                  Abrir ayuda
-                </a>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+      <main className="flex min-h-screen items-center justify-center bg-background p-4 text-foreground sm:p-6">
+        <div className="w-full max-w-3xl border border-operational-border bg-operational-surface">
+          <RouteState
+            kind="error"
+            title="La pantalla no pudo cargarse"
+            description="El sistema sigue activo, pero esta vista tuvo un error de interfaz. Recargue la pantalla para continuar."
+            detail="Si vuelve a ocurrir, prepare el resumen seguro desde Ayuda y avise a supervisor o soporte. El detalle técnico quedó guardado en este navegador."
+            action={{ label: 'Recargar pantalla', onClick: () => window.location.reload() }}
+          />
+          <div className="border-t border-operational-border px-5 py-3 sm:px-8">
+            <a
+              href="/help"
+              className="inline-flex min-h-11 items-center gap-2 py-2 text-sm font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <LifeBuoy aria-hidden="true" className="size-4" />
+              Abrir ayuda
+            </a>
+          </div>
+        </div>
       </main>
     );
   }

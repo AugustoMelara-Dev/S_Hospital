@@ -23,6 +23,7 @@ export function useHospitalSession() {
   const canEditFiscalSettings = permissions.has('settings.fiscal.update');
   const canEditOperationalSettings = permissions.has('settings.operational.update');
   const canViewCatalog = permissions.has('catalog.view');
+  const canManageCatalog = permissions.has('catalog.manage');
   const canCreateInvoices = permissions.has('invoices.create');
   const canViewInvoices = permissions.has('invoices.view');
   const canViewCash = permissions.has('cash.view');
@@ -201,6 +202,7 @@ export function useHospitalSession() {
     canEditFiscalSettings,
     canEditOperationalSettings,
     canViewCatalog,
+    canManageCatalog,
     canCreateInvoices,
     canViewInvoices,
     canViewCash,
@@ -224,6 +226,7 @@ export function useHospitalSession() {
     hasAnyOperationalPermission:
       canViewFiscalSettings ||
       canViewCatalog ||
+      canManageCatalog ||
       canCreateInvoices ||
       canViewCash ||
       canViewInvoices ||

@@ -253,27 +253,24 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
       onOpenChange={onOpenChange}
       size="lg"
       title="Preparar caja"
-      description="Complete los datos minimos para comenzar a facturar."
+      description="Complete los datos mínimos para comenzar a facturar."
     >
       <div className="space-y-6 py-2">
         {/* Step Indicators */}
-        <div className="flex items-center justify-between border-b border-border pb-4">
-          <div className="flex items-center gap-6">
+        <div className="border-b border-border pb-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <div className={`flex items-center gap-2 text-xs font-semibold ${step >= 1 ? 'text-secondary' : 'text-muted-foreground'}`}>
-              <span className={`flex size-6 items-center justify-center rounded-full text-[10px] ${step === 1 ? 'bg-secondary text-secondary-foreground animate-pulse' : step > 1 ? 'bg-secondary/10 text-secondary' : 'bg-muted'}`}>1</span>
+              <span className={`flex size-6 items-center justify-center rounded-full text-[10px] ${step === 1 ? 'bg-secondary text-secondary-foreground' : step > 1 ? 'bg-secondary/10 text-secondary' : 'bg-muted'}`}>1</span>
               <span>Hospital</span>
             </div>
-            <div className="h-px w-8 bg-border" />
             <div className={`flex items-center gap-2 text-xs font-semibold ${step >= 2 ? 'text-secondary' : 'text-muted-foreground'}`}>
-              <span className={`flex size-6 items-center justify-center rounded-full text-[10px] ${step === 2 ? 'bg-secondary text-secondary-foreground animate-pulse' : step > 2 ? 'bg-secondary/10 text-secondary' : 'bg-muted'}`}>2</span>
+              <span className={`flex size-6 items-center justify-center rounded-full text-[10px] ${step === 2 ? 'bg-secondary text-secondary-foreground' : step > 2 ? 'bg-secondary/10 text-secondary' : 'bg-muted'}`}>2</span>
               <span>Numeración</span>
             </div>
-            <div className="h-px w-8 bg-border" />
             <div className={`flex items-center gap-2 text-xs font-semibold ${step >= 3 ? 'text-secondary' : 'text-muted-foreground'}`}>
-              <span className={`flex size-6 items-center justify-center rounded-full text-[10px] ${step === 3 ? 'bg-secondary text-secondary-foreground animate-pulse' : step > 3 ? 'bg-secondary/10 text-secondary' : 'bg-muted'}`}>3</span>
-              <span>Catalogo</span>
+              <span className={`flex size-6 items-center justify-center rounded-full text-[10px] ${step === 3 ? 'bg-secondary text-secondary-foreground' : step > 3 ? 'bg-secondary/10 text-secondary' : 'bg-muted'}`}>3</span>
+              <span>Catálogo</span>
             </div>
-            <div className="h-px w-8 bg-border" />
             <div className={`flex items-center gap-2 text-xs font-semibold ${step >= 4 ? 'text-secondary' : 'text-muted-foreground'}`}>
               <span className={`flex size-6 items-center justify-center rounded-full text-[10px] ${step === 4 ? 'bg-secondary text-secondary-foreground' : 'bg-muted'}`}>4</span>
               <span>Finalizar</span>
@@ -304,6 +301,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
               <div className="space-y-1.5">
                 <Label htmlFor="wiz-hosp-name">Nombre del hospital *</Label>
                 <Input
+                  className="min-h-11"
                   id="wiz-hosp-name"
                   value={hospitalForm.hospital_name}
                   onChange={(e) => setHospitalForm({ ...hospitalForm, hospital_name: e.target.value })}
@@ -314,6 +312,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
               <div className="space-y-1.5">
                 <Label htmlFor="wiz-hosp-rtn">RTN *</Label>
                 <Input
+                  className="min-h-11"
                   id="wiz-hosp-rtn"
                   value={hospitalForm.rtn}
                   onChange={(e) => setHospitalForm({ ...hospitalForm, rtn: e.target.value })}
@@ -324,6 +323,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
               <div className="space-y-1.5">
                 <Label htmlFor="wiz-hosp-tax">Impuesto general (%)</Label>
                 <Input
+                  className="min-h-11"
                   id="wiz-hosp-tax"
                   type="number"
                   step="0.01"
@@ -336,7 +336,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
             </div>
 
             <div className="flex justify-end pt-4">
-              <Button onClick={handleSaveHospital} disabled={loading} className="gap-2">
+              <Button onClick={handleSaveHospital} disabled={loading} className="min-h-11 gap-2">
                 Siguiente
                 <ArrowRight className="size-4" />
               </Button>
@@ -361,6 +361,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
               <div className="space-y-1.5">
                 <Label htmlFor="wiz-seq-prefix">Prefijo *</Label>
                 <Input
+                  className="min-h-11"
                   id="wiz-seq-prefix"
                   value={sequenceForm.prefix}
                   onChange={(e) => setSequenceForm({ ...sequenceForm, prefix: e.target.value })}
@@ -371,6 +372,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
               <div className="space-y-1.5">
                 <Label htmlFor="wiz-seq-cai">CAI *</Label>
                 <Input
+                  className="min-h-11"
                   id="wiz-seq-cai"
                   value={sequenceForm.cai}
                   onChange={(e) => setSequenceForm({ ...sequenceForm, cai: e.target.value.toUpperCase() })}
@@ -381,6 +383,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
               <div className="space-y-1.5">
                 <Label htmlFor="wiz-seq-min">Desde el número *</Label>
                 <Input
+                  className="min-h-11"
                   id="wiz-seq-min"
                   type="number"
                   value={sequenceForm.min_number}
@@ -391,6 +394,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
               <div className="space-y-1.5">
                 <Label htmlFor="wiz-seq-max">Hasta el número *</Label>
                 <Input
+                  className="min-h-11"
                   id="wiz-seq-max"
                   type="number"
                   value={sequenceForm.max_number}
@@ -399,8 +403,9 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
               </div>
 
               <div className="space-y-1.5 md:col-span-2">
-                <Label htmlFor="wiz-seq-date">Fecha limite *</Label>
+                <Label htmlFor="wiz-seq-date">Fecha límite *</Label>
                 <Input
+                  className="min-h-11"
                   id="wiz-seq-date"
                   type="date"
                   value={sequenceForm.valid_until}
@@ -410,11 +415,11 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
             </div>
 
             <div className="flex justify-between pt-4">
-              <Button type="button" variant="secondary" onClick={() => setStep(1)} className="gap-2">
+              <Button type="button" variant="secondary" onClick={() => setStep(1)} className="min-h-11 gap-2">
                 <ArrowLeft className="size-4" />
-                Atras
+                Atrás
               </Button>
-              <Button onClick={handleSaveSequence} disabled={loading} className="gap-2">
+              <Button onClick={handleSaveSequence} disabled={loading} className="min-h-11 gap-2">
                 Siguiente
                 <ArrowRight className="size-4" />
               </Button>
@@ -428,16 +433,16 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
             <div className="flex gap-4 p-4 rounded-lg bg-accent border border-secondary/10">
               <PackagePlus className="size-10 text-secondary shrink-0" />
               <div>
-                <h4 className="font-semibold text-foreground text-sm">Paso 3: Catalogo de servicios</h4>
+                <h4 className="font-semibold text-foreground text-sm">Paso 3: Catálogo de servicios</h4>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Pegue la lista inicial de servicios. Luego podra editarla desde Catalogo.
+                  Pegue la lista inicial de servicios. Luego podrá editarla desde Catálogo.
                 </p>
               </div>
             </div>
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="wiz-cat-csv">Servicios: categoria, servicio, precio, impuesto</Label>
+                <Label htmlFor="wiz-cat-csv">Servicios: categoría, servicio, precio, impuesto</Label>
                 <span className="text-[10px] text-muted-foreground">Use S para impuesto o N para exento</span>
               </div>
               <Textarea
@@ -457,7 +462,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
                 </div>
                 <div className="h-2 w-full bg-background rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-secondary transition-[width] duration-200"
+                    className="h-full bg-secondary"
                     style={{ width: `${(importProgress.current / importProgress.total) * 100}%` }}
                   />
                 </div>
@@ -465,14 +470,14 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
             )}
 
             <div className="flex justify-between pt-4">
-              <Button type="button" variant="secondary" onClick={() => setStep(2)} className="gap-2" disabled={loading}>
+              <Button type="button" variant="secondary" onClick={() => setStep(2)} className="min-h-11 gap-2" disabled={loading}>
                 <ArrowLeft className="size-4" />
-                Atras
+                Atrás
               </Button>
-              <Button onClick={handleImportCatalog} disabled={loading} className="gap-2">
+              <Button onClick={handleImportCatalog} disabled={loading} className="min-h-11 gap-2">
                 {loading ? (
                   <>
-                    <Loader2 className="size-4 animate-spin" />
+                    <Loader2 className="size-4" />
                     Procesando...
                   </>
                 ) : (
@@ -490,13 +495,13 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
         {step === 4 && (
           <div className="space-y-6 text-center py-6">
             <div className="flex justify-center">
-              <CheckCircle className="size-16 text-success fill-success/15 animate-bounce" />
+              <CheckCircle className="size-16 text-success fill-success/15" />
             </div>
 
             <div className="space-y-2">
               <h3 className="text-xl font-bold text-foreground">Configuración lista</h3>
               <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                Ya puede iniciar la operacion con datos del hospital, numeracion y servicios base.
+                Ya puede iniciar la operación con datos del hospital, numeración y servicios base.
               </p>
             </div>
 
@@ -511,12 +516,12 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
               </div>
               <div className="flex items-center gap-2.5 text-xs text-success font-semibold">
                 <span className="flex size-4 items-center justify-center rounded-full bg-success/15 text-[10px]">✓</span>
-                <span>Catalogo importado</span>
+                <span>Catálogo importado</span>
               </div>
             </div>
 
             <div className="flex justify-center pt-4">
-              <Button onClick={handleFinish} className="px-8">
+              <Button onClick={handleFinish} className="min-h-11 px-8">
                 Entrar
               </Button>
             </div>

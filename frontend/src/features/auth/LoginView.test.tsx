@@ -33,7 +33,7 @@ describe('LoginView', () => {
     render(<LoginView {...defaultProps} />, { wrapper: Wrapper });
 
     expect(screen.getAllByText(/sistema hospitalario local/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/conexion local/i)).toBeInTheDocument();
+    expect(screen.getByText(/conexión local/i)).toBeInTheDocument();
     expect(document.body).not.toHaveTextContent(/clientes LAN|sistema hospitalario LAN|offline\/LAN/i);
     expect(screen.getByLabelText(/usuario o correo/i)).toHaveAttribute('autocomplete', 'username');
     expect(screen.getByLabelText(/^contrase/i)).toHaveAttribute('autocomplete', 'current-password');
@@ -126,5 +126,22 @@ describe('LoginView', () => {
 
     expect(loginInput).toHaveValue('admin@hospital.local');
     expect(passwordInput).toHaveValue('test123');
+  });
+
+  it('avisa cuando Bloq Mayús está activo en contraseña', () => {
+    render(<LoginView {...defaultProps} />, { wrapper: Wrapper });
+
+    fireEvent.keyDown(screen.getByLabelText('Contraseña'), {
+      key: 'A',
+      getModifierState: (key: string) => key === 'CapsLock',
+    });
+
+    expect(screen.getByText('Bloq Mayús está activo')).toBeVisible();
+  });
+
+  it('expone una sola identidad hospitalaria por composición', () => {
+    render(<LoginView {...defaultProps} />, { wrapper: Wrapper });
+
+    expect(screen.getAllByText('Hospital San Isidro')).toHaveLength(1);
   });
 });

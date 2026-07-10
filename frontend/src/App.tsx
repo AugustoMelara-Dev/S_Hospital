@@ -121,6 +121,7 @@ function HospitalApp() {
           canCreateInvoices={session.canCreateInvoices}
           canEditFiscalSettings={session.canEditFiscalSettings}
           canEditOperationalSettings={session.canEditOperationalSettings}
+          canManageCatalog={session.canManageCatalog}
           canOpenCash={session.canOpenCash}
           canCloseAnyCash={session.canCloseAnyCash}
           canCloseCash={session.canCloseCash}

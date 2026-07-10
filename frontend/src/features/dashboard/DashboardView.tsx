@@ -1,23 +1,23 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Banknote, ReceiptText, TrendingUp, WalletCards } from 'lucide-react';
-import { Alert } from '@/components/ui/alert';
+import { ReceiptText, WalletCards } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
-import { StatGrid } from '@/components/shared';
+import { RouteState } from '@/design-system/patterns/RouteState';
+import { useDashboardReport } from '@/hooks/useDashboardReport';
 import { type CashSession, type Invoice, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { formatDateTimeEs } from '@/lib/format/formatDate';
-import { formatLempirasUI } from '@/lib/money';
 import { finiteNumber } from '@/lib/money';
 import { formatLempirasUIFromCents, parseCents } from '@/lib/moneyCents';
-import { LoadingState } from '@/components/ui/states';
-import { useDashboardReport } from '@/hooks/useDashboardReport';
-import { DashboardSetupStatusCard } from './components/DashboardSetupStatusCard';
+import { OperationalQueue, type OperationalQueueItem } from './components/OperationalQueue';
 import { SetupWizardDialog } from './components/SetupWizardDialog';
+import { TodayLedger, type TodayLedgerItem } from './components/TodayLedger';
 import { type SetupStatus } from './components/dashboardTypes';
 
 type DashboardViewProps = {
   canCreateInvoices: boolean;
+  canEditFiscalSettings: boolean;
+  canManageCatalog: boolean;
   canOpenCash: boolean;
   canViewBackups: boolean;
   canViewCatalog: boolean;
@@ -31,226 +31,326 @@ type DashboardViewProps = {
 
 export function DashboardView({
   canCreateInvoices,
+  canEditFiscalSettings,
+  canManageCatalog,
   canOpenCash,
+  canViewCatalog,
   canViewFiscalSettings,
   canViewInvoices,
   canViewManagerialReports,
   cashSession,
-  onStatus,
 }: DashboardViewProps) {
   const [setupStatus, setSetupStatus] = useState<SetupStatus | null>(null);
+  const [setupStatusState, setSetupStatusState] = useState<'loading' | 'error' | 'ready'>('loading');
+  const [setupStatusError, setSetupStatusError] = useState('');
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [recentInvoices, setRecentInvoices] = useState<Invoice[]>([]);
+  const [recentInvoicesError, setRecentInvoicesError] = useState('');
   const [loadingRecent, setLoadingRecent] = useState(false);
   const dashboardQuery = useDashboardReport(canViewManagerialReports);
   const dashboardData = dashboardQuery.data ?? null;
   const dashboardError = dashboardQuery.isError
     ? userSafeErrorMessage(dashboardQuery.error, 'No se pudo cargar el resumen.')
     : '';
-  const loadingDashboard = dashboardQuery.isFetching;
-
   const todaySnapshot = dashboardData?.last_7_days.at(-1) ?? null;
   const cashIsOpen = Boolean(cashSession);
   const totalPending = dashboardData?.current_month.total_pending ?? null;
 
-  async function loadRecentInvoices() {
+  const loadRecentInvoices = useCallback(async () => {
     if (!canViewInvoices) return;
+
     setLoadingRecent(true);
+    setRecentInvoicesError('');
     try {
       const data = await apiClient.getInvoices({ page: 1, per_page: 5 });
       setRecentInvoices(Array.isArray(data.data) ? (data.data as Invoice[]) : []);
-    } catch {
-      setRecentInvoices([]);
+    } catch (error) {
+      setRecentInvoicesError(userSafeErrorMessage(error, 'No se pudieron cargar las facturas recientes.'));
     } finally {
       setLoadingRecent(false);
     }
-  }
+  }, [canViewInvoices]);
 
-  async function loadSetupStatus() {
-    if (!canViewFiscalSettings && !canViewManagerialReports) return;
+  useEffect(() => {
+    void loadRecentInvoices();
+  }, [loadRecentInvoices]);
+
+  const loadSetupStatus = useCallback(async () => {
+    setSetupStatusState('loading');
+    setSetupStatusError('');
     try {
-      const res = await apiClient.request<SetupStatus>('/api/system/setup-status');
-      setSetupStatus(res);
-    } catch {
+      setSetupStatus(await apiClient.request<SetupStatus>('/api/system/setup-status'));
+      setSetupStatusState('ready');
+    } catch (error) {
       setSetupStatus(null);
+      setSetupStatusError(userSafeErrorMessage(error, 'No se pudo confirmar la configuración operativa.'));
+      setSetupStatusState('error');
     }
-  }
+  }, []);
 
   useEffect(() => {
     void loadSetupStatus();
-    void loadRecentInvoices();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canViewFiscalSettings, canViewInvoices]);
+  }, [loadSetupStatus]);
 
-  useEffect(() => {
-    if (dashboardError) {
-      onStatus(dashboardError);
-    }
-  }, [dashboardError, onStatus]);
-
-  const moneyValue = (value: string | number | null | undefined, hasData: boolean) => {
-    if (loadingDashboard) return <span className="inline-block h-7 w-24 rounded-md bg-muted" aria-hidden="true" />;
-    return hasData ? formatLempirasUI(value) : 'Sin datos';
-  };
-
-  const primaryAction = cashIsOpen && canCreateInvoices
-    ? { label: 'Nueva factura', icon: <ReceiptText aria-hidden="true" className="size-4" />, to: '/billing/new' }
-    : canOpenCash
-      ? { label: 'Abrir caja', icon: <WalletCards aria-hidden="true" className="size-4" />, to: '/cashbox' }
+  const setupReady = setupStatusState === 'ready';
+  const setupRequired = setupReady && setupStatus?.needs_setup === true;
+  const primaryAction = setupReady && !setupRequired && cashIsOpen && canCreateInvoices
+    ? { label: 'Nueva factura', icon: <ReceiptText aria-hidden="true" />, to: '/billing/new' }
+    : setupReady && !setupRequired && !cashIsOpen && canOpenCash
+      ? { label: 'Abrir caja', icon: <WalletCards aria-hidden="true" />, to: '/cashbox' }
       : null;
 
-  const showTodayBilled = todaySnapshot?.total_billed !== null && todaySnapshot?.total_billed !== undefined;
-  const showTodayCollected = todaySnapshot?.total_collected !== null && todaySnapshot?.total_collected !== undefined;
-  const showPending = totalPending !== null && totalPending !== undefined;
-  const showRecentInvoices = !loadingRecent && recentInvoices.length === 0 && cashIsOpen;
+  const ledgerLoading = dashboardQuery.isFetching;
+  const hasCachedDashboardData = dashboardQuery.isError && dashboardData !== null;
+  const ledgerUnavailable = dashboardQuery.isError || (!ledgerLoading && dashboardData === null);
+
+  const ledgerItems: TodayLedgerItem[] = [
+    {
+      id: 'cash',
+      label: 'Caja',
+      value: cashIsOpen ? `Caja #${cashSession?.id}` : 'Cerrada',
+      note: cashIsOpen ? 'Turno listo para cobrar' : 'Sin sesión de caja activa',
+      tone: cashIsOpen ? 'success' : 'attention',
+    },
+    {
+      id: 'billed',
+      label: 'Facturado',
+      value: ledgerLoading ? <LedgerSkeleton /> : moneyOrUnavailable(todaySnapshot?.total_billed),
+      note: ledgerLoading
+        ? 'Cargando facturación de hoy'
+        : hasCachedDashboardData && todaySnapshot?.invoice_count !== null && todaySnapshot?.invoice_count !== undefined
+          ? `Último dato conocido · ${finiteNumber(todaySnapshot.invoice_count)} facturas registradas`
+        : ledgerUnavailable || todaySnapshot?.invoice_count === null || todaySnapshot?.invoice_count === undefined
+          ? 'Actividad no disponible'
+          : `${finiteNumber(todaySnapshot.invoice_count)} facturas registradas hoy`,
+      tone: 'neutral',
+    },
+    {
+      id: 'collected',
+      label: 'Cobrado',
+      value: ledgerLoading ? <LedgerSkeleton /> : moneyOrUnavailable(todaySnapshot?.total_collected),
+      note: ledgerLoading
+        ? 'Cargando pagos de hoy'
+        : hasCachedDashboardData && todaySnapshot?.payment_count !== null && todaySnapshot?.payment_count !== undefined
+          ? `Último dato conocido · ${finiteNumber(todaySnapshot.payment_count)} pagos recibidos`
+        : ledgerUnavailable || todaySnapshot?.payment_count === null || todaySnapshot?.payment_count === undefined
+          ? 'Actividad no disponible'
+          : `${finiteNumber(todaySnapshot.payment_count)} pagos recibidos hoy`,
+      tone: 'success',
+    },
+    {
+      id: 'pending',
+      label: 'Pendiente',
+      value: ledgerLoading ? <LedgerSkeleton /> : moneyOrUnavailable(totalPending),
+      note: ledgerLoading
+        ? 'Cargando saldos del mes'
+        : hasCachedDashboardData && totalPending !== null && totalPending !== undefined
+          ? 'Último dato conocido · saldo pendiente del mes'
+        : ledgerUnavailable || totalPending === null || totalPending === undefined
+          ? 'Saldo no disponible'
+          : finiteNumber(totalPending) > 0
+            ? 'Saldo pendiente del mes'
+            : 'Sin saldo pendiente',
+      tone: totalPending !== null && totalPending !== undefined && finiteNumber(totalPending) > 0 ? 'attention' : 'neutral',
+    },
+  ];
+
+  const queueItems: OperationalQueueItem[] = [];
+  const canConfigureFiscal = canViewFiscalSettings && canEditFiscalSettings;
+  const canConfigureCatalog = canViewCatalog && canManageCatalog;
+  const missingAdminSetup = setupRequired && setupStatus?.steps.admin_exists === false;
+  const missingFiscalSetup = setupRequired && (
+    setupStatus?.steps.fiscal_settings === false || setupStatus?.steps.fiscal_sequence_exists === false
+  );
+  const missingCatalogSetup = setupRequired && setupStatus?.steps.catalog_has_services === false;
+  const setupAction = !setupRequired || missingAdminSetup
+    ? null
+    : missingFiscalSetup && missingCatalogSetup && canConfigureFiscal && canConfigureCatalog
+      ? { kind: 'wizard' as const, label: 'Completar configuración' }
+      : missingFiscalSetup && !missingCatalogSetup && canConfigureFiscal
+        ? { kind: 'link' as const, label: 'Completar configuración fiscal', to: '/settings/fiscal' }
+        : missingCatalogSetup && !missingFiscalSetup && canConfigureCatalog
+          ? { kind: 'link' as const, label: 'Completar catálogo', to: '/catalog' }
+          : null;
+  if (setupReady && setupStatus?.needs_setup) {
+    queueItems.push({
+      id: 'setup',
+      title: 'Configuración pendiente',
+      description: missingAdminSetup
+        ? 'Un técnico autorizado debe crear o restaurar el usuario administrador antes de continuar.'
+        : setupAction
+          ? 'Complete los pasos pendientes antes de continuar la operación.'
+          : 'Solicite a un administrador que complete hospital, numeración fiscal y catálogo.',
+      priority: 'danger',
+    });
+  }
+  if (!cashIsOpen) {
+    queueItems.push({
+      id: 'cash',
+      title: 'Caja cerrada',
+      description: canOpenCash ? 'Abra una sesión para registrar cobros y facturas.' : 'No hay una sesión de caja activa.',
+      priority: canOpenCash ? 'attention' : 'normal',
+    });
+  }
+  if (
+    canViewManagerialReports
+    && !dashboardQuery.isError
+    && totalPending !== null
+    && totalPending !== undefined
+    && finiteNumber(totalPending) > 0
+  ) {
+    queueItems.push({
+      id: 'pending',
+      title: 'Cobros pendientes',
+      description: `${formatLempirasUIFromCents(parseCents(totalPending))} pendientes durante el mes actual.`,
+      href: canViewInvoices ? '/invoices' : undefined,
+      actionLabel: canViewInvoices ? 'Revisar pendientes' : undefined,
+      priority: 'attention',
+    });
+  }
+  if (setupReady && !setupRequired && cashIsOpen && canCreateInvoices) {
+    queueItems.push({
+      id: 'billing',
+      title: 'Facturación disponible',
+      description: 'La caja está lista para emitir la siguiente factura del turno.',
+      priority: 'normal',
+    });
+  }
+  if (queueItems.length === 0) {
+    queueItems.push({
+      id: 'idle',
+      title: 'Turno sin acciones disponibles',
+      description: 'Consulte los módulos habilitados para su rol.',
+      priority: 'normal',
+    });
+  }
 
   const invoiceColumns: Array<DataTableColumn<Invoice>> = [
-    {
-      key: 'invoice_number',
-      header: 'Número',
-      cellClassName: 'font-mono tabular-nums',
-      render: (invoice) => invoice.invoice_number,
-    },
-    {
-      key: 'issued_at',
-      header: 'Fecha',
-      render: (invoice) => formatDateTimeEs(invoice.issued_at),
-    },
-    {
-      key: 'patient_name',
-      header: 'Paciente',
-      render: (invoice) => invoice.patient_name,
-    },
-    {
+    { key: 'invoice_number', header: 'Número', cellClassName: 'font-mono tabular-nums', render: (invoice) => invoice.invoice_number },
+    { key: 'issued_at', header: 'Fecha', render: (invoice) => formatDateTimeEs(invoice.issued_at) },
+    { key: 'patient_name', header: 'Paciente', render: (invoice) => invoice.patient_name },
+    { key: 'status', header: 'Estado', render: (invoice) => invoice.status },
+  ];
+  if (canViewManagerialReports) {
+    invoiceColumns.splice(3, 0, {
       key: 'total',
       header: 'Total',
       numeric: true,
       render: (invoice) => formatLempirasUIFromCents(parseCents(invoice.total)),
-    },
-    {
-      key: 'status',
-      header: 'Estado',
-      render: (invoice) => invoice.status,
-    },
-  ];
+    });
+  }
 
   return (
-    <section aria-labelledby="dashboard-title" className="flex flex-col gap-5">
-      <header className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+    <section aria-labelledby="dashboard-title" className="flex min-w-0 flex-col gap-6">
+      <header className="border-b border-operational-border pb-5 sm:flex sm:items-end sm:justify-between sm:gap-6">
         <div className="min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-            Inicio operativo
-          </p>
-          <h1 id="dashboard-title" className="mt-1 text-2xl font-semibold leading-tight text-foreground sm:text-3xl">
-            Centro de mando
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Inicio operativo</p>
+          <h1 id="dashboard-title" className="mt-2 text-3xl font-semibold leading-tight text-foreground">
+            Continuar operación
           </h1>
-          <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            Caja, cobros del día, pendientes y facturas recientes.
-            {primaryAction ? (
-              <>
-                {' '}Una acción clara: <strong>{primaryAction.label}</strong>.
-              </>
-            ) : null}
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            Estado del turno: <strong className="font-semibold text-foreground">{cashIsOpen ? `Caja abierta #${cashSession?.id}` : 'Caja cerrada'}</strong>
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {primaryAction && (
-            <Button asChild>
-              <Link to={primaryAction.to}>
-                {primaryAction.icon}
-                {primaryAction.label}
-              </Link>
-            </Button>
-          )}
-          {canCreateInvoices && canViewInvoices && cashIsOpen && (
-            <Button asChild variant="outline" size="sm">
-              <Link to="/invoices">Ver historial</Link>
-            </Button>
-          )}
-        </div>
+        {setupAction?.kind === 'wizard' ? (
+          <Button type="button" onClick={() => setIsWizardOpen(true)} className="mt-4 min-h-12 w-full sm:mt-0 sm:w-auto">
+            {setupAction.label}
+          </Button>
+        ) : setupAction?.kind === 'link' ? (
+          <Button asChild className="mt-4 min-h-12 w-full sm:mt-0 sm:w-auto">
+            <Link to={setupAction.to}>{setupAction.label}</Link>
+          </Button>
+        ) : primaryAction ? (
+          <Button asChild className="mt-4 min-h-12 w-full sm:mt-0 sm:w-auto">
+            <Link to={primaryAction.to}>
+              {primaryAction.icon}
+              {primaryAction.label}
+            </Link>
+          </Button>
+        ) : null}
       </header>
 
-      {setupStatus?.needs_setup && (
-        <DashboardSetupStatusCard
-          canViewFiscalSettings={canViewFiscalSettings}
-          onReview={() => setIsWizardOpen(true)}
-          setupStatus={setupStatus}
+      {canViewManagerialReports ? <TodayLedger items={ledgerItems} /> : null}
+
+      {dashboardError ? (
+        <RouteState
+          kind="error"
+          title="Resumen no disponible"
+          description={dashboardError}
+          headingLevel={2}
+          action={{ label: 'Reintentar', onClick: () => void dashboardQuery.refetch() }}
         />
-      )}
-
-      <StatGrid
-        items={[
-          {
-            icon: <WalletCards aria-hidden="true" className="size-4" />,
-            label: 'Caja',
-            value: cashIsOpen ? `Caja #${cashSession?.id}` : 'Cerrada',
-            helper: cashIsOpen ? 'Lista para cobrar' : 'Abra caja para facturar',
-            tone: cashIsOpen ? 'success' : 'warning',
-          },
-          {
-            icon: <TrendingUp aria-hidden="true" className="size-4" />,
-            label: 'Facturado hoy',
-            value: moneyValue(todaySnapshot?.total_billed, Boolean(showTodayBilled)),
-            helper: `${finiteNumber(todaySnapshot?.invoice_count)} facturas registradas`,
-            tone: 'info',
-          },
-          {
-            icon: <Banknote aria-hidden="true" className="size-4" />,
-            label: 'Cobrado hoy',
-            value: moneyValue(todaySnapshot?.total_collected, Boolean(showTodayCollected)),
-            helper: `${finiteNumber(todaySnapshot?.payment_count)} pagos recibidos`,
-            tone: 'success',
-          },
-          {
-            icon: <ReceiptText aria-hidden="true" className="size-4" />,
-            label: 'Pendiente del mes',
-            value: moneyValue(totalPending ?? undefined, Boolean(showPending)),
-            helper: finiteNumber(totalPending) > 0 ? 'Saldo pendiente de cobro' : 'Sin pendientes',
-            tone: finiteNumber(totalPending) > 0 ? 'warning' : 'neutral',
-          },
-        ]}
-      />
-
-      {dashboardError && (
-        <Alert variant="destructive" title="Resumen no disponible">
-          {dashboardError}
-        </Alert>
-      )}
-
-      {canViewInvoices ? (
-        <section className="rounded-panel border border-operational-border bg-operational-surface p-5 shadow-operational" aria-labelledby="recent-invoices-title">
-          <header className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <h2 id="recent-invoices-title" className="text-base font-semibold text-foreground">
-            Facturas recientes
-          </h2>
-          <Button asChild variant="ghost" size="sm">
-            <Link to="/invoices">Ver historial completo</Link>
-          </Button>
-          </header>
-
-          {loadingRecent ? (
-          <LoadingState label="Cargando facturas recientes..." />
-        ) : showRecentInvoices ? (
-          <Alert title="Sin facturas hoy">
-            Aún no se emitieron facturas en este turno. Cree la primera desde Nueva factura.
-          </Alert>
-        ) : recentInvoices.length === 0 ? (
-          <Alert title="Sin facturas recientes">
-            Cuando emita facturas aparecerán aquí.
-          </Alert>
-        ) : (
-          <DataTable
-            containerLabel="Facturas recientes"
-            rows={recentInvoices}
-            columns={invoiceColumns}
-            getRowKey={(invoice) => invoice.id}
-            emptyTitle="Sin facturas recientes"
-          />
-        )}
-        </section>
       ) : null}
 
-      {canViewFiscalSettings && (
+      {setupStatusState === 'loading' ? (
+        <RouteState
+          kind="loading"
+          title="Verificando configuración operativa"
+          description="Confirmando que el hospital esté listo antes de habilitar acciones de caja y facturación."
+          headingLevel={2}
+        />
+      ) : setupStatusState === 'error' ? (
+        <RouteState
+          kind="error"
+          title="No se pudo verificar la configuración"
+          description={setupStatusError}
+          headingLevel={2}
+          action={{ label: 'Reintentar configuración', onClick: () => void loadSetupStatus() }}
+        />
+      ) : null}
+
+      <div className={`grid min-w-0 gap-6 ${canViewInvoices ? 'xl:grid-cols-[minmax(17rem,0.72fr)_minmax(0,1.28fr)]' : ''}`}>
+        <OperationalQueue items={queueItems} />
+
+        {canViewInvoices ? (
+          <section aria-labelledby="recent-invoices-title" className="min-w-0 border border-operational-border bg-operational-surface">
+            <header className="flex items-center justify-between gap-3 border-b border-operational-border px-5 py-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Actividad</p>
+                <h2 id="recent-invoices-title" className="mt-1 text-lg font-semibold">Facturas recientes</h2>
+              </div>
+              <Button asChild variant="ghost" size="sm" className="min-h-11 sm:min-h-11">
+                <Link to="/invoices">Ver historial completo</Link>
+              </Button>
+            </header>
+            <div className="min-w-0 p-4 sm:p-5">
+              {loadingRecent ? (
+                <div role="status" aria-label="Cargando facturas recientes" className="space-y-3">
+                  <span className="sr-only">Cargando facturas recientes...</span>
+                  {[1, 2, 3].map((row) => (
+                    <div key={row} className="h-11 w-full animate-pulse rounded bg-muted motion-reduce:animate-none" aria-hidden="true" />
+                  ))}
+                </div>
+              ) : recentInvoicesError ? (
+                <RouteState
+                  kind="error"
+                  title="Facturas recientes no disponibles"
+                  description={recentInvoicesError}
+                  headingLevel={2}
+                  action={{ label: 'Reintentar facturas recientes', onClick: () => void loadRecentInvoices() }}
+                />
+              ) : recentInvoices.length === 0 ? (
+                <div className="border-l-2 border-muted-foreground/40 py-2 pl-4">
+                  <p className="font-semibold">Sin facturas recientes</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {cashIsOpen ? 'La actividad del turno aparecerá aquí.' : 'Abra caja para iniciar la actividad del turno.'}
+                  </p>
+                </div>
+              ) : (
+                <DataTable
+                  containerLabel="Facturas recientes"
+                  rows={recentInvoices}
+                  columns={invoiceColumns}
+                  getRowKey={(invoice) => invoice.id}
+                  emptyTitle="Sin facturas recientes"
+                />
+              )}
+            </div>
+          </section>
+        ) : null}
+      </div>
+
+      {canConfigureFiscal && canConfigureCatalog && !missingAdminSetup ? (
         <SetupWizardDialog
           open={isWizardOpen}
           onOpenChange={setIsWizardOpen}
@@ -259,7 +359,15 @@ export function DashboardView({
             void dashboardQuery.refetch();
           }}
         />
-      )}
+      ) : null}
     </section>
   );
+}
+
+function LedgerSkeleton() {
+  return <span className="inline-block h-7 w-24 animate-pulse rounded bg-muted motion-reduce:animate-none" aria-hidden="true" />;
+}
+
+function moneyOrUnavailable(value: string | number | null | undefined) {
+  return value === null || value === undefined ? 'No disponible' : formatLempirasUIFromCents(parseCents(value));
 }

@@ -1,8 +1,9 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, apiClient, type CashSession, type Invoice } from '../../lib/api';
+import { queryKeys } from '../../lib/queryKeys';
 import { DashboardView } from './DashboardView';
 
 function makeCashSession(overrides: Partial<CashSession> = {}): CashSession {
@@ -25,6 +26,8 @@ function makeCashSession(overrides: Partial<CashSession> = {}): CashSession {
 function makeBaseProps(overrides: Partial<React.ComponentProps<typeof DashboardView>> = {}) {
   return {
     canCreateInvoices: true,
+    canEditFiscalSettings: true,
+    canManageCatalog: true,
     canOpenCash: true,
     canViewBackups: true,
     canViewCatalog: true,
@@ -56,7 +59,12 @@ function makeInvoice(overrides: Partial<Invoice> = {}): Invoice {
   };
 }
 
-function mockSetupStatus(needsSetup = false) {
+function mockSetupStatus(needsSetup = false, stepOverrides: Partial<{
+  fiscal_settings: boolean;
+  admin_exists: boolean;
+  catalog_has_services: boolean;
+  fiscal_sequence_exists: boolean;
+}> = {}) {
   vi.spyOn(apiClient, 'request').mockResolvedValue({
     needs_setup: needsSetup,
     steps: {
@@ -64,52 +72,61 @@ function mockSetupStatus(needsSetup = false) {
       admin_exists: !needsSetup,
       catalog_has_services: !needsSetup,
       fiscal_sequence_exists: !needsSetup,
+      ...stepOverrides,
     },
   });
 }
 
-function renderDashboard(props: React.ComponentProps<typeof DashboardView>) {
-  const queryClient = new QueryClient({
+function makeQueryClient() {
+  return new QueryClient({
     defaultOptions: {
       queries: { retry: false },
       mutations: { retry: false },
     },
   });
+}
 
-  return render(
+function renderDashboard(props: React.ComponentProps<typeof DashboardView>, queryClient = makeQueryClient()) {
+  const result = render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter>
         <DashboardView {...props} />
       </MemoryRouter>
     </QueryClientProvider>,
   );
+
+  return { ...result, queryClient };
+}
+
+function makeDashboardReport() {
+  return {
+    current_month: {
+      total_billed: '125.00',
+      total_collected: '100.00',
+      total_pending: '25.00',
+      invoice_count: 2,
+      payment_count: 2,
+    },
+    last_7_days: [
+      {
+        date: '2026-06-30',
+        total_billed: '125.00',
+        total_collected: '100.00',
+        invoice_count: 2,
+        payment_count: 2,
+      },
+    ],
+    payments_by_method: { cash: '100.00', transfer: '0.00', card: '0.00', other: '0.00' },
+    top_services: [],
+    cashiers_summary: [],
+  };
 }
 
 describe('DashboardView', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     mockSetupStatus(false);
-    vi.spyOn(apiClient, 'getDashboardReport').mockResolvedValue({
-      current_month: {
-        total_billed: '125.00',
-        total_collected: '100.00',
-        total_pending: '25.00',
-        invoice_count: 2,
-        payment_count: 2,
-      },
-      last_7_days: [
-        {
-          date: '2026-06-30',
-          total_billed: '125.00',
-          total_collected: '100.00',
-          invoice_count: 2,
-          payment_count: 2,
-        },
-      ],
-      payments_by_method: { cash: '100.00', transfer: '0.00', card: '0.00', other: '0.00' },
-      top_services: [],
-      cashiers_summary: [],
-    });
+    vi.spyOn(apiClient, 'getDashboardReport').mockResolvedValue(makeDashboardReport());
     vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
       data: [makeInvoice()],
       meta: { current_page: 1, per_page: 5, total: 1 },
@@ -125,12 +142,12 @@ describe('DashboardView', () => {
 
     const headings = await screen.findAllByRole('heading', { level: 1 });
     expect(headings).toHaveLength(1);
-    expect(headings[0]).toHaveTextContent(/^centro de mando$/i);
+    expect(headings[0]).toHaveTextContent(/^continuar operación$/i);
 
     expect(await screen.findByText(/^caja$/i)).toBeInTheDocument();
-    expect(screen.getByText(/^facturado hoy$/i)).toBeInTheDocument();
-    expect(screen.getByText(/^cobrado hoy$/i)).toBeInTheDocument();
-    expect(screen.getByText(/^pendiente del mes$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^facturado$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^cobrado$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^pendiente$/i)).toBeInTheDocument();
   });
 
   it('shows open cash session label when there is one', async () => {
@@ -203,9 +220,57 @@ describe('DashboardView', () => {
 
     renderDashboard(makeBaseProps({ onStatus }));
 
-    expect(await screen.findByText(/resumen no disponible/i)).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 2, name: /resumen no disponible/i })).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/SQLSTATE|stack trace|storage\/logs/i);
-    expect(onStatus).toHaveBeenCalledWith(expect.stringMatching(/servidor local/i));
+    expect(screen.queryByText(/^0 facturas registradas hoy$/i)).not.toBeInTheDocument();
+    expect(screen.getAllByText('Actividad no disponible').length).toBeGreaterThan(0);
+    expect(onStatus).not.toHaveBeenCalled();
+  });
+
+  it('distingue las notas del ledger mientras el resumen está cargando', () => {
+    vi.spyOn(apiClient, 'getDashboardReport').mockReturnValue(new Promise(() => undefined));
+
+    renderDashboard(makeBaseProps());
+
+    expect(screen.getByText('Cargando facturación de hoy')).toBeVisible();
+    expect(screen.getByText('Cargando pagos de hoy')).toBeVisible();
+    expect(screen.getByText('Cargando saldos del mes')).toBeVisible();
+    expect(screen.queryByText(/^0 facturas registradas hoy$/i)).not.toBeInTheDocument();
+  });
+
+  it('marca las cifras cacheadas como último dato conocido cuando falla la actualización', async () => {
+    const queryClient = makeQueryClient();
+    queryClient.setQueryData(queryKeys.reports.dashboard(), makeDashboardReport(), { updatedAt: 1 });
+    vi.spyOn(apiClient, 'getDashboardReport').mockRejectedValue(new ApiError('Servidor local no disponible', 500));
+
+    renderDashboard(makeBaseProps(), queryClient);
+
+    expect(await screen.findByRole('heading', { level: 2, name: 'Resumen no disponible' })).toBeVisible();
+    expect(screen.getByText('L 125.00')).toBeVisible();
+    expect(screen.getAllByText(/^Último dato conocido/).length).toBeGreaterThanOrEqual(3);
+    expect(screen.queryByText('2 facturas registradas hoy')).not.toBeInTheDocument();
+    expect(screen.queryByText('Cobros pendientes')).not.toBeInTheDocument();
+  });
+
+  it('presenta el error de facturas recientes sin convertirlo en estado vacío y permite reintentar', async () => {
+    const getInvoices = vi
+      .spyOn(apiClient, 'getInvoices')
+      .mockRejectedValueOnce(new ApiError('SQLSTATE recent invoices', 500))
+      .mockResolvedValueOnce({
+        data: [makeInvoice()],
+        meta: { current_page: 1, per_page: 5, total: 1 },
+      });
+
+    renderDashboard(makeBaseProps());
+
+    expect(await screen.findByRole('heading', { level: 2, name: 'Facturas recientes no disponibles' })).toBeVisible();
+    expect(screen.queryByText('Sin facturas recientes')).not.toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/SQLSTATE recent invoices/i);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar facturas recientes' }));
+
+    expect(await screen.findByText('Paciente Demo')).toBeVisible();
+    expect(getInvoices).toHaveBeenCalledTimes(2);
   });
 
   it('does not request the dashboard report when the user lacks managerial reports permission', async () => {
@@ -234,20 +299,223 @@ describe('DashboardView', () => {
     expect(getInvoices).not.toHaveBeenCalled();
   });
 
-  it('renders a setup card only when needs_setup is true', async () => {
+  it('prioritizes setup in the operational queue only when needs_setup is true', async () => {
     mockSetupStatus(true);
 
     renderDashboard(makeBaseProps());
 
-    expect((await screen.findAllByText(/configuracion pendiente/i)).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText(/configuración pendiente/i)).length).toBeGreaterThan(0);
   });
 
-  it('hides the setup card when needs_setup is false', async () => {
+  it('bloquea acciones operativas mientras verifica setup-status', () => {
+    vi.mocked(apiClient.request).mockReturnValue(new Promise(() => undefined));
+
+    renderDashboard(makeBaseProps({ cashSession: makeCashSession() }));
+
+    expect(screen.getByRole('heading', { level: 2, name: 'Verificando configuración operativa' })).toBeVisible();
+    expect(screen.queryByRole('link', { name: /nueva factura|abrir caja/i })).not.toBeInTheDocument();
+  });
+
+  it('presenta el error de setup-status, bloquea la operación y permite reintentar', async () => {
+    vi.mocked(apiClient.request)
+      .mockRejectedValueOnce(new ApiError('SQLSTATE setup-status', 500))
+      .mockResolvedValueOnce({
+        needs_setup: false,
+        steps: {
+          fiscal_settings: true,
+          admin_exists: true,
+          catalog_has_services: true,
+          fiscal_sequence_exists: true,
+        },
+      });
+
+    renderDashboard(makeBaseProps({ cashSession: makeCashSession() }));
+
+    expect(await screen.findByRole('heading', { level: 2, name: 'No se pudo verificar la configuración' })).toBeVisible();
+    expect(document.body.textContent).not.toMatch(/SQLSTATE setup-status/i);
+    expect(screen.queryByRole('link', { name: /nueva factura|abrir caja/i })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar configuración' }));
+
+    expect(await screen.findByRole('link', { name: 'Nueva factura' })).toHaveAttribute('href', '/billing/new');
+  });
+
+  it('consulta setup-status también para un cajero sin permisos fiscales ni gerenciales', async () => {
+    mockSetupStatus(true, { admin_exists: true });
+    const request = vi.mocked(apiClient.request);
+
+    renderDashboard(makeBaseProps({
+      canEditFiscalSettings: false,
+      canManageCatalog: false,
+      canViewFiscalSettings: false,
+      canViewManagerialReports: false,
+    }));
+
+    expect(await screen.findByText(/solicite a un administrador/i)).toBeVisible();
+    expect(request).toHaveBeenCalledWith('/api/system/setup-status');
+  });
+
+  it('hace que setup domine la CTA y abre el wizard completo con permiso fiscal', async () => {
+    mockSetupStatus(true, { admin_exists: true });
+
+    renderDashboard(makeBaseProps({
+      canEditFiscalSettings: true,
+      canManageCatalog: true,
+      canViewCatalog: true,
+      canViewFiscalSettings: true,
+      cashSession: makeCashSession(),
+    }));
+
+    const setupAction = await screen.findByRole('button', { name: 'Completar configuración' });
+    expect(screen.queryByRole('link', { name: /nueva factura|abrir caja/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /revisar configuración/i })).not.toBeInTheDocument();
+
+    fireEvent.click(setupAction);
+
+    expect(await screen.findByRole('heading', { name: 'Preparar caja' })).toBeVisible();
+    expect(screen.getByText('Hospital')).toBeVisible();
+    expect(screen.getByText('Numeración')).toBeVisible();
+    expect(screen.getByText('Catálogo')).toBeVisible();
+  });
+
+  it('explica setup sin ofrecer edición cuando falta permiso fiscal', async () => {
+    mockSetupStatus(true, { admin_exists: true });
+
+    renderDashboard(makeBaseProps({
+      canEditFiscalSettings: false,
+      canManageCatalog: false,
+      canViewCatalog: true,
+      canViewFiscalSettings: true,
+    }));
+
+    expect(await screen.findByText(/solicite a un administrador/i)).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Completar configuración' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /nueva factura|abrir caja|revisar configuración/i })).not.toBeInTheDocument();
+  });
+
+  it('dirige al editor fiscal cuando solo falta configuración fiscal', async () => {
+    mockSetupStatus(true, { admin_exists: true, catalog_has_services: true });
+
+    renderDashboard(makeBaseProps({ canEditFiscalSettings: true, canManageCatalog: false }));
+
+    expect(await screen.findByRole('link', { name: 'Completar configuración fiscal' })).toHaveAttribute('href', '/settings/fiscal');
+    expect(screen.queryByRole('button', { name: 'Completar configuración' })).not.toBeInTheDocument();
+  });
+
+  it('dirige al catálogo cuando solo faltan servicios y puede gestionarlos', async () => {
+    mockSetupStatus(true, {
+      admin_exists: true,
+      fiscal_settings: true,
+      fiscal_sequence_exists: true,
+    });
+
+    renderDashboard(makeBaseProps({
+      canEditFiscalSettings: false,
+      canManageCatalog: true,
+      canViewFiscalSettings: false,
+    }));
+
+    expect(await screen.findByRole('link', { name: 'Completar catálogo' })).toHaveAttribute('href', '/catalog');
+    expect(screen.queryByRole('button', { name: 'Completar configuración' })).not.toBeInTheDocument();
+  });
+
+  it('no ofrece el editor fiscal con escritura sin lectura efectiva', async () => {
+    mockSetupStatus(true, { admin_exists: true, catalog_has_services: true });
+
+    renderDashboard(makeBaseProps({
+      canEditFiscalSettings: true,
+      canViewFiscalSettings: false,
+    }));
+
+    expect(await screen.findByText(/solicite a un administrador/i)).toBeVisible();
+    expect(screen.queryByRole('link', { name: 'Completar configuración fiscal' })).not.toBeInTheDocument();
+  });
+
+  it('no ofrece el catálogo con gestión sin lectura efectiva', async () => {
+    mockSetupStatus(true, {
+      admin_exists: true,
+      fiscal_settings: true,
+      fiscal_sequence_exists: true,
+    });
+
+    renderDashboard(makeBaseProps({
+      canManageCatalog: true,
+      canViewCatalog: false,
+    }));
+
+    expect(await screen.findByText(/solicite a un administrador/i)).toBeVisible();
+    expect(screen.queryByRole('link', { name: 'Completar catálogo' })).not.toBeInTheDocument();
+  });
+
+  it('requiere lectura y escritura de ambos módulos para abrir el wizard', async () => {
+    mockSetupStatus(true, { admin_exists: true });
+
+    renderDashboard(makeBaseProps({
+      canEditFiscalSettings: true,
+      canManageCatalog: true,
+      canViewCatalog: false,
+      canViewFiscalSettings: true,
+    }));
+
+    expect(await screen.findByText(/solicite a un administrador/i)).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Completar configuración' })).not.toBeInTheDocument();
+  });
+
+  it('hace que admin_exists falso domine y deriva la recuperación a un técnico autorizado', async () => {
+    mockSetupStatus(true, { admin_exists: false });
+
+    renderDashboard(makeBaseProps({ cashSession: makeCashSession() }));
+
+    expect(await screen.findByText(/técnico autorizado.*crear o restaurar.*administrador/i)).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Completar configuración' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Configuración lista')).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /nueva factura|abrir caja/i })).not.toBeInTheDocument();
+  });
+
+  it('no agrega Facturación disponible a la queue mientras setup está incompleto', async () => {
+    mockSetupStatus(true);
+
+    renderDashboard(makeBaseProps({ cashSession: makeCashSession() }));
+
+    expect(await screen.findByText('Configuración pendiente')).toBeVisible();
+    expect(screen.queryByText('Facturación disponible')).not.toBeInTheDocument();
+  });
+
+  it('hides setup from the operational queue when needs_setup is false', async () => {
     mockSetupStatus(false);
 
     renderDashboard(makeBaseProps());
 
     await screen.findByText(/^caja$/i);
-    expect(screen.queryByText(/configuracion pendiente/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/configuración pendiente/i)).not.toBeInTheDocument();
+  });
+
+  it('prioriza la próxima acción del cajero y recompone módulos sin permiso', async () => {
+    renderDashboard(
+      makeBaseProps({
+        canCreateInvoices: true,
+        canViewManagerialReports: false,
+      }),
+    );
+
+    expect(screen.getByRole('heading', { name: 'Continuar operación' })).toBeVisible();
+    expect(screen.queryByText('Ingresos del mes')).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Resumen financiero de hoy' })).not.toBeInTheDocument();
+    expect(await screen.findByText('Paciente Demo')).toBeVisible();
+    expect(screen.queryByRole('columnheader', { name: 'Total' })).not.toBeInTheDocument();
+    expect(screen.queryByText('L 115.00')).not.toBeInTheDocument();
+  });
+
+  it('presenta cifras como ledger y no como stat cards', async () => {
+    renderDashboard(makeBaseProps());
+
+    expect(await screen.findByRole('region', { name: 'Resumen financiero de hoy' })).toBeVisible();
+    expect(document.querySelector('[data-slot="stat-grid"]')).not.toBeInTheDocument();
+  });
+
+  it('mantiene Ver historial completo con target mínimo de 44 px', async () => {
+    renderDashboard(makeBaseProps());
+
+    expect(await screen.findByRole('link', { name: 'Ver historial completo' })).toHaveClass('min-h-11', 'sm:min-h-11');
   });
 });

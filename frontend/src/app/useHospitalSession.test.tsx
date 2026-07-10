@@ -73,6 +73,16 @@ function CashPermissionProbe() {
   );
 }
 
+function SetupPermissionProbe() {
+  const session = useHospitalSession();
+
+  return (
+    <output>
+      {`${session.loading ? 'loading' : 'ready'}:fiscal-edit=${session.canEditFiscalSettings ? 'yes' : 'no'}:catalog-manage=${session.canManageCatalog ? 'yes' : 'no'}`}
+    </output>
+  );
+}
+
 describe('useHospitalSession', () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -192,5 +202,24 @@ describe('useHospitalSession', () => {
     render(<CashPermissionProbe />, { wrapper: makeWrapper() });
 
     await waitFor(() => expect(screen.getByText('ready:close=yes:close-any=yes')).toBeInTheDocument());
+  });
+
+  it('deriva por separado edición fiscal y gestión de catálogo', async () => {
+    vi.spyOn(apiClient, 'session').mockResolvedValue({
+      id: 1,
+      name: 'Configurador',
+      email: 'configurador@hospital.local',
+      username: 'configurador',
+      active: true,
+      roles: ['configurador'],
+      permissions: ['settings.fiscal.update', 'catalog.manage'],
+      must_change_password: false,
+    });
+
+    render(<SetupPermissionProbe />, { wrapper: makeWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByText('ready:fiscal-edit=yes:catalog-manage=yes')).toBeInTheDocument();
+    });
   });
 });

@@ -251,7 +251,7 @@ describe('App', () => {
 
     render(<App />);
 
-    expect(await screen.findByRole('heading', { name: /acceso institucional para caja y administracion/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /iniciar sesión/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/usuario o correo/i)).toHaveValue('');
   });
 
@@ -263,7 +263,7 @@ describe('App', () => {
 
     render(<App />);
 
-    expect(await screen.findByRole('heading', { name: /acceso institucional para caja y administracion/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /iniciar sesión/i })).toBeInTheDocument();
     expect(fetchMock.mock.calls.map(([input]) => String(input))).not.toContain('/api/cash-sessions/current');
   });
 
@@ -729,7 +729,7 @@ describe('App', () => {
 
     render(<App />);
 
-    expect(await screen.findByRole('heading', { name: /centro de mando/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /continuar operación/i })).toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: /^caja$/i }).length).toBeGreaterThan(0);
     expect(screen.queryByRole('button', { name: /abrir caja desde el centro de mando/i })).not.toBeInTheDocument();
   });
@@ -1321,5 +1321,12 @@ describe('App', () => {
     expect(source).toContain('lazy(() => import');
     expect(source).toContain("import('./features/dashboard/DashboardView')");
     expect(source).toContain('<Suspense fallback={<LoadingState label="Cargando módulo..." />}>');
+  });
+
+  it('propaga capacidades de escritura fiscal y catálogo desde la sesión', () => {
+    const source = readFileSync('src/App.tsx', 'utf8');
+
+    expect(source).toContain('canEditFiscalSettings={session.canEditFiscalSettings}');
+    expect(source).toContain('canManageCatalog={session.canManageCatalog}');
   });
 });

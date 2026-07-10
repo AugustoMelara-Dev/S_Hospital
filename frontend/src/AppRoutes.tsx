@@ -1,8 +1,8 @@
 import { lazy, Suspense } from 'react';
-import { Link, Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import { PermissionGate } from './components/PermissionGate';
-import { Button } from './components/ui/button';
 import { LoadingState } from './components/ui/states';
+import { RouteState } from './design-system/patterns/RouteState';
 import { CashBoxView } from './features/cash/CashBoxView';
 import { NewInvoiceView } from './features/invoices/NewInvoiceView';
 import { type AuthUser, type CashSession } from './lib/api';
@@ -25,6 +25,7 @@ type AppRoutesProps = {
   canCreatePayments: boolean;
   canEditFiscalSettings: boolean;
   canEditOperationalSettings: boolean;
+  canManageCatalog: boolean;
   canOpenCash: boolean;
   canCloseAnyCash: boolean;
   canCloseCash: boolean;
@@ -57,6 +58,7 @@ export function AppRoutes({
   canCreatePayments,
   canEditFiscalSettings,
   canEditOperationalSettings,
+  canManageCatalog,
   canOpenCash,
   canCloseAnyCash,
   canCloseCash,
@@ -93,6 +95,8 @@ export function AppRoutes({
           <Suspense fallback={<LoadingState label="Cargando módulo..." />}>
             <DashboardView
               canCreateInvoices={canCreateInvoices}
+              canEditFiscalSettings={canEditFiscalSettings}
+              canManageCatalog={canManageCatalog}
               canOpenCash={canOpenCash}
               canViewBackups={canViewBackups}
               canViewCatalog={canViewCatalog}
@@ -267,25 +271,13 @@ export function AppRoutes({
   );
 }
 
-function NotFoundView() {
+export function NotFoundView() {
   return (
-    <section
-      aria-labelledby="not-found-title"
-      className="rounded-md border border-border bg-card p-5 text-card-foreground shadow-sm"
-    >
-      <div className="flex flex-col gap-2">
-        <h1 id="not-found-title" className="text-2xl font-semibold leading-tight text-foreground">
-          Ruta no encontrada
-        </h1>
-        <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-          La pantalla solicitada no existe dentro de la navegacion principal.
-        </p>
-      </div>
-      <div className="mt-5">
-        <Button asChild>
-          <Link to={appRoutes.dashboard.path}>Ir al inicio</Link>
-        </Button>
-      </div>
-    </section>
+    <RouteState
+      kind="not-found"
+      title="Ruta no encontrada"
+      description="La pantalla solicitada no existe dentro de la navegación principal."
+      action={{ label: 'Ir al inicio', href: appRoutes.dashboard.path }}
+    />
   );
 }

@@ -23,4 +23,14 @@ describe('Dialog accessibility', () => {
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
+
+  it('mantiene el cierre global con un target de 44 por 44 px', () => {
+    render(
+      <Dialog open={true} onOpenChange={() => undefined} title="Cerrar diálogo">
+        <button>OK</button>
+      </Dialog>,
+    );
+
+    expect(screen.getByRole('button', { name: 'Cerrar modal' })).toHaveClass('size-11', 'sm:size-11');
+  });
 });
