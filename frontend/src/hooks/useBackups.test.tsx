@@ -129,6 +129,24 @@ describe('useBackups', () => {
     expect(result.current.pollIntervalMs).toBe(false);
   });
 
+  it('fails closed instead of crashing when the backup collection is malformed', async () => {
+    mockedGetBackups.mockResolvedValue({
+      data: { unexpected: 'payload' },
+      meta: { current_page: 1, per_page: 25, total: 0 },
+    } as never);
+
+    const { result } = renderHook(() => useBackups(), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(result.current.hasPending).toBe(false);
+    expect(result.current.pollIntervalMs).toBe(false);
+  });
+
   it('does not poll pending backups while the tab is hidden', async () => {
     stubVisibilityState('hidden');
     mockedGetBackups.mockResolvedValue({

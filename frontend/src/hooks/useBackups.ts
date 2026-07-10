@@ -17,6 +17,15 @@ const PENDING_POLL_INTERVAL_MS = 5_000;
 const STALE_TIME_MS = 30_000;
 const HEALTH_POLL_INTERVAL_MS = 60_000;
 
+function backupRows(result: unknown): BackupLog[] {
+  if (!result || typeof result !== 'object' || !('data' in result)) {
+    return [];
+  }
+
+  const data = (result as { data?: unknown }).data;
+  return Array.isArray(data) ? data as BackupLog[] : [];
+}
+
 export function useBackups(filters: BackupsFilters = {}) {
   const { enabled = true, ...apiFilters } = filters;
   const query = useQuery({
@@ -26,7 +35,7 @@ export function useBackups(filters: BackupsFilters = {}) {
     placeholderData: keepPreviousData,
     staleTime: STALE_TIME_MS,
     refetchInterval: (currentQuery) => {
-      const backups = currentQuery.state.data?.data ?? [];
+      const backups = backupRows(currentQuery.state.data);
       return backups.some((backup: BackupLog) => backup.status === 'pending')
         ? getVisibleRefetchInterval(PENDING_POLL_INTERVAL_MS)
         : false;
@@ -34,7 +43,7 @@ export function useBackups(filters: BackupsFilters = {}) {
   });
 
   const hasPending = useMemo(
-    () => (query.data?.data ?? []).some((backup: BackupLog) => backup.status === 'pending'),
+    () => backupRows(query.data).some((backup) => backup.status === 'pending'),
     [query.data],
   );
 
