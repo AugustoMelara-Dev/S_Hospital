@@ -112,6 +112,9 @@ git commit -m "feat(ui): establish clinical design foundations"
 - Create: `frontend/src/design-system/motion/MotionProvider.tsx`
 - Create: `frontend/src/design-system/primitives/primitives.test.tsx`
 - Modify: `frontend/src/App.tsx`
+- Modify: `frontend/src/lib/realtime/useBroadcastSync.ts`
+- Modify: `frontend/src/features/reports/ReportsExecutive.tsx`
+- Modify: `frontend/src/features/reports/ReportsExecutive.test.tsx`
 - Remove at end of task: `frontend/src/components/ui/toaster.tsx`
 
 **Interfaces:**
@@ -147,7 +150,7 @@ Expected: FAIL por imports inexistentes.
 
 - [ ] **Step 3: implementar primitives y proveedor**
 
-`Button` expone variantes `primary | secondary | quiet | danger`, tamaños `sm | md | lg | icon` y `busy`; `Field` genera IDs estables y `aria-describedby`; `Surface` usa `section | article | aside`; `StatusMark` combina texto, icono y tono; `MotionProvider` usa `LazyMotion`, `domAnimation` y `MotionConfig reducedMotion="user"`; `ClinicalToaster` instala Sonner una sola vez.
+`Button` expone variantes `primary | secondary | quiet | danger`, tamaños `sm | md | lg | icon` y `busy`; `Field` genera IDs estables y `aria-describedby`; `Surface` usa `section | article | aside`; `StatusMark` combina texto, icono y tono; `MotionProvider` usa `LazyMotion`, `domAnimation` y `MotionConfig reducedMotion="user"`; `ClinicalToaster` instala Sonner una sola vez. El nuevo módulo también conserva la interfaz `notify.success/error/info/warning/loading/dismiss/promise`, migra todos sus consumidores y elimina `react-hot-toast` del paquete.
 
 - [ ] **Step 4: migrar el root y verificar**
 
@@ -158,7 +161,7 @@ Expected: PASS y ningún warning de `act`, foco o ARIA.
 - [ ] **Step 5: commit**
 
 ```bash
-git add frontend/src/design-system frontend/src/App.tsx frontend/src/components/ui/toaster.tsx
+git add frontend/package.json frontend/package-lock.json frontend/src/design-system frontend/src/App.tsx frontend/src/lib/realtime/useBroadcastSync.ts frontend/src/features/reports frontend/src/components/ui/toaster.tsx
 git commit -m "feat(ui): add clinical primitives and feedback"
 ```
 
