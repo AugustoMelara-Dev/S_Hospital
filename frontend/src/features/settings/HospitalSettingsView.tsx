@@ -10,6 +10,7 @@ import { FormField } from '@/components/ui/form-field';
 import { FormSection } from '@/components/ui/form-section';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { type FiscalSettings, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { safeClientMessage } from '@/lib/support/clientIssueLog';
 
@@ -45,6 +46,8 @@ export function HospitalSettingsView({ canEdit, onStatus }: HospitalSettingsView
   const [settings, setSettings] = useState<FiscalSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [pendingChange, setPendingChange] = useState<HospitalFormData | null>(null);
+  const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
 
   const form = useForm<HospitalFormData>({
@@ -104,8 +107,19 @@ export function HospitalSettingsView({ canEdit, onStatus }: HospitalSettingsView
 
       return;
     }
+    if (rtnChanged) {
+      setPendingChange(data);
+      return;
+    }
+
+    await saveHospital(data);
+  }
+
+  async function saveHospital(data: HospitalFormData) {
     if (savingRef.current) return;
+    const fiscalReason = data.reason?.trim() ?? '';
     savingRef.current = true;
+    setSaving(true);
     setError('');
     onStatus('Guardando datos del hospital...');
     try {
@@ -121,6 +135,18 @@ export function HospitalSettingsView({ canEdit, onStatus }: HospitalSettingsView
         ...(rtnChanged ? { reason: fiscalReason } : {}),
       });
       setSettings(updated);
+      setPendingChange(null);
+      form.reset({
+        hospital_name: updated.hospital_name,
+        rtn: updated.rtn ?? '',
+        address: updated.address ?? '',
+        slogan: updated.slogan ?? '',
+        government_line: updated.government_line ?? '',
+        secretariat_line: updated.secretariat_line ?? '',
+        receipt_location: updated.receipt_location ?? '',
+        receipt_footer_text: updated.receipt_footer_text ?? '',
+        reason: '',
+      });
       onStatus('Datos del hospital guardados.');
     } catch (err) {
       const message = safeClientMessage(userSafeErrorMessage(err, 'No se pudo guardar los datos del hospital.'));
@@ -128,6 +154,7 @@ export function HospitalSettingsView({ canEdit, onStatus }: HospitalSettingsView
       onStatus(message);
     } finally {
       savingRef.current = false;
+      setSaving(false);
     }
   }
 
@@ -153,7 +180,7 @@ export function HospitalSettingsView({ canEdit, onStatus }: HospitalSettingsView
       <form
         onSubmit={form.handleSubmit(onSubmit)}
         className="space-y-4"
-        aria-busy={form.formState.isSubmitting}
+        aria-busy={form.formState.isSubmitting || saving}
       >
         <Card>
           <CardHeader>
@@ -290,12 +317,42 @@ export function HospitalSettingsView({ canEdit, onStatus }: HospitalSettingsView
         </Card>
 
         <div className="flex justify-end">
-          <Button type="submit" disabled={!canEdit || form.formState.isSubmitting}>
+          <Button type="submit" disabled={!canEdit || form.formState.isSubmitting || saving}>
             <Save data-icon aria-hidden="true" />
             Guardar datos del hospital
           </Button>
         </div>
       </form>
+
+      <ConfirmDialog
+        open={pendingChange !== null}
+        title="Revisar cambio de RTN"
+        confirmLabel={saving ? 'Guardando...' : 'Confirmar y guardar'}
+        confirmDisabled={saving}
+        cancelDisabled={saving}
+        onCancel={() => setPendingChange(null)}
+        onConfirm={() => {
+          if (pendingChange) void saveHospital(pendingChange);
+        }}
+      >
+        {pendingChange ? (
+          <div className="space-y-3">
+            {error ? <Alert variant="destructive" title="No se pudo guardar">{error}</Alert> : null}
+            <p>El RTN se usará en recibos y documentos institucionales emitidos después del cambio.</p>
+            <dl className="grid gap-2 rounded-md border border-operational-border bg-operational-panel p-3 sm:grid-cols-2">
+              <div>
+                <dt className="text-xs font-medium">RTN actual</dt>
+                <dd className="break-all font-mono tabular-nums">{settings?.rtn || 'Sin RTN'}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-medium">RTN nuevo</dt>
+                <dd className="break-all font-mono tabular-nums">{pendingChange.rtn?.trim() || 'Sin RTN'}</dd>
+              </div>
+            </dl>
+            <p className="font-medium text-foreground">El motivo se enviará al servidor para auditoría.</p>
+          </div>
+        ) : null}
+      </ConfirmDialog>
     </FormSection>
   );
 }

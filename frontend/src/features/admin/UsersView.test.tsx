@@ -112,6 +112,37 @@ describe('UsersView', () => {
     expect(screen.getByText(/solo lectura/i)).toBeInTheDocument();
   });
 
+  it('preserves search context after reviewing and closing a user detail', async () => {
+    vi.mocked(apiClient.getUsers).mockResolvedValueOnce([
+      adminUser,
+      {
+        ...adminUser,
+        id: 2,
+        name: 'Caja Respaldo',
+        email: 'caja-respaldo@hospital.test',
+        username: 'caja-respaldo',
+        roles: ['cajero'],
+        permissions: ['cash.view'],
+      },
+    ]);
+
+    render(<UsersView onStatus={vi.fn()} canCreateUsers={false} canManageRoles={false} />);
+
+    const search = await screen.findByRole('textbox', { name: /buscar usuarios/i });
+    fireEvent.change(search, { target: { value: 'respaldo' } });
+    fireEvent.click(screen.getByRole('button', { name: /ver detalle de caja respaldo/i }));
+
+    const dialog = await screen.findByRole('dialog', { name: /detalle de usuario/i });
+    expect(dialog).toHaveTextContent(/caja respaldo/i);
+    expect(dialog).toHaveTextContent(/cajero/i);
+    fireEvent.click(within(dialog).getByRole('button', { name: /^cerrar$/i }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: /detalle de usuario/i })).not.toBeInTheDocument());
+    expect(search).toHaveValue('respaldo');
+    expect(screen.getByText('Caja Respaldo')).toBeInTheDocument();
+    expect(screen.queryByText('Admin Hospital')).not.toBeInTheDocument();
+  });
+
   it('groups per-user mutation actions in a single action menu', async () => {
     vi.mocked(apiClient.getUsers).mockResolvedValueOnce([
       adminUser,

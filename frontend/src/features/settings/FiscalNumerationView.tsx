@@ -10,6 +10,8 @@ import { FormField } from '@/components/ui/form-field';
 import { FormSection } from '@/components/ui/form-section';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { type FiscalSequence, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { safeClientMessage } from '@/lib/support/clientIssueLog';
 
@@ -45,6 +47,8 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
   const [sequence, setSequence] = useState<FiscalSequence | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [pendingChange, setPendingChange] = useState<SequenceFormData | null>(null);
+  const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
 
   const form = useForm<SequenceFormData>({
@@ -97,8 +101,14 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
       return;
     }
 
+    setPendingChange(data);
+  }
+
+  async function saveSequence(data: SequenceFormData) {
     if (savingRef.current) return;
+    const reason = data.reason?.trim() ?? '';
     savingRef.current = true;
+    setSaving(true);
     setError('');
     onStatus('Guardando numeración fiscal...');
     try {
@@ -115,6 +125,15 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
         ...(sequence?.id ? { reason } : {}),
       });
       setSequence(saved);
+      setPendingChange(null);
+      form.reset({
+        prefix: saved.prefix,
+        cai: saved.cai,
+        min_number: saved.min_number,
+        max_number: saved.max_number,
+        valid_until: saved.valid_until,
+        reason: '',
+      });
       onStatus('Numeración fiscal guardada.');
     } catch (err) {
       const message = safeClientMessage(userSafeErrorMessage(err, 'No se pudo guardar la numeración.'));
@@ -122,8 +141,14 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
       onStatus(message);
     } finally {
       savingRef.current = false;
+      setSaving(false);
     }
   }
+
+  const availableNumbers = sequence
+    ? Math.max(0, Number(sequence.max_number) - Number(sequence.current_number))
+    : 0;
+  const isExpired = sequence ? new Date(`${sequence.valid_until}T23:59:59`) < new Date() : false;
 
   if (loading) {
     return (
@@ -154,7 +179,34 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
         </Alert>
       )}
 
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" aria-busy={form.formState.isSubmitting}>
+      {sequence ? (
+        <div className="grid gap-3 sm:grid-cols-2" aria-label="Estado del rango fiscal">
+          <div className="rounded-md border border-operational-border bg-operational-panel p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm font-semibold">Disponibilidad del rango</p>
+              <StatusBadge status={availableNumbers <= 100 ? 'pending' : 'success'}>
+                {availableNumbers <= 100 ? 'Rango por agotarse' : 'Rango disponible'}
+              </StatusBadge>
+            </div>
+            <p className="mt-2 text-sm tabular-nums text-muted-foreground">
+              {availableNumbers.toLocaleString('es-HN')} números disponibles de {Number(sequence.max_number - sequence.min_number + 1).toLocaleString('es-HN')} autorizados.
+            </p>
+          </div>
+          <div className="rounded-md border border-operational-border bg-operational-panel p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm font-semibold">Vigencia</p>
+              <StatusBadge status={isExpired ? 'failed' : 'success'}>
+                {isExpired ? 'Vencida' : 'Vigente'}
+              </StatusBadge>
+            </div>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {isExpired ? 'Venció el' : 'Vigente hasta'} {sequence.valid_until}.
+            </p>
+          </div>
+        </div>
+      ) : null}
+
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" aria-busy={form.formState.isSubmitting || saving}>
         <Card>
           <CardHeader>
             <CardTitle>Datos fiscales</CardTitle>
@@ -262,12 +314,50 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
         ) : null}
 
         <div className="flex justify-end">
-          <Button type="submit" disabled={!canEdit || form.formState.isSubmitting}>
+          <Button type="submit" disabled={!canEdit || form.formState.isSubmitting || saving}>
             <Save data-icon aria-hidden="true" />
             Guardar numeración
           </Button>
         </div>
       </form>
+
+      <ConfirmDialog
+        open={pendingChange !== null}
+        title="Revisar cambio fiscal"
+        confirmLabel={saving ? 'Guardando...' : 'Confirmar y guardar'}
+        confirmDisabled={saving}
+        cancelDisabled={saving}
+        onCancel={() => setPendingChange(null)}
+        onConfirm={() => {
+          if (pendingChange) void saveSequence(pendingChange);
+        }}
+      >
+        {pendingChange ? (
+          <div className="space-y-3">
+            {error ? <Alert variant="destructive" title="No se pudo guardar">{error}</Alert> : null}
+            <p>Este cambio afecta la numeración de las próximas facturas y quedará auditado.</p>
+            <dl className="grid gap-2 rounded-md border border-operational-border bg-operational-panel p-3 sm:grid-cols-2">
+              <div>
+                <dt className="text-xs font-medium">Prefijo</dt>
+                <dd className="font-mono tabular-nums">{sequence?.prefix ?? '—'} → {pendingChange.prefix}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-medium">Rango autorizado</dt>
+                <dd className="font-mono tabular-nums">{pendingChange.min_number.toLocaleString('es-HN')} – {pendingChange.max_number.toLocaleString('es-HN')}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-medium">Vigencia</dt>
+                <dd>{pendingChange.valid_until}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-medium">Correlativo actual</dt>
+                <dd className="font-mono tabular-nums">{sequence?.current_number ?? 0}</dd>
+              </div>
+            </dl>
+            <p className="font-medium text-foreground">El correlativo actual no cambia desde esta pantalla.</p>
+          </div>
+        ) : null}
+      </ConfirmDialog>
     </FormSection>
   );
 }

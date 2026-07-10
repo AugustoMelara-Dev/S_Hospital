@@ -49,6 +49,7 @@ describe('UsersTable', () => {
         onEdit={vi.fn()}
         onResetPassword={vi.fn()}
         onToggleActive={vi.fn()}
+        onViewDetail={vi.fn()}
         searchTerm=""
         users={[activeUser]}
       />,
@@ -71,6 +72,7 @@ describe('UsersTable', () => {
         onEdit={vi.fn()}
         onResetPassword={vi.fn()}
         onToggleActive={vi.fn()}
+        onViewDetail={vi.fn()}
         searchTerm=""
         users={[activeUser]}
       />,
@@ -89,6 +91,7 @@ describe('UsersTable', () => {
         onEdit={vi.fn()}
         onResetPassword={vi.fn()}
         onToggleActive={vi.fn()}
+        onViewDetail={vi.fn()}
         searchTerm=""
         users={[customRoleUser]}
       />,
@@ -107,6 +110,7 @@ describe('UsersTable', () => {
         onEdit={vi.fn()}
         onResetPassword={vi.fn()}
         onToggleActive={vi.fn()}
+        onViewDetail={vi.fn()}
         searchTerm=""
         users={[userWithoutRole]}
       />,

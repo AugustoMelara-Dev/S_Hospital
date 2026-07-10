@@ -90,6 +90,7 @@ describe('HospitalSettingsView', () => {
     });
 
     fireEvent.click(screen.getByRole('button', { name: /guardar datos del hospital/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /confirmar y guardar/i }));
 
     await waitFor(() => {
       expect(updateFiscalSettings).toHaveBeenCalled();
@@ -111,6 +112,7 @@ describe('HospitalSettingsView', () => {
     const reasonInput = screen.getByLabelText(/motivo del cambio fiscal/i);
     fireEvent.change(reasonInput, { target: { value: 'Correccion documentada de RTN' } });
     fireEvent.click(screen.getByRole('button', { name: /guardar datos del hospital/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /confirmar y guardar/i }));
 
     await waitFor(() => {
       expect(updateFiscalSettings).toHaveBeenCalled();
@@ -119,6 +121,40 @@ describe('HospitalSettingsView', () => {
     const payload = updateFiscalSettings.mock.calls.at(-1)?.[0] as Record<string, unknown>;
     expect(payload.rtn).toBe('08011999111111');
     expect(payload.reason).toBe('Correccion documentada de RTN');
+  });
+
+  it('reviews the RTN consequence before preserving the exact hospital payload', async () => {
+    const updateFiscalSettings = vi.mocked(apiClient.updateFiscalSettings);
+
+    render(<HospitalSettingsView canEdit onStatus={vi.fn()} />);
+
+    fireEvent.change(await screen.findByLabelText(/^rtn$/i), {
+      target: { value: '08011999111111' },
+    });
+    fireEvent.change(screen.getByLabelText(/motivo del cambio fiscal/i), {
+      target: { value: 'Correccion documentada de RTN' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /guardar datos del hospital/i }));
+
+    const dialog = await screen.findByRole('alertdialog', { name: /revisar cambio de rtn/i });
+    expect(dialog).toHaveTextContent('08011999000001');
+    expect(dialog).toHaveTextContent('08011999111111');
+    expect(dialog).toHaveTextContent(/recibos y documentos institucionales/i);
+    expect(updateFiscalSettings).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: /confirmar y guardar/i }));
+
+    await waitFor(() => expect(updateFiscalSettings).toHaveBeenCalledWith({
+      hospital_name: 'Hospital San Isidro',
+      rtn: '08011999111111',
+      address: 'Tocoa, Colon',
+      slogan: 'Servicio publico',
+      government_line: 'Gobierno de Honduras',
+      secretariat_line: 'Secretaria de Salud Publica',
+      receipt_location: 'Tocoa, Colon',
+      receipt_footer_text: null,
+      reason: 'Correccion documentada de RTN',
+    }));
   });
   it('disables inputs without edit permission', async () => {
     render(<HospitalSettingsView canEdit={false} onStatus={vi.fn()} />);

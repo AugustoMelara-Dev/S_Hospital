@@ -1,8 +1,10 @@
 import { Search } from 'lucide-react';
+import { useState } from 'react';
 import { type AuthUser } from '@/lib/api';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { UsersTable } from './UsersTable';
+import { UserDetailDialog } from './UserDetailDialog';
 
 type UsersDirectoryPanelProps = {
   canAssignAdminRole: boolean;
@@ -33,6 +35,8 @@ export function UsersDirectoryPanel({
   searchTerm,
   users,
 }: UsersDirectoryPanelProps) {
+  const [detailUser, setDetailUser] = useState<AuthUser | null>(null);
+
   return (
     <>
       {readOnly && (
@@ -62,11 +66,18 @@ export function UsersDirectoryPanel({
             onEdit={onEdit}
             onResetPassword={onResetPassword}
             onToggleActive={onToggleActive}
+            onViewDetail={setDetailUser}
             searchTerm={searchTerm}
             users={users}
           />
         </CardContent>
       </Card>
+      <UserDetailDialog
+        user={detailUser}
+        onOpenChange={(open) => {
+          if (!open) setDetailUser(null);
+        }}
+      />
     </>
   );
 }

@@ -4,6 +4,8 @@ import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { UserActionMenu } from './UserActionMenu';
 import { roleLabel } from '@/lib/role-labels';
+import { Button } from '@/components/ui/button';
+import { Eye } from 'lucide-react';
 
 type UsersTableProps = {
   canAssignAdminRole: boolean;
@@ -14,6 +16,7 @@ type UsersTableProps = {
   onEdit: (user: AuthUser) => void;
   onResetPassword: (user: AuthUser) => void;
   onToggleActive: (user: AuthUser) => void;
+  onViewDetail: (user: AuthUser) => void;
   searchTerm: string;
   users: AuthUser[];
 };
@@ -27,6 +30,7 @@ export function UsersTable({
   onEdit,
   onResetPassword,
   onToggleActive,
+  onViewDetail,
   searchTerm,
   users,
 }: UsersTableProps) {
@@ -99,15 +103,28 @@ export function UsersTable({
         const isOnlyActiveProtectedUser = onlyActiveProtectedUserIds.includes(user.id);
 
         return (
-          <UserActionMenu
-            canDisableUsers={canDisableUsers && canManageProtectedTarget && !isCurrentUser && !isOnlyActiveProtectedUser}
-            canResetPassword={canUpdateUsers && canManageProtectedTarget && !isCurrentUser}
-            canUpdateUsers={canUpdateUsers && canManageProtectedTarget}
-            onEdit={onEdit}
-            onResetPassword={onResetPassword}
-            onToggleActive={onToggleActive}
-            user={user}
-          />
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="min-h-11"
+              aria-label={`Ver detalle de ${user.name}`}
+              onClick={() => onViewDetail(user)}
+            >
+              <Eye data-icon aria-hidden="true" />
+              <span className="hidden xl:inline">Ver detalle</span>
+            </Button>
+            <UserActionMenu
+              canDisableUsers={canDisableUsers && canManageProtectedTarget && !isCurrentUser && !isOnlyActiveProtectedUser}
+              canResetPassword={canUpdateUsers && canManageProtectedTarget && !isCurrentUser}
+              canUpdateUsers={canUpdateUsers && canManageProtectedTarget}
+              onEdit={onEdit}
+              onResetPassword={onResetPassword}
+              onToggleActive={onToggleActive}
+              user={user}
+            />
+          </div>
         );
       },
     },
