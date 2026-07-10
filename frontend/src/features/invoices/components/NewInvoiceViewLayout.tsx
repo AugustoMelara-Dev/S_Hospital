@@ -140,13 +140,14 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
   }
 
   return (
-    <section id="nueva-factura" className="flex h-full min-w-0 flex-col gap-4 pb-36 md:pb-8">
-      <header className="flex flex-col gap-3 border-b border-operational-border pb-4 sm:flex-row sm:items-center sm:justify-between">
+    <section id="nueva-factura" className="flex h-full min-w-0 flex-col gap-5 pb-36 md:pb-8">
+      <header className="relative overflow-hidden rounded-2xl bg-[#0c2733] px-5 py-6 text-white shadow-[0_24px_60px_-44px_rgba(4,20,28,.95)] sm:flex sm:items-center sm:justify-between sm:gap-6 sm:px-7">
+        <div className="pointer-events-none absolute -right-12 -top-20 size-56 rounded-full border border-[#55d3bf]/20" aria-hidden="true" />
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Facturación</p>
-          <h1 className="text-2xl font-semibold leading-tight text-foreground sm:text-3xl">Nueva factura</h1>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#80dfd0]">Facturación</p>
+          <h1 className="mt-1 text-2xl font-semibold leading-tight text-white sm:text-3xl">Nueva factura</h1>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="relative mt-4 flex flex-wrap items-center gap-2 sm:mt-0 sm:justify-end">
           <Badge variant={cashIsOpen ? 'success' : 'destructive'} className="min-h-11 px-3 font-mono text-sm tabular-nums sm:min-h-9">
             {cashIsOpen ? `${cashSessionLabel} · Abierta` : cashSessionLabel}
           </Badge>
@@ -216,7 +217,7 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
 
       <div
         data-billing-workspace
-        className="grid min-w-0 flex-1 gap-0 md:grid-cols-[minmax(15rem,0.72fr)_minmax(24rem,1.45fr)] xl:grid-cols-[minmax(15rem,0.72fr)_minmax(24rem,1.45fr)_minmax(19rem,0.83fr)]"
+        className="grid min-w-0 flex-1 gap-4 md:grid-cols-[minmax(15rem,0.72fr)_minmax(24rem,1.45fr)] xl:grid-cols-[minmax(15rem,0.72fr)_minmax(24rem,1.45fr)_minmax(19rem,0.83fr)]"
       >
         <section
           ref={patientRegionRef}
@@ -224,7 +225,7 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
           data-billing-region="patient"
           data-billing-step="patient"
           tabIndex={-1}
-          className={`${mobileStep === 0 ? 'block' : 'hidden'} min-w-0 border-operational-border pb-5 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:block md:border-r md:pb-0 md:pr-5`}
+          className={`${mobileStep === 0 ? 'block' : 'hidden'} min-w-0 rounded-xl border border-operational-border bg-operational-surface p-5 shadow-operational motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:block`}
         >
           <PatientStep
             ref={patientInputRef}
@@ -241,7 +242,7 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
           data-billing-region="services"
           data-billing-step="services"
           tabIndex={-1}
-          className={`${mobileStep === 1 ? 'block' : 'hidden'} min-w-0 border-operational-border py-5 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:block md:py-0 md:pl-5 xl:border-r xl:pr-5`}
+          className={`${mobileStep === 1 ? 'block' : 'hidden'} min-w-0 rounded-xl border border-operational-border bg-operational-surface p-5 shadow-operational motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:block`}
         >
           <ServiceSearch
             categories={state.categories}
@@ -273,7 +274,7 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
           data-billing-region="ticket"
           data-billing-step="review"
           tabIndex={-1}
-          className={`${mobileStep === 2 ? 'block' : 'hidden'} min-w-0 border-t border-operational-border pt-5 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:col-span-2 md:block xl:sticky xl:top-20 xl:col-span-1 xl:max-h-[calc(100vh-6rem)] xl:self-start xl:overflow-y-auto xl:border-t-0 xl:pl-5 xl:pt-0`}
+          className={`${mobileStep === 2 ? 'block' : 'hidden'} min-w-0 rounded-xl border border-secondary/25 bg-accent/35 p-5 shadow-[0_24px_60px_-42px_rgba(4,20,28,.55)] motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:col-span-2 md:block xl:sticky xl:top-24 xl:col-span-1 xl:max-h-[calc(100vh-7rem)] xl:self-start xl:overflow-y-auto`}
         >
           <InvoiceCart
             items={state.cartItems}

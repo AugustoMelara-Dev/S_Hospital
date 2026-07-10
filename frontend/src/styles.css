@@ -104,7 +104,13 @@ html.dark {
 
   [data-slot="page-header-title"] { color: #ffffff; }
   [data-slot="page-header-description"] { color: #c9dcda; }
-  [data-slot="page-header-actions"], [data-slot="page-header-secondary"], [data-slot="page-header-top"] { position: relative; z-index: 1; }
+  [data-slot="page-header-actions"], [data-slot="page-header-secondary"], [data-slot="page-header-top"] { position: relative; z-index: 1; color: #d6e8e5; }
+  [data-slot="page-header-top"] :where(p, span) { color: #80dfd0; }
+  [data-slot="page-header-secondary"] :where(p, span) { color: #d6e8e5; }
+  [data-slot="page-header-actions"] [data-slot="button"],
+  [data-slot="operational-banner"] [data-slot="button"] { border-color: rgb(255 255 255 / 0.18); background: #55d3bf; color: #071c24; }
+  [data-slot="page-header-actions"] [data-slot="button"]:hover,
+  [data-slot="operational-banner"] [data-slot="button"]:hover { background: #76dfcf; color: #071c24; }
 
   [data-slot="card"] {
     border-color: rgb(203 216 213 / 0.82);

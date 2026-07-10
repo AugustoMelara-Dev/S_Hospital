@@ -242,26 +242,27 @@ export function DashboardView({
 
   return (
     <section aria-labelledby="dashboard-title" className="flex min-w-0 flex-col gap-6">
-      <header className="border-b border-operational-border pb-5 sm:flex sm:items-end sm:justify-between sm:gap-6">
-        <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Inicio operativo</p>
-          <h1 id="dashboard-title" className="mt-2 text-3xl font-semibold leading-tight text-foreground">
+      <header className="relative isolate overflow-hidden rounded-2xl bg-[#0c2733] px-5 py-7 text-white shadow-[0_28px_70px_-48px_rgba(4,20,28,.95)] sm:flex sm:items-end sm:justify-between sm:gap-8 sm:px-7 sm:py-9">
+        <div className="absolute -right-24 -top-28 -z-10 size-80 rounded-full border border-[#55d3bf]/20 bg-[#55d3bf]/5" aria-hidden="true" />
+        <div className="min-w-0 max-w-2xl">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#80dfd0]">Inicio operativo</p>
+          <h1 id="dashboard-title" className="mt-3 text-3xl font-semibold leading-[1.08] tracking-[-0.04em] text-white sm:text-4xl">
             Continuar operación
           </h1>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            Estado del turno: <strong className="font-semibold text-foreground">{cashIsOpen ? `Caja abierta #${cashSession?.id}` : 'Caja cerrada'}</strong>
+          <p className="mt-4 text-sm leading-6 text-white/65">
+            Estado del turno: <strong className="font-semibold text-white">{cashIsOpen ? `Caja abierta #${cashSession?.id}` : 'Caja cerrada'}</strong>
           </p>
         </div>
         {setupAction?.kind === 'wizard' ? (
-          <Button type="button" onClick={() => setIsWizardOpen(true)} className="mt-4 min-h-12 w-full sm:mt-0 sm:w-auto">
+          <Button type="button" onClick={() => setIsWizardOpen(true)} className="mt-6 min-h-12 w-full bg-[#55d3bf] text-[#071c24] hover:bg-[#76dfcf] sm:mt-0 sm:w-auto">
             {setupAction.label}
           </Button>
         ) : setupAction?.kind === 'link' ? (
-          <Button asChild className="mt-4 min-h-12 w-full sm:mt-0 sm:w-auto">
+          <Button asChild className="mt-6 min-h-12 w-full bg-[#55d3bf] text-[#071c24] hover:bg-[#76dfcf] sm:mt-0 sm:w-auto">
             <Link to={setupAction.to}>{setupAction.label}</Link>
           </Button>
         ) : primaryAction ? (
-          <Button asChild className="mt-4 min-h-12 w-full sm:mt-0 sm:w-auto">
+          <Button asChild className="mt-6 min-h-12 w-full bg-[#55d3bf] text-[#071c24] hover:bg-[#76dfcf] sm:mt-0 sm:w-auto">
             <Link to={primaryAction.to}>
               {primaryAction.icon}
               {primaryAction.label}
@@ -303,8 +304,8 @@ export function DashboardView({
         <OperationalQueue items={queueItems} />
 
         {canViewInvoices ? (
-          <section aria-labelledby="recent-invoices-title" className="min-w-0 border border-operational-border bg-operational-surface">
-            <header className="flex items-center justify-between gap-3 border-b border-operational-border px-5 py-4">
+          <section aria-labelledby="recent-invoices-title" className="min-w-0 overflow-hidden rounded-xl border border-operational-border bg-operational-surface shadow-operational">
+            <header className="flex items-center justify-between gap-3 border-b border-operational-border bg-muted/35 px-5 py-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Actividad</p>
                 <h2 id="recent-invoices-title" className="mt-1 text-lg font-semibold">Facturas recientes</h2>

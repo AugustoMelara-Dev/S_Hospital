@@ -385,16 +385,16 @@ export function StatGrid({ children, className, items, ...props }: StatGridProps
         <div
           key={index}
           data-slot="stat-grid-item"
-          className={cn('rounded-panel border border-operational-border bg-operational-surface p-4 shadow-sm', item.tone && toneStyles[item.tone])}
+          className={cn('relative overflow-hidden rounded-xl border border-operational-border bg-operational-surface p-5 shadow-operational before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-secondary/70', item.tone && toneStyles[item.tone])}
         >
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">{item.label}</p>
-              <p className="mt-2 text-xl font-semibold text-foreground tabular-nums">{item.value}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{item.label}</p>
+              <p className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-foreground tabular-nums">{item.value}</p>
             </div>
             {item.icon ? <span className="shrink-0 text-hospital-primary [&_svg]:size-4">{item.icon}</span> : null}
           </div>
-          {item.helper ? <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{item.helper}</p> : null}
+          {item.helper ? <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{item.helper}</p> : null}
         </div>
       ))}
       {children}
@@ -420,7 +420,7 @@ export function StatCard({
     <div
       data-slot="stat-card"
       className={cn(
-        'rounded-panel border border-operational-border bg-operational-surface p-4 shadow-sm',
+        'relative overflow-hidden rounded-xl border border-operational-border bg-operational-surface p-5 shadow-operational before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-secondary/70',
         toneStyles[tone],
         className,
       )}
@@ -434,7 +434,7 @@ export function StatCard({
       >
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">{label}</p>
-          <p className="mt-2 text-xl font-semibold text-foreground tabular-nums">{value}</p>
+          <p className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-foreground tabular-nums">{value}</p>
         </div>
         {icon ? (
           <span className={cn('shrink-0 text-hospital-primary [&_svg]:size-4', align === 'vertical' && 'self-end')}>
@@ -467,7 +467,7 @@ export const SectionCard = forwardRef<HTMLElement, SectionCardProps>(function Se
       ref={ref as never}
       data-slot="section-card"
       className={cn(
-        'rounded-panel border border-operational-border bg-operational-surface p-panel shadow-operational',
+        'rounded-xl border border-operational-border bg-operational-surface p-panel shadow-operational',
         'focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background',
         className,
       )}
@@ -637,14 +637,19 @@ export function OperationalBanner({
   return (
     <section
       data-slot="operational-banner"
-      className={cn('rounded-panel border bg-operational-surface p-panel shadow-operational', toneStyles[tone], className)}
+      data-tone={tone}
+      className={cn(
+        'relative isolate overflow-hidden rounded-2xl border border-white/10 bg-[#0c2733] p-5 text-white shadow-[0_28px_70px_-48px_rgba(4,20,28,.95)] sm:p-7',
+        className,
+      )}
       {...props}
     >
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div className="pointer-events-none absolute -right-24 -top-28 -z-10 size-72 rounded-full border border-[#55d3bf]/20 bg-[#55d3bf]/5" aria-hidden="true" />
+      <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
-          {meta ? <div className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">{meta}</div> : null}
-          <TitleTag className="text-2xl font-semibold leading-tight text-foreground sm:text-3xl">{title}</TitleTag>
-          {description ? <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted-foreground">{description}</p> : null}
+          {meta ? <div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#80dfd0]">{meta}</div> : null}
+          <TitleTag className="text-2xl font-semibold leading-tight tracking-[-0.035em] text-white sm:text-3xl">{title}</TitleTag>
+          {description ? <p className="mt-3 max-w-3xl text-sm leading-relaxed text-white/65">{description}</p> : null}
         </div>
         {(status || actions) ? (
           <div className="flex shrink-0 flex-wrap items-center gap-2 lg:justify-end">
