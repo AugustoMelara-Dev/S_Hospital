@@ -146,6 +146,30 @@ describe('ReceiptPreview', () => {
     expect(screen.queryByLabelText(/tam/i)).not.toBeInTheDocument();
   });
 
+  it('groups receipt actions outside the printable document with accessible targets', () => {
+    render(
+      <ReceiptPreview
+        receipt={receiptFixture()}
+        onPrint={vi.fn()}
+        onNewInvoice={vi.fn()}
+      />,
+    );
+
+    const actions = screen.getByRole('group', { name: 'Acciones del recibo' });
+    expect(within(actions).getByRole('button', { name: 'Imprimir' })).toHaveClass('min-h-11');
+    expect(within(actions).getByRole('button', { name: 'Nueva factura' })).toHaveClass('min-h-11');
+    expect(within(document.querySelector('[data-receipt-print-root]') as HTMLElement).queryByRole('button')).toBeNull();
+  });
+
+  it('keeps the 58 mm compatibility print root when returned by the API', () => {
+    const receipt = receiptFixture();
+    receipt.width = '58mm';
+
+    render(<ReceiptPreview receipt={receipt} onPrint={vi.fn()} />);
+
+    expect(document.querySelector('[data-receipt-print-root]')).toHaveClass('receipt-58mm');
+  });
+
   it('renders malformed historical receipt amounts as safe financial values', () => {
     const receipt = receiptFixture();
     receipt.invoice.subtotal = 'monto-danado';

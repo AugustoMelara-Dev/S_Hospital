@@ -5,9 +5,10 @@ import { Alert } from '../../components/ui/alert';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { type ReceiptData } from '../../lib/api';
-import { institutionalReceiptPaperSize } from '../../lib/institutionalReceiptPaper';
+import { receiptPrintPaperSize } from '../../lib/institutionalReceiptPaper';
 import { formatLempirasFromCents, parseCents } from '../../lib/moneyCents';
 import { formatLocalizedDateTime } from '../../lib/format/formatDate';
+import { receiptPaperPresentation } from '../../modules/receipts/paperPolicy';
 
 type ReceiptPreviewProps = {
   onNewInvoice?: () => void;
@@ -18,8 +19,8 @@ type ReceiptPreviewProps = {
 export function ReceiptPreview({ onNewInvoice, onPrint, receipt }: ReceiptPreviewProps) {
   const receiptRef = useRef<HTMLDivElement>(null);
   const [printError, setPrintError] = useState('');
-  const receiptWidth = institutionalReceiptPaperSize(receipt.width);
-  const receiptWidthClass = receiptWidth.replace('_', '-');
+  const receiptWidth = receiptPrintPaperSize(receipt.width);
+  const receiptPresentation = receiptPaperPresentation(receiptWidth);
 
   const handlePrint = useReactToPrint({
     contentRef: receiptRef,
@@ -61,12 +62,12 @@ export function ReceiptPreview({ onNewInvoice, onPrint, receipt }: ReceiptPrevie
 
   return (
     <div className="receipt-preview-panel" aria-label="Vista previa del recibo">
-      <div className="receipt-preview-controls no-print">
-        <Button type="button" onClick={handlePrintClick}>
+      <div className="receipt-preview-controls no-print" role="group" aria-label="Acciones del recibo">
+        <Button type="button" className="min-h-11" onClick={handlePrintClick}>
           Imprimir
         </Button>
         {onNewInvoice ? (
-          <Button type="button" variant="secondary" onClick={onNewInvoice}>
+          <Button type="button" variant="secondary" className="min-h-11" onClick={onNewInvoice}>
             Nueva factura
           </Button>
         ) : null}
@@ -83,7 +84,7 @@ export function ReceiptPreview({ onNewInvoice, onPrint, receipt }: ReceiptPrevie
       <div className="receipt-preview-container">
         <div
           ref={receiptRef}
-          className={`institutional-receipt receipt-${receiptWidthClass}`}
+          className={`institutional-receipt ${receiptPresentation.printClass}`}
           aria-label="Recibo institucional"
           data-receipt-print-root
         >

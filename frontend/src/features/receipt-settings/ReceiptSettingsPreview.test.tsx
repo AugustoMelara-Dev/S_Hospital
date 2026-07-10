@@ -1,6 +1,9 @@
 import { render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ReceiptSettingsPreview } from './components/ReceiptSettingsPreview';
+import {
+  ReceiptSettingsPreview,
+  calculateReceiptPreviewScale,
+} from './components/ReceiptSettingsPreview';
 import type { InstitutionalReceiptSeries, ReceiptPrintProfile } from '@/lib/api';
 
 const series: InstitutionalReceiptSeries = {
@@ -64,6 +67,7 @@ describe('ReceiptSettingsPreview', () => {
         footerText="Original: Oficina Recaudadora"
         series={series}
         profile={profile}
+        paper="half_letter"
       />,
     );
 
@@ -75,11 +79,13 @@ describe('ReceiptSettingsPreview', () => {
     expect(document.body.textContent).toContain('Texto legal VEINTICINCO LEMPIRAS CON 00/100 CENTAVOS');
     expect(screen.getByRole('table', { name: /detalle sintético/i })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /descripción/i })).toBeInTheDocument();
-    expect(screen.getByText('Servicios hospitalarios de prueba')).toBeInTheDocument();
+    expect(screen.getByText('Consulta de medicina general')).toBeInTheDocument();
     expect(document.body.textContent).toContain('Fecha: 03/07/2026');
     expect(screen.getByText('Espacio para sello/firma')).toBeInTheDocument();
     expect(document.body.textContent).toContain('ORIGINAL');
     expect(document.body.textContent).not.toMatch(/CAI|barcode|qr_code|user_id|Estado|PDF final|servidor/);
+    expect(screen.getByRole('region', { name: 'Vista previa de recibo Media carta' })).toBeInTheDocument();
+    expect(screen.getByText('Vista previa')).toBeInTheDocument();
   });
 
   it('does not invent optional institutional header lines when they are blank', () => {
@@ -92,6 +98,7 @@ describe('ReceiptSettingsPreview', () => {
         footerText=""
         series={series}
         profile={profile}
+        paper="half_letter"
       />,
     );
 
@@ -110,6 +117,7 @@ describe('ReceiptSettingsPreview', () => {
         footerText="Copia digital guardada"
         series={series}
         profile={{ ...profile, copies_mode: 'original_first_second' }}
+        paper="half_letter"
       />,
     );
 
@@ -128,6 +136,7 @@ describe('ReceiptSettingsPreview', () => {
         footerText="Original: Oficina Recaudadora"
         series={series}
         profile={{ ...profile, show_physical_seal_space: false }}
+        paper="half_letter"
       />,
     );
 
@@ -144,6 +153,7 @@ describe('ReceiptSettingsPreview', () => {
         location="Tocoa, Colon"
         footerText="Original: Oficina Recaudadora"
         series={series}
+        paper="a5"
         profile={{
           ...profile,
           code: 'a5_horizontal',
@@ -155,7 +165,53 @@ describe('ReceiptSettingsPreview', () => {
       />,
     );
 
-    expect(screen.getByRole('region', { name: /vista previa original/i })).toHaveClass('aspect-[210/148]');
-    expect(screen.getByRole('region', { name: /vista previa original/i })).not.toHaveClass('aspect-[8.5/5.5]');
+    expect(screen.getByRole('region', { name: 'Vista previa de recibo A5' })).toHaveStyle({
+      aspectRatio: '210 / 148',
+    });
+    expect(screen.getByRole('region', { name: 'Vista previa de recibo A5' })).toHaveClass(
+      'receipt-paper-preview--a5',
+    );
+  });
+
+  it('provides a scalable content surface inside the paper container', () => {
+    render(
+      <ReceiptSettingsPreview
+        hospitalName="Hospital San Isidro"
+        governmentLine="Gobierno de Honduras"
+        secretariatLine="Secretaria de Salud"
+        location="Tocoa, Colon"
+        footerText="Original: Oficina Recaudadora"
+        series={series}
+        profile={profile}
+        paper="half_letter"
+      />,
+    );
+
+    const paper = screen.getByRole('region', { name: 'Vista previa de recibo Media carta' });
+    expect(paper).toHaveClass('receipt-paper-preview');
+    expect(paper).toHaveAttribute('data-receipt-preview-paper', 'half_letter');
+    const content = paper.querySelector('[data-receipt-preview-content]');
+    expect(content).toHaveClass('receipt-paper-preview__content');
+    expect(content).not.toHaveClass('min-h-full');
+    expect(content).toHaveAttribute('data-receipt-preview-fit', 'contain');
+    expect(paper.querySelector('[data-receipt-preview-table]')).toHaveAttribute('data-receipt-preview-table', 'true');
+    expect(paper.querySelector('[data-receipt-preview-signatures]')).toHaveAttribute('data-receipt-preview-signatures', 'true');
+    expect(paper.querySelector('[data-receipt-preview-footer]')).toHaveAttribute('data-receipt-preview-footer', 'true');
+  });
+
+  it('calculates a contain scale from both real content dimensions', () => {
+    expect(calculateReceiptPreviewScale({
+      paperWidth: 240,
+      paperHeight: 155,
+      contentWidth: 768,
+      contentHeight: 500,
+    })).toBeCloseTo(0.31, 4);
+
+    expect(calculateReceiptPreviewScale({
+      paperWidth: 768,
+      paperHeight: 497,
+      contentWidth: 768,
+      contentHeight: 420,
+    })).toBe(1);
   });
 });

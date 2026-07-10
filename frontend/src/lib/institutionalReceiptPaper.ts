@@ -1,15 +1,16 @@
 import type { ReceiptData } from './api';
 import {
-  INSTITUTIONAL_PAPER_OPTIONS,
+  PAPER_CHOICES,
   normalizeInstitutionalPaper,
+  paperChoiceFor,
   type InstitutionalPaper,
 } from '../modules/receipts/paperPolicy';
 
-export const INSTITUTIONAL_RECEIPT_PAPER_VALUES = INSTITUTIONAL_PAPER_OPTIONS.map((option) => option.value);
+export const INSTITUTIONAL_RECEIPT_PAPER_VALUES = PAPER_CHOICES.map((option) => option.value);
 
 export type InstitutionalReceiptPaperOption = InstitutionalPaper;
 
-export const INSTITUTIONAL_RECEIPT_PAPER_OPTIONS = [...INSTITUTIONAL_PAPER_OPTIONS];
+export const INSTITUTIONAL_RECEIPT_PAPER_OPTIONS = PAPER_CHOICES;
 
 export function institutionalReceiptPaperSize(
   value: ReceiptData['width'] | string | null | undefined,
@@ -17,7 +18,16 @@ export function institutionalReceiptPaperSize(
   return normalizeInstitutionalPaper(value);
 }
 
-export function receiptPaperSizeLabel(value: ReceiptData['width'] | string | null | undefined): string {
-  const normalized = institutionalReceiptPaperSize(value);
-  return INSTITUTIONAL_RECEIPT_PAPER_OPTIONS.find((option) => option.value === normalized)?.label ?? 'Media carta';
+export function receiptPrintPaperSize(
+  value: ReceiptData['width'] | string | null | undefined,
+): ReceiptData['width'] {
+  return value === 'letter' || value === 'half_letter' || value === 'a5' || value === '80mm' || value === '58mm'
+    ? value
+    : 'half_letter';
+}
+
+export function receiptPaperSizeLabel(
+  value: ReceiptData['width'] | string | null | undefined,
+): string {
+  return paperChoiceFor(institutionalReceiptPaperSize(value)).label;
 }

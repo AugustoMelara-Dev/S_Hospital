@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { InstitutionalReceiptSettingsView } from './InstitutionalReceiptSettingsView';
 import type { InstitutionalReceiptSettings, ReceiptPrintProfile } from '@/lib/api';
@@ -124,12 +124,40 @@ describe('InstitutionalReceiptSettingsView', () => {
     vi.clearAllMocks();
   });
 
+  it('permite elegir papel sin controles técnicos', async () => {
+    renderView();
+
+    expect(await screen.findByRole('radio', { name: /Carta/ })).toBeVisible();
+    expect(screen.getByRole('radio', { name: /Media carta/ })).toBeVisible();
+    expect(screen.getByRole('radio', { name: /A5/ })).toBeVisible();
+    expect(screen.queryByLabelText(/margen|escala|fuente|tamaño/i)).not.toBeInTheDocument();
+  });
+
+  it('separa compatibilidad térmica de formatos institucionales', async () => {
+    renderView();
+
+    const institutional = await screen.findByRole('group', { name: 'Formatos institucionales' });
+    const compatibility = screen.getByRole('group', { name: 'Compatibilidad térmica' });
+
+    expect(within(institutional).getAllByRole('radio')).toHaveLength(3);
+    expect(within(compatibility).queryAllByRole('radio')).toHaveLength(0);
+    expect(within(compatibility).getAllByRole('listitem')).toHaveLength(2);
+  });
+
+  it('actualiza la vista previa con el papel institucional elegido', async () => {
+    renderView();
+
+    expect(await screen.findByRole('region', { name: 'Vista previa de recibo Media carta' })).toBeVisible();
+    fireEvent.click(screen.getByRole('radio', { name: /^Carta\b/i }));
+    expect(screen.getByRole('region', { name: 'Vista previa de recibo Carta' })).toBeVisible();
+  });
+
   it('shows the page header and stat cards for the resolved profile', async () => {
     renderView();
 
     expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
     expect(screen.getAllByText('Media carta').length).toBeGreaterThan(0);
-    expect(screen.getByText('REC-A')).toBeInTheDocument();
+    expect(screen.getAllByText('REC-A').length).toBeGreaterThan(0);
     expect(screen.getByText('Editable')).toBeInTheDocument();
   });
 
@@ -239,7 +267,7 @@ describe('InstitutionalReceiptSettingsView', () => {
     expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
     await activateTab('Papel y copias');
 
-    expect(screen.getByRole('radiogroup', { name: /tipo de papel/i })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: /formatos institucionales/i })).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: /copias/i })).toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: /espacio para sello\/firma/i })).toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: /mostrar logo autorizado/i })).toBeInTheDocument();
@@ -280,14 +308,15 @@ describe('InstitutionalReceiptSettingsView', () => {
     expect(screen.getByRole('button', { name: /guardar perfil/i })).toBeEnabled();
   });
 
-  it('uses operational paper copy without print implementation terms', async () => {
+  it('explains that technical print adjustments are automatic without exposing controls', async () => {
     renderView();
 
     expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
     await activateTab('Papel y copias');
 
     expect(screen.queryByText(/css/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/fuente/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/ajusta m.rgenes, fuente y escala autom.ticamente/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/margen|escala|fuente|tama.o/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/layout/i)).not.toBeInTheDocument();
   });
 

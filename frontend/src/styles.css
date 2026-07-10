@@ -130,6 +130,53 @@ html.dark {
     padding: 1rem;
   }
 
+  .receipt-paper-preview {
+    --receipt-preview-canvas-width: 48rem;
+    --receipt-preview-canvas-min-height: 31.06rem;
+    min-width: 0;
+    position: relative;
+    container-name: receipt-paper;
+    container-type: inline-size;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+  }
+
+  .receipt-paper-preview__content {
+    --receipt-preview-scale: 1;
+    position: absolute;
+    inset: 0 auto auto 0;
+    transform: scale(var(--receipt-preview-scale));
+    transform-origin: top left;
+    width: var(--receipt-preview-canvas-width);
+    min-height: var(--receipt-preview-canvas-min-height);
+  }
+
+  @container receipt-paper (max-width: 26rem) {
+    .receipt-paper-preview__content {
+      --receipt-preview-scale: 0.56;
+    }
+  }
+
+  @container receipt-paper (max-width: 20rem) {
+    .receipt-paper-preview__content {
+      --receipt-preview-scale: 0.34;
+    }
+  }
+
+  .receipt-paper-preview--letter {
+    --receipt-preview-canvas-min-height: 37.09rem;
+    max-width: 48rem;
+  }
+
+  .receipt-paper-preview--a5 {
+    --receipt-preview-canvas-min-height: 33.83rem;
+  }
+
+  .receipt-paper-preview--half-letter,
+  .receipt-paper-preview--a5 {
+    max-width: 48rem;
+  }
+
   .institutional-receipt {
     margin: 0 auto;
     background: #ffffff;
@@ -142,8 +189,8 @@ html.dark {
   }
 
   .institutional-receipt.receipt-letter {
-    width: min(7.6in, 100%);
-    min-height: 10.1in;
+    width: min(10.1in, 100%);
+    min-height: 7.6in;
   }
 
   .institutional-receipt.receipt-half-letter {
@@ -422,8 +469,8 @@ html.dark {
 
   .institutional-receipt.receipt-letter {
     page: receipt-letter;
-    width: 7.6in;
-    min-height: 10.1in;
+    width: 10.1in;
+    min-height: 7.6in;
   }
 
   .institutional-receipt.receipt-half-letter {
@@ -472,7 +519,7 @@ html.dark {
   }
 
   @page receipt-letter {
-    size: letter;
+    size: letter landscape;
     margin: 0.45in;
   }
 

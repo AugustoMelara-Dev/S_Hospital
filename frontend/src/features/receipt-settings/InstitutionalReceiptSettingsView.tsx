@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Printer, Save } from 'lucide-react';
+import { CheckCircle2, Printer, Save } from 'lucide-react';
 import { type ReactElement, ReactNode, cloneElement, isValidElement, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -15,11 +15,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { LoadingState } from '@/components/ui/states';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { PAPER_PROFILES, PaperProfileSelector, SectionCard, StatCard } from '@/components/shared';
+import { SectionCard, StatCard } from '@/components/shared';
 import { ReceiptSettingsPreview } from './components/ReceiptSettingsPreview';
 import { type InstitutionalReceiptSeries, type ReceiptPrintProfile, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { downloadBlob } from '@/lib/download';
 import { queryKeys } from '@/lib/queryKeys';
+import {
+  PAPER_CHOICES,
+  THERMAL_COMPATIBILITY_CHOICES,
+  institutionalPaperFromProfile,
+  paperChoiceFor,
+  paperProfileCode,
+  type InstitutionalPaper,
+} from '@/modules/receipts/paperPolicy';
 import {
   receiptProfileSchema,
   type ReceiptProfileForm,
@@ -29,29 +37,6 @@ type InstitutionalReceiptSettingsViewProps = {
   canEdit: boolean;
   onStatus: (message: string) => void;
 };
-
-type PaperProfileCode = 'carta' | 'media_carta' | 'a5';
-
-const PAPER_LABELS: Record<PaperProfileCode, string> = {
-  carta: 'Carta',
-  media_carta: 'Media carta',
-  a5: 'A5',
-};
-
-const RECEIPT_PROFILE_TO_PAPER: Record<string, PaperProfileCode> = {
-  carta_horizontal: 'carta',
-  media_carta_horizontal: 'media_carta',
-  a5_horizontal: 'a5',
-};
-
-const PAPER_TO_RECEIPT_CODE: Record<PaperProfileCode, ReceiptPrintProfile['code']> = {
-  carta: 'carta_horizontal',
-  media_carta: 'media_carta_horizontal',
-  a5: 'a5_horizontal',
-};
-
-const PRIMARY_PAPER_PROFILE_CODES = new Set<PaperProfileCode>(['carta', 'media_carta', 'a5']);
-const NORMAL_RECEIPT_PAPER_OPTIONS = PAPER_PROFILES.filter((profile) => PRIMARY_PAPER_PROFILE_CODES.has(profile.code));
 
 const PROFILE_FORM_DEFAULTS = {
   copies_mode: 'original_only',
@@ -103,8 +88,7 @@ export function InstitutionalReceiptSettingsView({
   onStatus,
 }: InstitutionalReceiptSettingsViewProps) {
   const queryClient = useQueryClient();
-  const [paper, setPaper] = useState<PaperProfileCode>('media_carta');
-  const [selectedCode, setSelectedCode] = useState<string>('media_carta_horizontal');
+  const [paper, setPaper] = useState<InstitutionalPaper>('half_letter');
   const [error, setError] = useState('');
   const institutionSavingRef = useRef(false);
   const seriesSavingRef = useRef(false);
@@ -119,10 +103,8 @@ export function InstitutionalReceiptSettingsView({
   const activeSeries = settings?.active_series ?? settings?.series[0] ?? null;
   const selectedProfile = useMemo(
     () =>
-      settings?.print_profiles.find((candidate) => candidate.code === selectedCode)
-      ?? settings?.resolved_profile
-      ?? null,
-    [selectedCode, settings],
+      settings?.print_profiles.find((candidate) => candidate.code === paperProfileCode(paper)) ?? null,
+    [paper, settings],
   );
 
   const institutionForm = useForm<InstitutionFormData>({
@@ -190,10 +172,7 @@ export function InstitutionalReceiptSettingsView({
       });
     }
 
-    const resolvedCode = settings.resolved_profile?.code ?? 'media_carta_horizontal';
-    const initialPaper = RECEIPT_PROFILE_TO_PAPER[resolvedCode] ?? 'media_carta';
-    setPaper(initialPaper);
-    setSelectedCode(resolvedCode);
+    setPaper(institutionalPaperFromProfile(settings.resolved_profile));
   }, [settings, activeSeries, institutionForm, seriesForm]);
 
   useEffect(() => {
@@ -263,7 +242,7 @@ export function InstitutionalReceiptSettingsView({
   const testPrintMutation = useMutation({
     mutationFn: () =>
       apiClient.testPrintInstitutionalReceipt({
-        profile_code: selectedProfile?.code ?? PAPER_TO_RECEIPT_CODE[paper],
+        profile_code: selectedProfile?.code ?? paperProfileCode(paper),
         payer_name: 'Paciente de prueba',
         concept: 'Servicios hospitalarios de prueba',
         amount: '25.00',
@@ -333,7 +312,7 @@ export function InstitutionalReceiptSettingsView({
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Papel"
-          value={PAPER_LABELS[paper]}
+          value={paperChoiceFor(paper).label}
           helper="Tamaño resuelto por el sistema"
           tone="success"
         />
@@ -500,21 +479,65 @@ export function InstitutionalReceiptSettingsView({
         </TabsContent>
 
         <TabsContent value="papel" className="space-y-6">
-          <SectionCard
-            title="Tipo de papel institucional"
-            description="El hospital elige el papel. El sistema prepara una impresión segura para ese formato."
-          >
-            <PaperProfileSelector
-              value={paper}
-                onChange={(code) => {
-                  setPaper(code);
-                  const mapped = PAPER_TO_RECEIPT_CODE[code];
-                  if (mapped) setSelectedCode(mapped);
-                }}
-                disabled={profileControlsDisabled}
-                options={NORMAL_RECEIPT_PAPER_OPTIONS}
-                helperText="Los márgenes se calculan automáticamente según el tipo de papel seleccionado."
-              />
+          <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] xl:items-start">
+            <SectionCard
+              title="Papel del recibo"
+              description="El sistema ajusta márgenes, fuente y escala automáticamente."
+            >
+              <fieldset disabled={profileControlsDisabled} className="min-w-0 space-y-3">
+                <legend className="text-sm font-semibold text-foreground">Formatos institucionales</legend>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  {PAPER_CHOICES.map((choice) => {
+                    const selected = choice.value === paper;
+                    return (
+                      <label
+                        key={choice.value}
+                        className={`flex min-h-11 cursor-pointer items-start gap-3 rounded-panel border p-3 text-left transition-colors focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 ${
+                          selected
+                            ? 'border-hospital-primary bg-hospital-primary/5 ring-1 ring-hospital-primary/40'
+                            : 'border-operational-border bg-operational-surface'
+                        } ${profileControlsDisabled ? 'cursor-not-allowed opacity-60' : ''}`}
+                      >
+                        <input
+                          type="radio"
+                          name="institutional-receipt-paper"
+                          value={choice.value}
+                          checked={selected}
+                          onChange={() => setPaper(choice.value)}
+                          className="mt-0.5 size-5 shrink-0 accent-[var(--color-hospital-primary)]"
+                        />
+                        <span className="min-w-0">
+                          <span className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                            {choice.label}
+                            {selected ? <CheckCircle2 className="size-4" aria-hidden="true" /> : null}
+                          </span>
+                          <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
+                            {choice.description}
+                          </span>
+                          {selected ? <span className="mt-1 block text-xs font-semibold">Seleccionado</span> : null}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </fieldset>
+
+              <fieldset className="mt-5 min-w-0 rounded-panel border border-dashed border-operational-border p-3">
+                <legend className="px-1 text-sm font-semibold text-foreground">Compatibilidad térmica</legend>
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  Disponibles solo para compatibilidad secundaria; no reemplazan el recibo institucional.
+                </p>
+                <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+                  {THERMAL_COMPATIBILITY_CHOICES.map((choice) => (
+                    <li key={choice.value} className="min-h-11 rounded-md border border-operational-border bg-muted/40 p-3">
+                      <span className="text-sm font-semibold text-foreground">{choice.label}</span>
+                      <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
+                        {choice.description}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </fieldset>
 
               <form
                 className="mt-5 space-y-4"
@@ -563,14 +586,28 @@ export function InstitutionalReceiptSettingsView({
                     <Printer className="size-4" data-icon aria-hidden="true" />
                     Imprimir prueba
                   </Button>
-                  <Button type="submit" disabled={!canEdit || profileMutation.isPending}>
+                  <Button type="submit" disabled={!canEdit || profileMutation.isPending || !selectedProfile}>
                     <Save className="size-4" data-icon aria-hidden="true" />
                     Guardar perfil
                   </Button>
                 </div>
               </form>
-
             </SectionCard>
+
+            <div className="min-w-0">
+              <ReceiptSettingsPreview
+                hospitalName={institutionValues.hospital_name}
+                governmentLine={institutionValues.government_line ?? ''}
+                secretariatLine={institutionValues.secretariat_line ?? ''}
+                location={institutionValues.receipt_location ?? ''}
+                footerText={institutionValues.receipt_footer_text ?? ''}
+                series={previewSeries}
+                profile={previewProfile}
+                paper={paper}
+                draft
+              />
+            </div>
+          </div>
         </TabsContent>
 
         <TabsContent value="vista">
@@ -582,6 +619,7 @@ export function InstitutionalReceiptSettingsView({
             footerText={institutionValues.receipt_footer_text ?? ''}
             series={previewSeries}
             profile={previewProfile}
+            paper={paper}
             draft
           />
         </TabsContent>
