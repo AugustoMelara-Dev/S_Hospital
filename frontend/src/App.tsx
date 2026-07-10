@@ -14,18 +14,21 @@ import { CashBoxView } from './features/cash/CashBoxView';
 import { AppShell } from './layout/AppShell';
 import { queryClient } from './lib/query-client';
 import { apiClient } from './lib/api';
-import { notify, Toaster } from './components/ui/toaster';
+import { MotionProvider } from './design-system/motion/MotionProvider';
+import { ClinicalToaster, notify } from './design-system/primitives/Toaster';
 import { isErrorMessage } from './lib/api/user-error';
 
 export function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AppErrorBoundary>
-          <HospitalApp />
-        </AppErrorBoundary>
-        <Toaster />
-      </BrowserRouter>
+      <MotionProvider>
+        <BrowserRouter>
+          <AppErrorBoundary>
+            <HospitalApp />
+          </AppErrorBoundary>
+          <ClinicalToaster />
+        </BrowserRouter>
+      </MotionProvider>
     </QueryClientProvider>
   );
 }

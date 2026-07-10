@@ -10,7 +10,7 @@ vi.mock('@/hooks/useExecutiveReport', () => ({
   useExecutiveReport: useExecutiveReportMock,
 }));
 
-vi.mock('@/components/ui/toaster', () => ({
+vi.mock('@/design-system/primitives/Toaster', () => ({
   notify: {
     error: vi.fn(),
     success: vi.fn(),

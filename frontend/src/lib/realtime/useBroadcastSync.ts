@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { getEcho } from './echo';
-import { notify } from '../../components/ui/toaster';
+import { notify } from '../../design-system/primitives/Toaster';
 import { invalidateBillingQueries } from '@/lib/queryInvalidation';
 import { queryKeys } from '@/lib/queryKeys';
 import type {

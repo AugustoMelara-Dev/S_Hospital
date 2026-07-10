@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Alert } from '@/components/ui/alert';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/states';
-import { notify } from '@/components/ui/toaster';
+import { notify } from '@/design-system/primitives/Toaster';
 import {
   type ExecutiveReportFilters as ExecutiveReportFilterState,
   apiClient,
