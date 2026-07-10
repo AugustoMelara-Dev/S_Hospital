@@ -51,7 +51,9 @@ test('release gate cashier can issue, collect, show receipt and surface reports'
   expect(prepared.branding.data?.hospital_name).toContain('E2E');
   expect(prepared.services.data?.some((service: { name?: string }) => service.name === 'Glucosa')).toBe(true);
 
-  await page.getByRole('link', { name: /nueva factura/i }).click();
+  await page.getByRole('navigation', { name: /navegaci.n principal/i })
+    .getByRole('link', { name: /nueva factura/i })
+    .click();
   await expect(page.getByRole('heading', { name: /nueva factura/i })).toBeVisible();
   await page.getByLabel(/buscar por nombre/i).fill(serviceQuery);
   const serviceButton = page.getByRole('button', { name: new RegExp(serviceQuery, 'i') }).first();
@@ -69,13 +71,13 @@ test('release gate cashier can issue, collect, show receipt and surface reports'
       /\/api\/invoices\/\d+\/payments$/.test(new URL(response.url()).pathname) &&
       response.status() === 201,
     ),
-    page.getByRole('button', { name: /confirmar cobro e imprimir|registrar cobro e imprimir/i }).click(),
+    page.waitForResponse((response) =>
+      response.request().method() === 'GET' &&
+      /\/api\/institutional-receipts\/\d+\/pdf$/.test(new URL(response.url()).pathname) &&
+      response.ok(),
+    ),
+    page.getByRole('button', { name: /confirmar cobro/i }).click(),
   ]);
-  await page.waitForResponse((response) =>
-    response.request().method() === 'GET' &&
-    /\/api\/institutional-receipts\/\d+\/pdf$/.test(new URL(response.url()).pathname) &&
-    response.ok(),
-  );
   await expect(page.getByRole('heading', { name: /factura pagada/i })).toBeVisible({ timeout: 30_000 });
   await expect(page.getByRole('status').filter({ hasText: /pdf institucional/i }).first()).toBeVisible();
   await expect(page.getByText(patientName)).toBeVisible();
