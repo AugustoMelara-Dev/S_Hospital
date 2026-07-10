@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Alert } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/states';
 import { notify } from '@/design-system/primitives/Toaster';
 import {
@@ -64,6 +65,7 @@ export function ReportsExecutive({
     92,
     'ejecutivo',
   );
+  const hasUnappliedChanges = !sameFilters(filters, appliedFilters);
 
   const { data: report, dataUpdatedAt, isFetching, isError, refetch, error: queryError } = useExecutiveReport(
     appliedFilters,
@@ -94,7 +96,7 @@ export function ReportsExecutive({
       next.set('from', filters.date_from);
       next.set('to', filters.date_to);
       return next;
-    }, { replace: true });
+    });
   }
 
   function handleExportPdf() {
@@ -105,6 +107,10 @@ export function ReportsExecutive({
     if (executiveRangeError) {
       notify.warning(executiveRangeError);
       onStatus(executiveRangeError);
+      return;
+    }
+    if (hasUnappliedChanges) {
+      notify.warning('Aplique el periodo antes de exportar el reporte ejecutivo.');
       return;
     }
     if (exporting) return;
@@ -137,6 +143,10 @@ export function ReportsExecutive({
     if (executiveRangeError) {
       notify.warning(executiveRangeError);
       onStatus(executiveRangeError);
+      return;
+    }
+    if (hasUnappliedChanges) {
+      notify.warning('Aplique el periodo antes de exportar el reporte ejecutivo.');
       return;
     }
     if (exporting) return;
@@ -176,6 +186,7 @@ export function ReportsExecutive({
         exporting={exporting}
         titleLevel={titleLevel}
         rangeError={executiveRangeError}
+        hasUnappliedChanges={hasUnappliedChanges}
       />
 
       {!executiveRangeError ? (
@@ -199,13 +210,14 @@ export function ReportsExecutive({
           title="No se pudo cargar el reporte ejecutivo"
           description={userSafeErrorMessage(queryError, 'No se pudo cargar la informacion. Revise la conexion local y vuelva a intentar.')}
           action={
-            <button
+            <Button
               type="button"
               onClick={handleRefresh}
-              className="rounded border border-border bg-card px-3 py-1.5 text-sm font-semibold hover:bg-muted"
+              size="lg"
+              variant="secondary"
             >
               Reintentar
-            </button>
+            </Button>
           }
         />
       ) : null}

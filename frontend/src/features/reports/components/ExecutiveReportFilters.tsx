@@ -25,6 +25,7 @@ type ExecutiveReportFiltersProps = {
   exporting: boolean;
   titleLevel?: 1 | 2 | 3;
   rangeError?: string | null;
+  hasUnappliedChanges?: boolean;
 };
 
 function detectPreset(filters: ExecutiveReportFilters): PresetKey {
@@ -56,6 +57,7 @@ export function ExecutiveReportFilters({
   exporting,
   titleLevel,
   rangeError,
+  hasUnappliedChanges = false,
 }: ExecutiveReportFiltersProps) {
   const inferredPreset = useMemo(() => detectPreset(filters), [filters]);
   const controlsDisabled = loading || exporting;
@@ -79,6 +81,10 @@ export function ExecutiveReportFilters({
           <p role="alert" className="text-xs font-medium text-destructive">
             {rangeError}
           </p>
+        ) : hasUnappliedChanges ? (
+          <p role="status" className="text-xs font-medium text-warning-foreground">
+            Aplique el periodo antes de exportar. El reporte visible conserva el ultimo alcance consultado. Puede consultar hasta 92 dias.
+          </p>
         ) : inferredPreset !== preset ? (
           <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Filter className="size-3" aria-hidden="true" />
@@ -86,7 +92,7 @@ export function ExecutiveReportFilters({
           </p>
         ) : (
           <p className="text-xs text-muted-foreground">
-            Los reportes ejecutivos permiten rangos de hasta 31 dias.
+            Los reportes ejecutivos permiten rangos de hasta 92 dias.
           </p>
         )
       }
@@ -158,7 +164,7 @@ export function ExecutiveReportFilters({
                   variant="outline"
                   size="sm"
                   onClick={onExportPdf}
-                  disabled={loading || exporting || Boolean(rangeError)}
+                  disabled={loading || exporting || hasUnappliedChanges || Boolean(rangeError)}
                   className="gap-1.5"
                 >
                   <FileText className="size-4" aria-hidden="true" />
@@ -169,7 +175,7 @@ export function ExecutiveReportFilters({
                   variant="outline"
                   size="sm"
                   onClick={onExportExcel}
-                  disabled={loading || exporting || Boolean(rangeError)}
+                  disabled={loading || exporting || hasUnappliedChanges || Boolean(rangeError)}
                   className="gap-1.5"
                 >
                   <Download className="size-4" aria-hidden="true" />

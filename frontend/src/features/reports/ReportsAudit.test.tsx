@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ReportsAudit } from './ReportsAudit';
-import { MemoryRouter, useLocation } from 'react-router-dom';
+import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom';
 import type { AuditLogPage, OperationsReport } from '@/lib/api/types';
 
 const emptyAuditPage: AuditLogPage = {
@@ -46,7 +46,13 @@ vi.mock('@/lib/api', async (importOriginal) => {
 
 function LocationProbe() {
   const location = useLocation();
-  return <output aria-label="url actual">{location.pathname}{location.search}</output>;
+  const navigate = useNavigate();
+  return (
+    <>
+      <output aria-label="url actual">{location.pathname}{location.search}</output>
+      <button type="button" onClick={() => navigate(-1)}>Volver filtros</button>
+    </>
+  );
 }
 
 function renderView(
@@ -111,6 +117,27 @@ describe('ReportsAudit', () => {
     expect(screen.getByRole('region', { name: /alcance del reporte de auditoria/i })).toHaveTextContent(
       /1 de julio de 2026.*10 de julio de 2026/i,
     );
+  });
+
+  it('creates navigable history when audit filters are applied from the UI', async () => {
+    renderView({}, '/reports/audit?from=2026-07-01&to=2026-07-10');
+
+    await waitFor(() => expect(screen.getByRole('button', { name: /buscar/i })).toBeEnabled());
+    fireEvent.change(screen.getByLabelText(/^acci.n$/i), { target: { value: 'anulacion' } });
+    fireEvent.click(screen.getByRole('button', { name: /buscar/i }));
+    await waitFor(() => expect(screen.getByLabelText(/url actual/i)).toHaveTextContent('action=anulacion'));
+
+    await waitFor(() => expect(screen.getByRole('button', { name: /buscar/i })).toBeEnabled());
+    fireEvent.change(screen.getByLabelText(/^acci.n$/i), { target: { value: 'reimpresion' } });
+    fireEvent.click(screen.getByRole('button', { name: /buscar/i }));
+    await waitFor(() => expect(screen.getByLabelText(/url actual/i)).toHaveTextContent('action=reimpresion'));
+
+    fireEvent.click(screen.getByRole('button', { name: /volver filtros/i }));
+    await waitFor(() => {
+      expect(screen.getByLabelText(/^acci.n$/i)).toHaveValue('anulacion');
+      expect(screen.getByLabelText(/url actual/i)).toHaveTextContent('action=anulacion');
+      expect(getAuditLogsMock).toHaveBeenCalledWith(expect.objectContaining({ action: 'invoice.voided' }));
+    });
   });
 
   it('does not request audit data for an invalid URL date range', () => {
@@ -203,6 +230,18 @@ describe('ReportsAudit', () => {
       expect(screen.getByText(/factura anulada/i)).toBeInTheDocument();
       expect(document.body.textContent).not.toMatch(/invoices\.void|Cajero Demo \(cajero\)/i);
     });
+  });
+
+  it('renders a failed audit result with a human status', async () => {
+    getAuditLogsMock.mockResolvedValue({
+      data: [{ ...oneEntryAuditPage.data[0], result: 'failed' }],
+      meta: oneEntryAuditPage.meta,
+    });
+
+    renderView();
+
+    expect(await screen.findByText(/con error/i)).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/\bfailed\b/i);
   });
 
   it('renders an empty state when the API returns no entries', async () => {

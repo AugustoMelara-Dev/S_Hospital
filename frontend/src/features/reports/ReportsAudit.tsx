@@ -133,7 +133,7 @@ export function ReportsAudit({
 
   function applyAuditFilters(next: AuditLogFilters) {
     setApplied(next);
-    setSearchParams(auditFiltersToUrl(next), { replace: true });
+    setSearchParams(auditFiltersToUrl(next));
   }
 
   return (
@@ -427,7 +427,7 @@ function toSafeAuditEntry(entry: ApiAuditLogEntry): AuditLogEntry {
     action: auditActionLabel(entry.action),
     created_at: entry.created_at,
     reason: entry.reason,
-    result: entry.result ?? undefined,
+    result: entry.result === 'failed' ? 'error' : entry.result ?? undefined,
     user: entry.user?.name ? { name: entry.user.name } : null,
   };
 }

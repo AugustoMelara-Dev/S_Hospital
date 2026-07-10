@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { EmptyState } from '@/components/ui/states';
 import { OperationalBanner } from '@/components/shared';
 import { apiClient, type CashSession, userSafeErrorMessage } from '@/lib/api';
@@ -19,30 +20,69 @@ export function ReportsCash({
   canViewCash,
   canViewManagerial,
 }: ReportsCashProps) {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlCashSessionId = searchParams.get('cash_session_id') ?? '';
+  const initialUrlCashSessionId = useRef(urlCashSessionId).current;
   const [cashSessionReport, setCashSessionReport] = useState<Awaited<ReturnType<typeof apiClient.getCashSessionReport>> | null>(null);
-  const [cashReportId, setCashReportId] = useState('');
+  const [cashReportId, setCashReportId] = useState(() => isPositiveInteger(urlCashSessionId) ? urlCashSessionId : '');
   const [cashError, setCashError] = useState('');
   const [cashLoading, setCashLoading] = useState(false);
   const [cashExporting, setCashExporting] = useState<'excel' | 'pdf' | null>(null);
   const [recentCashSessions, setRecentCashSessions] = useState<CashSession[]>([]);
   const [cashSessionsLoading, setCashSessionsLoading] = useState(false);
+  const requestSequence = useRef(0);
+  const recentSessionsRequested = useRef(false);
+  const visibleCashSessionReport = cashSessionReport
+    && String(cashSessionReport.cash_session.id) === cashReportId.trim()
+    && (!urlCashSessionId || String(cashSessionReport.cash_session.id) === urlCashSessionId)
+    ? cashSessionReport
+    : null;
 
   const loadCashReportById = useCallback(async (normalizedCashReportId: string) => {
+    const requestId = ++requestSequence.current;
     try {
       setCashError('');
       setCashLoading(true);
-      setCashSessionReport(await apiClient.getCashSessionReport(normalizedCashReportId));
+      setCashSessionReport(null);
+      const report = await apiClient.getCashSessionReport(normalizedCashReportId);
+      if (requestSequence.current === requestId) {
+        setCashSessionReport(report);
+      }
     } catch (err) {
-      setCashError(userSafeErrorMessage(err, 'No se pudo cargar la caja.'));
+      if (requestSequence.current === requestId) {
+        setCashSessionReport(null);
+        setCashError(userSafeErrorMessage(err, 'No se pudo cargar la caja.'));
+      }
     } finally {
-      setCashLoading(false);
+      if (requestSequence.current === requestId) {
+        setCashLoading(false);
+      }
     }
   }, []);
+
+  useEffect(() => {
+    if (!canViewCash && !canViewManagerial) return;
+
+    if (!urlCashSessionId) return;
+
+    setCashReportId(urlCashSessionId);
+    if (!isPositiveInteger(urlCashSessionId)) {
+      requestSequence.current += 1;
+      setCashSessionReport(null);
+      setCashLoading(false);
+      setCashError('Ingrese un numero de caja valido.');
+      return;
+    }
+
+    void loadCashReportById(urlCashSessionId);
+  }, [canViewCash, canViewManagerial, loadCashReportById, urlCashSessionId]);
 
   useEffect(() => {
     if (!canBrowseCashSessions) {
       return;
     }
+    if (recentSessionsRequested.current) return;
+    recentSessionsRequested.current = true;
 
     let cancelled = false;
 
@@ -55,9 +95,13 @@ export function ReportsCash({
         const sessions = Array.isArray(response.data) ? response.data : [];
         const firstSessionId = sessions[0]?.id ? String(sessions[0].id) : '';
         setRecentCashSessions(sessions);
-        setCashReportId((current) => current.trim() || firstSessionId);
-        if (firstSessionId) {
-          await loadCashReportById(firstSessionId);
+        if (firstSessionId && !initialUrlCashSessionId) {
+          setCashReportId(firstSessionId);
+          setSearchParams((current) => {
+            const next = new URLSearchParams(current);
+            next.set('cash_session_id', firstSessionId);
+            return next;
+          }, { replace: true });
         }
       } catch {
         if (!cancelled) {
@@ -75,7 +119,7 @@ export function ReportsCash({
     return () => {
       cancelled = true;
     };
-  }, [canBrowseCashSessions, loadCashReportById]);
+  }, [canBrowseCashSessions, initialUrlCashSessionId, setSearchParams]);
 
   async function loadCashReport() {
     if (cashLoading) {
@@ -94,17 +138,26 @@ export function ReportsCash({
       return;
     }
 
-    await loadCashReportById(normalizedCashReportId);
-  }
-
-  async function exportCashReport() {
-    if (!cashSessionReport || cashExporting !== null) {
+    if (urlCashSessionId === normalizedCashReportId) {
+      await loadCashReportById(normalizedCashReportId);
       return;
     }
 
-    const cashSessionId = cashSessionReport.cash_session.id;
-    const dateFrom = dateOnly(cashSessionReport.cash_session.opened_at);
-    const dateTo = dateOnly(cashSessionReport.cash_session.closed_at ?? cashSessionReport.cash_session.opened_at);
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      next.set('cash_session_id', normalizedCashReportId);
+      return next;
+    });
+  }
+
+  async function exportCashReport() {
+    if (!visibleCashSessionReport || cashLoading || cashError || cashExporting !== null) {
+      return;
+    }
+
+    const cashSessionId = visibleCashSessionReport.cash_session.id;
+    const dateFrom = dateOnly(visibleCashSessionReport.cash_session.opened_at);
+    const dateTo = dateOnly(visibleCashSessionReport.cash_session.closed_at ?? visibleCashSessionReport.cash_session.opened_at);
 
     try {
       setCashError('');
@@ -123,13 +176,13 @@ export function ReportsCash({
   }
 
   async function exportCashReportPdf() {
-    if (!cashSessionReport || cashExporting !== null) {
+    if (!visibleCashSessionReport || cashLoading || cashError || cashExporting !== null) {
       return;
     }
 
-    const cashSessionId = cashSessionReport.cash_session.id;
-    const dateFrom = dateOnly(cashSessionReport.cash_session.opened_at);
-    const dateTo = dateOnly(cashSessionReport.cash_session.closed_at ?? cashSessionReport.cash_session.opened_at);
+    const cashSessionId = visibleCashSessionReport.cash_session.id;
+    const dateFrom = dateOnly(visibleCashSessionReport.cash_session.opened_at);
+    const dateTo = dateOnly(visibleCashSessionReport.cash_session.closed_at ?? visibleCashSessionReport.cash_session.opened_at);
 
     try {
       setCashError('');
@@ -164,18 +217,18 @@ export function ReportsCash({
         description="Sesiones, cajeros, metodos de pago y diferencias de caja."
       />
 
-      {cashSessionReport ? (
+      {visibleCashSessionReport ? (
         <ReportScope
           ariaLabel="Alcance del reporte de caja"
-          from={dateOnly(cashSessionReport.cash_session.opened_at)}
-          to={dateOnly(cashSessionReport.cash_session.closed_at ?? cashSessionReport.cash_session.opened_at)}
-          source={`Sesión de caja ${cashSessionReport.cash_session.id} · ${cashSessionReport.cash_session.user?.name ?? 'Cajero no disponible'}`}
+          from={dateOnly(visibleCashSessionReport.cash_session.opened_at)}
+          to={dateOnly(visibleCashSessionReport.cash_session.closed_at ?? visibleCashSessionReport.cash_session.opened_at)}
+          source={`Sesión de caja ${visibleCashSessionReport.cash_session.id} · ${visibleCashSessionReport.cash_session.user?.name ?? 'Cajero no disponible'}`}
         />
       ) : null}
 
       <CashSessionReportPanel
         canExport={canExport}
-        cashSession={cashSessionReport}
+        cashSession={visibleCashSessionReport}
         cashReportId={cashReportId}
         recentCashSessions={recentCashSessions}
         sessionsLoading={cashSessionsLoading}
@@ -184,7 +237,12 @@ export function ReportsCash({
         exportingType={cashExporting}
         error={cashError}
         onCashReportIdChange={(value) => {
+          requestSequence.current += 1;
           setCashReportId(value);
+          if (String(cashSessionReport?.cash_session.id ?? '') !== value.trim()) {
+            setCashSessionReport(null);
+            setCashLoading(false);
+          }
           if (cashError && (value.trim() === '' || isPositiveInteger(value.trim()))) {
             setCashError('');
           }

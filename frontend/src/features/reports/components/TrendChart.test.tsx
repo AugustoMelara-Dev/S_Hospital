@@ -59,6 +59,9 @@ describe('TrendChart', () => {
     expect(table).toHaveTextContent('L 125.00');
     expect(table).toHaveTextContent('L 100.00');
     expect(table).toHaveTextContent('L 25.00');
+    const scrollRegion = screen.getByRole('region', { name: /datos exactos de tendencia diaria/i });
+    expect(scrollRegion).toHaveAttribute('tabindex', '0');
+    expect(scrollRegion).toHaveAccessibleDescription(/desplace horizontalmente/i);
   });
 
   it('gives Recharts a stable measurable height and non-negative minimum width', () => {

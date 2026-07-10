@@ -76,4 +76,26 @@ describe('ExecutiveReportFilters', () => {
     expect(screen.queryByRole('button', { name: /pdf ejecutivo/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /excel ejecutivo/i })).not.toBeInTheDocument();
   });
+
+  it('describes the real 92 day limit and blocks stale-scope exports', () => {
+    render(
+      <ExecutiveReportFilters
+        filters={{ date_from: '2026-07-01', date_to: '2026-07-02' }}
+        preset="custom"
+        onPresetChange={vi.fn()}
+        onChange={vi.fn()}
+        onRefresh={vi.fn()}
+        onExportPdf={vi.fn()}
+        onExportExcel={vi.fn()}
+        canExport
+        loading={false}
+        exporting={false}
+        hasUnappliedChanges
+      />,
+    );
+
+    expect(screen.getByText(/hasta 92 dias/i)).toBeInTheDocument();
+    expect(screen.getByText(/aplique el periodo antes de exportar/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /pdf ejecutivo/i })).toBeDisabled();
+  });
 });

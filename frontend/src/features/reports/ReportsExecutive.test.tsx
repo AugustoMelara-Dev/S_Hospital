@@ -132,6 +132,43 @@ describe('ReportsExecutive', () => {
     });
   });
 
+  it('creates navigable history when periods are applied from the UI', async () => {
+    render(
+      <MemoryRouter initialEntries={['/reports/executive?from=2026-07-01&to=2026-07-10']}>
+        <ReportsExecutive canExport canViewManagerial onStatus={vi.fn()} />
+        <HistoryControls />
+      </MemoryRouter>,
+    );
+
+    fireEvent.change(screen.getByLabelText(/fin ejecutivo/i), { target: { value: '2026-07-11' } });
+    fireEvent.click(screen.getByRole('button', { name: /refrescar ejecutivo/i }));
+    await waitFor(() => expect(screen.getByLabelText(/url actual/i)).toHaveTextContent('to=2026-07-11'));
+
+    fireEvent.change(screen.getByLabelText(/fin ejecutivo/i), { target: { value: '2026-07-12' } });
+    fireEvent.click(screen.getByRole('button', { name: /refrescar ejecutivo/i }));
+    await waitFor(() => expect(screen.getByLabelText(/url actual/i)).toHaveTextContent('to=2026-07-12'));
+
+    fireEvent.click(screen.getByRole('button', { name: /volver per.odo/i }));
+    await waitFor(() => {
+      expect(screen.getByLabelText(/fin ejecutivo/i)).toHaveValue('2026-07-11');
+      expect(useExecutiveReportMock).toHaveBeenLastCalledWith(
+        { date_from: '2026-07-01', date_to: '2026-07-11' },
+        true,
+      );
+    });
+  });
+
+  it('blocks exports while edited dates have not been applied', () => {
+    renderExecutive({}, '/reports/executive?from=2026-07-01&to=2026-07-10');
+
+    fireEvent.change(screen.getByLabelText(/fin ejecutivo/i), { target: { value: '2026-07-11' } });
+
+    expect(screen.getByRole('button', { name: /pdf ejecutivo/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /excel ejecutivo/i })).toBeDisabled();
+    expect(screen.getByText(/aplique el periodo antes de exportar/i)).toBeInTheDocument();
+    expect(downloadExecutivePdf).not.toHaveBeenCalled();
+  });
+
   it('uses a valid URL period for the query, visible scope and export', async () => {
     downloadExecutivePdf.mockResolvedValue(new Blob(['pdf'], { type: 'application/pdf' }));
 
@@ -214,6 +251,9 @@ describe('ReportsExecutive', () => {
 
     expect(screen.getByText(/revise la conexion local/i)).toBeInTheDocument();
     expect(screen.queryByText(/error desconocido/i)).not.toBeInTheDocument();
+    const retry = screen.getByRole('button', { name: /reintentar/i });
+    expect(retry).toHaveAttribute('data-slot', 'button');
+    expect(retry).toHaveClass('min-h-12');
   });
 
   it('shows export progress while an executive PDF is being prepared', async () => {

@@ -129,8 +129,17 @@ export function TrendChart({ report }: TrendChartProps) {
             </AreaChart>
           </ResponsiveContainer>
         </div>
-        <div className="max-h-80 overflow-auto rounded-md border border-operational-border">
-        <table className="w-full min-w-[28rem] border-collapse text-sm">
+        <div
+          role="region"
+          aria-label="Datos exactos de tendencia diaria"
+          aria-describedby="trend-table-scroll-help"
+          tabIndex={0}
+          className="max-h-80 overflow-auto rounded-md border border-operational-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        >
+          <p id="trend-table-scroll-help" className="sr-only">
+            Desplace horizontalmente para consultar todas las columnas de la tabla.
+          </p>
+          <table className="w-full min-w-[28rem] border-collapse text-sm">
           <caption>Tendencia diaria del reporte ejecutivo</caption>
           <thead className="sticky top-0 bg-operational-panel text-left text-xs text-muted-foreground">
             <tr>
@@ -150,8 +159,8 @@ export function TrendChart({ report }: TrendChartProps) {
               </tr>
             ))}
           </tbody>
-        </table>
-      </div>
+          </table>
+        </div>
       </div>
     </ChartCard>
   );
