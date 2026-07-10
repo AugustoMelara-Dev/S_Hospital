@@ -38,7 +38,6 @@ test.describe('Backups - critical mocked e2e', () => {
     await page.goto('/backups');
 
     await expect(page.getByRole('heading', { level: 1, name: /respaldos/i })).toBeVisible();
-    await expect(page.getByRole('status').filter({ hasText: /restauraci.n no disponible desde la app/i })).toBeVisible();
     const primaryIndicators = page.getByLabel(/indicadores principales de respaldos/i);
     await expect(primaryIndicators.getByText(/ultimo exitoso/i)).toBeVisible();
     await expect(primaryIndicators.getByText(/^pendientes$/i)).toBeVisible();

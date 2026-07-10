@@ -149,6 +149,38 @@ function receiptFor(invoice: Record<string, unknown>, width: string) {
   };
 }
 
+function institutionalReceiptFor(invoice: Record<string, unknown>, paymentId: number | null) {
+  const invoiceId = Number(invoice.id);
+  const receiptNumber = invoiceId - 10;
+
+  return {
+    id: invoiceId,
+    invoice_id: invoiceId,
+    payment_id: paymentId,
+    cash_session_id: 7,
+    series_id: 1,
+    receipt_number: receiptNumber,
+    receipt_number_full: `REC-A-${String(receiptNumber).padStart(8, '0')}`,
+    status: 'issued',
+    amount: invoice.total,
+    amount_cents: Math.round(Number(invoice.total) * 100),
+    issued_at: operationalPaidAt,
+    issued_by: cashierUser.id,
+    payer_name: invoice.patient_name,
+    concept: `Pago de factura ${invoice.invoice_number}`,
+    amount_words: 'VEINTICINCO LEMPIRAS CON 00/100',
+    template_code: 'institutional_classic',
+    print_profile_code: 'media_carta_horizontal',
+    copy_mode: 'original_only',
+    reprint_count: 0,
+    print_events_count: 1,
+    has_print_events: true,
+    voided_by: null,
+    voided_at: null,
+    void_reason: null,
+  };
+}
+
 async function installApiMocks(page: Page) {
   let currentUser = cashierUser;
   let currentCashSession: Record<string, unknown> | null = null;
@@ -354,23 +386,45 @@ async function installApiMocks(page: Page) {
     invoice.paid_amount = invoice.total;
     invoice.balance_due = '0.00';
     invoice.status = 'paid';
+    const payment = {
+      id: 50,
+      invoice_id: invoiceId,
+      cash_session_id: 7,
+      user_id: currentUser.id,
+      method: 'cash',
+      amount: invoice.total,
+      reference: null,
+      status: 'posted',
+      paid_at: operationalPaidAt,
+    };
+    const institutionalReceipt = institutionalReceiptFor(invoice, payment.id);
+    invoice.payments = [payment];
+    invoice.institutional_receipt = institutionalReceipt;
     return json(route, {
       data: {
-        payment: {
-          id: 50,
-          invoice_id: invoiceId,
-          cash_session_id: 7,
-          user_id: currentUser.id,
-          method: 'cash',
-          amount: invoice.total,
-          reference: null,
-          status: 'posted',
-          paid_at: operationalPaidAt,
-        },
+        payment,
         invoice,
+        institutional_receipt: institutionalReceipt,
+        institutional_receipt_error: null,
+        receipt_outcome: 'issued',
       },
     }, 201);
   });
+
+  await page.route('**/api/institutional-receipts/*/print-events**', (route) => json(route, {
+    data: {
+      id: 1,
+      institutional_receipt_id: Number(route.request().url().match(/institutional-receipts\/(\d+)/)?.[1]),
+      reason: null,
+      created_at: operationalPaidAt,
+    },
+  }, 201));
+
+  await page.route('**/api/institutional-receipts/*/pdf**', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/pdf',
+    body: '%PDF-1.4 institutional receipt',
+  }));
 
   await page.route('**/api/invoices/*/receipt**', (route) => {
     const invoiceId = Number(route.request().url().match(/invoices\/(\d+)\/receipt/)?.[1]);
@@ -650,7 +704,7 @@ test.describe('RC1 cashier flow screens', () => {
     await setTheme(page, 'light');
   });
 
-  test('POS billing - new, cart, payment modal, receipt (light + dark)', async ({ page }) => {
+  test('POS billing - new, cart, payment and institutional outcome (light + dark)', async ({ page }) => {
     await installApiMocks(page);
     await loginAs(page, 'cajero.validacion');
     await setTheme(page, 'light');
@@ -690,24 +744,15 @@ test.describe('RC1 cashier flow screens', () => {
 
     await page.getByLabel(/monto recibido/i).fill('25.00');
     await page.getByRole('button', { name: /confirmar cobro/i }).click();
-    await expect(page.getByRole('heading', { name: /comprobante de factura|vista previa del recibo/i })).toBeVisible();
+    await expect(page.getByRole('dialog', { name: /factura pagada/i })).toBeVisible();
+    await expect(page.getByText(/REC-A-00000091/i).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: /imprimir recibo institucional/i })).toBeVisible();
     await page.waitForTimeout(500);
-    await captureScreen(page, 'receipt-preview-light');
-
-    await page.getByRole('combobox', { name: /tama(?:ñ|n)o del recibo/i }).click();
-    await page.getByRole('option', { name: 'A5', exact: true }).click({ force: true });
-    await expect(page.getByLabel(/recibo institucional/i)).toHaveClass(/receipt-a5/);
-    await page.waitForTimeout(500);
-    await captureScreen(page, 'receipt-preview-a5-light');
-
-    await page.getByRole('combobox', { name: /tama(?:ñ|n)o del recibo/i }).click();
-    await page.getByRole('option', { name: /Carta|Letter|80mm/i }).first().click();
-    await page.waitForTimeout(500);
-    await captureScreen(page, 'receipt-preview-letter-light');
+    await captureScreen(page, 'institutional-receipt-issued-light');
 
     await setTheme(page, 'dark');
     await page.waitForTimeout(500);
-    await captureScreen(page, 'receipt-preview-dark');
+    await captureScreen(page, 'institutional-receipt-issued-dark');
     await setTheme(page, 'light');
   });
 
@@ -733,8 +778,6 @@ test.describe('RC1 cashier flow screens', () => {
     await confirmIssueDialog.getByRole('button', { name: /emitir y abrir cobro/i }).click();
     await page.getByLabel(/monto recibido/i).fill('25.00');
     await page.getByRole('button', { name: /confirmar cobro/i }).click();
-    await expect(page.getByRole('heading', { name: /comprobante de factura|vista previa del recibo/i })).toBeVisible();
-    await page.getByRole('button', { name: /cerrar modal/i }).click({ force: true });
     await page.getByRole('button', { name: /nueva factura|crear otra factura/i }).click();
 
     await page.getByRole('link', { name: /historial/i }).click();
@@ -744,14 +787,16 @@ test.describe('RC1 cashier flow screens', () => {
 
     await page.getByRole('button', { name: /buscar/i }).click();
     await page.getByRole('button', { name: /acciones de la factura/i }).first().click();
-    const reprintItem = page.getByRole('menuitem', { name: /reimprimir/i });
+    const reprintItem = page.getByRole('menuitem', { name: 'Reimprimir', exact: true });
     await expect(reprintItem).toBeVisible();
     await reprintItem.click({ force: true });
-    await page.getByLabel(/motivo de reimpresi.n/i).fill('Copia solicitada por paciente para expediente administrativo.');
-    await page.getByRole('button', { name: /registrar reimpresi.n/i }).click();
-    await expect(page.getByRole('heading', { name: /comprobante de factura - 000-001-01-00000001/i })).toBeVisible();
+    const reprintDialog = page.getByRole('alertdialog', { name: /reimprimir 000-001-01-00000001/i });
+    await reprintDialog.getByRole('textbox', { name: /^motivo$/i }).fill('Copia solicitada por paciente para expediente administrativo.');
+    await captureScreen(page, 'reprint-reason-light');
+    await reprintDialog.getByRole('button', { name: /^reimprimir$/i }).click();
+    await expect(page.getByText(/PDF institucional REC-A-00000091 abierto/i).first()).toBeVisible();
     await page.waitForTimeout(500);
-    await captureScreen(page, 'reprint-modal-light');
+    await captureScreen(page, 'reprint-complete-light');
   });
 
   test('cashbox close flow (light)', async ({ page }) => {
@@ -835,7 +880,7 @@ test.describe('RC1 cashier flow screens', () => {
     await captureScreen(page, 'backups-light');
 
     const createBtn = page.getByRole('button', { name: /crear respaldo/i }).first();
-    if (await createBtn.isVisible().catch(() => false)) {
+    if (await createBtn.isVisible().catch(() => false) && await createBtn.isEnabled()) {
       await createBtn.click();
       const confirmBtn = page.getByRole('button', { name: /^crear respaldo$/i });
       if (await confirmBtn.isVisible().catch(() => false)) {

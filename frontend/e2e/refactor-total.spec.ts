@@ -6,11 +6,17 @@ import { dirname, resolve } from 'node:path';
 const reportPath = resolve(
   process.env.REFACTOR_TOTAL_E2E_REPORT_PATH ?? '../qa/production-audit/refactor-total-e2e.json',
 );
-const authStatePath = resolve(process.env.REFACTOR_TOTAL_AUTH_STATE_PATH ?? '/tmp/s-hospital-refactor-total-auth.json');
+const authStatePath = resolve(process.env.REFACTOR_TOTAL_AUTH_STATE_PATH ?? './test-results/.auth/refactor-total.json');
+const adminUsername = process.env.REFACTOR_TOTAL_E2E_USERNAME?.trim() ?? '';
+const adminPassword = process.env.REFACTOR_TOTAL_E2E_PASSWORD ?? '';
 
 test.setTimeout(180_000);
 
 test.describe('Refactor Total - E2E criticos', () => {
+  test.skip(
+    !adminUsername || !adminPassword,
+    'Requiere una cuenta administrativa temporal mediante REFACTOR_TOTAL_E2E_USERNAME y REFACTOR_TOTAL_E2E_PASSWORD.',
+  );
   test.use({ storageState: authStatePath });
 
   test.beforeAll(async ({ browser }) => {
@@ -119,8 +125,8 @@ test.describe('Refactor Total - E2E criticos', () => {
 
 async function loginAsAdmin(page: Page) {
   await page.goto('/login');
-  await page.locator('#login-input').fill('admin.validacion');
-  await page.locator('#password-input').fill('Password123!');
+  await page.locator('#login-input').fill(adminUsername);
+  await page.locator('#password-input').fill(adminPassword);
   const submit = page.locator('form button[type="submit"]');
   await expect(submit).toBeEnabled({ timeout: 70_000 });
   await Promise.all([

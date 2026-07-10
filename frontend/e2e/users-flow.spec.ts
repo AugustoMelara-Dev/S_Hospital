@@ -43,7 +43,7 @@ const roleCatalog = {
       id: 3,
       name: 'auditor',
       protected: false,
-      permissions: [{ name: 'reports.view', module: 'reports', label: 'Reports view' }],
+      permissions: [{ name: 'reports.export', module: 'reports', label: 'Exportar reportes' }],
     },
   ],
   permission_catalog: [
@@ -55,7 +55,7 @@ const roleCatalog = {
     {
       module: 'reports',
       label: 'Reportes',
-      permissions: [{ name: 'reports.view', module: 'reports', label: 'Reports view' }],
+      permissions: [{ name: 'reports.export', module: 'reports', label: 'Exportar reportes' }],
     },
   ],
 };
@@ -85,14 +85,16 @@ test.describe('Users - critical mocked e2e', () => {
     await page.getByRole('button', { name: /crear usuario/i }).click();
     const dialog = page.getByRole('dialog', { name: /crear usuario/i });
     await expect(dialog).toBeVisible();
-    await expect(dialog.getByRole('checkbox', { name: /reports view/i })).toBeVisible();
+    await dialog.getByRole('button', { name: /permisos exactos avanzados/i }).click();
+    const reportsPermission = dialog.getByRole('checkbox', { name: /exportar reportes/i });
+    await expect(reportsPermission).toBeVisible();
     await expect(dialog.getByText(/users.assign_admin_role|sqlstate|\.env/i)).toHaveCount(0);
 
     await dialog.getByLabel(/nombre completo/i).fill('Reportes Turno');
     await dialog.getByLabel(/correo electr.nico/i).fill('reportes@hospital.local');
     await dialog.getByLabel(/nombre de usuario/i).fill('reportes-turno');
     await dialog.getByLabel(/contrase.a inicial/i).fill('Password123!');
-    await dialog.getByRole('checkbox', { name: /reports view/i }).check();
+    await reportsPermission.check();
     await dialog.getByRole('button', { name: /crear usuario/i }).click();
 
     await expect.poll(() => createPayload).not.toBeNull();
@@ -101,7 +103,7 @@ test.describe('Users - critical mocked e2e', () => {
       email: 'reportes@hospital.local',
       username: 'reportes-turno',
       role: 'cajero',
-      permissions: ['cash.view', 'reports.view'],
+      permissions: ['cash.view', 'reports.export'],
     });
 
     await page.getByLabel(/buscar usuarios/i).fill('caja');
@@ -113,6 +115,7 @@ test.describe('Users - critical mocked e2e', () => {
     await expect.poll(() => toggleCalls).toBe(0);
     await expect(page.getByRole('alertdialog', { name: /desactivar usuario/i })).toBeVisible();
     await expect(page.getByText(/no podr. iniciar sesi.n ni operar en el sistema/i)).toBeVisible();
+    await page.getByRole('textbox', { name: /^motivo$/i }).fill('Cambio de personal de caja.');
     await page.getByRole('button', { name: /^desactivar$/i }).click();
 
     await expect.poll(() => toggleCalls).toBe(1);

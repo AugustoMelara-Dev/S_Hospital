@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-10T05:02:18.343Z",
+  "generated_at": "2026-07-10T04:55:27.343Z",
   "mode": "mocked-non-mutating-playwright",
   "results": [
     {
@@ -71,12 +71,6 @@
     {
       "name": "full route accessibility matrix",
       "viewport": "320x640",
-      "path": "/support",
-      "status": "passed"
-    },
-    {
-      "name": "full route accessibility matrix",
-      "viewport": "320x640",
       "path": "/about",
       "status": "passed"
     },
@@ -155,12 +149,6 @@
     {
       "name": "full route accessibility matrix",
       "viewport": "375x667",
-      "path": "/support",
-      "status": "passed"
-    },
-    {
-      "name": "full route accessibility matrix",
-      "viewport": "375x667",
       "path": "/about",
       "status": "passed"
     },
@@ -239,12 +227,6 @@
     {
       "name": "full route accessibility matrix",
       "viewport": "768x1024",
-      "path": "/support",
-      "status": "passed"
-    },
-    {
-      "name": "full route accessibility matrix",
-      "viewport": "768x1024",
       "path": "/about",
       "status": "passed"
     },
@@ -323,12 +305,6 @@
     {
       "name": "full route accessibility matrix",
       "viewport": "1024x768",
-      "path": "/support",
-      "status": "passed"
-    },
-    {
-      "name": "full route accessibility matrix",
-      "viewport": "1024x768",
       "path": "/about",
       "status": "passed"
     },
@@ -407,12 +383,6 @@
     {
       "name": "full route accessibility matrix",
       "viewport": "1366x768",
-      "path": "/support",
-      "status": "passed"
-    },
-    {
-      "name": "full route accessibility matrix",
-      "viewport": "1366x768",
       "path": "/about",
       "status": "passed"
     },
@@ -486,12 +456,6 @@
       "name": "full route accessibility matrix",
       "viewport": "1920x1080",
       "path": "/help",
-      "status": "passed"
-    },
-    {
-      "name": "full route accessibility matrix",
-      "viewport": "1920x1080",
-      "path": "/support",
       "status": "passed"
     },
     {
