@@ -337,6 +337,7 @@ export function PaymentModal({
               role="radiogroup"
               aria-label="Método de pago"
               aria-describedby="payment-method-help"
+              tabIndex={-1}
               className="grid grid-cols-2 gap-2 sm:grid-cols-4"
               onKeyDown={handlePaymentMethodKeyDown}
             >
