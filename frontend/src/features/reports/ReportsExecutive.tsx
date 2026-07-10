@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Alert } from '@/components/ui/alert';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/states';
 import { notify } from '@/design-system/primitives/Toaster';
@@ -16,8 +17,9 @@ import { PaymentMethodPanel } from './components/PaymentMethodPanel';
 import { ServiceRanking } from './components/ServiceRanking';
 import { PendingAgingPanel } from './components/PendingAgingPanel';
 import { ExecutiveReportFilters } from './components/ExecutiveReportFilters';
-import { computePresetRange, type PresetKey } from './components/reportDateRanges';
+import { computePresetRange, parseReportDate, type PresetKey } from './components/reportDateRanges';
 import { AccountingPolicyPanel } from '@/modules/reports/components/AccountingPolicyPanel';
+import { ReportScope } from './components/ReportScope';
 
 type ReportsExecutiveProps = {
   canExport: boolean;
@@ -32,15 +34,29 @@ export function ReportsExecutive({
   onStatus,
   titleLevel = 1,
 }: ReportsExecutiveProps) {
-  const [preset, setPreset] = useState<PresetKey>(canViewManagerial ? 'thisMonth' : 'today');
-  const [filters, setFilters] = useState<ExecutiveReportFilterState>(() => {
-    const initialRange = computePresetRange(canViewManagerial ? 'thisMonth' : 'today');
-    return { date_from: initialRange.from, date_to: initialRange.to };
-  });
-  const [appliedFilters, setAppliedFilters] = useState<ExecutiveReportFilterState>(() => {
-    const initialRange = computePresetRange(canViewManagerial ? 'thisMonth' : 'today');
-    return { date_from: initialRange.from, date_to: initialRange.to };
-  });
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialFilters = initialExecutiveFilters(searchParams, canViewManagerial);
+  const [preset, setPreset] = useState<PresetKey>(() => detectExecutivePreset(initialFilters));
+  const [filters, setFilters] = useState<ExecutiveReportFilterState>(initialFilters);
+  const [appliedFilters, setAppliedFilters] = useState<ExecutiveReportFilterState>(initialFilters);
+  const urlFilterKey = searchParams.toString();
+
+  useEffect(() => {
+    const currentParams = new URLSearchParams(urlFilterKey);
+    const next = initialExecutiveFilters(currentParams, canViewManagerial);
+
+    if (!currentParams.has('from') || !currentParams.has('to')) {
+      const normalized = new URLSearchParams(currentParams);
+      normalized.set('from', next.date_from);
+      normalized.set('to', next.date_to);
+      setSearchParams(normalized, { replace: true });
+      return;
+    }
+
+    setFilters((current) => sameFilters(current, next) ? current : next);
+    setAppliedFilters((current) => sameFilters(current, next) ? current : next);
+    setPreset(detectExecutivePreset(next));
+  }, [canViewManagerial, setSearchParams, urlFilterKey]);
   const [exporting, setExporting] = useState(false);
   const executiveRangeError = validateReportDateRange(
     filters.date_from,
@@ -49,7 +65,7 @@ export function ReportsExecutive({
     'ejecutivo',
   );
 
-  const { data: report, isFetching, isError, refetch, error: queryError } = useExecutiveReport(
+  const { data: report, dataUpdatedAt, isFetching, isError, refetch, error: queryError } = useExecutiveReport(
     appliedFilters,
     canViewManagerial && executiveRangeError === null,
   );
@@ -73,6 +89,12 @@ export function ReportsExecutive({
       return;
     }
     setAppliedFilters(filters);
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      next.set('from', filters.date_from);
+      next.set('to', filters.date_to);
+      return next;
+    }, { replace: true });
   }
 
   function handleExportPdf() {
@@ -90,9 +112,9 @@ export function ReportsExecutive({
     onStatus('Preparando PDF ejecutivo...');
     void runExecutiveExport(
       apiClient.downloadExecutivePdf,
-      filters,
+      appliedFilters,
       (blob) => {
-        openBlobInNewTab(blob, `reporte-ejecutivo-${filters.date_from}-a-${filters.date_to}.pdf`);
+        openBlobInNewTab(blob, `reporte-ejecutivo-${appliedFilters.date_from}-a-${appliedFilters.date_to}.pdf`);
         notify.success('PDF ejecutivo generado.');
         onStatus('PDF ejecutivo generado.');
       },
@@ -122,9 +144,9 @@ export function ReportsExecutive({
     onStatus('Descargando Excel ejecutivo...');
     void runExecutiveExport(
       apiClient.downloadExecutiveExcel,
-      filters,
+      appliedFilters,
       (blob) => {
-        downloadBlob(blob, `reporte-ejecutivo-${filters.date_from}-a-${filters.date_to}.xlsx`);
+        downloadBlob(blob, `reporte-ejecutivo-${appliedFilters.date_from}-a-${appliedFilters.date_to}.xlsx`);
         notify.success('Excel ejecutivo descargado.');
         onStatus('Excel ejecutivo descargado.');
       },
@@ -155,6 +177,16 @@ export function ReportsExecutive({
         titleLevel={titleLevel}
         rangeError={executiveRangeError}
       />
+
+      {!executiveRangeError ? (
+        <ReportScope
+          ariaLabel="Alcance del reporte ejecutivo"
+          from={appliedFilters.date_from}
+          to={appliedFilters.date_to}
+          source="Totales operativos consolidados por el servidor hospitalario"
+          updatedAt={dataUpdatedAt}
+        />
+      ) : null}
 
       {executiveRangeError ? (
         <Alert variant="warning" title="Rango ejecutivo no valido">
@@ -197,15 +229,34 @@ export function ReportsExecutive({
   );
 }
 
+function initialExecutiveFilters(
+  searchParams: URLSearchParams,
+  canViewManagerial: boolean,
+): ExecutiveReportFilterState {
+  const defaultRange = computePresetRange(canViewManagerial ? 'thisMonth' : 'today');
+  return {
+    date_from: searchParams.get('from') ?? defaultRange.from,
+    date_to: searchParams.get('to') ?? defaultRange.to,
+  };
+}
+
+function detectExecutivePreset(filters: ExecutiveReportFilterState): PresetKey {
+  const presets: PresetKey[] = ['today', 'yesterday', 'last7', 'thisMonth', 'lastMonth'];
+  return presets.find((candidate) => {
+    const range = computePresetRange(candidate);
+    return range.from === filters.date_from && range.to === filters.date_to;
+  }) ?? 'custom';
+}
+
 function validateReportDateRange(dateFrom: string, dateTo: string, maxDays: number, scope: string): string | null {
   if (!dateFrom || !dateTo) {
     return 'Seleccione fecha de inicio y fin para el reporte.';
   }
 
-  const start = new Date(`${dateFrom}T00:00:00`);
-  const end = new Date(`${dateTo}T00:00:00`);
+  const start = parseReportDate(dateFrom);
+  const end = parseReportDate(dateTo);
 
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+  if (!start || !end) {
     return 'Seleccione fechas validas para el reporte.';
   }
 

@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { AlertTriangle, Search } from 'lucide-react';
 import { Alert } from '@/components/ui/alert';
@@ -9,10 +10,11 @@ import { PageHeader } from '@/components/ui/page-header';
 import { AuditLogList, type AuditLogEntry } from '@/components/ui/audit-log-list';
 import { InfoPanel } from '@/components/shared';
 import { apiClient, system } from '@/lib/api';
-import type { AuditLogPage, OperationsReport } from '@/lib/api/types';
+import type { AuditLogEntry as ApiAuditLogEntry, AuditLogPage, OperationsReport } from '@/lib/api/types';
 import { useExecutiveReport } from '@/hooks/useExecutiveReport';
 import { AuditSummaryPanel } from './components/AuditSummaryPanel';
-import { computePresetRange } from './components/reportDateRanges';
+import { computePresetRange, parseReportDate } from './components/reportDateRanges';
+import { ReportScope } from './components/ReportScope';
 
 type AuditLogFilters = {
   action: string;
@@ -52,10 +54,20 @@ export function ReportsAudit({
   canViewManagerial,
   onStatus,
 }: ReportsAuditProps) {
+  const [searchParams, setSearchParams] = useSearchParams();
   const summaryRange = useMemo(() => computePresetRange('thisMonth'), []);
-  const [draft, setDraft] = useState<AuditLogFilters>(EMPTY_FILTERS);
-  const [applied, setApplied] = useState<AuditLogFilters>(EMPTY_FILTERS);
-  const [rangeError, setRangeError] = useState('');
+  const initialUrlFilters = auditFiltersFromUrl(searchParams);
+  const [draft, setDraft] = useState<AuditLogFilters>(initialUrlFilters);
+  const [applied, setApplied] = useState<AuditLogFilters>(initialUrlFilters);
+  const [rangeError, setRangeError] = useState(() => validateAuditDateRange(initialUrlFilters.from, initialUrlFilters.to));
+  const urlFilterKey = searchParams.toString();
+
+  useEffect(() => {
+    const next = auditFiltersFromUrl(new URLSearchParams(urlFilterKey));
+    setDraft(next);
+    setApplied(next);
+    setRangeError(validateAuditDateRange(next.from, next.to));
+  }, [urlFilterKey]);
 
   const queryKey = useMemo(
     () => ['audit-logs', applied] as const,
@@ -72,7 +84,7 @@ export function ReportsAudit({
         page: applied.page,
         per_page: 25,
       }),
-    enabled: canViewManagerial,
+    enabled: canViewManagerial && validateAuditDateRange(applied.from, applied.to) === '',
     staleTime: 30_000,
   });
   const { data: summary, isFetching: summaryLoading } = useExecutiveReport(
@@ -110,13 +122,18 @@ export function ReportsAudit({
     }
 
     setRangeError('');
-    setApplied({ ...draft, page: 1 });
+    applyAuditFilters({ ...draft, page: 1 });
   }
 
   function handleReset() {
     setRangeError('');
     setDraft(EMPTY_FILTERS);
-    setApplied(EMPTY_FILTERS);
+    applyAuditFilters(EMPTY_FILTERS);
+  }
+
+  function applyAuditFilters(next: AuditLogFilters) {
+    setApplied(next);
+    setSearchParams(auditFiltersToUrl(next), { replace: true });
   }
 
   return (
@@ -126,6 +143,15 @@ export function ReportsAudit({
         description="Resumen mensual de supervision operativa y bitacora filtrable."
         className="pb-4"
       />
+
+      {applied.from && applied.to && !rangeError ? (
+        <ReportScope
+          ariaLabel="Alcance del reporte de auditoria"
+          from={applied.from}
+          to={applied.to}
+          source={applied.action ? `Bitácora filtrada por “${applied.action}”` : 'Bitácora operativa completa'}
+        />
+      ) : null}
 
       {summary ? <AuditSummaryPanel report={summary} /> : null}
 
@@ -234,7 +260,7 @@ export function ReportsAudit({
               No hay entradas para los filtros aplicados.
             </p>
           ) : (
-            <AuditLogList entries={data.data as AuditLogEntry[]} />
+            <AuditLogList entries={data.data.map(toSafeAuditEntry)} />
           )}
           {data.meta.total > data.meta.per_page && (
             <div className="mt-3 flex items-center justify-between">
@@ -243,7 +269,7 @@ export function ReportsAudit({
                 variant="secondary"
                 size="sm"
                 disabled={applied.page <= 1}
-                onClick={() => setApplied((current) => ({ ...current, page: current.page - 1 }))}
+                onClick={() => applyAuditFilters({ ...applied, page: applied.page - 1 })}
               >
                 Anterior
               </Button>
@@ -252,7 +278,7 @@ export function ReportsAudit({
                 variant="secondary"
                 size="sm"
                 disabled={applied.page * data.meta.per_page >= data.meta.total}
-                onClick={() => setApplied((current) => ({ ...current, page: current.page + 1 }))}
+                onClick={() => applyAuditFilters({ ...applied, page: applied.page + 1 })}
               >
                 Siguiente
               </Button>
@@ -351,10 +377,10 @@ function validateAuditDateRange(from: string, to: string): string {
     return '';
   }
 
-  const start = new Date(`${from}T00:00:00`);
-  const end = new Date(`${to}T00:00:00`);
+  const start = parseReportDate(from);
+  const end = parseReportDate(to);
 
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+  if (!start || !end) {
     return 'Seleccione fechas validas para la auditoria.';
   }
 
@@ -375,6 +401,49 @@ function resolveAuditActionFilter(value: string): string | undefined {
   );
 
   return alias?.action ?? trimmed;
+}
+
+function auditFiltersFromUrl(searchParams: URLSearchParams): AuditLogFilters {
+  const rawPage = Number(searchParams.get('page'));
+  return {
+    action: searchParams.get('action') ?? '',
+    from: searchParams.get('from') ?? '',
+    to: searchParams.get('to') ?? '',
+    page: Number.isInteger(rawPage) && rawPage > 0 ? rawPage : 1,
+  };
+}
+
+function auditFiltersToUrl(filters: AuditLogFilters): URLSearchParams {
+  const params = new URLSearchParams();
+  if (filters.action.trim()) params.set('action', filters.action.trim());
+  if (filters.from) params.set('from', filters.from);
+  if (filters.to) params.set('to', filters.to);
+  if (filters.page > 1) params.set('page', String(filters.page));
+  return params;
+}
+
+function toSafeAuditEntry(entry: ApiAuditLogEntry): AuditLogEntry {
+  return {
+    action: auditActionLabel(entry.action),
+    created_at: entry.created_at,
+    reason: entry.reason,
+    result: entry.result ?? undefined,
+    user: entry.user?.name ? { name: entry.user.name } : null,
+  };
+}
+
+function auditActionLabel(action: string): string {
+  const normalized = action.toLowerCase();
+  if (normalized.includes('invoice') && (normalized.includes('void') || normalized.includes('annul'))) return 'Factura anulada';
+  if (normalized.includes('payment') && (normalized.includes('void') || normalized.includes('revers'))) return 'Pago reversado';
+  if (normalized.includes('reprint')) return 'Comprobante reimpreso';
+  if (normalized.includes('cash') && normalized.includes('open')) return 'Caja abierta';
+  if (normalized.includes('cash') && normalized.includes('clos')) return 'Caja cerrada';
+  if (normalized.includes('price')) return 'Precio de servicio actualizado';
+  if (normalized.includes('fiscal')) return 'Configuración fiscal actualizada';
+  if (normalized.includes('backup')) return 'Respaldo procesado';
+  if (normalized.includes('login')) return 'Inicio de sesión';
+  return 'Acción operativa auditada';
 }
 
 function normalizeSearchText(value: string): string {

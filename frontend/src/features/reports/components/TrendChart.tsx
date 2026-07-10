@@ -96,82 +96,62 @@ export function TrendChart({ report }: TrendChartProps) {
     <ChartCard
       title="Tendencia diaria"
       description="Facturado vs cobrado por dia. Responde: cuanto se emite y cuanto realmente se cobra."
-      caption="La tabla oculta para lectores de pantalla contiene los valores exactos del grafico."
+      caption="La tabla contiene los mismos valores exactos que el grafico."
     >
-      <div className="sr-only">
-        <table>
+      <p className="mb-3 text-sm font-medium text-foreground">
+        {data.length} {data.length === 1 ? 'dia' : 'dias'} con actividad en el periodo.
+      </p>
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(22rem,0.65fr)] xl:items-start">
+        <div
+          className="h-80 min-w-0 w-full"
+          role="img"
+          aria-label="Grafico de tendencia diaria de facturacion y cobros; la tabla contigua contiene los valores exactos."
+        >
+          <ResponsiveContainer width="100%" height={320} minWidth={0}>
+            <AreaChart data={data} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
+              <defs>
+                <linearGradient id="billed-fill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={CHART_COLORS.billed} stopOpacity={0.18} />
+                  <stop offset="95%" stopColor={CHART_COLORS.billed} stopOpacity={0.02} />
+                </linearGradient>
+                <linearGradient id="collected-fill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={CHART_COLORS.collected} stopOpacity={0.18} />
+                  <stop offset="95%" stopColor={CHART_COLORS.collected} stopOpacity={0.02} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid stroke={CHART_COLORS.grid} strokeDasharray="2 4" vertical={false} />
+              <XAxis dataKey="day" tick={{ fill: CHART_COLORS.axis, fontSize: 11 }} tickLine={false} axisLine={{ stroke: CHART_COLORS.grid }} />
+              <YAxis tick={{ fill: CHART_COLORS.axis, fontSize: 11 }} tickFormatter={formatMoneyShort} tickLine={false} axisLine={false} width={50} />
+              <Tooltip content={<TrendTooltip />} cursor={{ stroke: CHART_COLORS.cursor, strokeWidth: 1 }} />
+              <Legend iconType="square" wrapperStyle={{ fontSize: 12, paddingTop: 4 }} />
+              <Area type="monotone" dataKey="Facturado" stroke={CHART_COLORS.billed} fill="url(#billed-fill)" strokeWidth={2} isAnimationActive={false} />
+              <Area type="monotone" dataKey="Cobrado" stroke={CHART_COLORS.collected} fill="url(#collected-fill)" strokeWidth={2} isAnimationActive={false} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="max-h-80 overflow-auto rounded-md border border-operational-border">
+        <table className="w-full min-w-[28rem] border-collapse text-sm">
           <caption>Tendencia diaria del reporte ejecutivo</caption>
-          <thead>
+          <thead className="sticky top-0 bg-operational-panel text-left text-xs text-muted-foreground">
             <tr>
-              <th scope="col">Fecha</th>
-              <th scope="col">Facturado</th>
-              <th scope="col">Cobrado</th>
-              <th scope="col">Pendiente</th>
+              <th className="px-3 py-2" scope="col">Fecha</th>
+              <th className="px-3 py-2 text-right" scope="col">Facturado</th>
+              <th className="px-3 py-2 text-right" scope="col">Cobrado</th>
+              <th className="px-3 py-2 text-right" scope="col">Pendiente</th>
             </tr>
           </thead>
           <tbody>
             {data.map((day) => (
-              <tr key={day.date}>
-                <td>{day.date}</td>
-                <td>{formatLempirasUI(day.Facturado)}</td>
-                <td>{formatLempirasUI(day.Cobrado)}</td>
-                <td>{formatLempirasUI(day.Pendiente)}</td>
+              <tr key={day.date} className="border-t border-operational-border">
+                <td className="px-3 py-2 tabular-nums">{day.date}</td>
+                <td className="px-3 py-2 text-right font-mono tabular-nums">{formatLempirasUI(day.Facturado)}</td>
+                <td className="px-3 py-2 text-right font-mono tabular-nums">{formatLempirasUI(day.Cobrado)}</td>
+                <td className="px-3 py-2 text-right font-mono tabular-nums">{formatLempirasUI(day.Pendiente)}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      <div
-        className="h-80 min-w-0 w-full"
-        role="img"
-        aria-label="Grafico de tendencia diaria; la tabla oculta para lectores de pantalla contiene los valores exactos."
-      >
-        <ResponsiveContainer width="100%" height={320} minWidth={0}>
-          <AreaChart data={data} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
-            <defs>
-              <linearGradient id="billed-fill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={CHART_COLORS.billed} stopOpacity={0.18} />
-                <stop offset="95%" stopColor={CHART_COLORS.billed} stopOpacity={0.02} />
-              </linearGradient>
-              <linearGradient id="collected-fill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={CHART_COLORS.collected} stopOpacity={0.18} />
-                <stop offset="95%" stopColor={CHART_COLORS.collected} stopOpacity={0.02} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid stroke={CHART_COLORS.grid} strokeDasharray="2 4" vertical={false} />
-            <XAxis
-              dataKey="day"
-              tick={{ fill: CHART_COLORS.axis, fontSize: 11 }}
-              tickLine={false}
-              axisLine={{ stroke: CHART_COLORS.grid }}
-            />
-            <YAxis
-              tick={{ fill: CHART_COLORS.axis, fontSize: 11 }}
-              tickFormatter={formatMoneyShort}
-              tickLine={false}
-              axisLine={false}
-              width={50}
-            />
-            <Tooltip content={<TrendTooltip />} cursor={{ stroke: CHART_COLORS.cursor, strokeWidth: 1 }} />
-            <Legend iconType="square" wrapperStyle={{ fontSize: 12, paddingTop: 4 }} />
-            <Area
-              type="monotone"
-              dataKey="Facturado"
-              stroke={CHART_COLORS.billed}
-              fill="url(#billed-fill)"
-              strokeWidth={2}
-              isAnimationActive={false}
-            />
-            <Area
-              type="monotone"
-              dataKey="Cobrado"
-              stroke={CHART_COLORS.collected}
-              fill="url(#collected-fill)"
-              strokeWidth={2}
-              isAnimationActive={false}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
       </div>
     </ChartCard>
   );

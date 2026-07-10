@@ -79,7 +79,7 @@ describe('CashSessionReportPanel', () => {
     expect(screen.getByRole('heading', { name: /control contable de caja/i })).toBeInTheDocument();
     expect(screen.getByText(/1 recibo institucional pendiente/i)).toBeInTheDocument();
     expect(screen.getByText(/1 pago reversado/i)).toBeInTheDocument();
-    expect(screen.getByText(/egresos operativos no estan modelados/i)).toBeInTheDocument();
+    expect(screen.getByText(/los egresos operativos no est.n modelados en esta versi.n/i)).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/L 0\.00(?:\s*)Contado/);
   });
 

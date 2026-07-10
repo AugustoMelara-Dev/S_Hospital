@@ -56,4 +56,24 @@ describe('ExecutiveReportFilters', () => {
       date_to: '2026-07-03',
     });
   });
+
+  it('does not render export actions without export permission', () => {
+    render(
+      <ExecutiveReportFilters
+        filters={{ date_from: '2026-07-01', date_to: '2026-07-02' }}
+        preset="custom"
+        onPresetChange={vi.fn()}
+        onChange={vi.fn()}
+        onRefresh={vi.fn()}
+        onExportPdf={vi.fn()}
+        onExportExcel={vi.fn()}
+        canExport={false}
+        loading={false}
+        exporting={false}
+      />,
+    );
+
+    expect(screen.queryByRole('button', { name: /pdf ejecutivo/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /excel ejecutivo/i })).not.toBeInTheDocument();
+  });
 });

@@ -35,6 +35,32 @@ vi.mock('recharts', async () => {
 });
 
 describe('TrendChart', () => {
+  it('shows a visible text summary and exact data table beside the chart', () => {
+    render(
+      <TrendChart
+        report={buildExecutiveReport({
+          daily_trend: [
+            {
+              date: '2026-07-01',
+              billed: '125.00',
+              collected: '100.00',
+              pending: '25.00',
+              voided_count: 0,
+              invoice_count: 2,
+            },
+          ],
+        })}
+      />,
+    );
+
+    expect(screen.getByText(/1 dia con actividad/i)).toBeVisible();
+    const table = screen.getByRole('table', { name: /tendencia diaria del reporte ejecutivo/i });
+    expect(table).toBeVisible();
+    expect(table).toHaveTextContent('L 125.00');
+    expect(table).toHaveTextContent('L 100.00');
+    expect(table).toHaveTextContent('L 25.00');
+  });
+
   it('gives Recharts a stable measurable height and non-negative minimum width', () => {
     render(<TrendChart report={buildExecutiveReport()} />);
 

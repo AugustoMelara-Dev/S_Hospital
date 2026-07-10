@@ -1,10 +1,12 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom';
 import { ReportsExecutive } from './ReportsExecutive';
 import { buildExecutiveReport } from './components/testUtils';
 
 const useExecutiveReportMock = vi.hoisted(() => vi.fn());
 const downloadExecutivePdf = vi.hoisted(() => vi.fn());
+const downloadExecutiveExcel = vi.hoisted(() => vi.fn());
 
 vi.mock('@/hooks/useExecutiveReport', () => ({
   useExecutiveReport: useExecutiveReportMock,
@@ -58,6 +60,7 @@ vi.mock('@/lib/api', async () => {
     apiClient: {
       ...actual.apiClient,
       downloadExecutivePdf,
+      downloadExecutiveExcel,
     },
   };
 });
@@ -73,16 +76,110 @@ describe('ReportsExecutive', () => {
       error: null,
     });
     downloadExecutivePdf.mockReset();
+    downloadExecutiveExcel.mockReset();
+  });
+
+  function renderExecutive(
+    props: Partial<React.ComponentProps<typeof ReportsExecutive>> = {},
+    initialEntry = '/reports/executive',
+  ) {
+    return render(
+      <MemoryRouter initialEntries={[initialEntry]}>
+        <ReportsExecutive
+          canExport
+          canViewManagerial
+          onStatus={vi.fn()}
+          {...props}
+        />
+      </MemoryRouter>,
+    );
+  }
+
+  function HistoryControls() {
+    const location = useLocation();
+    const navigate = useNavigate();
+    return (
+      <>
+        <output aria-label="url actual">{location.pathname}{location.search}</output>
+        <button type="button" onClick={() => navigate(-1)}>Volver período</button>
+      </>
+    );
+  }
+
+  it('restores the applied period when browser history changes', async () => {
+    render(
+      <MemoryRouter
+        initialEntries={[
+          '/reports/executive?from=2026-06-01&to=2026-06-02',
+          '/reports/executive?from=2026-07-01&to=2026-07-10',
+        ]}
+        initialIndex={1}
+      >
+        <ReportsExecutive canExport canViewManagerial onStatus={vi.fn()} />
+        <HistoryControls />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /volver per.odo/i }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/inicio ejecutivo/i)).toHaveValue('2026-06-01');
+      expect(screen.getByLabelText(/fin ejecutivo/i)).toHaveValue('2026-06-02');
+      expect(useExecutiveReportMock).toHaveBeenLastCalledWith(
+        { date_from: '2026-06-01', date_to: '2026-06-02' },
+        true,
+      );
+    });
+  });
+
+  it('uses a valid URL period for the query, visible scope and export', async () => {
+    downloadExecutivePdf.mockResolvedValue(new Blob(['pdf'], { type: 'application/pdf' }));
+
+    renderExecutive({}, '/reports/executive?from=2026-07-01&to=2026-07-10');
+
+    expect(useExecutiveReportMock).toHaveBeenLastCalledWith(
+      { date_from: '2026-07-01', date_to: '2026-07-10' },
+      true,
+    );
+    expect(screen.getByRole('region', { name: /alcance del reporte ejecutivo/i })).toHaveTextContent(
+      /1 de julio de 2026.*10 de julio de 2026/i,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /pdf ejecutivo/i }));
+
+    await waitFor(() => {
+      expect(downloadExecutivePdf).toHaveBeenCalledWith({
+        date_from: '2026-07-01',
+        date_to: '2026-07-10',
+      });
+    });
+  });
+
+  it('does not query or export an invalid URL period', () => {
+    renderExecutive({}, '/reports/executive?from=2026-07-10&to=2026-07-01');
+
+    expect(useExecutiveReportMock).toHaveBeenLastCalledWith(
+      { date_from: '2026-07-10', date_to: '2026-07-01' },
+      false,
+    );
+    expect(screen.getAllByText(/fecha de inicio debe ser anterior o igual/i).length).toBeGreaterThan(0);
+    expect(screen.queryByRole('button', { name: /pdf ejecutivo/i })).toBeDisabled();
+    expect(downloadExecutivePdf).not.toHaveBeenCalled();
+  });
+
+  it('rejects calendar dates that do not exist before querying', () => {
+    renderExecutive({}, '/reports/executive?from=2026-02-31&to=2026-03-02');
+
+    expect(useExecutiveReportMock).toHaveBeenLastCalledWith(
+      { date_from: '2026-02-31', date_to: '2026-03-02' },
+      false,
+    );
+    expect(screen.getAllByText(/seleccione fechas validas/i).length).toBeGreaterThan(0);
+    expect(screen.queryByRole('region', { name: /alcance del reporte ejecutivo/i })).not.toBeInTheDocument();
   });
 
   it('keeps executive free of cash and audit detail panels', () => {
-    render(
-      <ReportsExecutive
-        canExport
-        canViewManagerial
-        onStatus={vi.fn()}
-      />,
-    );
+    renderExecutive();
 
     const panelIds = [
       'executive-summary',
@@ -113,13 +210,7 @@ describe('ReportsExecutive', () => {
       error: null,
     });
 
-    render(
-      <ReportsExecutive
-        canExport
-        canViewManagerial
-        onStatus={vi.fn()}
-      />,
-    );
+    renderExecutive();
 
     expect(screen.getByText(/revise la conexion local/i)).toBeInTheDocument();
     expect(screen.queryByText(/error desconocido/i)).not.toBeInTheDocument();
@@ -128,13 +219,7 @@ describe('ReportsExecutive', () => {
   it('shows export progress while an executive PDF is being prepared', async () => {
     downloadExecutivePdf.mockReturnValue(new Promise(() => undefined));
 
-    render(
-      <ReportsExecutive
-        canExport
-        canViewManagerial
-        onStatus={vi.fn()}
-      />,
-    );
+    renderExecutive();
 
     fireEvent.click(screen.getByRole('button', { name: /pdf ejecutivo/i }));
 

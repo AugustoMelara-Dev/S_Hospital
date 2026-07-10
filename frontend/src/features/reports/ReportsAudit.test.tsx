@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ReportsAudit } from './ReportsAudit';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import type { AuditLogPage, OperationsReport } from '@/lib/api/types';
 
 const emptyAuditPage: AuditLogPage = {
@@ -43,17 +44,28 @@ vi.mock('@/lib/api', async (importOriginal) => {
   };
 });
 
-function renderView(props: Partial<React.ComponentProps<typeof ReportsAudit>> = {}) {
+function LocationProbe() {
+  const location = useLocation();
+  return <output aria-label="url actual">{location.pathname}{location.search}</output>;
+}
+
+function renderView(
+  props: Partial<React.ComponentProps<typeof ReportsAudit>> = {},
+  initialEntry = '/reports/audit',
+) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={queryClient}>
-      <ReportsAudit
-        canExport={true}
-        canViewExecutiveSummary={true}
-        canViewManagerial={true}
-        onStatus={vi.fn()}
-        {...props}
-      />
+      <MemoryRouter initialEntries={[initialEntry]}>
+        <ReportsAudit
+          canExport={true}
+          canViewExecutiveSummary={true}
+          canViewManagerial={true}
+          onStatus={vi.fn()}
+          {...props}
+        />
+        <LocationProbe />
+      </MemoryRouter>
     </QueryClientProvider>,
   );
 }
@@ -77,6 +89,43 @@ describe('ReportsAudit', () => {
     expect(screen.getByLabelText(/^acción$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^desde$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^hasta$/i)).toBeInTheDocument();
+  });
+
+  it('restores audit filters from the URL and keeps the applied scope there', async () => {
+    renderView({}, '/reports/audit?action=anulacion&from=2026-07-01&to=2026-07-10&page=2');
+
+    expect(screen.getByLabelText(/^acci.n$/i)).toHaveValue('anulacion');
+    expect(screen.getByLabelText(/^desde$/i)).toHaveValue('2026-07-01');
+    expect(screen.getByLabelText(/^hasta$/i)).toHaveValue('2026-07-10');
+    await waitFor(() => {
+      expect(getAuditLogsMock).toHaveBeenCalledWith(expect.objectContaining({
+        action: 'invoice.voided',
+        from: '2026-07-01',
+        to: '2026-07-10',
+        page: 2,
+      }));
+    });
+    expect(screen.getByLabelText(/url actual/i)).toHaveTextContent(
+      '/reports/audit?action=anulacion&from=2026-07-01&to=2026-07-10&page=2',
+    );
+    expect(screen.getByRole('region', { name: /alcance del reporte de auditoria/i })).toHaveTextContent(
+      /1 de julio de 2026.*10 de julio de 2026/i,
+    );
+  });
+
+  it('does not request audit data for an invalid URL date range', () => {
+    renderView({}, '/reports/audit?from=2026-07-10&to=2026-07-01');
+
+    expect(getAuditLogsMock).not.toHaveBeenCalled();
+    expect(screen.getByText(/fecha de inicio debe ser anterior o igual/i)).toBeInTheDocument();
+  });
+
+  it('does not request audit data for nonexistent calendar dates', () => {
+    renderView({}, '/reports/audit?from=2026-02-31&to=2026-03-02');
+
+    expect(getAuditLogsMock).not.toHaveBeenCalled();
+    expect(screen.getByText(/seleccione fechas validas/i)).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: /alcance del reporte de auditoria/i })).not.toBeInTheDocument();
   });
 
   it('locks audit filters while audit logs are loading', async () => {
@@ -151,7 +200,8 @@ describe('ReportsAudit', () => {
     fireEvent.click(screen.getByRole('button', { name: /buscar/i }));
 
     await waitFor(() => {
-      expect(screen.getByText(/invoices void/i)).toBeInTheDocument();
+      expect(screen.getByText(/factura anulada/i)).toBeInTheDocument();
+      expect(document.body.textContent).not.toMatch(/invoices\.void|Cajero Demo \(cajero\)/i);
     });
   });
 

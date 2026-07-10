@@ -151,28 +151,32 @@ export function ExecutiveReportFilters({
               <RefreshCw className={'size-4 ' + (loading ? 'animate-spin' : '')} aria-hidden="true" />
               Refrescar ejecutivo
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={onExportPdf}
-              disabled={loading || exporting || !canExport || Boolean(rangeError)}
-              className="gap-1.5"
-            >
-              <FileText className="size-4" aria-hidden="true" />
-              {exporting ? 'Exportando...' : 'PDF ejecutivo'}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={onExportExcel}
-              disabled={loading || exporting || !canExport || Boolean(rangeError)}
-              className="gap-1.5"
-            >
-              <Download className="size-4" aria-hidden="true" />
-              {exporting ? 'Exportando...' : 'Excel ejecutivo'}
-            </Button>
+            {canExport ? (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={onExportPdf}
+                  disabled={loading || exporting || Boolean(rangeError)}
+                  className="gap-1.5"
+                >
+                  <FileText className="size-4" aria-hidden="true" />
+                  {exporting ? 'Exportando...' : 'PDF ejecutivo'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={onExportExcel}
+                  disabled={loading || exporting || Boolean(rangeError)}
+                  className="gap-1.5"
+                >
+                  <Download className="size-4" aria-hidden="true" />
+                  {exporting ? 'Exportando...' : 'Excel ejecutivo'}
+                </Button>
+              </>
+            ) : null}
           </div>
         </div>
     </CommandPanel>

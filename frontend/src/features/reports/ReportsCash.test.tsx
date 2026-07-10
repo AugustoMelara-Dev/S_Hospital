@@ -132,6 +132,18 @@ describe('ReportsCash', () => {
     expect(downloadBlob).toHaveBeenCalledWith(expect.any(Blob), 'reporte-caja-12.xlsx');
   });
 
+  it('explains the loaded cash session period and operational scope', async () => {
+    vi.mocked(apiClient.getCashSessionReport).mockResolvedValue(buildCashSessionReport());
+
+    render(<ReportsCash canViewCash canBrowseCashSessions canViewManagerial canExport={false} />);
+    fireEvent.change(screen.getByLabelText(/numero de caja/i), { target: { value: '12' } });
+    fireEvent.click(screen.getByRole('button', { name: /ver caja/i }));
+
+    const scope = await screen.findByRole('region', { name: /alcance del reporte de caja/i });
+    expect(scope).toHaveTextContent(/2 de junio de 2026/i);
+    expect(scope).toHaveTextContent(/sesi.n de caja 12/i);
+  });
+
   it('opens a printable cash session pdf for a cash report user with export permission', async () => {
     vi.mocked(apiClient.getCashSessionReport).mockResolvedValue(buildCashSessionReport());
     downloadCashSessionReportPdfMock.mockResolvedValue(new Blob(['pdf'], { type: 'application/pdf' }));

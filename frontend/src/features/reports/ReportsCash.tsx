@@ -4,6 +4,7 @@ import { OperationalBanner } from '@/components/shared';
 import { apiClient, type CashSession, userSafeErrorMessage } from '@/lib/api';
 import { downloadBlob, openBlobInNewTab } from '@/lib/download';
 import { CashSessionReportPanel } from './components/CashSessionReportPanel';
+import { ReportScope } from './components/ReportScope';
 
 type ReportsCashProps = {
   canBrowseCashSessions: boolean;
@@ -162,6 +163,15 @@ export function ReportsCash({
         title="Operacion de caja"
         description="Sesiones, cajeros, metodos de pago y diferencias de caja."
       />
+
+      {cashSessionReport ? (
+        <ReportScope
+          ariaLabel="Alcance del reporte de caja"
+          from={dateOnly(cashSessionReport.cash_session.opened_at)}
+          to={dateOnly(cashSessionReport.cash_session.closed_at ?? cashSessionReport.cash_session.opened_at)}
+          source={`Sesión de caja ${cashSessionReport.cash_session.id} · ${cashSessionReport.cash_session.user?.name ?? 'Cajero no disponible'}`}
+        />
+      ) : null}
 
       <CashSessionReportPanel
         canExport={canExport}
