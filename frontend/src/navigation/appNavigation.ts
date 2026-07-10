@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 
 type PermissionMode = 'all' | 'any';
-type NavigationGroup = 'operations' | 'administration' | 'support';
+export type NavigationGroup = 'operations' | 'administration' | 'support';
 
 export type AppNavigationItem = {
   id: string;

@@ -14,6 +14,7 @@ describe('appNavigation', () => {
     const labels = primaryNavigation.map((item) => item.label);
     const permissionMetadata = primaryNavigation.map((item) => ({
       path: item.path,
+      group: item.navigationGroup,
       permissions: item.navigationPermissions ?? [],
       mode: item.navigationPermissionMode ?? 'any',
     }));
@@ -46,17 +47,17 @@ describe('appNavigation', () => {
       'Ayuda',
     ]);
     expect(permissionMetadata).toEqual([
-      { path: '/dashboard', permissions: [], mode: 'any' },
-      { path: '/billing/new', permissions: ['invoices.create', 'catalog.view', 'cash.view', 'payments.create', 'receipts.view'], mode: 'all' },
-      { path: '/cashbox', permissions: ['cash.view'], mode: 'any' },
-      { path: '/catalog', permissions: ['catalog.view'], mode: 'any' },
-      { path: '/invoices', permissions: ['invoices.view'], mode: 'any' },
-      { path: '/reports', permissions: ['reports.managerial.view', 'reports.cash_session.view', 'audit.view'], mode: 'any' },
-      { path: '/backups', permissions: ['backups.view'], mode: 'any' },
-      { path: '/settings/fiscal', permissions: ['settings.fiscal.view', 'settings.operational.update'], mode: 'any' },
-      { path: '/settings/institutional-receipts', permissions: ['receipt_settings.view'], mode: 'any' },
-      { path: '/admin/users', permissions: ['users.view'], mode: 'any' },
-      { path: '/help', permissions: [], mode: 'any' },
+      { path: '/dashboard', group: 'operations', permissions: [], mode: 'any' },
+      { path: '/billing/new', group: 'operations', permissions: ['invoices.create', 'catalog.view', 'cash.view', 'payments.create', 'receipts.view'], mode: 'all' },
+      { path: '/cashbox', group: 'operations', permissions: ['cash.view'], mode: 'any' },
+      { path: '/catalog', group: 'operations', permissions: ['catalog.view'], mode: 'any' },
+      { path: '/invoices', group: 'operations', permissions: ['invoices.view'], mode: 'any' },
+      { path: '/reports', group: 'operations', permissions: ['reports.managerial.view', 'reports.cash_session.view', 'audit.view'], mode: 'any' },
+      { path: '/backups', group: 'administration', permissions: ['backups.view'], mode: 'any' },
+      { path: '/settings/fiscal', group: 'administration', permissions: ['settings.fiscal.view', 'settings.operational.update'], mode: 'any' },
+      { path: '/settings/institutional-receipts', group: 'administration', permissions: ['receipt_settings.view'], mode: 'any' },
+      { path: '/admin/users', group: 'administration', permissions: ['users.view'], mode: 'any' },
+      { path: '/help', group: 'support', permissions: [], mode: 'any' },
     ]);
   });
 

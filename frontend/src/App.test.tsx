@@ -730,7 +730,7 @@ describe('App', () => {
     render(<App />);
 
     expect(await screen.findByRole('heading', { name: /centro de mando/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /^caja$/i })).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: /^caja$/i }).length).toBeGreaterThan(0);
     expect(screen.queryByRole('button', { name: /abrir caja desde el centro de mando/i })).not.toBeInTheDocument();
   });
 
@@ -1308,7 +1308,7 @@ describe('App', () => {
       { timeout: 20_000, interval: 100 },
     );
     expect(reportHeadings.length).toBeGreaterThan(0);
-    expect(screen.getByRole('link', { name: /nueva factura/i })).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: /nueva factura/i }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole('link', { name: /^configuraci[oó]n$/i }).length).toBeGreaterThan(0);
     expect(screen.queryByRole('heading', { name: /nueva factura/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /datos fiscales del hospital/i })).not.toBeInTheDocument();

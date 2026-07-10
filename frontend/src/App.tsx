@@ -11,7 +11,7 @@ import { EmptyState, LoadingState } from './components/ui/states';
 import { LoginView } from './features/auth/LoginView';
 import { PasswordChangeView } from './features/auth/PasswordChangeView';
 import { CashBoxView } from './features/cash/CashBoxView';
-import { AppShell } from './layout/AppShell';
+import { ClinicalShell } from './shell/ClinicalShell';
 import { queryClient } from './lib/query-client';
 import { apiClient } from './lib/api';
 import { MotionProvider } from './design-system/motion/MotionProvider';
@@ -102,7 +102,7 @@ function HospitalApp() {
   }
 
   return (
-    <AppShell
+    <ClinicalShell
       cashSession={cashSession ?? null}
       onLogout={session.handleLogout}
       status={session.status}
@@ -168,7 +168,7 @@ function HospitalApp() {
           compact
         />
       </Dialog>
-    </AppShell>
+    </ClinicalShell>
   );
 }
 
