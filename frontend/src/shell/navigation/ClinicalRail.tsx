@@ -125,7 +125,7 @@ export function ClinicalRail({ activeItem, collapsed, hospitalName, logoUrl, nav
           type="button"
           variant="ghost"
           size="icon"
-          className="!size-11 shrink-0"
+          className="!size-11 shrink-0 text-sidebar-foreground hover:bg-sidebar-accent hover:text-white"
           aria-label={collapsed ? 'Expandir navegación' : 'Reducir navegación'}
           aria-pressed={collapsed}
           onClick={onToggleCollapsed}

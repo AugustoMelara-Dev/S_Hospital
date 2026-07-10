@@ -216,7 +216,7 @@ export function InvoiceCart({
               <Banknote className="size-4 text-secondary" aria-hidden="true" />
               Total estimado:
             </dt>
-            <dd className="font-mono text-2xl font-bold tracking-tight tabular-nums text-secondary">{moneyLabel(preview.total)}</dd>
+            <dd className="whitespace-nowrap font-mono text-2xl font-bold tracking-tight tabular-nums text-secondary">{moneyLabel(preview.total)}</dd>
           </div>
         </dl>
 
