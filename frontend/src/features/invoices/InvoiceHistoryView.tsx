@@ -1,4 +1,4 @@
-import { type FormEvent, useRef, useState } from 'react';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -30,6 +30,7 @@ import { payloadScopedIdempotencyKey, resetPayloadScopedIdempotencyKey } from '.
 import { InvoiceHistoryFilters } from './history/InvoiceHistoryFilters';
 import { InvoiceHistoryHeader } from './history/InvoiceHistoryHeader';
 import { InvoiceHistoryTable, issuedInstitutionalReceipt } from './history/InvoiceHistoryTable';
+import { InvoiceDetailSheet } from './history/InvoiceDetailSheet';
 
 type InvoiceHistoryViewProps = {
   user: AuthUser;
@@ -62,6 +63,9 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   const queryClient = useQueryClient();
   const [filters, setFilters] = useState<InvoiceFilters>(() => filtersFromSearchParams(searchParams));
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [detailInvoice, setDetailInvoice] = useState<Invoice | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState('');
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
   const [receiptWidth, setReceiptWidth] = useState<ReceiptData['width']>('half_letter');
   const [voidReason, setVoidReason] = useState('');
@@ -94,6 +98,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   const receiptGenerationPrintIdempotencySignatureRef = useRef<string | null>(null);
   const actionRequestRef = useRef(0);
   const receiptRequestRef = useRef(0);
+  const detailRequestRef = useRef(0);
 
   const canReprint = user.permissions.includes('receipts.reprint');
   const canReprintAny = user.permissions.includes('receipts.reprint_any');
@@ -117,6 +122,25 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   const loadError = invoicesQuery.isError
     ? userSafeErrorMessage(invoicesQuery.error, 'No se pudo cargar historial.')
     : '';
+  const detailInvoiceId = positiveIntegerFromSearchParam(searchParams.get('invoice'), 0);
+
+  useEffect(() => {
+    setFilters(filtersFromSearchParams(searchParams));
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (!detailInvoiceId || detailInvoice?.id === detailInvoiceId || detailLoading) return;
+
+    const summary = invoicesList.find((invoice) => invoice.id === detailInvoiceId) ?? null;
+    void openInvoiceDetail(summary ?? detailInvoiceId, false);
+  // The detail loader deliberately reacts only to URL identity and list availability.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, invoicesList]);
+
+  function changeFilters(nextFilters: InvoiceFilters) {
+    setFilters(nextFilters);
+    setSearchParams(withPreservedDetail(searchParamsFromFilters(nextFilters), searchParams));
+  }
 
   async function submitFilters(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -138,8 +162,44 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       per_page: 10,
     };
     setFilters(clearedFilters);
-    setSearchParams({});
+    setSearchParams(withPreservedDetail({}, searchParams));
     // Refetch is automatic via the filters key.
+  }
+
+  async function openInvoiceDetail(invoice: Invoice | number, updateUrl = true) {
+    const invoiceId = typeof invoice === 'number' ? invoice : invoice.id;
+    const requestId = detailRequestRef.current + 1;
+    detailRequestRef.current = requestId;
+    setDetailInvoice(typeof invoice === 'number' ? null : invoice);
+    setDetailError('');
+    setDetailLoading(true);
+
+    if (updateUrl) {
+      const next = new URLSearchParams(searchParams);
+      next.set('invoice', String(invoiceId));
+      setSearchParams(next);
+    }
+
+    try {
+      const detail = await apiClient.getInvoice(invoiceId);
+      if (detailRequestRef.current === requestId) setDetailInvoice(detail);
+    } catch (error) {
+      if (detailRequestRef.current === requestId) {
+        setDetailError(userSafeErrorMessage(error, 'No se pudo cargar el detalle de la factura.'));
+      }
+    } finally {
+      if (detailRequestRef.current === requestId) setDetailLoading(false);
+    }
+  }
+
+  function closeInvoiceDetail() {
+    detailRequestRef.current += 1;
+    setDetailInvoice(null);
+    setDetailError('');
+    setDetailLoading(false);
+    const next = new URLSearchParams(searchParams);
+    next.delete('invoice');
+    setSearchParams(next);
   }
 
   async function prepareInvoiceAction(invoiceId: number, action: 'void' | 'reverse') {
@@ -513,7 +573,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
         filters={filters}
         hasActiveFilters={hasActiveFilters}
         loading={loading}
-        onChange={setFilters}
+        onChange={changeFilters}
         onClear={clearFilters}
         onSubmit={(event) => void submitFilters(event)}
       />
@@ -569,6 +629,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
               onGenerateInstitutionalReceipt={(invoiceId) => void generateInstitutionalReceipt(invoiceId)}
               onDownloadInstitutionalReceipt={(invoice) => void downloadInstitutionalReceipt(invoice)}
               onOpenReceipt={(invoiceId) => void openReceiptModal(invoiceId)}
+              onOpenDetail={(invoice) => void openInvoiceDetail(invoice)}
               onPrepareInvoiceAction={(invoiceId, action) => void prepareInvoiceAction(invoiceId, action)}
               onReprint={requestReprintInvoice}
             />
@@ -588,6 +649,31 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
           />
         </div>
       )}
+
+      <InvoiceDetailSheet
+        error={detailError}
+        invoice={detailInvoice}
+        loading={detailLoading}
+        loadingActionInvoiceId={loadingActionInvoiceId}
+        moneyLabel={moneyLabel}
+        onDownloadInstitutionalReceipt={(invoice) => void downloadInstitutionalReceipt(invoice)}
+        onGenerateInstitutionalReceipt={(invoiceId) => void generateInstitutionalReceipt(invoiceId)}
+        onOpenChange={(open) => { if (!open) closeInvoiceDetail(); }}
+        onOpenReceipt={(invoiceId) => void openReceiptModal(invoiceId)}
+        onPrepareInvoiceAction={(invoiceId, action) => void prepareInvoiceAction(invoiceId, action)}
+        onReprint={requestReprintInvoice}
+        open={detailInvoiceId > 0}
+        permissions={detailInvoice ? {
+          canIssueInstitutionalReceipt,
+          canOperateAnyInvoice,
+          canReprint,
+          canReprintAny,
+          canReverse,
+          canViewReceipt,
+          canVoid,
+          isOwnInvoiceFromToday: isOwnInvoiceFromToday(detailInvoice),
+        } : null}
+      />
 
       <Dialog
         open={receiptModalOpen}
@@ -760,7 +846,7 @@ function filtersFromSearchParams(searchParams: URLSearchParams): InvoiceFilters 
     date_from: searchParams.get('date_from') || today,
     date_to: searchParams.get('date_to') || today,
     status: (searchParams.get('status') ?? '') as InvoiceFilters['status'],
-    patient: searchParams.get('patient') ?? '',
+    patient: searchParams.get('q') ?? searchParams.get('patient') ?? '',
     invoice_number: searchParams.get('invoice_number') ?? '',
     page: positiveIntegerFromSearchParam(searchParams.get('page'), 1),
     per_page: positiveIntegerFromSearchParam(searchParams.get('per_page'), 10),
@@ -779,10 +865,18 @@ function searchParamsFromFilters(filters: InvoiceFilters): Record<string, string
   if (filters.date_from && filters.date_from !== today) params.date_from = filters.date_from;
   if (filters.date_to && filters.date_to !== today) params.date_to = filters.date_to;
   if (filters.status) params.status = filters.status;
-  if (filters.patient) params.patient = filters.patient;
+  if (filters.patient) params.q = filters.patient;
   if (filters.invoice_number) params.invoice_number = filters.invoice_number;
   if (filters.page && filters.page > 1) params.page = String(filters.page);
   if (filters.per_page && filters.per_page !== 10) params.per_page = String(filters.per_page);
 
   return params;
+}
+
+function withPreservedDetail(
+  filters: Record<string, string>,
+  currentSearchParams: URLSearchParams,
+): Record<string, string> {
+  const invoice = currentSearchParams.get('invoice');
+  return invoice ? { ...filters, invoice } : filters;
 }

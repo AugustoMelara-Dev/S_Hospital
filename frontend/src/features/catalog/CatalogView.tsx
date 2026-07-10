@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import { StatGrid } from '@/components/shared';
+import { Pencil } from 'lucide-react';
 import { type AuthUser, type Category, type Service, type ServiceFilters, apiClient, userSafeErrorMessage } from '../../lib/api';
 import { useAreas, useCategories } from '@/hooks/useCategories';
 import { useOperationalSettings } from '@/hooks/useFiscalSettings';
 import { useServices } from '@/hooks/useServices';
 import { ConfirmDialog } from '../../components/ui/confirm-dialog';
+import { Button } from '../../components/ui/button';
 import { CatalogPagination } from './components/CatalogPagination';
 import { CatalogToolbar } from './components/CatalogToolbar';
 import { ServiceCatalogTable } from './components/ServiceCatalogTable';
@@ -28,12 +31,13 @@ type CatalogViewProps = {
 const DEFAULT_PER_PAGE = 15;
 
 export function CatalogView({ user, onStatus }: CatalogViewProps) {
-  const [search, setSearch] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<string>(CATEGORY_FILTER_ALL);
-  const [activeFilter, setActiveFilter] = useState<string>(STATUS_FILTER_ALL);
-  const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(DEFAULT_PER_PAGE);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [search, setSearch] = useState(() => searchParams.get('q') ?? '');
+  const [debouncedSearch, setDebouncedSearch] = useState(() => searchParams.get('q') ?? '');
+  const [categoryFilter, setCategoryFilter] = useState<string>(() => searchParams.get('category') ?? CATEGORY_FILTER_ALL);
+  const [activeFilter, setActiveFilter] = useState<string>(() => searchParams.get('status') ?? STATUS_FILTER_ALL);
+  const [page, setPage] = useState(() => positiveUrlInteger(searchParams.get('page'), 1));
+  const [perPage, setPerPage] = useState(() => positiveUrlInteger(searchParams.get('per_page'), DEFAULT_PER_PAGE));
   const [lastServicesData, setLastServicesData] = useState<Awaited<ReturnType<typeof apiClient.getServicesPage>> | null>(null);
   const queryClient = useQueryClient();
 
@@ -68,9 +72,9 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
   }, [servicesQuery.data]);
 
   const servicesData = servicesQuery.data ?? lastServicesData;
-  const categories = categoriesQuery.data ?? [];
+  const categories = useMemo(() => categoriesQuery.data ?? [], [categoriesQuery.data]);
   const areas = areasQuery.data ?? [];
-  const services = servicesData?.data ?? [];
+  const services = useMemo(() => servicesData?.data ?? [], [servicesData]);
   const meta = servicesData?.meta ?? { current_page: 1, per_page: DEFAULT_PER_PAGE, total: 0 };
   const scannerEnabled = operationalSettingsQuery.data?.scanner_enabled === true;
   const serviceStatusActionLabel = servicePendingStatusChange?.active ? 'Desactivar servicio' : 'Activar servicio';
@@ -84,9 +88,52 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
     const timeoutId = setTimeout(() => {
       setDebouncedSearch(search);
       setPage(1);
+      const trimmedSearch = search.trim();
+      if ((searchParams.get('q') ?? '') === trimmedSearch && !searchParams.has('page')) return;
+      const next = new URLSearchParams(searchParams);
+      setOrDelete(next, 'q', trimmedSearch);
+      next.delete('page');
+      setSearchParams(next, { replace: true });
     }, CATALOG_DEBOUNCE_MS);
     return () => clearTimeout(timeoutId);
+  // URL writes are intentionally driven by the search value after the debounce.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
+
+  useEffect(() => {
+    const nextSearch = searchParams.get('q') ?? '';
+    const nextCategory = searchParams.get('category') ?? CATEGORY_FILTER_ALL;
+    const nextStatus = searchParams.get('status') ?? STATUS_FILTER_ALL;
+    const nextPage = positiveUrlInteger(searchParams.get('page'), 1);
+    const nextPerPage = positiveUrlInteger(searchParams.get('per_page'), DEFAULT_PER_PAGE);
+
+    setSearch((current) => current === nextSearch ? current : nextSearch);
+    setDebouncedSearch((current) => current === nextSearch ? current : nextSearch);
+    setCategoryFilter((current) => current === nextCategory ? current : nextCategory);
+    setActiveFilter((current) => current === nextStatus ? current : nextStatus);
+    setPage((current) => current === nextPage ? current : nextPage);
+    setPerPage((current) => current === nextPerPage ? current : nextPerPage);
+  }, [searchParams]);
+
+  useEffect(() => {
+    const serviceId = positiveUrlInteger(searchParams.get('service'), 0);
+    if (!serviceId) return;
+    const service = services.find((candidate) => candidate.id === serviceId);
+    if (service && editingService?.id !== serviceId) {
+      setEditingService(service);
+      setServiceSheetOpen(true);
+    }
+  }, [editingService?.id, searchParams, services]);
+
+  useEffect(() => {
+    const categoryId = positiveUrlInteger(searchParams.get('edit_category'), 0);
+    if (!categoryId) return;
+    const category = categories.find((candidate) => candidate.id === categoryId);
+    if (category && editingCategory?.id !== categoryId) {
+      setEditingCategory(category);
+      setCategorySheetOpen(true);
+    }
+  }, [categories, editingCategory?.id, searchParams]);
 
   useEffect(() => {
     if (loadError) {
@@ -106,16 +153,19 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
   function handleCategoryFilterChange(value: string) {
     setCategoryFilter(value);
     setPage(1);
+    updateCatalogUrl({ category: value === CATEGORY_FILTER_ALL ? null : value, page: null });
   }
 
   function handleActiveFilterChange(value: string) {
     setActiveFilter(value);
     setPage(1);
+    updateCatalogUrl({ status: value === STATUS_FILTER_ALL ? null : value, page: null });
   }
 
   function handlePerPageChange(value: number) {
     setPerPage(value);
     setPage(1);
+    updateCatalogUrl({ per_page: value === DEFAULT_PER_PAGE ? null : String(value), page: null });
   }
 
   function clearFilters() {
@@ -124,21 +174,54 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
     setCategoryFilter(CATEGORY_FILTER_ALL);
     setActiveFilter(STATUS_FILTER_ALL);
     setPage(1);
+    const next = new URLSearchParams(searchParams);
+    ['q', 'category', 'status', 'page', 'per_page'].forEach((key) => next.delete(key));
+    setSearchParams(next);
   }
 
   function openNewService() {
     setEditingService(null);
     setServiceSheetOpen(true);
+    updateCatalogUrl({ panel: 'new-service', service: null });
   }
 
   function openEditService(service: Service) {
     setEditingService(service);
     setServiceSheetOpen(true);
+    updateCatalogUrl({ service: String(service.id), panel: null });
   }
 
   function openNewCategory() {
     setEditingCategory(null);
     setCategorySheetOpen(true);
+    updateCatalogUrl({ panel: 'new-category', service: null, edit_category: null });
+  }
+
+  function openEditCategory(category: Category) {
+    setEditingCategory(category);
+    setCategorySheetOpen(true);
+    updateCatalogUrl({ edit_category: String(category.id), panel: null, service: null });
+  }
+
+  function handleServiceSheetOpenChange(open: boolean) {
+    setServiceSheetOpen(open);
+    if (!open) updateCatalogUrl({ service: null, panel: null });
+  }
+
+  function handleCategorySheetOpenChange(open: boolean) {
+    setCategorySheetOpen(open);
+    if (!open) updateCatalogUrl({ panel: null, edit_category: null });
+  }
+
+  function updateCatalogUrl(patch: Record<string, string | null>) {
+    const next = new URLSearchParams(searchParams);
+    Object.entries(patch).forEach(([key, value]) => setOrDelete(next, key, value));
+    setSearchParams(next);
+  }
+
+  function handlePageChange(nextPage: number) {
+    setPage(nextPage);
+    updateCatalogUrl({ page: nextPage > 1 ? String(nextPage) : null });
   }
 
   function handleServiceSuccess() {
@@ -220,6 +303,33 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
         ]}
       />
 
+      {canManageCatalog && categories.length > 0 ? (
+        <section aria-labelledby="catalog-categories-title" className="border-y border-border py-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h2 id="catalog-categories-title" className="text-sm font-semibold text-foreground">Categorías del catálogo</h2>
+              <p className="mt-1 text-xs text-muted-foreground">Edite la organización sin perder la búsqueda ni la página actual.</p>
+            </div>
+            <ul className="flex flex-wrap gap-2" aria-label="Categorías editables">
+              {categories.map((category) => (
+                <li key={category.id}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    aria-label={`Editar categoría ${category.name}`}
+                    onClick={() => openEditCategory(category)}
+                  >
+                    <Pencil aria-hidden="true" className="size-3.5" />
+                    {category.name}
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      ) : null}
+
       <CatalogToolbar
         categories={categories}
         categoryFilter={categoryFilter}
@@ -254,7 +364,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
           meta={meta}
           perPage={perPage}
           servicesCount={services.length}
-          onPageChange={setPage}
+          onPageChange={handlePageChange}
           onPerPageChange={handlePerPageChange}
         />
       ) : null}
@@ -263,7 +373,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
         <>
           <ServiceSheet
             open={serviceSheetOpen}
-            onOpenChange={setServiceSheetOpen}
+            onOpenChange={handleServiceSheetOpenChange}
             service={editingService ? normalizeServiceForSheet(editingService) : null}
             categories={categories}
             areas={areas}
@@ -273,7 +383,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
 
           <CategorySheet
             open={categorySheetOpen}
-            onOpenChange={setCategorySheetOpen}
+            onOpenChange={handleCategorySheetOpenChange}
             category={editingCategory}
             onSuccess={handleCategorySuccess}
           />
@@ -321,4 +431,14 @@ function serviceStatusPayload(service: Service, active: boolean, availabilityCha
 function errorMessageFromQueries(...errors: unknown[]): string {
   const firstError = errors.find(Boolean);
   return firstError ? userSafeErrorMessage(firstError, 'No se pudo cargar el catálogo.') : '';
+}
+
+function positiveUrlInteger(value: string | null, fallback: number) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function setOrDelete(params: URLSearchParams, key: string, value: string | null) {
+  if (value) params.set(key, value);
+  else params.delete(key);
 }

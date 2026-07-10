@@ -24,6 +24,7 @@ type InvoiceHistoryTableProps = {
   onDownloadInstitutionalReceipt: (invoice: Invoice) => void;
   onGenerateInstitutionalReceipt: (invoiceId: number) => void;
   onOpenReceipt: (invoiceId: number) => void;
+  onOpenDetail: (invoice: Invoice) => void;
   onPrepareInvoiceAction: (invoiceId: number, action: 'void' | 'reverse') => void;
   onReprint: (invoice: Invoice) => void;
 };
@@ -49,6 +50,7 @@ export function InvoiceHistoryTable({
   onDownloadInstitutionalReceipt,
   onGenerateInstitutionalReceipt,
   onOpenReceipt,
+  onOpenDetail,
   onPrepareInvoiceAction,
   onReprint,
 }: InvoiceHistoryTableProps) {
@@ -61,7 +63,14 @@ export function InvoiceHistoryTable({
       render: (invoice) => (
         <div className="flex items-start gap-2">
           <ReceiptText data-icon aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-secondary" />
-          <span>{invoice.invoice_number}</span>
+          <button
+            type="button"
+            className="min-h-11 rounded-sm text-left font-semibold text-foreground underline-offset-4 hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:min-h-9"
+            aria-label={`Ver detalle de la factura ${invoice.invoice_number}`}
+            onClick={() => onOpenDetail(invoice)}
+          >
+            {invoice.invoice_number}
+          </button>
         </div>
       ),
     },
