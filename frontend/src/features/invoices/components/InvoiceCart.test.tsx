@@ -5,6 +5,24 @@ import { InvoiceCart, type CartItem } from './InvoiceCart';
 import type { Service } from '../../../lib/api';
 
 describe('InvoiceCart', () => {
+  it('labels the ticket as Cuenta actual with its line count and registered price rule', () => {
+    renderCart();
+
+    expect(screen.getByText('Cuenta actual')).toBeInTheDocument();
+    expect(screen.getByLabelText('1 línea en la cuenta')).toBeInTheDocument();
+    expect(screen.getByText(/precio registrado/i)).toHaveTextContent('L 120.00');
+  });
+
+  it('keeps quantity controls at a 44px target and exposes the configured total CTA', () => {
+    renderCart({ actionLabel: 'Cobrar L 138.00' });
+
+    expect(screen.getByRole('button', { name: /disminuir cantidad/i })).toHaveClass('size-11');
+    expect(screen.getByRole('button', { name: /aumentar cantidad/i })).toHaveClass('size-11');
+    const action = screen.getByRole('button', { name: 'Cobrar L 138.00' });
+    expect(action).toBeEnabled();
+    expect(action).toHaveTextContent(/^Cobrar L 138\.00$/);
+  });
+
   it('renders an accessible empty cart without treating it as an error', () => {
     renderCart({ items: [] });
 
@@ -71,7 +89,7 @@ describe('InvoiceCart', () => {
     expect(onConfirm).toHaveBeenCalledTimes(1);
   });
 
-  it('preserves dialysis prescription gating and boolean callback', () => {
+  it('shows the dialysis prescription only with permission and preserves its boolean callback', () => {
     const onUpdateDialysisPrescription = vi.fn();
     const { rerender } = renderCart({
       items: [cartItemFixture({ service: serviceFixture({ special_rule_code: 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION' }) })],
@@ -79,8 +97,8 @@ describe('InvoiceCart', () => {
       onUpdateDialysisPrescription,
     });
 
-    expect(screen.getByRole('checkbox')).toBeDisabled();
-    expect(screen.getByText(/receta de diálisis \(requiere autorización\)/i)).toBeInTheDocument();
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+    expect(screen.queryByText(/receta de diálisis/i)).not.toBeInTheDocument();
     expect(onUpdateDialysisPrescription).not.toHaveBeenCalled();
 
     rerender(cartElement({

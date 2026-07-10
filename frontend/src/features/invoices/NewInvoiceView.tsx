@@ -19,12 +19,11 @@ import { useNewInvoiceScreenGuards } from './hooks/useNewInvoiceScreenGuards';
 import { useNewInvoiceShortcuts } from './hooks/useNewInvoiceShortcuts';
 import { useNewInvoiceValidation } from './hooks/useNewInvoiceValidation';
 import { buildInvoicePayload } from './invoicePayload';
-import { institutionalReceiptPdfFilename, openBlobInNewTab } from '@/lib/download';
+import { downloadBlob, institutionalReceiptPdfFilename, openBlobInNewTab } from '@/lib/download';
 import { createClientIdempotencyKey } from '@/lib/api/base';
 import { payloadScopedIdempotencyKey, resetPayloadScopedIdempotencyKey } from '@/lib/api/idempotency';
 import { queryKeys } from '@/lib/queryKeys';
 import { interpretPaymentOutcome } from '@/modules/billing/application/paymentOutcome';
-
 
 const POS_SERVICE_PAGE_SIZE = 24;
 
@@ -70,7 +69,7 @@ export function NewInvoiceView({
   const receiptPdfIdempotencyKeyRef = useRef<string | null>(null);
   const scanCodeInFlightRef = useRef(false);
   const skipInitialServiceSearchRef = useRef(true);
-
+  const latestPaymentResultRef = useRef<import('../../lib/api').Payment | null>(null);
   useEffect(() => {
     void loadPointOfSaleData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -82,7 +81,6 @@ export function NewInvoiceView({
     patientName: state.patientName,
     searchInputRef,
   });
-
   useEffect(() => {
     if (!canViewCatalog) {
       return;
@@ -97,15 +95,12 @@ export function NewInvoiceView({
     return () => window.clearTimeout(timeoutId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canViewCatalog, state.search, state.selectedAreaId, state.selectedCategoryId]);
-
   useEffect(() => {
     dispatch({ type: 'SET_LOADED_CASH_SESSION', payload: cashSession });
   }, [cashSession]);
-
   useEffect(() => {
     submitInvoiceIdempotencyKeyRef.current = null;
   }, [canMarkDialysisPrescription, state.cartItems, state.patientName]);
-
   useEffect(() => {
     if (!operationalSettings) {
       return;
@@ -349,6 +344,7 @@ export function NewInvoiceView({
     if (submitInvoiceInFlightRef.current) {
       return;
     }
+    latestPaymentResultRef.current = null;
 
     submitInvoiceInFlightRef.current = true;
     dispatch({ type: 'SET_SUBMITTING', payload: true });
@@ -464,6 +460,7 @@ export function NewInvoiceView({
         queryClient.invalidateQueries({ queryKey: queryKeys.cashSessions.movements(sessionToUse.id) }),
         queryClient.invalidateQueries({ queryKey: queryKeys.reports.dashboard(), refetchType: 'none' }),
       ]);
+      latestPaymentResultRef.current = result.payment;
       dispatch({ type: 'SET_ISSUED_INVOICE', payload: result.invoice });
       dispatch({ type: 'SET_PAYMENT_AMOUNT', payload: result.invoice.balance_due });
 
@@ -621,7 +618,20 @@ export function NewInvoiceView({
     await loadReceipt(state.receiptWidth);
   }
 
+  async function handleSaveIssuedReceiptPdf() {
+    if (!state.institutionalReceipt) return;
+
+    try {
+      const blob = await apiClient.getInstitutionalReceiptPdf(state.institutionalReceipt.id);
+      downloadBlob(blob, institutionalReceiptPdfFilename(state.institutionalReceipt.receipt_number_full));
+      onStatus(`PDF institucional ${state.institutionalReceipt.receipt_number_full} guardado.`);
+    } catch (error) {
+      onStatus(userSafeErrorMessage(error, 'No se pudo guardar el PDF institucional.'));
+    }
+  }
+
   function handleNuevaFactura() {
+    latestPaymentResultRef.current = null;
     dispatch({ type: 'RESET_FORM', payload: { loadedCashSession: state.loadedCashSession } });
     window.setTimeout(() => patientInputRef.current?.focus(), 0);
   }
@@ -654,6 +664,7 @@ export function NewInvoiceView({
   return (
     <NewInvoiceViewLayout
       state={state}
+      paymentResult={latestPaymentResultRef.current}
       preview={preview}
       emitBlockReasons={emitBlockReasons}
       canEmit={canEmit}
@@ -684,6 +695,7 @@ export function NewInvoiceView({
       onPaymentOpenChange={handlePaymentOpenChange}
       onSubmitPayment={(appliedAmount) => void submitPayment(appliedAmount)}
       onPrintIssuedReceipt={() => void handlePrintIssuedReceipt()}
+      onSaveIssuedReceiptPdf={() => void handleSaveIssuedReceiptPdf()}
       onNuevaFactura={handleNuevaFactura}
       onSuccessDialogChange={(val) => dispatch({ type: 'SET_SHOW_SUCCESS', payload: val })}
       onReceiptOpenChange={handleReceiptOpenChange}

@@ -21,6 +21,23 @@ const service = {
 };
 
 describe('InvoiceConfirmation', () => {
+  it('keeps the accounting warning free of implementation language', () => {
+    render(
+      <InvoiceConfirmation
+        open
+        onOpenChange={vi.fn()}
+        patientName="Maria Lopez"
+        items={[{ service, quantity: '1.00', dialysisPrescription: false }]}
+        preview={{ subtotal: '15.00', tax: '2.25', total: '17.25' }}
+        cashSessionId={7}
+        onConfirm={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText(/total definitivo/i)).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/backend|payload|api/i);
+  });
+
   it('does not manually confirm from Enter keydown before the native button click', () => {
     const onConfirm = vi.fn();
 

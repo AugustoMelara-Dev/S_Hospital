@@ -9,6 +9,7 @@ import { getInitialNewInvoiceState } from './state/types';
 import { apiClient, type Service, type CashSession } from '../../lib/api';
 import * as apiBase from '@/lib/api/base';
 import { queryKeys } from '@/lib/queryKeys';
+import { downloadBlob, openBlobInNewTab } from '@/lib/download';
 
 vi.mock('@/lib/api', async () => {
   const actual = await vi.importActual<typeof import('@/lib/api')>('@/lib/api');
@@ -22,7 +23,9 @@ vi.mock('@/lib/api', async () => {
 });
 
 vi.mock('@/lib/download', () => ({
+  downloadBlob: vi.fn(),
   openBlobInNewTab: vi.fn(),
+  institutionalReceiptPdfFilename: (receiptNumber: string) => `recibo-institucional-${receiptNumber}.pdf`,
 }));
 
 function makeService(overrides: Partial<Service> = {}): Service {
@@ -469,7 +472,7 @@ describe('NewInvoiceView critical flows', () => {
     })));
   });
 
-  it('prefills payment amount from issued invoice balance and submits exact cash with Ctrl+Enter', async () => {
+  it('prefills payment amount, clears a residual reference and submits exact cash with Ctrl+Enter', async () => {
     const fetchMock = globalThis.fetch as ReturnType<typeof vi.fn>;
     let paymentPayload: unknown = null;
 
@@ -568,11 +571,22 @@ describe('NewInvoiceView critical flows', () => {
     const amountInput = await screen.findByLabelText(/monto recibido/i);
     expect(amountInput).toHaveValue('25.00');
 
+    fireEvent.click(screen.getByRole('radio', { name: 'Transferencia' }));
+    fireEvent.change(screen.getByLabelText(/referencia de pago/i), { target: { value: 'TX-RESIDUAL' } });
+    fireEvent.click(screen.getByRole('radio', { name: 'Efectivo' }));
+
     fireEvent.keyDown(amountInput, { key: 'Enter', code: 'Enter', ctrlKey: true });
 
     await waitFor(() => {
-      expect(paymentPayload).toEqual(expect.objectContaining({ amount: '25.00' }));
+      expect(paymentPayload).toEqual(expect.objectContaining({ amount: '25.00', method: 'cash', reference: null }));
     });
+    expect(await screen.findByRole('dialog', { name: /factura pagada/i })).toBeInTheDocument();
+    expect(screen.getByText('Efectivo')).toBeInTheDocument();
+    expect(screen.getByText(/17\/05\/2026/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /nueva factura/i }));
+    expect(screen.getByLabelText(/nombre del paciente/i)).toHaveValue('');
+    expect(screen.queryByText(/17\/05\/2026/)).not.toBeInTheDocument();
   });
 
   it('sends dialysis prescription only as an invoice-level flag', async () => {
@@ -699,7 +713,7 @@ describe('NewInvoiceView critical flows', () => {
 
     expect((await screen.findAllByText(/pendiente de cobro/i)).length).toBeGreaterThan(0);
     expect(screen.queryByRole('button', { name: /cobrar ahora/i })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /crear otra factura/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /nueva factura/i })).toBeInTheDocument();
     expect(screen.queryByText(/permisos completos/i)).not.toBeInTheDocument();
   });
 
@@ -827,7 +841,7 @@ describe('NewInvoiceView critical flows', () => {
     });
 
     fireEvent.change(screen.getByLabelText(/monto recibido/i), { target: { value: '25.00' } });
-    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro e imprimir/i }));
+    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro.*imprimir/i }));
 
     await waitFor(() => {
       expect(fetchMock.mock.calls.some(([url]) => String(url).endsWith('/api/invoices/57/payments'))).toBe(true);
@@ -959,7 +973,7 @@ describe('NewInvoiceView critical flows', () => {
     });
 
     fireEvent.change(screen.getByLabelText(/monto recibido/i), { target: { value: '15.00' } });
-    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro e imprimir/i }));
+    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro.*imprimir/i }));
 
     await waitFor(() => {
       expect(fetchMock.mock.calls.some(([url]) => String(url).endsWith('/api/invoices/65/payments'))).toBe(true);
@@ -967,7 +981,9 @@ describe('NewInvoiceView critical flows', () => {
 
     expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/api/invoices/65/receipt'))).toBe(false);
     expect(screen.queryByRole('dialog', { name: /comprobante de factura/i })).not.toBeInTheDocument();
-    expect(await screen.findByRole('dialog', { name: /factura emitida exitosamente/i })).toBeInTheDocument();
+    expect(await screen.findByRole('dialog', { name: /factura pendiente/i })).toBeInTheDocument();
+    expect(screen.getByText('Efectivo')).toBeInTheDocument();
+    expect(screen.getByText(/17\/05\/2026/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /cobrar ahora/i })).toBeInTheDocument();
   });
 
@@ -1007,7 +1023,7 @@ describe('NewInvoiceView critical flows', () => {
       expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(2);
     });
 
-    fireEvent.click(screen.getByText('Eritropoyetina'));
+    fireEvent.click(screen.getByRole('button', { name: /agregar eritropoyetina/i }));
 
     fetchMock.mockImplementation(async (input) => {
       const url = String(input);
@@ -1114,7 +1130,7 @@ describe('NewInvoiceView critical flows', () => {
     });
 
     fireEvent.change(screen.getByLabelText(/monto recibido/i), { target: { value: '25.00' } });
-    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro e imprimir/i }));
+    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro.*imprimir/i }));
 
     await waitFor(() => {
       expect(fetchMock.mock.calls.some(([url]) => String(url).endsWith('/api/invoices/61/payments'))).toBe(true);
@@ -1123,7 +1139,7 @@ describe('NewInvoiceView critical flows', () => {
     expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/api/invoices/61/receipt'))).toBe(false);
     expect(screen.queryByRole('dialog', { name: /comprobante de factura/i })).not.toBeInTheDocument();
     expect(await screen.findByRole('dialog', { name: /factura pagada/i })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /imprimir recibo institucional/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /imprimir recibo$/i })).not.toBeInTheDocument();
     expect(screen.getAllByText(/revise la factura en historial/i).length).toBeGreaterThan(0);
     expect(onStatus).toHaveBeenCalledWith(expect.stringMatching(/recibo institucional esta pendiente/i));
   });
@@ -1141,7 +1157,7 @@ describe('NewInvoiceView critical flows', () => {
       expect(screen.getByText('Eritropoyetina')).toBeInTheDocument();
     }, { timeout: 3000 });
 
-    fireEvent.click(screen.getByText('Eritropoyetina'));
+    fireEvent.click(screen.getByRole('button', { name: /agregar eritropoyetina/i }));
 
     fetchMock.mockImplementation(async (input) => {
       const url = String(input);
@@ -1215,7 +1231,7 @@ describe('NewInvoiceView critical flows', () => {
     expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/api/invoices/56/receipt'))).toBe(false);
     expect(screen.queryByRole('dialog', { name: /comprobante de factura/i })).not.toBeInTheDocument();
     expect(await screen.findByRole('dialog', { name: /factura pagada/i })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /imprimir recibo institucional/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /imprimir recibo$/i })).not.toBeInTheDocument();
   });
 
   it('issues an institutional receipt for a paid zero-total invoice instead of using the legacy receipt', async () => {
@@ -1245,7 +1261,7 @@ describe('NewInvoiceView critical flows', () => {
       expect(screen.getByText('Eritropoyetina')).toBeInTheDocument();
     }, { timeout: 3000 });
 
-    fireEvent.click(screen.getByText('Eritropoyetina'));
+    fireEvent.click(screen.getByRole('button', { name: /agregar eritropoyetina/i }));
 
     fetchMock.mockImplementation(async (input, init) => {
       const url = String(input);
@@ -1343,7 +1359,7 @@ describe('NewInvoiceView critical flows', () => {
     expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/api/invoices/64/receipt'))).toBe(false);
     expect(screen.queryByRole('dialog', { name: /comprobante de factura/i })).not.toBeInTheDocument();
     expect(await screen.findByRole('dialog', { name: /factura pagada/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /imprimir recibo institucional/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /imprimir recibo$/i })).toBeInTheDocument();
   });
 
   it('reprints the institutional receipt from the sale flow with an idempotency key', async () => {
@@ -1475,7 +1491,7 @@ describe('NewInvoiceView critical flows', () => {
     });
 
     fireEvent.change(screen.getByLabelText(/monto recibido/i), { target: { value: '25.00' } });
-    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro e imprimir/i }));
+    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro.*imprimir/i }));
 
     await waitFor(() => {
       expect(registerPrint).toHaveBeenCalledWith(96, undefined, {
@@ -1483,13 +1499,19 @@ describe('NewInvoiceView critical flows', () => {
       });
     });
     expect(getInstitutionalReceiptPdf).toHaveBeenCalledWith(96);
+    expect(openBlobInNewTab).toHaveBeenCalledWith(
+      expect.any(Blob),
+      'recibo-institucional-REC-A-00000096.pdf',
+    );
     registerPrint.mockClear();
     getInstitutionalReceiptPdf.mockClear();
+    vi.mocked(openBlobInNewTab).mockClear();
+    vi.mocked(downloadBlob).mockClear();
 
     await waitFor(() => {
       expect(screen.getByRole('dialog', { name: /factura pagada/i })).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByRole('button', { name: /imprimir recibo institucional/i }));
+    fireEvent.click(screen.getByRole('button', { name: /imprimir recibo$/i }));
 
     await waitFor(() => {
       expect(registerPrint).toHaveBeenCalledWith(
@@ -1499,6 +1521,25 @@ describe('NewInvoiceView critical flows', () => {
       );
     });
     expect(getInstitutionalReceiptPdf).toHaveBeenCalledWith(96);
+    expect(openBlobInNewTab).toHaveBeenCalledWith(
+      expect.any(Blob),
+      'recibo-institucional-REC-A-00000096.pdf',
+    );
+
+    registerPrint.mockClear();
+    getInstitutionalReceiptPdf.mockClear();
+    vi.mocked(openBlobInNewTab).mockClear();
+    vi.mocked(downloadBlob).mockClear();
+
+    fireEvent.click(screen.getByRole('button', { name: /guardar pdf/i }));
+
+    await waitFor(() => expect(downloadBlob).toHaveBeenCalledWith(
+      expect.any(Blob),
+      'recibo-institucional-REC-A-00000096.pdf',
+    ));
+    expect(getInstitutionalReceiptPdf).toHaveBeenCalledWith(96);
+    expect(registerPrint).not.toHaveBeenCalled();
+    expect(openBlobInNewTab).not.toHaveBeenCalled();
   });
 
   it('keeps a visible retry path when the institutional PDF fails to open after payment', async () => {
@@ -1649,7 +1690,7 @@ describe('NewInvoiceView critical flows', () => {
     });
 
     fireEvent.change(screen.getByLabelText(/monto recibido/i), { target: { value: '25.00' } });
-    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro e imprimir/i }));
+    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro.*imprimir/i }));
 
     await waitFor(() => {
       expect(registerPrint).toHaveBeenCalledWith(97, undefined, {
@@ -1662,7 +1703,7 @@ describe('NewInvoiceView critical flows', () => {
     expect(await screen.findByRole('dialog', { name: /factura pagada/i })).toBeInTheDocument();
     expect(screen.getAllByText(/recibo institucional REC-A-00000097 emitido/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/no se pudo abrir el PDF/i).length).toBeGreaterThan(0);
-    expect(screen.getByRole('button', { name: /imprimir recibo institucional/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /imprimir recibo$/i })).toBeInTheDocument();
     expect(onStatus).toHaveBeenCalledWith(expect.stringMatching(/no se pudo abrir el PDF/i));
   });
 
@@ -1790,14 +1831,14 @@ describe('NewInvoiceView critical flows', () => {
     });
 
     fireEvent.change(screen.getByLabelText(/monto recibido/i), { target: { value: '10.00' } });
-    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro e imprimir/i }));
+    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro.*imprimir/i }));
     await waitFor(() => {
       expect(paymentIdempotencyKeys).toEqual(['payment-attempt-1']);
     });
     expect(screen.getByRole('dialog', { name: /registrar pago/i })).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText(/monto recibido/i), { target: { value: '15.00' } });
-    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro e imprimir/i }));
+    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro.*imprimir/i }));
 
     await waitFor(() => {
       expect(paymentIdempotencyKeys).toEqual(['payment-attempt-1', 'payment-attempt-2']);

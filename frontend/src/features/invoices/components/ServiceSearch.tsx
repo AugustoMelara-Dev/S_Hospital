@@ -1,5 +1,6 @@
-import { Barcode, Filter, Search, X } from 'lucide-react';
-import { type KeyboardEvent, type RefObject, useEffect, useState, useCallback } from 'react';
+import { Barcode, Filter, Plus, Search, X } from 'lucide-react';
+import { type KeyboardEvent, type RefObject, useCallback, useDeferredValue, useEffect, useRef, useState } from 'react';
+import { Alert } from '../../../components/ui/alert';
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
@@ -25,12 +26,14 @@ type ServiceSearchProps = {
   scanCode: string;
   onScanCodeChange: (value: string) => void;
   onAddService: (service: Service) => void;
-  onAddByScanCode: () => void;
+  onAddByScanCode: () => void | Promise<void>;
   searchInputRef?: RefObject<HTMLInputElement | null>;
   scannerInputRef?: RefObject<HTMLInputElement | null>;
   loading?: boolean;
   scanningCode?: boolean;
   scannerEnabled?: boolean;
+  error?: string;
+  onRetry?: () => void;
 };
 
 export function ServiceSearch({
@@ -52,9 +55,18 @@ export function ServiceSearch({
   loading,
   scanningCode = false,
   scannerEnabled = false,
+  error,
+  onRetry,
 }: ServiceSearchProps) {
   const [addFirstWhenReady, setAddFirstWhenReady] = useState(false);
-  const filteredServices = services.filter((service) => {
+  const addLockRef = useRef<number | null>(null);
+  const addLockTimeoutRef = useRef<number | null>(null);
+  const scanLockRef = useRef(false);
+  const scanLockTimeoutRef = useRef<number | null>(null);
+  const deferredSearch = useDeferredValue(search);
+  const deferredServices = useDeferredValue(services);
+  const normalizedSearch = deferredSearch.trim().toLocaleLowerCase('es');
+  const filteredServices = deferredServices.filter((service) => {
     const matchesArea =
       selectedAreaId === undefined ||
       selectedAreaId === 'all' ||
@@ -63,8 +75,13 @@ export function ServiceSearch({
       selectedCategoryId === undefined ||
       selectedCategoryId === 'all' ||
       service.category_id === selectedCategoryId;
+    const searchableText = [service.name, service.aliases, service.category?.name, service.area?.name]
+      .filter(Boolean)
+      .join(' ')
+      .toLocaleLowerCase('es');
+    const matchesSearch = normalizedSearch === '' || searchableText.includes(normalizedSearch);
 
-    return matchesArea && matchesCategory;
+    return matchesArea && matchesCategory && matchesSearch;
   });
   const hasIntent = Boolean(search.trim()) || selectedAreaId !== undefined || selectedCategoryId !== undefined;
   const visibleServices = hasIntent ? filteredServices.slice(0, SERVICE_RESULT_LIMIT) : [];
@@ -77,10 +94,55 @@ export function ServiceSearch({
   }).length;
 
   const handleAddService = useCallback((service: Service) => {
+    if (addLockRef.current === service.id) return;
+
+    addLockRef.current = service.id;
     setAddFirstWhenReady(false);
     onAddService(service);
     window.setTimeout(() => searchInputRef?.current?.focus(), 0);
+    if (addLockTimeoutRef.current !== null) {
+      window.clearTimeout(addLockTimeoutRef.current);
+    }
+    addLockTimeoutRef.current = window.setTimeout(() => {
+      addLockRef.current = null;
+      addLockTimeoutRef.current = null;
+    }, 250);
   }, [onAddService, searchInputRef]);
+
+  useEffect(() => () => {
+    if (addLockTimeoutRef.current !== null) {
+      window.clearTimeout(addLockTimeoutRef.current);
+    }
+    if (scanLockTimeoutRef.current !== null) {
+      window.clearTimeout(scanLockTimeoutRef.current);
+    }
+  }, []);
+
+  const handleAddByScanCode = useCallback(() => {
+    if (scanningCode || scanLockRef.current) return;
+
+    scanLockRef.current = true;
+    const scheduleUnlock = () => {
+      if (scanLockTimeoutRef.current !== null) {
+        window.clearTimeout(scanLockTimeoutRef.current);
+      }
+      scanLockTimeoutRef.current = window.setTimeout(() => {
+        scanLockRef.current = false;
+        scanLockTimeoutRef.current = null;
+      }, 250);
+    };
+
+    try {
+      const result = onAddByScanCode();
+      if (result instanceof Promise) {
+        void result.then(scheduleUnlock, scheduleUnlock);
+      } else {
+        scheduleUnlock();
+      }
+    } catch {
+      scheduleUnlock();
+    }
+  }, [onAddByScanCode, scanningCode]);
 
   const handleRadioGroupKeyDown = useCallback((
     event: KeyboardEvent<HTMLDivElement>,
@@ -198,15 +260,15 @@ export function ServiceSearch({
                       if (e.key === 'Enter') {
                         if (e.ctrlKey || e.metaKey || e.altKey) return;
                         e.preventDefault();
-                        if (!scanningCode) onAddByScanCode();
+                        handleAddByScanCode();
                       }
                     }}
                     autoComplete="off"
                     disabled={scanningCode}
-                    className="min-h-10 pl-9"
+                    className="min-h-11 pl-9"
                   />
                 </div>
-                <Button type="button" variant="secondary" size="sm" className="min-h-10 shrink-0" disabled={scanningCode} onClick={() => onAddByScanCode()}>
+                <Button type="button" variant="secondary" className="min-h-11 shrink-0" disabled={scanningCode} onClick={handleAddByScanCode}>
                   {scanningCode ? 'Buscando...' : 'Escanear'}
                 </Button>
               </div>
@@ -280,8 +342,7 @@ export function ServiceSearch({
           <Button
             type="button"
             variant="ghost"
-            size="sm"
-            className="w-fit"
+            className="min-h-11 w-fit"
             onClick={() => {
               onSearchChange('');
               onAreaChange(undefined);
@@ -293,7 +354,18 @@ export function ServiceSearch({
           </Button>
         </div>
 
-        {loading ? (
+        {error ? (
+          <Alert variant="destructive" title="No se pudieron cargar los servicios">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <span className="min-w-0 flex-1">{error}</span>
+              {onRetry ? (
+                <Button type="button" variant="secondary" size="sm" onClick={onRetry}>
+                  Reintentar
+                </Button>
+              ) : null}
+            </div>
+          </Alert>
+        ) : loading ? (
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2" role="status" aria-busy="true" aria-label="Cargando servicios">
             {Array.from({ length: 6 }).map((_, index) => (
               <Skeleton key={index} className="h-24 rounded-lg" />
@@ -315,47 +387,46 @@ export function ServiceSearch({
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 gap-2 md:grid-cols-2 2xl:grid-cols-3" role="list" aria-label="Servicios facturables disponibles">
+            <div className="divide-y divide-operational-border border-y border-operational-border" role="list" aria-label="Servicios facturables disponibles">
               {visibleServices.map((service) => {
                 const isErythropoietin = service.special_rule_code === ERYTHROPOIETIN_RULE;
 
                 return (
-                  <div key={service.id} role="listitem">
+                  <div key={service.id} role="listitem" className="grid min-w-0 gap-3 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+                    <div className="min-w-0">
+                      <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+                        <p className="min-w-0 break-words text-sm font-semibold leading-tight text-foreground">{service.name}</p>
+                        <span className="shrink-0 font-mono text-sm font-semibold tabular-nums text-secondary">
+                          {moneyLabel(service.price)}
+                        </span>
+                      </div>
+                      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                        <Badge variant="info" className="rounded-sm px-1.5 py-0.5 text-[10px]">
+                          {service.category?.name ?? 'Sin categoría'}
+                        </Badge>
+                        {service.area?.name ? (
+                          <Badge variant="outline" className="rounded-sm px-1.5 py-0.5 text-[10px]">
+                            {service.area.name}
+                          </Badge>
+                        ) : null}
+                        {scannerEnabled && (service.scan_code || service.barcode || service.qr_code) ? (
+                          <span className="text-[10px] text-muted-foreground">Disponible para lector</span>
+                        ) : null}
+                      </div>
+                      {isErythropoietin ? (
+                        <p className="mt-2 text-xs font-medium text-warning-foreground">
+                          Precio L 25.00; gratis solo con receta de diálisis autorizada.
+                        </p>
+                      ) : null}
+                    </div>
                     <Button
                       type="button"
-                      variant="outline"
-                      aria-label={`Agregar ${service.name} por ${moneyLabel(service.price)}`}
-                      className="group h-full min-h-24 w-full items-stretch justify-start gap-3 border-operational-border bg-card p-3 text-left font-normal transition-[background-color,border-color,box-shadow,transform] duration-150 hover:border-secondary/45 hover:bg-accent/50 active:translate-y-px active:scale-[0.99]"
+                      aria-label={`Agregar ${service.name}`}
+                      className="min-h-11 w-full shrink-0 sm:w-auto"
                       onClick={() => handleAddService(service)}
                     >
-                      <div className="flex min-w-0 flex-1 flex-col gap-2">
-                        <div className="flex min-w-0 items-start justify-between gap-3">
-                          <p className="min-w-0 break-words text-sm font-semibold leading-tight text-foreground">{service.name}</p>
-                          <span className="shrink-0 rounded-sm bg-secondary/12 px-2 py-1 font-mono text-sm font-semibold tabular-nums text-secondary">
-                            {moneyLabel(service.price)}
-                          </span>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <Badge variant="info" className="rounded-sm px-1.5 py-0.5 text-[10px]">
-                            {service.category?.name ?? 'Sin categoría'}
-                          </Badge>
-                          {service.area?.name ? (
-                            <Badge variant="outline" className="rounded-sm px-1.5 py-0.5 text-[10px]">
-                              {service.area.name}
-                            </Badge>
-                          ) : null}
-                          {scannerEnabled && (service.scan_code || service.barcode || service.qr_code) && (
-                            <span className="text-[10px] text-muted-foreground">
-                              Disponible para lector
-                            </span>
-                          )}
-                        </div>
-                        {isErythropoietin && (
-                          <p className="rounded-sm bg-warning/10 px-1.5 py-1 text-[10px] font-medium text-warning-foreground">
-                            Con receta diálisis = gratis
-                          </p>
-                        )}
-                      </div>
+                      <Plus className="size-4" aria-hidden="true" />
+                      Agregar
                     </Button>
                   </div>
                 );
@@ -390,7 +461,7 @@ function CategoryButton({
     <button
       aria-checked={active}
       className={cn(
-        'min-h-10 rounded-md border px-3 py-2 text-left text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        'min-h-11 rounded-md border px-3 py-2 text-left text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         active
           ? 'border-secondary bg-accent text-foreground shadow-sm'
           : 'border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground',

@@ -1,4 +1,4 @@
-import { Banknote, Minus, Plus, ReceiptText, ShoppingCart, Trash2 } from 'lucide-react';
+import { Banknote, Minus, Plus, ReceiptText, Trash2 } from 'lucide-react';
 import { Alert } from '../../../components/ui/alert';
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
@@ -59,36 +59,34 @@ export function InvoiceCart({
     : disabled || isEmpty
       ? disabledActionLabel
       : actionLabel;
-  const actionAriaLabel = disabled || isEmpty ? `${actionLabel}: ${displayActionLabel}` : undefined;
+  const actionAriaLabel = disabled || isEmpty ? `${actionLabel}: ${displayActionLabel}` : actionLabel;
+  const totalLabel = moneyLabel(preview.total);
+  const enabledActionLabel = actionLabel.includes(totalLabel) ? actionLabel : `${actionLabel} · ${totalLabel}`;
 
   return (
     <section className="flex h-full min-w-0 flex-col" aria-labelledby="invoice-cart-title" aria-busy={submitting ? 'true' : undefined}>
       <div className="mb-4 flex items-start gap-3">
-        <span className="flex size-11 shrink-0 items-center justify-center rounded-md border border-secondary/25 bg-secondary/10 text-secondary">
-          <ShoppingCart className="size-5" aria-hidden="true" />
-        </span>
         <div className="min-w-0">
-          <Label id="invoice-cart-title" className="text-base font-semibold text-foreground">Factura en curso</Label>
+          <Label id="invoice-cart-title" className="text-base font-semibold text-foreground">Cuenta actual</Label>
           <p className="text-xs leading-relaxed text-muted-foreground">
             Revise servicios, cantidades y total estimado antes de emitir.
           </p>
         </div>
         {items.length > 0 && (
-          <Badge variant="info" className="ml-auto shrink-0 font-mono tabular-nums" aria-label={`${items.length} servicios agregados`}>
-            {items.length}
+          <Badge variant="info" className="ml-auto shrink-0 font-mono tabular-nums" aria-label={`${items.length} ${items.length === 1 ? 'línea' : 'líneas'} en la cuenta`}>
+            {items.length} {items.length === 1 ? 'línea' : 'líneas'}
           </Badge>
         )}
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         {isEmpty ? (
-          <div className="flex flex-col items-center justify-center rounded-md border border-dashed border-operational-border bg-operational-panel px-4 py-12 text-center text-muted-foreground" role="status" aria-live="polite">
-            <ShoppingCart className="mb-3 size-10 opacity-50" aria-hidden="true" />
+          <div className="border-y border-operational-border px-2 py-10 text-center text-muted-foreground" role="status" aria-live="polite">
             <p className="text-sm font-semibold text-foreground">No hay servicios agregados</p>
             <p className="mt-1 max-w-56 text-xs">Busque por nombre, area o categoria para comenzar.</p>
           </div>
         ) : (
-          <div className="flex flex-col gap-2 pr-1" role="list" aria-label="Servicios agregados a la factura">
+          <div className="divide-y divide-operational-border border-y border-operational-border pr-1" role="list" aria-label="Servicios agregados a la factura">
             {items.map((item, index) => {
               const isErythropoietin = item.service.special_rule_code === ERYTHROPOIETIN_RULE;
               const isFree = item.dialysisPrescription && isErythropoietin;
@@ -99,7 +97,7 @@ export function InvoiceCart({
                 <div
                   key={`${item.service.id}-${index}`}
                   role="listitem"
-                  className="flex flex-col gap-3 rounded-md border border-operational-border bg-card/95 p-3 transition-colors hover:border-secondary/35"
+                  className="flex flex-col gap-3 py-4"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
@@ -114,8 +112,9 @@ export function InvoiceCart({
                           </Badge>
                         ) : null}
                       </div>
-                      <p className="mt-1 font-mono text-xs tabular-nums text-muted-foreground">
-                        {moneyLabel(item.service.price)} {isFree && <span className="font-sans font-semibold text-success">(Gratis - receta diálisis)</span>}
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Precio registrado: <span className="font-mono tabular-nums">{moneyLabel(item.service.price)}</span>{' '}
+                        {isFree && <span className="font-semibold text-success">(Gratis - receta diálisis)</span>}
                       </p>
                     </div>
                     <Button
@@ -136,7 +135,7 @@ export function InvoiceCart({
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="size-9 p-0"
+                        className="size-11 p-0"
                         onClick={() => {
                           onUpdateQuantity(index, formatQuantity(Math.max(100, parseQuantityUnits(item.quantity) - 100)));
                         }}
@@ -147,7 +146,7 @@ export function InvoiceCart({
                       <Input
                         value={item.quantity}
                         onChange={(e) => onUpdateQuantity(index, e.target.value)}
-                        className="h-9 w-24 text-center font-mono tabular-nums"
+                        className="h-11 w-24 text-center font-mono tabular-nums"
                         inputMode="decimal"
                         name={`quantity-${item.service.id}`}
                         aria-label={`Cantidad de ${item.service.name}`}
@@ -156,7 +155,7 @@ export function InvoiceCart({
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="size-9 p-0"
+                        className="size-11 p-0"
                         onClick={() => {
                           onUpdateQuantity(index, formatQuantity(parseQuantityUnits(item.quantity) + 100));
                         }}
@@ -173,17 +172,16 @@ export function InvoiceCart({
                     </div>
                   </div>
 
-                  {isErythropoietin && (
-                    <label htmlFor={`dialysis-${index}`} className="flex items-start gap-2 rounded-md border border-secondary/20 bg-secondary/8 px-2 py-2 text-xs">
+                  {isErythropoietin && canMarkDialysisPrescription && (
+                    <label htmlFor={`dialysis-${index}`} className="flex min-h-11 items-start gap-3 border-l-2 border-secondary bg-secondary/8 px-3 py-2 text-xs">
                       <Checkbox
                         id={`dialysis-${index}`}
                         checked={item.dialysisPrescription}
-                        disabled={!canMarkDialysisPrescription}
                         aria-describedby={dialysisHelpId}
                         onCheckedChange={(checked) => onUpdateDialysisPrescription(index, checked === true)}
                       />
-                      <span id={dialysisHelpId} className={`text-muted-foreground ${!canMarkDialysisPrescription ? 'opacity-60' : ''}`}>
-                        {canMarkDialysisPrescription ? 'Receta de diálisis (gratis)' : 'Receta de diálisis (requiere autorización)'}
+                      <span id={dialysisHelpId} className="text-muted-foreground">
+                        Receta de diálisis: eritropoyetina L 25.00 → L 0.00
                       </span>
                     </label>
                   )}
@@ -239,7 +237,7 @@ export function InvoiceCart({
           ) : disabled || isEmpty ? (
             disabledActionLabel
           ) : (
-            <>{actionLabel}</>
+            <>{enabledActionLabel}</>
           )}
         </Button>
         {disabledReasons.length > 0 && (

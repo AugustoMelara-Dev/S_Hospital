@@ -6,7 +6,6 @@ import { Dialog } from '../../../components/ui/dialog';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
 import { MoneyText } from '../../../components/ui/money-text';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { Separator } from '../../../components/ui/separator';
 import type { Payment } from '../../../lib/api';
 import { formatLempirasUIFromCents, parseCents as parseCentsNullable } from '../../../lib/moneyCents';
@@ -37,6 +36,13 @@ const methodHelp: Record<Payment['method'], string> = {
   other: 'Este método queda separado del efectivo esperado de caja.',
 };
 
+const paymentMethods: Array<{ value: Payment['method']; label: string }> = [
+  { value: 'cash', label: 'Efectivo' },
+  { value: 'card', label: 'Tarjeta' },
+  { value: 'transfer', label: 'Transferencia' },
+  { value: 'other', label: 'Otro' },
+];
+
 export function PaymentModal({
   open,
   onOpenChange,
@@ -60,6 +66,7 @@ export function PaymentModal({
   const amountInputRef = useRef<HTMLInputElement | null>(null);
   const referenceInputRef = useRef<HTMLInputElement | null>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
+  const submitLockRef = useRef(false);
 
   const balanceCents = parseMoneyCents(balanceDue);
   const paymentCents = parseMoneyCents(paymentAmount);
@@ -97,6 +104,12 @@ export function PaymentModal({
     }
   }, [open, invoiceNumber]);
 
+  useEffect(() => {
+    if (!submitting) {
+      submitLockRef.current = false;
+    }
+  }, [submitting]);
+
   function handleAmountChange(value: string) {
     setError(null);
     const normalizedValue = value.trim().replace(',', '.');
@@ -126,6 +139,40 @@ export function PaymentModal({
   function handlePaymentMethodChange(method: Payment['method']) {
     setReferenceError(null);
     onPaymentMethodChange(method);
+    if (method === 'cash' || method === 'other') {
+      onPaymentReferenceChange('');
+    }
+  }
+
+  function handlePaymentMethodKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (submitting) return;
+
+    const offsets: Partial<Record<string, number>> = {
+      ArrowRight: 1,
+      ArrowDown: 1,
+      ArrowLeft: -1,
+      ArrowUp: -1,
+    };
+    const radios = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="radio"]'));
+    const targetIndex = radios.indexOf(event.target as HTMLButtonElement);
+    const currentIndex = targetIndex >= 0
+      ? targetIndex
+      : paymentMethods.findIndex((method) => method.value === paymentMethod);
+    let nextIndex: number;
+
+    if (event.key === 'Home') {
+      nextIndex = 0;
+    } else if (event.key === 'End') {
+      nextIndex = paymentMethods.length - 1;
+    } else if (offsets[event.key] !== undefined) {
+      nextIndex = (currentIndex + (offsets[event.key] ?? 0) + paymentMethods.length) % paymentMethods.length;
+    } else {
+      return;
+    }
+
+    event.preventDefault();
+    handlePaymentMethodChange(paymentMethods[nextIndex].value);
+    window.setTimeout(() => radios[nextIndex]?.focus(), 0);
   }
 
   function handleReferenceChange(value: string) {
@@ -135,7 +182,7 @@ export function PaymentModal({
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (submitting) {
+    if (submitting || submitLockRef.current) {
       return;
     }
 
@@ -162,6 +209,7 @@ export function PaymentModal({
     }
     setError(null);
     setReferenceError(null);
+    submitLockRef.current = true;
     onConfirm(formatMoneyCents(appliedAmountCents ?? amountCents));
   }
 
@@ -283,23 +331,36 @@ export function PaymentModal({
         </div>
 
         <section aria-label="Datos del pago" className="grid gap-4 rounded-panel border border-operational-border bg-card p-4">
-          <div className="grid gap-1.5">
-            <Label htmlFor="payment-method">Método de pago</Label>
-            <Select value={paymentMethod} onValueChange={(v) => handlePaymentMethodChange(v as Payment['method'])} disabled={submitting}>
-              <SelectTrigger id="payment-method" aria-describedby="payment-method-help">
-                <SelectValue placeholder="Seleccione método" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="cash">Efectivo</SelectItem>
-                <SelectItem value="card">Tarjeta</SelectItem>
-                <SelectItem value="transfer">Transferencia</SelectItem>
-                <SelectItem value="other">Otro</SelectItem>
-              </SelectContent>
-            </Select>
+          <fieldset className="grid gap-1.5">
+            <legend className="text-sm font-medium">Método de pago</legend>
+            <div
+              role="radiogroup"
+              aria-label="Método de pago"
+              aria-describedby="payment-method-help"
+              className="grid grid-cols-2 gap-2 sm:grid-cols-4"
+              onKeyDown={handlePaymentMethodKeyDown}
+            >
+              {paymentMethods.map((method) => (
+                <Button
+                  key={method.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={paymentMethod === method.value}
+                  aria-label={method.label}
+                  tabIndex={paymentMethod === method.value ? 0 : -1}
+                  variant={paymentMethod === method.value ? 'default' : 'outline'}
+                  className="min-h-11"
+                  disabled={submitting}
+                  onClick={() => handlePaymentMethodChange(method.value)}
+                >
+                  {method.label}
+                </Button>
+              ))}
+            </div>
             <p id="payment-method-help" className="text-xs text-muted-foreground">
               {methodHelp[paymentMethod]}
             </p>
-          </div>
+          </fieldset>
 
           <div className="grid gap-1.5">
             <Label htmlFor="payment-amount">Monto recibido (L.)</Label>
@@ -335,7 +396,7 @@ export function PaymentModal({
             ) : null}
           </div>
 
-          {paymentMethod !== 'cash' ? (
+          {requiresReference ? (
             <div className="grid gap-1.5">
               <Label htmlFor="payment-reference">Referencia de pago</Label>
               <Input
@@ -371,14 +432,14 @@ export function PaymentModal({
           </Button>
           <Button
             type="submit"
-            className="sm:min-w-56"
+            className="min-h-11 sm:min-w-56"
             disabled={submitting || exceedsPending || needsAmount}
-            aria-label="Confirmar cobro e imprimir"
+            aria-label={`Confirmar cobro de ${moneyLabel(balanceDue)} e imprimir`}
           >
             {submitting ? 'Cobrando...' : (
               <span className="inline-flex items-center gap-2">
                 <Printer className="size-4" aria-hidden="true" />
-                Registrar cobro e imprimir
+                Cobrar {moneyLabel(balanceDue)} e imprimir
               </span>
             )}
           </Button>

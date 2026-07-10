@@ -15,7 +15,7 @@ describe('ServiceSearch', () => {
     expect(input).toHaveValue('glu');
     expect(input).toHaveAttribute('id', 'service-search');
     expect(input).toHaveAttribute('name', 'service_search');
-    expect(screen.getByRole('button', { name: /agregar glucosa por l 0\.00/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /agregar glucosa/i })).toBeInTheDocument();
     expect(document.body.textContent).toContain('L 0.00');
     expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|undefined/);
   });
@@ -89,27 +89,81 @@ describe('ServiceSearch', () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
-  it('keeps scanner value, callback and Enter behavior when scanner is enabled', () => {
-    const onScanCodeChange = vi.fn();
-    const onAddByScanCode = vi.fn();
-    const scannerInputRef = createRef<HTMLInputElement>();
+  it('ignores a duplicated Enter while the local add is still settling', () => {
+    vi.useFakeTimers();
+    const onAddService = vi.fn();
+    renderSearch({ services: [serviceFixture()], search: 'glu', onAddService });
+
+    const searchbox = screen.getByRole('textbox', { name: /buscar por nombre/i });
+    fireEvent.keyDown(searchbox, { key: 'Enter', code: 'Enter' });
+    fireEvent.keyDown(searchbox, { key: 'Enter', code: 'Enter' });
+
+    expect(onAddService).toHaveBeenCalledTimes(1);
+
+    vi.advanceTimersByTime(251);
+    fireEvent.keyDown(searchbox, { key: 'Enter', code: 'Enter' });
+    expect(onAddService).toHaveBeenCalledTimes(2);
+    vi.runOnlyPendingTimers();
+    vi.useRealTimers();
+  });
+
+  it('renders operational rows with an explicit 44px add target and the EPO rule', () => {
     renderSearch({
-      scannerEnabled: true,
-      scanCode: 'LAB-001',
-      onScanCodeChange,
-      onAddByScanCode,
-      scannerInputRef,
+      services: [serviceFixture({
+        name: 'Eritropoyetina',
+        price: '25.00',
+        special_rule_code: 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION',
+      })],
+      search: 'eritro',
     });
 
-    const scanner = screen.getByLabelText(/lector usb o entrada manual/i);
-    expect(scanner).toHaveValue('LAB-001');
+    const addButton = screen.getByRole('button', { name: 'Agregar Eritropoyetina' });
+    expect(addButton).toHaveClass('min-h-11');
+    expect(screen.getByText('L 25.00')).toBeInTheDocument();
+    expect(screen.getByText(/gratis solo con receta de diálisis/i)).toBeInTheDocument();
+  });
 
-    fireEvent.change(scanner, { target: { value: 'LAB-002' } });
-    fireEvent.keyDown(scanner, { key: 'Enter', code: 'Enter' });
-    fireEvent.click(screen.getByRole('button', { name: /escanear/i }));
+  it('distinguishes service loading errors from an empty result', () => {
+    const { rerender } = renderSearch({ services: [], search: 'glu', error: 'No se pudo consultar el catálogo.' });
 
-    expect(onScanCodeChange).toHaveBeenCalledWith('LAB-002');
-    expect(onAddByScanCode).toHaveBeenCalledTimes(2);
+    expect(screen.getByRole('alert')).toHaveTextContent(/no se pudo consultar el catálogo/i);
+    expect(screen.queryByText(/sin servicios encontrados/i)).not.toBeInTheDocument();
+
+    rerender(defaultRender({ services: [], search: 'glu', error: undefined }));
+    expect(screen.getByRole('status')).toHaveTextContent(/sin servicios encontrados/i);
+  });
+
+  it('keeps scanner value, callback and Enter behavior when scanner is enabled', () => {
+    vi.useFakeTimers();
+    try {
+      const onScanCodeChange = vi.fn();
+      const onAddByScanCode = vi.fn();
+      const scannerInputRef = createRef<HTMLInputElement>();
+      renderSearch({
+        scannerEnabled: true,
+        scanCode: 'LAB-001',
+        onScanCodeChange,
+        onAddByScanCode,
+        scannerInputRef,
+      });
+
+      const scanner = screen.getByLabelText(/lector usb o entrada manual/i);
+      expect(scanner).toHaveValue('LAB-001');
+
+      fireEvent.change(scanner, { target: { value: 'LAB-002' } });
+      fireEvent.keyDown(scanner, { key: 'Enter', code: 'Enter' });
+      fireEvent.click(screen.getByRole('button', { name: /escanear/i }));
+
+      expect(onScanCodeChange).toHaveBeenCalledWith('LAB-002');
+      expect(onAddByScanCode).toHaveBeenCalledTimes(1);
+
+      vi.advanceTimersByTime(251);
+      fireEvent.click(screen.getByRole('button', { name: /escanear/i }));
+      expect(onAddByScanCode).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.runOnlyPendingTimers();
+      vi.useRealTimers();
+    }
   });
 
   it('keeps scanner controls disabled while a lookup is pending', () => {
@@ -121,6 +175,21 @@ describe('ServiceSearch', () => {
 
     expect(screen.getByLabelText(/lector usb o entrada manual/i)).toBeDisabled();
     expect(screen.getByRole('button', { name: /buscando/i })).toBeDisabled();
+  });
+
+  it('keeps scanner and filter controls at least 44px at every breakpoint', () => {
+    renderSearch({
+      scannerEnabled: true,
+      serviceAreas: [{ id: 3, name: 'Laboratorio', slug: 'laboratorio', active: true }],
+      categories: [{ id: 2, name: 'Imágenes', slug: 'imagenes', active: true, sort_order: 2 }],
+    });
+
+    expect(screen.getByLabelText(/lector usb o entrada manual/i)).toHaveClass('min-h-11');
+    expect(screen.getByRole('button', { name: /escanear/i })).toHaveClass('min-h-11');
+    expect(screen.getByRole('button', { name: /escanear/i })).not.toHaveClass('sm:min-h-9');
+    screen.getAllByRole('radio').forEach((filter) => expect(filter).toHaveClass('min-h-11'));
+    expect(screen.getByRole('button', { name: 'Limpiar' })).toHaveClass('min-h-11');
+    expect(screen.getByRole('button', { name: 'Limpiar' })).not.toHaveClass('sm:min-h-9');
   });
 
   it('supports keyboard navigation in category radio groups', async () => {

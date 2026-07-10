@@ -1,9 +1,23 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { PATIENT_NAME_MAX_LENGTH } from '../../../schemas/invoice.schema';
 import { PatientStep } from './PatientStep';
 
 describe('PatientStep', () => {
+  it('keeps the patient field and character count in a vertical stack at every viewport', () => {
+    const { container } = render(
+      <PatientStep
+        patientName="Maria Lopez"
+        onPatientNameChange={vi.fn()}
+      />,
+    );
+
+    expect(container.querySelector('[class*="md:grid-cols"]')).not.toBeInTheDocument();
+    expect(screen.getByText('Dato requerido').parentElement).toHaveClass('w-full');
+    expect(screen.getByLabelText(/nombre del paciente/i)).toHaveAttribute('placeholder', 'Ej. Maria Lopez…');
+    expect(screen.getByText('La factura no necesita expediente clínico, identidad ni otros datos del paciente. El nombre es suficiente.')).toBeInTheDocument();
+  });
+
   it('renders an accessible patient label, controlled value and backend-aligned character limit', () => {
     render(
       <PatientStep
@@ -69,5 +83,38 @@ describe('PatientStep', () => {
 
     expect(screen.getAllByRole('textbox')).toHaveLength(1);
     expect(screen.queryByLabelText(/expediente|identidad|documento|medico|seguro|habitacion/i)).not.toBeInTheDocument();
+  });
+
+  it('offers an accessible optional-data disclosure without requiring extra patient fields', () => {
+    render(
+      <PatientStep
+        patientName="Maria Lopez"
+        onPatientNameChange={vi.fn()}
+      />,
+    );
+
+    const disclosure = screen.getByText('Datos opcionales');
+    expect(disclosure.closest('details')).not.toHaveAttribute('open');
+    expect(screen.getByText(/no necesita expediente clínico/i)).toBeInTheDocument();
+  });
+
+  it('focuses the validation summary when continuing reveals an error', async () => {
+    const { rerender } = render(
+      <PatientStep
+        patientName=""
+        onPatientNameChange={vi.fn()}
+      />,
+    );
+
+    rerender(
+      <PatientStep
+        patientName=""
+        onPatientNameChange={vi.fn()}
+        error="Ingrese el nombre del paciente"
+      />,
+    );
+
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveFocus());
+    expect(screen.getByRole('alert')).toHaveAttribute('tabindex', '-1');
   });
 });

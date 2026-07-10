@@ -119,7 +119,7 @@ export function InvoiceConfirmation({
 
         <p className="flex gap-2 rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning-foreground">
           <AlertTriangle className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-          <span>Los precios finales seran calculados por el backend al emitir la factura.</span>
+          <span>El total definitivo quedará confirmado al emitir la factura.</span>
         </p>
 
         <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:gap-3">

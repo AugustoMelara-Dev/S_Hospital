@@ -57,6 +57,58 @@ function renderLayout(overrides: Partial<React.ComponentProps<typeof NewInvoiceV
 }
 
 describe('NewInvoiceViewLayout', () => {
+  it('expone paciente, servicios y cuenta como estación de trabajo', () => {
+    renderLayout();
+
+    expect(screen.getByRole('region', { name: 'Paciente' })).toHaveAttribute('data-billing-region', 'patient');
+    expect(screen.getByRole('region', { name: 'Servicios' })).toHaveAttribute('data-billing-region', 'services');
+    expect(screen.getByRole('complementary', { name: 'Cuenta actual' })).toHaveAttribute('data-billing-region', 'ticket');
+    for (const region of [
+      screen.getByRole('region', { name: 'Paciente' }),
+      screen.getByRole('region', { name: 'Servicios' }),
+      screen.getByRole('complementary', { name: 'Cuenta actual' }),
+    ]) {
+      expect(region).toHaveClass('focus-visible:ring-2', 'focus-visible:ring-ring');
+    }
+  });
+
+  it('usa grid de tres zonas en escritorio y secuencia móvil sin perder contenido', () => {
+    const { container } = renderLayout();
+
+    expect(container.querySelector('[data-billing-workspace]')).toHaveClass(
+      'xl:grid-cols-[minmax(15rem,0.72fr)_minmax(24rem,1.45fr)_minmax(19rem,0.83fr)]',
+    );
+    expect(screen.getByText('Paso 1 de 3')).toBeInTheDocument();
+  });
+
+  it('bloquea el avance móvil sin paciente y conserva las tres regiones montadas', () => {
+    const onPatientSubmit = vi.fn();
+    const { container } = renderLayout({ onPatientSubmit });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Continuar a servicios' }));
+
+    expect(onPatientSubmit).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('Paso 1 de 3')).toBeInTheDocument();
+    expect(container.querySelectorAll('[data-billing-region]')).toHaveLength(3);
+  });
+
+  it('avanza y retrocede entre pasos móviles sin desmontar el borrador', () => {
+    const { container } = renderLayout({
+      state: {
+        ...getInitialNewInvoiceState(null),
+        loadingServices: false,
+        patientName: 'Maria Lopez',
+      },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Continuar a servicios' }));
+    expect(screen.getByText('Paso 2 de 3')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Atrás' }));
+
+    expect(screen.getByText('Paso 1 de 3')).toBeInTheDocument();
+    expect(container.querySelectorAll('[data-billing-region]')).toHaveLength(3);
+  });
+
   it('does not offer opening cash when the user lacks cash open permission', () => {
     renderLayout({ canOpenCash: false, onOpenCash: vi.fn() });
 
@@ -65,7 +117,7 @@ describe('NewInvoiceViewLayout', () => {
     expect(screen.getByText(/solicite apertura a un usuario autorizado/i)).toBeInTheDocument();
   });
 
-  it('shows a mobile total summary when the cart has services and reuses confirm action', () => {
+  it('shows the current total in the billing ticket and reuses confirm action', () => {
     const onConfirm = vi.fn();
     renderLayout({
       state: {
@@ -84,9 +136,10 @@ describe('NewInvoiceViewLayout', () => {
 
     const buttons = screen.getAllByRole('button', { name: /emitir y cobrar/i });
     expect(buttons.length).toBeGreaterThan(0);
-    const mobileAction = buttons[0];
-    expect(mobileAction).toBeEnabled();
-    fireEvent.click(mobileAction);
+    const billingAction = buttons[0];
+    expect(billingAction).toBeEnabled();
+    expect(billingAction).toHaveTextContent('L 138.00');
+    fireEvent.click(billingAction);
     expect(onConfirm).toHaveBeenCalledTimes(1);
   });
 

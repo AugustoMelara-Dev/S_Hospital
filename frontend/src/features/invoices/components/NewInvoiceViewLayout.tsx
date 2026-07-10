@@ -1,13 +1,11 @@
 import { Link } from 'react-router-dom';
-import type { RefObject } from 'react';
-import { Banknote, ClipboardList } from 'lucide-react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
+import { ChevronLeft, ChevronRight, Eraser, History } from 'lucide-react';
 import { Alert } from '../../../components/ui/alert';
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
-import { Card, CardContent } from '../../../components/ui/card';
 import { Dialog } from '../../../components/ui/dialog';
 import { ConfirmDialog } from '../../../components/ui/confirm-dialog';
-import { CashStatusCard, OperationalBanner } from '../../../components/shared/design-system';
 import { ReceiptPreview } from '../../receipts/ReceiptPreview';
 import { PatientStep } from './PatientStep';
 import { ServiceSearch } from './ServiceSearch';
@@ -17,10 +15,10 @@ import { PaymentModal } from './PaymentModal';
 import { InvoiceSuccess } from './InvoiceSuccess';
 import type { Payment, Service } from '../../../lib/api';
 import type { NewInvoiceState } from '../state/types';
-import { formatLempirasUIFromCents, parseCents } from '../../../lib/moneyCents';
 
 export type NewInvoiceLayoutProps = {
   state: NewInvoiceState;
+  paymentResult?: Pick<Payment, 'method' | 'paid_at'> | null;
   preview: { subtotal: string; tax: string; total: string };
   emitBlockReasons: string[];
   canEmit: boolean;
@@ -51,6 +49,7 @@ export type NewInvoiceLayoutProps = {
   onPaymentOpenChange: (val: boolean) => void;
   onSubmitPayment: (appliedAmount: string) => void;
   onPrintIssuedReceipt: () => void;
+  onSaveIssuedReceiptPdf?: () => void;
   onNuevaFactura: () => void;
   onSuccessDialogChange: (val: boolean) => void;
   onReceiptOpenChange: (val: boolean) => void;
@@ -64,6 +63,7 @@ export type NewInvoiceLayoutProps = {
 export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
   const {
     state,
+    paymentResult,
     preview,
     emitBlockReasons,
     canEmit,
@@ -93,6 +93,7 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
     onPaymentOpenChange,
     onSubmitPayment,
     onPrintIssuedReceipt,
+    onSaveIssuedReceiptPdf,
     onNuevaFactura,
     onSuccessDialogChange,
     onReceiptOpenChange,
@@ -104,46 +105,67 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
   } = props;
   const cashIsOpen = Boolean(state.loadedCashSession);
   const cashSessionLabel = state.loadedCashSession ? `Caja #${state.loadedCashSession.id}` : 'Caja cerrada';
+  const postedPayments = state.issuedInvoice?.payments?.filter((payment) => payment.status === 'posted') ?? [];
+  const latestPayment = paymentResult ?? postedPayments[postedPayments.length - 1];
+  const [mobileStep, setMobileStep] = useState<0 | 1 | 2>(0);
+  const patientRegionRef = useRef<HTMLElement | null>(null);
+  const servicesRegionRef = useRef<HTMLElement | null>(null);
+  const ticketRegionRef = useRef<HTMLElement | null>(null);
+  const hasChangedStepRef = useRef(false);
+  const stepLabels = ['Paciente', 'Servicios', 'Cuenta'] as const;
+
+  useEffect(() => {
+    if (!hasChangedStepRef.current) return;
+
+    const stepRegion = [patientRegionRef, servicesRegionRef, ticketRegionRef][mobileStep];
+    window.setTimeout(() => stepRegion.current?.focus(), 0);
+  }, [mobileStep]);
+
+  function goToStep(nextStep: 0 | 1 | 2) {
+    hasChangedStepRef.current = true;
+    setMobileStep(nextStep);
+  }
+
+  function continueMobileFlow() {
+    if (mobileStep === 0) {
+      onPatientSubmit();
+      if (state.patientName.trim() === '') return;
+      goToStep(1);
+      return;
+    }
+
+    if (mobileStep === 1) {
+      goToStep(2);
+    }
+  }
 
   return (
-    <section id="nueva-factura" className="flex h-full flex-col gap-4 pb-28 lg:pb-0">
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
-        <OperationalBanner
-          className="border-hospital-primary/25 bg-[linear-gradient(135deg,var(--color-operational-surface),var(--color-accent))]"
-          meta="Punto de venta hospitalario"
-          title="Nueva factura"
-          description="Registre paciente, agregue servicios facturables y continue al cobro institucional sin salir del flujo de caja."
-          status={
-            <Badge variant={cashIsOpen ? 'success' : 'destructive'} className="font-mono text-sm tabular-nums">
-              {cashIsOpen ? `${cashSessionLabel} - Abierta` : cashSessionLabel}
-            </Badge>
-          }
-        />
-        <CashStatusCard
-          status={cashIsOpen ? 'open' : 'attention'}
-          amount={cashSessionLabel}
-          label="Operacion de caja"
-          helper={cashIsOpen ? 'Lista para emitir y cobrar facturas.' : 'Debe abrir caja antes de emitir facturas.'}
-          actions={!cashIsOpen && canOpenCash && onOpenCash ? (
-              <Button type="button" variant="secondary" size="sm" onClick={onOpenCash}>
-                Abrir Caja
-              </Button>
+    <section id="nueva-factura" className="flex h-full min-w-0 flex-col gap-4 pb-36 md:pb-8">
+      <header className="flex flex-col gap-3 border-b border-operational-border pb-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Facturación</p>
+          <h1 className="text-2xl font-semibold leading-tight text-foreground sm:text-3xl">Nueva factura</h1>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant={cashIsOpen ? 'success' : 'destructive'} className="min-h-11 px-3 font-mono text-sm tabular-nums sm:min-h-9">
+            {cashIsOpen ? `${cashSessionLabel} · Abierta` : cashSessionLabel}
+          </Badge>
+          <Button asChild type="button" variant="secondary" size="sm">
+            <Link to="/invoices">
+              <History className="size-4" aria-hidden="true" />
+              Historial
+            </Link>
+          </Button>
+          {(state.patientName || state.cartItems.length > 0) ? (
+            <Button type="button" variant="ghost" size="sm" onClick={() => onClearConfirmChange(true)}>
+              <Eraser className="size-4" aria-hidden="true" />
+              Limpiar borrador
+            </Button>
           ) : null}
-        />
-      </div>
+        </div>
+      </header>
 
       <div role="status" aria-live="polite" aria-atomic="false" className="flex flex-col gap-3">
-        {state.pointOfSaleLoadError && (
-          <Alert variant="destructive" title="No se pudo cargar el punto de venta">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <span className="flex-1">{state.pointOfSaleLoadError}</span>
-              <Button type="button" variant="secondary" size="sm" onClick={onRetryLoad} disabled={state.loadingServices}>
-                {state.loadingServices ? 'Reintentando...' : 'Reintentar'}
-              </Button>
-            </div>
-          </Alert>
-        )}
-
         {!state.loadedCashSession && !state.pointOfSaleLoadError && (
           <Alert variant="warning" title="Caja no abierta">
             <div className="flex flex-col sm:flex-row sm:items-center gap-3">
@@ -185,81 +207,112 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
         )}
       </div>
 
-      <div className="grid flex-1 gap-4 lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_400px] xl:grid-cols-[minmax(0,1fr)_430px]">
-        <div className="flex flex-col gap-4 lg:min-h-0 lg:overflow-hidden">
-          <Card className="border-secondary/25 bg-operational-surface shadow-operational lg:shrink-0">
-            <CardContent className="pt-5">
-              <PatientStep
-                ref={patientInputRef}
-                patientName={state.patientName}
-                onPatientNameChange={onPatientNameChange}
-                onPatientSubmit={onPatientSubmit}
-                error={state.patientError}
-              />
-            </CardContent>
-          </Card>
-
-          <Card className="border-operational-border bg-operational-surface shadow-operational lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
-            <CardContent className="lg:min-h-0 lg:flex-1 lg:overflow-hidden">
-              <ServiceSearch
-                categories={state.categories}
-                serviceAreas={state.serviceAreas}
-                services={state.services}
-                selectedAreaId={state.selectedAreaId}
-                selectedCategoryId={state.selectedCategoryId}
-                onAreaChange={onAreaChange}
-                onCategoryChange={onCategoryChange}
-                search={state.search}
-                onSearchChange={onSearchChange}
-                scanCode={state.scanCode}
-                onScanCodeChange={onScanCodeChange}
-                onAddService={onAddService}
-                onAddByScanCode={onAddByScanCode}
-                searchInputRef={searchInputRef}
-                scannerInputRef={scannerInputRef}
-                loading={state.loadingServices}
-                scanningCode={state.scanningCode}
-                scannerEnabled={state.scannerEnabled}
-              />
-            </CardContent>
-          </Card>
+      <div className="md:hidden" aria-live="polite">
+        <div className="flex items-center justify-between gap-3 border-y border-operational-border py-3">
+          <p className="text-sm font-semibold">Paso {mobileStep + 1} de 3</p>
+          <p className="text-sm text-muted-foreground">{stepLabels[mobileStep]}</p>
         </div>
-
-        <Card className="border-operational-border bg-operational-surface shadow-operational lg:sticky lg:top-20 lg:h-fit lg:shrink-0">
-          <CardContent className="pt-5">
-            <div className="mb-4 grid grid-cols-2 gap-2">
-              <div className="rounded-md border border-operational-border bg-operational-panel px-3 py-2">
-                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                  <ClipboardList className="size-3.5" aria-hidden="true" />
-                  Items
-                </div>
-                <p className="mt-1 font-mono text-lg font-semibold tabular-nums">{state.cartItems.length}</p>
-              </div>
-              <div className="rounded-md border border-secondary/25 bg-secondary/10 px-3 py-2">
-                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                  <Banknote className="size-3.5" aria-hidden="true" />
-                  Total
-                </div>
-                <p className="mt-1 font-mono text-lg font-semibold tabular-nums text-foreground">{moneyLabel(preview.total)}</p>
-              </div>
-            </div>
-            <InvoiceCart
-              items={state.cartItems}
-              preview={preview}
-              onUpdateQuantity={onUpdateQuantity}
-              onUpdateDialysisPrescription={onUpdateDialysisPrescription}
-              onRemoveItem={onRemoveItem}
-              onConfirm={onConfirm}
-              disabled={state.submitting || !canEmit}
-              disabledReasons={emitBlockReasons}
-              actionLabel={canCreatePayments && canViewReceipts ? 'Emitir y cobrar' : 'Emitir factura'}
-              emptyActionLabel="Agregue servicios"
-              submitting={state.submitting}
-              canMarkDialysisPrescription={props.canMarkDialysisPrescription}
-            />
-          </CardContent>
-        </Card>
       </div>
+
+      <div
+        data-billing-workspace
+        className="grid min-w-0 flex-1 gap-0 md:grid-cols-[minmax(15rem,0.72fr)_minmax(24rem,1.45fr)] xl:grid-cols-[minmax(15rem,0.72fr)_minmax(24rem,1.45fr)_minmax(19rem,0.83fr)]"
+      >
+        <section
+          ref={patientRegionRef}
+          aria-label="Paciente"
+          data-billing-region="patient"
+          data-billing-step="patient"
+          tabIndex={-1}
+          className={`${mobileStep === 0 ? 'block' : 'hidden'} min-w-0 border-operational-border pb-5 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:block md:border-r md:pb-0 md:pr-5`}
+        >
+          <PatientStep
+            ref={patientInputRef}
+            patientName={state.patientName}
+            onPatientNameChange={onPatientNameChange}
+            onPatientSubmit={onPatientSubmit}
+            error={state.patientError}
+          />
+        </section>
+
+        <section
+          ref={servicesRegionRef}
+          aria-label="Servicios"
+          data-billing-region="services"
+          data-billing-step="services"
+          tabIndex={-1}
+          className={`${mobileStep === 1 ? 'block' : 'hidden'} min-w-0 border-operational-border py-5 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:block md:py-0 md:pl-5 xl:border-r xl:pr-5`}
+        >
+          <ServiceSearch
+            categories={state.categories}
+            serviceAreas={state.serviceAreas}
+            services={state.services}
+            selectedAreaId={state.selectedAreaId}
+            selectedCategoryId={state.selectedCategoryId}
+            onAreaChange={onAreaChange}
+            onCategoryChange={onCategoryChange}
+            search={state.search}
+            onSearchChange={onSearchChange}
+            scanCode={state.scanCode}
+            onScanCodeChange={onScanCodeChange}
+            onAddService={onAddService}
+            onAddByScanCode={onAddByScanCode}
+            searchInputRef={searchInputRef}
+            scannerInputRef={scannerInputRef}
+            loading={state.loadingServices}
+            scanningCode={state.scanningCode}
+            scannerEnabled={state.scannerEnabled}
+            error={state.pointOfSaleLoadError ?? undefined}
+            onRetry={onRetryLoad}
+          />
+        </section>
+
+        <aside
+          ref={ticketRegionRef}
+          aria-label="Cuenta actual"
+          data-billing-region="ticket"
+          data-billing-step="review"
+          tabIndex={-1}
+          className={`${mobileStep === 2 ? 'block' : 'hidden'} min-w-0 border-t border-operational-border pt-5 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:col-span-2 md:block xl:sticky xl:top-20 xl:col-span-1 xl:max-h-[calc(100vh-6rem)] xl:self-start xl:overflow-y-auto xl:border-t-0 xl:pl-5 xl:pt-0`}
+        >
+          <InvoiceCart
+            items={state.cartItems}
+            preview={preview}
+            onUpdateQuantity={onUpdateQuantity}
+            onUpdateDialysisPrescription={onUpdateDialysisPrescription}
+            onRemoveItem={onRemoveItem}
+            onConfirm={onConfirm}
+            disabled={state.submitting || !canEmit}
+            disabledReasons={emitBlockReasons}
+            actionLabel={canCreatePayments && canViewReceipts ? 'Emitir y cobrar' : 'Emitir factura'}
+            emptyActionLabel="Agregue servicios"
+            submitting={state.submitting}
+            canMarkDialysisPrescription={props.canMarkDialysisPrescription}
+          />
+        </aside>
+      </div>
+
+      <nav aria-label="Pasos de facturación" className="fixed inset-x-0 bottom-16 z-30 border-t border-operational-border bg-background/95 p-3 backdrop-blur md:hidden">
+        <div className="mx-auto flex max-w-lg gap-3">
+          {mobileStep > 0 ? (
+            <Button type="button" variant="secondary" className="min-h-11 flex-1" onClick={() => goToStep((mobileStep - 1) as 0 | 1)}>
+              <ChevronLeft className="size-4" aria-hidden="true" />
+              Atrás
+            </Button>
+          ) : null}
+          {mobileStep < 2 ? (
+            <Button
+              type="button"
+              className="min-h-11 flex-1"
+              aria-label={mobileStep === 0 ? 'Continuar a servicios' : 'Continuar a cuenta'}
+              onClick={continueMobileFlow}
+            >
+              Continuar
+              <ChevronRight className="size-4" aria-hidden="true" />
+            </Button>
+          ) : null}
+        </div>
+      </nav>
 
       <InvoiceConfirmation
         open={state.showConfirmation}
@@ -303,9 +356,13 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
           status={state.issuedInvoice.status}
           canCollectPayment={canCreatePayments && canViewReceipts}
           canPrintReceipt={canViewReceipts && Boolean(state.institutionalReceipt || state.receipt)}
+          canSavePdf={canViewReceipts && Boolean(state.institutionalReceipt) && Boolean(onSaveIssuedReceiptPdf)}
           receiptRecoveryMessage={state.institutionalReceiptRecoveryMessage ?? undefined}
+          paymentMethod={latestPayment?.method ?? (state.issuedInvoice.status === 'paid' ? state.paymentMethod : undefined)}
+          paymentDate={latestPayment?.paid_at}
           onCobrar={onCobrar}
           onImprimir={onPrintIssuedReceipt}
+          onGuardarPdf={onSaveIssuedReceiptPdf}
           onNuevaFactura={onNuevaFactura}
         />
       )}
@@ -340,8 +397,4 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
       </ConfirmDialog>
     </section>
   );
-}
-
-function moneyLabel(value: string | number | null | undefined): string {
-  return formatLempirasUIFromCents(parseCents(value));
 }
