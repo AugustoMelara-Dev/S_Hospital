@@ -11,6 +11,7 @@ const migratedFiles = new Set([
   'src/design-system/tokens/institutional-tokens.css',
   'src/design-system/index.ts',
   'src/App.tsx',
+  'src/components/shared/design-system.stories.tsx',
 ]);
 
 const legacyImports = [
