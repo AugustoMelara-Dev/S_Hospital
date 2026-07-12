@@ -6,8 +6,7 @@ import {
   apiClient,
   userSafeErrorMessage,
 } from '@/lib/api';
-import { Button } from '@/components/ui/button';
-import { ErrorState, LoadingState } from '@/components/ui/states';
+import { Button, ErrorState, LoadingState } from './components/adminAntCompat';
 import { UserFormDialog, type UserFormData } from './components/UserFormDialog';
 import { UserManagementOverview } from './components/UserManagementOverview';
 import { RoleFormDialog } from './components/RoleFormDialog';

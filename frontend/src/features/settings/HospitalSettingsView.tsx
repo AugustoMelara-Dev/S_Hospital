@@ -2,15 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Save } from 'lucide-react';
-import { Alert } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { FormField } from '@/components/ui/form-field';
-import { FormSection } from '@/components/ui/form-section';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { SaveOutlined as Save } from '@ant-design/icons';
+import { Alert, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, ConfirmDialog, FormField, FormSection, Input, Textarea } from './settingsAntd';
 import { type FiscalSettings, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { safeClientMessage } from '@/lib/support/clientIssueLog';
 
@@ -339,7 +332,7 @@ export function HospitalSettingsView({ canEdit, onStatus }: HospitalSettingsView
           <div className="space-y-3">
             {error ? <Alert variant="destructive" title="No se pudo guardar">{error}</Alert> : null}
             <p>El RTN se usará en recibos y documentos institucionales emitidos después del cambio.</p>
-            <dl className="grid gap-2 rounded-md border border-operational-border bg-operational-panel p-3 sm:grid-cols-2">
+            <dl className="grid gap-3 border border-operational-border bg-muted/40 p-4 sm:grid-cols-2">
               <div>
                 <dt className="text-xs font-medium">RTN actual</dt>
                 <dd className="break-all font-mono tabular-nums">{settings?.rtn || 'Sin RTN'}</dd>

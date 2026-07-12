@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { EmptyState } from '@/components/ui/states';
-import { Alert } from '@/components/ui/alert';
-import { OperationalBanner } from '@/components/shared';
+import { Alert, Empty, Typography } from 'antd';
 import { apiClient, type CashSession, userSafeErrorMessage } from '@/lib/api';
 import { downloadBlob, openBlobInNewTab } from '@/lib/download';
 import { CashSessionReportPanel } from './components/CashSessionReportPanel';
@@ -216,34 +214,25 @@ export function ReportsCash({
 
   if (!canViewCash && !canViewManagerial) {
     return (
-      <EmptyState
-        title="Reporte de caja no disponible"
-        description="Este usuario no tiene permiso para consultar cajas."
-      />
+      <Empty description={<><Typography.Title level={3}>Reporte de caja no disponible</Typography.Title><Typography.Text>Este usuario no tiene permiso para consultar cajas.</Typography.Text></>} />
     );
   }
 
   return (
     <section className="flex flex-col gap-5" aria-label="Reporte de caja">
-      <OperationalBanner
-        meta="Reporte de caja"
-        title="Operacion de caja"
-        description="Sesiones, cajeros, metodos de pago y diferencias de caja."
-      />
+      <header className="border-b border-slate-300 pb-4"><Typography.Text>Reporte de caja</Typography.Text><Typography.Title level={1}>Operación de caja</Typography.Title><Typography.Paragraph>Sesiones, cajeros, métodos de pago y diferencias de caja.</Typography.Paragraph></header>
 
       {visibleCashSessionReport ? (
         <ReportScope
           ariaLabel="Alcance del reporte de caja"
           from={dateOnly(visibleCashSessionReport.cash_session.opened_at)}
           to={dateOnly(visibleCashSessionReport.cash_session.closed_at ?? visibleCashSessionReport.cash_session.opened_at)}
-          source={`Sesión de caja ${visibleCashSessionReport.cash_session.id} · ${visibleCashSessionReport.cash_session.user?.name ?? 'Cajero no disponible'}`}
+          source={`Sesión de caja ${visibleCashSessionReport.cash_session.id} Â· ${visibleCashSessionReport.cash_session.user?.name ?? 'Cajero no disponible'}`}
         />
       ) : null}
 
       {cashExportError ? (
-        <Alert variant="destructive" title={cashExportError.title}>
-          {cashExportError.message}
-        </Alert>
+        <Alert type="error" title={cashExportError.title} description={cashExportError.message} showIcon />
       ) : null}
 
       <CashSessionReportPanel

@@ -1,17 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { AlertTriangle, Save } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { FormField } from '@/components/ui/form-field';
-import { FormSection } from '@/components/ui/form-section';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { StatusBadge } from '@/components/ui/status-badge';
+import { AlertOutlined as AlertTriangle, SaveOutlined as Save } from '@ant-design/icons';
+import { Alert, AlertDescription, AlertTitle, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, ConfirmDialog, FormField, FormSection, Input, StatusBadge, Textarea } from './settingsAntd';
 import { type FiscalSequence, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { safeClientMessage } from '@/lib/support/clientIssueLog';
 
@@ -23,8 +15,8 @@ type FiscalNumerationViewProps = {
 const sequenceSchema = z.object({
   prefix: z.string().min(1, 'El prefijo es requerido').max(32, 'Prefijo muy largo'),
   cai: z.string().min(1, 'El CAI es requerido').max(128, 'CAI muy largo'),
-  min_number: z.number().int().min(1, 'Debe ser mayor a 0').max(Number.MAX_SAFE_INTEGER, 'Número fuera del rango permitido'),
-  max_number: z.number().int().min(1, 'Debe ser mayor a 0').max(Number.MAX_SAFE_INTEGER, 'Número fuera del rango permitido'),
+  min_number: z.number().int().min(1, 'Debe ser mayor a 0').max(Number.MAX_SAFE_INTEGER, 'N?fúmero fuera del rango permitido'),
+  max_number: z.number().int().min(1, 'Debe ser mayor a 0').max(Number.MAX_SAFE_INTEGER, 'N?fúmero fuera del rango permitido'),
   valid_until: z.string().min(1, 'La fecha de vencimiento es requerida'),
   reason: z.string().max(500, 'Motivo muy largo').optional(),
 }).superRefine((data, ctx) => {
@@ -32,7 +24,7 @@ const sequenceSchema = z.object({
     ctx.addIssue({
       code: 'custom',
       path: ['max_number'],
-      message: 'El número máximo debe ser mayor o igual al mínimo.',
+      message: 'El número m?fúximo debe ser mayor o igual al m?fúnimo.',
     });
   }
 });
@@ -110,7 +102,7 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
     savingRef.current = true;
     setSaving(true);
     setError('');
-    onStatus('Guardando numeración fiscal...');
+    onStatus('Guardando numeraci?fún fiscal...');
     try {
       const saved = await apiClient.saveFiscalSequence({
         ...(sequence?.id ? { id: sequence.id } : {}),
@@ -134,9 +126,9 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
         valid_until: saved.valid_until,
         reason: '',
       });
-      onStatus('Numeración fiscal guardada.');
+      onStatus('Numeraci?fún fiscal guardada.');
     } catch (err) {
-      const message = safeClientMessage(userSafeErrorMessage(err, 'No se pudo guardar la numeración.'));
+      const message = safeClientMessage(userSafeErrorMessage(err, 'No se pudo guardar la numeraci?fún.'));
       setError(message);
       onStatus(message);
     } finally {
@@ -153,14 +145,14 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
   if (loading) {
     return (
       <div role="status" aria-live="polite" className="text-sm text-muted-foreground">
-        Cargando numeración fiscal...
+        Cargando numeraci?fún fiscal...
       </div>
     );
   }
 
   return (
     <FormSection
-      title="Numeración fiscal"
+      title="Numeraci?fún fiscal"
       description="Configure el rango autorizado para emitir facturas. Cambios requieren motivo y quedan auditados."
     >
       {error ? (
@@ -172,7 +164,7 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
       {!sequence && (
         <Alert variant="warning">
           <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Sin numeración</AlertTitle>
+          <AlertTitle>Sin numeraci?fún</AlertTitle>
           <AlertDescription>
             Configure el CAI, prefijo y rango autorizado antes de emitir facturas.
           </AlertDescription>
@@ -181,7 +173,7 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
 
       {sequence ? (
         <div className="grid gap-3 sm:grid-cols-2" aria-label="Estado del rango fiscal">
-          <div className="rounded-md border border-operational-border bg-operational-panel p-4">
+          <div className="rounded-xl border border-operational-border bg-muted/40 p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-sm font-semibold">Disponibilidad del rango</p>
               <StatusBadge status={availableNumbers <= 100 ? 'pending' : 'success'}>
@@ -192,7 +184,7 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
               {availableNumbers.toLocaleString('es-HN')} números disponibles de {Number(sequence.max_number - sequence.min_number + 1).toLocaleString('es-HN')} autorizados.
             </p>
           </div>
-          <div className="rounded-md border border-operational-border bg-operational-panel p-4">
+          <div className="rounded-xl border border-operational-border bg-muted/40 p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-sm font-semibold">Vigencia</p>
               <StatusBadge status={isExpired ? 'failed' : 'success'}>
@@ -200,7 +192,7 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
               </StatusBadge>
             </div>
             <p className="mt-2 text-sm text-muted-foreground">
-              {isExpired ? 'Venció el' : 'Vigente hasta'} {sequence.valid_until}.
+              {isExpired ? 'Venci?fú el' : 'Vigente hasta'} {sequence.valid_until}.
             </p>
           </div>
         </div>
@@ -275,14 +267,14 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
                 />
               )}
             </FormField>
-            <div className="rounded-md border border-operational-border bg-operational-panel p-3 text-sm">
+            <div className="rounded-xl border border-operational-border bg-muted/40 p-4 text-sm">
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                 Correlativo actual
               </p>
               <p className="mt-1 font-mono text-lg font-semibold tabular-nums">
                 {sequence?.prefix && sequence?.current_number != null
                   ? `${sequence.prefix}-${String(sequence.current_number).padStart(8, '0')}`
-                  : '—'}
+                  : 'ú?,????'}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
                 El backend lo incrementa al emitir. No se reinicia desde esta pantalla.
@@ -316,7 +308,7 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
         <div className="flex justify-end">
           <Button type="submit" disabled={!canEdit || form.formState.isSubmitting || saving}>
             <Save data-icon aria-hidden="true" />
-            Guardar numeración
+            Guardar numeraci?fún
           </Button>
         </div>
       </form>
@@ -335,11 +327,11 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
         {pendingChange ? (
           <div className="space-y-3">
             {error ? <Alert variant="destructive" title="No se pudo guardar">{error}</Alert> : null}
-            <p>Este cambio afecta la numeración de las próximas facturas y quedará auditado.</p>
-            <dl className="grid gap-3 rounded-md border border-operational-border bg-operational-panel p-3 sm:grid-cols-2">
+            <p>Este cambio afecta la numeraci?fún de las pr?fúximas facturas y quedar?fú auditado.</p>
+            <dl className="grid gap-3 border border-operational-border bg-muted/40 p-4 sm:grid-cols-2">
               <div>
                 <dt className="text-xs font-medium">Prefijo</dt>
-                <dd className="font-mono tabular-nums">{sequence?.prefix ?? '—'} → {pendingChange.prefix}</dd>
+                <dd className="font-mono tabular-nums">{sequence?.prefix ?? 'ú?,????'} ú?????T {pendingChange.prefix}</dd>
               </div>
               <div>
                 <dt className="text-xs font-medium">CAI actual</dt>
@@ -352,12 +344,12 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
               <div>
                 <dt className="text-xs font-medium">Rango actual</dt>
                 <dd className="font-mono tabular-nums">
-                  {sequence ? `${sequence.min_number.toLocaleString('es-HN')} – ${sequence.max_number.toLocaleString('es-HN')}` : 'Sin configurar'}
+                  {sequence ? `${sequence.min_number.toLocaleString('es-HN')} ú?,??ó ${sequence.max_number.toLocaleString('es-HN')}` : 'Sin configurar'}
                 </dd>
               </div>
               <div>
                 <dt className="text-xs font-medium">Rango nuevo</dt>
-                <dd className="font-mono tabular-nums">{pendingChange.min_number.toLocaleString('es-HN')} – {pendingChange.max_number.toLocaleString('es-HN')}</dd>
+                <dd className="font-mono tabular-nums">{pendingChange.min_number.toLocaleString('es-HN')} ú?,??ó {pendingChange.max_number.toLocaleString('es-HN')}</dd>
               </div>
               <div>
                 <dt className="text-xs font-medium">Vigencia actual</dt>

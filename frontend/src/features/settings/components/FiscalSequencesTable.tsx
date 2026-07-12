@@ -1,70 +1,19 @@
-import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
-import { StatusBadge } from '@/components/ui/status-badge';
+import type { InstitutionalColumn } from '@/design-system/ag-grid/InstitutionalDataGrid';
+import { InstitutionalDataGrid } from '@/design-system/ag-grid/InstitutionalDataGrid';
 import type { FiscalSequence } from '@/lib/api';
+import { StatusBadge } from '../settingsAntd';
 
-type FiscalSequencesTableProps = {
-  sequences: FiscalSequence[];
-};
-
-export function FiscalSequencesTable({ sequences }: FiscalSequencesTableProps) {
-  return (
-    <DataTable
-      caption="Secuencias fiscales reales devueltas por el servidor. Las acciones de activar o editar usan el formulario autorizado."
-      columns={sequenceColumns}
-      containerLabel="Secuencias fiscales registradas"
-      emptyDescription="Configure una secuencia autorizada antes de emitir facturas."
-      emptyTitle="No hay secuencias fiscales"
-      getRowKey={(sequence) => sequence.id ?? `${sequence.document_type}-${sequence.prefix}-${sequence.cai}`}
-      rows={sequences}
-      tableClassName="min-w-[760px]"
-    />
-  );
+export function FiscalSequencesTable({ sequences }: { sequences: FiscalSequence[] }) {
+  return <InstitutionalDataGrid ariaLabel="Secuencias fiscales registradas" columns={sequenceColumns} rows={sequences} getRowId={(sequence) => String(sequence.id ?? `${sequence.document_type}-${sequence.prefix}-${sequence.cai}`)} density="compact" height={420} emptyMessage="No hay secuencias fiscales" />;
 }
 
-const sequenceColumns: Array<DataTableColumn<FiscalSequence>> = [
-  {
-    key: 'state',
-    header: 'Estado',
-    render: (sequence) => (
-      <StatusBadge status={sequence.active ? 'success' : 'pending'}>
-        {sequence.active ? 'Activa' : 'Inactiva'}
-      </StatusBadge>
-    ),
-  },
-  {
-    key: 'document',
-    header: 'Documento',
-    cellClassName: 'capitalize',
-    render: (sequence) => sequence.document_type,
-  },
-  {
-    key: 'prefix',
-    header: 'Prefijo',
-    cellClassName: 'font-mono',
-    render: (sequence) => sequence.prefix,
-  },
-  {
-    key: 'range',
-    header: 'Rango',
-    cellClassName: 'font-mono tabular-nums',
-    render: (sequence) => `${formatSequenceNumber(sequence.min_number)} - ${formatSequenceNumber(sequence.max_number)}`,
-  },
-  {
-    key: 'current',
-    header: 'Correlativo',
-    cellClassName: 'font-mono tabular-nums',
-    render: (sequence) => formatSequenceNumber(sequence.current_number),
-  },
-  {
-    key: 'valid-until',
-    header: 'Válido hasta',
-    cellClassName: 'whitespace-nowrap',
-    render: (sequence) => sequence.valid_until || '-',
-  },
+const sequenceColumns: InstitutionalColumn<FiscalSequence>[] = [
+  { headerName: 'Estado', cellRenderer: ({ data }: { data?: FiscalSequence }) => data ? <StatusBadge status={data.active ? 'success' : 'pending'}>{data.active ? 'Activa' : 'Inactiva'}</StatusBadge> : null },
+  { field: 'document_type', headerName: 'Documento' },
+  { field: 'prefix', headerName: 'Prefijo' },
+  { headerName: 'Rango', valueGetter: ({ data }) => data ? `${formatSequenceNumber(data.min_number)} - ${formatSequenceNumber(data.max_number)}` : '' },
+  { field: 'current_number', headerName: 'Correlativo', type: 'numericColumn', valueFormatter: ({ value }) => formatSequenceNumber(value == null ? null : Number(value)) },
+  { field: 'valid_until', headerName: 'Válido hasta', valueFormatter: ({ value }) => String(value || '-') },
 ];
 
-function formatSequenceNumber(value: number | null | undefined): string {
-  if (value == null) return '-';
-
-  return String(value).padStart(8, '0');
-}
+function formatSequenceNumber(value: number | null | undefined): string { return value == null ? '-' : String(value).padStart(8, '0'); }

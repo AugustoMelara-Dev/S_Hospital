@@ -87,7 +87,7 @@ function renderReports(
 describe('ReportsView (sub-routes)', () => {
   it('renders the three report sub-route links without legacy tabs', () => {
     renderReports('/reports');
-    expect(screen.getByRole('heading', { level: 1, name: /^reportes$/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: /^informes y auditoría$/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /ejecutivo/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /caja/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /auditoria/i })).toBeInTheDocument();
@@ -121,7 +121,7 @@ describe('ReportsView (sub-routes)', () => {
     await waitFor(() => expect(apiClient.getCashSessions).toHaveBeenCalled());
 
     expect(screen.getByRole('link', { name: /caja/i })).toHaveAttribute('aria-current', 'page');
-    expect(screen.getByText(/operacion de caja/i)).toBeInTheDocument();
+    expect(screen.getByText(/operación de caja/i)).toBeInTheDocument();
     expect(screen.queryByText(/reporte ejecutivo no disponible/i)).not.toBeInTheDocument();
   });
 
@@ -130,7 +130,7 @@ describe('ReportsView (sub-routes)', () => {
     await waitFor(() => expect(apiClient.getCashSessions).toHaveBeenCalled());
 
     expect(screen.getByRole('link', { name: /caja/i })).toHaveAttribute('aria-current', 'page');
-    expect(screen.getByText(/operacion de caja/i)).toBeInTheDocument();
+    expect(screen.getByText(/operación de caja/i)).toBeInTheDocument();
     expect(screen.queryByText(/reporte de auditoria no disponible/i)).not.toBeInTheDocument();
   });
 

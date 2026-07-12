@@ -1,11 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Check, Save, UploadCloud } from 'lucide-react';
-import { Alert } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { FormSection } from '@/components/ui/form-section';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { CheckOutlined as Check, CloudUploadOutlined as UploadCloud, SaveOutlined as Save } from '@ant-design/icons';
+import { Alert, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, FormSection, Input, Label } from './settingsAntd';
 import { useTheme, COLOR_THEMES, type ColorTheme } from '@/hooks/useTheme';
 import { type FiscalSettings, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { safeClientMessage } from '@/lib/support/clientIssueLog';
@@ -104,7 +99,7 @@ export function BrandingView({ canEdit, onStatus }: BrandingViewProps) {
             <CardDescription>Aparece en recibos y cabecera de la app.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex flex-col items-center justify-center rounded-panel border-2 border-dashed border-operational-border bg-operational-panel p-6">
+            <div className="flex flex-col items-center justify-center border-2 border-dashed border-operational-border bg-muted/40 p-8">
               {logoUrl ? (
                 <img
                   src={logoUrl}
@@ -160,7 +155,7 @@ export function BrandingView({ canEdit, onStatus }: BrandingViewProps) {
                   <span className="flex items-center gap-3">
                     <span
                       aria-hidden="true"
-                      className="size-5 rounded-full border border-black/10"
+                      className="size-7 border border-black/10"
                       style={{ backgroundColor: themeObj.light.secondary }}
                     />
                     <span className="text-sm">{themeObj.name}</span>

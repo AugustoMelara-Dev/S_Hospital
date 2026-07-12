@@ -1,6 +1,5 @@
-import { AlertCircle, CheckCircle } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { StatusBadge } from '@/components/ui/status-badge';
+import { AlertOutlined as AlertCircle, CheckCircleOutlined as CheckCircle } from '@ant-design/icons';
+import { Card, CardContent, StatusBadge } from '../settingsAntd';
 import type { FiscalSequence, FiscalSettings } from '@/lib/api';
 
 interface FiscalStatusCardProps {
@@ -43,10 +42,10 @@ export function FiscalStatusCard({ settings, sequence }: FiscalStatusCardProps) 
   const isConfigured = blockers.length === 0;
 
   return (
-    <Card className={isConfigured ? 'status-success' : 'status-warning'}>
+    <Card className={isConfigured ? 'border-success/30 bg-success/10 text-success-foreground' : 'border-warning/30 bg-warning/10 text-warning-foreground'}>
       <CardContent className="pt-6">
         <div className="flex items-center gap-4">
-          <div className={`p-3 rounded-full ${isConfigured ? 'bg-success/10' : 'bg-warning/10'}`}>
+          <div className={`rounded-xl p-3 ${isConfigured ? 'bg-success/10' : 'bg-warning/10'}`}>
             {isConfigured ? (
               <CheckCircle aria-hidden="true" className="h-6 w-6 text-success" />
             ) : (
@@ -70,7 +69,7 @@ export function FiscalStatusCard({ settings, sequence }: FiscalStatusCardProps) 
           </div>
         </div>
         {blockers.length > 0 && (
-          <p className="mt-3 text-sm text-warning">
+          <p className="mt-3 text-sm text-warning-foreground">
             Faltan o requieren revisión: {blockers.join(', ')}.
           </p>
         )}

@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+vi.mock('@/design-system/ag-grid', () => ({ InstitutionalDataGrid: ({ ariaLabel, rows }: { ariaLabel: string; rows: Array<{ action?: string; reason?: string | null; result?: string }> }) => <section aria-label={ariaLabel}>{rows.length ? rows.map((row, index) => <div key={index}>{row.action} {row.reason} {row.result === 'error' ? 'Con error' : row.result}</div>) : <div role="status">Sin entradas</div>}</section> }));
 import { ReportsAudit } from './ReportsAudit';
 import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom';
 import type { AuditLogPage, OperationsReport } from '@/lib/api/types';
@@ -98,7 +99,7 @@ describe('ReportsAudit', () => {
   });
 
   it('restores audit filters from the URL and keeps the applied scope there', async () => {
-    renderView({}, '/reports/audit?action=anulacion&from=2026-07-01&to=2026-07-10&page=2');
+    renderView({}, '/reports/auditáction=anulacion&from=2026-07-01&to=2026-07-10&page=2');
 
     expect(screen.getByLabelText(/^acci.n$/i)).toHaveValue('anulacion');
     expect(screen.getByLabelText(/^desde$/i)).toHaveValue('2026-07-01');
@@ -112,7 +113,7 @@ describe('ReportsAudit', () => {
       }));
     });
     expect(screen.getByLabelText(/url actual/i)).toHaveTextContent(
-      '/reports/audit?action=anulacion&from=2026-07-01&to=2026-07-10&page=2',
+      '/reports/auditáction=anulacion&from=2026-07-01&to=2026-07-10&page=2',
     );
     expect(screen.getByRole('region', { name: /alcance del reporte de auditoria/i })).toHaveTextContent(
       /1 de julio de 2026.*10 de julio de 2026/i,

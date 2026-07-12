@@ -3,9 +3,9 @@ import { Link, useLocation } from 'react-router-dom';
 import { ReportsAudit } from './ReportsAudit';
 import { ReportsCash } from './ReportsCash';
 import { ReportsExecutive } from './ReportsExecutive';
-import { PageHeader } from '@/components/ui/page-header';
-import { cn } from '@/lib/utils';
-import { LineChart, ShieldCheck, WalletCards } from 'lucide-react';
+import { LineChartOutlined, SafetyCertificateOutlined, WalletOutlined } from '@ant-design/icons';
+import { Typography } from 'antd';
+const PageHeader = ({ title, description, className }: { title: string; description: string; className?: string }) => <header className={className}><Typography.Title level={1}>{title}</Typography.Title><Typography.Paragraph>{description}</Typography.Paragraph></header>;
 
 type ReportsViewProps = {
   canBrowseCashSessions: boolean;
@@ -21,19 +21,19 @@ const SUB_ROUTES = [
     id: 'executive',
     label: 'Ejecutivo',
     description: 'Cobros, pendientes, ticket promedio, tendencia y servicios.',
-    icon: LineChart,
+    icon: LineChartOutlined,
   },
   {
     id: 'cash',
     label: 'Caja',
     description: 'Sesiones, cajeros, metodos y diferencias.',
-    icon: WalletCards,
+    icon: WalletOutlined,
   },
   {
     id: 'audit',
     label: 'Auditoria',
     description: 'Anulaciones, reversos, cambios de precio y fiscales.',
-    icon: ShieldCheck,
+    icon: SafetyCertificateOutlined,
   },
 ] as const;
 
@@ -58,8 +58,8 @@ export function ReportsView(props: ReportsViewProps) {
     <div data-slot="reports-view" className="flex flex-col gap-5">
       {isRoot ? (
         <PageHeader
-          title="Reportes"
-          description="Ejecutivo, caja y auditoria para supervision diaria."
+          title="Informes y auditoría"
+          description="Resumen ejecutivo, control de caja y trazabilidad para la supervisión institucional."
           className="pb-4"
         />
       ) : null}
@@ -165,17 +165,12 @@ function ReportsNavigation({
             to={`${basePath}/${route.id}`}
             aria-current={isActive ? 'page' : undefined}
             aria-describedby={descriptionId}
-            className={cn(
-              'group flex min-h-20 items-center gap-3 rounded-xl border px-4 py-3 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-              isActive
-                ? 'border-[#0c2733] bg-[#0c2733] text-white shadow-operational'
-                : 'border-operational-border bg-operational-surface text-muted-foreground shadow-sm hover:border-hospital-primary/45 hover:bg-accent/30 hover:text-foreground',
-            )}
+            className={`flex min-h-20 items-center gap-3 border px-4 py-3 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 ${isActive ? 'border-blue-700 bg-blue-700 text-white' : 'border-slate-300 bg-white text-slate-700 hover:border-blue-600'}`}
           >
-            <span className={cn('flex size-10 shrink-0 items-center justify-center rounded-lg', isActive ? 'bg-white/10 text-[#80dfd0]' : 'bg-muted text-secondary')}><Icon aria-hidden="true" className="size-5" /></span>
+            <span className="flex size-10 shrink-0 items-center justify-center"><Icon aria-hidden="true" className="size-5" /></span>
             <span className="min-w-0">
               <span className="block font-semibold">{route.label}</span>
-              <span id={descriptionId} className={cn('mt-0.5 block text-xs font-normal leading-relaxed', isActive ? 'text-white/60' : 'text-muted-foreground')}>{route.description}</span>
+              <span id={descriptionId} className="mt-1 block text-xs font-normal leading-relaxed">{route.description}</span>
             </span>
           </Link>
         );

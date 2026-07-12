@@ -131,7 +131,7 @@ describe('AboutView', () => {
     render(<AboutView user={cashierUser} onStatus={vi.fn()} />);
 
     expect(screen.getByText('Hospital San Isidro')).toBeInTheDocument();
-    expect(document.body.textContent).not.toMatch(/tel[eÃ©]fono|correo|RTN|licencia/i);
+    expect(document.body.textContent).not.toMatch(/tel[eé]fono|correo|RTN|licencia/i);
   });
 
   it('shows protected administrative diagnostics with human-safe labels for admin users', async () => {
@@ -207,7 +207,7 @@ describe('AboutView', () => {
     expect(screen.getByText('Direccion local configurada')).toBeInTheDocument();
     expect(screen.getByText(/Acceso local:/i)).toBeInTheDocument();
     expect(screen.getByText(/127\.0\.0\.1:8000/i)).toBeInTheDocument();
-    expect(screen.queryByText('Falta direcciÃ³n LAN')).not.toBeInTheDocument();
+    expect(screen.queryByText('Falta dirección LAN')).not.toBeInTheDocument();
     expect(screen.queryByText(/Acceso LAN:/i)).not.toBeInTheDocument();
   });
 

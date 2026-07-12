@@ -1,14 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
-import { StatGrid } from '@/components/shared';
-import { Pencil } from 'lucide-react';
+import { EditOutlined } from '@ant-design/icons';
+import { Button, Col, Input, Modal, Row, Statistic, Typography } from 'antd';
 import { type AuthUser, type Category, type Service, type ServiceFilters, apiClient, userSafeErrorMessage } from '../../lib/api';
 import { useAreas, useCategories } from '@/hooks/useCategories';
 import { useOperationalSettings } from '@/hooks/useFiscalSettings';
 import { useServices } from '@/hooks/useServices';
-import { ConfirmDialog } from '../../components/ui/confirm-dialog';
-import { Button } from '../../components/ui/button';
 import { CatalogPagination } from './components/CatalogPagination';
 import { CatalogToolbar } from './components/CatalogToolbar';
 import { ServiceCatalogTable } from './components/ServiceCatalogTable';
@@ -328,13 +326,11 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
               {categories.map((category) => (
                 <li key={category.id}>
                   <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
+                    htmlType="button"
                     aria-label={`Editar categoría ${category.name}`}
                     onClick={() => openEditCategory(category)}
                   >
-                    <Pencil aria-hidden="true" className="size-3.5" />
+                    <EditOutlined aria-hidden="true" />
                     {category.name}
                   </Button>
                 </li>
@@ -455,4 +451,39 @@ function positiveUrlInteger(value: string | null, fallback: number) {
 function setOrDelete(params: URLSearchParams, key: string, value: string | null) {
   if (value) params.set(key, value);
   else params.delete(key);
+}
+
+function StatGrid({ items, className }: { className?: string; items: Array<{ label: string; value: number; helper?: string; tone?: string }> }) {
+  return <Row gutter={[16, 16]} className={className}>{items.map((item) => <Col xs={24} sm={12} key={item.label}><div className="border border-slate-300 p-3"><Statistic title={item.label} value={item.value} /><Typography.Text type="secondary">{item.helper}</Typography.Text></div></Col>)}</Row>;
+}
+
+function ConfirmDialog({ open, title, children, confirmLabel, danger, onCancel, onConfirm, reasonHelpText, requireReasonMinLength = 0 }: {
+  open: boolean;
+  title: string;
+  children: React.ReactNode;
+  confirmLabel: string;
+  danger?: boolean;
+  onCancel: () => void;
+  onConfirm: (reason: string | null) => void;
+  reasonHelpText?: string;
+  requireReasonMinLength?: number;
+  requireReasonTextarea?: boolean;
+}) {
+  const [reason, setReason] = useState('');
+  return (
+    <Modal
+      open={open}
+      title={title}
+      okText={confirmLabel}
+      okButtonProps={{ danger, disabled: reason.trim().length < requireReasonMinLength }}
+      onCancel={() => { setReason(''); onCancel(); }}
+      onOk={() => { onConfirm(reason.trim() || null); setReason(''); }}
+      modalRender={(node) => <div role="alertdialog" aria-modal="true" aria-label={title}>{node}</div>}
+    >
+      <Typography.Paragraph>{children}</Typography.Paragraph>
+      <label htmlFor="catalog-audit-reason">Motivo de auditoría</label>
+      <Input.TextArea id="catalog-audit-reason" value={reason} onChange={(event) => setReason(event.target.value)} aria-describedby="catalog-audit-help" />
+      <Typography.Text id="catalog-audit-help" type="secondary">{reasonHelpText}</Typography.Text>
+    </Modal>
+  );
 }

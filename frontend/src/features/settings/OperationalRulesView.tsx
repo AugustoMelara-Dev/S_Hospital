@@ -1,11 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Save } from 'lucide-react';
-import { Alert } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
-import { FormSection } from '@/components/ui/form-section';
-import { Label } from '@/components/ui/label';
+import { SaveOutlined as Save } from '@ant-design/icons';
+import { Alert, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, FormSection, Label, Switch } from './settingsAntd';
 import { type OperationalSettings, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { safeClientMessage } from '@/lib/support/clientIssueLog';
 
@@ -87,11 +82,11 @@ export function OperationalRulesView({ canEdit, onStatus }: OperationalRulesView
           <CardDescription>Activa o desactiva funciones del flujo de facturación.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-start gap-3 rounded-md border border-operational-border bg-operational-panel p-4">
-            <Checkbox
+          <div className="flex items-start gap-4 border border-operational-border bg-muted/40 p-4">
+            <Switch
               id="scanner_enabled"
               checked={scannerEnabled}
-              onCheckedChange={(value) => setScannerEnabled(value === true)}
+              onCheckedChange={setScannerEnabled}
               disabled={!canEdit}
             />
             <Label htmlFor="scanner_enabled" className="cursor-pointer">
@@ -102,11 +97,11 @@ export function OperationalRulesView({ canEdit, onStatus }: OperationalRulesView
             </Label>
           </div>
 
-          <div className="flex items-start gap-3 rounded-md border border-operational-border bg-operational-panel p-4">
-            <Checkbox
+          <div className="flex items-start gap-4 border border-operational-border bg-muted/40 p-4">
+            <Switch
               id="partial_payments_enabled"
               checked={partialPaymentsEnabled}
-              onCheckedChange={(value) => setPartialPaymentsEnabled(value === true)}
+              onCheckedChange={setPartialPaymentsEnabled}
               disabled={!canEdit}
             />
             <Label htmlFor="partial_payments_enabled" className="cursor-pointer">

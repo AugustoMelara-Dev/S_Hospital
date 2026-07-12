@@ -1,19 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { FileTextOutlined as FileText } from '@ant-design/icons';
+import { Link } from 'react-router-dom';
 import { type FiscalSequence, type FiscalSettings, apiClient, userSafeErrorMessage } from '@/lib/api';
-import { useCallback } from 'react';
-import { Alert } from '@/components/ui/alert';
-import { ActionBar } from '@/components/ui/action-bar';
-import { InfoPanel, OperationalBanner, StatGrid } from '@/components/shared';
-import { PageHeader } from '@/components/ui/page-header';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { StatusBadge } from '@/components/ui/status-badge';
 import { FiscalStatusCard } from './components/FiscalStatusCard';
 import { FiscalSummary } from './components/FiscalSummary';
 import { HospitalSettingsView } from './HospitalSettingsView';
 import { FiscalNumerationView } from './FiscalNumerationView';
 import { OperationalRulesView } from './OperationalRulesView';
 import { BrandingView } from './BrandingView';
-import { Link } from 'react-router-dom';
+import { ActionBar, Alert, Button, PageHeader, StatusBadge, Tabs, TabsContent, TabsList, TabsTrigger } from './settingsAntd';
 
 type FiscalSettingsViewProps = {
   canEdit: boolean;
@@ -63,7 +58,7 @@ export function FiscalSettingsView({ canEdit, canEditOperationalRules, canViewFi
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Configuración"
-        description="Datos del hospital, numeración fiscal, reglas operativas y marca."
+        description="Configure identidad hospitalaria, numeración fiscal, reglas operativas y presentación de documentos."
         actions={
           <ActionBar align="end">
             <StatusBadge status={canEdit || canEditOperationalRules ? 'success' : 'info'}>
@@ -73,51 +68,19 @@ export function FiscalSettingsView({ canEdit, canEditOperationalRules, canViewFi
         }
       />
 
-      <OperationalBanner
-        meta="Configuración institucional"
-        title="Centro de configuración"
-        titleLevel={2}
-        description="Cada sección tiene su propio permiso y auditoría. Cambios fiscales piden motivo."
-        tone="info"
-      />
-
-      <StatGrid
-        items={[
-          {
-            label: 'Hospital',
-            value: settings?.hospital_name || 'Pendiente',
-            helper: settings?.rtn ? `RTN ${settings.rtn}` : 'RTN sin configurar',
-            tone: settings?.hospital_name ? 'success' : 'warning',
-          },
-          {
-            label: 'Recibo',
-            value: 'Recibos',
-            helper: <Link to="/settings/institutional-receipts" className="underline">Administrar recibos</Link>,
-            tone: 'info',
-          },
-          {
-            label: 'Permiso',
-            value: canEdit ? 'Editable' : 'Solo lectura',
-            tone: canEdit ? 'success' : 'warning',
-          },
-        ]}
-      />
-
-      <InfoPanel
-        title="Secciones de configuración"
-        description="Hospital, numeración fiscal, reglas operativas y marca. Los recibos se administran en su pantalla dedicada."
-        tone="info"
-      />
-
       {error ? (
         <Alert variant="destructive" title="Error">
           {error}
         </Alert>
       ) : null}
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="grid items-start gap-5 lg:grid-cols-[15rem_minmax(0,1fr)]">
-        <div className="overflow-x-auto rounded-xl border border-operational-border bg-operational-surface p-2 shadow-operational lg:sticky lg:top-24 lg:overflow-visible">
-          <p className="hidden px-3 pb-3 pt-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground lg:block">Secciones</p>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="grid items-start gap-6 lg:grid-cols-[17rem_minmax(0,1fr)]">
+        <aside className="overflow-x-auto border border-operational-border bg-operational-surface p-3 lg:sticky lg:top-24 lg:overflow-visible">
+          <div className="hidden border-b border-border px-3 pb-4 pt-2 lg:block">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-secondary">Configuración</p>
+            <p className="mt-1 text-sm font-semibold text-foreground">{settings?.hospital_name || 'Hospital'}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{settings?.rtn ? `RTN ${settings.rtn}` : 'Identidad pendiente'}</p>
+          </div>
           <TabsList className="min-w-max border-0 bg-transparent p-0 lg:flex lg:min-w-0 lg:flex-col lg:items-stretch lg:gap-1">
             {canViewFiscalSettings ? <TabsTrigger value="resumen">Resumen</TabsTrigger> : null}
             {canViewFiscalSettings ? <TabsTrigger value="hospital">Hospital</TabsTrigger> : null}
@@ -125,10 +88,22 @@ export function FiscalSettingsView({ canEdit, canEditOperationalRules, canViewFi
             <TabsTrigger value="operativa">Operativa</TabsTrigger>
             {canViewFiscalSettings ? <TabsTrigger value="marca">Marca</TabsTrigger> : null}
           </TabsList>
-        </div>
+        </aside>
 
         {canViewFiscalSettings ? (
           <TabsContent value="resumen" className="mt-0 min-w-0 space-y-6">
+            <ActionBar className="justify-between border border-operational-border bg-operational-surface p-4">
+              <div>
+                <p className="text-sm font-semibold text-foreground">Documentos institucionales</p>
+                <p className="mt-1 text-xs text-muted-foreground">Configure papel, contenido y vista previa fuera de los datos fiscales.</p>
+              </div>
+              <Button asChild variant="outline">
+                <Link to="/settings/institutional-receipts">
+                  <FileText data-icon aria-hidden="true" />
+                  Administrar recibos
+                </Link>
+              </Button>
+            </ActionBar>
             <FiscalStatusCard settings={settings} sequence={sequence} />
             <FiscalSummary settings={settings} sequence={sequence} />
           </TabsContent>

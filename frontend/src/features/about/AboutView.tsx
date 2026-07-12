@@ -1,9 +1,5 @@
-import { Building2, Clock3, HardDrive, HeartHandshake, MonitorCheck, Network, ShieldCheck } from 'lucide-react';
-import { ActionBar } from '../../components/ui/action-bar';
-import { Button } from '../../components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
-import { PageHeader } from '../../components/ui/page-header';
-import { StatusBadge } from '../../components/ui/status-badge';
+import { BuildOutlined as MonitorCheck, ClockCircleOutlined as Clock3, HddOutlined as HardDrive, HeartOutlined as HeartHandshake, HomeOutlined as Building2, SafetyCertificateOutlined as ShieldCheck, WifiOutlined as Network } from '@ant-design/icons';
+import { ActionBar, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, PageHeader, StatusBadge } from './aboutAntd';
 import { useBackups } from '../../hooks/useBackups';
 import { usePublicBranding } from '../../hooks/useFiscalSettings';
 import { useServerStatus, useSystemStatusSnapshot } from '../../hooks/useServerStatus';
@@ -46,13 +42,13 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
     <section id="about" className="flex flex-col gap-6" aria-labelledby="about-title">
       <PageHeader
         title="Informacion del sistema"
-        description="Estado general de operacion local, respaldos y soporte."
+        description="Identidad del hospital, estado de la red local, continuidad operativa y diagnóstico autorizado."
       />
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         <Card className="overflow-hidden md:col-span-2">
           <CardHeader className="flex flex-row items-start gap-4 pb-4">
-            <div className="flex size-12 items-center justify-center rounded-xl bg-secondary/10 text-secondary">
+            <div className="flex size-12 items-center justify-center bg-secondary/10 text-secondary">
               <Building2 aria-hidden="true" className="h-6 w-6" />
             </div>
             <div>
@@ -69,14 +65,14 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
               recibos institucionales y respaldos locales.
             </p>
 
-            <div className="rounded-lg border border-border bg-muted/30 p-4">
+            <div className="border border-border p-5">
               <h3 className="mb-2 text-sm font-semibold text-foreground">Operación local</h3>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="font-semibold text-foreground">Sistema disponible en la red del hospital</p>
                   <p className="text-xs text-muted-foreground">Uso local para caja, facturacion, reportes y respaldos.</p>
                 </div>
-                <div className="inline-flex items-center gap-1.5 rounded-full border border-success/20 bg-success/10 px-2.5 py-1 text-xs font-bold text-success">
+                <div className="inline-flex items-center gap-1.5 border border-success/20 bg-success/10 px-2.5 py-1 text-xs font-bold text-success">
                   <ShieldCheck aria-hidden="true" className="h-4 w-4" />
                   Activa
                 </div>
@@ -141,14 +137,14 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
           </CardHeader>
           <CardContent className="space-y-4">
             {systemStatusError ? (
-              <div className="rounded-md border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
+              <div className="border p-4 text-sm text-destructive">
                 {systemStatusError}
               </div>
             ) : systemStatus ? (
               <>
                 <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                   {adminDiagnosticItems(systemStatus).map((item) => (
-                    <div key={item.label} className="rounded-md border border-border bg-muted/30 p-4">
+                    <div key={item.label} className="border border-border p-4">
                       <div className="flex items-center justify-between gap-3">
                         <p className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">{item.label}</p>
                         <StatusBadge status={statusForLevel(item.level)}>{diagnosticLevelLabel(item.level)}</StatusBadge>
@@ -159,22 +155,22 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
                 </div>
 
                 <div className="grid gap-3 text-sm text-muted-foreground md:grid-cols-3">
-                  <div className="flex items-start gap-2 rounded-md border border-border bg-card p-3">
+                  <div className="flex items-start gap-2 border border-border bg-card p-4">
                     <Clock3 aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-secondary" />
                     <span className="break-words">Hora del servidor: {formatServerTime(systemStatus.environment.server_time, systemStatus.environment.timezone)}</span>
                   </div>
-                  <div className="flex items-start gap-2 rounded-md border border-border bg-card p-3">
+                  <div className="flex items-start gap-2 border border-border bg-card p-4">
                     <HardDrive aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-secondary" />
                     <span className="break-words">Espacio libre para respaldos: {formatBytes(systemStatus.backups.storage.free_bytes)}</span>
                   </div>
-                  <div className="flex items-start gap-2 rounded-md border border-border bg-card p-3">
+                  <div className="flex items-start gap-2 border border-border bg-card p-4">
                     <Network aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-secondary" />
                     <span className="break-words">{networkAccessLabel(systemStatus)}: {networkAccessUrl(systemStatus)}</span>
                   </div>
                 </div>
               </>
             ) : (
-              <div className="rounded-md border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
+              <div className="border border-border p-4 text-sm text-muted-foreground">
                 Cargando diagnóstico administrativo...
               </div>
             )}

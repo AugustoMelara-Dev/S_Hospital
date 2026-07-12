@@ -17,6 +17,9 @@ import {
   PaperProfileSelector
 } from './design-system';
 
+import { Button } from 'antd';
+import { StatusTag } from '../ui/status-tag';
+
 const meta: Meta = {
   title: 'Institutional/SharedComponents',
   parameters: {
@@ -35,7 +38,7 @@ export const Headers: StoryObj = {
           title="Facturación de Paciente"
           description="Cree una nueva factura para pacientes ambulatorios o de diálisis."
           eyebrow="Operaciones de Caja"
-          actions={<button className="bg-primary text-white px-3 py-1.5 text-sm font-semibold">Nueva Acción</button>}
+          actions={<Button type="primary">Nueva Acción</Button>}
         />
       </div>
       <div>
@@ -44,7 +47,7 @@ export const Headers: StoryObj = {
           title="Panel de Control Hospitalario"
           description="Resumen operativo del estado de caja y transacciones del día."
           meta="ADMINISTRACIÓN"
-          status={<span className="bg-green-600 text-white px-2 py-0.5 text-xs font-bold">ACTIVO</span>}
+          status={<StatusTag kind="success">ACTIVO</StatusTag>}
         />
       </div>
     </div>

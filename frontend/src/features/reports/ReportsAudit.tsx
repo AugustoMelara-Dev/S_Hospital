@@ -1,20 +1,24 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { AlertTriangle, Search } from 'lucide-react';
-import { Alert } from '@/components/ui/alert';
-import { ErrorState, LoadingState } from '@/components/ui/states';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { PageHeader } from '@/components/ui/page-header';
-import { AuditLogList, type AuditLogEntry } from '@/components/ui/audit-log-list';
-import { InfoPanel } from '@/components/shared';
+import { SearchOutlined, WarningOutlined } from '@ant-design/icons';
+import { Alert as AntAlert, Button as AntButton, Input, Spin, Statistic, Typography } from 'antd';
+import { InstitutionalDataGrid, type InstitutionalColumn } from '@/design-system/ag-grid';
 import { apiClient, system } from '@/lib/api';
 import type { AuditLogEntry as ApiAuditLogEntry, AuditLogPage, OperationsReport } from '@/lib/api/types';
 import { useExecutiveReport } from '@/hooks/useExecutiveReport';
 import { AuditSummaryPanel } from './components/AuditSummaryPanel';
 import { computePresetRange, parseReportDate } from './components/reportDateRanges';
 import { ReportScope } from './components/ReportScope';
+
+type AuditLogEntry = { action: string; created_at: string; reason?: string | null; result?: string; user?: { name: string } | null };
+const Button = ({ children, type = 'button', disabled, onClick, className }: React.PropsWithChildren<{ type?: 'button' | 'submit'; variant?: string; size?: string; disabled?: boolean; onClick?: () => void; className?: string }>) => <AntButton htmlType={type} disabled={disabled} onClick={onClick} className={className}>{children}</AntButton>;
+const Alert = ({ title, children, variant }: React.PropsWithChildren<{ title: string; variant?: string }>) => <AntAlert type={variant === 'warning' ? 'warning' : 'error'} title={title} description={children} showIcon />;
+const LoadingState = ({ label }: { label: string }) => <div role="status"><Spin /> {label}</div>;
+const ErrorState = ({ title, description, action }: { title: string; description: string; action?: React.ReactNode }) => <AntAlert type="error" title={title} description={<>{description}{action}</>} showIcon />;
+const InfoPanel = ({ title, description }: { title: string; description: string; tone?: string }) => <AntAlert type="warning" title={title} description={description} showIcon />;
+const PageHeader = ({ title, description, className }: { title: string; description: string; className?: string }) => <header className={className}><Typography.Title level={1}>{title}</Typography.Title><Typography.Paragraph>{description}</Typography.Paragraph></header>;
+function AuditLogList({ entries }: { entries: AuditLogEntry[] }) { const columns: InstitutionalColumn<AuditLogEntry>[] = [{ field: 'created_at', headerName: 'Fecha', priority: 'secondary' }, { field: 'action', headerName: 'Acción', priority: 'primary', flex: 1 }, { field: 'user', headerName: 'Usuario', priority: 'secondary' }, { field: 'reason', headerName: 'Motivo', priority: 'primary', flex: 1 }, { field: 'result', headerName: 'Resultado', priority: 'tertiary' }]; return <InstitutionalDataGrid ariaLabel="Bitácora de auditoría" rows={entries} columns={columns} getRowId={(entry) => `${entry.created_at}-${entry.action}-${entry.user ?? ''}`} state={entries.length ? 'ready' : 'empty'} density="compact" />; }
 
 type AuditLogFilters = {
   action: string;
@@ -149,7 +153,7 @@ export function ReportsAudit({
           ariaLabel="Alcance del reporte de auditoria"
           from={applied.from}
           to={applied.to}
-          source={applied.action ? `Bitácora filtrada por “${applied.action}”` : 'Bitácora operativa completa'}
+          source={applied.action ? `Bitácora filtrada por â€œ${applied.action}â€` : 'Bitácora operativa completa'}
         />
       ) : null}
 
@@ -166,7 +170,7 @@ export function ReportsAudit({
           event.preventDefault();
           handleApply();
         }}
-        className="rounded-md border border-operational-border bg-operational-surface p-4 shadow-sm"
+        className="border border-operational-border bg-operational-surface p-5"
       >
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-1">
@@ -174,7 +178,7 @@ export function ReportsAudit({
               Acción
             </label>
             <div className="relative">
-              <Search
+              <SearchOutlined
                 aria-hidden="true"
                 className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
               />
@@ -247,16 +251,16 @@ export function ReportsAudit({
       ) : null}
 
       {!isLoading && !isError && data ? (
-        <div className="rounded-md border border-operational-border bg-operational-surface p-4 shadow-sm">
+        <div className="border border-operational-border bg-operational-surface p-5">
           <header className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-sm font-semibold text-foreground">Bitacora</h2>
             <span className="text-xs text-muted-foreground">
-              {data.meta.total} entradas · pagina {data.meta.current_page} de {Math.max(1, Math.ceil(data.meta.total / data.meta.per_page))}
+              {data.meta.total} entradas Â· pagina {data.meta.current_page} de {Math.max(1, Math.ceil(data.meta.total / data.meta.per_page))}
             </span>
           </header>
           {data.data.length === 0 ? (
-            <p className="flex items-center justify-center gap-2 rounded-md border border-dashed border-operational-border bg-operational-panel/20 p-6 text-sm text-muted-foreground">
-              <AlertTriangle aria-hidden="true" className="size-4" />
+            <p className="flex items-center justify-center gap-2 border border-dashed border-operational-border bg-muted/40 p-6 text-sm text-muted-foreground">
+              <WarningOutlined aria-hidden="true" className="size-4" />
               No hay entradas para los filtros aplicados.
             </p>
           ) : (
@@ -319,7 +323,7 @@ function OperationsSnapshot({ report }: { report: OperationsReport }) {
   ].slice(0, 6);
 
   return (
-    <section className="rounded-md border border-operational-border bg-operational-surface p-4 shadow-sm" aria-labelledby="operations-snapshot-title">
+    <section className="border border-operational-border bg-operational-surface p-5" aria-labelledby="operations-snapshot-title">
       <header className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 id="operations-snapshot-title" className="text-sm font-semibold text-foreground">
@@ -339,7 +343,7 @@ function OperationsSnapshot({ report }: { report: OperationsReport }) {
       </dl>
 
       {recentRows.length > 0 ? (
-        <ul className="mt-4 divide-y divide-operational-border rounded-md border border-operational-border bg-operational-panel/20">
+        <ul className="mt-4 divide-y divide-operational-border border border-operational-border bg-muted/40">
           {recentRows.map((row) => (
             <li key={row.key} className="flex flex-col gap-1 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
               <span className="text-sm font-medium text-foreground">{row.label}</span>
@@ -348,7 +352,7 @@ function OperationsSnapshot({ report }: { report: OperationsReport }) {
           ))}
         </ul>
       ) : (
-        <p className="mt-4 rounded-md border border-dashed border-operational-border bg-operational-panel/20 p-3 text-sm text-muted-foreground">
+        <p className="mt-4 border border-dashed border-operational-border bg-muted/40 p-4 text-sm text-muted-foreground">
           Sin eventos operativos relevantes en el periodo.
         </p>
       )}
@@ -358,9 +362,8 @@ function OperationsSnapshot({ report }: { report: OperationsReport }) {
 
 function Metric({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-md border border-operational-border bg-card p-3">
-      <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
-      <dd className="mt-1 text-xl font-semibold tabular-nums text-foreground">{value}</dd>
+    <div className="border border-operational-border bg-card p-4">
+      <Statistic title={label} value={value} />
     </div>
   );
 }
@@ -425,8 +428,8 @@ function auditFiltersToUrl(filters: AuditLogFilters): URLSearchParams {
 function toSafeAuditEntry(entry: ApiAuditLogEntry): AuditLogEntry {
   return {
     action: auditActionLabel(entry.action),
-    created_at: entry.created_at,
-    reason: entry.reason,
+    created_at: entry.created_at ?? '',
+    reason: typeof entry.reason === 'string' ? entry.reason : null,
     result: entry.result === 'failed' ? 'error' : entry.result ?? undefined,
     user: entry.user?.name ? { name: entry.user.name } : null,
   };

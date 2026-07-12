@@ -11,10 +11,11 @@ import {
   type HTMLAttributes,
   type ReactNode,
 } from 'react';
-import { Tag, Radio } from 'antd';
+import { Radio } from 'antd';
 import { cn } from '../../lib/utils';
 import { MoneyText } from '../ui/money-text';
 import { formatDateTimeEs } from '../../lib/format/formatDate';
+import { StatusTag } from '../ui/status-tag';
 
 type Tone = 'neutral' | 'info' | 'success' | 'warning' | 'destructive';
 
@@ -261,7 +262,7 @@ export const WorkflowPanel = forwardRef<HTMLElement, PanelProps & { status?: Rea
             <div data-slot="workflow-panel-header" className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between border-b border-border pb-3">
               <div className="min-w-0">
                 {title ? <h2 className="text-base font-semibold text-foreground">{title}</h2> : null}
-                {description ? <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{description}</p> : null}
+                {description ? <p className="mt-1 text-sm leading-relaxed text-foreground/80">{description}</p> : null}
               </div>
               {(actions || status) ? (
                 <div className="flex shrink-0 flex-wrap items-center gap-2">
@@ -379,12 +380,12 @@ export function StatGrid({ children, className, items, ...props }: StatGridProps
         >
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{item.label}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-foreground/80">{item.label}</p>
               <p className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-foreground tabular-nums">{item.value}</p>
             </div>
             {item.icon ? <span className="shrink-0 text-primary [&_svg]:size-4">{item.icon}</span> : null}
           </div>
-          {item.helper ? <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{item.helper}</p> : null}
+          {item.helper ? <p className="mt-3 text-xs leading-relaxed text-foreground/80">{item.helper}</p> : null}
         </div>
       ))}
       {children}
@@ -423,7 +424,7 @@ export function StatCard({
         )}
       >
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">{label}</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-foreground/80">{label}</p>
           <p className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-foreground tabular-nums">{value}</p>
         </div>
         {icon ? (
@@ -432,7 +433,7 @@ export function StatCard({
           </span>
         ) : null}
       </div>
-      {helper ? <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{helper}</p> : null}
+      {helper ? <p className="mt-2 text-xs leading-relaxed text-foreground/80">{helper}</p> : null}
     </div>
   );
 }
@@ -677,12 +678,12 @@ export function CashStatusCard({
     attention: 'Requiere atencion',
   }[status];
 
-  const tagColorMap = {
+  const tagKind = {
     open: 'success',
-    closed: 'default',
-    pending: 'warning',
-    attention: 'error',
-  } as const;
+    closed: 'neutral',
+    pending: 'pending',
+    attention: 'danger',
+  }[status] as 'success' | 'neutral' | 'pending' | 'danger';
 
   return (
     <section
@@ -692,31 +693,31 @@ export function CashStatusCard({
     >
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">{label}</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-foreground/80">{label}</p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <DollarOutlined className="size-5 text-primary" />
             <strong className="text-2xl font-semibold tabular-nums text-foreground">{amount ?? statusLabel}</strong>
           </div>
         </div>
-        <Tag color={tagColorMap[status]}>{statusLabel}</Tag>
+        <StatusTag kind={tagKind}>{statusLabel}</StatusTag>
       </div>
       {(cashier || timestamp) ? (
         <dl className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
           {cashier ? (
             <div>
-              <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Cajero</dt>
+              <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-foreground/80">Cajero</dt>
               <dd className="mt-1 text-foreground">{cashier}</dd>
             </div>
           ) : null}
           {timestamp ? (
             <div>
-              <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Actualizacion</dt>
+              <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-foreground/80">Actualizacion</dt>
               <dd className="mt-1 text-foreground">{timestamp}</dd>
             </div>
           ) : null}
         </dl>
       ) : null}
-      {helper ? <p className="mt-4 text-sm text-muted-foreground">{helper}</p> : null}
+      {helper ? <p className="mt-4 text-sm text-foreground/80">{helper}</p> : null}
       {actions ? <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border pt-4">{actions}</div> : null}
     </section>
   );
@@ -738,39 +739,39 @@ export function PermissionBadge({
     granted: {
       icon: CheckOutlined,
       label: 'Permitido',
-      color: 'success' as const,
+      kind: 'success' as const,
     },
     readonly: {
       icon: CheckOutlined,
       label: 'Solo lectura',
-      color: 'processing' as const,
+      kind: 'info' as const,
     },
     denied: {
       icon: WarningOutlined,
       label: 'Restringido',
-      color: 'warning' as const,
+      kind: 'warning' as const,
     },
     system: {
       icon: WarningOutlined,
       label: 'Sistema',
-      color: 'default' as const,
+      kind: 'neutral' as const,
     },
   }[state];
   const Icon = config.icon;
 
   return (
-    <Tag
+    <StatusTag
       data-slot="permission-badge"
-      color={config.color}
+      kind={config.kind}
       className={cn('text-[11px] px-2 py-0.5', className)}
       title={permission ? `${config.label}: ${permission}` : config.label}
-      {...props}
+      {...(props as Record<string, unknown>)}
     >
       <span className="inline-flex items-center gap-1">
         <Icon className="text-[10px]" />
         {children ?? config.label}
       </span>
-    </Tag>
+    </StatusTag>
   );
 }
 
@@ -899,7 +900,7 @@ export function PrintPreviewFrame({
       <div className="receipt-preview-controls no-print flex flex-wrap items-center gap-2 pb-3">
         <div className="min-w-0">
           <h2 className="text-base font-semibold text-foreground">{title}</h2>
-          {description ? <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{description}</p> : null}
+          {description ? <p className="mt-1 text-sm leading-relaxed text-foreground/80">{description}</p> : null}
         </div>
         {actions ? <div className="ml-auto flex flex-wrap items-center gap-2">{actions}</div> : null}
       </div>
@@ -968,16 +969,16 @@ export function PaperProfileSelector({
             >
               <span className="flex w-full items-center justify-between gap-2">
                 <span className="text-sm font-semibold leading-tight text-foreground">{option.label}</span>
-                <Radio value={option.code} />
+                <Radio value={option.code} aria-label={option.label} />
               </span>
-              <span className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">{option.size}</span>
-              <span className="text-xs leading-relaxed text-muted-foreground">{option.description}</span>
+              <span className="text-xs font-medium uppercase tracking-[0.12em] text-foreground/80">{option.size}</span>
+              <span className="text-xs leading-relaxed text-foreground/80">{option.description}</span>
             </label>
           );
         })}
       </Radio.Group>
       {helperText ? (
-        <p id={helperId} className="text-xs leading-5 text-muted-foreground">
+        <p id={helperId} className="text-xs leading-5 text-foreground/80">
           {helperText}
         </p>
       ) : null}
