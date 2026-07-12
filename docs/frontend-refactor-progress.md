@@ -7,10 +7,10 @@ Este documento registra el progreso fase por fase del refactor del frontend. Se 
 ## Estado General de la Campaña
 
 * **Fases Totales:** 20
-* **Fases Completadas:** 3 (Fase 0, Fase 1, Fase 2, Fase 3)
+* **Fases Completadas:** 5 (Fase 0, Fase 1, Fase 2, Fase 3, Fase 4)
 * **Fases en Progreso:** 0
-* **Fases Pendientes:** 17
-* **Porcentaje Completado:** 20%
+* **Fases Pendientes:** 15
+* **Porcentaje Completado:** 25%
 
 ---
 
@@ -53,7 +53,16 @@ Este documento registra el progreso fase por fase del refactor del frontend. Se 
   * Modificación de [styles.css](file:///c:/Projects/S_Hospital/frontend/src/styles.css)
 * **Resultado:** Calidad del diseño protegida con esquinas rectas (`borderRadius: 0` y `shadow-none`) aplicadas a nivel de tokens globales de Tailwind y un validador que vigila violaciones en archivos migrados.
 
+### Fase 4: Storybook y Componentes Institucionales
+* **Estado:** **Completado**
+* **Archivos Migrados/Creados:**
+  * [design-system.stories.tsx](file:///c:/Projects/S_Hospital/frontend/src/components/shared/design-system.stories.tsx) (Historias completas de componentes compartidos)
+  * Modificación de [design-system.tsx](file:///c:/Projects/S_Hospital/frontend/src/components/shared/design-system.tsx) (Refactor de componentes compartidos a Ant Design)
+  * Modificación de [design-system.test.tsx](file:///c:/Projects/S_Hospital/frontend/src/components/shared/design-system.test.tsx) y [design-system-additions.test.tsx](file:///c:/Projects/S_Hospital/frontend/src/components/shared/design-system-additions.test.tsx)
+  * Modificación de [.storybook/preview.tsx](file:///c:/Projects/S_Hospital/frontend/.storybook/preview.tsx) y [eslint.config.js](file:///c:/Projects/S_Hospital/frontend/eslint.config.js) (ignora bundles generados de storybook)
+* **Resultado:** Storybook inicializado y corriendo con soporte para el proveedor de Ant Design. Los componentes institucionales compartidos fueron migrados a Ant Design y estilos planos conformes con el Quality Gate, logrando que el 100% de sus pruebas unitarias pasen en verde.
+
 ---
 
-### Próxima Fase: Fase 4: Storybook y Componentes Institucionales
-* **Próxima Acción:** Configurar Storybook con Vite y axe-core para documentar los componentes institucionales transversales (PageHeader, StatusLabel, etc.).
+### Próxima Fase: Fase 5: Estructura del Layout y Menús (ClinicalShell)
+* **Próxima Acción:** Refactorizar el shell del aplicativo (ClinicalShell, ClinicalRail, ContextBar, UserMenu) a componentes y menús nativos de Ant Design.
