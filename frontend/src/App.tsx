@@ -15,6 +15,7 @@ import { ClinicalShell } from './shell/ClinicalShell';
 import { queryClient } from './lib/query-client';
 import { apiClient } from './lib/api';
 import { MotionProvider } from './design-system/motion/MotionProvider';
+import { DesignSystemProvider } from './design-system';
 import { ClinicalToaster, notify } from './design-system/primitives/Toaster';
 import { isErrorMessage } from './lib/api/user-error';
 import { appRoutes, canAccessRoute } from './navigation/appNavigation';
@@ -23,12 +24,14 @@ export function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <MotionProvider>
-        <BrowserRouter>
-          <AppErrorBoundary>
-            <HospitalApp />
-          </AppErrorBoundary>
-          <ClinicalToaster />
-        </BrowserRouter>
+        <DesignSystemProvider>
+          <BrowserRouter>
+            <AppErrorBoundary>
+              <HospitalApp />
+            </AppErrorBoundary>
+            <ClinicalToaster />
+          </BrowserRouter>
+        </DesignSystemProvider>
       </MotionProvider>
     </QueryClientProvider>
   );

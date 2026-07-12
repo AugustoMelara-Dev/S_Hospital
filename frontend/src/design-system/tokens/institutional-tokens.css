@@ -1,0 +1,151 @@
+:root {
+  --color-background: #f8fafc;
+  --color-surface: #ffffff;
+  --color-text-base: #172033;
+  --color-border: #dbe2ea;
+  --color-primary: #0284c7; /* Azul Médico */
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #475569;
+  --color-secondary-foreground: #ffffff;
+  --color-muted: #f1f5f9;
+  --color-muted-foreground: #64748b;
+  --color-accent: #e0f2fe;
+  --color-accent-foreground: #0369a1;
+  --color-success: #16a34a;
+  --color-success-foreground: #14532d;
+  --color-warning: #d97706;
+  --color-warning-foreground: #78350f;
+  --color-error: #dc2626;
+  --color-error-foreground: #7f1d1d;
+  --color-info: #0284c7;
+  --color-info-foreground: #0c4a6e;
+  
+  --color-sidebar: #172033;
+  --color-sidebar-foreground: #e8edf5;
+  --color-sidebar-primary: #93c5fd;
+  --color-sidebar-primary-foreground: #172033;
+  --color-sidebar-accent: #26334d;
+  --color-sidebar-accent-foreground: #ffffff;
+  --color-sidebar-border: #35435e;
+  --color-sidebar-ring: #93c5fd;
+}
+
+.dark {
+  --color-background: #0f172a;
+  --color-surface: #1e293b;
+  --color-text-base: #f8fafc;
+  --color-border: #334155;
+  --color-primary: #38bdf8; /* Azul Médico Oscuro */
+  --color-primary-foreground: #0f172a;
+  --color-secondary: #94a3b8;
+  --color-secondary-foreground: #0f172a;
+  --color-muted: #1e293b;
+  --color-muted-foreground: #94a3b8;
+  --color-accent: #0c4a6e;
+  --color-accent-foreground: #38bdf8;
+  --color-success: #22c55e;
+  --color-success-foreground: #052e16;
+  --color-warning: #f59e0b;
+  --color-warning-foreground: #451a03;
+  --color-error: #ef4444;
+  --color-error-foreground: #450a0a;
+  --color-info: #38bdf8;
+  --color-info-foreground: #0c4a6e;
+  
+  --color-sidebar: #0f172a;
+  --color-sidebar-foreground: #e2e8f0;
+  --color-sidebar-primary: #38bdf8;
+  --color-sidebar-primary-foreground: #0f172a;
+  --color-sidebar-accent: #1e293b;
+  --color-sidebar-accent-foreground: #f8fafc;
+  --color-sidebar-border: #334155;
+  --color-sidebar-ring: #38bdf8;
+}
+
+@theme {
+  --color-background: var(--color-background);
+  --color-surface: var(--color-surface);
+  --color-foreground: var(--color-text-base);
+  --color-border: var(--color-border);
+  --color-primary: var(--color-primary);
+  --color-primary-foreground: var(--color-primary-foreground);
+  --color-secondary: var(--color-secondary);
+  --color-secondary-foreground: var(--color-secondary-foreground);
+  --color-muted: var(--color-muted);
+  --color-muted-foreground: var(--color-muted-foreground);
+  --color-accent: var(--color-accent);
+  --color-accent-foreground: var(--color-accent-foreground);
+  --color-success: var(--color-success);
+  --color-success-foreground: var(--color-success-foreground);
+  --color-warning: var(--color-warning);
+  --color-warning-foreground: var(--color-warning-foreground);
+  --color-error: var(--color-error);
+  --color-error-foreground: var(--color-error-foreground);
+  --color-info: var(--color-info);
+  --color-info-foreground: var(--color-info-foreground);
+
+  --color-sidebar: var(--color-sidebar);
+  --color-sidebar-foreground: var(--color-sidebar-foreground);
+  --color-sidebar-primary: var(--color-sidebar-primary);
+  --color-sidebar-primary-foreground: var(--color-sidebar-primary-foreground);
+  --color-sidebar-accent: var(--color-sidebar-accent);
+  --color-sidebar-accent-foreground: var(--color-sidebar-accent-foreground);
+  --color-sidebar-border: var(--color-sidebar-border);
+  --color-sidebar-ring: var(--color-sidebar-ring);
+
+  --font-sans: "IBM Plex Sans Variable", system-ui, -apple-system, sans-serif;
+  --font-mono: "Cascadia Code", ui-monospace, monospace;
+
+  /* Geometría institucional estricta (borderRadius: 0) */
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-panel: 0px;
+  --radius-card: 0px;
+
+  /* Eliminación de sombras decorativas flotantes */
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-panel: none;
+  --shadow-command: none;
+  --shadow-operational: none;
+}
+
+/* AG Grid v33 Institutional Theme configuration via CSS variables */
+.ag-theme-custom {
+  --ag-background-color: var(--color-surface);
+  --ag-foreground-color: var(--color-foreground);
+  --ag-border-color: var(--color-border);
+  --ag-header-background-color: var(--color-background);
+  --ag-header-foreground-color: var(--color-foreground);
+  --ag-row-border-color: var(--color-border);
+  --ag-selected-row-background-color: var(--color-accent);
+  --ag-row-hover-background-color: var(--color-muted);
+  --ag-font-family: var(--font-sans);
+  --ag-font-size: 13px;
+  --ag-grid-size: 8px;
+  --ag-border-radius: 0px;
+  --ag-card-radius: 0px;
+  --ag-header-cell-hover-background-color: var(--color-muted);
+  --ag-header-cell-moving-background-color: var(--color-muted);
+  
+  width: 100%;
+  height: 100%;
+}
+
+.ag-theme-custom .ag-header {
+  border-bottom: 1px solid var(--color-border) !important;
+  font-weight: 600;
+}
+
+.ag-theme-custom .ag-row {
+  border-bottom: 1px solid var(--color-border) !important;
+}
+
+.ag-theme-custom .ag-cell-focus {
+  outline: 2px solid var(--color-primary) !important;
+  outline-offset: -2px;
+}
+

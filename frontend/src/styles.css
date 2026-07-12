@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import "./design-system/tokens/clinical-tokens.css";
+@import "./design-system/tokens/institutional-tokens.css";
 
 @theme {
   --color-receipt-border: #1f2937;
@@ -34,15 +34,9 @@ html.dark {
     -webkit-font-smoothing: antialiased;
     -webkit-tap-highlight-color: transparent;
     color-scheme: light;
-    background-image:
-      radial-gradient(circle at 88% 2%, rgb(8 127 113 / 0.07), transparent 24rem),
-      linear-gradient(180deg, #f4f8f7 0, var(--color-background) 22rem);
-    background-attachment: fixed;
   }
 
-  html.dark body {
-    color-scheme: dark;
-  }
+  html.dark body { color-scheme: light; }
 
   button,
   input,
@@ -66,91 +60,6 @@ html.dark {
 
   :where(.tabular-nums, [data-numeric="true"]) {
     font-variant-numeric: tabular-nums;
-  }
-
-  .table-wrap {
-    width: 100%;
-    max-width: 100%;
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .table-wrap:focus-within {
-    outline: 2px solid var(--color-ring);
-    outline-offset: 2px;
-  }
-
-  [data-slot="page-header"] {
-    position: relative;
-    overflow: hidden;
-    border: 0;
-    border-radius: 1rem;
-    background: linear-gradient(125deg, #103746 0%, #164b59 62%, #0d6b67 125%);
-    color: #f5fbfa;
-    padding: 1.25rem 1.35rem 1.4rem;
-    box-shadow: 0 22px 50px -38px rgb(7 28 36 / 0.75);
-  }
-
-  [data-slot="page-header"]::after {
-    position: absolute;
-    inset: auto -3rem -5rem auto;
-    width: 14rem;
-    height: 14rem;
-    border: 1px solid rgb(116 225 207 / 0.2);
-    border-radius: 999px;
-    content: "";
-  }
-
-  [data-slot="page-header-title"] { color: #ffffff; }
-  [data-slot="page-header-description"] { color: #c9dcda; }
-  [data-slot="page-header-actions"], [data-slot="page-header-secondary"], [data-slot="page-header-top"] { position: relative; z-index: 1; color: #d6e8e5; }
-  [data-slot="page-header-top"] :where(p, span) { color: #80dfd0; }
-  [data-slot="page-header-secondary"] :where(p, span) { color: #d6e8e5; }
-  [data-slot="page-header-actions"] [data-slot="button"],
-  [data-slot="operational-banner"] [data-slot="button"] { border-color: rgb(255 255 255 / 0.18); background: #55d3bf; color: #071c24; }
-  [data-slot="page-header-actions"] [data-slot="button"]:hover,
-  [data-slot="operational-banner"] [data-slot="button"]:hover { background: #76dfcf; color: #071c24; }
-
-  [data-slot="card"] {
-    border-color: rgb(203 216 213 / 0.82);
-    box-shadow: var(--shadow-panel);
-    transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
-  }
-
-  [data-slot="card"]:hover { border-color: rgb(8 127 113 / 0.28); box-shadow: 0 22px 48px -36px rgb(12 39 51 / 0.48); }
-  [data-slot="card-title"] { letter-spacing: -0.02em; }
-  [data-slot="button"] { transition: transform 120ms ease, background-color 160ms ease, border-color 160ms ease, color 160ms ease; }
-  [data-slot="button"]:active { transform: translateY(1px) scale(0.985); }
-  :where(table) thead { background: color-mix(in srgb, var(--color-muted) 72%, transparent); }
-  :where(table) tbody tr { transition: background-color 140ms ease; }
-  :where(table) tbody tr:hover { background: color-mix(in srgb, var(--color-accent) 58%, transparent); }
-
-  .status-success {
-    border-color: color-mix(in srgb, var(--color-success) 35%, transparent);
-    background: color-mix(in srgb, var(--color-success) 12%, var(--color-operational-surface));
-    color: var(--color-success-foreground);
-  }
-
-  .status-warning {
-    border-color: color-mix(in srgb, var(--color-warning) 42%, transparent);
-    background: color-mix(in srgb, var(--color-warning) 12%, var(--color-operational-surface));
-    color: var(--color-warning-foreground);
-  }
-
-  .status-info {
-    border-color: color-mix(in srgb, var(--color-info) 35%, transparent);
-    background: color-mix(in srgb, var(--color-info) 12%, var(--color-operational-surface));
-    color: var(--color-info-foreground);
-  }
-
-  .cash-layout {
-    display: grid;
-    gap: 1.5rem;
-  }
-
-  .data-table {
-    min-width: max-content;
   }
 
   .print-hidden {
@@ -230,11 +139,12 @@ html.dark {
     margin: 0 auto;
     background: #ffffff;
     color: #111827;
-    font-family: "Times New Roman", Georgia, serif;
+    font-family: Georgia, "Times New Roman", serif;
     font-size: 12px;
     line-height: 1.35;
-    box-shadow: 0 1px 3px rgb(15 23 42 / 0.18);
-    padding: 0.35in;
+    border: 1px solid #253f47;
+    box-shadow: 0 18px 42px -28px rgb(15 35 42 / 0.42);
+    padding: 0.42in;
   }
 
   .institutional-receipt.receipt-letter {
@@ -273,15 +183,21 @@ html.dark {
     text-align: center;
   }
 
+  .receipt-header {
+    color: #153d48;
+    letter-spacing: 0.025em;
+  }
+
   .receipt-header .hospital-name {
-    font-size: 1.15em;
+    font-size: 1.35em;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
   }
 
   .receipt-rule {
     height: 1px;
     margin: 0.14in 0;
-    background: #111827;
+    background: #274c56;
   }
 
   .receipt-title-row,
@@ -295,7 +211,8 @@ html.dark {
 
   .receipt-title {
     margin: 0;
-    font-size: 1.15em;
+    color: #153d48;
+    font-size: 1.2em;
     letter-spacing: 0;
   }
 
