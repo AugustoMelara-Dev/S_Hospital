@@ -1,38 +1,29 @@
 import { useId as useReactId } from 'react';
 import {
-  AlertTriangle,
-  Banknote,
-  Check,
-  ReceiptText,
-  type LucideIcon,
-} from 'lucide-react';
+  WarningOutlined,
+  DollarOutlined,
+  CheckOutlined,
+  FileTextOutlined,
+} from '@ant-design/icons';
 import {
   forwardRef,
   type ButtonHTMLAttributes,
   type HTMLAttributes,
   type ReactNode,
 } from 'react';
+import { Tag, Radio } from 'antd';
 import { cn } from '../../lib/utils';
-import { Badge } from '../ui/badge';
 import { MoneyText } from '../ui/money-text';
 import { formatDateTimeEs } from '../../lib/format/formatDate';
 
 type Tone = 'neutral' | 'info' | 'success' | 'warning' | 'destructive';
 
 const toneStyles: Record<Tone, string> = {
-  neutral: 'border-operational-border bg-operational-surface text-foreground',
+  neutral: 'border-border bg-surface text-foreground',
   info: 'border-info/35 bg-info/10 text-info-foreground dark:text-info-foreground',
   success: 'border-success/35 bg-success/10 text-success-foreground dark:text-success-foreground',
   warning: 'border-warning/40 bg-warning/10 text-warning-foreground dark:text-warning-foreground',
-  destructive: 'border-destructive/40 bg-destructive/10 text-destructive',
-};
-
-const toneIcons: Record<Tone, LucideIcon> = {
-  neutral: AlertTriangle,
-  info: AlertTriangle,
-  success: AlertTriangle,
-  warning: AlertTriangle,
-  destructive: AlertTriangle,
+  destructive: 'border-error/40 bg-error/10 text-error-foreground dark:text-error-foreground',
 };
 
 const receiptFormatClasses = {
@@ -53,7 +44,7 @@ export const AppSurface = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivEleme
     <div
       ref={ref}
       data-slot="app-surface"
-      className={cn('min-h-[100dvh] bg-operational-bg text-foreground', className)}
+      className={cn('min-h-[100dvh] bg-background text-foreground', className)}
       {...props}
     />
   );
@@ -95,7 +86,7 @@ export function SectionHeader({
   return (
     <header
       data-slot="section-header"
-      className={cn('flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between', className)}
+      className={cn('flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between border-b border-border pb-4', className)}
       {...props}
     >
       <div data-slot="section-header-main" className="min-w-0">
@@ -142,7 +133,7 @@ export function CommandCenterHeader({
   return (
     <section
       data-slot="command-center-header"
-      className={cn('rounded-panel border bg-operational-surface p-panel shadow-command', toneStyles[tone], className)}
+      className={cn('border bg-surface p-5', toneStyles[tone], className)}
       {...props}
     >
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-start">
@@ -188,14 +179,13 @@ export const CommandPanel = forwardRef<HTMLElement, PanelProps>(function Command
       ref={ref}
       data-slot="command-panel"
       className={cn(
-        'rounded-panel border border-operational-border bg-operational-surface p-panel shadow-operational',
-        'focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background',
+        'border border-border bg-surface p-5',
         className,
       )}
       {...props}
     >
       {title || description || actions ? (
-        <div data-slot="command-panel-header" className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div data-slot="command-panel-header" className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between border-b border-border pb-3">
           <div className="min-w-0">
             {title ? <TitleTag className="text-base font-semibold text-foreground">{title}</TitleTag> : null}
             {description ? <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{description}</p> : null}
@@ -206,7 +196,7 @@ export const CommandPanel = forwardRef<HTMLElement, PanelProps>(function Command
       <div data-slot="command-panel-content" className="min-w-0">
         {children}
       </div>
-      {footer ? <div data-slot="command-panel-footer" className="mt-4 border-t border-operational-border pt-4">{footer}</div> : null}
+      {footer ? <div data-slot="command-panel-footer" className="mt-4 border-t border-border pt-4">{footer}</div> : null}
     </section>
   );
 });
@@ -225,7 +215,7 @@ export const PrimaryActionPanel = forwardRef<HTMLElement, PanelProps & { emphasi
     <section
       ref={ref}
       data-slot="primary-action-panel"
-      className={cn('rounded-panel border border-hospital-border bg-hospital-surface p-panel shadow-command', className)}
+      className={cn('border border-border bg-surface p-5', className)}
       {...props}
     >
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -241,7 +231,7 @@ export const PrimaryActionPanel = forwardRef<HTMLElement, PanelProps & { emphasi
           </div>
         ) : null}
       </div>
-      {footer ? <div className="mt-4 border-t border-operational-border pt-4">{footer}</div> : null}
+      {footer ? <div className="mt-4 border-t border-border pt-4">{footer}</div> : null}
     </section>
   );
 });
@@ -261,14 +251,14 @@ export const WorkflowPanel = forwardRef<HTMLElement, PanelProps & { status?: Rea
     <section
       ref={ref}
       data-slot="workflow-panel"
-      className={cn('overflow-hidden rounded-panel border bg-operational-surface shadow-operational', toneStyles[tone], className)}
+      className={cn('overflow-hidden border bg-surface', toneStyles[tone], className)}
       {...props}
     >
       <div className="grid grid-cols-[0.35rem_minmax(0,1fr)]">
-        <div aria-hidden="true" className={cn('bg-hospital-primary', tone === 'warning' && 'bg-warning', tone === 'destructive' && 'bg-destructive', tone === 'success' && 'bg-success', tone === 'info' && 'bg-info')} />
-        <div className="min-w-0 p-panel">
+        <div aria-hidden="true" className={cn('bg-primary', tone === 'warning' && 'bg-warning', tone === 'destructive' && 'bg-error', tone === 'success' && 'bg-success', tone === 'info' && 'bg-info')} />
+        <div className="min-w-0 p-5">
           {title || description || actions || status ? (
-            <div data-slot="workflow-panel-header" className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div data-slot="workflow-panel-header" className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between border-b border-border pb-3">
               <div className="min-w-0">
                 {title ? <h2 className="text-base font-semibold text-foreground">{title}</h2> : null}
                 {description ? <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{description}</p> : null}
@@ -284,7 +274,7 @@ export const WorkflowPanel = forwardRef<HTMLElement, PanelProps & { status?: Rea
           <div data-slot="workflow-panel-content" className="min-w-0">
             {children}
           </div>
-          {footer ? <div data-slot="workflow-panel-footer" className="mt-4 border-t border-operational-border pt-4">{footer}</div> : null}
+          {footer ? <div data-slot="workflow-panel-footer" className="mt-4 border-t border-border pt-4">{footer}</div> : null}
         </div>
       </div>
     </section>
@@ -313,11 +303,11 @@ export function ChartCard({
       data-slot="chart-card"
       aria-labelledby={title ? titleId : undefined}
       aria-describedby={description || caption ? descriptionId : undefined}
-      className={cn('rounded-panel border border-operational-border bg-operational-surface p-panel shadow-operational', className)}
+      className={cn('border border-border bg-surface p-5', className)}
       {...props}
     >
       {title || description || actions ? (
-        <figcaption data-slot="chart-card-header" className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <figcaption data-slot="chart-card-header" className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between border-b border-border pb-3">
           <div className="min-w-0">
             {title ? <h2 id={titleId} className="text-base font-semibold text-foreground">{title}</h2> : null}
             {description ? <p id={descriptionId} className="mt-1 text-sm leading-relaxed text-muted-foreground">{description}</p> : null}
@@ -329,7 +319,7 @@ export function ChartCard({
         {children}
       </div>
       {caption && !description ? <p id={descriptionId} className="mt-3 text-xs text-muted-foreground">{caption}</p> : null}
-      {footer ? <div data-slot="chart-card-footer" className="mt-4 border-t border-operational-border pt-4">{footer}</div> : null}
+      {footer ? <div data-slot="chart-card-footer" className="mt-4 border-t border-border pt-4">{footer}</div> : null}
     </figure>
   );
 }
@@ -351,7 +341,7 @@ export function ChartLegend({
         <span key={index} className="inline-flex items-center gap-2">
           <span
             aria-hidden="true"
-            className="size-2.5 rounded-sm border border-black/5"
+            className="size-2.5 border border-black/5"
             style={{ backgroundColor: item.color ?? `var(--color-chart-${(index % 8) + 1})` }}
           />
           <span className="font-medium text-foreground">{item.label}</span>
@@ -385,14 +375,14 @@ export function StatGrid({ children, className, items, ...props }: StatGridProps
         <div
           key={index}
           data-slot="stat-grid-item"
-          className={cn('relative overflow-hidden rounded-xl border border-operational-border bg-operational-surface p-5 shadow-operational before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-secondary/70', item.tone && toneStyles[item.tone])}
+          className={cn('relative overflow-hidden border border-border bg-surface p-5 before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-secondary/70', item.tone && toneStyles[item.tone])}
         >
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{item.label}</p>
               <p className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-foreground tabular-nums">{item.value}</p>
             </div>
-            {item.icon ? <span className="shrink-0 text-hospital-primary [&_svg]:size-4">{item.icon}</span> : null}
+            {item.icon ? <span className="shrink-0 text-primary [&_svg]:size-4">{item.icon}</span> : null}
           </div>
           {item.helper ? <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{item.helper}</p> : null}
         </div>
@@ -420,7 +410,7 @@ export function StatCard({
     <div
       data-slot="stat-card"
       className={cn(
-        'relative overflow-hidden rounded-xl border border-operational-border bg-operational-surface p-5 shadow-operational before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-secondary/70',
+        'relative overflow-hidden border border-border bg-surface p-5 before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-secondary/70',
         toneStyles[tone],
         className,
       )}
@@ -437,7 +427,7 @@ export function StatCard({
           <p className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-foreground tabular-nums">{value}</p>
         </div>
         {icon ? (
-          <span className={cn('shrink-0 text-hospital-primary [&_svg]:size-4', align === 'vertical' && 'self-end')}>
+          <span className={cn('shrink-0 text-primary [&_svg]:size-4', align === 'vertical' && 'self-end')}>
             {icon}
           </span>
         ) : null}
@@ -467,14 +457,13 @@ export const SectionCard = forwardRef<HTMLElement, SectionCardProps>(function Se
       ref={ref as never}
       data-slot="section-card"
       className={cn(
-        'rounded-xl border border-operational-border bg-operational-surface p-panel shadow-operational',
-        'focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background',
+        'border border-border bg-surface p-5',
         className,
       )}
       {...props}
     >
       {title || description || actions ? (
-        <div data-slot="section-card-header" className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div data-slot="section-card-header" className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between border-b border-border pb-3">
           <div className="min-w-0">
             {title ? <h2 className="text-base font-semibold text-foreground">{title}</h2> : null}
             {description ? <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{description}</p> : null}
@@ -485,7 +474,7 @@ export const SectionCard = forwardRef<HTMLElement, SectionCardProps>(function Se
       <div data-slot="section-card-content" className="min-w-0">
         {children}
       </div>
-      {footer ? <div data-slot="section-card-footer" className="mt-4 border-t border-operational-border pt-4">{footer}</div> : null}
+      {footer ? <div data-slot="section-card-footer" className="mt-4 border-t border-border pt-4">{footer}</div> : null}
     </Comp>
   );
 });
@@ -508,18 +497,16 @@ export function InfoPanel({
   tone = 'info',
   ...props
 }: InfoPanelProps) {
-  const Icon = toneIcons[tone];
-
   return (
     <div
       data-slot="info-panel"
       role={tone === 'warning' || tone === 'destructive' ? 'alert' : 'status'}
-      className={cn('flex flex-col gap-3 rounded-panel border p-4 text-sm sm:flex-row sm:items-start sm:justify-between', toneStyles[tone], className)}
+      className={cn('flex flex-col gap-3 border p-4 text-sm sm:flex-row sm:items-start sm:justify-between', toneStyles[tone], className)}
       {...props}
     >
       <div className="flex min-w-0 gap-3">
         <span aria-hidden="true" className="mt-0.5 shrink-0 [&_svg]:size-4">
-          {icon ?? <Icon data-icon />}
+          {icon ?? <WarningOutlined />}
         </span>
         <div className="min-w-0">
           <p className="font-semibold leading-tight">{title}</p>
@@ -543,11 +530,11 @@ export function OfflineState({
     <div
       data-slot="offline-state"
       role="alert"
-      className={cn('rounded-panel border border-warning/40 bg-warning/10 p-panel text-warning-foreground dark:text-warning-foreground', className)}
+      className={cn('border border-warning/40 bg-warning/10 p-5 text-warning-foreground dark:text-warning-foreground', className)}
       {...props}
     >
       <div className="flex gap-3">
-        <AlertTriangle data-icon aria-hidden="true" className="mt-0.5 size-5 shrink-0" />
+        <WarningOutlined aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-warning" />
         <div className="min-w-0">
           <p className="font-semibold">{title}</p>
           <p className="mt-1 text-sm leading-relaxed text-current/85">{description}</p>
@@ -575,17 +562,17 @@ export function PermissionState({
 }: PermissionStateProps) {
   const content = {
     denied: {
-      icon: AlertTriangle,
+      icon: WarningOutlined,
       title: 'Acceso restringido',
       description: 'Tu usuario no tiene permiso para esta acción.',
     },
     readonly: {
-      icon: AlertTriangle,
+      icon: WarningOutlined,
       title: 'Solo lectura',
       description: 'Puedes revisar esta información, pero no modificarla.',
     },
     unavailable: {
-      icon: AlertTriangle,
+      icon: WarningOutlined,
       title: 'Acción no disponible',
       description: 'La acción está bloqueada por el estado actual.',
     },
@@ -596,11 +583,11 @@ export function PermissionState({
     <div
       data-slot="permission-state"
       role="status"
-      className={cn('rounded-panel border border-warning/40 bg-warning/10 p-panel text-warning-foreground dark:text-warning-foreground', className)}
+      className={cn('border border-warning/40 bg-warning/10 p-5 text-warning-foreground dark:text-warning-foreground', className)}
       {...props}
     >
       <div className="flex gap-3">
-        <Icon data-icon aria-hidden="true" className="mt-0.5 size-5 shrink-0" />
+        <Icon aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-warning" />
         <div className="min-w-0">
           <p className="font-semibold">{title ?? content.title}</p>
           <p className="mt-1 text-sm leading-relaxed text-current/85">{description ?? content.description}</p>
@@ -639,17 +626,16 @@ export function OperationalBanner({
       data-slot="operational-banner"
       data-tone={tone}
       className={cn(
-        'relative isolate overflow-hidden rounded-2xl border border-white/10 bg-[#0c2733] p-5 text-white shadow-[0_28px_70px_-48px_rgba(4,20,28,.95)] sm:p-7',
+        'relative isolate overflow-hidden border border-border bg-slate-900 p-5 text-white sm:p-7',
         className,
       )}
       {...props}
     >
-      <div className="pointer-events-none absolute -right-24 -top-28 -z-10 size-72 rounded-full border border-[#55d3bf]/20 bg-[#55d3bf]/5" aria-hidden="true" />
       <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
-          {meta ? <div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#80dfd0]">{meta}</div> : null}
+          {meta ? <div className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-blue-400">{meta}</div> : null}
           <TitleTag className="text-2xl font-semibold leading-tight tracking-[-0.035em] text-white sm:text-3xl">{title}</TitleTag>
-          {description ? <p className="mt-3 max-w-3xl text-sm leading-relaxed text-white/65">{description}</p> : null}
+          {description ? <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-300">{description}</p> : null}
         </div>
         {(status || actions) ? (
           <div className="flex shrink-0 flex-wrap items-center gap-2 lg:justify-end">
@@ -691,21 +677,28 @@ export function CashStatusCard({
     attention: 'Requiere atencion',
   }[status];
 
+  const tagColorMap = {
+    open: 'success',
+    closed: 'default',
+    pending: 'warning',
+    attention: 'error',
+  } as const;
+
   return (
     <section
       data-slot="cash-status-card"
-      className={cn('rounded-panel border bg-operational-surface p-panel shadow-operational', toneStyles[tone], className)}
+      className={cn('border bg-surface p-5', toneStyles[tone], className)}
       {...props}
     >
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">{label}</p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <Banknote data-icon aria-hidden="true" className="size-5 text-hospital-primary" />
+            <DollarOutlined className="size-5 text-primary" />
             <strong className="text-2xl font-semibold tabular-nums text-foreground">{amount ?? statusLabel}</strong>
           </div>
         </div>
-        <Badge variant={tone === 'success' ? 'success' : tone === 'warning' ? 'warning' : 'secondary'}>{statusLabel}</Badge>
+        <Tag color={tagColorMap[status]}>{statusLabel}</Tag>
       </div>
       {(cashier || timestamp) ? (
         <dl className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
@@ -724,7 +717,7 @@ export function CashStatusCard({
         </dl>
       ) : null}
       {helper ? <p className="mt-4 text-sm text-muted-foreground">{helper}</p> : null}
-      {actions ? <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-operational-border pt-4">{actions}</div> : null}
+      {actions ? <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border pt-4">{actions}</div> : null}
     </section>
   );
 }
@@ -743,39 +736,41 @@ export function PermissionBadge({
 }: PermissionBadgeProps) {
   const config = {
     granted: {
-      icon: Check,
+      icon: CheckOutlined,
       label: 'Permitido',
-      variant: 'success' as const,
+      color: 'success' as const,
     },
     readonly: {
-      icon: Check,
+      icon: CheckOutlined,
       label: 'Solo lectura',
-      variant: 'info' as const,
+      color: 'processing' as const,
     },
     denied: {
-      icon: Check,
+      icon: WarningOutlined,
       label: 'Restringido',
-      variant: 'warning' as const,
+      color: 'warning' as const,
     },
     system: {
-      icon: AlertTriangle,
+      icon: WarningOutlined,
       label: 'Sistema',
-      variant: 'secondary' as const,
+      color: 'default' as const,
     },
   }[state];
   const Icon = config.icon;
 
   return (
-    <Badge
+    <Tag
       data-slot="permission-badge"
-      variant={config.variant}
-      className={cn('rounded-md border border-current/10 text-[11px]', className)}
+      color={config.color}
+      className={cn('text-[11px] px-2 py-0.5', className)}
       title={permission ? `${config.label}: ${permission}` : config.label}
       {...props}
     >
-      <Icon data-icon aria-hidden="true" className="size-3" />
-      {children ?? config.label}
-    </Badge>
+      <span className="inline-flex items-center gap-1">
+        <Icon className="text-[10px]" />
+        {children ?? config.label}
+      </span>
+    </Tag>
   );
 }
 
@@ -798,13 +793,13 @@ export function QuickActionTile({
       type={type}
       data-slot="quick-action-tile"
       className={cn(
-        'group flex min-h-24 w-full items-start gap-3 rounded-card border border-operational-border bg-operational-surface p-4 text-left shadow-sm transition hover:border-hospital-primary/45 hover:shadow-panel focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-operational-ring',
+        'group flex h-auto min-h-24 w-full items-start justify-start gap-3 border border-border bg-surface p-4 text-left transition hover:border-primary/45 hover:bg-slate-50 dark:hover:bg-slate-800',
         className,
       )}
       {...props}
     >
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-hospital-primary/10 text-hospital-primary group-hover:bg-hospital-primary group-hover:text-primary-foreground">
-        {icon ?? <ReceiptText data-icon aria-hidden="true" className="size-4" />}
+      <span className="flex size-9 shrink-0 items-center justify-center bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white">
+        {icon ?? <FileTextOutlined className="size-4" />}
       </span>
       <span className="min-w-0">
         <span className="block font-semibold text-foreground">{title}</span>
@@ -823,7 +818,7 @@ export function SummaryRail({
   return (
     <aside
       data-slot="summary-rail"
-      className={cn('rounded-panel border border-operational-border bg-operational-surface p-panel shadow-panel', className)}
+      className={cn('border border-border bg-surface p-5', className)}
       {...props}
     >
       {title ? <h2 className="mb-4 text-base font-semibold text-foreground">{title}</h2> : null}
@@ -840,7 +835,7 @@ export function MobileStickyActionBar({
   return (
     <div
       data-slot="mobile-sticky-action-bar"
-      className={cn('sticky bottom-0 z-30 -mx-4 border-t border-operational-border bg-operational-surface/95 px-4 py-3 shadow-command backdrop-blur md:hidden', className)}
+      className={cn('sticky bottom-0 z-30 -mx-4 border-t border-border bg-surface/95 px-4 py-3 backdrop-blur md:hidden', className)}
       {...props}
     >
       <div className="flex items-center justify-between gap-3">{children}</div>
@@ -898,10 +893,10 @@ export function PrintPreviewFrame({
   return (
     <section
       data-slot="print-preview-frame"
-      className={cn('rounded-panel border border-operational-border bg-operational-panel p-panel', className)}
+      className={cn('border border-border bg-muted p-5', className)}
       {...props}
     >
-      <div className="receipt-preview-controls no-print">
+      <div className="receipt-preview-controls no-print flex flex-wrap items-center gap-2 pb-3">
         <div className="min-w-0">
           <h2 className="text-base font-semibold text-foreground">{title}</h2>
           {description ? <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{description}</p> : null}
@@ -928,7 +923,8 @@ export const PAPER_PROFILES: readonly PaperProfile[] = [
   { code: 'a5', label: 'A5', size: '148 × 210 mm', description: 'Formato compacto' },
 ] as const;
 
-type PaperProfileSelectorProps = Omit<HTMLAttributes<HTMLDivElement>, 'onChange'> & {
+type PaperProfileSelectorProps = {
+  className?: string;
   disabled?: boolean;
   helperText?: string;
   onChange: (code: PaperProfile['code']) => void;
@@ -944,51 +940,44 @@ export function PaperProfileSelector({
   options = PAPER_PROFILES,
   value,
   ...props
-}: PaperProfileSelectorProps) {
+}: PaperProfileSelectorProps & Record<string, unknown>) {
+  const helperId = useReactId();
   return (
-    <div
-      data-slot="paper-profile-selector"
-      role="radiogroup"
-      aria-label="Tipo de papel del recibo"
-      aria-describedby={helperText ? 'paper-profile-helper' : undefined}
-      className={cn('grid gap-3 sm:grid-cols-2 lg:grid-cols-3', className)}
-      {...props}
-    >
-      {options.map((option) => {
-        const isActive = option.code === value;
-        return (
-          <button
-            key={option.code}
-            type="button"
-            role="radio"
-            aria-checked={isActive}
-            disabled={disabled}
-            onClick={() => onChange(option.code)}
-            className={cn(
-              'flex flex-col items-start gap-1 rounded-panel border bg-operational-surface p-4 text-left shadow-sm transition',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-              'hover:border-hospital-primary/45 hover:shadow-panel',
-              isActive
-                ? 'border-hospital-primary bg-hospital-primary/5 ring-2 ring-hospital-primary/40'
-                : 'border-operational-border',
-              disabled && 'cursor-not-allowed opacity-60',
-            )}
-          >
-            <span className="flex w-full items-center justify-between gap-2">
-              <span className="text-sm font-semibold leading-tight text-foreground">{option.label}</span>
-              {isActive ? (
-                <Check aria-hidden="true" className="size-4 text-hospital-primary" />
-              ) : (
-                <span aria-hidden="true" className="size-4 rounded-full border border-operational-border" />
+    <div className={cn('flex flex-col gap-3', className)}>
+      <Radio.Group
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        disabled={disabled}
+        className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 w-full"
+        aria-label="Tipo de papel del recibo"
+        aria-describedby={helperText ? helperId : undefined}
+        {...props}
+      >
+        {options.map((option) => {
+          const isActive = option.code === value;
+          return (
+            <label
+              key={option.code}
+              className={cn(
+                'flex flex-col items-start gap-1 border bg-surface p-4 text-left transition cursor-pointer select-none',
+                isActive
+                  ? 'border-primary bg-primary/5 ring-2 ring-primary/40'
+                  : 'border-border',
+                disabled && 'cursor-not-allowed opacity-60',
               )}
-            </span>
-            <span className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">{option.size}</span>
-            <span className="text-xs leading-relaxed text-muted-foreground">{option.description}</span>
-          </button>
-        );
-      })}
+            >
+              <span className="flex w-full items-center justify-between gap-2">
+                <span className="text-sm font-semibold leading-tight text-foreground">{option.label}</span>
+                <Radio value={option.code} />
+              </span>
+              <span className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">{option.size}</span>
+              <span className="text-xs leading-relaxed text-muted-foreground">{option.description}</span>
+            </label>
+          );
+        })}
+      </Radio.Group>
       {helperText ? (
-        <p id="paper-profile-helper" className="col-span-full text-xs leading-5 text-muted-foreground">
+        <p id={helperId} className="text-xs leading-5 text-muted-foreground">
           {helperText}
         </p>
       ) : null}

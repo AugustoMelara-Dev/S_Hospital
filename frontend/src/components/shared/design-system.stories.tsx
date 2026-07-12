@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import {
   SectionHeader,
   CommandCenterHeader,
@@ -102,6 +102,37 @@ export const BadgesAndButtons: StoryObj = {
       <div className="max-w-xs">
         <QuickActionTile title="Cobrar Factura" description="Registrar pago y emitir recibo institucional" />
       </div>
+    </div>
+  )
+};
+
+export const OperationalAndPrinting: StoryObj = {
+  render: () => (
+    <div className="flex flex-col gap-6 p-4 max-w-4xl">
+      <OperationalBanner
+        title="Centro de Control"
+        description="Estado general de los servicios LAN y sincronización."
+        meta="SISTEMA"
+      />
+      <div className="grid gap-6 md:grid-cols-2">
+        <CashStatusCard
+          status="open"
+          amount="L 1,500.00"
+          cashier="Augusto Melara"
+          timestamp="12/07/2026 08:30"
+          helper="Caja chica inicial registrada."
+        />
+        <PaperProfileSelector
+          value="media_carta"
+          onChange={() => {}}
+          helperText="Los márgenes del recibo institucional se adaptan automáticamente al perfil de papel."
+        />
+      </div>
+      <PrintPreviewFrame title="Recibo Institucional 001-002" description="Vista de pre-impresión">
+        <div className="p-8 bg-white text-slate-800 border border-slate-300 font-serif">
+          [Contenido del Recibo Impreso]
+        </div>
+      </PrintPreviewFrame>
     </div>
   )
 };

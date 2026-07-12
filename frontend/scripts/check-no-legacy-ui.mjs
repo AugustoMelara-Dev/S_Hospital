@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { resolve, relative } from 'node:path';
+import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const projectRoot = resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -12,6 +12,9 @@ const migratedFiles = new Set([
   'src/design-system/index.ts',
   'src/App.tsx',
   'src/components/shared/design-system.stories.tsx',
+  'src/components/shared/design-system.tsx',
+  'src/components/shared/design-system.test.tsx',
+  'src/components/shared/design-system-additions.test.tsx',
 ]);
 
 const legacyImports = [
@@ -47,7 +50,7 @@ for (const fileRel of migratedFiles) {
   let source;
   try {
     source = readFileSync(fileAbs, 'utf8');
-  } catch (err) {
+  } catch {
     continue; // File does not exist yet or has been moved
   }
 

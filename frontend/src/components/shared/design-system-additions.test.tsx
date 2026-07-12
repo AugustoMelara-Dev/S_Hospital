@@ -47,8 +47,7 @@ describe('PaperProfileSelector', () => {
     expect(screen.queryByRole('radio', { name: /ticket 80/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('radio', { name: /ticket 58/i })).not.toBeInTheDocument();
 
-    const activeRadio = screen.getByRole('radio', { checked: true });
-    expect(activeRadio).toHaveTextContent('Media carta');
+    expect(screen.getByRole('radio', { name: /media carta/i })).toBeChecked();
   });
 
   it('exposes accessible label and helper text', () => {

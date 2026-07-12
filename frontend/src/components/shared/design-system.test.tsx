@@ -1,5 +1,5 @@
 import { render, screen, within } from '@testing-library/react';
-import { Search } from 'lucide-react';
+import { SearchOutlined } from '@ant-design/icons';
 import { describe, expect, it } from 'vitest';
 import { Button } from '../ui/button';
 import {
@@ -38,7 +38,7 @@ describe('v1.2 shared design system components', () => {
     expect(screen.getByText('Caja local').closest('[data-slot="section-header"]')).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: 'Facturacion' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Nuevo recibo' })).toBeInTheDocument();
-    expect(screen.getByText('Facturacion').closest('[data-slot="app-surface"]')).toHaveClass('bg-operational-bg');
+    expect(screen.getByText('Facturacion').closest('[data-slot="app-surface"]')).toHaveClass('bg-background');
     expect(screen.getByText('Facturacion').closest('[data-slot="page-shell"]')).toHaveClass('max-w-7xl');
   });
 
@@ -83,7 +83,7 @@ describe('v1.2 shared design system components', () => {
         />
         <StatGrid
           items={[
-            { label: 'Facturas', value: '12', helper: 'Emitidas hoy', icon: <Search data-icon aria-hidden="true" /> },
+            { label: 'Facturas', value: '12', helper: 'Emitidas hoy', icon: <SearchOutlined /> },
             { label: 'Pagos', value: 'L 1,250.00', tone: 'success' },
           ]}
         />
@@ -138,7 +138,7 @@ describe('v1.2 shared design system components', () => {
     expect(receipt).toHaveClass('institutional-receipt', 'receipt-half-letter', 'border-receipt-border');
 
     const preview = container.querySelector('[data-slot="print-preview-frame"]');
-    expect(preview).toHaveClass('bg-operational-panel');
+    expect(preview).toHaveClass('bg-muted');
     expect(within(preview as HTMLElement).getByText('Paciente: Maria Lopez')).toBeInTheDocument();
   });
 });
