@@ -15,6 +15,13 @@ const migratedFiles = new Set([
   'src/components/shared/design-system.tsx',
   'src/components/shared/design-system.test.tsx',
   'src/components/shared/design-system-additions.test.tsx',
+  'src/navigation/appNavigation.ts',
+  'src/shell/navigation/ClinicalRail.tsx',
+  'src/shell/status/ContextBar.tsx',
+  'src/layout/components/UserMenu.tsx',
+  'src/shell/navigation/ClinicalMobileNav.tsx',
+  'src/shell/navigation/CommandPalette.tsx',
+  'src/shell/ClinicalShell.tsx',
 ]);
 
 const legacyImports = [

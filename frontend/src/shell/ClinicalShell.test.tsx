@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React from 'react';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -5,6 +7,62 @@ import { type AuthUser, type CashSession } from '../lib/api';
 import { ClinicalShell } from './ClinicalShell';
 import { ClinicalMobileNav } from './navigation/ClinicalMobileNav';
 import { ClinicalRail } from './navigation/ClinicalRail';
+
+vi.mock('antd', async (importOriginal) => {
+  const original = await importOriginal<typeof import('antd')>();
+  return {
+    ...original,
+    Dropdown: ({ children, menu, open, onOpenChange }: any) => {
+      console.log('Mock Dropdown rendering with open:', open);
+      const child = React.Children.only(children);
+      const childWithClick = React.cloneElement(child, {
+        onClick: (e: any) => {
+          console.log('Mock Dropdown click triggered, current open:', open);
+          if (child.props.onClick) child.props.onClick(e);
+          if (onOpenChange) {
+            console.log('Mock Dropdown calling onOpenChange with:', !open);
+            onOpenChange(!open);
+          }
+        },
+      });
+
+      return (
+        <div className="ant-dropdown-trigger-container">
+          {childWithClick}
+          {open && (
+            <div role="menu" className="ant-dropdown-menu">
+              {menu.items.map((item: any) => {
+                if (!item) return null;
+                if (item.type === 'divider') return <hr key={item.key || Math.random()} />;
+                if (item.type === 'group') {
+                  return (
+                    <div key={item.key || Math.random()} role="group">
+                      {item.label}
+                    </div>
+                  );
+                }
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      if (item.onClick) item.onClick();
+                      if (onOpenChange) onOpenChange(false);
+                    }}
+                    className={item.className}
+                  >
+                    {item.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      );
+    },
+  };
+});
 
 vi.mock('../hooks/useFiscalSettings', () => ({
   usePublicBranding: () => ({ data: { hospital_name: 'Hospital San Isidro' } }),
@@ -276,8 +334,7 @@ describe('ClinicalShell', () => {
     const onLogout = vi.fn();
     renderShell({ onLogout });
     const trigger = screen.getByRole('button', { name: 'Abrir menu de usuario' });
-    trigger.focus();
-    fireEvent.keyDown(trigger, { key: 'Enter', code: 'Enter' });
+    fireEvent.click(trigger);
     fireEvent.click(await screen.findByRole('menuitem', { name: 'Cerrar sesion' }));
     expect(onLogout).toHaveBeenCalledOnce();
   });
@@ -285,8 +342,7 @@ describe('ClinicalShell', () => {
   it('entrega el nombre real del hospital al menú de usuario', async () => {
     renderShell();
     const trigger = screen.getByRole('button', { name: 'Abrir menu de usuario' });
-    trigger.focus();
-    fireEvent.keyDown(trigger, { key: 'Enter', code: 'Enter' });
+    fireEvent.click(trigger);
 
     const menu = await screen.findByRole('menu');
     expect(within(menu).getByText('Hospital San Isidro')).toBeInTheDocument();

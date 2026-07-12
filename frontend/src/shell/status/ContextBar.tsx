@@ -1,9 +1,13 @@
-import { CircleHelp, Keyboard, Moon, Search, Sun, Wifi, WifiOff } from 'lucide-react';
+import {
+  DisconnectOutlined,
+  KeyOutlined,
+  QuestionCircleOutlined,
+  SearchOutlined,
+  WifiOutlined,
+} from '@ant-design/icons';
 import { type RefObject } from 'react';
-import { Button } from '../../components/ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../components/ui/tooltip';
+import { Button, Tooltip, Tag } from 'antd';
 import { useServerStatus } from '../../hooks/useServerStatus';
-import { useTheme } from '../../hooks/useTheme';
 import { type AuthUser, type CashSession } from '../../lib/api';
 import { roleListLabel } from '../../lib/role-labels';
 import { type AppBreadcrumb } from '../../navigation/appNavigation';
@@ -25,69 +29,76 @@ type ContextBarProps = {
 
 export function ContextBar({ cashSession, commandButtonRef, crumbs, hospitalName, onLogout, onOpenCommands, onOpenGuide, onOpenShortcuts, status, user }: ContextBarProps) {
   const { isOnline } = useServerStatus();
-  const { isDark, setTheme } = useTheme();
   const currentTitle = crumbs.at(-1)?.label ?? 'Inicio';
   const cashLabel = cashSession?.status === 'open' ? `Caja #${cashSession.id}` : 'Caja cerrada';
-  const toggleTheme = () => setTheme(isDark ? 'light' : 'dark');
 
   return (
-    <TooltipProvider>
-      <header className="print-hidden sticky top-0 z-20 flex min-h-[76px] items-center gap-2 border-b border-white/10 bg-[#103746]/95 px-3 text-white shadow-[0_14px_30px_-28px_rgba(7,28,36,.9)] backdrop-blur lg:px-6">
-        <div className="min-w-0 flex-1 py-2">
-          <p data-testid="clinical-mobile-identity" className="truncate text-[10px] font-semibold uppercase tracking-[0.14em] text-[#74decf] lg:hidden">
-            {hospitalName}
-          </p>
-          <p className="truncate text-lg font-semibold tracking-tight">{currentTitle}</p>
-          <AppBreadcrumbs
-            crumbs={crumbs}
-            className="mt-1 hidden text-white/65 sm:block [&_[data-slot=breadcrumb-link]]:text-white/70 [&_[data-slot=breadcrumb-page]]:text-white [&_[data-slot=breadcrumb-separator]]:text-white/40"
-          />
-        </div>
+    <header className="print-hidden sticky top-0 z-20 flex min-h-[76px] items-center gap-2 border-b border-border/80 bg-white px-3 text-foreground backdrop-blur-xl lg:px-6">
+      <div className="min-w-0 flex-1 py-2">
+        <p data-testid="clinical-mobile-identity" className="truncate text-[10px] font-semibold uppercase tracking-[0.16em] text-secondary lg:hidden">
+          {hospitalName}
+        </p>
+        <p className="truncate text-lg font-semibold tracking-tight">{currentTitle}</p>
+        <AppBreadcrumbs
+          crumbs={crumbs}
+          className="mt-1 hidden text-muted-foreground sm:block"
+        />
+      </div>
 
-        <div className="flex shrink-0 items-center gap-2">
-          <span className="rounded-lg border border-[#74decf]/30 bg-[#74decf]/10 px-3 py-2 font-mono text-xs font-semibold text-[#b9f0e8] tabular-nums">{cashLabel}</span>
-          <span
-            role="img"
-            aria-label={isOnline ? 'Conexión local disponible' : 'Sin conexión al servidor local'}
-            className={isOnline ? 'hidden text-success md:inline-flex' : 'hidden items-center gap-1 text-sm font-semibold text-destructive md:flex'}
-          >
-            {isOnline ? <Wifi className="size-5" aria-hidden="true" /> : <><WifiOff className="size-5" aria-hidden="true" /><span>Sin conexión</span></>}
-          </span>
-        </div>
+      <div className="flex shrink-0 items-center gap-2">
+        <Tag color="processing" style={{ borderRadius: 0, margin: 0, padding: '4px 12px', fontSize: '12px', fontWeight: 'bold' }}>
+          {cashLabel}
+        </Tag>
+        <span
+          role="img"
+          aria-label={isOnline ? 'Conexión local disponible' : 'Sin conexión al servidor local'}
+          className={isOnline ? 'hidden text-success md:inline-flex' : 'hidden items-center gap-1 text-sm font-semibold text-destructive md:flex'}
+        >
+          {isOnline ? (
+            <WifiOutlined className="text-lg text-green-600" />
+          ) : (
+            <>
+              <DisconnectOutlined className="text-lg text-red-600" />
+              <span>Sin conexión</span>
+            </>
+          )}
+        </span>
+      </div>
 
-        <Button ref={commandButtonRef} type="button" variant="outline" className="hidden min-w-44 justify-start border-white/15 bg-white/10 text-white hover:bg-white/15 hover:text-white sm:inline-flex" onClick={onOpenCommands} aria-label="Abrir comandos">
-          <Search aria-hidden="true" />
-          Buscar
-          <kbd className="ml-auto font-mono text-[10px]">Ctrl K</kbd>
-        </Button>
+      <Button
+        ref={commandButtonRef as never}
+        type="default"
+        className="hidden min-w-44 justify-start bg-white text-muted-foreground sm:inline-flex"
+        onClick={onOpenCommands}
+        aria-label="Abrir comandos"
+        icon={<SearchOutlined />}
+      >
+        Buscar
+        <span className="ml-auto font-mono text-[10px] border border-border px-1.5 py-0.5 bg-slate-50 text-slate-400">Ctrl K</span>
+      </Button>
 
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button type="button" variant="ghost" size="icon" className="hidden text-white hover:bg-white/10 hover:text-white sm:inline-flex" onClick={onOpenShortcuts} aria-label="Ver atajos de teclado">
-              <Keyboard aria-hidden="true" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Atajos (?)</TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button type="button" variant="ghost" size="icon" className="hidden text-white hover:bg-white/10 hover:text-white sm:inline-flex" onClick={onOpenGuide} aria-label="Abrir ayuda">
-              <CircleHelp aria-hidden="true" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Ayuda</TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button type="button" variant="ghost" size="icon" className="hidden text-white hover:bg-white/10 hover:text-white sm:inline-flex" onClick={toggleTheme} aria-label={isDark ? 'Cambiar a claro' : 'Cambiar a oscuro'}>
-              {isDark ? <Sun aria-hidden="true" /> : <Moon aria-hidden="true" />}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>{isDark ? 'Tema claro' : 'Tema oscuro'}</TooltipContent>
-        </Tooltip>
-        <UserMenu hospitalName={hospitalName} isDark={isDark} onLogout={onLogout} onOpenGuide={onOpenGuide} onToggleTheme={toggleTheme} roleLabel={roleListLabel(user.roles)} user={user} />
-        <span role="status" className="sr-only">{status}</span>
-      </header>
-    </TooltipProvider>
+      <Tooltip title="Atajos (?)" mouseEnterDelay={0.4}>
+        <Button
+          type="text"
+          icon={<KeyOutlined />}
+          className="hidden sm:inline-flex"
+          onClick={onOpenShortcuts}
+          aria-label="Ver atajos de teclado"
+        />
+      </Tooltip>
+
+      <Tooltip title="Ayuda" mouseEnterDelay={0.4}>
+        <Button
+          type="text"
+          icon={<QuestionCircleOutlined />}
+          className="hidden sm:inline-flex"
+          onClick={onOpenGuide}
+          aria-label="Abrir ayuda"
+        />
+      </Tooltip>
+
+      <UserMenu hospitalName={hospitalName} onLogout={onLogout} onOpenGuide={onOpenGuide} roleLabel={roleListLabel(user.roles)} user={user} />
+      <span role="status" className="sr-only">{status}</span>
+    </header>
   );
 }

@@ -1,7 +1,6 @@
-import { ChevronsLeft, ChevronsRight, ShieldCheck } from 'lucide-react';
+import { MenuFoldOutlined, MenuUnfoldOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
 import { Link } from 'react-router-dom';
-import { Button } from '../../components/ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../components/ui/tooltip';
+import { Button, Tooltip } from 'antd';
 import { type AuthUser } from '../../lib/api';
 import { roleListLabel } from '../../lib/role-labels';
 import { cn } from '../../lib/utils';
@@ -18,9 +17,9 @@ type ClinicalRailProps = {
 };
 
 const groups: ReadonlyArray<{ id: NavigationGroup; label: string }> = [
-  { id: 'operations', label: 'Operación' },
-  { id: 'administration', label: 'Administración' },
-  { id: 'support', label: 'Soporte' },
+  { id: 'operations', label: 'Operaciones y control' },
+  { id: 'administration', label: 'Administración del sistema' },
+  { id: 'support', label: 'Asistencia' },
 ];
 
 export function ClinicalRail({ activeItem, collapsed, hospitalName, logoUrl, navigation, onToggleCollapsed, user }: ClinicalRailProps) {
@@ -33,30 +32,30 @@ export function ClinicalRail({ activeItem, collapsed, hospitalName, logoUrl, nav
       data-testid="clinical-rail"
       data-collapsed={collapsed ? 'true' : 'false'}
       className={cn(
-        'print-hidden hidden border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-[12px_0_40px_-28px_rgba(4,20,28,.9)] transition-[width] duration-200 lg:fixed lg:inset-y-0 lg:z-30 lg:flex lg:flex-col',
-        collapsed ? 'lg:w-[76px]' : 'lg:w-[264px]',
+        'print-hidden hidden border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:fixed lg:inset-y-0 lg:z-30 lg:flex lg:flex-col',
+        collapsed ? 'lg:w-[80px]' : 'lg:w-[280px]',
       )}
     >
       <div className={cn('flex min-h-24 items-center border-b border-sidebar-border', collapsed ? 'justify-center px-2' : 'gap-3 px-5')}>
         {logoUrl ? (
-          <img src={logoUrl} alt={hospitalName} title={collapsed ? hospitalName : undefined} className="size-11 rounded-md border border-sidebar-border bg-card object-contain p-1" />
+          <img src={logoUrl} alt={hospitalName} title={collapsed ? hospitalName : undefined} className="size-11 border border-sidebar-border bg-white object-contain p-1" />
         ) : (
           <span
             role="img"
             aria-label={hospitalName}
             title={collapsed ? hospitalName : undefined}
-            className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-sidebar-primary text-sidebar-primary-foreground shadow-lg"
+            className="flex size-11 shrink-0 items-center justify-center border border-white/10 bg-sidebar-primary text-sidebar-primary-foreground"
           >
             {collapsed ? (
               <span className="text-[10px] font-bold tracking-tight" aria-hidden="true">{hospitalInitials(hospitalName)}</span>
             ) : (
-              <ShieldCheck className="size-5" aria-hidden="true" />
+              <SafetyCertificateOutlined className="text-xl" aria-hidden="true" />
             )}
           </span>
         )}
         {!collapsed ? (
           <div className="min-w-0">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/70">Consola clínica</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-sidebar-primary">Gestión institucional</p>
             <p data-testid="clinical-desktop-identity" className="mt-1 truncate text-sm font-semibold text-white" title={hospitalName}>{hospitalName}</p>
           </div>
         ) : null}
@@ -64,74 +63,67 @@ export function ClinicalRail({ activeItem, collapsed, hospitalName, logoUrl, nav
 
       {sections.length > 0 ? (
         <nav aria-label="Navegación principal" className="min-h-0 flex-1 overflow-y-auto px-3 py-5">
-          <TooltipProvider>
-            {sections.map((section) => (
-              <section key={section.id} aria-labelledby={`clinical-rail-${section.id}`} className="mb-5">
-                <h2 id={`clinical-rail-${section.id}`} className={cn('mb-2 px-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-sidebar-foreground/85', collapsed && 'sr-only')}>
-                  {section.label}
-                </h2>
-                <ul className="space-y-1">
-                  {section.items.map((item) => {
-                    const Icon = item.icon;
-                    const active = activeItem?.id === item.id;
-                    const link = (
-                      <Link
-                        to={item.path}
-                        aria-current={active ? 'page' : undefined}
-                        data-active={active ? 'true' : 'false'}
-                        className={cn(
-                          'group relative flex min-h-11 items-center rounded-lg border border-transparent text-sm font-medium outline-none transition-all focus-visible:ring-2 focus-visible:ring-sidebar-ring',
-                          collapsed ? 'justify-center px-2' : 'gap-3 px-3',
-                          active
-                            ? 'border-sidebar-primary/35 bg-sidebar-primary/25 font-semibold text-white shadow-[inset_3px_0_0_var(--color-sidebar-primary)]'
-                            : 'text-sidebar-foreground/80 hover:translate-x-0.5 hover:bg-sidebar-accent hover:text-white',
-                        )}
-                      >
-                        <Icon className="size-5 shrink-0" aria-hidden="true" />
-                        {!collapsed ? <span>{item.label}</span> : <span className="sr-only">{item.label}</span>}
-                      </Link>
-                    );
+          {sections.map((section) => (
+            <section key={section.id} aria-labelledby={`clinical-rail-${section.id}`} className="mb-5">
+              <h2 id={`clinical-rail-${section.id}`} className={cn('mb-2 px-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-sidebar-foreground/85', collapsed && 'sr-only')}>
+                {section.label}
+              </h2>
+              <ul className="space-y-1">
+                {section.items.map((item) => {
+                  const Icon = item.icon;
+                  const active = activeItem?.id === item.id;
+                  const link = (
+                    <Link
+                      to={item.path}
+                      aria-current={active ? 'page' : undefined}
+                      data-active={active ? 'true' : 'false'}
+                      className={cn(
+                        'group relative flex min-h-11 items-center border border-transparent text-sm font-medium outline-none transition-all',
+                        collapsed ? 'justify-center px-2' : 'gap-3 px-3',
+                        active
+                          ? 'border-sidebar-primary/30 bg-white/10 font-semibold text-white'
+                          : 'text-sidebar-foreground/80 hover:translate-x-0.5 hover:bg-sidebar-accent hover:text-white',
+                      )}
+                    >
+                      <Icon className="text-lg shrink-0" aria-hidden="true" />
+                      {!collapsed ? <span>{item.label}</span> : <span className="sr-only">{item.label}</span>}
+                    </Link>
+                  );
 
-                    return (
-                      <li key={item.id}>
-                        {collapsed ? (
-                          <Tooltip>
-                            <TooltipTrigger asChild>{link}</TooltipTrigger>
-                            <TooltipContent side="right">{item.label}</TooltipContent>
-                          </Tooltip>
-                        ) : link}
-                      </li>
-                    );
-                  })}
-                </ul>
-              </section>
-            ))}
-          </TooltipProvider>
+                  return (
+                    <li key={item.id}>
+                      {collapsed ? (
+                        <Tooltip title={item.label} placement="right" mouseEnterDelay={0.4}>
+                          {link}
+                        </Tooltip>
+                      ) : link}
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          ))}
         </nav>
       ) : (
-        <p className="m-3 rounded-md border border-sidebar-border bg-sidebar-accent p-3 text-xs text-sidebar-foreground/75">
+        <p className="m-3 border border-sidebar-border bg-sidebar-accent p-3 text-xs text-sidebar-foreground/75">
           No hay módulos de navegación disponibles.
         </p>
       )}
 
-      <div className="mt-auto border-t border-sidebar-border p-3">
+      <div className="mt-auto border-t border-sidebar-border p-3 flex flex-col gap-3">
         {!collapsed ? (
-          <div className="mb-3 min-w-0 rounded-xl border border-sidebar-border bg-sidebar-accent/75 p-3">
+          <div className="min-w-0 border border-sidebar-border bg-sidebar-accent/75 p-3">
             <p className="truncate text-sm font-semibold">{user.name}</p>
             <p className="truncate text-xs text-sidebar-foreground/70">{roleListLabel(user.roles)}</p>
           </div>
         ) : null}
         <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="!size-11 shrink-0 text-sidebar-foreground hover:bg-sidebar-accent hover:text-white"
+          type="text"
+          icon={collapsed ? <MenuUnfoldOutlined className="text-white text-lg" /> : <MenuFoldOutlined className="text-white text-lg" />}
+          className="!size-11 shrink-0 hover:bg-sidebar-accent text-sidebar-foreground"
           aria-label={collapsed ? 'Expandir navegación' : 'Reducir navegación'}
-          aria-pressed={collapsed}
           onClick={onToggleCollapsed}
-        >
-          {collapsed ? <ChevronsRight aria-hidden="true" /> : <ChevronsLeft aria-hidden="true" />}
-        </Button>
+        />
       </div>
     </aside>
   );

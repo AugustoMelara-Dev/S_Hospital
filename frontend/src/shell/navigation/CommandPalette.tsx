@@ -1,9 +1,8 @@
-import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { Command } from 'cmdk';
-import { Search, X } from 'lucide-react';
-import { useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Modal, Input, List } from 'antd';
+import { SearchOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '../../components/ui/button';
+import { cn } from '../../lib/utils';
 import { type AuthUser } from '../../lib/api';
 import { type AppNavigationItem } from '../../navigation/appNavigation';
 
@@ -11,7 +10,7 @@ export type ClinicalCommand = {
   id: string;
   label: string;
   path: string;
-  group: 'Navegación' | 'Operación' | 'Ayuda';
+  group: 'Administración' | 'Operaciones' | 'Asistencia';
   keywords: string[];
 };
 
@@ -27,7 +26,7 @@ export function buildPermittedCommands(_user: AuthUser, navigation: readonly App
     id: item.id,
     label: item.label,
     path: item.path,
-    group: item.navigationGroup === 'support' ? 'Ayuda' : item.navigationGroup === 'operations' ? 'Operación' : 'Navegación',
+    group: item.navigationGroup === 'support' ? 'Asistencia' : item.navigationGroup === 'operations' ? 'Operaciones' : 'Administración',
     keywords: [item.label, item.path, item.navigationGroup ?? 'operations'],
   }));
 }
@@ -35,61 +34,119 @@ export function buildPermittedCommands(_user: AuthUser, navigation: readonly App
 export function CommandPalette({ navigation, onOpenChange, open, user }: CommandPaletteProps) {
   const navigate = useNavigate();
   const commands = buildPermittedCommands(user, navigation);
+  const [search, setSearch] = useState('');
+  const [activeIndex, setActiveIndex] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
 
+  // Reset search on open
   useEffect(() => {
-    if (!open) return;
-    const active = document.activeElement;
-    return () => {
-      if (active instanceof HTMLElement) active.focus();
-    };
+    if (open) {
+      setSearch('');
+      setActiveIndex(0);
+    }
   }, [open]);
 
-  function select(path: string) {
+  const filteredCommands = commands.filter((cmd) => {
+    const query = search.toLowerCase();
+    return (
+      cmd.label.toLowerCase().includes(query) ||
+      cmd.group.toLowerCase().includes(query) ||
+      cmd.keywords.some((kw) => kw.toLowerCase().includes(query))
+    );
+  });
+
+  const selectCommand = useCallback((path: string) => {
     navigate(path);
     onOpenChange(false);
-  }
+  }, [navigate, onOpenChange]);
+
+  // Keyboard navigation handlers
+  useEffect(() => {
+    if (!open) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setActiveIndex((prev) => (filteredCommands.length ? (prev + 1) % filteredCommands.length : 0));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setActiveIndex((prev) => (filteredCommands.length ? (prev - 1 + filteredCommands.length) % filteredCommands.length : 0));
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (filteredCommands[activeIndex]) {
+          selectCommand(filteredCommands[activeIndex].path);
+        }
+      } else if (e.key === 'Escape') {
+        onOpenChange(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [open, filteredCommands, activeIndex, selectCommand, onOpenChange]);
 
   return (
-    <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
-      <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-foreground/55" />
-        <DialogPrimitive.Content className="fixed left-1/2 top-[15vh] z-50 w-[calc(100vw-1.5rem)] max-w-xl -translate-x-1/2 overflow-hidden rounded-lg border border-border bg-card shadow-xl outline-none">
-          <DialogPrimitive.Title className="sr-only">Comandos</DialogPrimitive.Title>
-          <DialogPrimitive.Description className="sr-only">Busque una pantalla permitida y navegue sin abandonar el teclado.</DialogPrimitive.Description>
-          <DialogPrimitive.Close asChild>
-            <Button type="button" variant="ghost" size="icon" className="absolute right-2 top-2 z-10" aria-label="Cerrar comandos">
-              <X aria-hidden="true" />
-            </Button>
-          </DialogPrimitive.Close>
-          <Command label="Comandos" className="[&_[cmdk-group-heading]]:px-4 [&_[cmdk-group-heading]]:py-2 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:text-muted-foreground">
-            <div className="flex items-center gap-2 border-b border-border px-4">
-              <Search className="size-5 text-muted-foreground" aria-hidden="true" />
-              <Command.Input autoFocus aria-label="Buscar pantalla o acción" placeholder="Buscar pantalla o acción" className="h-14 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground" />
+    <Modal
+      title="Comandos"
+      open={open}
+      onCancel={() => onOpenChange(false)}
+      footer={null}
+      closable={false}
+      width={600}
+      styles={{ body: { padding: 0 } }}
+      style={{ top: '15vh' }}
+      destroyOnClose
+      transitionName=""
+      maskTransitionName=""
+    >
+      <div className="flex flex-col border border-border bg-surface" ref={containerRef}>
+        <div className="border-b border-border p-3">
+          <Input
+            autoFocus
+            size="large"
+            placeholder="Buscar pantalla o acción (Use ↑↓ para navegar, Enter para seleccionar)..."
+            prefix={<SearchOutlined className="text-muted-foreground mr-1" />}
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setActiveIndex(0);
+            }}
+            variant="borderless"
+            className="w-full text-base font-medium"
+          />
+        </div>
+        
+        <div className="max-h-[300px] overflow-y-auto p-2">
+          {filteredCommands.length === 0 ? (
+            <div className="p-4 text-center text-sm text-muted-foreground">
+              No se encontraron comandos.
             </div>
-            <Command.List className="max-h-[min(24rem,60vh)] overflow-y-auto p-2">
-              <Command.Empty className="p-6 text-center text-sm text-muted-foreground">No se encontraron comandos.</Command.Empty>
-              {(['Operación', 'Navegación', 'Ayuda'] as const).map((group) => {
-                const groupCommands = commands.filter((command) => command.group === group);
-                if (groupCommands.length === 0) return null;
+          ) : (
+            <List
+              dataSource={filteredCommands}
+              renderItem={(item, index) => {
+                const isActive = index === activeIndex;
                 return (
-                  <Command.Group key={group} heading={group}>
-                    {groupCommands.map((command) => (
-                      <Command.Item
-                        key={command.id}
-                        value={`${command.label} ${command.keywords.join(' ')}`}
-                        onSelect={() => select(command.path)}
-                        className="flex min-h-11 cursor-default items-center rounded-md px-3 text-sm outline-none data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground"
-                      >
-                        {command.label}
-                      </Command.Item>
-                    ))}
-                  </Command.Group>
+                  <button
+                    type="button"
+                    key={item.id}
+                    onClick={() => selectCommand(item.path)}
+                    className={cn(
+                      'flex w-full items-center justify-between px-4 py-2.5 text-sm cursor-pointer transition border-none text-left bg-transparent text-foreground outline-none font-normal',
+                      isActive ? 'bg-primary text-white font-semibold' : 'hover:bg-slate-100 dark:hover:bg-slate-800'
+                    )}
+                  >
+                    <span>{item.label}</span>
+                    <span className={cn('text-xs font-semibold uppercase tracking-wider', isActive ? 'text-blue-100' : 'text-muted-foreground')}>
+                      {item.group}
+                    </span>
+                  </button>
                 );
-              })}
-            </Command.List>
-          </Command>
-        </DialogPrimitive.Content>
-      </DialogPrimitive.Portal>
-    </DialogPrimitive.Root>
+              }}
+            />
+          )}
+        </div>
+      </div>
+    </Modal>
   );
 }

@@ -96,13 +96,13 @@ export function ClinicalShell({ cashSession, children, logoUrl, onLogout, status
 
   return (
     <div className="min-h-[100dvh] overflow-x-hidden bg-background text-foreground">
-      <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground">
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground">
         Omitir al contenido principal
       </a>
 
       <ClinicalRail activeItem={activeItem} collapsed={collapsed} hospitalName={hospitalName} logoUrl={logoUrl} navigation={visibleNavigation} onToggleCollapsed={toggleCollapsed} user={user} />
 
-      <div className={cn('flex min-h-[100dvh] min-w-0 flex-col pb-16 transition-[margin] duration-200 lg:pb-0', collapsed ? 'lg:ml-[76px]' : 'lg:ml-[264px]')}>
+      <div className={cn('flex min-h-[100dvh] min-w-0 flex-col pb-16 lg:pb-0', collapsed ? 'lg:ml-[80px]' : 'lg:ml-[280px]')}>
         <ContextBar
           cashSession={cashSession}
           commandButtonRef={commandButtonRef}
@@ -115,8 +115,8 @@ export function ClinicalShell({ cashSession, children, logoUrl, onLogout, status
           status={status}
           user={user}
         />
-        <main id="main-content" tabIndex={-1} className="min-w-0 flex-1 scroll-mt-24 px-3 py-4 outline-none sm:px-6 lg:px-8 lg:py-7 xl:px-10">
-          <div className="mx-auto flex max-w-[1500px] flex-col gap-6">{children}</div>
+        <main id="main-content" tabIndex={-1} className="min-w-0 flex-1 scroll-mt-24 px-3 py-4 outline-none sm:px-6 lg:px-8 lg:py-8 xl:px-10">
+          <div className="mx-auto flex max-w-[1540px] flex-col gap-6">{children}</div>
         </main>
         <footer className="print-hidden sr-only">Sistema hospitalario local</footer>
       </div>
