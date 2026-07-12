@@ -1,8 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ReceiptText, WalletCards } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
+import { FileTextOutlined, WalletOutlined } from '@ant-design/icons';
+import {
+  Alert,
+  Button,
+  Flex,
+  List,
+  Skeleton,
+  Tag,
+  Typography,
+} from 'antd';
+import { PageHeader } from '@/components/ui/page-header';
 import { RouteState } from '@/design-system/patterns/RouteState';
 import { useDashboardReport } from '@/hooks/useDashboardReport';
 import { type CashSession, type Invoice, apiClient, userSafeErrorMessage } from '@/lib/api';
@@ -28,6 +36,21 @@ type DashboardViewProps = {
   cashSession: CashSession | null;
   onStatus: (message: string) => void;
 };
+
+// Status label and color map — single source of truth for invoice status tags.
+const INVOICE_STATUS_TAG: Record<string, { label: string; color: string }> = {
+  paid:    { label: 'Pagada',   color: 'success' },
+  pending: { label: 'Pendiente', color: 'warning' },
+  void:    { label: 'Anulada',  color: 'error' },
+  partial: { label: 'Parcial',  color: 'processing' },
+};
+
+function InvoiceStatusTag({ status }: { status: string }) {
+  const cfg = INVOICE_STATUS_TAG[status];
+  return cfg
+    ? <Tag color={cfg.color}>{cfg.label}</Tag>
+    : <Tag>{status}</Tag>;
+}
 
 export function DashboardView({
   canCreateInvoices,
@@ -95,9 +118,9 @@ export function DashboardView({
   const setupReady = setupStatusState === 'ready';
   const setupRequired = setupReady && setupStatus?.needs_setup === true;
   const primaryAction = setupReady && !setupRequired && cashIsOpen && canCreateInvoices
-    ? { label: 'Nueva factura', icon: <ReceiptText aria-hidden="true" />, to: '/billing/new' }
+    ? { label: 'Nueva factura', icon: <FileTextOutlined aria-hidden="true" />, to: '/billing/new' }
     : setupReady && !setupRequired && !cashIsOpen && canOpenCash
-      ? { label: 'Abrir caja', icon: <WalletCards aria-hidden="true" />, to: '/cashbox' }
+      ? { label: 'Abrir caja', icon: <WalletOutlined aria-hidden="true" />, to: '/cashbox' }
       : null;
 
   const ledgerLoading = dashboardQuery.isFetching;
@@ -225,51 +248,40 @@ export function DashboardView({
     });
   }
 
-  const invoiceColumns: Array<DataTableColumn<Invoice>> = [
-    { key: 'invoice_number', header: 'Número', cellClassName: 'font-mono tabular-nums', render: (invoice) => invoice.invoice_number },
-    { key: 'issued_at', header: 'Fecha', render: (invoice) => formatDateTimeEs(invoice.issued_at) },
-    { key: 'patient_name', header: 'Paciente', render: (invoice) => invoice.patient_name },
-    { key: 'status', header: 'Estado', render: (invoice) => invoice.status },
-  ];
-  if (canViewManagerialReports) {
-    invoiceColumns.splice(3, 0, {
-      key: 'total',
-      header: 'Total',
-      numeric: true,
-      render: (invoice) => formatLempirasUIFromCents(parseCents(invoice.total)),
-    });
-  }
-
   return (
     <section aria-labelledby="dashboard-title" className="flex min-w-0 flex-col gap-6">
-      <header className="relative isolate overflow-hidden rounded-2xl bg-[#0c2733] px-5 py-7 text-white shadow-[0_28px_70px_-48px_rgba(4,20,28,.95)] sm:flex sm:items-end sm:justify-between sm:gap-8 sm:px-7 sm:py-9">
-        <div className="absolute -right-24 -top-28 -z-10 size-80 rounded-full border border-[#55d3bf]/20 bg-[#55d3bf]/5" aria-hidden="true" />
-        <div className="min-w-0 max-w-2xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#80dfd0]">Inicio operativo</p>
-          <h1 id="dashboard-title" className="mt-3 text-3xl font-semibold leading-[1.08] tracking-[-0.04em] text-white sm:text-4xl">
-            Continuar operación
-          </h1>
-          <p className="mt-4 text-sm leading-6 text-white/65">
-            Estado del turno: <strong className="font-semibold text-white">{cashIsOpen ? `Caja abierta #${cashSession?.id}` : 'Caja cerrada'}</strong>
-          </p>
-        </div>
-        {setupAction?.kind === 'wizard' ? (
-          <Button type="button" onClick={() => setIsWizardOpen(true)} className="mt-6 min-h-12 w-full bg-[#55d3bf] text-[#071c24] hover:bg-[#76dfcf] sm:mt-0 sm:w-auto">
-            {setupAction.label}
-          </Button>
-        ) : setupAction?.kind === 'link' ? (
-          <Button asChild className="mt-6 min-h-12 w-full bg-[#55d3bf] text-[#071c24] hover:bg-[#76dfcf] sm:mt-0 sm:w-auto">
-            <Link to={setupAction.to}>{setupAction.label}</Link>
-          </Button>
-        ) : primaryAction ? (
-          <Button asChild className="mt-6 min-h-12 w-full bg-[#55d3bf] text-[#071c24] hover:bg-[#76dfcf] sm:mt-0 sm:w-auto">
-            <Link to={primaryAction.to}>
-              {primaryAction.icon}
-              {primaryAction.label}
+      <PageHeader
+        id="dashboard-title"
+        headingLevel={1}
+        title="Continuar operación"
+        description={
+          <span>
+            <Typography.Text type="secondary" className="text-xs font-semibold uppercase tracking-[0.14em]">
+              Centro operativo ·{' '}
+            </Typography.Text>
+            Estado del turno: <Typography.Text strong>{cashIsOpen ? `Caja abierta #${cashSession?.id}` : 'Caja cerrada'}</Typography.Text>
+          </span>
+        }
+        actions={
+          setupAction?.kind === 'wizard' ? (
+            <Button type="primary" onClick={() => setIsWizardOpen(true)} size="large">
+              {setupAction.label}
+            </Button>
+          ) : setupAction?.kind === 'link' ? (
+            <Link to={setupAction.to}>
+              <Button type="primary" size="large">
+                {setupAction.label}
+              </Button>
             </Link>
-          </Button>
-        ) : null}
-      </header>
+          ) : primaryAction ? (
+            <Link to={primaryAction.to}>
+              <Button type="primary" icon={primaryAction.icon} size="large">
+                {primaryAction.label}
+              </Button>
+            </Link>
+          ) : null
+        }
+      />
 
       {canViewManagerialReports ? <TodayLedger items={ledgerItems} /> : null}
 
@@ -304,24 +316,21 @@ export function DashboardView({
         <OperationalQueue items={queueItems} />
 
         {canViewInvoices ? (
-          <section aria-labelledby="recent-invoices-title" className="min-w-0 overflow-hidden rounded-xl border border-operational-border bg-operational-surface shadow-operational">
-            <header className="flex items-center justify-between gap-3 border-b border-operational-border bg-muted/35 px-5 py-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Actividad</p>
-                <h2 id="recent-invoices-title" className="mt-1 text-lg font-semibold">Facturas recientes</h2>
-              </div>
-              <Button asChild variant="ghost" size="sm" className="min-h-11 sm:min-h-11">
-                <Link to="/invoices">Ver historial completo</Link>
-              </Button>
+          <section aria-labelledby="recent-invoices-title" className="min-w-0 border border-border bg-surface">
+            <header className="border-b border-border px-5 py-4">
+              <Flex justify="space-between" align="center" wrap="wrap" gap="small">
+                <div>
+                  <Typography.Text type="secondary" className="text-xs font-semibold uppercase tracking-wider">Actividad</Typography.Text>
+                  <Typography.Title id="recent-invoices-title" level={2} className="m-0 mt-1">Facturas recientes</Typography.Title>
+                </div>
+                <Link to="/invoices">
+                  <Button type="link" size="small">Ver historial completo</Button>
+                </Link>
+              </Flex>
             </header>
             <div className="min-w-0 p-4 sm:p-5">
               {loadingRecent ? (
-                <div role="status" aria-label="Cargando facturas recientes" className="space-y-3">
-                  <span className="sr-only">Cargando facturas recientes...</span>
-                  {[1, 2, 3].map((row) => (
-                    <div key={row} className="h-11 w-full animate-pulse rounded bg-muted motion-reduce:animate-none" aria-hidden="true" />
-                  ))}
-                </div>
+                <Skeleton active={false} paragraph={{ rows: 3 }} title={false} />
               ) : recentInvoicesError ? (
                 <RouteState
                   kind="error"
@@ -331,19 +340,35 @@ export function DashboardView({
                   action={{ label: 'Reintentar facturas recientes', onClick: () => void loadRecentInvoices() }}
                 />
               ) : recentInvoices.length === 0 ? (
-                <div className="border-l-2 border-muted-foreground/40 py-2 pl-4">
-                  <p className="font-semibold">Sin facturas recientes</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {cashIsOpen ? 'La actividad del turno aparecerá aquí.' : 'Abra caja para iniciar la actividad del turno.'}
-                  </p>
-                </div>
+                <Alert type="info" showIcon title="Sin facturas recientes" description={cashIsOpen ? 'La actividad del turno aparecerá aquí.' : 'Abra caja para iniciar la actividad del turno.'} />
               ) : (
-                <DataTable
-                  containerLabel="Facturas recientes"
-                  rows={recentInvoices}
-                  columns={invoiceColumns}
-                  getRowKey={(invoice) => invoice.id}
-                  emptyTitle="Sin facturas recientes"
+                <List<Invoice>
+                  aria-label="Facturas recientes"
+                  dataSource={recentInvoices}
+                  size="small"
+                  renderItem={(invoice) => (
+                    <List.Item key={invoice.id}>
+                      <List.Item.Meta
+                        title={
+                          <Flex gap="small" align="center" wrap="wrap">
+                            <Typography.Text strong>{invoice.invoice_number}</Typography.Text>
+                            <InvoiceStatusTag status={invoice.status} />
+                            {canViewManagerialReports ? (
+                              <Typography.Text className="tabular-nums">
+                                {formatLempirasUIFromCents(parseCents(invoice.total))}
+                              </Typography.Text>
+                            ) : null}
+                          </Flex>
+                        }
+                        description={
+                          <Flex gap="middle" wrap="wrap">
+                            <Typography.Text type="secondary">{invoice.patient_name}</Typography.Text>
+                            <Typography.Text type="secondary">{formatDateTimeEs(invoice.issued_at)}</Typography.Text>
+                          </Flex>
+                        }
+                      />
+                    </List.Item>
+                  )}
                 />
               )}
             </div>
@@ -366,7 +391,7 @@ export function DashboardView({
 }
 
 function LedgerSkeleton() {
-  return <span className="inline-block h-7 w-24 animate-pulse rounded bg-muted motion-reduce:animate-none" aria-hidden="true" />;
+  return <Skeleton.Input active={false} size="small" />;
 }
 
 function moneyOrUnavailable(value: string | number | null | undefined) {

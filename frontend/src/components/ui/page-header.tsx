@@ -1,22 +1,28 @@
 import { type ReactNode } from 'react';
+import { Typography } from 'antd';
 import { cn } from '../../lib/utils';
-import { ActionBar } from './action-bar';
 
 type PageHeaderProps = {
   actions?: ReactNode;
   className?: string;
   description?: ReactNode;
   headingLevel?: 1 | 2 | 3;
+  id?: string;
   secondary?: ReactNode;
   title: ReactNode;
   topContent?: ReactNode;
 };
 
+/**
+ * Institutional page header — flat, no gradients, no rounded corners, no shadows.
+ * Matches the hospital design system: sober, dense, structured.
+ */
 export function PageHeader({
   actions,
   className,
   description,
   headingLevel = 1,
+  id,
   secondary,
   title,
   topContent,
@@ -24,27 +30,39 @@ export function PageHeader({
   const HeadingTag = `h${headingLevel}` as 'h1' | 'h2' | 'h3';
 
   return (
-    <header data-slot="page-header" className={cn('flex flex-col gap-4 border-b border-border pb-5', className)}>
-      {topContent ? <div data-slot="page-header-top">{topContent}</div> : null}
+    <header
+      data-slot="page-header"
+      className={cn('border-b border-border bg-surface px-5 py-5 sm:px-6', className)}
+    >
+      {topContent ? <div data-slot="page-header-top" className="mb-4">{topContent}</div> : null}
+
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div data-slot="page-header-main" className="flex min-w-0 flex-col gap-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] !text-[#80dfd0]">Operación local</p>
-          <HeadingTag data-slot="page-header-title" className="text-2xl font-semibold leading-tight !text-white md:text-3xl">
+          <HeadingTag
+            id={id}
+            data-slot="page-header-title"
+            className="m-0 text-xl font-semibold leading-tight text-foreground md:text-2xl"
+          >
             {title}
           </HeadingTag>
           {description ? (
-            <p data-slot="page-header-description" className="max-w-3xl text-sm leading-relaxed !text-white/65">
+            <Typography.Text
+              type="secondary"
+              data-slot="page-header-description"
+              className="text-sm leading-relaxed"
+            >
               {description}
-            </p>
+            </Typography.Text>
           ) : null}
         </div>
         {actions ? (
-          <ActionBar data-slot="page-header-actions" className="shrink-0 md:justify-end" fullWidthOnMobile>
+          <div data-slot="page-header-actions" className="flex shrink-0 flex-wrap items-center justify-end gap-2">
             {actions}
-          </ActionBar>
+          </div>
         ) : null}
       </div>
-      {secondary ? <div data-slot="page-header-secondary">{secondary}</div> : null}
+
+      {secondary ? <div data-slot="page-header-secondary" className="mt-4">{secondary}</div> : null}
     </header>
   );
 }

@@ -372,10 +372,10 @@ describe('DashboardView', () => {
 
     fireEvent.click(setupAction);
 
-    expect(await screen.findByRole('heading', { name: 'Preparar caja' })).toBeVisible();
-    expect(screen.getByText('Hospital')).toBeVisible();
-    expect(screen.getByText('Numeración')).toBeVisible();
-    expect(screen.getByText('Catálogo')).toBeVisible();
+    expect(await screen.findByRole('dialog', { name: 'Preparar caja' })).toBeInTheDocument();
+    expect(screen.getByText('Hospital')).toBeInTheDocument();
+    expect(screen.getByText('Numeración')).toBeInTheDocument();
+    expect(screen.getByText('Catálogo')).toBeInTheDocument();
   });
 
   it('explica setup sin ofrecer edición cuando falta permiso fiscal', async () => {
@@ -513,9 +513,11 @@ describe('DashboardView', () => {
     expect(document.querySelector('[data-slot="stat-grid"]')).not.toBeInTheDocument();
   });
 
-  it('mantiene Ver historial completo con target mínimo de 44 px', async () => {
+  it('renderiza Ver historial completo como control Ant Design dentro del enlace', async () => {
     renderDashboard(makeBaseProps());
 
-    expect(await screen.findByRole('link', { name: 'Ver historial completo' })).toHaveClass('min-h-11', 'sm:min-h-11');
+    const link = await screen.findByRole('link', { name: 'Ver historial completo' });
+    expect(link).toHaveAttribute('href', '/invoices');
+    expect(link.querySelector('.ant-btn')).toBeInTheDocument();
   });
 });
