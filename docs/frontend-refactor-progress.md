@@ -7,10 +7,10 @@ Este documento registra el progreso fase por fase del refactor del frontend. Se 
 ## Estado General de la Campaña
 
 * **Fases Totales:** 20
-* **Fases Completadas:** 5 (Fase 0, Fase 1, Fase 2, Fase 3, Fase 4)
+* **Fases Completadas:** 6 (Fase 0, Fase 1, Fase 2, Fase 3, Fase 4, Fase 5)
 * **Fases en Progreso:** 0
-* **Fases Pendientes:** 15
-* **Porcentaje Completado:** 25%
+* **Fases Pendientes:** 14
+* **Porcentaje Completado:** 30%
 
 ---
 
@@ -36,7 +36,7 @@ Este documento registra el progreso fase por fase del refactor del frontend. Se 
   * [worktree_backup.diff](file:///c:/Projects/S_Hospital/qa/production-audit/worktree_backup.diff) (Respaldado diff completo)
 * **Resultado:** Cambios de diálisis, prevención de doble envío e idempotencia salvaguardados en el parche de control y listos para reintegrar.
 
-### Fase 2: Dependencias y Providers
+### Fase 2: Dependencias and Providers
 * **Estado:** **Completado**
 * **Archivos Migrados/Creados:**
   * [DesignSystemProvider.tsx](file:///c:/Projects/S_Hospital/frontend/src/design-system/providers/DesignSystemProvider.tsx)
@@ -62,7 +62,20 @@ Este documento registra el progreso fase por fase del refactor del frontend. Se 
   * Modificación de [.storybook/preview.tsx](file:///c:/Projects/S_Hospital/frontend/.storybook/preview.tsx) y [eslint.config.js](file:///c:/Projects/S_Hospital/frontend/eslint.config.js) (ignora bundles generados de storybook)
 * **Resultado:** Storybook inicializado y corriendo con soporte para el proveedor de Ant Design. Los componentes institucionales compartidos fueron migrados a Ant Design y estilos planos conformes con el Quality Gate, logrando que el 100% de sus pruebas unitarias pasen en verde.
 
+### Fase 5: Estructura del Layout y Menús (ClinicalShell)
+* **Estado:** **Completado**
+* **Archivos Migrados/Creados:**
+  * Modificación de [appNavigation.ts](file:///c:/Projects/S_Hospital/frontend/src/navigation/appNavigation.ts) (Iconos Ant Design, tipos y etiquetas consistentes)
+  * Modificación de [ClinicalRail.tsx](file:///c:/Projects/S_Hospital/frontend/src/shell/navigation/ClinicalRail.tsx) (Sider e iconos de Ant Design con borde recto)
+  * Modificación de [ContextBar.tsx](file:///c:/Projects/S_Hospital/frontend/src/shell/status/ContextBar.tsx) (Header con Tooltips, Buttons y Tags de Ant Design)
+  * Modificación de [UserMenu.tsx](file:///c:/Projects/S_Hospital/frontend/src/layout/components/UserMenu.tsx) (Dropdown de Ant Design con controles de teclado para accesibilidad en test)
+  * Modificación de [ClinicalMobileNav.tsx](file:///c:/Projects/S_Hospital/frontend/src/shell/navigation/ClinicalMobileNav.tsx) (Drawer de Ant Design)
+  * Modificación de [CommandPalette.tsx](file:///c:/Projects/S_Hospital/frontend/src/shell/navigation/CommandPalette.tsx) (Modal, Input y List de Ant Design con navegación de teclado)
+  * Modificación de [ClinicalShell.tsx](file:///c:/Projects/S_Hospital/frontend/src/shell/ClinicalShell.tsx) y [ClinicalShell.test.tsx](file:///c:/Projects/S_Hospital/frontend/src/shell/ClinicalShell.test.tsx)
+  * Modificación de [check-no-legacy-ui.mjs](file:///c:/Projects/S_Hospital/frontend/scripts/check-no-legacy-ui.mjs) (Se agregaron los archivos de shell y navegación al Quality Gate)
+* **Resultado:** El Shell y los componentes de navegación fueron completamente migrados a la estética institucional plana de Ant Design. Se eliminaron dependencias de Radix UI y cmdk en estos archivos. 100% de las pruebas unitarias y de accesibilidad pasan en verde.
+
 ---
 
-### Próxima Fase: Fase 5: Estructura del Layout y Menús (ClinicalShell)
-* **Próxima Acción:** Refactorizar el shell del aplicativo (ClinicalShell, ClinicalRail, ContextBar, UserMenu) a componentes y menús nativos de Ant Design.
+### Próxima Fase: Fase 6: Dashboard y Métricas (DashboardView)
+* **Próxima Acción:** Refactorizar la vista de inicio del dashboard hospitalario (`DashboardView.tsx`), adaptando los widgets de resumen, estado de caja, y gráficos de barras y líneas utilizando Apache ECharts nativo.
