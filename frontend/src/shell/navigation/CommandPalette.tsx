@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Modal, Input, List } from 'antd';
+import { Modal, Input } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '../../lib/utils';
@@ -134,12 +134,11 @@ export function CommandPalette({ navigation, onOpenChange, open, user }: Command
               No se encontraron comandos.
             </div>
           ) : (
-            <List
-              dataSource={filteredCommands}
-              renderItem={(item, index) => {
+            <ul aria-label="Resultados de comandos">
+              {filteredCommands.map((item, index) => {
                 const isActive = index === activeIndex;
                 return (
-                  <List.Item key={item.id} className="!border-0 !p-0">
+                  <li key={item.id}>
                     <button
                       type="button"
                       onClick={() => selectCommand(item.path)}
@@ -153,10 +152,10 @@ export function CommandPalette({ navigation, onOpenChange, open, user }: Command
                         {item.group}
                       </span>
                     </button>
-                  </List.Item>
+                  </li>
                 );
-              }}
-            />
+              })}
+            </ul>
           )}
         </div>
       </div>

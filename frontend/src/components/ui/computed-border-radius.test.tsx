@@ -1,7 +1,6 @@
 import { render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { Tag, Button, Modal, Steps, Input, Alert, Select, Tooltip } from 'antd';
-import { List } from 'antd';
+import { Tag, Button, Modal, Steps, Input, Alert, Select, Tooltip, Menu } from 'antd';
 import { ConfigProvider } from 'antd';
 
 afterEach(() => {
@@ -60,7 +59,7 @@ describe('institutional border-radius policy', () => {
   it('renders Alert with no border radius', () => {
     const { container } = render(
       <ConfigProvider theme={{ token: { borderRadius: 0 } }}>
-        <Alert type="info" message="Aviso" />
+        <Alert type="info" title="Aviso" />
       </ConfigProvider>,
     );
     const alert = container.querySelector('.ant-alert') as HTMLElement;
@@ -90,13 +89,10 @@ describe('institutional border-radius policy', () => {
   it('renders List rows without border radius', () => {
     const { container } = render(
       <ConfigProvider theme={{ token: { borderRadius: 0 } }}>
-        <List
-          dataSource={[{ id: 1, name: 'A' }, { id: 2, name: 'B' }]}
-          renderItem={(item) => <List.Item key={item.id}>{item.name}</List.Item>}
-        />
+        <Menu items={[{ key: '1', label: 'A' }, { key: '2', label: 'B' }]} />
       </ConfigProvider>,
     );
-    const items = container.querySelectorAll('.ant-list-item');
+    const items = container.querySelectorAll('.ant-menu-item');
     items.forEach((item) => {
       expect((item as HTMLElement).className).not.toMatch(/rounded-/);
     });
