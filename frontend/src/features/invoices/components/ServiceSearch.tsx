@@ -1,11 +1,6 @@
-import { Barcode, Filter, Plus, Search, X } from 'lucide-react';
+import { BarcodeOutlined as Barcode, FilterOutlined as Filter, PlusOutlined as Plus, SearchOutlined as Search, CloseOutlined as X } from '@ant-design/icons';
 import { type KeyboardEvent, type RefObject, useCallback, useDeferredValue, useEffect, useRef, useState } from 'react';
-import { Alert } from '../../../components/ui/alert';
-import { Badge } from '../../../components/ui/badge';
-import { Button } from '../../../components/ui/button';
-import { Input } from '../../../components/ui/input';
-import { Label } from '../../../components/ui/label';
-import { Skeleton } from '../../../components/ui/states';
+import { Alert, Button, Input, Skeleton, Tag } from 'antd';
 import type { Category, Service, ServiceArea } from '../../../lib/api';
 import { cn } from '../../../lib/utils';
 import { formatLempirasUIFromCents, parseCents } from '../../../lib/moneyCents';
@@ -191,30 +186,34 @@ export function ServiceSearch({
   }, [addFirstWhenReady, firstVisibleService, loading]);
 
   return (
-    <div className="flex flex-col gap-4 lg:h-full lg:overflow-hidden">
-      <div className="flex flex-col gap-4 rounded-xl border border-operational-border bg-muted/35 p-4 lg:shrink-0">
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-5 border border-operational-border bg-muted/40 p-4 sm:p-5">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-foreground">Busqueda de servicios</p>
-            <p className="text-xs text-muted-foreground">
+            <h2 className="text-xl font-semibold tracking-tight text-foreground">Selección de servicios</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
               {scannerEnabled
                 ? 'Filtre por area, categoria, texto o lector sin exponer datos internos.'
                 : 'Filtre por nombre, area o categoria para agregar servicios.'}
             </p>
           </div>
-          <Badge variant={activeFilterCount > 0 ? 'info' : 'secondary'} className="w-fit">
+          <Tag color={activeFilterCount > 0 ? 'processing' : 'default'} className="w-fit">
             {activeFilterCount} filtro{activeFilterCount === 1 ? '' : 's'}
-          </Badge>
+          </Tag>
         </div>
         <div className={scannerEnabled ? 'grid gap-3 sm:grid-cols-[1fr_minmax(14rem,18rem)]' : 'grid gap-3'}>
           <div className="flex min-w-0 flex-col gap-2">
-            <Label htmlFor="service-search" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            <label htmlFor="service-search" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
               Buscar por nombre, area o categoria
-            </Label>
+            </label>
             <div className="relative">
               <Search className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-secondary" aria-hidden="true" />
               <Input
-                ref={searchInputRef}
+                ref={(node) => {
+                  if (searchInputRef) {
+                    (searchInputRef as React.MutableRefObject<HTMLInputElement | null>).current = node?.input ?? null;
+                  }
+                }}
                 id="service-search"
                 name="service_search"
                 aria-label="Buscar por nombre, area o categoria"
@@ -235,21 +234,25 @@ export function ServiceSearch({
                   }
                 }}
                 autoComplete="off"
-                className="min-h-14 pl-12 text-base font-semibold shadow-sm"
+                className="min-h-16 pl-12 text-base font-semibold"
               />
             </div>
           </div>
 
           {scannerEnabled ? (
             <div className="flex min-w-0 flex-col gap-2">
-              <Label htmlFor="scanner-code" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              <label htmlFor="scanner-code" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                 Lector USB o entrada manual
-              </Label>
+              </label>
               <div className="flex items-center gap-2">
                 <div className="relative min-w-0 flex-1">
                   <Barcode className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-secondary" aria-hidden="true" />
                   <Input
-                    ref={scannerInputRef}
+                    ref={(node) => {
+                      if (scannerInputRef) {
+                        (scannerInputRef as React.MutableRefObject<HTMLInputElement | null>).current = node?.input ?? null;
+                      }
+                    }}
                     id="scanner-code"
                     name="scanner_code"
                     aria-label="Lector USB o entrada manual"
@@ -268,7 +271,7 @@ export function ServiceSearch({
                     className="min-h-11 pl-9"
                   />
                 </div>
-                <Button type="button" variant="secondary" className="min-h-11 shrink-0" disabled={scanningCode} onClick={handleAddByScanCode}>
+                <Button type="default" className="min-h-11 shrink-0" disabled={scanningCode} onClick={handleAddByScanCode}>
                   {scanningCode ? 'Buscando...' : 'Escanear'}
                 </Button>
               </div>
@@ -279,7 +282,7 @@ export function ServiceSearch({
         <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
           {serviceAreas.length > 0 && (
             <div className="min-w-0">
-              <Label className="mb-2 block" id="service-area-label">Area</Label>
+              <span className="mb-2 block text-sm font-semibold text-foreground animate-none" id="service-area-label">Area</span>
               <div
                 aria-labelledby="service-area-label"
                 className="grid max-h-28 grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3 xl:grid-cols-2 2xl:grid-cols-3"
@@ -305,7 +308,7 @@ export function ServiceSearch({
           )}
 
           <div className="min-w-0">
-            <Label className="mb-2 block" id="service-category-label">Categoría</Label>
+            <span className="mb-2 block text-sm font-semibold text-foreground animate-none" id="service-category-label">Categoría</span>
             <div
               aria-labelledby="service-category-label"
               className="grid max-h-32 grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3 xl:grid-cols-3"
@@ -331,17 +334,16 @@ export function ServiceSearch({
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto pr-1">
-        <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between" aria-live="polite">
+      <div className="min-h-0 flex-1">
+        <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between" aria-live="polite">
           <div className="flex min-w-0 items-center gap-2">
             <Filter className="size-4 text-secondary" aria-hidden="true" />
-            <Label className="font-mono text-xs uppercase tracking-[0.14em] text-muted-foreground">
+            <label className="font-mono text-xs uppercase tracking-[0.14em] text-muted-foreground">
               Servicios ({hasIntent ? filteredServices.length : 0})
-            </Label>
+            </label>
           </div>
           <Button
-            type="button"
-            variant="ghost"
+            type="text"
             className="min-h-11 w-fit"
             onClick={() => {
               onSearchChange('');
@@ -355,24 +357,24 @@ export function ServiceSearch({
         </div>
 
         {error ? (
-          <Alert variant="destructive" title="No se pudieron cargar los servicios">
+          <Alert type="error" showIcon message="No se pudieron cargar los servicios" description={
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <span className="min-w-0 flex-1">{error}</span>
               {onRetry ? (
-                <Button type="button" variant="secondary" size="sm" onClick={onRetry}>
+                <Button type="default" size="small" onClick={onRetry}>
                   Reintentar
                 </Button>
               ) : null}
             </div>
-          </Alert>
+          } />
         ) : loading ? (
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2" role="status" aria-busy="true" aria-label="Cargando servicios">
             {Array.from({ length: 6 }).map((_, index) => (
-              <Skeleton key={index} className="h-24 rounded-lg" />
+              <Skeleton.Input key={index} active={false} block className="h-24" />
             ))}
           </div>
         ) : !hasIntent ? (
-            <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-muted/35 px-4 py-10 text-center text-muted-foreground" role="status" aria-live="polite">
+            <div className="flex flex-col items-center justify-center gap-2 border border-dashed border-border bg-muted/35 px-4 py-10 text-center text-muted-foreground" role="status" aria-live="polite">
             <span className="font-medium text-foreground">Busque o elija una categoría</span>
             <span className="max-w-sm text-sm">
               {scannerEnabled
@@ -381,18 +383,18 @@ export function ServiceSearch({
             </span>
           </div>
         ) : filteredServices.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-muted/35 px-4 py-10 text-center text-muted-foreground" role="status" aria-live="polite">
+            <div className="flex flex-col items-center justify-center gap-2 border border-dashed border-border bg-muted/35 px-4 py-10 text-center text-muted-foreground" role="status" aria-live="polite">
             <span className="font-medium text-foreground">Sin servicios encontrados</span>
             <span className="max-w-sm text-sm">Revise la búsqueda o quite filtros para consultar todo el catálogo activo.</span>
           </div>
         ) : (
           <>
-            <div className="grid gap-2 sm:grid-cols-2" role="list" aria-label="Servicios facturables disponibles">
+            <div className="grid gap-3 sm:grid-cols-2" role="list" aria-label="Servicios facturables disponibles">
               {visibleServices.map((service) => {
                 const isErythropoietin = service.special_rule_code === ERYTHROPOIETIN_RULE;
 
                 return (
-                  <div key={service.id} role="listitem" className="flex min-w-0 flex-col justify-between gap-3 rounded-xl border border-operational-border bg-card p-4 shadow-sm transition hover:border-secondary/35 hover:shadow-operational">
+                  <div key={service.id} role="listitem" className="flex min-w-0 flex-col justify-between gap-4 border border-operational-border bg-card p-4 hover:border-secondary/35">
                     <div className="min-w-0">
                       <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
                         <p className="min-w-0 break-words text-sm font-semibold leading-tight text-foreground">{service.name}</p>
@@ -401,13 +403,13 @@ export function ServiceSearch({
                         </span>
                       </div>
                       <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                        <Badge variant="info" className="rounded-sm px-1.5 py-0.5 text-[10px]">
+                        <Tag color="processing" className="px-1.5 py-0.5 text-[10px]">
                           {service.category?.name ?? 'Sin categoría'}
-                        </Badge>
+                        </Tag>
                         {service.area?.name ? (
-                          <Badge variant="outline" className="rounded-sm px-1.5 py-0.5 text-[10px]">
+                          <Tag className="px-1.5 py-0.5 text-[10px]">
                             {service.area.name}
-                          </Badge>
+                          </Tag>
                         ) : null}
                         {scannerEnabled && (service.scan_code || service.barcode || service.qr_code) ? (
                           <span className="text-[10px] text-muted-foreground">Disponible para lector</span>
@@ -420,12 +422,12 @@ export function ServiceSearch({
                       ) : null}
                     </div>
                     <Button
-                      type="button"
+                      type="primary"
                       aria-label={`Agregar ${service.name}`}
-                      className="min-h-11 w-full shrink-0"
+                      className="min-h-11 w-full shrink-0 sm:w-auto sm:self-end"
                       onClick={() => handleAddService(service)}
+                      icon={<Plus className="size-4" aria-hidden="true" />}
                     >
-                      <Plus className="size-4" aria-hidden="true" />
                       Agregar
                     </Button>
                   </div>
@@ -433,7 +435,7 @@ export function ServiceSearch({
               })}
             </div>
             {hiddenCount > 0 && (
-              <p className="mt-3 rounded-md border border-border bg-muted px-3 py-2 text-sm text-muted-foreground">
+              <p className="mt-3 border border-border bg-muted px-3 py-2 text-sm text-muted-foreground">
                 Mostrando {visibleServices.length} resultados. Afine la búsqueda para ver los {hiddenCount} restantes.
               </p>
             )}
@@ -461,10 +463,10 @@ function CategoryButton({
     <button
       aria-checked={active}
       className={cn(
-        'min-h-11 rounded-md border px-3 py-2 text-left text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        'min-h-11 border px-3 py-2 text-left text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         active
-          ? 'border-secondary bg-accent text-foreground shadow-sm'
-          : 'border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground',
+          ? 'border-secondary bg-secondary text-white'
+          : 'border-border bg-white text-muted-foreground hover:border-secondary/30 hover:bg-accent/45 hover:text-foreground',
       )}
       onClick={onClick}
       role="radio"

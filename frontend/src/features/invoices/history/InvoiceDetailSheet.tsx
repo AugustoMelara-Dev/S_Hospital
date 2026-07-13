@@ -1,8 +1,6 @@
-import { Download, Printer, Receipt, ReceiptText, XCircle } from 'lucide-react';
-import { Button } from '../../../components/ui/button';
-import { Sheet } from '../../../components/ui/sheet';
-import { StatusBadge } from '../../../components/ui/status-badge';
-import { ErrorState, LoadingState } from '../../../components/ui/states';
+import { DownloadOutlined as Download, PrinterOutlined as Printer, FileDoneOutlined as Receipt, FileTextOutlined as ReceiptText, CloseCircleOutlined as XCircle, CloseOutlined } from '@ant-design/icons';
+import { Button, Alert, Drawer, Skeleton } from 'antd';
+import { StatusTag } from '@/components/ui/status-tag';
 import type { Invoice } from '../../../lib/api';
 import { formatDateTimeEs } from '../../../lib/format/formatDate';
 import {
@@ -25,13 +23,6 @@ type InvoiceDetailSheetProps = {
   onReprint: (invoice: Invoice) => void;
   open: boolean;
   permissions: InvoiceActionPermissions | null;
-};
-
-const statusLabels: Record<Invoice['status'], string> = {
-  issued: 'Emitida',
-  partial: 'Parcial',
-  paid: 'Pagada',
-  void: 'Anulada',
 };
 
 const paymentLabels = {
@@ -60,20 +51,44 @@ export function InvoiceDetailSheet({
   const institutionalReceipt = invoice ? getIssuedInstitutionalReceipt(invoice) : null;
 
   return (
-    <Sheet
+    <Drawer
+      getContainer={false}
       open={open}
-      onOpenChange={onOpenChange}
+      onClose={() => onOpenChange(false)}
       title={`Factura ${invoice?.invoice_number ?? ''}`.trim()}
-      description="Detalle histórico de la factura y sus acciones autorizadas."
+      closable={false}
+      extra={
+        <Button
+          type="text"
+          icon={<CloseOutlined />}
+          onClick={() => onOpenChange(false)}
+          aria-label="Cerrar panel"
+          className="h-8 w-8 flex items-center justify-center p-0 border-0 bg-transparent hover:bg-muted"
+        />
+      }
+      {...{ role: 'dialog', 'aria-label': `Factura ${invoice?.invoice_number ?? ''}`.trim() } as Record<string, unknown>}
     >
-      {loading ? <LoadingState label="Cargando detalle de factura..." /> : null}
-      {!loading && error ? <ErrorState title="No se pudo cargar el detalle" description={error} /> : null}
+      <p className="text-sm text-muted-foreground mb-4">Detalle histórico de la factura y sus acciones autorizadas.</p>
+      {loading ? (
+        <div role="status">
+          <Skeleton active={false} />
+          <span>Cargando detalle de factura...</span>
+        </div>
+      ) : null}
+      {!loading && error ? (
+        <Alert
+          type="error"
+          showIcon
+          message="No se pudo cargar el detalle"
+          description={error}
+        />
+      ) : null}
       {!loading && !error && invoice ? (
         <div className="flex flex-col gap-6">
-          <section aria-label="Resumen de factura" className="rounded-xl bg-[#0c2733] p-5 text-white shadow-operational">
+          <section aria-label="Resumen de factura" className="border border-border bg-surface p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#80dfd0]">Paciente</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary-foreground">Paciente</p>
                 <p className="mt-1 text-xl font-semibold text-white">{patientName(invoice)}</p>
                 <p className="mt-1 text-sm text-white/60">
                   Emitida por {invoice.issuer?.name ?? 'Usuario no disponible'}
@@ -82,15 +97,13 @@ export function InvoiceDetailSheet({
                   {formatDateTimeEs(invoice.issued_at)}
                 </p>
               </div>
-              <StatusBadge status={invoice.status === 'paid' ? 'paid' : invoice.status === 'void' ? 'void' : invoice.status === 'partial' ? 'partial' : 'info'}>
-                {statusLabels[invoice.status]}
-              </StatusBadge>
+              <StatusTag kind={invoice.status === 'paid' ? 'paid' : invoice.status === 'void' ? 'void' : invoice.status === 'partial' ? 'partial' : 'info'} />
             </div>
           </section>
 
           <section aria-labelledby="invoice-detail-totals">
             <h3 id="invoice-detail-totals" className="text-sm font-semibold text-foreground">Resumen financiero</h3>
-            <dl className="mt-3 divide-y divide-border rounded-xl border border-border bg-muted/25 px-4">
+            <dl className="mt-3 divide-y divide-border border border-border bg-muted/25 px-4">
               <AmountRow label="Subtotal" value={moneyLabel(invoice.subtotal)} />
               <AmountRow label="ISV" value={moneyLabel(invoice.tax_amount)} />
               <AmountRow label="Descuento" value={moneyLabel(invoice.discount_amount)} />
@@ -100,38 +113,45 @@ export function InvoiceDetailSheet({
             </dl>
           </section>
 
-          <section aria-labelledby="invoice-detail-items">
-            <h3 id="invoice-detail-items" className="text-sm font-semibold text-foreground">Servicios facturados</h3>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">Los nombres y precios corresponden al snapshot guardado al emitir la factura.</p>
-            {invoice.items.length > 0 ? (
-              <ul className="mt-3 divide-y divide-border rounded-md border border-border" aria-label="Ítems históricos de la factura">
+          {invoice.items && invoice.items.length > 0 ? (
+            <section aria-labelledby="invoice-detail-items">
+              <h3 id="invoice-detail-items" className="text-sm font-semibold text-foreground">Servicios detallados</h3>
+              <div className="mt-3 border border-border divide-y divide-border">
                 {invoice.items.map((item) => (
-                  <li key={item.id} className="grid gap-1 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+                  <div key={item.id} className="flex items-start justify-between gap-4 p-4 bg-muted/5 hover:bg-muted/10">
                     <div className="min-w-0">
-                      <p className="break-words font-medium text-foreground">{item.service_name}</p>
-                      <p className="text-xs text-muted-foreground">{item.category_name} · {item.quantity} × {moneyLabel(item.unit_price)}</p>
+                      <p className="font-semibold text-sm text-foreground leading-snug break-words">{item.service_name}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Precio unitario: <span className="font-mono tabular-nums">{moneyLabel(item.unit_price)}</span>
+                      </p>
+                      {item.special_rule_applied ? (
+                        <span className="mt-1 inline-block text-[11px] font-semibold text-success bg-success/10 px-2 py-0.5 border border-success/15">
+                          Receta de diálisis (L 0.00)
+                        </span>
+                      ) : null}
                     </div>
-                    <p className="font-semibold tabular-nums text-foreground">{moneyLabel(item.line_total)}</p>
-                  </li>
+                    <div className="text-right shrink-0">
+                      <p className="text-xs text-muted-foreground">Cantidad: <span className="font-mono font-semibold text-foreground tabular-nums">{item.quantity}</span></p>
+                      <p className="mt-1 font-mono font-semibold text-sm text-foreground tabular-nums">{moneyLabel(item.line_total)}</p>
+                    </div>
+                  </div>
                 ))}
-              </ul>
-            ) : (
-              <p className="mt-3 rounded-md border border-dashed border-border px-4 py-3 text-sm text-muted-foreground">Esta respuesta no incluye el detalle de servicios.</p>
-            )}
-          </section>
+              </div>
+            </section>
+          ) : null}
 
-          <section aria-labelledby="invoice-detail-payments">
-            <h3 id="invoice-detail-payments" className="text-sm font-semibold text-foreground">Pagos y caja</h3>
-            {invoice.payments?.length ? (
-              <ul className="mt-3 divide-y divide-border rounded-md border border-border">
+          {invoice.payments && invoice.payments.length > 0 ? (
+            <section aria-labelledby="invoice-detail-payments">
+              <h3 id="invoice-detail-payments" className="text-sm font-semibold text-foreground">Pagos y caja</h3>
+              <div className="mt-3 border border-border divide-y divide-border rounded-md">
                 {invoice.payments.map((payment) => (
-                  <li key={payment.id} className="grid gap-2 px-4 py-3 text-sm sm:grid-cols-[minmax(0,1fr)_auto]">
+                  <div key={payment.id} className="grid gap-2 p-4 text-sm sm:grid-cols-[minmax(0,1fr)_auto] bg-muted/5">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-medium">{paymentLabels[payment.method]}</span>
-                        <StatusBadge status={payment.status === 'void' ? 'void' : 'paid'}>
+                        <span className="font-medium text-foreground">{paymentLabels[payment.method] ?? payment.method}</span>
+                        <StatusTag kind={payment.status === 'void' ? 'void' : 'success'}>
                           {payment.status === 'void' ? 'Pago anulado' : 'Pago registrado'}
-                        </StatusBadge>
+                        </StatusTag>
                       </div>
                       <p className="mt-1 text-xs tabular-nums text-muted-foreground">
                         {formatDateTimeEs(payment.paid_at)} · Caja #{payment.cash_session_id}
@@ -149,49 +169,46 @@ export function InvoiceDetailSheet({
                     >
                       {moneyLabel(payment.amount)}
                     </span>
-                  </li>
+                  </div>
                 ))}
-              </ul>
-            ) : (
-              <p className="mt-3 text-sm text-muted-foreground">Sin pagos registrados.</p>
-            )}
-            {invoice.cash_session ? (
-              <p className="mt-2 text-xs text-muted-foreground">Caja #{invoice.cash_session.id} · {invoice.cash_session.user?.name ?? 'Cajero no disponible'}</p>
-            ) : null}
-          </section>
+              </div>
+              {invoice.cash_session ? (
+                <p className="mt-2 text-xs text-muted-foreground">Caja #{invoice.cash_session.id} · {invoice.cash_session.user?.name ?? 'Cajero no disponible'}</p>
+              ) : null}
+            </section>
+          ) : null}
 
-          {actions && Object.values(actions).some(Boolean) ? (
-            <section aria-labelledby="invoice-detail-actions" className="border-t border-border pt-5">
+          {actions ? (
+            <section aria-labelledby="invoice-detail-actions">
               <h3 id="invoice-detail-actions" className="text-sm font-semibold text-foreground">Acciones autorizadas</h3>
               <div className="mt-3 flex flex-wrap gap-2">
                 {actions.openReceipt ? (
-                  <Button type="button" variant="outline" onClick={() => onOpenReceipt(invoice.id)}>
-                    {actions.auditedOpen ? <Printer aria-hidden="true" /> : <Receipt aria-hidden="true" />}
-                    {actions.auditedOpen ? 'Reimprimir PDF' : 'Ver recibo'}
+                  <Button type="default" onClick={() => onOpenReceipt(invoice.id)}>
+                    <Receipt aria-hidden="true" /> {actions.auditedOpen ? 'Reimprimir PDF' : 'Ver recibo'}
                   </Button>
                 ) : null}
                 {actions.downloadInstitutionalReceipt && institutionalReceipt ? (
-                  <Button type="button" variant="outline" disabled={loadingActionInvoiceId === invoice.id} onClick={() => onDownloadInstitutionalReceipt(invoice)}>
+                  <Button type="default" disabled={loadingActionInvoiceId === invoice.id} onClick={() => onDownloadInstitutionalReceipt(invoice)}>
                     <Download aria-hidden="true" /> Descargar
                   </Button>
                 ) : null}
                 {actions.generateInstitutionalReceipt ? (
-                  <Button type="button" variant="outline" disabled={loadingActionInvoiceId === invoice.id} onClick={() => onGenerateInstitutionalReceipt(invoice.id)}>
+                  <Button type="default" disabled={loadingActionInvoiceId === invoice.id} onClick={() => onGenerateInstitutionalReceipt(invoice.id)}>
                     <ReceiptText aria-hidden="true" /> Generar PDF
                   </Button>
                 ) : null}
                 {actions.reprint ? (
-                  <Button type="button" variant="outline" onClick={() => onReprint(invoice)}>
+                  <Button type="default" onClick={() => onReprint(invoice)}>
                     <Printer aria-hidden="true" /> Reimprimir
                   </Button>
                 ) : null}
                 {actions.reverse ? (
-                  <Button type="button" variant="danger" onClick={() => onPrepareInvoiceAction(invoice.id, 'reverse')}>
+                  <Button type="default" danger onClick={() => onPrepareInvoiceAction(invoice.id, 'reverse')}>
                     <XCircle aria-hidden="true" /> Reversar pago
                   </Button>
                 ) : null}
                 {actions.void ? (
-                  <Button type="button" variant="danger" onClick={() => onPrepareInvoiceAction(invoice.id, 'void')}>
+                  <Button type="default" danger onClick={() => onPrepareInvoiceAction(invoice.id, 'void')}>
                     <XCircle aria-hidden="true" /> Anular factura
                   </Button>
                 ) : null}
@@ -201,7 +218,7 @@ export function InvoiceDetailSheet({
 
         </div>
       ) : null}
-    </Sheet>
+    </Drawer>
   );
 }
 

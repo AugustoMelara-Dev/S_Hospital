@@ -1,7 +1,9 @@
-import { Download, Printer, Receipt, ReceiptText, User, XCircle } from 'lucide-react';
-import { ActionMenu, type ActionMenuGroup } from '../../../components/ui/action-menu';
-import { DataTable, type DataTableColumn } from '../../../components/ui/data-table';
-import { StatusBadge } from '../../../components/ui/status-badge';
+import { DownloadOutlined as Download, PrinterOutlined as Printer, FileDoneOutlined as Receipt, FileTextOutlined as ReceiptText, UserOutlined as User, CloseCircleOutlined as XCircle, MoreOutlined } from '@ant-design/icons';
+import { Button, Dropdown, Checkbox } from 'antd';
+import type { MenuProps } from 'antd';
+import { type ReactNode, useState } from 'react';
+import { StatusTag } from '@/components/ui/status-tag';
+import { InstitutionalDataGrid, type InstitutionalColumn } from '@/design-system/ag-grid/InstitutionalDataGrid';
 import type { Invoice } from '../../../lib/api';
 import {
   getIssuedInstitutionalReceipt,
@@ -34,6 +36,38 @@ function patientNameLabel(invoice: Invoice) {
   return patientName ? patientName : 'Paciente sin nombre';
 }
 
+export type ActionMenuGroup = {
+  key: string;
+  items: Array<{
+    key: string;
+    label: string;
+    icon?: ReactNode;
+    disabled?: boolean;
+    destructive?: boolean;
+    onSelect: () => void;
+  }>;
+};
+
+export function ActionMenu({ ariaLabel, groups }: { ariaLabel: string; groups: ActionMenuGroup[] }) {
+  const items: MenuProps['items'] = groups.flatMap((group, index) => [
+    ...group.items.map((item) => ({
+      key: `${group.key}-${item.key}`,
+      label: item.label,
+      icon: item.icon,
+      disabled: item.disabled,
+      danger: item.destructive,
+      onClick: item.onSelect,
+    })),
+    ...(index < groups.length - 1 ? [{ type: 'divider' as const }] : []),
+  ]);
+
+  return (
+    <Dropdown menu={{ items }} trigger={['click']}>
+      <Button aria-label={ariaLabel} icon={<MoreOutlined aria-hidden="true" />} />
+    </Dropdown>
+  );
+}
+
 export function InvoiceHistoryTable({
   canIssueInstitutionalReceipt,
   canOperateAnyInvoice,
@@ -54,80 +88,127 @@ export function InvoiceHistoryTable({
   onPrepareInvoiceAction,
   onReprint,
 }: InvoiceHistoryTableProps) {
-  const columns: Array<DataTableColumn<Invoice>> = [
+  const [visibleKeys, setVisibleKeys] = useState<string[]>([
+    'invoice_number',
+    'issued_at',
+    'patient_name',
+    'total',
+    'paid_amount',
+    'balance_due',
+    'status',
+    'receipt',
+    'actions',
+  ]);
+  const [openDropdown, setOpenDropdown] = useState(false);
+
+  const hideableColumns = [
+    { key: 'issued_at', label: 'Fecha' },
+    { key: 'total', label: 'Total' },
+    { key: 'paid_amount', label: 'Pagado' },
+    { key: 'balance_due', label: 'Saldo' },
+    { key: 'status', label: 'Estado' },
+    { key: 'receipt', label: 'Recibo' },
+  ];
+
+  const menuItems: MenuProps['items'] = hideableColumns.map((col) => ({
+    key: col.key,
+    label: (
+      <Checkbox
+        checked={visibleKeys.includes(col.key)}
+        onChange={() => {
+          setVisibleKeys((prev) =>
+            prev.includes(col.key) ? prev.filter((k) => k !== col.key) : [...prev, col.key]
+          );
+        }}
+      >
+        {col.label}
+      </Checkbox>
+    ),
+  }));
+
+  const allColumns: InstitutionalColumn<Invoice>[] = [
     {
-      key: 'invoice_number',
-      header: 'Factura',
-      cellClassName: "max-w-56 break-words text-sm font-semibold tabular-nums max-md:col-span-2 max-md:flex max-md:items-center max-md:gap-2 max-md:before:text-xs max-md:before:font-normal max-md:before:text-muted-foreground max-md:before:content-['Factura']",
-      hideable: false,
-      render: (invoice) => (
-        <div className="flex items-start gap-2">
-          <ReceiptText data-icon aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-secondary" />
-          <button
-            type="button"
-            data-invoice-detail-trigger={invoice.id}
-            className="min-h-11 rounded-sm text-left font-semibold text-foreground underline-offset-4 hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:min-h-9"
-            aria-label={`Ver detalle de la factura ${invoice.invoice_number}`}
-            onClick={(event) => onOpenDetail(invoice, event.currentTarget)}
-          >
-            {invoice.invoice_number}
-          </button>
-        </div>
-      ),
+      colId: 'invoice_number',
+      headerName: 'Factura',
+      cellRenderer: ({ data }: { data?: Invoice }) => {
+        if (!data) return null;
+        return (
+          <div className="flex items-start gap-2">
+            <ReceiptText data-icon aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-secondary" />
+            <button
+              type="button"
+              data-invoice-detail-trigger={data.id}
+              className="min-h-11 text-left font-semibold text-foreground underline-offset-4 hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:min-h-9"
+              aria-label={`Ver detalle de la factura ${data.invoice_number}`}
+              onClick={(event) => onOpenDetail(data, event.currentTarget)}
+            >
+              {data.invoice_number}
+            </button>
+          </div>
+        );
+      },
     },
     {
-      key: 'issued_at',
-      header: 'Fecha',
-      cellClassName: "whitespace-nowrap max-md:flex max-md:flex-col max-md:before:text-xs max-md:before:text-muted-foreground max-md:before:content-['Fecha']",
-      render: (invoice) => formatDate(invoice.issued_at),
+      colId: 'issued_at',
+      headerName: 'Fecha',
+      cellRenderer: ({ data }: { data?: Invoice }) => data ? formatDate(data.issued_at) : null,
     },
     {
-      key: 'patient_name',
-      header: 'Paciente',
-      cellClassName: "max-w-60 break-words font-medium max-md:col-span-2 max-md:flex max-md:flex-col max-md:before:text-xs max-md:before:font-normal max-md:before:text-muted-foreground max-md:before:content-['Paciente']",
-      hideable: false,
-      render: (invoice) => (
-        <div className="flex items-start gap-2">
-          <User data-icon aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-          <span>{patientNameLabel(invoice)}</span>
-        </div>
-      ),
-    },
-    { key: 'total', header: 'Total', numeric: true, cellClassName: "max-md:flex max-md:flex-col max-md:items-start max-md:text-left max-md:before:text-xs max-md:before:text-muted-foreground max-md:before:content-['Total']", render: (invoice) => moneyLabel(invoice.total) },
-    { key: 'paid_amount', header: 'Pagado', numeric: true, cellClassName: "max-md:flex max-md:flex-col max-md:items-start max-md:text-left max-md:before:text-xs max-md:before:text-muted-foreground max-md:before:content-['Pagado']", render: (invoice) => moneyLabel(invoice.paid_amount) },
-    {
-      key: 'balance_due',
-      header: 'Saldo',
-      numeric: true,
-      cellClassName: "max-md:flex max-md:flex-col max-md:items-start max-md:text-left max-md:before:text-xs max-md:before:text-muted-foreground max-md:before:content-['Saldo']",
-      render: (invoice) => (
-        <span className={invoice.status === 'partial' || invoice.status === 'issued' ? 'font-semibold text-warning-foreground' : undefined}>
-          {moneyLabel(invoice.balance_due)}
-        </span>
-      ),
+      colId: 'patient_name',
+      headerName: 'Paciente',
+      cellRenderer: ({ data }: { data?: Invoice }) => {
+        if (!data) return null;
+        return (
+          <div className="flex items-start gap-2">
+            <User data-icon aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+            <span>{patientNameLabel(data)}</span>
+          </div>
+        );
+      },
     },
     {
-      key: 'status',
-      header: 'Estado',
-      cellClassName: "max-md:flex max-md:flex-col max-md:items-start max-md:before:text-xs max-md:before:text-muted-foreground max-md:before:content-['Estado']",
-      render: (invoice) => <InvoiceStatusBadge status={invoice.status} />,
+      colId: 'total',
+      headerName: 'Total',
+      type: 'rightAligned',
+      cellRenderer: ({ data }: { data?: Invoice }) => data ? moneyLabel(data.total) : null,
     },
     {
-      key: 'receipt',
-      header: 'Recibo',
-      cellClassName: "max-w-48 break-words text-xs max-md:col-span-2 max-md:flex max-md:flex-col max-md:before:text-xs max-md:before:text-muted-foreground max-md:before:content-['Recibo']",
-      render: (invoice) => <ReceiptTrace invoice={invoice} />,
+      colId: 'paid_amount',
+      headerName: 'Pagado',
+      type: 'rightAligned',
+      cellRenderer: ({ data }: { data?: Invoice }) => data ? moneyLabel(data.paid_amount) : null,
     },
     {
-      key: 'actions',
-      header: 'Acciones',
-      headerClassName: 'text-right',
-      cellClassName: "text-right max-md:col-span-2 max-md:flex max-md:justify-end",
-      hideable: false,
-      render: (invoice) => {
-        const isOwn = isOwnInvoiceFromToday(invoice);
-        const institutionalReceipt = issuedInstitutionalReceipt(invoice);
-        const actions = invoiceActionPolicy(invoice, {
+      colId: 'balance_due',
+      headerName: 'Saldo',
+      type: 'rightAligned',
+      cellRenderer: ({ data }: { data?: Invoice }) => {
+        if (!data) return null;
+        return (
+          <span className={data.status === 'partial' || data.status === 'issued' ? 'font-semibold text-warning-foreground' : undefined}>
+            {moneyLabel(data.balance_due)}
+          </span>
+        );
+      },
+    },
+    {
+      colId: 'status',
+      headerName: 'Estado',
+      cellRenderer: ({ data }: { data?: Invoice }) => data ? <InvoiceStatusBadge status={data.status} /> : null,
+    },
+    {
+      colId: 'receipt',
+      headerName: 'Recibo',
+      cellRenderer: ({ data }: { data?: Invoice }) => data ? <ReceiptTrace invoice={data} /> : null,
+    },
+    {
+      colId: 'actions',
+      headerName: 'Acciones',
+      cellRenderer: ({ data }: { data?: Invoice }) => {
+        if (!data) return null;
+        const isOwn = isOwnInvoiceFromToday(data);
+        const institutionalReceipt = issuedInstitutionalReceipt(data);
+        const actions = invoiceActionPolicy(data, {
           canIssueInstitutionalReceipt,
           canOperateAnyInvoice,
           canReprint,
@@ -150,7 +231,7 @@ export function InvoiceHistoryTable({
             icon: actions.auditedOpen
               ? <Printer aria-hidden="true" className="size-4" />
               : <Receipt aria-hidden="true" className="size-4" />,
-            onSelect: () => onOpenReceipt(invoice.id),
+            onSelect: () => onOpenReceipt(data.id),
           });
         }
         if (
@@ -161,8 +242,8 @@ export function InvoiceHistoryTable({
             key: 'download',
             label: 'Descargar',
             icon: <Download aria-hidden="true" className="size-4" />,
-            disabled: loadingActionInvoiceId === invoice.id,
-            onSelect: () => onDownloadInstitutionalReceipt(invoice),
+            disabled: loadingActionInvoiceId === data.id,
+            onSelect: () => onDownloadInstitutionalReceipt(data),
           });
         }
         if (actions.generateInstitutionalReceipt) {
@@ -170,8 +251,8 @@ export function InvoiceHistoryTable({
             key: 'generate',
             label: 'Generar PDF',
             icon: <ReceiptText aria-hidden="true" className="size-4" />,
-            disabled: loadingActionInvoiceId === invoice.id,
-            onSelect: () => onGenerateInstitutionalReceipt(invoice.id),
+            disabled: loadingActionInvoiceId === data.id,
+            onSelect: () => onGenerateInstitutionalReceipt(data.id),
           });
         }
         if (actions.reprint) {
@@ -179,7 +260,7 @@ export function InvoiceHistoryTable({
             key: 'reprint',
             label: 'Reimprimir',
             icon: <Printer aria-hidden="true" className="size-4" />,
-            onSelect: () => onReprint(invoice),
+            onSelect: () => onReprint(data),
           });
         }
         if (primaryGroup.items.length > 0) {
@@ -193,7 +274,7 @@ export function InvoiceHistoryTable({
             label: 'Reversar pago',
             icon: <XCircle aria-hidden="true" className="size-4" />,
             destructive: true,
-            onSelect: () => onPrepareInvoiceAction(invoice.id, 'reverse'),
+            onSelect: () => onPrepareInvoiceAction(data.id, 'reverse'),
           });
         }
         if (actions.void) {
@@ -202,7 +283,7 @@ export function InvoiceHistoryTable({
             label: 'Anular factura',
             icon: <XCircle aria-hidden="true" className="size-4" />,
             destructive: true,
-            onSelect: () => onPrepareInvoiceAction(invoice.id, 'void'),
+            onSelect: () => onPrepareInvoiceAction(data.id, 'void'),
           });
         }
         if (dangerGroup.items.length > 0) {
@@ -215,7 +296,7 @@ export function InvoiceHistoryTable({
 
         return (
           <ActionMenu
-            ariaLabel={`Acciones de la factura ${invoice.invoice_number}`}
+            ariaLabel={`Acciones de la factura ${data.invoice_number}`}
             groups={groups}
           />
         );
@@ -223,16 +304,42 @@ export function InvoiceHistoryTable({
     },
   ];
 
+  const activeColumns = allColumns.filter((col) => visibleKeys.includes(col.colId!));
+
   return (
-    <DataTable
-      caption="Facturas filtradas con estado, montos y acciones autorizadas."
-      containerLabel="Listado de facturas"
-      tableClassName="w-full min-w-0 md:min-w-[980px] max-md:block max-md:[&_thead]:sr-only max-md:[&_tbody]:grid max-md:[&_tbody]:gap-3 max-md:[&_tr]:grid max-md:[&_tr]:grid-cols-2 max-md:[&_tr]:rounded-md max-md:[&_tr]:border max-md:[&_tr]:border-border max-md:[&_tr]:bg-card max-md:[&_tr]:p-3 max-md:[&_td]:min-w-0 max-md:[&_td]:border-0 max-md:[&_td]:p-1.5"
-      rows={invoices}
-      columns={columns}
-      getRowKey={(invoice) => invoice.id}
-      showColumnVisibility
-    />
+    <div className="space-y-2">
+      {hideableColumns.length > 0 && (
+        <Dropdown
+          menu={{ items: menuItems }}
+          trigger={['click']}
+          open={openDropdown}
+          onOpenChange={setOpenDropdown}
+          getPopupContainer={(triggerNode) => triggerNode.parentNode as HTMLElement}
+        >
+          <Button
+            aria-label="Columnas"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                setOpenDropdown((prev) => !prev);
+              }
+            }}
+          >
+            Columnas
+          </Button>
+        </Dropdown>
+      )}
+      <InstitutionalDataGrid
+        ariaLabel="Listado de facturas"
+        regionAriaLabel="Tabla de facturas"
+        gridAriaLabel="Facturas filtradas"
+        rows={invoices}
+        columns={activeColumns}
+        getRowId={(invoice) => String(invoice.id)}
+        state={invoices.length ? 'ready' : 'empty'}
+        emptyMessage="No hay registros para mostrar."
+      />
+    </div>
   );
 }
 
@@ -240,21 +347,9 @@ export function issuedInstitutionalReceipt(invoice: Invoice): NonNullable<Invoic
   return getIssuedInstitutionalReceipt(invoice);
 }
 
-const statusConfig = {
-  issued: { label: 'Emitida', status: 'info' },
-  partial: { label: 'Parcial', status: 'partial' },
-  paid: { label: 'Pagada', status: 'paid' },
-  void: { label: 'Anulada', status: 'void' },
-} as const;
-
 function InvoiceStatusBadge({ status }: { status: Invoice['status'] }) {
-  const config = statusConfig[status] ?? statusConfig.issued;
-
-  return (
-    <StatusBadge status={config.status}>
-      {config.label}
-    </StatusBadge>
-  );
+  const kind = status === 'issued' ? 'info' : status;
+  return <StatusTag kind={kind} />;
 }
 
 function ReceiptTrace({ invoice }: { invoice: Invoice }) {

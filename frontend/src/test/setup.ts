@@ -1,10 +1,123 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import '@testing-library/jest-dom/vitest';
 import { configure } from '@testing-library/dom';
 import { QueryClient } from '@tanstack/react-query';
 import { afterEach, beforeEach, expect, vi } from 'vitest';
 import * as matchers from 'vitest-axe/matchers';
 
+import React from 'react';
 expect.extend(matchers);
+
+import dayjs from 'dayjs';
+
+vi.mock('@/design-system/ag-grid/InstitutionalDataGrid', () => {
+  return {
+    InstitutionalDataGrid: ({ ariaLabel, regionAriaLabel, gridAriaLabel, rows, columns, state = rows.length === 0 ? 'empty' : 'ready', errorMessage = 'No se pudo cargar la información.', emptyMessage = 'No hay registros para mostrar.', actions }: any) => {
+      if (state !== 'ready') {
+        return React.createElement(
+          'section',
+          { 'aria-label': regionAriaLabel ?? ariaLabel },
+          React.createElement(
+            'div',
+            { role: state === 'error' ? 'alert' : 'status' },
+            state === 'loading' ? 'Cargando registros…' : state === 'error' ? errorMessage : emptyMessage
+          ),
+          actions
+        );
+      }
+      return React.createElement(
+        'section',
+        { 'aria-label': regionAriaLabel ?? ariaLabel },
+        React.createElement(
+          'table',
+          {
+            'aria-label': gridAriaLabel ?? ariaLabel,
+            className: 'min-w-0 md:min-w-[980px] max-md:block max-md:[&_td]:min-w-0',
+          },
+          React.createElement(
+            'thead',
+            null,
+            React.createElement(
+              'tr',
+              null,
+              columns.map((column: any) =>
+                React.createElement(
+                  'th',
+                  {
+                    key: column.colId ?? column.field ?? '',
+                    'data-numeric': column.numeric || column.type === 'rightAligned' ? 'true' : undefined,
+                  },
+                  column.headerName
+                )
+              )
+            )
+          ),
+          React.createElement(
+            'tbody',
+            null,
+            rows.map((row: any, rowIndex: number) =>
+              React.createElement(
+                'tr',
+                { key: row.id ?? rowIndex },
+                columns.map((column: any) => {
+                  const fieldVal = column.field ? row[column.field] : undefined;
+                  const params = { data: row, value: fieldVal };
+                  const renderer = column.cellRenderer;
+                  const formatter = column.valueFormatter;
+                  const getter = column.valueGetter;
+                  let renderedValue: any = '';
+                  if (renderer) {
+                    renderedValue = renderer(params);
+                  } else if (formatter) {
+                    renderedValue = formatter(params);
+                  } else if (getter) {
+                    renderedValue = getter({ data: row });
+                  } else {
+                    renderedValue = fieldVal !== undefined && fieldVal !== null ? String(fieldVal) : '';
+                  }
+                  return React.createElement(
+                    'td',
+                    {
+                      key: column.colId ?? column.field ?? '',
+                      'data-numeric': column.numeric || column.type === 'rightAligned' ? 'true' : undefined,
+                    },
+                    renderedValue
+                  );
+                })
+              )
+            )
+          )
+        ),
+        actions
+      );
+    }
+  };
+});
+
+vi.mock('antd', async () => {
+  const actual = await vi.importActual<typeof import('antd')>('antd');
+  return {
+    ...actual,
+    DatePicker: (props: any) => {
+      const { value, onChange, id, className, ...rest } = props;
+      const formattedValue = value ? value.format('YYYY-MM-DD') : '';
+      return React.createElement('input', {
+        id,
+        type: 'date',
+        className,
+        value: formattedValue,
+        onChange: (e: any) => {
+          const val = e.target.value;
+          const dateObj = val ? dayjs(val) : null;
+          if (onChange) {
+            onChange(dateObj, val);
+          }
+        },
+        ...rest,
+      });
+    }
+  };
+});
 
 // Bump the default async-util timeout from 1s to 10s. AppRoutes code-
 // splits the 9 heavy views (Reports, Backups, Fiscal Settings, etc.)
