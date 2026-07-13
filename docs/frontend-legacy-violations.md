@@ -1,120 +1,123 @@
-# Reporte de Violaciones Legacy del Frontend — S_Hospital
+# Inventario de violaciones legacy del frontend
 
-> Recuento verificado el 2026-07-13: `npm run check:ui-legacy` continúa fallando
-> con **165 violaciones en 407 archivos**. Facturación aporta **0 imports legacy**
-> y **0 clases prohibidas** después de eliminar su último `rounded-md`. El gate
-> transversal no está certificado.
+Fecha de corte: 2026-07-13
 
-Este reporte agrupa las **165 violaciones de la UI antigua** (imports prohibidos y clases Tailwind decorativas obsoletas) detectadas en los 407 archivos escaneados del código fuente de `frontend/src/`.
+## Estado verificable
 
----
+El gate anterior reportaba 163 violaciones en 407 archivos, omitía clases dentro de primitivas exentas y contaba erróneamente propiedades institucionales como `borderRadiusLG: 0`. Después del arreglo del shell, ese mismo criterio bajó a 159. El nuevo modo inventario audita los 411 archivos actuales y hace visibles todas las deudas: 190 violaciones. El aumento de 31 no es una regresión de runtime, sino deuda antes silenciada por `exemptedFiles`.
 
-## 1. Resumen de Violaciones y Backlog
+```text
+npm run check:ui-legacy
+[INVENTORY] 411 archivos; 190 violaciones; exit 0
 
-* **Total de Archivos Auditados:** 407
-* **Total de Violaciones Reportadas:** 165
-  * **Clases Prohibidas (`rounded-*`, `shadow-*`, `bg-gradient-*`):** 124
-  * **Imports Legacy (`lucide-react`, `@radix-ui/`, `sonner`, etc.):** 41
+npm run check:ui-legacy:strict
+[QUALITY GATE PASSED] 411 archivos; 0 violaciones
+Módulos estrictos: invoices, catalog
 
----
+npm run check:ui-legacy:final
+[QUALITY GATE FAILED] 411 archivos; 190 violaciones; exit 1
+```
 
-## 2. Reporte Agrupado por Módulo
+| Tipo | Cantidad |
+| --- | ---: |
+| Imports legacy | 72 |
+| Clases prohibidas | 115 |
+| Motion legacy | 2 |
+| Border radius inline distinto de cero | 1 |
+| **Total** | **190** |
 
-### Primitivos de Componentes ShadCN (`src/components/ui/`)
-Estos archivos representan las primitivas legacy del sistema antiguo. Están marcadas como `exempted` temporalmente por el scanner hasta que sean completamente eliminadas tras migrar a sus equivalentes de Ant Design.
+| Módulo propietario | Violaciones | Riesgo / estado |
+| --- | ---: | --- |
+| ui-primitives | 137 | alto; backlog prioritario, no eliminar hasta migrar consumidores |
+| design-system legacy | 21 | alto; consolidar en Ant/institucional central |
+| layout | 9 | alto; consumidor transversal |
+| shared | 6 | alto; incluye atajos del shell y notificaciones |
+| receipt-settings | 6 | alto; fase Recibos/Configuración |
+| reports | 4 | medio/alto; fase Reportes |
+| settings | 4 | medio; fase Configuración |
+| receipts | 2 | medio; fase Recibos |
+| accounting | 1 | medio; fase Contabilidad |
 
-| Archivo | Tipo de Violación | Detalles |
-| :--- | :--- | :--- |
-| `src/components/ui/accordion.tsx` | Import Prohibido | `@radix-ui/react-accordion`, `lucide-react` |
-| `src/components/ui/action-menu.tsx` | Import / Clase | `lucide-react` / `shadow-sm` |
-| `src/components/ui/alert-dialog.tsx` | Import Prohibido | `@radix-ui/react-alert-dialog` |
-| `src/components/ui/alert.tsx` | Import Prohibido | `lucide-react` |
-| `src/components/ui/animations.tsx` | Import / Clase | `motion/react` / `rounded-2xl`, `shadow-sm`, `rounded-md` |
-| `src/components/ui/audit-log-list.tsx` | Clases Prohibidas | `rounded-xl`, `rounded-full`, `shadow-sm`, `rounded-md` |
-| `src/components/ui/breadcrumb.tsx` | Import Prohibido | `@radix-ui/react-slot`, `lucide-react` |
-| `src/components/ui/button.tsx` | Import Prohibido | `@radix-ui/react-slot` |
-| `src/components/ui/calendar.tsx` | Import Prohibido | `lucide-react`, `react-day-picker` |
-| `src/components/ui/chart.tsx` | Import Prohibido | `recharts` |
-| `src/components/ui/checkbox.tsx` | Import Prohibido | `@radix-ui/react-checkbox`, `lucide-react` |
-| `src/components/ui/collapsible.tsx` | Import Prohibido | `@radix-ui/react-collapsible` |
-| `src/components/ui/command.tsx` | Import Prohibido | `cmdk`, `lucide-react` |
-| `src/components/ui/confirm-dialog.tsx` | Import / Clase | `@radix-ui/react-alert-dialog`, `lucide-react` / `rounded-2xl`, `rounded-xl` |
-| `src/components/ui/data-table.tsx` | Import Prohibido | `@tanstack/react-table`, `lucide-react` |
-| `src/components/ui/date-range-picker.tsx`| Import Prohibido | `lucide-react`, `react-day-picker` |
-| `src/components/ui/dialog.tsx` | Import Prohibido | `@radix-ui/react-dialog`, `lucide-react` |
-| `src/components/ui/drawer.tsx` | Import Prohibido | `vaul` |
-| `src/components/ui/dropdown-menu.tsx` | Import Prohibido | `@radix-ui/react-dropdown-menu` |
-| `src/components/ui/filter-bar.tsx` | Import / Clase | `lucide-react` / `rounded-lg`, `rounded-md`, `shadow-sm`, `rounded-xl` |
-| `src/components/ui/metric-card.tsx` | Import Prohibido | `lucide-react` |
-| `src/components/ui/pagination.tsx` | Import Prohibido | `lucide-react` |
-| `src/components/ui/popover.tsx` | Import Prohibido | `@radix-ui/react-popover` |
-| `src/components/ui/progress.tsx` | Import Prohibido | `@radix-ui/react-progress` |
-| `src/components/ui/radio-group.tsx` | Import Prohibido | `@radix-ui/react-radio-group`, `lucide-react` |
-| `src/components/ui/scroll-area.tsx` | Import Prohibido | `@radix-ui/react-scroll-area` |
-| `src/components/ui/search-input.tsx` | Import / Clase | `lucide-react` / `rounded-xl`, `shadow-sm`, `rounded-lg` |
-| `src/components/ui/select.tsx` | Import Prohibido | `@radix-ui/react-select`, `lucide-react` |
-| `src/components/ui/separator.tsx` | Import Prohibido | `@radix-ui/react-separator` |
-| `src/components/ui/sheet.tsx` | Import Prohibido | `@radix-ui/react-dialog`, `lucide-react` |
-| `src/components/ui/sonner.tsx` | Import Prohibido | `sonner` |
-| `src/components/ui/spinner.tsx` | Import Prohibido | `lucide-react` |
-| `src/components/ui/states.tsx` | Import Prohibido | `lucide-react` |
-| `src/components/ui/status-badge.tsx` | Import Prohibido | `lucide-react` |
-| `src/components/ui/switch.tsx` | Import Prohibido | `@radix-ui/react-switch` |
-| `src/components/ui/tabs.tsx` | Import Prohibido | `@radix-ui/react-tabs` |
-| `src/components/ui/tooltip.tsx` | Import Prohibido | `@radix-ui/react-tooltip` |
+## Inventario por archivo y consumidor
 
----
+`Archivo / consumidor` identifica el consumidor físico; `Propietario` es la fase que debe retirarlo. El JSON completo y sus líneas exactas se obtiene con `node scripts/check-no-legacy-ui.mjs --mode=inventory --format=json`.
 
-### Módulos Funcionales Activos
-Consumidores que importan componentes antiguos o usan estilos no conformes directos. Se deben migrar por completo a Ant Design en sus respectivas fases.
+| Archivo / consumidor | Módulo | Dependencias | Clases | Propietario | Riesgo | Estado | N |
+| --- | --- | --- | --- | --- | --- | --- | ---: |
+| `src/components/keyboard-shortcuts-palette.tsx` | shared | lucide-react | rounded-lg/md/xl, shadow-sm | shell | alto | backlog | 5 |
+| `src/components/ui/accordion.tsx` | ui-primitives | Radix, lucide | rounded-md | UI central | alto | backlog | 3 |
+| `src/components/ui/action-menu.tsx` | ui-primitives | lucide | shadow-sm | UI central | alto | backlog | 2 |
+| `src/components/ui/alert-dialog.tsx` | ui-primitives | Radix | rounded-2xl | UI central | alto | backlog | 2 |
+| `src/components/ui/alert.tsx` | ui-primitives | lucide | rounded-lg/xl, shadow-sm | UI central | alto | backlog | 4 |
+| `src/components/ui/animations.tsx` | ui-primitives | motion/react | rounded-2xl/md, shadow-sm | UI central | medio | backlog | 4 |
+| `src/components/ui/audit-log-list.tsx` | ui-primitives | — | rounded-full/md/xl, shadow-sm | Admin | medio | backlog | 4 |
+| `src/components/ui/badge.tsx` | ui-primitives | — | rounded-md | UI central | medio | backlog | 1 |
+| `src/components/ui/breadcrumb.tsx` | ui-primitives | Radix, lucide | rounded-md | UI central | alto | backlog | 3 |
+| `src/components/ui/button.tsx` | ui-primitives | Radix | rounded-md | UI central | alto | backlog | 4 |
+| `src/components/ui/calendar.tsx` | ui-primitives | lucide, react-day-picker | rounded-lg/md | UI central | alto | backlog | 4 |
+| `src/components/ui/card.tsx` | ui-primitives | — | rounded-xl | UI central | medio | backlog | 1 |
+| `src/components/ui/chart.tsx` | ui-primitives | recharts | rounded-lg, shadow-xl | Reportes | alto | backlog | 4 |
+| `src/components/ui/checkbox.tsx` | ui-primitives | Radix, lucide | rounded-md, shadow-sm | UI central | alto | backlog | 4 |
+| `src/components/ui/collapsible.tsx` | ui-primitives | Radix | — | UI central | alto | backlog | 1 |
+| `src/components/ui/command.tsx` | ui-primitives | cmdk, lucide | rounded-md/sm | UI central | alto | backlog | 6 |
+| `src/components/ui/confirm-dialog.tsx` | ui-primitives | Radix, lucide | rounded-2xl/xl | UI central | alto | backlog | 4 |
+| `src/components/ui/data-table.test.tsx` | ui-primitives | TanStack Table | — | UI central | alto | backlog | 1 |
+| `src/components/ui/data-table.tsx` | ui-primitives | TanStack Table, lucide | rounded-sm/xl | UI central | alto | backlog | 6 |
+| `src/components/ui/date-range-picker.tsx` | ui-primitives | lucide, react-day-picker | — | UI central | alto | backlog | 2 |
+| `src/components/ui/dialog.tsx` | ui-primitives | Radix, lucide | rounded-2xl | UI central | alto | backlog | 3 |
+| `src/components/ui/drawer.tsx` | ui-primitives | vaul | rounded-full, shadow-2xl | UI central | alto | backlog | 3 |
+| `src/components/ui/dropdown-menu.tsx` | ui-primitives | Radix | rounded-lg/xl | UI central | alto | backlog | 3 |
+| `src/components/ui/empty.tsx` | ui-primitives | — | rounded-lg | UI central | medio | backlog | 2 |
+| `src/components/ui/filter-bar.tsx` | ui-primitives | lucide | rounded-lg/md/xl, shadow-sm | UI central | alto | backlog | 5 |
+| `src/components/ui/form-field.tsx` | ui-primitives | — | rounded-lg | UI central | medio | backlog | 1 |
+| `src/components/ui/input-group.tsx` | ui-primitives | — | rounded-md | UI central | medio | backlog | 1 |
+| `src/components/ui/input.tsx` | ui-primitives | — | rounded-md | UI central | medio | backlog | 1 |
+| `src/components/ui/metric-card.tsx` | ui-primitives | lucide | rounded-xl, shadow-lg | Dashboard | alto | backlog | 3 |
+| `src/components/ui/pagination.tsx` | ui-primitives | lucide | rounded-xl, shadow-sm | UI central | alto | backlog | 3 |
+| `src/components/ui/popover.tsx` | ui-primitives | Radix | rounded-md, shadow-md | UI central | alto | backlog | 3 |
+| `src/components/ui/progress.tsx` | ui-primitives | Radix | rounded-full | UI central | alto | backlog | 2 |
+| `src/components/ui/radio-group.tsx` | ui-primitives | Radix, lucide | rounded-full | UI central | alto | backlog | 3 |
+| `src/components/ui/scroll-area.tsx` | ui-primitives | Radix | rounded-full | UI central | alto | backlog | 2 |
+| `src/components/ui/search-input.tsx` | ui-primitives | lucide | rounded-lg/xl, shadow-sm | UI central | alto | backlog | 5 |
+| `src/components/ui/select.tsx` | ui-primitives | Radix, lucide | rounded-lg/md/sm, shadow-md/sm | UI central | alto | backlog | 9 |
+| `src/components/ui/separator.tsx` | ui-primitives | Radix | — | UI central | alto | backlog | 1 |
+| `src/components/ui/sheet.tsx` | ui-primitives | Radix, lucide | — | UI central | alto | backlog | 2 |
+| `src/components/ui/sonner.tsx` | ui-primitives | sonner | rounded-lg, shadow-lg | UI central | alto | backlog | 3 |
+| `src/components/ui/spinner.tsx` | ui-primitives | lucide | — | UI central | alto | backlog | 1 |
+| `src/components/ui/states.tsx` | ui-primitives | lucide | rounded-md/xl | UI central | alto | backlog | 6 |
+| `src/components/ui/status-badge.tsx` | ui-primitives | lucide | — | UI central | alto | backlog | 1 |
+| `src/components/ui/switch.tsx` | ui-primitives | Radix | rounded-full, shadow-sm | UI central | alto | backlog | 3 |
+| `src/components/ui/table.tsx` | ui-primitives | — | rounded-lg | UI central | medio | backlog | 1 |
+| `src/components/ui/tabs.tsx` | ui-primitives | Radix | rounded-lg/xl, shadow-md/sm | UI central | alto | backlog | 5 |
+| `src/components/ui/textarea.tsx` | ui-primitives | — | rounded-lg, shadow-sm | UI central | medio | backlog | 2 |
+| `src/components/ui/tooltip.tsx` | ui-primitives | Radix | rounded-lg | UI central | alto | backlog | 2 |
+| `src/components/ui/ui-patterns.test.tsx` | ui-primitives | lucide | — | UI central | alto | backlog | 1 |
+| `src/design-system/motion/MotionProvider.tsx` | design-system | motion/react | — | UI central | medio | backlog | 1 |
+| `src/design-system/primitives/Button.tsx` | design-system | Radix | rounded-full/md | UI central | alto | backlog | 3 |
+| `src/design-system/primitives/Field.tsx` | design-system | — | rounded-md | UI central | medio | backlog | 1 |
+| `src/design-system/primitives/StatusMark.tsx` | design-system | — | rounded-full | UI central | medio | backlog | 1 |
+| `src/design-system/primitives/Surface.tsx` | design-system | — | rounded-md | UI central | medio | backlog | 1 |
+| `src/design-system/primitives/Toaster.tsx` | design-system | sonner | inline radius | UI central | alto | backlog | 2 |
+| `src/design-system/primitives/primitives.test.tsx` | design-system | sonner | — | UI central | alto | backlog | 12 |
+| `src/features/receipt-settings/InstitutionalReceiptSettingsView.tsx` | receipt-settings | lucide | rounded-md/xl | Recibos | alto | backlog | 4 |
+| `src/features/receipt-settings/components/ReceiptSettingsPreview.tsx` | receipt-settings | — | rounded-2xl/sm | Recibos | medio | backlog | 2 |
+| `src/features/receipts/ReceiptPreview.tsx` | receipts | — | rounded-xl, shadow-sm | Recibos | medio | backlog | 2 |
+| `src/features/reports/ReportsExecutive.test.tsx` | reports | sonner | — | Reportes | alto | backlog | 1 |
+| `src/features/settings/FiscalNumerationView.tsx` | settings | — | rounded-xl | Configuración | medio | backlog | 3 |
+| `src/features/settings/components/FiscalStatusCard.tsx` | settings | — | rounded-xl | Configuración | medio | backlog | 1 |
+| `src/layout/components/OperationalStatus.tsx` | layout | lucide | rounded-md, shadow-sm | Layout | alto | backlog | 5 |
+| `src/layout/components/SidebarNavItem.tsx` | layout | — | rounded-full/md, shadow-sm | Layout | medio | backlog | 4 |
+| `src/lib/realtime/useBroadcastSync.ts` | shared | sonner | — | UI central | alto | backlog | 1 |
+| `src/modules/accounting/components/AccountingControlPanel.tsx` | accounting | — | rounded-2xl | Contabilidad | medio | backlog | 1 |
+| `src/modules/reports/components/AccountingPolicyPanel.tsx` | reports | lucide | rounded-xl | Reportes | alto | backlog | 3 |
 
-#### 1. Módulo de Recibos y Configuración (`src/features/receipt-settings/`)
-* **Archivos:**
-  * `InstitutionalReceiptSettingsView.tsx` (Línea 4: import lucide-react; 359: rounded-xl; 541: rounded-md; 699: rounded-md)
-  * `components/ReceiptSettingsPreview.tsx` (Línea 80: rounded-2xl; 87: rounded-sm)
-* **Acción:** Reemplazar Lucide con Ant Design Icons y remover clases de bordes/sombras.
+## Registro por fase
 
-#### 2. Módulo de Vista de Recibos (`src/features/receipts/`)
-* **Archivo:** `ReceiptPreview.tsx` (Línea 4: import alert; 5: import badge; 6: import button; 65: rounded-xl; 65: shadow-sm)
-* **Acción:** Reemplazar completamente con Ant Design components.
+| Fase | Violaciones al inicio | Imports eliminados | Clases eliminadas | Archivos legacy eliminados | Violaciones al final comparable | Estado |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| Facturación 8B | 16 focales | 11 | 5 | 2 Compat | 0 focales | estricta |
+| Catálogo 9 | 7 focales | 4 | 3 | 0 Compat | 0 focales | estricta |
+| Shell accesibilidad | 163 globales (criterio anterior) | 2 (`lucide`, Dialog/Button legacy del tour) | 2 radios/sombras del tour | 0 | 159 globales (criterio anterior) | QA global pendiente |
+| Gate exhaustivo | 159 visibles | n/a | +31 deudas antes exentas ahora visibles | 0 | 190 reales | inventario activo |
 
-#### 3. Módulo de Onboarding (`src/features/onboarding/`)
-* **Archivo:** `GuidedTour.tsx` (Línea 1: import lucide-react; 80: rounded-2xl; 82: rounded-xl; 82: shadow-md; 98: rounded-xl)
-* **Acción:** Reemplazar con Ant Design `Tour` oficial.
-
-#### 4. Módulo de Diseño Global / Layout (`src/layout/components/`)
-* **Archivos:**
-  * `OperationalStatus.tsx` (Línea 1: import lucide-react; 27: shadow-sm; 32, 46, 56: rounded-md)
-  * `SidebarNavItem.tsx` (Línea 27: rounded-md; 32: shadow-sm; 42, 53: rounded-full)
-* **Acción:** Migrar a componentes de Ant Design.
-
-#### 5. Módulo de Contabilidad (`src/modules/accounting/`)
-* **Archivo:** `components/AccountingControlPanel.tsx` (Línea 38: rounded-2xl)
-* **Acción:** Remover clases redondeadas.
-
-#### 6. Módulo de Políticas e Informes de Contabilidad (`src/modules/reports/`)
-* **Archivo:** `components/AccountingPolicyPanel.tsx` (Línea 1: import lucide-react; 23, 57: rounded-xl)
-* **Acción:** Reemplazar con Card y elementos planos Ant Design.
-
----
-
-## 3. Plan de Eliminación de Primitivas ShadCN
-
-Las primitivas ShadCN se eliminarán del proyecto en las siguientes fases del refactor:
-
-| Fase | Primitivos ShadCN a Eliminar |
-| :--- | :--- |
-| **Fase 9 (Catálogo)** | `dialog.tsx`, `sheet.tsx`, `form-field.tsx`, `form-section.tsx`, `input.tsx` |
-| **Fase 10 (Facturación)** | `data-table.tsx`, `select.tsx`, `alert-dialog.tsx`, `dropdown-menu.tsx`, `badge.tsx` |
-| **Fase 11 (Reportes)** | `chart.tsx`, `popover.tsx`, `tabs.tsx` |
-| **Fase 12 (Configuración/Admin)** | `calendar.tsx`, `date-range-picker.tsx`, `switch.tsx`, `textarea.tsx`, `accordion.tsx` |
-| **Fase Transversal Final** | `sonner.tsx`, `spinner.tsx`, `states.tsx`, `status-badge.tsx`, `status-tag.tsx` |
-
-### Corte focal de Fase 9 (2026-07-13)
-
-La búsqueda en el runtime de `src/features/catalog` registró **0 imports** de
-las primitivas legacy asignadas a Catálogo y **0 clases prohibidas**. Los formularios y
-overlays focales usan directamente Ant Design y la tabla operativa usa el
-`InstitutionalDataGrid` compartido. No se agregaron archivos Compat. El gate
-global registra **163 violaciones en 407 archivos**, todas fuera del runtime de
-Catálogo.
+Las primitivas no se eliminarán hasta migrar todos sus consumidores. Facturación y Catálogo son los únicos módulos estrictos actuales. Caja, Auth y Dashboard se agregarán a `strictModulePrefixes` cuando su auditoría transversal de runtime y pruebas termine; no se confunde su estado focal implementado con certificación.
