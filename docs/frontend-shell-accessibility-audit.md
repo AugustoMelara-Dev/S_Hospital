@@ -97,4 +97,4 @@ Cobertura Playwright: teal/blue/green/indigo/rose/branding inválido × claro/os
 Resultado axe antes: 25 nodos `color-contrast` en la corrida base, más cuatro combinaciones de tema descubiertas en la matriz.
 Resultado axe después: 0 violaciones de contraste y 0 violaciones serious/critical en los estados shell cubiertos.
 
-La certificación transversal sigue pendiente hasta completar suite global, consola y el gate legacy endurecido.
+La certificación transversal sigue pendiente. El shell conserva 0 violaciones serious/critical en los estados cubiertos, pero la regresión segmentada global cerró 197/208 en el bloque restante (11 fallos en Reportes y Ajustes de Recibos). El gate estricto está verde para Facturación, Catálogo y Administración; el inventario final continúa en 190/409. `npm run test:e2e` no puede iniciar sin la credencial de seed release obligatoria.

@@ -200,3 +200,34 @@ Este documento registra el progreso fase por fase del refactor del frontend. Se 
 * **Navegador focal:** 2/2 recorridos Chromium aprobados en `catalog-flow.spec.ts`: búsqueda, AG Grid, Dropdown real, confirmación de estado, Drawer real, Escape, restauración de foco, deep-link y navegación atrás.
 * **Arquitectura:** `CatalogView` deriva la apertura y entidad de los overlays desde la URL, sin estado espejo ni ramas de test. `ServiceSheet` y `CategorySheet` usan Drawer/Form reales de Ant Design. El menú de acciones conserva estado controlado fuera del renderer de AG Grid para evitar que la selección de fila desmonte el Dropdown.
 * **Deuda focal:** 0 imports de primitivas legacy y 0 clases prohibidas detectadas en runtime de `src/features/catalog`; no se agregaron Compat. El gate global continúa rojo con 163 violaciones en 407 archivos. La Fase 9 continúa abierta hasta completar su gate transversal y la revisión integral del módulo.
+
+---
+
+### Fase 10: Usuarios, roles y permisos (2026-07-13)
+
+* **Estado:** IMPLEMENTADA — QA TRANSVERSAL PENDIENTE.
+* **Arquitectura:** eliminada la capa transitoria `adminAntCompat.tsx`. Los consumidores usan directamente `Modal`, `Dropdown` + `MenuProps`, controles de `Form`, `Select`, `Checkbox`, `Alert`, `Tag` y Ant Design Icons; el directorio de escritorio usa `InstitutionalDataGrid` y los estados usan `StatusTag`.
+* **RBAC preservado:** permisos exactos, roles protegidos, protección del último administrador, bloqueo de auto-desactivación, auditoría con motivo, reset de contraseña e idempotencia.
+* **Accesibilidad:** el catálogo pequeño de roles usa búsqueda y `virtual={false}` para exponer todas las opciones a tecnologías asistivas; el motivo de desactivación tiene nombre accesible explícito.
+* **Vitest:** 84/84 pruebas focales aprobadas en 7 archivos.
+* **Playwright:** 1/1 flujo Chromium aprobado en 9.8 s: creación, permisos exactos, búsqueda, AG Grid, Dropdown, Modal de desactivación, motivo y cierre.
+* **Gate legacy estricto:** `invoices`, `catalog` y `admin` pasan con 0 violaciones sobre 409 archivos auditados.
+* **Commit:** `802e2101 feat(admin): migrate users roles and permissions`.
+
+#### Regresión transversal posterior al shell y Administración
+
+| Gate | Resultado |
+| --- | --- |
+| `git diff --check` | aprobado |
+| `npm run typecheck` | aprobado |
+| `npm run lint` | aprobado, 31 s |
+| `npm run build` | aprobado, 48.3 s; warnings de `@theme` y chunk vendor >500 kB |
+| Facturación | 194/194 |
+| Catálogo | 53/53 |
+| Administración | 84/84 |
+| Shell/compartidos | 225/225 en 42 archivos |
+| Bloque Reportes/Recibos/otros | 197/208; 11 fallos en 6 archivos, fuera de los módulos migrados |
+| Playwright shell / Facturación / Catálogo / Administración | 4/4 · 5/5 · 2/2 · 1/1 |
+| `npm run test:e2e` release | bloqueado antes de ejecutar: falta `E2E_RELEASE_PASSWORD` o `E2E_SEED_PASSWORD` |
+
+La invocación monolítica de Vitest agotó memoria y la variante serial completa dejó procesos huérfanos; la evidencia global se ejecutó en segmentos explícitos. No se declara certificación mientras permanezcan los 11 fallos de Reportes/Ajustes de Recibos y falte la credencial del E2E release.

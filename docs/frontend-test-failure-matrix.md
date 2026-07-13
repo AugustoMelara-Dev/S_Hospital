@@ -50,3 +50,18 @@ Modal, Dropdown ni AG Grid en runtime. Las limitaciones del portal completo en
 JSDOM se dividieron de forma explícita: Vitest valida datos, contratos URL,
 reglas, payloads y callbacks; Playwright valida Dropdown y Drawer reales,
 Escape, foco, deep-link y navegación atrás. El recorrido Chromium aprobó **2/2**.
+
+## Regresión global posterior al shell y Administración (2026-07-13)
+
+La ejecución segmentada aprobó 197/208 pruebas del bloque no migrado y dejó 11 fallos reproducibles, todos fuera de Facturación, Catálogo y Administración:
+
+| Suite | Fallos | Evidencia / propietario | Estado |
+| --- | ---: | --- | --- |
+| `InstitutionalReceiptSettingsView.test.tsx` | 1 | permanece en loading al consultar el perfil resuelto | Backlog Recibos |
+| `ReportsAudit.test.tsx` | 1 | restauración del filtro `action` desde URL | Backlog Reportes |
+| `ReportsExecutive.test.tsx` | 4 | historial de fechas, bloqueo de exportación, error LAN y progreso PDF | Backlog Reportes |
+| `ExecutiveAlerts.test.tsx` | 1 | textos de riesgos operativos | Backlog Reportes |
+| `PendingAgingPanel.test.tsx` | 3 | estado vacío, tabla accesible y fecha ausente | Backlog Reportes |
+| `ServiceRanking.test.tsx` | 1 | texto de estado vacío con acento | Backlog Reportes |
+
+Administración cerró **84/84** y Playwright **1/1**. El E2E release global no inicia sin `E2E_RELEASE_PASSWORD`/`E2E_SEED_PASSWORD`; el preflight falla deliberadamente para impedir una contraseña comprometida en el repositorio.

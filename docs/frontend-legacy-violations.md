@@ -4,18 +4,18 @@ Fecha de corte: 2026-07-13
 
 ## Estado verificable
 
-El gate anterior reportaba 163 violaciones en 407 archivos, omitía clases dentro de primitivas exentas y contaba erróneamente propiedades institucionales como `borderRadiusLG: 0`. Después del arreglo del shell, ese mismo criterio bajó a 159. El nuevo modo inventario audita los 411 archivos actuales y hace visibles todas las deudas: 190 violaciones. El aumento de 31 no es una regresión de runtime, sino deuda antes silenciada por `exemptedFiles`.
+El gate anterior reportaba 163 violaciones en 407 archivos, omitía clases dentro de primitivas exentas y contaba erróneamente propiedades institucionales como `borderRadiusLG: 0`. Después del arreglo del shell, ese mismo criterio bajó a 159. El nuevo modo inventario audita los 409 archivos actuales y hace visibles todas las deudas: 190 violaciones. La reducción de 411 a 409 archivos corresponde a la eliminación del stylesheet de tokens clínicos obsoleto y su prueba sin consumidores; el total de deuda no se ocultó.
 
 ```text
 npm run check:ui-legacy
-[INVENTORY] 411 archivos; 190 violaciones; exit 0
+[INVENTORY] 409 archivos; 190 violaciones; exit 0
 
 npm run check:ui-legacy:strict
-[QUALITY GATE PASSED] 411 archivos; 0 violaciones
-Módulos estrictos: invoices, catalog
+[QUALITY GATE PASSED] 409 archivos; 0 violaciones
+Módulos estrictos: invoices, catalog, admin
 
 npm run check:ui-legacy:final
-[QUALITY GATE FAILED] 411 archivos; 190 violaciones; exit 1
+[QUALITY GATE FAILED] 409 archivos; 190 violaciones; exit 1
 ```
 
 | Tipo | Cantidad |
@@ -119,5 +119,6 @@ npm run check:ui-legacy:final
 | Catálogo 9 | 7 focales | 4 | 3 | 0 Compat | 0 focales | estricta |
 | Shell accesibilidad | 163 globales (criterio anterior) | 2 (`lucide`, Dialog/Button legacy del tour) | 2 radios/sombras del tour | 0 | 159 globales (criterio anterior) | QA global pendiente |
 | Gate exhaustivo | 159 visibles | n/a | +31 deudas antes exentas ahora visibles | 0 | 190 reales | inventario activo |
+| Administración 10 | 0 focales | 11 consumidores dejaron `adminAntCompat` | 0 contabilizadas | 1 Compat transitorio eliminado | 0 focales | estricta |
 
-Las primitivas no se eliminarán hasta migrar todos sus consumidores. Facturación y Catálogo son los únicos módulos estrictos actuales. Caja, Auth y Dashboard se agregarán a `strictModulePrefixes` cuando su auditoría transversal de runtime y pruebas termine; no se confunde su estado focal implementado con certificación.
+Las primitivas no se eliminarán hasta migrar todos sus consumidores. Facturación, Catálogo y Administración son los módulos estrictos actuales. Caja, Auth y Dashboard se agregarán a `strictModulePrefixes` cuando su auditoría transversal de runtime y pruebas termine; no se confunde su estado focal implementado con certificación.
