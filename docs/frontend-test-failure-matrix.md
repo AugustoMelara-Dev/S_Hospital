@@ -63,5 +63,8 @@ La ejecución segmentada aprobó 197/208 pruebas del bloque no migrado y dejó 1
 | `ExecutiveAlerts.test.tsx` | 1 | textos de riesgos operativos | Backlog Reportes |
 | `PendingAgingPanel.test.tsx` | 3 | estado vacío, tabla accesible y fecha ausente | Backlog Reportes |
 | `ServiceRanking.test.tsx` | 1 | texto de estado vacío con acento | Backlog Reportes |
+| `App.test.tsx` | 8 | contratos antiguos de Settings/Catálogo/Backups/Auth y fallback lazy | Backlog transversal por módulo propietario |
+| `lib/api/system.test.ts` | 1 | expectation corrupta usa `áction` en vez de `?action` | Backlog API tests |
+| `modules/receipts/paperPolicy.test.ts` | 1 | busca CSS de impresión retirado de `styles.css` | Backlog Recibos/Impresión |
 
-Administración cerró **84/84** y Playwright **1/1**. El E2E release global no inicia sin `E2E_RELEASE_PASSWORD`/`E2E_SEED_PASSWORD`; el preflight falla deliberadamente para impedir una contraseña comprometida en el repositorio.
+Administración cerró **84/84** y Playwright **1/1**. En total quedaron 21 fallos reproducibles en 9 archivos no migrados. El E2E release global no inicia sin `E2E_RELEASE_PASSWORD`/`E2E_SEED_PASSWORD`; el preflight falla deliberadamente para impedir una contraseña comprometida en el repositorio.

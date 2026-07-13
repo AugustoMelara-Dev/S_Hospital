@@ -227,7 +227,8 @@ Este documento registra el progreso fase por fase del refactor del frontend. Se 
 | Administración | 84/84 |
 | Shell/compartidos | 225/225 en 42 archivos |
 | Bloque Reportes/Recibos/otros | 197/208; 11 fallos en 6 archivos, fuera de los módulos migrados |
+| Bloque App/API/impresión y utilidades | 226/236; 10 fallos en 3 archivos (`App.test`, API system y política de papel) |
 | Playwright shell / Facturación / Catálogo / Administración | 4/4 · 5/5 · 2/2 · 1/1 |
 | `npm run test:e2e` release | bloqueado antes de ejecutar: falta `E2E_RELEASE_PASSWORD` o `E2E_SEED_PASSWORD` |
 
-La invocación monolítica de Vitest agotó memoria y la variante serial completa dejó procesos huérfanos; la evidencia global se ejecutó en segmentos explícitos. No se declara certificación mientras permanezcan los 11 fallos de Reportes/Ajustes de Recibos y falte la credencial del E2E release.
+La invocación monolítica de Vitest agotó memoria y la variante serial completa dejó procesos huérfanos; la evidencia global se ejecutó en segmentos explícitos. Hay 21 fallos reproducibles en 9 archivos fuera de Facturación, Catálogo y Administración. No se declara certificación mientras permanezcan y falte la credencial del E2E release.
