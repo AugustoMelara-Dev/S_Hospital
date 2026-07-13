@@ -27,6 +27,7 @@ export const prohibitedClasses = [
 export const strictModulePrefixes = [
   'src/features/invoices/',
   'src/features/catalog/',
+  'src/features/admin/',
 ];
 
 export function classifyModule(file) {

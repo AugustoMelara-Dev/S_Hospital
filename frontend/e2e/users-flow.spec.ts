@@ -75,7 +75,7 @@ test.describe('Users - critical mocked e2e', () => {
 
     await page.goto('/admin/users');
 
-    await expect(page.getByRole('heading', { name: /usuarios y permisos/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /usuarios y funciones/i })).toBeVisible();
     await expect(page.getByText(/rbac activo/i)).toBeVisible();
     await expect(page.getByText(/roles y modulos/i)).toBeVisible();
     await expect(page.getByRole('button', { name: /crear usuario/i })).toBeVisible();

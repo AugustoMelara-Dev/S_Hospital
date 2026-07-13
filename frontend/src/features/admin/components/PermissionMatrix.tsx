@@ -1,5 +1,5 @@
 import { useId, useState } from 'react';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { DownOutlined as ChevronDown, RightOutlined as ChevronRight } from '@ant-design/icons';
 import type { PermissionCatalogGroup, RoleDefinition } from '@/lib/api';
 import { roleLabel } from '@/lib/role-labels';
 import { cn } from '@/lib/utils';
@@ -33,7 +33,7 @@ export function PermissionMatrix({ roles, permissionCatalog, className }: Permis
     <section
       aria-labelledby={titleId}
       className={cn(
-        'rounded-md border border-operational-border bg-operational-surface p-4 shadow-sm',
+        'border border-operational-border bg-operational-surface p-5 sm:p-6',
         className,
       )}
     >
@@ -50,7 +50,7 @@ export function PermissionMatrix({ roles, permissionCatalog, className }: Permis
             aria-controls={matrixId}
             aria-expanded={isMatrixOpen}
             onClick={() => setIsMatrixOpen((current) => !current)}
-            className="inline-flex min-h-9 items-center gap-2 rounded border border-operational-border bg-operational-panel px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-operational-panel/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            className="inline-flex min-h-10 items-center gap-2 border border-operational-border bg-white px-3 py-2 text-xs font-semibold text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             {isMatrixOpen ? (
               <ChevronDown aria-hidden="true" className="size-3.5" />
@@ -156,7 +156,7 @@ function PermissionGroup({
             <div className="flex flex-col">
               <span className="font-medium">{permission.label}</span>
               {isCriticalPermission(permission) && (
-                <span className="mt-1 w-fit rounded-sm border border-warning/40 bg-warning/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-warning-foreground">
+                <span className="mt-1 w-fit border border-warning/40 bg-warning/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-warning-foreground">
                   Permiso critico
                 </span>
               )}
@@ -178,7 +178,7 @@ function PermissionGroup({
               >
                 <span
                   className={cn(
-                    'inline-flex min-w-10 items-center justify-center rounded-full px-2 py-1 text-xs font-semibold',
+                    'inline-flex min-w-10 items-center justify-center px-2 py-1 text-xs font-semibold',
                     granted
                       ? 'bg-success/15 text-success-foreground'
                       : 'bg-muted/40 text-muted-foreground',

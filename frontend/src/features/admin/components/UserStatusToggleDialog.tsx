@@ -1,5 +1,6 @@
+import { useEffect, useState } from 'react';
+import { Form, Input, Modal } from 'antd';
 import { type AuthUser } from '@/lib/api';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 type UserStatusToggleDialogProps = {
   isToggling: boolean;
@@ -16,19 +17,25 @@ export function UserStatusToggleDialog({
   open,
   targetUser,
 }: UserStatusToggleDialogProps) {
+  const [reason, setReason] = useState('');
+  const requiresReason = Boolean(targetUser?.active);
+  const reasonInvalid = requiresReason && reason.trim().length < 5;
+
+  useEffect(() => {
+    if (!open) setReason('');
+  }, [open]);
+
   return (
-    <ConfirmDialog
+    <Modal
       open={open}
       title={targetUser?.active ? 'Desactivar usuario?' : 'Activar usuario?'}
-      confirmLabel={isToggling ? 'Cambiando...' : targetUser?.active ? 'Desactivar' : 'Activar'}
-      confirmDisabled={isToggling}
-      cancelDisabled={isToggling}
-      danger={targetUser?.active}
-      requireReasonTextarea={targetUser?.active}
-      requireReasonMinLength={5}
-      reasonHelpText="Explique por que se desactiva este usuario. Quedara registrado en auditoria."
+      okText={isToggling ? 'Cambiando...' : targetUser?.active ? 'Desactivar' : 'Activar'}
+      cancelText="Cancelar"
+      okButtonProps={{ disabled: isToggling || reasonInvalid, danger: Boolean(targetUser?.active) }}
+      cancelButtonProps={{ disabled: isToggling }}
       onCancel={onCancel}
-      onConfirm={onConfirm}
+      onOk={() => onConfirm(requiresReason ? reason.trim() : null)}
+      modalRender={(node) => <div role="alertdialog" aria-label={targetUser?.active ? 'Desactivar usuario?' : 'Activar usuario?'}>{node}</div>}
     >
       {targetUser?.active ? (
         <p>
@@ -39,6 +46,15 @@ export function UserStatusToggleDialog({
           Al reactivar a <strong>{targetUser?.name}</strong>, el usuario volvera a tener acceso operativo al sistema con sus credenciales habituales.
         </p>
       )}
-    </ConfirmDialog>
+      {requiresReason ? <Form.Item
+        label="Motivo"
+        htmlFor="user-status-reason"
+        required
+        validateStatus={reason.length > 0 && reasonInvalid ? 'error' : undefined}
+        help={reason.length > 0 && reasonInvalid ? 'El motivo debe tener al menos 5 caracteres.' : 'Explique por que se desactiva este usuario. Quedara registrado en auditoria.'}
+      >
+        <Input.TextArea id="user-status-reason" aria-label="Motivo" value={reason} disabled={isToggling} onChange={(event) => setReason(event.target.value)} />
+      </Form.Item> : null}
+    </Modal>
   );
 }

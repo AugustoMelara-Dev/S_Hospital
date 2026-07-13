@@ -1,5 +1,5 @@
-import { KeyRound, Pencil, UserCheck, UserX } from 'lucide-react';
-import { ActionMenu, type ActionMenuGroup } from '@/components/ui/action-menu';
+import { KeyOutlined as KeyRound, EditOutlined as Pencil, MoreOutlined, UserSwitchOutlined as UserCheck, UserDeleteOutlined as UserX } from '@ant-design/icons';
+import { Button, Dropdown, type MenuProps } from 'antd';
 import type { AuthUser } from '@/lib/api';
 
 type UserActionMenuProps = {
@@ -21,56 +21,42 @@ export function UserActionMenu({
   onToggleActive,
   user,
 }: UserActionMenuProps) {
-  const groups: ActionMenuGroup[] = [];
-
-  const accountItems: ActionMenuGroup['items'] = [];
+  const items: MenuProps['items'] = [];
 
   if (canUpdateUsers) {
-    accountItems.push({
+    items.push({
       key: 'edit',
       label: 'Editar',
       icon: <Pencil aria-hidden="true" className="size-4" />,
-      onSelect: () => onEdit(user),
+      onClick: () => onEdit(user),
     });
   }
 
   if (canResetPassword) {
-    accountItems.push({
+    items.push({
       key: 'reset-password',
       label: 'Restablecer clave',
       icon: <KeyRound aria-hidden="true" className="size-4" />,
-      onSelect: () => onResetPassword(user),
-    });
-  }
-
-  if (accountItems.length > 0) {
-    groups.push({
-      key: 'account',
-      items: accountItems,
+      onClick: () => onResetPassword(user),
     });
   }
 
   if (canDisableUsers) {
-    groups.push({
-      key: 'access',
-      items: [
-        {
-          key: user.active ? 'disable' : 'enable',
-          label: user.active ? 'Desactivar' : 'Activar',
-          icon: user.active
-            ? <UserX aria-hidden="true" className="size-4" />
-            : <UserCheck aria-hidden="true" className="size-4" />,
-          destructive: user.active,
-          onSelect: () => onToggleActive(user),
-        },
-      ],
+    if (items.length > 0) items.push({ type: 'divider' });
+    items.push({
+      key: user.active ? 'disable' : 'enable',
+      label: user.active ? 'Desactivar' : 'Activar',
+      icon: user.active
+        ? <UserX aria-hidden="true" className="size-4" />
+        : <UserCheck aria-hidden="true" className="size-4" />,
+      danger: user.active,
+      onClick: () => onToggleActive(user),
     });
   }
 
-  return (
-    <ActionMenu
-      ariaLabel={`Acciones de usuario ${user.name}`}
-      groups={groups}
-    />
-  );
+  if (items.length === 0) return null;
+
+  return <Dropdown menu={{ items }} trigger={['click']}>
+    <Button aria-label={`Acciones de usuario ${user.name}`} icon={<MoreOutlined aria-hidden="true" />} />
+  </Dropdown>;
 }

@@ -1,7 +1,5 @@
-import { UserCog, UserPlus, Users } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { OperationalBanner, StatGrid } from '@/components/shared';
+import { TeamOutlined, UserAddOutlined, UserSwitchOutlined } from '@ant-design/icons';
+import { Alert, Button, Card, Statistic, Tag } from 'antd';
 
 type UserManagementOverviewProps = {
   activeUsersCount: number;
@@ -13,59 +11,18 @@ type UserManagementOverviewProps = {
   totalUsersCount: number;
 };
 
-export function UserManagementOverview({
-  activeUsersCount,
-  editableRolesCount,
-  onCreateUser,
-  pendingPasswordUsersCount,
-  showCreateAction,
-  totalRolesCount,
-  totalUsersCount,
-}: UserManagementOverviewProps) {
-  return (
-    <>
-      <OperationalBanner
-        title="Usuarios y permisos"
-        meta="Administracion segura"
-        description="Administre cuentas individuales, roles operativos y permisos por modulo sin cambiar la politica de acceso del servidor."
-        status={(
-          <Badge variant="info">
-            <Users data-icon aria-hidden="true" />
-            RBAC activo
-          </Badge>
-        )}
-        actions={showCreateAction ? (
-          <Button onClick={onCreateUser}>
-            <UserPlus data-icon aria-hidden="true" />
-            Crear usuario
-          </Button>
-        ) : undefined}
-      />
-
-      <StatGrid
-        className="xl:grid-cols-3"
-        items={[
-          {
-            label: 'Usuarios activos',
-            value: activeUsersCount,
-            helper: `${totalUsersCount} cuenta${totalUsersCount === 1 ? '' : 's'} registrada${totalUsersCount === 1 ? '' : 's'}`,
-            icon: <Users aria-hidden="true" className="size-4" />,
-            tone: 'success',
-          },
-          {
-            label: 'Cambio pendiente',
-            value: pendingPasswordUsersCount,
-            helper: 'Usuarios que deberan cambiar clave al ingresar.',
-            tone: pendingPasswordUsersCount > 0 ? 'warning' : 'neutral',
-          },
-          {
-            label: 'Roles editables',
-            value: editableRolesCount,
-            helper: `${totalRolesCount} rol${totalRolesCount === 1 ? '' : 'es'} disponible${totalRolesCount === 1 ? '' : 's'} en total.`,
-            icon: <UserCog aria-hidden="true" className="size-4" />,
-          },
-        ]}
-      />
-    </>
-  );
+export function UserManagementOverview({ activeUsersCount, editableRolesCount, onCreateUser, pendingPasswordUsersCount, showCreateAction, totalRolesCount, totalUsersCount }: UserManagementOverviewProps) {
+  return <>
+    <Alert
+      type="info"
+      title={<h1>Usuarios y funciones</h1>}
+      description={<><p>Administre cuentas individuales, roles operativos y permisos por modulo sin cambiar la politica de acceso del servidor.</p><Tag color="processing" icon={<TeamOutlined aria-hidden="true" />}>RBAC activo</Tag></>}
+      action={showCreateAction ? <Button type="primary" icon={<UserAddOutlined aria-hidden="true" />} onClick={onCreateUser}>Crear usuario</Button> : undefined}
+    />
+    <div className="grid gap-3 sm:grid-cols-3">
+      <Card title="Usuarios activos" extra={<TeamOutlined aria-hidden="true" />}><Statistic value={activeUsersCount} /><p>{totalUsersCount} cuenta{totalUsersCount === 1 ? '' : 's'} registrada{totalUsersCount === 1 ? '' : 's'}</p></Card>
+      <Card title="Cambio pendiente"><Statistic value={pendingPasswordUsersCount} /><p>Usuarios que deberan cambiar clave al ingresar.</p></Card>
+      <Card title="Roles editables" extra={<UserSwitchOutlined aria-hidden="true" />}><Statistic value={editableRolesCount} /><p>{totalRolesCount} rol{totalRolesCount === 1 ? '' : 'es'} disponible{totalRolesCount === 1 ? '' : 's'} en total.</p></Card>
+    </div>
+  </>;
 }

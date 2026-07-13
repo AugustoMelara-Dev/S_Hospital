@@ -1,13 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { Search, Save } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Dialog } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Alert } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { InfoPanel } from '@/components/shared';
+import { SearchOutlined as Search, SaveOutlined as Save } from '@ant-design/icons';
+import { Alert, Button, Checkbox, Input, Modal, Tag } from 'antd';
 import { type RoleDefinition, type RolePermission } from '@/lib/api';
 import { isCriticalPermission, permissionRiskLabel } from './permission-risk';
 
@@ -109,30 +102,29 @@ export function RoleFormDialog({
   }
 
   return (
-    <Dialog
+    <Modal
       open={open}
-      onOpenChange={(value) => {
-        if (!isSaving) onOpenChange(value);
-      }}
-      size="lg"
+      onCancel={() => { if (!isSaving) onOpenChange(false); }}
       title={editingRole ? 'Editar rol' : 'Nuevo rol'}
-      description="Seleccione los permisos exactos que tendra este rol operativo."
+      footer={null}
+      width={860}
+      destroyOnHidden
     >
+      <p>Seleccione los permisos exactos que tendra este rol operativo.</p>
       <form onSubmit={handleSubmit} className="space-y-4">
         {globalError && (
-          <Alert variant="destructive" title="No se pudo guardar">
-            {globalError}
-          </Alert>
+          <Alert type="error" showIcon title="No se pudo guardar" description={globalError} />
         )}
 
-        <InfoPanel
+        <Alert
+          type="info"
+          showIcon
           title="Permisos por modulo"
           description="Seleccione exactamente los accesos que tendra el rol. Use permisos entendibles por modulo para evitar asignaciones accidentales."
-          tone="info"
         />
 
         {requiresCriticalConfirmation && (
-          <div className="rounded-md border border-warning/40 bg-warning/10 p-3 text-sm text-warning-foreground">
+          <div className="border border-warning/40 bg-warning/10 p-4 text-sm text-warning-foreground">
             <p className="font-semibold">Permisos criticos seleccionados</p>
             <p className="mt-1 text-xs text-current/80">
               Estos accesos pueden modificar caja, recibos, anulaciones, respaldos o usuarios. Confirme que el rol realmente los necesita.
@@ -162,15 +154,15 @@ export function RoleFormDialog({
                 id="critical-role-confirmation"
                 checked={criticalAccessConfirmed}
                 disabled={isSaving}
-                onCheckedChange={(value) => setCriticalAccessConfirmed(value === true)}
+                onChange={(event) => setCriticalAccessConfirmed(event.target.checked)}
               />
               <span>Confirmo que este rol necesita permisos criticos</span>
             </label>
           </div>
         )}
 
-        <div className="rounded-md border border-operational-border bg-operational-panel/50 p-3 space-y-1">
-          <Label htmlFor="role-name">Nombre del rol *</Label>
+        <div className="space-y-1 border border-operational-border bg-muted/40 p-4">
+          <label htmlFor="role-name">Nombre del rol *</label>
           <Input
             id="role-name"
             value={roleName}
@@ -203,14 +195,14 @@ export function RoleFormDialog({
           />
         </div>
 
-        <div className="max-h-[420px] space-y-3 overflow-y-auto rounded-md border border-operational-border bg-operational-panel/40 p-3">
+        <div className="max-h-96 space-y-3 overflow-y-auto border border-operational-border bg-muted/40 p-4">
           {filteredCatalog.length === 0 ? (
-            <p className="rounded-md border border-dashed border-operational-border bg-operational-surface p-4 text-center text-sm text-muted-foreground">
+            <p className="border border-dashed border-operational-border bg-operational-surface p-4 text-center text-sm text-muted-foreground">
               No se encontraron permisos para «{permissionFilter}».
             </p>
           ) : (
             filteredCatalog.map((group) => (
-              <fieldset key={group.module} className="rounded-md border border-operational-border bg-operational-surface p-3">
+              <fieldset key={group.module} className="border border-operational-border bg-operational-surface p-4">
                 <legend className="px-1 text-sm font-semibold text-foreground">
                   {group.label}
                   <span className="ml-2 text-xs font-normal text-muted-foreground">
@@ -224,17 +216,17 @@ export function RoleFormDialog({
                     const critical = isCriticalPermission(permission);
                     const riskLabel = permissionRiskLabel(permission);
                     return (
-                      <label key={permission.name} htmlFor={id} className="flex items-start gap-2 rounded-md p-2 text-sm hover:bg-muted/50">
+                      <label key={permission.name} htmlFor={id} className="flex items-start gap-3 border border-transparent p-3 text-sm hover:border-border hover:bg-accent/35">
                         <Checkbox
                           id={id}
                           checked={checked}
                           disabled={isSaving}
-                          onCheckedChange={(value) => onTogglePermission(permission.name, value === true)}
+                          onChange={(event) => onTogglePermission(permission.name, event.target.checked)}
                         />
                         <span>
                           <span className="flex flex-wrap items-center gap-2 font-medium text-foreground">
                             {permission.label}
-                            {critical && <Badge variant="warning">Permiso critico</Badge>}
+                            {critical && <Tag color="warning">Permiso critico</Tag>}
                           </span>
                           {critical && riskLabel && (
                             <span className="block text-xs text-warning-foreground">{riskLabel}</span>
@@ -250,15 +242,15 @@ export function RoleFormDialog({
         </div>
 
         <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" variant="secondary" onClick={() => onOpenChange(false)} disabled={isSaving}>
+          <Button onClick={() => onOpenChange(false)} disabled={isSaving}>
             Cancelar
           </Button>
-          <Button type="submit" disabled={isSaving || (requiresCriticalConfirmation && !criticalAccessConfirmed)}>
+          <Button type="primary" htmlType="submit" loading={isSaving} disabled={isSaving || (requiresCriticalConfirmation && !criticalAccessConfirmed)}>
             <Save data-icon aria-hidden="true" />
             {isSaving ? 'Guardando...' : editingRole ? 'Guardar rol' : 'Crear rol'}
           </Button>
         </div>
       </form>
-    </Dialog>
+    </Modal>
   );
 }

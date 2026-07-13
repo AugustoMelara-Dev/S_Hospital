@@ -1,4 +1,5 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { UsersView } from './UsersView';
 import { ApiError, apiClient, type AuthUser, type RoleDefinition } from '@/lib/api';
@@ -64,10 +65,10 @@ const roleCatalog = {
 };
 
 async function openUserActions(userName: string) {
+  const user = userEvent.setup();
   const trigger = await screen.findByRole('button', { name: new RegExp(`acciones de usuario ${userName}`, 'i') });
   trigger.focus();
-  fireEvent.keyDown(trigger, { key: 'Enter', code: 'Enter', keyCode: 13, charCode: 13 });
-  fireEvent.click(trigger);
+  await user.click(trigger);
 }
 
 function openAdvancedUserPermissions(dialog: HTMLElement) {
@@ -97,7 +98,7 @@ describe('UsersView', () => {
   it('shows the V1.2 RBAC summary without changing read-only restrictions', async () => {
     render(<UsersView onStatus={vi.fn()} canCreateUsers={false} canManageRoles={false} />);
 
-    expect(await screen.findByRole('heading', { name: /usuarios y permisos/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /usuarios y funciones/i })).toBeInTheDocument();
     expect(screen.getByText(/rbac activo/i)).toBeInTheDocument();
     expect(screen.getByText(/usuarios activos/i)).toBeInTheDocument();
     expect(screen.getByText(/roles en modo consulta/i)).toBeInTheDocument();
@@ -377,7 +378,7 @@ describe('UsersView', () => {
     const dialog = await screen.findByRole('dialog', { name: /editar usuario/i });
     expect(within(dialog).getByText(/conserva el rol protegido/i)).toBeInTheDocument();
 
-    fireEvent.click(within(dialog).getByRole('combobox', { name: /rol operativo/i }));
+    fireEvent.mouseDown(within(dialog).getByRole('combobox', { name: /rol operativo/i }));
 
     expect(screen.getByRole('option', { name: /Admin/i })).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: /^Cajero$/i })).not.toBeInTheDocument();
@@ -460,7 +461,7 @@ describe('UsersView', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: /crear usuario/i }));
     const dialog = screen.getByRole('dialog', { name: /crear usuario/i });
-    fireEvent.click(within(dialog).getByRole('combobox', { name: /rol operativo/i }));
+    fireEvent.mouseDown(within(dialog).getByRole('combobox', { name: /rol operativo/i }));
 
     expect(screen.getByRole('option', { name: /^Cajero$/i })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /Catalog manager/i })).toBeInTheDocument();
@@ -475,13 +476,14 @@ describe('UsersView', () => {
     fireEvent.click(await screen.findByRole('button', { name: /crear usuario/i }));
     const dialog = screen.getByRole('dialog', { name: /crear usuario/i });
 
-    fireEvent.click(within(dialog).getByRole('combobox', { name: /rol operativo/i }));
+    fireEvent.mouseDown(within(dialog).getByRole('combobox', { name: /rol operativo/i }));
 
     expect(await screen.findByRole('option', { name: /Catalog manager/i })).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: /Auditor/i })).not.toBeInTheDocument();
   });
 
   it('updates the direct permission template when the administrator changes the user role', async () => {
+    const user = userEvent.setup();
     const createUser = vi.spyOn(apiClient, 'createUser').mockResolvedValue({
       ...adminUser,
       id: 10,
@@ -496,11 +498,17 @@ describe('UsersView', () => {
 
     render(<UsersView onStatus={vi.fn()} canCreateUsers={true} canUpdateUsers canManageRoles={true} canAssignAdminRole />);
 
+    await screen.findAllByText(/Catalog manager/i);
     fireEvent.click(await screen.findByRole('button', { name: /crear usuario/i }));
     const dialog = screen.getByRole('dialog', { name: /crear usuario/i });
 
-    fireEvent.click(within(dialog).getByRole('combobox', { name: /rol operativo/i }));
-    fireEvent.click(await screen.findByRole('option', { name: /Catalog manager/i }));
+    const roleSelector = within(dialog).getByRole('combobox', { name: /rol operativo/i });
+    await user.click(roleSelector);
+    await user.type(roleSelector, 'Catalog manager');
+    const catalogOption = await screen.findByRole('option', { name: /Catalog manager/i });
+    fireEvent.mouseDown(catalogOption);
+    fireEvent.click(catalogOption);
+    await waitFor(() => expect(roleSelector.closest('.ant-select')).toHaveTextContent(/Catalog manager/i));
     openAdvancedUserPermissions(dialog);
 
     expect(within(dialog).getByRole('checkbox', { name: /Catalog view/i })).toBeChecked();

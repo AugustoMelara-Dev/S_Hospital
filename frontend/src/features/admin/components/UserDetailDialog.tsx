@@ -1,7 +1,5 @@
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Dialog } from '@/components/ui/dialog';
-import { StatusBadge } from '@/components/ui/status-badge';
+import { Button, Modal, Tag } from 'antd';
+import { StatusTag } from '@/components/ui/status-tag';
 import type { AuthUser } from '@/lib/api';
 import { roleLabel } from '@/lib/role-labels';
 
@@ -12,16 +10,19 @@ type UserDetailDialogProps = {
 
 export function UserDetailDialog({ onOpenChange, user }: UserDetailDialogProps) {
   return (
-    <Dialog
+    <Modal
       open={user !== null}
-      onOpenChange={onOpenChange}
+      onCancel={() => onOpenChange(false)}
       title="Detalle de usuario"
-      description="Cuenta, acceso operativo y estado actual."
+      footer={null}
+      width={720}
+      destroyOnHidden
     >
+      <p>Cuenta, acceso operativo y estado actual.</p>
       {user ? (
         <div className="space-y-5">
-          <div className="flex items-start gap-3 rounded-md border border-operational-border bg-operational-panel p-4">
-            <div className="flex size-11 shrink-0 items-center justify-center rounded-md bg-primary/10 font-semibold text-primary" aria-hidden="true">
+          <div className="flex items-start gap-4 border border-operational-border bg-muted/40 p-4">
+            <div className="flex size-12 shrink-0 items-center justify-center bg-primary font-semibold text-white" aria-hidden="true">
               {user.name.charAt(0).toUpperCase()}
             </div>
             <div className="min-w-0">
@@ -31,27 +32,27 @@ export function UserDetailDialog({ onOpenChange, user }: UserDetailDialogProps) 
           </div>
 
           <dl className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-md border border-operational-border p-3">
+            <div className="border border-operational-border bg-white p-4">
               <dt className="text-xs font-medium text-muted-foreground">Usuario de acceso</dt>
               <dd className="mt-1 break-all font-mono text-sm">{user.username}</dd>
             </div>
-            <div className="rounded-md border border-operational-border p-3">
+            <div className="border border-operational-border bg-white p-4">
               <dt className="text-xs font-medium text-muted-foreground">Estado</dt>
               <dd className="mt-1">
-                <StatusBadge status={user.active ? 'active' : 'closed'}>
+                <StatusTag kind={user.active ? 'success' : 'closed'}>
                   {user.active ? 'Activo' : 'Inactivo'}
-                </StatusBadge>
+                </StatusTag>
               </dd>
             </div>
-            <div className="rounded-md border border-operational-border p-3 sm:col-span-2">
+            <div className="border border-operational-border bg-white p-4 sm:col-span-2">
               <dt className="text-xs font-medium text-muted-foreground">Roles operativos</dt>
               <dd className="mt-2 flex flex-wrap gap-2">
                 {user.roles.length > 0
-                  ? user.roles.map((role) => <Badge key={role} variant="secondary">{roleLabel(role)}</Badge>)
+                  ? user.roles.map((role) => <Tag key={role}>{roleLabel(role)}</Tag>)
                   : <span className="text-sm text-muted-foreground">Sin rol asignado</span>}
               </dd>
             </div>
-            <div className="rounded-md border border-operational-border p-3 sm:col-span-2">
+            <div className="border border-operational-border bg-white p-4 sm:col-span-2">
               <dt className="text-xs font-medium text-muted-foreground">Acceso efectivo</dt>
               <dd className="mt-1 text-sm text-foreground">
                 {user.permissions.length} permiso{user.permissions.length === 1 ? '' : 's'} habilitado{user.permissions.length === 1 ? '' : 's'} por el servidor.
@@ -63,12 +64,12 @@ export function UserDetailDialog({ onOpenChange, user }: UserDetailDialogProps) 
           </dl>
 
           <div className="flex justify-end">
-            <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
+            <Button onClick={() => onOpenChange(false)}>
               Cerrar
             </Button>
           </div>
         </div>
       ) : null}
-    </Dialog>
+    </Modal>
   );
 }

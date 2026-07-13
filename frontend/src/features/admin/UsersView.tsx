@@ -6,7 +6,7 @@ import {
   apiClient,
   userSafeErrorMessage,
 } from '@/lib/api';
-import { Button, ErrorState, LoadingState } from './components/adminAntCompat';
+import { Alert, Button, Skeleton } from 'antd';
 import { UserFormDialog, type UserFormData } from './components/UserFormDialog';
 import { UserManagementOverview } from './components/UserManagementOverview';
 import { RoleFormDialog } from './components/RoleFormDialog';
@@ -313,18 +313,20 @@ export function UsersView({
   };
 
   if (loading) {
-    return <LoadingState label="Cargando usuarios..." />;
+    return <div role="status"><Skeleton active={false} />Cargando usuarios...</div>;
   }
 
   if (loadError) {
     return (
       <>
         <h1 className="text-2xl font-semibold leading-tight">Usuarios</h1>
-        <ErrorState
-          title="No se pudieron cargar los usuarios"
+        <Alert
+          type="error"
+          showIcon
+          title={<h2>No se pudieron cargar los usuarios</h2>}
           description={loadError}
           action={(
-            <Button type="button" variant="secondary" onClick={() => void fetchUsers()}>
+            <Button onClick={() => void fetchUsers()}>
               Reintentar
             </Button>
           )}

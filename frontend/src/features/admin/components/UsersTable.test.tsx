@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import type { AuthUser } from '@/lib/api';
 import { UsersTable } from './UsersTable';
@@ -33,10 +34,10 @@ const userWithoutRole: AuthUser = {
 };
 
 async function openUserActions(userName: string) {
+  const user = userEvent.setup();
   const trigger = await screen.findByRole('button', { name: new RegExp(`acciones de usuario ${userName}`, 'i') });
   trigger.focus();
-  fireEvent.keyDown(trigger, { key: 'Enter', code: 'Enter', keyCode: 13, charCode: 13 });
-  fireEvent.click(trigger);
+  await user.click(trigger);
 }
 
 describe('UsersTable', () => {
@@ -92,9 +93,9 @@ describe('UsersTable', () => {
     await openUserActions('Caja Principal');
 
     expect(screen.queryByRole('button', { name: /editar usuario caja principal/i })).not.toBeInTheDocument();
-    expect(screen.getByRole('menuitem', { name: /^editar$/i })).toBeInTheDocument();
-    expect(screen.getByRole('menuitem', { name: /restablecer clave/i })).toBeInTheDocument();
-    expect(screen.getByRole('menuitem', { name: /^desactivar$/i })).toBeInTheDocument();
+    expect(await screen.findByRole('menuitem', { name: /^editar$/i })).toBeInTheDocument();
+    expect(await screen.findByRole('menuitem', { name: /restablecer clave/i })).toBeInTheDocument();
+    expect(await screen.findByRole('menuitem', { name: /^desactivar$/i })).toBeInTheDocument();
   });
 
   it('does not render row actions for read-only operators', () => {

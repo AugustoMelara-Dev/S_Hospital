@@ -1,8 +1,5 @@
 import { type PermissionCatalogGroup, type RoleDefinition } from '@/lib/api';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { PermissionState } from '@/components/shared';
+import { Alert, Button, Card, Tag } from 'antd';
 import { roleLabel } from '@/lib/role-labels';
 import { PermissionMatrix } from './PermissionMatrix';
 
@@ -25,9 +22,9 @@ export function UserRolesPanel({
 }: UserRolesPanelProps) {
   if (!canManageRoles) {
     return (
-      <PermissionState
-        state="readonly"
-        className="mb-6"
+      <Alert
+        type="info"
+        showIcon
         title="Roles en modo consulta"
         description="Su usuario puede revisar cuentas autorizadas, pero la asignacion directa de permisos requiere permiso de administracion de roles."
       />
@@ -36,8 +33,8 @@ export function UserRolesPanel({
 
   return (
     <>
-      <Card className="overflow-hidden border border-operational-border bg-operational-surface shadow-operational">
-        <CardContent className="space-y-5 p-5">
+      <Card className="overflow-hidden border border-operational-border bg-operational-surface">
+        <div className="border-b border-border bg-muted/40 p-5 sm:p-6">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
               <h2 className="text-base font-semibold text-foreground">Roles y modulos</h2>
@@ -45,13 +42,15 @@ export function UserRolesPanel({
                 Defina que modulos puede usar cada tipo de usuario. Los roles base protegidos se conservan para no perder acceso administrativo.
               </p>
             </div>
-            <Button type="button" variant="outline" onClick={onCreateRole}>
+            <Button onClick={onCreateRole}>
               Nuevo rol
             </Button>
           </div>
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        </div>
+        <div className="p-5 sm:p-6">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {roles.map((role) => (
-              <div key={role.id} className="relative overflow-hidden rounded-xl border border-operational-border bg-operational-panel/45 p-5 before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-secondary/65">
+              <article key={role.id} className="relative overflow-hidden border border-operational-border bg-white p-5 before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-secondary/65">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="font-semibold text-foreground">{roleLabel(role.name)}</p>
@@ -59,14 +58,12 @@ export function UserRolesPanel({
                       {role.permissions.length} permiso{role.permissions.length === 1 ? '' : 's'}
                     </p>
                   </div>
-                  <Badge variant={role.protected ? 'warning' : 'secondary'}>
+                  <Tag color={role.protected ? 'warning' : 'default'}>
                     {role.protected ? 'Base' : 'Editable'}
-                  </Badge>
+                  </Tag>
                 </div>
                 <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
+                  size="small"
                   className="mt-3 w-full"
                   onClick={() => onEditRole(role)}
                   disabled={role.protected}
@@ -74,10 +71,10 @@ export function UserRolesPanel({
                 >
                   Editar permisos
                 </Button>
-              </div>
+              </article>
             ))}
           </div>
-        </CardContent>
+        </div>
       </Card>
 
       {canAssignAdminRole && (
