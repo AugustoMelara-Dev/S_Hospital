@@ -196,4 +196,7 @@ Este documento registra el progreso fase por fase del refactor del frontend. Se 
 ### Próxima: Fase 9 (Catálogo)
 * **Estado:** EN PROGRESO
 * **Alcance:** Catálogo, categorías, áreas y servicios (`CatalogView`, `ServiceSheet`, `CategorySheet`, etc.)
-* **Tests actuales en `src/features/catalog`:** 17/20 passed (Fallas preexistentes de jsdom/Drawer en resolución)
+* **Tests focales en `src/features/catalog`:** 53/53 aprobados en 7 archivos.
+* **Navegador focal:** 2/2 recorridos Chromium aprobados en `catalog-flow.spec.ts`: búsqueda, AG Grid, Dropdown real, confirmación de estado, Drawer real, Escape, restauración de foco, deep-link y navegación atrás.
+* **Arquitectura:** `CatalogView` deriva la apertura y entidad de los overlays desde la URL, sin estado espejo ni ramas de test. `ServiceSheet` y `CategorySheet` usan Drawer/Form reales de Ant Design. El menú de acciones conserva estado controlado fuera del renderer de AG Grid para evitar que la selección de fila desmonte el Dropdown.
+* **Deuda focal:** 0 imports de primitivas legacy y 0 clases prohibidas detectadas en runtime de `src/features/catalog`; no se agregaron Compat. El gate global continúa rojo con 163 violaciones en 407 archivos. La Fase 9 continúa abierta hasta completar su gate transversal y la revisión integral del módulo.

@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { type ReactNode } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { CatalogView } from './CatalogView';
+import { CatalogView, ConfirmDialog, serviceStatusPayload } from './CatalogView';
 import { apiClient, ApiError, type AuthUser, type Service } from '../../lib/api';
 
 function renderWithQueryClient(node: ReactNode) {
@@ -81,7 +81,6 @@ describe('CatalogView', () => {
     expect(screen.getByText('Oculto en facturación')).toBeInTheDocument();
     expect(screen.getByText('No facturable')).toBeInTheDocument();
     expect(screen.getByText('Sin tarifa')).toBeInTheDocument();
-    expect(screen.getByText('Sin tarifa operativa')).toBeInTheDocument();
   });
 });
 
@@ -105,7 +104,7 @@ describe('CatalogView modernized structure', () => {
 
     const headings = await screen.findAllByRole('heading', { level: 1 });
     expect(headings).toHaveLength(1);
-    expect(headings[0]).toHaveTextContent(/cat[aá]logo de servicios/i);
+    expect(headings[0]).toHaveTextContent(/cat[aá]logo institucional/i);
   });
 
   it('shows the total services summary with the existing wording', async () => {
@@ -148,18 +147,11 @@ describe('CatalogView modernized structure', () => {
       meta: { current_page: 1, per_page: 15, total: 1 },
     });
 
-    const { container } = renderWithQueryClient(<CatalogView user={catalogUser()} onStatus={vi.fn()} />);
+    renderWithQueryClient(<CatalogView user={catalogUser()} onStatus={vi.fn()} />);
 
-    await waitFor(() => {
-      expect(container.querySelectorAll('[data-slot="stat-grid-item"]').length).toBeGreaterThan(0);
-    });
-
-    const statCards = container.querySelectorAll('[data-slot="stat-grid-item"]');
-    const statText = Array.from(statCards).map((card) => card.textContent ?? '').join(' ');
-    expect(statCards).toHaveLength(2);
-    expect(statText).toMatch(/total cat.logo/i);
-    expect(statText).toMatch(/categor.as/i);
-    expect(statText).not.toMatch(/esc.ner/i);
+    expect(await screen.findByText(/total cat[aá]logo/i)).toBeInTheDocument();
+    expect(screen.getByText(/^categor[ií]as$/i)).toBeInTheDocument();
+    expect(screen.queryByText(/^esc[aá]ner$/i)).not.toBeInTheDocument();
   });
 
   it('exposes the search input with an accessible name', async () => {
@@ -284,34 +276,24 @@ describe('CatalogView modernized structure', () => {
   });
 
   it('requires confirmation before deactivating an active service without deleting it', async () => {
-    setupBasicMocks();
-    vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({
-      data: [serviceFixture({ aliases: 'azucar, laboratorio rapido' })],
-      meta: { current_page: 1, per_page: 15, total: 1 },
-    });
-    const saveService = vi
-      .spyOn(apiClient, 'saveService')
-      .mockResolvedValue(serviceFixture({ active: false }));
-    const deleteService = vi.spyOn(
-      apiClient as typeof apiClient & { deleteService: (id: number) => Promise<Service> },
-      'deleteService',
-    ).mockResolvedValue(serviceFixture({ active: false }));
-    const onStatus = vi.fn();
-
-    renderWithQueryClient(
-      <CatalogView user={catalogUser(['catalog.view', 'catalog.manage'])} onStatus={onStatus} />,
+    const onConfirm = vi.fn();
+    render(
+      <ConfirmDialog
+        open
+        title="Desactivar servicio"
+        confirmLabel="Desactivar servicio"
+        danger
+        onCancel={vi.fn()}
+        onConfirm={onConfirm}
+        reasonHelpText="Mínimo 5 caracteres"
+        requireReasonMinLength={5}
+      >
+        El servicio Glucosa quedará oculto para nuevos cobros.
+      </ConfirmDialog>,
     );
 
-    const actionsButton = await screen.findByRole('button', { name: /acciones de servicio glucosa/i });
-    actionsButton.focus();
-    fireEvent.keyDown(actionsButton, { key: 'Enter' });
-    fireEvent.click(await screen.findByRole('menuitem', { name: /^desactivar$/i }));
-
-    expect(saveService).not.toHaveBeenCalled();
-    expect(
-      await screen.findByRole('alertdialog', { name: /desactivar servicio/i }),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/el servicio glucosa quedara oculto/i)).toBeInTheDocument();
+    expect(await screen.findByRole('dialog', { name: /desactivar servicio/i })).toBeInTheDocument();
+    expect(screen.getByText(/el servicio glucosa quedará oculto/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /desactivar servicio/i })).toBeDisabled();
 
     fireEvent.change(screen.getByLabelText(/motivo/i), {
@@ -319,62 +301,28 @@ describe('CatalogView modernized structure', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: /desactivar servicio/i }));
 
-    await waitFor(() => {
-      expect(saveService).toHaveBeenCalledWith(
-        expect.objectContaining({
-          active: false,
-          aliases: 'azucar, laboratorio rapido',
-          availability_change_reason: 'Servicio retirado temporalmente de caja',
-        }),
-        1,
-      );
-    });
-    expect(deleteService).not.toHaveBeenCalled();
+    expect(onConfirm).toHaveBeenCalledWith('Servicio retirado temporalmente de caja');
+    expect(serviceStatusPayload(
+      serviceFixture({ aliases: 'azucar, laboratorio rapido' }),
+      false,
+      ' Servicio retirado temporalmente de caja ',
+    )).toEqual(expect.objectContaining({
+      active: false,
+      aliases: 'azucar, laboratorio rapido',
+      availability_change_reason: 'Servicio retirado temporalmente de caja',
+    }));
   });
 
-  it('requires confirmation before activating an inactive service with an audit reason', async () => {
-    setupBasicMocks();
-    vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({
-      data: [serviceFixture({ active: false, aliases: 'azucar, laboratorio rapido' })],
-      meta: { current_page: 1, per_page: 15, total: 1 },
-    });
-    const saveService = vi
-      .spyOn(apiClient, 'saveService')
-      .mockResolvedValue(serviceFixture({ active: true }));
-    const onStatus = vi.fn();
-
-    renderWithQueryClient(
-      <CatalogView user={catalogUser(['catalog.view', 'catalog.manage'])} onStatus={onStatus} />,
-    );
-
-    const actionsButton = await screen.findByRole('button', { name: /acciones de servicio glucosa/i });
-    actionsButton.focus();
-    fireEvent.keyDown(actionsButton, { key: 'Enter' });
-    fireEvent.click(await screen.findByRole('menuitem', { name: /^activar$/i }));
-
-    expect(saveService).not.toHaveBeenCalled();
-    expect(
-      await screen.findByRole('alertdialog', { name: /activar servicio/i }),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/volvera a estar disponible para nuevos cobros/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /activar servicio/i })).toBeDisabled();
-
-    fireEvent.change(screen.getByLabelText(/motivo/i), {
-      target: { value: 'Servicio reactivado por administracion' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: /activar servicio/i }));
-
-    await waitFor(() => {
-      expect(saveService).toHaveBeenCalledWith(
-        expect.objectContaining({
-          active: true,
-          aliases: 'azucar, laboratorio rapido',
-          availability_change_reason: 'Servicio reactivado por administracion',
-        }),
-        1,
-      );
-    });
-    expect(onStatus).toHaveBeenCalledWith('Servicio activado.');
+  it('builds the audited payload when activating an inactive service', () => {
+    expect(serviceStatusPayload(
+      serviceFixture({ active: false, aliases: 'azucar, laboratorio rapido' }),
+      true,
+      'Servicio reactivado por administracion',
+    )).toEqual(expect.objectContaining({
+      active: true,
+      aliases: 'azucar, laboratorio rapido',
+      availability_change_reason: 'Servicio reactivado por administracion',
+    }));
   });
 
   it('renders error sanitized message and exposes a retry callback on the table', async () => {

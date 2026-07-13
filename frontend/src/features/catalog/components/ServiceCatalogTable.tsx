@@ -1,6 +1,6 @@
+import { useState } from 'react';
 import { EditOutlined, MoreOutlined, PoweroffOutlined } from '@ant-design/icons';
 import { Button, Dropdown, Space, Tag, Typography, type MenuProps } from 'antd';
-import { useState } from 'react';
 import { InstitutionalDataGrid, type InstitutionalColumn } from '@/design-system/ag-grid';
 import { formatLempirasUIFromCents, parseCents } from '../../../lib/moneyCents';
 import { getServiceBillingSummary } from '../../../lib/serviceBilling';
@@ -18,6 +18,7 @@ export function ServiceCatalogTable({
   hasActiveFilters,
   isEmpty,
 }: ServiceCatalogTableProps) {
+  const [openActionsServiceId, setOpenActionsServiceId] = useState<number | null>(null);
   const columns: InstitutionalColumn<Service>[] = [
     {
       field: 'name',
@@ -75,6 +76,8 @@ export function ServiceCatalogTable({
         data ? (
           <ServiceActions
             service={data}
+            open={openActionsServiceId === data.id}
+            onOpenChange={(open) => setOpenActionsServiceId(open ? data.id : null)}
             onEdit={onRowActions.onEdit}
             onToggle={onRowActions.onToggleActive}
           />
@@ -124,21 +127,6 @@ export function ServiceCatalogTable({
         }
       />
 
-      {/* Always-in-DOM accessibility action menu — allows keyboard users and tests to
-          interact with service actions even when the AG Grid cell renderer isn't mounted
-          (e.g., jsdom, screen readers, reduced-motion environments). Visually hidden. */}
-      {canManage && services.length > 0 ? (
-        <div className="sr-only">
-          {services.map((service) => (
-            <ServiceActionsAccessible
-              key={service.id}
-              service={service}
-              onEdit={onRowActions.onEdit}
-              onToggle={onRowActions.onToggleActive}
-            />
-          ))}
-        </div>
-      ) : null}
     </section>
   );
 }
@@ -179,10 +167,14 @@ function ServiceState({ service }: { service: Service }) {
 // Inline dropdown for desktop AG Grid column (visual only).
 function ServiceActions({
   service,
+  open,
+  onOpenChange,
   onEdit,
   onToggle,
 }: {
   service: Service;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   onEdit: (service: Service) => void;
   onToggle: (service: Service) => void;
 }) {
@@ -198,63 +190,12 @@ function ServiceActions({
     },
   ];
   return (
-    <Dropdown menu={{ items }} trigger={['click']}>
+    <Dropdown menu={{ items }} open={open} onOpenChange={onOpenChange} trigger={['click']}>
       <Button
         aria-label={`Acciones de servicio ${service.name}`}
         icon={<MoreOutlined />}
+        onClick={(event) => event.stopPropagation()}
       />
     </Dropdown>
-  );
-}
-
-// Always-in-DOM accessibility action menu. Renders a visually-hidden trigger + inline menu
-// so tests and assistive technologies can find service actions without relying on AG Grid
-// cell renderers or Dropdown portals (which don't mount in jsdom).
-function ServiceActionsAccessible({
-  service,
-  onEdit,
-  onToggle,
-}: {
-  service: Service;
-  onEdit: (service: Service) => void;
-  onToggle: (service: Service) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div>
-      <button
-        type="button"
-        aria-label={`Acciones de servicio ${service.name}`}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        onClick={() => setOpen((prev) => !prev)}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setOpen((prev) => !prev); }}
-      >
-        <MoreOutlined aria-hidden="true" />
-      </button>
-      {open ? (
-        <ul role="menu" aria-label={`Menú de ${service.name}`}>
-          <li>
-            <button
-              role="menuitem"
-              type="button"
-              onClick={() => { setOpen(false); onEdit(service); }}
-            >
-              <EditOutlined aria-hidden="true" /> Editar
-            </button>
-          </li>
-          <li>
-            <button
-              role="menuitem"
-              type="button"
-              onClick={() => { setOpen(false); onToggle(service); }}
-            >
-              <PoweroffOutlined aria-hidden="true" />
-              {service.active ? 'Desactivar' : 'Activar'}
-            </button>
-          </li>
-        </ul>
-      ) : null}
-    </div>
   );
 }

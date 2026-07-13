@@ -39,10 +39,6 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
   const [lastServicesData, setLastServicesData] = useState<Awaited<ReturnType<typeof apiClient.getServicesPage>> | null>(null);
   const queryClient = useQueryClient();
 
-  const [serviceSheetOpen, setServiceSheetOpen] = useState(false);
-  const [editingService, setEditingService] = useState<Service | null>(null);
-  const [categorySheetOpen, setCategorySheetOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [servicePendingStatusChange, setServicePendingStatusChange] = useState<Service | null>(null);
 
   const canManageCatalog = useMemo(
@@ -73,6 +69,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
   const categories = useMemo(() => categoriesQuery.data ?? [], [categoriesQuery.data]);
   const areas = areasQuery.data ?? [];
   const services = useMemo(() => servicesData?.data ?? [], [servicesData]);
+  const overlayState = catalogOverlayState(searchParams, services, categories);
   const meta = servicesData?.meta ?? { current_page: 1, per_page: DEFAULT_PER_PAGE, total: 0 };
   const scannerEnabled = operationalSettingsQuery.data?.scanner_enabled === true;
   const serviceStatusActionLabel = servicePendingStatusChange?.active ? 'Desactivar servicio' : 'Activar servicio';
@@ -112,40 +109,6 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
     setPage((current) => current === nextPage ? current : nextPage);
     setPerPage((current) => current === nextPerPage ? current : nextPerPage);
   }, [searchParams]);
-
-  useEffect(() => {
-    const serviceId = positiveUrlInteger(searchParams.get('service'), 0);
-    const categoryId = positiveUrlInteger(searchParams.get('edit_category'), 0);
-    const panel = searchParams.get('panel');
-
-    if (serviceId) {
-      const service = services.find((candidate) => candidate.id === serviceId);
-      if (service) {
-        setEditingService(service);
-        setServiceSheetOpen(true);
-      }
-    } else if (panel === 'new-service') {
-      setEditingService(null);
-      setServiceSheetOpen(true);
-    } else {
-      setEditingService(null);
-      setServiceSheetOpen(false);
-    }
-
-    if (categoryId) {
-      const category = categories.find((candidate) => candidate.id === categoryId);
-      if (category) {
-        setEditingCategory(category);
-        setCategorySheetOpen(true);
-      }
-    } else if (panel === 'new-category') {
-      setEditingCategory(null);
-      setCategorySheetOpen(true);
-    } else {
-      setEditingCategory(null);
-      setCategorySheetOpen(false);
-    }
-  }, [categories, searchParams, services]);
 
   useEffect(() => {
     if (loadError) {
@@ -192,36 +155,26 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
   }
 
   function openNewService() {
-    setEditingService(null);
-    setServiceSheetOpen(true);
     updateCatalogUrl({ panel: 'new-service', service: null });
   }
 
   function openEditService(service: Service) {
-    setEditingService(service);
-    setServiceSheetOpen(true);
     updateCatalogUrl({ service: String(service.id), panel: null });
   }
 
   function openNewCategory() {
-    setEditingCategory(null);
-    setCategorySheetOpen(true);
     updateCatalogUrl({ panel: 'new-category', service: null, edit_category: null });
   }
 
   function openEditCategory(category: Category) {
-    setEditingCategory(category);
-    setCategorySheetOpen(true);
     updateCatalogUrl({ edit_category: String(category.id), panel: null, service: null });
   }
 
   function handleServiceSheetOpenChange(open: boolean) {
-    setServiceSheetOpen(open);
     if (!open) updateCatalogUrl({ service: null, panel: null });
   }
 
   function handleCategorySheetOpenChange(open: boolean) {
-    setCategorySheetOpen(open);
     if (!open) updateCatalogUrl({ panel: null, edit_category: null });
   }
 
@@ -382,9 +335,9 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
       {canManageCatalog ? (
         <>
           <ServiceSheet
-            open={serviceSheetOpen}
+            open={overlayState.serviceSheetOpen}
             onOpenChange={handleServiceSheetOpenChange}
-            service={editingService ? normalizeServiceForSheet(editingService) : null}
+            service={overlayState.editingService ? normalizeServiceForSheet(overlayState.editingService) : null}
             categories={categories}
             areas={areas}
             scannerEnabled={scannerEnabled}
@@ -392,9 +345,9 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
           />
 
           <CategorySheet
-            open={categorySheetOpen}
+            open={overlayState.categorySheetOpen}
             onOpenChange={handleCategorySheetOpenChange}
-            category={editingCategory}
+            category={overlayState.editingCategory}
             onSuccess={handleCategorySuccess}
           />
 
@@ -419,7 +372,30 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
   );
 }
 
-function serviceStatusPayload(service: Service, active: boolean, availabilityChangeReason?: string | null) {
+export function catalogOverlayState(
+  searchParams: URLSearchParams,
+  services: Service[],
+  categories: Category[],
+) {
+  const requestedServiceId = positiveUrlInteger(searchParams.get('service'), 0);
+  const requestedCategoryId = positiveUrlInteger(searchParams.get('edit_category'), 0);
+  const requestedPanel = searchParams.get('panel');
+  const editingService = requestedServiceId
+    ? services.find((candidate) => candidate.id === requestedServiceId) ?? null
+    : null;
+  const editingCategory = requestedCategoryId
+    ? categories.find((candidate) => candidate.id === requestedCategoryId) ?? null
+    : null;
+
+  return {
+    editingCategory,
+    editingService,
+    categorySheetOpen: requestedPanel === 'new-category' || editingCategory !== null,
+    serviceSheetOpen: requestedPanel === 'new-service' || editingService !== null,
+  };
+}
+
+export function serviceStatusPayload(service: Service, active: boolean, availabilityChangeReason?: string | null) {
   return {
     category_id: service.category_id,
     area_id: service.area_id ?? undefined,
@@ -457,7 +433,7 @@ function StatGrid({ items, className }: { className?: string; items: Array<{ lab
   return <Row gutter={[16, 16]} className={className}>{items.map((item) => <Col xs={24} sm={12} key={item.label}><div className="border border-slate-300 p-3"><Statistic title={item.label} value={item.value} /><Typography.Text type="secondary">{item.helper}</Typography.Text></div></Col>)}</Row>;
 }
 
-function ConfirmDialog({ open, title, children, confirmLabel, danger, onCancel, onConfirm, reasonHelpText, requireReasonMinLength = 0 }: {
+export function ConfirmDialog({ open, title, children, confirmLabel, danger, onCancel, onConfirm, reasonHelpText, requireReasonMinLength = 0 }: {
   open: boolean;
   title: string;
   children: React.ReactNode;
@@ -478,7 +454,6 @@ function ConfirmDialog({ open, title, children, confirmLabel, danger, onCancel, 
       okButtonProps={{ danger, disabled: reason.trim().length < requireReasonMinLength }}
       onCancel={() => { setReason(''); onCancel(); }}
       onOk={() => { onConfirm(reason.trim() || null); setReason(''); }}
-      modalRender={(node) => <div role="alertdialog" aria-modal="true" aria-label={title}>{node}</div>}
     >
       <Typography.Paragraph>{children}</Typography.Paragraph>
       <label htmlFor="catalog-audit-reason">Motivo de auditoría</label>

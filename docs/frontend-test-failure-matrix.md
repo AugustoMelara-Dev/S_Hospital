@@ -8,9 +8,9 @@ Esta matriz registra de forma detallada y clasificada los 93 fallos identificado
 
 | Módulo | Test Fallado / Suite | Cantidad | Error Principal | ¿Preexistente? | Componente Legacy Relacionado | Fase Propietaria | Solución Prevista | Estado | Criterio de Cierre |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| `catalog/` | `ServiceSheet.test.tsx` (múltiples tests de renderizado y envío) | 19 | Error al buscar etiquetas asociadas o al hacer clic en botones de acción. | Sí | `ServiceSheet.tsx` (Drawer de Ant Design / destroyOnHidden) | Fase de Catálogo (Fase 8/9) | Alinear etiquetas, deshabilitar `destroyOnHidden` en entorno de prueba o mockear el Drawer para renderizado síncrono inline. | **EN INVENTARIO** | Paso de la suite completa sin fallos de renderizado. |
-| `catalog/` | `CategorySheet.test.tsx` (guardado y validación de categorías) | 5 | El botón de guardar o confirmación no es interactivo o no se encuentra en el DOM. | Sí | `CategorySheet.tsx` (Drawer / Form de Ant Design) | Fase de Catálogo (Fase 8/9) | Ajustar consultas de testing-library (`getByRole` o `findByRole`) al marcado real de Ant Design. | **EN INVENTARIO** | Suite pasa al 100%. |
-| `catalog/` | `CatalogView.test.tsx` (requiere confirmación al deactivar/activar) | 4 | No se encuentra el elemento `alertdialog` tras activar la acción. | Sí | `ConfirmDialog` / `ServiceCatalogTable` (Portales de Modal/Dropdown en jsdom) | Fase de Catálogo (Fase 8/9) | Mockear el Dropdown o renderizar botones alternativos accesibles siempre presentes en el DOM para entornos de prueba. | **EN INVENTARIO** | Los tests de activación/desactivación pasan con AG Grid. |
+| `catalog/` | `ServiceSheet.test.tsx` (renderizado, reglas y envío) | 19 | Etiquetas y eventos heredados no representaban Drawer/Form reales. | Sí | `ServiceSheet.tsx` | Fase 9 Catálogo | Se conservaron Drawer y Form reales; se corrigieron asociaciones, hidratación y pruebas de reglas puras. | **CERRADO** | 21/21 y flujo Drawer real en Chromium. |
+| `catalog/` | `CategorySheet.test.tsx` (guardado y validación) | 5 | Carrera de hidratación y consultas incompatibles con el marcado real. | Sí | `CategorySheet.tsx` | Fase 9 Catálogo | `useLayoutEffect` sincroniza el formulario y las pruebas consultan semántica real. | **CERRADO** | 5/5 con Drawer real. |
+| `catalog/` | `CatalogView.test.tsx` / continuidad | 4 | Estado URL duplicado y cobertura de Dropdown/Drawer fuera del límite fiable de JSDOM. | Sí | `CatalogView`, `ServiceCatalogTable` | Fase 9 Catálogo | Overlay derivado de URL; Vitest cubre contrato y callbacks, Playwright cubre portales, teclado y navegación. | **CERRADO FOCAL** | Catálogo 53/53 y Playwright 2/2. |
 | `invoices/` | `InvoiceHistoryView.test.tsx` / `InvoiceDetailSheet.test.tsx` | ~50 | Inconsistencias de aserciones entre los componentes Sheet y Modal, y controles de filtros en la URL. | Sí | `InvoiceHistoryFilters.tsx`, `InvoiceDetailSheet.tsx` | Fase de Facturación (Historial, detalle, anulación) | Reescribir las aserciones de pruebas adaptándolas a los componentes Ant Design y la manipulación de query params de react-router. | **EN INVENTARIO** | Limpieza de tests del historial e integración de detalle en el Drawer. |
 | `App.test.tsx` | `App.test.tsx` (flujos de inicio y recuperación de sesión) | 7 | Tiempos de espera asíncronos excedidos (`testTimeout`) y advertencias de `act(...)` no controlado. | Sí | `App.tsx` / `AppRoutes.tsx` | Transversal | Ajustar tiempos de espera, envolver operaciones asíncronas en `await act()` y mockear timers si es necesario. | **EN INVENTARIO** | La suite completa de `App.test.tsx` pasa sin timeouts. |
 | `reports/` | `ServiceRanking.test.tsx` (monto y estado vacío) | 2 | No encuentra el texto exacto de estado vacío o montos esperados en las celdas. | Sí | `ServiceRanking.tsx` (AG Grid / Empty state) | Fase de Reportes | Configurar el mensaje vacío del grid y adaptar el formateador de monedas en la columna. | **EN INVENTARIO** | Integración exitosa con la suite de reportes. |
@@ -42,3 +42,11 @@ serias de contraste del shell institucional; quedan pendientes los estados
 normal, formulario inválido, Modal, Drawer, Dropdown, DatePicker, grid vacío y
 error de API. El gate transversal también sigue abierto por las 165 violaciones
 globales de `check:ui-legacy` fuera de Invoices.
+
+## Revisión focal de Catálogo (2026-07-13)
+
+La suite partió de **34/53** y cerró en **53/53**. No se sustituyeron Drawer,
+Modal, Dropdown ni AG Grid en runtime. Las limitaciones del portal completo en
+JSDOM se dividieron de forma explícita: Vitest valida datos, contratos URL,
+reglas, payloads y callbacks; Playwright valida Dropdown y Drawer reales,
+Escape, foco, deep-link y navegación atrás. El recorrido Chromium aprobó **2/2**.

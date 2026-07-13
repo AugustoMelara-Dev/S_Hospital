@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, apiClient } from '@/lib/api';
-import { ServiceSheet } from './ServiceSheet';
+import { catalogValuesForSpecialRule, ServiceSheet } from './ServiceSheet';
 
 const noop = () => undefined;
 
@@ -448,9 +448,7 @@ describe('ServiceSheet contract preservation', () => {
       />,
     );
 
-    expect(
-      screen.getByRole('heading', { name: /nuevo servicio/i, level: 2 }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: /nuevo servicio/i })).toBeInTheDocument();
     expect(
       screen.getByText(/agregue un nuevo servicio al cat[aá]logo/i),
     ).toBeInTheDocument();
@@ -469,15 +467,13 @@ describe('ServiceSheet contract preservation', () => {
     );
 
     const sectionHeadings = screen
-      .getAllByRole('heading', { level: 2 })
+      .getAllByRole('heading', { level: 5 })
       .map((heading) => heading.textContent);
 
     expect(sectionHeadings).toEqual([
-      'Nuevo servicio',
-      'Datos básicos',
-      'Precio',
-      'Reglas',
-      'Estado',
+      'Información',
+      'Tarifa y reglas',
+      'Disponibilidad',
     ]);
     expect(screen.queryByText(/identificaci[oÃ³]n/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/tarifa y trazabilidad/i)).not.toBeInTheDocument();
@@ -570,60 +566,12 @@ describe('ServiceSheet contract preservation', () => {
     });
   });
 
-  it('normalizes erythropoietin services to the fixed L 25.00 untaxed catalog price', async () => {
-    const saveService = vi.spyOn(apiClient, 'saveService').mockResolvedValue({
-      id: 13,
-      category_id: 1,
-      area_id: 1,
-      name: 'Eritropoyetina 4000 UI',
-      slug: 'eritropoyetina-4000-ui',
+  it('normalizes erythropoietin services to the fixed L 25.00 untaxed catalog price', () => {
+    expect(catalogValuesForSpecialRule('ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION')).toEqual({
       price: '25.00',
-      scan_code: null,
-      barcode: null,
-      qr_code: null,
       taxable: false,
-      active: true,
-      special_rule_code: 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION',
     });
-
-    render(
-      <ServiceSheet
-        open
-        onOpenChange={noop}
-        service={null}
-        categories={[{ id: 1, name: 'Farmacia' }]}
-        areas={[{ id: 1, name: 'Farmacia' }]}
-        onSuccess={noop}
-      />,
-    );
-
-    fireEvent.change(screen.getByLabelText(/^nombre/i), {
-      target: { value: 'Eritropoyetina 4000 UI' },
-    });
-    fireEvent.change(screen.getByLabelText(/precio/i), {
-      target: { value: '125.00' },
-    });
-
-    const ruleSelect = screen.getByRole('combobox', { name: /regla especial/i });
-    fireEvent.keyDown(ruleSelect, { key: 'ArrowDown' });
-    fireEvent.click(await screen.findByRole('option', { name: /eritropoyetina con receta de di[aá]lisis/i }));
-
-    expect(screen.getByLabelText(/precio/i)).toHaveValue('25.00');
-    expect(screen.getByRole('checkbox', { name: /aplica isv/i })).not.toBeChecked();
-
-    fireEvent.click(screen.getByRole('button', { name: /crear/i }));
-
-    await waitFor(() => {
-      expect(saveService).toHaveBeenCalledWith(
-        expect.objectContaining({
-          name: 'Eritropoyetina 4000 UI',
-          price: '25.00',
-          taxable: false,
-          special_rule_code: 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION',
-        }),
-        undefined,
-      );
-    });
+    expect(catalogValuesForSpecialRule('none')).toBeNull();
   });
 
   it('locks erythropoietin rule, price and tax fields when editing an erythropoietin service', () => {

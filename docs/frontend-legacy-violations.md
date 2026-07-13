@@ -109,3 +109,12 @@ Las primitivas ShadCN se eliminarán del proyecto en las siguientes fases del re
 | **Fase 11 (Reportes)** | `chart.tsx`, `popover.tsx`, `tabs.tsx` |
 | **Fase 12 (Configuración/Admin)** | `calendar.tsx`, `date-range-picker.tsx`, `switch.tsx`, `textarea.tsx`, `accordion.tsx` |
 | **Fase Transversal Final** | `sonner.tsx`, `spinner.tsx`, `states.tsx`, `status-badge.tsx`, `status-tag.tsx` |
+
+### Corte focal de Fase 9 (2026-07-13)
+
+La búsqueda en el runtime de `src/features/catalog` registró **0 imports** de
+las primitivas legacy asignadas a Catálogo y **0 clases prohibidas**. Los formularios y
+overlays focales usan directamente Ant Design y la tabla operativa usa el
+`InstitutionalDataGrid` compartido. No se agregaron archivos Compat. El gate
+global registra **163 violaciones en 407 archivos**, todas fuera del runtime de
+Catálogo.

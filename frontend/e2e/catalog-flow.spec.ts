@@ -79,26 +79,27 @@ test.describe('Catalog - critical mocked e2e', () => {
 
     await page.goto('/catalog');
 
-    await expect(page.getByRole('heading', { level: 1, name: /cat.logo de servicios/i })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: /cat.logo institucional/i })).toBeVisible();
     await expect(page.getByLabel(/resumen de servicios/i)).toContainText(/2 servicios/i);
     await expect(page.getByRole('button', { name: /crear nuevo servicio/i })).toBeVisible();
     await expect(page.getByRole('button', { name: /crear nueva categor.a/i })).toBeVisible();
-    await expect(page.getByRole('cell', { name: 'Glucosa basal', exact: true })).toBeVisible();
-    await expect(page.getByRole('cell', { name: 'Hemograma completo', exact: true })).toBeVisible();
+    await expect(page.getByRole('gridcell', { name: 'Glucosa basal', exact: true })).toBeVisible();
+    await expect(page.getByRole('gridcell', { name: 'Hemograma completo', exact: true })).toBeVisible();
 
     await page.getByLabel(/buscar servicio/i).fill('hemo');
 
-    await expect(page.getByRole('cell', { name: 'Hemograma completo', exact: true })).toBeVisible();
-    await expect(page.getByRole('cell', { name: 'Glucosa basal', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('gridcell', { name: 'Hemograma completo', exact: true })).toBeVisible();
+    await expect(page.getByRole('gridcell', { name: 'Glucosa basal', exact: true })).toHaveCount(0);
 
     await page.getByRole('button', { name: /acciones de servicio hemograma completo/i }).click();
-    await page.getByRole('menuitem', { name: /^desactivar$/i }).click();
+    await page.getByRole('menuitem', { name: /desactivar/i }).click();
     await expect.poll(() => deleteCalls).toBe(0);
 
-    await expect(page.getByRole('alertdialog', { name: /desactivar servicio/i })).toBeVisible();
-    await expect(page.getByText(/facturas historicas conservaran sus snapshots/i)).toBeVisible();
-    await page.getByLabel(/motivo/i).fill('Servicio retirado temporalmente de caja');
-    await page.getByRole('button', { name: /desactivar servicio/i }).click();
+    const statusDialog = page.getByRole('dialog', { name: /desactivar servicio/i });
+    await expect(statusDialog).toBeVisible();
+    await expect(statusDialog.getByText(/facturas historicas conservaran sus snapshots/i)).toBeVisible();
+    await statusDialog.getByLabel(/motivo/i).fill('Servicio retirado temporalmente de caja');
+    await statusDialog.getByRole('button', { name: /desactivar servicio/i }).click();
 
     await expect.poll(() => patchPayloads.length).toBe(1);
     expect(patchPayloads[0]).toEqual(expect.objectContaining({
@@ -106,8 +107,38 @@ test.describe('Catalog - critical mocked e2e', () => {
       availability_change_reason: 'Servicio retirado temporalmente de caja',
     }));
     expect(deleteCalls).toBe(0);
-    await expect(page.getByRole('alertdialog', { name: /desactivar servicio/i })).toHaveCount(0);
+    await expect(statusDialog).toHaveCount(0);
     await expect(page.getByRole('button', { name: /restaurar|eliminar/i })).toHaveCount(0);
+  });
+
+  test('keeps URL continuity and real Drawer keyboard behavior', async ({ page }) => {
+    await installCatalogMocks(page);
+    await page.goto('/catalog?q=glucosa');
+
+    const createTrigger = page.getByRole('button', { name: /crear nuevo servicio/i });
+    await createTrigger.click();
+    const createDrawer = page.getByRole('dialog', { name: /nuevo servicio/i });
+    await expect(createDrawer).toBeVisible();
+    await expect(page).toHaveURL(/q=glucosa/);
+    await expect(page).toHaveURL(/panel=new-service/);
+
+    await createDrawer.press('Escape');
+    await expect(createDrawer).toHaveCount(0);
+    await expect(page).toHaveURL(/q=glucosa/);
+    await expect(page).not.toHaveURL(/panel=/);
+    await expect(createTrigger).toBeFocused();
+
+    await page.goto('/catalog?q=glucosa&service=1');
+    const editDrawer = page.getByRole('dialog', { name: /editar servicio/i });
+    await expect(editDrawer).toBeVisible();
+    await expect(editDrawer.getByLabel(/precio/i)).toHaveValue('125.00');
+    await editDrawer.getByRole('button', { name: /^cerrar$/i }).click();
+    await expect(editDrawer).toHaveCount(0);
+    await expect(page).toHaveURL(/q=glucosa/);
+    await expect(page).not.toHaveURL(/service=/);
+
+    await page.goBack();
+    await expect(page.getByRole('dialog', { name: /editar servicio/i })).toBeVisible();
   });
 });
 

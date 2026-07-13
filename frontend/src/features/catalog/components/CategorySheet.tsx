@@ -1,198 +1,42 @@
-import { useEffect, useState } from 'react';
-import { useForm, Controller } from 'react-hook-form';
-import { z } from 'zod';
+import { useLayoutEffect, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Alert, Button, Checkbox, Drawer, Form, Input, InputNumber, Space, Typography } from 'antd';
 import { ApiError, apiClient, userSafeErrorMessage } from '@/lib/api';
-import { Alert } from '@/components/ui/alert';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Sheet } from '@/components/ui/sheet';
-import { FieldGroup, FormSection } from '@/components/ui/form-section';
-import { cn } from '@/lib/utils';
-import { CategorySheetFooter } from './CategorySheetFooter';
 
-const categorySchema = z.object({
-  name: z.string().min(1, 'El nombre es requerido'),
-  sort_order: z.number().int().min(0),
-  active: z.boolean(),
-});
-
+const categorySchema = z.object({ name: z.string().trim().min(1, 'El nombre es requerido'), sort_order: z.number().int().min(0), active: z.boolean() });
 type CategoryFormData = z.infer<typeof categorySchema>;
-
-type CategorySheetProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  category?: {
-    id: number;
-    name: string;
-    sort_order: number;
-    active: boolean;
-  } | null;
-  onSuccess: () => void;
-};
-
-const defaultValues: CategoryFormData = {
-  name: '',
-  sort_order: 0,
-  active: true,
-};
+type CategorySheetProps = { open: boolean; onOpenChange: (open: boolean) => void; category?: { id: number; name: string; sort_order: number; active: boolean } | null; onSuccess: () => void };
+const defaultValues: CategoryFormData = { name: '', sort_order: 0, active: true };
 
 export function CategorySheet({ open, onOpenChange, category, onSuccess }: CategorySheetProps) {
-  const isEditing = !!category;
   const [submitError, setSubmitError] = useState<string | null>(null);
-
-  const {
-    register,
-    handleSubmit,
-    reset,
-    setError,
-    setFocus,
-    control,
-    formState: { errors, isSubmitting },
-  } = useForm<CategoryFormData>({
-    resolver: zodResolver(categorySchema),
-    defaultValues,
-  });
-
-  useEffect(() => {
-    if (open) {
-      if (category) {
-        reset({
-          name: category.name,
-          sort_order: category.sort_order,
-          active: category.active,
-        });
-      } else {
-        reset(defaultValues);
-      }
-    }
-  }, [open, category, reset]);
-
-  async function onSubmit(data: CategoryFormData) {
+  const { control, register, handleSubmit, reset, setError, setFocus, formState: { errors, isSubmitting } } = useForm<CategoryFormData>({ resolver: zodResolver(categorySchema), defaultValues });
+  useLayoutEffect(() => { if (open) reset(category ? { name: category.name, sort_order: category.sort_order, active: category.active } : defaultValues); }, [open, category, reset]);
+  async function submit(data: CategoryFormData) {
     setSubmitError(null);
-    try {
-      await apiClient.saveCategory(data, category?.id);
-      onSuccess();
-      onOpenChange(false);
-      reset(defaultValues);
-    } catch (error) {
+    try { await apiClient.saveCategory(data, category?.id); onSuccess(); onOpenChange(false); reset(defaultValues); }
+    catch (error) {
       if (error instanceof ApiError && error.validationErrors) {
-        applyCategoryBackendErrors(error.validationErrors, setError);
-        focusFirstCategoryError(error.validationErrors, setFocus);
+        (['name', 'sort_order', 'active'] as const).forEach((field) => { const message = error.validationErrors?.[field]?.[0]; if (message) setError(field, { type: 'server', message }); });
+        if (error.validationErrors.name?.[0]) window.setTimeout(() => setFocus('name'), 0);
       }
-
       setSubmitError(userSafeErrorMessage(error, 'Error al guardar la categoría.'));
     }
   }
-
+  const nameRegistration = register('name');
   return (
-    <Sheet
-      open={open}
-      onOpenChange={onOpenChange}
-      title={isEditing ? 'Editar Categoría' : 'Nueva Categoría'}
-      description={isEditing ? 'Modifique los datos de la categoría.' : 'Cree una nueva categoría para organizar servicios.'}
-    >
-      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
-        <FormSection
-          title="Datos básicos"
-          description="Nombre y orden de aparicion en el catalogo."
-        >
-          <FieldGroup columns={2}>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="name">Nombre *</Label>
-              <Input
-                id="name"
-                {...register('name')}
-                aria-invalid={Boolean(errors.name)}
-                aria-describedby={errors.name ? 'category-name-error' : undefined}
-                className={cn(errors.name && 'border-destructive')}
-              />
-              {errors.name && (
-                <p id="category-name-error" role="alert" className="text-sm text-destructive">
-                  {errors.name.message}
-                </p>
-              )}
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="sort_order">Orden</Label>
-              <Input
-                id="sort_order"
-                type="number"
-                min={0}
-                step={1}
-                {...register('sort_order', { valueAsNumber: true })}
-                aria-invalid={Boolean(errors.sort_order)}
-                aria-describedby={errors.sort_order ? 'category-sort-error' : undefined}
-                className={cn(errors.sort_order && 'border-destructive')}
-              />
-              {errors.sort_order && (
-                <p id="category-sort-error" role="alert" className="text-sm text-destructive">
-                  {errors.sort_order.message}
-                </p>
-              )}
-            </div>
-          </FieldGroup>
-        </FormSection>
-
-        <FormSection
-          title="Estado"
-          description="Disponibilidad de la categoria para organizar servicios."
-        >
-          <div className="flex items-center gap-2">
-            <Controller
-              control={control}
-              name="active"
-              render={({ field }) => (
-                <Checkbox
-                  id="active"
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              )}
-            />
-            <Label htmlFor="active" className="cursor-pointer text-sm font-medium">
-              Categoría activa
-            </Label>
-          </div>
-        </FormSection>
-
-        {submitError && (
-          <Alert variant="destructive" title="Error al guardar">
-            {submitError}
-          </Alert>
-        )}
-
-        <CategorySheetFooter
-          cancelLabel="Cancelar"
-          isEditing={isEditing}
-          isSubmitting={isSubmitting}
-          onCancel={() => onOpenChange(false)}
-        />
-      </form>
-    </Sheet>
+    <Drawer open={open} onClose={() => onOpenChange(false)} title={category ? 'Editar Categoría' : 'Nueva Categoría'} destroyOnHidden footer={<Space><Button onClick={() => onOpenChange(false)}>Cancelar</Button><Button type="primary" htmlType="submit" form="category-form" loading={isSubmitting}>{category ? 'Guardar cambios' : 'Crear categoría'}</Button></Space>}>
+      <Typography.Paragraph>{category ? 'Modifique los datos de la categoría.' : 'Cree una nueva categoría para organizar servicios.'}</Typography.Paragraph>
+      <Form id="category-form" layout="vertical" onFinish={handleSubmit(submit)}>
+        <Typography.Title level={5}>Datos básicos</Typography.Title>
+        <Form.Item label="Nombre" htmlFor="name" required validateStatus={errors.name ? 'error' : undefined} help={errors.name?.message}><Input id="name" {...nameRegistration} ref={(element) => nameRegistration.ref(element?.input ?? null)} aria-invalid={Boolean(errors.name)} /></Form.Item>
+        <Controller control={control} name="sort_order" render={({ field }) => <Form.Item label="Orden" htmlFor="sort_order" validateStatus={errors.sort_order ? 'error' : undefined} help={errors.sort_order?.message}><InputNumber id="sort_order" min={0} precision={0} value={field.value} onChange={(value) => field.onChange(value ?? 0)} /></Form.Item>} />
+        <Typography.Title level={5}>Estado</Typography.Title>
+        <Controller control={control} name="active" render={({ field }) => <Checkbox id="active" checked={field.value} onChange={(event) => field.onChange(event.target.checked)}>Categoría activa</Checkbox>} />
+        {submitError ? <Alert type="error" title="Error al guardar" description={submitError} showIcon /> : null}
+      </Form>
+    </Drawer>
   );
-}
-
-function applyCategoryBackendErrors(
-  validationErrors: Record<string, string[]>,
-  setError: ReturnType<typeof useForm<CategoryFormData>>['setError'],
-) {
-  (['name', 'sort_order', 'active'] as const).forEach((field) => {
-    const message = validationErrors[field]?.[0];
-    if (message) {
-      setError(field, { type: 'server', message });
-    }
-  });
-}
-
-function focusFirstCategoryError(
-  validationErrors: Record<string, string[]>,
-  setFocus: ReturnType<typeof useForm<CategoryFormData>>['setFocus'],
-) {
-  const firstFocusable = (['name', 'sort_order'] as const).find((field) => validationErrors[field]?.[0]);
-  if (firstFocusable) {
-    window.setTimeout(() => setFocus(firstFocusable), 0);
-  }
 }
