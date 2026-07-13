@@ -1,11 +1,7 @@
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useEffect, useRef, useState, type RefObject } from 'react';
-import { ChevronLeft, ChevronRight, Eraser, History } from 'lucide-react';
-import { Alert } from '../../../components/ui/alert';
-import { Badge } from '../../../components/ui/badge';
-import { Button } from '../../../components/ui/button';
-import { Dialog } from '../../../components/ui/dialog';
-import { ConfirmDialog } from '../../../components/ui/confirm-dialog';
+import { LeftOutlined as ChevronLeft, RightOutlined as ChevronRight, ClearOutlined as Eraser, HistoryOutlined as History } from '@ant-design/icons';
+import { Alert, Button, Modal, Tag } from 'antd';
 import { ReceiptPreview } from '../../receipts/ReceiptPreview';
 import { PatientStep } from './PatientStep';
 import { ServiceSearch } from './ServiceSearch';
@@ -61,6 +57,7 @@ export type NewInvoiceLayoutProps = {
 };
 
 export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
+  const navigate = useNavigate();
   const {
     state,
     paymentResult,
@@ -141,24 +138,20 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
 
   return (
     <section id="nueva-factura" className="flex h-full min-w-0 flex-col gap-5 pb-36 md:pb-8">
-      <header className="relative overflow-hidden rounded-2xl bg-[#0c2733] px-5 py-6 text-white shadow-[0_24px_60px_-44px_rgba(4,20,28,.95)] sm:flex sm:items-center sm:justify-between sm:gap-6 sm:px-7">
-        <div className="pointer-events-none absolute -right-12 -top-20 size-56 rounded-full border border-[#55d3bf]/20" aria-hidden="true" />
+      <header className="relative overflow-hidden border border-border bg-surface px-5 py-6 sm:flex sm:items-center sm:justify-between sm:gap-6 sm:px-7">
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#80dfd0]">Facturación</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary-foreground">Operaciones financieras</p>
           <h1 className="mt-1 text-2xl font-semibold leading-tight text-white sm:text-3xl">Nueva factura</h1>
         </div>
         <div className="relative mt-4 flex flex-wrap items-center gap-2 sm:mt-0 sm:justify-end">
-          <Badge variant={cashIsOpen ? 'success' : 'destructive'} className="min-h-11 px-3 font-mono text-sm tabular-nums sm:min-h-9">
+          <Tag color={cashIsOpen ? 'success' : 'error'} className="min-h-11 px-3 font-mono text-sm tabular-nums sm:min-h-9 flex items-center border-0 m-0">
             {cashIsOpen ? `${cashSessionLabel} · Abierta` : cashSessionLabel}
-          </Badge>
-          <Button asChild type="button" variant="secondary" size="sm">
-            <Link to="/invoices">
-              <History className="size-4" aria-hidden="true" />
-              Historial
-            </Link>
+          </Tag>
+          <Button type="default" icon={<History aria-hidden="true" />} onClick={() => navigate('/invoices')}>
+            Historial
           </Button>
           {(state.patientName || state.cartItems.length > 0) ? (
-            <Button type="button" variant="ghost" size="sm" onClick={() => onClearConfirmChange(true)}>
+            <Button type="text" onClick={() => onClearConfirmChange(true)} className="flex items-center gap-2">
               <Eraser className="size-4" aria-hidden="true" />
               Limpiar borrador
             </Button>
@@ -168,64 +161,64 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
 
       <div role="status" aria-live="polite" aria-atomic="false" className="flex flex-col gap-3">
         {!state.loadedCashSession && !state.pointOfSaleLoadError && (
-          <Alert variant="warning" title="Caja no abierta">
+          <Alert type="warning" showIcon title="Caja no abierta" description={
             <div className="flex flex-col sm:flex-row sm:items-center gap-3">
               <span className="flex-1">Debe abrir la caja antes de emitir facturas.</span>
               {canOpenCash && onOpenCash ? (
-                <Button type="button" variant="secondary" size="sm" onClick={onOpenCash}>
+                <Button type="default" onClick={onOpenCash}>
                   Abrir Caja
                 </Button>
               ) : (
                 <div className="flex flex-col gap-1 sm:items-end">
-                  <Button asChild variant="secondary" size="sm">
-                    <Link to="/cashbox">Ir a caja</Link>
-                  </Button>
+                  <Button type="default" onClick={() => navigate('/cashbox')}>Ir a caja</Button>
                   {!canOpenCash ? (
                     <span className="text-xs text-muted-foreground">Solicite apertura a un usuario autorizado.</span>
                   ) : null}
                 </div>
               )}
             </div>
-          </Alert>
+          } />
         )}
 
         {state.alertMessage && state.alertMessage !== state.pointOfSaleLoadError && (
-          <Alert variant="destructive" title="Revise antes de continuar">
-            {state.alertMessage}
-          </Alert>
+          <Alert type="error" showIcon title="Revise antes de continuar" description={state.alertMessage} />
         )}
 
         {state.warningMessage && (
-          <Alert variant="warning" title="Factura pendiente">
-            {state.warningMessage}
-          </Alert>
+          <Alert type="warning" showIcon title="Factura pendiente" description={state.warningMessage} />
         )}
 
         {state.successMessage && (
-          <Alert variant="success" title="Servicio agregado">
-            {state.successMessage.replace(/^Agregado: /, '')}
-          </Alert>
+          <Alert type="success" showIcon title="Servicio agregado" description={state.successMessage.replace(/^Agregado: /, '')} />
         )}
       </div>
 
-      <div className="md:hidden" aria-live="polite">
-        <div className="flex items-center justify-between gap-3 border-y border-operational-border py-3">
-          <p className="text-sm font-semibold">Paso {mobileStep + 1} de 3</p>
-          <p className="text-sm text-muted-foreground">{stepLabels[mobileStep]}</p>
-        </div>
+      <div aria-live="polite" className="mx-auto w-full max-w-5xl">
+        <ol className="grid grid-cols-3 overflow-hidden border border-border bg-white">
+          {stepLabels.map((label, index) => (
+            <li key={label} className="min-w-0 border-r border-border last:border-r-0">
+              <Button type="text" aria-current={mobileStep === index ? 'step' : undefined} onClick={() => index <= mobileStep ? goToStep(index as 0 | 1 | 2) : undefined} disabled={index > mobileStep} className={`h-auto min-h-14 w-full min-w-0 justify-start gap-2 px-3 py-3 text-left sm:px-4 ${mobileStep === index ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'}`}>
+                <span className={`flex size-8 shrink-0 items-center justify-center text-xs font-bold ${mobileStep === index ? 'bg-secondary text-white' : 'bg-muted text-muted-foreground'}`}>{index + 1}</span>
+                <span className="truncate text-xs font-semibold sm:text-sm">{label}</span>
+              </Button>
+            </li>
+          ))}
+        </ol>
       </div>
 
       <div
         data-billing-workspace
-        className="grid min-w-0 flex-1 gap-4 md:grid-cols-[minmax(15rem,0.72fr)_minmax(24rem,1.45fr)] xl:grid-cols-[minmax(15rem,0.72fr)_minmax(24rem,1.45fr)_minmax(19rem,0.83fr)]"
+        className="mx-auto grid w-full max-w-5xl min-w-0 flex-1 gap-4"
       >
         <section
           ref={patientRegionRef}
           aria-label="Paciente"
           data-billing-region="patient"
           data-billing-step="patient"
+          aria-hidden={mobileStep !== 0}
+          inert={mobileStep !== 0}
           tabIndex={-1}
-          className={`${mobileStep === 0 ? 'block' : 'hidden'} min-w-0 rounded-xl border border-operational-border bg-operational-surface p-5 shadow-operational motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:block`}
+          className={`${mobileStep === 0 ? 'block' : 'hidden'} min-w-0 border border-operational-border bg-operational-surface p-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:p-7`}
         >
           <PatientStep
             ref={patientInputRef}
@@ -241,8 +234,10 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
           aria-label="Servicios"
           data-billing-region="services"
           data-billing-step="services"
+          aria-hidden={mobileStep !== 1}
+          inert={mobileStep !== 1}
           tabIndex={-1}
-          className={`${mobileStep === 1 ? 'block' : 'hidden'} min-w-0 rounded-xl border border-operational-border bg-operational-surface p-5 shadow-operational motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:block`}
+          className={`${mobileStep === 1 ? 'block' : 'hidden'} min-w-0 border border-operational-border bg-operational-surface p-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:p-7`}
         >
           <ServiceSearch
             categories={state.categories}
@@ -273,8 +268,10 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
           aria-label="Cuenta actual"
           data-billing-region="ticket"
           data-billing-step="review"
+          aria-hidden={mobileStep !== 2}
+          inert={mobileStep !== 2}
           tabIndex={-1}
-          className={`${mobileStep === 2 ? 'block' : 'hidden'} min-w-0 rounded-xl border border-secondary/25 bg-accent/35 p-5 shadow-[0_24px_60px_-42px_rgba(4,20,28,.55)] motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:col-span-2 md:block xl:sticky xl:top-24 xl:col-span-1 xl:max-h-[calc(100vh-7rem)] xl:self-start xl:overflow-y-auto`}
+          className={`${mobileStep === 2 ? 'block' : 'hidden'} min-w-0 border border-secondary/25 bg-accent/25 p-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:p-7`}
         >
           <InvoiceCart
             items={state.cartItems}
@@ -293,18 +290,18 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
         </aside>
       </div>
 
-      <nav aria-label="Pasos de facturación" className="fixed inset-x-0 bottom-16 z-30 border-t border-operational-border bg-background/95 p-3 backdrop-blur md:hidden">
-        <div className="mx-auto flex max-w-lg gap-3">
+      <nav aria-label="Pasos de facturación" className="fixed inset-x-0 bottom-16 z-30 border-t border-operational-border bg-background p-3 md:static md:mx-auto md:w-full md:max-w-5xl md:border md:bg-white">
+        <div className="mx-auto flex max-w-2xl gap-3 md:justify-end">
           {mobileStep > 0 ? (
-            <Button type="button" variant="secondary" className="min-h-11 flex-1" onClick={() => goToStep((mobileStep - 1) as 0 | 1)}>
+            <Button type="default" className="min-h-11 flex-1 flex items-center justify-center gap-1" onClick={() => goToStep((mobileStep - 1) as 0 | 1)}>
               <ChevronLeft className="size-4" aria-hidden="true" />
               Atrás
             </Button>
           ) : null}
           {mobileStep < 2 ? (
             <Button
-              type="button"
-              className="min-h-11 flex-1"
+              type="primary"
+              className="min-h-11 flex-1 flex items-center justify-center gap-1"
               aria-label={mobileStep === 0 ? 'Continuar a servicios' : 'Continuar a cuenta'}
               onClick={continueMobileFlow}
             >
@@ -368,34 +365,40 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
         />
       )}
 
-      <Dialog
+      <Modal
         open={state.showReceipt && Boolean(state.receipt)}
-        onOpenChange={onReceiptOpenChange}
-        size="lg"
+        onCancel={() => onReceiptOpenChange(false)}
         title="Comprobante de factura"
-        description="Formato de compatibilidad para facturas antiguas o cuando el PDF institucional no esta disponible."
+        footer={null}
+        width={760}
+        destroyOnHidden
       >
+        <p className="text-sm text-muted-foreground mb-4">
+          Formato de compatibilidad para facturas antiguas o cuando el PDF institucional no esta disponible.
+        </p>
         {state.receipt ? (
           <ReceiptPreview
             receipt={state.receipt}
             onNewInvoice={onNuevaFactura}
           />
         ) : null}
-      </Dialog>
+      </Modal>
 
-      <ConfirmDialog
+      <Modal
         open={state.showClearConfirm}
         title="Limpiar factura en curso"
-        confirmLabel="Limpiar"
-        cancelLabel="Seguir editando"
+        okText="Limpiar"
+        cancelText="Seguir editando"
         onCancel={() => onClearConfirmChange(false)}
-        onConfirm={() => {
+        onOk={() => {
           onClearConfirmChange(false);
           onClearCart();
         }}
       >
-        Se borraran paciente, busqueda y servicios agregados. Use esta accion solo si quiere empezar de nuevo.
-      </ConfirmDialog>
+        <p className="text-sm text-muted-foreground">
+          Se borraran paciente, busqueda y servicios agregados. Use esta accion solo si quiere empezar de nuevo.
+        </p>
+      </Modal>
     </section>
   );
 }

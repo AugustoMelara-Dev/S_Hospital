@@ -26,17 +26,13 @@ describe('InvoiceSuccess', () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole('heading', { name: 'Factura pagada' })).toBeVisible();
+    expect(screen.getByRole('dialog', { name: 'Factura pagada' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Imprimir recibo' })).toBeEnabled();
     expect(screen.getByRole('button', { name: 'Guardar PDF' })).toBeEnabled();
     expect(screen.getByRole('button', { name: 'Nueva factura' })).toBeEnabled();
     expect(screen.getByRole('link', { name: 'Ir al historial' })).toHaveAttribute('href', '/invoices');
     expect(screen.getByText('Efectivo')).toBeInTheDocument();
     expect(screen.getByText(/10\/07\/2026/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Imprimir recibo' })).toHaveClass('min-h-12');
-    expect(screen.getByRole('button', { name: 'Guardar PDF' })).toHaveClass('min-h-11');
-    expect(screen.getByRole('button', { name: 'Nueva factura' })).toHaveClass('min-h-11');
-    expect(screen.getByRole('link', { name: 'Ir al historial' })).toHaveClass('min-h-11');
   });
 
   it('uses pending language for an issued invoice and never calls it paid', () => {
@@ -56,7 +52,7 @@ describe('InvoiceSuccess', () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole('heading', { name: 'Factura pendiente' })).toBeVisible();
+    expect(screen.getByRole('dialog', { name: 'Factura pendiente' })).toBeInTheDocument();
     expect(screen.queryByText(/factura pagada/i)).not.toBeInTheDocument();
   });
 

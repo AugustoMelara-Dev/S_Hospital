@@ -8,116 +8,66 @@ import * as matchers from 'vitest-axe/matchers';
 import React from 'react';
 expect.extend(matchers);
 
-import dayjs from 'dayjs';
-
-vi.mock('@/design-system/ag-grid/InstitutionalDataGrid', () => {
-  return {
-    InstitutionalDataGrid: ({ ariaLabel, regionAriaLabel, gridAriaLabel, rows, columns, state = rows.length === 0 ? 'empty' : 'ready', errorMessage = 'No se pudo cargar la información.', emptyMessage = 'No hay registros para mostrar.', actions }: any) => {
-      if (state !== 'ready') {
-        return React.createElement(
-          'section',
-          { 'aria-label': regionAriaLabel ?? ariaLabel },
-          React.createElement(
-            'div',
-            { role: state === 'error' ? 'alert' : 'status' },
-            state === 'loading' ? 'Cargando registros…' : state === 'error' ? errorMessage : emptyMessage
-          ),
-          actions
-        );
-      }
-      return React.createElement(
-        'section',
-        { 'aria-label': regionAriaLabel ?? ariaLabel },
-        React.createElement(
-          'table',
+// JSDOM cannot run AG Grid's layout engine. The institutional adapter remains
+// real; only the third-party renderer is replaced at the test boundary.
+vi.mock('ag-grid-react', () => ({
+  AgGridProvider: ({ children }: { children: React.ReactNode }) => children,
+  AgGridReact: ({
+    'aria-label': ariaLabel,
+    columnDefs = [],
+    rowData = [],
+  }: {
+    'aria-label'?: string;
+    columnDefs?: Array<Record<string, any>>;
+    rowData?: Array<Record<string, any>>;
+  }) => React.createElement(
+    'table',
+    { 'aria-label': ariaLabel },
+    React.createElement(
+      'thead',
+      null,
+      React.createElement(
+        'tr',
+        null,
+        columnDefs.map((column) => React.createElement(
+          'th',
           {
-            'aria-label': gridAriaLabel ?? ariaLabel,
-            className: 'min-w-0 md:min-w-[980px] max-md:block max-md:[&_td]:min-w-0',
+            key: column.colId ?? column.field ?? column.headerName,
+            'data-numeric': column.type === 'rightAligned' ? 'true' : undefined,
           },
-          React.createElement(
-            'thead',
-            null,
-            React.createElement(
-              'tr',
-              null,
-              columns.map((column: any) =>
-                React.createElement(
-                  'th',
-                  {
-                    key: column.colId ?? column.field ?? '',
-                    'data-numeric': column.numeric || column.type === 'rightAligned' ? 'true' : undefined,
-                  },
-                  column.headerName
-                )
-              )
-            )
-          ),
-          React.createElement(
-            'tbody',
-            null,
-            rows.map((row: any, rowIndex: number) =>
-              React.createElement(
-                'tr',
-                { key: row.id ?? rowIndex },
-                columns.map((column: any) => {
-                  const fieldVal = column.field ? row[column.field] : undefined;
-                  const params = { data: row, value: fieldVal };
-                  const renderer = column.cellRenderer;
-                  const formatter = column.valueFormatter;
-                  const getter = column.valueGetter;
-                  let renderedValue: any = '';
-                  if (renderer) {
-                    renderedValue = renderer(params);
-                  } else if (formatter) {
-                    renderedValue = formatter(params);
-                  } else if (getter) {
-                    renderedValue = getter({ data: row });
-                  } else {
-                    renderedValue = fieldVal !== undefined && fieldVal !== null ? String(fieldVal) : '';
-                  }
-                  return React.createElement(
-                    'td',
-                    {
-                      key: column.colId ?? column.field ?? '',
-                      'data-numeric': column.numeric || column.type === 'rightAligned' ? 'true' : undefined,
-                    },
-                    renderedValue
-                  );
-                })
-              )
-            )
-          )
-        ),
-        actions
-      );
-    }
-  };
-});
-
-vi.mock('antd', async () => {
-  const actual = await vi.importActual<typeof import('antd')>('antd');
-  return {
-    ...actual,
-    DatePicker: (props: any) => {
-      const { value, onChange, id, className, ...rest } = props;
-      const formattedValue = value ? value.format('YYYY-MM-DD') : '';
-      return React.createElement('input', {
-        id,
-        type: 'date',
-        className,
-        value: formattedValue,
-        onChange: (e: any) => {
-          const val = e.target.value;
-          const dateObj = val ? dayjs(val) : null;
-          if (onChange) {
-            onChange(dateObj, val);
-          }
-        },
-        ...rest,
-      });
-    }
-  };
-});
+          column.headerName,
+        )),
+      ),
+    ),
+    React.createElement(
+      'tbody',
+      null,
+      rowData.map((row, rowIndex) => React.createElement(
+        'tr',
+        { key: row.id ?? rowIndex },
+        columnDefs.map((column) => {
+          const value = column.field ? row[column.field] : undefined;
+          const params = { data: row, value };
+          const renderedValue = column.cellRenderer
+            ? column.cellRenderer(params)
+            : column.valueFormatter
+              ? column.valueFormatter(params)
+              : column.valueGetter
+                ? column.valueGetter({ data: row })
+                : value;
+          return React.createElement(
+            'td',
+            {
+              key: column.colId ?? column.field ?? column.headerName,
+              'data-numeric': column.type === 'rightAligned' ? 'true' : undefined,
+            },
+            renderedValue == null ? '' : renderedValue,
+          );
+        }),
+      )),
+    ),
+  ),
+}));
 
 // Bump the default async-util timeout from 1s to 10s. AppRoutes code-
 // splits the 9 heavy views (Reports, Backups, Fiscal Settings, etc.)
@@ -138,6 +88,36 @@ Object.defineProperty(window, 'print', {
   value: vi.fn(),
 });
 
+// Ant Design measures scrollbars and focus styles through computed styles.
+// Keep JSDOM's stylesheet-derived values (notably display/visibility for
+// closing overlays) and fall back only when its CSS parser rejects a selector.
+const jsdomGetComputedStyle = window.getComputedStyle.bind(window);
+Object.defineProperty(window, 'getComputedStyle', {
+  configurable: true,
+  value: (element: Element, _pseudoElement?: string | null) => {
+    try {
+      return jsdomGetComputedStyle(element);
+    } catch {
+      const style = element instanceof HTMLElement || element instanceof SVGElement
+        ? element.style
+        : document.documentElement.style;
+      return style;
+    }
+  },
+});
+
+Object.defineProperty(window, 'requestAnimationFrame', {
+  configurable: true,
+  writable: true,
+  value: (callback: FrameRequestCallback) => window.setTimeout(() => callback(performance.now()), 0),
+});
+
+Object.defineProperty(window, 'cancelAnimationFrame', {
+  configurable: true,
+  writable: true,
+  value: (handle: number) => window.clearTimeout(handle),
+});
+
 class ResizeObserverMock implements ResizeObserver {
   observe = vi.fn();
   unobserve = vi.fn();
@@ -154,11 +134,11 @@ Object.defineProperty(window, 'ResizeObserver', {
   value: ResizeObserverMock,
 });
 
-if (typeof window !== 'undefined' && typeof window.matchMedia !== 'function') {
+if (typeof window !== 'undefined') {
   Object.defineProperty(window, 'matchMedia', {
     configurable: true,
     value: vi.fn().mockImplementation((query: string) => ({
-      matches: false,
+      matches: query.includes('prefers-reduced-motion'),
       media: query,
       onchange: null,
       addListener: vi.fn(),
@@ -193,6 +173,9 @@ if (typeof HTMLFormElement !== 'undefined') {
 
 beforeEach(async () => {
   document.body.innerHTML = '';
+  const portalRoot = document.createElement('div');
+  portalRoot.id = 'test-portal-root';
+  document.body.appendChild(portalRoot);
   // Reset the module-level queryClient so each test starts with a
   // clean cache. Otherwise a previous test's stale data could leak
   // into mocks of the next test.

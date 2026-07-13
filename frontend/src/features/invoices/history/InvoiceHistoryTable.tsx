@@ -1,5 +1,5 @@
 import { DownloadOutlined as Download, PrinterOutlined as Printer, FileDoneOutlined as Receipt, FileTextOutlined as ReceiptText, UserOutlined as User, CloseCircleOutlined as XCircle, MoreOutlined } from '@ant-design/icons';
-import { Button, Dropdown, Checkbox } from 'antd';
+import { Button, Dropdown } from 'antd';
 import type { MenuProps } from 'antd';
 import { type ReactNode, useState } from 'react';
 import { StatusTag } from '@/components/ui/status-tag';
@@ -99,8 +99,6 @@ export function InvoiceHistoryTable({
     'receipt',
     'actions',
   ]);
-  const [openDropdown, setOpenDropdown] = useState(false);
-
   const hideableColumns = [
     { key: 'issued_at', label: 'Fecha' },
     { key: 'total', label: 'Total' },
@@ -110,21 +108,16 @@ export function InvoiceHistoryTable({
     { key: 'receipt', label: 'Recibo' },
   ];
 
-  const menuItems: MenuProps['items'] = hideableColumns.map((col) => ({
-    key: col.key,
-    label: (
-      <Checkbox
-        checked={visibleKeys.includes(col.key)}
-        onChange={() => {
-          setVisibleKeys((prev) =>
-            prev.includes(col.key) ? prev.filter((k) => k !== col.key) : [...prev, col.key]
-          );
-        }}
-      >
-        {col.label}
-      </Checkbox>
-    ),
+  const menuItems: MenuProps['items'] = hideableColumns.map((column) => ({
+    key: column.key,
+    label: column.label,
   }));
+
+  const setColumnVisible = (columnKey: string, visible: boolean) => {
+    setVisibleKeys((current) => visible
+      ? Array.from(new Set([...current, columnKey]))
+      : current.filter((key) => key !== columnKey));
+  };
 
   const allColumns: InstitutionalColumn<Invoice>[] = [
     {
@@ -304,27 +297,22 @@ export function InvoiceHistoryTable({
     },
   ];
 
-  const activeColumns = allColumns.filter((col) => visibleKeys.includes(col.colId!));
-
   return (
     <div className="space-y-2">
       {hideableColumns.length > 0 && (
         <Dropdown
-          menu={{ items: menuItems }}
+          menu={{
+            'aria-label': 'Visibilidad de columnas del historial',
+            items: menuItems,
+            multiple: true,
+            selectable: true,
+            selectedKeys: visibleKeys.filter((key) => hideableColumns.some((column) => column.key === key)),
+            onSelect: ({ key }) => setColumnVisible(key, true),
+            onDeselect: ({ key }) => setColumnVisible(key, false),
+          }}
           trigger={['click']}
-          open={openDropdown}
-          onOpenChange={setOpenDropdown}
-          getPopupContainer={(triggerNode) => triggerNode.parentNode as HTMLElement}
         >
-          <Button
-            aria-label="Columnas"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                setOpenDropdown((prev) => !prev);
-              }
-            }}
-          >
+          <Button aria-label="Configurar columnas de facturas">
             Columnas
           </Button>
         </Dropdown>
@@ -333,11 +321,19 @@ export function InvoiceHistoryTable({
         ariaLabel="Listado de facturas"
         regionAriaLabel="Tabla de facturas"
         gridAriaLabel="Facturas filtradas"
+        caption="Facturas filtradas"
+        description="Resultados del historial con acciones y columnas configurables."
         rows={invoices}
-        columns={activeColumns}
+        columns={allColumns}
         getRowId={(invoice) => String(invoice.id)}
+        columnVisibility={{
+          visibleColumnIds: visibleKeys,
+          requiredColumnIds: ['invoice_number', 'patient_name', 'actions'],
+        }}
         state={invoices.length ? 'ready' : 'empty'}
         emptyMessage="No hay registros para mostrar."
+        loadingMessage="Cargando facturas..."
+        errorMessage="No se pudo cargar el historial de facturas."
       />
     </div>
   );

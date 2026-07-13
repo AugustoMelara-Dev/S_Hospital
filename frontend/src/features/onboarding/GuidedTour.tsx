@@ -130,9 +130,5 @@ export function GuidedTour({ open, onOpenChange }: GuidedTourProps) {
 }
 
 export function shouldAutoOpenGuidedTour(): boolean {
-  if (import.meta.env.MODE === 'test') {
-    return false;
-  }
-
   return localStorage.getItem(AUTO_KEY) === 'true' && localStorage.getItem(COMPLETED_KEY) !== 'true';
 }

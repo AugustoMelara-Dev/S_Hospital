@@ -66,6 +66,42 @@ const paidInvoice = invoiceFixture({
 });
 
 test.describe('Invoice history - critical mocked e2e', () => {
+  test('keeps AG Grid, column menu, DatePicker and Drawer keyboard behavior real', async ({ page }) => {
+    await installInvoiceHistoryMocks(page);
+    await page.goto('/invoices');
+
+    const columnsButton = page.getByRole('button', { name: /configurar columnas de facturas/i });
+    await columnsButton.click();
+    const statusColumnItem = page.getByRole('menuitem', { name: /^estado$/i });
+    await expect(statusColumnItem).toBeVisible();
+    await statusColumnItem.click();
+    await expect(page.getByRole('columnheader', { name: /^estado$/i })).toHaveCount(0);
+
+    await page.getByRole('button', { name: /filtros avanzados/i }).click();
+    await page.getByLabel(/^desde$/i).click();
+    const firstOfJuly = page.locator('[title="2026-07-01"]');
+    await expect(firstOfJuly).toBeVisible();
+    await firstOfJuly.click();
+    await expect(page.getByLabel(/^desde$/i)).toHaveValue('01/07/2026');
+
+    const detailTrigger = page.getByRole('button', { name: /ver detalle de la factura A-0001/i });
+    await detailTrigger.click();
+    const drawer = page.getByRole('dialog', { name: /factura A-0001/i });
+    await expect(drawer).toBeVisible();
+
+    const voidTrigger = drawer.getByRole('button', { name: /anular factura/i });
+    await voidTrigger.click();
+    const voidDialog = page.getByRole('dialog', { name: /anular factura A-0001/i });
+    await expect(voidDialog).toBeVisible();
+    await voidDialog.getByRole('button', { name: /^cancelar$/i }).click();
+    await expect(drawer).toBeVisible();
+    await expect(voidTrigger).toBeFocused();
+
+    await drawer.getByRole('button', { name: /cerrar panel/i }).press('Escape');
+    await expect(drawer).toHaveCount(0);
+    await expect(detailTrigger).toBeFocused();
+  });
+
   test('uses row action menu and requires a reason before voiding an invoice', async ({ page }) => {
     let voidPayload: Record<string, unknown> | null = null;
     await installInvoiceHistoryMocks(page, {
@@ -77,7 +113,7 @@ test.describe('Invoice history - critical mocked e2e', () => {
     await page.goto('/invoices');
 
     await expect(page.getByRole('heading', { level: 1, name: /historial de facturas/i })).toBeVisible();
-    await expect(page.getByRole('status').filter({ hasText: /2 registros en total/i })).toBeVisible();
+    await expect(page.getByText(/2 registros en total/i)).toBeVisible();
     await expect(page.getByRole('row', { name: /A-0001.*Maria Lopez/i })).toBeVisible();
     await expect(page.getByRole('row', { name: /A-0002.*Carlos Rivera/i })).toBeVisible();
     await expect(page.getByRole('button', { name: /^anular factura$/i })).toHaveCount(0);
@@ -93,7 +129,7 @@ test.describe('Invoice history - critical mocked e2e', () => {
     await expect(voidItem).toBeVisible();
     await voidItem.click({ force: true });
 
-    const dialog = page.getByRole('alertdialog', { name: /anular factura A-0001/i });
+    const dialog = page.getByRole('dialog', { name: /anular factura A-0001/i });
     await expect(dialog).toBeVisible();
     await expect(dialog.getByText(/paciente.*maria lopez/i)).toBeVisible();
     await expect(dialog.getByRole('button', { name: /anular factura/i })).toBeDisabled();
@@ -105,7 +141,7 @@ test.describe('Invoice history - critical mocked e2e', () => {
 
     await expect.poll(() => voidPayload).not.toBeNull();
     expect(voidPayload).toMatchObject({ reason: 'Error' });
-    await expect(page.getByRole('alertdialog', { name: /anular factura A-0001/i })).toHaveCount(0);
+    await expect(page.getByRole('dialog', { name: /anular factura A-0001/i })).toHaveCount(0);
   });
 
   test('reprints an institutional receipt from history without legacy receipt fallback', async ({ page }) => {
@@ -137,9 +173,9 @@ test.describe('Invoice history - critical mocked e2e', () => {
     await page.getByRole('button', { name: /acciones de la factura A-0002/i }).click();
     await page.getByRole('menuitem', { name: /reimprimir pdf/i }).click();
 
-    const reprintDialog = page.getByRole('alertdialog', { name: /reimprimir A-0002/i });
+    const reprintDialog = page.getByRole('dialog', { name: /reimprimir A-0002/i });
     await expect(reprintDialog).toBeVisible();
-    await reprintDialog.getByRole('textbox', { name: /^motivo$/i }).fill('Reimpresión solicitada desde historial.');
+    await reprintDialog.getByRole('textbox', { name: /^motivo \*$/i }).fill('Reimpresión solicitada desde historial.');
     await reprintDialog.getByRole('button', { name: /^reimprimir$/i }).click();
 
     await expect.poll(() => institutionalPrintEventPayload).toMatchObject({
@@ -254,6 +290,7 @@ function receiptFixture() {
     },
   };
 }
+
 
 async function installCommonMocks(page: Page, sessionUser: typeof invoiceUser) {
   await page.route('**/sanctum/csrf-cookie', (route) => route.fulfill({ status: 204 }));

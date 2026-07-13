@@ -127,6 +127,15 @@ async function waitForPointOfSaleLoad() {
   });
 }
 
+function addErythropoietinAndOpenAccount(options: { openAccount?: boolean } = {}) {
+  const { openAccount = true } = options;
+  fireEvent.click(screen.getByRole('button', { name: /continuar a servicios/i }));
+  fireEvent.click(screen.getByRole('button', { name: /agregar eritropoyetina/i }));
+  if (openAccount) {
+    fireEvent.click(screen.getByRole('button', { name: /continuar a cuenta/i }));
+  }
+}
+
 describe('NewInvoiceView critical flows', () => {
   beforeEach(() => {
     mockFetchForOpenCashWithService();
@@ -227,7 +236,7 @@ describe('NewInvoiceView critical flows', () => {
       expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(2);
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /agregar eritropoyetina/i }));
+    addErythropoietinAndOpenAccount();
 
     fetchMock.mockClear();
 
@@ -289,7 +298,7 @@ describe('NewInvoiceView critical flows', () => {
     await waitFor(() => {
       expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(2);
     });
-    fireEvent.click(screen.getByRole('button', { name: /agregar eritropoyetina/i }));
+    addErythropoietinAndOpenAccount();
     fireEvent.click(await screen.findByRole('button', { name: /^emitir y cobrar$/i }));
 
     const confirmButton = await screen.findByRole('button', { name: /emitir y abrir cobro/i });
@@ -345,7 +354,7 @@ describe('NewInvoiceView critical flows', () => {
       expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(2);
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /agregar eritropoyetina/i }));
+    addErythropoietinAndOpenAccount();
 
     fetchMock.mockImplementation(async (input) => {
       const url = String(input);
@@ -392,13 +401,6 @@ describe('NewInvoiceView critical flows', () => {
 
     const patientInput = screen.getByLabelText(/nombre del paciente/i);
     fireEvent.change(patientInput, { target: { value: '   ' } });
-    fireEvent.change(screen.getByLabelText(/buscar por nombre/i), { target: { value: 'eritro' } });
-
-    await waitFor(() => {
-      expect(screen.getByText('Eritropoyetina')).toBeInTheDocument();
-    }, { timeout: 3000 });
-
-    fireEvent.click(screen.getByRole('button', { name: /agregar eritropoyetina/i }));
     fetchMock.mockClear();
 
     fireEvent.keyDown(patientInput, { key: 'Enter', ctrlKey: true });
@@ -463,7 +465,7 @@ describe('NewInvoiceView critical flows', () => {
     await waitFor(() => {
       expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(2);
     });
-    fireEvent.click(screen.getByRole('button', { name: /agregar eritropoyetina/i }));
+    addErythropoietinAndOpenAccount();
     fireEvent.click(await screen.findByRole('button', { name: /^emitir y cobrar$/i }));
     fireEvent.click(await screen.findByRole('button', { name: /emitir y abrir cobro/i }));
 
@@ -564,7 +566,7 @@ describe('NewInvoiceView critical flows', () => {
     await waitFor(() => {
       expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(2);
     });
-    fireEvent.click(screen.getByRole('button', { name: /agregar eritropoyetina/i }));
+    addErythropoietinAndOpenAccount();
     fireEvent.click(await screen.findByRole('button', { name: /^emitir y cobrar$/i }));
     fireEvent.click(await screen.findByRole('button', { name: /emitir y abrir cobro/i }));
 
@@ -643,7 +645,7 @@ describe('NewInvoiceView critical flows', () => {
     fireEvent.change(screen.getByLabelText(/buscar por nombre/i), { target: { value: 'eritro' } });
 
     await waitFor(() => expect(screen.getByText('Eritropoyetina')).toBeInTheDocument(), { timeout: 3000 });
-    fireEvent.click(screen.getByRole('button', { name: /agregar eritropoyetina/i }));
+    addErythropoietinAndOpenAccount();
     fireEvent.click(screen.getByRole('checkbox', { name: /receta de di/i }));
 
     fireEvent.click(await screen.findByRole('button', { name: /^emitir y cobrar$/i }));
@@ -673,7 +675,7 @@ describe('NewInvoiceView critical flows', () => {
       expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(2);
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /agregar eritropoyetina/i }));
+    addErythropoietinAndOpenAccount();
 
     const emitButton = await screen.findByRole('button', { name: /^emitir factura$/i });
 
@@ -753,7 +755,7 @@ describe('NewInvoiceView critical flows', () => {
       expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(2);
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /agregar eritropoyetina/i }));
+    addErythropoietinAndOpenAccount();
 
     fetchMock.mockImplementation(async (input) => {
       const url = String(input);
@@ -962,7 +964,7 @@ describe('NewInvoiceView critical flows', () => {
     await waitFor(() => {
       expect(screen.getByText('Eritropoyetina')).toBeInTheDocument();
     }, { timeout: 3000 });
-    fireEvent.click(screen.getByRole('button', { name: /agregar eritropoyetina/i }));
+    addErythropoietinAndOpenAccount();
     fireEvent.click(screen.getAllByRole('button', { name: /emitir/i })[0]);
     await waitFor(() => {
       expect(screen.getByRole('dialog', { name: /confirmar emis/i })).toBeInTheDocument();
@@ -1023,7 +1025,7 @@ describe('NewInvoiceView critical flows', () => {
       expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(2);
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /agregar eritropoyetina/i }));
+    addErythropoietinAndOpenAccount();
 
     fetchMock.mockImplementation(async (input) => {
       const url = String(input);
@@ -1157,7 +1159,7 @@ describe('NewInvoiceView critical flows', () => {
       expect(screen.getByText('Eritropoyetina')).toBeInTheDocument();
     }, { timeout: 3000 });
 
-    fireEvent.click(screen.getByRole('button', { name: /agregar eritropoyetina/i }));
+    addErythropoietinAndOpenAccount();
 
     fetchMock.mockImplementation(async (input) => {
       const url = String(input);
@@ -1261,7 +1263,7 @@ describe('NewInvoiceView critical flows', () => {
       expect(screen.getByText('Eritropoyetina')).toBeInTheDocument();
     }, { timeout: 3000 });
 
-    fireEvent.click(screen.getByRole('button', { name: /agregar eritropoyetina/i }));
+    addErythropoietinAndOpenAccount();
 
     fetchMock.mockImplementation(async (input, init) => {
       const url = String(input);
@@ -1386,7 +1388,7 @@ describe('NewInvoiceView critical flows', () => {
       expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(2);
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /agregar eritropoyetina/i }));
+    addErythropoietinAndOpenAccount();
 
     fetchMock.mockImplementation(async (input) => {
       const url = String(input);
@@ -1582,7 +1584,7 @@ describe('NewInvoiceView critical flows', () => {
       expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(2);
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /agregar eritropoyetina/i }));
+    addErythropoietinAndOpenAccount();
 
     fetchMock.mockImplementation(async (input) => {
       const url = String(input);
@@ -1820,7 +1822,7 @@ describe('NewInvoiceView critical flows', () => {
     await waitFor(() => {
       expect(screen.getByText('Eritropoyetina')).toBeInTheDocument();
     }, { timeout: 3000 });
-    fireEvent.click(screen.getByRole('button', { name: /agregar eritropoyetina/i }));
+    addErythropoietinAndOpenAccount();
     fireEvent.click(screen.getAllByRole('button', { name: /emitir/i })[0]);
     await waitFor(() => {
       expect(screen.getByRole('dialog', { name: /confirmar emis/i })).toBeInTheDocument();
@@ -1872,6 +1874,8 @@ describe('NewInvoiceView critical flows', () => {
 
     const patientInput = screen.getByLabelText(/nombre del paciente/i);
     fireEvent.change(patientInput, { target: { value: 'Maria Lopez' } });
+    fireEvent.click(screen.getByRole('button', { name: /continuar a servicios/i }));
+    fireEvent.click(screen.getByRole('button', { name: /continuar a cuenta/i }));
 
     await waitFor(() => {
       const emitButtons = screen.queryAllByRole('button', { name: /emitir/i });
@@ -1920,7 +1924,7 @@ describe('NewInvoiceView critical flows', () => {
       expect(screen.getByText('Eritropoyetina')).toBeInTheDocument();
     }, { timeout: 3000 });
 
-    fireEvent.click(screen.getByRole('button', { name: /agregar eritropoyetina/i }));
+    addErythropoietinAndOpenAccount();
     fetchMock.mockClear();
 
     fireEvent.click(screen.getByRole('button', { name: /^emitir y cobrar$/i }));

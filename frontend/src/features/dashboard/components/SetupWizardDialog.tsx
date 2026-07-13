@@ -256,7 +256,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
       width={760}
       title={<Typography.Title level={3} className="m-0">Preparar caja</Typography.Title>}
       footer={null}
-      destroyOnClose
+      destroyOnHidden
     >
       <Typography.Paragraph className="mb-6">
         Complete los datos mínimos para comenzar a facturar.

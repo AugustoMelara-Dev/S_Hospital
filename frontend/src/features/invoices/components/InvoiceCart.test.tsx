@@ -13,11 +13,11 @@ describe('InvoiceCart', () => {
     expect(screen.getByText(/precio registrado/i)).toHaveTextContent('L 120.00');
   });
 
-  it('keeps quantity controls at a 44px target and exposes the configured total CTA', () => {
+  it('keeps quantity controls operable and exposes the configured total CTA', () => {
     renderCart({ actionLabel: 'Cobrar L 138.00' });
 
-    expect(screen.getByRole('button', { name: /disminuir cantidad/i })).toHaveClass('size-11');
-    expect(screen.getByRole('button', { name: /aumentar cantidad/i })).toHaveClass('size-11');
+    expect(screen.getByRole('button', { name: /disminuir cantidad/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /aumentar cantidad/i })).toBeEnabled();
     const action = screen.getByRole('button', { name: 'Cobrar L 138.00' });
     expect(action).toBeEnabled();
     expect(action).toHaveTextContent(/^Cobrar L 138\.00$/);

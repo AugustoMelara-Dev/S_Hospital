@@ -12,8 +12,8 @@ import {
   userSafeErrorMessage,
 } from '../../lib/api';
 import { useInvoices } from '../../hooks/useInvoices';
-import { Button } from 'antd';
-import { ConfirmDialog, Dialog, EmptyState, ErrorState, Label, LoadingState, PaginationControls, Textarea } from './history/historyAntCompat';
+import { Alert, Button, Empty, Input, Modal, Pagination, Skeleton } from 'antd';
+import type { ReactNode } from 'react';
 import { ReceiptPreview } from '../receipts/ReceiptPreview';
 import { institutionalReceiptPaperSize } from '../../lib/institutionalReceiptPaper';
 import { downloadBlob, institutionalReceiptPdfFilename, openBlobInNewTab } from '../../lib/download';
@@ -210,26 +210,30 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   }
 
   function closeInvoiceDetail() {
-    const returnInvoiceId = detailReturnFocusInvoiceIdRef.current;
-    const originalFocusTarget = detailReturnFocusRef.current;
     detailRequestRef.current += 1;
-    detailRequestedInvoiceIdRef.current = 0;
     setDetailInvoice(null);
     setDetailError('');
     setDetailLoading(false);
     const next = new URLSearchParams(searchParams);
     next.delete('invoice');
     setSearchParams(next);
-    detailReturnFocusRef.current = null;
-    detailReturnFocusInvoiceIdRef.current = null;
-    window.setTimeout(() => {
-      const currentTrigger = returnInvoiceId
-        ? document.querySelector<HTMLElement>(`[data-invoice-detail-trigger="${returnInvoiceId}"]`)
-        : null;
-      const focusTarget = currentTrigger
-        ?? (originalFocusTarget?.isConnected ? originalFocusTarget : historySectionRef.current);
-      focusTarget?.focus();
-    }, 100);
+  }
+
+  function restoreInvoiceDetailFocus() {
+    const returnInvoiceId = detailReturnFocusInvoiceIdRef.current;
+    const originalFocusTarget = detailReturnFocusRef.current;
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        const currentTrigger = returnInvoiceId
+          ? document.querySelector<HTMLElement>(`[data-invoice-detail-trigger="${returnInvoiceId}"]`)
+          : null;
+        const focusTarget = currentTrigger
+          ?? (originalFocusTarget?.isConnected ? originalFocusTarget : historySectionRef.current);
+        focusTarget?.focus();
+        detailReturnFocusRef.current = null;
+        detailReturnFocusInvoiceIdRef.current = null;
+      });
+    });
   }
 
   function synchronizeDetailInvoice(invoice: Invoice) {
@@ -625,31 +629,42 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       />
 
       {loadError ? (
-        <ErrorState
+        <Alert
+          type="error"
+          showIcon
           title="No se pudo cargar el historial"
           description={loadError}
-          action={(
+          action={
             <Button type="default" onClick={() => void invoicesQuery.refetch()}>
               Reintentar
             </Button>
-          )}
+          }
         />
       ) : null}
 
       {isEmpty && !loading && !loadError ? (
-        <EmptyState
-          title="No hay facturas"
-          description={hasActiveFilters
-            ? 'No se encontraron facturas con los filtros seleccionados.'
-            : 'No hay facturas registradas aún.'}
-          action={hasActiveFilters ? (
-            <Button type="default" onClick={clearFilters}>
-              Limpiar filtros
-            </Button>
-          ) : undefined}
+        <Empty
+          description={
+            <>
+              <strong>No hay facturas</strong>
+              <p>
+                {hasActiveFilters
+                  ? 'No se encontraron facturas con los filtros seleccionados.'
+                  : 'No hay facturas registradas aún.'}
+              </p>
+              {hasActiveFilters ? (
+                <Button type="default" onClick={clearFilters} className="mt-2">
+                  Limpiar filtros
+                </Button>
+              ) : null}
+            </>
+          }
         />
       ) : loading ? (
-        <LoadingState label="Cargando facturas..." />
+        <div role="status">
+          <Skeleton active={false} />
+          <span>Cargando facturas...</span>
+        </div>
       ) : !loadError ? (
         <section aria-label="Listado de facturas" className="border border-operational-border">
           <header className="border-b border-border p-4">
@@ -688,10 +703,13 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
           <span className="text-sm text-muted-foreground">
             {meta.total} registro{meta.total !== 1 ? 's' : ''} en total
           </span>
-          <PaginationControls
-            meta={meta}
-            loading={loading}
-            onPageChange={(nextPage) => void changePage(nextPage)}
+          <Pagination
+            current={meta.current_page}
+            pageSize={meta.per_page}
+            total={meta.total}
+            disabled={loading}
+            showSizeChanger={false}
+            onChange={(nextPage) => void changePage(nextPage)}
           />
         </div>
       )}
@@ -703,12 +721,13 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
         loadingActionInvoiceId={loadingActionInvoiceId}
         moneyLabel={moneyLabel}
         onDownloadInstitutionalReceipt={(invoice) => void downloadInstitutionalReceipt(invoice)}
+        onAfterClose={restoreInvoiceDetailFocus}
         onGenerateInstitutionalReceipt={(invoiceId) => void generateInstitutionalReceipt(invoiceId)}
         onOpenChange={(open) => { if (!open) closeInvoiceDetail(); }}
         onOpenReceipt={(invoiceId) => void openReceiptModal(invoiceId)}
         onPrepareInvoiceAction={(invoiceId, action) => void prepareInvoiceAction(invoiceId, action)}
         onReprint={requestReprintInvoice}
-        open={detailInvoiceId > 0 && !confirmingVoid && !confirmingReverse}
+        open={detailInvoiceId > 0}
         permissions={detailInvoice ? {
           canIssueInstitutionalReceipt,
           canOperateAnyInvoice,
@@ -721,12 +740,18 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
         } : null}
       />
 
-      <Dialog
+      <Modal
         open={receiptModalOpen}
-        onOpenChange={setReceiptModalOpen}
+        zIndex={1200}
+        onCancel={() => setReceiptModalOpen(false)}
         title={`Comprobante de factura - ${selectedInvoice?.invoice_number ?? ''}`}
-        description="Recibo disponible para esta factura. Usa el perfil de papel configurado."
+        footer={null}
+        width={760}
+        destroyOnHidden
       >
+        <p className="text-sm text-muted-foreground mb-4">
+          Recibo disponible para esta factura. Usa el perfil de papel configurado.
+        </p>
         {receipt && selectedInvoice && (
           <div className="space-y-4">
             <ReceiptPreview
@@ -743,125 +768,201 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
             />
           </div>
         )}
-      </Dialog>
+      </Modal>
 
-      <ConfirmDialog
-        confirmLabel={reprintingReceipt ? 'Reimprimiendo...' : 'Reimprimir'}
-        onCancel={() => setConfirmingReprint(false)}
-        cancelDisabled={reprintingReceipt}
-        confirmDisabled={reprintingReceipt}
-        onConfirm={(reason) => void reprintSelectedInvoice(reason ?? '')}
-        open={confirmingReprint}
-        requireReasonTextarea
-        requireReasonMinLength={5}
-        reasonHelpText="Explique por que se entrega otra copia. Quedara registrado en auditoria."
-        title={`Reimprimir ${selectedInvoice?.invoice_number ?? ''}`}
-      >
-        <div className="flex flex-col gap-2 text-sm">
-          <p>
-            <strong>Paciente:</strong> {invoicePatientNameLabel(selectedInvoice)}
-          </p>
-          <p>El motivo quedara asociado a la auditoria de impresion.</p>
-        </div>
-      </ConfirmDialog>
-
-      <ConfirmDialog
-        confirmLabel={voidingInvoice ? 'Anulando...' : 'Anular Factura'}
-        danger
-        onCancel={() => {
-          setConfirmingVoid(false);
-          setVoidReason('');
-          setVoidReasonError('');
-        }}
-        cancelDisabled={voidingInvoice}
-        confirmDisabled={voidingInvoice || voidReason.trim().length < 5}
-        onConfirm={() => void voidSelectedInvoice()}
-        open={confirmingVoid}
-        title={`¿Anular factura ${selectedInvoice?.invoice_number}?`}
-      >
-        <div className="flex flex-col gap-4">
-          <p className="text-sm">
-            <strong>Paciente:</strong> {invoicePatientNameLabel(selectedInvoice)}
-          </p>
-          <div className="space-y-2">
-            <Label htmlFor="voidReason">Motivo de anulación *</Label>
-            <Textarea
-              id="voidReason"
-              aria-describedby={voidReasonError ? 'voidReason-help voidReason-error' : 'voidReason-help'}
-              aria-invalid={Boolean(voidReasonError)}
-              aria-label="Motivo de anulación"
-              value={voidReason}
-              disabled={voidingInvoice}
-              onChange={(e) => {
-                setVoidReason(e.target.value);
-                if (voidReasonError && e.target.value.trim().length >= 5) {
-                  setVoidReasonError('');
-                }
-              }}
-              placeholder="Explique el motivo de la anulación (mínimo 5 caracteres)..."
-              rows={3}
-            />
-            <p id="voidReason-help" className="text-xs text-muted-foreground">
-              Esta acción no se puede deshacer. La factura será marcada como anulada.
+      <LocalConfirmDialog
+          confirmLabel={reprintingReceipt ? 'Reimprimiendo...' : 'Reimprimir'}
+          onCancel={() => setConfirmingReprint(false)}
+          cancelDisabled={reprintingReceipt}
+          confirmDisabled={reprintingReceipt}
+          onConfirm={(reason) => void reprintSelectedInvoice(reason ?? '')}
+          open={confirmingReprint}
+          requireReasonTextarea
+          requireReasonMinLength={5}
+          reasonHelpText="Explique por que se entrega otra copia. Quedara registrado en auditoria."
+          title={`Reimprimir ${selectedInvoice?.invoice_number ?? ''}`}
+        >
+          <div className="flex flex-col gap-2 text-sm">
+            <p>
+              <strong>Paciente:</strong> {invoicePatientNameLabel(selectedInvoice)}
             </p>
-            {voidReasonError ? (
-              <p id="voidReason-error" role="alert" className="text-xs font-medium text-destructive">
-                {voidReasonError}
-              </p>
-            ) : null}
+            <p>El motivo quedara asociado a la auditoria de impresion.</p>
           </div>
-        </div>
-      </ConfirmDialog>
+      </LocalConfirmDialog>
 
-      <ConfirmDialog
-        confirmLabel={reversingInvoice ? 'Reversando...' : 'Reversar Factura'}
-        danger
-        onCancel={() => {
-          setConfirmingReverse(false);
-          setReverseReason('');
-          setReverseReasonError('');
-        }}
-        cancelDisabled={reversingInvoice}
-        confirmDisabled={reversingInvoice || reverseReason.trim().length < 5}
-        onConfirm={() => void reverseSelectedInvoice()}
-        open={confirmingReverse}
-        title={`¿Reversar factura ${selectedInvoice?.invoice_number}?`}
-      >
-        <div className="flex flex-col gap-4">
-          <p className="text-sm">
-            <strong>Paciente:</strong> {invoicePatientNameLabel(selectedInvoice)}
-          </p>
-          <div className="space-y-2">
-            <Label htmlFor="reverseReason">Motivo de reversa *</Label>
-            <Textarea
-              id="reverseReason"
-              aria-describedby={reverseReasonError ? 'reverseReason-help reverseReason-error' : 'reverseReason-help'}
-              aria-invalid={Boolean(reverseReasonError)}
-              aria-label="Motivo de reversa"
-              value={reverseReason}
-              disabled={reversingInvoice}
-              onChange={(e) => {
-                setReverseReason(e.target.value);
-                if (reverseReasonError && e.target.value.trim().length >= 5) {
-                  setReverseReasonError('');
-                }
-              }}
-              placeholder="Explique por qué se reversan los pagos y la factura..."
-              rows={3}
-            />
-            <p id="reverseReason-help" className="text-xs text-muted-foreground">
-              Reversa los pagos registrados, crea movimientos compensatorios y deja auditoría. Motivo mínimo 5 caracteres.
+      <LocalConfirmDialog
+          confirmLabel={voidingInvoice ? 'Anulando...' : 'Anular Factura'}
+          danger
+          onCancel={() => {
+            setConfirmingVoid(false);
+            setVoidReason('');
+            setVoidReasonError('');
+          }}
+          cancelDisabled={voidingInvoice}
+          confirmDisabled={voidingInvoice || voidReason.trim().length < 5}
+          onConfirm={() => void voidSelectedInvoice()}
+          open={confirmingVoid}
+          title={`¿Anular factura ${selectedInvoice?.invoice_number}?`}
+        >
+          <div className="flex flex-col gap-4">
+            <p className="text-sm">
+              <strong>Paciente:</strong> {invoicePatientNameLabel(selectedInvoice)}
             </p>
-            {reverseReasonError ? (
-              <p id="reverseReason-error" role="alert" className="text-xs font-medium text-destructive">
-                {reverseReasonError}
+            <div className="space-y-2">
+              <label htmlFor="voidReason" className="block text-sm font-semibold text-foreground">Motivo de anulación *</label>
+              <Input.TextArea
+                id="voidReason"
+                aria-describedby={voidReasonError ? 'voidReason-help voidReason-error' : 'voidReason-help'}
+                aria-invalid={Boolean(voidReasonError)}
+                aria-label="Motivo de anulación"
+                value={voidReason}
+                disabled={voidingInvoice}
+                onChange={(e) => {
+                  setVoidReason(e.target.value);
+                  if (voidReasonError && e.target.value.trim().length >= 5) {
+                    setVoidReasonError('');
+                  }
+                }}
+                placeholder="Explique el motivo de la anulación (mínimo 5 caracteres)..."
+                rows={3}
+              />
+              <p id="voidReason-help" className="text-xs text-muted-foreground">
+                Esta acción no se puede deshacer. La factura será marcada como anulada.
               </p>
-            ) : null}
+              {voidReasonError ? (
+                <p id="voidReason-error" role="alert" className="text-xs font-medium text-destructive">
+                  {voidReasonError}
+                </p>
+              ) : null}
+            </div>
           </div>
-        </div>
-      </ConfirmDialog>
+      </LocalConfirmDialog>
+
+      <LocalConfirmDialog
+          confirmLabel={reversingInvoice ? 'Reversando...' : 'Reversar Factura'}
+          danger
+          onCancel={() => {
+            setConfirmingReverse(false);
+            setReverseReason('');
+            setReverseReasonError('');
+          }}
+          cancelDisabled={reversingInvoice}
+          confirmDisabled={reversingInvoice || reverseReason.trim().length < 5}
+          onConfirm={() => void reverseSelectedInvoice()}
+          open={confirmingReverse}
+          title={`¿Reversar factura ${selectedInvoice?.invoice_number}?`}
+        >
+          <div className="flex flex-col gap-4">
+            <p className="text-sm">
+              <strong>Paciente:</strong> {invoicePatientNameLabel(selectedInvoice)}
+            </p>
+            <div className="space-y-2">
+              <label htmlFor="reverseReason" className="block text-sm font-semibold text-foreground">Motivo de reversa *</label>
+              <Input.TextArea
+                id="reverseReason"
+                aria-describedby={reverseReasonError ? 'reverseReason-help reverseReason-error' : 'reverseReason-help'}
+                aria-invalid={Boolean(reverseReasonError)}
+                aria-label="Motivo de reversa"
+                value={reverseReason}
+                disabled={reversingInvoice}
+                onChange={(e) => {
+                  setReverseReason(e.target.value);
+                  if (reverseReasonError && e.target.value.trim().length >= 5) {
+                    setReverseReasonError('');
+                  }
+                }}
+                placeholder="Explique por qué se reversan los pagos y la factura..."
+                rows={3}
+              />
+              <p id="reverseReason-help" className="text-xs text-muted-foreground">
+                Reversa los pagos registrados, crea movimientos compensatorios y deja auditoría. Motivo mínimo 5 caracteres.
+              </p>
+              {reverseReasonError ? (
+                <p id="reverseReason-error" role="alert" className="text-xs font-medium text-destructive">
+                  {reverseReasonError}
+                </p>
+              ) : null}
+            </div>
+          </div>
+      </LocalConfirmDialog>
 
     </section>
+  );
+}
+
+function LocalConfirmDialog({
+  open,
+  title,
+  confirmLabel,
+  cancelLabel = 'Cancelar',
+  onCancel,
+  onConfirm,
+  children,
+  confirmDisabled,
+  cancelDisabled,
+  danger,
+  requireReasonTextarea,
+  requireReasonMinLength = 0,
+  reasonHelpText,
+}: {
+  open: boolean;
+  title: string;
+  confirmLabel: string;
+  cancelLabel?: string;
+  onCancel: () => void;
+  onConfirm: (reason?: string) => void;
+  children: ReactNode;
+  confirmDisabled?: boolean;
+  cancelDisabled?: boolean;
+  danger?: boolean;
+  requireReasonTextarea?: boolean;
+  requireReasonMinLength?: number;
+  reasonHelpText?: string;
+}) {
+  const [reason, setReason] = useState('');
+  useEffect(() => {
+    if (open) {
+      setReason('');
+    }
+  }, [open]);
+
+  return (
+    <Modal
+      open={open}
+      zIndex={1200}
+      title={title}
+      okText={confirmLabel}
+      cancelText={cancelLabel}
+      onCancel={onCancel}
+      onOk={() => onConfirm(reason)}
+      okButtonProps={{
+        disabled: confirmDisabled || (requireReasonTextarea && reason.trim().length < requireReasonMinLength),
+        danger,
+      }}
+      cancelButtonProps={{ disabled: cancelDisabled }}
+      destroyOnHidden
+    >
+      <div className="space-y-4 py-4">
+        {children}
+        {requireReasonTextarea ? (
+          <div className="space-y-2">
+            <label htmlFor="confirm-reason" className="block text-sm font-semibold text-foreground">
+              Motivo *
+            </label>
+            <Input.TextArea
+              id="confirm-reason"
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+              placeholder="Explique el motivo (mínimo 5 caracteres)..."
+              rows={3}
+            />
+            {reasonHelpText ? (
+              <p className="text-xs text-muted-foreground">{reasonHelpText}</p>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+    </Modal>
   );
 }
 

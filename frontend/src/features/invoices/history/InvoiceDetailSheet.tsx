@@ -16,6 +16,7 @@ type InvoiceDetailSheetProps = {
   loadingActionInvoiceId: number | null;
   moneyLabel: (value: string | number | null | undefined) => string;
   onDownloadInstitutionalReceipt: (invoice: Invoice) => void;
+  onAfterClose: () => void;
   onGenerateInstitutionalReceipt: (invoiceId: number) => void;
   onOpenChange: (open: boolean) => void;
   onOpenReceipt: (invoiceId: number) => void;
@@ -39,6 +40,7 @@ export function InvoiceDetailSheet({
   loadingActionInvoiceId,
   moneyLabel,
   onDownloadInstitutionalReceipt,
+  onAfterClose,
   onGenerateInstitutionalReceipt,
   onOpenChange,
   onOpenReceipt,
@@ -52,8 +54,8 @@ export function InvoiceDetailSheet({
 
   return (
     <Drawer
-      getContainer={false}
       open={open}
+      afterOpenChange={(nextOpen) => { if (!nextOpen) onAfterClose(); }}
       onClose={() => onOpenChange(false)}
       title={`Factura ${invoice?.invoice_number ?? ''}`.trim()}
       closable={false}
@@ -79,7 +81,7 @@ export function InvoiceDetailSheet({
         <Alert
           type="error"
           showIcon
-          message="No se pudo cargar el detalle"
+          title="No se pudo cargar el detalle"
           description={error}
         />
       ) : null}
@@ -143,7 +145,7 @@ export function InvoiceDetailSheet({
           {invoice.payments && invoice.payments.length > 0 ? (
             <section aria-labelledby="invoice-detail-payments">
               <h3 id="invoice-detail-payments" className="text-sm font-semibold text-foreground">Pagos y caja</h3>
-              <div className="mt-3 border border-border divide-y divide-border rounded-md">
+              <div className="mt-3 divide-y divide-border border border-border">
                 {invoice.payments.map((payment) => (
                   <div key={payment.id} className="grid gap-2 p-4 text-sm sm:grid-cols-[minmax(0,1fr)_auto] bg-muted/5">
                     <div className="min-w-0">

@@ -226,7 +226,7 @@ export function InvoiceCart({
           )}
         </Button>
         {disabledReasons.length > 0 && (
-          <Alert id="invoice-submit-blockers" type="warning" showIcon className="mt-2" message="Pendiente para emitir" description={
+          <Alert id="invoice-submit-blockers" type="warning" showIcon className="mt-2" title="Pendiente para emitir" description={
             disabledReasons.map((reason) => (
               <p key={reason} className="m-0 text-xs">{reason}</p>
             ))

@@ -6,8 +6,8 @@ Este documento registra el progreso fase por fase del refactor del frontend. Se 
 
 ## Estado General de la Campaña
 
-* **Fases Implementadas (QA Transversal Pendiente):** Fase 6 (Auth), Fase 7 (Dashboard), Fase 8 (Caja)
-* **Fases Completadas (Certificadas):** Fase 0-5, Fase 8b (Facturación/Invoices)
+* **Fases Implementadas (QA Transversal Pendiente):** Fase 6 (Auth), Fase 7 (Dashboard), Fase 8 (Caja), Fase 8b (Facturación/Invoices)
+* **Fases Completadas (Certificadas):** Fase 0-5
 * **Fases Pendientes:** 11
 
 ---
@@ -169,12 +169,27 @@ Este documento registra el progreso fase por fase del refactor del frontend. Se 
 ---
 
 ### Fase 8b: Facturación (Invoices)
-* **Estado:** COMPLETADO — CERTIFICADO (100% Tests, Typecheck, Lint & Build aprobados)
+* **Estado:** FASE 8B IMPLEMENTADA — QA TRANSVERSAL PENDIENTE
 * **Archivos Migrados/Creados:**
   * `src/features/invoices/NewInvoiceView.tsx` (y componentes `PatientStep`, `InvoiceConfirmation`, `InvoiceSuccess`)
   * `src/features/invoices/InvoiceHistoryView.tsx` (y componentes `InvoiceHistoryFilters`, `InvoiceHistoryTable`, `InvoiceDetailSheet`)
-  * `src/features/invoices/history/historyAntCompat.tsx` (componentes de compatibilidad de testing para grids y overlays)
-* **Tests:** `src/features/invoices`: 191/191 ✓ (100% de la suite de facturación verde)
+  * `src/design-system/ag-grid/InstitutionalDataGrid.tsx` (adaptador único de AG Grid con visibilidad explícita)
+  * Eliminados `flowAntCompat.tsx` y `historyAntCompat.tsx`; no sobreviven adaptadores Compat en Invoices.
+* **Tests focales:** 194/194 pruebas aprobadas en 17 archivos. La primera pasada arquitectónica expuso 30 fallos de contrato de pruebas; no se introdujeron ramas de runtime para resolverlos.
+* **Gates estáticos:** `git diff --check`, typecheck, lint y build aprobados. `check:ui-legacy` permanece rojo por 165 violaciones globales en 407 archivos; Invoices quedó sin imports legacy ni clases prohibidas.
+* **Navegador:** 5/5 pruebas Chromium aprobadas en `new-invoice-flow.spec.ts` e `invoice-history-flow.spec.ts`, con AG Grid, DatePicker, Dropdown, Drawer y Modal reales, teclado, Escape, restauración de foco y consola limpia para esos recorridos. La matriz completa de 1366x768, 1920x1080, 390x844, zoom 125 %, claro/oscuro continúa pendiente.
+* **Accesibilidad transversal:** axe se ejecutó sobre el grid con datos y bloqueó la matriz en el primer estado por infracciones serias de contraste en el shell institucional (rail, navegación, breadcrumb, estado de caja y atajo Ctrl+K). No se excluyeron nodos ni reglas; los estados restantes de axe siguen pendientes hasta corregir el shell.
+
+#### Cifras de la campaña de Facturación
+
+| Métrica | Antes | Después |
+| --- | ---: | ---: |
+| Tests completos de Invoices | 191 | 194 |
+| Fallos restantes focales | 0 aceptados, arquitectura sin validar | 0; 194/194 en repetición completa |
+| Imports legacy en Invoices | 0 | 0 |
+| Clases prohibidas en Invoices | 1 | 0 |
+| Archivos Compat nuevos | 2 acumulados en la campaña | 0 sobrevivientes |
+| Archivos Compat eliminados | 0 | 2 |
 
 ---
 
@@ -182,5 +197,3 @@ Este documento registra el progreso fase por fase del refactor del frontend. Se 
 * **Estado:** EN PROGRESO
 * **Alcance:** Catálogo, categorías, áreas y servicios (`CatalogView`, `ServiceSheet`, `CategorySheet`, etc.)
 * **Tests actuales en `src/features/catalog`:** 17/20 passed (Fallas preexistentes de jsdom/Drawer en resolución)
-
-

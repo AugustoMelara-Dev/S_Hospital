@@ -40,6 +40,13 @@ function renderHistory(initialEntry: string, user = historyUser()) {
   );
 }
 
+async function findDialogByTitle(title: RegExp) {
+  const titleElement = await screen.findByText(title);
+  const dialog = titleElement.closest<HTMLElement>('[role="dialog"]');
+  expect(dialog).not.toBeNull();
+  return dialog as HTMLElement;
+}
+
 describe('InvoiceHistoryView continuity', () => {
   afterEach(() => vi.restoreAllMocks());
 
@@ -212,7 +219,8 @@ describe('InvoiceHistoryView continuity', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: /anular factura/i }));
     fireEvent.change(await screen.findByLabelText(/motivo de anulaci/i), { target: { value: 'Registro duplicado' } });
-    fireEvent.click(screen.getByRole('button', { name: /anular factura/i }));
+    const confirmation = await findDialogByTitle(/anular factura 000-001-01-00000071/i);
+    fireEvent.click(within(confirmation).getByRole('button', { name: /anular factura/i }));
 
     await waitFor(() => expect(apiClient.voidInvoice).toHaveBeenCalled());
     expect(await screen.findByText('Anulada')).toBeInTheDocument();
@@ -229,7 +237,8 @@ describe('InvoiceHistoryView continuity', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: /reversar pago/i }));
     fireEvent.change(await screen.findByLabelText(/motivo de reversa/i), { target: { value: 'Pago aplicado a otra factura' } });
-    fireEvent.click(screen.getByRole('button', { name: /reversar factura/i }));
+    const confirmation = await findDialogByTitle(/reversar factura 000-001-01-00000071/i);
+    fireEvent.click(within(confirmation).getByRole('button', { name: /reversar factura/i }));
 
     await waitFor(() => expect(apiClient.reverseInvoice).toHaveBeenCalled());
     expect(await screen.findByText('Anulada')).toBeInTheDocument();
@@ -290,16 +299,45 @@ describe('InvoiceHistoryView continuity', () => {
     await waitFor(() => expect(screen.getByLabelText('Historial de facturas')).toHaveFocus());
   });
 
-  it('usa una presentación móvil sin ancho mínimo de escritorio ni overflow interno de celdas', async () => {
+  it.each([
+    {
+      actionName: /anular factura/i,
+      modalName: /anular factura 000-001-01-00000071/i,
+      invoice: invoiceFixture(),
+    },
+    {
+      actionName: /reversar pago/i,
+      modalName: /reversar factura 000-001-01-00000071/i,
+      invoice: invoiceFixture({ status: 'paid', paid_amount: '275.00', balance_due: '0.00' }),
+    },
+  ])('conserva detalle y factura al cancelar $actionName', async ({ actionName, modalName, invoice }) => {
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({ data: [invoice], meta: { current_page: 1, per_page: 10, total: 1 } });
+    vi.spyOn(apiClient, 'getInvoice').mockResolvedValue(invoice);
+    renderHistory('/invoices?invoice=71', historyAdministrator());
+
+    const detail = await screen.findByRole('dialog', { name: /factura 000-001-01-00000071/i });
+    const actionTrigger = within(detail).getByRole('button', { name: actionName });
+    fireEvent.click(actionTrigger);
+
+    const confirmation = await findDialogByTitle(modalName);
+    expect(detail).toBeInTheDocument();
+    expect(detail).toHaveTextContent('Ana Lopez');
+
+    fireEvent.click(within(confirmation).getByRole('button', { name: /cancelar/i }));
+
+    await waitFor(() => expect(screen.queryByText(modalName)).not.toBeInTheDocument());
+    expect(detail).toBeInTheDocument();
+    expect(screen.getByLabelText('Ubicacion actual')).toHaveTextContent('invoice=71');
+  });
+
+  it('expone el contrato semántico del grid sin afirmar clases de implementación visual', async () => {
     const invoice = invoiceFixture();
     vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({ data: [invoice], meta: { current_page: 1, per_page: 10, total: 1 } });
     renderHistory('/invoices');
 
-    const table = await screen.findByRole('table', { name: /facturas filtradas/i });
-    expect(table).toHaveClass('min-w-0');
-    expect(table).toHaveClass('md:min-w-[980px]');
-    expect(table).toHaveClass('max-md:block');
-    expect(table.className).toContain('max-md:[&_td]:min-w-0');
+    expect(await screen.findByRole('region', { name: /tabla de facturas/i })).toBeInTheDocument();
+    expect(screen.getByRole('table', { name: /facturas filtradas/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /ver detalle de la factura/i })).toBeEnabled();
   });
 });
 

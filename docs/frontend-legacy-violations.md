@@ -1,12 +1,17 @@
 # Reporte de Violaciones Legacy del Frontend — S_Hospital
 
-Este reporte agrupa las **165 violaciones de la UI antigua** (imports prohibidos y clases Tailwind decorativas obsoletas) detectadas en los 408 archivos escaneados del código fuente de `frontend/src/`.
+> Recuento verificado el 2026-07-13: `npm run check:ui-legacy` continúa fallando
+> con **165 violaciones en 407 archivos**. Facturación aporta **0 imports legacy**
+> y **0 clases prohibidas** después de eliminar su último `rounded-md`. El gate
+> transversal no está certificado.
+
+Este reporte agrupa las **165 violaciones de la UI antigua** (imports prohibidos y clases Tailwind decorativas obsoletas) detectadas en los 407 archivos escaneados del código fuente de `frontend/src/`.
 
 ---
 
 ## 1. Resumen de Violaciones y Backlog
 
-* **Total de Archivos Auditados:** 408
+* **Total de Archivos Auditados:** 407
 * **Total de Violaciones Reportadas:** 165
   * **Clases Prohibidas (`rounded-*`, `shadow-*`, `bg-gradient-*`):** 124
   * **Imports Legacy (`lucide-react`, `@radix-ui/`, `sonner`, etc.):** 41

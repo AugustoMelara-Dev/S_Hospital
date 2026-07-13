@@ -1,5 +1,6 @@
 import { act } from 'react';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { type ReactNode } from 'react';
@@ -41,7 +42,7 @@ async function openInvoiceMenu(invoiceNumber: string) {
 }
 
 async function submitReprintReason(reason: string) {
-  const dialog = await screen.findByRole('alertdialog');
+  const dialog = await screen.findByRole('dialog');
   fireEvent.change(within(dialog).getByRole('textbox', { name: /motivo/i }), { target: { value: reason } });
   fireEvent.click(within(dialog).getByRole('button', { name: /^reimprimir$/i }));
 }
@@ -92,6 +93,7 @@ describe('InvoiceHistoryView', () => {
   });
 
   it('keeps invoice identity and row actions locked while optional columns can be hidden', async () => {
+    const user = userEvent.setup();
     const invoice = invoiceFixture({
       id: 12,
       invoice_number: '000-001-01-00000012',
@@ -113,7 +115,7 @@ describe('InvoiceHistoryView', () => {
 
     const columnsButton = screen.getByRole('button', { name: /columnas/i });
     columnsButton.focus();
-    fireEvent.keyDown(columnsButton, { key: 'Enter' });
+    await user.keyboard('{Enter}');
 
     expect(screen.queryByRole('menuitem', { name: /^Factura$/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('menuitem', { name: /^Paciente$/i })).not.toBeInTheDocument();
@@ -245,12 +247,10 @@ describe('InvoiceHistoryView', () => {
       meta: { current_page: 1, per_page: 10, total: 0 },
     });
 
-    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
-
-    expect(await screen.findByText(/no hay facturas registradas/i)).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: /filtros avanzados/i }));
-    fireEvent.change(screen.getByLabelText(/desde/i), { target: { value: '2026-06-01' } });
+    renderWithQueryClient(
+      <InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />,
+      ['/invoices?date_from=2026-06-01'],
+    );
 
     await waitFor(() => expect(getInvoices).toHaveBeenLastCalledWith(expect.objectContaining({
       date_from: '2026-06-01',
@@ -724,7 +724,7 @@ describe('InvoiceHistoryView', () => {
     fireEvent.click(await screen.findByRole('menuitem', { name: /Anular factura/i }));
 
     await waitFor(() => expect(screen.getByText(/Anular factura 000-001-01-00000037/i)).toBeInTheDocument());
-    expect(within(screen.getByRole('alertdialog')).getByText(/Paciente sin nombre/i)).toBeInTheDocument();
+    expect(within(screen.getByRole('dialog')).getByText(/Paciente sin nombre/i)).toBeInTheDocument();
   });
 
   it('voids invoices with a stable idempotency key from history', async () => {
@@ -830,7 +830,7 @@ describe('InvoiceHistoryView', () => {
     await openInvoiceMenu(invoice.invoice_number);
     fireEvent.click(await screen.findByRole('menuitem', { name: /Reversar pago/i }));
     await waitFor(() => expect(screen.getByText(/Reversar factura 000-001-01-00000032/i)).toBeInTheDocument());
-    expect(within(screen.getByRole('alertdialog')).getByText(/mínimo 5 caracteres/i)).toBeInTheDocument();
+    expect(within(screen.getByRole('dialog')).getByText(/mínimo 5 caracteres/i)).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText(/motivo de reversa/i), { target: { value: 'abc' } });
     const confirmButton = screen.getByRole('button', { name: /reversar factura/i });
@@ -1306,7 +1306,7 @@ describe('InvoiceHistoryView', () => {
     expect(screen.queryByRole('menuitem', { name: /^Descargar$/i })).not.toBeInTheDocument();
     fireEvent.click(await screen.findByRole('menuitem', { name: /Reimprimir PDF/i }));
 
-    expect(await screen.findByRole('alertdialog', { name: /Reimprimir 000-001-01-00000034/i })).toBeInTheDocument();
+    expect(await screen.findByRole('dialog', { name: /Reimprimir 000-001-01-00000034/i })).toBeInTheDocument();
     expect(registerPrint).not.toHaveBeenCalled();
     expect(getPdf).not.toHaveBeenCalled();
 
@@ -1413,7 +1413,7 @@ describe('InvoiceHistoryView', () => {
     }));
     expect(getPdf).toHaveBeenCalledWith(141);
     await waitFor(() => expect(onStatus).toHaveBeenCalledWith('pdf failed'));
-    fireEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: /cancelar/i }));
+    fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: /cancelar/i }));
 
     await openInvoiceMenu(secondPaid.invoice_number);
     fireEvent.click(await screen.findByRole('menuitem', { name: /Reimprimir/i }));
@@ -1491,7 +1491,7 @@ describe('InvoiceHistoryView', () => {
     await openInvoiceMenu(paid.invoice_number);
     fireEvent.click(await screen.findByRole('menuitem', { name: /Reimprimir/i }));
 
-    const dialog = await screen.findByRole('alertdialog');
+    const dialog = await screen.findByRole('dialog');
     fireEvent.change(within(dialog).getByRole('textbox', { name: /motivo/i }), {
       target: { value: 'Copia solicitada por auditoria' },
     });

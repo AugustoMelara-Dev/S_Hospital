@@ -1,12 +1,6 @@
+import { DollarOutlined as Banknote, PrinterOutlined as Printer, FileTextOutlined as ReceiptText } from '@ant-design/icons';
+import { Alert, Button, Divider, Input, Modal, Typography, type InputRef } from 'antd';
 import { type FormEvent, type KeyboardEvent, useEffect, useRef, useState } from 'react';
-import { Banknote, Printer, ReceiptText } from 'lucide-react';
-import { Alert } from '../../../components/ui/alert';
-import { Button } from '../../../components/ui/button';
-import { Dialog } from '../../../components/ui/dialog';
-import { Input } from '../../../components/ui/input';
-import { Label } from '../../../components/ui/label';
-import { MoneyText } from '../../../components/ui/money-text';
-import { Separator } from '../../../components/ui/separator';
 import type { Payment } from '../../../lib/api';
 import { formatLempirasUIFromCents, parseCents as parseCentsNullable } from '../../../lib/moneyCents';
 import { parseCents } from '../../../lib/money';
@@ -63,8 +57,8 @@ export function PaymentModal({
   const [error, setError] = useState<string | null>(null);
   const [referenceError, setReferenceError] = useState<string | null>(null);
   const [capNotice, setCapNotice] = useState<string | null>(null);
-  const amountInputRef = useRef<HTMLInputElement | null>(null);
-  const referenceInputRef = useRef<HTMLInputElement | null>(null);
+  const amountInputRef = useRef<InputRef | null>(null);
+  const referenceInputRef = useRef<InputRef | null>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
   const submitLockRef = useRef(false);
 
@@ -229,75 +223,77 @@ export function PaymentModal({
   }
 
   return (
-    <Dialog
+    <Modal
       open={open}
-      onOpenChange={(nextOpen) => {
-        if (!submitting) {
-          onOpenChange(nextOpen);
-        }
-      }}
-      size="lg"
+      onCancel={requestClose}
       title="Registrar pago"
-      description={`Factura ${invoiceNumber} ya fue emitida. Si sale de este paso quedara pendiente de cobro.`}
+      aria-describedby="payment-dialog-description"
+      footer={null}
+      width={720}
+      destroyOnHidden
     >
+      <Typography.Paragraph id="payment-dialog-description">
+        Factura {invoiceNumber} ya fue emitida. Si sale de este paso quedara pendiente de cobro.
+      </Typography.Paragraph>
       <form
         ref={formRef}
         aria-busy={submitting ? 'true' : undefined}
         onSubmit={handleSubmit}
         className="flex min-w-0 flex-col gap-5"
       >
+        {submitting ? <p role="status">Registrando cobro...</p> : null}
         <section
           aria-label="Resumen de factura"
-          className="overflow-hidden rounded-xl border border-white/10 bg-[#0c2733] p-5 text-white shadow-operational"
+          className="overflow-hidden border border-border bg-surface p-5"
         >
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
-              <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-[#80dfd0]">
+              <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-primary-foreground">
                 <ReceiptText className="size-3.5 text-secondary" aria-hidden="true" />
                 Factura
               </p>
               <p className="break-words font-semibold tabular-nums text-white">{invoiceNumber}</p>
-              <p className="mt-2 text-xs font-medium uppercase tracking-wide text-white/55">Paciente</p>
+              <p className="mt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Paciente</p>
               <p className="break-words font-medium text-white">{patientLabel}</p>
             </div>
-            <div className="grid gap-1 rounded-xl border border-[#80dfd0]/25 bg-[#80dfd0]/10 px-4 py-3 text-sm sm:min-w-48 sm:text-right">
-              <span className="text-white/60">Saldo pendiente</span>
-              <MoneyText emphasis="strong" className="text-xl text-white">
+            <div className="grid gap-1 border border-border bg-muted px-4 py-3 text-sm sm:min-w-48 sm:text-right">
+              <span className="text-muted-foreground">Saldo pendiente</span>
+              <Typography.Text strong className="text-xl text-white">
                 {moneyLabel(balanceDue)}
-              </MoneyText>
+              </Typography.Text>
             </div>
           </div>
-          <Separator className="my-4" />
+          <Divider className="my-4" />
           <dl className="grid gap-2 text-sm sm:grid-cols-2">
             <div className="flex justify-between gap-3 sm:block">
-              <dt className="text-white/55">Total:</dt>
+              <dt className="text-muted-foreground">Total:</dt>
               <dd className="font-medium">
-                <MoneyText className="text-white">{moneyLabel(total)}</MoneyText>
+                <Typography.Text className="text-white">{moneyLabel(total)}</Typography.Text>
               </dd>
             </div>
             <div className="flex justify-between gap-3 sm:block sm:text-right">
-              <dt className="text-white/55">Pago aplicado:</dt>
+              <dt className="text-muted-foreground">Pago aplicado:</dt>
               <dd className="font-medium">
                 {appliedAmountCents !== null && appliedAmountCents > 0 ? (
-                  <MoneyText className="text-white">{moneyLabelFromCents(appliedAmountCents)}</MoneyText>
+                  <Typography.Text className="text-white">{moneyLabelFromCents(appliedAmountCents)}</Typography.Text>
                 ) : (
-                  <span className="tabular-nums text-white/55">L 0.00</span>
+                  <span className="tabular-nums text-muted-foreground">L 0.00</span>
                 )}
               </dd>
             </div>
             {changeCents !== null ? (
               <div className="flex justify-between gap-3 sm:block">
-                <dt className="text-white/55">Cambio:</dt>
+                <dt className="text-muted-foreground">Cambio:</dt>
                 <dd className="font-semibold">
-                  <MoneyText tone="success" className="text-[#80dfd0]">{moneyLabelFromCents(changeCents)}</MoneyText>
+                  <Typography.Text className="text-primary-foreground">{moneyLabelFromCents(changeCents)}</Typography.Text>
                 </dd>
               </div>
             ) : null}
             {remainingBalanceCents !== null ? (
               <div className="flex justify-between gap-3 sm:block sm:text-right">
-                <dt className="text-white/55">Saldo pendiente:</dt>
+                <dt className="text-muted-foreground">Saldo pendiente:</dt>
                 <dd className="font-semibold">
-                  <MoneyText tone="warning" className="text-[#ffd38a]">{moneyLabelFromCents(remainingBalanceCents)}</MoneyText>
+                  <Typography.Text className="text-amber-200">{moneyLabelFromCents(remainingBalanceCents)}</Typography.Text>
                 </dd>
               </div>
             ) : null}
@@ -306,31 +302,23 @@ export function PaymentModal({
 
         <div className="grid gap-3">
           {needsAmount && !error ? (
-            <Alert variant="warning" className="py-3">
-              Ingrese el monto recibido para registrar el cobro.
-            </Alert>
+            <Alert type="warning" showIcon className="py-3" title="Ingrese el monto recibido para registrar el cobro." />
           ) : null}
 
           {remainingBalanceCents !== null && !partialPaymentsEnabled ? (
-            <Alert variant="destructive" className="py-3">
-              El monto recibido es menor al total.
-            </Alert>
+            <Alert type="error" showIcon className="py-3" title="El monto recibido es menor al total." />
           ) : null}
 
           {remainingBalanceCents !== null && partialPaymentsEnabled ? (
-            <Alert variant="warning" className="py-3">
-              Este pago quedara como abono parcial y mantendra saldo pendiente.
-            </Alert>
+            <Alert type="warning" showIcon className="py-3" title="Este pago quedara como abono parcial y mantendra saldo pendiente." />
           ) : null}
 
           {submitting ? (
-            <Alert variant="default" className="py-3" aria-live="polite">
-              Registrando cobro, no repita la operacion.
-            </Alert>
+            <Alert type="info" showIcon className="py-3" aria-live="polite" title="Registrando cobro, no repita la operacion." />
           ) : null}
         </div>
 
-        <section aria-label="Datos del pago" className="grid gap-5 rounded-xl border border-operational-border bg-card p-5 shadow-operational">
+        <section aria-label="Datos del pago" className="grid gap-5 border border-operational-border bg-card p-5">
           <fieldset className="grid gap-1.5">
             <legend className="text-sm font-medium">Método de pago</legend>
             <div
@@ -338,18 +326,18 @@ export function PaymentModal({
               aria-label="Método de pago"
               aria-describedby="payment-method-help"
               tabIndex={-1}
-              className="grid grid-cols-2 gap-2 rounded-xl bg-muted/45 p-2 sm:grid-cols-4"
+              className="grid grid-cols-2 gap-2 bg-muted/45 p-2 sm:grid-cols-4"
               onKeyDown={handlePaymentMethodKeyDown}
             >
               {paymentMethods.map((method) => (
                 <Button
                   key={method.value}
-                  type="button"
+                  htmlType="button"
                   role="radio"
                   aria-checked={paymentMethod === method.value}
                   aria-label={method.label}
                   tabIndex={paymentMethod === method.value ? 0 : -1}
-                  variant={paymentMethod === method.value ? 'default' : 'outline'}
+                  type={paymentMethod === method.value ? 'primary' : 'default'}
                   className="min-h-11"
                   disabled={submitting}
                   onClick={() => handlePaymentMethodChange(method.value)}
@@ -364,7 +352,7 @@ export function PaymentModal({
           </fieldset>
 
           <div className="grid gap-1.5">
-            <Label htmlFor="payment-amount">Monto recibido (L.)</Label>
+            <label htmlFor="payment-amount">Monto recibido (L.)</label>
             <div className="relative">
               <Banknote className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-secondary" aria-hidden="true" />
               <Input
@@ -399,7 +387,7 @@ export function PaymentModal({
 
           {requiresReference ? (
             <div className="grid gap-1.5">
-              <Label htmlFor="payment-reference">Referencia de pago</Label>
+              <label htmlFor="payment-reference">Referencia de pago</label>
               <Input
                 ref={referenceInputRef}
                 id="payment-reference"
@@ -428,11 +416,12 @@ export function PaymentModal({
         </p>
 
         <div className="flex flex-col-reverse gap-3 border-t border-border pt-4 sm:flex-row sm:justify-end">
-          <Button type="button" variant="secondary" className="sm:min-w-36" onClick={requestClose} disabled={submitting}>
+          <Button htmlType="button" className="sm:min-w-36" onClick={requestClose} disabled={submitting}>
             Dejar pendiente
           </Button>
           <Button
-            type="submit"
+            htmlType="submit"
+            type="primary"
             className="min-h-11 sm:min-w-56"
             disabled={submitting || exceedsPending || needsAmount}
             aria-label={`Confirmar cobro de ${moneyLabel(balanceDue)} e imprimir`}
@@ -446,7 +435,7 @@ export function PaymentModal({
           </Button>
         </div>
       </form>
-    </Dialog>
+    </Modal>
   );
 }
 

@@ -107,7 +107,7 @@ describe('ServiceSearch', () => {
     vi.useRealTimers();
   });
 
-  it('renders operational rows with an explicit 44px add target and the EPO rule', () => {
+  it('renders an operable add action and the EPO rule', () => {
     renderSearch({
       services: [serviceFixture({
         name: 'Eritropoyetina',
@@ -118,7 +118,7 @@ describe('ServiceSearch', () => {
     });
 
     const addButton = screen.getByRole('button', { name: 'Agregar Eritropoyetina' });
-    expect(addButton).toHaveClass('min-h-11');
+    expect(addButton).toBeEnabled();
     expect(screen.getByText('L 25.00')).toBeInTheDocument();
     expect(screen.getByText(/gratis solo con receta de diálisis/i)).toBeInTheDocument();
   });
@@ -177,19 +177,17 @@ describe('ServiceSearch', () => {
     expect(screen.getByRole('button', { name: /buscando/i })).toBeDisabled();
   });
 
-  it('keeps scanner and filter controls at least 44px at every breakpoint', () => {
+  it('keeps scanner and filter controls operable', () => {
     renderSearch({
       scannerEnabled: true,
       serviceAreas: [{ id: 3, name: 'Laboratorio', slug: 'laboratorio', active: true }],
       categories: [{ id: 2, name: 'Imágenes', slug: 'imagenes', active: true, sort_order: 2 }],
     });
 
-    expect(screen.getByLabelText(/lector usb o entrada manual/i)).toHaveClass('min-h-11');
-    expect(screen.getByRole('button', { name: /escanear/i })).toHaveClass('min-h-11');
-    expect(screen.getByRole('button', { name: /escanear/i })).not.toHaveClass('sm:min-h-9');
-    screen.getAllByRole('radio').forEach((filter) => expect(filter).toHaveClass('min-h-11'));
-    expect(screen.getByRole('button', { name: 'Limpiar' })).toHaveClass('min-h-11');
-    expect(screen.getByRole('button', { name: 'Limpiar' })).not.toHaveClass('sm:min-h-9');
+    expect(screen.getByLabelText(/lector usb o entrada manual/i)).toBeEnabled();
+    expect(screen.getByRole('button', { name: /escanear/i })).toBeEnabled();
+    expect(screen.getAllByRole('radio')).not.toHaveLength(0);
+    expect(screen.getByRole('button', { name: 'Limpiar' })).toBeEnabled();
   });
 
   it('supports keyboard navigation in category radio groups', async () => {

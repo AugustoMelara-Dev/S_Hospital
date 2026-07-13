@@ -357,7 +357,7 @@ export function ServiceSearch({
         </div>
 
         {error ? (
-          <Alert type="error" showIcon message="No se pudieron cargar los servicios" description={
+          <Alert type="error" showIcon title="No se pudieron cargar los servicios" description={
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <span className="min-w-0 flex-1">{error}</span>
               {onRetry ? (

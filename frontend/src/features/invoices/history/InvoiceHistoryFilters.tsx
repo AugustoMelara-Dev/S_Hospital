@@ -54,44 +54,24 @@ export function InvoiceHistoryFilters({ filters, hasActiveFilters, loading, onCh
           <>
             <div className="flex flex-col gap-1">
               <label htmlFor="date_from" className="text-xs font-semibold text-foreground">Desde</label>
-              {import.meta.env.MODE === 'test' ? (
-                <input
-                  id="date_from"
-                  type="date"
-                  value={filters.date_from || ''}
-                  onChange={(e) => update({ date_from: e.target.value })}
-                  className="w-36 ant-input css-dev-only-do-not-override-1pi45l5"
-                />
-              ) : (
-                <DatePicker
-                  id="date_from"
-                  format="DD/MM/YYYY"
-                  value={filters.date_from ? dayjs(filters.date_from) : null}
-                  onChange={(date) => update({ date_from: date ? date.format('YYYY-MM-DD') : '' })}
-                  className="w-36"
-                />
-              )}
+              <DatePicker
+                id="date_from"
+                format="DD/MM/YYYY"
+                value={filters.date_from ? dayjs(filters.date_from) : null}
+                onChange={(date) => update({ date_from: date ? date.format('YYYY-MM-DD') : '' })}
+                className="w-36"
+              />
             </div>
 
             <div className="flex flex-col gap-1">
               <label htmlFor="date_to" className="text-xs font-semibold text-foreground">Hasta</label>
-              {import.meta.env.MODE === 'test' ? (
-                <input
-                  id="date_to"
-                  type="date"
-                  value={filters.date_to || ''}
-                  onChange={(e) => update({ date_to: e.target.value })}
-                  className="w-36 ant-input css-dev-only-do-not-override-1pi45l5"
-                />
-              ) : (
-                <DatePicker
-                  id="date_to"
-                  format="DD/MM/YYYY"
-                  value={filters.date_to ? dayjs(filters.date_to) : null}
-                  onChange={(date) => update({ date_to: date ? date.format('YYYY-MM-DD') : '' })}
-                  className="w-36"
-                />
-              )}
+              <DatePicker
+                id="date_to"
+                format="DD/MM/YYYY"
+                value={filters.date_to ? dayjs(filters.date_to) : null}
+                onChange={(date) => update({ date_to: date ? date.format('YYYY-MM-DD') : '' })}
+                className="w-36"
+              />
             </div>
 
             <div className="flex flex-col gap-1">

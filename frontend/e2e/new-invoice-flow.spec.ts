@@ -85,13 +85,17 @@ test.describe('New invoice - critical mocked e2e', () => {
     await page.goto('/billing/new');
 
     await expect(page.getByRole('heading', { level: 1, name: /nueva factura/i })).toBeVisible();
-    await expect(page.getByText(/caja #7 - abierta/i)).toBeVisible();
+    await expect(page.getByText(/caja #7.*abierta/i)).toBeVisible();
     await expect(page.getByLabel(/nombre del paciente/i)).toBeEditable();
-    await expect(page.getByRole('button', { name: /emitir y cobrar/i })).toBeDisabled();
+    await expect(page.getByRole('button', { name: /continuar a servicios/i })).toBeVisible();
+    await page.getByRole('button', { name: /continuar a servicios/i }).click();
+    await expect(page.getByRole('alert')).toContainText(/ingrese el nombre del paciente para continuar/i);
 
     await page.getByLabel(/nombre del paciente/i).fill('Maria Lopez');
+    await page.getByRole('button', { name: /continuar a servicios/i }).click();
     await page.getByLabel(/buscar por nombre/i).fill('glucosa');
     await page.getByRole('button', { name: /agregar glucosa basal/i }).click();
+    await page.getByRole('button', { name: /continuar a cuenta/i }).click();
 
     await expect(page.getByRole('list', { name: /servicios agregados/i })).toContainText('Glucosa basal');
     await expect(page.getByRole('button', { name: /^emitir y cobrar$/i })).toBeEnabled();
@@ -116,7 +120,7 @@ test.describe('New invoice - critical mocked e2e', () => {
 
     const paymentAmountInput = page.getByLabel(/monto recibido/i);
     await expect(paymentAmountInput).toHaveValue('17.25');
-    await page.getByRole('button', { name: /confirmar cobro e imprimir/i }).click();
+    await page.getByRole('button', { name: /confirmar cobro de .* e imprimir/i }).click();
 
     await expect.poll(() => paymentPayload).toEqual({
       cash_session_id: openCashSession.id,
@@ -126,7 +130,7 @@ test.describe('New invoice - critical mocked e2e', () => {
     });
     await expect.poll(() => receiptPdfRequests).toBe(1);
     await expect(page.getByRole('dialog', { name: /factura pagada/i })).toBeVisible();
-    await expect(page.getByRole('contentinfo').getByText(/REC-A-00000077/i)).toBeVisible();
+    await expect(page.getByRole('status').filter({ hasText: /REC-A-00000077/i })).toBeVisible();
   });
 
   test('keeps a completed payment recoverable when receipt issuance fails', async ({ page }) => {
@@ -145,14 +149,16 @@ test.describe('New invoice - critical mocked e2e', () => {
 
     await page.goto('/billing/new');
     await page.getByLabel(/nombre del paciente/i).fill('Maria Lopez');
+    await page.getByRole('button', { name: /continuar a servicios/i }).click();
     await page.getByLabel(/buscar por nombre/i).fill('glucosa');
     await page.getByRole('button', { name: /agregar glucosa basal/i }).click();
+    await page.getByRole('button', { name: /continuar a cuenta/i }).click();
     await page.getByRole('button', { name: /^emitir y cobrar$/i }).click();
     await page.getByRole('dialog', { name: /confirmar emisi/i })
       .getByRole('button', { name: /emitir y abrir cobro/i })
       .click();
     await page.getByRole('dialog', { name: /registrar pago/i })
-      .getByRole('button', { name: /confirmar cobro e imprimir/i })
+      .getByRole('button', { name: /confirmar cobro de .* e imprimir/i })
       .click();
 
     await expect(page.getByRole('dialog', { name: /factura pagada/i })).toBeVisible();

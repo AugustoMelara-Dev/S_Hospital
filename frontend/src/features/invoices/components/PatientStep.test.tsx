@@ -13,9 +13,9 @@ describe('PatientStep', () => {
     );
 
     expect(container.querySelector('[class*="md:grid-cols"]')).not.toBeInTheDocument();
-    expect(screen.getByText('Dato requerido').parentElement).toHaveClass('w-full');
+    expect(screen.getByText('Dato requerido')).toBeVisible();
     expect(screen.getByLabelText(/nombre del paciente/i)).toHaveAttribute('placeholder', 'Ej. Maria Lopez…');
-    expect(screen.getByText('La factura no necesita expediente clínico, identidad ni otros datos del paciente. El nombre es suficiente.')).toBeInTheDocument();
+    expect(screen.getByText(/La factura no necesita expediente clínico/)).toBeInTheDocument();
   });
 
   it('renders an accessible patient label, controlled value and backend-aligned character limit', () => {

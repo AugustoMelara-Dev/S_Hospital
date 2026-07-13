@@ -18,7 +18,7 @@ export const PatientStep = forwardRef<HTMLInputElement, PatientStepProps>(functi
 
   return (
     <section aria-labelledby="patient-step-title" className="min-w-0">
-      <Space direction="vertical" size="middle" className="w-full">
+      <Space orientation="vertical" size="middle" className="w-full">
         <header className="border-b border-border pb-4">
           <Space align="start">
             <UserOutlined aria-hidden="true" />

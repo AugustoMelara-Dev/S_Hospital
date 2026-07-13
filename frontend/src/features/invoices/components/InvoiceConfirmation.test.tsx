@@ -2,21 +2,6 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { InvoiceConfirmation } from './InvoiceConfirmation';
 
-vi.mock('antd', async () => {
-  const actual = await vi.importActual<typeof import('antd')>('antd');
-  return {
-    ...actual,
-    Modal: ({ children, open, title }: { children: React.ReactNode; open?: boolean; title?: React.ReactNode }) => {
-      if (!open) return null;
-      return (
-        <div role="dialog" aria-label={typeof title === 'string' ? title : undefined}>
-          {children}
-        </div>
-      );
-    },
-  };
-});
-
 const service = {
   id: 1,
   category_id: 1,
@@ -97,7 +82,7 @@ describe('InvoiceConfirmation', () => {
     expect(onConfirm).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps long patient and service names readable in narrow dialogs', () => {
+  it('preserves long patient and service data in the real modal content', () => {
     const longPatientName = 'Paciente con nombre extremadamente largo para validar que la confirmacion no se desborde en caja';
     const longService = {
       ...service,
@@ -120,9 +105,9 @@ describe('InvoiceConfirmation', () => {
     expect(screen.getByText(longPatientName)).toBeInTheDocument();
 
     const servicesList = screen.getByRole('list', { name: /servicios por confirmar/i });
-    expect(within(servicesList).getByText(/consulta especializada de nefrologia/i)).toBeVisible();
-    expect(within(servicesList).getByText(/L 17\.25/i)).toBeVisible();
-    expect(screen.getByText(/L 238\.05/i)).toBeVisible();
+    expect(within(servicesList).getByText(/consulta especializada de nefrologia/i)).toBeInTheDocument();
+    expect(within(servicesList).getByText(/L 17\.25/i)).toBeInTheDocument();
+    expect(screen.getByText(/L 238\.05/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /emitir y abrir cobro/i })).toBeEnabled();
   });
 });

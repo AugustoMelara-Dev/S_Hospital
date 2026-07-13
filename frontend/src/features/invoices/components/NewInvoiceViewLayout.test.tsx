@@ -61,38 +61,41 @@ describe('NewInvoiceViewLayout', () => {
     renderLayout();
 
     expect(screen.getByRole('region', { name: 'Paciente' })).toHaveAttribute('data-billing-region', 'patient');
-    expect(screen.getByRole('region', { name: 'Servicios' })).toHaveAttribute('data-billing-region', 'services');
-    expect(screen.getByRole('complementary', { name: 'Cuenta actual' })).toHaveAttribute('data-billing-region', 'ticket');
+    const servicesRegion = document.querySelector('[data-billing-region="services"]');
+    const ticketRegion = document.querySelector('[data-billing-region="ticket"]');
+    expect(servicesRegion).toHaveAttribute('aria-hidden', 'true');
+    expect(ticketRegion).toHaveAttribute('aria-hidden', 'true');
     for (const region of [
       screen.getByRole('region', { name: 'Paciente' }),
-      screen.getByRole('region', { name: 'Servicios' }),
-      screen.getByRole('complementary', { name: 'Cuenta actual' }),
+      servicesRegion,
+      ticketRegion,
     ]) {
-      expect(region).toHaveClass('focus-visible:ring-2', 'focus-visible:ring-ring');
+      expect(region).toHaveAttribute('tabindex', '-1');
     }
   });
 
-  it('usa grid de tres zonas en escritorio y secuencia móvil sin perder contenido', () => {
+  it('usa un asistente de una sola columna en escritorio y móvil', () => {
     const { container } = renderLayout();
 
-    expect(container.querySelector('[data-billing-workspace]')).toHaveClass(
-      'xl:grid-cols-[minmax(15rem,0.72fr)_minmax(24rem,1.45fr)_minmax(19rem,0.83fr)]',
-    );
-    expect(screen.getByText('Paso 1 de 3')).toBeInTheDocument();
+    expect(container.querySelector('[data-billing-workspace]')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /1 paciente/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /2 servicios/i })).toBeDisabled();
   });
 
-  it('bloquea el avance móvil sin paciente y conserva las tres regiones montadas', () => {
+  it('bloquea el avance sin paciente y mantiene el asistente en identificación', () => {
     const onPatientSubmit = vi.fn();
     const { container } = renderLayout({ onPatientSubmit });
 
     fireEvent.click(screen.getByRole('button', { name: 'Continuar a servicios' }));
 
     expect(onPatientSubmit).toHaveBeenCalledTimes(1);
-    expect(screen.getByText('Paso 1 de 3')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /1 paciente/i })).toBeEnabled();
     expect(container.querySelectorAll('[data-billing-region]')).toHaveLength(3);
+    expect(screen.getByRole('region', { name: 'Paciente' })).toHaveAttribute('aria-hidden', 'false');
+    expect(container.querySelector('[data-billing-region="services"]')).toHaveAttribute('aria-hidden', 'true');
   });
 
-  it('avanza y retrocede entre pasos móviles sin desmontar el borrador', () => {
+  it('avanza y retrocede entre etapas sin desmontar el borrador', () => {
     const { container } = renderLayout({
       state: {
         ...getInitialNewInvoiceState(null),
@@ -102,10 +105,11 @@ describe('NewInvoiceViewLayout', () => {
     });
 
     fireEvent.click(screen.getByRole('button', { name: 'Continuar a servicios' }));
-    expect(screen.getByText('Paso 2 de 3')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /2 servicios/i })).toBeEnabled();
+    expect(screen.getByRole('region', { name: 'Servicios' })).toHaveAttribute('aria-hidden', 'false');
     fireEvent.click(screen.getByRole('button', { name: 'Atrás' }));
 
-    expect(screen.getByText('Paso 1 de 3')).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Paciente' })).toHaveAttribute('aria-hidden', 'false');
     expect(container.querySelectorAll('[data-billing-region]')).toHaveLength(3);
   });
 
@@ -113,7 +117,7 @@ describe('NewInvoiceViewLayout', () => {
     renderLayout({ canOpenCash: false, onOpenCash: vi.fn() });
 
     expect(screen.queryByRole('button', { name: /abrir caja/i })).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /ir a caja/i })).toHaveAttribute('href', '/cashbox');
+    expect(screen.getByRole('button', { name: /ir a caja/i })).toBeEnabled();
     expect(screen.getByText(/solicite apertura a un usuario autorizado/i)).toBeInTheDocument();
   });
 
@@ -134,7 +138,7 @@ describe('NewInvoiceViewLayout', () => {
     expect(screen.getAllByText(/total estimado/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText('L 138.00').length).toBeGreaterThan(0);
 
-    const buttons = screen.getAllByRole('button', { name: /emitir y cobrar/i });
+    const buttons = screen.getAllByRole('button', { name: /emitir y cobrar/i, hidden: true });
     expect(buttons.length).toBeGreaterThan(0);
     const billingAction = buttons[0];
     expect(billingAction).toBeEnabled();
