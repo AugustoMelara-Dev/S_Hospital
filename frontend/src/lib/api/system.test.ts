@@ -37,5 +37,18 @@ describe('system api client', () => {
     expect(mockedRequest).toHaveBeenCalledWith(
       '/api/system/audit-logs?action=invoice.void&user_id=7&from=2026-06-01&to=2026-06-30&page=2&per_page=25',
     );
+
+    const requestedPath = mockedRequest.mock.calls[0]?.[0];
+    expect(requestedPath).toMatch(/^\/api\/system\/audit-logs\?/);
+    expect(requestedPath).not.toMatch(/Ã|áction/);
+    const requestedUrl = new URL(requestedPath, 'http://hospital.local');
+    expect(Object.fromEntries(requestedUrl.searchParams)).toEqual({
+      action: 'invoice.void',
+      user_id: '7',
+      from: '2026-06-01',
+      to: '2026-06-30',
+      page: '2',
+      per_page: '25',
+    });
   });
 });

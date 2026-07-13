@@ -45,7 +45,10 @@ describe('institutional receipt paper policy', () => {
   });
 
   it('aligns Carta preview and print CSS with the horizontal backend profile', () => {
-    const styles = readFileSync(resolve(process.cwd(), 'src/styles.css'), 'utf8');
+    const styles = readFileSync(
+      resolve(process.cwd(), 'src/printing/styles/receipt-print.css'),
+      'utf8',
+    );
 
     expect(paperChoiceFor('letter').aspectRatio).toBe('11 / 8.5');
     expect(styles).toMatch(
