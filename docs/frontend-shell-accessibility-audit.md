@@ -89,12 +89,12 @@ npx vitest run src/features/onboarding/GuidedTour.test.tsx \
 
 PLAYWRIGHT_EXTERNAL_SERVER=1 npx playwright test e2e/accessibility.spec.ts \
   --project=chromium -g "institutional shell reports|all supported branding|real shell overlays|mobile navigation"
-4/4 passed en 1.2 min
+4/4 passed en 1.4 min
 ```
 
-Cobertura Playwright: teal/blue/green/indigo/rose/branding inválido × claro/oscuro; sidebar expandido/colapsado; navegación móvil; UserMenu; Command Palette; GuidedTour; Tooltip; PageHeader y breadcrumbs de Dashboard; teclado; foco visible; Escape; 390×844; 1366×768; 1920×1080; zoom CSS 125 %; axe normal y con overlays abiertos.
+Cobertura Playwright: teal/blue/green/indigo/rose/branding inválido × claro/oscuro; sidebar expandido/colapsado; navegación móvil; UserMenu; Command Palette; GuidedTour; Tooltip; PageHeader y breadcrumbs de Dashboard; teclado; foco visible; Escape; 390×844; 1366×768; 1920×1080; zoom CSS 125 %; axe normal y con overlays abiertos. La corrida adjunta screenshots de teal claro/oscuro, los tres viewports y el Drawer móvil abierto al reporte Playwright.
 
 Resultado axe antes: 25 nodos `color-contrast` en la corrida base, más cuatro combinaciones de tema descubiertas en la matriz.
 Resultado axe después: 0 violaciones de contraste y 0 violaciones serious/critical en los estados shell cubiertos.
 
-La certificación transversal sigue pendiente hasta completar suite global, consola, screenshots persistidos y el gate legacy endurecido.
+La certificación transversal sigue pendiente hasta completar suite global, consola y el gate legacy endurecido.

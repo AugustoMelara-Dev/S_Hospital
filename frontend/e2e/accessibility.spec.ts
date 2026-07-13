@@ -167,6 +167,136 @@ const routeExpectations = [
 ] as const;
 
 test.describe('Accessibility - critical mocked e2e (WCAG AA)', () => {
+  test('institutional shell reports no color contrast violations', async ({ page }) => {
+    await installAccessibilityMocks(page, { authenticated: true });
+    await page.goto('/dashboard');
+    await waitForScreen(page, /continuar operaci.n/i);
+
+    await expect(await shellContrastViolations(page), 'institutional shell contrast details').toEqual([]);
+  });
+
+  test('all supported branding themes keep the shell contrast-safe', async ({ page }, testInfo) => {
+    await installAccessibilityMocks(page, { authenticated: true });
+    await page.goto('/dashboard');
+
+    for (const color of ['teal', 'blue', 'green', 'indigo', 'rose', 'invalid-low-contrast']) {
+      for (const mode of ['light', 'dark']) {
+        await page.evaluate(({ color, mode }) => {
+          localStorage.setItem('hospital-billing-color-theme', color);
+          localStorage.setItem('hospital-billing-theme', mode);
+        }, { color, mode });
+        await page.reload();
+        await waitForScreen(page, /continuar operaci.n/i);
+        await expect(
+          await shellContrastViolations(page),
+          `${color} ${mode} shell contrast details`,
+        ).toEqual([]);
+        if (color === 'teal') {
+          await testInfo.attach(`shell-teal-${mode}`, {
+            body: await page.screenshot({ fullPage: true }),
+            contentType: 'image/png',
+          });
+        }
+      }
+    }
+  });
+
+  test('real shell overlays remain accessible, flat and keyboard operable', async ({ page }) => {
+    await installAccessibilityMocks(page, { authenticated: true });
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await page.goto('/dashboard');
+    await waitForScreen(page, /continuar operaci.n/i);
+
+    const rail = page.locator('[data-testid="institutional-rail"], [data-testid="clinical-rail"]');
+    await expect(rail).toHaveAttribute('data-collapsed', 'false');
+    await expectFlatSurface(rail);
+
+    await page.keyboard.press('Tab');
+    const focusedFromKeyboard = page.locator(':focus');
+    await expect(focusedFromKeyboard).toBeVisible();
+    await expect.poll(async () => focusedFromKeyboard.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return style.outlineStyle !== 'none' || style.boxShadow !== 'none';
+    }), { message: 'keyboard focus must have a visible outline or ring' }).toBe(true);
+
+    const collapseButton = page.getByRole('button', { name: 'Reducir navegación' });
+    await collapseButton.click();
+    await expect(rail).toHaveAttribute('data-collapsed', 'true');
+    await expect(await seriousShellAxeViolations(page), 'collapsed rail axe').toEqual([]);
+
+    const userMenuButton = page.getByRole('button', { name: 'Abrir menu de usuario' });
+    await userMenuButton.click();
+    const userMenu = page.getByRole('menu');
+    await expect(userMenu).toBeVisible();
+    await expectFlatSurface(page.locator('.ant-dropdown'));
+    await expect(await seriousShellAxeViolations(page), 'user menu axe').toEqual([]);
+    await page.keyboard.press('Escape');
+    await expect(userMenuButton).toBeFocused();
+
+    const commandButton = page.getByRole('button', { name: 'Abrir comandos' });
+    await commandButton.click();
+    const commandDialog = page.getByRole('dialog', { name: 'Comandos' });
+    await expect(commandDialog).toBeVisible();
+    await expectFlatSurface(commandDialog);
+    await expect(await seriousShellAxeViolations(page), 'command palette axe').toEqual([]);
+    await page.keyboard.press('Escape');
+    await expect(commandButton).toBeFocused();
+
+    const shortcutsButton = page.getByRole('button', { name: /atajos de teclado/i });
+    await shortcutsButton.hover();
+    const tooltip = page.getByRole('tooltip', { name: /atajos/i });
+    await expect(tooltip).toBeVisible();
+    await expectFlatSurface(tooltip);
+    await page.keyboard.press('Escape');
+
+    const helpButton = page.getByRole('button', { name: /abrir ayuda/i });
+    await helpButton.click();
+    const guideDialog = page.getByRole('dialog', { name: /gu.a r.pida del sistema/i });
+    await expect(guideDialog).toBeVisible();
+    await expectFlatSurface(guideDialog);
+    await expectFlatSurface(page.getByTestId('guided-tour-step'));
+    await expect(await seriousShellAxeViolations(page), 'guided tour axe').toEqual([]);
+    await page.keyboard.press('Escape');
+    await expect(helpButton).toBeFocused();
+  });
+
+  test('mobile navigation and responsive zoom keep the shell usable', async ({ page }, testInfo) => {
+    await installAccessibilityMocks(page, { authenticated: true });
+
+    for (const viewport of [
+      { width: 390, height: 844, zoom: 1 },
+      { width: 1366, height: 768, zoom: 1.25 },
+      { width: 1920, height: 1080, zoom: 1 },
+    ]) {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.goto('/dashboard');
+      await waitForScreen(page, /continuar operaci.n/i);
+      await page.evaluate((zoom) => { document.documentElement.style.zoom = String(zoom); }, viewport.zoom);
+
+      await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+      await expect(await seriousShellAxeViolations(page), `${viewport.width}x${viewport.height} axe`).toEqual([]);
+      await testInfo.attach(`shell-${viewport.width}x${viewport.height}-zoom-${viewport.zoom}`, {
+        body: await page.screenshot({ fullPage: true }),
+        contentType: 'image/png',
+      });
+
+      if (viewport.width === 390) {
+        const moreButton = page.getByRole('button', { name: 'Más destinos' });
+        await moreButton.click();
+        const drawer = page.getByRole('dialog', { name: 'Más destinos' });
+        await expect(drawer).toBeVisible();
+        await expectFlatSurface(drawer);
+        await expect(await seriousShellAxeViolations(page), 'mobile navigation open axe').toEqual([]);
+        await testInfo.attach('shell-mobile-navigation-open', {
+          body: await page.screenshot({ fullPage: true }),
+          contentType: 'image/png',
+        });
+        await page.keyboard.press('Escape');
+        await expect(moreButton).toBeFocused();
+      }
+    }
+  });
+
   test('login page exposes a single h1, labeled controls and no serious axe issues', async ({ page }) => {
     await installAccessibilityMocks(page, { authenticated: false });
 
@@ -196,6 +326,71 @@ test.describe('Accessibility - critical mocked e2e (WCAG AA)', () => {
     }
   });
 });
+
+async function shellContrastViolations(page: Page) {
+  await page.addScriptTag({ content: axeCore.source });
+  return page.evaluate(async () => {
+    const result = await window.axe.run(document, {
+      runOnly: { type: 'rule', values: ['color-contrast'] },
+    });
+
+    return result.violations.flatMap((violation) => violation.nodes.map((node) => {
+      const element = document.querySelector(node.target.join(' '));
+      const style = element ? window.getComputedStyle(element) : null;
+      return {
+        selector: node.target,
+        html: node.html,
+        foreground: style?.color ?? null,
+        background: style?.backgroundColor ?? null,
+        failure: node.failureSummary,
+      };
+    }));
+  });
+}
+
+async function seriousShellAxeViolations(page: Page) {
+  await page.addScriptTag({ content: axeCore.source });
+  return page.evaluate(async () => {
+    const result = await window.axe.run(document, {
+      runOnly: {
+        type: 'tag',
+        values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'],
+      },
+    });
+    return result.violations
+      .filter((violation) => ['critical', 'serious'].includes(String(violation.impact)))
+      .map((violation) => ({
+        id: violation.id,
+        impact: violation.impact,
+        help: violation.help,
+        nodes: violation.nodes.slice(0, 5).map((node) => ({ target: node.target, failure: node.failureSummary })),
+      }));
+  });
+}
+
+async function expectFlatSurface(locator: ReturnType<Page['locator']>) {
+  await expect(locator).toBeVisible();
+  const style = await locator.evaluate((element) => {
+    const computed = window.getComputedStyle(element);
+    return {
+      borderTopLeftRadius: computed.borderTopLeftRadius,
+      borderTopRightRadius: computed.borderTopRightRadius,
+      borderBottomLeftRadius: computed.borderBottomLeftRadius,
+      borderBottomRightRadius: computed.borderBottomRightRadius,
+      hasVisibleBoxShadow: computed.boxShadow !== 'none'
+        && !computed.boxShadow.split(/,\s*(?=rgba\()/).every((shadow) => /rgba\([^)]+,\s*0\)\s/.test(shadow)),
+      backgroundImage: computed.backgroundImage,
+    };
+  });
+  expect(style).toEqual({
+    borderTopLeftRadius: '0px',
+    borderTopRightRadius: '0px',
+    borderBottomLeftRadius: '0px',
+    borderBottomRightRadius: '0px',
+    hasVisibleBoxShadow: false,
+    backgroundImage: 'none',
+  });
+}
 
 async function installAccessibilityMocks(page: Page, options: { authenticated: boolean }) {
   let authenticated = options.authenticated;
