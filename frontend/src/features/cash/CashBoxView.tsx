@@ -1,9 +1,6 @@
-import { type FormEvent, useEffect, useRef, useState } from 'react';
-import { AlertTriangle } from 'lucide-react';
-import { Alert } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { EmptyState, ErrorState, LoadingState } from '@/components/ui/states';
+import { type FormEvent, type ReactNode, useEffect, useRef, useState } from 'react';
+import { WarningOutlined } from '@ant-design/icons';
+import { Alert as AntAlert, Button as AntButton, Empty, Modal, Result, Spin } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type CashSession, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { payloadScopedIdempotencyKey, resetPayloadScopedIdempotencyKey } from '@/lib/api/idempotency';
@@ -38,6 +35,20 @@ function centsToFloat(cents: number): number {
   return toFloat(cents);
 }
 
+function Button({ children, disabled, onClick, type = 'button', variant }: { children: ReactNode; disabled?: boolean; onClick?: () => void; type?: 'button' | 'submit'; variant?: string }) {
+  return <AntButton htmlType={type} type={variant === 'secondary' ? 'default' : 'primary'} disabled={disabled} onClick={onClick}>{children}</AntButton>;
+}
+function Alert({ children, icon, title, variant }: { children?: ReactNode; icon?: ReactNode; title?: string; variant?: string }) {
+  const type = variant === 'destructive' ? 'error' : variant === 'success' ? 'success' : variant === 'warning' ? 'warning' : 'info';
+  return <AntAlert type={type} showIcon icon={icon} message={title} description={children} />;
+}
+function LoadingState({ label }: { label: string }) { return <div role="status" aria-label={label} className="p-8 text-center"><Spin /><p>{label}</p></div>; }
+function EmptyState({ description, title }: { description: string; title: string }) { return <Empty description={<><strong>{title}</strong><br />{description}</>} />; }
+function ErrorState({ action, description, title }: { action?: ReactNode; description: string; title: string }) { return <Result status="error" title={title} subTitle={description} extra={action} />; }
+function ConfirmDialog({ cancelDisabled, children, confirmDisabled, confirmLabel, onCancel, onConfirm, open, title }: { cancelDisabled?: boolean; children: ReactNode; confirmDisabled?: boolean; confirmLabel: string; onCancel: () => void; onConfirm: () => void; open: boolean; title: string }) {
+  return <Modal open={open} title={title} onCancel={onCancel} confirmLoading={confirmDisabled} cancelButtonProps={{ disabled: cancelDisabled }} okButtonProps={{ disabled: confirmDisabled }} okText={confirmLabel} onOk={onConfirm}>{children}</Modal>;
+}
+
 export function CashBoxView({
   cashSession = null,
   canCloseAnyCash = false,
@@ -46,7 +57,7 @@ export function CashBoxView({
   canOpenCash = true,
   canViewInvoices = false,
   canViewCashSessionReport = false,
-  compact = false,
+  compact: _compact = false,
   currentUserId,
   onStatus,
   onSessionChange,
@@ -285,7 +296,7 @@ export function CashBoxView({
   const isPOSBlocked = !isOpen;
 
   return (
-    <section id="caja" className={compact ? 'flex flex-col gap-4' : 'cash-layout'} aria-label="Caja">
+    <section id="caja" className={'grid gap-6'} aria-label="Caja">
       <div className="flex flex-col gap-6">
         <CashSessionHeader
           canCloseAnyCash={canCloseAnyCash}
@@ -333,7 +344,7 @@ export function CashBoxView({
         ) : null}
 
         {canRenderOperationalState && isPOSBlocked ? (
-          <Alert variant="warning" icon={<AlertTriangle data-icon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />}>
+          <Alert variant="warning" icon={<WarningOutlined aria-hidden="true" />}>
             <div>
               <strong>Pagos bloqueados.</strong> Abra caja antes de emitir y cobrar facturas.
             </div>
@@ -474,7 +485,7 @@ export function CashBoxView({
           <p>
             Revise el efectivo fisico antes de iniciar el turno. Esta apertura quedara auditada.
           </p>
-          <div className="flex justify-between gap-4 rounded-md border border-border bg-muted/35 p-3 text-sm">
+          <div className="flex justify-between gap-4 border border-border bg-muted/40 p-4 text-sm">
             <span>Monto inicial</span>
             <strong>{formatLempirasUI(pendingOpening?.opening_amount ?? '0.00')}</strong>
           </div>

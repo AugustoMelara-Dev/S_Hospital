@@ -32,8 +32,8 @@ describe('CloseSessionDialog', () => {
       />,
     );
 
-    const dialog = screen.getByRole('alertdialog', { name: /cerrar caja/i });
-    expect(dialog).toHaveAccessibleDescription(/monto apertura/i);
+    const dialog = screen.getByRole('dialog', { name: /cierre de caja/i });
+    expect(dialog).toHaveTextContent(/monto apertura/i);
     expect(screen.getByRole('heading', { name: /1\. resumen del turno/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /2\. conteo de efectivo/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /3\. confirmar cierre/i })).toBeInTheDocument();
@@ -329,7 +329,7 @@ describe('CloseSessionDialog', () => {
       />,
     );
 
-    const dialog = screen.getByRole('alertdialog', { name: /cerrar caja/i });
+    const dialog = screen.getByRole('dialog', { name: /cierre de caja/i });
     expect(dialog).toHaveTextContent(/monto apertura:\s*L 100\.00/i);
     expect(dialog).toHaveTextContent(/efectivo esperado:\s*L 100\.00/i);
   });

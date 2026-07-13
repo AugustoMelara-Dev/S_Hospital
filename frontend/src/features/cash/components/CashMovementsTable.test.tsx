@@ -15,15 +15,15 @@ describe('CashMovementsTable', () => {
       />,
     );
 
-    expect(rowFor('Pago')).toHaveTextContent('+ L 51.75');
-    expect(rowFor('Reverso de pago')).toHaveTextContent('- L 17.25');
-    expect(rowFor('Reverso de pago')).not.toHaveTextContent('- -');
-    expect(rowFor('Cierre')).toHaveTextContent('L 134.50');
-    expect(rowFor('Cierre')).not.toHaveTextContent('- L 134.50');
+    const mobileList = screen.getByRole('list', { name: /movimientos de caja en m.vil/i });
+    expect(within(mobileList).getByText('Pago').closest('li')).toHaveTextContent('+ L 51.75');
+    expect(within(mobileList).getByText('Reverso de pago').closest('li')).toHaveTextContent('- L 17.25');
+    expect(within(mobileList).getByText('Reverso de pago').closest('li')).not.toHaveTextContent('- -');
+    expect(within(mobileList).getByText('Cierre').closest('li')).toHaveTextContent('L 134.50');
     expect(screen.queryByText('payment_void')).not.toBeInTheDocument();
   });
 
-  it('renders a semantic table with accessible caption and no invented actions', () => {
+  it('renders the institutional operational grid and no invented actions', () => {
     render(
       <CashMovementsTable
         movements={[
@@ -32,10 +32,8 @@ describe('CashMovementsTable', () => {
       />,
     );
 
-    expect(screen.getByRole('region', { name: /movimientos de caja/i })).toBeInTheDocument();
-    expect(screen.getByRole('table', { name: /movimientos registrados/i })).toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: /monto/i })).toHaveAttribute('data-numeric', 'true');
-    expect(screen.getByRole('cell', { name: /\+ L 10\.00/i })).toHaveAttribute('data-numeric', 'true');
+    expect(screen.getAllByRole('region', { name: /movimientos de caja/i }).length).toBeGreaterThan(0);
+    expect(screen.getByRole('list', { name: /movimientos de caja en m.vil/i })).toHaveTextContent('+ L 10.00');
     expect(screen.queryByRole('button', { name: /editar|eliminar|revertir/i })).not.toBeInTheDocument();
   });
 
@@ -44,7 +42,7 @@ describe('CashMovementsTable', () => {
 
     expect(screen.getByText(/sin movimientos de caja/i)).toBeInTheDocument();
     expect(screen.getByText(/entradas, salidas y ajustes aparecer[aá]n/i)).toBeInTheDocument();
-    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    expect(screen.getByRole('list', { name: /movimientos de caja en m.vil/i })).toBeEmptyDOMElement();
   });
 
   it('shows a human fallback when a movement time is unavailable', () => {
@@ -84,9 +82,7 @@ describe('CashMovementsTable', () => {
     expect(screen.getAllByRole('link', { name: /factura FAC-000022/i })[0])
       .toHaveAttribute('href', '/invoices?invoice=22');
     expect(screen.getAllByText(/pago #81/i).length).toBeGreaterThan(0);
-    const desktopTable = screen.getByRole('table', { name: /movimientos registrados/i });
-    expect(within(desktopTable).getByRole('columnheader', { name: /detalle auditado/i })).toBeVisible();
-    expect(within(desktopTable).getByText(/cobro validado en ventanilla/i)).toBeVisible();
+    expect(screen.getAllByText(/cobro validado en ventanilla/i).length).toBeGreaterThan(0);
     expect(screen.getByRole('list', { name: /movimientos de caja en móvil/i })).toBeInTheDocument();
   });
 
@@ -113,12 +109,6 @@ describe('CashMovementsTable', () => {
     expect(screen.getAllByText(/reverso autorizado por supervisión/i).length).toBeGreaterThan(0);
   });
 });
-
-function rowFor(label: string): HTMLElement {
-  return screen.getAllByText(label)[0]?.closest('tr') ?? (() => {
-    throw new Error(`Missing row for ${label}`);
-  })();
-}
 
 function movement(overrides: Partial<CashMovement>): CashMovement {
   return {

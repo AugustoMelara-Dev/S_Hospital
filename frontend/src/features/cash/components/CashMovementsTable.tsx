@@ -1,233 +1,62 @@
-import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Badge } from '@/components/ui/badge';
-import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
+import { Tag } from 'antd';
+import type { InstitutionalColumn } from '@/design-system/ag-grid/InstitutionalDataGrid';
+import { InstitutionalDataGrid } from '@/design-system/ag-grid/InstitutionalDataGrid';
 import { finiteNumber, formatLempirasUI } from '@/lib/money';
-import { cn } from '@/lib/utils';
 
 export type CashMovement = {
-  id: number;
-  cash_session_id: number;
-  payment_id: number | null;
-  invoice_id?: number | null;
-  invoice_number?: string | null;
-  user_id: number;
-  type: string;
-  method: string | null;
-  amount: string;
-  notes: string | null;
-  occurred_at: string;
+  id: number; cash_session_id: number; payment_id: number | null; invoice_id?: number | null;
+  invoice_number?: string | null; user_id: number; type: string; method: string | null;
+  amount: string; notes: string | null; occurred_at: string;
 };
 
-interface CashMovementsTableProps {
-  canViewInvoices?: boolean;
-  movements: CashMovement[];
-}
-
-const movementColumns: Array<DataTableColumn<CashMovement>> = [
-  {
-    key: 'occurred_at',
-    header: 'Hora',
-    cellClassName: 'whitespace-nowrap font-medium tabular-nums',
-    render: (movement) => formatMovementTime(movement.occurred_at),
-  },
-  {
-    key: 'type',
-    header: 'Tipo',
-    render: (movement) => {
-      const direction = movementDirection(movement.type);
-      return <Badge variant={movementBadgeVariant(direction)}>{movementLabel(movement.type)}</Badge>;
-    },
-  },
-  {
-    key: 'reference',
-    header: 'Referencia',
-    render: (movement) => <MovementReference canViewInvoices={false} movement={movement} />,
-  },
-  {
-    key: 'method',
-    header: 'Método',
-    render: (movement) => methodLabel(movement.method),
-  },
-  {
-    key: 'notes',
-    header: 'Detalle auditado',
-    render: (movement) => movement.notes
-      ? <span className="text-sm text-foreground">{movement.notes}</span>
-      : <span className="text-sm text-muted-foreground">Sin nota registrada</span>,
-  },
-  {
-    key: 'amount',
-    header: 'Monto',
-    numeric: true,
-    cellClassName: 'text-base font-semibold',
-    render: (movement) => <MovementAmount movement={movement} />,
-  },
-];
+interface CashMovementsTableProps { canViewInvoices?: boolean; movements: CashMovement[] }
 
 export function CashMovementsTable({ canViewInvoices = false, movements }: CashMovementsTableProps) {
-  const columns = useMemo(() => movementColumns.map((column) => column.key === 'reference'
-    ? { ...column, render: (movement: CashMovement) => <MovementReference canViewInvoices={canViewInvoices} movement={movement} /> }
-    : column), [canViewInvoices]);
+  const columns: InstitutionalColumn<CashMovement>[] = [
+    { field: 'occurred_at', headerName: 'Hora', valueFormatter: ({ value }) => formatMovementTime(String(value)) },
+    { field: 'type', headerName: 'Tipo', valueFormatter: ({ value }) => movementLabel(String(value)) },
+    { headerName: 'Referencia', valueGetter: ({ data }) => referenceText(data), flex: 1 },
+    { field: 'method', headerName: 'Método', valueFormatter: ({ value }) => methodLabel(value == null ? null : String(value)) },
+    { field: 'notes', headerName: 'Detalle auditado', flex: 1, valueFormatter: ({ value }) => value ? String(value) : 'Sin nota registrada' },
+    { field: 'amount', headerName: 'Monto', type: 'numericColumn', valueFormatter: ({ data }) => data ? movementAmount(data) : '' },
+  ];
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-operational-border bg-operational-surface shadow-operational">
-      <div className="border-b border-border bg-muted/35 px-5 py-4">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Trazabilidad</p>
-        <h2 id="cash-movements-title" className="mt-1 text-lg font-semibold leading-tight">
-          Movimientos de caja
-        </h2>
-        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Cada movimiento conserva su hora, método y referencia de pago o factura.
-        </p>
+    <section className="border border-border bg-background" aria-labelledby="cash-movements-title">
+      <header className="border-b border-border p-5">
+        <h2 id="cash-movements-title" className="text-lg font-semibold">Movimientos de caja</h2>
+        <p className="text-sm text-muted-foreground">Cada movimiento conserva su hora, método y referencia de pago o factura.</p>
+      </header>
+      <div className="hidden p-4 md:block">
+        <InstitutionalDataGrid ariaLabel="Movimientos de caja" columns={columns} rows={movements} getRowId={(row) => String(row.id)} emptyMessage="Sin movimientos de caja" density="compact" height={360} />
       </div>
-
-      <div className="p-4 sm:p-5">
-      {movements.length === 0 ? (
-        <DataTable
-          caption="Movimientos registrados para la sesión de caja actual."
-          columns={columns}
-          containerLabel="Movimientos de caja"
-          emptyDescription="Entradas, salidas y ajustes aparecerán cuando la sesión tenga actividad."
-          emptyTitle="Sin movimientos de caja"
-          getRowKey={(movement) => movement.id}
-          rows={movements}
-        />
-      ) : (
-        <>
-          <div className="hidden md:block">
-            <DataTable
-              caption="Movimientos registrados para la sesión de caja actual."
-              columns={columns}
-              containerLabel="Movimientos de caja"
-              getRowKey={(movement) => movement.id}
-              rows={movements}
-              tableClassName="min-w-[800px]"
-            />
-          </div>
-
-          <ol className="space-y-2 md:hidden" aria-label="Movimientos de caja en móvil">
-            {movements.map((movement) => {
-              const direction = movementDirection(movement.type);
-              return (
-                <li key={movement.id} className="grid gap-3 rounded-xl border border-border bg-card px-4 py-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex min-w-0 flex-col gap-1">
-                      <Badge className="w-fit" variant={movementBadgeVariant(direction)}>{movementLabel(movement.type)}</Badge>
-                      <span className="text-xs text-muted-foreground">{formatMovementTime(movement.occurred_at)} · {methodLabel(movement.method)}</span>
-                    </div>
-                    <MovementAmount movement={movement} />
-                  </div>
-                  <MovementReference canViewInvoices={canViewInvoices} movement={movement} />
-                  {movement.notes ? <p className="text-xs leading-relaxed text-muted-foreground">{movement.notes}</p> : null}
-                </li>
-              );
-            })}
-          </ol>
-        </>
-      )}
-      </div>
+      <ol className="md:hidden" aria-label="Movimientos de caja en móvil">
+        {movements.map((movement) => (
+          <li key={movement.id} className="block border-b border-border p-4">
+            <div className="flex justify-between gap-3">
+              <div><Tag color={movementColor(movement.type)}>{movementLabel(movement.type)}</Tag><p className="text-xs text-muted-foreground">{formatMovementTime(movement.occurred_at)} · {methodLabel(movement.method)}</p></div>
+              <strong className="tabular-nums">{movementAmount(movement)}</strong>
+            </div>
+            <div className="mt-2"><MovementReference canViewInvoices={canViewInvoices} movement={movement} /></div>
+            {movement.notes ? <p className="mt-2 text-xs text-muted-foreground">{movement.notes}</p> : null}
+          </li>
+        ))}
+      </ol>
+      {movements.length === 0 ? <p className="sr-only">Entradas, salidas y ajustes aparecerán cuando la sesión tenga actividad.</p> : null}
     </section>
   );
 }
 
-function MovementReference({
-  canViewInvoices,
-  movement,
-}: {
-  canViewInvoices: boolean;
-  movement: CashMovement;
-}) {
+function MovementReference({ canViewInvoices, movement }: { canViewInvoices: boolean; movement: CashMovement }) {
   const invoiceLabel = movement.invoice_number ?? (movement.invoice_id ? `#${movement.invoice_id}` : null);
-
-  if (!movement.payment_id && !movement.invoice_id) {
-    return <span className="text-sm text-muted-foreground">Movimiento #{movement.id}</span>;
-  }
-
-  return (
-    <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-      {movement.invoice_id && canViewInvoices ? (
-        <Link
-          className="min-h-11 content-center font-medium text-hospital-primary underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:min-h-0"
-          to={`/invoices?invoice=${movement.invoice_id}`}
-        >
-          Factura {invoiceLabel}
-        </Link>
-      ) : movement.invoice_id ? (
-        <span className="font-medium text-foreground">Factura {invoiceLabel}</span>
-      ) : null}
-      {movement.payment_id ? <span className="text-muted-foreground">Pago #{movement.payment_id}</span> : null}
-    </span>
-  );
+  if (!movement.payment_id && !movement.invoice_id) return <span>Movimiento #{movement.id}</span>;
+  return <span>{movement.invoice_id && canViewInvoices ? <Link to={`/invoices?invoice=${movement.invoice_id}`}>Factura {invoiceLabel}</Link> : movement.invoice_id ? `Factura ${invoiceLabel}` : null}{movement.payment_id ? ` Pago #${movement.payment_id}` : null}</span>;
 }
-
-function MovementAmount({ movement }: { movement: CashMovement }) {
-  const direction = movementDirection(movement.type);
-  const sign = direction === 'positive' ? '+' : direction === 'negative' ? '-' : '';
-  const amount = direction === 'neutral'
-    ? formatLempirasUI(movement.amount)
-    : formatLempirasUI(Math.abs(finiteNumber(movement.amount)));
-
-  return (
-    <span
-      className={cn(
-        'whitespace-nowrap font-semibold tabular-nums',
-        direction === 'positive' && 'text-success-foreground',
-        direction === 'negative' && 'text-destructive',
-        direction === 'neutral' && 'text-muted-foreground',
-      )}
-    >
-      {sign ? `${sign} ` : ''}{amount}
-    </span>
-  );
-}
-
-function movementDirection(type: string): 'positive' | 'negative' | 'neutral' {
-  if (['income', 'opening', 'payment', 'cash_in'].includes(type)) return 'positive';
-  if (['expense', 'payment_void', 'cash_out', 'refund', 'void'].includes(type)) return 'negative';
-  return 'neutral';
-}
-
-function movementBadgeVariant(direction: 'positive' | 'negative' | 'neutral'): 'success' | 'destructive' | 'secondary' {
-  if (direction === 'positive') return 'success';
-  if (direction === 'negative') return 'destructive';
-  return 'secondary';
-}
-
-function movementLabel(type: string): string {
-  const labels: Record<string, string> = {
-    cash_in: 'Entrada',
-    cash_out: 'Salida',
-    closing: 'Cierre',
-    expense: 'Egreso',
-    income: 'Ingreso',
-    opening: 'Apertura',
-    payment: 'Pago',
-    payment_void: 'Reverso de pago',
-    refund: 'Devolución',
-    void: 'Anulación',
-  };
-  return labels[type] ?? 'Movimiento';
-}
-
-function methodLabel(method: string | null): string {
-  const labels: Record<string, string> = {
-    card: 'Tarjeta',
-    cash: 'Efectivo',
-    closing: 'Cierre',
-    other: 'Otro',
-    transfer: 'Transferencia',
-  };
-  return method ? labels[method] ?? method : 'Sin método';
-}
-
-function formatMovementTime(value: string): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'Hora no disponible';
-
-  return new Intl.DateTimeFormat('es-HN', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  }).format(date);
-}
+function referenceText(movement?: CashMovement) { return movement ? `${movement.invoice_id ? `Factura ${movement.invoice_number ?? `#${movement.invoice_id}`}` : ''}${movement.payment_id ? ` Pago #${movement.payment_id}` : ''}`.trim() || `Movimiento #${movement.id}` : ''; }
+function direction(type: string) { return ['income', 'opening', 'payment', 'cash_in'].includes(type) ? 1 : ['expense', 'payment_void', 'cash_out', 'refund', 'void'].includes(type) ? -1 : 0; }
+function movementAmount(movement: CashMovement) { const sign = direction(movement.type); return `${sign > 0 ? '+ ' : sign < 0 ? '- ' : ''}${formatLempirasUI(sign ? Math.abs(finiteNumber(movement.amount)) : movement.amount)}`; }
+function movementColor(type: string) { return direction(type) > 0 ? 'green' : direction(type) < 0 ? 'red' : 'default'; }
+function movementLabel(type: string) { return ({ cash_in: 'Entrada', cash_out: 'Salida', closing: 'Cierre', expense: 'Egreso', income: 'Ingreso', opening: 'Apertura', payment: 'Pago', payment_void: 'Reverso de pago', refund: 'Devolución', void: 'Anulación' } as Record<string, string>)[type] ?? 'Movimiento'; }
+function methodLabel(method: string | null) { return method ? ({ card: 'Tarjeta', cash: 'Efectivo', closing: 'Cierre', other: 'Otro', transfer: 'Transferencia' } as Record<string, string>)[method] ?? method : 'Sin método'; }
+function formatMovementTime(value: string) { const date = new Date(value); return Number.isNaN(date.getTime()) ? 'Hora no disponible' : new Intl.DateTimeFormat('es-HN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(date); }

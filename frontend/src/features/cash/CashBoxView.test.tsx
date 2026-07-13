@@ -95,7 +95,7 @@ describe('CashBoxView', () => {
     expect(await screen.findByText(/no hay una caja abierta actualmente/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/monto inicial/i)).toHaveValue('0.00');
     fireEvent.click(screen.getByRole('button', { name: /abrir caja/i }));
-    const openingDialog = await screen.findByRole('alertdialog', { name: /confirmar apertura de caja/i });
+    const openingDialog = await screen.findByRole('dialog', { name: /confirmar apertura de caja/i });
     fireEvent.click(within(openingDialog).getByRole('button', { name: /^abrir caja$/i }));
 
     await waitFor(() => {
@@ -415,7 +415,7 @@ describe('CashBoxView', () => {
 
     expect(openCashSession).not.toHaveBeenCalled();
 
-    const dialog = await screen.findByRole('alertdialog', { name: /confirmar apertura de caja/i });
+    const dialog = await screen.findByRole('dialog', { name: /confirmar apertura de caja/i });
     expect(dialog).toHaveTextContent(/monto inicial/i);
     expect(dialog).toHaveTextContent(/L 0\.00/i);
 
@@ -447,7 +447,7 @@ describe('CashBoxView', () => {
 
     expect(await screen.findByLabelText(/monto inicial/i)).toHaveValue('0.00');
     fireEvent.click(screen.getByRole('button', { name: /abrir caja/i }));
-    fireEvent.click(within(await screen.findByRole('alertdialog', { name: /confirmar apertura de caja/i }))
+    fireEvent.click(within(await screen.findByRole('dialog', { name: /confirmar apertura de caja/i }))
       .getByRole('button', { name: /^abrir caja$/i }));
 
     await waitFor(() => expect(openCashSession).toHaveBeenCalledTimes(1));
@@ -466,7 +466,7 @@ describe('CashBoxView', () => {
     fireEvent.change(amount, { target: { value: '75.00' } });
     fireEvent.click(screen.getByRole('button', { name: /abrir caja/i }));
 
-    expect(await screen.findByRole('alertdialog', { name: /confirmar apertura de caja/i })).toBeInTheDocument();
+    expect(await screen.findByRole('dialog', { name: /confirmar apertura de caja/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/monto inicial/i)).toBeDisabled();
     expect(within(amount.closest('form')!).getByText(/abriendo/i).closest('button')).toBeDisabled();
   });
@@ -482,7 +482,7 @@ describe('CashBoxView', () => {
     fireEvent.change(amount, { target: { value: ' 100.00 ' } });
     fireEvent.click(screen.getByRole('button', { name: /abrir caja/i }));
 
-    const dialog = await screen.findByRole('alertdialog', { name: /confirmar apertura de caja/i });
+    const dialog = await screen.findByRole('dialog', { name: /confirmar apertura de caja/i });
     expect(dialog).toHaveTextContent(/L 100\.00/i);
     fireEvent.click(within(dialog).getByRole('button', { name: /^abrir caja$/i }));
 
@@ -512,7 +512,7 @@ describe('CashBoxView', () => {
     fireEvent.change(counted, { target: { value: '100.00' } });
     fireEvent.click(screen.getByRole('button', { name: /^cerrar caja$/i }));
 
-    expect(await screen.findByRole('alertdialog')).toBeInTheDocument();
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
     const confirmButtons = screen.getAllByRole('button', { name: /^cerrar caja$/i });
     fireEvent.click(confirmButtons[confirmButtons.length - 1]);
 
@@ -539,7 +539,7 @@ describe('CashBoxView', () => {
 
     expect(screen.getByRole('status', { name: /diferencia en vivo/i }))
       .toHaveTextContent(/- L 5\.00/i);
-    expect(screen.queryByRole('alertdialog', { name: /cerrar caja/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: /cierre de caja/i })).not.toBeInTheDocument();
   });
 
   it('keeps a confirmed close summary printable after the cash session closes', async () => {
@@ -589,7 +589,7 @@ describe('CashBoxView', () => {
     fireEvent.change(await screen.findByLabelText(/monto contado/i), { target: { value: '101.00' } });
     fireEvent.change(screen.getByLabelText(/nota de cierre/i), { target: { value: 'Sobrante confirmado' } });
     fireEvent.click(screen.getByRole('button', { name: /^cerrar caja$/i }));
-    const closeDialog = await screen.findByRole('alertdialog');
+    const closeDialog = await screen.findByRole('dialog');
     fireEvent.click(within(closeDialog).getByRole('button', { name: /^cerrar caja$/i }));
 
     const confirmedSummary = await screen.findByRole('region', { name: /resumen de cierre confirmado/i });
@@ -617,7 +617,7 @@ describe('CashBoxView', () => {
     fireEvent.change(await screen.findByLabelText(/monto contado/i), { target: { value: '99.00' } });
     fireEvent.change(screen.getByLabelText(/nota de cierre/i), { target: { value: '  Faltante validado  ' } });
     fireEvent.click(screen.getByRole('button', { name: /^cerrar caja$/i }));
-    const closeDialog = await screen.findByRole('alertdialog');
+    const closeDialog = await screen.findByRole('dialog');
     fireEvent.click(within(closeDialog).getByRole('button', { name: /^cerrar caja$/i }));
 
     await waitFor(() => expect(closeCashSession).toHaveBeenCalledWith(
@@ -638,7 +638,7 @@ describe('CashBoxView', () => {
 
     fireEvent.change(await screen.findByLabelText(/monto contado/i), { target: { value: ' 100.00 ' } });
     fireEvent.click(screen.getByRole('button', { name: /^cerrar caja$/i }));
-    const closeDialog = await screen.findByRole('alertdialog');
+    const closeDialog = await screen.findByRole('dialog');
     fireEvent.click(within(closeDialog).getByRole('button', { name: /^cerrar caja$/i }));
 
     await waitFor(() => expect(closeCashSession).toHaveBeenCalledWith(
@@ -667,7 +667,7 @@ describe('CashBoxView', () => {
     fireEvent.click(screen.getByRole('button', { name: /^cerrar caja$/i }));
 
     await waitFor(() => expect(getCurrentCashSession).toHaveBeenCalledTimes(2), { timeout: 250 });
-    expect(screen.queryByRole('alertdialog', { name: /confirmar cierre de caja/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: /cierre de caja/i })).not.toBeInTheDocument();
     expect(await screen.findByText(/no se puede cerrar caja con 1 factura\(s\) pendientes/i)).toBeInTheDocument();
     expect(closeCashSession).not.toHaveBeenCalled();
   });
@@ -687,7 +687,7 @@ describe('CashBoxView', () => {
     fireEvent.click(screen.getByRole('button', { name: /^cerrar caja$/i }));
 
     await waitFor(() => expect(getCurrentCashSession).toHaveBeenCalledTimes(2), { timeout: 250 });
-    expect(screen.queryByRole('alertdialog', { name: /confirmar cierre de caja/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: /cierre de caja/i })).not.toBeInTheDocument();
     expect((await screen.findAllByText(/recibo institucional pendiente/i)).length).toBeGreaterThan(0);
     expect(closeCashSession).not.toHaveBeenCalled();
   });
@@ -720,7 +720,7 @@ describe('CashBoxView', () => {
     fireEvent.click(screen.getByRole('button', { name: /^cerrar caja$/i }));
 
     await waitFor(() => expect(getCurrentCashSession).toHaveBeenCalledTimes(2), { timeout: 250 });
-    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(await screen.findByText(/no se pudo actualizar caja antes de cerrar/i)).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/SQLSTATE|LAN timeout/i);
     expect(closeCashSession).not.toHaveBeenCalled();
@@ -737,7 +737,7 @@ describe('CashBoxView', () => {
     fireEvent.change(await screen.findByLabelText(/monto contado/i), { target: { value: '100.00' } });
     fireEvent.change(screen.getByLabelText(/nota de cierre/i), { target: { value: 'Turno contado' } });
     fireEvent.click(screen.getByRole('button', { name: /^cerrar caja$/i }));
-    const closeDialog = await screen.findByRole('alertdialog');
+    const closeDialog = await screen.findByRole('dialog');
     fireEvent.click(within(closeDialog).getByRole('button', { name: /^cerrar caja$/i }));
 
     await waitFor(() => expect(closeCashSession).toHaveBeenCalledTimes(1));

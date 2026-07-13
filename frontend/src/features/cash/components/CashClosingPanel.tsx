@@ -1,10 +1,6 @@
 import { type FormEvent, type RefObject } from 'react';
-import { AlertTriangle, ClipboardCheck } from 'lucide-react';
-import { Alert } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { FormField } from '@/components/ui/form-field';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { AuditOutlined, WarningOutlined } from '@ant-design/icons';
+import { Alert, Button, Form, Input } from 'antd';
 import { formatLempirasUI } from '@/lib/money';
 
 type CashClosingPanelProps = {
@@ -59,12 +55,12 @@ export function CashClosingPanel({
   return (
     <section
       aria-labelledby="cash-close-guided-title"
-      className="overflow-hidden rounded-2xl border border-operational-border bg-operational-surface shadow-operational"
+      className="overflow-hidden border border-operational-border bg-operational-surface "
     >
-      <div className="border-b border-border bg-muted/35 px-5 pb-5 pt-6 sm:px-6">
+      <div className="border-b border-border bg-muted/40 px-5 pb-5 pt-6 sm:px-6">
         <div className="flex items-start gap-3">
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#0c2733] text-[#80dfd0] shadow-lg">
-            <ClipboardCheck data-icon aria-hidden="true" className="size-5" />
+          <span className="flex size-11 shrink-0 items-center justify-center bg-primary text-primary-foreground ">
+            <AuditOutlined aria-hidden="true" />
           </span>
           <div className="min-w-0">
             <h2 id="cash-close-guided-title" className="text-lg font-semibold leading-tight">
@@ -79,16 +75,10 @@ export function CashClosingPanel({
 
       <form onSubmit={onSubmit} className="flex flex-col gap-5 px-5 pb-6 pt-5 sm:px-6" aria-busy={isSubmitting}>
         <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(13rem,0.45fr)]">
-          <FormField
-            id="closing_amount"
-            label="Monto contado (L.) *"
-            hint="Cuente el efectivo fisico en gaveta. No incluya tarjeta ni transferencia."
-            error={closingAmountError ?? undefined}
-          >
-            {({ id, describedBy, invalid }) => (
+          <Form.Item label="Monto contado (L.)" htmlFor="closing_amount" required validateStatus={closingAmountError ? 'error' : undefined} help={closingAmountError ?? 'Cuente el efectivo físico en gaveta. No incluya tarjeta ni transferencia.'}>
               <Input
-                ref={closingAmountRef}
-                id={id}
+                ref={(control) => { closingAmountRef.current = control?.input ?? null; }}
+                id="closing_amount"
                 name="closing_amount"
                 type="text"
                 inputMode="decimal"
@@ -98,13 +88,11 @@ export function CashClosingPanel({
                 autoComplete="off"
                 disabled={isSubmitting}
                 className="min-h-11 font-mono text-lg tabular-nums"
-                aria-invalid={invalid}
-                aria-describedby={describedBy}
+                aria-invalid={Boolean(closingAmountError)}
               />
-            )}
-          </FormField>
+          </Form.Item>
 
-          <div className="rounded-xl border border-secondary/25 bg-accent/35 p-4">
+          <div className="border border-secondary/25 bg-accent/35 p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
               Diferencia
             </p>
@@ -123,38 +111,27 @@ export function CashClosingPanel({
         </div>
 
         {hasCashDifference ? (
-          <Alert variant="warning" icon={<AlertTriangle data-icon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />}>
-            <div>
+          <Alert type="warning" showIcon icon={<WarningOutlined />} description={<div>
               Hay una diferencia de <strong>{formatLempirasUI(difference)}</strong>. La nota de cierre es obligatoria para dejar el motivo auditado.
-            </div>
-          </Alert>
+            </div>} />
         ) : null}
 
         {hasPendingBalance ? (
-          <Alert variant="warning" icon={<AlertTriangle data-icon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />}>
-            <div>
+          <Alert type="warning" showIcon icon={<WarningOutlined />} description={<div>
               Hay <strong>{pendingInvoiceCount}</strong> factura(s) pendientes o parciales por{' '}
               <strong>{formatLempirasUI(pendingAmount)}</strong>. Revise los cobros antes de cerrar.
-            </div>
-          </Alert>
+            </div>} />
         ) : null}
 
         {missingInstitutionalReceiptCount > 0 ? (
-          <Alert variant="warning" icon={<AlertTriangle data-icon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />}>
-            <div>
+          <Alert type="warning" showIcon icon={<WarningOutlined />} description={<div>
               Hay <strong>{missingInstitutionalReceiptCount}</strong> recibo(s) institucional(es) pendiente(s). Genere los recibos antes de cerrar.
-            </div>
-          </Alert>
+            </div>} />
         ) : null}
 
-        <FormField
-          id="closing_notes"
-          label={hasCashDifference ? 'Nota de cierre *' : 'Nota de cierre'}
-          hint={hasCashDifference ? 'Nota obligatoria: explique el faltante o sobrante antes de confirmar.' : 'Opcional cuando el conteo coincide.'}
-        >
-          {({ id }) => (
-            <Textarea
-              id={id}
+        <Form.Item label={hasCashDifference ? 'Nota de cierre *' : 'Nota de cierre'} htmlFor="closing_notes" help={hasCashDifference ? 'Nota obligatoria: explique el faltante o sobrante antes de confirmar.' : 'Opcional cuando el conteo coincide.'}>
+            <Input.TextArea
+              id="closing_notes"
               name="closing_notes"
               value={closingNotes}
               onChange={(event) => onClosingNotesChange(event.target.value)}
@@ -163,13 +140,12 @@ export function CashClosingPanel({
               required={hasCashDifference}
               disabled={isSubmitting}
             />
-          )}
-        </FormField>
+        </Form.Item>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <Button
-            type="submit"
-            variant="default"
+            htmlType="submit"
+            type="primary"
             className="min-h-11"
             disabled={isSubmitting || !canCloseCash || hasPendingBalance || missingInstitutionalReceiptCount > 0}
           >

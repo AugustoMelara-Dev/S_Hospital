@@ -351,7 +351,11 @@ export function DashboardView({
                       <List.Item.Meta
                         title={
                           <Flex gap="small" align="center" wrap="wrap">
-                            <Typography.Text strong>{invoice.invoice_number}</Typography.Text>
+                            <Link to={`/invoices?invoice=${invoice.id}`}>
+                              <Typography.Text strong className="text-primary hover:underline cursor-pointer">
+                                {invoice.invoice_number}
+                              </Typography.Text>
+                            </Link>
                             <InvoiceStatusTag status={invoice.status} />
                             {canViewManagerialReports ? (
                               <Typography.Text className="tabular-nums">
