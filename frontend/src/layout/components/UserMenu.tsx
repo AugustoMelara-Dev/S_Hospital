@@ -52,7 +52,7 @@ export function UserMenu({
     },
     {
       key: 'logout',
-      label: 'Cerrar sesion',
+      label: 'Cerrar sesión',
       icon: <LogoutOutlined />,
       danger: true,
       onClick: () => {
@@ -73,7 +73,7 @@ export function UserMenu({
     >
       <button
         type="button"
-        className="flex items-center gap-2 border border-border bg-white px-2 py-1.5 text-foreground hover:border-primary/45 cursor-pointer outline-none transition"
+        className="flex cursor-pointer items-center gap-2 border border-border bg-surface px-2 py-1.5 text-foreground outline-none transition hover:border-primary"
         aria-label="Abrir menu de usuario"
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -82,7 +82,7 @@ export function UserMenu({
           }
         }}
       >
-        <div className="flex size-8 items-center justify-center bg-primary text-xs font-bold text-white">
+        <div className="flex size-8 items-center justify-center bg-primary text-xs font-bold text-primary-foreground">
           {user.name.charAt(0).toUpperCase()}
         </div>
         <span className="hidden max-w-[10rem] truncate text-xs lg:inline" title={user.name}>

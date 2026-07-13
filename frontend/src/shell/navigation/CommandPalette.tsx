@@ -6,7 +6,7 @@ import { cn } from '../../lib/utils';
 import { type AuthUser } from '../../lib/api';
 import { type AppNavigationItem } from '../../navigation/appNavigation';
 
-export type ClinicalCommand = {
+export type InstitutionalCommand = {
   id: string;
   label: string;
   path: string;
@@ -21,7 +21,7 @@ type CommandPaletteProps = {
   user: AuthUser;
 };
 
-export function buildPermittedCommands(_user: AuthUser, navigation: readonly AppNavigationItem[]): ClinicalCommand[] {
+export function buildPermittedCommands(_user: AuthUser, navigation: readonly AppNavigationItem[]): InstitutionalCommand[] {
   return navigation.map((item) => ({
     id: item.id,
     label: item.label,
@@ -37,6 +37,19 @@ export function CommandPalette({ navigation, onOpenChange, open, user }: Command
   const [search, setSearch] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    function rememberExternalFocus(event: FocusEvent) {
+      const target = event.target;
+      if (target instanceof HTMLElement && !target.closest('.ant-modal')) {
+        returnFocusRef.current = target;
+      }
+    }
+
+    document.addEventListener('focusin', rememberExternalFocus);
+    return () => document.removeEventListener('focusin', rememberExternalFocus);
+  }, []);
 
   // Reset search on open
   useEffect(() => {
@@ -76,8 +89,6 @@ export function CommandPalette({ navigation, onOpenChange, open, user }: Command
         if (filteredCommands[activeIndex]) {
           selectCommand(filteredCommands[activeIndex].path);
         }
-      } else if (e.key === 'Escape') {
-        onOpenChange(false);
       }
     };
 
@@ -90,12 +101,13 @@ export function CommandPalette({ navigation, onOpenChange, open, user }: Command
       title="Comandos"
       open={open}
       onCancel={() => onOpenChange(false)}
+      afterClose={() => returnFocusRef.current?.focus()}
       footer={null}
       closable={false}
       width={600}
       styles={{ body: { padding: 0 } }}
       style={{ top: '15vh' }}
-      destroyOnClose
+      destroyOnHidden
       transitionName=""
       maskTransitionName=""
     >
@@ -127,20 +139,21 @@ export function CommandPalette({ navigation, onOpenChange, open, user }: Command
               renderItem={(item, index) => {
                 const isActive = index === activeIndex;
                 return (
-                  <button
-                    type="button"
-                    key={item.id}
-                    onClick={() => selectCommand(item.path)}
-                    className={cn(
-                      'flex w-full items-center justify-between px-4 py-2.5 text-sm cursor-pointer transition border-none text-left bg-transparent text-foreground outline-none font-normal',
-                      isActive ? 'bg-primary text-white font-semibold' : 'hover:bg-slate-100 dark:hover:bg-slate-800'
-                    )}
-                  >
-                    <span>{item.label}</span>
-                    <span className={cn('text-xs font-semibold uppercase tracking-wider', isActive ? 'text-blue-100' : 'text-muted-foreground')}>
-                      {item.group}
-                    </span>
-                  </button>
+                  <List.Item key={item.id} className="!border-0 !p-0">
+                    <button
+                      type="button"
+                      onClick={() => selectCommand(item.path)}
+                      className={cn(
+                        'flex w-full cursor-pointer items-center justify-between border-none bg-transparent px-4 py-2.5 text-left text-sm font-normal text-foreground outline-none transition',
+                        isActive ? 'bg-primary font-semibold text-primary-foreground' : 'hover:bg-muted'
+                      )}
+                    >
+                      <span>{item.label}</span>
+                      <span className={cn('text-xs font-semibold uppercase tracking-wider', isActive ? 'text-primary-foreground' : 'text-muted-foreground')}>
+                        {item.group}
+                      </span>
+                    </button>
+                  </List.Item>
                 );
               }}
             />

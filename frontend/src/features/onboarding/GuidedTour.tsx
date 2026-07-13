@@ -1,8 +1,7 @@
-import { ArrowLeft, ArrowRight, CheckCircle2, MapPinned } from 'lucide-react';
+import { ArrowLeftOutlined, ArrowRightOutlined, CheckCircleOutlined, EnvironmentOutlined } from '@ant-design/icons';
+import { Button, Modal } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '../../components/ui/button';
-import { Dialog } from '../../components/ui/dialog';
 
 const AUTO_KEY = 'hospital-onboarding-auto';
 const COMPLETED_KEY = 'hospital-onboarding-completed';
@@ -69,18 +68,22 @@ export function GuidedTour({ open, onOpenChange }: GuidedTourProps) {
   }
 
   return (
-    <Dialog
+    <Modal
       open={open}
-      onOpenChange={onOpenChange}
-      size="md"
+      onCancel={() => onOpenChange(false)}
+      footer={null}
+      width={640}
       title="Guía rápida del sistema"
-      description="Recorrido operativo para recordar las pantallas principales."
+      destroyOnHidden
     >
+      <p className="mb-5 text-sm text-muted-foreground">
+        Recorrido operativo para recordar las pantallas principales.
+      </p>
       <div className="space-y-5">
-        <div className="rounded-lg border border-secondary/20 bg-accent p-4">
+        <div data-testid="guided-tour-step" className="border border-border bg-muted p-5 shadow-none">
           <div className="flex items-start gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-secondary text-secondary-foreground">
-              <MapPinned aria-hidden="true" className="size-5" />
+            <div className="flex size-11 shrink-0 items-center justify-center bg-primary text-primary-foreground shadow-none">
+              <EnvironmentOutlined aria-hidden="true" className="text-lg" />
             </div>
             <div className="min-w-0">
               <p className="text-xs font-semibold uppercase text-muted-foreground">{progress}</p>
@@ -92,40 +95,34 @@ export function GuidedTour({ open, onOpenChange }: GuidedTourProps) {
 
         <div className="grid gap-2 sm:grid-cols-3">
           {steps.map((item, stepIndex) => (
-            <button
+            <Button
               key={item.path}
-              type="button"
-              className={`rounded-md border px-3 py-2 text-left text-xs font-semibold transition-colors ${
-                stepIndex === index
-                  ? 'border-secondary bg-secondary/10 text-secondary'
-                  : 'border-border bg-card text-muted-foreground hover:bg-muted'
-              }`}
+              type={stepIndex === index ? 'primary' : 'default'}
+              className="h-auto min-h-11 justify-start whitespace-normal px-3 py-3 text-left text-xs font-semibold"
               onClick={() => goToStep(stepIndex)}
             >
               {item.title}
-            </button>
+            </Button>
           ))}
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-4">
-          <Button type="button" variant="secondary" disabled={index === 0} onClick={() => goToStep(index - 1)}>
-            <ArrowLeft aria-hidden="true" className="size-4" />
+          <Button disabled={index === 0} onClick={() => goToStep(index - 1)} icon={<ArrowLeftOutlined aria-hidden="true" />}>
             Anterior
           </Button>
           {index < steps.length - 1 ? (
-            <Button type="button" onClick={() => goToStep(index + 1)}>
+            <Button type="primary" onClick={() => goToStep(index + 1)}>
               Siguiente
-              <ArrowRight aria-hidden="true" className="size-4" />
+              <ArrowRightOutlined aria-hidden="true" />
             </Button>
           ) : (
-            <Button type="button" onClick={finish}>
-              <CheckCircle2 aria-hidden="true" className="size-4" />
+            <Button type="primary" onClick={finish} icon={<CheckCircleOutlined aria-hidden="true" />}>
               Finalizar
             </Button>
           )}
         </div>
       </div>
-    </Dialog>
+    </Modal>
   );
 }
 
