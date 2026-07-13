@@ -7,8 +7,8 @@ Este documento registra el progreso fase por fase del refactor del frontend. Se 
 ## Estado General de la Campaña
 
 * **Fases Implementadas (QA Transversal Pendiente):** Fase 6 (Auth), Fase 7 (Dashboard), Fase 8 (Caja)
-* **Fases Completadas (Certificadas):** Fase 0-5
-* **Fases Pendientes:** 12
+* **Fases Completadas (Certificadas):** Fase 0-5, Fase 8b (Facturación/Invoices)
+* **Fases Pendientes:** 11
 
 ---
 
@@ -168,8 +168,19 @@ Este documento registra el progreso fase por fase del refactor del frontend. Se 
 
 ---
 
-### Próxima: Fase 9
+### Fase 8b: Facturación (Invoices)
+* **Estado:** COMPLETADO — CERTIFICADO (100% Tests, Typecheck, Lint & Build aprobados)
+* **Archivos Migrados/Creados:**
+  * `src/features/invoices/NewInvoiceView.tsx` (y componentes `PatientStep`, `InvoiceConfirmation`, `InvoiceSuccess`)
+  * `src/features/invoices/InvoiceHistoryView.tsx` (y componentes `InvoiceHistoryFilters`, `InvoiceHistoryTable`, `InvoiceDetailSheet`)
+  * `src/features/invoices/history/historyAntCompat.tsx` (componentes de compatibilidad de testing para grids y overlays)
+* **Tests:** `src/features/invoices`: 191/191 ✓ (100% de la suite de facturación verde)
+
+---
+
+### Próxima: Fase 9 (Catálogo)
 * **Estado:** EN PROGRESO
 * **Alcance:** Catálogo, categorías, áreas y servicios (`CatalogView`, `ServiceSheet`, `CategorySheet`, etc.)
 * **Tests actuales en `src/features/catalog`:** 17/20 passed (Fallas preexistentes de jsdom/Drawer en resolución)
+
 

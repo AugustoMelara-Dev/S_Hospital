@@ -12,15 +12,9 @@ import {
   userSafeErrorMessage,
 } from '../../lib/api';
 import { useInvoices } from '../../hooks/useInvoices';
-import { Button } from '../../components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
-import { ConfirmDialog } from '../../components/ui/confirm-dialog';
-import { Dialog } from '../../components/ui/dialog';
-import { Label } from '../../components/ui/label';
-import { PaginationControls } from '../../components/ui/pagination';
-import { EmptyState, ErrorState, LoadingState } from '../../components/ui/states';
+import { Button } from 'antd';
+import { ConfirmDialog, Dialog, EmptyState, ErrorState, Label, LoadingState, PaginationControls, Textarea } from './history/historyAntCompat';
 import { ReceiptPreview } from '../receipts/ReceiptPreview';
-import { Textarea } from '../../components/ui/textarea';
 import { institutionalReceiptPaperSize } from '../../lib/institutionalReceiptPaper';
 import { downloadBlob, institutionalReceiptPdfFilename, openBlobInNewTab } from '../../lib/download';
 import { formatLempirasUIFromCents, parseCents } from '../../lib/moneyCents';
@@ -635,7 +629,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
           title="No se pudo cargar el historial"
           description={loadError}
           action={(
-            <Button type="button" variant="secondary" onClick={() => void invoicesQuery.refetch()}>
+            <Button type="default" onClick={() => void invoicesQuery.refetch()}>
               Reintentar
             </Button>
           )}
@@ -649,7 +643,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
             ? 'No se encontraron facturas con los filtros seleccionados.'
             : 'No hay facturas registradas aún.'}
           action={hasActiveFilters ? (
-            <Button type="button" variant="outline" onClick={clearFilters}>
+            <Button type="default" onClick={clearFilters}>
               Limpiar filtros
             </Button>
           ) : undefined}
@@ -657,14 +651,14 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       ) : loading ? (
         <LoadingState label="Cargando facturas..." />
       ) : !loadError ? (
-        <Card className="border-operational-border">
-          <CardHeader className="gap-1 border-b border-border">
-            <CardTitle>Facturas filtradas</CardTitle>
-            <CardDescription>
+        <section aria-label="Listado de facturas" className="border border-operational-border">
+          <header className="border-b border-border p-4">
+            <h2>Facturas filtradas</h2>
+            <p>
               Acciones disponibles según permisos, estado de pago y trazabilidad del recibo institucional.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-0">
+            </p>
+          </header>
+          <div className="p-0">
             <InvoiceHistoryTable
               canReprint={canReprint}
               canReprintAny={canReprintAny}
@@ -685,8 +679,8 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
               onPrepareInvoiceAction={(invoiceId, action) => void prepareInvoiceAction(invoiceId, action)}
               onReprint={requestReprintInvoice}
             />
-          </CardContent>
-        </Card>
+          </div>
+        </section>
       ) : null}
 
       {!isEmpty && (
@@ -714,7 +708,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
         onOpenReceipt={(invoiceId) => void openReceiptModal(invoiceId)}
         onPrepareInvoiceAction={(invoiceId, action) => void prepareInvoiceAction(invoiceId, action)}
         onReprint={requestReprintInvoice}
-        open={detailInvoiceId > 0}
+        open={detailInvoiceId > 0 && !confirmingVoid && !confirmingReverse}
         permissions={detailInvoice ? {
           canIssueInstitutionalReceipt,
           canOperateAnyInvoice,
@@ -756,7 +750,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
         onCancel={() => setConfirmingReprint(false)}
         cancelDisabled={reprintingReceipt}
         confirmDisabled={reprintingReceipt}
-        onConfirm={(reason) => void reprintSelectedInvoice(reason)}
+        onConfirm={(reason) => void reprintSelectedInvoice(reason ?? '')}
         open={confirmingReprint}
         requireReasonTextarea
         requireReasonMinLength={5}

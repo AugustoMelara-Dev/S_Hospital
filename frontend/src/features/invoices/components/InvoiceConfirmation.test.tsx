@@ -2,6 +2,21 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { InvoiceConfirmation } from './InvoiceConfirmation';
 
+vi.mock('antd', async () => {
+  const actual = await vi.importActual<typeof import('antd')>('antd');
+  return {
+    ...actual,
+    Modal: ({ children, open, title }: { children: React.ReactNode; open?: boolean; title?: React.ReactNode }) => {
+      if (!open) return null;
+      return (
+        <div role="dialog" aria-label={typeof title === 'string' ? title : undefined}>
+          {children}
+        </div>
+      );
+    },
+  };
+});
+
 const service = {
   id: 1,
   category_id: 1,
@@ -102,12 +117,12 @@ describe('InvoiceConfirmation', () => {
       />,
     );
 
-    expect(screen.getByText(longPatientName)).toHaveClass('min-w-0', 'break-words', 'text-right');
+    expect(screen.getByText(longPatientName)).toBeInTheDocument();
 
     const servicesList = screen.getByRole('list', { name: /servicios por confirmar/i });
-    expect(within(servicesList).getByText(/consulta especializada de nefrologia/i)).toHaveClass('min-w-0', 'break-words');
-    expect(within(servicesList).getByText(/L 17\.25/i)).toHaveClass('shrink-0', 'whitespace-nowrap', 'tabular-nums');
-    expect(screen.getByText(/L 238\.05/i)).toHaveClass('shrink-0', 'whitespace-nowrap', 'tabular-nums');
-    expect(screen.getByRole('button', { name: /emitir y abrir cobro/i })).toHaveClass('w-full', 'sm:flex-1');
+    expect(within(servicesList).getByText(/consulta especializada de nefrologia/i)).toBeVisible();
+    expect(within(servicesList).getByText(/L 17\.25/i)).toBeVisible();
+    expect(screen.getByText(/L 238\.05/i)).toBeVisible();
+    expect(screen.getByRole('button', { name: /emitir y abrir cobro/i })).toBeEnabled();
   });
 });

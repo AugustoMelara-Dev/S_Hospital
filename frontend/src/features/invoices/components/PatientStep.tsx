@@ -1,7 +1,6 @@
+import { CheckCircleOutlined, UserOutlined } from '@ant-design/icons';
+import { Alert, Form, Input, Space, Typography } from 'antd';
 import { forwardRef, useEffect, useRef } from 'react';
-import { CheckCircle2, User } from 'lucide-react';
-import { Label } from '../../../components/ui/label';
-import { Input } from '../../../components/ui/input';
 import { PATIENT_NAME_MAX_LENGTH } from '../../../schemas/invoice.schema';
 
 type PatientStepProps = {
@@ -12,106 +11,60 @@ type PatientStepProps = {
 };
 
 export const PatientStep = forwardRef<HTMLInputElement, PatientStepProps>(function PatientStep(
-  { patientName, onPatientNameChange, onPatientSubmit, error },
-  ref,
+  { patientName, onPatientNameChange, onPatientSubmit, error }, ref,
 ) {
-  const errorSummaryRef = useRef<HTMLParagraphElement | null>(null);
-  const errorId = error ? 'patient-name-error' : undefined;
-  const helpId = 'patient-name-help';
-  const remainingCharacters = PATIENT_NAME_MAX_LENGTH - patientName.length;
-  const isNearLimit = remainingCharacters <= 20;
-
-  useEffect(() => {
-    if (error) {
-      errorSummaryRef.current?.focus();
-    }
-  }, [error]);
+  const errorSummaryRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => { if (error) errorSummaryRef.current?.focus(); }, [error]);
 
   return (
-    <div className="min-w-0">
-      <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex min-w-0 items-start gap-3">
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-md border border-secondary/25 bg-secondary/10 text-secondary">
-            <User className="size-5" aria-hidden="true" />
-          </span>
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-foreground">Paciente</p>
-            <p className="text-xs leading-relaxed text-muted-foreground">
-              Registre el nombre que debe aparecer en la factura.
-            </p>
-          </div>
-        </div>
-        {patientName ? (
-          <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-success/30 bg-success/10 px-2.5 py-1 text-xs font-medium text-success-foreground">
-            <CheckCircle2 className="size-3.5" aria-hidden="true" />
-            Capturado
-          </span>
-        ) : null}
-      </div>
+    <section aria-labelledby="patient-step-title" className="min-w-0">
+      <Space direction="vertical" size="middle" className="w-full">
+        <header className="border-b border-border pb-4">
+          <Space align="start">
+            <UserOutlined aria-hidden="true" />
+            <span>
+              <Typography.Text type="secondary">Paso 1</Typography.Text>
+              <Typography.Title id="patient-step-title" level={2}>Identificar paciente</Typography.Title>
+              <Typography.Paragraph>Solo el nombre es obligatorio para emitir la factura.</Typography.Paragraph>
+            </span>
+          </Space>
+        </header>
 
-      <div className="flex min-w-0 flex-col gap-3">
-        <div className="w-full min-w-0">
-          <Label htmlFor="patient-name" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            Nombre del paciente *
-          </Label>
-          <div className="relative">
+        {error ? <div ref={errorSummaryRef} tabIndex={-1} role="alert" id="patient-name-error"><Alert role="presentation" type="error" showIcon title="Revise el nombre del paciente" description={error} /></div> : null}
+
+        <Form layout="vertical" onFinish={onPatientSubmit}>
+          <div className="w-full"><Typography.Text strong>Dato requerido</Typography.Text></div>
+          <label htmlFor="patient-name">Nombre del paciente *</label>
+          <Form.Item required validateStatus={error ? 'error' : undefined}>
             <Input
-              ref={ref}
+              ref={(control) => {
+                const input = control?.input ?? null;
+                if (typeof ref === 'function') ref(input);
+                else if (ref) ref.current = input;
+              }}
               id="patient-name"
               name="patient_name"
               value={patientName}
-              onChange={(e) => onPatientNameChange(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  onPatientSubmit?.();
-                }
-              }}
-              placeholder="Ej. Maria Lopez…"
-              autoComplete="off"
-              className={`min-h-14 text-lg font-semibold ${error ? 'border-destructive ring-destructive' : ''}`}
-              aria-invalid={error ? 'true' : 'false'}
-              aria-describedby={errorId ? `${helpId} ${errorId}` : helpId}
               maxLength={PATIENT_NAME_MAX_LENGTH}
+              onChange={(event) => onPatientNameChange(event.target.value)}
+              aria-invalid={Boolean(error)}
+              aria-describedby={error ? 'patient-name-help patient-name-error' : 'patient-name-help'}
+              autoComplete="name"
+              placeholder="Ej. Maria Lopez…"
+              prefix={<UserOutlined aria-hidden="true" />}
+              onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); onPatientSubmit?.(); } }}
             />
-          </div>
-        </div>
-        <div className="w-full rounded-md border border-border bg-card px-3 py-2">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Dato requerido</p>
-          <p
-            id={helpId}
-            className={`mt-1 text-xs ${isNearLimit ? 'font-medium text-warning' : 'text-muted-foreground'}`}
-          >
-            {patientName.length}/{PATIENT_NAME_MAX_LENGTH} caracteres
-          </p>
-        </div>
-      </div>
-      <div className="min-w-0">
-        {error && (
-          <p
-            ref={errorSummaryRef}
-            id={errorId}
-            className="mt-2 rounded-md border border-destructive/35 bg-destructive/10 px-3 py-2 text-sm text-destructive outline-none focus-visible:ring-2 focus-visible:ring-destructive/40"
-            role="alert"
-            tabIndex={-1}
-          >
-            {error}
-          </p>
-        )}
-      </div>
-      {patientName && (
-        <p className="mt-3 rounded-md border border-secondary/25 bg-secondary/10 px-3 py-2 text-sm text-muted-foreground">
-          Paciente: <span className="break-words font-medium text-foreground">{patientName}</span>
-        </p>
-      )}
-      <details className="mt-4 border-t border-operational-border pt-3 text-sm">
-        <summary className="min-h-11 cursor-pointer py-2 font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-          Datos opcionales
-        </summary>
-        <p className="pb-2 text-sm leading-relaxed text-muted-foreground">
-          La factura no necesita expediente clínico, identidad ni otros datos del paciente. El nombre es suficiente.
-        </p>
-      </details>
-    </div>
+            <span id="patient-name-help">{patientName.length}/{PATIENT_NAME_MAX_LENGTH} caracteres</span>
+          </Form.Item>
+        </Form>
+
+        <details>
+          <summary>Datos opcionales</summary>
+          <p>La factura no necesita expediente clínico, identidad ni otros datos del paciente. El nombre es suficiente.</p>
+        </details>
+
+        {patientName.trim() ? <Alert role="status" type="success" showIcon icon={<CheckCircleOutlined />} title="Paciente identificado" /> : null}
+      </Space>
+    </section>
   );
 });
