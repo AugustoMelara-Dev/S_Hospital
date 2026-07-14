@@ -5,6 +5,7 @@ export const legacyImports = [
   'sonner',
   'vaul',
   'cmdk',
+  'motion/react',
   'react-day-picker',
   '@tanstack/react-table',
   '@tanstack/react-virtual',
@@ -62,10 +63,11 @@ export function scanSource(file, rawSource) {
   const module = classifyModule(file);
   const violations = [];
 
-  if (/(?:^|\/)[^/]*(?:Compat|Legacy|Adapter|Antd)\.(?:ts|tsx)$/.test(file) || /\b\w*Compat\b/.test(source)) {
+  if (/(?:^|\/)[^/]*(?:Compat|Legacy|Old|V1|Adapter|Antd|Sheet)[^/]*\.(?:ts|tsx)$/.test(file)
+    || /\b\w*(?:Compat|Legacy|Old|V1)\w*\b/.test(source)) {
     violations.push(makeViolation({
       file,
-      line: findLine(source, /\b\w*Compat\b/),
+      line: findLine(source, /\b\w*(?:Compat|Legacy|Old|V1)\w*\b/),
       kind: 'compat-surface',
       module,
       message: 'superficie de compatibilidad legacy prohibida',
@@ -118,7 +120,7 @@ export function scanSource(file, rawSource) {
     const isModuleDeclaration = /^\s*(?:import|export)\b/.test(line);
     const broadVisualClasses = isModuleDeclaration
       ? []
-      : line.match(/\b(?:rounded|shadow|from|via|to|backdrop-blur)(?:-[\w[\].:/%-]+)+\b|\bglass\b/g) ?? [];
+      : line.match(/\b(?:rounded|shadow|from|via|to)(?:-[\w[\].:/%-]+)+\b|\bbackdrop-blur(?:-[\w[\].:/%-]+)?\b|\bglass\b/g) ?? [];
     for (const cssClass of broadVisualClasses) {
       if (prohibitedClasses.includes(cssClass)) continue;
       violations.push(makeViolation({
@@ -142,6 +144,33 @@ export function scanSource(file, rawSource) {
         module,
         message: `valor arbitrario de Tailwind prohibido "${cssClass}"`,
         risk: 'medium',
+      }));
+    }
+
+    const localPaletteClasses = isModuleDeclaration
+      ? []
+      : line.match(/\b(?:text|bg|border|fill|stroke|ring|outline|divide)-(?:slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|white|black)(?:-\d{2,3})?(?:\/\d+)?\b/g) ?? [];
+    for (const cssClass of localPaletteClasses) {
+      violations.push(makeViolation({
+        file,
+        line: lineNumber,
+        kind: 'local-palette-class',
+        cssClass,
+        module,
+        message: `clase de paleta local prohibida "${cssClass}"`,
+        risk: 'medium',
+      }));
+    }
+
+    if (!file.startsWith('src/design-system/')
+      && /\b(?:function|const)\s+(?:Button|Alert|Badge|Dialog|Drawer|Sheet|Toast|Chart|Calendar|Command)\b/.test(line)) {
+      violations.push(makeViolation({
+        file,
+        line: lineNumber,
+        kind: 'manual-visual-wrapper',
+        module,
+        message: 'wrapper visual manual con API legacy prohibido',
+        risk: 'high',
       }));
     }
 

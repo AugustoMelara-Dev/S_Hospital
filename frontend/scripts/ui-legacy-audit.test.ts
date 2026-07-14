@@ -84,11 +84,26 @@ describe('ui legacy audit', () => {
     ]));
   });
 
+  it('flags bare backdrop blur, local palette classes and manual visual wrappers', () => {
+    const violations = scanSource(
+      'src/features/example/Example.tsx',
+      'const Button = () => <div className="backdrop-blur bg-white text-amber-200 border-slate-300" />;',
+    );
+
+    expect(violations).toEqual(expect.arrayContaining([
+      expect.objectContaining({ kind: 'prohibited-class', cssClass: 'backdrop-blur' }),
+      expect.objectContaining({ kind: 'local-palette-class', cssClass: 'bg-white' }),
+      expect.objectContaining({ kind: 'local-palette-class', cssClass: 'text-amber-200' }),
+      expect.objectContaining({ kind: 'local-palette-class', cssClass: 'border-slate-300' }),
+      expect.objectContaining({ kind: 'manual-visual-wrapper' }),
+    ]));
+  });
+
   it('does not interpret module specifiers as visual utility classes', () => {
     expect(scanSource('src/printing/usePrint.ts', "import { useReactToPrint } from 'react-to-print';")).toEqual([]);
   });
 
-  it.each(['settingsAntd.tsx', 'DialogLegacy.tsx', 'ButtonAdapter.tsx'])(
+  it.each(['settingsAntd.tsx', 'DialogLegacy.tsx', 'ButtonAdapter.tsx', 'OldPanel.tsx', 'V1Card.tsx', 'ServiceSheet.tsx'])(
     'flags forbidden parallel visual surface %s',
     (name) => {
       expect(scanSource(`src/shared/${name}`, 'export const Surface = () => null;')).toEqual([
