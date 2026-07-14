@@ -10,8 +10,8 @@ describe('institutional CSS tokens', () => {
     expect(css).not.toMatch(/(--color-[\w-]+):\s*var\(\1\)/);
   });
 
-  it('keeps radii and decorative shadows flat', () => {
+  it('keeps radii flat and exposes no parallel shadow token surface', () => {
     expect(css).toMatch(/--radius-card:\s*0px/);
-    expect(css).toMatch(/--shadow-command:\s*none/);
+    expect(css).not.toMatch(/--shadow-/);
   });
 });

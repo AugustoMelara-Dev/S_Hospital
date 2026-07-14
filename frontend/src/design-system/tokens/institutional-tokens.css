@@ -84,8 +84,12 @@
   --color-info: var(--institutional-info);
   --color-info-foreground: var(--institutional-info-foreground);
   --color-receipt-border: #1f2937;
+  --color-receipt-border-soft: #d1d5db;
   --color-receipt-paper: #ffffff;
+  --color-receipt-ink: #111827;
   --color-receipt-muted: #374151;
+  --color-receipt-accent: #274c56;
+  --color-receipt-accent-foreground: #153d48;
 
   --color-sidebar: var(--institutional-sidebar);
   --color-sidebar-foreground: var(--institutional-sidebar-foreground);
@@ -108,12 +112,6 @@
   --radius-card: 0px;
 
   /* Eliminación de sombras decorativas flotantes */
-  --shadow-sm: none;
-  --shadow-md: none;
-  --shadow-lg: none;
-  --shadow-panel: none;
-  --shadow-command: none;
-  --shadow-operational: none;
 }
 
 /* AG Grid v33 Institutional Theme configuration via CSS variables */
