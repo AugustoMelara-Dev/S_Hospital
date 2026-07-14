@@ -1,4 +1,4 @@
-import { renderHook } from '@testing-library/react';
+import { renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { COLOR_THEMES, useTheme } from './useTheme';
 import { institutionalDarkTheme, institutionalLightTheme } from '../design-system/antd/theme';
@@ -17,6 +17,15 @@ describe('institutional color themes', () => {
   it.each(Object.entries(COLOR_THEMES))('%s keeps primary controls at WCAG AA contrast', (_name, palette) => {
     expect(contrastRatio(palette.light.secondary, String(institutionalLightTheme.token?.colorBgBase))).toBeGreaterThanOrEqual(4.5);
     expect(contrastRatio(palette.dark.secondary, String(institutionalDarkTheme.token?.colorBgBase))).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('uses the accessible light palette for sidebar indicators in light mode', async () => {
+    renderHook(() => useTheme());
+
+    await waitFor(() => {
+      expect(document.documentElement.style.getPropertyValue('--institutional-sidebar-primary'))
+        .toBe(COLOR_THEMES.teal.light.ring);
+    });
   });
 });
 
