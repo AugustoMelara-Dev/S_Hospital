@@ -66,6 +66,18 @@ describe('PaymentModal', () => {
     expect(screen.getByText('Paciente no especificado')).toBeInTheDocument();
   });
 
+  it('uses semantic theme colors for the invoice summary in light and dark themes', () => {
+    renderPaymentModal({
+      paymentAmount: '10.00',
+      partialPaymentsEnabled: true,
+    });
+
+    const summary = screen.getByRole('region', { name: 'Resumen de factura' });
+    expect(summary).toHaveClass('bg-surface');
+    expect(summary.innerHTML).not.toMatch(/(?:text|bg|border)-(?:white|black|neutral|amber)(?:-|\b)/);
+    expect(screen.getByText('L 7.25')).toHaveClass('text-warning-foreground');
+  });
+
   it('selects the prefilled amount when opened for quick overwrite', async () => {
     renderPaymentModal({ paymentAmount: '17.25' });
 

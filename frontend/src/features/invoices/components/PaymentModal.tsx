@@ -252,13 +252,13 @@ export function PaymentModal({
                 <ReceiptText className="size-3.5 text-secondary" aria-hidden="true" />
                 Factura
               </p>
-              <p className="break-words font-semibold tabular-nums text-white">{invoiceNumber}</p>
+              <p className="break-words font-semibold tabular-nums text-foreground">{invoiceNumber}</p>
               <p className="mt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Paciente</p>
-              <p className="break-words font-medium text-white">{patientLabel}</p>
+              <p className="break-words font-medium text-foreground">{patientLabel}</p>
             </div>
             <div className="grid gap-1 border border-border bg-muted px-4 py-3 text-sm sm:min-w-48 sm:text-right">
               <span className="text-muted-foreground">Saldo pendiente</span>
-              <Typography.Text strong className="text-xl text-white">
+              <Typography.Text strong className="text-xl text-foreground">
                 {moneyLabel(balanceDue)}
               </Typography.Text>
             </div>
@@ -268,14 +268,14 @@ export function PaymentModal({
             <div className="flex justify-between gap-3 sm:block">
               <dt className="text-muted-foreground">Total:</dt>
               <dd className="font-medium">
-                <Typography.Text className="text-white">{moneyLabel(total)}</Typography.Text>
+                <Typography.Text className="text-foreground">{moneyLabel(total)}</Typography.Text>
               </dd>
             </div>
             <div className="flex justify-between gap-3 sm:block sm:text-right">
               <dt className="text-muted-foreground">Pago aplicado:</dt>
               <dd className="font-medium">
                 {appliedAmountCents !== null && appliedAmountCents > 0 ? (
-                  <Typography.Text className="text-white">{moneyLabelFromCents(appliedAmountCents)}</Typography.Text>
+                  <Typography.Text className="text-foreground">{moneyLabelFromCents(appliedAmountCents)}</Typography.Text>
                 ) : (
                   <span className="tabular-nums text-muted-foreground">L 0.00</span>
                 )}
@@ -293,7 +293,7 @@ export function PaymentModal({
               <div className="flex justify-between gap-3 sm:block sm:text-right">
                 <dt className="text-muted-foreground">Saldo pendiente:</dt>
                 <dd className="font-semibold">
-                  <Typography.Text className="text-amber-200">{moneyLabelFromCents(remainingBalanceCents)}</Typography.Text>
+                  <Typography.Text className="text-warning-foreground">{moneyLabelFromCents(remainingBalanceCents)}</Typography.Text>
                 </dd>
               </div>
             ) : null}
@@ -326,7 +326,7 @@ export function PaymentModal({
               aria-label="Método de pago"
               aria-describedby="payment-method-help"
               tabIndex={-1}
-              className="grid grid-cols-2 gap-2 bg-muted/45 p-2 sm:grid-cols-4"
+              className="grid grid-cols-2 gap-2 bg-muted p-2 sm:grid-cols-4"
               onKeyDown={handlePaymentMethodKeyDown}
             >
               {paymentMethods.map((method) => (

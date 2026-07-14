@@ -85,19 +85,19 @@ export function ReceiptSettingsPreview({
           <ReceiptPreviewSheet
             key={label}
             className={cn(
-              'receipt-paper-preview mx-auto w-full max-w-3xl border border-neutral-400 bg-white p-0 text-black',
+              'receipt-paper-preview mx-auto w-full max-w-3xl border border-receipt-border-soft bg-receipt-paper p-0 text-receipt-ink',
               presentation.previewClass,
             )}
             aspectRatio={paperChoice.aspectRatio}
             label={`Vista previa de recibo ${paperChoice.label}`}
             paper={paper}
           >
-            <div className="mb-2 flex items-center justify-between gap-2 text-xs font-semibold uppercase tracking-wide text-neutral-600">
+            <div className="mb-2 flex items-center justify-between gap-2 text-xs font-semibold uppercase tracking-wide text-receipt-muted">
               <span>Vista previa</span>
               <span>{paperChoice.label}</span>
             </div>
             {draft ? (
-              <div className="mb-2 border-2 border-black py-1 text-center text-sm font-bold uppercase tracking-normal">
+              <div className="mb-2 border-2 border-receipt-ink py-1 text-center text-sm font-bold uppercase tracking-normal">
                 PRUEBA - SIN VALIDEZ
               </div>
             ) : null}
@@ -109,7 +109,7 @@ export function ReceiptSettingsPreview({
                 {location ? <div>{location}</div> : null}
               </header>
 
-              <div className="mt-4 grid grid-cols-1 gap-3 border-y border-neutral-300 py-2 text-sm sm:grid-cols-2">
+              <div className="mt-4 grid grid-cols-1 gap-3 border-y border-receipt-border-soft py-2 text-sm sm:grid-cols-2">
                 <div>
                   <span className="font-semibold">Próximo estimado</span>{' '}
                   {series ? (
@@ -128,10 +128,10 @@ export function ReceiptSettingsPreview({
               </div>
 
               <dl className="mt-4 grid grid-cols-3 gap-x-3 gap-y-1 text-sm">
-                <dt className="font-bold uppercase text-neutral-700">Paciente</dt>
-                <dd className="col-span-2 border-b border-neutral-700 px-1">María López</dd>
-                <dt className="font-bold uppercase text-neutral-700">Monto en letras</dt>
-                <dd className="col-span-2 border-b border-neutral-700 px-1">
+                <dt className="font-bold uppercase text-receipt-muted">Paciente</dt>
+                <dd className="col-span-2 border-b border-receipt-muted px-1">María López</dd>
+                <dt className="font-bold uppercase text-receipt-muted">Monto en letras</dt>
+                <dd className="col-span-2 border-b border-receipt-muted px-1">
                   {[series?.legal_text, 'VEINTICINCO LEMPIRAS CON 00/100 CENTAVOS'].filter(Boolean).join(' ')}
                 </dd>
               </dl>
@@ -139,7 +139,7 @@ export function ReceiptSettingsPreview({
               <table className="mt-4 w-full border-collapse text-sm" data-receipt-preview-table="true">
                 <caption className="sr-only">Detalle sintético del recibo institucional</caption>
                 <thead>
-                  <tr className="border-b border-neutral-800 text-left text-xs uppercase text-neutral-700">
+                  <tr className="border-b border-receipt-ink text-left text-xs uppercase text-receipt-muted">
                     <th className="py-1 pr-2" scope="col">Descripción</th>
                     <th className="px-2 py-1 text-right" scope="col">Cant.</th>
                     <th className="px-2 py-1 text-right" scope="col">Precio</th>
@@ -147,7 +147,7 @@ export function ReceiptSettingsPreview({
                   </tr>
                 </thead>
                 <tbody>
-                  <tr className="border-b border-neutral-300">
+                  <tr className="border-b border-receipt-border-soft">
                     <td className="py-1 pr-2">Consulta de medicina general</td>
                     <td className="px-2 py-1 text-right tabular-nums">1.00</td>
                     <td className="px-2 py-1 text-right tabular-nums">L. 25.00</td>
@@ -160,18 +160,18 @@ export function ReceiptSettingsPreview({
                 className={cn('mt-auto grid gap-8 pt-8 text-center text-xs', showSealSpace ? 'grid-cols-2' : 'grid-cols-1')}
                 data-receipt-preview-signatures="true"
               >
-                <div className="border-t border-black pt-1">Firma del enterante</div>
+                <div className="border-t border-receipt-ink pt-1">Firma del enterante</div>
                 {showSealSpace ? (
                   <div>
-                    <div className="mx-auto mb-1 h-12 w-3/4 border border-black" />
-                    <div className="border-t border-black pt-1">Espacio para sello/firma</div>
+                    <div className="mx-auto mb-1 h-12 w-3/4 border border-receipt-ink" />
+                    <div className="border-t border-receipt-ink pt-1">Espacio para sello/firma</div>
                   </div>
                 ) : null}
               </div>
 
               {profile?.show_copy_legend !== false ? (
                 <footer
-                  className="mt-4 border-t border-black pt-1 text-center text-xs uppercase"
+                  className="mt-4 border-t border-receipt-ink pt-1 text-center text-xs uppercase"
                   data-receipt-preview-footer="true"
                 >
                   {label} - {footerText || 'Copia digital guardada en sistema'}

@@ -216,6 +216,25 @@ describe('ReceiptSettingsPreview', () => {
     expect(paper.querySelector('[data-receipt-preview-footer]')).toHaveAttribute('data-receipt-preview-footer', 'true');
   });
 
+  it('uses the institutional receipt palette instead of local neutral color utilities', () => {
+    render(
+      <ReceiptSettingsPreview
+        hospitalName="Hospital San Isidro"
+        governmentLine="Gobierno de Honduras"
+        secretariatLine="Secretaria de Salud"
+        location="Tocoa, Colon"
+        footerText="Original: Oficina Recaudadora"
+        series={series}
+        profile={profile}
+        paper="half_letter"
+      />,
+    );
+
+    const paper = screen.getByRole('region', { name: 'Vista previa de recibo Media carta' });
+    expect(paper).toHaveClass('bg-receipt-paper', 'text-receipt-ink', 'border-receipt-border-soft');
+    expect(paper.innerHTML).not.toMatch(/(?:text|bg|border)-(?:white|black|neutral|amber)(?:-|\b)/);
+  });
+
   it('calculates a contain scale from both real content dimensions', () => {
     expect(calculateReceiptPreviewScale({
       paperWidth: 240,
