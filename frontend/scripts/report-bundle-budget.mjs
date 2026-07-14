@@ -5,7 +5,7 @@ import { gzipSync } from 'node:zlib';
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const assetsDir = resolve(root, 'dist', 'assets');
-const maxChunkBytes = Number(process.env.BUNDLE_MAX_CHUNK_BYTES ?? 750_000);
+const maxChunkBytes = Number(process.env.BUNDLE_MAX_CHUNK_BYTES ?? 500_000);
 const maxStartupGzipBytes = Number(process.env.BUNDLE_MAX_STARTUP_GZIP_BYTES ?? 500_000);
 const maxTotalGzipBytes = Number(process.env.BUNDLE_MAX_TOTAL_GZIP_BYTES ?? 1_100_000);
 
