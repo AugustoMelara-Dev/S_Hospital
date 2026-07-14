@@ -10,6 +10,7 @@ import {
   Typography,
 } from 'antd';
 import { RouteState } from '@/design-system/patterns/RouteState';
+import { PageHeader } from '@/design-system/components/PageHeader';
 import { useDashboardReport } from '@/hooks/useDashboardReport';
 import { type CashSession, type Invoice, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { formatDateTimeEs } from '@/lib/format/formatDate';
@@ -264,21 +265,13 @@ export function DashboardView({
   }
 
   return (
-    <section aria-labelledby="dashboard-title" className="flex min-w-0 flex-col gap-6">
-      <Flex justify="space-between" align="start" wrap="wrap" gap="middle">
-        <div>
-          <Typography.Title id="dashboard-title" level={1} className="m-0">
-            Continuar operación
-          </Typography.Title>
-          <span>
-            <Typography.Text type="secondary" className="text-xs font-semibold uppercase tracking-wider">
-              Centro operativo ·{' '}
-            </Typography.Text>
-            Estado del turno: <Typography.Text strong>{cashIsOpen ? `Caja abierta #${cashSession?.id}` : 'Caja cerrada'}</Typography.Text>
-          </span>
-        </div>
-        {primaryHeaderAction}
-      </Flex>
+    <section aria-label="Panel principal" className="flex min-w-0 flex-col gap-6">
+      <PageHeader
+        eyebrow="Centro operativo"
+        title="Continuar operación"
+        description={<>Estado del turno: <Typography.Text strong>{cashIsOpen ? `Caja abierta #${cashSession?.id}` : 'Caja cerrada'}</Typography.Text></>}
+        actions={primaryHeaderAction}
+      />
 
       {canViewManagerialReports ? <TodayLedger items={ledgerItems} /> : null}
 

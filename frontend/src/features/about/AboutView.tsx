@@ -5,6 +5,7 @@ import { usePublicBranding } from '../../hooks/useFiscalSettings';
 import { useServerStatus, useSystemStatusSnapshot } from '../../hooks/useServerStatus';
 import { type AuthUser, type SystemStatus, userSafeErrorMessage } from '../../lib/api';
 import { displayHospitalName } from '../../lib/hospital-name';
+import { PageHeader } from '@/design-system/components/PageHeader';
 
 type AboutViewProps = {
   user: AuthUser;
@@ -39,11 +40,11 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
   };
 
   return (
-    <section id="about" className="flex flex-col gap-6" aria-labelledby="about-title">
-      <header>
-        <Typography.Title id="about-title" level={1}>Informacion del sistema</Typography.Title>
-        <Typography.Paragraph type="secondary">Identidad del hospital, estado de la red local, continuidad operativa y diagnóstico autorizado.</Typography.Paragraph>
-      </header>
+    <section id="about" className="flex flex-col gap-6" aria-label="Informacion del sistema">
+      <PageHeader
+        title="Informacion del sistema"
+        description="Identidad del hospital, estado de la red local, continuidad operativa y diagnóstico autorizado."
+      />
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         <Card className="overflow-hidden md:col-span-2">

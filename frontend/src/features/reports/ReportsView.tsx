@@ -4,7 +4,7 @@ import { ReportsAudit } from './ReportsAudit';
 import { ReportsCash } from './ReportsCash';
 import { ReportsExecutive } from './ReportsExecutive';
 import { LineChartOutlined, SafetyCertificateOutlined, WalletOutlined } from '@ant-design/icons';
-import { Typography } from 'antd';
+import { PageHeader } from '@/design-system/components/PageHeader';
 
 type ReportsViewProps = {
   canBrowseCashSessions: boolean;
@@ -56,10 +56,10 @@ export function ReportsView(props: ReportsViewProps) {
   return (
     <div data-slot="reports-view" className="flex flex-col gap-5">
       {isRoot ? (
-        <header>
-          <Typography.Title level={1}>Informes y auditoría</Typography.Title>
-          <Typography.Paragraph type="secondary">Resumen ejecutivo, control de caja y trazabilidad para la supervisión institucional.</Typography.Paragraph>
-        </header>
+        <PageHeader
+          title="Informes y auditoría"
+          description="Resumen ejecutivo, control de caja y trazabilidad para la supervisión institucional."
+        />
       ) : null}
       <ReportsNavigation
         active={activeSubRoute}

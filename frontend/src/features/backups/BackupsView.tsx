@@ -5,6 +5,7 @@ import { useSystemStatusSnapshot } from '@/hooks/useServerStatus';
 import { BackupEmptyState } from './components/BackupExplanationCard';
 import { BackupHistoryTable } from './components/BackupHistoryTable';
 import { BackupPageActions } from './components/BackupPageActions';
+import { PageHeader } from '@/design-system/components/PageHeader';
 import { BackupSupportStatusPanel } from './components/BackupSupportStatusPanel';
 import {
   backupDownloadFilename,
@@ -167,13 +168,11 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
   const showHistory = !initialLoading && !error && (backupsList.length > 0 || statusFilter !== 'all');
 
   return (
-    <section id="backups" aria-labelledby="backups-title" className="flex flex-col gap-6">
-      <Flex component="header" justify="space-between" gap="middle" wrap>
-        <div>
-          <Typography.Title id="backups-title" level={1}>Protección y recuperación</Typography.Title>
-          <Typography.Paragraph type="secondary">Estado, creación y descarga autorizada de copias locales de facturación, caja y reportes.</Typography.Paragraph>
-        </div>
-        {canCreate ? (
+    <section id="backups" aria-label="Protección y recuperación" className="flex flex-col gap-6">
+      <PageHeader
+        title="Protección y recuperación"
+        description="Estado, creación y descarga autorizada de copias locales de facturación, caja y reportes."
+        actions={canCreate ? (
             <BackupPageActions
               busy={busy}
               createDisabled={pendingCount > 0}
@@ -181,8 +180,8 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
               onCreateRequest={() => setConfirmCreateOpen(true)}
               onRefresh={refreshOperationalStatus}
             />
-          ) : null}
-      </Flex>
+          ) : undefined}
+      />
 
       <div className="space-y-6">
         <section aria-label="Indicadores principales de respaldos">

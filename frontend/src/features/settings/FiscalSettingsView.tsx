@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { FileTextOutlined as FileText } from '@ant-design/icons';
 import { Link } from 'react-router-dom';
-import { Alert, Button, Flex, Grid, Tabs, Tag, Typography } from 'antd';
+import { Alert, Button, Flex, Grid, Tabs, Tag } from 'antd';
 import { type FiscalSequence, type FiscalSettings, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { FiscalStatusCard } from './components/FiscalStatusCard';
 import { FiscalSummary } from './components/FiscalSummary';
@@ -9,6 +9,7 @@ import { HospitalSettingsView } from './HospitalSettingsView';
 import { FiscalNumerationView } from './FiscalNumerationView';
 import { OperationalRulesView } from './OperationalRulesView';
 import { BrandingView } from './BrandingView';
+import { PageHeader } from '@/design-system/components/PageHeader';
 
 type FiscalSettingsViewProps = {
   canEdit: boolean;
@@ -57,15 +58,13 @@ export function FiscalSettingsView({ canEdit, canEditOperationalRules, canViewFi
 
   return (
     <div className="flex flex-col gap-6">
-      <Flex justify="space-between" align="start" wrap="wrap" gap="middle">
-        <div>
-          <Typography.Title level={1}>Configuración</Typography.Title>
-          <Typography.Paragraph type="secondary">Configure identidad hospitalaria, numeración fiscal, reglas operativas y presentación de documentos.</Typography.Paragraph>
-        </div>
-        <Tag color={canEdit || canEditOperationalRules ? 'success' : 'default'}>
+      <PageHeader
+        title="Configuración"
+        description="Configure identidad hospitalaria, numeración fiscal, reglas operativas y presentación de documentos."
+        actions={<Tag color={canEdit || canEditOperationalRules ? 'success' : 'default'}>
           {canEdit ? 'Edición habilitada' : canEditOperationalRules ? 'Edición operativa' : 'Solo lectura'}
-        </Tag>
-      </Flex>
+        </Tag>}
+      />
 
       {error ? (
         <Alert type="error" showIcon title="Error" description={error} />

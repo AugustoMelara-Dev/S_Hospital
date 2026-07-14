@@ -1,5 +1,6 @@
 import { TeamOutlined, UserAddOutlined, UserSwitchOutlined } from '@ant-design/icons';
-import { Alert, Button, Card, Statistic, Tag } from 'antd';
+import { Button, Card, Statistic, Tag } from 'antd';
+import { PageHeader } from '@/design-system/components/PageHeader';
 
 type UserManagementOverviewProps = {
   activeUsersCount: number;
@@ -13,11 +14,10 @@ type UserManagementOverviewProps = {
 
 export function UserManagementOverview({ activeUsersCount, editableRolesCount, onCreateUser, pendingPasswordUsersCount, showCreateAction, totalRolesCount, totalUsersCount }: UserManagementOverviewProps) {
   return <>
-    <Alert
-      type="info"
-      title={<h1>Usuarios y funciones</h1>}
-      description={<><p>Administre cuentas individuales, roles operativos y permisos por modulo sin cambiar la politica de acceso del servidor.</p><Tag color="processing" icon={<TeamOutlined aria-hidden="true" />}>RBAC activo</Tag></>}
-      action={showCreateAction ? <Button type="primary" icon={<UserAddOutlined aria-hidden="true" />} onClick={onCreateUser}>Crear usuario</Button> : undefined}
+    <PageHeader
+      title="Usuarios y funciones"
+      description="Administre cuentas individuales, roles operativos y permisos por módulo sin cambiar la política de acceso del servidor."
+      actions={<><Tag color="processing" icon={<TeamOutlined aria-hidden="true" />}>RBAC activo</Tag>{showCreateAction ? <Button type="primary" icon={<UserAddOutlined aria-hidden="true" />} onClick={onCreateUser}>Crear usuario</Button> : null}</>}
     />
     <div className="grid gap-3 sm:grid-cols-3">
       <Card title="Usuarios activos" extra={<TeamOutlined aria-hidden="true" />}><Statistic value={activeUsersCount} /><p>{totalUsersCount} cuenta{totalUsersCount === 1 ? '' : 's'} registrada{totalUsersCount === 1 ? '' : 's'}</p></Card>

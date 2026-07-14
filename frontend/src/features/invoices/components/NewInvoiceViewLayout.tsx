@@ -11,6 +11,7 @@ import { PaymentModal } from './PaymentModal';
 import { InvoiceSuccess } from './InvoiceSuccess';
 import type { Payment, Service } from '../../../lib/api';
 import type { NewInvoiceState } from '../state/types';
+import { PageHeader } from '@/design-system/components/PageHeader';
 
 export type NewInvoiceLayoutProps = {
   state: NewInvoiceState;
@@ -138,12 +139,11 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
 
   return (
     <section id="nueva-factura" className="flex h-full min-w-0 flex-col gap-5 pb-36 md:pb-8">
-      <header className="relative overflow-hidden border border-border bg-surface px-5 py-6 sm:flex sm:items-center sm:justify-between sm:gap-6 sm:px-7">
-        <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Operaciones financieras</p>
-          <h1 className="mt-1 text-2xl font-semibold leading-tight text-foreground sm:text-3xl">Nueva factura</h1>
-        </div>
-        <div className="relative mt-4 flex flex-wrap items-center gap-2 sm:mt-0 sm:justify-end">
+      <PageHeader
+        eyebrow="Operaciones financieras"
+        title="Nueva factura"
+        actions={(
+          <>
           <Tag color={cashIsOpen ? 'success' : 'error'} className="min-h-11 px-3 font-mono text-sm tabular-nums sm:min-h-9 flex items-center border-0 m-0">
             {cashIsOpen ? `${cashSessionLabel} · Abierta` : cashSessionLabel}
           </Tag>
@@ -156,8 +156,9 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
               Limpiar borrador
             </Button>
           ) : null}
-        </div>
-      </header>
+          </>
+        )}
+      />
 
       <div role="status" aria-live="polite" aria-atomic="false" className="flex flex-col gap-3">
         {!state.loadedCashSession && !state.pointOfSaleLoadError && (

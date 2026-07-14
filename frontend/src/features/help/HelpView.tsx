@@ -18,6 +18,7 @@ import {
   WindowsOutlined as Keyboard,
 } from '@ant-design/icons';
 import { Button, Card, Collapse, Flex, Input, Typography } from 'antd';
+import { PageHeader } from '@/design-system/components/PageHeader';
 import { type ShortcutScope, shortcutLabel, shortcutsByScope } from '../../lib/shortcuts';
 import { buildClientIssueSupportSummary, getClientIssues } from '../../lib/support/clientIssueLog';
 
@@ -324,17 +325,15 @@ export function HelpView() {
   const resultCount = visibleGuides.length + visibleIncidents.length;
 
   return (
-    <section className="space-y-6" aria-labelledby="help-title">
-      <Flex component="header" justify="space-between" gap="middle" wrap>
-        <div>
-          <Typography.Title id="help-title" level={1}>Ayuda institucional</Typography.Title>
-          <Typography.Paragraph type="secondary">Guía rápida para operar caja, facturación, recibos, reportes y respaldos.</Typography.Paragraph>
-        </div>
-          <div className="inline-flex items-center gap-2 border px-3 py-2 text-xs font-semibold">
+    <section className="space-y-6" aria-label="Ayuda institucional">
+      <PageHeader
+        title="Ayuda institucional"
+        description="Guía rápida para operar caja, facturación, recibos, reportes y respaldos."
+        actions={<div className="inline-flex items-center gap-2 border px-3 py-2 text-xs font-semibold">
             <HelpCircle aria-hidden="true" className="size-4" />
             Manual operativo
-          </div>
-      </Flex>
+          </div>}
+      />
 
       <div className="border border-border bg-card p-5">
         <label htmlFor="help-task-search" className="text-sm font-semibold text-foreground">¿Qué necesita hacer?</label>

@@ -7,6 +7,7 @@ import {
   userSafeErrorMessage,
 } from '@/lib/api';
 import { Alert, Button, Skeleton } from 'antd';
+import { PageHeader } from '@/design-system/components/PageHeader';
 import { UserFormDialog, type UserFormData } from './components/UserFormDialog';
 import { UserManagementOverview } from './components/UserManagementOverview';
 import { RoleFormDialog } from './components/RoleFormDialog';
@@ -313,13 +314,13 @@ export function UsersView({
   };
 
   if (loading) {
-    return <div role="status"><Skeleton active={false} />Cargando usuarios...</div>;
+    return <><PageHeader title="Cargando usuarios" description="Preparando cuentas, roles y permisos operativos." /><div role="status"><Skeleton active={false} />Cargando usuarios...</div></>;
   }
 
   if (loadError) {
     return (
       <>
-        <h1 className="text-2xl font-semibold leading-tight">Usuarios</h1>
+        <PageHeader title="Usuarios y funciones" description="Administre cuentas individuales, roles operativos y permisos por módulo." />
         <Alert
           type="error"
           showIcon

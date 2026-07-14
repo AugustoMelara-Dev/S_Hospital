@@ -2,11 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { CheckCircleOutlined, PrinterOutlined, SaveOutlined } from '@ant-design/icons';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert, Button, Checkbox, Collapse, Form, Input, InputNumber, Radio, Select, Spin, Tabs, Typography, theme as antdTheme } from 'antd';
+import { Alert, Button, Checkbox, Collapse, Form, Input, InputNumber, Radio, Select, Spin, Tabs, theme as antdTheme } from 'antd';
 import { ReactNode, useRef } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { SectionCard, StatCard } from '@/components/shared';
+import { PageHeader } from '@/design-system/components/PageHeader';
 import { ReceiptSettingsPreview } from './components/ReceiptSettingsPreview';
 import { type InstitutionalReceiptSeries, type ReceiptPrintProfile, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { downloadBlob } from '@/lib/download';
@@ -296,10 +297,10 @@ export function InstitutionalReceiptSettingsView({
   if (settingsQuery.isLoading) {
     return (
       <div className="flex flex-col gap-6">
-        <header>
-          <Typography.Title level={1}>Preparando ajustes de recibos</Typography.Title>
-          <Typography.Paragraph type="secondary">Papel, copias, logo y firma. El sistema prepara la impresión según el perfil seleccionado.</Typography.Paragraph>
-        </header>
+        <PageHeader
+          title="Preparando ajustes de recibos"
+          description="Papel, copias, logo y firma. El sistema prepara la impresión según el perfil seleccionado."
+        />
         <div className="flex min-h-48 items-center justify-center" role="status" aria-label="Cargando ajustes de recibos...">
           <Spin size="large" description="Cargando ajustes de recibos..." />
         </div>
@@ -310,10 +311,10 @@ export function InstitutionalReceiptSettingsView({
   if (settingsQuery.isError) {
     return (
       <>
-        <header>
-          <Typography.Title level={1}>Recibos institucionales</Typography.Title>
-          <Typography.Paragraph type="secondary">Configuración del recibo clásico, serie, papel y copias para impresora normal.</Typography.Paragraph>
-        </header>
+        <PageHeader
+          title="Recibos institucionales"
+          description="Configuración del recibo clásico, serie, papel y copias para impresora normal."
+        />
         <Alert
           type="error"
           showIcon
@@ -356,10 +357,10 @@ export function InstitutionalReceiptSettingsView({
 
   return (
     <>
-      <header>
-        <Typography.Title level={1}>Recibos institucionales</Typography.Title>
-        <Typography.Paragraph type="secondary">Papel, copias, logo y firma. El sistema prepara la impresión según el perfil seleccionado.</Typography.Paragraph>
-      </header>
+      <PageHeader
+        title="Recibos institucionales"
+        description="Papel, copias, logo y firma. El sistema prepara la impresión según el perfil seleccionado."
+      />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
