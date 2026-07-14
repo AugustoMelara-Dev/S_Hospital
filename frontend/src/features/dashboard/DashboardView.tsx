@@ -342,11 +342,11 @@ export function DashboardView({
               ) : recentInvoices.length === 0 ? (
                 <Alert type="info" showIcon title="Sin facturas recientes" description={cashIsOpen ? 'La actividad del turno aparecerá aquí.' : 'Abra caja para iniciar la actividad del turno.'} />
               ) : (
-                <List<Invoice>
-                  aria-label="Facturas recientes"
-                  dataSource={recentInvoices}
-                  size="small"
-                  renderItem={(invoice) => (
+                <section aria-label="Facturas recientes">
+                  <List<Invoice>
+                    dataSource={recentInvoices}
+                    size="small"
+                    renderItem={(invoice) => (
                     <List.Item key={invoice.id}>
                       <List.Item.Meta
                         title={
@@ -372,8 +372,9 @@ export function DashboardView({
                         }
                       />
                     </List.Item>
-                  )}
-                />
+                    )}
+                  />
+                </section>
               )}
             </div>
           </section>

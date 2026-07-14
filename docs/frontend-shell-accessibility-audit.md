@@ -77,6 +77,30 @@ También se verifica `backgroundImage: none` y ausencia de sombra con opacidad v
 
 ## Ejecuciones verificadas
 
+### Resultado axe por impacto e `incomplete`
+
+La corrida del 2026-07-13 evalúa el documento completo con las etiquetas WCAG 2 A/AA y 2.1 A/AA. Axe no devolvió violaciones reales en ningún nivel. La auditoría no descarta `incomplete`: los casos se registran aquí y la prueba imprime regla, selector y motivo en cada ejecución.
+
+| Estado | minor | moderate | serious | critical | incomplete | Detalle |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| shell normal claro | 0 | 0 | 0 | 0 | 1 | `color-contrast`, `a[href$="help"] > span:nth-child(2)` |
+| teal claro / oscuro | 0 | 0 | 0 | 0 | 1 por tema | mismo link de Ayuda |
+| blue claro / oscuro | 0 | 0 | 0 | 0 | 1 por tema | mismo link de Ayuda |
+| green claro / oscuro | 0 | 0 | 0 | 0 | 1 por tema | mismo link de Ayuda |
+| indigo claro / oscuro | 0 | 0 | 0 | 0 | 1 por tema | mismo link de Ayuda |
+| rose claro / oscuro | 0 | 0 | 0 | 0 | 1 por tema | mismo link de Ayuda |
+| branding inválido/bajo contraste claro / oscuro | 0 | 0 | 0 | 0 | 1 por tema | mismo link de Ayuda después del fallback seguro a teal |
+| sidebar colapsado | 0 | 0 | 0 | 0 | 0 | sin pendientes |
+| UserMenu abierto | 0 | 0 | 0 | 0 | 1 | `color-contrast`, `.ant-btn-primary > span:nth-child(2)` |
+| Command Palette abierta | 0 | 0 | 0 | 0 | 1 regla / 5 nodos | `color-contrast`: spans de botones, `.ml-auto` y filas 8–9 superpuestas |
+| GuidedTour abierto | 0 | 0 | 0 | 0 | 1 regla / 2 nodos | `color-contrast`: `.min-w-44 > span:nth-child(3)` y `.ml-auto` |
+| 390×844 | 0 | 0 | 0 | 0 | 0 | sin pendientes |
+| navegación móvil abierta | 0 | 0 | 0 | 0 | 1 | `color-contrast`, `.py-2.border-border[href$="users"]` |
+| 1366×768, zoom 125 % | 0 | 0 | 0 | 0 | 0 | sin pendientes |
+| 1920×1080 | 0 | 0 | 0 | 0 | 0 | sin pendientes |
+
+Los `incomplete` de contraste son indeterminaciones de axe por solapamiento geométrico (“background color could not be determined”), no ratios reprobados. Se contrastaron con la ejecución exclusiva de `color-contrast`, inspección de estilos computados y las parejas de tokens/ratios documentadas arriba; esa ejecución devuelve cero violaciones. Si un cambio futuro convierte cualquiera de estos nodos en una violación calculable, la aserción sobre `report.violations` falla. El `incomplete` anterior `aria-prohibited-attr` en `.ant-list-sm` sí reveló un defecto real: `aria-label` estaba aplicado a un `div` sin rol. Se movió el nombre a una región semántica y la repetición focal redujo el shell normal de 2 a 1 `incomplete`.
+
 ```text
 npx vitest run src/features/onboarding/GuidedTour.test.tsx
 3/3 passed
@@ -95,6 +119,6 @@ PLAYWRIGHT_EXTERNAL_SERVER=1 npx playwright test e2e/accessibility.spec.ts \
 Cobertura Playwright: teal/blue/green/indigo/rose/branding inválido × claro/oscuro; sidebar expandido/colapsado; navegación móvil; UserMenu; Command Palette; GuidedTour; Tooltip; PageHeader y breadcrumbs de Dashboard; teclado; foco visible; Escape; 390×844; 1366×768; 1920×1080; zoom CSS 125 %; axe normal y con overlays abiertos. La corrida adjunta screenshots de teal claro/oscuro, los tres viewports y el Drawer móvil abierto al reporte Playwright.
 
 Resultado axe antes: 25 nodos `color-contrast` en la corrida base, más cuatro combinaciones de tema descubiertas en la matriz.
-Resultado axe después: 0 violaciones de contraste y 0 violaciones serious/critical en los estados shell cubiertos.
+Resultado axe después: `minor 0`, `moderate 0`, `serious 0`, `critical 0`; los `incomplete` restantes están individualizados arriba.
 
-La certificación transversal sigue pendiente. El shell conserva 0 violaciones serious/critical en los estados cubiertos, pero la regresión segmentada encontró 21 fallos en 9 archivos no migrados (Reportes, Ajustes de Recibos, App, API system y política de papel). El gate estricto está verde para Facturación, Catálogo y Administración; el inventario final continúa en 190/409. `npm run test:e2e` no puede iniciar sin la credencial de seed release obligatoria.
+La certificación transversal sigue pendiente. `npm run test:e2e:mock` aprobó Shell, Facturación, Catálogo, Administración, Recibos y Reportes sin secretos. `npm run test:e2e:release` permanece condicionado a una credencial explícita de seed/release y falla con instrucciones cuando no está presente.

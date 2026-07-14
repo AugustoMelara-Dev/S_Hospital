@@ -1,4 +1,4 @@
-import { expect, test, type Page, type Route } from '@playwright/test';
+import { expect, test, type Page, type Route, type TestInfo } from '@playwright/test';
 import axeCore from 'axe-core';
 
 const today = '2026-07-02';
@@ -167,12 +167,13 @@ const routeExpectations = [
 ] as const;
 
 test.describe('Accessibility - critical mocked e2e (WCAG AA)', () => {
-  test('institutional shell reports no color contrast violations', async ({ page }) => {
+  test('institutional shell reports no color contrast violations', async ({ page }, testInfo) => {
     await installAccessibilityMocks(page, { authenticated: true });
     await page.goto('/dashboard');
     await waitForScreen(page, /continuar operaci.n/i);
 
     await expect(await shellContrastViolations(page), 'institutional shell contrast details').toEqual([]);
+    await expectShellAxeReport(page, 'shell-normal-light', testInfo);
   });
 
   test('all supported branding themes keep the shell contrast-safe', async ({ page }, testInfo) => {
@@ -187,10 +188,8 @@ test.describe('Accessibility - critical mocked e2e (WCAG AA)', () => {
         }, { color, mode });
         await page.reload();
         await waitForScreen(page, /continuar operaci.n/i);
-        await expect(
-          await shellContrastViolations(page),
-          `${color} ${mode} shell contrast details`,
-        ).toEqual([]);
+        await expect(await shellContrastViolations(page), `${color} ${mode} shell contrast details`).toEqual([]);
+        await expectShellAxeReport(page, `shell-brand-${color}-${mode}`, testInfo);
         if (color === 'teal') {
           await testInfo.attach(`shell-teal-${mode}`, {
             body: await page.screenshot({ fullPage: true }),
@@ -201,7 +200,7 @@ test.describe('Accessibility - critical mocked e2e (WCAG AA)', () => {
     }
   });
 
-  test('real shell overlays remain accessible, flat and keyboard operable', async ({ page }) => {
+  test('real shell overlays remain accessible, flat and keyboard operable', async ({ page }, testInfo) => {
     await installAccessibilityMocks(page, { authenticated: true });
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/dashboard');
@@ -222,14 +221,14 @@ test.describe('Accessibility - critical mocked e2e (WCAG AA)', () => {
     const collapseButton = page.getByRole('button', { name: 'Reducir navegación' });
     await collapseButton.click();
     await expect(rail).toHaveAttribute('data-collapsed', 'true');
-    await expect(await seriousShellAxeViolations(page), 'collapsed rail axe').toEqual([]);
+    await expectShellAxeReport(page, 'shell-sidebar-collapsed', testInfo);
 
     const userMenuButton = page.getByRole('button', { name: 'Abrir menu de usuario' });
     await userMenuButton.click();
     const userMenu = page.getByRole('menu');
     await expect(userMenu).toBeVisible();
     await expectFlatSurface(page.locator('.ant-dropdown'));
-    await expect(await seriousShellAxeViolations(page), 'user menu axe').toEqual([]);
+    await expectShellAxeReport(page, 'shell-user-menu-open', testInfo);
     await page.keyboard.press('Escape');
     await expect(userMenuButton).toBeFocused();
 
@@ -238,7 +237,7 @@ test.describe('Accessibility - critical mocked e2e (WCAG AA)', () => {
     const commandDialog = page.getByRole('dialog', { name: 'Comandos' });
     await expect(commandDialog).toBeVisible();
     await expectFlatSurface(commandDialog);
-    await expect(await seriousShellAxeViolations(page), 'command palette axe').toEqual([]);
+    await expectShellAxeReport(page, 'shell-command-palette-open', testInfo);
     await page.keyboard.press('Escape');
     await expect(commandButton).toBeFocused();
 
@@ -255,7 +254,7 @@ test.describe('Accessibility - critical mocked e2e (WCAG AA)', () => {
     await expect(guideDialog).toBeVisible();
     await expectFlatSurface(guideDialog);
     await expectFlatSurface(page.getByTestId('guided-tour-step'));
-    await expect(await seriousShellAxeViolations(page), 'guided tour axe').toEqual([]);
+    await expectShellAxeReport(page, 'shell-guided-tour-open', testInfo);
     await page.keyboard.press('Escape');
     await expect(helpButton).toBeFocused();
   });
@@ -274,7 +273,7 @@ test.describe('Accessibility - critical mocked e2e (WCAG AA)', () => {
       await page.evaluate((zoom) => { document.documentElement.style.zoom = String(zoom); }, viewport.zoom);
 
       await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
-      await expect(await seriousShellAxeViolations(page), `${viewport.width}x${viewport.height} axe`).toEqual([]);
+      await expectShellAxeReport(page, `shell-${viewport.width}x${viewport.height}-zoom-${viewport.zoom}`, testInfo);
       await testInfo.attach(`shell-${viewport.width}x${viewport.height}-zoom-${viewport.zoom}`, {
         body: await page.screenshot({ fullPage: true }),
         contentType: 'image/png',
@@ -286,7 +285,7 @@ test.describe('Accessibility - critical mocked e2e (WCAG AA)', () => {
         const drawer = page.getByRole('dialog', { name: 'Más destinos' });
         await expect(drawer).toBeVisible();
         await expectFlatSurface(drawer);
-        await expect(await seriousShellAxeViolations(page), 'mobile navigation open axe').toEqual([]);
+        await expectShellAxeReport(page, 'shell-mobile-navigation-open', testInfo);
         await testInfo.attach('shell-mobile-navigation-open', {
           body: await page.screenshot({ fullPage: true }),
           contentType: 'image/png',
@@ -348,7 +347,7 @@ async function shellContrastViolations(page: Page) {
   });
 }
 
-async function seriousShellAxeViolations(page: Page) {
+async function shellAxeReport(page: Page) {
   await page.addScriptTag({ content: axeCore.source });
   return page.evaluate(async () => {
     const result = await window.axe.run(document, {
@@ -357,15 +356,42 @@ async function seriousShellAxeViolations(page: Page) {
         values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'],
       },
     });
-    return result.violations
-      .filter((violation) => ['critical', 'serious'].includes(String(violation.impact)))
-      .map((violation) => ({
+    const impacts = { minor: 0, moderate: 0, serious: 0, critical: 0 };
+    for (const violation of result.violations) {
+      const impact = String(violation.impact) as keyof typeof impacts;
+      if (impact in impacts) impacts[impact] += 1;
+    }
+    return {
+      impacts,
+      incomplete: result.incomplete.length,
+      violations: result.violations.map((violation) => ({
         id: violation.id,
         impact: violation.impact,
         help: violation.help,
         nodes: violation.nodes.slice(0, 5).map((node) => ({ target: node.target, failure: node.failureSummary })),
-      }));
+      })),
+      incompleteDetails: result.incomplete.map((entry) => ({
+        id: entry.id,
+        impact: entry.impact,
+        help: entry.help,
+        nodes: entry.nodes.slice(0, 5).map((node) => ({ target: node.target, failure: node.failureSummary })),
+      })),
+    };
   });
+}
+
+async function expectShellAxeReport(page: Page, state: string, testInfo: TestInfo) {
+  const report = await shellAxeReport(page);
+  await testInfo.attach(`${state}-axe`, {
+    body: Buffer.from(JSON.stringify({ state, ...report }, null, 2)),
+    contentType: 'application/json',
+  });
+  console.log(`[axe-shell] ${state} ${JSON.stringify({ ...report.impacts, incomplete: report.incomplete })}`);
+  if (report.incompleteDetails.length > 0) {
+    console.log(`[axe-shell-incomplete] ${state} ${JSON.stringify(report.incompleteDetails)}`);
+  }
+  await expect(report.violations, `${state} axe violations`).toEqual([]);
+  return report;
 }
 
 async function expectFlatSurface(locator: ReturnType<Page['locator']>) {
