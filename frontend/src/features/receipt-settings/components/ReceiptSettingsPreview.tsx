@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, type ReactNode } from 'react';
+import { Tag } from 'antd';
 import { PrintPreviewFrame } from '@/components/shared';
 import { formatDate } from '@/lib/format/formatDate';
 import type { InstitutionalReceiptSeries, ReceiptPrintProfile } from '@/lib/api';
@@ -66,7 +67,7 @@ export function ReceiptSettingsPreview({
   draft = true,
 }: ReceiptSettingsPreviewProps) {
   const labels = copyLabels(profile?.copies_mode);
-  const receiptColor = series?.receipt_number_color ?? '#b91c1c';
+  const receiptColor = series?.receipt_number_color;
   const previewDate = formatDate(new Date());
   const showSealSpace = profile?.show_physical_seal_space !== false;
   const paperChoice = paperChoiceFor(paper);
@@ -91,7 +92,7 @@ export function ReceiptSettingsPreview({
             label={`Vista previa de recibo ${paperChoice.label}`}
             paper={paper}
           >
-            <div className="mb-2 flex items-center justify-between gap-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-neutral-600">
+            <div className="mb-2 flex items-center justify-between gap-2 text-xs font-semibold uppercase tracking-wide text-neutral-600">
               <span>Vista previa</span>
               <span>{paperChoice.label}</span>
             </div>
@@ -101,19 +102,23 @@ export function ReceiptSettingsPreview({
               </div>
             ) : null}
 
-              <header className="text-center text-[11px] uppercase leading-tight">
+              <header className="text-center text-xs uppercase leading-tight">
                 {governmentLine ? <div>{governmentLine}</div> : null}
                 {secretariatLine ? <div>{secretariatLine}</div> : null}
                 <div className="text-base font-bold">{hospitalName || 'SIN CONFIGURAR'}</div>
                 {location ? <div>{location}</div> : null}
               </header>
 
-              <div className="mt-4 grid grid-cols-1 gap-3 border-y border-neutral-300 py-2 text-sm sm:grid-cols-[1.2fr_0.8fr]">
+              <div className="mt-4 grid grid-cols-1 gap-3 border-y border-neutral-300 py-2 text-sm sm:grid-cols-2">
                 <div>
                   <span className="font-semibold">Próximo estimado</span>{' '}
-                  <span className="text-lg font-bold" style={{ color: receiptColor }}>
-                    {nextReceiptNumber(series)}
-                  </span>
+                  {series ? (
+                    <Tag color={receiptColor} className="text-lg font-bold">
+                      {nextReceiptNumber(series)}
+                    </Tag>
+                  ) : (
+                    <span className="text-lg font-bold text-receipt-muted">{nextReceiptNumber(series)}</span>
+                  )}
                 </div>
                 <div className="space-y-1 sm:text-right">
                   <div><span className="font-semibold">Serie:</span> {series?.series ?? 'PRUEBA'}</div>
@@ -122,11 +127,11 @@ export function ReceiptSettingsPreview({
                 </div>
               </div>
 
-              <dl className="mt-4 grid grid-cols-[120px_1fr] gap-x-3 gap-y-1 text-sm">
+              <dl className="mt-4 grid grid-cols-3 gap-x-3 gap-y-1 text-sm">
                 <dt className="font-bold uppercase text-neutral-700">Paciente</dt>
-                <dd className="border-b border-neutral-700 px-1">María López</dd>
+                <dd className="col-span-2 border-b border-neutral-700 px-1">María López</dd>
                 <dt className="font-bold uppercase text-neutral-700">Monto en letras</dt>
-                <dd className="border-b border-neutral-700 px-1">
+                <dd className="col-span-2 border-b border-neutral-700 px-1">
                   {[series?.legal_text, 'VEINTICINCO LEMPIRAS CON 00/100 CENTAVOS'].filter(Boolean).join(' ')}
                 </dd>
               </dl>
@@ -134,7 +139,7 @@ export function ReceiptSettingsPreview({
               <table className="mt-4 w-full border-collapse text-sm" data-receipt-preview-table="true">
                 <caption className="sr-only">Detalle sintético del recibo institucional</caption>
                 <thead>
-                  <tr className="border-b border-neutral-800 text-left text-[11px] uppercase text-neutral-700">
+                  <tr className="border-b border-neutral-800 text-left text-xs uppercase text-neutral-700">
                     <th className="py-1 pr-2" scope="col">Descripción</th>
                     <th className="px-2 py-1 text-right" scope="col">Cant.</th>
                     <th className="px-2 py-1 text-right" scope="col">Precio</th>
@@ -166,7 +171,7 @@ export function ReceiptSettingsPreview({
 
               {profile?.show_copy_legend !== false ? (
                 <footer
-                  className="mt-4 border-t border-black pt-1 text-center text-[10px] uppercase"
+                  className="mt-4 border-t border-black pt-1 text-center text-xs uppercase"
                   data-receipt-preview-footer="true"
                 >
                   {label} - {footerText || 'Copia digital guardada en sistema'}
@@ -200,6 +205,8 @@ function ReceiptPreviewSheet({
     const contentElement = contentRef.current;
     if (!paperElement || !contentElement) return undefined;
 
+    paperElement.style.aspectRatio = aspectRatio;
+
     const fitContent = () => {
       const scale = calculateReceiptPreviewScale({
         paperWidth: paperElement.clientWidth,
@@ -221,14 +228,14 @@ function ReceiptPreviewSheet({
     return () => {
       observer?.disconnect();
       window.removeEventListener('resize', fitContent);
+      paperElement.style.removeProperty('aspect-ratio');
     };
-  }, []);
+  }, [aspectRatio]);
 
   return (
     <section
       ref={paperRef}
       className={className}
-      style={{ aspectRatio }}
       aria-label={label}
       data-receipt-preview-paper={paper}
     >

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CheckOutlined as Check, CloudUploadOutlined as UploadCloud, SaveOutlined as Save } from '@ant-design/icons';
-import { Alert, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, FormSection, Input, Label } from './settingsAntd';
+import { Alert, Button, Card, ColorPicker, Input, Typography } from 'antd';
 import { useTheme, COLOR_THEMES, type ColorTheme } from '@/hooks/useTheme';
 import { type FiscalSettings, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { safeClientMessage } from '@/lib/support/clientIssueLog';
@@ -82,23 +82,16 @@ export function BrandingView({ canEdit, onStatus }: BrandingViewProps) {
   }
 
   return (
-    <FormSection
-      title="Marca institucional"
-      description="Logo y color de la marca. Visible en encabezados y botones."
-    >
+    <section>
+      <Typography.Title level={3}>Marca institucional</Typography.Title>
+      <Typography.Paragraph type="secondary">Logo y color de la marca. Visible en encabezados y botones.</Typography.Paragraph>
       {error ? (
-        <Alert variant="destructive" title="No se pudo guardar">
-          {error}
-        </Alert>
+        <Alert type="error" showIcon title="No se pudo guardar" description={error} />
       ) : null}
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Logo institucional</CardTitle>
-            <CardDescription>Aparece en recibos y cabecera de la app.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <Card title="Logo institucional" extra={<Typography.Text type="secondary">Aparece en recibos y cabecera de la app.</Typography.Text>}>
+          <div className="space-y-4">
             <div className="flex flex-col items-center justify-center border-2 border-dashed border-operational-border bg-muted/40 p-8">
               {logoUrl ? (
                 <img
@@ -115,7 +108,7 @@ export function BrandingView({ canEdit, onStatus }: BrandingViewProps) {
             </div>
             {canEdit && (
               <div className="space-y-2">
-                <Label htmlFor="logo-input">Seleccionar imagen (.png, .jpg)</Label>
+                <label htmlFor="logo-input">Seleccionar imagen (.png, .jpg)</label>
                 <Input
                   id="logo-input"
                   type="file"
@@ -124,49 +117,40 @@ export function BrandingView({ canEdit, onStatus }: BrandingViewProps) {
                   onChange={(e) => setLogoFile(e.target.files?.[0] ?? null)}
                 />
                 {logoFile && (
-                  <Button type="button" onClick={handleUploadLogo} disabled={uploading} className="w-full gap-2">
-                    <Save data-icon aria-hidden="true" />
+                  <Button htmlType="button" type="primary" icon={<Save aria-hidden="true" />} onClick={handleUploadLogo} disabled={uploading} className="w-full gap-2">
                     {uploading ? 'Subiendo...' : 'Subir logo'}
                   </Button>
                 )}
               </div>
             )}
-          </CardContent>
+          </div>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Color de marca</CardTitle>
-            <CardDescription>Aplica a botones, acentos y estados activos.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
+        <Card title="Color de marca" extra={<Typography.Text type="secondary">Aplica a botones, acentos y estados activos.</Typography.Text>}>
+          <div className="space-y-3">
             {(Object.keys(COLOR_THEMES) as ColorTheme[]).map((themeKey) => {
               const themeObj = COLOR_THEMES[themeKey];
               const active = colorTheme === themeKey;
               return (
                 <Button
                   key={themeKey}
-                  type="button"
-                  variant={active ? 'secondary' : 'outline'}
+                  htmlType="button"
+                  type={active ? 'primary' : 'default'}
                   onClick={() => handleSaveColor(themeKey)}
                   disabled={!canEdit}
                   className="h-auto w-full justify-between p-3 text-left"
                 >
                   <span className="flex items-center gap-3">
-                    <span
-                      aria-hidden="true"
-                      className="size-7 border border-black/10"
-                      style={{ backgroundColor: themeObj.light.secondary }}
-                    />
+                    <ColorPicker aria-hidden="true" value={themeObj.light.secondary} disabled size="small" />
                     <span className="text-sm">{themeObj.name}</span>
                   </span>
                   {active ? <Check aria-hidden="true" className="size-4 text-secondary shrink-0" /> : null}
                 </Button>
               );
             })}
-          </CardContent>
+          </div>
         </Card>
       </div>
-    </FormSection>
+    </section>
   );
 }

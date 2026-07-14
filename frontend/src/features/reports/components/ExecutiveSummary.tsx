@@ -182,12 +182,12 @@ export function ExecutiveSummary({ report }: ExecutiveSummaryProps) {
       aria-labelledby="executive-summary-title"
       className="flex flex-col gap-5 overflow-hidden border border-operational-border bg-operational-surface p-5 sm:p-6"
     >
-      <header className="-mx-5 -mt-5 flex flex-col gap-3 border-b border-blue-900 bg-blue-700 p-5 text-white sm:-mx-6 sm:-mt-6 sm:p-6 lg:flex-row lg:items-end lg:justify-between">
+      <header className="-mx-5 -mt-5 flex flex-col gap-3 border-b border-operational-border bg-surface p-5 text-foreground sm:-mx-6 sm:-mt-6 sm:p-6 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">
-        <p id="executive-summary-title" className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground">
+        <p id="executive-summary-title" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Resumen ejecutivo
         </p>
-        <h2 className="text-lg font-semibold text-white">
+        <h2 className="text-lg font-semibold text-foreground">
           Lectura de facturacion, cobros y caja
         </h2>
         <p className="text-xs text-muted-foreground">
@@ -195,15 +195,15 @@ export function ExecutiveSummary({ report }: ExecutiveSummaryProps) {
         </p>
         </div>
         <dl className="grid grid-cols-3 gap-2 text-right text-xs sm:min-w-80">
-          <div className="border border-operational-border bg-white/10 px-3 py-2">
+          <div className="border border-operational-border bg-muted/40 px-3 py-2">
             <dt className="text-muted-foreground">Pagadas</dt>
             <dd className="mt-1 font-semibold tabular-nums text-foreground">{report.summary.paid_count}</dd>
           </div>
-          <div className="border border-operational-border bg-white/10 px-3 py-2">
+          <div className="border border-operational-border bg-muted/40 px-3 py-2">
             <dt className="text-muted-foreground">Parciales</dt>
             <dd className="mt-1 font-semibold tabular-nums text-foreground">{report.summary.partial_count}</dd>
           </div>
-          <div className="border border-operational-border bg-white/10 px-3 py-2">
+          <div className="border border-operational-border bg-muted/40 px-3 py-2">
             <dt className="text-muted-foreground">Anuladas</dt>
             <dd className="mt-1 font-semibold tabular-nums text-foreground">{report.summary.voided_count}</dd>
           </div>
@@ -234,7 +234,7 @@ export function ExecutiveSummary({ report }: ExecutiveSummaryProps) {
               )}
             >
               <header className="flex items-start justify-between gap-2">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   {spec.label}
                 </p>
                 {deltaView && DeltaIcon ? (
@@ -250,7 +250,7 @@ export function ExecutiveSummary({ report }: ExecutiveSummaryProps) {
                   : formatLempirasUI(value)}
               </p>
               <p className="text-xs text-muted-foreground">{context}</p>
-              <p className="text-[11px] text-muted-foreground">{spec.helper}</p>
+              <p className="text-xs text-muted-foreground">{spec.helper}</p>
             </article>
           );
         })}

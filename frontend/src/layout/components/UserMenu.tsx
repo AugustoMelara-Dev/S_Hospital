@@ -24,7 +24,7 @@ export function UserMenu({
     {
       key: 'user-info',
       label: (
-        <div className="border-b border-border pb-2 text-xs" style={{ minWidth: '180px' }}>
+        <div className="min-w-44 border-b border-border pb-2 text-xs">
           <p className="font-semibold text-foreground">{user.name}</p>
           <p className="truncate font-medium text-secondary" title={roleLabel}>
             {roleLabel}
@@ -85,10 +85,10 @@ export function UserMenu({
         <div className="flex size-8 items-center justify-center bg-primary text-xs font-bold text-primary-foreground">
           {user.name.charAt(0).toUpperCase()}
         </div>
-        <span className="hidden max-w-[10rem] truncate text-xs lg:inline" title={user.name}>
+        <span className="hidden max-w-40 truncate text-xs lg:inline" title={user.name}>
           {user.name}
         </span>
-        <DownOutlined className="text-[10px] text-muted-foreground" aria-hidden="true" />
+        <DownOutlined className="text-xs text-muted-foreground" aria-hidden="true" />
       </button>
     </Dropdown>
   );

@@ -92,17 +92,17 @@ export function InvoiceCart({
                 <div
                   key={`${item.service.id}-${index}`}
                   role="listitem"
-                  className="grid gap-4 border border-operational-border bg-card p-4 hover:border-secondary/25 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+                  className="grid gap-4 border border-operational-border bg-card p-4 hover:border-secondary/25 sm:grid-cols-2 sm:items-center"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
                       <p className="break-words text-sm font-semibold leading-tight">{item.service.name}</p>
                       <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                        <Tag className="px-1.5 py-0.5 text-[10px] m-0">
+                        <Tag className="m-0 px-1.5 py-0.5 text-xs">
                           {item.service.category?.name ?? 'Sin categoría'}
                         </Tag>
                         {item.service.area?.name ? (
-                          <Tag className="px-1.5 py-0.5 text-[10px] m-0">
+                          <Tag className="m-0 px-1.5 py-0.5 text-xs">
                             {item.service.area.name}
                           </Tag>
                         ) : null}
@@ -151,7 +151,7 @@ export function InvoiceCart({
                       />
                     </div>
                     <div className="text-right">
-                      <span className="block text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Importe estimado</span>
+                      <span className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Importe estimado</span>
                       <span className="font-mono text-sm font-semibold tabular-nums">
                         {formatLempirasUIFromCents(estimatedLineTotal)}
                       </span>

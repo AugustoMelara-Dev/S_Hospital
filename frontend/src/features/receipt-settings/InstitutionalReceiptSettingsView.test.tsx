@@ -139,7 +139,7 @@ describe('InstitutionalReceiptSettingsView', () => {
     renderView();
 
     const institutional = await screen.findByRole('group', { name: 'Formatos institucionales' });
-    const compatibility = screen.getByRole('group', { name: 'Compatibilidad térmica' });
+    const compatibility = screen.getByRole('group', { name: 'Formatos térmicos secundarios' });
 
     expect(within(institutional).getAllByRole('radio')).toHaveLength(3);
     expect(within(compatibility).queryAllByRole('radio')).toHaveLength(0);

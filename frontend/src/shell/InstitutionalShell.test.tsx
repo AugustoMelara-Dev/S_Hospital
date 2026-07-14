@@ -4,9 +4,9 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { type AuthUser, type CashSession } from '../lib/api';
-import { ClinicalShell } from './ClinicalShell';
-import { ClinicalMobileNav } from './navigation/ClinicalMobileNav';
-import { ClinicalRail } from './navigation/ClinicalRail';
+import { InstitutionalShell } from './InstitutionalShell';
+import { InstitutionalMobileNav } from './navigation/InstitutionalMobileNav';
+import { InstitutionalRail } from './navigation/InstitutionalRail';
 
 vi.mock('antd', async (importOriginal) => {
   const original = await importOriginal<typeof import('antd')>();
@@ -50,7 +50,6 @@ vi.mock('antd', async (importOriginal) => {
                       if (item.onClick) item.onClick();
                       if (onOpenChange) onOpenChange(false);
                     }}
-                    className={item.className}
                   >
                     {item.label}
                   </button>
@@ -145,15 +144,15 @@ function renderShell({
 } = {}) {
   return render(
     <MemoryRouter initialEntries={[initialPath]}>
-      <ClinicalShell cashSession={cashSession} onLogout={onLogout} status="Servidor local disponible" user={user}>
+      <InstitutionalShell cashSession={cashSession} onLogout={onLogout} status="Servidor local disponible" user={user}>
         <div>Contenido</div>
         <LocationProbe />
-      </ClinicalShell>
+      </InstitutionalShell>
     </MemoryRouter>,
   );
 }
 
-describe('ClinicalShell', () => {
+describe('InstitutionalShell', () => {
   beforeEach(() => {
     window.localStorage.clear();
     Element.prototype.scrollIntoView = vi.fn();
@@ -165,8 +164,8 @@ describe('ClinicalShell', () => {
     expect(screen.getAllByText(/Caja #12/)).toHaveLength(1);
     expect(screen.getByText(/Caja #12/).parentElement).not.toHaveClass('hidden');
     const identities = screen.getAllByText('Hospital San Isidro');
-    const mobileIdentity = screen.getByTestId('clinical-mobile-identity');
-    const desktopIdentity = screen.getByTestId('clinical-desktop-identity');
+    const mobileIdentity = screen.getByTestId('institutional-mobile-identity');
+    const desktopIdentity = screen.getByTestId('institutional-desktop-identity');
 
     expect(identities).toHaveLength(2);
     expect(mobileIdentity).toHaveClass('lg:hidden');
@@ -175,10 +174,10 @@ describe('ClinicalShell', () => {
   });
 
   it('mantiene identidad accesible y marca visible al reducir el rail', () => {
-    window.localStorage.setItem('s-hospital-clinical-rail:v1', 'collapsed');
+    window.localStorage.setItem('s-hospital-institutional-rail:v1', 'collapsed');
     renderShell();
 
-    const rail = screen.getByTestId('clinical-rail');
+    const rail = screen.getByTestId('institutional-rail');
     const brand = within(rail).getByLabelText('Hospital San Isidro');
 
     expect(rail).toHaveAttribute('data-collapsed', 'true');
@@ -205,7 +204,7 @@ describe('ClinicalShell', () => {
   it('explica la navegación vacía dentro del shell móvil', () => {
     render(
       <MemoryRouter>
-        <ClinicalMobileNav activeItem={undefined} navigation={[]} onOpenChange={vi.fn()} open={false} />
+        <InstitutionalMobileNav activeItem={undefined} navigation={[]} onOpenChange={vi.fn()} open={false} />
       </MemoryRouter>,
     );
 
@@ -230,12 +229,12 @@ describe('ClinicalShell', () => {
     renderShell();
 
     fireEvent.click(screen.getByRole('button', { name: 'Reducir navegación' }));
-    expect(screen.getByTestId('clinical-rail')).toHaveAttribute('data-collapsed', 'true');
-    expect(window.localStorage.getItem('s-hospital-clinical-rail:v1')).toBe('collapsed');
+    expect(screen.getByTestId('institutional-rail')).toHaveAttribute('data-collapsed', 'true');
+    expect(window.localStorage.getItem('s-hospital-institutional-rail:v1')).toBe('collapsed');
 
     fireEvent.click(screen.getByRole('button', { name: 'Expandir navegación' }));
-    expect(screen.getByTestId('clinical-rail')).toHaveAttribute('data-collapsed', 'false');
-    expect(window.localStorage.getItem('s-hospital-clinical-rail:v1')).toBe('expanded');
+    expect(screen.getByTestId('institutional-rail')).toHaveAttribute('data-collapsed', 'false');
+    expect(window.localStorage.getItem('s-hospital-institutional-rail:v1')).toBe('expanded');
   });
 
   it('usa un toggle de rail 44x44 sin ancho conflictivo', () => {
@@ -250,7 +249,7 @@ describe('ClinicalShell', () => {
     renderShell();
 
     expect(screen.getByRole('main').parentElement?.className).not.toMatch(/transition-\[(?:margin|width)\]/);
-    expect(screen.getByTestId('clinical-rail').className).not.toMatch(/transition-\[(?:margin|width)\]/);
+    expect(screen.getByTestId('institutional-rail').className).not.toMatch(/transition-\[(?:margin|width)\]/);
   });
 
   it('cierra el sheet móvil con Escape y devuelve foco', async () => {
@@ -322,8 +321,8 @@ describe('ClinicalShell', () => {
     renderShell();
 
     fireEvent.keyDown(window, { key: '?' });
-    expect(screen.getByRole('dialog', { name: 'Atajos de teclado' })).toBeVisible();
-    fireEvent.click(screen.getByRole('button', { name: 'Cerrar modal' }));
+    await waitFor(() => expect(screen.getByRole('dialog', { name: 'Atajos de teclado' })).toBeVisible());
+    fireEvent.keyDown(screen.getByRole('dialog', { name: 'Atajos de teclado' }), { key: 'Escape' });
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Atajos de teclado' })).not.toBeInTheDocument());
 
     fireEvent.click(screen.getByRole('button', { name: 'Abrir ayuda' }));
@@ -335,7 +334,7 @@ describe('ClinicalShell', () => {
     renderShell({ onLogout });
     const trigger = screen.getByRole('button', { name: 'Abrir menu de usuario' });
     fireEvent.click(trigger);
-    fireEvent.click(await screen.findByRole('menuitem', { name: 'Cerrar sesion' }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: /Cerrar sesi.n/i }));
     expect(onLogout).toHaveBeenCalledOnce();
   });
 
@@ -351,7 +350,7 @@ describe('ClinicalShell', () => {
   it('explica una navegación vacía', () => {
     render(
       <MemoryRouter>
-        <ClinicalRail
+        <InstitutionalRail
           activeItem={undefined}
           collapsed={false}
           hospitalName="Hospital San Isidro"

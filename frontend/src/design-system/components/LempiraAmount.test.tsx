@@ -1,10 +1,10 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { MoneyText } from './money-text';
+import { LempiraAmount } from './LempiraAmount';
 
-describe('MoneyText', () => {
-  it('formats cent amounts as Lempiras with tabular numbers', () => {
-    render(<MoneyText amountCents={123456} />);
+describe('LempiraAmount', () => {
+  it('renders cents as a non-translatable tabular Lempira amount', () => {
+    render(<LempiraAmount cents={123456} />);
 
     const amount = screen.getByText('L 1,234.56');
     expect(amount).toHaveClass('tabular-nums');

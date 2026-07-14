@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { COLOR_THEMES, normalizeColorTheme, type ColorTheme } from '../design-system/themes/colorThemes';
+import { institutionalDarkTheme, institutionalLightTheme } from '../design-system/antd/theme';
 
 export { COLOR_THEMES, type ColorTheme } from '../design-system/themes/colorThemes';
 
@@ -35,15 +36,17 @@ export function useTheme() {
 
     // 2. Apply theme color variables
     const config = COLOR_THEMES[colorTheme][isDark ? 'dark' : 'light'];
+    const semanticTokens = (isDark ? institutionalDarkTheme : institutionalLightTheme).token ?? {};
     root.style.setProperty('--institutional-primary', config.secondary);
-    root.style.setProperty('--institutional-primary-foreground', isDark ? '#0f172a' : '#ffffff');
-    root.style.setProperty('--institutional-secondary', isDark ? '#cbd5e1' : '#475569');
+    root.style.setProperty('--institutional-primary-foreground', String(isDark ? semanticTokens.colorBgBase : semanticTokens.colorTextLightSolid));
+    root.style.setProperty('--institutional-secondary', String(semanticTokens.colorTextSecondary));
     root.style.setProperty('--institutional-accent', config.accent);
     root.style.setProperty('--institutional-accent-foreground', config.accentForeground);
 
     // Sidebar indicators / highlights
-    root.style.setProperty('--institutional-sidebar-primary', isDark ? config.ring : lightenForDarkRail(config.secondary));
-    root.style.setProperty('--institutional-sidebar-ring', isDark ? config.ring : lightenForDarkRail(config.secondary));
+    const railColor = COLOR_THEMES[colorTheme].dark.ring;
+    root.style.setProperty('--institutional-sidebar-primary', railColor);
+    root.style.setProperty('--institutional-sidebar-ring', railColor);
   }, [theme, colorTheme, isDark]);
 
   const setTheme = useCallback((newTheme: Theme) => {
@@ -80,15 +83,4 @@ export function useTheme() {
     colorTheme,
     setColorTheme,
   } as const;
-}
-
-function lightenForDarkRail(color: string) {
-  const accessibleRailColors: Record<string, string> = {
-    '#0f766e': '#5eead4',
-    '#0369a1': '#7dd3fc',
-    '#047857': '#6ee7b7',
-    '#4338ca': '#a5b4fc',
-    '#be123c': '#fda4af',
-  };
-  return accessibleRailColors[color] ?? '#e2e8f0';
 }

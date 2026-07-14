@@ -1,9 +1,10 @@
 ﻿import { useEffect, useRef, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, type UseFormRegisterReturn } from 'react-hook-form';
+import type { ComponentProps, ReactNode } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { AlertOutlined as AlertTriangle, SaveOutlined as Save } from '@ant-design/icons';
-import { Alert, AlertDescription, AlertTitle, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, ConfirmDialog, FormField, FormSection, Input, StatusBadge, Textarea } from './settingsAntd';
+import { Alert, Button, Card, Form, Input, Modal, Tag, Typography } from 'antd';
 import { type FiscalSequence, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { safeClientMessage } from '@/lib/support/clientIssueLog';
 
@@ -30,6 +31,32 @@ const sequenceSchema = z.object({
 });
 
 type SequenceFormData = z.infer<typeof sequenceSchema>;
+
+function FiscalField({ children, error, id, label, required, hint }: {
+  children: (props: { id: string; invalid: boolean; describedBy: string | undefined }) => ReactNode;
+  error?: string;
+  id: string;
+  label: string;
+  required?: boolean;
+  hint?: ReactNode;
+}) {
+  const help = error ?? hint;
+  return (
+    <Form.Item label={label} htmlFor={id} required={required} validateStatus={error ? 'error' : undefined} help={help}>
+      {children({ id, invalid: Boolean(error), describedBy: help ? `${id}-help` : undefined })}
+    </Form.Item>
+  );
+}
+
+function RegisteredInput({ registration, ...props }: ComponentProps<typeof Input> & { registration: UseFormRegisterReturn }) {
+  const { ref, ...field } = registration;
+  return <Input {...field} {...props} ref={(node) => ref(node?.input ?? null)} />;
+}
+
+function RegisteredTextArea({ registration, ...props }: ComponentProps<typeof Input.TextArea> & { registration: UseFormRegisterReturn }) {
+  const { ref, ...field } = registration;
+  return <Input.TextArea {...field} {...props} ref={(node) => ref(node?.resizableTextArea?.textArea ?? null)} />;
+}
 
 function isPlaceholderCai(value: string | null | undefined): boolean {
   return new RegExp(`^${'de' + 'mo'}-cai$`, 'i').test(value?.trim() ?? '');
@@ -151,45 +178,36 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
   }
 
   return (
-    <FormSection
-      title="Numeraci?fún fiscal"
-      description="Configure el rango autorizado para emitir facturas. Cambios requieren motivo y quedan auditados."
-    >
+    <section>
+      <Typography.Title level={3}>Numeraci?fún fiscal</Typography.Title>
+      <Typography.Paragraph type="secondary">Configure el rango autorizado para emitir facturas. Cambios requieren motivo y quedan auditados.</Typography.Paragraph>
       {error ? (
-        <Alert variant="destructive" title="No se pudo guardar">
-          {error}
-        </Alert>
+        <Alert type="error" showIcon title="No se pudo guardar" description={error} />
       ) : null}
 
       {!sequence && (
-        <Alert variant="warning">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Sin numeraci?fún</AlertTitle>
-          <AlertDescription>
-            Configure el CAI, prefijo y rango autorizado antes de emitir facturas.
-          </AlertDescription>
-        </Alert>
+        <Alert type="warning" showIcon icon={<AlertTriangle />} title="Sin numeraci?fún" description="Configure el CAI, prefijo y rango autorizado antes de emitir facturas." />
       )}
 
       {sequence ? (
         <div className="grid gap-3 sm:grid-cols-2" aria-label="Estado del rango fiscal">
-          <div className="rounded-xl border border-operational-border bg-muted/40 p-4">
+          <div className="border border-operational-border bg-muted/40 p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-sm font-semibold">Disponibilidad del rango</p>
-              <StatusBadge status={availableNumbers <= 100 ? 'pending' : 'success'}>
+              <Tag color={availableNumbers <= 100 ? 'warning' : 'success'}>
                 {availableNumbers <= 100 ? 'Rango por agotarse' : 'Rango disponible'}
-              </StatusBadge>
+              </Tag>
             </div>
             <p className="mt-2 text-sm tabular-nums text-muted-foreground">
               {availableNumbers.toLocaleString('es-HN')} números disponibles de {Number(sequence.max_number - sequence.min_number + 1).toLocaleString('es-HN')} autorizados.
             </p>
           </div>
-          <div className="rounded-xl border border-operational-border bg-muted/40 p-4">
+          <div className="border border-operational-border bg-muted/40 p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-sm font-semibold">Vigencia</p>
-              <StatusBadge status={isExpired ? 'failed' : 'success'}>
+              <Tag color={isExpired ? 'error' : 'success'}>
                 {isExpired ? 'Vencida' : 'Vigente'}
-              </StatusBadge>
+              </Tag>
             </div>
             <p className="mt-2 text-sm text-muted-foreground">
               {isExpired ? 'Venci?fú el' : 'Vigente hasta'} {sequence.valid_until}.
@@ -200,16 +218,14 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" aria-busy={form.formState.isSubmitting || saving}>
         <Card>
-          <CardHeader>
-            <CardTitle>Datos fiscales</CardTitle>
-            <CardDescription>CAI, prefijo y rango autorizado por el SAR.</CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-3">
-            <FormField id="prefix" label="Prefijo" required error={form.formState.errors.prefix?.message}>
+          <Typography.Title level={3}>Datos fiscales</Typography.Title>
+          <Typography.Paragraph type="secondary">CAI, prefijo y rango autorizado por el SAR.</Typography.Paragraph>
+          <div className="grid gap-4 md:grid-cols-3">
+            <FiscalField id="prefix" label="Prefijo" required error={form.formState.errors.prefix?.message}>
               {({ id, invalid, describedBy }) => (
-                <Input
+                <RegisteredInput
                   id={id}
-                  {...form.register('prefix')}
+                  registration={form.register('prefix')}
                   placeholder="A"
                   className="font-mono uppercase"
                   aria-invalid={invalid}
@@ -217,12 +233,12 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
                   disabled={!canEdit}
                 />
               )}
-            </FormField>
-            <FormField id="cai" label="CAI" required error={form.formState.errors.cai?.message}>
+            </FiscalField>
+            <FiscalField id="cai" label="CAI" required error={form.formState.errors.cai?.message}>
               {({ id, invalid, describedBy }) => (
-                <Input
+                <RegisteredInput
                   id={id}
-                  {...form.register('cai')}
+                  registration={form.register('cai')}
                   placeholder="CAI-XXXXX-XXXXX-XXXXX"
                   className="font-mono"
                   aria-invalid={invalid}
@@ -230,45 +246,45 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
                   disabled={!canEdit}
                 />
               )}
-            </FormField>
-            <FormField id="valid_until" label="Válido hasta" required error={form.formState.errors.valid_until?.message}>
+            </FiscalField>
+            <FiscalField id="valid_until" label="Válido hasta" required error={form.formState.errors.valid_until?.message}>
               {({ id, invalid, describedBy }) => (
-                <Input
+                <RegisteredInput
                   id={id}
                   type="date"
-                  {...form.register('valid_until')}
+                  registration={form.register('valid_until')}
                   aria-invalid={invalid}
                   aria-describedby={describedBy}
                   disabled={!canEdit}
                 />
               )}
-            </FormField>
-            <FormField id="min_number" label="Desde el número" required error={form.formState.errors.min_number?.message}>
+            </FiscalField>
+            <FiscalField id="min_number" label="Desde el número" required error={form.formState.errors.min_number?.message}>
               {({ id, invalid, describedBy }) => (
-                <Input
+                <RegisteredInput
                   id={id}
                   type="number"
-                  {...form.register('min_number', { valueAsNumber: true })}
+                  registration={form.register('min_number', { valueAsNumber: true })}
                   aria-invalid={invalid}
                   aria-describedby={describedBy}
                   disabled={!canEdit}
                 />
               )}
-            </FormField>
-            <FormField id="max_number" label="Hasta el número" required error={form.formState.errors.max_number?.message}>
+            </FiscalField>
+            <FiscalField id="max_number" label="Hasta el número" required error={form.formState.errors.max_number?.message}>
               {({ id, invalid, describedBy }) => (
-                <Input
+                <RegisteredInput
                   id={id}
                   type="number"
-                  {...form.register('max_number', { valueAsNumber: true })}
+                  registration={form.register('max_number', { valueAsNumber: true })}
                   aria-invalid={invalid}
                   aria-describedby={describedBy}
                   disabled={!canEdit}
                 />
               )}
-            </FormField>
-            <div className="rounded-xl border border-operational-border bg-muted/40 p-4 text-sm">
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+            </FiscalField>
+            <div className="border border-operational-border bg-muted/40 p-4 text-sm">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Correlativo actual
               </p>
               <p className="mt-1 font-mono text-lg font-semibold tabular-nums">
@@ -280,11 +296,11 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
                 El backend lo incrementa al emitir. No se reinicia desde esta pantalla.
               </p>
             </div>
-          </CardContent>
+          </div>
         </Card>
 
         {sequence?.id ? (
-          <FormField
+          <FiscalField
             id="reason"
             label="Motivo del cambio fiscal"
             required
@@ -292,9 +308,9 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
             error={form.formState.errors.reason?.message}
           >
             {({ id, invalid, describedBy }) => (
-              <Textarea
+              <RegisteredTextArea
                 id={id}
-                {...form.register('reason')}
+                registration={form.register('reason')}
                 rows={3}
                 aria-invalid={invalid}
                 aria-describedby={describedBy}
@@ -302,31 +318,31 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
                 placeholder="Ej. Nuevo rango autorizado por SAR"
               />
             )}
-          </FormField>
+          </FiscalField>
         ) : null}
 
         <div className="flex justify-end">
-          <Button type="submit" disabled={!canEdit || form.formState.isSubmitting || saving}>
-            <Save data-icon aria-hidden="true" />
+          <Button htmlType="submit" type="primary" icon={<Save aria-hidden="true" />} disabled={!canEdit || form.formState.isSubmitting || saving}>
             Guardar numeración
           </Button>
         </div>
       </form>
 
-      <ConfirmDialog
+      <Modal
         open={pendingChange !== null}
         title="Revisar cambio fiscal"
-        confirmLabel={saving ? 'Guardando...' : 'Confirmar y guardar'}
-        confirmDisabled={saving}
-        cancelDisabled={saving}
+        okText={saving ? 'Guardando...' : 'Confirmar y guardar'}
+        okButtonProps={{ disabled: saving }}
+        cancelButtonProps={{ disabled: saving }}
         onCancel={() => setPendingChange(null)}
-        onConfirm={() => {
+        onOk={() => {
           if (pendingChange) void saveSequence(pendingChange);
         }}
+        modalRender={(node) => <div role="alertdialog" aria-label="Revisar cambio fiscal">{node}</div>}
       >
         {pendingChange ? (
           <div className="space-y-3">
-            {error ? <Alert variant="destructive" title="No se pudo guardar">{error}</Alert> : null}
+            {error ? <Alert type="error" showIcon title="No se pudo guardar" description={error} /> : null}
             <p>Este cambio afecta la numeraci?fún de las pr?fúximas facturas y quedar?fú auditado.</p>
             <dl className="grid gap-3 border border-operational-border bg-muted/40 p-4 sm:grid-cols-2">
               <div>
@@ -367,7 +383,7 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
             <p className="font-medium text-foreground">El correlativo actual no cambia desde esta pantalla.</p>
           </div>
         ) : null}
-      </ConfirmDialog>
-    </FormSection>
+      </Modal>
+    </section>
   );
 }

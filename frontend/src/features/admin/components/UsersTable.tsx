@@ -1,7 +1,6 @@
 import type { AuthUser } from '@/lib/api';
 import { Button, Tag } from 'antd';
 import { InstitutionalDataGrid, type InstitutionalColumn } from '@/design-system/ag-grid/InstitutionalDataGrid';
-import { StatusTag } from '@/components/ui/status-tag';
 import { UserActionMenu } from './UserActionMenu';
 import { roleLabel } from '@/lib/role-labels';
 import { EyeOutlined as Eye } from '@ant-design/icons';
@@ -75,7 +74,7 @@ export function UsersTable({
             return (
               <Tag
                 key={role}
-                color={role === 'admin' ? 'error' : role === 'supervisor' ? 'processing' : 'default'}
+                color={role === 'supervisor' ? 'processing' : 'default'}
               >
                 <span>{label}</span>
               </Tag>
@@ -89,9 +88,9 @@ export function UsersTable({
       headerName: 'Estado',
       valueGetter: ({ data }) => data?.active ? 'Activo' : 'Inactivo',
       cellRenderer: ({ data: user }: ICellRendererParams<AuthUser>) => user ? (
-        <StatusTag kind={user.active ? 'success' : 'closed'}>
+        <Tag color={user.active ? 'success' : 'default'}>
           {user.active ? 'Activo' : 'Inactivo'}
-        </StatusTag>
+        </Tag>
       ) : null,
     },
     {
@@ -151,13 +150,13 @@ export function UsersTable({
                   <p className="truncate text-sm text-muted-foreground">{user.email}</p>
                   <p className="mt-1 font-mono text-xs text-muted-foreground">{user.username}</p>
                 </div>
-                <StatusTag kind={user.active ? 'success' : 'closed'}>
+                <Tag color={user.active ? 'success' : 'default'}>
                   {user.active ? 'Activo' : 'Inactivo'}
-                </StatusTag>
+                </Tag>
               </div>
               <div className="mt-3 flex flex-wrap gap-1">
                 {user.roles.length > 0 ? user.roles.map((role) => (
-                  <Tag key={role} color={role === 'admin' ? 'error' : 'default'}>{roleLabel(role)}</Tag>
+                  <Tag key={role}>{roleLabel(role)}</Tag>
                 )) : <Tag>Sin rol</Tag>}
               </div>
               <div className="mt-4 flex items-center justify-end gap-2">

@@ -2,11 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { CheckCircleOutlined, PrinterOutlined, SaveOutlined } from '@ant-design/icons';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert, Button, Checkbox, Collapse, Form, Input, InputNumber, Radio, Select, Spin, Tabs } from 'antd';
+import { Alert, Button, Checkbox, Collapse, Form, Input, InputNumber, Radio, Select, Spin, Tabs, Typography, theme as antdTheme } from 'antd';
 import { ReactNode, useRef } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { PageHeader } from '@/components/ui/page-header';
 import { SectionCard, StatCard } from '@/components/shared';
 import { ReceiptSettingsPreview } from './components/ReceiptSettingsPreview';
 import { type InstitutionalReceiptSeries, type ReceiptPrintProfile, apiClient, userSafeErrorMessage } from '@/lib/api';
@@ -141,7 +140,7 @@ export function InstitutionalReceiptSettingsView({
       current_number: 0,
       range_authorization: '',
       legal_text: '',
-      receipt_number_color: '#b91c1c',
+      receipt_number_color: String(antdTheme.getDesignToken().colorError),
       active: true,
     },
   });
@@ -297,10 +296,10 @@ export function InstitutionalReceiptSettingsView({
   if (settingsQuery.isLoading) {
     return (
       <div className="flex flex-col gap-6">
-        <PageHeader
-          title="Preparando ajustes de recibos"
-          description="Papel, copias, logo y firma. El sistema prepara la impresión según el perfil seleccionado."
-        />
+        <header>
+          <Typography.Title level={1}>Preparando ajustes de recibos</Typography.Title>
+          <Typography.Paragraph type="secondary">Papel, copias, logo y firma. El sistema prepara la impresión según el perfil seleccionado.</Typography.Paragraph>
+        </header>
         <div className="flex min-h-48 items-center justify-center" role="status" aria-label="Cargando ajustes de recibos...">
           <Spin size="large" description="Cargando ajustes de recibos..." />
         </div>
@@ -311,10 +310,10 @@ export function InstitutionalReceiptSettingsView({
   if (settingsQuery.isError) {
     return (
       <>
-        <PageHeader
-          title="Recibos institucionales"
-          description="Configuración del recibo clásico, serie, papel y copias para impresora normal."
-        />
+        <header>
+          <Typography.Title level={1}>Recibos institucionales</Typography.Title>
+          <Typography.Paragraph type="secondary">Configuración del recibo clásico, serie, papel y copias para impresora normal.</Typography.Paragraph>
+        </header>
         <Alert
           type="error"
           showIcon
@@ -357,10 +356,10 @@ export function InstitutionalReceiptSettingsView({
 
   return (
     <>
-      <PageHeader
-        title="Recibos institucionales"
-        description="Papel, copias, logo y firma. El sistema prepara la impresión según el perfil seleccionado."
-      />
+      <header>
+        <Typography.Title level={1}>Recibos institucionales</Typography.Title>
+        <Typography.Paragraph type="secondary">Papel, copias, logo y firma. El sistema prepara la impresión según el perfil seleccionado.</Typography.Paragraph>
+      </header>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
@@ -543,7 +542,7 @@ export function InstitutionalReceiptSettingsView({
             label: 'Papel y copias',
             children: (
               <div className="space-y-6">
-          <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] xl:items-start">
+          <div className="grid min-w-0 gap-6 xl:grid-cols-2 xl:items-start">
             <SectionCard
               title="Papel del recibo"
               description="El sistema ajusta márgenes, fuente y escala automáticamente."
@@ -587,7 +586,7 @@ export function InstitutionalReceiptSettingsView({
               </fieldset>
 
               <fieldset className="mt-5 min-w-0 border border-dashed border-operational-border p-3">
-                <legend className="px-1 text-sm font-semibold text-foreground">Compatibilidad térmica</legend>
+                <legend className="px-1 text-sm font-semibold text-foreground">Formatos térmicos secundarios</legend>
                 <p className="text-xs leading-relaxed text-muted-foreground">
                   Disponibles solo para compatibilidad secundaria; no reemplazan el recibo institucional.
                 </p>

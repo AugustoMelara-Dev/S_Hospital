@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { Grid } from 'antd';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FiscalSettingsView } from './FiscalSettingsView';
 import { apiClient, type FiscalSequence, type FiscalSettings } from '@/lib/api';
@@ -108,6 +109,18 @@ describe('FiscalSettingsView (separated sections)', () => {
       'href',
       '/settings/institutional-receipts',
     );
+  });
+
+  it('uses vertical tabs on narrow screens so every tab remains a direct tablist child', async () => {
+    vi.spyOn(Grid, 'useBreakpoint').mockReturnValue({ md: false });
+
+    renderView();
+
+    await screen.findByRole('heading', { level: 1 });
+    const tabList = screen.getByRole('tablist');
+    expect(tabList.closest('.ant-tabs')).toHaveClass('ant-tabs-left');
+    expect(tabList).toHaveAttribute('aria-orientation', 'vertical');
+    expect(tabList.querySelector('.ant-tabs-nav-operations')).toHaveClass('ant-tabs-nav-operations-hidden');
   });
 
   it('renders a sanitized load error when the API fails', async () => {

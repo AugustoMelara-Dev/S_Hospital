@@ -5,14 +5,11 @@ import type { ReceiptData } from '../../lib/api';
 
 const printSpy = vi.fn();
 
-vi.mock('react-to-print', () => ({
-  useReactToPrint: () => printSpy,
-}));
-
 describe('ReceiptPreview', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     printSpy.mockReset();
+    vi.stubGlobal('print', printSpy);
     Object.defineProperty(window.navigator, 'userAgent', {
       configurable: true,
       value: 'Mozilla/5.0 hospital-validation-browser',
@@ -23,6 +20,7 @@ describe('ReceiptPreview', () => {
 
   afterEach(() => {
     cleanup();
+    vi.unstubAllGlobals();
     vi.useRealTimers();
   });
 

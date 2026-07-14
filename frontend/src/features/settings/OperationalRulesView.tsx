@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { SaveOutlined as Save } from '@ant-design/icons';
-import { Alert, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, FormSection, Label, Switch } from './settingsAntd';
+import { Alert, Button, Card, Switch, Typography } from 'antd';
 import { type OperationalSettings, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { safeClientMessage } from '@/lib/support/clientIssueLog';
 
@@ -66,60 +66,52 @@ export function OperationalRulesView({ canEdit, onStatus }: OperationalRulesView
   }
 
   return (
-    <FormSection
-      title="Reglas operativas"
-      description="Ajustes que afectan el flujo diario del POS. Cambios quedan auditados."
-    >
+    <section>
+      <Typography.Title level={3}>Reglas operativas</Typography.Title>
+      <Typography.Paragraph type="secondary">Ajustes que afectan el flujo diario del POS. Cambios quedan auditados.</Typography.Paragraph>
       {error ? (
-        <Alert variant="destructive" title="No se pudo guardar">
-          {error}
-        </Alert>
+        <Alert type="error" showIcon title="No se pudo guardar" description={error} />
       ) : null}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Punto de venta</CardTitle>
-          <CardDescription>Activa o desactiva funciones del flujo de facturación.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <Card title="Punto de venta" extra={<Typography.Text type="secondary">Activa o desactiva funciones del flujo de facturación.</Typography.Text>}>
+        <div className="space-y-4">
           <div className="flex items-start gap-4 border border-operational-border bg-muted/40 p-4">
             <Switch
               id="scanner_enabled"
               checked={scannerEnabled}
-              onCheckedChange={setScannerEnabled}
+              onChange={setScannerEnabled}
               disabled={!canEdit}
             />
-            <Label htmlFor="scanner_enabled" className="cursor-pointer">
+            <label htmlFor="scanner_enabled" className="cursor-pointer">
               <span className="block font-medium">Habilitar scanner/códigos en caja</span>
               <span className="mt-1 block text-sm font-normal text-muted-foreground">
                 Si está desactivado, el POS oculta los controles de scanner y códigos internos.
               </span>
-            </Label>
+            </label>
           </div>
 
           <div className="flex items-start gap-4 border border-operational-border bg-muted/40 p-4">
             <Switch
               id="partial_payments_enabled"
               checked={partialPaymentsEnabled}
-              onCheckedChange={setPartialPaymentsEnabled}
+              onChange={setPartialPaymentsEnabled}
               disabled={!canEdit}
             />
-            <Label htmlFor="partial_payments_enabled" className="cursor-pointer">
+            <label htmlFor="partial_payments_enabled" className="cursor-pointer">
               <span className="block font-medium">Permitir abonos parciales</span>
               <span className="mt-1 block text-sm font-normal text-muted-foreground">
                 Si está desactivado, un monto menor al total no se registra como pago completo.
               </span>
-            </Label>
+            </label>
           </div>
-        </CardContent>
+        </div>
       </Card>
 
       <div className="flex justify-end">
-        <Button type="button" onClick={onSubmit} disabled={!canEdit}>
-          <Save data-icon aria-hidden="true" />
+        <Button htmlType="button" type="primary" icon={<Save aria-hidden="true" />} onClick={onSubmit} disabled={!canEdit}>
           Guardar reglas operativas
         </Button>
       </div>
-    </FormSection>
+    </section>
   );
 }

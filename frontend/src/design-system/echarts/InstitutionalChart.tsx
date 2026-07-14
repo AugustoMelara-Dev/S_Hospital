@@ -56,7 +56,6 @@ export function InstitutionalChart({
   loadingMessage = 'Cargando gráfico…',
   summary,
   alternativeTable,
-  height = 320,
   renderer = 'canvas',
 }: InstitutionalChartProps) {
   const { token } = theme.useToken();
@@ -99,7 +98,7 @@ export function InstitutionalChart({
           {state === 'loading' ? loadingMessage : state === 'error' ? errorMessage : emptyMessage}
         </div>
       ) : (
-        <div ref={containerRef} className="institutional-chart__canvas" style={{ height }} role="img" aria-label={ariaLabel} />
+        <div ref={containerRef} className="institutional-chart__canvas" role="img" aria-label={ariaLabel} />
       )}
       {summary ? <figcaption className="institutional-chart__summary">{summary}</figcaption> : null}
       {alternativeTable ? <div className="institutional-chart__table">{alternativeTable}</div> : null}

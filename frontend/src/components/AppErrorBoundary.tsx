@@ -1,5 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
-import { LifeBuoy } from 'lucide-react';
+import { QuestionCircleOutlined } from '@ant-design/icons';
 import { RouteState } from '../design-system/patterns/RouteState';
 import { logClientIssue } from '../lib/support/clientIssueLog';
 
@@ -39,7 +39,7 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
 
     return (
       <main className="flex min-h-screen items-center justify-center bg-background p-4 text-foreground sm:p-6">
-        <div className="w-full max-w-3xl border border-operational-border bg-operational-surface">
+        <div className="w-full max-w-3xl overflow-hidden border border-operational-border bg-operational-surface">
           <RouteState
             kind="error"
             title="La pantalla no pudo cargarse"
@@ -52,7 +52,7 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
               href="/help"
               className="inline-flex min-h-11 items-center gap-2 py-2 text-sm font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <LifeBuoy aria-hidden="true" className="size-4" />
+              <QuestionCircleOutlined aria-hidden="true" />
               Abrir ayuda
             </a>
           </div>

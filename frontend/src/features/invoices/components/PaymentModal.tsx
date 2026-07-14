@@ -374,7 +374,7 @@ export function PaymentModal({
               Use hasta dos decimales. Se registrara el monto aplicado a la factura.
             </p>
             {capNotice && !error ? (
-              <p id="payment-amount-cap" className="text-sm text-warning-foreground" role="status">
+              <p id="payment-amount-cap" className="text-sm text-warning" role="status">
                 {capNotice}
               </p>
             ) : null}

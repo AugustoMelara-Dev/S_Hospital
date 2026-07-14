@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Alert, Button, Empty, message, Spin, Typography } from 'antd';
+import { Alert, App as AntApp, Button, Empty, Spin, Typography } from 'antd';
 import {
   type ExecutiveReportFilters as ExecutiveReportFilterState,
   apiClient,
@@ -19,8 +19,6 @@ import { computePresetRange, parseReportDate, type PresetKey } from './component
 import { AccountingPolicyPanel } from '@/modules/reports/components/AccountingPolicyPanel';
 import { ReportScope } from './components/ReportScope';
 
-const notify = { success: (text: string) => void message.success(text), error: (text: string) => void message.error(text), warning: (text: string) => void message.warning(text) };
-
 type ReportsExecutiveProps = {
   canExport: boolean;
   canViewManagerial: boolean;
@@ -34,6 +32,7 @@ export function ReportsExecutive({
   onStatus,
   titleLevel = 1,
 }: ReportsExecutiveProps) {
+  const { message: notify } = AntApp.useApp();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialFilters = initialExecutiveFilters(searchParams, canViewManagerial);
   const [preset, setPreset] = useState<PresetKey>(() => detectExecutivePreset(initialFilters));
@@ -97,16 +96,16 @@ export function ReportsExecutive({
 
   function handleExportPdf() {
     if (!canExport) {
-      notify.warning('Exportacion PDF requiere permiso de exportacion de reportes.');
+      notify?.warning?.('Exportacion PDF requiere permiso de exportacion de reportes.');
       return;
     }
     if (executiveRangeError) {
-      notify.warning(executiveRangeError);
+      notify?.warning?.(executiveRangeError);
       onStatus(executiveRangeError);
       return;
     }
     if (hasUnappliedChanges) {
-      notify.warning('Aplique el periodo antes de exportar el reporte ejecutivo.');
+      notify?.warning?.('Aplique el periodo antes de exportar el reporte ejecutivo.');
       return;
     }
     if (exporting) return;
@@ -117,12 +116,12 @@ export function ReportsExecutive({
       appliedFilters,
       (blob) => {
         openBlobInNewTab(blob, `reporte-ejecutivo-${appliedFilters.date_from}-a-${appliedFilters.date_to}.pdf`);
-        notify.success('PDF ejecutivo generado.');
+        notify?.success?.('PDF ejecutivo generado.');
         onStatus('PDF ejecutivo generado.');
       },
       (err) => {
         const message = userSafeErrorMessage(err, 'No se pudo generar el PDF ejecutivo.');
-        notify.error(message);
+        notify?.error?.(message);
         onStatus(message);
       },
       () => {
@@ -133,16 +132,16 @@ export function ReportsExecutive({
 
   function handleExportExcel() {
     if (!canExport) {
-      notify.warning('Exportacion Excel requiere permiso de exportacion de reportes.');
+      notify?.warning?.('Exportacion Excel requiere permiso de exportacion de reportes.');
       return;
     }
     if (executiveRangeError) {
-      notify.warning(executiveRangeError);
+      notify?.warning?.(executiveRangeError);
       onStatus(executiveRangeError);
       return;
     }
     if (hasUnappliedChanges) {
-      notify.warning('Aplique el periodo antes de exportar el reporte ejecutivo.');
+      notify?.warning?.('Aplique el periodo antes de exportar el reporte ejecutivo.');
       return;
     }
     if (exporting) return;
@@ -153,12 +152,12 @@ export function ReportsExecutive({
       appliedFilters,
       (blob) => {
         downloadBlob(blob, `reporte-ejecutivo-${appliedFilters.date_from}-a-${appliedFilters.date_to}.xlsx`);
-        notify.success('Excel ejecutivo descargado.');
+        notify?.success?.('Excel ejecutivo descargado.');
         onStatus('Excel ejecutivo descargado.');
       },
       (err) => {
         const message = userSafeErrorMessage(err, 'No se pudo descargar el Excel.');
-        notify.error(message);
+        notify?.error?.(message);
         onStatus(message);
       },
       () => {

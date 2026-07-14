@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useRef, useState } from 'react';
+import { cloneElement, isValidElement, type FormEvent, useEffect, useRef, useState, type ReactElement } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -12,12 +12,21 @@ import {
   userSafeErrorMessage,
 } from '../../lib/api';
 import { useInvoices } from '../../hooks/useInvoices';
-import { Alert, Button, Empty, Input, Modal, Pagination, Skeleton } from 'antd';
+import { Alert, Button, Empty, Input, Modal, Pagination, Skeleton, type PaginationProps } from 'antd';
 import type { ReactNode } from 'react';
 import { ReceiptPreview } from '../receipts/ReceiptPreview';
 import { institutionalReceiptPaperSize } from '../../lib/institutionalReceiptPaper';
 import { downloadBlob, institutionalReceiptPdfFilename, openBlobInNewTab } from '../../lib/download';
 import { formatLempirasUIFromCents, parseCents } from '../../lib/moneyCents';
+
+const accessiblePaginationItem: NonNullable<PaginationProps['itemRender']> = (_, type, originalElement) => {
+  if ((type === 'prev' || type === 'next') && isValidElement(originalElement)) {
+    return cloneElement(originalElement as ReactElement<Record<string, unknown>>, {
+      'aria-label': type === 'prev' ? 'Página anterior' : 'Página siguiente',
+    });
+  }
+  return originalElement;
+};
 import { formatLocalizedDateTime } from '../../lib/format/formatDate';
 import { invalidateBillingQueries } from '@/lib/queryInvalidation';
 import { payloadScopedIdempotencyKey, resetPayloadScopedIdempotencyKey } from '../../lib/api/idempotency';
@@ -285,7 +294,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
         }
 
         const idempotencyKey = payloadScopedIdempotencyKey(reprintIdempotencyKeyRef, reprintIdempotencySignatureRef, {
-          action: 'first-print-from-history',
+          action: 'history-initial-print',
           receiptId: institutionalReceipt.id,
         });
         await apiClient.registerInstitutionalReceiptPrintEvent(institutionalReceipt.id, undefined, { idempotencyKey });
@@ -390,7 +399,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
         downloadReceiptIdempotencyKeyRef,
         downloadReceiptIdempotencySignatureRef,
         {
-          action: 'first-download-from-history',
+          action: 'history-initial-download',
           receiptId: institutionalReceipt.id,
         },
       );
@@ -710,6 +719,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
             disabled={loading}
             showSizeChanger={false}
             onChange={(nextPage) => void changePage(nextPage)}
+            itemRender={accessiblePaginationItem}
           />
         </div>
       )}

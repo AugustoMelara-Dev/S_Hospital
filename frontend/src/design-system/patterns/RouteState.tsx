@@ -1,14 +1,13 @@
-import { useId, type ComponentType } from 'react';
+import { useId, type ReactNode } from 'react';
 import {
-  AlertTriangle,
-  Ban,
-  CircleDashed,
-  FileQuestion,
-  Inbox,
-  RotateCw,
-  WifiOff,
-} from 'lucide-react';
-import { Button } from '../../components/ui/button';
+  CloseCircleOutlined,
+  DisconnectOutlined,
+  ExclamationCircleOutlined,
+  FileUnknownOutlined,
+  InboxOutlined,
+  LoadingOutlined,
+} from '@ant-design/icons';
+import { Button } from 'antd';
 
 export type RouteStateKind =
   | 'loading'
@@ -33,13 +32,13 @@ export type RouteStateProps = {
   headingLevel?: 1 | 2 | 3;
 };
 
-const stateIcons: Record<RouteStateKind, ComponentType<{ className?: string; 'aria-hidden'?: boolean }>> = {
-  denied: Ban,
-  empty: Inbox,
-  error: AlertTriangle,
-  loading: CircleDashed,
-  offline: WifiOff,
-  'not-found': FileQuestion,
+const stateIcons: Record<RouteStateKind, ReactNode> = {
+  denied: <CloseCircleOutlined />,
+  empty: <InboxOutlined />,
+  error: <ExclamationCircleOutlined />,
+  loading: <LoadingOutlined />,
+  offline: <DisconnectOutlined />,
+  'not-found': <FileUnknownOutlined />,
 };
 
 const stateLabels: Record<RouteStateKind, string> = {
@@ -52,7 +51,6 @@ const stateLabels: Record<RouteStateKind, string> = {
 };
 
 export function RouteState({ action, description, detail, headingLevel = 1, kind, title }: RouteStateProps) {
-  const Icon = stateIcons[kind];
   const Heading = `h${headingLevel}` as 'h1' | 'h2' | 'h3';
   const headingId = `route-state-${useId()}-title`.replaceAll(':', '');
   const role = kind === 'error' ? 'alert' : kind === 'loading' ? 'status' : undefined;
@@ -61,26 +59,23 @@ export function RouteState({ action, description, detail, headingLevel = 1, kind
   return (
     <section
       aria-labelledby={headingId}
-      className="relative isolate w-full overflow-hidden border-l-4 border-primary bg-background px-5 py-8 text-foreground sm:px-8 sm:py-10"
+      className="w-full overflow-hidden border border-border bg-white px-5 py-8 text-foreground sm:px-8 sm:py-10"
       role={role}
     >
-      <div className="flex max-w-2xl items-start gap-4 sm:gap-5">
-        <span className="mt-0.5 flex size-11 shrink-0 items-center justify-center rounded-full bg-muted text-primary">
-          <Icon
-            aria-hidden={true}
-            className={kind === 'loading' ? 'size-5 motion-safe:animate-spin motion-reduce:animate-none' : 'size-5'}
-          />
+      <div className="mx-auto flex max-w-2xl flex-col items-center gap-4 text-center sm:gap-5">
+        <span className="flex size-14 shrink-0 items-center justify-center bg-accent text-secondary text-xl">
+          {stateIcons[kind]}
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             {stateLabels[kind]}
           </p>
           <Heading id={headingId} className="mt-2 text-balance text-2xl font-semibold leading-tight sm:text-3xl">
             {title}
           </Heading>
-          <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">{description}</p>
+          <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">{description}</p>
           {detail ? (
-            <details className="mt-4 text-sm text-muted-foreground">
+            <details className="mt-4 border border-border bg-muted/30 p-3 text-left text-sm text-muted-foreground">
               <summary className="min-h-11 cursor-pointer py-3 font-medium text-foreground">Ver detalle</summary>
               <p className="border-l border-border pl-3 leading-6">{detail}</p>
             </details>
@@ -88,12 +83,15 @@ export function RouteState({ action, description, detail, headingLevel = 1, kind
           {actionable ? (
             <div className="mt-6">
               {actionable.href ? (
-                <Button asChild className="min-h-11">
-                  <a href={actionable.href}>{actionable.label}</a>
+                <Button type="primary" href={actionable.href} className="min-h-11">
+                  {actionable.label}
                 </Button>
               ) : (
-                <Button type="button" onClick={actionable.onClick} className="min-h-11">
-                  {kind === 'error' ? <RotateCw data-icon="inline-start" aria-hidden="true" /> : null}
+                <Button
+                  type="primary"
+                  onClick={actionable.onClick}
+                  className="min-h-11"
+                >
                   {actionable.label}
                 </Button>
               )}

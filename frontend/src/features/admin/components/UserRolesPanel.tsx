@@ -50,7 +50,7 @@ export function UserRolesPanel({
         <div className="p-5 sm:p-6">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {roles.map((role) => (
-              <article key={role.id} className="relative overflow-hidden border border-operational-border bg-white p-5 before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-secondary/65">
+              <article key={role.id} className="relative overflow-hidden border border-operational-border bg-surface p-5 before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-secondary/65">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="font-semibold text-foreground">{roleLabel(role.name)}</p>

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { FileTextOutlined as FileText } from '@ant-design/icons';
 import { Link } from 'react-router-dom';
+import { Alert, Button, Flex, Grid, Tabs, Tag, Typography } from 'antd';
 import { type FiscalSequence, type FiscalSettings, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { FiscalStatusCard } from './components/FiscalStatusCard';
 import { FiscalSummary } from './components/FiscalSummary';
@@ -8,7 +9,6 @@ import { HospitalSettingsView } from './HospitalSettingsView';
 import { FiscalNumerationView } from './FiscalNumerationView';
 import { OperationalRulesView } from './OperationalRulesView';
 import { BrandingView } from './BrandingView';
-import { ActionBar, Alert, Button, PageHeader, StatusBadge, Tabs, TabsContent, TabsList, TabsTrigger } from './settingsAntd';
 
 type FiscalSettingsViewProps = {
   canEdit: boolean;
@@ -18,6 +18,7 @@ type FiscalSettingsViewProps = {
 };
 
 export function FiscalSettingsView({ canEdit, canEditOperationalRules, canViewFiscalSettings, onStatus }: FiscalSettingsViewProps) {
+  const screens = Grid.useBreakpoint();
   const [activeTab, setActiveTab] = useState(() => (canViewFiscalSettings ? 'resumen' : 'operativa'));
   const [settings, setSettings] = useState<FiscalSettings | null>(null);
   const [sequence, setSequence] = useState<FiscalSequence | null>(null);
@@ -56,81 +57,42 @@ export function FiscalSettingsView({ canEdit, canEditOperationalRules, canViewFi
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader
-        title="Configuración"
-        description="Configure identidad hospitalaria, numeración fiscal, reglas operativas y presentación de documentos."
-        actions={
-          <ActionBar align="end">
-            <StatusBadge status={canEdit || canEditOperationalRules ? 'success' : 'info'}>
-              {canEdit ? 'Edición habilitada' : canEditOperationalRules ? 'Edición operativa' : 'Solo lectura'}
-            </StatusBadge>
-          </ActionBar>
-        }
-      />
+      <Flex justify="space-between" align="start" wrap="wrap" gap="middle">
+        <div>
+          <Typography.Title level={1}>Configuración</Typography.Title>
+          <Typography.Paragraph type="secondary">Configure identidad hospitalaria, numeración fiscal, reglas operativas y presentación de documentos.</Typography.Paragraph>
+        </div>
+        <Tag color={canEdit || canEditOperationalRules ? 'success' : 'default'}>
+          {canEdit ? 'Edición habilitada' : canEditOperationalRules ? 'Edición operativa' : 'Solo lectura'}
+        </Tag>
+      </Flex>
 
       {error ? (
-        <Alert variant="destructive" title="Error">
-          {error}
-        </Alert>
+        <Alert type="error" showIcon title="Error" description={error} />
       ) : null}
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="grid items-start gap-6 lg:grid-cols-[17rem_minmax(0,1fr)]">
-        <aside className="overflow-x-auto border border-operational-border bg-operational-surface p-3 lg:sticky lg:top-24 lg:overflow-visible">
-          <div className="hidden border-b border-border px-3 pb-4 pt-2 lg:block">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-secondary">Configuración</p>
-            <p className="mt-1 text-sm font-semibold text-foreground">{settings?.hospital_name || 'Hospital'}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{settings?.rtn ? `RTN ${settings.rtn}` : 'Identidad pendiente'}</p>
-          </div>
-          <TabsList className="min-w-max border-0 bg-transparent p-0 lg:flex lg:min-w-0 lg:flex-col lg:items-stretch lg:gap-1">
-            {canViewFiscalSettings ? <TabsTrigger value="resumen">Resumen</TabsTrigger> : null}
-            {canViewFiscalSettings ? <TabsTrigger value="hospital">Hospital</TabsTrigger> : null}
-            {canViewFiscalSettings ? <TabsTrigger value="numeracion">Numeración</TabsTrigger> : null}
-            <TabsTrigger value="operativa">Operativa</TabsTrigger>
-            {canViewFiscalSettings ? <TabsTrigger value="marca">Marca</TabsTrigger> : null}
-          </TabsList>
-        </aside>
-
-        {canViewFiscalSettings ? (
-          <TabsContent value="resumen" className="mt-0 min-w-0 space-y-6">
-            <ActionBar className="justify-between border border-operational-border bg-operational-surface p-4">
+      <Tabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        tabPlacement={screens.md === false ? 'start' : 'top'}
+        items={[
+          ...(canViewFiscalSettings ? [{ key: 'resumen', label: 'Resumen', children: (
+          <div className="min-w-0 space-y-6">
+            <Flex justify="space-between" align="center" wrap="wrap" className="border border-operational-border bg-operational-surface p-4">
               <div>
                 <p className="text-sm font-semibold text-foreground">Documentos institucionales</p>
                 <p className="mt-1 text-xs text-muted-foreground">Configure papel, contenido y vista previa fuera de los datos fiscales.</p>
               </div>
-              <Button asChild variant="outline">
-                <Link to="/settings/institutional-receipts">
-                  <FileText data-icon aria-hidden="true" />
-                  Administrar recibos
-                </Link>
-              </Button>
-            </ActionBar>
+              <Link to="/settings/institutional-receipts"><Button icon={<FileText aria-hidden="true" />}>Administrar recibos</Button></Link>
+            </Flex>
             <FiscalStatusCard settings={settings} sequence={sequence} />
             <FiscalSummary settings={settings} sequence={sequence} />
-          </TabsContent>
-        ) : null}
-
-        {canViewFiscalSettings ? (
-          <TabsContent value="hospital" className="mt-0 min-w-0">
-            <HospitalSettingsView canEdit={canEdit} onStatus={onStatus} />
-          </TabsContent>
-        ) : null}
-
-        {canViewFiscalSettings ? (
-          <TabsContent value="numeracion" className="mt-0 min-w-0">
-            <FiscalNumerationView canEdit={canEdit} onStatus={onStatus} />
-          </TabsContent>
-        ) : null}
-
-        <TabsContent value="operativa" className="mt-0 min-w-0">
-          <OperationalRulesView canEdit={canEditOperationalRules} onStatus={onStatus} />
-        </TabsContent>
-
-        {canViewFiscalSettings ? (
-          <TabsContent value="marca" className="mt-0 min-w-0">
-            <BrandingView canEdit={canEdit} onStatus={onStatus} />
-          </TabsContent>
-        ) : null}
-      </Tabs>
+          </div>
+          ) }, { key: 'hospital', label: 'Hospital', children: <HospitalSettingsView canEdit={canEdit} onStatus={onStatus} /> }, { key: 'numeracion', label: 'Numeración', children: <FiscalNumerationView canEdit={canEdit} onStatus={onStatus} /> }] : []),
+          { key: 'operativa', label: 'Operativa', children: <OperationalRulesView canEdit={canEditOperationalRules} onStatus={onStatus} /> },
+          ...(canViewFiscalSettings ? [{ key: 'marca', label: 'Marca', children: <BrandingView canEdit={canEdit} onStatus={onStatus} /> }] : []),
+        ]}
+      />
     </div>
   );
 }

@@ -6,7 +6,7 @@ import { roleListLabel } from '../../lib/role-labels';
 import { cn } from '../../lib/utils';
 import { type AppNavigationItem, type NavigationGroup } from '../../navigation/appNavigation';
 
-type ClinicalRailProps = {
+type InstitutionalRailProps = {
   activeItem: AppNavigationItem | undefined;
   collapsed: boolean;
   hospitalName: string;
@@ -22,18 +22,18 @@ const groups: ReadonlyArray<{ id: NavigationGroup; label: string }> = [
   { id: 'support', label: 'Asistencia' },
 ];
 
-export function ClinicalRail({ activeItem, collapsed, hospitalName, logoUrl, navigation, onToggleCollapsed, user }: ClinicalRailProps) {
+export function InstitutionalRail({ activeItem, collapsed, hospitalName, logoUrl, navigation, onToggleCollapsed, user }: InstitutionalRailProps) {
   const sections = groups
     .map((group) => ({ ...group, items: navigation.filter((item) => (item.navigationGroup ?? 'operations') === group.id) }))
     .filter((group) => group.items.length > 0);
 
   return (
     <aside
-      data-testid="clinical-rail"
+      data-testid="institutional-rail"
       data-collapsed={collapsed ? 'true' : 'false'}
       className={cn(
         'print-hidden hidden border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:fixed lg:inset-y-0 lg:z-30 lg:flex lg:flex-col',
-        collapsed ? 'lg:w-[80px]' : 'lg:w-[280px]',
+        collapsed ? 'lg:w-20' : 'lg:w-72',
       )}
     >
       <div className={cn('flex min-h-24 items-center border-b border-sidebar-border', collapsed ? 'justify-center px-2' : 'gap-3 px-5')}>
@@ -47,7 +47,7 @@ export function ClinicalRail({ activeItem, collapsed, hospitalName, logoUrl, nav
             className="flex size-11 shrink-0 items-center justify-center border border-white/10 bg-sidebar-primary text-sidebar-primary-foreground"
           >
             {collapsed ? (
-              <span className="text-[10px] font-bold tracking-tight" aria-hidden="true">{hospitalInitials(hospitalName)}</span>
+              <span className="text-xs font-bold tracking-tight" aria-hidden="true">{hospitalInitials(hospitalName)}</span>
             ) : (
               <SafetyCertificateOutlined className="text-xl" aria-hidden="true" />
             )}
@@ -55,8 +55,8 @@ export function ClinicalRail({ activeItem, collapsed, hospitalName, logoUrl, nav
         )}
         {!collapsed ? (
           <div className="min-w-0">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-sidebar-primary">Gestión institucional</p>
-            <p data-testid="clinical-desktop-identity" className="mt-1 truncate text-sm font-semibold text-white" title={hospitalName}>{hospitalName}</p>
+            <p className="text-xs font-semibold uppercase tracking-widest text-sidebar-primary">Gestión institucional</p>
+            <p data-testid="institutional-desktop-identity" className="mt-1 truncate text-sm font-semibold text-white" title={hospitalName}>{hospitalName}</p>
           </div>
         ) : null}
       </div>
@@ -64,8 +64,8 @@ export function ClinicalRail({ activeItem, collapsed, hospitalName, logoUrl, nav
       {sections.length > 0 ? (
         <nav aria-label="Navegación principal" className="min-h-0 flex-1 overflow-y-auto px-3 py-5">
           {sections.map((section) => (
-            <section key={section.id} aria-labelledby={`clinical-rail-${section.id}`} className="mb-5">
-              <h2 id={`clinical-rail-${section.id}`} className={cn('mb-2 px-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-sidebar-foreground/85', collapsed && 'sr-only')}>
+            <section key={section.id} aria-labelledby={`institutional-rail-${section.id}`} className="mb-5">
+              <h2 id={`institutional-rail-${section.id}`} className={cn('mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/85', collapsed && 'sr-only')}>
                 {section.label}
               </h2>
               <ul className="space-y-1">

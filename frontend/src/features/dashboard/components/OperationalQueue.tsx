@@ -1,5 +1,5 @@
 import { ExclamationCircleOutlined, RightOutlined } from '@ant-design/icons';
-import { Button, List, Space, Tag, Typography } from 'antd';
+import { Button, Flex, Space, Tag, Typography } from 'antd';
 
 export type OperationalQueueItem = {
   id: string;
@@ -26,31 +26,27 @@ export function OperationalQueue({ items }: { items: OperationalQueueItem[] }) {
         <Typography.Text type="secondary">Prioridad del turno</Typography.Text>
         <Typography.Title id="operational-queue-title" level={2} className="m-0">Próxima acción</Typography.Title>
       </header>
-      <List
-        dataSource={items}
-        className="px-5"
-        renderItem={(item, index) => (
-          <List.Item
-            key={item.id}
-            actions={item.href && item.actionLabel ? [
-              <Button key="action" type="link" href={item.href} icon={<RightOutlined />} iconPlacement="end">{item.actionLabel}</Button>,
-            ] : undefined}
-          >
-            <List.Item.Meta
-              avatar={index === 0
-                ? <ExclamationCircleOutlined aria-hidden="true" style={{ fontSize: '18px', marginTop: '4px' }} />
+      <Flex vertical role="list" className="px-5">
+        {items.map((item, index) => (
+          <Flex key={item.id} role="listitem" justify="space-between" align="start" gap="middle" className="border-b border-border py-4 last:border-b-0">
+            <Flex align="start" gap="middle">
+              {index === 0
+                ? <ExclamationCircleOutlined aria-hidden="true" className="mt-1 text-lg" />
                 : <Typography.Text type="secondary">{index + 1}</Typography.Text>}
-              title={
+              <Flex vertical gap="small">
                 <Space>
                   <Typography.Text strong>{item.title}</Typography.Text>
                   <Tag color={PRIORITY_TAG_COLOR[item.priority]}>{priorityLabel[item.priority]}</Tag>
                 </Space>
-              }
-              description={item.description}
-            />
-          </List.Item>
-        )}
-      />
+                <Typography.Text type="secondary">{item.description}</Typography.Text>
+              </Flex>
+            </Flex>
+            {item.href && item.actionLabel ? (
+              <Button type="link" href={item.href} icon={<RightOutlined />} iconPlacement="end">{item.actionLabel}</Button>
+            ) : null}
+          </Flex>
+        ))}
+      </Flex>
     </section>
   );
 }

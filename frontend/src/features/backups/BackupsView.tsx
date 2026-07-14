@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { Alert, Button, Col, Modal, Pagination, Result, Row, Spin, Statistic } from 'antd';
-import { PageHeader } from '@/components/ui/page-header';
+import { cloneElement, isValidElement, useEffect, useRef, useState, type ReactElement } from 'react';
+import { Alert, Button, Col, Flex, Modal, Pagination, Result, Row, Spin, Statistic, Typography } from 'antd';
 import { useBackups, useCreateBackup } from '@/hooks/useBackups';
 import { useSystemStatusSnapshot } from '@/hooks/useServerStatus';
 import { BackupEmptyState } from './components/BackupExplanationCard';
@@ -169,11 +168,12 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
 
   return (
     <section id="backups" aria-labelledby="backups-title" className="flex flex-col gap-6">
-      <PageHeader
-        title="Protección y recuperación"
-        description="Estado, creación y descarga autorizada de copias locales de facturación, caja y reportes."
-        actions={
-          canCreate ? (
+      <Flex component="header" justify="space-between" gap="middle" wrap>
+        <div>
+          <Typography.Title id="backups-title" level={1}>Protección y recuperación</Typography.Title>
+          <Typography.Paragraph type="secondary">Estado, creación y descarga autorizada de copias locales de facturación, caja y reportes.</Typography.Paragraph>
+        </div>
+        {canCreate ? (
             <BackupPageActions
               busy={busy}
               createDisabled={pendingCount > 0}
@@ -181,9 +181,8 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
               onCreateRequest={() => setConfirmCreateOpen(true)}
               onRefresh={refreshOperationalStatus}
             />
-          ) : undefined
-        }
-      />
+          ) : null}
+      </Flex>
 
       <div className="space-y-6">
         <section aria-label="Indicadores principales de respaldos">
@@ -274,7 +273,29 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
             />
 
             {meta ? (
-              <Pagination disabled={busy} current={meta.current_page} pageSize={meta.per_page} total={meta.total} showSizeChanger={false} onChange={setPage} />
+              <Flex align="center" gap="middle" wrap>
+                <Typography.Text type="secondary">
+                  Página {meta.current_page} de {Math.max(1, Math.ceil(meta.total / meta.per_page))}
+                </Typography.Text>
+                <Pagination
+                disabled={busy}
+                current={meta.current_page}
+                pageSize={meta.per_page}
+                total={meta.total}
+                showSizeChanger={false}
+                onChange={setPage}
+                itemRender={(_, type, originalElement) => {
+                  if (!isValidElement(originalElement) || (type !== 'prev' && type !== 'next')) {
+                    return originalElement;
+                  }
+                  const label = type === 'prev' ? 'Página anterior' : 'Página siguiente';
+                  return cloneElement(originalElement as ReactElement<Record<string, unknown>>, {
+                    'aria-label': label,
+                    title: label,
+                  });
+                }}
+                />
+              </Flex>
             ) : null}
           </section>
         ) : null}

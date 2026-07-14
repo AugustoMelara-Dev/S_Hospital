@@ -205,7 +205,7 @@ export function BackupSupportStatusPanel({
             </Card>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
             <Card className="border-operational-border bg-operational-surface ">
               <div className="pt-6">
                 <div className="mb-4 flex items-start justify-between gap-3">
@@ -224,7 +224,7 @@ export function BackupSupportStatusPanel({
                     <div key={check.code} className="border border-border p-3">
                       <div className="flex items-start justify-between gap-3">
                         <p className="text-sm font-medium">{friendlyProductionCheck(check.code, check.label)}</p>
-                        <span className={`shrink-0 border px-2 py-0.5 text-[11px] font-semibold ${statusClass(check.status)}`}>
+                        <span className={`shrink-0 border px-2 py-0.5 text-xs font-semibold ${statusClass(check.status)}`}>
                           {statusLabel(check.status)}
                         </span>
                       </div>
@@ -234,7 +234,7 @@ export function BackupSupportStatusPanel({
                   <div className="border border-border p-3">
                     <div className="flex items-start justify-between gap-3">
                       <p className="text-sm font-medium">Estado de datos</p>
-                      <span className={`shrink-0 border px-2 py-0.5 text-[11px] font-semibold ${
+                      <span className={`shrink-0 border px-2 py-0.5 text-xs font-semibold ${
                         systemStatus.runtime.pending_migration_count === null
                           ? 'border-warning/30 bg-warning/10 text-warning'
                           : systemStatus.runtime.pending_migration_count > 0
@@ -259,7 +259,7 @@ export function BackupSupportStatusPanel({
                   <div className="border border-border p-3">
                     <div className="flex items-start justify-between gap-3">
                       <p className="text-sm font-medium">Tareas con problema</p>
-                      <span className={`shrink-0 border px-2 py-0.5 text-[11px] font-semibold ${systemStatus.backups.queue.failed_jobs_count ? 'border-warning/30 bg-warning/10 text-warning' : 'border-success/30 bg-success/10 text-success-foreground'}`}>
+                      <span className={`shrink-0 border px-2 py-0.5 text-xs font-semibold ${systemStatus.backups.queue.failed_jobs_count ? 'border-warning/30 bg-warning/10 text-warning' : 'border-success/30 bg-success/10 text-success-foreground'}`}>
                         {systemStatus.backups.queue.failed_jobs_count ?? 'Sin dato'}
                       </span>
                     </div>
@@ -270,7 +270,7 @@ export function BackupSupportStatusPanel({
                   <div className="border border-border p-3">
                     <div className="flex items-start justify-between gap-3">
                       <p className="text-sm font-medium">Registro operativo</p>
-                      <span className={`shrink-0 border px-2 py-0.5 text-[11px] font-semibold ${systemStatus.runtime.laravel_log.exists ? 'border-info/30 bg-info/10 text-info' : 'border-warning/30 bg-warning/10 text-warning'}`}>
+                      <span className={`shrink-0 border px-2 py-0.5 text-xs font-semibold ${systemStatus.runtime.laravel_log.exists ? 'border-info/30 bg-info/10 text-info' : 'border-warning/30 bg-warning/10 text-warning'}`}>
                         {systemStatus.runtime.laravel_log.exists ? formatBytes(systemStatus.runtime.laravel_log.size_bytes) : 'no existe'}
                       </span>
                     </div>
@@ -281,7 +281,7 @@ export function BackupSupportStatusPanel({
                   <div className="border border-border p-3">
                     <div className="flex items-start justify-between gap-3">
                       <p className="text-sm font-medium">Actividad de respaldos</p>
-                      <span className={`shrink-0 border px-2 py-0.5 text-[11px] font-semibold ${systemStatus.runtime.backup_automation_log.exists ? 'border-info/30 bg-info/10 text-info' : 'border-warning/30 bg-warning/10 text-warning'}`}>
+                      <span className={`shrink-0 border px-2 py-0.5 text-xs font-semibold ${systemStatus.runtime.backup_automation_log.exists ? 'border-info/30 bg-info/10 text-info' : 'border-warning/30 bg-warning/10 text-warning'}`}>
                         {systemStatus.runtime.backup_automation_log.exists ? formatBytes(systemStatus.runtime.backup_automation_log.size_bytes) : 'no existe'}
                       </span>
                     </div>
@@ -308,7 +308,7 @@ export function BackupSupportStatusPanel({
                             </span>
                             <span className="text-xs text-muted-foreground">{route.expected}</span>
                           </span>
-                          <span className={`shrink-0 border px-2 py-0.5 text-[11px] font-semibold ${statusClass(route.status)}`}>
+                          <span className={`shrink-0 border px-2 py-0.5 text-xs font-semibold ${statusClass(route.status)}`}>
                             {statusLabel(route.status)}
                           </span>
                         </li>
@@ -322,7 +322,7 @@ export function BackupSupportStatusPanel({
                         <li key={proof.code} className="border border-border p-2">
                           <div className="flex items-start justify-between gap-3">
                             <span className="text-sm font-medium">{proof.label}</span>
-                            <span className={`shrink-0 border px-2 py-0.5 text-[11px] font-semibold ${statusClass(proof.status)}`}>
+                            <span className={`shrink-0 border px-2 py-0.5 text-xs font-semibold ${statusClass(proof.status)}`}>
                               {statusLabel(proof.status)}
                             </span>
                           </div>

@@ -40,7 +40,7 @@ function Button({ children, disabled, onClick, type = 'button', variant }: { chi
 }
 function Alert({ children, icon, title, variant }: { children?: ReactNode; icon?: ReactNode; title?: string; variant?: string }) {
   const type = variant === 'destructive' ? 'error' : variant === 'success' ? 'success' : variant === 'warning' ? 'warning' : 'info';
-  return <AntAlert type={type} showIcon icon={icon} message={title} description={children} />;
+  return <AntAlert type={type} showIcon icon={icon} title={title} description={children} />;
 }
 function LoadingState({ label }: { label: string }) { return <div role="status" aria-label={label} className="p-8 text-center"><Spin /><p>{label}</p></div>; }
 function EmptyState({ description, title }: { description: string; title: string }) { return <Empty description={<><strong>{title}</strong><br />{description}</>} />; }
@@ -377,7 +377,7 @@ export function CashBoxView({
               difference={difference}
             />
 
-            <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(20rem,0.75fr)] xl:items-start">
+            <div className="grid min-w-0 gap-4 xl:grid-cols-2 xl:items-start">
               <CashMethodSummary
                 paymentsByMethod={activeSession.payments_by_method}
                 paymentsCount={activeSession.payments_count}

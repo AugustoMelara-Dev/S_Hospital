@@ -5,12 +5,10 @@ import {
   Alert,
   Button,
   Flex,
-  List,
   Skeleton,
   Tag,
   Typography,
 } from 'antd';
-import { PageHeader } from '@/components/ui/page-header';
 import { RouteState } from '@/design-system/patterns/RouteState';
 import { useDashboardReport } from '@/hooks/useDashboardReport';
 import { type CashSession, type Invoice, apiClient, userSafeErrorMessage } from '@/lib/api';
@@ -195,6 +193,23 @@ export function DashboardView({
         : missingCatalogSetup && !missingFiscalSetup && canConfigureCatalog
           ? { kind: 'link' as const, label: 'Completar catálogo', to: '/catalog' }
           : null;
+  const primaryHeaderAction = setupAction?.kind === 'wizard' ? (
+    <Button type="primary" onClick={() => setIsWizardOpen(true)} size="large">
+      {setupAction.label}
+    </Button>
+  ) : setupAction?.kind === 'link' ? (
+    <Link to={setupAction.to}>
+      <Button type="primary" size="large">
+        {setupAction.label}
+      </Button>
+    </Link>
+  ) : primaryAction ? (
+    <Link to={primaryAction.to}>
+      <Button type="primary" icon={primaryAction.icon} size="large">
+        {primaryAction.label}
+      </Button>
+    </Link>
+  ) : null;
   if (setupReady && setupStatus?.needs_setup) {
     queueItems.push({
       id: 'setup',
@@ -250,38 +265,20 @@ export function DashboardView({
 
   return (
     <section aria-labelledby="dashboard-title" className="flex min-w-0 flex-col gap-6">
-      <PageHeader
-        id="dashboard-title"
-        headingLevel={1}
-        title="Continuar operación"
-        description={
+      <Flex justify="space-between" align="start" wrap="wrap" gap="middle">
+        <div>
+          <Typography.Title id="dashboard-title" level={1} className="m-0">
+            Continuar operación
+          </Typography.Title>
           <span>
-            <Typography.Text type="secondary" className="text-xs font-semibold uppercase tracking-[0.14em]">
+            <Typography.Text type="secondary" className="text-xs font-semibold uppercase tracking-wider">
               Centro operativo ·{' '}
             </Typography.Text>
             Estado del turno: <Typography.Text strong>{cashIsOpen ? `Caja abierta #${cashSession?.id}` : 'Caja cerrada'}</Typography.Text>
           </span>
-        }
-        actions={
-          setupAction?.kind === 'wizard' ? (
-            <Button type="primary" onClick={() => setIsWizardOpen(true)} size="large">
-              {setupAction.label}
-            </Button>
-          ) : setupAction?.kind === 'link' ? (
-            <Link to={setupAction.to}>
-              <Button type="primary" size="large">
-                {setupAction.label}
-              </Button>
-            </Link>
-          ) : primaryAction ? (
-            <Link to={primaryAction.to}>
-              <Button type="primary" icon={primaryAction.icon} size="large">
-                {primaryAction.label}
-              </Button>
-            </Link>
-          ) : null
-        }
-      />
+        </div>
+        {primaryHeaderAction}
+      </Flex>
 
       {canViewManagerialReports ? <TodayLedger items={ledgerItems} /> : null}
 
@@ -312,7 +309,7 @@ export function DashboardView({
         />
       ) : null}
 
-      <div className={`grid min-w-0 gap-6 ${canViewInvoices ? 'xl:grid-cols-[minmax(17rem,0.72fr)_minmax(0,1.28fr)]' : ''}`}>
+      <div className={`grid min-w-0 gap-6 ${canViewInvoices ? 'xl:grid-cols-2' : ''}`}>
         <OperationalQueue items={queueItems} />
 
         {canViewInvoices ? (
@@ -343,37 +340,29 @@ export function DashboardView({
                 <Alert type="info" showIcon title="Sin facturas recientes" description={cashIsOpen ? 'La actividad del turno aparecerá aquí.' : 'Abra caja para iniciar la actividad del turno.'} />
               ) : (
                 <section aria-label="Facturas recientes">
-                  <List<Invoice>
-                    dataSource={recentInvoices}
-                    size="small"
-                    renderItem={(invoice) => (
-                    <List.Item key={invoice.id}>
-                      <List.Item.Meta
-                        title={
-                          <Flex gap="small" align="center" wrap="wrap">
-                            <Link to={`/invoices?invoice=${invoice.id}`}>
-                              <Typography.Text strong className="text-primary hover:underline cursor-pointer">
-                                {invoice.invoice_number}
-                              </Typography.Text>
-                            </Link>
-                            <InvoiceStatusTag status={invoice.status} />
-                            {canViewManagerialReports ? (
-                              <Typography.Text className="tabular-nums">
-                                {formatLempirasUIFromCents(parseCents(invoice.total))}
-                              </Typography.Text>
-                            ) : null}
-                          </Flex>
-                        }
-                        description={
-                          <Flex gap="middle" wrap="wrap">
-                            <Typography.Text type="secondary">{invoice.patient_name}</Typography.Text>
-                            <Typography.Text type="secondary">{formatDateTimeEs(invoice.issued_at)}</Typography.Text>
-                          </Flex>
-                        }
-                      />
-                    </List.Item>
-                    )}
-                  />
+                  <Flex vertical role="list">
+                    {recentInvoices.map((invoice) => (
+                      <Flex key={invoice.id} role="listitem" vertical gap="small" className="border-b border-border py-3 last:border-b-0">
+                        <Flex gap="small" align="center" wrap="wrap">
+                          <Link to={`/invoices?invoice=${invoice.id}`}>
+                            <Typography.Text strong className="text-primary hover:underline cursor-pointer">
+                              {invoice.invoice_number}
+                            </Typography.Text>
+                          </Link>
+                          <InvoiceStatusTag status={invoice.status} />
+                          {canViewManagerialReports ? (
+                            <Typography.Text className="tabular-nums">
+                              {formatLempirasUIFromCents(parseCents(invoice.total))}
+                            </Typography.Text>
+                          ) : null}
+                        </Flex>
+                        <Flex gap="middle" wrap="wrap">
+                          <Typography.Text type="secondary">{invoice.patient_name}</Typography.Text>
+                          <Typography.Text type="secondary">{formatDateTimeEs(invoice.issued_at)}</Typography.Text>
+                        </Flex>
+                      </Flex>
+                    ))}
+                  </Flex>
                 </section>
               )}
             </div>

@@ -1,7 +1,7 @@
-import { type ReactNode } from 'react';
 import { Tag, type TagProps } from 'antd';
+import type { ReactNode } from 'react';
 
-export type StatusTagKind =
+export type InstitutionalStatusKind =
   | 'normal'
   | 'success'
   | 'warning'
@@ -16,7 +16,7 @@ export type StatusTagKind =
   | 'paid'
   | 'partial';
 
-const STATUS_COLOR: Record<StatusTagKind, string> = {
+const statusColor: Record<InstitutionalStatusKind, string> = {
   normal: 'default',
   success: 'success',
   warning: 'warning',
@@ -32,7 +32,7 @@ const STATUS_COLOR: Record<StatusTagKind, string> = {
   partial: 'warning',
 };
 
-const STATUS_LABEL: Partial<Record<StatusTagKind, string>> = {
+const statusLabel: Record<InstitutionalStatusKind, string> = {
   normal: 'Normal',
   success: 'Correcto',
   warning: 'Atención',
@@ -48,20 +48,15 @@ const STATUS_LABEL: Partial<Record<StatusTagKind, string>> = {
   partial: 'Parcial',
 };
 
-export type StatusTagProps = Omit<TagProps, 'color'> & {
+type InstitutionalStatusProps = Omit<TagProps, 'color'> & {
   children?: ReactNode;
-  kind: StatusTagKind;
-  label?: ReactNode;
+  status: InstitutionalStatusKind;
 };
 
-/**
- * Institutional status tag. All colors come from Ant Design design tokens; no
- * hex literals allowed in feature code.
- */
-export function StatusTag({ children, kind, label, ...props }: StatusTagProps) {
+export function InstitutionalStatus({ children, status, ...props }: InstitutionalStatusProps) {
   return (
-    <Tag color={STATUS_COLOR[kind]} variant="solid" {...props}>
-      {children ?? label ?? STATUS_LABEL[kind] ?? 'Estado'}
+    <Tag color={statusColor[status]} variant="solid" {...props}>
+      {children ?? statusLabel[status]}
     </Tag>
   );
 }

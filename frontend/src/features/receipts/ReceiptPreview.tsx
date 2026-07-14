@@ -1,13 +1,12 @@
 ﻿import { useEffect, useRef, useState } from 'react';
 import type React from 'react';
-import { Alert, Button } from 'antd';
-import { useReactToPrint } from 'react-to-print';
-import { StatusTag } from '../../components/ui/status-tag';
+import { Alert, Button, Tag } from 'antd';
 import { type ReceiptData } from '../../lib/api';
 import { receiptPrintPaperSize } from '../../lib/institutionalReceiptPaper';
 import { formatLempirasFromCents, parseCents } from '../../lib/moneyCents';
 import { formatLocalizedDateTime } from '../../lib/format/formatDate';
 import { receiptPaperPresentation } from '../../modules/receipts/paperPolicy';
+import { printReceiptDocument } from '../../printing/browserPrint';
 
 type ReceiptPreviewProps = {
   onNewInvoice?: () => void;
@@ -20,10 +19,6 @@ export function ReceiptPreview({ onNewInvoice, onPrint, receipt }: ReceiptPrevie
   const [printError, setPrintError] = useState('');
   const receiptWidth = receiptPrintPaperSize(receipt.width);
   const receiptPresentation = receiptPaperPresentation(receiptWidth);
-
-  const handlePrint = useReactToPrint({
-    contentRef: receiptRef,
-  });
 
   async function handlePrintClick() {
     setPrintError('');
@@ -39,11 +34,7 @@ export function ReceiptPreview({ onNewInvoice, onPrint, receipt }: ReceiptPrevie
     }
 
     try {
-      printReceiptDocument(receiptWidth, () => {
-        if (!navigator.userAgent.toLowerCase().includes('jsdom')) {
-          handlePrint();
-        }
-      });
+      printReceiptDocument(receiptWidth);
     } catch {
       setPrintError(
         'No se pudo abrir la ventana de impresión. Verifique la impresora y reimprima desde Historial con motivo cuando el supervisor lo autorice.',
@@ -230,7 +221,7 @@ function ItemName({ item }: { item: ReceiptData['items'][number] }) {
       <span className="name">{item.service_name}</span>
       {Number(item.quantity) !== 1 ? <span className="qty"> x {item.quantity}</span> : null}
       {item.special_rule_applied ? (
-        <StatusTag kind="info" className="special-rule-badge">Regla</StatusTag>
+        <Tag color="processing" className="special-rule-badge">Regla</Tag>
       ) : null}
     </span>
   );
@@ -278,35 +269,4 @@ function statusLabel(status: ReceiptData['invoice']['status']): string {
     paid: 'Pagada',
     void: 'Anulada',
   }[status] ?? status;
-}
-
-function printReceiptDocument(width: ReceiptData['width'], print: () => void) {
-  const previousWidth = document.body.dataset.receiptWidth;
-  const previousPrinting = document.body.dataset.printingReceipt;
-
-  function restorePrintState() {
-    if (previousWidth) {
-      document.body.dataset.receiptWidth = previousWidth;
-    } else {
-      delete document.body.dataset.receiptWidth;
-    }
-
-    if (previousPrinting) {
-      document.body.dataset.printingReceipt = previousPrinting;
-    } else {
-      delete document.body.dataset.printingReceipt;
-    }
-  }
-
-  document.body.dataset.receiptWidth = width;
-  document.body.dataset.printingReceipt = 'true';
-
-  try {
-    print();
-  } catch (error) {
-    restorePrintState();
-    throw error;
-  } finally {
-    restorePrintState();
-  }
 }

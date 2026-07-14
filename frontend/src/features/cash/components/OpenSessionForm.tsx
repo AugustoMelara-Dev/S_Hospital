@@ -50,7 +50,7 @@ export function OpenSessionForm({ isSubmitting, onSubmit }: OpenSessionFormProps
             ref={(element) => { registration.ref(element?.input ?? null); inputRef.current = element?.input ?? null; }}
           />
         </Form.Item>
-        <Alert type="info" showIcon icon={<InfoCircleOutlined />} message="El monto inicial debe registrar el efectivo disponible en la caja al abrir." />
+        <Alert type="info" showIcon icon={<InfoCircleOutlined />} title="El monto inicial debe registrar el efectivo disponible en la caja al abrir." />
         <Button htmlType="submit" type="primary" size="large" block loading={isSubmitting} disabled={isSubmitting} className="mt-4">
           {isSubmitting ? 'Abriendo...' : 'Abrir caja'}
         </Button>

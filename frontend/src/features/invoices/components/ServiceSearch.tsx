@@ -201,9 +201,9 @@ export function ServiceSearch({
             {activeFilterCount} filtro{activeFilterCount === 1 ? '' : 's'}
           </Tag>
         </div>
-        <div className={scannerEnabled ? 'grid gap-3 sm:grid-cols-[1fr_minmax(14rem,18rem)]' : 'grid gap-3'}>
+        <div className={scannerEnabled ? 'grid gap-3 sm:grid-cols-2' : 'grid gap-3'}>
           <div className="flex min-w-0 flex-col gap-2">
-            <label htmlFor="service-search" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            <label htmlFor="service-search" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Buscar por nombre, area o categoria
             </label>
             <div className="relative">
@@ -241,7 +241,7 @@ export function ServiceSearch({
 
           {scannerEnabled ? (
             <div className="flex min-w-0 flex-col gap-2">
-              <label htmlFor="scanner-code" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              <label htmlFor="scanner-code" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Lector USB o entrada manual
               </label>
               <div className="flex items-center gap-2">
@@ -279,7 +279,7 @@ export function ServiceSearch({
           ) : null}
         </div>
 
-        <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+        <div className="grid gap-3 xl:grid-cols-2">
           {serviceAreas.length > 0 && (
             <div className="min-w-0">
               <span className="mb-2 block text-sm font-semibold text-foreground animate-none" id="service-area-label">Area</span>
@@ -338,7 +338,7 @@ export function ServiceSearch({
         <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between" aria-live="polite">
           <div className="flex min-w-0 items-center gap-2">
             <Filter className="size-4 text-secondary" aria-hidden="true" />
-            <label className="font-mono text-xs uppercase tracking-[0.14em] text-muted-foreground">
+            <label className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
               Servicios ({hasIntent ? filteredServices.length : 0})
             </label>
           </div>
@@ -403,20 +403,20 @@ export function ServiceSearch({
                         </span>
                       </div>
                       <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                        <Tag color="processing" className="px-1.5 py-0.5 text-[10px]">
+                        <Tag color="processing" className="px-1.5 py-0.5 text-xs">
                           {service.category?.name ?? 'Sin categoría'}
                         </Tag>
                         {service.area?.name ? (
-                          <Tag className="px-1.5 py-0.5 text-[10px]">
+                          <Tag className="px-1.5 py-0.5 text-xs">
                             {service.area.name}
                           </Tag>
                         ) : null}
                         {scannerEnabled && (service.scan_code || service.barcode || service.qr_code) ? (
-                          <span className="text-[10px] text-muted-foreground">Disponible para lector</span>
+                          <span className="text-xs text-muted-foreground">Disponible para lector</span>
                         ) : null}
                       </div>
                       {isErythropoietin ? (
-                        <p className="mt-2 text-xs font-medium text-warning-foreground">
+                        <p className="mt-2 text-xs font-medium text-warning">
                           Precio L 25.00; gratis solo con receta de diálisis autorizada.
                         </p>
                       ) : null}

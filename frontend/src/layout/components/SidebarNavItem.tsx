@@ -24,12 +24,12 @@ export function SidebarNavItem({ collapsed = false, isActive, item, onNavigate }
       data-slot="sidebar-nav-item"
       title={collapsed ? item.label : undefined}
       className={cn(
-        'group relative flex min-h-11 items-center gap-3 rounded-md border outline-none transition-colors duration-100',
+        'group relative flex min-h-11 items-center gap-3 border outline-none transition-colors duration-100',
         collapsed ? 'justify-center px-0' : 'px-3 py-2.5',
         'text-sm font-medium',
         'focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar',
         isActive
-          ? 'border-sidebar-primary/60 bg-sidebar-primary/10 text-sidebar-accent-foreground shadow-sm'
+          ? 'border-sidebar-primary/60 bg-sidebar-primary/10 text-sidebar-accent-foreground'
           : 'border-transparent text-sidebar-foreground/78 hover:border-sidebar-border hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground',
       )}
       to={item.path}
@@ -39,7 +39,7 @@ export function SidebarNavItem({ collapsed = false, isActive, item, onNavigate }
         <span
           aria-hidden="true"
           className={cn(
-            'absolute left-1 top-1/2 h-7 w-1 -translate-y-1/2 rounded-full bg-transparent transition-colors',
+            'absolute left-1 top-1/2 h-7 w-1 -translate-y-1/2 bg-transparent transition-colors',
             isActive && 'bg-sidebar-primary',
           )}
         />
@@ -50,7 +50,7 @@ export function SidebarNavItem({ collapsed = false, isActive, item, onNavigate }
         aria-hidden="true"
       />
       {labelNode}
-      {isActive && !collapsed ? <span className="ml-auto h-2 w-2 shrink-0 rounded-full bg-sidebar-primary" aria-hidden="true" /> : null}
+      {isActive && !collapsed ? <span className="ml-auto h-2 w-2 shrink-0 bg-sidebar-primary" aria-hidden="true" /> : null}
     </NavLink>
   );
 }

@@ -4,20 +4,20 @@ import { Drawer } from 'antd';
 import { cn } from '../../lib/utils';
 import { type AppNavigationItem } from '../../navigation/appNavigation';
 
-type ClinicalMobileNavProps = {
+type InstitutionalMobileNavProps = {
   activeItem: AppNavigationItem | undefined;
   navigation: readonly AppNavigationItem[];
   onOpenChange: (open: boolean) => void;
   open: boolean;
 };
 
-export function ClinicalMobileNav({ activeItem, navigation, onOpenChange, open }: ClinicalMobileNavProps) {
+export function InstitutionalMobileNav({ activeItem, navigation, onOpenChange, open }: InstitutionalMobileNavProps) {
   const dockItems = navigation.slice(0, 4);
   const remainingItems = navigation.slice(4);
 
   return (
     <>
-      <nav aria-label="Accesos móviles" className="print-hidden fixed inset-x-0 bottom-0 z-30 flex min-h-16 items-stretch border-t border-sidebar-border bg-sidebar px-1 text-sidebar-foreground pb-[env(safe-area-inset-bottom)] lg:hidden">
+      <nav aria-label="Accesos móviles" className="print-hidden fixed inset-x-0 bottom-0 z-30 flex min-h-16 items-stretch border-t border-sidebar-border bg-sidebar px-1 pb-4 text-sidebar-foreground lg:hidden">
         {dockItems.length === 0 ? (
           <p className="flex flex-1 items-center justify-center px-4 text-center text-xs text-sidebar-foreground/70">
             No hay destinos móviles disponibles.
@@ -32,7 +32,7 @@ export function ClinicalMobileNav({ activeItem, navigation, onOpenChange, open }
               to={item.path}
               aria-current={active ? 'page' : undefined}
               className={cn(
-                'flex min-w-0 flex-1 flex-col items-center justify-center gap-1 px-1 py-2 text-[10px] font-medium',
+                'flex min-w-0 flex-1 flex-col items-center justify-center gap-1 px-1 py-2 text-xs font-medium',
                 active ? 'bg-sidebar-accent text-sidebar-primary' : 'text-sidebar-foreground/65'
               )}
             >
@@ -44,7 +44,7 @@ export function ClinicalMobileNav({ activeItem, navigation, onOpenChange, open }
         {remainingItems.length > 0 ? (
           <button
             type="button"
-            className="h-auto min-w-14 flex flex-1 flex-col items-center justify-center gap-1 px-2 py-2 text-[10px] text-sidebar-foreground/65 hover:bg-sidebar-accent hover:text-sidebar-foreground cursor-pointer outline-none transition"
+            className="flex h-auto min-w-14 flex-1 cursor-pointer flex-col items-center justify-center gap-1 px-2 py-2 text-xs text-sidebar-foreground/65 outline-none transition hover:bg-sidebar-accent hover:text-sidebar-foreground"
             aria-label="Más destinos"
             onClick={() => onOpenChange(true)}
           >
@@ -61,7 +61,7 @@ export function ClinicalMobileNav({ activeItem, navigation, onOpenChange, open }
         open={open}
         styles={{ body: { padding: '16px' } }}
         classNames={{ header: 'border-b border-border' }}
-        height="auto"
+        size="default"
       >
         <p className="text-xs text-muted-foreground mb-4">Pantallas permitidas para su usuario.</p>
         <ul className="grid gap-2 overflow-y-auto sm:grid-cols-2">

@@ -107,6 +107,23 @@ describe('ReceiptSettingsPreview', () => {
     expect(screen.getByText(/Copia digital guardada en sistema/)).toBeInTheDocument();
   });
 
+  it('uses the semantic error tag when no configured series color exists', () => {
+    render(
+      <ReceiptSettingsPreview
+        hospitalName="Hospital San Isidro"
+        governmentLine=""
+        secretariatLine=""
+        location=""
+        footerText=""
+        series={null}
+        profile={profile}
+        paper="half_letter"
+      />,
+    );
+
+    expect(screen.getByText('PRUEBA-SIN-SERIE')).toHaveClass('text-receipt-muted');
+  });
+
   it('renders configured physical copies as separate pages', () => {
     render(
       <ReceiptSettingsPreview

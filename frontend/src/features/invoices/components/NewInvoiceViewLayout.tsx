@@ -140,8 +140,8 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
     <section id="nueva-factura" className="flex h-full min-w-0 flex-col gap-5 pb-36 md:pb-8">
       <header className="relative overflow-hidden border border-border bg-surface px-5 py-6 sm:flex sm:items-center sm:justify-between sm:gap-6 sm:px-7">
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary-foreground">Operaciones financieras</p>
-          <h1 className="mt-1 text-2xl font-semibold leading-tight text-white sm:text-3xl">Nueva factura</h1>
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Operaciones financieras</p>
+          <h1 className="mt-1 text-2xl font-semibold leading-tight text-foreground sm:text-3xl">Nueva factura</h1>
         </div>
         <div className="relative mt-4 flex flex-wrap items-center gap-2 sm:mt-0 sm:justify-end">
           <Tag color={cashIsOpen ? 'success' : 'error'} className="min-h-11 px-3 font-mono text-sm tabular-nums sm:min-h-9 flex items-center border-0 m-0">
@@ -194,11 +194,11 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
       </div>
 
       <div aria-live="polite" className="mx-auto w-full max-w-5xl">
-        <ol className="grid grid-cols-3 overflow-hidden border border-border bg-white">
+        <ol className="grid grid-cols-3 overflow-hidden border border-border bg-surface">
           {stepLabels.map((label, index) => (
             <li key={label} className="min-w-0 border-r border-border last:border-r-0">
-              <Button type="text" aria-current={mobileStep === index ? 'step' : undefined} onClick={() => index <= mobileStep ? goToStep(index as 0 | 1 | 2) : undefined} disabled={index > mobileStep} className={`h-auto min-h-14 w-full min-w-0 justify-start gap-2 px-3 py-3 text-left sm:px-4 ${mobileStep === index ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'}`}>
-                <span className={`flex size-8 shrink-0 items-center justify-center text-xs font-bold ${mobileStep === index ? 'bg-secondary text-white' : 'bg-muted text-muted-foreground'}`}>{index + 1}</span>
+              <Button type={mobileStep === index ? 'primary' : 'text'} aria-current={mobileStep === index ? 'step' : undefined} onClick={() => index <= mobileStep ? goToStep(index as 0 | 1 | 2) : undefined} disabled={index > mobileStep} className="h-auto min-h-14 w-full min-w-0 justify-start gap-2 px-3 py-3 text-left sm:px-4">
+                <span className={`flex size-8 shrink-0 items-center justify-center text-xs font-bold ${mobileStep === index ? 'bg-primary-foreground text-primary' : 'bg-muted text-muted-foreground'}`}>{index + 1}</span>
                 <span className="truncate text-xs font-semibold sm:text-sm">{label}</span>
               </Button>
             </li>

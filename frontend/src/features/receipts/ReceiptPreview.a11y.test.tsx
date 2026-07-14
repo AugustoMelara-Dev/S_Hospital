@@ -1,12 +1,8 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { render } from '@testing-library/react';
 import { axe } from 'vitest-axe';
 import { ReceiptPreview } from './ReceiptPreview';
 import type { ReceiptData } from '../../lib/api';
-
-vi.mock('react-to-print', () => ({
-  useReactToPrint: () => () => undefined,
-}));
 
 function buildReceipt(): ReceiptData {
   return {

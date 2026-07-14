@@ -106,7 +106,6 @@ export function CommandPalette({ navigation, onOpenChange, open, user }: Command
       closable={false}
       width={600}
       styles={{ body: { padding: 0 } }}
-      style={{ top: '15vh' }}
       destroyOnHidden
       transitionName=""
       maskTransitionName=""
@@ -128,7 +127,7 @@ export function CommandPalette({ navigation, onOpenChange, open, user }: Command
           />
         </div>
         
-        <div className="max-h-[300px] overflow-y-auto p-2">
+        <div className="max-h-72 overflow-y-auto p-2">
           {filteredCommands.length === 0 ? (
             <div className="p-4 text-center text-sm text-muted-foreground">
               No se encontraron comandos.

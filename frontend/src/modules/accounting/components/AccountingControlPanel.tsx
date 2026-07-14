@@ -144,7 +144,7 @@ function Fact({
   value: string;
 }) {
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-1 px-4 py-4 transition-colors hover:bg-accent/20 sm:px-5">
+    <div className="grid grid-cols-2 gap-x-4 gap-y-1 px-4 py-4 transition-colors hover:bg-accent/20 sm:px-5">
       <dt className="text-sm text-muted-foreground">{label}</dt>
       <dd className="text-right font-semibold tabular-nums text-foreground">{value}</dd>
       <dd

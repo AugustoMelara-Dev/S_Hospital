@@ -131,7 +131,7 @@ describe('LoginView', () => {
   it('avisa cuando Bloq Mayús está activo en contraseña', () => {
     render(<LoginView {...defaultProps} />, { wrapper: Wrapper });
 
-    fireEvent.keyDown(screen.getByLabelText('Contraseña'), {
+    fireEvent.keyDown(screen.getByPlaceholderText('********'), {
       key: 'A',
       getModifierState: (key: string) => key === 'CapsLock',
     });

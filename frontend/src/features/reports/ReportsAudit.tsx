@@ -2,10 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { SearchOutlined, WarningOutlined } from '@ant-design/icons';
-import { Alert, Button, DatePicker, Form, Input, Spin, Statistic } from 'antd';
+import { Alert, Button, DatePicker, Form, Input, Spin, Statistic, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { InstitutionalDataGrid, type InstitutionalColumn } from '@/design-system/ag-grid';
-import { PageHeader } from '@/components/ui/page-header';
 import { apiClient, system } from '@/lib/api';
 import type { AuditLogEntry as ApiAuditLogEntry, AuditLogPage, OperationsReport } from '@/lib/api/types';
 import { useExecutiveReport } from '@/hooks/useExecutiveReport';
@@ -134,11 +133,10 @@ export function ReportsAudit({
 
   return (
     <section className="flex flex-col gap-5" aria-label="Registro de auditoria">
-      <PageHeader
-        title="Auditoria"
-        description="Resumen mensual de supervision operativa y bitacora filtrable."
-        className="pb-4"
-      />
+      <header>
+        <Typography.Title level={1}>Auditoria</Typography.Title>
+        <Typography.Paragraph type="secondary">Resumen mensual de supervision operativa y bitacora filtrable.</Typography.Paragraph>
+      </header>
 
       {applied.from && applied.to && !rangeError ? (
         <ReportScope

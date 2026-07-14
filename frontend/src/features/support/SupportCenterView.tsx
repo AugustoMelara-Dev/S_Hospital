@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Button, Result } from 'antd';
-import { PageHeader } from '@/components/ui/page-header';
+import { Alert, Button, Result, Typography } from 'antd';
 import { type AuthUser, type SystemStatus, type SystemStatusSummary, apiClient, userSafeErrorMessage } from '../../lib/api';
 import { safeClientMessage } from '../../lib/support/clientIssueLog';
 import { OperationalStatusSummary } from './components/OperationalStatusSummary';
@@ -51,10 +50,10 @@ export function SupportCenterView({ user, onStatus }: Props) {
 
   return (
     <section className="space-y-6" aria-labelledby="support-title">
-      <PageHeader
-        title="Asistencia operativa"
-        description="Guías de turno, recuperación segura y diagnóstico del sistema hospitalario local."
-      />
+      <header>
+        <Typography.Title id="support-title" level={1}>Asistencia operativa</Typography.Title>
+        <Typography.Paragraph type="secondary">Guías de turno, recuperación segura y diagnóstico del sistema hospitalario local.</Typography.Paragraph>
+      </header>
 
       {error ? (
         <div role="alert"><Result status="error" title="Diagnóstico no disponible" subTitle={error} extra={<Button onClick={loadStatus}>Reintentar diagnóstico</Button>} /></div>

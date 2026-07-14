@@ -63,28 +63,28 @@ const localeText: Record<string, string> = {
 };
 
 const lightTheme = themeQuartz.withParams({
-  accentColor: '#0369a1',
-  backgroundColor: '#ffffff',
-  borderColor: '#cbd5e1',
+  accentColor: 'var(--institutional-primary)',
+  backgroundColor: 'var(--color-background)',
+  borderColor: 'var(--color-border)',
   borderRadius: 0,
   browserColorScheme: 'light',
   fontFamily: '"IBM Plex Sans Variable", system-ui, sans-serif',
-  foregroundColor: '#172033',
-  headerBackgroundColor: '#f1f5f9',
-  headerTextColor: '#172033',
+  foregroundColor: 'var(--color-foreground)',
+  headerBackgroundColor: 'var(--color-muted)',
+  headerTextColor: 'var(--color-foreground)',
   wrapperBorderRadius: 0,
 });
 
 const darkTheme = themeQuartz.withParams({
-  accentColor: '#38bdf8',
-  backgroundColor: '#0f172a',
-  borderColor: '#475569',
+  accentColor: 'var(--institutional-primary)',
+  backgroundColor: 'var(--color-background)',
+  borderColor: 'var(--color-border)',
   borderRadius: 0,
   browserColorScheme: 'dark',
   fontFamily: '"IBM Plex Sans Variable", system-ui, sans-serif',
-  foregroundColor: '#f8fafc',
-  headerBackgroundColor: '#1e293b',
-  headerTextColor: '#f8fafc',
+  foregroundColor: 'var(--color-foreground)',
+  headerBackgroundColor: 'var(--color-muted)',
+  headerTextColor: 'var(--color-foreground)',
   wrapperBorderRadius: 0,
 });
 

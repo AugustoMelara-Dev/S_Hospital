@@ -74,8 +74,18 @@ export function CashClosingPanel({
       </div>
 
       <form onSubmit={onSubmit} className="flex flex-col gap-5 px-5 pb-6 pt-5 sm:px-6" aria-busy={isSubmitting}>
-        <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(13rem,0.45fr)]">
-          <Form.Item label="Monto contado (L.)" htmlFor="closing_amount" required validateStatus={closingAmountError ? 'error' : undefined} help={closingAmountError ?? 'Cuente el efectivo físico en gaveta. No incluya tarjeta ni transferencia.'}>
+        <div className="grid gap-4 md:grid-cols-2">
+          <Form.Item
+            label="Monto contado (L.)"
+            htmlFor="closing_amount"
+            required
+            validateStatus={closingAmountError ? 'error' : undefined}
+            help={closingAmountError ?? (
+              <span className="block bg-surface text-muted-foreground">
+                Cuente el efectivo físico en gaveta. No incluya tarjeta ni transferencia.
+              </span>
+            )}
+          >
               <Input
                 ref={(control) => { closingAmountRef.current = control?.input ?? null; }}
                 id="closing_amount"
@@ -93,7 +103,7 @@ export function CashClosingPanel({
           </Form.Item>
 
           <div className="border border-secondary/25 bg-accent/35 p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Diferencia
             </p>
             <output
@@ -129,7 +139,17 @@ export function CashClosingPanel({
             </div>} />
         ) : null}
 
-        <Form.Item label={hasCashDifference ? 'Nota de cierre *' : 'Nota de cierre'} htmlFor="closing_notes" help={hasCashDifference ? 'Nota obligatoria: explique el faltante o sobrante antes de confirmar.' : 'Opcional cuando el conteo coincide.'}>
+        <Form.Item
+          label={hasCashDifference ? 'Nota de cierre *' : 'Nota de cierre'}
+          htmlFor="closing_notes"
+          help={(
+            <span className="block bg-surface text-muted-foreground">
+              {hasCashDifference
+                ? 'Nota obligatoria: explique el faltante o sobrante antes de confirmar.'
+                : 'Opcional cuando el conteo coincide.'}
+            </span>
+          )}
+        >
             <Input.TextArea
               id="closing_notes"
               name="closing_notes"

@@ -1,7 +1,5 @@
 import { BuildOutlined as MonitorCheck, ClockCircleOutlined as Clock3, HddOutlined as HardDrive, HeartOutlined as HeartHandshake, HomeOutlined as Building2, SafetyCertificateOutlined as ShieldCheck, WifiOutlined as Network } from '@ant-design/icons';
-import { Button, Card, Flex, Typography } from 'antd';
-import { PageHeader } from '../../components/ui/page-header';
-import { StatusTag } from '../../components/ui/status-tag';
+import { Button, Card, Flex, Tag, Typography } from 'antd';
 import { useBackups } from '../../hooks/useBackups';
 import { usePublicBranding } from '../../hooks/useFiscalSettings';
 import { useServerStatus, useSystemStatusSnapshot } from '../../hooks/useServerStatus';
@@ -42,11 +40,10 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
 
   return (
     <section id="about" className="flex flex-col gap-6" aria-labelledby="about-title">
-      <PageHeader
-        id="about-title"
-        title="Informacion del sistema"
-        description="Identidad del hospital, estado de la red local, continuidad operativa y diagnóstico autorizado."
-      />
+      <header>
+        <Typography.Title id="about-title" level={1}>Informacion del sistema</Typography.Title>
+        <Typography.Paragraph type="secondary">Identidad del hospital, estado de la red local, continuidad operativa y diagnóstico autorizado.</Typography.Paragraph>
+      </header>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         <Card className="overflow-hidden md:col-span-2">
@@ -57,7 +54,7 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <Typography.Title level={2} className="text-xl font-bold">{hospitalName}</Typography.Title>
-                <StatusTag kind="success">Activo</StatusTag>
+                <Tag>Activo</Tag>
               </div>
               <Typography.Text type="secondary">Sistema de caja y facturacion hospitalaria local.</Typography.Text>
             </div>
@@ -75,16 +72,13 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
                   <p className="font-semibold text-foreground">Sistema disponible en la red del hospital</p>
                   <p className="text-xs text-muted-foreground">Uso local para caja, facturacion, reportes y respaldos.</p>
                 </div>
-                <div className="inline-flex items-center gap-1.5 border border-success/20 bg-success/10 px-2.5 py-1 text-xs font-bold text-success">
-                  <ShieldCheck aria-hidden="true" className="h-4 w-4" />
-                  Activa
-                </div>
+                <Tag icon={<ShieldCheck aria-hidden="true" />}>Activa</Tag>
               </div>
 
               <div className="mt-4 border-t border-border pt-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">Resumen operativo</p>
-                  <StatusTag kind={statusForLevel(summary.level)}>{summary.label}</StatusTag>
+                  <Tag>{summary.label}</Tag>
                 </div>
                 <p className="mt-2 text-sm text-foreground">{summary.description}</p>
               </div>
@@ -106,14 +100,14 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
           <div className="space-y-4">
             <div className="flex items-center justify-between border-b border-border py-1.5">
               <span className="text-xs font-semibold text-muted-foreground">Servidor local</span>
-              <StatusTag kind={isOnline ? 'success' : 'failed'}>
+              <Tag>
                 {isOnline ? 'Conectado' : 'Desconectado'}
-              </StatusTag>
+              </Tag>
             </div>
 
             <div className="flex items-center justify-between border-b border-border py-1.5">
               <span className="text-xs font-semibold text-muted-foreground">Diagnostico</span>
-              <StatusTag kind={statusForLevel(summary.level)}>{summary.label}</StatusTag>
+              <Tag>{summary.label}</Tag>
             </div>
 
             <div className="flex items-center justify-between border-b border-border py-1.5">
@@ -123,7 +117,7 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
               <span className="text-xs font-bold text-foreground">{backupCount}</span>
             </div>
 
-            <div className="pt-2 text-center text-[11px] text-muted-foreground">
+            <div className="pt-2 text-center text-xs text-muted-foreground">
               Última revisión: {lastCheck ? lastCheck.toLocaleTimeString() : 'pendiente'}
             </div>
           </div>
@@ -150,7 +144,7 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
                     <div key={item.label} className="border border-border p-4">
                       <div className="flex items-center justify-between gap-3">
                         <p className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">{item.label}</p>
-                        <StatusTag kind={statusForLevel(item.level)}>{diagnosticLevelLabel(item.level)}</StatusTag>
+                        <Tag>{diagnosticLevelLabel(item.level)}</Tag>
                       </div>
                       <p className="mt-2 break-words text-sm font-semibold text-foreground">{item.value}</p>
                     </div>
@@ -201,18 +195,6 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
       </Card>
     </section>
   );
-}
-
-function statusForLevel(level: 'ok' | 'review' | 'error'): 'success' | 'pending' | 'failed' {
-  if (level === 'ok') {
-    return 'success';
-  }
-
-  if (level === 'review') {
-    return 'pending';
-  }
-
-  return 'failed';
 }
 
 function diagnosticLevelLabel(level: 'ok' | 'review' | 'error'): string {

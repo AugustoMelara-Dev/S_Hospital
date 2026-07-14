@@ -80,9 +80,9 @@ export function GuidedTour({ open, onOpenChange }: GuidedTourProps) {
         Recorrido operativo para recordar las pantallas principales.
       </p>
       <div className="space-y-5">
-        <div data-testid="guided-tour-step" className="border border-border bg-muted p-5 shadow-none">
+        <div data-testid="guided-tour-step" className="border border-border bg-muted p-5">
           <div className="flex items-start gap-3">
-            <div className="flex size-11 shrink-0 items-center justify-center bg-primary text-primary-foreground shadow-none">
+            <div className="flex size-11 shrink-0 items-center justify-center bg-primary text-primary-foreground">
               <EnvironmentOutlined aria-hidden="true" className="text-lg" />
             </div>
             <div className="min-w-0">

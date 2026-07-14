@@ -1,6 +1,5 @@
 import { DownloadOutlined as Download, PrinterOutlined as Printer, FileDoneOutlined as Receipt, FileTextOutlined as ReceiptText, CloseCircleOutlined as XCircle, CloseOutlined } from '@ant-design/icons';
-import { Button, Alert, Drawer, Skeleton } from 'antd';
-import { StatusTag } from '@/components/ui/status-tag';
+import { Button, Alert, Drawer, Skeleton, Tag } from 'antd';
 import type { Invoice } from '../../../lib/api';
 import { formatDateTimeEs } from '../../../lib/format/formatDate';
 import {
@@ -90,16 +89,18 @@ export function InvoiceDetailSheet({
           <section aria-label="Resumen de factura" className="border border-border bg-surface p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary-foreground">Paciente</p>
-                <p className="mt-1 text-xl font-semibold text-white">{patientName(invoice)}</p>
-                <p className="mt-1 text-sm text-white/60">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Paciente</p>
+                <p className="mt-1 text-xl font-semibold text-foreground">{patientName(invoice)}</p>
+                <p className="mt-1 text-sm text-muted-foreground">
                   Emitida por {invoice.issuer?.name ?? 'Usuario no disponible'}
                 </p>
-                <p className="mt-1 text-sm tabular-nums text-white/60">
+                <p className="mt-1 text-sm tabular-nums text-muted-foreground">
                   {formatDateTimeEs(invoice.issued_at)}
                 </p>
               </div>
-              <StatusTag kind={invoice.status === 'paid' ? 'paid' : invoice.status === 'void' ? 'void' : invoice.status === 'partial' ? 'partial' : 'info'} />
+              <Tag color={invoice.status === 'paid' ? 'success' : invoice.status === 'void' ? 'error' : invoice.status === 'partial' ? 'warning' : 'processing'}>
+                {invoice.status === 'paid' ? 'Pagada' : invoice.status === 'void' ? 'Anulada' : invoice.status === 'partial' ? 'Parcial' : 'Emitida'}
+              </Tag>
             </div>
           </section>
 
@@ -127,7 +128,7 @@ export function InvoiceDetailSheet({
                         Precio unitario: <span className="font-mono tabular-nums">{moneyLabel(item.unit_price)}</span>
                       </p>
                       {item.special_rule_applied ? (
-                        <span className="mt-1 inline-block text-[11px] font-semibold text-success bg-success/10 px-2 py-0.5 border border-success/15">
+                        <span className="mt-1 inline-block border border-success/15 bg-success/10 px-2 py-0.5 text-xs font-semibold text-success">
                           Receta de diálisis (L 0.00)
                         </span>
                       ) : null}
@@ -147,13 +148,13 @@ export function InvoiceDetailSheet({
               <h3 id="invoice-detail-payments" className="text-sm font-semibold text-foreground">Pagos y caja</h3>
               <div className="mt-3 divide-y divide-border border border-border">
                 {invoice.payments.map((payment) => (
-                  <div key={payment.id} className="grid gap-2 p-4 text-sm sm:grid-cols-[minmax(0,1fr)_auto] bg-muted/5">
+                  <div key={payment.id} className="grid gap-2 bg-muted/5 p-4 text-sm sm:grid-cols-2">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-medium text-foreground">{paymentLabels[payment.method] ?? payment.method}</span>
-                        <StatusTag kind={payment.status === 'void' ? 'void' : 'success'}>
+                        <Tag color={payment.status === 'void' ? 'error' : 'success'}>
                           {payment.status === 'void' ? 'Pago anulado' : 'Pago registrado'}
-                        </StatusTag>
+                        </Tag>
                       </div>
                       <p className="mt-1 text-xs tabular-nums text-muted-foreground">
                         {formatDateTimeEs(payment.paid_at)} · Caja #{payment.cash_session_id}

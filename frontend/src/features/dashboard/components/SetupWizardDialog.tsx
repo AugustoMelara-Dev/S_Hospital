@@ -276,7 +276,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
 
       <Space direction="vertical" size="large" className="w-full">
         {error && (
-          <Alert type="error" showIcon message="No se pudo guardar" description={error} />
+          <Alert type="error" showIcon title="No se pudo guardar" description={error} />
         )}
 
         {/* Step 1: Hospital details form */}
@@ -286,7 +286,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
               type="info"
               showIcon
               icon={<MedicineBoxOutlined />}
-              message={<Typography.Text strong>Paso 1: Datos del hospital</Typography.Text>}
+              title={<Typography.Text strong>Paso 1: Datos del hospital</Typography.Text>}
               description="Estos datos aparecen en facturas, recibos y pantalla de ingreso."
               className="mb-6"
             />
@@ -340,7 +340,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
               type="info"
               showIcon
               icon={<FileDoneOutlined />}
-              message={<Typography.Text strong>Paso 2: Numeración de facturas</Typography.Text>}
+              title={<Typography.Text strong>Paso 2: Numeración de facturas</Typography.Text>}
               description="Registre el CAI, prefijo y rango autorizado para imprimir facturas."
               className="mb-6"
             />
@@ -415,7 +415,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
               type="info"
               showIcon
               icon={<UploadOutlined />}
-              message={<Typography.Text strong>Paso 3: Catálogo de servicios</Typography.Text>}
+              title={<Typography.Text strong>Paso 3: Catálogo de servicios</Typography.Text>}
               description="Pegue la lista inicial de servicios. Luego podrá editarla desde Catálogo."
               className="mb-6"
             />

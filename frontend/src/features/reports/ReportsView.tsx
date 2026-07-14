@@ -4,7 +4,7 @@ import { ReportsAudit } from './ReportsAudit';
 import { ReportsCash } from './ReportsCash';
 import { ReportsExecutive } from './ReportsExecutive';
 import { LineChartOutlined, SafetyCertificateOutlined, WalletOutlined } from '@ant-design/icons';
-import { PageHeader } from '@/components/ui/page-header';
+import { Typography } from 'antd';
 
 type ReportsViewProps = {
   canBrowseCashSessions: boolean;
@@ -56,11 +56,10 @@ export function ReportsView(props: ReportsViewProps) {
   return (
     <div data-slot="reports-view" className="flex flex-col gap-5">
       {isRoot ? (
-        <PageHeader
-          title="Informes y auditoría"
-          description="Resumen ejecutivo, control de caja y trazabilidad para la supervisión institucional."
-          className="pb-4"
-        />
+        <header>
+          <Typography.Title level={1}>Informes y auditoría</Typography.Title>
+          <Typography.Paragraph type="secondary">Resumen ejecutivo, control de caja y trazabilidad para la supervisión institucional.</Typography.Paragraph>
+        </header>
       ) : null}
       <ReportsNavigation
         active={activeSubRoute}
@@ -164,7 +163,7 @@ function ReportsNavigation({
             to={`${basePath}/${route.id}`}
             aria-current={isActive ? 'page' : undefined}
             aria-describedby={descriptionId}
-            className={`flex min-h-20 items-center gap-3 border px-4 py-3 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 ${isActive ? 'border-blue-700 bg-blue-700 text-white' : 'border-slate-300 bg-white text-slate-700 hover:border-blue-600'}`}
+            className={`flex min-h-20 items-center gap-3 border px-4 py-3 text-sm font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 ${isActive ? 'border-primary bg-muted font-semibold' : 'border-border bg-surface hover:border-primary'}`}
           >
             <span className="flex size-10 shrink-0 items-center justify-center"><Icon aria-hidden="true" className="size-5" /></span>
             <span className="min-w-0">

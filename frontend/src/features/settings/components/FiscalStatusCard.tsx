@@ -1,5 +1,5 @@
 import { AlertOutlined as AlertCircle, CheckCircleOutlined as CheckCircle } from '@ant-design/icons';
-import { Card, CardContent, StatusBadge } from '../settingsAntd';
+import { Card, Tag } from 'antd';
 import type { FiscalSequence, FiscalSettings } from '@/lib/api';
 
 interface FiscalStatusCardProps {
@@ -43,9 +43,9 @@ export function FiscalStatusCard({ settings, sequence }: FiscalStatusCardProps) 
 
   return (
     <Card className={isConfigured ? 'border-success/30 bg-success/10 text-success-foreground' : 'border-warning/30 bg-warning/10 text-warning-foreground'}>
-      <CardContent className="pt-6">
+      <div className="pt-6">
         <div className="flex items-center gap-4">
-          <div className={`rounded-xl p-3 ${isConfigured ? 'bg-success/10' : 'bg-warning/10'}`}>
+          <div className={isConfigured ? 'bg-success/10 p-3' : 'bg-warning/10 p-3'}>
             {isConfigured ? (
               <CheckCircle aria-hidden="true" className="h-6 w-6 text-success" />
             ) : (
@@ -57,9 +57,9 @@ export function FiscalStatusCard({ settings, sequence }: FiscalStatusCardProps) 
               <h3 className="font-semibold">
                 {isConfigured ? 'Configuración completa' : 'Configuración pendiente'}
               </h3>
-              <StatusBadge status={isConfigured ? 'success' : 'pending'}>
+              <Tag color={isConfigured ? 'success' : 'warning'}>
                 {isConfigured ? 'Lista' : 'Requiere revisión'}
-              </StatusBadge>
+              </Tag>
             </div>
             <p className="text-sm text-muted-foreground">
               {isConfigured
@@ -73,7 +73,7 @@ export function FiscalStatusCard({ settings, sequence }: FiscalStatusCardProps) 
             Faltan o requieren revisión: {blockers.join(', ')}.
           </p>
         )}
-      </CardContent>
+      </div>
     </Card>
   );
 }

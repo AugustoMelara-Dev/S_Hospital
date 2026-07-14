@@ -18,7 +18,6 @@ import {
   WindowsOutlined as Keyboard,
 } from '@ant-design/icons';
 import { Button, Card, Collapse, Flex, Input, Typography } from 'antd';
-import { PageHeader } from '../../components/ui/page-header';
 import { type ShortcutScope, shortcutLabel, shortcutsByScope } from '../../lib/shortcuts';
 import { buildClientIssueSupportSummary, getClientIssues } from '../../lib/support/clientIssueLog';
 
@@ -326,17 +325,16 @@ export function HelpView() {
 
   return (
     <section className="space-y-6" aria-labelledby="help-title">
-      <PageHeader
-        id="help-title"
-        title="Ayuda institucional"
-        description="Guía rápida para operar caja, facturación, recibos, reportes y respaldos."
-        actions={
-          <div className="inline-flex items-center gap-2 border px-3 py-2 text-xs font-semibold text-white">
+      <Flex component="header" justify="space-between" gap="middle" wrap>
+        <div>
+          <Typography.Title id="help-title" level={1}>Ayuda institucional</Typography.Title>
+          <Typography.Paragraph type="secondary">Guía rápida para operar caja, facturación, recibos, reportes y respaldos.</Typography.Paragraph>
+        </div>
+          <div className="inline-flex items-center gap-2 border px-3 py-2 text-xs font-semibold">
             <HelpCircle aria-hidden="true" className="size-4" />
             Manual operativo
           </div>
-        }
-      />
+      </Flex>
 
       <div className="border border-border bg-card p-5">
         <label htmlFor="help-task-search" className="text-sm font-semibold text-foreground">¿Qué necesita hacer?</label>
@@ -477,7 +475,7 @@ export function HelpView() {
       <Card>
         <div className="mb-4">
           <Typography.Title level={2} className="flex items-center gap-2">
-            <AlertTriangle aria-hidden="true" className="size-5 text-warning-foreground" />
+            <AlertTriangle aria-hidden="true" className="size-5 text-warning" />
             Acciones delicadas
           </Typography.Title>
           <Typography.Text type="secondary">Advertencias antes de tocar datos, caja, respaldos o configuración de red.</Typography.Text>
@@ -485,7 +483,7 @@ export function HelpView() {
         <div className="grid gap-3">
           {delicateActions.map((item) => (
             <div key={item.title} className="border p-4">
-              <h3 className="text-sm font-semibold text-warning-foreground">{item.title}</h3>
+              <h3 className="text-sm font-semibold text-warning">{item.title}</h3>
               <p className="mt-2 text-sm leading-6">{item.warning}</p>
             </div>
           ))}
@@ -506,7 +504,7 @@ export function HelpView() {
             </p>
           </div>
           <div className="border p-4">
-            <h3 className="text-sm font-semibold text-warning-foreground">Modo práctica</h3>
+            <h3 className="text-sm font-semibold text-warning">Modo práctica</h3>
             <p className="mt-2 text-sm leading-6">
               Si no existe un entorno de práctica aislado, capacite en una instalación separada o una base descartable.
               No use la base de producción para ensayar anulaciones, recuperación de datos o cobros ficticios.

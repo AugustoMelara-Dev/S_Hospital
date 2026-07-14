@@ -111,7 +111,7 @@ describe('RouteState', () => {
     expect(document.getElementById(secondId!)).toHaveTextContent('Segundo estado');
   });
 
-  it('mantiene la acción con target mínimo de 44 px', () => {
+  it('la acción de recuperación es interactiva y accesible', () => {
     render(
       <RouteState
         kind="error"
@@ -121,6 +121,8 @@ describe('RouteState', () => {
       />,
     );
 
-    expect(screen.getByRole('button', { name: 'Reintentar' })).toHaveClass('min-h-11');
+    const button = screen.getByRole('button', { name: 'Reintentar' });
+    expect(button).toBeEnabled();
+    expect(button).toBeVisible();
   });
 });

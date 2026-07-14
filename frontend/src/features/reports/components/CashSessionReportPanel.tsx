@@ -119,7 +119,7 @@ export function CashSessionReportPanel({
     <div className="space-y-6">
       <section className="overflow-hidden">
         <div className="bg-muted/40 pt-6">
-          <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-[minmax(0,240px)_auto] sm:items-end">
+          <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2 sm:items-end">
             <div className="w-full">
               {hasRecentCashSessions ? (
                 <Form.Item label="Caja reciente" htmlFor="cash-session-id" extra="Seleccione una caja reciente. La más nueva queda lista para consultar.">

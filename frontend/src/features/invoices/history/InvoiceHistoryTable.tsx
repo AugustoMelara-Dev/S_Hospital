@@ -1,8 +1,7 @@
 import { DownloadOutlined as Download, PrinterOutlined as Printer, FileDoneOutlined as Receipt, FileTextOutlined as ReceiptText, UserOutlined as User, CloseCircleOutlined as XCircle, MoreOutlined } from '@ant-design/icons';
-import { Button, Dropdown } from 'antd';
+import { Button, Dropdown, Tag } from 'antd';
 import type { MenuProps } from 'antd';
 import { type ReactNode, useState } from 'react';
-import { StatusTag } from '@/components/ui/status-tag';
 import { InstitutionalDataGrid, type InstitutionalColumn } from '@/design-system/ag-grid/InstitutionalDataGrid';
 import type { Invoice } from '../../../lib/api';
 import {
@@ -178,7 +177,7 @@ export function InvoiceHistoryTable({
       cellRenderer: ({ data }: { data?: Invoice }) => {
         if (!data) return null;
         return (
-          <span className={data.status === 'partial' || data.status === 'issued' ? 'font-semibold text-warning-foreground' : undefined}>
+          <span className={data.status === 'partial' || data.status === 'issued' ? 'font-semibold text-warning' : undefined}>
             {moneyLabel(data.balance_due)}
           </span>
         );
@@ -344,8 +343,9 @@ export function issuedInstitutionalReceipt(invoice: Invoice): NonNullable<Invoic
 }
 
 function InvoiceStatusBadge({ status }: { status: Invoice['status'] }) {
-  const kind = status === 'issued' ? 'info' : status;
-  return <StatusTag kind={kind} />;
+  const color = status === 'paid' ? 'success' : status === 'void' ? 'error' : status === 'partial' ? 'warning' : 'processing';
+  const label = status === 'paid' ? 'Pagada' : status === 'void' ? 'Anulada' : status === 'partial' ? 'Parcial' : 'Emitida';
+  return <Tag color={color}>{label}</Tag>;
 }
 
 function ReceiptTrace({ invoice }: { invoice: Invoice }) {
@@ -357,7 +357,7 @@ function ReceiptTrace({ invoice }: { invoice: Invoice }) {
         <span className="font-mono text-xs font-semibold tabular-nums text-foreground">
           {receipt.receipt_number_full}
         </span>
-        <span className="text-[11px] text-muted-foreground">PDF emitido</span>
+        <span className="text-xs text-muted-foreground">PDF emitido</span>
       </span>
     );
   }

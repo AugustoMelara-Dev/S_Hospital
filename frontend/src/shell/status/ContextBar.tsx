@@ -33,9 +33,9 @@ export function ContextBar({ cashSession, commandButtonRef, crumbs, hospitalName
   const cashLabel = cashSession?.status === 'open' ? `Caja #${cashSession.id}` : 'Caja cerrada';
 
   return (
-    <header className="print-hidden sticky top-0 z-20 flex min-h-[76px] items-center gap-2 border-b border-border bg-surface px-3 text-foreground lg:px-6">
+    <header className="print-hidden sticky top-0 z-20 flex min-h-20 items-center gap-2 border-b border-border bg-surface px-3 text-foreground lg:px-6">
       <div className="min-w-0 flex-1 py-2">
-        <p data-testid="institutional-mobile-identity" className="truncate text-[10px] font-semibold uppercase tracking-[0.16em] text-secondary lg:hidden">
+        <p data-testid="institutional-mobile-identity" className="truncate text-xs font-semibold uppercase tracking-wider text-secondary lg:hidden">
           {hospitalName}
         </p>
         <p className="truncate text-lg font-semibold tracking-tight">{currentTitle}</p>
@@ -46,7 +46,7 @@ export function ContextBar({ cashSession, commandButtonRef, crumbs, hospitalName
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
-        <Tag color="processing" style={{ borderRadius: 0, margin: 0, padding: '4px 12px', fontSize: '12px', fontWeight: 'bold' }}>
+        <Tag color="processing" className="m-0 px-3 py-1 text-xs font-bold">
           {cashLabel}
         </Tag>
         <span
@@ -74,7 +74,7 @@ export function ContextBar({ cashSession, commandButtonRef, crumbs, hospitalName
         icon={<SearchOutlined />}
       >
         Buscar
-        <span className="ml-auto border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">Ctrl K</span>
+        <span className="ml-auto border border-border bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground">Ctrl K</span>
       </Button>
 
       <Tooltip title="Atajos (?)" mouseEnterDelay={0.4}>

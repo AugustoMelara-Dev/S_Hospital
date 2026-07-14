@@ -1,11 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Check, KeyRound, LockKeyhole, ShieldCheck } from 'lucide-react';
+import { CheckOutlined, KeyOutlined, LockOutlined, SafetyOutlined } from '@ant-design/icons';
 import { useForm, type UseFormRegisterReturn } from 'react-hook-form';
 import { z } from 'zod';
-import { Alert } from '../../components/ui/alert';
-import { Button } from '../../components/ui/button';
-import { FormField } from '../../components/ui/form-field';
-import { Input } from '../../components/ui/input';
+import { Alert, Button, Input } from 'antd';
 
 export const passwordChangeSchema = z
   .object({
@@ -47,13 +44,13 @@ export function PasswordChangeView({ onSubmit, submitting = false, status }: Pas
   });
 
   return (
-    <main className="min-h-[100dvh] overflow-x-hidden bg-operational-bg p-4 text-foreground sm:p-6 lg:flex lg:items-center">
-      <div className="mx-auto grid w-full max-w-5xl overflow-hidden border border-operational-border bg-operational-surface lg:grid-cols-[minmax(17rem,0.72fr)_minmax(22rem,1fr)]">
+    <main className="min-h-screen overflow-x-hidden bg-operational-bg p-4 text-foreground sm:p-6 lg:flex lg:items-center">
+      <div className="mx-auto grid w-full max-w-5xl overflow-hidden border border-operational-border bg-operational-surface lg:grid-cols-2">
         <aside className="border-b border-operational-border bg-sidebar px-5 py-7 text-sidebar-foreground sm:px-8 lg:border-b-0 lg:border-r lg:py-10">
-          <span className="flex size-11 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
-            <ShieldCheck aria-hidden="true" className="size-5" />
+          <span className="flex size-11 items-center justify-center bg-sidebar-primary text-sidebar-primary-foreground">
+            <SafetyOutlined aria-hidden="true" className="text-xl" />
           </span>
-          <p className="mt-6 text-xs font-semibold uppercase tracking-[0.14em] text-sidebar-foreground/65">
+          <p className="mt-6 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/65">
             Seguridad de cuenta
           </p>
           <h1 className="mt-2 text-2xl font-semibold leading-tight">Cambio obligatorio de contraseña</h1>
@@ -70,11 +67,11 @@ export function PasswordChangeView({ onSubmit, submitting = false, status }: Pas
             </p>
             <ul className="mt-4 space-y-2 text-sm text-sidebar-foreground/75">
               <li className="flex gap-2">
-                <Check aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+                <CheckOutlined aria-hidden="true" className="mt-0.5 text-base shrink-0" />
                 Use una clave individual.
               </li>
               <li className="flex gap-2">
-                <Check aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+                <CheckOutlined aria-hidden="true" className="mt-0.5 text-base shrink-0" />
                 Evite claves compartidas entre turnos.
               </li>
             </ul>
@@ -84,7 +81,7 @@ export function PasswordChangeView({ onSubmit, submitting = false, status }: Pas
         <section className="min-w-0 px-5 py-7 sm:px-8 lg:px-10 lg:py-10" aria-labelledby="password-form-title">
           <header className="mb-7">
             <div className="flex items-center gap-3">
-              <LockKeyhole aria-hidden="true" className="size-5 text-primary" />
+              <LockOutlined aria-hidden="true" className="text-xl text-primary" />
               <h2 id="password-form-title" className="text-xl font-semibold">Defina su nueva clave</h2>
             </div>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
@@ -94,9 +91,14 @@ export function PasswordChangeView({ onSubmit, submitting = false, status }: Pas
 
           <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
             {status?.trim() ? (
-              <Alert variant="warning" title="Revise la contraseña">
-                {status}
-              </Alert>
+              <Alert
+                type="warning"
+                title="Revise la contraseña"
+                description={status}
+                showIcon
+                role="alert"
+                className="mb-2"
+              />
             ) : null}
 
             <PasswordField
@@ -124,7 +126,14 @@ export function PasswordChangeView({ onSubmit, submitting = false, status }: Pas
               registration={register('password_confirmation')}
             />
 
-            <Button type="submit" disabled={submitting} className="mt-1 min-h-12 w-full sm:w-auto sm:self-start">
+            <Button
+              type="primary"
+              htmlType="submit"
+              disabled={submitting}
+              loading={submitting}
+              className="mt-1 h-12 w-full sm:w-auto sm:self-start font-semibold"
+              size="large"
+            >
               {submitting ? 'Actualizando credenciales...' : 'Actualizar contraseña'}
             </Button>
           </form>
@@ -145,25 +154,30 @@ type PasswordFieldProps = {
 
 function PasswordField({ autoComplete, disabled, error, id, label, registration }: PasswordFieldProps) {
   return (
-    <FormField id={id} label={label} error={error} required>
-      {({ describedBy, id: fieldId, invalid }) => (
-        <div className="relative">
-          <KeyRound
-            aria-hidden="true"
-            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-          />
-          <Input
-            id={fieldId}
-            type="password"
-            autoComplete={autoComplete}
-            disabled={disabled}
-            aria-describedby={describedBy}
-            aria-invalid={invalid}
-            className="min-h-11 pl-10"
-            {...registration}
-          />
-        </div>
-      )}
-    </FormField>
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center gap-1">
+        <label htmlFor={id} className="text-sm font-semibold text-foreground">
+          {label}
+        </label>
+        <span className="text-destructive" aria-hidden="true">*</span>
+      </div>
+      <Input.Password
+        id={id}
+        autoComplete={autoComplete}
+        disabled={disabled}
+        prefix={<KeyOutlined className="text-muted-foreground mr-1" />}
+        size="large"
+        className="h-11"
+        {...registration}
+        ref={(element) => {
+          registration.ref(element?.input ?? null);
+        }}
+      />
+      {error ? (
+        <p className="text-sm font-semibold text-destructive" role="alert">
+          {error}
+        </p>
+      ) : null}
+    </div>
   );
 }

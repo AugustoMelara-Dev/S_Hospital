@@ -1,9 +1,6 @@
+import { CloseOutlined, SearchOutlined } from '@ant-design/icons';
+import { Button, Empty, Flex, Input, Modal, Space, Typography } from 'antd';
 import { useEffect, useState } from 'react';
-import { Search, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Dialog } from '@/components/ui/dialog';
-import { cn } from '@/lib/utils';
 import { KEYBOARD_SHORTCUTS, shortcutLabel, type ShortcutScope } from '@/lib/shortcuts';
 
 type KeyboardShortcutsPaletteProps = {
@@ -23,20 +20,14 @@ export function KeyboardShortcutsPalette({ open, onOpenChange }: KeyboardShortcu
   const [filter, setFilter] = useState('');
 
   useEffect(() => {
-    if (!open) {
-      setFilter('');
-    }
+    if (!open) setFilter('');
   }, [open]);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       const target = event.target instanceof HTMLElement ? event.target : document.body;
       const tagName = target.tagName.toLowerCase();
-      const isEditable = target.isContentEditable;
-
-      if (tagName === 'input' || tagName === 'textarea' || tagName === 'select' || isEditable) {
-        return;
-      }
+      if (tagName === 'input' || tagName === 'textarea' || tagName === 'select' || target.isContentEditable) return;
 
       const isOpen = document.querySelector('[data-shortcuts-palette="open"]') !== null;
       if (event.key === 'Escape' && isOpen) {
@@ -44,7 +35,6 @@ export function KeyboardShortcutsPalette({ open, onOpenChange }: KeyboardShortcu
         onOpenChange(false);
         return;
       }
-
       if (event.key === '?' && !event.ctrlKey && !event.altKey && !event.metaKey) {
         event.preventDefault();
         onOpenChange(!isOpen);
@@ -58,101 +48,72 @@ export function KeyboardShortcutsPalette({ open, onOpenChange }: KeyboardShortcu
   const normalizedFilter = filter.trim().toLowerCase();
   const filteredShortcuts = normalizedFilter
     ? KEYBOARD_SHORTCUTS.filter((entry) =>
-        entry.description.toLowerCase().includes(normalizedFilter) ||
-        shortcutLabel(entry).toLowerCase().includes(normalizedFilter) ||
-        entry.scope.toLowerCase().includes(normalizedFilter),
+        entry.description.toLowerCase().includes(normalizedFilter)
+        || shortcutLabel(entry).toLowerCase().includes(normalizedFilter)
+        || entry.scope.toLowerCase().includes(normalizedFilter),
       )
     : KEYBOARD_SHORTCUTS;
 
   return (
-    <Dialog
+    <Modal
+      destroyOnHidden
+      footer={null}
+      onCancel={() => onOpenChange(false)}
       open={open}
-      onOpenChange={onOpenChange}
-      size="md"
-      title="Atajos de teclado"
-      description="Pulsa ? en cualquier momento para abrir esta paleta. Pulsa Esc para cerrar."
+      title={<Typography.Title level={2}>Atajos de teclado</Typography.Title>}
+      width={640}
     >
-      <div data-shortcuts-palette={open ? 'open' : 'closed'} className="space-y-4">
-        <div className="relative">
-          <Search
-            aria-hidden="true"
-            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-          />
+      <Space data-shortcuts-palette={open ? 'open' : 'closed'} orientation="vertical" size="middle">
+        <Typography.Paragraph type="secondary">
+          Pulsa ? en cualquier momento para abrir esta paleta. Pulsa Esc para cerrar.
+        </Typography.Paragraph>
+        <Space.Compact block>
           <Input
-            type="search"
-            value={filter}
+            aria-label="Buscar atajo de teclado"
+            autoComplete="off"
             onChange={(event) => setFilter(event.target.value)}
             placeholder="Buscar atajo..."
-            aria-label="Buscar atajo de teclado"
-            className="pl-9"
-            autoComplete="off"
+            prefix={<SearchOutlined aria-hidden="true" />}
+            type="search"
+            value={filter}
           />
-          {filter && (
+          {filter ? (
             <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="absolute right-1 top-1/2 size-7 -translate-y-1/2"
-              onClick={() => setFilter('')}
               aria-label="Limpiar filtro de atajos"
+              icon={<CloseOutlined aria-hidden="true" />}
+              onClick={() => setFilter('')}
             >
-              <X aria-hidden="true" className="size-4" />
+              Limpiar
             </Button>
-          )}
-        </div>
+          ) : null}
+        </Space.Compact>
 
-        <div className="max-h-[60vh] space-y-4 overflow-y-auto pr-1">
+        <Space orientation="vertical" size="middle">
           {SCOPES.map((scope) => {
-            const scopeShortcuts = filteredShortcuts.filter(
-              (entry) => entry.scope === scope.id,
-            );
-            if (scopeShortcuts.length === 0) {
-              return null;
-            }
+            const scopeShortcuts = filteredShortcuts.filter((entry) => entry.scope === scope.id);
+            if (scopeShortcuts.length === 0) return null;
             return (
-              <section
-                key={scope.id}
-                aria-labelledby={`shortcuts-scope-${scope.id}`}
-                className="rounded-md border border-operational-border bg-operational-panel/40 p-3"
-              >
-                <header className="mb-2">
-                  <h3
-                    id={`shortcuts-scope-${scope.id}`}
-                    className="text-sm font-semibold text-foreground"
-                  >
-                    {scope.label}
-                  </h3>
-                  <p className="text-xs text-muted-foreground">{scope.description}</p>
-                </header>
-                <ul className="space-y-1">
+              <section key={scope.id} aria-labelledby={`shortcuts-scope-${scope.id}`}>
+                <Typography.Title id={`shortcuts-scope-${scope.id}`} level={3}>{scope.label}</Typography.Title>
+                <Typography.Text type="secondary">{scope.description}</Typography.Text>
+                <ul>
                   {scopeShortcuts.map((entry) => (
-                    <li
-                      key={`${entry.scope}-${entry.key}-${entry.ctrl ? 'ctrl' : ''}`}
-                      className="flex items-center justify-between gap-3 rounded-sm px-2 py-1.5 text-sm hover:bg-muted/40"
-                    >
-                      <span className="text-muted-foreground">{entry.description}</span>
-                      <kbd
-                        className={cn(
-                          'inline-flex items-center gap-1 rounded border border-operational-border bg-card px-2 py-0.5',
-                          'font-mono text-xs font-semibold text-foreground shadow-sm',
-                        )}
-                        aria-label={shortcutLabel(entry)}
-                      >
-                        {shortcutLabel(entry)}
-                      </kbd>
+                    <li key={`${entry.scope}-${entry.key}-${entry.ctrl ? 'ctrl' : ''}`}>
+                      <Flex justify="space-between" gap="middle">
+                      <Typography.Text type="secondary">{entry.description}</Typography.Text>
+                      <Typography.Text keyboard aria-label={shortcutLabel(entry)}>{shortcutLabel(entry)}</Typography.Text>
+                      </Flex>
                     </li>
                   ))}
                 </ul>
               </section>
             );
           })}
-          {filteredShortcuts.length === 0 && (
-            <p className="rounded-md border border-dashed border-operational-border bg-operational-panel/20 p-4 text-center text-sm text-muted-foreground">
-              No se encontraron atajos para «{filter}».
-            </p>
-          )}
-        </div>
-      </div>
-    </Dialog>
+          {filteredShortcuts.length === 0 ? (
+            <Empty description={`No se encontraron atajos para «${filter}».`} image={Empty.PRESENTED_IMAGE_SIMPLE} />
+          ) : null}
+        </Space>
+      </Space>
+    </Modal>
   );
 }

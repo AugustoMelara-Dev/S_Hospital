@@ -1,5 +1,6 @@
 import { useId, useState } from 'react';
 import { DownOutlined as ChevronDown, RightOutlined as ChevronRight } from '@ant-design/icons';
+import { Button } from 'antd';
 import type { PermissionCatalogGroup, RoleDefinition } from '@/lib/api';
 import { roleLabel } from '@/lib/role-labels';
 import { cn } from '@/lib/utils';
@@ -45,20 +46,16 @@ export function PermissionMatrix({ roles, permissionCatalog, className }: Permis
           <p className="text-xs text-muted-foreground">
             {permissionCatalog.reduce((acc, group) => acc + group.permissions.length, 0)} permisos / {roles.length} roles
           </p>
-          <button
-            type="button"
+          <Button
             aria-controls={matrixId}
             aria-expanded={isMatrixOpen}
             onClick={() => setIsMatrixOpen((current) => !current)}
-            className="inline-flex min-h-10 items-center gap-2 border border-operational-border bg-white px-3 py-2 text-xs font-semibold text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            icon={isMatrixOpen
+              ? <ChevronDown aria-hidden="true" />
+              : <ChevronRight aria-hidden="true" />}
           >
-            {isMatrixOpen ? (
-              <ChevronDown aria-hidden="true" className="size-3.5" />
-            ) : (
-              <ChevronRight aria-hidden="true" className="size-3.5" />
-            )}
             {isMatrixOpen ? 'Ocultar matriz de permisos' : 'Mostrar matriz de permisos'}
-          </button>
+          </Button>
         </div>
       </header>
 
@@ -156,12 +153,12 @@ function PermissionGroup({
             <div className="flex flex-col">
               <span className="font-medium">{permission.label}</span>
               {isCriticalPermission(permission) && (
-                <span className="mt-1 w-fit border border-warning/40 bg-warning/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-warning-foreground">
+                <span className="mt-1 w-fit border border-warning/40 bg-warning/10 px-1.5 py-0.5 text-xs font-semibold uppercase text-warning-foreground">
                   Permiso critico
                 </span>
               )}
               {isCriticalPermission(permission) && permissionRiskLabel(permission) && (
-                <span className="mt-1 max-w-56 text-[10px] leading-snug text-warning-foreground">
+                <span className="mt-1 max-w-56 text-xs leading-snug text-warning-foreground">
                   {permissionRiskLabel(permission)}
                 </span>
               )}

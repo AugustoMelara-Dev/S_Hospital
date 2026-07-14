@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useCallback, useEffect, useRef, useState, type ComponentProps, type ReactNode } from 'react';
+import { useForm, type UseFormRegisterReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { SaveOutlined as Save } from '@ant-design/icons';
-import { Alert, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, ConfirmDialog, FormField, FormSection, Input, Textarea } from './settingsAntd';
+import { Alert, Button, Card, Form, Input, Modal, Typography } from 'antd';
 import { type FiscalSettings, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { safeClientMessage } from '@/lib/support/clientIssueLog';
 
@@ -33,6 +33,31 @@ function optionalText(value: string): string | null {
 
 function isPlaceholderHospitalName(value: string | null | undefined): boolean {
   return new RegExp(`^hospital ${'de' + 'mo'}$`, 'i').test(value?.trim() ?? '');
+}
+
+function HospitalField({ children, error, id, label, required }: {
+  children: (props: { id: string; invalid: boolean; describedBy: string | undefined }) => ReactNode;
+  error?: string;
+  id: string;
+  label: string;
+  required?: boolean;
+  hint?: ReactNode;
+}) {
+  return (
+    <Form.Item label={label} htmlFor={id} required={required} validateStatus={error ? 'error' : undefined} help={error}>
+      {children({ id, invalid: Boolean(error), describedBy: error ? `${id}-error` : undefined })}
+    </Form.Item>
+  );
+}
+
+function RegisteredInput({ registration, ...props }: ComponentProps<typeof Input> & { registration: UseFormRegisterReturn }) {
+  const { ref, ...field } = registration;
+  return <Input {...field} {...props} ref={(node) => ref(node?.input ?? null)} />;
+}
+
+function RegisteredTextArea({ registration, ...props }: ComponentProps<typeof Input.TextArea> & { registration: UseFormRegisterReturn }) {
+  const { ref, ...field } = registration;
+  return <Input.TextArea {...field} {...props} ref={(node) => ref(node?.resizableTextArea?.textArea ?? null)} />;
 }
 
 export function HospitalSettingsView({ canEdit, onStatus }: HospitalSettingsViewProps) {
@@ -160,14 +185,11 @@ export function HospitalSettingsView({ canEdit, onStatus }: HospitalSettingsView
   }
 
   return (
-    <FormSection
-      title="Datos del hospital"
-      description="Información legal y de contacto del hospital. Aparece en recibos y cabecera de la app."
-    >
+    <section>
+      <Typography.Title level={3}>Datos del hospital</Typography.Title>
+      <Typography.Paragraph type="secondary">Información legal y de contacto del hospital. Aparece en recibos y cabecera de la app.</Typography.Paragraph>
       {error ? (
-        <Alert variant="destructive" title="No se pudo guardar">
-          {error}
-        </Alert>
+        <Alert type="error" showIcon title="No se pudo guardar" description={error} />
       ) : null}
 
       <form
@@ -176,161 +198,155 @@ export function HospitalSettingsView({ canEdit, onStatus }: HospitalSettingsView
         aria-busy={form.formState.isSubmitting || saving}
       >
         <Card>
-          <CardHeader>
-            <CardTitle>Identidad</CardTitle>
-            <CardDescription>Nombre legal y datos fiscales básicos.</CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-2">
-            <FormField id="hospital_name" label="Nombre del hospital" required error={form.formState.errors.hospital_name?.message}>
+          <Typography.Title level={3}>Identidad</Typography.Title>
+          <Typography.Paragraph type="secondary">Nombre legal y datos fiscales básicos.</Typography.Paragraph>
+          <div className="grid gap-4 md:grid-cols-2">
+            <HospitalField id="hospital_name" label="Nombre del hospital" required error={form.formState.errors.hospital_name?.message}>
               {({ id, invalid, describedBy }) => (
-                <Input
+                <RegisteredInput
                   id={id}
-                  {...form.register('hospital_name')}
+                  registration={form.register('hospital_name')}
                   placeholder="Hospital Nacional..."
                   aria-invalid={invalid}
                   aria-describedby={describedBy}
                   disabled={!canEdit}
                 />
               )}
-            </FormField>
-            <FormField id="rtn" label="RTN" hint="Opcional. Si no aplica, dejar vacío." error={form.formState.errors.rtn?.message}>
+            </HospitalField>
+            <HospitalField id="rtn" label="RTN" hint="Opcional. Si no aplica, dejar vacío." error={form.formState.errors.rtn?.message}>
               {({ id, invalid, describedBy }) => (
-                <Input
+                <RegisteredInput
                   id={id}
-                  {...form.register('rtn')}
+                  registration={form.register('rtn')}
                   placeholder="0801-XXXX-XXXXX"
                   aria-invalid={invalid}
                   aria-describedby={describedBy}
                   disabled={!canEdit}
                 />
               )}
-            </FormField>
+            </HospitalField>
             {rtnChanged ? (
-              <FormField id="reason" label="Motivo del cambio fiscal" required hint="Obligatorio al modificar el RTN." error={form.formState.errors.reason?.message}>
+              <HospitalField id="reason" label="Motivo del cambio fiscal" required hint="Obligatorio al modificar el RTN." error={form.formState.errors.reason?.message}>
                 {({ id, invalid, describedBy }) => (
-                  <Textarea
+                  <RegisteredTextArea
                     id={id}
-                    {...form.register('reason')}
+                    registration={form.register('reason')}
                     rows={2}
                     aria-invalid={invalid}
                     aria-describedby={describedBy}
                     disabled={!canEdit}
                   />
                 )}
-              </FormField>
+              </HospitalField>
             ) : null}
-          </CardContent>
+          </div>
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>Encabezado institucional</CardTitle>
-            <CardDescription>Líneas opcionales que aparecen en el encabezado de recibos.</CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-2">
-            <FormField id="government_line" label="Dependencia superior" hint="Encabezado autorizado." error={form.formState.errors.government_line?.message}>
+          <Typography.Title level={3}>Encabezado institucional</Typography.Title>
+          <Typography.Paragraph type="secondary">Líneas opcionales que aparecen en el encabezado de recibos.</Typography.Paragraph>
+          <div className="grid gap-4 md:grid-cols-2">
+            <HospitalField id="government_line" label="Dependencia superior" hint="Encabezado autorizado." error={form.formState.errors.government_line?.message}>
               {({ id, invalid, describedBy }) => (
-                <Input
+                <RegisteredInput
                   id={id}
-                  {...form.register('government_line')}
+                  registration={form.register('government_line')}
                   aria-invalid={invalid}
                   aria-describedby={describedBy}
                   disabled={!canEdit}
                 />
               )}
-            </FormField>
-            <FormField id="secretariat_line" label="Secretaría o unidad" error={form.formState.errors.secretariat_line?.message}>
+            </HospitalField>
+            <HospitalField id="secretariat_line" label="Secretaría o unidad" error={form.formState.errors.secretariat_line?.message}>
               {({ id, invalid, describedBy }) => (
-                <Input
+                <RegisteredInput
                   id={id}
-                  {...form.register('secretariat_line')}
+                  registration={form.register('secretariat_line')}
                   aria-invalid={invalid}
                   aria-describedby={describedBy}
                   disabled={!canEdit}
                 />
               )}
-            </FormField>
-            <FormField id="address" label="Dirección" error={form.formState.errors.address?.message}>
+            </HospitalField>
+            <HospitalField id="address" label="Dirección" error={form.formState.errors.address?.message}>
               {({ id, invalid, describedBy }) => (
-                <Input
+                <RegisteredInput
                   id={id}
-                  {...form.register('address')}
+                  registration={form.register('address')}
                   placeholder="Barrio Centro, Avenida Principal..."
                   aria-invalid={invalid}
                   aria-describedby={describedBy}
                   disabled={!canEdit}
                 />
               )}
-            </FormField>
-            <FormField id="slogan" label="Lema" error={form.formState.errors.slogan?.message}>
+            </HospitalField>
+            <HospitalField id="slogan" label="Lema" error={form.formState.errors.slogan?.message}>
               {({ id, invalid, describedBy }) => (
-                <Input
+                <RegisteredInput
                   id={id}
-                  {...form.register('slogan')}
+                  registration={form.register('slogan')}
                   placeholder="Al servicio de tu salud..."
                   aria-invalid={invalid}
                   aria-describedby={describedBy}
                   disabled={!canEdit}
                 />
               )}
-            </FormField>
-          </CardContent>
+            </HospitalField>
+          </div>
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>Pie de recibo</CardTitle>
-            <CardDescription>Textos opcionales que aparecen al pie del recibo.</CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-2">
-            <FormField id="receipt_location" label="Lugar del recibo" hint="Ciudad o lugar autorizado." error={form.formState.errors.receipt_location?.message}>
+          <Typography.Title level={3}>Pie de recibo</Typography.Title>
+          <Typography.Paragraph type="secondary">Textos opcionales que aparecen al pie del recibo.</Typography.Paragraph>
+          <div className="grid gap-4 md:grid-cols-2">
+            <HospitalField id="receipt_location" label="Lugar del recibo" hint="Ciudad o lugar autorizado." error={form.formState.errors.receipt_location?.message}>
               {({ id, invalid, describedBy }) => (
-                <Input
+                <RegisteredInput
                   id={id}
-                  {...form.register('receipt_location')}
+                  registration={form.register('receipt_location')}
                   aria-invalid={invalid}
                   aria-describedby={describedBy}
                   disabled={!canEdit}
                 />
               )}
-            </FormField>
-            <FormField id="receipt_footer_text" label="Texto al pie" error={form.formState.errors.receipt_footer_text?.message}>
+            </HospitalField>
+            <HospitalField id="receipt_footer_text" label="Texto al pie" error={form.formState.errors.receipt_footer_text?.message}>
               {({ id, invalid, describedBy }) => (
-                <Textarea
+                <RegisteredTextArea
                   id={id}
-                  {...form.register('receipt_footer_text')}
+                  registration={form.register('receipt_footer_text')}
                   rows={2}
                   aria-invalid={invalid}
                   aria-describedby={describedBy}
                   disabled={!canEdit}
                 />
               )}
-            </FormField>
-          </CardContent>
+            </HospitalField>
+          </div>
         </Card>
 
         <div className="flex justify-end">
-          <Button type="submit" disabled={!canEdit || form.formState.isSubmitting || saving}>
-            <Save data-icon aria-hidden="true" />
+          <Button htmlType="submit" type="primary" icon={<Save aria-hidden="true" />} disabled={!canEdit || form.formState.isSubmitting || saving}>
             Guardar datos del hospital
           </Button>
         </div>
       </form>
 
-      <ConfirmDialog
+      <Modal
         open={pendingChange !== null}
         title="Revisar cambio de RTN"
-        confirmLabel={saving ? 'Guardando...' : 'Confirmar y guardar'}
-        confirmDisabled={saving}
-        cancelDisabled={saving}
+        okText={saving ? 'Guardando...' : 'Confirmar y guardar'}
+        okButtonProps={{ disabled: saving }}
+        cancelButtonProps={{ disabled: saving }}
         onCancel={() => setPendingChange(null)}
-        onConfirm={() => {
+        onOk={() => {
           if (pendingChange) void saveHospital(pendingChange);
         }}
+        modalRender={(node) => <div role="alertdialog" aria-label="Revisar cambio de RTN">{node}</div>}
       >
         {pendingChange ? (
           <div className="space-y-3">
-            {error ? <Alert variant="destructive" title="No se pudo guardar">{error}</Alert> : null}
+            {error ? <Alert type="error" showIcon title="No se pudo guardar" description={error} /> : null}
             <p>El RTN se usará en recibos y documentos institucionales emitidos después del cambio.</p>
             <dl className="grid gap-3 border border-operational-border bg-muted/40 p-4 sm:grid-cols-2">
               <div>
@@ -345,7 +361,7 @@ export function HospitalSettingsView({ canEdit, onStatus }: HospitalSettingsView
             <p className="font-medium text-foreground">El motivo se enviará al servidor para auditoría.</p>
           </div>
         ) : null}
-      </ConfirmDialog>
-    </FormSection>
+      </Modal>
+    </section>
   );
 }
