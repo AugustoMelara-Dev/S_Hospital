@@ -38,7 +38,6 @@ type NewInvoiceViewProps = {
   onOpenCash?: () => void;
   onStatus: OperationalStatusReporter;
 };
-
 export function NewInvoiceView({
   cashSession,
   canCreatePayments = true,
@@ -53,7 +52,6 @@ export function NewInvoiceView({
   const [state, dispatch] = useReducer(newInvoiceReducer, cashSession, getInitialNewInvoiceState);
   const { data: operationalSettings } = useOperationalSettings();
   const queryClient = useQueryClient();
-
   const patientInputRef = useRef<HTMLInputElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const scannerInputRef = useRef<HTMLInputElement | null>(null);

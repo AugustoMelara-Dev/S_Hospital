@@ -52,7 +52,10 @@ export function InvoiceDetailDrawer({
   const institutionalReceipt = invoice ? getIssuedInstitutionalReceipt(invoice) : null;
   const hasActions = actions ? Object.values(actions).some(Boolean) : false;
   const actionButtons = invoice && actions && hasActions ? (
-    <div className="flex flex-wrap justify-end gap-2" aria-label="Acciones autorizadas">
+    <div className="flex flex-wrap items-center justify-end gap-2" aria-label="Acciones autorizadas">
+      <span className="mr-auto text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        Acciones autorizadas
+      </span>
       {actions.openReceipt ? (
         <Button type="default" onClick={() => onOpenReceipt(invoice.id)}>
           <Receipt aria-hidden="true" /> {actions.auditedOpen ? 'Reimprimir PDF' : 'Ver recibo'}

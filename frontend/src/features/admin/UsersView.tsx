@@ -51,36 +51,30 @@ export function UsersView({
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<AuthUser | null>(null);
   const [formGlobalError, setFormGlobalError] = useState('');
-
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<RoleDefinition | null>(null);
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
   const [roleGlobalError, setRoleGlobalError] = useState('');
   const [isSavingRole, setIsSavingRole] = useState(false);
   const saveRoleInFlightRef = useRef(false);
-
   const [selectedUserPermissions, setSelectedUserPermissions] = useState<string[]>([]);
   const [advancedUserPermissionsMode, setAdvancedUserPermissionsMode] = useState(false);
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [targetResetUser, setTargetResetUser] = useState<AuthUser | null>(null);
   const [resetGlobalError, setResetGlobalError] = useState('');
-
   const [isToggleDialogOpen, setIsToggleDialogOpen] = useState(false);
   const [targetToggleUser, setTargetToggleUser] = useState<AuthUser | null>(null);
   const [isTogglingUser, setIsTogglingUser] = useState(false);
   const toggleUserInFlightRef = useRef(false);
-
   const defaultRoleName = useCallback(() => {
     return roles.find((role) => role.name === 'cajero')?.name
       ?? roles.find((role) => !role.protected)?.name
       ?? roles[0]?.name
       ?? 'cajero';
   }, [roles]);
-
   const permissionsForRole = useCallback((roleNameValue: string) => {
     return roles
       .find((role) => role.name === roleNameValue)
@@ -88,7 +82,6 @@ export function UsersView({
       .map((permission) => permission.name)
       .sort() ?? [];
   }, [roles]);
-
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     setLoadError('');
@@ -108,11 +101,9 @@ export function UsersView({
       setLoading(false);
     }
   }, [onStatus]);
-
   useEffect(() => {
     void fetchUsers();
   }, [fetchUsers]);
-
   const filteredUsers = useMemo(() => users.filter((user) => {
     const term = searchTerm.toLowerCase();
     return (
@@ -121,13 +112,11 @@ export function UsersView({
       || user.email.toLowerCase().includes(term)
     );
   }), [users, searchTerm]);
-
   const activeUsersCount = users.filter((user) => user.active).length;
   const activeProtectedUsers = users.filter((user) => user.active && hasProtectedRole(user));
   const onlyActiveProtectedUserIds = activeProtectedUsers.length === 1 ? [activeProtectedUsers[0].id] : [];
   const pendingPasswordUsersCount = users.filter((user) => user.must_change_password).length;
   const editableRolesCount = roles.filter((role) => !role.protected).length;
-
   const handleOpenCreateModal = () => {
     const role = defaultRoleName();
     setEditingUser(null);
@@ -136,21 +125,18 @@ export function UsersView({
     setFormGlobalError('');
     setIsUserModalOpen(true);
   };
-
   const handleOpenCreateRole = () => {
     setEditingRole(null);
     setSelectedPermissions([]);
     setRoleGlobalError('');
     setIsRoleModalOpen(true);
   };
-
   const handleOpenEditRole = (role: RoleDefinition) => {
     setEditingRole(role);
     setSelectedPermissions(role.permissions.map((permission) => permission.name));
     setRoleGlobalError('');
     setIsRoleModalOpen(true);
   };
-
   const togglePermission = (permissionName: string, checked: boolean) => {
     if (isHiddenPermission(permissionName)) {
       return;
