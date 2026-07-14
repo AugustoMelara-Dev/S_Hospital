@@ -25,9 +25,20 @@ export const prohibitedClasses = [
 ];
 
 export const strictModulePrefixes = [
+  'src/shell/',
+  'src/features/auth/',
+  'src/features/dashboard/',
+  'src/features/cash/',
   'src/features/invoices/',
   'src/features/catalog/',
   'src/features/admin/',
+  'src/features/receipt-settings/',
+  'src/features/receipts/',
+  'src/printing/',
+  'src/modules/receipts/',
+  'src/features/reports/',
+  'src/modules/reports/',
+  'src/modules/accounting/',
 ];
 
 export function classifyModule(file) {

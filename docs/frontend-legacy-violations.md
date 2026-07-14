@@ -4,27 +4,36 @@ Fecha de corte: 2026-07-13
 
 ## Estado verificable
 
-El gate anterior reportaba 163 violaciones en 407 archivos, omitía clases dentro de primitivas exentas y contaba erróneamente propiedades institucionales como `borderRadiusLG: 0`. Después del arreglo del shell, ese mismo criterio bajó a 159. El nuevo modo inventario audita los 409 archivos actuales y hace visibles todas las deudas: 190 violaciones. La reducción de 411 a 409 archivos corresponde a la eliminación del stylesheet de tokens clínicos obsoleto y su prueba sin consumidores; el total de deuda no se ocultó.
+| Línea base | Valor |
+| --- | --- |
+| Versión anterior del gate | v1, inventario focal con primitivas parcialmente exentas |
+| Archivos auditados anteriormente | 407 |
+| Violaciones anteriores | 163 |
+| Versión actual del gate | v2, inventario exhaustivo con clasificación import/clase/motion/radius y modos inventory/strict/final |
+| Archivos auditados actualmente | 409 |
+| Nueva línea base comparable | **190 violaciones / 409 archivos** |
+
+Las cifras 163/407 y 190/409 no son comparables porque cambió tanto el conjunto auditado como la regla. El gate v1 omitía clases dentro de primitivas exentas y contaba erróneamente propiedades institucionales como `borderRadiusLG: 0`; el gate v2 hace visible esa deuda y elimina ese falso positivo. A partir de esta línea base, toda reducción se calculará ejecutando exactamente el gate v2 sobre el mismo alcance de `src/`. Un cambio solo se registrará como regresión si esa misma versión y configuración demuestra un aumento.
 
 ```text
 npm run check:ui-legacy
-[INVENTORY] 409 archivos; 190 violaciones; exit 0
+[INVENTORY] 409 archivos; 177 violaciones; exit 0
 
 npm run check:ui-legacy:strict
 [QUALITY GATE PASSED] 409 archivos; 0 violaciones
-Módulos estrictos: invoices, catalog, admin
+Módulos estrictos: shell, auth, dashboard, cash, invoices, catalog, admin, receipt-settings, receipts, printing, modules/receipts, reports y accounting
 
 npm run check:ui-legacy:final
-[QUALITY GATE FAILED] 409 archivos; 190 violaciones; exit 1
+[QUALITY GATE FAILED] 409 archivos; 177 violaciones; exit 1
 ```
 
 | Tipo | Cantidad |
 | --- | ---: |
-| Imports legacy | 72 |
-| Clases prohibidas | 115 |
+| Imports legacy | 69 |
+| Clases prohibidas | 105 |
 | Motion legacy | 2 |
 | Border radius inline distinto de cero | 1 |
-| **Total** | **190** |
+| **Total** | **177** |
 
 | Módulo propietario | Violaciones | Riesgo / estado |
 | --- | ---: | --- |
@@ -32,11 +41,7 @@ npm run check:ui-legacy:final
 | design-system legacy | 21 | alto; consolidar en Ant/institucional central |
 | layout | 9 | alto; consumidor transversal |
 | shared | 6 | alto; incluye atajos del shell y notificaciones |
-| receipt-settings | 6 | alto; fase Recibos/Configuración |
-| reports | 4 | medio/alto; fase Reportes |
 | settings | 4 | medio; fase Configuración |
-| receipts | 2 | medio; fase Recibos |
-| accounting | 1 | medio; fase Contabilidad |
 
 ## Inventario por archivo y consumidor
 
@@ -99,17 +104,11 @@ npm run check:ui-legacy:final
 | `src/design-system/primitives/Surface.tsx` | design-system | — | rounded-md | UI central | medio | backlog | 1 |
 | `src/design-system/primitives/Toaster.tsx` | design-system | sonner | inline radius | UI central | alto | backlog | 2 |
 | `src/design-system/primitives/primitives.test.tsx` | design-system | sonner | — | UI central | alto | backlog | 12 |
-| `src/features/receipt-settings/InstitutionalReceiptSettingsView.tsx` | receipt-settings | lucide | rounded-md/xl | Recibos | alto | backlog | 4 |
-| `src/features/receipt-settings/components/ReceiptSettingsPreview.tsx` | receipt-settings | — | rounded-2xl/sm | Recibos | medio | backlog | 2 |
-| `src/features/receipts/ReceiptPreview.tsx` | receipts | — | rounded-xl, shadow-sm | Recibos | medio | backlog | 2 |
-| `src/features/reports/ReportsExecutive.test.tsx` | reports | sonner | — | Reportes | alto | backlog | 1 |
 | `src/features/settings/FiscalNumerationView.tsx` | settings | — | rounded-xl | Configuración | medio | backlog | 3 |
 | `src/features/settings/components/FiscalStatusCard.tsx` | settings | — | rounded-xl | Configuración | medio | backlog | 1 |
 | `src/layout/components/OperationalStatus.tsx` | layout | lucide | rounded-md, shadow-sm | Layout | alto | backlog | 5 |
 | `src/layout/components/SidebarNavItem.tsx` | layout | — | rounded-full/md, shadow-sm | Layout | medio | backlog | 4 |
 | `src/lib/realtime/useBroadcastSync.ts` | shared | sonner | — | UI central | alto | backlog | 1 |
-| `src/modules/accounting/components/AccountingControlPanel.tsx` | accounting | — | rounded-2xl | Contabilidad | medio | backlog | 1 |
-| `src/modules/reports/components/AccountingPolicyPanel.tsx` | reports | lucide | rounded-xl | Reportes | alto | backlog | 3 |
 
 ## Registro por fase
 
@@ -120,5 +119,7 @@ npm run check:ui-legacy:final
 | Shell accesibilidad | 163 globales (criterio anterior) | 2 (`lucide`, Dialog/Button legacy del tour) | 2 radios/sombras del tour | 0 | 159 globales (criterio anterior) | QA global pendiente |
 | Gate exhaustivo | 159 visibles | n/a | +31 deudas antes exentas ahora visibles | 0 | 190 reales | inventario activo |
 | Administración 10 | 0 focales | 11 consumidores dejaron `adminAntCompat` | 0 contabilizadas | 1 Compat transitorio eliminado | 0 focales | estricta |
+| Ajustes de recibos | 190 globales v2 | 1 | 7 | 0 Compat nuevos | 182 globales v2 | estricta; impresión física pendiente |
+| Reportes | 182 globales v2 | 2 | 3 | 0 Compat nuevos | 177 globales v2 | estricta; ECharts institucional |
 
-Las primitivas no se eliminarán hasta migrar todos sus consumidores. Facturación, Catálogo y Administración son los módulos estrictos actuales. Caja, Auth y Dashboard se agregarán a `strictModulePrefixes` cuando su auditoría transversal de runtime y pruebas termine; no se confunde su estado focal implementado con certificación.
+Las primitivas no se eliminarán hasta migrar todos sus consumidores. La reducción comparable con gate v2 es **190 → 177**, es decir, 13 violaciones eliminadas sin cambiar los 409 archivos auditados. El modo estricto cubre Shell, Auth, Dashboard, Caja, Facturación, Catálogo, Administración, Ajustes de recibos, Recibos, impresión TypeScript, Reportes y Contabilidad; todos están en cero. Este estado no equivale a certificación transversal.
