@@ -290,7 +290,7 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
               <p className="mt-1 font-mono text-lg font-semibold tabular-nums">
                 {sequence?.prefix && sequence?.current_number != null
                   ? `${sequence.prefix}-${String(sequence.current_number).padStart(8, '0')}`
-                  : 'ú?,????'}
+                  : 'Sin correlativo'}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
                 El backend lo incrementa al emitir. No se reinicia desde esta pantalla.
@@ -321,7 +321,10 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
           </FiscalField>
         ) : null}
 
-        <div className="flex justify-end">
+        <div
+          data-sticky-actions="true"
+          className="sticky bottom-0 z-10 flex justify-end border-t border-operational-border bg-operational-surface p-3"
+        >
           <Button htmlType="submit" type="primary" icon={<Save aria-hidden="true" />} disabled={!canEdit || form.formState.isSubmitting || saving}>
             Guardar numeración
           </Button>
@@ -347,7 +350,7 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
             <dl className="grid gap-3 border border-operational-border bg-muted/40 p-4 sm:grid-cols-2">
               <div>
                 <dt className="text-xs font-medium">Prefijo</dt>
-                <dd className="font-mono tabular-nums">{sequence?.prefix ?? 'ú?,????'} ú?????T {pendingChange.prefix}</dd>
+                <dd className="font-mono tabular-nums">{sequence?.prefix ?? 'Sin configurar'} → {pendingChange.prefix}</dd>
               </div>
               <div>
                 <dt className="text-xs font-medium">CAI actual</dt>
@@ -360,12 +363,12 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
               <div>
                 <dt className="text-xs font-medium">Rango actual</dt>
                 <dd className="font-mono tabular-nums">
-                  {sequence ? `${sequence.min_number.toLocaleString('es-HN')} ú?,??ó ${sequence.max_number.toLocaleString('es-HN')}` : 'Sin configurar'}
+                  {sequence ? `${sequence.min_number.toLocaleString('es-HN')} a ${sequence.max_number.toLocaleString('es-HN')}` : 'Sin configurar'}
                 </dd>
               </div>
               <div>
                 <dt className="text-xs font-medium">Rango nuevo</dt>
-                <dd className="font-mono tabular-nums">{pendingChange.min_number.toLocaleString('es-HN')} ú?,??ó {pendingChange.max_number.toLocaleString('es-HN')}</dd>
+                <dd className="font-mono tabular-nums">{pendingChange.min_number.toLocaleString('es-HN')} a {pendingChange.max_number.toLocaleString('es-HN')}</dd>
               </div>
               <div>
                 <dt className="text-xs font-medium">Vigencia actual</dt>

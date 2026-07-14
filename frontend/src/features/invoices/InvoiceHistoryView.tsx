@@ -1,4 +1,4 @@
-import { cloneElement, isValidElement, type FormEvent, useEffect, useRef, useState, type ReactElement } from 'react';
+import { cloneElement, isValidElement, useEffect, useRef, useState, type ReactElement } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -64,6 +64,7 @@ function latestPostedPayment(invoice: Invoice): NonNullable<Invoice['payments']>
 
 export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) {
   const [searchParams, setSearchParams] = useSearchParams();
+  const searchFilterKey = searchParams.toString();
   const queryClient = useQueryClient();
   const [filters, setFilters] = useState<InvoiceFilters>(() => filtersFromSearchParams(searchParams));
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
@@ -133,8 +134,8 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   const detailInvoiceId = positiveIntegerFromSearchParam(searchParams.get('invoice'), 0);
 
   useEffect(() => {
-    setFilters(filtersFromSearchParams(searchParams));
-  }, [searchParams]);
+    setFilters(filtersFromSearchParams(new URLSearchParams(searchFilterKey)));
+  }, [searchFilterKey]);
 
   useEffect(() => {
     if (!detailInvoiceId) {
@@ -155,14 +156,8 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, invoicesList]);
 
-  function changeFilters(nextFilters: InvoiceFilters) {
-    setFilters(nextFilters);
-    setSearchParams(withPreservedDetail(searchParamsFromFilters(nextFilters), searchParams));
-  }
-
-  async function submitFilters(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const nextFilters = { ...filters, page: 1 };
+  function applyFilters(draftFilters: InvoiceFilters) {
+    const nextFilters = { ...draftFilters, page: 1 };
     setFilters(nextFilters);
     setSearchParams(searchParamsFromFilters(nextFilters));
     // The query refetches automatically because filters is in the
@@ -638,9 +633,8 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
         filters={filters}
         hasActiveFilters={hasActiveFilters}
         loading={loading}
-        onChange={changeFilters}
+        onApply={applyFilters}
         onClear={clearFilters}
-        onSubmit={(event) => void submitFilters(event)}
       />
 
       {loadError ? (

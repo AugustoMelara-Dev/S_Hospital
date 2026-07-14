@@ -4,6 +4,7 @@ import { Grid } from 'antd';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FiscalSettingsView } from './FiscalSettingsView';
 import { apiClient, type FiscalSequence, type FiscalSettings } from '@/lib/api';
+import type { OperationalStatusReporter } from '@/app/operationalStatus';
 
 const fiscalSettings: FiscalSettings = {
   id: 1,
@@ -40,7 +41,7 @@ function renderView(
     canEdit?: boolean;
     canEditOperationalRules?: boolean;
     canViewFiscalSettings?: boolean;
-    onStatus?: (message: string) => void;
+    onStatus?: OperationalStatusReporter;
   } = {},
 ) {
   return render(
@@ -111,16 +112,15 @@ describe('FiscalSettingsView (separated sections)', () => {
     );
   });
 
-  it('uses vertical tabs on narrow screens so every tab remains a direct tablist child', async () => {
+  it('keeps configuration tabs above the content on narrow screens', async () => {
     vi.spyOn(Grid, 'useBreakpoint').mockReturnValue({ md: false });
 
     renderView();
 
     await screen.findByRole('heading', { level: 1 });
     const tabList = screen.getByRole('tablist');
-    expect(tabList.closest('.ant-tabs')).toHaveClass('ant-tabs-left');
-    expect(tabList).toHaveAttribute('aria-orientation', 'vertical');
-    expect(tabList.querySelector('.ant-tabs-nav-operations')).toHaveClass('ant-tabs-nav-operations-hidden');
+    expect(tabList.closest('.ant-tabs')).toHaveClass('ant-tabs-top');
+    expect(tabList).toHaveAttribute('aria-orientation', 'horizontal');
   });
 
   it('renders a sanitized load error when the API fails', async () => {

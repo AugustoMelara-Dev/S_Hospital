@@ -50,6 +50,41 @@ export function InvoiceDetailDrawer({
 }: InvoiceDetailDrawerProps) {
   const actions = invoice && permissions ? invoiceActionPolicy(invoice, permissions) : null;
   const institutionalReceipt = invoice ? getIssuedInstitutionalReceipt(invoice) : null;
+  const hasActions = actions ? Object.values(actions).some(Boolean) : false;
+  const actionButtons = invoice && actions && hasActions ? (
+    <div className="flex flex-wrap justify-end gap-2" aria-label="Acciones autorizadas">
+      {actions.openReceipt ? (
+        <Button type="default" onClick={() => onOpenReceipt(invoice.id)}>
+          <Receipt aria-hidden="true" /> {actions.auditedOpen ? 'Reimprimir PDF' : 'Ver recibo'}
+        </Button>
+      ) : null}
+      {actions.downloadInstitutionalReceipt && institutionalReceipt ? (
+        <Button type="default" disabled={loadingActionInvoiceId === invoice.id} onClick={() => onDownloadInstitutionalReceipt(invoice)}>
+          <Download aria-hidden="true" /> Descargar
+        </Button>
+      ) : null}
+      {actions.generateInstitutionalReceipt ? (
+        <Button type="default" disabled={loadingActionInvoiceId === invoice.id} onClick={() => onGenerateInstitutionalReceipt(invoice.id)}>
+          <ReceiptText aria-hidden="true" /> Generar PDF
+        </Button>
+      ) : null}
+      {actions.reprint ? (
+        <Button type="default" onClick={() => onReprint(invoice)}>
+          <Printer aria-hidden="true" /> Reimprimir
+        </Button>
+      ) : null}
+      {actions.reverse ? (
+        <Button type="default" danger onClick={() => onPrepareInvoiceAction(invoice.id, 'reverse')}>
+          <XCircle aria-hidden="true" /> Reversar pago
+        </Button>
+      ) : null}
+      {actions.void ? (
+        <Button type="default" danger onClick={() => onPrepareInvoiceAction(invoice.id, 'void')}>
+          <XCircle aria-hidden="true" /> Anular factura
+        </Button>
+      ) : null}
+    </div>
+  ) : undefined;
 
   return (
     <Drawer
@@ -58,6 +93,7 @@ export function InvoiceDetailDrawer({
       onClose={() => onOpenChange(false)}
       title={`Factura ${invoice?.invoice_number ?? ''}`.trim()}
       closable={false}
+      footer={actionButtons}
       extra={
         <Button
           type="text"
@@ -178,44 +214,6 @@ export function InvoiceDetailDrawer({
               {invoice.cash_session ? (
                 <p className="mt-2 text-xs text-muted-foreground">Caja #{invoice.cash_session.id} · {invoice.cash_session.user?.name ?? 'Cajero no disponible'}</p>
               ) : null}
-            </section>
-          ) : null}
-
-          {actions ? (
-            <section aria-labelledby="invoice-detail-actions">
-              <h3 id="invoice-detail-actions" className="text-sm font-semibold text-foreground">Acciones autorizadas</h3>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {actions.openReceipt ? (
-                  <Button type="default" onClick={() => onOpenReceipt(invoice.id)}>
-                    <Receipt aria-hidden="true" /> {actions.auditedOpen ? 'Reimprimir PDF' : 'Ver recibo'}
-                  </Button>
-                ) : null}
-                {actions.downloadInstitutionalReceipt && institutionalReceipt ? (
-                  <Button type="default" disabled={loadingActionInvoiceId === invoice.id} onClick={() => onDownloadInstitutionalReceipt(invoice)}>
-                    <Download aria-hidden="true" /> Descargar
-                  </Button>
-                ) : null}
-                {actions.generateInstitutionalReceipt ? (
-                  <Button type="default" disabled={loadingActionInvoiceId === invoice.id} onClick={() => onGenerateInstitutionalReceipt(invoice.id)}>
-                    <ReceiptText aria-hidden="true" /> Generar PDF
-                  </Button>
-                ) : null}
-                {actions.reprint ? (
-                  <Button type="default" onClick={() => onReprint(invoice)}>
-                    <Printer aria-hidden="true" /> Reimprimir
-                  </Button>
-                ) : null}
-                {actions.reverse ? (
-                  <Button type="default" danger onClick={() => onPrepareInvoiceAction(invoice.id, 'reverse')}>
-                    <XCircle aria-hidden="true" /> Reversar pago
-                  </Button>
-                ) : null}
-                {actions.void ? (
-                  <Button type="default" danger onClick={() => onPrepareInvoiceAction(invoice.id, 'void')}>
-                    <XCircle aria-hidden="true" /> Anular factura
-                  </Button>
-                ) : null}
-              </div>
             </section>
           ) : null}
 

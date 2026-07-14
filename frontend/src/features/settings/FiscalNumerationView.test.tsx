@@ -182,4 +182,12 @@ describe('FiscalNumerationView', () => {
       await screen.findByRole('button', { name: /guardar numeraci/i }),
     ).toBeDisabled();
   });
+
+  it('keeps fiscal copy readable and the save action sticky on long forms', async () => {
+    render(<FiscalNumerationView canEdit onStatus={vi.fn()} />);
+
+    const save = await screen.findByRole('button', { name: /guardar numeración/i });
+    expect(save.closest('[data-sticky-actions="true"]')).toHaveClass('sticky', 'bottom-0');
+    expect(document.body.textContent).not.toMatch(/Ã|Â|â€œ|â€|ú\?|�/);
+  });
 });

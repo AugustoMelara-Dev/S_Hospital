@@ -325,7 +325,10 @@ export function HospitalSettingsView({ canEdit, onStatus }: HospitalSettingsView
           </div>
         </Card>
 
-        <div className="flex justify-end">
+        <div
+          data-sticky-actions="true"
+          className="sticky bottom-0 z-10 flex justify-end border-t border-operational-border bg-operational-surface p-3"
+        >
           <Button htmlType="submit" type="primary" icon={<Save aria-hidden="true" />} disabled={!canEdit || form.formState.isSubmitting || saving}>
             Guardar datos del hospital
           </Button>

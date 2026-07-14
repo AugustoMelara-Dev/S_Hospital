@@ -5,6 +5,7 @@ import { ReportsCash } from './ReportsCash';
 import { ReportsExecutive } from './ReportsExecutive';
 import { LineChartOutlined, SafetyCertificateOutlined, WalletOutlined } from '@ant-design/icons';
 import { PageHeader } from '@/design-system/components/PageHeader';
+import type { OperationalStatusReporter } from '@/app/operationalStatus';
 
 type ReportsViewProps = {
   canBrowseCashSessions: boolean;
@@ -12,7 +13,7 @@ type ReportsViewProps = {
   canViewAuditReports: boolean;
   canViewCashSessionReport: boolean;
   canViewManagerial: boolean;
-  onStatus: (message: string) => void;
+  onStatus: OperationalStatusReporter;
 };
 
 const SUB_ROUTES = [
@@ -152,7 +153,7 @@ function ReportsNavigation({
   }
 
   return (
-    <nav aria-label="Secciones de reportes" className="grid gap-3 md:grid-cols-3">
+    <nav aria-label="Secciones de reportes" data-mobile-layout="compact" className="grid grid-cols-3 gap-1 sm:gap-3">
       {visible.map((route) => {
         const isActive = active === route.id;
         const Icon = route.icon;
@@ -163,12 +164,12 @@ function ReportsNavigation({
             to={`${basePath}/${route.id}`}
             aria-current={isActive ? 'page' : undefined}
             aria-describedby={descriptionId}
-            className={`flex min-h-20 items-center gap-3 border px-4 py-3 text-sm font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 ${isActive ? 'border-primary bg-muted font-semibold' : 'border-border bg-surface hover:border-primary'}`}
+            className={`flex min-h-12 items-center justify-center gap-2 border px-2 py-2 text-xs font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 sm:min-h-20 sm:justify-start sm:gap-3 sm:px-4 sm:py-3 sm:text-sm ${isActive ? 'border-primary bg-muted font-semibold' : 'border-border bg-surface hover:border-primary'}`}
           >
-            <span className="flex size-10 shrink-0 items-center justify-center"><Icon aria-hidden="true" className="size-5" /></span>
+            <span className="flex size-6 shrink-0 items-center justify-center sm:size-10"><Icon aria-hidden="true" className="size-4 sm:size-5" /></span>
             <span className="min-w-0">
               <span className="block font-semibold">{route.label}</span>
-              <span id={descriptionId} className="mt-1 block text-xs font-normal leading-relaxed">{route.description}</span>
+              <span id={descriptionId} className="mt-1 hidden text-xs font-normal leading-relaxed sm:block">{route.description}</span>
             </span>
           </Link>
         );
