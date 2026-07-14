@@ -82,7 +82,7 @@ export function ReceiptSettingsPreview({
     >
       <div className="space-y-4">
         {labels.map((label) => (
-          <ReceiptPreviewSheet
+          <ReceiptDocumentPreview
             key={label}
             className={cn(
               'receipt-paper-preview mx-auto w-full max-w-3xl border border-receipt-border-soft bg-receipt-paper p-0 text-receipt-ink',
@@ -177,14 +177,14 @@ export function ReceiptSettingsPreview({
                   {label} - {footerText || 'Copia digital guardada en sistema'}
                 </footer>
               ) : null}
-          </ReceiptPreviewSheet>
+          </ReceiptDocumentPreview>
         ))}
       </div>
     </PrintPreviewFrame>
   );
 }
 
-function ReceiptPreviewSheet({
+function ReceiptDocumentPreview({
   aspectRatio,
   children,
   className,
