@@ -17,14 +17,14 @@ Las cifras 163/407 y 190/409 no son comparables porque cambió tanto el conjunto
 
 ```text
 npm run check:ui-legacy
-[INVENTORY] 409 archivos; 177 violaciones; exit 0
+[INVENTORY] 408 archivos; 177 violaciones; exit 0
 
 npm run check:ui-legacy:strict
-[QUALITY GATE PASSED] 409 archivos; 0 violaciones
+[QUALITY GATE PASSED] 408 archivos; 0 violaciones
 Módulos estrictos: shell, auth, dashboard, cash, invoices, catalog, admin, receipt-settings, receipts, printing, modules/receipts, reports y accounting
 
 npm run check:ui-legacy:final
-[QUALITY GATE FAILED] 409 archivos; 177 violaciones; exit 1
+[QUALITY GATE FAILED] 408 archivos; 177 violaciones; exit 1
 ```
 
 | Tipo | Cantidad |
@@ -121,5 +121,6 @@ npm run check:ui-legacy:final
 | Administración 10 | 0 focales | 11 consumidores dejaron `adminAntCompat` | 0 contabilizadas | 1 Compat transitorio eliminado | 0 focales | estricta |
 | Ajustes de recibos | 190 globales v2 | 1 | 7 | 0 Compat nuevos | 182 globales v2 | estricta; impresión física pendiente |
 | Reportes | 182 globales v2 | 2 | 3 | 0 Compat nuevos | 177 globales v2 | estricta; ECharts institucional |
+| Respaldos | 177 globales v2 | 0 | 0 | 1 Compat eliminado | 177 globales v2 | estricta; Ant Design directo |
 
-Las primitivas no se eliminarán hasta migrar todos sus consumidores. La reducción comparable con gate v2 es **190 → 177**, es decir, 13 violaciones eliminadas sin cambiar los 409 archivos auditados. El modo estricto cubre Shell, Auth, Dashboard, Caja, Facturación, Catálogo, Administración, Ajustes de recibos, Recibos, impresión TypeScript, Reportes y Contabilidad; todos están en cero. Este estado no equivale a certificación transversal.
+Las primitivas no se eliminarán hasta migrar todos sus consumidores. La reducción comparable con gate v2 es **190/409 → 177/408**: 13 violaciones y un archivo Compat eliminados con la misma regla/configuración. El modo estricto cubre Shell, Auth, Dashboard, Caja, Facturación, Catálogo, Administración, Respaldos, Ajustes de recibos, Recibos, impresión TypeScript, Reportes y Contabilidad; todos están en cero. Este estado no equivale a certificación transversal.

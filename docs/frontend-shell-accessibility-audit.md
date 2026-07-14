@@ -93,7 +93,7 @@ La corrida del 2026-07-13 evalúa el documento completo con las etiquetas WCAG 2
 | sidebar colapsado | 0 | 0 | 0 | 0 | 0 | sin pendientes |
 | UserMenu abierto | 0 | 0 | 0 | 0 | 1 | `color-contrast`, `.ant-btn-primary > span:nth-child(2)` |
 | Command Palette abierta | 0 | 0 | 0 | 0 | 1 regla / 5 nodos | `color-contrast`: spans de botones, `.ml-auto` y filas 8–9 superpuestas |
-| GuidedTour abierto | 0 | 0 | 0 | 0 | 1 regla / 2 nodos | `color-contrast`: `.min-w-44 > span:nth-child(3)` y `.ml-auto` |
+| GuidedTour abierto | 0 | 0 | 0 | 0 | 0 | sin pendientes en la repetición final |
 | 390×844 | 0 | 0 | 0 | 0 | 0 | sin pendientes |
 | navegación móvil abierta | 0 | 0 | 0 | 0 | 1 | `color-contrast`, `.py-2.border-border[href$="users"]` |
 | 1366×768, zoom 125 % | 0 | 0 | 0 | 0 | 0 | sin pendientes |
