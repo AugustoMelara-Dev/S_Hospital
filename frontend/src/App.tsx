@@ -14,8 +14,8 @@ import { queryClient } from './lib/query-client';
 import { apiClient } from './lib/api';
 import { DesignSystemProvider } from './design-system/providers/DesignSystemProvider';
 import { FeedbackProvider, useFeedback } from './design-system/providers/FeedbackProvider';
-import { isErrorMessage } from './lib/api/user-error';
 import { appRoutes, canAccessRoute } from './navigation/appNavigation';
+import { normalizeOperationalStatus, type OperationalStatusReporter } from './app/operationalStatus';
 
 const CashBoxView = lazy(() => import('./features/cash/CashBoxView').then((module) => ({ default: module.CashBoxView })));
 
@@ -52,14 +52,11 @@ function HospitalApp() {
   // is also surfaced as a real toast (top-right). The status string
   // continues to drive the topbar pill, but cashiers no longer miss
   // errors that were previously hidden in an sr-only footer.
-  const handleStatus = useCallback((message: string) => {
-    session.setStatus(message);
-    if (message && message !== 'Listo para iniciar sesión local.') {
-      if (isErrorMessage(message)) {
-        feedback.error(message);
-      } else if (!isProgressStatusMessage(message)) {
-        feedback.success(message);
-      }
+  const handleStatus = useCallback<OperationalStatusReporter>((input) => {
+    const status = normalizeOperationalStatus(input);
+    session.setStatus(status.message);
+    if (status.toast && status.message && status.message !== 'Listo para iniciar sesión local.') {
+      feedback.notify(status);
     }
   }, [feedback, session]);
 
@@ -178,22 +175,4 @@ function HospitalApp() {
       </Modal>
     </InstitutionalShell>
   );
-}
-
-function isProgressStatusMessage(message: string): boolean {
-  return [
-    'Cargando',
-    'Consultando',
-    'Preparando',
-    'Validando',
-    'Actualizando',
-    'Guardando',
-    'Abriendo',
-    'Cerrando',
-    'Subiendo',
-    'Creando',
-    'Restableciendo',
-    'Cambiando',
-    'Revisando',
-  ].some((prefix) => message.startsWith(prefix));
 }

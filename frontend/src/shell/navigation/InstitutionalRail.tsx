@@ -33,10 +33,10 @@ export function InstitutionalRail({ activeItem, collapsed, hospitalName, logoUrl
       data-collapsed={collapsed ? 'true' : 'false'}
       className={cn(
         'print-hidden hidden border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:fixed lg:inset-y-0 lg:z-30 lg:flex lg:flex-col',
-        collapsed ? 'lg:w-20' : 'lg:w-72',
+        collapsed ? 'lg:w-20' : 'lg:w-64',
       )}
     >
-      <div className={cn('flex min-h-24 items-center border-b border-sidebar-border', collapsed ? 'justify-center px-2' : 'gap-3 px-5')}>
+      <div className={cn('flex min-h-20 items-center border-b border-sidebar-border', collapsed ? 'justify-center px-2' : 'gap-3 px-4')}>
         {logoUrl ? (
           <img src={logoUrl} alt={hospitalName} title={collapsed ? hospitalName : undefined} className="size-11 border border-sidebar-border bg-receipt-paper object-contain p-1" />
         ) : (
@@ -62,7 +62,7 @@ export function InstitutionalRail({ activeItem, collapsed, hospitalName, logoUrl
       </div>
 
       {sections.length > 0 ? (
-        <nav aria-label="Navegación principal" className="min-h-0 flex-1 overflow-y-auto px-3 py-5">
+        <nav aria-label="Navegación principal" className="min-h-0 flex-1 overflow-y-auto px-3 py-4">
           {sections.map((section) => (
             <section key={section.id} aria-labelledby={`institutional-rail-${section.id}`} className="mb-5">
               <h2 id={`institutional-rail-${section.id}`} className={cn('mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/85', collapsed && 'sr-only')}>
