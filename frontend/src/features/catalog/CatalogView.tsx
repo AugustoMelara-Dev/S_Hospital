@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { EditOutlined, PlusOutlined } from '@ant-design/icons';
-import { Alert, Button, Col, Input, Modal, Row, Statistic, Typography } from 'antd';
+import { Alert, Button, Col, Collapse, Input, Modal, Row, Statistic, Typography } from 'antd';
 import { type AuthUser, type Category, type Service, type ServiceFilters, apiClient, userSafeErrorMessage } from '../../lib/api';
 import { useAreas, useCategories } from '@/hooks/useCategories';
 import { useOperationalSettings } from '@/hooks/useFiscalSettings';
@@ -282,28 +282,38 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
       />
 
       {canManageCatalog && categories.length > 0 ? (
-        <section aria-labelledby="catalog-categories-title" className="border-y border-border py-4">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <h2 id="catalog-categories-title" className="text-sm font-semibold text-foreground">Categorías del catálogo</h2>
-              <p className="mt-1 text-xs text-muted-foreground">Edite la organización sin perder la búsqueda ni la página actual.</p>
-            </div>
-            <ul className="flex flex-wrap gap-2" aria-label="Categorías editables">
-              {categories.map((category) => (
-                <li key={category.id}>
-                  <Button
-                    htmlType="button"
-                    aria-label={`Editar categoría ${category.name}`}
-                    onClick={() => openEditCategory(category)}
-                  >
-                    <EditOutlined aria-hidden="true" />
-                    {category.name}
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
+        <Collapse
+          className="border-y border-border bg-surface"
+          destroyOnHidden
+          expandIconPlacement="end"
+          size="small"
+          items={[{
+            key: 'editable-categories',
+            label: (
+              <div>
+                <h2 className="text-sm font-semibold text-foreground">Categorías del catálogo</h2>
+                <p className="text-xs text-muted-foreground">{categories.length} disponibles · abrir para editar</p>
+              </div>
+            ),
+            children: (
+              <ul className="flex flex-wrap gap-2" aria-label="Categorías editables">
+                {categories.map((category) => (
+                  <li key={category.id}>
+                    <Button
+                      htmlType="button"
+                      size="small"
+                      aria-label={`Editar categoría ${category.name}`}
+                      onClick={() => openEditCategory(category)}
+                    >
+                      <EditOutlined aria-hidden="true" />
+                      {category.name}
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            ),
+          }]}
+        />
       ) : null}
 
       <CatalogToolbar

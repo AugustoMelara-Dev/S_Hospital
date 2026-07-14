@@ -38,8 +38,9 @@ describe('BrandingView', () => {
 
   it('updates brand color without sending fiscal or operational settings', async () => {
     const updateFiscalSettings = vi.mocked(apiClient.updateFiscalSettings);
+    const onStatus = vi.fn();
 
-    render(<BrandingView canEdit onStatus={vi.fn()} />);
+    render(<BrandingView canEdit onStatus={onStatus} />);
 
     fireEvent.click(await screen.findByRole('button', { name: /azul/i }));
 
@@ -53,5 +54,28 @@ describe('BrandingView', () => {
     expect(payload.default_tax_rate).toBeUndefined();
     expect(payload.scanner_enabled).toBeUndefined();
     expect(payload.partial_payments_enabled).toBeUndefined();
+    expect(onStatus).toHaveBeenCalledWith({
+      key: 'settings:branding:color',
+      level: 'info',
+      message: 'Guardando color de marca...',
+      toast: false,
+    });
+    expect(onStatus).toHaveBeenCalledWith(expect.objectContaining({
+      key: 'settings:branding:color',
+      level: 'success',
+    }));
+  });
+
+  it('reports brand color failures as errors with a stable key', async () => {
+    vi.mocked(apiClient.updateFiscalSettings).mockRejectedValueOnce(new Error('Fallo controlado'));
+    const onStatus = vi.fn();
+
+    render(<BrandingView canEdit onStatus={onStatus} />);
+    fireEvent.click(await screen.findByRole('button', { name: /azul/i }));
+
+    await waitFor(() => expect(onStatus).toHaveBeenCalledWith(expect.objectContaining({
+      key: 'settings:branding:color',
+      level: 'error',
+    })));
   });
 });

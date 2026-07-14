@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Alert, App as AntApp, Button, Empty, Spin, Typography } from 'antd';
+import { Alert, Button, Empty, Spin, Typography } from 'antd';
 import {
   type ExecutiveReportFilters as ExecutiveReportFilterState,
   apiClient,
@@ -18,11 +18,12 @@ import { ExecutiveReportFilters } from './components/ExecutiveReportFilters';
 import { computePresetRange, parseReportDate, type PresetKey } from './components/reportDateRanges';
 import { AccountingPolicyPanel } from '@/modules/reports/components/AccountingPolicyPanel';
 import { ReportScope } from './components/ReportScope';
+import type { OperationalStatusReporter } from '@/app/operationalStatus';
 
 type ReportsExecutiveProps = {
   canExport: boolean;
   canViewManagerial: boolean;
-  onStatus: (message: string) => void;
+  onStatus: OperationalStatusReporter;
   titleLevel?: 1 | 2 | 3;
 };
 
@@ -32,7 +33,6 @@ export function ReportsExecutive({
   onStatus,
   titleLevel = 1,
 }: ReportsExecutiveProps) {
-  const { message: notify } = AntApp.useApp();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialFilters = initialExecutiveFilters(searchParams, canViewManagerial);
   const [preset, setPreset] = useState<PresetKey>(() => detectExecutivePreset(initialFilters));
@@ -78,7 +78,7 @@ export function ReportsExecutive({
 
   function handleRefresh() {
     if (executiveRangeError) {
-      onStatus(executiveRangeError);
+      onStatus({ key: 'reports:executive:filters', level: 'warning', message: executiveRangeError });
       return;
     }
     if (sameFilters(filters, appliedFilters)) {
@@ -96,33 +96,47 @@ export function ReportsExecutive({
 
   function handleExportPdf() {
     if (!canExport) {
-      notify?.warning?.('Exportacion PDF requiere permiso de exportacion de reportes.');
+      onStatus({
+        key: 'reports:executive:export-permission',
+        level: 'warning',
+        message: 'Exportacion PDF requiere permiso de exportacion de reportes.',
+      });
       return;
     }
     if (executiveRangeError) {
-      notify?.warning?.(executiveRangeError);
-      onStatus(executiveRangeError);
+      onStatus({ key: 'reports:executive:filters', level: 'warning', message: executiveRangeError });
       return;
     }
     if (hasUnappliedChanges) {
-      notify?.warning?.('Aplique el periodo antes de exportar el reporte ejecutivo.');
+      onStatus({
+        key: 'reports:executive:filters',
+        level: 'warning',
+        message: 'Aplique el periodo antes de exportar el reporte ejecutivo.',
+      });
       return;
     }
     if (exporting) return;
     setExporting(true);
-    onStatus('Preparando PDF ejecutivo...');
+    onStatus({
+      key: 'reports:executive:export-pdf',
+      level: 'info',
+      message: 'Preparando PDF ejecutivo...',
+      toast: false,
+    });
     void runExecutiveExport(
       apiClient.downloadExecutivePdf,
       appliedFilters,
       (blob) => {
         openBlobInNewTab(blob, `reporte-ejecutivo-${appliedFilters.date_from}-a-${appliedFilters.date_to}.pdf`);
-        notify?.success?.('PDF ejecutivo generado.');
-        onStatus('PDF ejecutivo generado.');
+        onStatus({
+          key: 'reports:executive:export-pdf',
+          level: 'success',
+          message: 'PDF ejecutivo generado.',
+        });
       },
       (err) => {
         const message = userSafeErrorMessage(err, 'No se pudo generar el PDF ejecutivo.');
-        notify?.error?.(message);
-        onStatus(message);
+        onStatus({ key: 'reports:executive:export-pdf', level: 'error', message });
       },
       () => {
         setExporting(false);
@@ -132,33 +146,47 @@ export function ReportsExecutive({
 
   function handleExportExcel() {
     if (!canExport) {
-      notify?.warning?.('Exportacion Excel requiere permiso de exportacion de reportes.');
+      onStatus({
+        key: 'reports:executive:export-permission',
+        level: 'warning',
+        message: 'Exportacion Excel requiere permiso de exportacion de reportes.',
+      });
       return;
     }
     if (executiveRangeError) {
-      notify?.warning?.(executiveRangeError);
-      onStatus(executiveRangeError);
+      onStatus({ key: 'reports:executive:filters', level: 'warning', message: executiveRangeError });
       return;
     }
     if (hasUnappliedChanges) {
-      notify?.warning?.('Aplique el periodo antes de exportar el reporte ejecutivo.');
+      onStatus({
+        key: 'reports:executive:filters',
+        level: 'warning',
+        message: 'Aplique el periodo antes de exportar el reporte ejecutivo.',
+      });
       return;
     }
     if (exporting) return;
     setExporting(true);
-    onStatus('Descargando Excel ejecutivo...');
+    onStatus({
+      key: 'reports:executive:export-excel',
+      level: 'info',
+      message: 'Descargando Excel ejecutivo...',
+      toast: false,
+    });
     void runExecutiveExport(
       apiClient.downloadExecutiveExcel,
       appliedFilters,
       (blob) => {
         downloadBlob(blob, `reporte-ejecutivo-${appliedFilters.date_from}-a-${appliedFilters.date_to}.xlsx`);
-        notify?.success?.('Excel ejecutivo descargado.');
-        onStatus('Excel ejecutivo descargado.');
+        onStatus({
+          key: 'reports:executive:export-excel',
+          level: 'success',
+          message: 'Excel ejecutivo descargado.',
+        });
       },
       (err) => {
         const message = userSafeErrorMessage(err, 'No se pudo descargar el Excel.');
-        notify?.error?.(message);
-        onStatus(message);
+        onStatus({ key: 'reports:executive:export-excel', level: 'error', message });
       },
       () => {
         setExporting(false);

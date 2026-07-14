@@ -44,7 +44,7 @@ export function useTheme() {
     root.style.setProperty('--institutional-accent-foreground', config.accentForeground);
 
     // Sidebar indicators / highlights
-    const railColor = COLOR_THEMES[colorTheme].dark.ring;
+    const railColor = config.ring;
     root.style.setProperty('--institutional-sidebar-primary', railColor);
     root.style.setProperty('--institutional-sidebar-ring', railColor);
   }, [theme, colorTheme, isDark]);

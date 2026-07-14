@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from 'react';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { MemoryRouter, useLocation } from 'react-router-dom';
+import { Link, MemoryRouter, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { type AuthUser, type CashSession } from '../lib/api';
 import { InstitutionalShell } from './InstitutionalShell';
@@ -156,6 +156,32 @@ describe('InstitutionalShell', () => {
   beforeEach(() => {
     window.localStorage.clear();
     Element.prototype.scrollIntoView = vi.fn();
+    window.scrollTo = vi.fn();
+  });
+
+  it('restaura el inicio de la página al cambiar de ruta', async () => {
+    render(
+      <MemoryRouter initialEntries={['/dashboard']}>
+        <InstitutionalShell cashSession={openCashSession} onLogout={vi.fn()} status="Listo" user={cashier}>
+          <Link to="/cashbox">Abrir caja de prueba</Link>
+          <LocationProbe />
+        </InstitutionalShell>
+      </MemoryRouter>,
+    );
+
+    vi.mocked(window.scrollTo).mockClear();
+    fireEvent.click(screen.getByRole('link', { name: 'Abrir caja de prueba' }));
+
+    await waitFor(() => expect(screen.getByLabelText('Ruta de prueba')).toHaveTextContent('/cashbox'));
+    expect(window.scrollTo).toHaveBeenCalledWith({ behavior: 'auto', left: 0, top: 0 });
+  });
+
+  it('clips horizontal overflow without creating a competing vertical scroll container', () => {
+    renderShell();
+
+    const shellRoot = screen.getByRole('main').parentElement?.parentElement;
+    expect(shellRoot).toHaveClass('overflow-x-clip');
+    expect(shellRoot).not.toHaveClass('overflow-x-hidden');
   });
 
   it('muestra una sola vez caja y hospital', () => {

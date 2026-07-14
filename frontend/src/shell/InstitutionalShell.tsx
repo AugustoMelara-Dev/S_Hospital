@@ -72,6 +72,7 @@ export function InstitutionalShell({ cashSession, children, logoUrl, onLogout, s
   useEffect(() => {
     setCommandsOpen(false);
     setMobileOpen(false);
+    window.scrollTo({ behavior: 'auto', left: 0, top: 0 });
   }, [location.pathname]);
 
   useEffect(() => {
@@ -95,14 +96,14 @@ export function InstitutionalShell({ cashSession, children, logoUrl, onLogout, s
   }
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-background text-foreground">
+    <div className="min-h-screen overflow-x-clip bg-background text-foreground">
       <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground">
         Omitir al contenido principal
       </a>
 
       <InstitutionalRail activeItem={activeItem} collapsed={collapsed} hospitalName={hospitalName} logoUrl={logoUrl} navigation={visibleNavigation} onToggleCollapsed={toggleCollapsed} user={user} />
 
-      <div className={cn('flex min-h-screen min-w-0 flex-col pb-16 lg:pb-0', collapsed ? 'lg:ml-20' : 'lg:ml-72')}>
+      <div className={cn('flex min-h-screen min-w-0 flex-col pb-16 lg:pb-0', collapsed ? 'lg:ml-20' : 'lg:ml-64')}>
         <ContextBar
           cashSession={cashSession}
           commandButtonRef={commandButtonRef}
@@ -115,8 +116,8 @@ export function InstitutionalShell({ cashSession, children, logoUrl, onLogout, s
           status={status}
           user={user}
         />
-        <main id="main-content" tabIndex={-1} className="min-w-0 flex-1 scroll-mt-24 px-3 py-4 outline-none sm:px-6 lg:px-8 lg:py-8 xl:px-10">
-          <div className="mx-auto flex max-w-screen-2xl flex-col gap-6">{children}</div>
+        <main id="main-content" tabIndex={-1} className="min-w-0 flex-1 scroll-mt-20 px-3 py-4 outline-none sm:px-5 lg:px-7 lg:py-6 xl:px-8">
+          <div className="mx-auto flex max-w-screen-2xl flex-col gap-5">{children}</div>
         </main>
         <footer className="print-hidden sr-only">Sistema hospitalario local</footer>
       </div>

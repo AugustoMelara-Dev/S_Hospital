@@ -1,17 +1,40 @@
 import { SearchOutlined, DownOutlined, UpOutlined } from '@ant-design/icons';
 import { Button, DatePicker, Form, Input, Select, Space } from 'antd';
 import dayjs from 'dayjs';
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
 import type { InvoiceFilters } from '../../../lib/api';
 
-type Props = { filters: InvoiceFilters; hasActiveFilters: boolean; loading: boolean; onChange: (filters: InvoiceFilters) => void; onClear: () => void; onSubmit: (event: FormEvent<HTMLFormElement>) => void };
+type Props = {
+  filters: InvoiceFilters;
+  hasActiveFilters: boolean;
+  loading: boolean;
+  onApply: (filters: InvoiceFilters) => void;
+  onClear: () => void;
+};
 
-export function InvoiceHistoryFilters({ filters, hasActiveFilters, loading, onChange, onClear, onSubmit }: Props) {
+export function InvoiceHistoryFilters({ filters, hasActiveFilters, loading, onApply, onClear }: Props) {
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const update = (patch: Partial<InvoiceFilters>) => onChange({ ...filters, ...patch, page: 1 });
+  const [draft, setDraft] = useState(filters);
+  const draftRef = useRef(filters);
+  const update = (patch: Partial<InvoiceFilters>) => setDraft((current) => {
+    const next = { ...current, ...patch, page: 1 };
+    draftRef.current = next;
+    return next;
+  });
+  const hasDraftChanges = JSON.stringify(draft) !== JSON.stringify(filters);
+
+  useEffect(() => {
+    draftRef.current = filters;
+    setDraft(filters);
+  }, [filters]);
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    onApply({ ...draftRef.current, page: 1 });
+  }
 
   return (
-    <Form component="form" layout="vertical" onSubmitCapture={onSubmit} className="border border-border bg-surface p-4">
+    <Form component="form" layout="vertical" onSubmitCapture={handleSubmit} className="border border-border bg-surface p-4">
       <Space wrap align="end" size="middle">
         <div className="flex flex-col gap-1">
           <label htmlFor="patient" className="text-xs font-semibold text-foreground">Paciente</label>
@@ -20,7 +43,7 @@ export function InvoiceHistoryFilters({ filters, hasActiveFilters, loading, onCh
             allowClear
             prefix={<SearchOutlined aria-hidden="true" />}
             placeholder="Nombre del paciente..."
-            value={filters.patient ?? ''}
+            value={draft.patient ?? ''}
             onChange={(event) => update({ patient: event.target.value })}
             className="w-48"
           />
@@ -33,7 +56,7 @@ export function InvoiceHistoryFilters({ filters, hasActiveFilters, loading, onCh
             allowClear
             prefix={<SearchOutlined aria-hidden="true" />}
             placeholder="A-0001..."
-            value={filters.invoice_number ?? ''}
+            value={draft.invoice_number ?? ''}
             onChange={(event) => update({ invoice_number: event.target.value })}
             className="w-40"
           />
@@ -57,7 +80,7 @@ export function InvoiceHistoryFilters({ filters, hasActiveFilters, loading, onCh
               <DatePicker
                 id="date_from"
                 format="DD/MM/YYYY"
-                value={filters.date_from ? dayjs(filters.date_from) : null}
+                value={draft.date_from ? dayjs(draft.date_from) : null}
                 onChange={(date) => update({ date_from: date ? date.format('YYYY-MM-DD') : '' })}
                 className="w-36"
               />
@@ -68,7 +91,7 @@ export function InvoiceHistoryFilters({ filters, hasActiveFilters, loading, onCh
               <DatePicker
                 id="date_to"
                 format="DD/MM/YYYY"
-                value={filters.date_to ? dayjs(filters.date_to) : null}
+                value={draft.date_to ? dayjs(draft.date_to) : null}
                 onChange={(date) => update({ date_to: date ? date.format('YYYY-MM-DD') : '' })}
                 className="w-36"
               />
@@ -79,7 +102,7 @@ export function InvoiceHistoryFilters({ filters, hasActiveFilters, loading, onCh
               <Select
                 id="status"
                 aria-label="Estado de factura"
-                value={filters.status || 'all'}
+                value={draft.status || 'all'}
                 options={[
                   { value: 'all', label: 'Todos' },
                   { value: 'issued', label: 'Emitida' },
@@ -95,7 +118,7 @@ export function InvoiceHistoryFilters({ filters, hasActiveFilters, loading, onCh
         )}
 
         <Button htmlType="submit" type="primary" loading={loading}>Buscar</Button>
-        <Button disabled={!hasActiveFilters || loading} onClick={onClear}>Limpiar</Button>
+        <Button disabled={(!hasActiveFilters && !hasDraftChanges) || loading} onClick={onClear}>Limpiar</Button>
       </Space>
     </Form>
   );

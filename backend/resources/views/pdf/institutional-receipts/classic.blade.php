@@ -172,15 +172,77 @@
             margin-top: 1px;
         }
 
-        .receipt-closing-block {
+        .receipt-summary {
             page-break-inside: avoid;
             break-inside: avoid;
+        }
+
+        .primary-paper {
+            font-size: {{ 9.2 * $profile['font_scale'] }}px;
+            line-height: 1.18;
+        }
+
+        .primary-paper .document-header {
+            padding-bottom: 4px;
+        }
+
+        .primary-paper .institution-line,
+        .primary-paper .hospital ~ div {
+            display: inline-block;
+            margin-right: 6px;
+        }
+
+        .primary-paper .hospital {
+            font-size: 1.22em;
+        }
+
+        .primary-paper .logo {
+            height: 32px;
+            margin-bottom: 2px;
+        }
+
+        .primary-paper .document-band {
+            margin: 4px 0;
+            padding-bottom: 3px;
+        }
+
+        .primary-paper .meta-table td {
+            padding-bottom: 1px;
+            padding-top: 1px;
+        }
+
+        .primary-paper .meta-table br {
+            display: none;
+        }
+
+        .primary-paper .meta-table .label {
+            margin-right: 3px;
+        }
+
+        .primary-paper .section-title {
+            margin: 5px 0 3px;
+            padding-bottom: 2px;
+        }
+
+        .primary-paper .items-table th,
+        .primary-paper .items-table td {
+            padding-bottom: 2px;
+            padding-top: 2px;
         }
 
         .totals-table {
             margin-left: auto;
             margin-top: 8px;
             width: 45%;
+        }
+
+        .primary-paper .totals-table {
+            margin-top: 4px;
+        }
+
+        .primary-paper .totals-table td {
+            padding-bottom: 1px;
+            padding-top: 1px;
         }
 
         .thermal .totals-table {
@@ -204,9 +266,20 @@
             padding: 6px;
         }
 
+        .primary-paper .amount-words {
+            margin-top: 4px;
+            padding: 4px;
+        }
+
         .signature-grid {
             margin-top: 22px;
+            page-break-inside: avoid;
+            break-inside: avoid;
             width: 100%;
+        }
+
+        .primary-paper .signature-grid {
+            margin-top: 6px;
         }
 
         .signature-grid td {
@@ -229,6 +302,15 @@
             width: 78%;
         }
 
+        .primary-paper .blank-area {
+            height: 18px;
+            margin-bottom: 2px;
+        }
+
+        .primary-paper .signature-line {
+            padding-top: 2px;
+        }
+
         .copy-legend {
             border-top: 1px solid #d1d5db;
             color: #374151;
@@ -237,6 +319,11 @@
             padding-top: 5px;
             text-align: center;
             text-transform: uppercase;
+        }
+
+        .primary-paper .copy-legend {
+            margin-top: 5px;
+            padding-top: 3px;
         }
     </style>
 </head>
@@ -275,7 +362,7 @@
         $taxLabel = trim(($invoice['tax_label'] ?? 'ISV').' '.($invoice['tax_rate_snapshot'] ? $invoice['tax_rate_snapshot'].'%' : ''));
         $cashier = $payment['selected_payment']['cashier_name'] ?? $payment['issued_by']['name'] ?? $payment['cash_context']['cashier_name'] ?? null;
     @endphp
-    <section class="receipt-page {{ $isThermal ? 'thermal' : '' }}">
+    <section class="receipt-page {{ $isThermal ? 'thermal' : 'primary-paper' }}">
         @if ($page['draft'])
             <div class="draft-watermark">{{ $page['watermark'] }}</div>
         @endif
@@ -386,7 +473,7 @@
             </tbody>
         </table>
 
-        <div class="receipt-closing-block">
+        <div class="receipt-summary">
             <table class="totals-table">
                 <tr>
                     <td>Subtotal</td>
@@ -423,20 +510,21 @@
                 </div>
             @endif
 
-            <table class="signature-grid">
-                <tr>
-                    <td>
-                        <span class="signature-line">Firma del enterante</span>
-                    </td>
-                    <td>
-                        @if ($profile['show_physical_seal_space'])
-                            <span class="blank-area"></span><br>
-                        @endif
-                        <span class="signature-line">Sello y firma autorizada</span>
-                    </td>
-                </tr>
-            </table>
         </div>
+
+        <table class="signature-grid">
+            <tr>
+                <td>
+                    <span class="signature-line">Firma del enterante</span>
+                </td>
+                <td>
+                    @if ($profile['show_physical_seal_space'])
+                        <span class="blank-area"></span><br>
+                    @endif
+                    <span class="signature-line">Sello y firma autorizada</span>
+                </td>
+            </tr>
+        </table>
 
         @if ($profile['show_copy_legend'])
             <div class="copy-legend">{{ $page['copy_label'] }}@if (! empty($page['institution']['receipt_footer_text'])) - {{ $page['institution']['receipt_footer_text'] }}@endif</div>

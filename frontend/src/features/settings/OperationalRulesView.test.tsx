@@ -73,7 +73,30 @@ describe('OperationalRulesView', () => {
       partial_payments_enabled: false,
     });
     expect(apiClient.updateFiscalSettings).not.toHaveBeenCalled();
-    await waitFor(() => expect(onStatus).toHaveBeenCalledWith('Reglas operativas guardadas.'));
+    expect(onStatus).toHaveBeenCalledWith({
+      key: 'settings:operational-rules:save',
+      level: 'info',
+      message: 'Guardando reglas operativas...',
+      toast: false,
+    });
+    await waitFor(() => expect(onStatus).toHaveBeenCalledWith({
+      key: 'settings:operational-rules:save',
+      level: 'success',
+      message: 'Reglas operativas guardadas.',
+    }));
+  });
+
+  it('reports save failures with the same stable operation key', async () => {
+    vi.mocked(apiClient.updateOperationalSettings).mockRejectedValueOnce(new Error('Fallo controlado'));
+    const onStatus = vi.fn();
+
+    render(<OperationalRulesView canEdit onStatus={onStatus} />);
+    fireEvent.click(await screen.findByRole('button', { name: /guardar reglas operativas/i }));
+
+    await waitFor(() => expect(onStatus).toHaveBeenCalledWith(expect.objectContaining({
+      key: 'settings:operational-rules:save',
+      level: 'error',
+    })));
   });
 
   it('disables inputs without edit permission', async () => {

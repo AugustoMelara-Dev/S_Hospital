@@ -40,7 +40,12 @@ describe('SupportCenterView', () => {
     expect(screen.getByText(/diagnostico tecnico detallado se mantiene reservado/i)).toBeInTheDocument();
     expect(getSummary).toHaveBeenCalledTimes(1);
     expect(getStatus).not.toHaveBeenCalled();
-    expect(onStatus).toHaveBeenCalledWith('Diagnostico operativo actualizado.');
+    expect(onStatus).toHaveBeenCalledWith({
+      key: 'support:diagnostic:refresh',
+      level: 'success',
+      message: 'Diagnostico operativo actualizado.',
+      toast: false,
+    });
     expect(document.body.textContent).not.toMatch(/DB_PASSWORD|APP_KEY|\.env|queue:work/i);
   });
 
@@ -88,6 +93,11 @@ describe('SupportCenterView', () => {
     render(<SupportCenterView user={cashierUser} onStatus={onStatus} />);
 
     expect(await screen.findByText(/no se pudo cargar el diagnostico operativo/i)).toBeInTheDocument();
+    expect(onStatus).toHaveBeenCalledWith(expect.objectContaining({
+      key: 'support:diagnostic:refresh',
+      level: 'error',
+      toast: false,
+    }));
     expect(document.body.textContent).not.toMatch(/DB_PASSWORD=secret/i);
     expect(screen.getByRole('heading', { name: /cajero/i })).toBeInTheDocument();
 
@@ -95,7 +105,10 @@ describe('SupportCenterView', () => {
 
     expect((await screen.findAllByText('Requiere revision')).length).toBeGreaterThan(0);
     await waitFor(() => expect(getSummary).toHaveBeenCalledTimes(2));
-    expect(onStatus).toHaveBeenCalledWith('Diagnostico operativo actualizado.');
+    expect(onStatus).toHaveBeenCalledWith(expect.objectContaining({
+      key: 'support:diagnostic:refresh',
+      level: 'success',
+    }));
   });
 
   it('keeps icon buttons and state controls accessible by name', async () => {

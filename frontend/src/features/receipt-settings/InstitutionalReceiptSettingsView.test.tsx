@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { InstitutionalReceiptSettingsView } from './InstitutionalReceiptSettingsView';
 import type { InstitutionalReceiptSettings, ReceiptPrintProfile } from '@/lib/api';
+import type { OperationalStatusReporter } from '@/app/operationalStatus';
 
 const mockData = vi.hoisted(() => {
   const profiles = [
@@ -95,7 +96,13 @@ vi.mock('@/lib/download', () => ({
   downloadBlob: vi.fn(),
 }));
 
-function renderView({ canEditAdvanced = false }: { canEditAdvanced?: boolean } = {}) {
+function renderView({
+  canEditAdvanced = false,
+  onStatus = vi.fn<OperationalStatusReporter>(),
+}: {
+  canEditAdvanced?: boolean;
+  onStatus?: OperationalStatusReporter;
+} = {}) {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
@@ -108,7 +115,7 @@ function renderView({ canEditAdvanced = false }: { canEditAdvanced?: boolean } =
       <InstitutionalReceiptSettingsView
         canEdit
         canEditAdvanced={canEditAdvanced}
-        onStatus={vi.fn()}
+        onStatus={onStatus}
       />
     </QueryClientProvider>,
   );
@@ -543,7 +550,8 @@ describe('InstitutionalReceiptSettingsView', () => {
 
   it('generates a test print without leaving the settings screen', async () => {
     const { apiClient } = await import('@/lib/api');
-    renderView();
+    const onStatus = vi.fn();
+    renderView({ onStatus });
 
     expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
     await activateTab('Papel y copias');
@@ -553,6 +561,11 @@ describe('InstitutionalReceiptSettingsView', () => {
       expect(apiClient.testPrintInstitutionalReceipt).toHaveBeenCalledWith(expect.objectContaining({
         profile_code: 'media_carta_horizontal',
       }));
+    });
+    expect(onStatus).toHaveBeenCalledWith({
+      key: 'receipt-settings:test-print',
+      level: 'success',
+      message: 'PDF de prueba generado sin reservar correlativo.',
     });
   });
 

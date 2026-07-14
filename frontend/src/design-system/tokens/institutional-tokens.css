@@ -20,14 +20,14 @@
   --institutional-info: #0369a1;
   --institutional-info-foreground: #0c4a6e;
   
-  --institutional-sidebar: #172033;
-  --institutional-sidebar-foreground: #e8edf5;
-  --institutional-sidebar-primary: #5eead4;
-  --institutional-sidebar-primary-foreground: #172033;
-  --institutional-sidebar-accent: #26334d;
-  --institutional-sidebar-accent-foreground: #ffffff;
-  --institutional-sidebar-border: #526078;
-  --institutional-sidebar-ring: #5eead4;
+  --institutional-sidebar: #ffffff;
+  --institutional-sidebar-foreground: #172033;
+  --institutional-sidebar-primary: #0f766e;
+  --institutional-sidebar-primary-foreground: #ffffff;
+  --institutional-sidebar-accent: #e6f4f2;
+  --institutional-sidebar-accent-foreground: #0b4f4a;
+  --institutional-sidebar-border: #cbd5e1;
+  --institutional-sidebar-ring: #0f766e;
 }
 
 .dark {

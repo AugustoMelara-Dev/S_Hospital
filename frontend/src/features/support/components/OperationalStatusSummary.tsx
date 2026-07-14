@@ -160,6 +160,12 @@ export function OperationalStatusSummary({ loading, summary, status, canViewAdva
   );
 }
 
-function OperationalMetric({ helper, icon, label, value }: { helper: ReactNode; icon: ReactNode; label: string; value: ReactNode; variant?: string }) {
-  return <Card><div aria-hidden="true">{icon}</div><Statistic title={label} value={String(value)} /><Typography.Text type="secondary">{helper}</Typography.Text></Card>;
+function OperationalMetric({ helper, icon, label, value, variant }: { helper: ReactNode; icon: ReactNode; label: string; value: ReactNode; variant?: string }) {
+  return (
+    <div className="border border-border bg-surface p-4" data-tone={variant}>
+      <div aria-hidden="true" className="mb-2 text-secondary">{icon}</div>
+      <Statistic title={label} value={String(value)} />
+      <Typography.Text type="secondary">{helper}</Typography.Text>
+    </div>
+  );
 }

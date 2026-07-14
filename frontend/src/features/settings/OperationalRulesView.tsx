@@ -3,10 +3,11 @@ import { SaveOutlined as Save } from '@ant-design/icons';
 import { Alert, Button, Card, Switch, Typography } from 'antd';
 import { type OperationalSettings, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { safeClientMessage } from '@/lib/support/clientIssueLog';
+import type { OperationalStatusReporter } from '@/app/operationalStatus';
 
 type OperationalRulesViewProps = {
   canEdit: boolean;
-  onStatus: (message: string) => void;
+  onStatus: OperationalStatusReporter;
 };
 
 export function OperationalRulesView({ canEdit, onStatus }: OperationalRulesViewProps) {
@@ -40,18 +41,27 @@ export function OperationalRulesView({ canEdit, onStatus }: OperationalRulesView
     if (savingRef.current || !settings) return;
     savingRef.current = true;
     setError('');
-    onStatus('Guardando reglas operativas...');
+    onStatus({
+      key: 'settings:operational-rules:save',
+      level: 'info',
+      message: 'Guardando reglas operativas...',
+      toast: false,
+    });
     try {
       const updated = await apiClient.updateOperationalSettings({
         scanner_enabled: scannerEnabled,
         partial_payments_enabled: partialPaymentsEnabled,
       });
       setSettings((current) => (current ? { ...current, ...updated } : current));
-      onStatus('Reglas operativas guardadas.');
+      onStatus({
+        key: 'settings:operational-rules:save',
+        level: 'success',
+        message: 'Reglas operativas guardadas.',
+      });
     } catch (err) {
       const message = safeClientMessage(userSafeErrorMessage(err, 'No se pudo guardar reglas operativas.'));
       setError(message);
-      onStatus(message);
+      onStatus({ key: 'settings:operational-rules:save', level: 'error', message });
     } finally {
       savingRef.current = false;
     }

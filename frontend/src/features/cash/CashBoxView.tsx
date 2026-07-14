@@ -1,6 +1,6 @@
 import { type FormEvent, type ReactNode, useEffect, useRef, useState } from 'react';
 import { ReloadOutlined, WarningOutlined } from '@ant-design/icons';
-import { Alert, Button, Empty, Modal, Result, Spin, Tag } from 'antd';
+import { Alert, Button, Empty, Modal, Result, Spin, Tabs, Tag } from 'antd';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type CashSession, apiClient, userSafeErrorMessage } from '@/lib/api';
@@ -18,6 +18,9 @@ import { CashMovementsTable } from './components/CashMovementsTable';
 import { CashClosingPanel } from './components/CashClosingPanel';
 import { CashMethodSummary } from './components/CashMethodSummary';
 import { AccountingControlPanel } from '@/modules/accounting/components/AccountingControlPanel';
+import type { OperationalStatusReporter } from '@/app/operationalStatus';
+
+type CashView = 'summary' | 'movements' | 'reconciliation' | 'close';
 
 type CashBoxViewProps = {
   cashSession?: CashSession | null;
@@ -29,7 +32,7 @@ type CashBoxViewProps = {
   canViewCashSessionReport?: boolean;
   compact?: boolean;
   currentUserId?: number;
-  onStatus: (message: string) => void;
+  onStatus: OperationalStatusReporter;
   onSessionChange?: (session: CashSession | null) => void;
 };
 
@@ -60,6 +63,7 @@ export function CashBoxView({
   const [formAlert, setFormAlert] = useState<string | null>(null);
   const [closingAmountError, setClosingAmountError] = useState<string | null>(null);
   const [confirmingClose, setConfirmingClose] = useState(false);
+  const [activeView, setActiveView] = useState<CashView>('summary');
   const [pendingOpening, setPendingOpening] = useState<{ opening_amount: string } | null>(null);
   const [closedSummarySession, setClosedSummarySession] = useState<CashSession | null>(null);
   const closingAmountRef = useRef<HTMLInputElement | null>(null);
@@ -141,12 +145,13 @@ export function CashBoxView({
       setClosedSummarySession(null);
       setFormAlert(null);
       onSessionChange?.(opened);
-      onStatus('Caja abierta.');
+      setActiveView('summary');
+      onStatus({ key: 'cash:open:success', level: 'success', message: 'Caja abierta.' });
     },
     onError: (error) => {
       const message = userSafeErrorMessage(error, 'No se pudo abrir caja.');
       setFormAlert(message);
-      onStatus(message);
+      onStatus({ key: 'cash:open:error', level: 'error', message });
     },
     onSettled: () => {
       openingSessionInFlightRef.current = false;
@@ -174,12 +179,13 @@ export function CashBoxView({
       setClosingNotes('');
       setFormAlert(null);
       onSessionChange?.(null);
-      onStatus('Caja cerrada.');
+      setActiveView('summary');
+      onStatus({ key: 'cash:close:success', level: 'success', message: 'Caja cerrada.' });
     },
     onError: (error) => {
       const message = userSafeErrorMessage(error, 'No se pudo cerrar caja.');
       setFormAlert(message);
-      onStatus(message);
+      onStatus({ key: 'cash:close:error', level: 'error', message });
     },
     onSettled: () => {
       closingSessionInFlightRef.current = false;
@@ -210,10 +216,10 @@ export function CashBoxView({
   const isOpenSessionFormLocked = pendingOpening !== null || openSessionMutation.isPending;
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && activeView === 'close') {
       window.setTimeout(() => closingAmountRef.current?.focus(), 0);
     }
-  }, [isOpen, activeSession?.id]);
+  }, [activeView, isOpen, activeSession?.id]);
 
   function handleOpenSession(data: { opening_amount: string }) {
     if (openSessionMutation.isPending || openingSessionInFlightRef.current) return;
@@ -223,7 +229,7 @@ export function CashBoxView({
   function confirmOpenSession() {
     if (!pendingOpening || openSessionMutation.isPending || openingSessionInFlightRef.current) return;
     openingSessionInFlightRef.current = true;
-    onStatus('Abriendo caja...');
+    onStatus({ key: 'cash:open:progress', level: 'info', message: 'Abriendo caja...', toast: false });
     openSessionMutation.mutate({ opening_amount: pendingOpening.opening_amount });
     setPendingOpening(null);
   }
@@ -275,7 +281,7 @@ export function CashBoxView({
     if (!activeSession) return;
     if (closeSessionMutation.isPending || closingSessionInFlightRef.current) return;
     closingSessionInFlightRef.current = true;
-    onStatus('Cerrando caja...');
+    onStatus({ key: 'cash:close:progress', level: 'info', message: 'Cerrando caja...', toast: false });
     setConfirmingClose(false);
     const trimmedClosingAmount = closingAmount.trim();
     const trimmedClosingNotes = closingNotes.trim();
@@ -286,6 +292,11 @@ export function CashBoxView({
         notes: trimmedClosingNotes === '' ? null : trimmedClosingNotes,
       },
     });
+  }
+
+  function handleManualRefresh() {
+    onStatus({ key: 'cash:refresh', level: 'info', message: 'Actualizando caja...' });
+    void refetch();
   }
 
   const isPOSBlocked = !isOpen;
@@ -302,7 +313,7 @@ export function CashBoxView({
               {isOpen && isOwnSession && canCreateInvoices ? (
                 <Link to="/billing/new"><Button type="primary">Nueva factura</Button></Link>
               ) : null}
-              <Button icon={<ReloadOutlined spin={isLoading} />} onClick={() => void refetch()} disabled={isLoading}>
+              <Button icon={<ReloadOutlined spin={isLoading} />} onClick={handleManualRefresh} disabled={isLoading}>
                 Actualizar
               </Button>
             </>
@@ -378,54 +389,67 @@ export function CashBoxView({
 
         {canRenderOperationalState && isOpen && activeSession ? (
           <>
-            <SessionSummary
-              session={activeSession}
-              closingAmount={hasValidClosingAmount ? closingAmount : null}
-              difference={difference}
+            <Tabs
+              activeKey={activeView}
+              onChange={(key) => setActiveView(key as CashView)}
+              items={[
+                { key: 'summary', label: 'Resumen' },
+                { key: 'movements', label: 'Movimientos' },
+                { key: 'reconciliation', label: 'Arqueo' },
+                { key: 'close', label: 'Cierre' },
+              ]}
             />
 
-            <div className="grid min-w-0 gap-4 xl:grid-cols-2 xl:items-start">
-              <CashMethodSummary
-                paymentsByMethod={activeSession.payments_by_method}
-                paymentsCount={activeSession.payments_count}
-                pendingAmount={activeSession.pending_amount}
-              />
+            {activeView === 'summary' ? (
+              <div className="grid min-w-0 gap-4">
+                <SessionSummary
+                  session={activeSession}
+                  closingAmount={hasValidClosingAmount ? closingAmount : null}
+                  difference={difference}
+                />
+                <CashMethodSummary
+                  paymentsByMethod={activeSession.payments_by_method}
+                  paymentsCount={activeSession.payments_count}
+                  pendingAmount={activeSession.pending_amount}
+                />
+              </div>
+            ) : null}
 
+            {activeView === 'reconciliation' ? (
               <AccountingControlPanel
                 canViewInvoices={canViewInvoices}
-                reconciliation={{
-                  ...activeSession,
-                  difference_amount: difference,
-                }}
+                reconciliation={{ ...activeSession, difference_amount: difference }}
               />
-            </div>
+            ) : null}
 
-            <CashClosingPanel
-              canCloseCash={canCloseCash}
-              closingAmount={closingAmount}
-              closingAmountError={closingAmountError}
-              closingAmountRef={closingAmountRef}
-              closingNotes={closingNotes}
-              difference={difference}
-              hasCashDifference={hasCashDifference}
-              hasPendingBalance={hasPendingBalance}
-              missingInstitutionalReceiptCount={missingInstitutionalReceiptCount}
-              isSubmitting={closeSessionMutation.isPending}
-              onClosingAmountChange={(value) => {
-                setClosingAmount(value);
-                if (closingAmountError) setClosingAmountError(null);
-              }}
-              onClosingNotesChange={setClosingNotes}
-              onSubmit={handleCloseConfirmation}
-              pendingAmount={pendingAmount}
-              pendingInvoiceCount={pendingInvoiceCount}
-            />
+            {activeView === 'close' ? (
+              <CashClosingPanel
+                canCloseCash={canCloseCash}
+                closingAmount={closingAmount}
+                closingAmountError={closingAmountError}
+                closingAmountRef={closingAmountRef}
+                closingNotes={closingNotes}
+                difference={difference}
+                hasCashDifference={hasCashDifference}
+                hasPendingBalance={hasPendingBalance}
+                missingInstitutionalReceiptCount={missingInstitutionalReceiptCount}
+                isSubmitting={closeSessionMutation.isPending}
+                onClosingAmountChange={(value) => {
+                  setClosingAmount(value);
+                  if (closingAmountError) setClosingAmountError(null);
+                }}
+                onClosingNotesChange={setClosingNotes}
+                onSubmit={handleCloseConfirmation}
+                pendingAmount={pendingAmount}
+                pendingInvoiceCount={pendingInvoiceCount}
+              />
+            ) : null}
 
-            {canViewCashSessionReport && movementsLoading ? (
+            {activeView === 'movements' && canViewCashSessionReport && movementsLoading ? (
               <LoadingState label="Cargando movimientos de caja..." />
             ) : null}
 
-            {canViewCashSessionReport && movementsLoadError ? (
+            {activeView === 'movements' && canViewCashSessionReport && movementsLoadError ? (
               <ErrorState
                 title="No se pudieron cargar movimientos"
                 description={movementsLoadError}
@@ -437,15 +461,18 @@ export function CashBoxView({
               />
             ) : null}
 
-            {canViewCashSessionReport && !movementsLoading && !movementsLoadError && movements.length === 0 ? (
+            {activeView === 'movements' && canViewCashSessionReport && !movementsLoading && !movementsLoadError && movements.length === 0 ? (
               <EmptyState
                 title="Sin movimientos"
               description="No hay movimientos en esta sesión de caja."
               />
             ) : null}
 
-            {canViewCashSessionReport && movements && movements.length > 0 ? (
+            {activeView === 'movements' && canViewCashSessionReport && movements && movements.length > 0 ? (
               <CashMovementsTable canViewInvoices={canViewInvoices} movements={movements} />
+            ) : null}
+            {activeView === 'movements' && !canViewCashSessionReport ? (
+              <Alert type="info" showIcon title="Movimientos no disponibles" description="Su rol no permite consultar el detalle auditado de esta caja." />
             ) : null}
           </>
         ) : canRenderOperationalState && canOpenCash ? (

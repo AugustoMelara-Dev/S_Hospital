@@ -76,6 +76,14 @@ describe('LoginView', () => {
     render(<LoginView {...defaultProps} status="Credenciales inválidas" />, { wrapper: Wrapper });
 
     expect(screen.getByText(/credenciales inválidas/i)).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveClass('ant-alert-error');
+  });
+
+  it('announces benign connection progress as status instead of an alert', () => {
+    render(<LoginView {...defaultProps} status="Conectando con el servidor local..." />, { wrapper: Wrapper });
+
+    expect(screen.getByRole('status')).toHaveTextContent(/conectando con el servidor local/i);
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
   it('announces an expired session as a warning with a stable recovery action', () => {

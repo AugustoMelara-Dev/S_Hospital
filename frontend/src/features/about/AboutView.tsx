@@ -76,13 +76,6 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
                 <Tag icon={<ShieldCheck aria-hidden="true" />}>Activa</Tag>
               </div>
 
-              <div className="mt-4 border-t border-border pt-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">Resumen operativo</p>
-                  <Tag>{summary.label}</Tag>
-                </div>
-                <p className="mt-2 text-sm text-foreground">{summary.description}</p>
-              </div>
             </div>
 
             <Flex gap="small" wrap>
@@ -110,6 +103,10 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
               <span className="text-xs font-semibold text-muted-foreground">Diagnostico</span>
               <Tag>{summary.label}</Tag>
             </div>
+
+            <p className="border-b border-border pb-3 text-xs leading-5 text-muted-foreground">
+              {summary.description}
+            </p>
 
             <div className="flex items-center justify-between border-b border-border py-1.5">
               <span className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">

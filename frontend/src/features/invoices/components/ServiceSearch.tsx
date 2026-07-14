@@ -1,6 +1,6 @@
 import { BarcodeOutlined as Barcode, FilterOutlined as Filter, PlusOutlined as Plus, SearchOutlined as Search, CloseOutlined as X } from '@ant-design/icons';
 import { type KeyboardEvent, type RefObject, useCallback, useDeferredValue, useEffect, useRef, useState } from 'react';
-import { Alert, Button, Input, Skeleton, Tag } from 'antd';
+import { Alert, Button, Collapse, Input, Skeleton, Tag } from 'antd';
 import type { Category, Service, ServiceArea } from '../../../lib/api';
 import { cn } from '../../../lib/utils';
 import { formatLempirasUIFromCents, parseCents } from '../../../lib/moneyCents';
@@ -279,38 +279,12 @@ export function ServiceSearch({
           ) : null}
         </div>
 
-        <div className="grid gap-3 xl:grid-cols-2">
-          {serviceAreas.length > 0 && (
-            <div className="min-w-0">
-              <span className="mb-2 block text-sm font-semibold text-foreground animate-none" id="service-area-label">Area</span>
-              <div
-                aria-labelledby="service-area-label"
-                className="grid max-h-28 grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3 xl:grid-cols-2 2xl:grid-cols-3"
-                onKeyDown={(event) => handleRadioGroupKeyDown(event, areaOptions, selectedAreaId, onAreaChange)}
-                role="radiogroup"
-                tabIndex={-1}
-              >
-                <CategoryButton
-                  active={selectedAreaId === undefined || selectedAreaId === 'all'}
-                  label="Todas"
-                  onClick={() => onAreaChange('all')}
-                />
-                {serviceAreas.map((area) => (
-                  <CategoryButton
-                    key={area.id}
-                    active={selectedAreaId === area.id}
-                    label={area.name}
-                    onClick={() => onAreaChange(area.id)}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
+        <div className="grid gap-3">
           <div className="min-w-0">
             <span className="mb-2 block text-sm font-semibold text-foreground animate-none" id="service-category-label">Categoría</span>
             <div
               aria-labelledby="service-category-label"
+              data-filter-priority="primary"
               className="grid max-h-32 grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3 xl:grid-cols-3"
               onKeyDown={(event) => handleRadioGroupKeyDown(event, categoryOptions, selectedCategoryId, onCategoryChange)}
               role="radiogroup"
@@ -331,6 +305,35 @@ export function ServiceSearch({
               ))}
             </div>
           </div>
+
+          {serviceAreas.length > 0 && (
+            <Collapse
+              size="small"
+              className="border-t border-border bg-transparent"
+              items={[{
+                key: 'area',
+                label: <span className="text-sm font-semibold">Más filtros</span>,
+                children: (
+                  <div className="min-w-0">
+                    <span className="mb-2 block text-xs font-semibold uppercase tracking-wide text-muted-foreground" id="service-area-label">Area</span>
+                    <div
+                      aria-labelledby="service-area-label"
+                      data-filter-priority="secondary"
+                      className="flex max-h-24 flex-wrap gap-2 overflow-y-auto pr-1"
+                      onKeyDown={(event) => handleRadioGroupKeyDown(event, areaOptions, selectedAreaId, onAreaChange)}
+                      role="radiogroup"
+                      tabIndex={-1}
+                    >
+                      <CategoryButton active={selectedAreaId === undefined || selectedAreaId === 'all'} label="Todas" onClick={() => onAreaChange('all')} />
+                      {serviceAreas.map((area) => (
+                        <CategoryButton key={area.id} active={selectedAreaId === area.id} label={area.name} onClick={() => onAreaChange(area.id)} />
+                      ))}
+                    </div>
+                  </div>
+                ),
+              }]}
+            />
+          )}
         </div>
       </div>
 
@@ -368,9 +371,9 @@ export function ServiceSearch({
             </div>
           } />
         ) : loading ? (
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2" role="status" aria-busy="true" aria-label="Cargando servicios">
+          <div className="grid grid-cols-1 divide-y divide-border border border-operational-border" role="status" aria-busy="true" aria-label="Cargando servicios">
             {Array.from({ length: 6 }).map((_, index) => (
-              <Skeleton.Input key={index} active={false} block className="h-24" />
+              <Skeleton.Input key={index} active={false} block className="h-16" />
             ))}
           </div>
         ) : !hasIntent ? (
@@ -389,13 +392,33 @@ export function ServiceSearch({
           </div>
         ) : (
           <>
-            <div className="grid gap-3 sm:grid-cols-2" role="list" aria-label="Servicios facturables disponibles">
+            <ul
+              data-service-results
+              data-density="compact"
+              className="divide-y divide-border border border-operational-border p-0"
+              aria-label="Servicios facturables disponibles"
+            >
               {visibleServices.map((service) => {
                 const isErythropoietin = service.special_rule_code === ERYTHROPOIETIN_RULE;
+                const categoryName = service.category?.name ?? 'Sin categoría';
+                const areaName = service.area?.name;
+                const showArea = Boolean(areaName && areaName.trim().toLocaleLowerCase('es') !== categoryName.trim().toLocaleLowerCase('es'));
 
                 return (
-                  <div key={service.id} role="listitem" className="flex min-w-0 flex-col justify-between gap-4 border border-operational-border bg-card p-4 hover:border-secondary/35">
-                    <div className="min-w-0">
+                  <li key={service.id} className="min-w-0 list-none">
+                    <button
+                      type="button"
+                      aria-label={`Agregar ${service.name}`}
+                      data-service-row="compact"
+                      className="flex min-h-16 w-full min-w-0 items-center gap-3 bg-operational-surface px-3 py-2 text-left hover:bg-accent/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                      onClick={() => handleAddService(service)}
+                      onKeyDown={(event) => {
+                        if (event.key !== 'Enter') return;
+                        event.preventDefault();
+                        handleAddService(service);
+                      }}
+                    >
+                      <div className="min-w-0 flex-1">
                       <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
                         <p className="min-w-0 break-words text-sm font-semibold leading-tight text-foreground">{service.name}</p>
                         <span className="shrink-0 font-mono text-sm font-semibold tabular-nums text-secondary">
@@ -404,11 +427,11 @@ export function ServiceSearch({
                       </div>
                       <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                         <Tag color="processing" className="px-1.5 py-0.5 text-xs">
-                          {service.category?.name ?? 'Sin categoría'}
+                          {categoryName}
                         </Tag>
-                        {service.area?.name ? (
+                        {showArea ? (
                           <Tag className="px-1.5 py-0.5 text-xs">
-                            {service.area.name}
+                            {areaName}
                           </Tag>
                         ) : null}
                         {scannerEnabled && (service.scan_code || service.barcode || service.qr_code) ? (
@@ -420,20 +443,16 @@ export function ServiceSearch({
                           Precio L 25.00; gratis solo con receta de diálisis autorizada.
                         </p>
                       ) : null}
-                    </div>
-                    <Button
-                      type="primary"
-                      aria-label={`Agregar ${service.name}`}
-                      className="min-h-11 w-full shrink-0 sm:w-auto sm:self-end"
-                      onClick={() => handleAddService(service)}
-                      icon={<Plus className="size-4" aria-hidden="true" />}
-                    >
-                      Agregar
-                    </Button>
-                  </div>
+                      </div>
+                      <span className="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 border-l border-secondary pl-3 font-semibold text-secondary">
+                        <Plus className="size-4" aria-hidden="true" />
+                        Agregar
+                      </span>
+                    </button>
+                  </li>
                 );
               })}
-            </div>
+            </ul>
             {hiddenCount > 0 && (
               <p className="mt-3 border border-border bg-muted px-3 py-2 text-sm text-muted-foreground">
                 Mostrando {visibleServices.length} resultados. Afine la búsqueda para ver los {hiddenCount} restantes.

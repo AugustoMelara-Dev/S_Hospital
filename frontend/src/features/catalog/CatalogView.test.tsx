@@ -154,6 +154,28 @@ describe('CatalogView modernized structure', () => {
     expect(screen.queryByText(/^esc[aá]ner$/i)).not.toBeInTheDocument();
   });
 
+  it('keeps editable categories in a compact collapsed section until requested', async () => {
+    setupBasicMocks();
+    vi.spyOn(apiClient, 'getCategories').mockResolvedValue([
+      { id: 1, name: 'Laboratorio', slug: 'laboratorio', active: true, sort_order: 1 },
+    ]);
+    vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({
+      data: [serviceFixture()],
+      meta: { current_page: 1, per_page: 15, total: 1 },
+    });
+
+    renderWithQueryClient(
+      <CatalogView user={catalogUser(['catalog.view', 'catalog.manage'])} onStatus={vi.fn()} />,
+    );
+
+    const categorySection = await screen.findByRole('button', { name: /categorías del catálogo/i });
+    expect(categorySection).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('button', { name: /editar categoría laboratorio/i })).not.toBeInTheDocument();
+
+    fireEvent.click(categorySection);
+    expect(await screen.findByRole('button', { name: /editar categoría laboratorio/i })).toBeInTheDocument();
+  });
+
   it('exposes the search input with an accessible name', async () => {
     setupBasicMocks();
     vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({

@@ -83,7 +83,7 @@ describe('AboutView', () => {
     render(<AboutView user={cashierUser} onStatus={vi.fn()} />);
 
     expect(screen.getByRole('heading', { level: 1, name: /informacion del sistema/i })).toBeInTheDocument();
-    expect(screen.getAllByText('Todo bien')).toHaveLength(2);
+    expect(screen.getAllByText('Todo bien')).toHaveLength(1);
     expect(screen.getByText(/base de datos y respaldos responden/i)).toBeInTheDocument();
     await waitFor(() => expect(useBackups).toHaveBeenCalledWith({ page: 1, perPage: 1, enabled: false }));
     expect(screen.getByText('Sin permiso')).toBeInTheDocument();
@@ -106,7 +106,7 @@ describe('AboutView', () => {
 
     render(<AboutView user={cashierUser} onStatus={vi.fn()} />);
 
-    expect(screen.getAllByText('Requiere revision')).toHaveLength(2);
+    expect(screen.getAllByText('Requiere revision')).toHaveLength(1);
     expect(screen.getByText(/pida soporte/i)).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/queue:work|App\\\\|DB_PASSWORD|\.env|C:\\\\/i);
     await waitFor(() => expect(useBackups).toHaveBeenCalledWith({ page: 1, perPage: 1, enabled: false }));

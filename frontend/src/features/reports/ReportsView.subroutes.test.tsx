@@ -109,6 +109,16 @@ describe('ReportsView (sub-routes)', () => {
     );
   });
 
+  it('uses a compact three-option navigation on mobile without losing descriptions', () => {
+    renderReports('/reports');
+
+    const navigation = screen.getByRole('navigation', { name: /secciones de reportes/i });
+    expect(navigation).toHaveAttribute('data-mobile-layout', 'compact');
+    expect(navigation).toHaveClass('grid-cols-3');
+    expect(screen.getByRole('link', { name: /ejecutivo/i })).toHaveClass('min-h-12');
+    expect(screen.getByText(/cobros, pendientes/i)).toHaveClass('hidden', 'sm:block');
+  });
+
   it('hides sub-routes when the user lacks managerial permission', async () => {
     renderReports('/reports', false);
     await waitFor(() => expect(apiClient.getCashSessions).toHaveBeenCalled());

@@ -33,7 +33,7 @@ export function ContextBar({ cashSession, commandButtonRef, crumbs, hospitalName
   const cashLabel = cashSession?.status === 'open' ? `Caja #${cashSession.id}` : 'Caja cerrada';
 
   return (
-    <header className="print-hidden sticky top-0 z-20 flex min-h-20 items-center gap-2 border-b border-border bg-surface px-3 text-foreground lg:px-6">
+    <header className="print-hidden sticky top-0 z-20 flex min-h-16 items-center gap-2 border-b border-border bg-surface px-3 text-foreground lg:px-5">
       <div className="min-w-0 flex-1 py-2">
         <p data-testid="institutional-mobile-identity" className="truncate text-xs font-semibold uppercase tracking-wider text-secondary lg:hidden">
           {hospitalName}

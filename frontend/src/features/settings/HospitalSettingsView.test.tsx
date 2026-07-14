@@ -162,4 +162,11 @@ describe('HospitalSettingsView', () => {
     expect(await screen.findByLabelText(/nombre del hospital/i)).toBeDisabled();
     expect(screen.getByRole('button', { name: /guardar datos del hospital/i })).toBeDisabled();
   });
+
+  it('keeps the save action visible in a sticky action bar for long forms', async () => {
+    render(<HospitalSettingsView canEdit onStatus={vi.fn()} />);
+
+    const save = await screen.findByRole('button', { name: /guardar datos del hospital/i });
+    expect(save.closest('[data-sticky-actions="true"]')).toHaveClass('sticky', 'bottom-0');
+  });
 });

@@ -295,6 +295,16 @@
     padding-top: 0.04in;
   }
 
+  .receipt-summary {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .receipt-footer {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
   .receipt-signature-line {
     margin: 0.32in auto 0.08in;
     width: min(3in, 70%);

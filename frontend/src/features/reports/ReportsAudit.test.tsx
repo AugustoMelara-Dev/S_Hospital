@@ -119,6 +119,10 @@ describe('ReportsAudit', () => {
     expect(screen.getByRole('region', { name: /alcance del reporte de auditoria/i })).toHaveTextContent(
       /1 de julio de 2026.*10 de julio de 2026/i,
     );
+    expect(screen.getByRole('region', { name: /alcance del reporte de auditoria/i })).toHaveTextContent(
+      'Bitácora filtrada por “anulacion”',
+    );
+    expect(document.body.textContent).not.toMatch(/Ã|Â|â€œ|â€|�/);
   });
 
   it('creates navigable history when audit filters are applied from the UI', async () => {

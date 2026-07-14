@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { FileTextOutlined as FileText } from '@ant-design/icons';
 import { Link } from 'react-router-dom';
-import { Alert, Button, Flex, Grid, Tabs, Tag } from 'antd';
+import { Alert, Button, Flex, Tabs, Tag } from 'antd';
 import { type FiscalSequence, type FiscalSettings, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { FiscalStatusCard } from './components/FiscalStatusCard';
 import { FiscalSummary } from './components/FiscalSummary';
@@ -10,16 +10,16 @@ import { FiscalNumerationView } from './FiscalNumerationView';
 import { OperationalRulesView } from './OperationalRulesView';
 import { BrandingView } from './BrandingView';
 import { PageHeader } from '@/design-system/components/PageHeader';
+import type { OperationalStatusReporter } from '@/app/operationalStatus';
 
 type FiscalSettingsViewProps = {
   canEdit: boolean;
   canEditOperationalRules: boolean;
   canViewFiscalSettings: boolean;
-  onStatus: (message: string) => void;
+  onStatus: OperationalStatusReporter;
 };
 
 export function FiscalSettingsView({ canEdit, canEditOperationalRules, canViewFiscalSettings, onStatus }: FiscalSettingsViewProps) {
-  const screens = Grid.useBreakpoint();
   const [activeTab, setActiveTab] = useState(() => (canViewFiscalSettings ? 'resumen' : 'operativa'));
   const [settings, setSettings] = useState<FiscalSettings | null>(null);
   const [sequence, setSequence] = useState<FiscalSequence | null>(null);
@@ -73,7 +73,7 @@ export function FiscalSettingsView({ canEdit, canEditOperationalRules, canViewFi
       <Tabs
         activeKey={activeTab}
         onChange={setActiveTab}
-        tabPlacement={screens.md === false ? 'start' : 'top'}
+        tabPlacement="top"
         items={[
           ...(canViewFiscalSettings ? [{ key: 'resumen', label: 'Resumen', children: (
           <div className="min-w-0 space-y-6">

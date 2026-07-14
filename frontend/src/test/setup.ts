@@ -88,6 +88,15 @@ Object.defineProperty(window, 'print', {
   value: vi.fn(),
 });
 
+// JSDOM exposes scrollTo but throws "Not implemented" when route-level
+// restoration calls it. Browsers keep the real implementation; tests only
+// need an observable boundary for navigation and focus assertions.
+Object.defineProperty(window, 'scrollTo', {
+  configurable: true,
+  writable: true,
+  value: vi.fn(),
+});
+
 // Ant Design measures scrollbars and focus styles through computed styles.
 // Keep JSDOM's stylesheet-derived values (notably display/visibility for
 // closing overlays) and fall back only when its CSS parser rejects a selector.

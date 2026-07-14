@@ -70,6 +70,7 @@ const openCashSession = {
 
 test.describe('New invoice - critical mocked e2e', () => {
   test('emits an invoice from an open cash session and registers payment payload', async ({ page }) => {
+    await page.setViewportSize({ width: 1366, height: 768 });
     let invoicePayload: unknown = null;
     let paymentPayload: unknown = null;
     let receiptPdfRequests = 0;
@@ -91,20 +92,19 @@ test.describe('New invoice - critical mocked e2e', () => {
     await expect(page.getByRole('heading', { level: 1, name: /nueva factura/i })).toBeVisible();
     await expect(page.getByText(/caja #7.*abierta/i)).toBeVisible();
     await expect(page.getByLabel(/nombre del paciente/i)).toBeEditable();
-    await expect(page.getByRole('button', { name: /continuar a servicios/i })).toBeVisible();
-    await page.getByRole('button', { name: /continuar a servicios/i }).click();
-    await expect(page.getByRole('alert')).toContainText(/ingrese el nombre del paciente para continuar/i);
+    await expect(page.getByRole('region', { name: /servicios/i })).toBeVisible();
+    await expect(page.getByRole('region', { name: /cuenta actual/i })).toBeVisible();
 
     await page.getByLabel(/nombre del paciente/i).fill('Maria Lopez');
-    await page.getByRole('button', { name: /continuar a servicios/i }).click();
     await page.getByLabel(/buscar por nombre/i).fill('glucosa');
     await page.getByRole('button', { name: /agregar glucosa basal/i }).click();
-    await page.getByRole('button', { name: /continuar a cuenta/i }).click();
 
     await expect(page.getByRole('list', { name: /servicios agregados/i })).toContainText('Glucosa basal');
-    await expect(page.getByRole('button', { name: /^emitir y cobrar$/i })).toBeEnabled();
+    const emitButton = page.getByRole('button', { name: /emitir y cobrar/i });
+    await expect(emitButton).toBeEnabled();
+    await expect(emitButton).toBeInViewport();
 
-    await page.getByRole('button', { name: /^emitir y cobrar$/i }).click();
+    await emitButton.click();
     const confirmDialog = page.getByRole('dialog', { name: /confirmar emisi/i });
     await expect(confirmDialog).toBeVisible();
     await expect(confirmDialog).toContainText('Maria Lopez');
@@ -153,11 +153,9 @@ test.describe('New invoice - critical mocked e2e', () => {
 
     await page.goto('/billing/new');
     await page.getByLabel(/nombre del paciente/i).fill('Maria Lopez');
-    await page.getByRole('button', { name: /continuar a servicios/i }).click();
     await page.getByLabel(/buscar por nombre/i).fill('glucosa');
     await page.getByRole('button', { name: /agregar glucosa basal/i }).click();
-    await page.getByRole('button', { name: /continuar a cuenta/i }).click();
-    await page.getByRole('button', { name: /^emitir y cobrar$/i }).click();
+    await page.getByRole('button', { name: /emitir y cobrar/i }).click();
     await page.getByRole('dialog', { name: /confirmar emisi/i })
       .getByRole('button', { name: /emitir y abrir cobro/i })
       .click();

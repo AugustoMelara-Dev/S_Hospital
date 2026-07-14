@@ -4,6 +4,7 @@ import { PermissionGate } from './components/PermissionGate';
 import { RouteState } from './design-system/patterns/RouteState';
 import { type AuthUser, type CashSession } from './lib/api';
 import { appRoutes, canAccessRoute } from './navigation/appNavigation';
+import type { OperationalStatusReporter } from './app/operationalStatus';
 
 const AboutView = lazy(() => import('./features/about/AboutView').then((module) => ({ default: module.AboutView })));
 const BackupsView = lazy(() => import('./features/backups/BackupsView').then((module) => ({ default: module.BackupsView })));
@@ -48,7 +49,7 @@ type AppRoutesProps = {
   cashSession: CashSession | null;
   defaultAuthenticatedRoute: string;
   onQuickCash: () => void;
-  onStatus: (message: string) => void;
+  onStatus: OperationalStatusReporter;
   user: AuthUser;
 };
 

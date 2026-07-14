@@ -175,7 +175,8 @@ describe('InvoiceHistoryView', () => {
     expect(screen.queryByText(/pdf pendiente/i)).not.toBeInTheDocument();
   });
 
-  it('keeps invoice filters controlled and preserves the same query contract', async () => {
+  it('keeps invoice filters as a local draft until Buscar preserves the query contract', async () => {
+    const user = userEvent.setup();
     const getInvoices = vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
       data: [],
       meta: { current_page: 1, per_page: 10, total: 0 },
@@ -188,6 +189,13 @@ describe('InvoiceHistoryView', () => {
     fireEvent.change(screen.getByLabelText(/paciente/i), { target: { value: 'Maria Lopez' } });
     fireEvent.change(screen.getByLabelText(/n.mero de factura/i), { target: { value: '00000022' } });
 
+    expect(getInvoices).not.toHaveBeenCalledWith(expect.objectContaining({
+      patient: 'Maria Lopez',
+      invoice_number: '00000022',
+    }));
+
+    await user.click(screen.getByRole('button', { name: /buscar/i }));
+
     await waitFor(() => expect(getInvoices).toHaveBeenLastCalledWith(expect.objectContaining({
       patient: 'Maria Lopez',
       invoice_number: '00000022',
@@ -196,7 +204,7 @@ describe('InvoiceHistoryView', () => {
     })));
   });
 
-  it('returns to the first page when a search filter changes', async () => {
+  it('returns to the first page only when a draft search is submitted', async () => {
     const getInvoices = vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
       data: [],
       meta: { current_page: 3, per_page: 10, total: 40 },
@@ -213,6 +221,13 @@ describe('InvoiceHistoryView', () => {
     })));
 
     fireEvent.change(screen.getByLabelText(/paciente/i), { target: { value: 'Maria Lopez' } });
+
+    expect(getInvoices).not.toHaveBeenCalledWith(expect.objectContaining({
+      patient: 'Maria Lopez',
+      page: 1,
+    }));
+
+    fireEvent.submit(screen.getByLabelText(/paciente/i).closest('form')!);
 
     await waitFor(() => expect(getInvoices).toHaveBeenLastCalledWith(expect.objectContaining({
       patient: 'Maria Lopez',

@@ -73,7 +73,8 @@ export function LoginView({
       normalizedStatus.includes('invál') ||
       normalizedStatus.includes('credenciales')
     ? 'error'
-    : isSessionStatus ? 'warning' : 'success';
+    : isSessionStatus ? 'warning' : 'info';
+  const statusRole = statusType === 'error' || statusType === 'warning' ? 'alert' : 'status';
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     if (countdown > 0) {
@@ -193,7 +194,7 @@ export function LoginView({
 
             {status ? (
               <div className="mt-5 text-sm">
-                <Alert description={status} type={statusType} showIcon role="alert" />
+                <Alert description={status} type={statusType} showIcon role={statusRole} />
               </div>
             ) : null}
 

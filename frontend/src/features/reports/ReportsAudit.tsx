@@ -143,7 +143,7 @@ export function ReportsAudit({
           ariaLabel="Alcance del reporte de auditoria"
           from={applied.from}
           to={applied.to}
-          source={applied.action ? `Bitácora filtrada por â€œ${applied.action}â€` : 'Bitácora operativa completa'}
+          source={applied.action ? `Bitácora filtrada por “${applied.action}”` : 'Bitácora operativa completa'}
         />
       ) : null}
 

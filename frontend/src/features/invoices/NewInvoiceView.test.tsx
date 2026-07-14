@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import type { ComponentProps } from 'react';
+import { StrictMode, type ComponentProps } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { NewInvoiceView } from './NewInvoiceView';
@@ -114,7 +114,7 @@ function renderNewInvoice(
           canViewCatalog
           canViewReceipts={overrides.canViewReceipts ?? true}
           onOpenCash={vi.fn()}
-          onStatus={vi.fn()}
+          onStatus={overrides.onStatus ?? vi.fn()}
         />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -128,12 +128,8 @@ async function waitForPointOfSaleLoad() {
 }
 
 function addErythropoietinAndOpenAccount(options: { openAccount?: boolean } = {}) {
-  const { openAccount = true } = options;
-  fireEvent.click(screen.getByRole('button', { name: /continuar a servicios/i }));
+  void options;
   fireEvent.click(screen.getByRole('button', { name: /agregar eritropoyetina/i }));
-  if (openAccount) {
-    fireEvent.click(screen.getByRole('button', { name: /continuar a cuenta/i }));
-  }
 }
 
 describe('NewInvoiceView critical flows', () => {
@@ -164,6 +160,36 @@ describe('NewInvoiceView critical flows', () => {
     expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(1);
   });
 
+  it('deduplicates the initial point-of-sale load under React StrictMode', async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+
+    render(
+      <StrictMode>
+        <QueryClientProvider client={queryClient}>
+          <MemoryRouter initialEntries={['/billing/new']}>
+            <NewInvoiceView
+              cashSession={makeOpenCashSession()}
+              canCreatePayments
+              canOpenCash
+              canViewCatalog
+              canViewReceipts
+              onOpenCash={vi.fn()}
+              onStatus={vi.fn()}
+            />
+          </MemoryRouter>
+        </QueryClientProvider>
+      </StrictMode>,
+    );
+
+    await waitForPointOfSaleLoad();
+    await new Promise((resolve) => setTimeout(resolve, 350));
+
+    const fetchMock = globalThis.fetch as ReturnType<typeof vi.fn>;
+    expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services'))).toHaveLength(1);
+  });
+
   it('does not show success dialog before an invoice is issued', async () => {
     renderNewInvoice();
     await waitForPointOfSaleLoad();
@@ -176,6 +202,22 @@ describe('NewInvoiceView critical flows', () => {
     await waitForPointOfSaleLoad();
 
     expect(screen.queryByRole('dialog', { name: /comprobante de factura/i })).not.toBeInTheDocument();
+  });
+
+  it('reports contextual service additions without opening a duplicate toast', async () => {
+    const onStatus = vi.fn();
+    renderNewInvoice(makeOpenCashSession(), { onStatus });
+    await waitForPointOfSaleLoad();
+
+    fireEvent.change(screen.getByLabelText(/buscar por nombre/i), { target: { value: 'eritro' } });
+    await waitFor(() => expect(screen.getByRole('button', { name: /agregar eritropoyetina/i })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: /agregar eritropoyetina/i }));
+
+    expect(onStatus).toHaveBeenCalledWith(expect.objectContaining({
+      key: 'billing-service-added',
+      level: 'success',
+      toast: false,
+    }));
   });
   it('uses local server wording when initial point-of-sale data cannot load', async () => {
     const onStatus = vi.fn();
@@ -211,7 +253,12 @@ describe('NewInvoiceView critical flows', () => {
     );
 
     await waitFor(() => {
-      expect(onStatus).toHaveBeenCalledWith(expect.stringMatching(/servidor local/i));
+      expect(onStatus).toHaveBeenCalledWith(expect.objectContaining({
+        key: 'billing-services-load',
+        level: 'error',
+        message: expect.stringMatching(/servidor local/i),
+        toast: false,
+      }));
     });
     expect(onStatus).not.toHaveBeenCalledWith(expect.stringMatching(/servidor LAN/i));
   });
@@ -1143,7 +1190,11 @@ describe('NewInvoiceView critical flows', () => {
     expect(await screen.findByRole('dialog', { name: /factura pagada/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /imprimir recibo$/i })).not.toBeInTheDocument();
     expect(screen.getAllByText(/revise la factura en historial/i).length).toBeGreaterThan(0);
-    expect(onStatus).toHaveBeenCalledWith(expect.stringMatching(/recibo institucional esta pendiente/i));
+    expect(onStatus).toHaveBeenCalledWith(expect.objectContaining({
+      key: 'billing-payment',
+      level: 'warning',
+      message: expect.stringMatching(/recibo institucional esta pendiente/i),
+    }));
   });
 
   it('does not fetch or show a receipt for a paid zero-total invoice when receipts are not allowed', async () => {
@@ -1706,7 +1757,11 @@ describe('NewInvoiceView critical flows', () => {
     expect(screen.getAllByText(/recibo institucional REC-A-00000097 emitido/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/no se pudo abrir el PDF/i).length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: /imprimir recibo$/i })).toBeInTheDocument();
-    expect(onStatus).toHaveBeenCalledWith(expect.stringMatching(/no se pudo abrir el PDF/i));
+    expect(onStatus).toHaveBeenCalledWith(expect.objectContaining({
+      key: 'billing-payment',
+      level: 'warning',
+      message: expect.stringMatching(/no se pudo abrir el PDF/i),
+    }));
   });
 
   it('renews the payment idempotency key when a failed payment payload changes', async () => {
@@ -1874,8 +1929,6 @@ describe('NewInvoiceView critical flows', () => {
 
     const patientInput = screen.getByLabelText(/nombre del paciente/i);
     fireEvent.change(patientInput, { target: { value: 'Maria Lopez' } });
-    fireEvent.click(screen.getByRole('button', { name: /continuar a servicios/i }));
-    fireEvent.click(screen.getByRole('button', { name: /continuar a cuenta/i }));
 
     await waitFor(() => {
       const emitButtons = screen.queryAllByRole('button', { name: /emitir/i });
