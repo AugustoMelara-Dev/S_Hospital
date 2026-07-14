@@ -176,6 +176,14 @@ describe('InstitutionalShell', () => {
     expect(window.scrollTo).toHaveBeenCalledWith({ behavior: 'auto', left: 0, top: 0 });
   });
 
+  it('clips horizontal overflow without creating a competing vertical scroll container', () => {
+    renderShell();
+
+    const shellRoot = screen.getByRole('main').parentElement?.parentElement;
+    expect(shellRoot).toHaveClass('overflow-x-clip');
+    expect(shellRoot).not.toHaveClass('overflow-x-hidden');
+  });
+
   it('muestra una sola vez caja y hospital', () => {
     renderShell({ cashSession: openCashSession });
 

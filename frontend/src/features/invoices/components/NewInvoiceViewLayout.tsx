@@ -173,9 +173,9 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
 
       <div
         data-billing-workspace
-        className="grid w-full min-w-0 flex-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(22rem,26rem)] xl:items-start"
+        className="grid w-full min-w-0 flex-1 gap-4 xl:grid-cols-5 xl:items-start"
       >
-        <div className="flex min-w-0 flex-col gap-4">
+        <div className="flex min-w-0 flex-col gap-4 xl:col-span-3">
           <section aria-label="Paciente" data-billing-region="patient" className="min-w-0 border border-operational-border bg-operational-surface p-5 sm:p-6">
             <PatientStep
               ref={patientInputRef}
@@ -216,7 +216,7 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
           aria-label="Cuenta actual"
           data-billing-region="ticket"
           data-billing-cart-sticky
-          className="min-w-0 border border-secondary/25 bg-accent/25 p-5 xl:sticky xl:top-4 xl:max-h-[calc(100vh-8rem)] xl:overflow-y-auto"
+          className="min-w-0 border border-secondary/25 bg-accent/25 p-5 xl:col-span-2 xl:sticky xl:top-20 xl:max-h-160 xl:overflow-y-auto"
         >
           <InvoiceCart
             items={state.cartItems}

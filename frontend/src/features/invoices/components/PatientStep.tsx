@@ -17,8 +17,8 @@ export const PatientStep = forwardRef<HTMLInputElement, PatientStepProps>(functi
   useEffect(() => { if (error) errorSummaryRef.current?.focus(); }, [error]);
 
   return (
-    <section aria-labelledby="patient-step-title" className="grid min-w-0 gap-4 lg:grid-cols-[minmax(13rem,0.7fr)_minmax(0,1.3fr)] lg:items-start">
-      <header className="border-b border-border pb-3 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-5">
+    <section aria-labelledby="patient-step-title" className="grid min-w-0 gap-4 lg:grid-cols-5 lg:items-start">
+      <header className="border-b border-border pb-3 lg:col-span-2 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-5">
         <div className="flex items-start gap-3">
           <UserOutlined aria-hidden="true" className="mt-1" />
           <div>
@@ -29,7 +29,7 @@ export const PatientStep = forwardRef<HTMLInputElement, PatientStepProps>(functi
         </div>
       </header>
 
-      <div className="min-w-0">
+      <div className="min-w-0 lg:col-span-3">
         {error ? <div ref={errorSummaryRef} tabIndex={-1} role="alert" id="patient-name-error" className="mb-3"><Alert role="presentation" type="error" showIcon title="Revise el nombre del paciente" description={error} /></div> : null}
 
         <Form layout="vertical" onFinish={onPatientSubmit}>

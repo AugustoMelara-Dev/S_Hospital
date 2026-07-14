@@ -96,7 +96,7 @@ export function InstitutionalShell({ cashSession, children, logoUrl, onLogout, s
   }
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-background text-foreground">
+    <div className="min-h-screen overflow-x-clip bg-background text-foreground">
       <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground">
         Omitir al contenido principal
       </a>
@@ -117,7 +117,7 @@ export function InstitutionalShell({ cashSession, children, logoUrl, onLogout, s
           user={user}
         />
         <main id="main-content" tabIndex={-1} className="min-w-0 flex-1 scroll-mt-20 px-3 py-4 outline-none sm:px-5 lg:px-7 lg:py-6 xl:px-8">
-          <div className="mx-auto flex max-w-[1600px] flex-col gap-5">{children}</div>
+          <div className="mx-auto flex max-w-screen-2xl flex-col gap-5">{children}</div>
         </main>
         <footer className="print-hidden sr-only">Sistema hospitalario local</footer>
       </div>

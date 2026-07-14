@@ -78,7 +78,7 @@ describe('NewInvoiceViewLayout', () => {
     const { container } = renderLayout();
 
     expect(container.querySelector('[data-billing-workspace]')).toBeInTheDocument();
-    expect(container.querySelector('[data-billing-cart-sticky]')).toBeInTheDocument();
+    expect(container.querySelector('[data-billing-cart-sticky]')).toHaveClass('xl:top-20');
     expect(screen.queryByRole('navigation', { name: /pasos de facturaci/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /continuar a|atrás/i })).not.toBeInTheDocument();
   });
