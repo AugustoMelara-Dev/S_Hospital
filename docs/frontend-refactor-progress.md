@@ -26,14 +26,14 @@ Protegidas: `/dashboard`, `/billing/new`, `/cashbox`, `/catalog`, `/invoices`, `
 
 | Gate | Resultado |
 |---|---|
-| Regresión segmentada | 132/132 archivos; 967/967 tests; 12/12 segmentos; 0 omitidos |
+| Regresión segmentada | 135/135 archivos; 1004/1004 tests; 12/12 segmentos; 0 omitidos |
 | Storybook | 3/3 archivos; 14/14 tests |
 | Playwright mock | 39/39 |
 | Matriz visual | 4/4 recorridos agregados; 119 PNG + 119 JSON |
 | Axe | 0 minor/moderate/serious/critical; 191 nodos incomplete clasificados; 0 sin clasificar |
 | Estilos computados | 1,258 superficies; 0 radios distintos de `0px`; 0 overflow |
-| Gate legacy | inventory/strict/final: 329 archivos; 0 violaciones |
+| Gate legacy | inventory/strict/final: 333 archivos; 0 violaciones |
 | TypeScript / lint / build | PASS / PASS / PASS |
-| Bundle | 336,323 B gzip inicial; 1,077,559 B gzip total |
+| Bundle | 328.6 KiB gzip inicial; 1,053.5 KiB gzip total |
 
 Los únicos pendientes externos son la impresión física por falta de hardware y el E2E release por falta de credencial.

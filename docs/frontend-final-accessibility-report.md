@@ -30,6 +30,10 @@ Los incompletes corresponden a cálculo de contraste con fondos superpuestos o p
 - Violaciones axe reales: 0.
 - Errores de consola, `pageerror`, requests fallidos o inesperados: 0.
 - Matriz completa: 4/4 pruebas aprobadas en 356 s.
-- Playwright mock completo: 39/39 en 116.2 s.
+- Playwright mock completo posterior al merge: 39/39 en 131.0 s.
+
+## Verificación UX operativa posterior
+
+La campaña posterior revalidó el shell normal, cinco paletas en claro/oscuro, paleta persistida inválida, rail contraído, menú de usuario, paleta de comandos, recorrido guiado, 390×844, navegación móvil, 1366×768 con zoom 125 % y 1920×1080. Una regresión real de contraste (`#5eead4` sobre blanco, 1.47:1) fue reproducida, corregida a la paleta clara (`#0f766e`) y cubierta por test. Resultado final: 0 violaciones reales. Los incompletes de overlays conservan clasificación manual con fondo efectivo y ratios 5.47:1, 6.92:1, 7.58:1 o 16.27:1; 0 permanecen sin clasificar.
 
 Evidencia: `frontend/artifacts/frontend-final/`.

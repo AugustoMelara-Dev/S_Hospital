@@ -6,7 +6,9 @@ Fecha: 2026-07-14 (`America/Tegucigalpa`).
 
 S_Hospital tiene un frontend institucional único. Todas las rutas usan Ant Design/Ant Design Icons, los grids operativos usan AG Grid Community y los gráficos usan Apache ECharts modular. Formularios, estado remoto y fechas usan React Hook Form + Zod, TanStack Query y Day.js. Los tokens y fuentes son locales; `borderRadius` es 0 global.
 
-La facturación conserva búsqueda/filtros de servicios, paciente obligatorio, carrito/totales, cobro, confirmación, éxito, historial, detalle, anulación, reverso y reimpresión. El recibo institucional comparte contenido entre preview/PDF/impresión y cubre seis formatos con original y copias.
+La facturación funciona como un espacio POS: paciente, catálogo compacto y cuenta permanecen visibles; la fila completa agrega por clic o teclado; categoría es la navegación principal y área un filtro secundario; la acción de cobro permanece accesible. El cobro prioriza Total, Recibido y Cambio. Historial, detalle, anulación, reverso y reimpresión conservan sus contratos y permisos. El recibo institucional comparte contenido entre preview/PDF/impresión y cubre seis formatos con original y copias.
+
+Caja abre en Resumen y sólo enfoca el cierre cuando la persona entra a esa vista. Los refrescos automáticos de Respaldos son silenciosos. Ayuda ofrece índice por tareas, búsqueda, anclas y contenido expandible. El shell claro usa una jerarquía cromática continua y restaura el inicio al cambiar de ruta.
 
 ## Gates posteriores al merge
 
@@ -18,15 +20,15 @@ La facturación conserva búsqueda/filtros de servicios, paciente obligatorio, c
 | `npm ls --depth=0` | exit 0 |
 | `npm run typecheck` | PASS |
 | `npm run lint` | PASS |
-| `npm run test:segmented` | 132/132 archivos; 967/967 tests; 12/12 segmentos; 0 omitidos; 1,319.4 s |
+| `npm run test:segmented` | 135/135 archivos; 1004/1004 tests; 12/12 segmentos; 0 omitidos; 1,896.3 s |
 | `npm run test:storybook` | 3/3 archivos; 14/14 tests |
-| `npm run test:e2e:mock` | 39/39; 116.2 s |
+| `npm run test:e2e:mock` | 39/39; 131.0 s |
 | matriz visual/axe | 4/4; 119 PNG + 119 JSON; 356 s |
-| `npm run check:ui-legacy` | inventory: 329 archivos; 0 violaciones |
-| `npm run check:ui-legacy:strict` | 329 archivos; 0 violaciones |
-| `npm run check:ui-legacy:final` | 329 archivos; 0 violaciones; allowlist 0 |
-| `npm run build` | PASS; 3,973 módulos; sin warning `@theme` |
-| `npm run analyze:bundle` | PASS; 336,323 B gzip inicial; 1,077,559 B gzip total |
+| `npm run check:ui-legacy` | inventory: 333 archivos; 0 violaciones |
+| `npm run check:ui-legacy:strict` | 333 archivos; 0 violaciones |
+| `npm run check:ui-legacy:final` | 333 archivos; 0 violaciones; allowlist 0 |
+| `npm run build` | PASS; 3,974 módulos; sin warning `@theme` |
+| `npm run analyze:bundle` | PASS; 328.6 KiB gzip inicial; 1,053.5 KiB gzip total |
 
 ## QA, impresión y bundle
 
@@ -34,15 +36,15 @@ La facturación conserva búsqueda/filtros de servicios, paciente obligatorio, c
 - Computed styles: 1,258 superficies; 0 radios distintos de `0px`; 0 overflow.
 - Consola/red: 0 `console.error`, 0 `pageerror`, 0 `requestfailed`, 0 endpoints inesperados.
 - Impresión: 18/18 PDFs para Carta, Media Carta, A5, 80 mm, 58 mm y 190×140 mm; original, primera y segunda copia.
-- Bundle lazy justificado: AG Grid 866,247 B raw/239,949 B gzip; reportes/ECharts 614,307 B raw/204,784 B gzip. Ninguno forma parte del arranque.
+- Bundle lazy justificado: AG Grid 845.9 KiB raw/234.3 KiB gzip; reportes/ECharts 600.6 KiB raw/200.1 KiB gzip. Ninguno forma parte del arranque.
 
 ## Eliminación legacy
 
-Línea base 177 violaciones/406 archivos. Resultado inventory/strict/final: 0/329. `src/components/ui` y `src/components/shared`: eliminados. Dependencias reemplazadas e imports prohibidos: 0. Archivos o símbolos `Compat|Legacy|Old|V1`: 0. Ramas runtime específicas de test: 0. APIs estáticas Ant Design de feedback: 0.
+Línea base 177 violaciones/406 archivos. Resultado inventory/strict/final: 0/333. `src/components/ui` y `src/components/shared`: eliminados. Dependencias reemplazadas e imports prohibidos: 0. Archivos o símbolos `Compat|Legacy|Old|V1`: 0. Ramas runtime específicas de test: 0. APIs estáticas Ant Design de feedback: 0. Warnings deprecados Ant Design: 0.
 
 ## Integración
 
-Rama del refactor integrada: `codex/refactor-total`. Rama final: `main`. Merge verificado: `959c635e513a98aa4d2993691ea907aa24f03606`, con `66ca9afb087b65fafa2e8ecf7f4e7fc9a771ad83` como segundo padre. Todos los gates de esta tabla se ejecutaron después del merge.
+Refactor base integrado: `959c635e513a98aa4d2993691ea907aa24f03606`. Campaña UX operativa integrada desde `codex/operational-ux-refactor` en `main` mediante `a262fccf983d0f47795aee6ebdf01b723d5b5908`, con `9985c58f` como segundo padre. El árbol del merge coincide exactamente con el árbol certificado de la rama. Todos los gates de esta tabla se ejecutaron nuevamente sobre `main` después del merge.
 
 ## Bloqueos externos
 

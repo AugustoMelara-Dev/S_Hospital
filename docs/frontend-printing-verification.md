@@ -7,6 +7,7 @@ Fecha: 2026-07-14.
 - Playwright mock del bloque recibos/reportes: 27/27.
 - PDFs generados y versionados: 18, más `printing-evidence.json`.
 - Cada PDF tiene una página, MediaBox correcto, fuentes locales, contenido institucional obligatorio y cero overflow.
+- La plantilla administrativa compacta fue revalidada con 16/16 tests backend (197 aserciones) y 19/19 tests frontend de preview/CSS. Las facturas cortas conservan totales, monto en letras, firmas y sello en una página cuando el contenido cabe.
 
 | Formato | MediaBox verificado | Copias |
 |---|---|---|

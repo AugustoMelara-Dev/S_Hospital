@@ -13,7 +13,7 @@
 | AG Grid en arranque | Sí | No |
 | ECharts en arranque | Sí | No |
 
-El arranque bajó 64.4 % en gzip. El total incluye los motores operativos que ahora se descargan sólo al abrir sus rutas.
+El arranque bajó 64.4 % en gzip. La certificación posterior al refactor operativo midió 328.6 KiB gzip inicial y 1,053.5 KiB gzip total. El total incluye los motores operativos que ahora se descargan sólo al abrir sus rutas.
 
 ## Chunks de inicio
 
@@ -29,9 +29,9 @@ El arranque bajó 64.4 % en gzip. El total incluye los motores operativos que ah
 | Chunk | Raw | Gzip | Ruta/consumidor | Dependencia principal | Decisión |
 |---|---:|---:|---|---|---|
 | `InstitutionalDataGrid-*` | 845.9 KiB | 234.3 KiB | Catálogo, usuarios, historial, respaldos, caja y reportes | AG Grid Community | Aceptado asíncrono; no existe AG Grid Enterprise ni duplicación. |
-| `ReportsView-*` | 599.8 KiB | 200.0 KiB | `/reports/*` | Apache ECharts modular | Aceptado asíncrono; usa `echarts/core`, componentes seleccionados y `CanvasRenderer`. |
+| `ReportsView-*` | 600.6 KiB | 200.1 KiB | `/reports/*` | Apache ECharts modular | Aceptado asíncrono; usa `echarts/core`, componentes seleccionados y `CanvasRenderer`. |
 
-Vite conserva un warning sólo por estos dos chunks raw mayores de 500 KiB. No se elevó `chunkSizeWarningLimit`: ambos son asíncronos, no forman parte del arranque, su coste está medido y corresponden a los dos motores obligatorios. El gate de presupuesto aprueba 328.8 KiB gzip inicial contra 488.3 KiB y 1,052.6 KiB gzip total contra 1,074.2 KiB.
+Vite conserva un warning sólo por estos dos chunks raw mayores de 500 KiB. No se elevó `chunkSizeWarningLimit`: ambos son asíncronos, no forman parte del arranque, su coste está medido y corresponden a los dos motores obligatorios. El gate de presupuesto aprueba 328.6 KiB gzip inicial contra 488.3 KiB y 1,053.5 KiB gzip total contra 1,074.2 KiB.
 
 ## Decisiones aplicadas
 
