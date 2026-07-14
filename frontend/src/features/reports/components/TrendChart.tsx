@@ -12,8 +12,8 @@ export function TrendChart({ report }: TrendChartProps) {
   const table = <table><caption>Tendencia diaria del reporte ejecutivo</caption><thead><tr><th>Fecha</th><th>Facturado</th><th>Cobrado</th><th>Pendiente</th></tr></thead><tbody>{data.map((day) => <tr key={day.date}><td>{day.date}</td><td>{formatHnl(day.billed)}</td><td>{formatHnl(day.collected)}</td><td>{formatHnl(day.pending)}</td></tr>)}</tbody></table>;
   const option = {
     tooltip: { trigger: 'axis', valueFormatter: tooltipMoney },
-    legend: { data: ['Facturado', 'Cobrado', 'Pendiente'] },
-    grid: { left: 72, right: 24, top: 48, bottom: 40 },
+    legend: { data: ['Facturado', 'Cobrado', 'Pendiente'], bottom: 0 },
+    grid: { left: 72, right: 24, top: 24, bottom: 72 },
     xAxis: { type: 'category', data: data.map((item) => item.date.slice(5)) },
     yAxis: { type: 'value' },
     series: [

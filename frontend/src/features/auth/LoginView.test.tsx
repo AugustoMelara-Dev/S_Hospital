@@ -37,6 +37,8 @@ describe('LoginView', () => {
     expect(document.body).not.toHaveTextContent(/clientes LAN|sistema hospitalario LAN|offline\/LAN/i);
     expect(screen.getByLabelText(/usuario o correo/i)).toHaveAttribute('autocomplete', 'username');
     expect(screen.getByLabelText(/^contrase/i)).toHaveAttribute('autocomplete', 'current-password');
+    expect(screen.queryByText(/operación financiera clara/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/gestión hospitalaria institucional/i)).not.toBeInTheDocument();
   });
 
   it('calls onLoginChange when user types in login field', () => {
@@ -74,6 +76,14 @@ describe('LoginView', () => {
     render(<LoginView {...defaultProps} status="Credenciales inválidas" />, { wrapper: Wrapper });
 
     expect(screen.getByText(/credenciales inválidas/i)).toBeInTheDocument();
+  });
+
+  it('announces an expired session as a warning with a stable recovery action', () => {
+    render(<LoginView {...defaultProps} status="Sesión cerrada por el servidor. Inicie sesión nuevamente." />, { wrapper: Wrapper });
+
+    expect(screen.getByRole('alert')).toHaveClass('ant-alert-warning');
+    expect(screen.getByRole('alert')).toHaveTextContent(/inicie sesión nuevamente/i);
+    expect(screen.getByRole('alert')).not.toHaveTextContent(/redirigiendo/i);
   });
 
   it('disables submit button when countdown is active', () => {

@@ -10,6 +10,7 @@ describe('TrendChart', () => {
     render(<TrendChart report={report} />);
     const chart = screen.getByLabelText(/gráfico de tendencia/i);
     expect(chart).toHaveAttribute('data-option', expect.stringContaining('line'));
+    expect(chart).toHaveAttribute('data-option', expect.stringContaining('"bottom":0'));
     expect(screen.getByText(/1 día con actividad/i)).toBeInTheDocument();
     expect(screen.getByRole('table', { name: /tendencia diaria/i })).toHaveTextContent('L 100.00');
   });

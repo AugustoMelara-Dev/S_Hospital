@@ -4,9 +4,7 @@ import {
   EyeInvisibleOutlined,
   EyeOutlined,
   LockOutlined,
-  SafetyOutlined,
   UserOutlined,
-  DisconnectOutlined,
 } from '@ant-design/icons';
 import { Input, Button, Alert } from 'antd';
 import { usePublicBranding } from '../../hooks/useFiscalSettings';
@@ -43,6 +41,7 @@ export function LoginView({
     normalizedStatus.includes('demasiados intentos') ||
     normalizedStatus.includes('bloqueado temporalmente') ||
     normalizedStatus.includes('cuenta bloqueada');
+  const isSessionStatus = normalizedStatus.includes('sesión vencida') || normalizedStatus.includes('sesión cerrada');
 
   useEffect(() => {
     if (normalizedStatus.includes('cuenta bloqueada')) {
@@ -67,15 +66,14 @@ export function LoginView({
     return () => window.clearTimeout(timer);
   }, [countdown]);
 
-  const statusType =
-    isLockoutStatus ||
-    normalizedStatus.includes('error') ||
-    normalizedStatus.includes('no se pudo') ||
-    normalizedStatus.includes('incorrecta') ||
-    normalizedStatus.includes('invál') ||
-    normalizedStatus.includes('credenciales')
-      ? 'error'
-      : 'success';
+  const statusType = isLockoutStatus ||
+      normalizedStatus.includes('error') ||
+      normalizedStatus.includes('no se pudo') ||
+      normalizedStatus.includes('incorrecta') ||
+      normalizedStatus.includes('invál') ||
+      normalizedStatus.includes('credenciales')
+    ? 'error'
+    : isSessionStatus ? 'warning' : 'success';
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     if (countdown > 0) {
@@ -94,9 +92,9 @@ export function LoginView({
   const loginDisabled = submitting || countdown > 0;
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-sidebar text-foreground flex flex-col justify-between">
-      <div className="mx-auto grid min-h-screen w-full max-w-screen-2xl lg:grid-cols-2">
-        <section className="order-1 flex min-w-0 items-center bg-background px-5 py-8 sm:px-10 lg:order-2 lg:my-5 lg:mr-5 lg:px-16 border-l border-border">
+    <main className="flex min-h-screen items-center overflow-x-hidden bg-operational-bg p-4 text-foreground sm:p-6">
+      <div className="mx-auto flex w-full max-w-lg border border-operational-border bg-operational-surface">
+        <section className="flex min-w-0 flex-1 items-center px-5 py-8 sm:px-10">
           <div className="mx-auto w-full max-w-md">
             <div className="flex items-center gap-3 pb-6">
               {logoUrl ? (
@@ -205,26 +203,6 @@ export function LoginView({
           </div>
         </section>
 
-        <section className="relative order-2 flex min-w-0 items-center overflow-hidden bg-sidebar px-6 py-12 text-sidebar-foreground sm:px-10 lg:order-1 lg:min-h-screen lg:px-16">
-          <div className="relative max-w-xl">
-            <p className="text-xs font-semibold uppercase tracking-widest text-sidebar-primary">
-              Gestión hospitalaria institucional
-            </p>
-            <h2 className="mt-5 text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
-              Operación financiera clara, segura y diseñada para su hospital.
-            </h2>
-            <div className="mt-10 grid gap-3 text-sm leading-6 text-sidebar-foreground/70 sm:grid-cols-2">
-              <p className="flex items-start gap-3 border border-sidebar-border bg-sidebar-accent/50 p-4">
-                <SafetyOutlined aria-hidden="true" className="mt-0.5 text-lg shrink-0 text-sidebar-primary" />
-                El acceso por rol muestra solo los módulos autorizados.
-              </p>
-              <p className="flex items-start gap-3 border border-sidebar-border bg-sidebar-accent/50 p-4">
-                <DisconnectOutlined aria-hidden="true" className="mt-0.5 text-lg shrink-0 text-sidebar-primary" />
-                La operación principal continúa sin internet dentro de la red local.
-              </p>
-            </div>
-          </div>
-        </section>
       </div>
     </main>
   );

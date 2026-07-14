@@ -79,6 +79,26 @@ describe('ExecutiveReportFilters', () => {
     expect(screen.queryByRole('button', { name: /excel ejecutivo/i })).not.toBeInTheDocument();
   });
 
+  it('wraps the complete export action group on narrow viewports', () => {
+    render(
+      <ExecutiveReportFilters
+        filters={{ date_from: '2026-07-01', date_to: '2026-07-02' }}
+        preset="custom"
+        onPresetChange={vi.fn()}
+        onChange={vi.fn()}
+        onRefresh={vi.fn()}
+        onExportPdf={vi.fn()}
+        onExportExcel={vi.fn()}
+        canExport
+        loading={false}
+        exporting={false}
+      />,
+    );
+
+    const actionGroup = screen.getByRole('button', { name: /excel ejecutivo/i }).closest('.ant-space');
+    expect(actionGroup).toHaveStyle({ flexWrap: 'wrap' });
+  });
+
   it('describes the real 92 day limit and blocks stale-scope exports', () => {
     render(
       <ExecutiveReportFilters

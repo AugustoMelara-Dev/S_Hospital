@@ -175,6 +175,7 @@ const routeExpectations = [
   { path: '/help', heading: /ayuda institucional/i },
   { path: '/support', heading: /asistencia operativa/i },
   { path: '/about', heading: /informacion del sistema/i },
+  { path: '/ruta-no-existente', heading: /ruta no encontrada/i },
 ] as const;
 
 const visualMatrix = [

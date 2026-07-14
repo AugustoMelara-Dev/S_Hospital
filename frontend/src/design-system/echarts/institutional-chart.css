@@ -1,7 +1,12 @@
 .institutional-chart { margin: 0; width: 100%; color: var(--color-foreground); }
 .institutional-chart--dark { color: var(--color-foreground); background: var(--color-operational-surface); }
-.institutional-chart__canvas { width: 100%; min-height: 12rem; }
+.institutional-chart__canvas { width: 100%; min-height: 16rem; }
 .institutional-chart__state { display: grid; min-height: 12rem; place-items: center; border: 1px solid currentColor; padding: 1rem; text-align: center; }
 .institutional-chart__summary { margin-top: .5rem; font-size: .875rem; }
 .institutional-chart__table { margin-top: .75rem; overflow-x: auto; }
+.institutional-chart__table table { width: 100%; min-width: 30rem; border-collapse: collapse; font-size: .75rem; }
+.institutional-chart__table caption { padding-bottom: .5rem; text-align: left; font-weight: 600; }
+.institutional-chart__table th,
+.institutional-chart__table td { border: 1px solid var(--color-border); padding: .375rem .5rem; text-align: left; white-space: nowrap; }
+.institutional-chart__table th { background: var(--color-muted); color: var(--color-foreground); }
 @media (prefers-reduced-motion: reduce) { .institutional-chart * { animation: none !important; transition: none !important; } }

@@ -97,6 +97,11 @@ test.describe('Reports - critical mocked e2e (3 sub-routes)', () => {
     const navigation = page.getByRole('navigation', { name: /secciones de reportes/i });
     await expect(navigation).toBeVisible();
     await expect(page.getByRole('link', { name: /ejecutivo/i })).toHaveAttribute('aria-current', 'page');
+    for (const buttonName of [/refrescar ejecutivo/i, /pdf ejecutivo/i, /excel ejecutivo/i]) {
+      const box = await page.getByRole('button', { name: buttonName }).boundingBox();
+      expect(box).not.toBeNull();
+      expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(320);
+    }
     await page.getByRole('link', { name: /caja/i }).click();
     await expect(page.getByRole('link', { name: /caja/i })).toHaveAttribute('aria-current', 'page');
     await expect(page.getByRole('heading', { name: /operación de caja/i })).toBeVisible();

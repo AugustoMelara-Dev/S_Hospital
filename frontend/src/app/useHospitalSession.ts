@@ -66,7 +66,7 @@ export function useHospitalSession() {
         }
       }
       setUser(null);
-      setStatus('Sesión vencida. Redirigiendo al login...');
+      setStatus('Sesión vencida. Inicie sesión nuevamente.');
       setSessionExpired(true);
     });
 
@@ -87,7 +87,7 @@ export function useHospitalSession() {
         }
       }
       setUser(null);
-      setStatus('Sesión cerrada por el servidor. Redirigiendo al login...');
+      setStatus('Sesión cerrada por el servidor. Inicie sesión nuevamente.');
       setSessionExpired(true);
     });
 
