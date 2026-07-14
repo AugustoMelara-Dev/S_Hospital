@@ -4,8 +4,7 @@ import { ReportsAudit } from './ReportsAudit';
 import { ReportsCash } from './ReportsCash';
 import { ReportsExecutive } from './ReportsExecutive';
 import { LineChartOutlined, SafetyCertificateOutlined, WalletOutlined } from '@ant-design/icons';
-import { Typography } from 'antd';
-const PageHeader = ({ title, description, className }: { title: string; description: string; className?: string }) => <header className={className}><Typography.Title level={1}>{title}</Typography.Title><Typography.Paragraph>{description}</Typography.Paragraph></header>;
+import { PageHeader } from '@/components/ui/page-header';
 
 type ReportsViewProps = {
   canBrowseCashSessions: boolean;

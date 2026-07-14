@@ -109,7 +109,7 @@ describe('ServiceRanking', () => {
   it('uses a compact empty state when there are no billed services', () => {
     render(<ServiceRanking report={buildExecutiveReport()} />);
 
-    expect(screen.getByText(/sin servicios facturados en el periodo/i)).toBeInTheDocument();
+    expect(screen.getByText(/sin servicios facturados en el per[ií]odo/i)).toBeInTheDocument();
     expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
   });
 });

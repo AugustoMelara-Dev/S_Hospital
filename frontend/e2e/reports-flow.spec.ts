@@ -39,8 +39,8 @@ test.describe('Reports - critical mocked e2e (3 sub-routes)', () => {
     await expect(page.getByRole('heading', { name: /criterio contable operativo/i })).toBeVisible();
     await expect(page.getByText(/no se restan otra vez/i)).toBeVisible();
 
-    await page.getByLabel(/inicio ejecutivo/i).fill(reportPeriod.from);
-    await page.getByLabel(/fin ejecutivo/i).fill(reportPeriod.to);
+    await setAntDate(page, /inicio ejecutivo/i, reportPeriod.from);
+    await setAntDate(page, /fin ejecutivo/i, reportPeriod.to);
     await page.getByRole('button', { name: /refrescar ejecutivo/i }).click();
 
     await expect.poll(() => lastExecutiveQuery.get('date_from')).toBe(reportPeriod.from);
@@ -63,14 +63,14 @@ test.describe('Reports - critical mocked e2e (3 sub-routes)', () => {
 
     await page.goto('/reports/cash');
 
-    await expect(page.getByText(/operacion de caja/i).first()).toBeVisible();
-    await page.getByLabel(/numero de caja/i).fill('7');
+    await expect(page.getByRole('heading', { name: /operación de caja/i })).toBeVisible();
+    await page.getByLabel(/número de caja/i).fill('7');
     await page.getByRole('button', { name: /ver caja/i }).click();
 
     await expect.poll(() => requestedCashSessionId).toBe('7');
     await expect(page.getByRole('cell', { name: 'Administradora Hospital' })).toBeVisible();
-    await expect(page.getByRole('region', { name: /pagos registrados/i })).toContainText('Maria Lopez');
-    await expect(page.getByRole('region', { name: /totales por metodo/i })).toContainText('Efectivo');
+    await expect(page.getByRole('region', { name: 'Pagos registrados', exact: true })).toContainText('Maria Lopez');
+    await expect(page.getByRole('gridcell', { name: 'Efectivo' }).first()).toBeVisible();
   });
 
   test('audit sub-route exposes institutional audit counters', async ({ page }) => {
@@ -78,8 +78,8 @@ test.describe('Reports - critical mocked e2e (3 sub-routes)', () => {
 
     await page.goto('/reports/audit');
 
-    await expect(page.getByText(/auditoria institucional/i)).toBeVisible();
-    await expect(page.getByText(/eventos criticos/i)).toBeVisible();
+    await expect(page.getByRole('region', { name: /auditoría institucional/i })).toBeVisible();
+    await expect(page.getByText(/eventos críticos/i)).toBeVisible();
     await expect(page.getByText(/reimpresiones/i)).toBeVisible();
     await expect(page.getByText(/eventos de respaldo/i)).toBeVisible();
   });
@@ -95,7 +95,7 @@ test.describe('Reports - critical mocked e2e (3 sub-routes)', () => {
     await expect(page.getByRole('link', { name: /ejecutivo/i })).toHaveAttribute('aria-current', 'page');
     await page.getByRole('link', { name: /caja/i }).click();
     await expect(page.getByRole('link', { name: /caja/i })).toHaveAttribute('aria-current', 'page');
-    await expect(page.getByText(/operacion de caja/i).first()).toBeVisible();
+    await expect(page.getByRole('heading', { name: /operación de caja/i })).toBeVisible();
 
     await expectNoHorizontalPageOverflow(page);
     const navOverflow = await navigation.evaluate((element) => element.scrollWidth - element.clientWidth);
@@ -134,6 +134,14 @@ async function installReportsMocks(
     options.onCashReport?.(id);
     return json(route, { data: cashSessionReport(Number(id)) });
   });
+}
+
+async function setAntDate(page: Page, label: RegExp, value: string) {
+  const input = page.getByLabel(label);
+  await input.click();
+  await input.fill(value);
+  await input.press('Enter');
+  await expect(input).toHaveValue(value);
 }
 
 function executiveReport(from: string, to: string) {

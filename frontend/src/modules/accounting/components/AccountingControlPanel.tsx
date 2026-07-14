@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Alert } from '../../../components/ui/alert';
-import { Button } from '../../../components/ui/button';
+import { Alert, Button } from 'antd';
 import { finiteNumber, formatLempirasUI } from '../../../lib/money';
 import { cn } from '../../../lib/utils';
 import {
@@ -35,9 +34,9 @@ export function AccountingControlPanel({
   return (
     <section
       aria-labelledby="accounting-control-title"
-      className="overflow-hidden rounded-lg border border-operational-border bg-operational-surface"
+      className="overflow-hidden border border-operational-border bg-operational-surface"
     >
-      <div className="border-b border-border px-4 pb-4 pt-5 sm:px-5">
+      <div className="border-b border-border bg-muted/40 px-4 pb-4 pt-5 sm:px-5">
         <h2 id="accounting-control-title" className="text-lg font-semibold tracking-tight text-foreground">
           Control contable de caja
         </h2>
@@ -95,11 +94,14 @@ export function AccountingControlPanel({
 
       <div className="grid gap-3 border-t border-border p-4 sm:p-5">
         {status.state === 'blocked' ? (
-          <Alert variant="warning" title="Cierre bloqueado por conciliación pendiente">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <Alert
+            type="warning"
+            showIcon
+            title="Cierre bloqueado por conciliación pendiente"
+            description={<div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <span className="flex-1">Resuelva las facturas o recibos indicados antes de cerrar la caja.</span>
               {canViewInvoices ? (
-                <Button asChild size="sm" variant="secondary">
+                <Button size="small">
                   <Link to={historyHref}>Resolver en Historial</Link>
                 </Button>
               ) : (
@@ -107,12 +109,15 @@ export function AccountingControlPanel({
                   Solicite apoyo a un usuario con acceso al Historial.
                 </span>
               )}
-            </div>
-          </Alert>
+            </div>}
+          />
         ) : (
-          <Alert variant="success" title="Conciliación operativa lista">
-            Sin pendientes que bloqueen el cierre. Verifique el efectivo contado antes de confirmar.
-          </Alert>
+          <Alert
+            type="success"
+            showIcon
+            title="Conciliación operativa lista"
+            description="Sin pendientes que bloqueen el cierre. Verifique el efectivo contado antes de confirmar."
+          />
         )}
 
         <p className="text-xs leading-relaxed text-muted-foreground">
@@ -139,7 +144,7 @@ function Fact({
   value: string;
 }) {
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-1 px-4 py-3 sm:px-5">
+    <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-1 px-4 py-4 transition-colors hover:bg-accent/20 sm:px-5">
       <dt className="text-sm text-muted-foreground">{label}</dt>
       <dd className="text-right font-semibold tabular-nums text-foreground">{value}</dd>
       <dd

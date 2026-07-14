@@ -29,9 +29,9 @@ describe('ExecutiveAlerts', () => {
     );
 
     expect(screen.getByRole('heading', { name: /alertas operativas/i })).toBeInTheDocument();
-    expect(screen.getByText(/2 facturas tienen 31 o mas dias pendiente/i)).toBeInTheDocument();
+    expect(screen.getByText(/2 facturas tienen 31 o m[aá]s d[ií]as pendiente/i)).toBeInTheDocument();
     expect(screen.getByText(/1 cierre con diferencia de caja/i)).toBeInTheDocument();
-    expect(screen.getByText(/3 eventos criticos de auditoria/i)).toBeInTheDocument();
+    expect(screen.getByText(/3 eventos cr[ií]ticos de auditor[ií]a/i)).toBeInTheDocument();
   });
 
   it('does not expose malformed alert counts as operational alerts', () => {

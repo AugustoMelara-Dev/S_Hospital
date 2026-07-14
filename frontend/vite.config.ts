@@ -13,12 +13,15 @@ const dirname = typeof __dirname !== 'undefined' ? __dirname : path.dirname(file
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 const apiProxyTarget = process.env.VITE_DEV_API_PROXY_TARGET ?? 'http://localhost:8000';
 const manualChunkGroups: Record<string, string[]> = {
+  'ag-grid': ['ag-grid-community', 'ag-grid-react'],
+  antd: ['antd', '@ant-design/icons'],
   calendar: ['react-day-picker'],
   charts: ['recharts'],
   drawer: ['vaul'],
   forms: ['react-hook-form', '@hookform/resolvers', 'zod'],
   motion: ['motion'],
   query: ['@tanstack/react-query'],
+  echarts: ['echarts'],
   ui: ['lucide-react', '@radix-ui/react-alert-dialog', '@radix-ui/react-accordion', '@radix-ui/react-avatar', '@radix-ui/react-checkbox', '@radix-ui/react-collapsible', '@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-popover', '@radix-ui/react-progress', '@radix-ui/react-radio-group', '@radix-ui/react-scroll-area', '@radix-ui/react-select', '@radix-ui/react-separator', '@radix-ui/react-switch', '@radix-ui/react-slot', '@radix-ui/react-tabs', '@radix-ui/react-tooltip'],
   vendor: ['react', 'react-dom', 'react-router-dom']
 };

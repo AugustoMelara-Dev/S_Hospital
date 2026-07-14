@@ -1,17 +1,13 @@
 import { type FormEvent } from 'react';
-import { AlertTriangle, Download, FileText } from 'lucide-react';
-import { Button } from '../../../components/ui/button';
-import { Alert } from '../../../components/ui/alert';
-import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
-import { DataTable, type DataTableColumn } from '../../../components/ui/data-table';
-import { Input } from '../../../components/ui/input';
-import { Label } from '../../../components/ui/label';
-import { NativeSelect } from '../../../components/ui/select';
-import { StatGrid } from '../../../components/shared';
+import { DownloadOutlined, FilePdfOutlined, WarningOutlined } from '@ant-design/icons';
+import { Alert, Button, Col, Form, Input, Row, Select, Statistic, Typography } from 'antd';
+import { InstitutionalDataGrid, type InstitutionalColumn } from '@/design-system/ag-grid';
 import { formatLocalizedDateTime } from '../../../lib/format/formatDate';
 import type { CashSession, CashSessionReport } from '../../../lib/api/types';
 import { formatLempirasUIFromCents, parseCents } from '../../../lib/moneyCents';
 import { AccountingControlPanel } from '../../../modules/accounting/components/AccountingControlPanel';
+
+function StatGrid({ items }: { className?: string; items: Array<{ label: string; value: React.ReactNode; helper?: string; tone?: string }> }) { return <Row gutter={[12, 12]}>{items.map((item) => <Col xs={24} sm={12} xl={4} key={item.label}><Statistic title={item.label} value={String(item.value)} /><Typography.Text type="secondary">{item.helper}</Typography.Text></Col>)}</Row>; }
 
 interface CashSessionReportPanelProps {
   canExport: boolean;
@@ -37,86 +33,64 @@ type MethodTotalRow = {
 type RegisteredPayment = CashSessionReport['payments'][number];
 type CashMovement = CashSessionReport['movements'][number];
 
-const methodTotalColumns: Array<DataTableColumn<MethodTotalRow>> = [
+const methodTotalColumns: InstitutionalColumn<MethodTotalRow>[] = [
   {
-    key: 'method',
-    header: 'Metodo',
-    cellClassName: 'font-medium',
-    render: (row) => methodLabel(row.method),
+    colId: 'method', headerName: 'Método', field: 'method', flex: 1,
+    valueFormatter: ({ value }) => methodLabel(String(value)),
   },
   {
-    key: 'total',
-    header: 'Total',
-    numeric: true,
-    render: (row) => moneyLabel(row.total),
+    colId: 'total', headerName: 'Total', field: 'total', priority: 'secondary',
+    valueFormatter: ({ value }) => moneyLabel(String(value)),
   },
 ];
 
-const paymentColumns: Array<DataTableColumn<RegisteredPayment>> = [
+const paymentColumns: InstitutionalColumn<RegisteredPayment>[] = [
   {
-    key: 'invoice',
-    header: 'Factura',
-    cellClassName: 'font-medium',
-    render: (payment) => fallbackText(payment.invoice?.invoice_number, 'Sin factura'),
+    colId: 'invoice', headerName: 'Factura', flex: 1,
+    valueGetter: ({ data }) => fallbackText(data?.invoice?.invoice_number, 'Sin factura'),
   },
   {
-    key: 'patient',
-    header: 'Paciente',
-    render: (payment) => fallbackText(payment.invoice?.patient_name, 'Sin paciente'),
+    colId: 'patient', headerName: 'Paciente', flex: 1,
+    valueGetter: ({ data }) => fallbackText(data?.invoice?.patient_name, 'Sin paciente'),
   },
   {
-    key: 'method',
-    header: 'Metodo',
-    render: (payment) => methodLabel(payment.method),
+    colId: 'method', headerName: 'Método', field: 'method',
+    valueFormatter: ({ value }) => methodLabel(String(value)),
   },
   {
-    key: 'amount',
-    header: 'Monto',
-    numeric: true,
-    render: (payment) => moneyLabel(payment.amount),
+    colId: 'amount', headerName: 'Monto', field: 'amount', priority: 'secondary',
+    valueFormatter: ({ value }) => moneyLabel(String(value)),
   },
   {
-    key: 'paid_at',
-    header: 'Fecha',
-    cellClassName: 'text-xs text-muted-foreground',
-    render: (payment) => formatDate(payment.paid_at),
+    colId: 'paid_at', headerName: 'Fecha', field: 'paid_at', priority: 'secondary',
+    valueFormatter: ({ value }) => formatDate(String(value)),
   },
 ];
 
-const movementColumns: Array<DataTableColumn<CashMovement>> = [
+const movementColumns: InstitutionalColumn<CashMovement>[] = [
   {
-    key: 'type',
-    header: 'Tipo',
-    cellClassName: 'font-medium',
-    render: (movement) => movementTypeLabel(movement.type),
+    colId: 'type', headerName: 'Tipo', field: 'type', flex: 1,
+    valueFormatter: ({ value }) => movementTypeLabel(String(value)),
   },
   {
-    key: 'method',
-    header: 'Metodo',
-    render: (movement) => movementMethodLabel(movement.method),
+    colId: 'method', headerName: 'Método', field: 'method',
+    valueFormatter: ({ value }) => movementMethodLabel(value ? String(value) : null),
   },
   {
-    key: 'amount',
-    header: 'Monto',
-    numeric: true,
-    render: (movement) => signedMoneyLabel(movement.amount),
+    colId: 'amount', headerName: 'Monto', field: 'amount', priority: 'secondary',
+    valueFormatter: ({ value }) => signedMoneyLabel(String(value)),
   },
   {
-    key: 'notes',
-    header: 'Notas',
-    cellClassName: 'max-w-[150px] truncate',
-    render: (movement) => fallbackText(movement.notes, 'Sin nota'),
+    colId: 'notes', headerName: 'Notas', field: 'notes', flex: 1,
+    valueFormatter: ({ value }) => fallbackText(value ? String(value) : null, 'Sin nota'),
   },
   {
-    key: 'user',
-    header: 'Usuario',
-    render: (movement) => fallbackText(movement.user?.name, 'Sin usuario'),
+    colId: 'user', headerName: 'Usuario',
+    valueGetter: ({ data }) => fallbackText(data?.user?.name, 'Sin usuario'),
   },
   {
-    key: 'occurred_at',
-    header: 'Fecha',
-    cellClassName: 'text-xs text-muted-foreground',
-    render: (movement) => formatDate(movement.occurred_at),
+    colId: 'occurred_at', headerName: 'Fecha', field: 'occurred_at', priority: 'secondary',
+    valueFormatter: ({ value }) => formatDate(value ? String(value) : null),
   },
 ];
 
@@ -143,33 +117,26 @@ export function CashSessionReportPanel({
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardContent className="pt-6">
-          <form onSubmit={onSubmit} className="grid gap-3 sm:grid-cols-[minmax(0,200px)_auto] sm:items-end">
+      <section className="overflow-hidden">
+        <div className="bg-muted/40 pt-6">
+          <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-[minmax(0,240px)_auto] sm:items-end">
             <div className="w-full">
               {hasRecentCashSessions ? (
-                <>
-                  <Label htmlFor="cash-session-id">Caja reciente</Label>
-                  <NativeSelect
+                <Form.Item label="Caja reciente" htmlFor="cash-session-id" extra="Seleccione una caja reciente. La más nueva queda lista para consultar.">
+                  <Select
                     id="cash-session-id"
-                    aria-describedby="cash-session-id-help"
+                    aria-label="Caja reciente"
                     value={cashReportId}
-                    onChange={(event) => onCashReportIdChange(event.target.value)}
+                    onChange={onCashReportIdChange}
                     disabled={lookupLocked || sessionsLoading}
-                  >
-                    {recentCashSessions.map((session) => (
-                      <option key={session.id} value={String(session.id)}>
-                        {cashSessionOptionLabel(session)}
-                      </option>
-                    ))}
-                  </NativeSelect>
-                  <p id="cash-session-id-help" className="mt-1 text-xs text-muted-foreground">
-                    Seleccione una caja reciente. La mas nueva queda lista para consultar.
-                  </p>
-                </>
+                    options={recentCashSessions.map((session) => ({
+                      value: String(session.id),
+                      label: cashSessionOptionLabel(session),
+                    }))}
+                  />
+                </Form.Item>
               ) : (
-                <>
-                  <Label htmlFor="cash-session-id">Numero de Caja</Label>
+                <Form.Item label="Número de caja" htmlFor="cash-session-id" extra="Use el número que aparece en Caja al abrir o cerrar turno.">
                   <Input
                     id="cash-session-id"
                     type="text"
@@ -180,25 +147,20 @@ export function CashSessionReportPanel({
                     onChange={(event) => onCashReportIdChange(event.target.value)}
                     disabled={lookupLocked}
                   />
-                  <p id="cash-session-id-help" className="mt-1 text-xs text-muted-foreground">
-                    Use el numero que aparece en Caja al abrir o cerrar turno.
-                  </p>
-                </>
+                </Form.Item>
               )}
             </div>
-            <Button type="submit" className="w-full sm:w-auto" disabled={lookupLocked}>
-              {loading ? 'Consultando...' : 'Ver caja'}
+            <Button htmlType="submit" type="primary" size="large" className="w-full sm:w-auto" disabled={lookupLocked} loading={loading}>
+              Ver caja
             </Button>
           </form>
           {error ? (
             <div className="mt-3">
-              <Alert variant="destructive" title="No se pudo cargar la caja">
-                {error}
-              </Alert>
+              <Alert type="error" showIcon title="No se pudo cargar la caja" description={error} />
             </div>
           ) : null}
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
       {cashSession ? (
         <>
@@ -244,14 +206,11 @@ export function CashSessionReportPanel({
           <AccountingControlPanel reconciliation={cashSession} />
 
           {cashSession.cash_session.difference_amount && (parseCents(cashSession.cash_session.difference_amount) ?? 0) !== 0 ? (
-            <Card className="border-destructive">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-destructive">
-                  <AlertTriangle className="h-4 w-4" />
+            <section className="border border-destructive/30 bg-destructive/5 p-4" aria-labelledby="cash-difference-title">
+                <Typography.Title id="cash-difference-title" level={3} className="flex items-center gap-2 text-destructive">
+                  <WarningOutlined aria-hidden />
                   Diferencia
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
+                </Typography.Title>
                 <div className="text-3xl font-bold text-destructive">
                   {moneyLabel(cashSession.cash_session.difference_amount)}
                 </div>
@@ -260,72 +219,33 @@ export function CashSessionReportPanel({
                     {cashSession.cash_session.closing_notes.trim()}
                   </p>
                 ) : null}
-              </CardContent>
-            </Card>
+            </section>
           ) : null}
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Totales por metodo</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <DataTable
-                caption="Totales por metodo de pago."
-                columns={methodTotalColumns}
-                containerLabel="Totales por metodo"
-                emptyDescription="Los totales por metodo apareceran cuando la caja tenga datos de cobro."
-                emptyTitle="Sin totales por metodo"
-                getRowKey={(row) => row.method}
-                rows={methodTotalRows}
-              />
-            </CardContent>
-          </Card>
+          <section aria-labelledby="method-totals-title">
+            <Typography.Title id="method-totals-title" level={3}>Totales por método</Typography.Title>
+            <InstitutionalDataGrid ariaLabel="Totales por método" rows={methodTotalRows} columns={methodTotalColumns} getRowId={(row) => row.method} state={methodTotalRows.length ? 'ready' : 'empty'} emptyMessage="Sin totales por método" density="compact" gridOptions={{ pagination: false }} />
+          </section>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Pagos registrados ({cashSession.payments.length})</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <DataTable
-                caption="Pagos registrados en la caja."
-                columns={paymentColumns}
-                containerLabel="Pagos registrados"
-                emptyDescription="Los pagos cobrados apareceran cuando esta caja tenga cobros publicados."
-                emptyTitle="Sin pagos registrados"
-                getRowKey={(payment) => payment.id}
-                rows={cashSession.payments}
-                tableClassName="min-w-[720px]"
-              />
-            </CardContent>
-          </Card>
+          <section aria-labelledby="payments-title">
+            <Typography.Title id="payments-title" level={3}>Pagos registrados ({cashSession.payments.length})</Typography.Title>
+            <InstitutionalDataGrid ariaLabel="Pagos registrados" rows={cashSession.payments} columns={paymentColumns} getRowId={(payment) => String(payment.id)} state={cashSession.payments.length ? 'ready' : 'empty'} emptyMessage="Sin pagos registrados" density="compact" gridOptions={{ pagination: false }} />
+          </section>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Movimientos ({cashSession.movements.length})</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <DataTable
-                caption="Movimientos registrados en la caja."
-                columns={movementColumns}
-                containerLabel="Movimientos de caja"
-                emptyDescription="Aperturas, cierres y ajustes apareceran cuando esta caja tenga movimientos registrados."
-                emptyTitle="Sin movimientos de caja"
-                getRowKey={(movement) => movement.id}
-                rows={cashSession.movements}
-                tableClassName="min-w-[860px]"
-              />
-            </CardContent>
-          </Card>
+          <section aria-labelledby="movements-title">
+            <Typography.Title id="movements-title" level={3}>Movimientos ({cashSession.movements.length})</Typography.Title>
+            <InstitutionalDataGrid ariaLabel="Movimientos de caja" rows={cashSession.movements} columns={movementColumns} getRowId={(movement) => String(movement.id)} state={cashSession.movements.length ? 'ready' : 'empty'} emptyMessage="Sin movimientos de caja" density="compact" gridOptions={{ pagination: false }} />
+          </section>
 
           <div className="flex flex-wrap justify-end gap-2">
             {canExport ? (
               <>
-                <Button type="button" variant="outline" onClick={onExportPdf} disabled={exporting}>
-                  <FileText className="mr-2 h-4 w-4" />
+                <Button htmlType="button" onClick={onExportPdf} disabled={exporting}>
+                  <FilePdfOutlined aria-hidden />
                   {exportingType === 'pdf' ? 'Abriendo PDF...' : 'PDF caja'}
                 </Button>
-                <Button type="button" variant="outline" onClick={onExport} disabled={exporting}>
-                  <Download className="mr-2 h-4 w-4" />
+                <Button htmlType="button" onClick={onExport} disabled={exporting}>
+                  <DownloadOutlined aria-hidden />
                   {exportingType === 'excel' ? 'Exportando Excel...' : 'Exportar Excel'}
                 </Button>
               </>
@@ -425,4 +345,3 @@ function formatDate(value: string | null | undefined): string {
 function fallbackText(value: string | null | undefined, fallback: string): string {
   return value?.trim() || fallback;
 }
-

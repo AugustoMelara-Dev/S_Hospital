@@ -2,8 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { SearchOutlined, WarningOutlined } from '@ant-design/icons';
-import { Alert as AntAlert, Button as AntButton, Input, Spin, Statistic, Typography } from 'antd';
+import { Alert, Button, DatePicker, Form, Input, Spin, Statistic } from 'antd';
+import dayjs from 'dayjs';
 import { InstitutionalDataGrid, type InstitutionalColumn } from '@/design-system/ag-grid';
+import { PageHeader } from '@/components/ui/page-header';
 import { apiClient, system } from '@/lib/api';
 import type { AuditLogEntry as ApiAuditLogEntry, AuditLogPage, OperationsReport } from '@/lib/api/types';
 import { useExecutiveReport } from '@/hooks/useExecutiveReport';
@@ -12,13 +14,7 @@ import { computePresetRange, parseReportDate } from './components/reportDateRang
 import { ReportScope } from './components/ReportScope';
 
 type AuditLogEntry = { action: string; created_at: string; reason?: string | null; result?: string; user?: { name: string } | null };
-const Button = ({ children, type = 'button', disabled, onClick, className }: React.PropsWithChildren<{ type?: 'button' | 'submit'; variant?: string; size?: string; disabled?: boolean; onClick?: () => void; className?: string }>) => <AntButton htmlType={type} disabled={disabled} onClick={onClick} className={className}>{children}</AntButton>;
-const Alert = ({ title, children, variant }: React.PropsWithChildren<{ title: string; variant?: string }>) => <AntAlert type={variant === 'warning' ? 'warning' : 'error'} title={title} description={children} showIcon />;
-const LoadingState = ({ label }: { label: string }) => <div role="status"><Spin /> {label}</div>;
-const ErrorState = ({ title, description, action }: { title: string; description: string; action?: React.ReactNode }) => <AntAlert type="error" title={title} description={<>{description}{action}</>} showIcon />;
-const InfoPanel = ({ title, description }: { title: string; description: string; tone?: string }) => <AntAlert type="warning" title={title} description={description} showIcon />;
-const PageHeader = ({ title, description, className }: { title: string; description: string; className?: string }) => <header className={className}><Typography.Title level={1}>{title}</Typography.Title><Typography.Paragraph>{description}</Typography.Paragraph></header>;
-function AuditLogList({ entries }: { entries: AuditLogEntry[] }) { const columns: InstitutionalColumn<AuditLogEntry>[] = [{ field: 'created_at', headerName: 'Fecha', priority: 'secondary' }, { field: 'action', headerName: 'Acción', priority: 'primary', flex: 1 }, { field: 'user', headerName: 'Usuario', priority: 'secondary' }, { field: 'reason', headerName: 'Motivo', priority: 'primary', flex: 1 }, { field: 'result', headerName: 'Resultado', priority: 'tertiary' }]; return <InstitutionalDataGrid ariaLabel="Bitácora de auditoría" rows={entries} columns={columns} getRowId={(entry) => `${entry.created_at}-${entry.action}-${entry.user ?? ''}`} state={entries.length ? 'ready' : 'empty'} density="compact" />; }
+function AuditLogList({ entries }: { entries: AuditLogEntry[] }) { const columns: InstitutionalColumn<AuditLogEntry>[] = [{ field: 'created_at', headerName: 'Fecha', priority: 'secondary' }, { field: 'action', headerName: 'Acción', priority: 'primary', flex: 1 }, { colId: 'user', headerName: 'Usuario', priority: 'secondary', valueGetter: ({ data }) => data?.user?.name ?? 'Sistema' }, { field: 'reason', headerName: 'Motivo', priority: 'primary', flex: 1 }, { field: 'result', headerName: 'Resultado', priority: 'tertiary' }]; return <InstitutionalDataGrid ariaLabel="Bitácora de auditoría" rows={entries} columns={columns} getRowId={(entry) => `${entry.created_at}-${entry.action}-${entry.user?.name ?? ''}`} state={entries.length ? 'ready' : 'empty'} density="compact" />; }
 
 type AuditLogFilters = {
   action: string;
@@ -108,11 +104,7 @@ export function ReportsAudit({
 
   if (!canViewManagerial) {
     return (
-      <InfoPanel
-        tone="warning"
-        title="Sin permisos para auditoria"
-        description="Su usuario no tiene permisos para consultar el registro de auditoria."
-      />
+      <Alert type="warning" showIcon title="Sin permisos para auditoría" description="Su usuario no tiene permisos para consultar el registro de auditoría." />
     );
   }
 
@@ -160,7 +152,7 @@ export function ReportsAudit({
       {summary ? <AuditSummaryPanel report={summary} /> : null}
 
       {!summary && summaryLoading ? (
-        <LoadingState label="Cargando resumen de auditoria..." />
+        <div role="status" aria-label="Cargando resumen de auditoría..."><Spin /> Cargando resumen de auditoría...</div>
       ) : null}
 
       {operationsReport ? <OperationsSnapshot report={operationsReport} /> : null}
@@ -173,10 +165,7 @@ export function ReportsAudit({
         className="border border-operational-border bg-operational-surface p-5"
       >
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="space-y-1">
-            <label htmlFor="audit-action" className="text-xs font-semibold text-muted-foreground">
-              Acción
-            </label>
+          <Form.Item label="Acción" htmlFor="audit-action" className="mb-0">
             <div className="relative">
               <SearchOutlined
                 aria-hidden="true"
@@ -192,36 +181,32 @@ export function ReportsAudit({
                 disabled={auditControlsLocked}
               />
             </div>
-          </div>
-          <div className="space-y-1">
-            <label htmlFor="audit-from" className="text-xs font-semibold text-muted-foreground">
-              Desde
-            </label>
-            <Input
+          </Form.Item>
+          <Form.Item label="Desde" htmlFor="audit-from" className="mb-0">
+            <DatePicker
               id="audit-from"
-              type="date"
-              value={draft.from}
-              onChange={(event) => setDraft((current) => ({ ...current, from: event.target.value }))}
+              aria-label="Desde"
+              value={draft.from ? dayjs(draft.from) : null}
+              format="YYYY-MM-DD"
+              onChange={(_, value) => setDraft((current) => ({ ...current, from: String(value) }))}
               disabled={auditControlsLocked}
             />
-          </div>
-          <div className="space-y-1">
-            <label htmlFor="audit-to" className="text-xs font-semibold text-muted-foreground">
-              Hasta
-            </label>
-            <Input
+          </Form.Item>
+          <Form.Item label="Hasta" htmlFor="audit-to" className="mb-0">
+            <DatePicker
               id="audit-to"
-              type="date"
-              value={draft.to}
-              onChange={(event) => setDraft((current) => ({ ...current, to: event.target.value }))}
+              aria-label="Hasta"
+              value={draft.to ? dayjs(draft.to) : null}
+              format="YYYY-MM-DD"
+              onChange={(_, value) => setDraft((current) => ({ ...current, to: String(value) }))}
               disabled={auditControlsLocked}
             />
-          </div>
+          </Form.Item>
           <div className="flex items-end gap-2">
-            <Button type="submit" className="flex-1" disabled={auditControlsLocked}>
+            <Button htmlType="submit" type="primary" className="flex-1" disabled={auditControlsLocked}>
               Buscar
             </Button>
-            <Button type="button" variant="secondary" onClick={handleReset} disabled={auditControlsLocked}>
+            <Button htmlType="button" onClick={handleReset} disabled={auditControlsLocked}>
               Limpiar
             </Button>
           </div>
@@ -229,24 +214,23 @@ export function ReportsAudit({
       </form>
 
       {rangeError ? (
-        <Alert variant="warning" title="Rango de auditoria no valido">
-          {rangeError}
-        </Alert>
+        <Alert type="warning" showIcon title="Rango de auditoría no válido" description={rangeError} />
       ) : null}
 
       {isLoading ? (
-        <LoadingState label="Cargando bitacora de auditoria..." />
+        <div role="status" aria-label="Cargando bitácora de auditoría..."><Spin /> Cargando bitácora de auditoría...</div>
       ) : null}
 
       {isError ? (
-        <ErrorState
-          title="No se pudo cargar la auditoria"
-          description="Verifique la conexion local o sus permisos."
-          action={
-            <Button type="button" variant="secondary" onClick={() => void refetch()}>
+        <Alert
+          type="error"
+          showIcon
+          title="No se pudo cargar la auditoría"
+          description={<>Verifique la conexión local o sus permisos.
+            <Button htmlType="button" onClick={() => void refetch()}>
               Reintentar
             </Button>
-          }
+          </>}
         />
       ) : null}
 
@@ -269,18 +253,16 @@ export function ReportsAudit({
           {data.meta.total > data.meta.per_page && (
             <div className="mt-3 flex items-center justify-between">
               <Button
-                type="button"
-                variant="secondary"
-                size="sm"
+                htmlType="button"
+                size="small"
                 disabled={applied.page <= 1}
                 onClick={() => applyAuditFilters({ ...applied, page: applied.page - 1 })}
               >
                 Anterior
               </Button>
               <Button
-                type="button"
-                variant="secondary"
-                size="sm"
+                htmlType="button"
+                size="small"
                 disabled={applied.page * data.meta.per_page >= data.meta.total}
                 onClick={() => applyAuditFilters({ ...applied, page: applied.page + 1 })}
               >

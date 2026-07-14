@@ -1,156 +1,18 @@
-import { finiteNumber, formatLempirasUI } from '@/lib/moneyCents';
-import { ChartCard } from '@/components/shared';
-import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
+import { Typography } from 'antd';
+import { InstitutionalChart, formatHnl } from '@/design-system/echarts';
+import { InstitutionalDataGrid, type InstitutionalColumn } from '@/design-system/ag-grid';
+import { finiteNumber } from '@/lib/moneyCents';
 import type { ExecutiveReport } from '@/lib/api';
 
-type PaymentMethodPanelProps = {
-  report: ExecutiveReport;
-};
-
-const METHOD_COLORS: Record<string, string> = {
-  cash: 'var(--color-success)',
-  transfer: 'var(--color-info)',
-  card: 'var(--color-secondary)',
-  other: 'var(--color-warning)',
-};
-
-type PaymentMethod = ExecutiveReport['payment_methods'][number];
-type PaymentMethodRow = {
-  amount: string | number;
-  count: number;
-  isTotal?: boolean;
-  key: string;
-  label: string;
-  method: PaymentMethod['method'] | 'total';
-  percentage: number;
-};
-
-function safePaymentCount(value: number | string | null | undefined): number {
-  return Math.max(0, Math.trunc(finiteNumber(value)));
-}
-
-function safePaymentPercentage(value: number | string | null | undefined): number {
-  return Math.max(0, Math.min(100, finiteNumber(value)));
-}
-
-const paymentMethodColumns: Array<DataTableColumn<PaymentMethodRow>> = [
-  {
-    key: 'method',
-    header: 'Metodo',
-    render: (row) => (
-      <span className="flex items-center gap-2">
-        {!row.isTotal ? (
-          <span
-            className="inline-block size-2 rounded-sm"
-            style={{ background: METHOD_COLORS[row.method] ?? 'var(--color-muted-foreground)' }}
-            aria-hidden="true"
-          />
-        ) : null}
-        <span className={row.isTotal ? 'font-semibold' : undefined}>{row.label}</span>
-      </span>
-    ),
-  },
-  {
-    key: 'amount',
-    header: 'Monto',
-    numeric: true,
-    cellClassName: 'font-mono tabular-nums',
-    render: (row) => formatLempirasUI(row.amount),
-  },
-  {
-    key: 'count',
-    header: 'Pagos',
-    numeric: true,
-    render: (row) => row.count,
-  },
-  {
-    key: 'percentage',
-    header: '% del total',
-    numeric: true,
-    render: (row) => `${row.percentage.toFixed(2)}%`,
-  },
-];
+type PaymentMethodPanelProps = { report: ExecutiveReport };
+type Row = { key: string; label: string; amount: number; count: number; percentage: number };
+const tooltipMoney = (value: unknown) => formatHnl(Number(value));
+const columns: InstitutionalColumn<Row>[] = [{ field: 'label', headerName: 'Método', priority: 'primary', flex: 1 }, { field: 'amount', headerName: 'Monto', priority: 'primary', valueFormatter: ({ value }) => formatHnl(Number(value)) }, { field: 'count', headerName: 'Pagos', priority: 'secondary' }, { field: 'percentage', headerName: '% del total', priority: 'secondary', valueFormatter: ({ value }) => `${Number(value).toFixed(2)}%` }];
 
 export function PaymentMethodPanel({ report }: PaymentMethodPanelProps) {
-  const totalCollectedCents = report.summary.collected_total_cents;
-  const normalizedMethods = report.payment_methods.map((method) => ({
-    ...method,
-    count: safePaymentCount(method.count),
-    percentage: safePaymentPercentage(method.percentage),
-  }));
-  const totalPaymentCount = normalizedMethods.reduce((acc, method) => acc + method.count, 0);
-  const paymentMethodRows: PaymentMethodRow[] =
-    normalizedMethods.length > 0
-      ? [
-          ...normalizedMethods.map((method) => ({
-            amount: method.amount,
-            count: method.count,
-            key: method.method,
-            label: method.label,
-            method: method.method,
-            percentage: method.percentage,
-          })),
-          {
-            amount: totalCollectedCents / 100,
-            count: totalPaymentCount,
-            isTotal: true,
-            key: 'total',
-            label: 'Total',
-            method: 'total',
-            percentage: 100,
-          },
-        ]
-      : [];
-
-  return (
-    <ChartCard
-      title="Recaudacion por metodo de pago"
-      description="Cuanto se cobro por efectivo, transferencia, tarjeta y otros metodos."
-      caption="Las barras muestran participacion relativa; la tabla contiene los valores exactos."
-    >
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] xl:items-start">
-          <div className="rounded-xl border border-operational-border bg-operational-panel/55 p-5">
-            <p className="text-sm font-semibold text-foreground">Participacion por metodo</p>
-            {normalizedMethods.length > 0 ? (
-              <div className="mt-4 space-y-4" role="list" aria-label="Participacion por metodo de pago">
-                {normalizedMethods.map((method) => (
-                  <div key={method.method} role="listitem" className="space-y-1.5">
-                    <div className="flex items-center justify-between gap-3 text-sm">
-                      <span className="font-medium text-foreground">
-                        {method.label} - {method.percentage.toFixed(2)}%
-                      </span>
-                    </div>
-                    <div className="h-3 overflow-hidden rounded-full bg-muted" aria-hidden="true">
-                      <div
-                        className="h-full rounded-full"
-                        style={{
-                          width: `${method.percentage}%`,
-                          background: METHOD_COLORS[method.method] ?? 'var(--color-muted-foreground)',
-                        }}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
-                      <span>{method.count} pago{method.count === 1 ? '' : 's'}</span>
-                      <span className="font-mono tabular-nums">{formatLempirasUI(method.amount)}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="mt-3 text-sm text-muted-foreground">No hay pagos publicados en el periodo seleccionado.</p>
-            )}
-          </div>
-          <DataTable
-            caption="Recaudacion por metodo de pago."
-            columns={paymentMethodColumns}
-            containerLabel="Metodos de pago"
-            emptyDescription="Los cobros por metodo apareceran cuando existan pagos publicados en el periodo."
-            emptyTitle="Sin metodos de pago"
-            getRowClassName={(row) => (row.isTotal ? 'border-t-2 border-border bg-muted/40 font-semibold' : undefined)}
-            getRowKey={(row) => row.key}
-            rows={paymentMethodRows}
-          />
-        </div>
-    </ChartCard>
-  );
+  const methods = report.payment_methods.map((method) => ({ key: method.method, label: method.label, amount: finiteNumber(method.amount), count: Math.max(0, Math.trunc(finiteNumber(method.count))), percentage: Math.max(0, Math.min(100, finiteNumber(method.percentage))) }));
+  const rows: Row[] = methods.length ? [...methods, { key: 'total', label: 'Total', amount: report.summary.collected_total_cents / 100, count: methods.reduce((sum, item) => sum + item.count, 0), percentage: 100 }] : [];
+  const table = <table><caption>Recaudación por método de pago</caption><thead><tr><th>Método</th><th>Monto</th><th>Pagos</th><th>Porcentaje</th></tr></thead><tbody>{rows.map((row) => <tr key={row.key}><td>{row.label}</td><td>{formatHnl(row.amount)}</td><td>{row.count}</td><td>{row.percentage.toFixed(2)}%</td></tr>)}</tbody></table>;
+  const option = { tooltip: { trigger: 'axis', valueFormatter: tooltipMoney }, grid: { left: 100, right: 24, top: 24, bottom: 32 }, xAxis: { type: 'value' }, yAxis: { type: 'category', data: methods.map((item) => item.label) }, series: [{ type: 'bar', name: 'Recaudado', data: methods.map((item) => item.amount) }] };
+  return <section aria-labelledby="payment-method-title" className="border border-slate-300 p-4"><Typography.Title id="payment-method-title" level={3}>Recaudación por método de pago</Typography.Title><Typography.Paragraph>Cuánto se cobró por efectivo, transferencia, tarjeta y otros métodos.</Typography.Paragraph><InstitutionalChart ariaLabel="Participación por método de pago" summary={`${methods.length} métodos con pagos publicados.`} alternativeTable={table} state={methods.length ? 'ready' : 'empty'} option={option} /><InstitutionalDataGrid ariaLabel="Métodos de pago" rows={rows} columns={columns} getRowId={(row) => row.key} state={rows.length ? 'ready' : 'empty'} density="compact" gridOptions={{ pagination: false }} /></section>;
 }

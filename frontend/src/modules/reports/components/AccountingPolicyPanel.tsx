@@ -1,6 +1,5 @@
-import { BookOpenCheck } from 'lucide-react';
-import { Alert } from '../../../components/ui/alert';
-import { Card, CardContent } from '../../../components/ui/card';
+import { BookOutlined } from '@ant-design/icons';
+import { Alert, Descriptions, Typography } from 'antd';
 import type { ExecutiveReport } from '../../../lib/api/types';
 
 type AccountingPolicyPanelProps = {
@@ -17,29 +16,35 @@ export function AccountingPolicyPanel({ policy }: AccountingPolicyPanelProps) {
   };
 
   return (
-    <Card className="border-operational-border bg-operational-surface">
-      <CardContent className="grid gap-4 p-4 sm:p-5">
+    <section className="grid gap-4 border border-operational-border bg-operational-surface p-4 sm:p-5" aria-labelledby="accounting-policy-title">
         <div className="flex items-start gap-3">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded bg-muted text-secondary ring-1 ring-border">
-            <BookOpenCheck aria-hidden="true" className="size-5" />
+          <span className="flex size-11 shrink-0 items-center justify-center bg-accent text-secondary ring-1 ring-border">
+            <BookOutlined aria-hidden="true" />
           </span>
           <div>
-            <h2 className="text-lg font-semibold text-foreground">Criterio contable operativo</h2>
+            <Typography.Title id="accounting-policy-title" level={2}>Criterio contable operativo</Typography.Title>
             <p className="mt-1 text-sm text-muted-foreground">
               Este reporte controla facturacion, cobros y caja; no sustituye contabilidad financiera de partida doble.
             </p>
           </div>
         </div>
 
-        <dl className="grid gap-3 md:grid-cols-2">
-          <Definition label="Facturado" value={effectivePolicy.billed_definition} />
-          <Definition label="Cobrado" value={effectivePolicy.collected_definition} />
-        </dl>
+        <Descriptions
+          bordered
+          column={{ xs: 1, md: 2 }}
+          items={[
+            { key: 'billed', label: 'Facturado', children: effectivePolicy.billed_definition },
+            { key: 'collected', label: 'Cobrado', children: effectivePolicy.collected_definition },
+          ]}
+        />
 
         {effectivePolicy.exclusions_already_applied ? (
-          <Alert variant="default" title="Anulaciones y reversos son datos de control">
-            Ya estan excluidos de los totales activos y no se restan otra vez.
-          </Alert>
+          <Alert
+            type="info"
+            showIcon
+            title="Anulaciones y reversos son datos de control"
+            description="Ya están excluidos de los totales activos y no se restan otra vez."
+          />
         ) : null}
 
         {!effectivePolicy.expenses_supported ? (
@@ -47,16 +52,6 @@ export function AccountingPolicyPanel({ policy }: AccountingPolicyPanelProps) {
             Egresos no estan modelados en esta version y no se presentan como un valor cero.
           </p>
         ) : null}
-      </CardContent>
-    </Card>
-  );
-}
-
-function Definition({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-md border border-border bg-card/70 p-3">
-      <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</dt>
-      <dd className="mt-1 text-sm leading-relaxed text-foreground">{value}</dd>
-    </div>
+    </section>
   );
 }

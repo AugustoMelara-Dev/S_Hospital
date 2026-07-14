@@ -1,9 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Alert } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { EmptyState, ErrorState, LoadingState } from '@/components/ui/states';
-import { notify } from '@/design-system/primitives/Toaster';
+import { Alert, Button, Empty, message, Spin, Typography } from 'antd';
 import {
   type ExecutiveReportFilters as ExecutiveReportFilterState,
   apiClient,
@@ -21,6 +18,8 @@ import { ExecutiveReportFilters } from './components/ExecutiveReportFilters';
 import { computePresetRange, parseReportDate, type PresetKey } from './components/reportDateRanges';
 import { AccountingPolicyPanel } from '@/modules/reports/components/AccountingPolicyPanel';
 import { ReportScope } from './components/ReportScope';
+
+const notify = { success: (text: string) => void message.success(text), error: (text: string) => void message.error(text), warning: (text: string) => void message.warning(text) };
 
 type ReportsExecutiveProps = {
   canExport: boolean;
@@ -74,10 +73,7 @@ export function ReportsExecutive({
 
   if (!canViewManagerial) {
     return (
-      <EmptyState
-        title="Reporte ejecutivo no disponible"
-        description="Su usuario no tiene permiso para consultar el reporte ejecutivo. Solicite a un supervisor el permiso reports.managerial.view."
-      />
+      <Empty description={<><Typography.Title level={3}>Reporte ejecutivo no disponible</Typography.Title><Typography.Text>Su usuario no tiene permiso para consultar el reporte ejecutivo. Solicite a un supervisor el permiso reports.managerial.view.</Typography.Text></>} />
     );
   }
 
@@ -200,30 +196,28 @@ export function ReportsExecutive({
       ) : null}
 
       {executiveRangeError ? (
-        <Alert variant="warning" title="Rango ejecutivo no valido">
-          {executiveRangeError}
-        </Alert>
+        <Alert type="warning" showIcon title="Rango ejecutivo no válido" description={executiveRangeError} />
       ) : null}
 
       {isError ? (
-        <ErrorState
+        <Alert
+          type="error"
+          showIcon
           title="No se pudo cargar el reporte ejecutivo"
-          description={userSafeErrorMessage(queryError, 'No se pudo cargar la informacion. Revise la conexion local y vuelva a intentar.')}
-          action={
+          description={<>{userSafeErrorMessage(queryError, 'No se pudo cargar la información. Revise la conexión local y vuelva a intentar.')}
             <Button
-              type="button"
+              htmlType="button"
               onClick={handleRefresh}
-              size="lg"
-              variant="secondary"
+              size="large"
             >
               Reintentar
             </Button>
-          }
+          </>}
         />
       ) : null}
 
       {isFetching && !report ? (
-        <LoadingState label="Cargando reporte ejecutivo..." />
+        <div role="status" aria-label="Cargando reporte ejecutivo..."><Spin /> Cargando reporte ejecutivo...</div>
       ) : null}
 
       {report ? (

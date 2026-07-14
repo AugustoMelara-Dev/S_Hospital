@@ -1,5 +1,6 @@
-import { ArrowDownRight, ArrowUpRight, Minus } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { ArrowDownOutlined as ArrowDownRight, ArrowUpOutlined as ArrowUpRight, MinusOutlined as Minus } from '@ant-design/icons';
+import { Tag } from 'antd';
+const Badge = ({ children }: React.PropsWithChildren<{ variant?: string }>) => <Tag>{children}</Tag>;
 import { formatLempirasUI } from '@/lib/moneyCents';
 import { cn } from '@/lib/utils';
 import type { ExecutiveReport } from '@/lib/api';
@@ -179,11 +180,11 @@ export function ExecutiveSummary({ report }: ExecutiveSummaryProps) {
   return (
     <section
       aria-labelledby="executive-summary-title"
-      className="flex flex-col gap-5 overflow-hidden rounded-2xl border border-operational-border bg-operational-surface p-5 shadow-operational sm:p-6"
+      className="flex flex-col gap-5 overflow-hidden border border-operational-border bg-operational-surface p-5 sm:p-6"
     >
-      <header className="-mx-5 -mt-5 flex flex-col gap-3 border-b border-white/10 bg-[#0c2733] p-5 text-white sm:-mx-6 sm:-mt-6 sm:p-6 lg:flex-row lg:items-end lg:justify-between">
+      <header className="-mx-5 -mt-5 flex flex-col gap-3 border-b border-blue-900 bg-blue-700 p-5 text-white sm:-mx-6 sm:-mt-6 sm:p-6 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">
-        <p id="executive-summary-title" className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#80dfd0]">
+        <p id="executive-summary-title" className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground">
           Resumen ejecutivo
         </p>
         <h2 className="text-lg font-semibold text-white">
@@ -194,21 +195,21 @@ export function ExecutiveSummary({ report }: ExecutiveSummaryProps) {
         </p>
         </div>
         <dl className="grid grid-cols-3 gap-2 text-right text-xs sm:min-w-80">
-          <div className="rounded-md border border-operational-border bg-operational-panel px-3 py-2">
+          <div className="border border-operational-border bg-white/10 px-3 py-2">
             <dt className="text-muted-foreground">Pagadas</dt>
             <dd className="mt-1 font-semibold tabular-nums text-foreground">{report.summary.paid_count}</dd>
           </div>
-          <div className="rounded-md border border-operational-border bg-operational-panel px-3 py-2">
+          <div className="border border-operational-border bg-white/10 px-3 py-2">
             <dt className="text-muted-foreground">Parciales</dt>
             <dd className="mt-1 font-semibold tabular-nums text-foreground">{report.summary.partial_count}</dd>
           </div>
-          <div className="rounded-md border border-operational-border bg-operational-panel px-3 py-2">
+          <div className="border border-operational-border bg-white/10 px-3 py-2">
             <dt className="text-muted-foreground">Anuladas</dt>
             <dd className="mt-1 font-semibold tabular-nums text-foreground">{report.summary.voided_count}</dd>
           </div>
         </dl>
       </header>
-      <div className="grid gap-3 rounded-md border border-operational-border bg-operational-panel px-4 py-3 text-sm sm:grid-cols-3">
+      <div className="grid gap-3 border border-operational-border bg-muted/40 px-4 py-4 text-sm sm:grid-cols-3">
         <p className="font-semibold text-foreground">{collectionCoverage(report)}</p>
         <p className="text-muted-foreground">Pendiente: {formatLempirasUI(report.summary.pending_total)}</p>
         <p className="text-muted-foreground">
@@ -227,7 +228,7 @@ export function ExecutiveSummary({ report }: ExecutiveSummaryProps) {
             <article
               key={spec.key}
               className={cn(
-                'flex min-h-36 flex-col gap-1.5 rounded-md border border-operational-border bg-operational-panel p-4 shadow-sm transition-colors hover:border-hospital-primary/35',
+                'flex min-h-36 flex-col gap-1.5 border border-operational-border bg-muted/40 p-4 transition-colors hover:border-hospital-primary/35',
                 spec.key === 'billed_total' || spec.key === 'collected_total' ? 'lg:col-span-3' : 'lg:col-span-2',
                 TONE_BORDER[spec.tone],
               )}

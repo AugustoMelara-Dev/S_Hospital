@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ExecutiveReportFilters } from './ExecutiveReportFilters';
+import { PRESET_LABELS } from './reportDateRanges';
 
 describe('ExecutiveReportFilters', () => {
   afterEach(() => {
@@ -48,7 +49,8 @@ describe('ExecutiveReportFilters', () => {
       />,
     );
 
-    fireEvent.change(screen.getByLabelText(/periodo rapido/i), { target: { value: 'last7' } });
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: /periodo rápido/i }));
+    fireEvent.click(screen.getByText(PRESET_LABELS.last7));
 
     expect(onPresetChange).toHaveBeenCalledWith('last7');
     expect(onChange).toHaveBeenCalledWith({
@@ -94,8 +96,8 @@ describe('ExecutiveReportFilters', () => {
       />,
     );
 
-    expect(screen.getByText(/hasta 92 dias/i)).toBeInTheDocument();
-    expect(screen.getByText(/aplique el periodo antes de exportar/i)).toBeInTheDocument();
+    expect(screen.getByText(/hasta 92 días/i)).toBeInTheDocument();
+    expect(screen.getByText(/aplique el per.odo antes de exportar/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /pdf ejecutivo/i })).toBeDisabled();
   });
 });

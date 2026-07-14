@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('@/design-system/ag-grid', () => ({ InstitutionalDataGrid: ({ ariaLabel, rows }: { ariaLabel: string; rows: Array<{ action?: string; reason?: string | null; result?: string }> }) => <section aria-label={ariaLabel}>{rows.length ? rows.map((row, index) => <div key={index}>{row.action} {row.reason} {row.result === 'error' ? 'Con error' : row.result}</div>) : <div role="status">Sin entradas</div>}</section> }));
 import { ReportsAudit } from './ReportsAudit';
@@ -99,7 +100,7 @@ describe('ReportsAudit', () => {
   });
 
   it('restores audit filters from the URL and keeps the applied scope there', async () => {
-    renderView({}, '/reports/auditáction=anulacion&from=2026-07-01&to=2026-07-10&page=2');
+    renderView({}, '/reports/audit?action=anulacion&from=2026-07-01&to=2026-07-10&page=2');
 
     expect(screen.getByLabelText(/^acci.n$/i)).toHaveValue('anulacion');
     expect(screen.getByLabelText(/^desde$/i)).toHaveValue('2026-07-01');
@@ -113,7 +114,7 @@ describe('ReportsAudit', () => {
       }));
     });
     expect(screen.getByLabelText(/url actual/i)).toHaveTextContent(
-      '/reports/auditáction=anulacion&from=2026-07-01&to=2026-07-10&page=2',
+      '/reports/audit?action=anulacion&from=2026-07-01&to=2026-07-10&page=2',
     );
     expect(screen.getByRole('region', { name: /alcance del reporte de auditoria/i })).toHaveTextContent(
       /1 de julio de 2026.*10 de julio de 2026/i,
@@ -161,7 +162,7 @@ describe('ReportsAudit', () => {
 
     renderView();
 
-    expect(await screen.findByText(/cargando bitacora de auditoria/i)).toBeInTheDocument();
+    expect(await screen.findByRole('status', { name: /cargando bit.cora de auditor.a/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/^acci.n$/i)).toBeDisabled();
     expect(screen.getByLabelText(/^desde$/i)).toBeDisabled();
     expect(screen.getByLabelText(/^hasta$/i)).toBeDisabled();
@@ -213,9 +214,9 @@ describe('ReportsAudit', () => {
     });
     getAuditLogsMock.mockClear();
 
-    fireEvent.change(screen.getByLabelText(/^desde$/i), { target: { value: '2026-07-10' } });
-    fireEvent.change(screen.getByLabelText(/^hasta$/i), { target: { value: '2026-07-01' } });
-    fireEvent.click(screen.getByRole('button', { name: /buscar/i }));
+    await selectDate(/^desde$/i, '2026-07-10');
+    await selectDate(/^hasta$/i, '2026-07-01');
+    await userEvent.setup().click(screen.getByRole('button', { name: /buscar/i }));
 
     expect(getAuditLogsMock).not.toHaveBeenCalled();
     expect(screen.getByText(/fecha de inicio debe ser anterior o igual/i)).toBeInTheDocument();
@@ -326,3 +327,10 @@ describe('ReportsAudit', () => {
     expect(document.body.textContent).not.toMatch(/hospital-backup|checksum|sha256|98765/);
   });
 });
+
+async function selectDate(label: RegExp, date: string) {
+  const user = userEvent.setup();
+  await user.click(screen.getByLabelText(label));
+  const matchingDates = await screen.findAllByTitle(date);
+  await user.click(matchingDates[matchingDates.length - 1]);
+}

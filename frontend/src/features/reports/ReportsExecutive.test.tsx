@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom';
 import { ReportsExecutive } from './ReportsExecutive';
@@ -10,14 +11,6 @@ const downloadExecutiveExcel = vi.hoisted(() => vi.fn());
 
 vi.mock('@/hooks/useExecutiveReport', () => ({
   useExecutiveReport: useExecutiveReportMock,
-}));
-
-vi.mock('@/design-system/primitives/Toaster', () => ({
-  notify: {
-    error: vi.fn(),
-    success: vi.fn(),
-    warning: vi.fn(),
-  },
 }));
 
 vi.mock('@/lib/download', () => ({
@@ -140,11 +133,11 @@ describe('ReportsExecutive', () => {
       </MemoryRouter>,
     );
 
-    fireEvent.change(screen.getByLabelText(/fin ejecutivo/i), { target: { value: '2026-07-11' } });
+    await selectDate(/fin ejecutivo/i, '2026-07-11');
     fireEvent.click(screen.getByRole('button', { name: /refrescar ejecutivo/i }));
     await waitFor(() => expect(screen.getByLabelText(/url actual/i)).toHaveTextContent('to=2026-07-11'));
 
-    fireEvent.change(screen.getByLabelText(/fin ejecutivo/i), { target: { value: '2026-07-12' } });
+    await selectDate(/fin ejecutivo/i, '2026-07-12');
     fireEvent.click(screen.getByRole('button', { name: /refrescar ejecutivo/i }));
     await waitFor(() => expect(screen.getByLabelText(/url actual/i)).toHaveTextContent('to=2026-07-12'));
 
@@ -158,14 +151,14 @@ describe('ReportsExecutive', () => {
     });
   });
 
-  it('blocks exports while edited dates have not been applied', () => {
+  it('blocks exports while edited dates have not been applied', async () => {
     renderExecutive({}, '/reports/executive?from=2026-07-01&to=2026-07-10');
 
-    fireEvent.change(screen.getByLabelText(/fin ejecutivo/i), { target: { value: '2026-07-11' } });
+    await selectDate(/fin ejecutivo/i, '2026-07-11');
 
     expect(screen.getByRole('button', { name: /pdf ejecutivo/i })).toBeDisabled();
     expect(screen.getByRole('button', { name: /excel ejecutivo/i })).toBeDisabled();
-    expect(screen.getByText(/aplique el periodo antes de exportar/i)).toBeInTheDocument();
+    expect(screen.getByText(/aplique el per.odo antes de exportar/i)).toBeInTheDocument();
     expect(downloadExecutivePdf).not.toHaveBeenCalled();
   });
 
@@ -239,21 +232,23 @@ describe('ReportsExecutive', () => {
   });
 
   it('shows a LAN-safe error message when the executive report fails without detail', () => {
+    const refetch = vi.fn();
     useExecutiveReportMock.mockReturnValue({
       data: null,
       isFetching: false,
       isError: true,
-      refetch: vi.fn(),
+      refetch,
       error: null,
     });
 
     renderExecutive();
 
-    expect(screen.getByText(/revise la conexion local/i)).toBeInTheDocument();
+    expect(screen.getByText(/revise la conexi.n local/i)).toBeInTheDocument();
     expect(screen.queryByText(/error desconocido/i)).not.toBeInTheDocument();
     const retry = screen.getByRole('button', { name: /reintentar/i });
-    expect(retry).toHaveAttribute('data-slot', 'button');
-    expect(retry).toHaveClass('min-h-12');
+    expect(retry).toBeEnabled();
+    fireEvent.click(retry);
+    expect(refetch).toHaveBeenCalledOnce();
   });
 
   it('shows export progress while an executive PDF is being prepared', async () => {
@@ -268,8 +263,14 @@ describe('ReportsExecutive', () => {
     expect(exportingButtons.length).toBeGreaterThan(0);
     exportingButtons.forEach((button) => expect(button).toBeDisabled());
     expect(screen.getByRole('button', { name: /refrescar ejecutivo/i })).toBeDisabled();
-    expect(screen.getByLabelText(/periodo rapido/i)).toBeDisabled();
+    expect(screen.getByLabelText(/per[ií]odo r[aá]pido/i)).toBeDisabled();
     expect(screen.getByLabelText(/inicio ejecutivo/i)).toBeDisabled();
     expect(screen.getByLabelText(/fin ejecutivo/i)).toBeDisabled();
   });
 });
+
+async function selectDate(label: RegExp, date: string) {
+  const user = userEvent.setup();
+  await user.click(screen.getByLabelText(label));
+  await user.click(await screen.findByTitle(date));
+}

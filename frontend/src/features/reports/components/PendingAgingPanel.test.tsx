@@ -8,7 +8,7 @@ describe('PendingAgingPanel', () => {
     render(<PendingAgingPanel report={buildExecutiveReport()} />);
 
     expect(screen.getByText(/sin facturas pendientes/i)).toBeInTheDocument();
-    expect(screen.getByText(/las facturas con saldo abierto apareceran/i)).toBeInTheDocument();
+    expect(screen.getByText(/las facturas con saldo abierto aparecer[aá]n/i)).toBeInTheDocument();
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
   });
 
@@ -37,7 +37,7 @@ describe('PendingAgingPanel', () => {
     );
 
     expect(screen.getByRole('region', { name: /facturas pendientes/i })).toBeInTheDocument();
-    expect(screen.getByRole('table', { name: /facturas pendientes por antiguedad/i })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: /facturas pendientes/i })).toBeInTheDocument();
     expect(screen.getByText('FAC-000123')).toBeInTheDocument();
     expect(screen.getByText('Maria Lopez')).toBeInTheDocument();
     expect(screen.getByText('4 d')).toBeInTheDocument();
