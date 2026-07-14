@@ -8,7 +8,7 @@ import {
   type InvoiceActionPermissions,
 } from '../../../modules/invoices/application/invoiceActionPolicy';
 
-type InvoiceDetailSheetProps = {
+type InvoiceDetailDrawerProps = {
   error: string;
   invoice: Invoice | null;
   loading: boolean;
@@ -32,7 +32,7 @@ const paymentLabels = {
   other: 'Otro',
 } as const;
 
-export function InvoiceDetailSheet({
+export function InvoiceDetailDrawer({
   error,
   invoice,
   loading,
@@ -47,7 +47,7 @@ export function InvoiceDetailSheet({
   onReprint,
   open,
   permissions,
-}: InvoiceDetailSheetProps) {
+}: InvoiceDetailDrawerProps) {
   const actions = invoice && permissions ? invoiceActionPolicy(invoice, permissions) : null;
   const institutionalReceipt = invoice ? getIssuedInstitutionalReceipt(invoice) : null;
 

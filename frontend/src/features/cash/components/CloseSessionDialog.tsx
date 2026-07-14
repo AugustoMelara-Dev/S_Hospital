@@ -1,72 +1,10 @@
 import { DownloadOutlined, PrinterOutlined, WarningOutlined } from '@ant-design/icons';
-import { type ReactNode, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Button, Input, Modal } from 'antd';
 import { finiteNumber, formatLempirasUI } from '@/lib/money';
 import { cn } from '@/lib/utils';
 import { formatDateTimeEs } from '@/lib/format/formatDate';
 import { downloadCloseSummaryCsv } from '../cashCloseSummary';
-
-interface AlertDialogContentProps {
-  children: ReactNode;
-  className?: string;
-  printRoot?: boolean;
-}
-
-export function AlertDialogContent({ children, className, printRoot = false }: AlertDialogContentProps) {
-  return <div data-cash-close-print-root={printRoot ? '' : undefined} className={className}>{children}</div>;
-}
-
-interface AlertDialogHeaderProps {
-  children: ReactNode;
-}
-
-export function AlertDialogHeader({ children }: AlertDialogHeaderProps) {
-  return <div className="flex flex-col gap-1">{children}</div>;
-}
-
-interface AlertDialogTitleProps {
-  children: ReactNode;
-}
-
-export function AlertDialogTitle({ children }: AlertDialogTitleProps) {
-  return <h2 className="text-lg font-semibold">{children}</h2>;
-}
-
-interface AlertDialogDescriptionProps {
-  children: ReactNode;
-}
-
-export function AlertDialogDescription({ children }: AlertDialogDescriptionProps) {
-  return <div className="text-sm text-muted-foreground">{children}</div>;
-}
-
-interface AlertDialogFooterProps {
-  children: ReactNode;
-  className?: string;
-}
-
-export function AlertDialogFooter({ children, className }: AlertDialogFooterProps) {
-  return <div className={cn('flex flex-wrap justify-end gap-2', className)}>{children}</div>;
-}
-
-interface AlertDialogCancelProps {
-  children: ReactNode;
-  onClick?: () => void;
-}
-
-export function AlertDialogCancel({ children, onClick }: AlertDialogCancelProps) {
-  return <Button onClick={onClick}>{children}</Button>;
-}
-
-interface AlertDialogActionProps {
-  children: ReactNode;
-  onClick?: () => void;
-  disabled?: boolean;
-}
-
-export function AlertDialogAction({ children, onClick, disabled }: AlertDialogActionProps) {
-  return <Button type="primary" onClick={onClick} disabled={disabled}>{children}</Button>;
-}
 
 interface CloseSessionDialogProps {
   open: boolean;
@@ -301,10 +239,10 @@ export function CloseSessionDialog({
 
   return (
     <Modal open={open} onCancel={() => onOpenChange(false)} footer={null} width={720} destroyOnHidden title="Cierre de caja">
-      <AlertDialogContent printRoot>
-        <AlertDialogHeader>
-          <AlertDialogTitle>¿Cerrar caja?</AlertDialogTitle>
-          <AlertDialogDescription>
+      <div data-cash-close-print-root="">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-lg font-semibold">¿Cerrar caja?</h2>
+          <div className="text-sm text-muted-foreground">
             <div className="mt-3 grid gap-3">
               <h3 className="text-xs font-semibold text-foreground">
                 1. Resumen del turno
@@ -371,8 +309,8 @@ export function CloseSessionDialog({
                 </div>
               </div>
             </div>
-          </AlertDialogDescription>
-        </AlertDialogHeader>
+          </div>
+        </div>
 
         {isDifference && (
           <div className="mt-4 space-y-2">
@@ -401,7 +339,7 @@ export function CloseSessionDialog({
           </p>
         </section>
 
-        <AlertDialogFooter className="print-hidden mt-6">
+        <div className="print-hidden mt-6 flex flex-wrap justify-end gap-2">
           <Button onClick={printCloseSummary} disabled={isSubmitting}>
             <PrinterOutlined aria-hidden="true" />
             Imprimir resumen
@@ -410,11 +348,11 @@ export function CloseSessionDialog({
             <DownloadOutlined aria-hidden="true" />
             Exportar resumen
           </Button>
-          <AlertDialogCancel onClick={() => onOpenChange(false)}>Cancelar</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm} disabled={isSubmitting || hasPendingBalance || missingInstitutionalReceiptCount > 0 || !hasValidDifferenceNote}>
+          <Button onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button type="primary" onClick={onConfirm} disabled={isSubmitting || hasPendingBalance || missingInstitutionalReceiptCount > 0 || !hasValidDifferenceNote}>
             {isSubmitting ? 'Cerrando...' : 'Cerrar caja'}
-          </AlertDialogAction>
-        </AlertDialogFooter>
+          </Button>
+        </div>
 
         {isDifference && !hasValidDifferenceNote && (
           <div id="closing-notes-error" role="alert" className="mt-2 flex items-center gap-2 text-sm text-destructive">
@@ -422,7 +360,7 @@ export function CloseSessionDialog({
             <span>La nota es obligatoria y debe tener al menos 5 caracteres cuando hay diferencia.</span>
           </div>
         )}
-      </AlertDialogContent>
+      </div>
     </Modal>
   );
 }

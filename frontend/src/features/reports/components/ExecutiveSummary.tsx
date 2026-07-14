@@ -1,6 +1,5 @@
 import { ArrowDownOutlined as ArrowDownRight, ArrowUpOutlined as ArrowUpRight, MinusOutlined as Minus } from '@ant-design/icons';
 import { Tag } from 'antd';
-const Badge = ({ children }: React.PropsWithChildren<{ variant?: string }>) => <Tag>{children}</Tag>;
 import { formatLempirasUI } from '@/lib/moneyCents';
 import { cn } from '@/lib/utils';
 import type { ExecutiveReport } from '@/lib/api';
@@ -238,10 +237,10 @@ export function ExecutiveSummary({ report }: ExecutiveSummaryProps) {
                   {spec.label}
                 </p>
                 {deltaView && DeltaIcon ? (
-                  <Badge variant={spec.tone === 'danger' ? 'destructive' : spec.tone === 'warning' ? 'warning' : spec.tone === 'success' ? 'success' : 'secondary'}>
+                  <Tag>
                     <DeltaIcon className="size-3" aria-hidden="true" />
                     {deltaView.label}
-                  </Badge>
+                  </Tag>
                 ) : null}
               </header>
               <p className="text-xl font-bold tabular-nums text-foreground" translate="no">

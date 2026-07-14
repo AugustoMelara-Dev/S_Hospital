@@ -23,7 +23,7 @@ function invoice(overrides: Partial<Invoice> = {}): Invoice {
 }
 
 describe('invoiceActionPolicy', () => {
-  it('offers receipt recovery instead of a fake legacy receipt action', () => {
+  it('offers receipt recovery instead of a non-institutional receipt action', () => {
     expect(invoiceActionPolicy(invoice(), permissions)).toMatchObject({
       generateInstitutionalReceipt: true,
       openReceipt: false,

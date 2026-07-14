@@ -1,4 +1,4 @@
-import { priceCents } from './serviceSheetTypes';
+import { priceCents } from './serviceDrawerTypes';
 
 export type AuditedServiceSource = {
   active: boolean;

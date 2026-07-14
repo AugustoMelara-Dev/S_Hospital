@@ -105,20 +105,6 @@ export type CategoryFormSectionProps = {
   onActiveChange: (checked: boolean) => void;
 };
 
-export type ServiceSheetFooterProps = {
-  cancelLabel: string;
-  isEditing: boolean;
-  isSubmitting: boolean;
-  onCancel: () => void;
-};
-
-export type CategorySheetFooterProps = {
-  cancelLabel: string;
-  isEditing: boolean;
-  isSubmitting: boolean;
-  onCancel: () => void;
-};
-
 export const CATEGORY_FILTER_ALL = 'all';
 export const STATUS_FILTER_ALL = 'all';
 export const STATUS_FILTER_ACTIVE = 'active';

@@ -307,7 +307,7 @@ describe('CloseSessionDialog', () => {
     expect(onConfirm).not.toHaveBeenCalled();
   });
 
-  it('uses opening amount as expected cash fallback for legacy session payloads', () => {
+  it('uses opening amount as expected cash fallback for historical session payloads', () => {
     render(
       <CloseSessionDialog
         open

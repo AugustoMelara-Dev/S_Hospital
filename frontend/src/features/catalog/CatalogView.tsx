@@ -11,8 +11,8 @@ import { CatalogPagination } from './components/CatalogPagination';
 import { CatalogToolbar } from './components/CatalogToolbar';
 import { ServiceCatalogTable } from './components/ServiceCatalogTable';
 import { ServiceStatusSummary } from './components/ServiceStatusSummary';
-import { CategorySheet } from './components/CategorySheet';
-import { ServiceSheet } from './components/ServiceSheet';
+import { CategoryDrawer } from './components/CategoryDrawer';
+import { ServiceDrawer } from './components/ServiceDrawer';
 import { invalidateCatalogQueries } from '@/lib/queryInvalidation';
 import {
   CATALOG_DEBOUNCE_MS,
@@ -170,11 +170,11 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
     updateCatalogUrl({ edit_category: String(category.id), panel: null, service: null });
   }
 
-  function handleServiceSheetOpenChange(open: boolean) {
+  function handleServiceDrawerOpenChange(open: boolean) {
     if (!open) updateCatalogUrl({ service: null, panel: null });
   }
 
-  function handleCategorySheetOpenChange(open: boolean) {
+  function handleCategoryDrawerOpenChange(open: boolean) {
     if (!open) updateCatalogUrl({ panel: null, edit_category: null });
   }
 
@@ -225,7 +225,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
     }
   }, [onStatus, queryClient, refetchCatalogData, servicePendingStatusChange]);
 
-  function normalizeServiceForSheet(service: Service) {
+  function normalizeServiceForDrawer(service: Service) {
     return {
       ...service,
       scan_code: service.scan_code ?? null,
@@ -334,19 +334,19 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
 
       {canManageCatalog ? (
         <>
-          <ServiceSheet
-            open={overlayState.serviceSheetOpen}
-            onOpenChange={handleServiceSheetOpenChange}
-            service={overlayState.editingService ? normalizeServiceForSheet(overlayState.editingService) : null}
+          <ServiceDrawer
+            open={overlayState.serviceDrawerOpen}
+            onOpenChange={handleServiceDrawerOpenChange}
+            service={overlayState.editingService ? normalizeServiceForDrawer(overlayState.editingService) : null}
             categories={categories}
             areas={areas}
             scannerEnabled={scannerEnabled}
             onSuccess={handleServiceSuccess}
           />
 
-          <CategorySheet
-            open={overlayState.categorySheetOpen}
-            onOpenChange={handleCategorySheetOpenChange}
+          <CategoryDrawer
+            open={overlayState.categoryDrawerOpen}
+            onOpenChange={handleCategoryDrawerOpenChange}
             category={overlayState.editingCategory}
             onSuccess={handleCategorySuccess}
           />
@@ -390,8 +390,8 @@ export function catalogOverlayState(
   return {
     editingCategory,
     editingService,
-    categorySheetOpen: requestedPanel === 'new-category' || editingCategory !== null,
-    serviceSheetOpen: requestedPanel === 'new-service' || editingService !== null,
+    categoryDrawerOpen: requestedPanel === 'new-category' || editingCategory !== null,
+    serviceDrawerOpen: requestedPanel === 'new-service' || editingService !== null,
   };
 }
 
@@ -430,7 +430,7 @@ function setOrDelete(params: URLSearchParams, key: string, value: string | null)
 }
 
 function StatGrid({ items, className }: { className?: string; items: Array<{ label: string; value: number; helper?: string; tone?: string }> }) {
-  return <Row gutter={[16, 16]} className={className}>{items.map((item) => <Col xs={24} sm={12} key={item.label}><div className="border border-slate-300 p-3"><Statistic title={item.label} value={item.value} /><Typography.Text type="secondary">{item.helper}</Typography.Text></div></Col>)}</Row>;
+  return <Row gutter={[16, 16]} className={className}>{items.map((item) => <Col xs={24} sm={12} key={item.label}><div className="border border-border p-3"><Statistic title={item.label} value={item.value} /><Typography.Text type="secondary">{item.helper}</Typography.Text></div></Col>)}</Row>;
 }
 
 export function ConfirmDialog({ open, title, children, confirmLabel, danger, onCancel, onConfirm, reasonHelpText, requireReasonMinLength = 0 }: {

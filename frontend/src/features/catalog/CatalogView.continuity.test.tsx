@@ -13,8 +13,8 @@ describe('CatalogView URL continuity', () => {
     const state = catalogOverlayState(params, [erythropoietinFixture()], categories);
 
     expect(state).toMatchObject({
-      serviceSheetOpen: true,
-      categorySheetOpen: false,
+      serviceDrawerOpen: true,
+      categoryDrawerOpen: false,
       editingService: { id: 4, name: 'Eritropoyetina' },
       editingCategory: null,
     });
@@ -26,20 +26,20 @@ describe('CatalogView URL continuity', () => {
       new URLSearchParams('q=eritropoyetina&panel=new-service'),
       [erythropoietinFixture()],
       categories,
-    )).toMatchObject({ serviceSheetOpen: true, editingService: null });
+    )).toMatchObject({ serviceDrawerOpen: true, editingService: null });
 
     expect(catalogOverlayState(
       new URLSearchParams('q=eritropoyetina&panel=new-category'),
       [erythropoietinFixture()],
       categories,
-    )).toMatchObject({ categorySheetOpen: true, editingCategory: null });
+    )).toMatchObject({ categoryDrawerOpen: true, editingCategory: null });
 
     expect(catalogOverlayState(
       new URLSearchParams('q=eritropoyetina&edit_category=2'),
       [erythropoietinFixture()],
       categories,
     )).toMatchObject({
-      categorySheetOpen: true,
+      categoryDrawerOpen: true,
       editingCategory: { id: 2, name: 'Medicamentos' },
     });
   });

@@ -178,26 +178,26 @@ export function InvoiceCart({
         )}
       </div>
 
-      <div className="sticky bottom-0 mt-5 border-t border-operational-border bg-operational-surface/95 pt-5 backdrop-blur">
-        <dl className="mb-4 border border-primary/15 bg-primary p-5 text-white">
+      <div className="sticky bottom-0 mt-5 border-t border-operational-border bg-operational-surface pt-5">
+        <dl className="mb-4 border border-primary/15 bg-primary p-5 text-primary-foreground">
           <div className="mb-3 flex items-center justify-between gap-3">
-            <dt className="flex items-center gap-2 text-sm font-semibold text-white">
+            <dt className="flex items-center gap-2 text-sm font-semibold text-primary-foreground">
               <ReceiptText className="size-4 text-primary-foreground" aria-hidden="true" />
               Resumen de factura
             </dt>
-            <dd className="text-xs text-white/60">{items.length} item{items.length === 1 ? '' : 's'}</dd>
+            <dd className="text-xs text-primary-foreground/60">{items.length} item{items.length === 1 ? '' : 's'}</dd>
           </div>
           <div className="flex justify-between gap-3 text-sm">
-            <dt className="text-white/65">Subtotal:</dt>
+            <dt className="text-primary-foreground/65">Subtotal:</dt>
             <dd className="font-mono tabular-nums">{moneyLabel(preview.subtotal)}</dd>
           </div>
           {taxRate && (
             <div className="mt-2 flex justify-between gap-3 text-sm">
-              <dt className="text-white/65">ISV ({taxRate}%):</dt>
+              <dt className="text-primary-foreground/65">ISV ({taxRate}%):</dt>
               <dd className="font-mono tabular-nums">{moneyLabel(preview.tax)}</dd>
             </div>
           )}
-          <div className="mt-3 flex justify-between gap-3 border-t border-white/15 pt-4">
+          <div className="mt-3 flex justify-between gap-3 border-t border-primary-foreground/15 pt-4">
             <dt className="flex items-center gap-2 text-base font-bold">
               <Banknote className="size-4 text-primary-foreground" aria-hidden="true" />
               Total estimado:

@@ -53,17 +53,17 @@ export function invoiceActionPolicy(
     && permissions.canViewReceipt
     && canOperateReceipt
     && (!printed || permissions.canReprint);
-  const legacyReceiptState = invoice.status === 'paid' || invoice.status === 'partial';
-  const openLegacyReceipt = permissions.canViewReceipt
+  const canUseInvoiceReceiptFallback = invoice.status === 'paid' || invoice.status === 'partial';
+  const openReceiptFallback = permissions.canViewReceipt
     && canOperateReceipt
-    && legacyReceiptState
+    && canUseInvoiceReceiptFallback
     && !receipt
     && !generateInstitutionalReceipt;
-  const reprintLegacyReceipt = legacyReceiptState && !receipt && !generateInstitutionalReceipt;
-  const hasReprintableReceipt = Boolean(receipt) || reprintLegacyReceipt;
+  const reprintReceiptFallback = canUseInvoiceReceiptFallback && !receipt && !generateInstitutionalReceipt;
+  const hasReprintableReceipt = Boolean(receipt) || reprintReceiptFallback;
 
   return {
-    openReceipt: openInstitutionalReceipt || openLegacyReceipt,
+    openReceipt: openInstitutionalReceipt || openReceiptFallback,
     auditedOpen: openInstitutionalReceipt && printed,
     downloadInstitutionalReceipt: openInstitutionalReceipt && !printed,
     generateInstitutionalReceipt,

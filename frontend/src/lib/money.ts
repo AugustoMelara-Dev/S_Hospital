@@ -59,7 +59,7 @@ export function formatLempirasUI(value: number | string | null | undefined, frac
 }
 
 /**
- * Backwards-compatible alias. Older callers still reference
+ * Stable monetary parser used by callers that still reference
  * `formatLempiras`; treat it as the receipt format to keep the
  * preview / institutional surfaces intact.
  *

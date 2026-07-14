@@ -1,6 +1,6 @@
 import { type FormEvent, type ReactNode, useEffect, useRef, useState } from 'react';
 import { WarningOutlined } from '@ant-design/icons';
-import { Alert as AntAlert, Button as AntButton, Empty, Modal, Result, Spin } from 'antd';
+import { Alert, Button, Empty, Modal, Result, Spin } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type CashSession, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { payloadScopedIdempotencyKey, resetPayloadScopedIdempotencyKey } from '@/lib/api/idempotency';
@@ -35,19 +35,9 @@ function centsToFloat(cents: number): number {
   return toFloat(cents);
 }
 
-function Button({ children, disabled, onClick, type = 'button', variant }: { children: ReactNode; disabled?: boolean; onClick?: () => void; type?: 'button' | 'submit'; variant?: string }) {
-  return <AntButton htmlType={type} type={variant === 'secondary' ? 'default' : 'primary'} disabled={disabled} onClick={onClick}>{children}</AntButton>;
-}
-function Alert({ children, icon, title, variant }: { children?: ReactNode; icon?: ReactNode; title?: string; variant?: string }) {
-  const type = variant === 'destructive' ? 'error' : variant === 'success' ? 'success' : variant === 'warning' ? 'warning' : 'info';
-  return <AntAlert type={type} showIcon icon={icon} title={title} description={children} />;
-}
 function LoadingState({ label }: { label: string }) { return <div role="status" aria-label={label} className="p-8 text-center"><Spin /><p>{label}</p></div>; }
 function EmptyState({ description, title }: { description: string; title: string }) { return <Empty description={<><strong>{title}</strong><br />{description}</>} />; }
 function ErrorState({ action, description, title }: { action?: ReactNode; description: string; title: string }) { return <Result status="error" title={title} subTitle={description} extra={action} />; }
-function ConfirmDialog({ cancelDisabled, children, confirmDisabled, confirmLabel, onCancel, onConfirm, open, title }: { cancelDisabled?: boolean; children: ReactNode; confirmDisabled?: boolean; confirmLabel: string; onCancel: () => void; onConfirm: () => void; open: boolean; title: string }) {
-  return <Modal open={open} title={title} onCancel={onCancel} confirmLoading={confirmDisabled} cancelButtonProps={{ disabled: cancelDisabled }} okButtonProps={{ disabled: confirmDisabled }} okText={confirmLabel} onOk={onConfirm}>{children}</Modal>;
-}
 
 export function CashBoxView({
   cashSession = null,
@@ -197,7 +187,7 @@ export function CashBoxView({
   const activeSession = session ?? cashSession;
   // Server-computed expected cash is authoritative. The fallback chain
   // (expected_cash_amount -> expected_amount -> opening_amount) is
-  // preserved for legacy backends, but a fresh `expected_cash_amount`
+  // preserved for historical server payloads, but a fresh `expected_cash_amount`
   // from the LAN server is what we trust.
   const expectedCashAmount = activeSession?.expected_cash_amount ?? activeSession?.expected_amount ?? activeSession?.opening_amount ?? '0.00';
   const hasValidClosingAmount = /^\d+(\.\d{1,2})?$/.test(closingAmount.trim());
@@ -308,9 +298,7 @@ export function CashBoxView({
         />
 
         {formAlert ? (
-          <Alert variant="destructive" title="No se pudo completar la operación">
-            {formAlert}
-          </Alert>
+          <Alert type="error" showIcon title="No se pudo completar la operación" description={formAlert} />
         ) : null}
 
         {sessionLoadError ? (
@@ -318,7 +306,7 @@ export function CashBoxView({
             title="No se pudo cargar caja"
             description={sessionLoadError}
             action={(
-              <Button type="button" variant="secondary" onClick={() => void refetch()}>
+              <Button htmlType="button" onClick={() => void refetch()}>
                 Reintentar
               </Button>
             )}
@@ -330,25 +318,19 @@ export function CashBoxView({
         ) : null}
 
         {canRenderOperationalState && isOpen && isOwnSession && canCreateInvoices ? (
-          <Alert variant="success" title="Caja lista para facturar">
-            La caja está abierta. La acción principal para crear y cobrar una factura está disponible en la cabecera.
-          </Alert>
+          <Alert type="success" showIcon title="Caja lista para facturar" description="La caja está abierta. La acción principal para crear y cobrar una factura está disponible en la cabecera." />
         ) : canRenderOperationalState && isOpen && !isOwnSession ? (
-          <Alert variant="warning" title="Caja abierta en supervisión">
-            Esta sesión pertenece a otro cajero. Puede revisar y cerrar según sus permisos, pero no crear facturas desde esta caja.
-          </Alert>
+          <Alert type="warning" showIcon title="Caja abierta en supervisión" description="Esta sesión pertenece a otro cajero. Puede revisar y cerrar según sus permisos, pero no crear facturas desde esta caja." />
         ) : canRenderOperationalState && isOpen ? (
-          <Alert title="Caja abierta en modo consulta">
-            La sesión está activa, pero este usuario no tiene permiso para crear facturas.
-          </Alert>
+          <Alert type="info" showIcon title="Caja abierta en modo consulta" description="La sesión está activa, pero este usuario no tiene permiso para crear facturas." />
         ) : null}
 
         {canRenderOperationalState && isPOSBlocked ? (
-          <Alert variant="warning" icon={<WarningOutlined aria-hidden="true" />}>
+          <Alert type="warning" showIcon icon={<WarningOutlined aria-hidden="true" />} description={(
             <div>
               <strong>Pagos bloqueados.</strong> Abra caja antes de emitir y cobrar facturas.
             </div>
-          </Alert>
+          )} />
         ) : null}
 
         {canRenderOperationalState && !isOpen && closedSummarySession ? (
@@ -423,7 +405,7 @@ export function CashBoxView({
                 title="No se pudieron cargar movimientos"
                 description={movementsLoadError}
                 action={(
-                  <Button type="button" variant="secondary" onClick={() => void refetchMovements()}>
+                  <Button htmlType="button" onClick={() => void refetchMovements()}>
                     Reintentar
                   </Button>
                 )}
@@ -447,9 +429,7 @@ export function CashBoxView({
             onSubmit={handleOpenSession}
           />
         ) : canRenderOperationalState ? (
-          <Alert variant="warning" title="Caja en modo consulta">
-            Este usuario puede ver caja, pero no tiene permiso para abrir una nueva sesión.
-          </Alert>
+          <Alert type="warning" showIcon title="Caja en modo consulta" description="Este usuario puede ver caja, pero no tiene permiso para abrir una nueva sesión." />
         ) : null}
       </div>
 
@@ -472,14 +452,15 @@ export function CashBoxView({
         onConfirm={handleCloseSession}
       />
 
-      <ConfirmDialog
+      <Modal
         open={pendingOpening !== null}
         title="Confirmar apertura de caja"
-        confirmLabel="Abrir caja"
-        confirmDisabled={openSessionMutation.isPending}
-        cancelDisabled={openSessionMutation.isPending}
+        okText="Abrir caja"
+        confirmLoading={openSessionMutation.isPending}
+        okButtonProps={{ disabled: openSessionMutation.isPending }}
+        cancelButtonProps={{ disabled: openSessionMutation.isPending }}
         onCancel={() => setPendingOpening(null)}
-        onConfirm={confirmOpenSession}
+        onOk={confirmOpenSession}
       >
         <div className="grid gap-3">
           <p>
@@ -490,7 +471,7 @@ export function CashBoxView({
             <strong>{formatLempirasUI(pendingOpening?.opening_amount ?? '0.00')}</strong>
           </div>
         </div>
-      </ConfirmDialog>
+      </Modal>
     </section>
   );
 }

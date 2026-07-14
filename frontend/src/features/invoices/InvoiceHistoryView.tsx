@@ -33,7 +33,7 @@ import { payloadScopedIdempotencyKey, resetPayloadScopedIdempotencyKey } from '.
 import { InvoiceHistoryFilters } from './history/InvoiceHistoryFilters';
 import { InvoiceHistoryHeader } from './history/InvoiceHistoryHeader';
 import { InvoiceHistoryTable, issuedInstitutionalReceipt } from './history/InvoiceHistoryTable';
-import { InvoiceDetailSheet } from './history/InvoiceDetailSheet';
+import { InvoiceDetailDrawer } from './history/InvoiceDetailDrawer';
 
 type InvoiceHistoryViewProps = {
   user: AuthUser;
@@ -724,7 +724,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
         </div>
       )}
 
-      <InvoiceDetailSheet
+      <InvoiceDetailDrawer
         error={detailError}
         invoice={detailInvoice}
         loading={detailLoading}

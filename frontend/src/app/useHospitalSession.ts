@@ -94,7 +94,7 @@ export function useHospitalSession() {
     return unsubscribe;
   }, [queryClient]);
 
-  // Old code path that followed is now in a separate effect to
+  // The remaining session synchronization runs in a separate effect to
   // avoid running on every state change.
   useEffect(() => {
     apiClient

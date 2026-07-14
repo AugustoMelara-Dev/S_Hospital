@@ -4,10 +4,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Alert, Button, Checkbox, Drawer, Form, Input, Select, Space, Typography } from 'antd';
 import { ApiError, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { ServiceAuditedChangesSummary, auditedServiceChanges, priceValuesDiffer } from './ServiceAuditedChangesSummary';
-import { ERYTHROPOIETIN_FIXED_PRICE, MIN_CHANGE_REASON_LENGTH, SPECIAL_RULE_ERYTHROPOIETIN, SPECIAL_RULE_NONE, defaultServiceFormValues, serviceSchema, type ServiceFormData } from './serviceSheetTypes';
+import { ERYTHROPOIETIN_FIXED_PRICE, MIN_CHANGE_REASON_LENGTH, SPECIAL_RULE_ERYTHROPOIETIN, SPECIAL_RULE_NONE, defaultServiceFormValues, serviceSchema, type ServiceFormData } from './serviceDrawerTypes';
 
 type ServiceDraft = { id: number; category_id: number; area_id?: number | null; name: string; price: string; scan_code?: string | null; barcode?: string | null; qr_code?: string | null; taxable: boolean; active: boolean; visible_in_billing?: boolean | null; is_billable?: boolean | null; special_rule_code?: string | null };
-type ServiceSheetProps = { open: boolean; onOpenChange: (open: boolean) => void; service?: ServiceDraft | null; categories: Array<{ id: number; name: string }>; areas: Array<{ id: number; name: string }>; scannerEnabled?: boolean; onSuccess: () => void };
+type ServiceDrawerProps = { open: boolean; onOpenChange: (open: boolean) => void; service?: ServiceDraft | null; categories: Array<{ id: number; name: string }>; areas: Array<{ id: number; name: string }>; scannerEnabled?: boolean; onSuccess: () => void };
 const optionalCode = (value: string | null | undefined) => value?.trim() || null;
 
 export function catalogValuesForSpecialRule(value: string) {
@@ -16,7 +16,7 @@ export function catalogValuesForSpecialRule(value: string) {
     : null;
 }
 
-export function ServiceSheet({ open, onOpenChange, service, categories, areas, scannerEnabled = false, onSuccess }: ServiceSheetProps) {
+export function ServiceDrawer({ open, onOpenChange, service, categories, areas, scannerEnabled = false, onSuccess }: ServiceDrawerProps) {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const { control, register, handleSubmit, reset, setError, setFocus, setValue, watch, formState: { errors, isSubmitting } } = useForm<ServiceFormData>({ resolver: zodResolver(serviceSchema), defaultValues: defaultServiceFormValues });
   const values = watch();

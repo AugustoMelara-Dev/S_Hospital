@@ -1,11 +1,11 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, apiClient } from '@/lib/api';
-import { catalogValuesForSpecialRule, ServiceSheet } from './ServiceSheet';
+import { catalogValuesForSpecialRule, ServiceDrawer } from './ServiceDrawer';
 
 const noop = () => undefined;
 
-describe('ServiceSheet', () => {
+describe('ServiceDrawer', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     Element.prototype.scrollIntoView = vi.fn();
@@ -33,7 +33,7 @@ describe('ServiceSheet', () => {
     const onSuccess = vi.fn();
 
     render(
-      <ServiceSheet
+      <ServiceDrawer
         open
         onOpenChange={vi.fn()}
         service={{
@@ -95,7 +95,7 @@ describe('ServiceSheet', () => {
 
   it('summarizes audited catalog changes before saving', async () => {
     render(
-      <ServiceSheet
+      <ServiceDrawer
         open
         onOpenChange={vi.fn()}
         service={{
@@ -149,7 +149,7 @@ describe('ServiceSheet', () => {
     });
 
     render(
-      <ServiceSheet
+      <ServiceDrawer
         open
         onOpenChange={vi.fn()}
         service={{
@@ -200,7 +200,7 @@ describe('ServiceSheet', () => {
     });
 
     render(
-      <ServiceSheet
+      <ServiceDrawer
         open
         onOpenChange={vi.fn()}
         service={{
@@ -253,7 +253,7 @@ describe('ServiceSheet', () => {
     });
 
     render(
-      <ServiceSheet
+      <ServiceDrawer
         open
         onOpenChange={vi.fn()}
         service={{
@@ -324,7 +324,7 @@ describe('ServiceSheet', () => {
     });
 
     render(
-      <ServiceSheet
+      <ServiceDrawer
         open
         onOpenChange={vi.fn()}
         service={{
@@ -375,7 +375,7 @@ describe('ServiceSheet', () => {
     });
 
     render(
-      <ServiceSheet
+      <ServiceDrawer
         open
         onOpenChange={vi.fn()}
         service={{
@@ -426,7 +426,7 @@ describe('ServiceSheet', () => {
   });
 });
 
-describe('ServiceSheet contract preservation', () => {
+describe('ServiceDrawer contract preservation', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     Element.prototype.scrollIntoView = vi.fn();
@@ -438,7 +438,7 @@ describe('ServiceSheet contract preservation', () => {
 
   it('opens with the new-service accessible name when no service is provided', () => {
     render(
-      <ServiceSheet
+      <ServiceDrawer
         open
         onOpenChange={noop}
         service={null}
@@ -456,7 +456,7 @@ describe('ServiceSheet contract preservation', () => {
 
   it('organizes the service drawer into the required Phase 8 sections', () => {
     render(
-      <ServiceSheet
+      <ServiceDrawer
         open
         onOpenChange={noop}
         service={null}
@@ -482,7 +482,7 @@ describe('ServiceSheet contract preservation', () => {
 
   it('renders the initial values for editing mode without changing units or rounding', () => {
     render(
-      <ServiceSheet
+      <ServiceDrawer
         open
         onOpenChange={noop}
         service={{
@@ -532,7 +532,7 @@ describe('ServiceSheet contract preservation', () => {
     });
 
     render(
-      <ServiceSheet
+      <ServiceDrawer
         open
         onOpenChange={noop}
         service={null}
@@ -576,7 +576,7 @@ describe('ServiceSheet contract preservation', () => {
 
   it('locks erythropoietin rule, price and tax fields when editing an erythropoietin service', () => {
     render(
-      <ServiceSheet
+      <ServiceDrawer
         open
         onOpenChange={noop}
         service={{
@@ -624,7 +624,7 @@ describe('ServiceSheet contract preservation', () => {
     const onSuccess = vi.fn();
 
     render(
-      <ServiceSheet
+      <ServiceDrawer
         open
         onOpenChange={noop}
         service={null}
@@ -681,7 +681,7 @@ describe('ServiceSheet contract preservation', () => {
     });
 
     render(
-      <ServiceSheet
+      <ServiceDrawer
         open
         onOpenChange={noop}
         service={null}
@@ -726,7 +726,7 @@ describe('ServiceSheet contract preservation', () => {
     });
 
     render(
-      <ServiceSheet
+      <ServiceDrawer
         open
         onOpenChange={noop}
         service={null}
@@ -765,7 +765,7 @@ describe('ServiceSheet contract preservation', () => {
     });
 
     render(
-      <ServiceSheet
+      <ServiceDrawer
         open
         onOpenChange={noop}
         service={{
@@ -807,14 +807,14 @@ describe('ServiceSheet contract preservation', () => {
     });
   });
 
-  it('exposes a sanitize-friendly error alert and does not close the sheet on failure', async () => {
+  it('exposes a sanitize-friendly error alert and does not close the drawer on failure', async () => {
     vi.spyOn(apiClient, 'saveService').mockRejectedValueOnce(
       new ApiError('SQLSTATE[HY000]: stack trace storage/logs/laravel.log', 500),
     );
     const onOpenChange = vi.fn();
 
     render(
-      <ServiceSheet
+      <ServiceDrawer
         open
         onOpenChange={onOpenChange}
         service={null}
@@ -868,7 +868,7 @@ describe('ServiceSheet contract preservation', () => {
       );
 
     render(
-      <ServiceSheet
+      <ServiceDrawer
         open
         onOpenChange={noop}
         service={null}
@@ -919,7 +919,7 @@ describe('ServiceSheet contract preservation', () => {
     );
 
     render(
-      <ServiceSheet
+      <ServiceDrawer
         open
         onOpenChange={noop}
         service={null}
@@ -947,7 +947,7 @@ describe('ServiceSheet contract preservation', () => {
 
   it('does not expose delete or restore actions that are not part of the contract', () => {
     render(
-      <ServiceSheet
+      <ServiceDrawer
         open
         onOpenChange={noop}
         service={{

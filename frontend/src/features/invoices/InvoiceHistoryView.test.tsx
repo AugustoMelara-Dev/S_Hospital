@@ -997,7 +997,7 @@ describe('InvoiceHistoryView', () => {
       Promise.resolve(receiptFixture(invoiceId === first.id ? first : second))
     ));
 
-    renderWithQueryClient(<InvoiceHistoryView user={legacyReceiptOperator()} onStatus={vi.fn()} />);
+    renderWithQueryClient(<InvoiceHistoryView user={receiptFallbackOperator()} onStatus={vi.fn()} />);
 
     await waitFor(() => expect(screen.getByText('Paciente Solicitud Lenta')).toBeInTheDocument());
     await openInvoiceMenu(first.invoice_number);
@@ -1245,7 +1245,7 @@ describe('InvoiceHistoryView', () => {
     }));
   });
 
-  it('does not offer legacy receipt actions when the cashier can generate the missing institutional receipt', async () => {
+  it('does not offer fallback receipt actions when the cashier can generate the missing institutional receipt', async () => {
     const paid = invoiceFixture({
       id: 46,
       invoice_number: '000-001-01-00000046',
@@ -1325,7 +1325,7 @@ describe('InvoiceHistoryView', () => {
     );
   });
 
-  it('reprints institutional receipt from history before falling back to legacy receipt', async () => {
+  it('reprints institutional receipt from history before falling back to fallback receipt', async () => {
     vi.spyOn(apiBase, 'createClientIdempotencyKey').mockReturnValue('history-institutional-reprint-attempt-1');
     const paid = invoiceFixture({
       id: 5,
@@ -1429,12 +1429,12 @@ describe('InvoiceHistoryView', () => {
     );
   });
 
-  it('reprints legacy receipts with a stable idempotency key from history', async () => {
-    vi.spyOn(apiBase, 'createClientIdempotencyKey').mockReturnValue('history-legacy-reprint-attempt-1');
+  it('reprints fallback receipts with a stable idempotency key from history', async () => {
+    vi.spyOn(apiBase, 'createClientIdempotencyKey').mockReturnValue('history-fallback-reprint-attempt-1');
     const paid = invoiceFixture({
       id: 37,
       invoice_number: '000-001-01-00000037',
-      patient_name: 'Paciente Reimpresion Legacy',
+      patient_name: 'Paciente Reimpresion Histórica',
       status: 'paid',
       institutional_receipt: null,
     });
@@ -1448,9 +1448,9 @@ describe('InvoiceHistoryView', () => {
     });
     vi.spyOn(apiClient, 'getInvoice').mockResolvedValue(paid);
 
-    renderWithQueryClient(<InvoiceHistoryView user={legacyReceiptOperator()} onStatus={vi.fn()} />);
+    renderWithQueryClient(<InvoiceHistoryView user={receiptFallbackOperator()} onStatus={vi.fn()} />);
 
-    await waitFor(() => expect(screen.getByText('Paciente Reimpresion Legacy')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Paciente Reimpresion Histórica')).toBeInTheDocument());
     await openInvoiceMenu(paid.invoice_number);
     fireEvent.click(await screen.findByRole('menuitem', { name: /Reimprimir/i }));
     await submitReprintReason('Copia solicitada por auditoria');
@@ -1459,7 +1459,7 @@ describe('InvoiceHistoryView', () => {
       width: 'half_letter',
       reason: 'Copia solicitada por auditoria',
     }, {
-      idempotencyKey: 'history-legacy-reprint-attempt-1',
+      idempotencyKey: 'history-fallback-reprint-attempt-1',
     }));
     expect(screen.queryByText(/Reimprimir 000-001-01-00000037/i)).not.toBeInTheDocument();
     expect(getPdf).not.toHaveBeenCalled();
@@ -1567,14 +1567,14 @@ describe('InvoiceHistoryView', () => {
     vi.spyOn(apiClient, 'getInvoice').mockResolvedValue(paid);
     vi.spyOn(apiClient, 'getReceipt').mockResolvedValue(receipt);
 
-    renderWithQueryClient(<InvoiceHistoryView user={legacyReceiptOperator()} onStatus={vi.fn()} />);
+    renderWithQueryClient(<InvoiceHistoryView user={receiptFallbackOperator()} onStatus={vi.fn()} />);
 
     await waitFor(() => expect(screen.getByText('Paciente Recibo Anterior')).toBeInTheDocument());
     await openInvoiceMenu(invoice.invoice_number);
     fireEvent.click(await screen.findByRole('menuitem', { name: /Ver recibo/i }));
 
     await waitFor(() => expect(screen.getByText(/recibo disponible para esta factura/i)).toBeInTheDocument());
-    expect(screen.queryByText(/fallback|legacy/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/fallback|anterior/i)).not.toBeInTheDocument();
     expect(apiClient.getReceipt).toHaveBeenCalledWith(6, 'half_letter');
     expect(screen.queryByLabelText(/tama/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/cambiar el tama/i)).not.toBeInTheDocument();
@@ -1724,6 +1724,6 @@ function receiptViewerUser(): AuthUser {
   };
 }
 
-function legacyReceiptOperator(): AuthUser {
+function receiptFallbackOperator(): AuthUser {
   return historyUser(['invoices.view', 'receipts.view', 'receipts.reprint', 'receipts.reprint_any']);
 }

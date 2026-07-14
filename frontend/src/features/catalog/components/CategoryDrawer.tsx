@@ -7,10 +7,10 @@ import { ApiError, apiClient, userSafeErrorMessage } from '@/lib/api';
 
 const categorySchema = z.object({ name: z.string().trim().min(1, 'El nombre es requerido'), sort_order: z.number().int().min(0), active: z.boolean() });
 type CategoryFormData = z.infer<typeof categorySchema>;
-type CategorySheetProps = { open: boolean; onOpenChange: (open: boolean) => void; category?: { id: number; name: string; sort_order: number; active: boolean } | null; onSuccess: () => void };
+type CategoryDrawerProps = { open: boolean; onOpenChange: (open: boolean) => void; category?: { id: number; name: string; sort_order: number; active: boolean } | null; onSuccess: () => void };
 const defaultValues: CategoryFormData = { name: '', sort_order: 0, active: true };
 
-export function CategorySheet({ open, onOpenChange, category, onSuccess }: CategorySheetProps) {
+export function CategoryDrawer({ open, onOpenChange, category, onSuccess }: CategoryDrawerProps) {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const { control, register, handleSubmit, reset, setError, setFocus, formState: { errors, isSubmitting } } = useForm<CategoryFormData>({ resolver: zodResolver(categorySchema), defaultValues });
   useLayoutEffect(() => { if (open) reset(category ? { name: category.name, sort_order: category.sort_order, active: category.active } : defaultValues); }, [open, category, reset]);

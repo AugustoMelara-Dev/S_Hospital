@@ -10,7 +10,7 @@ function sourceFiles(directory: string): string[] {
 }
 
 describe('catalog library architecture', () => {
-  it('uses institutional libraries without legacy UI or visual utility debt', () => {
+  it('uses institutional libraries without replaced UI or visual utility debt', () => {
     const source = sourceFiles(join(process.cwd(), 'src/features/catalog')).map((file) => readFileSync(file, 'utf8')).join('\n');
     const forbiddenPackages = new RegExp([
       ['lucide', 'react'].join('-'),
