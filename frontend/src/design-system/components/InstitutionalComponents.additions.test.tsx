@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { SectionCard, StatCard } from './design-system';
+import { SectionCard, StatCard } from './InstitutionalComponents';
 
 describe('SectionCard', () => {
   it('renders title, description and children', () => {

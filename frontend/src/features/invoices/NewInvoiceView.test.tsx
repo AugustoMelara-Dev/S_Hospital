@@ -719,7 +719,7 @@ describe('NewInvoiceView critical flows', () => {
     expect(screen.queryByText(/permisos completos/i)).not.toBeInTheDocument();
   });
 
-  it('keeps payment registered without requesting legacy receipt when institutional receipt is missing after collection', async () => {
+  it('keeps payment registered without requesting fallback receipt when institutional receipt is missing after collection', async () => {
     const onStatus = vi.fn();
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -865,7 +865,7 @@ describe('NewInvoiceView critical flows', () => {
     expect(screen.getAllByText(/revise la factura en historial/i).length).toBeGreaterThan(0);
   });
 
-  it('does not request legacy receipt after partial payment', async () => {
+  it('does not request fallback receipt after partial payment', async () => {
     vi.spyOn(apiBase, 'createClientIdempotencyKey')
       .mockReturnValueOnce('partial-invoice-attempt-1')
       .mockReturnValueOnce('partial-payment-attempt-1');
@@ -989,7 +989,7 @@ describe('NewInvoiceView critical flows', () => {
     expect(screen.getByRole('button', { name: /cobrar ahora/i })).toBeInTheDocument();
   });
 
-  it('does not fall back to the legacy receipt when institutional receipt issuance fails after payment', async () => {
+  it('does not fall back to the historical receipt when institutional receipt issuance fails after payment', async () => {
     const onStatus = vi.fn();
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -1236,7 +1236,7 @@ describe('NewInvoiceView critical flows', () => {
     expect(screen.queryByRole('button', { name: /imprimir recibo$/i })).not.toBeInTheDocument();
   });
 
-  it('issues an institutional receipt for a paid zero-total invoice instead of using the legacy receipt', async () => {
+  it('issues an institutional receipt for a paid zero-total invoice instead of using the fallback receipt', async () => {
     vi.spyOn(apiBase, 'createClientIdempotencyKey')
       .mockReturnValueOnce('invoice-attempt-1')
       .mockReturnValueOnce('zero-receipt-attempt-1')

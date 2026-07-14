@@ -237,7 +237,7 @@ export function ReportsAudit({
           <header className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-sm font-semibold text-foreground">Bitacora</h2>
             <span className="text-xs text-muted-foreground">
-              {data.meta.total} entradas Â· pagina {data.meta.current_page} de {Math.max(1, Math.ceil(data.meta.total / data.meta.per_page))}
+              {data.meta.total} entradas · página {data.meta.current_page} de {Math.max(1, Math.ceil(data.meta.total / data.meta.per_page))}
             </span>
           </header>
           {data.data.length === 0 ? (

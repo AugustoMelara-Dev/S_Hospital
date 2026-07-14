@@ -95,7 +95,7 @@ describe('UsersView', () => {
     expect(screen.queryByRole('button', { name: /crear usuario/i })).not.toBeInTheDocument();
   });
 
-  it('shows the V1.2 RBAC summary without changing read-only restrictions', async () => {
+  it('shows the institutional RBAC summary without changing read-only restrictions', async () => {
     render(<UsersView onStatus={vi.fn()} canCreateUsers={false} canManageRoles={false} />);
 
     expect(await screen.findByRole('heading', { name: /usuarios y funciones/i })).toBeInTheDocument();
@@ -592,7 +592,7 @@ describe('UsersView', () => {
     }));
   });
 
-  it('filters inoperable restore permissions from forms and user payloads if a legacy catalog returns them', async () => {
+  it('filters inoperable restore permissions from forms and user payloads if a historical catalog returns them', async () => {
     vi.mocked(apiClient.getRoles).mockResolvedValueOnce({
       roles: [
         {

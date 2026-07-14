@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { PrintPreviewFrame, StatGrid } from './design-system';
+import { PrintPreviewFrame, StatGrid } from './InstitutionalComponents';
 
 const meta: Meta = {
   title: 'Institutional/SharedComponents',

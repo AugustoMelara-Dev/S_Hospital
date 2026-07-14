@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, type ReactNode } from 'react';
 import { Tag } from 'antd';
-import { PrintPreviewFrame } from '@/components/shared';
+import { PrintPreviewFrame } from '@/design-system/components/InstitutionalComponents';
 import { formatDate } from '@/lib/format/formatDate';
 import type { InstitutionalReceiptSeries, ReceiptPrintProfile } from '@/lib/api';
 import { cn } from '@/lib/utils';

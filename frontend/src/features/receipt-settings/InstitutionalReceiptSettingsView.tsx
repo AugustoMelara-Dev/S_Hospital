@@ -6,7 +6,7 @@ import { Alert, Button, Checkbox, Collapse, Form, Input, InputNumber, Radio, Sel
 import { ReactNode, useRef } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { SectionCard, StatCard } from '@/components/shared';
+import { SectionCard, StatCard } from '@/design-system/components/InstitutionalComponents';
 import { PageHeader } from '@/design-system/components/PageHeader';
 import { ReceiptSettingsPreview } from './components/ReceiptSettingsPreview';
 import { type InstitutionalReceiptSeries, type ReceiptPrintProfile, apiClient, userSafeErrorMessage } from '@/lib/api';

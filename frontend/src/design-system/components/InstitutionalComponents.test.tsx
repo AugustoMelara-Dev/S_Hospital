@@ -2,7 +2,7 @@ import { SearchOutlined } from '@ant-design/icons';
 import { render, screen, within } from '@testing-library/react';
 import { Button } from 'antd';
 import { describe, expect, it } from 'vitest';
-import { PrintPreviewFrame, StatGrid } from './design-system';
+import { PrintPreviewFrame, StatGrid } from './InstitutionalComponents';
 
 describe('shared design system components', () => {
   it('keeps statistics presentational', () => {

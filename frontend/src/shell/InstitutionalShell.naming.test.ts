@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 describe('institutional shell boundary', () => {
-  it('does not retain Clinical shell terminology or legacy overlay providers', () => {
+  it('does not retain Clinical shell terminology or retired overlay providers', () => {
     const app = readFileSync('src/App.tsx', 'utf8');
     const shell = readFileSync('src/shell/InstitutionalShell.tsx', 'utf8');
 

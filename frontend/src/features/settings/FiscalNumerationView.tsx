@@ -16,8 +16,8 @@ type FiscalNumerationViewProps = {
 const sequenceSchema = z.object({
   prefix: z.string().min(1, 'El prefijo es requerido').max(32, 'Prefijo muy largo'),
   cai: z.string().min(1, 'El CAI es requerido').max(128, 'CAI muy largo'),
-  min_number: z.number().int().min(1, 'Debe ser mayor a 0').max(Number.MAX_SAFE_INTEGER, 'N?fúmero fuera del rango permitido'),
-  max_number: z.number().int().min(1, 'Debe ser mayor a 0').max(Number.MAX_SAFE_INTEGER, 'N?fúmero fuera del rango permitido'),
+  min_number: z.number().int().min(1, 'Debe ser mayor a 0').max(Number.MAX_SAFE_INTEGER, 'Número fuera del rango permitido'),
+  max_number: z.number().int().min(1, 'Debe ser mayor a 0').max(Number.MAX_SAFE_INTEGER, 'Número fuera del rango permitido'),
   valid_until: z.string().min(1, 'La fecha de vencimiento es requerida'),
   reason: z.string().max(500, 'Motivo muy largo').optional(),
 }).superRefine((data, ctx) => {
@@ -25,7 +25,7 @@ const sequenceSchema = z.object({
     ctx.addIssue({
       code: 'custom',
       path: ['max_number'],
-      message: 'El número m?fúximo debe ser mayor o igual al m?fúnimo.',
+      message: 'El número máximo debe ser mayor o igual al mínimo.',
     });
   }
 });
@@ -129,7 +129,7 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
     savingRef.current = true;
     setSaving(true);
     setError('');
-    onStatus('Guardando numeraci?fún fiscal...');
+    onStatus('Guardando numeración fiscal...');
     try {
       const saved = await apiClient.saveFiscalSequence({
         ...(sequence?.id ? { id: sequence.id } : {}),
@@ -153,9 +153,9 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
         valid_until: saved.valid_until,
         reason: '',
       });
-      onStatus('Numeraci?fún fiscal guardada.');
+      onStatus('Numeración fiscal guardada.');
     } catch (err) {
-      const message = safeClientMessage(userSafeErrorMessage(err, 'No se pudo guardar la numeraci?fún.'));
+      const message = safeClientMessage(userSafeErrorMessage(err, 'No se pudo guardar la numeración.'));
       setError(message);
       onStatus(message);
     } finally {
@@ -172,21 +172,21 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
   if (loading) {
     return (
       <div role="status" aria-live="polite" className="text-sm text-muted-foreground">
-        Cargando numeraci?fún fiscal...
+        Cargando numeración fiscal...
       </div>
     );
   }
 
   return (
     <section>
-      <Typography.Title level={3}>Numeraci?fún fiscal</Typography.Title>
+      <Typography.Title level={3}>Numeración fiscal</Typography.Title>
       <Typography.Paragraph type="secondary">Configure el rango autorizado para emitir facturas. Cambios requieren motivo y quedan auditados.</Typography.Paragraph>
       {error ? (
         <Alert type="error" showIcon title="No se pudo guardar" description={error} />
       ) : null}
 
       {!sequence && (
-        <Alert type="warning" showIcon icon={<AlertTriangle />} title="Sin numeraci?fún" description="Configure el CAI, prefijo y rango autorizado antes de emitir facturas." />
+        <Alert type="warning" showIcon icon={<AlertTriangle />} title="Sin numeración" description="Configure el CAI, prefijo y rango autorizado antes de emitir facturas." />
       )}
 
       {sequence ? (
@@ -210,7 +210,7 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
               </Tag>
             </div>
             <p className="mt-2 text-sm text-muted-foreground">
-              {isExpired ? 'Venci?fú el' : 'Vigente hasta'} {sequence.valid_until}.
+              {isExpired ? 'Venció el' : 'Vigente hasta'} {sequence.valid_until}.
             </p>
           </div>
         </div>
@@ -343,7 +343,7 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
         {pendingChange ? (
           <div className="space-y-3">
             {error ? <Alert type="error" showIcon title="No se pudo guardar" description={error} /> : null}
-            <p>Este cambio afecta la numeraci?fún de las pr?fúximas facturas y quedar?fú auditado.</p>
+            <p>Este cambio afecta la numeración de las próximas facturas y quedará auditado.</p>
             <dl className="grid gap-3 border border-operational-border bg-muted/40 p-4 sm:grid-cols-2">
               <div>
                 <dt className="text-xs font-medium">Prefijo</dt>

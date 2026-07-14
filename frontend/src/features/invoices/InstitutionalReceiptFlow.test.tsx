@@ -65,11 +65,11 @@ describe('InstitutionalReceiptFlow', () => {
     expect(getReceipt).not.toHaveBeenCalled();
   });
 
-  it('falls back to legacy receipt preview for old invoices without institutional receipt', async () => {
+  it('falls back to historical receipt preview for earlier invoices without institutional receipt', async () => {
     const invoice = invoiceFixture({
       id: 11,
       invoice_number: '000-001-01-00000011',
-      patient_name: 'Paciente Legacy',
+      patient_name: 'Paciente histórico',
       status: 'paid',
       institutional_receipt: null,
     });
@@ -84,7 +84,7 @@ describe('InstitutionalReceiptFlow', () => {
 
     renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
 
-    await waitFor(() => expect(screen.getByText('Paciente Legacy')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Paciente histórico')).toBeInTheDocument());
     const trigger = await screen.findByRole('button', { name: 'Acciones de la factura 000-001-01-00000011' });
     trigger.focus();
     fireEvent.keyDown(trigger, { key: 'Enter', code: 'Enter', keyCode: 13, charCode: 13 });

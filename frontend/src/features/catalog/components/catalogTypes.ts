@@ -26,13 +26,6 @@ export type ServiceSummary = {
   total: number;
 };
 
-export type ServiceStatusSummaryProps = {
-  canManage: boolean;
-  onNewCategory: () => void;
-  onNewService: () => void;
-  summary: ServiceSummary;
-};
-
 export type ServiceBillingBadges = {
   active: boolean;
   hasConfiguredPrice: boolean;

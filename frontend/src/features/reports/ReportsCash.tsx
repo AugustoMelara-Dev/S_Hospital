@@ -227,7 +227,7 @@ export function ReportsCash({
           ariaLabel="Alcance del reporte de caja"
           from={dateOnly(visibleCashSessionReport.cash_session.opened_at)}
           to={dateOnly(visibleCashSessionReport.cash_session.closed_at ?? visibleCashSessionReport.cash_session.opened_at)}
-          source={`Sesión de caja ${visibleCashSessionReport.cash_session.id} Â· ${visibleCashSessionReport.cash_session.user?.name ?? 'Cajero no disponible'}`}
+          source={`Sesión de caja ${visibleCashSessionReport.cash_session.id} · ${visibleCashSessionReport.cash_session.user?.name ?? 'Cajero no disponible'}`}
         />
       ) : null}
 

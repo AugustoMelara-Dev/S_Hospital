@@ -67,20 +67,20 @@ describe('billing api client', () => {
     });
   });
 
-  it('allows legacy receipt reprints to reuse a caller-managed idempotency key', async () => {
+  it('allows historical receipt reprints to reuse a caller-managed idempotency key', async () => {
     const receipt = { invoice_id: 12, width: 'half_letter' };
     mockedRequest.mockResolvedValueOnce({ data: { receipt } });
 
     await expect(billing.reprintInvoice(
       12,
       { width: 'half_letter', reason: 'Copia solicitada por auditoria' },
-      { idempotencyKey: 'legacy-reprint-attempt-1' },
+      { idempotencyKey: 'historical-reprint-attempt-1' },
     )).resolves.toBe(receipt);
 
     expect(mockedRequest).toHaveBeenCalledWith('/api/invoices/12/reprint', {
       method: 'POST',
-      idempotencyKey: 'legacy-reprint-attempt-1',
-      headers: { 'Idempotency-Key': 'legacy-reprint-attempt-1' },
+      idempotencyKey: 'historical-reprint-attempt-1',
+      headers: { 'Idempotency-Key': 'historical-reprint-attempt-1' },
       body: JSON.stringify({ width: 'half_letter', reason: 'Copia solicitada por auditoria' }),
     });
   });

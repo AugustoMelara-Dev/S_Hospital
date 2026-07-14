@@ -24,7 +24,7 @@ describe('ReceiptPreview', () => {
     vi.useRealTimers();
   });
 
-  it('does not auto print when a legacy autoPrint prop is present', async () => {
+  it('does not auto print when a retired autoPrint prop is present', async () => {
     vi.useFakeTimers();
     const onPrint = vi.fn();
 
