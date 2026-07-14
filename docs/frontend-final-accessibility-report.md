@@ -30,6 +30,6 @@ Los incompletes corresponden a cálculo de contraste con fondos superpuestos o p
 - Violaciones axe reales: 0.
 - Errores de consola, `pageerror`, requests fallidos o inesperados: 0.
 - Matriz completa: 4/4 pruebas aprobadas en 356 s.
-- Playwright mock completo: 39/39 en 118.7 s.
+- Playwright mock completo: 39/39 en 116.2 s.
 
 Evidencia: `frontend/artifacts/frontend-final/`.

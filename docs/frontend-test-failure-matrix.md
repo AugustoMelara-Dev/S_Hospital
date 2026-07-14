@@ -4,7 +4,7 @@ Fecha: 2026-07-14.
 
 | Suite/gate | Archivos | Aprobados | Fallidos | Omitidos | Estado |
 |---|---:|---:|---:|---:|---|
-| Vitest segmentado | 132 | 965 | 0 | 0 | CERRADO |
+| Vitest segmentado | 132 | 967 | 0 | 0 | CERRADO |
 | Storybook | 3 | 14 | 0 | 0 | CERRADO |
 | Playwright mock | 39 recorridos | 39 | 0 | 0 | CERRADO |
 | Matriz visual/axe | 4 recorridos agregados | 4 | 0 | 0 | CERRADO |

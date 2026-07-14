@@ -5,8 +5,8 @@
 | Métrica | Antes | Después |
 |---|---:|---:|
 | JavaScript precargado al inicio, raw | 3,168,914 B | 1,061,998 B |
-| JavaScript precargado al inicio, gzip | 945,336 B | 336,667 B (328.8 KiB) |
-| Total JavaScript, gzip | 931,073 B | 1,077,880 B (1,052.6 KiB) |
+| JavaScript precargado al inicio, gzip | 945,336 B | 336,323 B (328.4 KiB) |
+| Total JavaScript, gzip | 931,073 B | 1,077,559 B (1,052.3 KiB) |
 | CSS total, raw | Sin medición comparable | 70,041 B |
 | Fuentes locales WOFF2, raw | Sin medición comparable | 162,416 B |
 | Rutas lazy | 11 | 13, incluyendo Nueva factura y Caja |

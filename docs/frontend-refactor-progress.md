@@ -22,11 +22,11 @@ Autenticación: login, cambio obligatorio de contraseña y sesión expirada.
 
 Protegidas: `/dashboard`, `/billing/new`, `/cashbox`, `/catalog`, `/invoices`, `/reports`, `/reports/executive`, `/reports/cash`, `/reports/audit`, `/backups`, `/settings/fiscal`, `/settings/institutional-receipts`, `/admin/users`, `/help`, `/support`, `/about` y fallback 404. Los estados 403, loading, empty, error y overlays se cubren dentro de sus rutas propietarias.
 
-## Evidencia final previa al merge
+## Evidencia final posterior al merge
 
 | Gate | Resultado |
 |---|---|
-| Regresión segmentada | 132/132 archivos; 965/965 tests; 12/12 segmentos; 0 omitidos |
+| Regresión segmentada | 132/132 archivos; 967/967 tests; 12/12 segmentos; 0 omitidos |
 | Storybook | 3/3 archivos; 14/14 tests |
 | Playwright mock | 39/39 |
 | Matriz visual | 4/4 recorridos agregados; 119 PNG + 119 JSON |
@@ -34,6 +34,6 @@ Protegidas: `/dashboard`, `/billing/new`, `/cashbox`, `/catalog`, `/invoices`, `
 | Estilos computados | 1,258 superficies; 0 radios distintos de `0px`; 0 overflow |
 | Gate legacy | inventory/strict/final: 329 archivos; 0 violaciones |
 | TypeScript / lint / build | PASS / PASS / PASS |
-| Bundle | 336,667 B gzip inicial; 1,077,880 B gzip total |
+| Bundle | 336,323 B gzip inicial; 1,077,559 B gzip total |
 
 Los únicos pendientes externos son la impresión física por falta de hardware y el E2E release por falta de credencial.
