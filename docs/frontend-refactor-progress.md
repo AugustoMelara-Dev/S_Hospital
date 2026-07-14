@@ -29,9 +29,9 @@ Protegidas: `/dashboard`, `/billing/new`, `/cashbox`, `/catalog`, `/invoices`, `
 | Regresión segmentada | 132/132 archivos; 965/965 tests; 12/12 segmentos; 0 omitidos |
 | Storybook | 3/3 archivos; 14/14 tests |
 | Playwright mock | 39/39 |
-| Matriz visual | 4/4 recorridos agregados; 112 PNG + 112 JSON |
+| Matriz visual | 4/4 recorridos agregados; 119 PNG + 119 JSON |
 | Axe | 0 minor/moderate/serious/critical; 191 nodos incomplete clasificados; 0 sin clasificar |
-| Estilos computados | 1,218 superficies; 0 radios distintos de `0px`; 0 overflow |
+| Estilos computados | 1,258 superficies; 0 radios distintos de `0px`; 0 overflow |
 | Gate legacy | inventory/strict/final: 329 archivos; 0 violaciones |
 | TypeScript / lint / build | PASS / PASS / PASS |
 | Bundle | 336,667 B gzip inicial; 1,077,880 B gzip total |

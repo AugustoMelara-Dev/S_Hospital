@@ -51,5 +51,6 @@ describe('InstitutionalChart', () => {
   it('renders an accepted alternative table', () => {
     render(<InstitutionalChart ariaLabel="Ingresos" option={{}} summary="Resumen" alternativeTable={<table aria-label="Datos"><tbody><tr><td>Julio</td></tr></tbody></table>} />);
     expect(screen.getByRole('table', { name: 'Datos' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Datos tabulares de Ingresos' })).toHaveAttribute('tabindex', '0');
   });
 });

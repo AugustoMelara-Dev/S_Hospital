@@ -101,7 +101,16 @@ export function InstitutionalChart({
         <div ref={containerRef} className="institutional-chart__canvas" role="img" aria-label={ariaLabel} />
       )}
       {summary ? <figcaption className="institutional-chart__summary">{summary}</figcaption> : null}
-      {alternativeTable ? <div className="institutional-chart__table">{alternativeTable}</div> : null}
+      {alternativeTable ? (
+        <div
+          className="institutional-chart__table"
+          role="region"
+          aria-label={`Datos tabulares de ${ariaLabel}`}
+          tabIndex={0}
+        >
+          {alternativeTable}
+        </div>
+      ) : null}
     </figure>
   );
 }

@@ -161,64 +161,64 @@
         },
         {
           "target": [
-            ".institutional-grid__header--primary[col-id=\"label\"][aria-colindex=\"2\"] > .ag-header-cell-comp-wrapper[role=\"presentation\"] > .ag-cell-label-container[role=\"presentation\"] > .ag-header-cell-label[data-ref=\"eLabel\"][role=\"presentation\"] > .ag-header-cell-text[data-ref=\"eText\"]"
+            "section[aria-labelledby=\"payment-method-title\"] > figure > .institutional-chart__table[role=\"region\"] > table > tbody > tr:nth-child(1) > td:nth-child(4)"
           ],
-          "failure": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element",
-          "html": "<span class=\"ag-header-cell-text\" data-ref=\"eText\">Método</span>",
+          "failure": "Fix any of the following:\n  Element's background color could not be determined because it's partially obscured by another element",
+          "html": "<td>100.00%</td>",
           "computed": {
             "backgroundColor": "rgba(0, 0, 0, 0)",
-            "effectiveBackgroundColor": "rgb(241, 245, 249)",
-            "contrastRatio": 14.85,
+            "effectiveBackgroundColor": "rgb(248, 250, 252)",
+            "contrastRatio": 15.55,
             "color": "rgb(23, 32, 51)",
-            "display": "block",
+            "display": "table-cell",
             "opacity": "1",
             "visibility": "visible"
           }
         },
         {
           "target": [
-            ".institutional-grid__header--primary[col-id=\"amount\"][aria-colindex=\"3\"] > .ag-header-cell-comp-wrapper[role=\"presentation\"] > .ag-cell-label-container[role=\"presentation\"] > .ag-header-cell-label[data-ref=\"eLabel\"][role=\"presentation\"] > .ag-header-cell-text[data-ref=\"eText\"]"
+            "tr:nth-child(2) > td:nth-child(4)"
           ],
-          "failure": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element",
-          "html": "<span class=\"ag-header-cell-text\" data-ref=\"eText\">Monto</span>",
+          "failure": "Fix any of the following:\n  Element's background color could not be determined because it's partially obscured by another element",
+          "html": "<td>0.00%</td>",
           "computed": {
             "backgroundColor": "rgba(0, 0, 0, 0)",
-            "effectiveBackgroundColor": "rgb(241, 245, 249)",
-            "contrastRatio": 14.85,
+            "effectiveBackgroundColor": "rgb(248, 250, 252)",
+            "contrastRatio": 15.55,
             "color": "rgb(23, 32, 51)",
-            "display": "block",
+            "display": "table-cell",
             "opacity": "1",
             "visibility": "visible"
           }
         },
         {
           "target": [
-            ".institutional-grid__header--primary[col-id=\"service\"][aria-colindex=\"2\"] > .ag-header-cell-comp-wrapper[role=\"presentation\"] > .ag-cell-label-container[role=\"presentation\"] > .ag-header-cell-label[data-ref=\"eLabel\"][role=\"presentation\"] > .ag-header-cell-text[data-ref=\"eText\"]"
+            "tr:nth-child(3) > td:nth-child(4)"
           ],
-          "failure": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element",
-          "html": "<span class=\"ag-header-cell-text\" data-ref=\"eText\">Servicio</span>",
+          "failure": "Fix any of the following:\n  Element's background color could not be determined because it's partially obscured by another element",
+          "html": "<td>0.00%</td>",
           "computed": {
             "backgroundColor": "rgba(0, 0, 0, 0)",
-            "effectiveBackgroundColor": "rgb(241, 245, 249)",
-            "contrastRatio": 14.85,
+            "effectiveBackgroundColor": "rgb(248, 250, 252)",
+            "contrastRatio": 15.55,
             "color": "rgb(23, 32, 51)",
-            "display": "block",
+            "display": "table-cell",
             "opacity": "1",
             "visibility": "visible"
           }
         },
         {
           "target": [
-            ".institutional-grid__header--secondary[col-id=\"category\"][aria-colindex=\"3\"] > .ag-header-cell-comp-wrapper[role=\"presentation\"] > .ag-cell-label-container[role=\"presentation\"] > .ag-header-cell-label[data-ref=\"eLabel\"][role=\"presentation\"] > .ag-header-cell-text[data-ref=\"eText\"]"
+            "tr:nth-child(4) > td:nth-child(4)"
           ],
-          "failure": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element",
-          "html": "<span class=\"ag-header-cell-text\" data-ref=\"eText\">Categoría</span>",
+          "failure": "Fix any of the following:\n  Element's background color could not be determined because it's partially obscured by another element",
+          "html": "<td>0.00%</td>",
           "computed": {
             "backgroundColor": "rgba(0, 0, 0, 0)",
-            "effectiveBackgroundColor": "rgb(241, 245, 249)",
-            "contrastRatio": 14.85,
+            "effectiveBackgroundColor": "rgb(248, 250, 252)",
+            "contrastRatio": 15.55,
             "color": "rgb(23, 32, 51)",
-            "display": "block",
+            "display": "table-cell",
             "opacity": "1",
             "visibility": "visible"
           }
@@ -248,74 +248,74 @@
     {
       "id": "color-contrast",
       "selector": [
-        ".institutional-grid__header--primary[col-id=\"label\"][aria-colindex=\"2\"] > .ag-header-cell-comp-wrapper[role=\"presentation\"] > .ag-cell-label-container[role=\"presentation\"] > .ag-header-cell-label[data-ref=\"eLabel\"][role=\"presentation\"] > .ag-header-cell-text[data-ref=\"eText\"]"
+        "section[aria-labelledby=\"payment-method-title\"] > figure > .institutional-chart__table[role=\"region\"] > table > tbody > tr:nth-child(1) > td:nth-child(4)"
       ],
       "computed": {
         "backgroundColor": "rgba(0, 0, 0, 0)",
-        "effectiveBackgroundColor": "rgb(241, 245, 249)",
-        "contrastRatio": 14.85,
+        "effectiveBackgroundColor": "rgb(248, 250, 252)",
+        "contrastRatio": 15.55,
         "color": "rgb(23, 32, 51)",
-        "display": "block",
+        "display": "table-cell",
         "opacity": "1",
         "visibility": "visible"
       },
-      "html": "<span class=\"ag-header-cell-text\" data-ref=\"eText\">Método</span>",
+      "html": "<td>100.00%</td>",
       "classification": "manual-false-positive",
-      "analysis": "Axe no puede resolver el fondo por superposición o pseudo-elemento; la comprobación computed-style shellContrastViolations valida el contraste efectivo del mismo estado."
+      "analysis": "Contraste manual 15.55:1 calculado entre rgb(23, 32, 51) y el ancestro opaco rgb(248, 250, 252); cumple 4.5:1."
     },
     {
       "id": "color-contrast",
       "selector": [
-        ".institutional-grid__header--primary[col-id=\"amount\"][aria-colindex=\"3\"] > .ag-header-cell-comp-wrapper[role=\"presentation\"] > .ag-cell-label-container[role=\"presentation\"] > .ag-header-cell-label[data-ref=\"eLabel\"][role=\"presentation\"] > .ag-header-cell-text[data-ref=\"eText\"]"
+        "tr:nth-child(2) > td:nth-child(4)"
       ],
       "computed": {
         "backgroundColor": "rgba(0, 0, 0, 0)",
-        "effectiveBackgroundColor": "rgb(241, 245, 249)",
-        "contrastRatio": 14.85,
+        "effectiveBackgroundColor": "rgb(248, 250, 252)",
+        "contrastRatio": 15.55,
         "color": "rgb(23, 32, 51)",
-        "display": "block",
+        "display": "table-cell",
         "opacity": "1",
         "visibility": "visible"
       },
-      "html": "<span class=\"ag-header-cell-text\" data-ref=\"eText\">Monto</span>",
+      "html": "<td>0.00%</td>",
       "classification": "manual-false-positive",
-      "analysis": "Axe no puede resolver el fondo por superposición o pseudo-elemento; la comprobación computed-style shellContrastViolations valida el contraste efectivo del mismo estado."
+      "analysis": "Contraste manual 15.55:1 calculado entre rgb(23, 32, 51) y el ancestro opaco rgb(248, 250, 252); cumple 4.5:1."
     },
     {
       "id": "color-contrast",
       "selector": [
-        ".institutional-grid__header--primary[col-id=\"service\"][aria-colindex=\"2\"] > .ag-header-cell-comp-wrapper[role=\"presentation\"] > .ag-cell-label-container[role=\"presentation\"] > .ag-header-cell-label[data-ref=\"eLabel\"][role=\"presentation\"] > .ag-header-cell-text[data-ref=\"eText\"]"
+        "tr:nth-child(3) > td:nth-child(4)"
       ],
       "computed": {
         "backgroundColor": "rgba(0, 0, 0, 0)",
-        "effectiveBackgroundColor": "rgb(241, 245, 249)",
-        "contrastRatio": 14.85,
+        "effectiveBackgroundColor": "rgb(248, 250, 252)",
+        "contrastRatio": 15.55,
         "color": "rgb(23, 32, 51)",
-        "display": "block",
+        "display": "table-cell",
         "opacity": "1",
         "visibility": "visible"
       },
-      "html": "<span class=\"ag-header-cell-text\" data-ref=\"eText\">Servicio</span>",
+      "html": "<td>0.00%</td>",
       "classification": "manual-false-positive",
-      "analysis": "Axe no puede resolver el fondo por superposición o pseudo-elemento; la comprobación computed-style shellContrastViolations valida el contraste efectivo del mismo estado."
+      "analysis": "Contraste manual 15.55:1 calculado entre rgb(23, 32, 51) y el ancestro opaco rgb(248, 250, 252); cumple 4.5:1."
     },
     {
       "id": "color-contrast",
       "selector": [
-        ".institutional-grid__header--secondary[col-id=\"category\"][aria-colindex=\"3\"] > .ag-header-cell-comp-wrapper[role=\"presentation\"] > .ag-cell-label-container[role=\"presentation\"] > .ag-header-cell-label[data-ref=\"eLabel\"][role=\"presentation\"] > .ag-header-cell-text[data-ref=\"eText\"]"
+        "tr:nth-child(4) > td:nth-child(4)"
       ],
       "computed": {
         "backgroundColor": "rgba(0, 0, 0, 0)",
-        "effectiveBackgroundColor": "rgb(241, 245, 249)",
-        "contrastRatio": 14.85,
+        "effectiveBackgroundColor": "rgb(248, 250, 252)",
+        "contrastRatio": 15.55,
         "color": "rgb(23, 32, 51)",
-        "display": "block",
+        "display": "table-cell",
         "opacity": "1",
         "visibility": "visible"
       },
-      "html": "<span class=\"ag-header-cell-text\" data-ref=\"eText\">Categoría</span>",
+      "html": "<td>0.00%</td>",
       "classification": "manual-false-positive",
-      "analysis": "Axe no puede resolver el fondo por superposición o pseudo-elemento; la comprobación computed-style shellContrastViolations valida el contraste efectivo del mismo estado."
+      "analysis": "Contraste manual 15.55:1 calculado entre rgb(23, 32, 51) y el ancestro opaco rgb(248, 250, 252); cumple 4.5:1."
     }
   ],
   "unclassifiedIncomplete": []

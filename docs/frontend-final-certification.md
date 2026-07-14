@@ -21,7 +21,7 @@ La facturación conserva búsqueda/filtros de servicios, paciente obligatorio, c
 | `npm run test:segmented` | 132/132 archivos; 965/965 tests; 12/12 segmentos; 0 omitidos; 1,307.3 s |
 | `npm run test:storybook` | 3/3 archivos; 14/14 tests |
 | `npm run test:e2e:mock` | 39/39; 118.7 s |
-| matriz visual/axe | 4/4; 112 PNG + 112 JSON; 342.9 s |
+| matriz visual/axe | 4/4; 119 PNG + 119 JSON; 356 s |
 | `npm run check:ui-legacy` | inventory: 329 archivos; 0 violaciones |
 | `npm run check:ui-legacy:strict` | 329 archivos; 0 violaciones |
 | `npm run check:ui-legacy:final` | 329 archivos; 0 violaciones; allowlist 0 |
@@ -31,7 +31,7 @@ La facturación conserva búsqueda/filtros de servicios, paciente obligatorio, c
 ## QA, impresión y bundle
 
 - Axe: minor 0, moderate 0, serious 0, critical 0; 191 nodos incomplete clasificados; 0 sin clasificar.
-- Computed styles: 1,218 superficies; 0 radios distintos de `0px`; 0 overflow.
+- Computed styles: 1,258 superficies; 0 radios distintos de `0px`; 0 overflow.
 - Consola/red: 0 `console.error`, 0 `pageerror`, 0 `requestfailed`, 0 endpoints inesperados.
 - Impresión: 18/18 PDFs para Carta, Media Carta, A5, 80 mm, 58 mm y 190×140 mm; original, primera y segunda copia.
 - Bundle lazy justificado: AG Grid 866,247 B raw/239,949 B gzip; reportes/ECharts 614,226 B raw/204,756 B gzip. Ninguno forma parte del arranque.
