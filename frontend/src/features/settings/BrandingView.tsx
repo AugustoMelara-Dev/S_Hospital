@@ -97,7 +97,7 @@ export function BrandingView({ canEdit, onStatus }: BrandingViewProps) {
                 <img
                   src={logoUrl}
                   alt="Logo institucional"
-                  className="max-h-24 rounded border border-border bg-white object-contain p-2"
+                  className="max-h-24 border border-border bg-receipt-paper object-contain p-2"
                 />
               ) : (
                 <div className="flex flex-col items-center text-muted-foreground">

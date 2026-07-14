@@ -290,7 +290,7 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
         </aside>
       </div>
 
-      <nav aria-label="Pasos de facturación" className="fixed inset-x-0 bottom-16 z-30 border-t border-operational-border bg-background p-3 md:static md:mx-auto md:w-full md:max-w-5xl md:border md:bg-white">
+      <nav aria-label="Pasos de facturación" className="fixed inset-x-0 bottom-16 z-30 border-t border-operational-border bg-background p-3 md:static md:mx-auto md:w-full md:max-w-5xl md:border md:bg-surface">
         <div className="mx-auto flex max-w-2xl gap-3 md:justify-end">
           {mobileStep > 0 ? (
             <Button type="default" className="min-h-11 flex-1 flex items-center justify-center gap-1" onClick={() => goToStep((mobileStep - 1) as 0 | 1)}>

@@ -52,13 +52,13 @@ export function ContextBar({ cashSession, commandButtonRef, crumbs, hospitalName
         <span
           role="img"
           aria-label={isOnline ? 'Conexión local disponible' : 'Sin conexión al servidor local'}
-          className={isOnline ? 'hidden text-success md:inline-flex' : 'hidden items-center gap-1 text-sm font-semibold text-destructive md:flex'}
+          className={isOnline ? 'hidden text-success md:inline-flex' : 'hidden items-center gap-1 text-sm font-semibold text-error md:flex'}
         >
           {isOnline ? (
-            <WifiOutlined className="text-lg text-green-600" />
+            <WifiOutlined className="text-lg" />
           ) : (
             <>
-              <DisconnectOutlined className="text-lg text-red-600" />
+              <DisconnectOutlined className="text-lg" />
               <span>Sin conexión</span>
             </>
           )}

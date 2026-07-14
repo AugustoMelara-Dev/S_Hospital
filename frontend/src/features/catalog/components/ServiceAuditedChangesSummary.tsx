@@ -49,7 +49,7 @@ export function ServiceAuditedChangesSummary({ changes }: { changes: string[] })
   return (
     <section
       aria-label="Cambios auditados"
-      className="border border-amber-600 p-4 text-sm text-amber-900"
+      className="border border-warning bg-warning/10 p-4 text-sm text-warning"
     >
       <h3 className="font-semibold">Cambios auditados</h3>
       <p className="mt-1 text-xs leading-5 text-current/80">

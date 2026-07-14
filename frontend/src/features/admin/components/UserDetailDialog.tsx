@@ -21,7 +21,7 @@ export function UserDetailDialog({ onOpenChange, user }: UserDetailDialogProps) 
       {user ? (
         <div className="space-y-5">
           <div className="flex items-start gap-4 border border-operational-border bg-muted/40 p-4">
-            <div className="flex size-12 shrink-0 items-center justify-center bg-primary font-semibold text-white" aria-hidden="true">
+            <div className="flex size-12 shrink-0 items-center justify-center bg-primary font-semibold text-primary-foreground" aria-hidden="true">
               {user.name.charAt(0).toUpperCase()}
             </div>
             <div className="min-w-0">

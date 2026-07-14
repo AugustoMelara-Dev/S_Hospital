@@ -59,7 +59,7 @@ export function RouteState({ action, description, detail, headingLevel = 1, kind
   return (
     <section
       aria-labelledby={headingId}
-      className="w-full overflow-hidden border border-border bg-white px-5 py-8 text-foreground sm:px-8 sm:py-10"
+      className="w-full overflow-hidden border border-border bg-surface px-5 py-8 text-foreground sm:px-8 sm:py-10"
       role={role}
     >
       <div className="mx-auto flex max-w-2xl flex-col items-center gap-4 text-center sm:gap-5">

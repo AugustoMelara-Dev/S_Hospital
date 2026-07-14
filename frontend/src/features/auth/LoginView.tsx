@@ -103,7 +103,7 @@ export function LoginView({
                 <img
                   src={logoUrl}
                   alt="Logo institucional"
-                  className="size-11 shrink-0 border border-border bg-white object-contain p-1"
+                  className="size-11 shrink-0 border border-border bg-receipt-paper object-contain p-1"
                 />
               ) : (
                 <span className="flex size-11 shrink-0 items-center justify-center bg-primary text-primary-foreground">
@@ -205,7 +205,7 @@ export function LoginView({
           </div>
         </section>
 
-        <section className="relative order-2 flex min-w-0 items-center overflow-hidden bg-sidebar px-6 py-12 text-white sm:px-10 lg:order-1 lg:min-h-screen lg:px-16">
+        <section className="relative order-2 flex min-w-0 items-center overflow-hidden bg-sidebar px-6 py-12 text-sidebar-foreground sm:px-10 lg:order-1 lg:min-h-screen lg:px-16">
           <div className="relative max-w-xl">
             <p className="text-xs font-semibold uppercase tracking-widest text-sidebar-primary">
               Gestión hospitalaria institucional
@@ -213,12 +213,12 @@ export function LoginView({
             <h2 className="mt-5 text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
               Operación financiera clara, segura y diseñada para su hospital.
             </h2>
-            <div className="mt-10 grid gap-3 text-sm leading-6 text-white/70 sm:grid-cols-2">
-              <p className="flex items-start gap-3 border border-white/10 bg-white/5 p-4">
+            <div className="mt-10 grid gap-3 text-sm leading-6 text-sidebar-foreground/70 sm:grid-cols-2">
+              <p className="flex items-start gap-3 border border-sidebar-border bg-sidebar-accent/50 p-4">
                 <SafetyOutlined aria-hidden="true" className="mt-0.5 text-lg shrink-0 text-sidebar-primary" />
                 El acceso por rol muestra solo los módulos autorizados.
               </p>
-              <p className="flex items-start gap-3 border border-white/10 bg-white/5 p-4">
+              <p className="flex items-start gap-3 border border-sidebar-border bg-sidebar-accent/50 p-4">
                 <DisconnectOutlined aria-hidden="true" className="mt-0.5 text-lg shrink-0 text-sidebar-primary" />
                 La operación principal continúa sin internet dentro de la red local.
               </p>

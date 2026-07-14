@@ -465,8 +465,8 @@ function CategoryButton({
       className={cn(
         'min-h-11 border px-3 py-2 text-left text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         active
-          ? 'border-secondary bg-secondary text-white'
-          : 'border-border bg-white text-muted-foreground hover:border-secondary/30 hover:bg-accent/45 hover:text-foreground',
+          ? 'border-secondary bg-secondary text-secondary-foreground'
+          : 'border-border bg-surface text-muted-foreground hover:border-secondary/30 hover:bg-accent/45 hover:text-foreground',
       )}
       onClick={onClick}
       role="radio"

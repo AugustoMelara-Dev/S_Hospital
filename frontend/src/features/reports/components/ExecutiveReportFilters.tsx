@@ -9,7 +9,7 @@ type Props = { filters: Filters; preset: PresetKey; onPresetChange: (preset: Pre
 export function ExecutiveReportFilters({ filters, preset, onPresetChange, onChange, onRefresh, onExportPdf, onExportExcel, canExport, loading, exporting, titleLevel = 2, rangeError, hasUnappliedChanges = false }: Props) {
   const disabled = loading || exporting;
   const changePreset = (next: PresetKey) => { onPresetChange(next); if (next !== 'custom') { const range = computePresetRange(next); onChange({ ...filters, date_from: range.from, date_to: range.to }); } };
-  return <section className="border border-slate-300 p-4" aria-labelledby="executive-controls-title">
+  return <section className="border border-border p-4" aria-labelledby="executive-controls-title">
     <Typography.Title id="executive-controls-title" level={titleLevel}>Control ejecutivo</Typography.Title>
     <Typography.Paragraph>Ajuste el periodo y actualice los indicadores con los datos del cierre operativo. Puede consultar hasta 92 días.</Typography.Paragraph>
     <Flex wrap gap={12} align="end">

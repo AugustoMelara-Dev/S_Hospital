@@ -4,7 +4,7 @@ import { CATEGORY_FILTER_ALL, STATUS_FILTER_ACTIVE, STATUS_FILTER_ALL, STATUS_FI
 
 export function CatalogToolbar({ categories, categoryFilter, hasActiveFilters, isLoading, onActiveFilterChange, onCategoryFilterChange, onClearFilters, onSearchChange, searchInputId = 'catalog-search', searchValue, statusFilter }: CatalogToolbarProps) {
   return (
-    <section className="border border-slate-300 p-4" aria-labelledby="catalog-filters-title">
+    <section className="border border-border p-4" aria-labelledby="catalog-filters-title">
       <Typography.Title id="catalog-filters-title" level={4}>Explorar catálogo</Typography.Title>
       <Typography.Paragraph>Busque por nombre y refine por categoría o disponibilidad.</Typography.Paragraph>
       <Space wrap align="end">

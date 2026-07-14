@@ -38,13 +38,13 @@ export function InstitutionalRail({ activeItem, collapsed, hospitalName, logoUrl
     >
       <div className={cn('flex min-h-24 items-center border-b border-sidebar-border', collapsed ? 'justify-center px-2' : 'gap-3 px-5')}>
         {logoUrl ? (
-          <img src={logoUrl} alt={hospitalName} title={collapsed ? hospitalName : undefined} className="size-11 border border-sidebar-border bg-white object-contain p-1" />
+          <img src={logoUrl} alt={hospitalName} title={collapsed ? hospitalName : undefined} className="size-11 border border-sidebar-border bg-receipt-paper object-contain p-1" />
         ) : (
           <span
             role="img"
             aria-label={hospitalName}
             title={collapsed ? hospitalName : undefined}
-            className="flex size-11 shrink-0 items-center justify-center border border-white/10 bg-sidebar-primary text-sidebar-primary-foreground"
+            className="flex size-11 shrink-0 items-center justify-center border border-sidebar-border bg-sidebar-primary text-sidebar-primary-foreground"
           >
             {collapsed ? (
               <span className="text-xs font-bold tracking-tight" aria-hidden="true">{hospitalInitials(hospitalName)}</span>
@@ -56,7 +56,7 @@ export function InstitutionalRail({ activeItem, collapsed, hospitalName, logoUrl
         {!collapsed ? (
           <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-widest text-sidebar-primary">Gestión institucional</p>
-            <p data-testid="institutional-desktop-identity" className="mt-1 truncate text-sm font-semibold text-white" title={hospitalName}>{hospitalName}</p>
+            <p data-testid="institutional-desktop-identity" className="mt-1 truncate text-sm font-semibold text-sidebar-accent-foreground" title={hospitalName}>{hospitalName}</p>
           </div>
         ) : null}
       </div>
@@ -81,8 +81,8 @@ export function InstitutionalRail({ activeItem, collapsed, hospitalName, logoUrl
                         'group relative flex min-h-11 items-center border border-transparent text-sm font-medium outline-none transition-all',
                         collapsed ? 'justify-center px-2' : 'gap-3 px-3',
                         active
-                          ? 'border-sidebar-primary/30 bg-white/10 font-semibold text-white'
-                          : 'text-sidebar-foreground/80 hover:translate-x-0.5 hover:bg-sidebar-accent hover:text-white',
+                          ? 'border-sidebar-primary/30 bg-sidebar-accent font-semibold text-sidebar-accent-foreground'
+                          : 'text-sidebar-foreground/80 hover:translate-x-0.5 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
                       )}
                     >
                       <Icon className="text-lg shrink-0" aria-hidden="true" />
@@ -119,7 +119,7 @@ export function InstitutionalRail({ activeItem, collapsed, hospitalName, logoUrl
         ) : null}
         <Button
           type="text"
-          icon={collapsed ? <MenuUnfoldOutlined className="text-white text-lg" /> : <MenuFoldOutlined className="text-white text-lg" />}
+          icon={collapsed ? <MenuUnfoldOutlined className="text-lg text-sidebar-accent-foreground" /> : <MenuFoldOutlined className="text-lg text-sidebar-accent-foreground" />}
           className="!size-11 shrink-0 hover:bg-sidebar-accent text-sidebar-foreground"
           aria-label={collapsed ? 'Expandir navegación' : 'Reducir navegación'}
           onClick={onToggleCollapsed}

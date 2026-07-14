@@ -22,5 +22,5 @@ export function TrendChart({ report }: TrendChartProps) {
       { name: 'Pendiente', type: 'line', data: data.map((item) => item.pending), smooth: true },
     ],
   };
-  return <section aria-labelledby="trend-title" className="border border-slate-300 p-4"><Typography.Title id="trend-title" level={3}>Tendencia diaria</Typography.Title><Typography.Paragraph>Facturado vs cobrado por día. La tabla contiene los valores exactos.</Typography.Paragraph><InstitutionalChart ariaLabel="Gráfico de tendencia diaria de facturación y cobros" summary={`${data.length} ${data.length === 1 ? 'día' : 'días'} con actividad en el periodo.`} alternativeTable={table} state={data.length ? 'ready' : 'empty'} option={option} /></section>;
+  return <section aria-labelledby="trend-title" className="border border-border p-4"><Typography.Title id="trend-title" level={3}>Tendencia diaria</Typography.Title><Typography.Paragraph>Facturado vs cobrado por día. La tabla contiene los valores exactos.</Typography.Paragraph><InstitutionalChart ariaLabel="Gráfico de tendencia diaria de facturación y cobros" summary={`${data.length} ${data.length === 1 ? 'día' : 'días'} con actividad en el periodo.`} alternativeTable={table} state={data.length ? 'ready' : 'empty'} option={option} /></section>;
 }

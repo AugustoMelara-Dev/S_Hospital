@@ -220,7 +220,7 @@ export function ReportsCash({
 
   return (
     <section className="flex flex-col gap-5" aria-label="Reporte de caja">
-      <header className="border-b border-slate-300 pb-4"><Typography.Text>Reporte de caja</Typography.Text><Typography.Title level={1}>Operación de caja</Typography.Title><Typography.Paragraph>Sesiones, cajeros, métodos de pago y diferencias de caja.</Typography.Paragraph></header>
+      <header className="border-b border-border pb-4"><Typography.Text>Reporte de caja</Typography.Text><Typography.Title level={1}>Operación de caja</Typography.Title><Typography.Paragraph>Sesiones, cajeros, métodos de pago y diferencias de caja.</Typography.Paragraph></header>
 
       {visibleCashSessionReport ? (
         <ReportScope

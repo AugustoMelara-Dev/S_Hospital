@@ -5,7 +5,7 @@ import type { ServiceStatusSummaryProps } from './catalogTypes';
 export function ServiceStatusSummary({ canManage, onNewCategory, onNewService, summary }: ServiceStatusSummaryProps) {
   const totalLabel = `${summary.total} servicio${summary.total !== 1 ? 's' : ''} en el catálogo`;
   return (
-    <header className="border-b border-slate-300 pb-4">
+    <header className="border-b border-border pb-4">
       <Typography.Text>Servicios y productos facturables</Typography.Text>
       <Typography.Title id="catalog-title" level={1}>Catálogo institucional</Typography.Title>
       <Typography.Paragraph>{canManage ? 'Administre categorías, servicios y precios para mantener operativo el catálogo de caja.' : 'Cajero puede consultar catálogo y precios, sin permisos para modificar servicios.'}</Typography.Paragraph>

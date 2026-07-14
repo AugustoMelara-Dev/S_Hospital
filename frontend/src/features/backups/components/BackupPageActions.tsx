@@ -17,7 +17,7 @@ export function BackupPageActions({
   onRefresh,
 }: BackupPageActionsProps) {
   return (
-    <Space wrap className="border border-white/15 bg-white/5 p-2">
+    <Space wrap className="border border-border bg-surface p-2">
       {createDisabled ? (
         <p className="text-sm text-muted-foreground">Espere a que termine el respaldo pendiente antes de crear otro.</p>
       ) : null}
