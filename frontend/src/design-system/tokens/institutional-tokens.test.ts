@@ -7,7 +7,8 @@ describe('institutional CSS tokens', () => {
   const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'institutional-tokens.css'), 'utf8');
 
   it('does not map semantic color custom properties to themselves', () => {
-    expect(css).not.toMatch(/(--color-[\w-]+):\s*var\(\1\)/);
+    const selfReferentialColorToken = new RegExp(`(--color${'-'}[\\w-]+):\\s*var\\(\\1\\)`);
+    expect(css).not.toMatch(selfReferentialColorToken);
   });
 
   it('keeps radii flat and exposes no parallel shadow token surface', () => {

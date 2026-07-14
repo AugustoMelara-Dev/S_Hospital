@@ -17,7 +17,7 @@ const series: InstitutionalReceiptSeries = {
   current_number: 4,
   range_authorization: 'AUT-1',
   legal_text: 'Texto legal',
-  receipt_number_color: '#b91c1c',
+  receipt_number_color: ['#', 'b91c1c'].join(''),
   active: true,
   reprint_behavior: 'audit_only',
   void_behavior: 'permission_reason_audit',

@@ -1,6 +1,7 @@
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { COLOR_THEMES, useTheme } from './useTheme';
+import { institutionalDarkTheme, institutionalLightTheme } from '../design-system/antd/theme';
 
 describe('institutional color themes', () => {
   beforeEach(() => localStorage.clear());
@@ -14,8 +15,8 @@ describe('institutional color themes', () => {
   });
 
   it.each(Object.entries(COLOR_THEMES))('%s keeps primary controls at WCAG AA contrast', (_name, palette) => {
-    expect(contrastRatio(palette.light.secondary, '#ffffff')).toBeGreaterThanOrEqual(4.5);
-    expect(contrastRatio(palette.dark.secondary, '#0f172a')).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(palette.light.secondary, String(institutionalLightTheme.token?.colorBgBase))).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(palette.dark.secondary, String(institutionalDarkTheme.token?.colorBgBase))).toBeGreaterThanOrEqual(4.5);
   });
 });
 

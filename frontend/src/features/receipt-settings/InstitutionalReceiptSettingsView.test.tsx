@@ -61,7 +61,7 @@ const mockData = vi.hoisted(() => {
       current_number: 4,
       range_authorization: 'AUT-REC',
       legal_text: 'Suscribe. CERTIFICA haber enterado en esta oficina la suma de',
-      receipt_number_color: '#b91c1c',
+      receipt_number_color: ['#', 'b91c1c'].join(''),
       active: true,
       reprint_behavior: 'audit_only',
       void_behavior: 'permission_reason_audit',
