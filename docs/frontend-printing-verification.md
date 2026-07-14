@@ -1,42 +1,35 @@
-# Matriz de verificación de impresión institucional
+# Verificación final de impresión del frontend
 
-Fecha de corte: 2026-07-13
-Estado: **automatización en curso; prueba física pendiente**
+## Evidencia automatizada
 
-La vista previa y la impresión usan HTML/CSS local. No se rasteriza el recibo,
-no se cargan fuentes remotas y el shell se oculta mediante media print. La
-geometría vive exclusivamente en
-`frontend/src/printing/styles/receipt-print.css`; `src/styles.css` no contiene
-reglas `@page`.
+- Pruebas unitarias focales: 25/25.
+- Playwright impresión: 21/21.
+- PDFs generados: 18, más `printing-evidence.json`, bajo `frontend/test-results/frontend-final/printing/`.
+- Cada PDF tiene una página; `pypdf` confirmó MediaBox y texto obligatorio en 18/18.
+- Recursos externos de fuentes durante la generación: 0.
 
-| Perfil | Tamaño | Orientación | Márgenes | Escala | Navegador | Impresora o PDF | Original | Copias | Resultado | Problemas |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Carta | letter | horizontal | 0.45 in | automática | Chromium | PDF | sí | 1.ª/2.ª según perfil | CSS/unit automatizado; Playwright pendiente de reejecución | prueba física pendiente |
-| Media Carta | 8.5 × 5.5 in | horizontal | 0.35 in | automática | Chromium | PDF | sí | 1.ª/2.ª según perfil | CSS/unit automatizado; Playwright pendiente de reejecución | prueba física pendiente |
-| A5 | A5 | horizontal | 0.30 in | automática | Chromium | PDF | sí | 1.ª/2.ª según perfil | CSS/unit automatizado; Playwright pendiente de reejecución | prueba física pendiente |
-| Ticket 80 mm | 80 mm × auto | vertical continuo | 4 mm | automática | Chromium | PDF/compatibilidad térmica | sí | según perfil histórico | CSS/unit automatizado | compatibilidad secundaria; prueba física pendiente |
-| Ticket 58 mm | 58 mm × auto | vertical continuo | 3 mm | automática | Chromium | PDF/compatibilidad térmica | sí | según perfil histórico | CSS/unit automatizado | compatibilidad secundaria; prueba física pendiente |
+| Formato | MediaBox verificado | Copias |
+|---|---|---|
+| Carta | 792 × 612 pt | Original, primera, segunda |
+| Media Carta | 612 × 396 pt | Original, primera, segunda |
+| A5 | 594.96 × 420 pt | Original, primera, segunda |
+| 80 mm | 227.04 × 841.92 pt | Original, primera, segunda |
+| 58 mm | 165.12 × 841.92 pt | Original, primera, segunda |
+| Personalizado 190 × 140 mm | 539.04 × 396.96 pt | Original, primera, segunda |
 
-## Cobertura automatizada
+Los recorridos comprobaron tamaño, orientación, una página, márgenes del perfil, ausencia de overflow, shell y acciones ocultos, sombra desactivada, encabezado, pie, RTN, correlativo, monto, monto en letras, firma, sello y leyenda de copia.
 
-- `receipt-print-css.test.ts` comprueba que los cinco perfiles conservan su
-  regla `@page` y que la geometría no contamina el stylesheet global.
-- `paperPolicy.test.ts` comprueba Carta, Media Carta, A5, 80 mm, 58 mm,
-  orientación institucional, clases de presentación y fallback seguro a Media
-  Carta.
-- `ReceiptSettingsPreview.test.tsx` comprueba contenido institucional, tabla,
-  firmas, sello, pie, leyendas y proporciones.
-- `ReceiptPreview.test.tsx` comprueba recibo institucional y legacy, contenido
-  sin controles interactivos dentro del área imprimible y selección de los
-  cinco formatos.
-- `print-profiles.spec.ts` y `clinical-receipts.spec.ts` cubren el selector real,
-  preview responsivo, campos técnicos protegidos y payload de impresión de
-  prueba. La matriz de media print, shell oculto y saltos de página se ampliará
-  antes de cerrar QA transversal.
+## VALIDACIÓN FÍSICA EXTERNA PENDIENTE
 
-## Deuda física explícita
+No existe una impresora física accesible en este entorno. Una persona debe:
 
-No existe todavía evidencia de salida en impresoras físicas Carta/Media Carta,
-A5, 80 mm ni 58 mm. Ningún formato se considera físicamente certificado hasta
-registrar modelo de impresora, driver, escala del diálogo, medición de márgenes,
-legibilidad de Original/1.ª copia/2.ª copia, firmas, sello y ausencia de cortes.
+1. Registrar modelo de impresora, versión de driver, sistema operativo, fecha y operador.
+2. Configurar en el driver el tamaño exacto de cada uno de los seis perfiles.
+3. Seleccionar la orientación indicada por el PDF y escala 100 %, sin “ajustar a página”.
+4. Imprimir original, primera copia y segunda copia de cada perfil: 18 salidas.
+5. Medir ancho, alto y cuatro márgenes con regla; comparar con el perfil seleccionado.
+6. Verificar que no existan cortes, páginas en blanco, desbordes ni escalado inesperado.
+7. Confirmar legibilidad de encabezado, RTN, correlativo, monto en número y letras, firma, sello, pie y leyenda de copia.
+8. Adjuntar fotografías/escaneos y anotar cualquier ajuste exclusivo del driver.
+
+Este pendiente es validación de hardware externo, no deuda de implementación.
