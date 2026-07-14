@@ -285,7 +285,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
         <Collapse
           className="border-y border-border bg-surface"
           destroyOnHidden
-          expandIconPosition="end"
+          expandIconPlacement="end"
           size="small"
           items={[{
             key: 'editable-categories',
