@@ -1,8 +1,6 @@
-import { AlertCircle, CheckCircle } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { StatusBadge } from '@/components/ui/status-badge';
+import { AlertOutlined as AlertCircle, CheckCircleOutlined as CheckCircle } from '@ant-design/icons';
+import { Card, Tag } from 'antd';
 import type { FiscalSequence, FiscalSettings } from '@/lib/api';
-import { INSTITUTIONAL_RECEIPT_PAPER_OPTIONS } from '@/lib/institutionalReceiptPaper';
 
 interface FiscalStatusCardProps {
   settings: FiscalSettings | null;
@@ -16,7 +14,6 @@ export function FiscalStatusCard({ settings, sequence }: FiscalStatusCardProps) 
   const isPlaceholderCai = new RegExp(`^${'de' + 'mo'}-cai$`, 'i').test(cai);
   const isHospitalConfigured = Boolean(hospitalName) && !isPlaceholderHospital;
   const hasRtn = Boolean(settings?.rtn?.trim());
-  const hasReceiptPaperSize = INSTITUTIONAL_RECEIPT_PAPER_OPTIONS.some((option) => option.value === settings?.receipt_paper_size);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const validUntil = sequence?.valid_until ? new Date(sequence.valid_until) : null;
@@ -36,7 +33,6 @@ export function FiscalStatusCard({ settings, sequence }: FiscalStatusCardProps) 
   const blockers = [
     !isHospitalConfigured ? 'nombre del hospital' : null,
     !hasRtn ? 'RTN del hospital' : null,
-    !hasReceiptPaperSize ? 'tamaño de recibo institucional' : null,
     !isSequenceConfigured ? 'CAI y prefijo fiscal' : null,
     !isSequenceActive ? 'secuencia fiscal activa' : null,
     !isDateValid ? 'fecha limite vigente' : null,
@@ -46,10 +42,10 @@ export function FiscalStatusCard({ settings, sequence }: FiscalStatusCardProps) 
   const isConfigured = blockers.length === 0;
 
   return (
-    <Card className={isConfigured ? 'status-success' : 'status-warning'}>
-      <CardContent className="pt-6">
+    <Card className={isConfigured ? 'border-success/30 bg-success/10 text-success-foreground' : 'border-warning/30 bg-warning/10 text-warning-foreground'}>
+      <div className="pt-6">
         <div className="flex items-center gap-4">
-          <div className={`p-3 rounded-full ${isConfigured ? 'bg-success/10' : 'bg-warning/10'}`}>
+          <div className={isConfigured ? 'bg-success/10 p-3' : 'bg-warning/10 p-3'}>
             {isConfigured ? (
               <CheckCircle aria-hidden="true" className="h-6 w-6 text-success" />
             ) : (
@@ -61,9 +57,9 @@ export function FiscalStatusCard({ settings, sequence }: FiscalStatusCardProps) 
               <h3 className="font-semibold">
                 {isConfigured ? 'Configuración completa' : 'Configuración pendiente'}
               </h3>
-              <StatusBadge status={isConfigured ? 'success' : 'pending'}>
+              <Tag color={isConfigured ? 'success' : 'warning'}>
                 {isConfigured ? 'Lista' : 'Requiere revisión'}
-              </StatusBadge>
+              </Tag>
             </div>
             <p className="text-sm text-muted-foreground">
               {isConfigured
@@ -73,11 +69,11 @@ export function FiscalStatusCard({ settings, sequence }: FiscalStatusCardProps) 
           </div>
         </div>
         {blockers.length > 0 && (
-          <p className="mt-3 text-sm text-warning">
+          <p className="mt-3 text-sm text-warning-foreground">
             Faltan o requieren revisión: {blockers.join(', ')}.
           </p>
         )}
-      </CardContent>
+      </div>
     </Card>
   );
 }

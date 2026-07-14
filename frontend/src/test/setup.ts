@@ -1,10 +1,73 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import '@testing-library/jest-dom/vitest';
 import { configure } from '@testing-library/dom';
 import { QueryClient } from '@tanstack/react-query';
 import { afterEach, beforeEach, expect, vi } from 'vitest';
 import * as matchers from 'vitest-axe/matchers';
 
+import React from 'react';
 expect.extend(matchers);
+
+// JSDOM cannot run AG Grid's layout engine. The institutional adapter remains
+// real; only the third-party renderer is replaced at the test boundary.
+vi.mock('ag-grid-react', () => ({
+  AgGridProvider: ({ children }: { children: React.ReactNode }) => children,
+  AgGridReact: ({
+    'aria-label': ariaLabel,
+    columnDefs = [],
+    rowData = [],
+  }: {
+    'aria-label'?: string;
+    columnDefs?: Array<Record<string, any>>;
+    rowData?: Array<Record<string, any>>;
+  }) => React.createElement(
+    'table',
+    { 'aria-label': ariaLabel },
+    React.createElement(
+      'thead',
+      null,
+      React.createElement(
+        'tr',
+        null,
+        columnDefs.map((column) => React.createElement(
+          'th',
+          {
+            key: column.colId ?? column.field ?? column.headerName,
+            'data-numeric': column.type === 'rightAligned' ? 'true' : undefined,
+          },
+          column.headerName,
+        )),
+      ),
+    ),
+    React.createElement(
+      'tbody',
+      null,
+      rowData.map((row, rowIndex) => React.createElement(
+        'tr',
+        { key: row.id ?? rowIndex },
+        columnDefs.map((column) => {
+          const value = column.field ? row[column.field] : undefined;
+          const params = { data: row, value };
+          const renderedValue = column.cellRenderer
+            ? column.cellRenderer(params)
+            : column.valueFormatter
+              ? column.valueFormatter(params)
+              : column.valueGetter
+                ? column.valueGetter({ data: row })
+                : value;
+          return React.createElement(
+            'td',
+            {
+              key: column.colId ?? column.field ?? column.headerName,
+              'data-numeric': column.type === 'rightAligned' ? 'true' : undefined,
+            },
+            renderedValue == null ? '' : renderedValue,
+          );
+        }),
+      )),
+    ),
+  ),
+}));
 
 // Bump the default async-util timeout from 1s to 10s. AppRoutes code-
 // splits the 9 heavy views (Reports, Backups, Fiscal Settings, etc.)
@@ -25,6 +88,36 @@ Object.defineProperty(window, 'print', {
   value: vi.fn(),
 });
 
+// Ant Design measures scrollbars and focus styles through computed styles.
+// Keep JSDOM's stylesheet-derived values (notably display/visibility for
+// closing overlays) and fall back only when its CSS parser rejects a selector.
+const jsdomGetComputedStyle = window.getComputedStyle.bind(window);
+Object.defineProperty(window, 'getComputedStyle', {
+  configurable: true,
+  value: (element: Element, _pseudoElement?: string | null) => {
+    try {
+      return jsdomGetComputedStyle(element);
+    } catch {
+      const style = element instanceof HTMLElement || element instanceof SVGElement
+        ? element.style
+        : document.documentElement.style;
+      return style;
+    }
+  },
+});
+
+Object.defineProperty(window, 'requestAnimationFrame', {
+  configurable: true,
+  writable: true,
+  value: (callback: FrameRequestCallback) => window.setTimeout(() => callback(performance.now()), 0),
+});
+
+Object.defineProperty(window, 'cancelAnimationFrame', {
+  configurable: true,
+  writable: true,
+  value: (handle: number) => window.clearTimeout(handle),
+});
+
 class ResizeObserverMock implements ResizeObserver {
   observe = vi.fn();
   unobserve = vi.fn();
@@ -41,11 +134,11 @@ Object.defineProperty(window, 'ResizeObserver', {
   value: ResizeObserverMock,
 });
 
-if (typeof window !== 'undefined' && typeof window.matchMedia !== 'function') {
+if (typeof window !== 'undefined') {
   Object.defineProperty(window, 'matchMedia', {
     configurable: true,
     value: vi.fn().mockImplementation((query: string) => ({
-      matches: false,
+      matches: query.includes('prefers-reduced-motion'),
       media: query,
       onchange: null,
       addListener: vi.fn(),
@@ -80,6 +173,9 @@ if (typeof HTMLFormElement !== 'undefined') {
 
 beforeEach(async () => {
   document.body.innerHTML = '';
+  const portalRoot = document.createElement('div');
+  portalRoot.id = 'test-portal-root';
+  document.body.appendChild(portalRoot);
   // Reset the module-level queryClient so each test starts with a
   // clean cache. Otherwise a previous test's stale data could leak
   // into mocks of the next test.

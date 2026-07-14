@@ -58,6 +58,7 @@ class MonthlyReportService
 
         Invoice::query()
             ->whereBetween('issued_at', [$start, $end])
+            ->where('status', '!=', Invoice::STATUS_VOID)
             ->groupBy('status')
             ->select('status')
             ->selectRaw('COUNT(*) as count')
@@ -69,6 +70,18 @@ class MonthlyReportService
                     'total' => $this->centsToMoney($row->total_cents),
                 ];
             });
+
+        $voided = Invoice::query()
+            ->where('status', Invoice::STATUS_VOID)
+            ->whereBetween('voided_at', [$start, $end])
+            ->selectRaw('COUNT(*) as count')
+            ->selectRaw('COALESCE(SUM(total_cents), 0) as total_cents')
+            ->first();
+
+        $statuses[Invoice::STATUS_VOID] = [
+            'count' => (int) ($voided->count ?? 0),
+            'total' => $this->centsToMoney($voided->total_cents ?? 0),
+        ];
 
         return $statuses;
     }
@@ -107,6 +120,12 @@ class MonthlyReportService
             ->selectRaw($this->dateExpression('issued_at').' as report_date')
             ->pluck('report_date');
 
+        $voidedDates = Invoice::query()
+            ->where('status', Invoice::STATUS_VOID)
+            ->whereBetween('voided_at', [$start, $end])
+            ->selectRaw($this->dateExpression('voided_at').' as report_date')
+            ->pluck('report_date');
+
         $paymentDates = Payment::query()
             ->join('invoices', 'payments.invoice_id', '=', 'invoices.id')
             ->where('payments.status', Payment::STATUS_POSTED)
@@ -116,6 +135,7 @@ class MonthlyReportService
             ->pluck('report_date');
 
         return $invoiceDates
+            ->merge($voidedDates)
             ->merge($paymentDates)
             ->filter()
             ->unique()

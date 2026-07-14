@@ -1,26 +1,27 @@
 import {
-  Archive,
-  Boxes,
-  ClipboardList,
-  FileClock,
-  HelpCircle,
-  Info,
-  LayoutDashboard,
-  ReceiptText,
-  Settings,
-  User,
-  WalletCards,
-  type LucideIcon,
-} from 'lucide-react';
+  AppstoreOutlined,
+  AuditOutlined,
+  CloudSyncOutlined,
+  DashboardOutlined,
+  FileTextOutlined,
+  HistoryOutlined,
+  InfoCircleOutlined,
+  QuestionCircleOutlined,
+  SettingOutlined,
+  UserOutlined,
+  WalletOutlined,
+} from '@ant-design/icons';
+import type React from 'react';
 
 type PermissionMode = 'all' | 'any';
-type NavigationGroup = 'operations' | 'administration' | 'support';
+export type NavigationGroup = 'operations' | 'administration' | 'support';
 
 export type AppNavigationItem = {
   id: string;
   label: string;
   path: string;
-  icon: LucideIcon;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  icon: React.ComponentType<any>;
   navigationGroup?: NavigationGroup;
   navigationPermissions?: string[];
   navigationPermissionMode?: PermissionMode;
@@ -35,7 +36,8 @@ export type AppRouteDefinition = {
   id: string;
   label: string;
   path: string;
-  icon: LucideIcon;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  icon: React.ComponentType<any>;
   breadcrumbs: AppBreadcrumb[];
   navigation: boolean;
   navigationGroup?: NavigationGroup;
@@ -51,7 +53,7 @@ export const appRoutes = {
     id: 'dashboard',
     label: 'Inicio',
     path: '/dashboard',
-    icon: LayoutDashboard,
+    icon: DashboardOutlined,
     breadcrumbs: [{ label: 'Inicio', path: '/dashboard' }],
     navigationGroup: 'operations',
     navigation: true,
@@ -60,7 +62,7 @@ export const appRoutes = {
     id: 'newInvoice',
     label: 'Nueva factura',
     path: '/billing/new',
-    icon: ReceiptText,
+    icon: FileTextOutlined,
     breadcrumbs: [
       { label: 'Inicio', path: '/dashboard' },
       { label: 'Nueva factura', path: '/billing/new' },
@@ -77,7 +79,7 @@ export const appRoutes = {
     id: 'cashbox',
     label: 'Caja',
     path: '/cashbox',
-    icon: WalletCards,
+    icon: WalletOutlined,
     breadcrumbs: [
       { label: 'Inicio', path: '/dashboard' },
       { label: 'Caja', path: '/cashbox' },
@@ -92,7 +94,7 @@ export const appRoutes = {
     id: 'catalog',
     label: 'Catálogo',
     path: '/catalog',
-    icon: Boxes,
+    icon: AppstoreOutlined,
     breadcrumbs: [
       { label: 'Inicio', path: '/dashboard' },
       { label: 'Catálogo', path: '/catalog' },
@@ -107,7 +109,7 @@ export const appRoutes = {
     id: 'invoices',
     label: 'Historial',
     path: '/invoices',
-    icon: FileClock,
+    icon: HistoryOutlined,
     breadcrumbs: [
       { label: 'Inicio', path: '/dashboard' },
       { label: 'Historial', path: '/invoices' },
@@ -122,15 +124,15 @@ export const appRoutes = {
     id: 'reports',
     label: 'Reportes',
     path: '/reports',
-    icon: ClipboardList,
+    icon: AuditOutlined,
     breadcrumbs: [
       { label: 'Inicio', path: '/dashboard' },
       { label: 'Reportes', path: '/reports' },
     ],
     navigationGroup: 'operations',
     navigation: true,
-    navigationPermissions: ['reports.view', 'reports.managerial.view', 'reports.cash_session.view'],
-    requiredPermissions: ['reports.view', 'reports.managerial.view', 'reports.cash_session.view'],
+    navigationPermissions: ['reports.managerial.view', 'reports.cash_session.view', 'audit.view'],
+    requiredPermissions: ['reports.managerial.view', 'reports.cash_session.view', 'audit.view'],
     permissionMode: 'any',
     deniedReason: 'Requiere permiso para consultar reportes operativos, gerenciales o de caja.',
   },
@@ -138,7 +140,7 @@ export const appRoutes = {
     id: 'backups',
     label: 'Respaldos',
     path: '/backups',
-    icon: Archive,
+    icon: CloudSyncOutlined,
     breadcrumbs: [
       { label: 'Inicio', path: '/dashboard' },
       { label: 'Respaldos', path: '/backups' },
@@ -153,22 +155,23 @@ export const appRoutes = {
     id: 'fiscalSettings',
     label: 'Configuración',
     path: '/settings/fiscal',
-    icon: Settings,
+    icon: SettingOutlined,
     breadcrumbs: [
       { label: 'Inicio', path: '/dashboard' },
       { label: 'Configuración', path: '/settings/fiscal' },
     ],
     navigationGroup: 'administration',
     navigation: true,
-    navigationPermissions: ['settings.fiscal.view'],
-    requiredPermissions: ['settings.fiscal.view'],
-    deniedReason: 'Requiere permiso para consultar configuración fiscal.',
+    navigationPermissions: ['settings.fiscal.view', 'settings.operational.update'],
+    requiredPermissions: ['settings.fiscal.view', 'settings.operational.update'],
+    permissionMode: 'any',
+    deniedReason: 'Requiere permiso para consultar configuración fiscal o editar reglas operativas.',
   },
   receiptSettings: {
     id: 'receiptSettings',
     label: 'Recibos',
     path: '/settings/institutional-receipts',
-    icon: ReceiptText,
+    icon: FileTextOutlined,
     breadcrumbs: [
       { label: 'Inicio', path: '/dashboard' },
       { label: 'Recibos institucionales', path: '/settings/institutional-receipts' },
@@ -183,7 +186,7 @@ export const appRoutes = {
     id: 'users',
     label: 'Usuarios',
     path: '/admin/users',
-    icon: User,
+    icon: UserOutlined,
     breadcrumbs: [
       { label: 'Inicio', path: '/dashboard' },
       { label: 'Usuarios', path: '/admin/users' },
@@ -198,7 +201,7 @@ export const appRoutes = {
     id: 'help',
     label: 'Ayuda',
     path: '/help',
-    icon: HelpCircle,
+    icon: QuestionCircleOutlined,
     breadcrumbs: [
       { label: 'Inicio', path: '/dashboard' },
       { label: 'Ayuda', path: '/help' },
@@ -210,7 +213,7 @@ export const appRoutes = {
     id: 'support',
     label: 'Soporte',
     path: '/support',
-    icon: HelpCircle,
+    icon: QuestionCircleOutlined,
     breadcrumbs: [
       { label: 'Inicio', path: '/dashboard' },
       { label: 'Soporte', path: '/support' },
@@ -221,7 +224,7 @@ export const appRoutes = {
     id: 'about',
     label: 'Acerca de',
     path: '/about',
-    icon: Info,
+    icon: InfoCircleOutlined,
     breadcrumbs: [
       { label: 'Inicio', path: '/dashboard' },
       { label: 'Acerca de', path: '/about' },

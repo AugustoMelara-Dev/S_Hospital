@@ -7,6 +7,7 @@ use App\Models\FiscalSetting;
 use App\Models\InstitutionalReceipt;
 use App\Models\InstitutionalReceiptSeries;
 use App\Models\ReceiptPrintProfile;
+use App\Models\ReceiptProfileAssignment;
 use App\Models\User;
 use Database\Seeders\ReceiptPrintProfileSeeder;
 use Database\Seeders\RolesAndPermissionsSeeder;
@@ -58,6 +59,74 @@ class InstitutionalReceiptSettingsTest extends TestCase
             'action' => 'institutional_receipt.settings.created',
             'entity_type' => FiscalSetting::class,
         ]);
+    }
+
+    public function test_view_only_user_does_not_receive_technical_print_profile_fields(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $this->seed(ReceiptPrintProfileSeeder::class);
+
+        $user = User::factory()->create();
+        $user->givePermissionTo('receipt_settings.view');
+        $profile = ReceiptPrintProfile::query()
+            ->where('code', ReceiptPrintProfile::CODE_HALF_LETTER)
+            ->firstOrFail();
+
+        ReceiptProfileAssignment::query()->create([
+            'receipt_print_profile_id' => $profile->id,
+            'scope_type' => ReceiptProfileAssignment::SCOPE_GLOBAL,
+            'scope_id' => null,
+            'active' => true,
+            'created_by' => $user->id,
+            'updated_by' => $user->id,
+        ]);
+
+        $response = $this->actingAs($user)
+            ->getJson('/api/settings/institutional-receipts')
+            ->assertOk()
+            ->assertJsonPath('data.print_profiles.0.code', ReceiptPrintProfile::CODE_HALF_LETTER);
+
+        $payload = $response->json('data');
+        $encoded = json_encode($payload, JSON_THROW_ON_ERROR);
+
+        foreach ([
+            'width_mm',
+            'height_mm',
+            'margin_top_mm',
+            'margin_right_mm',
+            'margin_bottom_mm',
+            'margin_left_mm',
+            'font_family',
+            'font_scale',
+            'show_technical_fields',
+            ReceiptPrintProfile::CODE_THERMAL_80,
+            ReceiptPrintProfile::CODE_THERMAL_58,
+            ReceiptPrintProfile::CODE_CUSTOM_SMALL,
+        ] as $hiddenValue) {
+            $this->assertStringNotContainsString($hiddenValue, $encoded);
+        }
+
+        $this->assertSame([
+            'id',
+            'code',
+            'name',
+            'copies_mode',
+            'show_copy_legend',
+            'show_physical_seal_space',
+            'use_logo',
+            'active',
+            'is_global_default',
+        ], array_keys($payload['print_profiles'][0]));
+        $this->assertSame([
+            'id',
+            'scope_type',
+            'scope_id',
+            'active',
+            'print_profile',
+        ], array_keys($payload['assignments'][0]));
+        $this->assertArrayNotHasKey('receipt_print_profile_id', $payload['assignments'][0]);
+        $this->assertArrayNotHasKey('profile_code', $payload['assignments'][0]);
+        $this->assertArrayNotHasKey('profile_name', $payload['assignments'][0]);
     }
 
     public function test_institutional_receipt_settings_accept_missing_rtn_when_not_applicable(): void
@@ -340,6 +409,42 @@ class InstitutionalReceiptSettingsTest extends TestCase
             'entity_type' => InstitutionalReceiptSeries::class,
             'entity_id' => $series->id,
         ]);
+    }
+
+    public function test_test_preview_and_print_reject_support_profiles_without_advanced_permission(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $this->seed(ReceiptPrintProfileSeeder::class);
+
+        $operator = User::factory()->create();
+        $operator->givePermissionTo('receipts.print_test');
+
+        foreach (['test-preview', 'test-print'] as $endpoint) {
+            $this->actingAs($operator)
+                ->postJson("/api/settings/institutional-receipts/{$endpoint}", [
+                    'profile_code' => ReceiptPrintProfile::CODE_THERMAL_80,
+                    'payer_name' => 'Paciente prueba',
+                    'amount' => '25.00',
+                ])
+                ->assertForbidden()
+                ->assertJsonValidationErrors('receipt_settings.advanced');
+        }
+
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $operator->id,
+            'action' => 'receipt_settings.advanced_denied',
+            'entity_type' => ReceiptPrintProfile::class,
+            'result' => 'failed',
+        ]);
+
+        $this->actingAs($operator)
+            ->postJson('/api/settings/institutional-receipts/test-preview', [
+                'profile_code' => ReceiptPrintProfile::CODE_HALF_LETTER,
+                'payer_name' => 'Paciente prueba',
+                'amount' => '25.00',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.profile.code', ReceiptPrintProfile::CODE_HALF_LETTER);
     }
 
     /**

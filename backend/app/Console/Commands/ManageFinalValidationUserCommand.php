@@ -24,7 +24,6 @@ class ManageFinalValidationUserCommand extends Command
         'receipts.view',
         'receipts.reprint',
         'audit.view',
-        'reports.view',
         'reports.managerial.view',
         'reports.cash_session.view',
         'reports.export',

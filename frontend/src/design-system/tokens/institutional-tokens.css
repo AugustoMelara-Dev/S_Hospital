@@ -1,0 +1,171 @@
+:root {
+  --institutional-background: #f8fafc;
+  --institutional-surface: #ffffff;
+  --institutional-text: #172033;
+  --institutional-border: #cbd5e1;
+  --institutional-primary: #0f766e;
+  --institutional-primary-foreground: #ffffff;
+  --institutional-secondary: #475569;
+  --institutional-secondary-foreground: #ffffff;
+  --institutional-muted: #f1f5f9;
+  --institutional-muted-foreground: #475569;
+  --institutional-accent: #ecfdf5;
+  --institutional-accent-foreground: #0f766e;
+  --institutional-success: #15803d;
+  --institutional-success-foreground: #14532d;
+  --institutional-warning: #b45309;
+  --institutional-warning-foreground: #78350f;
+  --institutional-error: #b91c1c;
+  --institutional-error-foreground: #7f1d1d;
+  --institutional-info: #0369a1;
+  --institutional-info-foreground: #0c4a6e;
+  
+  --institutional-sidebar: #172033;
+  --institutional-sidebar-foreground: #e8edf5;
+  --institutional-sidebar-primary: #5eead4;
+  --institutional-sidebar-primary-foreground: #172033;
+  --institutional-sidebar-accent: #26334d;
+  --institutional-sidebar-accent-foreground: #ffffff;
+  --institutional-sidebar-border: #526078;
+  --institutional-sidebar-ring: #5eead4;
+}
+
+.dark {
+  --institutional-background: #0f172a;
+  --institutional-surface: #1e293b;
+  --institutional-text: #f8fafc;
+  --institutional-border: #475569;
+  --institutional-primary: #14b8a6;
+  --institutional-primary-foreground: #0f172a;
+  --institutional-secondary: #cbd5e1;
+  --institutional-secondary-foreground: #0f172a;
+  --institutional-muted: #1e293b;
+  --institutional-muted-foreground: #cbd5e1;
+  --institutional-accent: #134e4a;
+  --institutional-accent-foreground: #ccfbf1;
+  --institutional-success: #4ade80;
+  --institutional-success-foreground: #052e16;
+  --institutional-warning: #fbbf24;
+  --institutional-warning-foreground: #451a03;
+  --institutional-error: #f87171;
+  --institutional-error-foreground: #450a0a;
+  --institutional-info: #38bdf8;
+  --institutional-info-foreground: #082f49;
+  
+  --institutional-sidebar: #0f172a;
+  --institutional-sidebar-foreground: #e2e8f0;
+  --institutional-sidebar-primary: #5eead4;
+  --institutional-sidebar-primary-foreground: #0f172a;
+  --institutional-sidebar-accent: #1e293b;
+  --institutional-sidebar-accent-foreground: #f8fafc;
+  --institutional-sidebar-border: #475569;
+  --institutional-sidebar-ring: #5eead4;
+}
+
+@theme {
+  --color-background: var(--institutional-background);
+  --color-surface: var(--institutional-surface);
+  --color-foreground: var(--institutional-text);
+  --color-border: var(--institutional-border);
+  --color-primary: var(--institutional-primary);
+  --color-primary-foreground: var(--institutional-primary-foreground);
+  --color-secondary: var(--institutional-secondary);
+  --color-secondary-foreground: var(--institutional-secondary-foreground);
+  --color-muted: var(--institutional-muted);
+  --color-muted-foreground: var(--institutional-muted-foreground);
+  --color-accent: var(--institutional-accent);
+  --color-accent-foreground: var(--institutional-accent-foreground);
+  --color-success: var(--institutional-success);
+  --color-success-foreground: var(--institutional-success-foreground);
+  --color-warning: var(--institutional-warning);
+  --color-warning-foreground: var(--institutional-warning-foreground);
+  --color-error: var(--institutional-error);
+  --color-error-foreground: var(--institutional-error-foreground);
+  --color-info: var(--institutional-info);
+  --color-info-foreground: var(--institutional-info-foreground);
+  --color-receipt-border: #1f2937;
+  --color-receipt-border-soft: #d1d5db;
+  --color-receipt-paper: #ffffff;
+  --color-receipt-ink: #111827;
+  --color-receipt-muted: #374151;
+  --color-receipt-accent: #274c56;
+  --color-receipt-accent-foreground: #153d48;
+
+  --color-sidebar: var(--institutional-sidebar);
+  --color-sidebar-foreground: var(--institutional-sidebar-foreground);
+  --color-sidebar-primary: var(--institutional-sidebar-primary);
+  --color-sidebar-primary-foreground: var(--institutional-sidebar-primary-foreground);
+  --color-sidebar-accent: var(--institutional-sidebar-accent);
+  --color-sidebar-accent-foreground: var(--institutional-sidebar-accent-foreground);
+  --color-sidebar-border: var(--institutional-sidebar-border);
+  --color-sidebar-ring: var(--institutional-sidebar-ring);
+
+  --font-sans: "IBM Plex Sans Variable", system-ui, -apple-system, sans-serif;
+  --font-mono: "Cascadia Code", ui-monospace, monospace;
+
+  /* Geometría institucional estricta (borderRadius: 0) */
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-panel: 0px;
+  --radius-card: 0px;
+
+  /* Eliminación de sombras decorativas flotantes */
+}
+
+/* AG Grid v33 Institutional Theme configuration via CSS variables */
+.ag-theme-custom {
+  --ag-background-color: var(--color-surface);
+  --ag-foreground-color: var(--color-foreground);
+  --ag-border-color: var(--color-border);
+  --ag-header-background-color: var(--color-background);
+  --ag-header-foreground-color: var(--color-foreground);
+  --ag-row-border-color: var(--color-border);
+  --ag-selected-row-background-color: var(--color-accent);
+  --ag-row-hover-background-color: var(--color-muted);
+  --ag-font-family: var(--font-sans);
+  --ag-font-size: 13px;
+  --ag-grid-size: 8px;
+  --ag-border-radius: 0px;
+  --ag-card-radius: 0px;
+  --ag-header-cell-hover-background-color: var(--color-muted);
+  --ag-header-cell-moving-background-color: var(--color-muted);
+  
+  width: 100%;
+  height: 100%;
+}
+
+.ag-theme-custom .ag-header {
+  border-bottom: 1px solid var(--color-border) !important;
+  font-weight: 600;
+}
+
+.ag-theme-custom .ag-row {
+  border-bottom: 1px solid var(--color-border) !important;
+}
+
+.ag-theme-custom .ag-cell-focus {
+  outline: 2px solid var(--color-primary) !important;
+  outline-offset: -2px;
+}
+
+/* Ant Design assigns colorLink to every anchor. Navigation has its own
+   semantic foreground because it is rendered on the dark institutional rail. */
+.ant-app [data-testid="institutional-rail"] a {
+  color: var(--institutional-sidebar-foreground);
+}
+
+.ant-app [data-testid="institutional-rail"] a[aria-current="page"],
+.ant-app [data-testid="institutional-rail"] a:hover {
+  color: var(--institutional-sidebar-accent-foreground);
+}
+
+.ant-app nav[aria-label="Accesos móviles"] a {
+  color: var(--institutional-sidebar-foreground);
+}
+
+.ant-app nav[aria-label="Accesos móviles"] a[aria-current="page"],
+.ant-app nav[aria-label="Accesos móviles"] a:hover {
+  color: var(--institutional-sidebar-accent-foreground);
+}

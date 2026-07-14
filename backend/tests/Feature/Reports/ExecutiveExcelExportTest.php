@@ -92,6 +92,16 @@ class ExecutiveExcelExportTest extends TestCase
         $this->assertContains('Auditoria', $sheetTitles);
         $this->assertContains('Glosario', $sheetTitles);
 
+        $glossary = $loaded->getSheetByName('Glosario');
+        $this->assertNotNull($glossary);
+        $glossaryText = implode(' ', array_map(
+            static fn (array $row): string => implode(' ', array_map('strval', $row)),
+            $glossary->toArray(),
+        ));
+        $this->assertStringContainsString('Cobrado neto operativo', $glossaryText);
+        $this->assertStringContainsString('ya estan excluidos', $glossaryText);
+        $this->assertStringNotContainsString('Total facturado menos anulado y reversado', $glossaryText);
+
         @unlink($tempFile);
     }
 
@@ -130,6 +140,47 @@ class ExecutiveExcelExportTest extends TestCase
         $this->assertTrue((bool) array_filter($flat, fn ($line) => str_contains($line, 'Total Cobrado')));
         $this->assertTrue((bool) array_filter($flat, fn ($line) => str_contains($line, 'Anulado')));
         $this->assertTrue((bool) array_filter($flat, fn ($line) => str_contains($line, 'Ticket Promedio')));
+    }
+
+    public function test_executive_excel_without_audit_view_omits_audit_sheets(): void
+    {
+        $this->seedBillingBase();
+        $viewer = User::factory()->create();
+        $this->grantDirectPermissions($viewer, [
+            'reports.view',
+            'reports.managerial.view',
+            'reports.export',
+        ]);
+        $admin = $this->admin();
+        $cashier = $this->cashier();
+        $voided = $this->createInvoice($cashier, 'Glucosa');
+
+        $voided->update([
+            'status' => Invoice::STATUS_VOID,
+            'voided_by' => $admin->id,
+            'voided_at' => Carbon::now('America/Tegucigalpa'),
+            'void_reason' => 'Motivo ejecutivo reservado',
+        ]);
+
+        $today = Carbon::now('America/Tegucigalpa')->toDateString();
+        $report = app(ExecutiveReportService::class)
+            ->report(['date_from' => $today, 'date_to' => $today], $viewer);
+        $fiscal = FiscalSetting::first();
+
+        $spreadsheet = app(ExecutiveExcelExportService::class)->generate(
+            $report,
+            $fiscal->toArray(),
+            Carbon::createFromFormat('Y-m-d', $today),
+            Carbon::createFromFormat('Y-m-d', $today),
+            $viewer->name,
+        );
+
+        $sheetTitles = $spreadsheet->getSheetNames();
+
+        $this->assertContains('Resumen', $sheetTitles);
+        $this->assertContains('Glosario', $sheetTitles);
+        $this->assertNotContains('Anulaciones y reversas', $sheetTitles);
+        $this->assertNotContains('Auditoria', $sheetTitles);
     }
 
     public function test_executive_excel_escapes_formula_like_text_from_report_payload(): void
@@ -256,6 +307,115 @@ class ExecutiveExcelExportTest extends TestCase
         $this->assertSame("'{$dangerousFormula}", $spreadsheet->getSheetByName('Anulaciones y reversas')->getCell('F4')->getValue());
         $this->assertSame("'{$dangerousPlus}", $spreadsheet->getSheetByName('Anulaciones y reversas')->getCell('G4')->getValue());
         $this->assertSame("'{$dangerousAt}", $spreadsheet->getSheetByName('Anulaciones y reversas')->getCell('H4')->getValue());
+    }
+
+    public function test_executive_excel_sanitizes_malformed_numeric_payloads(): void
+    {
+        $report = [
+            'summary' => [
+                'billed_total' => 'monto-danado',
+                'collected_total' => 'NaN',
+                'pending_total' => 'Infinity',
+                'voided_total' => null,
+                'reversed_total' => '0.00',
+                'invoice_count' => 'no-numero',
+                'receipt_count' => 'recibos-danados',
+                'paid_count' => 'pagadas-danadas',
+                'partial_count' => 'parciales-danadas',
+                'pending_count' => 'pendientes-danadas',
+                'voided_count' => 'anuladas-danadas',
+                'average_ticket' => 'ticket-danado',
+            ],
+            'comparison' => [
+                'billed' => ['delta_percentage' => 'Infinity'],
+                'collected' => ['delta_percentage' => 'NaN'],
+            ],
+            'payment_methods' => [[
+                'label' => 'Efectivo',
+                'amount' => 'monto-danado',
+                'count' => 'no-numero',
+                'percentage' => 'Infinity',
+            ]],
+            'daily_trend' => [[
+                'date' => '2026-06-01',
+                'billed' => 'monto-danado',
+                'collected' => 'NaN',
+                'pending' => 'Infinity',
+                'voided_count' => 'no-numero',
+                'invoice_count' => 'conteo-danado',
+            ]],
+            'services' => [
+                'top_by_amount' => [[
+                    'service' => 'Glucosa',
+                    'category' => 'Laboratorio',
+                    'quantity' => 'cantidad-danada',
+                    'total' => 'monto-danado',
+                    'collected' => 'NaN',
+                ]],
+                'top_by_quantity' => [],
+                'by_category' => [],
+                'by_area' => [],
+            ],
+            'cashiers' => [],
+            'cash_sessions' => [],
+            'pending_aging' => [
+                '0_7_days' => ['count' => 'no-numero', 'amount' => 'monto-danado'],
+                '8_30_days' => ['count' => 0, 'amount' => '0.00'],
+                '31_plus_days' => ['count' => 0, 'amount' => '0.00'],
+                'items' => [[
+                    'invoice_number' => 'REC-001',
+                    'patient' => 'Maria Lopez',
+                    'issued_at' => '2026-06-01',
+                    'age_days' => 'edad-danada',
+                    'total' => 'monto-danado',
+                    'balance_due' => 'NaN',
+                ]],
+            ],
+            'voids_and_reversals' => [],
+            'audit_summary' => [
+                'critical_events' => 'no-numero',
+                'reprints' => 'NaN',
+                'fiscal_changes' => 'Infinity',
+                'cash_differences' => 'monto-danado',
+                'backup_events' => null,
+            ],
+        ];
+
+        $spreadsheet = app(ExecutiveExcelExportService::class)->generate(
+            $report,
+            ['hospital_name' => 'Hospital San Isidro', 'rtn' => '08011999123456'],
+            Carbon::create(2026, 6, 1, 0, 0, 0, 'America/Tegucigalpa'),
+            Carbon::create(2026, 6, 1, 0, 0, 0, 'America/Tegucigalpa'),
+            'Admin',
+        );
+
+        $summary = $spreadsheet->getSheetByName('Resumen');
+        $methods = $spreadsheet->getSheetByName('Cobros por metodo');
+        $daily = $spreadsheet->getSheetByName('Facturado diario');
+        $services = $spreadsheet->getSheetByName('Servicios');
+        $pending = $spreadsheet->getSheetByName('Pendientes');
+
+        $this->assertSame(0.0, $summary->getCell('B8')->getValue());
+        $this->assertSame('0.00%', $summary->getCell('C8')->getValue());
+        $this->assertSame(0, $summary->getCell('B14')->getValue());
+        $this->assertSame(0, $summary->getCell('B15')->getValue());
+        $this->assertSame(0, $summary->getCell('B16')->getValue());
+        $this->assertSame(0, $summary->getCell('B17')->getValue());
+        $this->assertSame(0, $summary->getCell('B18')->getValue());
+        $this->assertSame(0.0, $methods->getCell('B4')->getValue());
+        $this->assertSame(0, $methods->getCell('C4')->getValue());
+        $this->assertSame(0.0, $methods->getCell('D4')->getValue());
+        $this->assertSame(0.0, $daily->getCell('B4')->getValue());
+        $this->assertSame(0.0, $daily->getCell('C4')->getValue());
+        $this->assertSame(0.0, $daily->getCell('D4')->getValue());
+        $this->assertSame(0, $daily->getCell('E4')->getValue());
+        $this->assertSame(0, $daily->getCell('F4')->getValue());
+        $this->assertSame(0.0, $services->getCell('C6')->getValue());
+        $this->assertSame(0.0, $services->getCell('D6')->getValue());
+        $this->assertSame(0.0, $services->getCell('E6')->getValue());
+        $this->assertSame(0, $pending->getCell('D10')->getValue());
+        $this->assertSame(0.0, $pending->getCell('E10')->getValue());
+        $this->assertSame(0.0, $pending->getCell('F10')->getValue());
     }
 
     public function test_executive_excel_requires_reports_export_permission(): void

@@ -73,6 +73,10 @@ class BackupController extends Controller
             $this->denyDownload($request, $backupLog, 'outside_backup_root');
         }
 
+        if (! $this->matchesRecordedIntegrity($backupLog, $absolutePath)) {
+            $this->denyDownload($request, $backupLog, 'integrity_mismatch');
+        }
+
         AuditLog::query()->create([
             'user_id' => $request->user()->id,
             'action' => 'backup.downloaded',
@@ -133,16 +137,33 @@ class BackupController extends Controller
         return str_starts_with($realPath, rtrim($realRoot, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR);
     }
 
+    private function matchesRecordedIntegrity(BackupLog $backupLog, string $absolutePath): bool
+    {
+        if ($backupLog->size_bytes === null || $backupLog->checksum_sha256 === null) {
+            return false;
+        }
+
+        $actualSize = filesize($absolutePath);
+        $actualChecksum = hash_file('sha256', $absolutePath);
+
+        if ($actualSize === false || $actualChecksum === false) {
+            return false;
+        }
+
+        return (int) $backupLog->size_bytes === (int) $actualSize
+            && hash_equals($backupLog->checksum_sha256, $actualChecksum);
+    }
+
     private function safeDownloadFilename(string $filename): string
     {
-        $safeFallback = 'hospital-backup-download.sql.enc';
+        $safeFallback = 'hospital-backup-download.sql.gz.enc';
         $normalized = str_replace('\\', '/', $filename);
 
         if (basename($normalized) !== $filename) {
             return $safeFallback;
         }
 
-        if (! preg_match('/\A[A-Za-z0-9][A-Za-z0-9._-]{0,160}\.sql(\.enc)?\z/', $filename)) {
+        if (! preg_match('/\A[A-Za-z0-9][A-Za-z0-9._-]{0,160}\.sql(\.enc|\.gz\.enc)?\z/', $filename)) {
             return $safeFallback;
         }
 
@@ -156,9 +177,7 @@ class BackupController extends Controller
     {
         $payload = [
             'id' => $backupLog->id,
-            'filename' => $backupLog->filename,
             'size_bytes' => $backupLog->size_bytes,
-            'checksum_sha256' => $backupLog->checksum_sha256,
             'status' => $backupLog->status,
             'type' => $backupLog->type,
             'created_by' => $backupLog->created_by,

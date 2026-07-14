@@ -6,11 +6,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use LogicException;
 
 /**
  * @property int $id
  * @property int $user_id
  * @property int|null $open_user_id
+ * @property int|null $closed_by_user_id
  * @property string $opening_amount
  * @property string|null $closing_amount
  * @property string|null $expected_amount
@@ -28,6 +30,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read User|null $user
+ * @property-read User|null $closedBy
  */
 class CashRegisterSession extends Model
 {
@@ -38,6 +41,7 @@ class CashRegisterSession extends Model
     protected $fillable = [
         'user_id',
         'open_user_id',
+        'closed_by_user_id',
         'opening_amount',
         'closing_amount',
         'expected_amount',
@@ -71,9 +75,29 @@ class CashRegisterSession extends Model
         ];
     }
 
+    protected static function booted(): void
+    {
+        static::updating(function (CashRegisterSession $session): void {
+            if ($session->getOriginal('status') === self::STATUS_CLOSED) {
+                throw new LogicException('Las cajas cerradas no se modifican; use ajustes autorizados para correcciones posteriores.');
+            }
+        });
+
+        static::deleting(function (CashRegisterSession $session): void {
+            if ($session->status === self::STATUS_CLOSED) {
+                throw new LogicException('Las cajas cerradas no se eliminan; conserve el cierre para auditoria.');
+            }
+        });
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function closedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'closed_by_user_id');
     }
 
     public function payments(): HasMany

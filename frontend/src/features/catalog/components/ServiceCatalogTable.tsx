@@ -1,17 +1,9 @@
-import { MoreHorizontal } from 'lucide-react';
-import { Badge } from '../../../components/ui/badge';
-import { Button } from '../../../components/ui/button';
-import { DataTable, type DataTableColumn } from '../../../components/ui/data-table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '../../../components/ui/dropdown-menu';
+import { useState } from 'react';
+import { EditOutlined, MoreOutlined, PoweroffOutlined } from '@ant-design/icons';
+import { Button, Dropdown, Space, Tag, Typography, type MenuProps } from 'antd';
+import { InstitutionalDataGrid, type InstitutionalColumn } from '@/design-system/ag-grid';
 import { formatLempirasUIFromCents, parseCents } from '../../../lib/moneyCents';
 import { getServiceBillingSummary } from '../../../lib/serviceBilling';
-import type { ServiceBillingBadge } from '../../../lib/serviceBilling';
 import type { Service } from '../../../lib/api';
 import type { ServiceCatalogTableProps } from './catalogTypes';
 
@@ -22,207 +14,188 @@ export function ServiceCatalogTable({
   onClearFilters,
   onRetry,
   onRowActions,
-  scannerEnabled,
   services,
   hasActiveFilters,
   isEmpty,
 }: ServiceCatalogTableProps) {
-  const columns = createServiceColumns({ canManage, onRowActions, scannerEnabled });
-
-  return (
-    <DataTable
-      columns={columns}
-      containerLabel="Listado de servicios del catálogo"
-      emptyAction={
-        hasActiveFilters ? (
-          <Button type="button" variant="outline" onClick={onClearFilters}>
-            Limpiar filtros
-          </Button>
-        ) : null
-      }
-      emptyDescription={
-        hasActiveFilters
-          ? 'No se encontraron servicios con los filtros seleccionados.'
-          : 'Comience agregando su primer servicio al catálogo.'
-      }
-      emptyTitle="No hay servicios"
-      error={Boolean(loadError)}
-      errorDescription={loadError}
-      getRowClassName={() => 'border-b transition-colors hover:bg-muted/30'}
-      getRowKey={(service) => service.id}
-      loading={isLoading}
-      loadingLabel="Cargando servicios del catálogo..."
-      onRetry={onRetry}
-      rows={isEmpty ? [] : services}
-    />
-  );
-}
-
-type CreateServiceColumnsOptions = {
-  canManage: boolean;
-  onRowActions: ServiceCatalogTableProps['onRowActions'];
-  scannerEnabled: boolean;
-};
-
-function createServiceColumns({
-  canManage,
-  onRowActions,
-  scannerEnabled,
-}: CreateServiceColumnsOptions): Array<DataTableColumn<Service>> {
-  const columns: Array<DataTableColumn<Service>> = [
+  const [openActionsServiceId, setOpenActionsServiceId] = useState<number | null>(null);
+  const columns: InstitutionalColumn<Service>[] = [
     {
-      key: 'name',
-      header: 'Nombre',
-      cellClassName: 'px-4 py-3 align-top',
-      render: (service) => {
-        const billingSummary = getServiceBillingSummary(service);
-        return (
-          <div className="flex flex-col gap-1">
-            <span className="break-words font-medium">{service.name}</span>
-            {billingSummary.reasons.length > 0 ? (
-              <span className="text-xs text-muted-foreground">{billingSummary.reasons[0]}</span>
-            ) : null}
-          </div>
-        );
-      },
+      field: 'name',
+      headerName: 'Servicio',
+      priority: 'primary',
+      flex: 2,
+      minWidth: 190,
+      cellRenderer: ({ data }: { data?: Service }) =>
+        data ? <ServiceName service={data} /> : null,
     },
     {
-      key: 'category',
-      header: 'Categoría',
-      cellClassName: 'px-4 py-3 align-top text-sm',
-      render: (service) => service.category?.name ?? 'Sin categoría',
+      colId: 'category',
+      headerName: 'Categoría',
+      priority: 'secondary',
+      valueGetter: ({ data }) => (data as Service | undefined)?.category?.name ?? 'Sin categoría',
+      flex: 1,
     },
     {
-      key: 'area',
-      header: 'Área',
-      cellClassName: 'px-4 py-3 align-top text-sm',
-      render: (service) => service.area?.name ?? 'Sin área',
+      colId: 'area',
+      headerName: 'Área',
+      priority: 'tertiary',
+      valueGetter: ({ data }) => (data as Service | undefined)?.area?.name ?? 'Sin área',
+      flex: 1,
     },
     {
-      key: 'price',
-      header: 'Precio',
-      numeric: true,
-      cellClassName: 'px-4 py-3 align-top',
-      render: (service) => {
-        const billingSummary = getServiceBillingSummary(service);
-        return (
-          <div className="flex flex-col items-end gap-1 text-right">
-            <span className="font-semibold tabular-nums">{formatServicePrice(service.price)}</span>
-            {!billingSummary.hasConfiguredPrice ? (
-              <span className="text-xs text-warning-foreground">Sin tarifa operativa</span>
-            ) : null}
-          </div>
-        );
-      },
+      field: 'price',
+      headerName: 'Precio',
+      priority: 'primary',
+      type: 'rightAligned',
+      cellRenderer: ({ data }: { data?: Service }) =>
+        data ? (
+          <span className="tabular-nums">{formatLempirasUIFromCents(parseCents(data.price))}</span>
+        ) : null,
+    },
+    {
+      colId: 'status',
+      headerName: 'Estado',
+      priority: 'secondary',
+      sortable: false,
+      filter: false,
+      cellRenderer: ({ data }: { data?: Service }) =>
+        data ? <ServiceState service={data} /> : null,
     },
   ];
-
-  if (scannerEnabled) {
-    columns.push({
-      key: 'code',
-      header: 'Código',
-      cellClassName: 'px-4 py-3 align-top text-sm text-muted-foreground',
-      render: (service) => <ServiceCodeList service={service} />,
-    });
-  }
-
-  columns.push({
-    key: 'billing-state',
-    header: 'Estado en caja',
-    cellClassName: 'px-4 py-3 align-top',
-    render: (service) => {
-      const billingSummary = getServiceBillingSummary(service);
-      return (
-        <div className="flex flex-wrap gap-1">
-          {billingSummary.badges.map((badge) => (
-            <ServiceBillingBadgeView key={`${service.id}-${badge.label}`} badge={badge} />
-          ))}
-        </div>
-      );
-    },
-  });
 
   if (canManage) {
     columns.push({
-      key: 'actions',
-      header: 'Acciones',
-      headerClassName: 'text-right',
-      cellClassName: 'px-4 py-3 text-right align-top',
-      render: (service) => <ServiceRowActions service={service} onRowActions={onRowActions} />,
+      colId: 'actions',
+      headerName: 'Acciones',
+      pinned: 'right',
+      width: 100,
+      sortable: false,
+      filter: false,
+      cellRenderer: ({ data }: { data?: Service }) =>
+        data ? (
+          <ServiceActions
+            service={data}
+            open={openActionsServiceId === data.id}
+            onOpenChange={(open) => setOpenActionsServiceId(open ? data.id : null)}
+            onEdit={onRowActions.onEdit}
+            onToggle={onRowActions.onToggleActive}
+          />
+        ) : null,
     });
   }
 
-  return columns;
-}
+  const state = isLoading ? 'loading' : loadError ? 'error' : isEmpty ? 'empty' : 'ready';
 
-type ServiceCodeListProps = {
-  service: Service;
-};
-
-function ServiceCodeList({ service }: ServiceCodeListProps) {
-  const codes: Array<['Escaner' | 'Barra' | 'QR', string | null | undefined]> = [
-    ['Escaner', service.scan_code],
-    ['Barra', service.barcode],
-    ['QR', service.qr_code],
-  ];
-
-  const visible = codes.filter(([, code]) => Boolean(code));
-
-  if (visible.length === 0) {
-    return <span>-</span>;
-  }
+  // Empty message varies depending on whether filters are active.
+  const emptyMessage = hasActiveFilters
+    ? 'No se encontraron servicios con los filtros seleccionados.'
+    : 'No hay servicios. Comience agregando su primer servicio al catálogo.';
 
   return (
-    <div className="flex flex-col gap-1">
-      {visible.map(([label, code]) => (
-        <span key={`${service.id}-${label}`} className="break-all text-xs">
-          {label}: {code}
-        </span>
-      ))}
+    <section aria-labelledby="service-catalog-results-title">
+      <Space className="w-full justify-between">
+        <div>
+          <Typography.Title id="service-catalog-results-title" level={3}>
+            Servicios disponibles
+          </Typography.Title>
+          <Typography.Paragraph>
+            Precio vigente, disponibilidad en caja y reglas especiales.
+          </Typography.Paragraph>
+        </div>
+        <Typography.Text>{services.length} en esta vista</Typography.Text>
+      </Space>
+
+      <InstitutionalDataGrid<Service>
+        ariaLabel="Listado de servicios del catálogo"
+        rows={services}
+        columns={columns}
+        getRowId={(service) => String(service.id)}
+        state={state}
+        errorMessage={loadError}
+        emptyMessage={emptyMessage}
+        gridOptions={{
+          pagination: false,
+          rowSelection: { mode: 'singleRow', enableClickSelection: true },
+        }}
+        actions={
+          loadError ? (
+            <Button onClick={onRetry}>Reintentar</Button>
+          ) : hasActiveFilters && isEmpty ? (
+            <Button onClick={onClearFilters}>Limpiar filtros</Button>
+          ) : null
+        }
+      />
+
+    </section>
+  );
+}
+
+function ServiceName({ service }: { service: Service }) {
+  const summary = getServiceBillingSummary(service);
+  return (
+    <div>
+      <Typography.Text strong>{service.name}</Typography.Text>
+      {summary.reasons[0] ? (
+        <Typography.Text type="secondary" className="block">
+          {summary.reasons[0]}
+        </Typography.Text>
+      ) : null}
     </div>
   );
 }
 
-function ServiceBillingBadgeView({ badge }: { badge: ServiceBillingBadge }) {
+function ServiceState({ service }: { service: Service }) {
   return (
-    <Badge variant={badge.tone} aria-label={`Indicador: ${badge.label}`}>
-      {badge.label}
-    </Badge>
+    <Space size={4}>
+      {getServiceBillingSummary(service).badges.map((badge) => (
+        <Tag
+          key={badge.label}
+          color={
+            badge.tone === 'destructive' ? 'error'
+            : badge.tone === 'secondary' ? 'blue'
+            : 'default'
+          }
+        >
+          {badge.label}
+        </Tag>
+      ))}
+    </Space>
   );
 }
 
-type ServiceRowActionsProps = {
-  onRowActions: ServiceCatalogTableProps['onRowActions'];
+// Inline dropdown for desktop AG Grid column (visual only).
+function ServiceActions({
+  service,
+  open,
+  onOpenChange,
+  onEdit,
+  onToggle,
+}: {
   service: Service;
-};
-
-function ServiceRowActions({ onRowActions, service }: ServiceRowActionsProps) {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onEdit: (service: Service) => void;
+  onToggle: (service: Service) => void;
+}) {
+  const items: MenuProps['items'] = [
+    { key: 'edit', icon: <EditOutlined />, label: 'Editar', onClick: () => onEdit(service) },
+    { type: 'divider' },
+    {
+      key: 'toggle',
+      danger: service.active,
+      icon: <PoweroffOutlined />,
+      label: service.active ? 'Desactivar' : 'Activar',
+      onClick: () => onToggle(service),
+    },
+  ];
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          aria-label={`Acciones de servicio ${service.name}`}
-        >
-          <MoreHorizontal aria-hidden="true" className="h-4 w-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => onRowActions.onEdit(service)}>Editar</DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onClick={() => onRowActions.onToggleActive(service)}
-          className={service.active ? 'text-destructive' : 'text-success'}
-        >
-          {service.active ? 'Desactivar' : 'Activar'}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <Dropdown menu={{ items }} open={open} onOpenChange={onOpenChange} trigger={['click']}>
+      <Button
+        aria-label={`Acciones de servicio ${service.name}`}
+        icon={<MoreOutlined />}
+        onClick={(event) => event.stopPropagation()}
+      />
+    </Dropdown>
   );
-}
-
-function formatServicePrice(value: string | number | null | undefined): string {
-  const cents = parseCents(value);
-  return formatLempirasUIFromCents(cents);
 }

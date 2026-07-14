@@ -2,18 +2,21 @@
 
 namespace Tests\Feature;
 
+use App\Actions\Billing\CreateInvoiceAction;
 use App\Models\Area;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
 use App\Models\Invoice;
+use App\Models\ReceiptPrintProfile;
 use App\Models\Service;
 use App\Models\ServiceArea;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
-use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use LogicException;
 use Tests\TestCase;
 
 class InvoiceCreationTest extends TestCase
@@ -75,6 +78,49 @@ class InvoiceCreationTest extends TestCase
             'entity_type' => Invoice::class,
         ]);
         $this->assertSame(1, FiscalSequence::query()->where('document_type', 'invoice')->firstOrFail()->current_number);
+    }
+
+    public function test_invoice_receipt_paper_size_uses_resolved_print_profile(): void
+    {
+        $this->seedBillingBase();
+
+        ReceiptPrintProfile::query()->create([
+            'code' => ReceiptPrintProfile::CODE_A5,
+            'name' => 'A5 horizontal',
+            'paper_kind' => 'a5_landscape',
+            'width_mm' => '210.00',
+            'height_mm' => '148.00',
+            'margin_top_mm' => '6.00',
+            'margin_right_mm' => '6.00',
+            'margin_bottom_mm' => '6.00',
+            'margin_left_mm' => '6.00',
+            'orientation' => 'landscape',
+            'template_code' => 'institutional_classic',
+            'font_family' => 'Arial, sans-serif',
+            'font_scale' => '1.00',
+            'copies_mode' => 'original_only',
+            'show_copy_legend' => true,
+            'show_physical_seal_space' => true,
+            'use_logo' => false,
+            'show_technical_fields' => false,
+            'active' => true,
+            'is_global_default' => true,
+        ]);
+
+        $cashier = $this->cashier();
+
+        $invoiceId = $this->actingAs($cashier)
+            ->postJson('/api/invoices', [
+                'patient_name' => 'Paciente Perfil A5',
+                'items' => [$this->invoiceItem('Glucosa')],
+            ])
+            ->assertCreated()
+            ->json('data.id');
+
+        $this->assertDatabaseHas('invoices', [
+            'id' => $invoiceId,
+            'receipt_paper_size' => 'a5',
+        ]);
     }
 
     public function test_patient_name_is_required(): void
@@ -189,6 +235,23 @@ class InvoiceCreationTest extends TestCase
             ->assertJsonValidationErrors('items.0.service_id');
     }
 
+    public function test_invoice_rejects_service_from_inactive_category(): void
+    {
+        $this->seedBillingBase();
+        $service = Service::query()->where('name', 'Glucosa')->firstOrFail();
+        $service->category->forceFill(['active' => false])->save();
+
+        $this->actingAs($this->cashier())
+            ->postJson('/api/invoices', [
+                'patient_name' => 'Maria Lopez',
+                'items' => [['service_id' => $service->id, 'quantity' => '1.00']],
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('items.0.service_id');
+
+        $this->assertSame(0, Invoice::query()->count());
+    }
+
     public function test_invoice_rejects_hidden_or_non_billable_services(): void
     {
         $this->seedBillingBase();
@@ -266,6 +329,58 @@ class InvoiceCreationTest extends TestCase
             ->assertJsonPath('data.items.0.line_total', '17.25');
     }
 
+    public function test_invoice_item_notes_are_trimmed_and_blank_notes_are_not_snapshotted(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $glucose = Service::query()->where('name', 'Glucosa')->firstOrFail();
+        $hemogram = Service::query()->where('name', 'Hemograma Completo')->firstOrFail();
+
+        $invoice = app(CreateInvoiceAction::class)->execute([
+            'patient_name' => 'Maria Lopez',
+            'items' => [
+                ['service_id' => $glucose->id, 'quantity' => '1.00', 'notes' => '  En ayunas  '],
+                ['service_id' => $hemogram->id, 'quantity' => '1.00', 'notes' => '   '],
+            ],
+        ], $cashier);
+
+        $notes = DB::table('invoice_items')
+            ->where('invoice_id', $invoice->id)
+            ->orderBy('id')
+            ->pluck('notes')
+            ->all();
+
+        $this->assertSame(['En ayunas', null], $notes);
+    }
+
+    public function test_invoice_items_do_not_snapshot_scanner_or_barcode_codes(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $glucose = Service::query()->where('name', 'Glucosa')->firstOrFail();
+        $glucose->forceFill([
+            'scan_code' => 'SCAN-GLU-001',
+            'barcode' => 'BAR-GLU-001',
+            'qr_code' => 'QR-GLU-001',
+        ])->save();
+
+        $invoiceId = $this->actingAs($cashier)
+            ->postJson('/api/invoices', [
+                'patient_name' => 'Maria Lopez',
+                'items' => [['service_id' => $glucose->id, 'quantity' => '1.00']],
+            ])
+            ->assertCreated()
+            ->json('data.id');
+
+        $this->assertDatabaseHas('invoice_items', [
+            'invoice_id' => $invoiceId,
+            'service_name' => 'Glucosa',
+            'scan_code' => null,
+            'barcode' => null,
+            'qr_code' => null,
+        ]);
+    }
+
     public function test_invoice_items_keep_service_area_snapshot_when_catalog_area_changes_later(): void
     {
         $this->seedBillingBase();
@@ -308,13 +423,39 @@ class InvoiceCreationTest extends TestCase
             ->assertCreated()
             ->json('data.id');
 
-        $this->expectException(QueryException::class);
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('Las facturas no se eliminan; deben anularse con motivo y auditoria.');
 
         try {
             Invoice::query()->findOrFail($invoiceId)->delete();
         } finally {
             $this->assertDatabaseHas('invoices', ['id' => $invoiceId]);
             $this->assertDatabaseHas('invoice_items', ['invoice_id' => $invoiceId]);
+        }
+    }
+
+    public function test_invoice_cannot_be_deleted_even_if_items_were_removed_first(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+
+        $invoiceId = $this->actingAs($cashier)
+            ->postJson('/api/invoices', [
+                'patient_name' => 'Maria Lopez',
+                'items' => [$this->invoiceItem('Glucosa')],
+            ])
+            ->assertCreated()
+            ->json('data.id');
+
+        DB::table('invoice_items')->where('invoice_id', $invoiceId)->delete();
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('Las facturas no se eliminan; deben anularse con motivo y auditoria.');
+
+        try {
+            Invoice::query()->findOrFail($invoiceId)->delete();
+        } finally {
+            $this->assertDatabaseHas('invoices', ['id' => $invoiceId]);
         }
     }
 
@@ -330,8 +471,11 @@ class InvoiceCreationTest extends TestCase
             ])
             ->assertCreated()
             ->assertJsonPath('data.items.0.unit_price', '25.00')
+            ->assertJsonPath('data.items.0.tax_rate', '0.00')
+            ->assertJsonPath('data.items.0.tax_amount', '0.00')
             ->assertJsonPath('data.items.0.special_rule_applied', false)
-            ->assertJsonPath('data.total', '28.75');
+            ->assertJsonPath('data.tax_amount', '0.00')
+            ->assertJsonPath('data.total', '25.00');
     }
 
     public function test_erythropoietin_with_dialysis_prescription_is_free_and_snapshotted(): void
@@ -339,12 +483,6 @@ class InvoiceCreationTest extends TestCase
         $this->seedBillingBase();
         $erythropoietin = Service::query()->where('name', 'Eritropoyetina')->firstOrFail();
         $cashier = $this->cashier();
-        // BUG-SEC-04: simulate the patient being pre-marked as
-        // dialysis-prescribed by clinical staff; in production the cashier
-        // would not have this permission. Granted here per-user so the
-        // broader security invariant (cajero role lacks the permission) is
-        // preserved for InvoiceDialysisPrescriptionTest.
-        $cashier->givePermissionTo('patients.mark_dialysis_prescription');
 
         $this->actingAs($cashier)
             ->postJson('/api/invoices', [
@@ -602,5 +740,56 @@ class InvoiceCreationTest extends TestCase
         ]);
 
         return $cashier->refresh();
+    }
+
+    public function test_duplicate_invoice_with_same_idempotency_key_creates_one_invoice(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $glucose = Service::query()->where('name', 'Glucosa')->firstOrFail();
+
+        $idempotencyKey = 'invoice-test-idem-'.uniqid();
+        $payload = [
+            'patient_name' => 'Paciente Idempotente',
+            'items' => [
+                ['service_id' => $glucose->id, 'quantity' => 1],
+            ],
+        ];
+
+        $headers = [
+            'Idempotency-Key' => $idempotencyKey,
+            'Accept' => 'application/json',
+        ];
+
+        $first = $this->actingAs($cashier)
+            ->postJson('/api/invoices', $payload, $headers)
+            ->assertCreated();
+
+        $second = $this->actingAs($cashier)
+            ->postJson('/api/invoices', $payload, $headers);
+
+        $second->assertCreated();
+        $second->assertJsonPath('data.id', $first->json('data.id'));
+
+        $this->assertSame(1, Invoice::query()->where('patient_name', 'Paciente Idempotente')->count());
+    }
+
+    public function test_invoice_without_idempotency_key_still_creates_unique_invoice(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $glucose = Service::query()->where('name', 'Glucosa')->firstOrFail();
+
+        $payload = [
+            'patient_name' => 'Paciente Sin Key',
+            'items' => [
+                ['service_id' => $glucose->id, 'quantity' => 1],
+            ],
+        ];
+
+        $this->actingAs($cashier)->postJson('/api/invoices', $payload)->assertCreated();
+        $this->actingAs($cashier)->postJson('/api/invoices', $payload)->assertCreated();
+
+        $this->assertSame(2, Invoice::query()->where('patient_name', 'Paciente Sin Key')->count());
     }
 }

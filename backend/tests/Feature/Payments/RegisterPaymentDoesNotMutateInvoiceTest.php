@@ -153,6 +153,16 @@ class RegisterPaymentDoesNotMutateInvoiceTest extends TestCase
 
     private function openSessionFor(User $cashier, string $openingAmount): int
     {
+        if (CashRegisterSession::query()->where('status', CashRegisterSession::STATUS_OPEN)->exists()) {
+            return CashRegisterSession::query()->create([
+                'user_id' => $cashier->id,
+                'open_user_id' => $cashier->id,
+                'opening_amount' => $openingAmount,
+                'status' => CashRegisterSession::STATUS_OPEN,
+                'opened_at' => now(),
+            ])->id;
+        }
+
         return $this->actingAs($cashier)
             ->postJson('/api/cash-sessions/open', ['opening_amount' => $openingAmount])
             ->assertCreated()

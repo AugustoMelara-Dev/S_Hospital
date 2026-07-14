@@ -31,13 +31,6 @@ import type {
   InvoiceInstitutionalReceipt,
   ReceiptData,
   MoneyByMethod,
-  DailyReport,
-  MonthlyReport,
-  IncomeReport,
-  CategoryReport,
-  AreaIncomeReport,
-  ServiceSalesReport,
-  OperationsReport,
   CashSessionReport,
   BackupLog,
   SystemStatus,
@@ -53,6 +46,8 @@ import type {
   TodayReport,
   ExecutiveReport,
   ExecutiveReportFilters,
+  OperationsReport,
+  OperationsReportFilters,
   InstitutionalReceiptSettings,
   InstitutionalReceipt,
   InstitutionalReceiptSeries,
@@ -63,6 +58,7 @@ import type {
   ReceiptSeriesPayload,
   ReceiptTestPrintPayload,
   RoleDefinition,
+  RolePermission,
   PermissionCatalogGroup,
 } from './api/types';
 
@@ -103,13 +99,6 @@ export type {
   InvoiceInstitutionalReceipt,
   ReceiptData,
   MoneyByMethod,
-  DailyReport,
-  MonthlyReport,
-  IncomeReport,
-  CategoryReport,
-  AreaIncomeReport,
-  ServiceSalesReport,
-  OperationsReport,
   CashSessionReport,
   BackupLog,
   SystemStatus,
@@ -132,12 +121,15 @@ export type {
   ReceiptSeriesPayload,
   ReceiptTestPrintPayload,
   RoleDefinition,
+  RolePermission,
   PermissionCatalogGroup,
   UserPayload,
   RolePayload,
   TodayReport,
   ExecutiveReport,
   ExecutiveReportFilters,
+  OperationsReport,
+  OperationsReportFilters,
 };
 
 
@@ -157,12 +149,12 @@ export const apiClient = {
     return users.updateUser(id, payload);
   },
 
-  async toggleUserActive(id: number): Promise<AuthUser> {
-    return users.toggleActive(id);
+  async toggleUserActive(id: number, reason?: string | null): Promise<AuthUser> {
+    return users.toggleActive(id, reason);
   },
 
-  async resetUserPassword(id: number, password: string): Promise<AuthUser> {
-    return users.resetPassword(id, password);
+  async resetUserPassword(id: number, password: string, reason: string): Promise<AuthUser> {
+    return users.resetPassword(id, password, reason);
   },
 
   async getRoles(): Promise<{ roles: RoleDefinition[]; permissionCatalog: PermissionCatalogGroup[] }> {
@@ -206,6 +198,10 @@ export const apiClient = {
     return catalog.saveService(payload, id);
   },
 
+  async deleteService(id: number): Promise<Service> {
+    return catalog.deleteService(id);
+  },
+
   async createInvoice(payload: InvoicePayload, options: { idempotencyKey?: string } = {}): Promise<Invoice> {
     return billing.createInvoice(payload, options);
   },
@@ -233,28 +229,32 @@ export const apiClient = {
   async reprintInvoice(
     invoiceId: number,
     payload: { width: ReceiptData['width']; reason?: string | null },
+    options: { idempotencyKey?: string } = {},
   ): Promise<ReceiptData> {
-    return billing.reprintInvoice(invoiceId, payload);
+    return billing.reprintInvoice(invoiceId, payload, options);
   },
 
-  async voidInvoice(invoiceId: number, reason: string): Promise<Invoice> {
-    return billing.voidInvoice(invoiceId, reason);
+  async voidInvoice(invoiceId: number, reason: string, options: { idempotencyKey?: string } = {}): Promise<Invoice> {
+    return billing.voidInvoice(invoiceId, reason, options);
   },
 
-  async reverseInvoice(invoiceId: number, reason: string): Promise<Invoice> {
-    return billing.reverseInvoice(invoiceId, reason);
+  async reverseInvoice(invoiceId: number, reason: string, options: { idempotencyKey?: string } = {}): Promise<Invoice> {
+    return billing.reverseInvoice(invoiceId, reason, options);
   },
 
   async voidPayment(
     invoiceId: number,
     paymentId: number,
     reason: string,
+    options: { idempotencyKey?: string } = {},
   ): Promise<{ payment: Payment; invoice: Invoice }> {
-    return billing.voidPayment(invoiceId, paymentId, { reason });
+    return billing.voidPayment(invoiceId, paymentId, { reason }, options);
   },
 
-  async getCurrentCashSession(): Promise<CashSession | null> {
-    return cash.getCurrentCashSession();
+  async getCurrentCashSession(
+    options: Parameters<typeof cash.getCurrentCashSession>[0] = {},
+  ): Promise<CashSession | null> {
+    return cash.getCurrentCashSession(options);
   },
 
   async getCashSessions(
@@ -263,12 +263,19 @@ export const apiClient = {
     return cash.getCashSessions(filters);
   },
 
-  async openCashSession(payload: { opening_amount: string; notes?: string | null }): Promise<CashSession> {
-    return cash.openCashSession(payload);
+  async openCashSession(
+    payload: { opening_amount: string; notes?: string | null },
+    options: { idempotencyKey?: string } = {},
+  ): Promise<CashSession> {
+    return cash.openCashSession(payload, options);
   },
 
-  async closeCashSession(id: number, payload: { closing_amount: string; notes?: string | null }): Promise<CashSession> {
-    return cash.closeCashSession(id, payload);
+  async closeCashSession(
+    id: number,
+    payload: { closing_amount: string; notes?: string | null },
+    options: { idempotencyKey?: string } = {},
+  ): Promise<CashSession> {
+    return cash.closeCashSession(id, payload, options);
   },
 
   async getDashboardReport(): Promise<DashboardReport> {
@@ -283,31 +290,7 @@ export const apiClient = {
     return reports.getExecutiveReport(filters);
   },
 
-  async getDailyReport(date?: string): Promise<DailyReport> {
-    return reports.getDailyReport(date);
-  },
-
-  async getMonthlyReport(month?: string): Promise<MonthlyReport> {
-    return reports.getMonthlyReport(month);
-  },
-
-  async getIncomeReport(filters: ReportFilters): Promise<IncomeReport> {
-    return reports.getIncomeReport(filters);
-  },
-
-  async getCategoryReport(filters: ReportFilters): Promise<CategoryReport> {
-    return reports.getCategoryReport(filters);
-  },
-
-  async getAreaIncomeReport(filters: ReportFilters): Promise<AreaIncomeReport> {
-    return reports.getAreaIncomeReport(filters);
-  },
-
-  async getServiceSalesReport(filters: ReportFilters): Promise<ServiceSalesReport> {
-    return reports.getServiceSalesReport(filters);
-  },
-
-  async getOperationsReport(filters: ReportFilters): Promise<OperationsReport> {
+  async getOperationsReport(filters: OperationsReportFilters): Promise<OperationsReport> {
     return reports.getOperationsReport(filters);
   },
 
@@ -335,6 +318,13 @@ export const apiClient = {
     return reports.downloadPdf(filters);
   },
 
+  async downloadCashSessionReportExcel(filters: ReportFilters): Promise<Blob> {
+    return reports.downloadCashSessionReportExcel(filters);
+  },
+
+  async downloadCashSessionReportPdf(filters: ReportFilters): Promise<Blob> {
+    return reports.downloadCashSessionReportPdf(filters);
+  },
   async downloadExecutivePdf(filters: ExecutiveReportFilters): Promise<Blob> {
     return reports.downloadExecutivePdf(filters);
   },
@@ -347,8 +337,8 @@ export const apiClient = {
     return backups.getBackups(filters);
   },
 
-  async createBackup(): Promise<BackupLog> {
-    return backups.createBackup();
+  async createBackup(options: { idempotencyKey?: string } = {}): Promise<BackupLog> {
+    return backups.createBackup(options);
   },
 
   backupDownloadUrl(id: number): string {
@@ -383,8 +373,14 @@ export const apiClient = {
     return fiscal.getPublicBranding();
   },
 
-  async updateFiscalSettings(payload: FiscalSettings): Promise<FiscalSettings> {
+  async updateFiscalSettings(payload: Partial<FiscalSettings>): Promise<FiscalSettings> {
     return fiscal.updateFiscalSettings(payload);
+  },
+
+  async updateOperationalSettings(
+    payload: Pick<OperationalSettings, 'scanner_enabled' | 'partial_payments_enabled'>,
+  ): Promise<Pick<OperationalSettings, 'scanner_enabled' | 'partial_payments_enabled'>> {
+    return fiscal.updateOperationalSettings(payload);
   },
 
   async getFiscalSequences(): Promise<FiscalSequence[]> {
@@ -437,12 +433,20 @@ export const apiClient = {
     return institutionalReceipts.testPrint(payload);
   },
 
-  async registerInstitutionalReceiptPrintEvent(id: number, reason?: string | null): Promise<InstitutionalReceipt> {
-    return institutionalReceipts.registerPrintEvent(id, reason);
+  async registerInstitutionalReceiptPrintEvent(
+    id: number,
+    reason?: string | null,
+    options: { idempotencyKey?: string } = {},
+  ): Promise<InstitutionalReceipt> {
+    return institutionalReceipts.registerPrintEvent(id, reason, options);
   },
 
-  async getInstitutionalReceiptPdf(id: number, reason?: string | null): Promise<Blob> {
-    return institutionalReceipts.pdf(id, reason);
+  async getInstitutionalReceiptPdf(
+    id: number,
+    reason?: string | null,
+    options: { idempotencyKey?: string } = {},
+  ): Promise<Blob> {
+    return institutionalReceipts.pdf(id, reason, options);
   },
 
   async login(login: string, password: string): Promise<AuthUser> {

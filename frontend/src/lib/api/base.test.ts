@@ -79,6 +79,18 @@ describe('resolveApiBaseUrl', () => {
     expect(message).not.toMatch(/items\.0\.quantity/);
   });
 
+  it('labels cash session validation errors as caja for cashiers', () => {
+    const message = userSafeErrorMessage(
+      new ApiError('Revise los datos del formulario.', 422, {
+        cash_session: ['Ya existe una caja abierta en esta terminal. Cierre la caja actual antes de abrir otra.'],
+      }),
+      'No se pudo abrir caja.',
+    );
+
+    expect(message).toMatch(/Caja: Ya existe una caja abierta/i);
+    expect(message).not.toMatch(/cash_session|cash session/i);
+  });
+
   it('falls back to a generic message when a 422 has no validation payload', () => {
     const message = userSafeErrorMessage(new ApiError('No se pudo guardar.', 422), 'fallback');
 
@@ -108,14 +120,15 @@ describe('resolveApiBaseUrl', () => {
       'fallback',
     );
 
-    expect(message).toMatch(/el servidor LAN no pudo completar la operación/i);
+    expect(message).toMatch(/el servidor local no pudo completar la operación/i);
+    expect(message).not.toMatch(/servidor LAN/i);
     expect(message).not.toMatch(/SQLSTATE/);
   });
 
-  it('stores safe local support evidence when the LAN server is unavailable', async () => {
+  it('stores safe local support evidence when the local server is unavailable', async () => {
     vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('failed to fetch DB_PASSWORD=secret'));
 
-    await expect(apiClient.request('/api/health')).rejects.toThrow(/servidor LAN/i);
+    await expect(apiClient.request('/api/health')).rejects.toThrow(/servidor local/i);
     await expect(apiClient.request('/api/health')).rejects.not.toThrow(/failed to fetch|DB_PASSWORD|secret/i);
 
     const stored = JSON.parse(window.localStorage.getItem('hospital_client_issue_log') ?? '[]') as Array<{
@@ -128,7 +141,8 @@ describe('resolveApiBaseUrl', () => {
       action: 'GET /api/health',
       module: 'api',
     });
-    expect(stored[0].safe_message).toMatch(/servidor LAN/i);
+    expect(stored[0].safe_message).toMatch(/servidor local/i);
+    expect(stored[0].safe_message).not.toMatch(/servidor LAN/i);
     expect(stored[0].safe_message).toMatch(/failed to fetch/i);
     expect(stored[0].safe_message).not.toMatch(/DB_PASSWORD|secret/i);
   });
@@ -146,7 +160,7 @@ describe('resolveApiBaseUrl', () => {
     });
 
     await expect(apiClient.request('/api/payments', { method: 'POST', body: JSON.stringify({ amount: '1.00' }) }))
-      .rejects.toThrow(/servidor LAN/i);
+      .rejects.toThrow(/servidor local/i);
 
     const stored = JSON.parse(window.localStorage.getItem('hospital_client_issue_log') ?? '[]') as Array<{
       action: string;

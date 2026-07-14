@@ -89,4 +89,12 @@ export const catalog = {
     );
     return response.data;
   },
+
+  async deleteService(id: number): Promise<Service> {
+    const response = await apiClient.request<{ data: Service }>(`/api/services/${id}`, {
+      method: 'DELETE',
+    });
+
+    return response.data;
+  },
 };

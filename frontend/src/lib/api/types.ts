@@ -16,6 +16,9 @@ export type RolePermission = {
   name: string;
   module: string;
   label: string;
+  critical?: boolean;
+  risk_level?: 'critical' | 'standard' | string | null;
+  risk_label?: string | null;
 };
 
 export type RoleDefinition = {
@@ -47,6 +50,7 @@ export type FiscalSettings = {
   secretariat_line?: string | null;
   receipt_location?: string | null;
   receipt_footer_text?: string | null;
+  reason?: string | null;
 };
 
 export type PublicBranding = Pick<
@@ -56,7 +60,7 @@ export type PublicBranding = Pick<
 
 export type OperationalSettings = Pick<
   FiscalSettings,
-  'default_tax_rate' | 'scanner_enabled' | 'partial_payments_enabled' | 'receipt_paper_size'
+  'default_tax_rate' | 'scanner_enabled' | 'partial_payments_enabled'
 >;
 
 export type FiscalSequence = {
@@ -69,6 +73,7 @@ export type FiscalSequence = {
   cai: string;
   valid_until: string;
   active: boolean;
+  reason?: string;
 };
 
 export type Category = {
@@ -123,6 +128,8 @@ export type ServicePayload = {
   aliases?: string | null;
   price: string;
   price_change_reason?: string | null;
+  tax_change_reason?: string | null;
+  availability_change_reason?: string | null;
   scan_code: string | null;
   barcode: string | null;
   qr_code: string | null;
@@ -139,7 +146,6 @@ export type ServicePayload = {
 export type InvoiceItemPayload = {
   service_id: number;
   quantity: string;
-  dialysis_prescription?: boolean;
   notes?: string | null;
 };
 
@@ -204,6 +210,8 @@ export type CashSession = {
   id: number;
   user_id: number;
   user?: Pick<AuthUser, 'id' | 'name' | 'username'>;
+  closed_by_user_id?: number | null;
+  closed_by?: Pick<AuthUser, 'id' | 'name' | 'username'> | null;
   opening_amount: string;
   closing_amount: string | null;
   expected_amount: string | null;
@@ -219,6 +227,9 @@ export type CashSession = {
   expected_cash_amount?: string;
   pending_invoice_count?: number;
   pending_amount?: string;
+  missing_institutional_receipt_count?: number;
+  reversed_payments_count?: number;
+  reversed_payments_total?: string;
 };
 
 export type Payment = {
@@ -264,7 +275,6 @@ export type ReceiptData = {
   };
   invoice: Pick<
     Invoice,
-    | 'id'
     | 'invoice_number'
     | 'patient_name'
     | 'subtotal'
@@ -294,7 +304,7 @@ export type ReceiptData = {
       | 'notes'
     >
   >;
-  payments: Array<Pick<Payment, 'id' | 'method' | 'amount' | 'reference' | 'paid_at'> & {
+  payments: Array<Pick<Payment, 'method' | 'amount' | 'reference' | 'paid_at'> & {
     cashier: string | null;
   }>;
 };
@@ -324,11 +334,14 @@ export type InstitutionalReceipt = {
   void_reason: string | null;
 };
 
+export type PaymentReceiptOutcome = 'issued' | 'not_required' | 'recovery_required';
+
 export type PaymentRegistrationResult = {
   payment: Payment;
   invoice: Invoice;
   institutional_receipt: InstitutionalReceipt | null;
   institutional_receipt_error: string | null;
+  receipt_outcome: PaymentReceiptOutcome;
 };
 
 export type MoneyByMethod = {
@@ -336,204 +349,6 @@ export type MoneyByMethod = {
   transfer: string;
   card: string;
   other: string;
-};
-
-export type DailyReport = {
-  date: string;
-  total_billed: string;
-  total_collected: string;
-  total_pending: string;
-  total_partial: string;
-  total_voided: string;
-  invoice_count: number;
-  payment_count: number;
-  payments_by_method: MoneyByMethod;
-  invoices_by_status: Record<'issued' | 'partial' | 'paid' | 'void', { count: number; total: string }>;
-};
-
-export type MonthlyReport = {
-  month: string;
-  date_from: string;
-  date_to: string;
-  total_billed: string;
-  total_collected: string;
-  total_pending: string;
-  total_partial: string;
-  total_voided: string;
-  invoice_count: number;
-  payment_count: number;
-  payments_by_method: MoneyByMethod;
-  invoices_by_status: Record<'issued' | 'partial' | 'paid' | 'void', { count: number; total: string }>;
-  daily_totals: Array<{
-    date: string;
-    total_billed: string;
-    total_collected: string;
-    total_pending: string;
-    total_partial: string;
-    total_voided: string;
-    invoice_count: number;
-    payment_count: number;
-  }>;
-};
-
-export type IncomeReport = {
-  date_from: string;
-  date_to: string;
-  cash_session_id: number | null;
-  user_id: number | null;
-  filters: ReportFilters;
-  total_billed: string;
-  total_collected: string;
-  total_pending: string;
-  total_partial: string;
-  total_voided: string;
-  payments_by_method: MoneyByMethod;
-  invoices_by_status?: Record<'issued' | 'partial' | 'paid' | 'void', { count: number; total: string }>;
-  payment_count: number;
-  invoice_count: number;
-};
-
-export type CategoryReport = {
-  date_from: string;
-  date_to: string;
-  amount_basis: 'billed' | 'collected_prorated';
-  amount_label: string;
-  amount_source: string;
-  filters: ReportFilters;
-  categories: Array<{
-    category: string;
-    item_count: number;
-    quantity: string;
-    subtotal: string;
-    tax_amount: string;
-    total: string;
-  }>;
-};
-
-export type AreaReport = {
-  date_from: string;
-  date_to: string;
-  filters: ReportFilters;
-  areas: Array<{
-    area_id: number | null;
-    area: string;
-    item_count: number;
-    invoice_count: number;
-    quantity: string;
-    subtotal: string;
-    tax_amount: string;
-    total: string;
-    collected: string;
-    balance_due: string;
-  }>;
-};
-
-export type ServiceSalesReport = {
-  date_from: string;
-  date_to: string;
-  amount_basis: 'billed' | 'collected_prorated';
-  amount_label: string;
-  amount_source: string;
-  filters: ReportFilters;
-  services: Array<{
-    service: string;
-    category: string;
-    item_count: number;
-    quantity: string;
-    total: string;
-  }>;
-};
-
-export type AreaIncomeReport = {
-  date_from: string;
-  date_to: string;
-  amount_basis: 'billed' | 'collected_prorated';
-  amount_label: string;
-  amount_source: string;
-  filters: ReportFilters;
-  areas: Array<{
-    area_id: number | null;
-    area: string;
-    item_count: number;
-    quantity: string;
-    total: string;
-  }>;
-};
-
-export type OperationsReport = {
-  date_from: string;
-  date_to: string;
-  filters: ReportFilters;
-  summary: {
-    void_count: number;
-    reprint_count: number;
-    service_change_count?: number;
-    payment_void_count?: number;
-    audit_event_count?: number;
-    backup_count: number;
-    failed_backup_count: number;
-    cashier_count: number;
-  };
-  voids: Array<{
-    invoice_number: string;
-    total: string;
-    reason: string | null;
-    voided_at: string | null;
-    user: string | null;
-  }>;
-  reprints: Array<{
-    invoice_number: string | null;
-    width: string | null;
-    reason: string | null;
-    created_at: string | null;
-    user: string | null;
-  }>;
-  payment_voids?: Array<{
-    invoice_number: string | null;
-    method: Payment['method'];
-    amount: string;
-    reason: string | null;
-    voided_at: string | null;
-    voided_by: string | null;
-    cashier: string | null;
-  }>;
-  catalog_changes?: Array<{
-    action: string;
-    service: string;
-    old_values: Record<string, string | number | boolean | null | string[]>;
-    new_values: Record<string, string | number | boolean | null | string[]>;
-    created_at: string | null;
-    user: string | null;
-  }>;
-  audit_events?: Array<{
-    id?: number;
-    action: string;
-    result?: string | null;
-    entity_type?: string | null;
-    entity_id?: number | null;
-    reason?: string | null;
-    created_at: string | null;
-    user: string | null;
-    ip_address?: string | null;
-    user_agent?: string | null;
-    details?: Record<string, unknown> | null;
-  }>;
-  backups: Array<{
-    filename: string;
-    status: string;
-    type: string;
-    size_bytes: number | null;
-    created_at: string | null;
-    completed_at: string | null;
-    creator: string | null;
-  }>;
-  cashiers: Array<{
-    name: string;
-    payment_count: number;
-    cash_session_count: number;
-    invoice_count: number;
-    total_collected: string;
-  }>;
 };
 
 export type CashSessionReport = {
@@ -550,6 +365,9 @@ export type CashSessionReport = {
   expected_cash_amount: string;
   pending_invoice_count: number;
   pending_amount: string;
+  missing_institutional_receipt_count: number;
+  reversed_payments_count: number;
+  reversed_payments_total: string;
   payments: Array<Payment & {
     invoice?: Pick<
       Invoice,
@@ -573,9 +391,8 @@ export type CashSessionReport = {
 
 export type BackupLog = {
   id: number;
-  filename: string;
   size_bytes: number | null;
-  checksum_sha256: string | null;
+  checksum_sha256?: string | null;
   status: 'pending' | 'success' | 'failed';
   type: 'manual' | 'scheduled';
   created_by: number | null;
@@ -624,12 +441,14 @@ export type SystemStatus = {
   };
   backups: {
     pending_count: number;
+    failed_count?: number;
     worker_recently_active: boolean;
     oldest_pending_at?: string | null;
     stale_pending_count?: number;
     stale_pending_threshold_minutes?: number;
     last_success_at: string | null;
-    last_success_filename: string | null;
+    last_success_file_exists?: boolean;
+    last_success_checksum_matches?: boolean;
     last_failure_at: string | null;
     last_failure_message: string | null;
     dump_binary: {
@@ -647,8 +466,16 @@ export type SystemStatus = {
       failed_jobs_table_available: boolean;
       failed_jobs_count: number | null;
       pending_backup_jobs: number | null;
-      worker_command: string;
-      scheduler_command: string;
+      scheduler_heartbeat?: {
+        status: 'never_run' | 'ok' | 'stale' | 'stuck' | 'invalid' | string;
+        last_tick_at: string | null;
+        last_result: string;
+        last_message: string;
+        age_seconds: number | null;
+        ticks_in_db: number;
+        ticks_last_24h: number;
+        expected: string;
+      };
     };
   };
   runtime: {
@@ -702,11 +529,6 @@ export type SystemStatus = {
       status: 'pending' | 'partial' | 'validated' | 'manual_required';
       detail: string;
     }>;
-    commands: {
-      preflight: string;
-      backup_worker: string;
-      scheduler: string;
-    };
   };
 };
 
@@ -826,6 +648,13 @@ export type ExecutiveReport = {
     area_id: number | null;
     method: string | null;
     status: string | null;
+  };
+  accounting_policy: {
+    scope: 'operational_cash';
+    expenses_supported: false;
+    exclusions_already_applied: true;
+    billed_definition: string;
+    collected_definition: string;
   };
   comparison: {
     billed: {
@@ -962,6 +791,80 @@ export type ExecutiveReport = {
   };
 };
 
+export type OperationsReportFilters = {
+  date_from: string;
+  date_to: string;
+  cash_session_id?: number;
+  user_id?: number;
+  category_id?: number;
+  area_id?: number;
+  method?: 'cash' | 'transfer' | 'card' | 'other';
+  status?: 'issued' | 'partial' | 'paid' | 'void';
+};
+
+export type OperationsReport = {
+  date_from: string;
+  date_to: string;
+  filters: Partial<Record<keyof OperationsReportFilters, string | number | null>>;
+  summary: {
+    void_count: number;
+    reprint_count: number;
+    audit_event_count: number;
+    service_change_count: number;
+    payment_void_count: number;
+    backup_count: number;
+    failed_backup_count: number;
+    cashier_count: number;
+  };
+  voids: Array<{
+    invoice_number: string;
+    amount?: string;
+    reason: string | null;
+    user: string | null;
+    voided_by?: string | null;
+    created_at: string | null;
+  }>;
+  reprints: Array<{
+    invoice_number?: string | null;
+    receipt_number?: string | null;
+    receipt_number_full?: string | null;
+    reason: string | null;
+    user: string | null;
+    source?: string | null;
+    created_at: string | null;
+  }>;
+  catalog_changes: Array<{
+    action: string;
+    service: string | null;
+    user: string | null;
+    reason?: string | null;
+    created_at: string | null;
+    old_values?: Record<string, unknown>;
+    new_values?: Record<string, unknown>;
+  }>;
+  payment_voids: Array<{
+    invoice_number: string;
+    method: string | null;
+    amount: string;
+    reason: string | null;
+    voided_by: string | null;
+    created_at: string | null;
+  }>;
+  backups: Array<{
+    status: string;
+    type: string | null;
+    completed_at: string | null;
+    created_at?: string | null;
+  }>;
+  cashiers: Array<{
+    cashier: string;
+    username?: string | null;
+    cash_session_count: number;
+    invoice_count: number;
+    total_collected: string;
+  }>;
+};
+
 export type DashboardReport = {
   last_7_days: Array<{
     date: string;
@@ -998,6 +901,23 @@ export type DashboardReport = {
   }>;
 };
 
+export type AuditLogEntry = {
+  id: number;
+  action: string;
+  result?: string | null;
+  reason?: string | null;
+  ip?: string | null;
+  entity_type?: string | null;
+  entity_id?: number | string | null;
+  created_at?: string | null;
+  user?: { id: number; name: string; username: string } | null;
+};
+
+export type AuditLogPage = {
+  data: AuditLogEntry[];
+  meta: PaginatedMeta;
+};
+
 
 export type OperationalHealth = {
   generated_at: string;
@@ -1017,6 +937,8 @@ export type OperationalHealth = {
     pending: number;
     success_last_24h: number;
     failed_last_24h: number;
+    latest_success_file_exists?: boolean | null;
+    latest_success_checksum_matches?: boolean | null;
     error?: string;
   };
   storage: {
@@ -1053,22 +975,22 @@ export type ReceiptPrintProfile = {
   id: number;
   code: 'recibo_pequeno_personalizado' | 'media_carta_horizontal' | 'a5_horizontal' | 'carta_horizontal' | 'thermal_80mm' | 'thermal_58mm';
   name: string;
-  paper_kind: 'custom_mm' | 'half_letter_landscape' | 'a5_landscape' | 'letter_landscape' | 'thermal_80mm' | 'thermal_58mm';
-  width_mm: string;
-  height_mm: string;
-  margin_top_mm: string;
-  margin_right_mm: string;
-  margin_bottom_mm: string;
-  margin_left_mm: string;
-  orientation: 'landscape' | 'portrait';
-  template_code: 'institutional_classic';
-  font_family: string | null;
-  font_scale: string;
+  paper_kind?: 'custom_mm' | 'half_letter_landscape' | 'a5_landscape' | 'letter_landscape' | 'thermal_80mm' | 'thermal_58mm';
+  width_mm?: string;
+  height_mm?: string;
+  margin_top_mm?: string;
+  margin_right_mm?: string;
+  margin_bottom_mm?: string;
+  margin_left_mm?: string;
+  orientation?: 'landscape' | 'portrait';
+  template_code?: 'institutional_classic';
+  font_family?: string | null;
+  font_scale?: string;
   copies_mode: 'original_only' | 'original_first' | 'original_first_second';
   show_copy_legend: boolean;
   show_physical_seal_space: boolean;
   use_logo: boolean;
-  show_technical_fields: boolean;
+  show_technical_fields?: boolean;
   active: boolean;
   is_global_default: boolean;
 };
@@ -1140,7 +1062,9 @@ export type ReceiptPrintProfilePayload = Partial<Pick<
   | 'show_technical_fields'
   | 'active'
   | 'is_global_default'
->>;
+>> & {
+  support_reason?: string | null;
+};
 
 export type ReceiptTestPrintPayload = {
   profile_id?: number;

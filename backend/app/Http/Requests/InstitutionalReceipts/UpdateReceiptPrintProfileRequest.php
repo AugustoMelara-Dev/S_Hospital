@@ -17,6 +17,8 @@ class UpdateReceiptPrintProfileRequest extends FormRequest
      * @var list<string>
      */
     public const ADVANCED_FIELDS = [
+        'paper_kind',
+        'orientation',
         'width_mm',
         'height_mm',
         'margin_top_mm',
@@ -25,6 +27,7 @@ class UpdateReceiptPrintProfileRequest extends FormRequest
         'margin_left_mm',
         'font_family',
         'font_scale',
+        'show_technical_fields',
     ];
 
     public function authorize(): bool
@@ -33,16 +36,8 @@ class UpdateReceiptPrintProfileRequest extends FormRequest
             return false;
         }
 
-        $payload = $this->all();
-        $hasAdvanced = false;
-        $present = [];
-
-        foreach (self::ADVANCED_FIELDS as $key) {
-            if (array_key_exists($key, $payload)) {
-                $hasAdvanced = true;
-                $present[] = $key;
-            }
-        }
+        $present = $this->advancedFieldsPresent();
+        $hasAdvanced = $present !== [];
 
         if (! $hasAdvanced) {
             return true;
@@ -61,14 +56,14 @@ class UpdateReceiptPrintProfileRequest extends FormRequest
             request: $this,
             newValues: ['attempted_fields' => $present],
             reason: 'Intento de modificar campos avanzados sin permiso.',
-            result: 'denied',
+            result: 'failed',
         );
 
         throw new HttpResponseException(new JsonResponse([
             'message' => 'Este cambio requiere el permiso receipt_settings.advanced.',
             'errors' => [
                 'receipt_settings.advanced' => [
-                    'No tiene permiso para modificar margenes, tamano, fuente o escala del recibo. Solicite soporte tecnico.',
+                    'No tiene permiso para modificar papel, orientacion, margenes, tamano, fuente, escala o campos tecnicos del recibo. Solicite soporte tecnico.',
                 ],
             ],
         ], 403));
@@ -76,15 +71,7 @@ class UpdateReceiptPrintProfileRequest extends FormRequest
 
     public function hasAdvancedFields(): bool
     {
-        $payload = $this->all();
-
-        foreach (self::ADVANCED_FIELDS as $key) {
-            if (array_key_exists($key, $payload)) {
-                return true;
-            }
-        }
-
-        return false;
+        return $this->advancedFieldsPresent() !== [];
     }
 
     /**
@@ -101,7 +88,36 @@ class UpdateReceiptPrintProfileRequest extends FormRequest
             }
         }
 
+        /** @var ReceiptPrintProfile|null $profile */
+        $profile = $this->route('profile');
+
+        if ($profile instanceof ReceiptPrintProfile && $this->isSupportOnlyProfile($profile)) {
+            if (array_key_exists('active', $payload) && $this->boolean('active')) {
+                $present[] = 'active';
+            }
+
+            if (array_key_exists('is_global_default', $payload) && $this->boolean('is_global_default')) {
+                $present[] = 'is_global_default';
+            }
+        }
+
         return $present;
+    }
+
+    private function isSupportOnlyProfile(ReceiptPrintProfile $profile): bool
+    {
+        return in_array($profile->code, [
+            ReceiptPrintProfile::CODE_CUSTOM_SMALL,
+            ReceiptPrintProfile::CODE_THERMAL_80,
+            ReceiptPrintProfile::CODE_THERMAL_58,
+        ], true);
+    }
+
+    public function supportReason(): ?string
+    {
+        $reason = trim((string) $this->input('support_reason', ''));
+
+        return $reason === '' ? null : $reason;
     }
 
     /**
@@ -128,6 +144,7 @@ class UpdateReceiptPrintProfileRequest extends FormRequest
             'show_technical_fields' => ['sometimes', 'required', 'boolean'],
             'active' => ['sometimes', 'required', 'boolean'],
             'is_global_default' => ['sometimes', 'required', 'boolean'],
+            'support_reason' => ['nullable', 'string', 'max:500'],
         ];
 
         if ($this->user()?->can('receipt_settings.advanced') === true) {
@@ -155,6 +172,16 @@ class UpdateReceiptPrintProfileRequest extends FormRequest
                 $isGlobalDefault = $this->boolean('is_global_default', $profile->is_global_default);
 
                 $userHasAdvanced = $this->user()?->can('receipt_settings.advanced') === true;
+
+                if ($userHasAdvanced && $this->hasAdvancedFields()) {
+                    $supportReason = trim((string) $this->input('support_reason', ''));
+
+                    if ($supportReason === '') {
+                        $validator->errors()->add('support_reason', 'Indique el motivo del ajuste avanzado de impresion.');
+                    } elseif (mb_strlen($supportReason) < 5) {
+                        $validator->errors()->add('support_reason', 'Indique al menos 5 caracteres explicando el ajuste avanzado de impresion.');
+                    }
+                }
 
                 if ($userHasAdvanced) {
                     $width = (float) $this->input('width_mm', $profile->width_mm);

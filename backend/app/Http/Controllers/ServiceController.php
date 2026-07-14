@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Catalog\DeleteServiceRequest;
 use App\Http\Requests\Catalog\IndexServiceRequest;
 use App\Http\Requests\Catalog\StoreServiceRequest;
 use App\Http\Requests\Catalog\UpdateServiceRequest;
 use App\Models\AuditLog;
+use App\Models\InvoiceItem;
 use App\Models\Service;
 use App\Models\ServicePriceHistory;
 use App\Support\ServiceSearch;
@@ -14,6 +16,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 
 class ServiceController extends Controller
@@ -38,7 +41,8 @@ class ServiceController extends Controller
             ->when($request->boolean('billing'), fn ($query) => $query
                 ->where('active', true)
                 ->where('visible_in_billing', true)
-                ->where('is_billable', true))
+                ->where('is_billable', true)
+                ->whereHas('category', fn ($category) => $category->where('active', true)))
             ->when($request->has('visible_in_billing'), fn ($query) => $query->where('visible_in_billing', $request->boolean('visible_in_billing')))
             ->when($request->has('is_billable'), fn ($query) => $query->where('is_billable', $request->boolean('is_billable')))
             ->orderBy('name');
@@ -108,7 +112,15 @@ class ServiceController extends Controller
             $priceChangeReason = array_key_exists('price_change_reason', $data)
                 ? trim((string) $data['price_change_reason'])
                 : null;
+            $taxChangeReason = array_key_exists('tax_change_reason', $data)
+                ? trim((string) $data['tax_change_reason'])
+                : null;
+            $availabilityChangeReason = array_key_exists('availability_change_reason', $data)
+                ? trim((string) $data['availability_change_reason'])
+                : null;
             unset($data['price_change_reason']);
+            unset($data['tax_change_reason']);
+            unset($data['availability_change_reason']);
 
             if (array_key_exists('name', $data)) {
                 $data['slug'] = Str::slug($data['name']);
@@ -127,7 +139,14 @@ class ServiceController extends Controller
                     $action,
                     $service,
                     $oldValues,
-                    $action === 'service.price_updated' ? ['price_change_reason' => $priceChangeReason] : [],
+                    match ($action) {
+                        'service.price_updated' => ['price_change_reason' => $priceChangeReason],
+                        'service.tax_updated' => ['tax_change_reason' => $taxChangeReason],
+                        'service.active_updated', 'service.visibility_updated', 'service.billability_updated' => [
+                            'availability_change_reason' => $availabilityChangeReason,
+                        ],
+                        default => [],
+                    },
                 );
             }
 
@@ -141,6 +160,40 @@ class ServiceController extends Controller
                     'reason' => $priceChangeReason,
                 ]);
             }
+
+            return $service;
+        });
+
+        return response()->json([
+            'data' => $service->load('category:id,name,slug,active,sort_order', 'area:id,name,slug,active'),
+        ]);
+    }
+
+    public function destroy(DeleteServiceRequest $request, Service $service): JsonResponse
+    {
+        Gate::authorize('delete', $service);
+
+        if (InvoiceItem::query()->where('service_id', $service->id)->exists()) {
+            return response()->json([
+                'message' => 'No se puede eliminar un servicio facturado. Desactive el servicio para ocultarlo de nuevos cobros.',
+            ], 409);
+        }
+
+        $service = DB::transaction(function () use ($request, $service): Service {
+            $oldValues = $this->auditPayload($service);
+            $availabilityChangeReason = trim((string) $request->validated('availability_change_reason'));
+
+            if ($service->active) {
+                $service->forceFill([
+                    'active' => false,
+                    'updated_by' => $request->user()->id,
+                ])->save();
+                $service->refresh();
+            }
+
+            $this->audit($request, 'service.deactivated', $service, $oldValues, [
+                'availability_change_reason' => $availabilityChangeReason,
+            ]);
 
             return $service;
         });
@@ -192,6 +245,10 @@ class ServiceController extends Controller
 
         if ((bool) $oldValues['active'] !== (bool) $service->active) {
             $actions[] = 'service.active_updated';
+        }
+
+        if ((bool) $oldValues['taxable'] !== (bool) $service->taxable) {
+            $actions[] = 'service.tax_updated';
         }
 
         if ((bool) $oldValues['visible_in_billing'] !== (bool) $service->visible_in_billing) {

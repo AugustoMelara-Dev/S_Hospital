@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+const { echoModuleLoads, pusherModuleLoads } = vi.hoisted(() => ({
+  echoModuleLoads: { count: 0 },
+  pusherModuleLoads: { count: 0 },
+}));
+
 const requestMock = vi.fn();
 
 vi.mock('../api/base', () => ({
@@ -10,6 +15,8 @@ vi.mock('../api/base', () => ({
 }));
 
 vi.mock('laravel-echo', () => {
+  echoModuleLoads.count += 1;
+
   return {
     default: vi.fn().mockImplementation(function () {
       return { disconnect: vi.fn(), leaveChannel: vi.fn() };
@@ -18,6 +25,8 @@ vi.mock('laravel-echo', () => {
 });
 
 vi.mock('pusher-js', () => {
+  pusherModuleLoads.count += 1;
+
   return {
     default: vi.fn(),
   };
@@ -42,6 +51,17 @@ const DISABLED_CONFIG = {
   },
 };
 
+const ENABLED_CONFIG = {
+  ...DISABLED_CONFIG,
+  driver: 'pusher' as const,
+  enabled: true,
+  key: 'local-key',
+  cluster: 'mt1',
+  host: '127.0.0.1',
+  port: 6001,
+  authEndpoint: '/broadcasting/auth',
+};
+
 async function loadEcho() {
   vi.resetModules();
   const mod = await import('./echo');
@@ -52,6 +72,8 @@ async function loadEcho() {
 describe('lib/realtime/echo', () => {
   beforeEach(() => {
     requestMock.mockReset();
+    echoModuleLoads.count = 0;
+    pusherModuleLoads.count = 0;
   });
 
   afterEach(() => {
@@ -67,6 +89,25 @@ describe('lib/realtime/echo', () => {
     const getEcho = await loadEcho();
     const echo = await getEcho();
     expect(echo).toBeNull();
+    expect(echoModuleLoads.count).toBe(0);
+    expect(pusherModuleLoads.count).toBe(0);
+  });
+
+  it('loads Echo and Pusher only after the config endpoint enables broadcasting', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({ data: ENABLED_CONFIG }),
+    } as Response);
+
+    const getEcho = await loadEcho();
+    expect(echoModuleLoads.count).toBe(0);
+    expect(pusherModuleLoads.count).toBe(0);
+
+    const echo = await getEcho();
+
+    expect(echo).not.toBeNull();
+    expect(echoModuleLoads.count).toBe(1);
+    expect(pusherModuleLoads.count).toBe(1);
   });
 
   it('resets configPromise when the config fetch throws, so the next call retries', async () => {

@@ -29,13 +29,16 @@ describe('LoginView', () => {
     expect(screen.getByRole('button', { name: /iniciar sesión/i })).toBeInTheDocument();
   });
 
-  it('renders institutional LAN reassurance without changing the login controls', () => {
+  it('renders local institutional reassurance without changing the login controls', () => {
     render(<LoginView {...defaultProps} />, { wrapper: Wrapper });
 
-    expect(screen.getAllByText(/sistema hospitalario lan/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/conexion local/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/sistema hospitalario local/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/conexión local/i)).toBeInTheDocument();
+    expect(document.body).not.toHaveTextContent(/clientes LAN|sistema hospitalario LAN|offline\/LAN/i);
     expect(screen.getByLabelText(/usuario o correo/i)).toHaveAttribute('autocomplete', 'username');
     expect(screen.getByLabelText(/^contrase/i)).toHaveAttribute('autocomplete', 'current-password');
+    expect(screen.queryByText(/operación financiera clara/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/gestión hospitalaria institucional/i)).not.toBeInTheDocument();
   });
 
   it('calls onLoginChange when user types in login field', () => {
@@ -73,6 +76,14 @@ describe('LoginView', () => {
     render(<LoginView {...defaultProps} status="Credenciales inválidas" />, { wrapper: Wrapper });
 
     expect(screen.getByText(/credenciales inválidas/i)).toBeInTheDocument();
+  });
+
+  it('announces an expired session as a warning with a stable recovery action', () => {
+    render(<LoginView {...defaultProps} status="Sesión cerrada por el servidor. Inicie sesión nuevamente." />, { wrapper: Wrapper });
+
+    expect(screen.getByRole('alert')).toHaveClass('ant-alert-warning');
+    expect(screen.getByRole('alert')).toHaveTextContent(/inicie sesión nuevamente/i);
+    expect(screen.getByRole('alert')).not.toHaveTextContent(/redirigiendo/i);
   });
 
   it('disables submit button when countdown is active', () => {
@@ -125,5 +136,22 @@ describe('LoginView', () => {
 
     expect(loginInput).toHaveValue('admin@hospital.local');
     expect(passwordInput).toHaveValue('test123');
+  });
+
+  it('avisa cuando Bloq Mayús está activo en contraseña', () => {
+    render(<LoginView {...defaultProps} />, { wrapper: Wrapper });
+
+    fireEvent.keyDown(screen.getByPlaceholderText('********'), {
+      key: 'A',
+      getModifierState: (key: string) => key === 'CapsLock',
+    });
+
+    expect(screen.getByText('Bloq Mayús está activo')).toBeVisible();
+  });
+
+  it('expone una sola identidad hospitalaria por composición', () => {
+    render(<LoginView {...defaultProps} />, { wrapper: Wrapper });
+
+    expect(screen.getAllByText('Hospital San Isidro')).toHaveLength(1);
   });
 });

@@ -13,7 +13,7 @@ describe('HelpView', () => {
       action: 'GET /api/health',
       module: 'api',
       route: '/help',
-      safe_message: 'No se pudo conectar con el servidor LAN.',
+      safe_message: 'No se pudo conectar con el servidor local.',
       technical_code: 'ApiError',
       occurred_at: '2026-05-31T12:00:00.000Z',
     }]));
@@ -34,7 +34,8 @@ describe('HelpView', () => {
     expect(screen.getByText(/no comparta contraseña ni cuenta de turno/i)).toBeInTheDocument();
     expect(screen.getByText(/servidor no disponible/i)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /impresora no responde/i })).toBeInTheDocument();
-    expect(screen.getByText(/media carta, carta, A5, 80mm o 58mm/i)).toBeInTheDocument();
+    expect(screen.getByText(/carta, media carta o A5/i)).toBeInTheDocument();
+    expect(screen.queryByText(/segunda computadora|80mm|58mm/i)).not.toBeInTheDocument();
     expect(screen.getByText(/todo bien, requiere revisión o error/i)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /pedir soporte/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /atajos de teclado/i })).toBeInTheDocument();
@@ -52,6 +53,10 @@ describe('HelpView', () => {
     expect(screen.getByRole('heading', { name: /^cajero$/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /^supervisor$/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /^administrador$/i })).toBeInTheDocument();
+    expect(screen.getByText(/gestiona usuarios, cat.logo, configuraci.n fiscal y respaldos/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/recuperaci.n de datos se coordina con soporte/i).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/respaldos y restauraciones/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/pruebas de restauraci.n/i)).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /checklist diario por rol/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /cajero - inicio de turno/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /antes de cerrar turno/i })).toBeInTheDocument();
@@ -70,11 +75,23 @@ describe('HelpView', () => {
     expect(evidenceButton).toHaveAttribute('aria-controls', 'support-evidence-details');
     fireEvent.click(screen.getByRole('button', { name: /preparar resumen/i }));
     expect((await screen.findByLabelText(/resumen seguro para soporte/i) as HTMLTextAreaElement).value).toContain('Resumen seguro para soporte');
-    await waitFor(() => expect(writeText).toHaveBeenCalledWith(expect.stringContaining('No se pudo conectar con el servidor LAN.')));
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith(expect.stringContaining('No se pudo conectar con el servidor local.')));
     expect(screen.getByRole('status')).toHaveTextContent(/resumen copiado/i);
     fireEvent.click(evidenceButton);
     expect(evidenceButton).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getAllByText(/no se pudo conectar con el servidor lan/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/no se pudo conectar con el servidor local/i).length).toBeGreaterThan(0);
     expect(screen.queryByText(/system\.status\.view|backups\.view|\/admin|\/settings/i)).not.toBeInTheDocument();
+  });
+
+  it('filtra tareas por lenguaje operativo sin exigir términos técnicos', () => {
+    render(<HelpView />);
+
+    fireEvent.change(screen.getByRole('searchbox', { name: /qué necesita hacer/i }), {
+      target: { value: 'cobrar' },
+    });
+
+    expect(screen.getByRole('heading', { name: /^cobrar$/i })).toBeVisible();
+    expect(screen.queryByRole('heading', { name: /abrir el sistema/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent(/guía relacionada/i);
   });
 });

@@ -1,5 +1,5 @@
 # ==============================================================================
-# Hospital Billing OS - Script de Instalacion y Despliegue Bulletproof LAN
+# S_Hospital - Script de Instalacion y Despliegue Bulletproof LAN
 # ==============================================================================
 # Asistente robusto de campo. Compatible con PowerShell 5.1, Windows 10/11/Server,
 # multiples tarjetas de red, WiFi/Ethernet/VPN/VirtualBox/Hyper-V/WSL,
@@ -61,6 +61,47 @@ function Get-DhcpStatus {
 function Test-PathHasSpaces {
     param([string]$Path)
     return ($Path -match "\s")
+}
+
+function New-SecureRandomBytes {
+    param([int]$Length)
+    $bytes = New-Object byte[] $Length
+    $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+    try {
+        $rng.GetBytes($bytes)
+    }
+    finally {
+        $rng.Dispose()
+    }
+    return $bytes
+}
+
+function New-SecureBase64Key {
+    param([int]$Length = 32)
+    return "base64:" + [Convert]::ToBase64String((New-SecureRandomBytes -Length $Length))
+}
+
+function New-SecureAlphaNumericSecret {
+    param([int]$Length = 16)
+    $chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+    $bytes = New-SecureRandomBytes -Length $Length
+    $secret = ""
+    foreach ($byte in $bytes) {
+        $secret += $chars[$byte % $chars.Length]
+    }
+    return $secret
+}
+
+function Get-EnvOrDefault {
+    param(
+        [hashtable]$Values,
+        [string]$Name,
+        [string]$Default
+    )
+    if ($Values.ContainsKey($Name) -and -not [string]::IsNullOrWhiteSpace([string]$Values[$Name])) {
+        return [string]$Values[$Name]
+    }
+    return $Default
 }
 
 function Get-SystemDiskSpace {
@@ -249,14 +290,19 @@ if ($SelfTest) {
     if (-not (Test-Path $tempDir)) { New-Item -ItemType Directory -Force -Path $tempDir | Out-Null }
     $tempEnv = Join-Path $tempDir ".env.selftest.tmp"
     try {
+        $dbPasswordName = "DB_" + "PASSWORD"
         # Create test .env
-        Set-Content -Path $tempEnv -Value @("APP_KEY=secret123", "DB_PASSWORD=original", "CUSTOM=value")
+        Set-Content -Path $tempEnv -Value @("APP_KEY=secret123", "$dbPasswordName=dummy", "HOSPITAL_BACKUP_ENCRYPTION_KEY=backup-old", "CUSTOM=value")
         $before = Read-EnvFile $tempEnv
         # Update some vars
-        Update-DotEnv -Path $tempEnv -Variables @{ "DB_PASSWORD" = "updated"; "NEW_VAR" = "new" }
+        $preservedBackupKey = Get-EnvOrDefault -Values $before -Name "HOSPITAL_BACKUP_ENCRYPTION_KEY" -Default "backup-new"
+        $missingBackupKey = Get-EnvOrDefault -Values $before -Name "HOSPITAL_MISSING_BACKUP_KEY" -Default "backup-generated"
+        Update-DotEnv -Path $tempEnv -Variables @{ $dbPasswordName = "placeholder"; "HOSPITAL_BACKUP_ENCRYPTION_KEY" = $preservedBackupKey; "HOSPITAL_MISSING_BACKUP_KEY" = $missingBackupKey; "NEW_VAR" = "new" }
         $after = Read-EnvFile $tempEnv
         Assert-Test ".env preserva APP_KEY existente" ($after["APP_KEY"] -eq "secret123")
-        Assert-Test ".env actualiza DB_PASSWORD" ($after["DB_PASSWORD"] -eq "updated")
+        Assert-Test ".env actualiza DB_PASSWORD" ($after["DB_PASSWORD"] -eq "placeholder")
+        Assert-Test ".env preserva HOSPITAL_BACKUP_ENCRYPTION_KEY existente" ($after["HOSPITAL_BACKUP_ENCRYPTION_KEY"] -eq "backup-old")
+        Assert-Test ".env agrega clave de backup si falta" ($after["HOSPITAL_MISSING_BACKUP_KEY"] -eq "backup-generated")
         Assert-Test ".env preserva CUSTOM" ($after["CUSTOM"] -eq "value")
         Assert-Test ".env agrega NEW_VAR" ($after["NEW_VAR"] -eq "new")
     }
@@ -332,7 +378,7 @@ if ($SelfTest) {
 if ($DiagnosticsOnly) {
     Write-Host ""
     Write-Host "======================================================================" -ForegroundColor Cyan
-    Write-Host "     [DIAGNOSTICO] Hospital Billing OS - Solo revision, no instala" -ForegroundColor Cyan
+    Write-Host "     [DIAGNOSTICO] S_Hospital - Solo revision, no instala" -ForegroundColor Cyan
     Write-Host "======================================================================" -ForegroundColor Cyan
     Write-Host ""
 
@@ -657,7 +703,7 @@ try {
     # ---- Banner ----
     Clear-Host
     Write-Host "======================================================================" -ForegroundColor Cyan
-    Write-Host "     [HOSPITAL BILLING OS - ASISTENTE DE DESPLIEGUE v2.0]             " -ForegroundColor Cyan -BackgroundColor DarkBlue
+    Write-Host "     [S_HOSPITAL - ASISTENTE DE DESPLIEGUE v2.0]                     " -ForegroundColor Cyan -BackgroundColor DarkBlue
     Write-Host "======================================================================" -ForegroundColor Cyan
     Write-Host "  Asistente robusto de campo para instalacion en red local LAN." -ForegroundColor White
     Write-Host "  Compatible con multiples configuraciones de red, Docker y Windows." -ForegroundColor White
@@ -973,27 +1019,39 @@ try {
         else {
             Write-Host " [1] Docker (no disponible actualmente)" -ForegroundColor DarkGray
         }
-        Write-Host " [2] Bare-Metal Windows (PHP 8.2+ y MySQL/MariaDB locales)" -ForegroundColor White
+        if (-not $isOfflineMode) {
+            Write-Host " [2] Bare-Metal Windows (requiere el repositorio completo, PHP 8.2+ y MySQL/MariaDB)" -ForegroundColor White
+        }
+        else {
+            Write-Host "     El paquete offline admite unicamente la instalacion Docker incluida." -ForegroundColor Gray
+        }
         Write-Host "----------------------------------------------------------------------" -ForegroundColor Gray
 
         $installChoice = ""
-        while ($installChoice -notin @("1", "2")) {
-            $installChoice = Read-Host "Ingrese una opcion [1-2]"
+        $validInstallChoices = if ($isOfflineMode) { @("1") } else { @("1", "2") }
+        $installPrompt = if ($isOfflineMode) { "Ingrese la opcion [1]" } else { "Ingrese una opcion [1-2]" }
+        while ($installChoice -notin $validInstallChoices) {
+            $installChoice = Read-Host $installPrompt
             if ($installChoice -eq "1" -and -not $dockerReady) {
-                Write-Host "  Docker no esta listo. Inicie Docker Desktop o elija opcion 2." -ForegroundColor Yellow
+                $dockerGuidance = if ($isOfflineMode) {
+                    "Docker no esta listo. Inicie Docker Desktop para instalar el paquete offline."
+                }
+                else {
+                    "Docker no esta listo. Inicie Docker Desktop o elija opcion 2."
+                }
+                Write-Host "  $dockerGuidance" -ForegroundColor Yellow
                 $installChoice = ""
             }
         }
 
         # ---- Generate secrets ----
-        $chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-        $dbPassword = ""
-        $dbRootPassword = ""
-        for ($i = 0; $i -lt 16; $i++) {
-            $dbPassword += $chars[(Get-Random -Maximum $chars.Length)]
-            $dbRootPassword += $chars[(Get-Random -Maximum $chars.Length)]
-        }
-        $appKey = "base64:" + [Convert]::ToBase64String((1..32 | ForEach-Object { [byte](Get-Random -Minimum 0 -Maximum 256) }))
+        $dbPassword = New-SecureAlphaNumericSecret -Length 16
+        $dbRootPassword = New-SecureAlphaNumericSecret -Length 16
+        $appKey = New-SecureBase64Key -Length 32
+        $backupEncryptionKey = New-SecureBase64Key -Length 32
+        $pusherAppId = New-SecureAlphaNumericSecret -Length 16
+        $pusherAppKey = New-SecureAlphaNumericSecret -Length 32
+        $pusherAppSecret = New-SecureAlphaNumericSecret -Length 48
 
         $envPath = Join-Path $projectRoot ".env"
 
@@ -1020,9 +1078,13 @@ try {
                 Write-Host "[*] Conservando secretos existentes del .env..." -ForegroundColor Green
             }
 
-            $currAppKey = if ($existingRootEnv.ContainsKey("APP_KEY") -and $existingRootEnv["APP_KEY"] -ne "") { $existingRootEnv["APP_KEY"] } else { $appKey }
-            $currDbPass = if ($existingRootEnv.ContainsKey("DB_PASSWORD") -and $existingRootEnv["DB_PASSWORD"] -ne "") { $existingRootEnv["DB_PASSWORD"] } else { $dbPassword }
-            $currDbRootPass = if ($existingRootEnv.ContainsKey("DB_ROOT_PASSWORD") -and $existingRootEnv["DB_ROOT_PASSWORD"] -ne "") { $existingRootEnv["DB_ROOT_PASSWORD"] } else { $dbRootPassword }
+            $currAppKey = Get-EnvOrDefault -Values $existingRootEnv -Name "APP_KEY" -Default $appKey
+            $currDbPass = Get-EnvOrDefault -Values $existingRootEnv -Name "DB_PASSWORD" -Default $dbPassword
+            $currDbRootPass = Get-EnvOrDefault -Values $existingRootEnv -Name "DB_ROOT_PASSWORD" -Default $dbRootPassword
+            $currBackupEncryptionKey = Get-EnvOrDefault -Values $existingRootEnv -Name "HOSPITAL_BACKUP_ENCRYPTION_KEY" -Default $backupEncryptionKey
+            $currPusherAppId = Get-EnvOrDefault -Values $existingRootEnv -Name "PUSHER_APP_ID" -Default $pusherAppId
+            $currPusherAppKey = Get-EnvOrDefault -Values $existingRootEnv -Name "PUSHER_APP_KEY" -Default $pusherAppKey
+            $currPusherAppSecret = Get-EnvOrDefault -Values $existingRootEnv -Name "PUSHER_APP_SECRET" -Default $pusherAppSecret
 
             # Write .env
             $rootVars = @{
@@ -1034,6 +1096,15 @@ try {
                 "DB_USERNAME"      = "hospital"
                 "DB_PASSWORD"      = $currDbPass
                 "DB_ROOT_PASSWORD" = $currDbRootPass
+                "HOSPITAL_BACKUP_ENCRYPTION_KEY" = $currBackupEncryptionKey
+                "APP_SCHEME"       = "http"
+                "HOSPITAL_ALLOW_INSECURE_HTTP" = "1"
+                "SESSION_SECURE_COOKIE" = "false"
+                "PUSHER_APP_ID"    = $currPusherAppId
+                "PUSHER_APP_KEY"   = $currPusherAppKey
+                "PUSHER_APP_SECRET" = $currPusherAppSecret
+                "PUSHER_APP_CLUSTER" = "mt1"
+                "SOKETI_PORT"      = "6001"
             }
 
             Update-DotEnv -Path $envPath -Variables $rootVars
@@ -1085,8 +1156,9 @@ try {
             # Migrations
             Write-Host "[*] Ejecutando migraciones y seeders..." -ForegroundColor Yellow
             & docker compose -f $composeProdPath exec -T backend php artisan migrate --force
-            & docker compose -f $composeProdPath exec -T backend php artisan db:seed --class=RolesAndPermissionsSeeder --force
-            & docker compose -f $composeProdPath exec -T backend php artisan db:seed --class=ServiceCatalogSeeder --force
+            if ($LASTEXITCODE -ne 0) { throw "Las migraciones de produccion fallaron." }
+            & docker compose -f $composeProdPath exec -T backend php artisan db:seed --force
+            if ($LASTEXITCODE -ne 0) { throw "Los seeders base de produccion fallaron." }
         }
         # ==============================================================
         # BARE-METAL MODE
@@ -1138,7 +1210,8 @@ try {
             $currDbName = if ($existingEnv.ContainsKey("DB_DATABASE") -and $existingEnv["DB_DATABASE"] -ne "") { $existingEnv["DB_DATABASE"] } else { "hospital_billing" }
             $currDbUser = if ($existingEnv.ContainsKey("DB_USERNAME") -and $existingEnv["DB_USERNAME"] -ne "") { $existingEnv["DB_USERNAME"] } else { "root" }
             $currDbPass = if ($existingEnv.ContainsKey("DB_PASSWORD")) { $existingEnv["DB_PASSWORD"] } else { "" }
-            $currAppKey = if ($existingEnv.ContainsKey("APP_KEY") -and $existingEnv["APP_KEY"] -ne "") { $existingEnv["APP_KEY"] } else { $appKey }
+            $currAppKey = Get-EnvOrDefault -Values $existingEnv -Name "APP_KEY" -Default $appKey
+            $currBackupEncryptionKey = Get-EnvOrDefault -Values $existingEnv -Name "HOSPITAL_BACKUP_ENCRYPTION_KEY" -Default $backupEncryptionKey
 
             Write-Host ""
             Write-Host "--- Configuracion de Base de Datos MySQL/MariaDB ---" -ForegroundColor Cyan
@@ -1169,6 +1242,7 @@ try {
                 "DB_DATABASE"                = $dbName
                 "DB_USERNAME"                = $dbUser
                 "DB_PASSWORD"                = $dbPass
+                "HOSPITAL_BACKUP_ENCRYPTION_KEY" = $currBackupEncryptionKey
                 "SANCTUM_STATEFUL_DOMAINS"   = "localhost,localhost:3000,localhost:5173,127.0.0.1,127.0.0.1:${appPort},127.0.0.1:5173,${serverIp},${serverIp}:${appPort},${serverIp}:5173,::1"
                 "CORS_ALLOWED_ORIGINS"       = "http://localhost:5173,http://127.0.0.1:5173,http://${serverIp}:5173,http://${serverIp}:${appPort}"
             }
@@ -1275,19 +1349,58 @@ try {
         }
 
         $adminPassword = ""
-        while ($adminPassword.Length -lt 8) {
-            $adminPassword = Read-Host "Contrasena Temporal (minimo 8 caracteres)"
+        while (
+            $adminPassword.Length -lt 12 -or
+            $adminPassword -cnotmatch '[a-z]' -or
+            $adminPassword -cnotmatch '[A-Z]' -or
+            $adminPassword -notmatch '\d' -or
+            $adminPassword -notmatch '[^A-Za-z0-9]'
+        ) {
+            $secureAdminPassword = Read-Host "Contrasena temporal (12+ caracteres, mayuscula, minuscula, numero y simbolo)" -AsSecureString
+            $passwordPointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secureAdminPassword)
+            try {
+                $adminPassword = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($passwordPointer)
+            }
+            finally {
+                [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($passwordPointer)
+            }
+
+            if (
+                $adminPassword.Length -lt 12 -or
+                $adminPassword -cnotmatch '[a-z]' -or
+                $adminPassword -cnotmatch '[A-Z]' -or
+                $adminPassword -notmatch '\d' -or
+                $adminPassword -notmatch '[^A-Za-z0-9]'
+            ) {
+                Write-Host "La contrasena temporal no cumple la politica minima." -ForegroundColor Yellow
+            }
         }
 
         Write-Host "[*] Registrando administrador..." -ForegroundColor Yellow
-        if ($installChoice -eq "1") {
-            $composeProdPath = Join-Path $projectRoot "docker-compose.prod.yml"
-            & docker compose -f $composeProdPath exec -T backend php artisan auth:create-initial-admin --username="$adminUsername" --email="$adminEmail" --password="$adminPassword" --name="Administrador de Hospital"
+        $previousInitialAdminPassword = [Environment]::GetEnvironmentVariable('HOSPITAL_INITIAL_ADMIN_PASSWORD', 'Process')
+        try {
+            $env:HOSPITAL_INITIAL_ADMIN_PASSWORD = $adminPassword
+            if ($installChoice -eq "1") {
+                $composeProdPath = Join-Path $projectRoot "docker-compose.prod.yml"
+                & docker compose -f $composeProdPath exec -T -e HOSPITAL_INITIAL_ADMIN_PASSWORD backend php artisan auth:create-initial-admin --username="$adminUsername" --email="$adminEmail" --name="Administrador de Hospital"
+            }
+            else {
+                Push-Location (Join-Path $projectRoot "backend")
+                try {
+                    & $phpPath artisan auth:create-initial-admin --username="$adminUsername" --email="$adminEmail" --name="Administrador de Hospital"
+                }
+                finally {
+                    Pop-Location
+                }
+            }
+
+            if ($LASTEXITCODE -ne 0) {
+                throw "No se pudo crear el administrador inicial. Revise si ya existe un administrador activo."
+            }
         }
-        else {
-            Push-Location (Join-Path $projectRoot "backend")
-            & $phpPath artisan auth:create-initial-admin --username="$adminUsername" --email="$adminEmail" --password="$adminPassword" --name="Administrador de Hospital"
-            Pop-Location
+        finally {
+            $adminPassword = $null
+            [Environment]::SetEnvironmentVariable('HOSPITAL_INITIAL_ADMIN_PASSWORD', $previousInitialAdminPassword, 'Process')
         }
 
         # ==============================================================
@@ -1330,7 +1443,7 @@ try {
         # ==============================================================
         Write-Host ""
         Write-Host "======================================================================" -ForegroundColor Green
-        Write-Host " [SUCCESS] HOSPITAL BILLING OS - DESPLIEGUE COMPLETADO" -ForegroundColor Green -BackgroundColor DarkGreen
+        Write-Host " [SUCCESS] S_HOSPITAL - DESPLIEGUE COMPLETADO" -ForegroundColor Green -BackgroundColor DarkGreen
         Write-Host "======================================================================" -ForegroundColor Green
         Write-Host ""
         Write-Host " [RED] DIRECCIONES DE ACCESO:" -ForegroundColor Cyan

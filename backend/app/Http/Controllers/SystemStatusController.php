@@ -45,10 +45,35 @@ class SystemStatusController extends Controller
                 '/up',
                 '/login',
                 '/verify-email',
-                '/api/system/echo-config',
                 'assets',
-                'WebSocket',
-                'Soketi',
+                'Login',
+                'Cashbox',
+                'Invoice',
+                'Payment',
+                'Receipt',
+                'history',
+                'Reports',
+                'Backup',
+            ],
+        ],
+        'LOCAL_SERVER_VALIDATION_PROOF' => [
+            'label' => 'Navegador local del servidor',
+            'required_file' => 'qa/LOCAL_SERVER_VALIDATION_PROOF.md',
+            'fields' => [
+                'Date/time',
+                'Responsible person',
+                'Server computer name',
+                'Local app URL',
+                'Browser/version',
+                'User/role used',
+                'Evidence/capture reference',
+                'Final conclusion',
+            ],
+            'checks' => [
+                '/up',
+                '/login',
+                '/verify-email',
+                'assets',
                 'Login',
                 'Cashbox',
                 'Invoice',
@@ -60,7 +85,7 @@ class SystemStatusController extends Controller
             ],
         ],
         'INSTITUTIONAL_RECEIPT_PRINT_PROOF' => [
-            'label' => 'Impresora institucional media carta/carta/A5/80mm/58mm',
+            'label' => 'Impresora institucional media carta/carta/A5',
             'required_file' => 'qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md',
             'fields' => [
                 'Date/time',
@@ -74,8 +99,6 @@ class SystemStatusController extends Controller
                 'Media carta result',
                 'Carta result',
                 'A5 result',
-                '80mm result',
-                '58mm result',
                 'Reprint result',
                 'Margins result',
                 'Browser headers/footers result',
@@ -87,8 +110,6 @@ class SystemStatusController extends Controller
                 'media carta',
                 'carta',
                 'A5',
-                '80mm',
-                '58mm',
                 'white background',
                 'Reprint',
                 'headers/footers',
@@ -165,6 +186,7 @@ class SystemStatusController extends Controller
     {
         $fiscalSettings = FiscalSetting::query()->exists();
         $adminExists = User::query()
+            ->where('active', true)
             ->whereHas('roles', fn ($query) => $query
                 ->where('name', 'admin')
                 ->where('guard_name', 'web'))
@@ -264,10 +286,12 @@ class SystemStatusController extends Controller
             'configured_host' => $host,
             'host_type' => $hostType,
             'lan_ready' => $hostType === 'lan',
-            'client_url' => $hostType === 'lan' ? "{$scheme}://{$host}{$port}" : null,
-            'guidance' => $hostType === 'lan'
-                ? 'Clientes deben entrar por esta direccion LAN.'
-                : 'Configure APP_URL con la IP o nombre LAN del servidor antes de validar clientes.',
+            'client_url' => in_array($hostType, ['lan', 'loopback'], true) ? "{$scheme}://{$host}{$port}" : null,
+            'guidance' => match ($hostType) {
+                'lan' => 'Clientes deben entrar por esta direccion LAN.',
+                'loopback' => 'Operacion local en este equipo. Use esta direccion solo en la computadora servidor.',
+                default => 'Configure APP_URL con la IP o nombre LAN del servidor antes de validar clientes.',
+            },
         ];
     }
 
@@ -291,6 +315,9 @@ class SystemStatusController extends Controller
         $pendingCount = BackupLog::query()
             ->where('status', BackupLog::STATUS_PENDING)
             ->count();
+        $failedCount = BackupLog::query()
+            ->where('status', BackupLog::STATUS_FAILED)
+            ->count();
         $oldestPending = BackupLog::query()
             ->where('status', BackupLog::STATUS_PENDING)
             ->oldest('created_at')
@@ -302,6 +329,9 @@ class SystemStatusController extends Controller
         $operationalMetrics = app(OperationalMetricsService::class)->snapshot();
         $queueStatus = $this->queueStatus();
         $workerRecentlyActive = (bool) ($operationalMetrics['backups']['worker_recently_active'] ?? false);
+        $lastSuccessFile = $this->backupFileStatus($lastSuccess);
+        $lastSuccessFileIsUsable = $lastSuccessFile['exists'] && $lastSuccessFile['checksum_matches'];
+        $workerRecentlyActive = $workerRecentlyActive && $lastSuccessFileIsUsable;
         $lastFailureIsUnresolved = $lastFailure !== null
             && (
                 $lastSuccess === null
@@ -311,6 +341,7 @@ class SystemStatusController extends Controller
             $schedulerHeartbeat = (string) ($queueStatus['scheduler_heartbeat']['status'] ?? 'never_run');
             $workerRecentlyActive =
                 $lastSuccess->completed_at->greaterThanOrEqualTo(now()->subDay())
+                && $lastSuccessFileIsUsable
                 && $pendingCount === 0
                 && $stalePendingCount === 0
                 && ! $lastFailureIsUnresolved
@@ -321,18 +352,67 @@ class SystemStatusController extends Controller
 
         return [
             'pending_count' => $pendingCount,
+            'failed_count' => $failedCount,
             'worker_recently_active' => $workerRecentlyActive,
             'oldest_pending_at' => $oldestPending?->created_at?->toJSON(),
             'stale_pending_count' => $stalePendingCount,
             'stale_pending_threshold_minutes' => $staleThresholdMinutes,
             'last_success_at' => $lastSuccess?->completed_at?->toJSON(),
-            'last_success_filename' => $lastSuccess?->filename,
+            'last_success_file_exists' => $lastSuccessFile['exists'],
+            'last_success_checksum_matches' => $lastSuccessFile['checksum_matches'],
             'last_failure_at' => $lastFailure?->completed_at?->toJSON(),
             'last_failure_message' => OperationalMessageSanitizer::message($lastFailure?->error_message),
             'dump_binary' => $this->dumpBinaryStatus(),
             'storage' => $this->backupStorageStatus(),
             'queue' => $queueStatus,
         ];
+    }
+
+    /**
+     * @return array{exists: bool, checksum_matches: bool}
+     */
+    private function backupFileStatus(?BackupLog $backupLog): array
+    {
+        if (! $backupLog instanceof BackupLog || ! $this->isSafeBackupPath((string) $backupLog->path)) {
+            return [
+                'exists' => false,
+                'checksum_matches' => false,
+            ];
+        }
+
+        try {
+            $disk = Storage::disk((string) ($backupLog->disk ?: 'local'));
+            $path = (string) $backupLog->path;
+
+            if (! $disk->exists($path)) {
+                return [
+                    'exists' => false,
+                    'checksum_matches' => false,
+                ];
+            }
+
+            $absolutePath = $disk->path($path);
+            $checksum = is_file($absolutePath) ? hash_file('sha256', $absolutePath) : false;
+
+            return [
+                'exists' => true,
+                'checksum_matches' => is_string($checksum)
+                    && hash_equals((string) $backupLog->checksum_sha256, $checksum),
+            ];
+        } catch (Throwable) {
+            return [
+                'exists' => false,
+                'checksum_matches' => false,
+            ];
+        }
+    }
+
+    private function isSafeBackupPath(string $path): bool
+    {
+        return str_starts_with($path, 'backups/')
+            && ! str_contains($path, '..')
+            && ! str_starts_with($path, '/')
+            && ! preg_match('/^[A-Za-z]:[\\\\\/]/', $path);
     }
 
     /**
@@ -554,8 +634,6 @@ class SystemStatusController extends Controller
             'failed_jobs_table_available' => Schema::hasTable('failed_jobs'),
             'failed_jobs_count' => Schema::hasTable('failed_jobs') ? DB::table('failed_jobs')->count() : null,
             'pending_backup_jobs' => $pendingJobs,
-            'worker_command' => 'php artisan queue:work --queue=backups --tries=1 --timeout=600',
-            'scheduler_command' => 'php artisan schedule:run',
             'scheduler_heartbeat' => $heartbeat,
         ];
     }
@@ -612,19 +690,25 @@ class SystemStatusController extends Controller
         $appEnv = (string) Config::get('app.env');
         $appDebug = (bool) Config::get('app.debug');
         $runtime = $this->runtimeStatus();
-        $proofs = $this->physicalProofStatuses();
+        $network = $this->networkStatus();
+        $localMode = ($network['host_type'] ?? null) === 'loopback';
+        $proofs = $this->physicalProofStatuses($localMode);
         $lanProof = $proofs[0];
         $printerProof = $proofs[1];
 
         $blockers = [
-            [
+            $localMode ? [
+                'code' => 'LOCAL_ACCESS_CONFIGURED',
+                'label' => 'Acceso local configurado en este equipo',
+                'status' => 'validated',
+            ] : [
                 'code' => 'PENDING_LAN_CLIENT_VALIDATION',
                 'label' => 'Validacion desde segunda PC LAN',
                 'status' => $lanProof['status'] === 'validated' ? 'validated' : 'pending',
             ],
             [
                 'code' => 'PENDING_HARDWARE_VALIDATION',
-                'label' => 'Impresora institucional fisica media carta/carta/A5/80mm/58mm',
+                'label' => 'Impresora institucional fisica media carta/carta/A5',
                 'status' => $printerProof['status'] === 'validated' ? 'validated' : 'pending',
             ],
             [
@@ -662,7 +746,8 @@ class SystemStatusController extends Controller
         $network = $this->networkStatus();
         $backups = $this->backupStatus();
         $runtime = $this->runtimeStatus();
-        $physicalProofs = $this->physicalProofStatuses();
+        $localMode = ($network['host_type'] ?? null) === 'loopback';
+        $physicalProofs = $this->physicalProofStatuses($localMode);
 
         return [
             'production_checks' => [
@@ -709,9 +794,9 @@ class SystemStatusController extends Controller
                         : 'Falta ejecutar build de frontend antes de instalar',
                 ],
                 [
-                    'code' => 'LAN_APP_URL_CONFIGURED',
-                    'label' => 'Direccion LAN configurada',
-                    'status' => $network['lan_ready'] ? 'validated' : 'manual_required',
+                    'code' => $localMode ? 'LOCAL_APP_URL_CONFIGURED' : 'LAN_APP_URL_CONFIGURED',
+                    'label' => $localMode ? 'Direccion local configurada' : 'Direccion LAN configurada',
+                    'status' => $localMode || $network['lan_ready'] ? 'validated' : 'manual_required',
                     'detail' => $network['guidance'],
                 ],
                 [
@@ -751,29 +836,35 @@ class SystemStatusController extends Controller
                 ],
                 [
                     'path' => '/login',
-                    'expected' => 'Pantalla de ingreso abre desde otra computadora',
+                    'expected' => $localMode
+                        ? 'Pantalla de ingreso abre en este equipo'
+                        : 'Pantalla de ingreso abre desde otra computadora',
                     'status' => 'manual_required',
                 ],
                 [
                     'path' => '/verify-email',
-                    'expected' => 'Pantalla esperada abre desde la red local',
+                    'expected' => $localMode
+                        ? 'Pantalla esperada abre localmente'
+                        : 'Pantalla esperada abre desde la red local',
                     'status' => 'manual_required',
                 ],
             ],
             'physical_proofs' => $physicalProofs,
-            'commands' => [
-                'preflight' => 'powershell.exe -ExecutionPolicy Bypass -File scripts\\production_readiness_preflight.ps1 -BaseUrl http://IP_DEL_SERVIDOR',
-                'backup_worker' => $backups['queue']['worker_command'],
-                'scheduler' => $backups['queue']['scheduler_command'],
-            ],
         ];
     }
 
     /**
      * @return array<int, array{code: string, label: string, required_file: string, status: string, detail: string}>
      */
-    private function physicalProofStatuses(): array
+    private function physicalProofStatuses(bool $localMode = false): array
     {
+        $codes = array_values(array_filter(
+            array_keys(self::PHYSICAL_PROOFS),
+            fn (string $code): bool => $localMode
+                ? $code !== 'LAN_CLIENT_VALIDATION_PROOF'
+                : $code !== 'LOCAL_SERVER_VALIDATION_PROOF',
+        ));
+
         return array_map(function (string $code): array {
             $proof = self::PHYSICAL_PROOFS[$code];
             $result = $this->evaluateProofFile(
@@ -789,7 +880,7 @@ class SystemStatusController extends Controller
                 'status' => $result['status'],
                 'detail' => $result['detail'],
             ];
-        }, array_keys(self::PHYSICAL_PROOFS));
+        }, $codes);
     }
 
     /**
@@ -874,7 +965,7 @@ class SystemStatusController extends Controller
 
     private function proofFieldValue(string $content, string $fieldLabel): ?string
     {
-        $pattern = '/^\s*-\s*'.preg_quote($fieldLabel, '/').'\s*:[ \t]*(?<value>[^\r\n]*)$/im';
+        $pattern = '/^\s*-\s*'.preg_quote($fieldLabel, '/').'\s*:[ \t]*(?<value>[^\r\n]*)\r?$/im';
 
         if (preg_match($pattern, $content, $matches) !== 1) {
             return null;
@@ -885,13 +976,13 @@ class SystemStatusController extends Controller
 
     private function proofHasCompletedCheckedItem(string $content, string $labelPattern): bool
     {
-        $linePattern = '/^\s*-\s*\[[xX]\]\s*.*'.preg_quote($labelPattern, '/').'.*$/im';
+        $linePattern = '/^\s*-\s*\[[xX]\]\s*.*'.preg_quote($labelPattern, '/').'.*\r?$/im';
 
         if (preg_match($linePattern, $content, $matches) !== 1) {
             return false;
         }
 
-        if (preg_match('/:[ \t]*(?<value>[^\r\n]*)$/', (string) $matches[0], $result) !== 1) {
+        if (preg_match('/:[ \t]*(?<value>[^\r\n]*)\r?$/', (string) $matches[0], $result) !== 1) {
             return false;
         }
 
@@ -946,6 +1037,7 @@ class SystemStatusController extends Controller
             'database' => $this->databaseStatus(),
             'backups' => $this->backupStatus(),
             'runtime' => $this->runtimeStatus(),
+            'network' => $this->networkStatus(),
             'readiness' => $this->readinessStatus(),
             'preflight' => $this->preflightStatus(),
         ];

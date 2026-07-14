@@ -3,17 +3,24 @@
 namespace Tests\Feature;
 
 use App\Actions\Billing\CreateInvoiceAction;
+use App\Actions\Billing\VoidInvoiceAction;
 use App\Actions\Cash\OpenCashSessionAction;
+use App\Models\AuditLog;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
+use App\Models\InstitutionalReceipt;
+use App\Models\InstitutionalReceiptSeries;
 use App\Models\Invoice;
 use App\Models\Payment;
+use App\Models\ReceiptPrintProfile;
 use App\Models\Service;
 use App\Models\User;
+use Database\Seeders\ReceiptPrintProfileSeeder;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 class InvoiceHistoryReprintVoidTest extends TestCase
@@ -95,6 +102,27 @@ class InvoiceHistoryReprintVoidTest extends TestCase
 
         $this->actingAs($user)
             ->getJson("/api/invoices/{$otherTodayId}")
+            ->assertForbidden();
+    }
+
+    public function test_invoice_void_permission_does_not_grant_historical_invoice_read_scope(): void
+    {
+        $this->seedBillingBase();
+        $voidUser = User::factory()->create();
+        $voidUser->givePermissionTo('invoices.view', 'invoices.void');
+        $otherCashier = $this->cashier();
+        $otherInvoiceId = $this->createInvoice($otherCashier, 'Other Patient', 'Hemograma Completo');
+
+        $response = $this->actingAs($voidUser)
+            ->getJson('/api/invoices?date_from='.now()->subDays(5)->toDateString().'&patient=Other')
+            ->assertOk()
+            ->assertJsonPath('meta.total', 0);
+
+        $ids = collect($response->json('data'))->pluck('id');
+        $this->assertFalse($ids->contains($otherInvoiceId));
+
+        $this->actingAs($voidUser)
+            ->getJson("/api/invoices/{$otherInvoiceId}")
             ->assertForbidden();
     }
 
@@ -334,6 +362,58 @@ class InvoiceHistoryReprintVoidTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_invoice_void_permission_does_not_grant_unrelated_institutional_receipt_pdf_access(): void
+    {
+        $this->seedBillingBase();
+        $this->seed(ReceiptPrintProfileSeeder::class);
+        $cashier = $this->cashier();
+        $voidOnlyUser = User::factory()->create();
+        $voidOnlyUser->givePermissionTo(['receipts.view', 'invoices.void']);
+        $invoice = Invoice::query()->findOrFail($this->createInvoice($cashier, 'Maria Lopez', 'Glucosa'));
+        $series = InstitutionalReceiptSeries::query()->create([
+            'document_type' => InstitutionalReceiptSeries::DOCUMENT_TYPE,
+            'series' => 'REC-A',
+            'prefix' => 'RA',
+            'number_format' => '{series}-{number:08}',
+            'min_number' => 1,
+            'max_number' => 100,
+            'current_number' => 1,
+            'active' => true,
+        ]);
+        $profile = ReceiptPrintProfile::query()
+            ->where('code', ReceiptPrintProfile::CODE_HALF_LETTER)
+            ->firstOrFail();
+        $receipt = InstitutionalReceipt::query()->create([
+            'invoice_id' => $invoice->id,
+            'payment_id' => null,
+            'cash_session_id' => CashRegisterSession::query()->where('user_id', $cashier->id)->firstOrFail()->id,
+            'series_id' => $series->id,
+            'receipt_number' => 1,
+            'receipt_number_full' => 'REC-A-00000001',
+            'status' => InstitutionalReceipt::STATUS_ISSUED,
+            'amount' => $invoice->total,
+            'amount_cents' => 1725,
+            'issued_at' => now()->subDay(),
+            'issued_by' => $cashier->id,
+            'payer_name' => $invoice->patient_name,
+            'concept' => 'Servicios hospitalarios',
+            'amount_words' => 'DIECISIETE LEMPIRAS CON 25/100 CENTAVOS',
+            'template_code' => 'institutional_classic',
+            'print_profile_code' => $profile->code,
+            'copy_mode' => 'original_only',
+            'institution_snapshot' => ['hospital_name' => 'Hospital San Isidro'],
+            'series_snapshot' => ['series' => 'REC-A'],
+            'profile_snapshot' => ['code' => $profile->code, 'paper_kind' => $profile->paper_kind],
+            'invoice_snapshot' => ['id' => $invoice->id],
+            'payment_snapshot' => null,
+            'items_snapshot' => [],
+        ]);
+
+        $this->actingAs($voidOnlyUser)
+            ->get("/api/institutional-receipts/{$receipt->id}/pdf")
+            ->assertForbidden();
+    }
+
     public function test_void_requires_permission_and_reason(): void
     {
         $this->seedBillingBase();
@@ -353,6 +433,29 @@ class InvoiceHistoryReprintVoidTest extends TestCase
             ->postJson("/api/invoices/{$invoiceId}/void", ['reason' => '   '])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('reason');
+    }
+
+    public function test_void_action_rejects_short_reason_before_mutating_invoice(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $supervisor = $this->supervisor();
+        $invoice = Invoice::query()->findOrFail($this->createInvoice($cashier, 'Maria Lopez', 'Glucosa'));
+
+        try {
+            app(VoidInvoiceAction::class)->execute($invoice, $supervisor, 'abc');
+            $this->fail('Expected short void reason to be rejected.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('reason', $exception->errors());
+        }
+
+        $this->assertDatabaseHas('invoices', [
+            'id' => $invoice->id,
+            'status' => Invoice::STATUS_ISSUED,
+            'void_reason' => null,
+            'voided_by' => null,
+            'voided_at' => null,
+        ]);
     }
 
     public function test_reprint_any_permission_does_not_grant_invoice_void_operation_scope(): void
@@ -443,6 +546,15 @@ class InvoiceHistoryReprintVoidTest extends TestCase
             'entity_type' => Invoice::class,
             'entity_id' => $invoiceId,
         ]);
+
+        $audit = AuditLog::query()
+            ->where('action', 'invoice.void_blocked_paid')
+            ->where('entity_id', $invoiceId)
+            ->firstOrFail();
+        $this->assertSame(
+            'No se puede anular una factura con pagos registrados sin flujo de reversión.',
+            $audit->new_values['message'] ?? null,
+        );
     }
 
     public function test_void_invoice_is_allowed_after_all_payments_are_reversed(): void
@@ -558,6 +670,38 @@ class InvoiceHistoryReprintVoidTest extends TestCase
             'entity_id' => $invoiceId,
             'action' => 'invoice.reprinted',
         ]);
+    }
+
+    public function test_reprint_with_same_idempotency_key_does_not_duplicate_audit_or_reprint_count(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $invoiceId = $this->createInvoice($cashier, 'Maria Lopez', 'Glucosa');
+        $payload = [
+            'width' => 'half_letter',
+            'reason' => 'Recibo original danado por impresora',
+        ];
+
+        $this->actingAs($cashier)
+            ->withHeaders(['Idempotency-Key' => 'invoice-reprint-'.$invoiceId])
+            ->postJson("/api/invoices/{$invoiceId}/reprint", $payload)
+            ->assertOk()
+            ->assertJsonPath('data.receipt.institutional.copy_label', 'Reimpresion #1')
+            ->assertJsonPath('data.audit.reprint_count', 1);
+
+        $this->actingAs($cashier)
+            ->withHeaders(['Idempotency-Key' => 'invoice-reprint-'.$invoiceId])
+            ->postJson("/api/invoices/{$invoiceId}/reprint", $payload)
+            ->assertOk()
+            ->assertHeader('Idempotent-Replay', 'true')
+            ->assertJsonPath('data.receipt.institutional.copy_label', 'Reimpresion #1')
+            ->assertJsonPath('data.audit.reprint_count', 1);
+
+        $this->assertSame(1, AuditLog::query()
+            ->where('entity_type', Invoice::class)
+            ->where('entity_id', $invoiceId)
+            ->where('action', 'invoice.reprinted')
+            ->count());
     }
 
     private function seedBillingBase(): void

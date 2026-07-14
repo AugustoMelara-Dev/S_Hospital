@@ -5,14 +5,11 @@ import type { ReceiptData } from '../../lib/api';
 
 const printSpy = vi.fn();
 
-vi.mock('react-to-print', () => ({
-  useReactToPrint: () => printSpy,
-}));
-
 describe('ReceiptPreview', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     printSpy.mockReset();
+    vi.stubGlobal('print', printSpy);
     Object.defineProperty(window.navigator, 'userAgent', {
       configurable: true,
       value: 'Mozilla/5.0 hospital-validation-browser',
@@ -23,7 +20,28 @@ describe('ReceiptPreview', () => {
 
   afterEach(() => {
     cleanup();
+    vi.unstubAllGlobals();
     vi.useRealTimers();
+  });
+
+  it('does not auto print when a retired autoPrint prop is present', async () => {
+    vi.useFakeTimers();
+    const onPrint = vi.fn();
+
+    render(
+      <ReceiptPreview
+        {...({
+          receipt: receiptFixture(),
+          autoPrint: true,
+          onPrint,
+        } as unknown as React.ComponentProps<typeof ReceiptPreview>)}
+      />,
+    );
+
+    await vi.advanceTimersByTimeAsync(500);
+
+    expect(onPrint).not.toHaveBeenCalled();
+    expect(printSpy).not.toHaveBeenCalled();
   });
 
   it('waits for audited print callback before printing', async () => {
@@ -39,7 +57,6 @@ describe('ReceiptPreview', () => {
       <ReceiptPreview
         receipt={receiptFixture()}
         onPrint={onPrint}
-        onWidthChange={vi.fn()}
       />,
     );
 
@@ -59,7 +76,6 @@ describe('ReceiptPreview', () => {
       <ReceiptPreview
         receipt={receiptFixture()}
         onPrint={onPrint}
-        onWidthChange={vi.fn()}
       />,
     );
 
@@ -80,7 +96,6 @@ describe('ReceiptPreview', () => {
       <ReceiptPreview
         receipt={receiptFixture()}
         onPrint={vi.fn()}
-        onWidthChange={vi.fn()}
       />,
     );
 
@@ -105,7 +120,6 @@ describe('ReceiptPreview', () => {
       <ReceiptPreview
         receipt={receipt}
         onPrint={vi.fn()}
-        onWidthChange={vi.fn()}
       />,
     );
 
@@ -116,6 +130,42 @@ describe('ReceiptPreview', () => {
     expect(printSpy).toHaveBeenCalledTimes(1);
     expect(document.body.dataset.receiptWidth).toBeUndefined();
     expect(document.body.dataset.printingReceipt).toBeUndefined();
+  });
+
+  it('does not expose manual paper size controls in the print preview', () => {
+    render(
+      <ReceiptPreview
+        receipt={receiptFixture()}
+        onPrint={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole('combobox', { name: /tama/i })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/tam/i)).not.toBeInTheDocument();
+  });
+
+  it('groups receipt actions outside the printable document with accessible targets', () => {
+    render(
+      <ReceiptPreview
+        receipt={receiptFixture()}
+        onPrint={vi.fn()}
+        onNewInvoice={vi.fn()}
+      />,
+    );
+
+    const actions = screen.getByRole('group', { name: 'Acciones del recibo' });
+    expect(within(actions).getByRole('button', { name: 'Imprimir' })).toHaveClass('min-h-11');
+    expect(within(actions).getByRole('button', { name: 'Nueva factura' })).toHaveClass('min-h-11');
+    expect(within(document.querySelector('[data-receipt-print-root]') as HTMLElement).queryByRole('button')).toBeNull();
+  });
+
+  it('keeps the 58 mm compatibility print root when returned by the API', () => {
+    const receipt = receiptFixture();
+    receipt.width = '58mm';
+
+    render(<ReceiptPreview receipt={receipt} onPrint={vi.fn()} />);
+
+    expect(document.querySelector('[data-receipt-print-root]')).toHaveClass('receipt-58mm');
   });
 
   it('renders malformed historical receipt amounts as safe financial values', () => {
@@ -132,7 +182,6 @@ describe('ReceiptPreview', () => {
       <ReceiptPreview
         receipt={receipt}
         onPrint={vi.fn()}
-        onWidthChange={vi.fn()}
       />,
     );
 
@@ -149,7 +198,6 @@ describe('ReceiptPreview', () => {
       <ReceiptPreview
         receipt={receiptFixture()}
         onPrint={vi.fn()}
-        onWidthChange={vi.fn()}
       />,
     );
 
@@ -157,11 +205,9 @@ describe('ReceiptPreview', () => {
     expect(screen.queryByRole('heading', { name: 'COMPROBANTE DE FACTURA' })).not.toBeInTheDocument();
     expect(screen.queryByText(/comprobante de compatibilidad/i)).not.toBeInTheDocument();
     expect(screen.getByText('Estado')).toBeInTheDocument();
-    expect(screen.getByText('CAI')).toBeInTheDocument();
-    expect(screen.getByText('Rango')).toBeInTheDocument();
-    expect(screen.getByText('Vence')).toBeInTheDocument();
-    expect(screen.getByText('TEST-CAI')).toBeInTheDocument();
-    expect(document.querySelector('[data-receipt-print-root]')).toBeInTheDocument();
+    const printRoot = document.querySelector('[data-receipt-print-root]');
+    expect(printRoot).toBeInTheDocument();
+    expect(printRoot?.textContent).not.toMatch(/\bCAI\b|Rango|Vence|TEST-CAI|000-001-01-99999999/i);
   });
 
   it('renders semantic receipt tables while keeping controls outside the printable document', () => {
@@ -169,7 +215,6 @@ describe('ReceiptPreview', () => {
       <ReceiptPreview
         receipt={receiptFixture()}
         onPrint={vi.fn()}
-        onWidthChange={vi.fn()}
       />,
     );
 
@@ -182,7 +227,7 @@ describe('ReceiptPreview', () => {
     expect(printable.getByRole('columnheader', { name: /importe/i })).toBeInTheDocument();
     expect(printable.getByRole('rowheader', { name: /^total$/i })).toBeInTheDocument();
     expect(printable.queryByRole('button', { name: /imprimir/i })).not.toBeInTheDocument();
-    expect(printable.queryByLabelText(/tamaÃ±o del recibo/i)).not.toBeInTheDocument();
+    expect(printable.queryByLabelText(/tamaño del recibo/i)).not.toBeInTheDocument();
     expect(printRoot?.textContent).not.toMatch(/qr|barcode|codigo interno|código interno/i);
   });
 
@@ -198,7 +243,6 @@ describe('ReceiptPreview', () => {
       <ReceiptPreview
         receipt={receipt}
         onPrint={vi.fn()}
-        onWidthChange={vi.fn()}
       />,
     );
 
@@ -238,7 +282,6 @@ function receiptFixture(): ReceiptData {
       valid_until: '2026-12-31',
     },
     invoice: {
-      id: 1,
       invoice_number: '000-001-01-00000001',
       patient_name: 'Maria Lopez',
       subtotal: '15.00',
@@ -268,7 +311,6 @@ function receiptFixture(): ReceiptData {
     ],
     payments: [
       {
-        id: 1,
         method: 'cash',
         amount: '17.25',
         reference: null,

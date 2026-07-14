@@ -19,8 +19,8 @@ describe('AppErrorBoundary', () => {
     window.localStorage.clear();
   });
 
-  it('shows human recovery instructions and stores support evidence', () => {
-    render(
+  it('shows human recovery instructions through RouteState and stores support evidence', () => {
+    const { container } = render(
       <AppErrorBoundary>
         <BrokenView />
       </AppErrorBoundary>,
@@ -30,6 +30,8 @@ describe('AppErrorBoundary', () => {
     expect(screen.getByText(/prepare el resumen seguro/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /recargar pantalla/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /abrir ayuda/i })).toHaveAttribute('href', '/help');
+    expect(screen.getByText('Atención requerida')).toBeVisible();
+    expect(container.querySelector('[data-slot="card"]')).not.toBeInTheDocument();
     expect(screen.queryByText(/consola del navegador/i)).not.toBeInTheDocument();
 
     const stored = JSON.parse(window.localStorage.getItem('hospital_client_issue_log') ?? '[]') as Array<{

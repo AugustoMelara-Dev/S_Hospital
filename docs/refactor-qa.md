@@ -1,5 +1,8 @@
 # Refactor QA final
 
+> Registro historico de la ronda 2026-07-01. El estado vigente de la
+> reescritura total esta en `docs/testing-report.md`.
+
 Fecha: 2026-07-01  
 Branch: `refactor/ux-system-overhaul`
 
@@ -17,11 +20,11 @@ Branch: `refactor/ux-system-overhaul`
 
 ## Recibos e impresion
 
-- OK - Usuario normal sin `receipt_settings.advanced` no ve campos manuales ni bloque de soporte tecnico.
+- OK - Ningun rol ve campos manuales ni bloque de soporte tecnico.
 - OK - UI normal no envia `width_mm`, `height_mm`, `margin_*_mm`, `font_family`, `font_scale`.
 - OK - Request manual con campos avanzados sin permiso devuelve 403 y audita (`ReceiptPrintProfileAdvancedFieldsTest`).
-- OK - Usuario soporte con `receipt_settings.advanced` ve acordeon avanzado para perfil personalizado.
-- OK - Perfiles probados visualmente: Carta, Media carta, A5, Ticket 80mm, Ticket 58mm.
+- OK - La UI no expone el acordeon avanzado aunque existan permisos historicos de compatibilidad.
+- OK - Perfiles principales probados visualmente: Carta, Media carta y A5. Ticket 80mm/58mm permanece como compatibilidad secundaria del backend.
 - OK - Preview cambia por perfil y el CSS de impresion excluye chrome de app.
 - OK - `Imprimir prueba` genera PDF de prueba sin reservar correlativo fiscal.
 

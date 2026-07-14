@@ -44,20 +44,17 @@ describe('NewInvoiceViewLayout accessibility', () => {
           onPaymentMethodChange={() => {}}
           onPaymentAmountChange={() => {}}
           onPaymentReferenceChange={() => {}}
-          onPreviewBeforePrintChange={() => {}}
           onSubmitInvoice={() => {}}
           onCobrar={() => {}}
           onRetryLoad={() => {}}
           onPaymentOpenChange={() => {}}
           onSubmitPayment={() => {}}
-          onLoadReceipt={() => {}}
           onPrintIssuedReceipt={() => {}}
           onNuevaFactura={() => {}}
           onSuccessDialogChange={() => {}}
           onReceiptOpenChange={() => {}}
           onClearCart={() => {}}
           onClearConfirmChange={() => {}}
-          onAutoPrintChange={() => {}}
           patientInputRef={{ current: null }}
           searchInputRef={{ current: null }}
           scannerInputRef={{ current: null }}

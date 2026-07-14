@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
+import { Card, Typography } from 'antd';
 import { supportPlaybooks } from '../trainingContent';
 
 export function SupportPlaybookList() {
@@ -9,24 +9,24 @@ export function SupportPlaybookList() {
 
         return (
           <Card key={playbook.title}>
-            <CardHeader>
+            <div className="mb-4">
               <div className="flex items-center gap-3">
-                <div className="flex size-9 items-center justify-center rounded-md bg-secondary/10 text-secondary">
+                <div className="flex size-11 items-center justify-center bg-accent text-secondary">
                   <Icon className="size-5" aria-hidden="true" />
                 </div>
-                <CardTitle className="text-base">{playbook.title}</CardTitle>
+                <Typography.Title level={2} className="text-base">{playbook.title}</Typography.Title>
               </div>
-            </CardHeader>
-            <CardContent>
+            </div>
+            <div>
               <ol className="space-y-2 text-sm text-muted-foreground">
                 {playbook.steps.map((step, index) => (
                   <li key={step} className="flex gap-2">
-                    <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-muted text-[11px] font-bold text-foreground">{index + 1}</span>
+                    <span className="flex size-5 shrink-0 items-center justify-center bg-muted text-xs font-bold text-foreground">{index + 1}</span>
                     <span>{step}</span>
                   </li>
                 ))}
               </ol>
-            </CardContent>
+            </div>
           </Card>
         );
       })}

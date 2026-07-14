@@ -4,7 +4,10 @@ namespace App\Http\Requests\InstitutionalReceipts;
 
 use App\Models\ReceiptPrintProfile;
 use App\Models\ReceiptProfileAssignment;
+use App\Support\AuditLogger;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
@@ -12,7 +15,40 @@ class UpsertReceiptProfileAssignmentRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('receipt_settings.update') === true;
+        if ($this->user()?->can('receipt_settings.update') !== true) {
+            return false;
+        }
+
+        if (! $this->boolean('active', true) || $this->user()->can('receipt_settings.advanced')) {
+            return true;
+        }
+
+        $profile = $this->profileFromPayload();
+        if (! $profile?->isSupportOnly()) {
+            return true;
+        }
+
+        AuditLogger::log(
+            action: 'receipt_settings.advanced_denied',
+            entity: $profile,
+            request: $this,
+            newValues: [
+                'attempted_fields' => ['profile_code'],
+                'profile_code' => $profile->code,
+                'flow' => 'profile-assignment',
+            ],
+            reason: 'Intento de asignar perfil de soporte sin permiso avanzado.',
+            result: 'failed',
+        );
+
+        throw new HttpResponseException(new JsonResponse([
+            'message' => 'Este perfil requiere el permiso receipt_settings.advanced.',
+            'errors' => [
+                'receipt_settings.advanced' => [
+                    'Los perfiles de soporte tecnico solo pueden asignarse con permiso receipt_settings.advanced.',
+                ],
+            ],
+        ], 403));
     }
 
     /**
@@ -61,5 +97,18 @@ class UpsertReceiptProfileAssignmentRequest extends FormRequest
                 }
             },
         ];
+    }
+
+    private function profileFromPayload(): ?ReceiptPrintProfile
+    {
+        if ($this->input('profile_id') !== null) {
+            return ReceiptPrintProfile::query()->find($this->input('profile_id'));
+        }
+
+        if ($this->input('profile_code') !== null) {
+            return ReceiptPrintProfile::query()->where('code', $this->input('profile_code'))->first();
+        }
+
+        return null;
     }
 }

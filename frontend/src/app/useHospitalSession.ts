@@ -21,21 +21,25 @@ export function useHospitalSession() {
   const permissions = useMemo(() => new Set(user?.permissions ?? []), [user?.permissions]);
   const canViewFiscalSettings = permissions.has('settings.fiscal.view');
   const canEditFiscalSettings = permissions.has('settings.fiscal.update');
+  const canEditOperationalSettings = permissions.has('settings.operational.update');
   const canViewCatalog = permissions.has('catalog.view');
+  const canManageCatalog = permissions.has('catalog.manage');
   const canCreateInvoices = permissions.has('invoices.create');
   const canViewInvoices = permissions.has('invoices.view');
   const canViewCash = permissions.has('cash.view');
   const canOpenCash = permissions.has('cash.open');
-  const canCloseCash = permissions.has('cash.close');
+  const canCloseAnyCash = permissions.has('cash.close_any');
+  const canCloseCash = permissions.has('cash.close') || canCloseAnyCash;
   const canCreatePayments = permissions.has('payments.create');
   const canViewReceipts = permissions.has('receipts.view');
   const canViewManagerialReports = permissions.has('reports.managerial.view');
   const canViewCashSessionReports = permissions.has('reports.cash_session.view');
+  const canViewAuditReports = permissions.has('audit.view');
   const canExportReports = permissions.has('reports.export');
   const canViewReports =
-    permissions.has('reports.view') ||
     canViewManagerialReports ||
-    canViewCashSessionReports;
+    canViewCashSessionReports ||
+    canViewAuditReports;
   const canViewBackups = permissions.has('backups.view');
   const canViewSystemStatus = permissions.has('system.status.view');
   const canViewUsers = permissions.has('users.view');
@@ -62,7 +66,7 @@ export function useHospitalSession() {
         }
       }
       setUser(null);
-      setStatus('Sesión vencida. Redirigiendo al login...');
+      setStatus('Sesión vencida. Inicie sesión nuevamente.');
       setSessionExpired(true);
     });
 
@@ -83,14 +87,14 @@ export function useHospitalSession() {
         }
       }
       setUser(null);
-      setStatus('Sesión cerrada por el servidor. Redirigiendo al login...');
+      setStatus('Sesión cerrada por el servidor. Inicie sesión nuevamente.');
       setSessionExpired(true);
     });
 
     return unsubscribe;
   }, [queryClient]);
 
-  // Old code path that followed is now in a separate effect to
+  // The remaining session synchronization runs in a separate effect to
   // avoid running on every state change.
   useEffect(() => {
     apiClient
@@ -196,16 +200,20 @@ export function useHospitalSession() {
     passwordSubmitting,
     canViewFiscalSettings,
     canEditFiscalSettings,
+    canEditOperationalSettings,
     canViewCatalog,
+    canManageCatalog,
     canCreateInvoices,
     canViewInvoices,
     canViewCash,
     canOpenCash,
+    canCloseAnyCash,
     canCloseCash,
     canCreatePayments,
     canViewReceipts,
     canViewManagerialReports,
     canViewCashSessionReports,
+    canViewAuditReports,
     canExportReports,
     canViewReports,
     canViewBackups,
@@ -218,6 +226,7 @@ export function useHospitalSession() {
     hasAnyOperationalPermission:
       canViewFiscalSettings ||
       canViewCatalog ||
+      canManageCatalog ||
       canCreateInvoices ||
       canViewCash ||
       canViewInvoices ||

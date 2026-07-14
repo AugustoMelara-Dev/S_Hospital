@@ -4,6 +4,13 @@ param(
 
     [string] $ProjectRoot = "",
 
+    [string] $EnvFile = "",
+
+    [ValidateSet("Auto", "Docker", "WindowsTasks")]
+    [string] $RuntimeMode = "Auto",
+
+    [string] $DockerProject = "",
+
     [switch] $AllowMissingPhysicalProof
 )
 
@@ -121,6 +128,95 @@ function Test-BackupScheduledTask([string] $taskName, [string[]] $AllowedStates)
 
     $info = Get-ScheduledTaskInfo -TaskName $taskName
     Add-Pass "Windows scheduled task '$taskName' state=$($task.State), lastResult=$($info.LastTaskResult), nextRun=$($info.NextRunTime)"
+}
+
+function Get-DockerServiceContainerId([string] $project, [string] $service) {
+    $ids = @(& docker ps --filter "label=com.docker.compose.project=$project" --filter "label=com.docker.compose.service=$service" --filter "status=running" --format '{{.ID}}' 2>&1)
+    if ($LASTEXITCODE -ne 0) {
+        Add-Failure "Could not inspect Docker service '$service': $($ids -join ' ')"
+        return ""
+    }
+
+    return ([string] ($ids | Select-Object -First 1)).Trim()
+}
+
+function Read-DockerRuntimeEnv([string] $project) {
+    $values = @{}
+    $containerId = Get-DockerServiceContainerId $project "backend"
+    if ($containerId -eq "") {
+        Add-Failure "Docker backend service is not running for project '$project'"
+        return $values
+    }
+
+    $inspectOutput = @(& docker inspect $containerId 2>&1)
+    if ($LASTEXITCODE -ne 0) {
+        Add-Failure "Could not inspect the Docker backend runtime environment"
+        return $values
+    }
+
+    try {
+        $container = (($inspectOutput -join [Environment]::NewLine) | ConvertFrom-Json | Select-Object -First 1)
+        $lines = @($container.Config.Env)
+    } catch {
+        Add-Failure "Could not parse the Docker backend runtime environment"
+        return $values
+    }
+
+    foreach ($lineValue in $lines) {
+        $line = ([string] $lineValue).Trim()
+        if ($line -eq "" -or -not $line.Contains("=")) {
+            continue
+        }
+
+        $key, $value = $line.Split("=", 2)
+        $values[$key] = $value
+    }
+
+    return $values
+}
+
+function Test-DockerRuntimeServices([string] $project) {
+    if (-not (Test-CommandExists "docker")) {
+        Add-Failure "docker is required to validate the production container runtime"
+        return
+    }
+
+    $output = @(& docker ps --filter "label=com.docker.compose.project=$project" --filter "status=running" --format '{{.ID}}' 2>&1)
+    if ($LASTEXITCODE -ne 0) {
+        Add-Failure "Could not inspect Docker production services: $($output -join ' ')"
+        return
+    }
+
+    $runningServices = @()
+    foreach ($containerIdValue in $output) {
+        $containerId = ([string] $containerIdValue).Trim()
+        if ($containerId -eq "") {
+            continue
+        }
+
+        $inspectOutput = @(& docker inspect $containerId 2>&1)
+        if ($LASTEXITCODE -ne 0) {
+            Add-Failure "Could not inspect Docker container '$containerId'"
+            continue
+        }
+
+        try {
+            $container = (($inspectOutput -join [Environment]::NewLine) | ConvertFrom-Json | Select-Object -First 1)
+            $service = [string] $container.Config.Labels.'com.docker.compose.service'
+            if ($service.Trim() -ne "") {
+                $runningServices += $service.Trim()
+            }
+        } catch {
+            Add-Failure "Could not parse Docker container '$containerId'"
+        }
+    }
+    foreach ($requiredService in @("mysql", "backend", "nginx", "queue-worker", "scheduler")) {
+        if ($runningServices -contains $requiredService) {
+            Add-Pass "Docker runtime service '$requiredService' is running"
+        } else {
+            Add-Failure "Docker runtime service '$requiredService' is not running"
+        }
+    }
 }
 
 function Normalize-ProofContent([string] $content) {
@@ -285,8 +381,37 @@ function Invoke-WebSocketHandshake([string] $BaseUrl, [string] $PusherKey) {
 
 $backendDir = Join-Path $ProjectRoot "backend"
 $frontendDist = Join-Path $ProjectRoot "frontend\dist"
-$envPath = Join-Path $backendDir ".env"
+$envPath = if ($EnvFile.Trim() -ne "") {
+    if ([System.IO.Path]::IsPathRooted($EnvFile)) { $EnvFile } else { Join-Path $ProjectRoot $EnvFile }
+} elseif ((Test-CommandExists "docker") -and (Test-Path -LiteralPath (Join-Path $ProjectRoot "docker-compose.prod.yml") -PathType Leaf)) {
+    Join-Path $ProjectRoot ".env"
+} else {
+    Join-Path $backendDir ".env"
+}
 $envValues = Read-EnvFile $envPath
+
+$resolvedRuntimeMode = if ($RuntimeMode -ne "Auto") {
+    $RuntimeMode
+} elseif ((Test-CommandExists "docker") -and (Test-Path -LiteralPath (Join-Path $ProjectRoot "docker-compose.prod.yml") -PathType Leaf)) {
+    "Docker"
+} else {
+    "WindowsTasks"
+}
+
+$resolvedDockerProject = if ($DockerProject.Trim() -ne "") {
+    $DockerProject.Trim()
+} elseif ($envValues.ContainsKey("COMPOSE_PROJECT_NAME") -and $envValues["COMPOSE_PROJECT_NAME"].Trim() -ne "") {
+    $envValues["COMPOSE_PROJECT_NAME"].Trim()
+} else {
+    ((Split-Path -Leaf $ProjectRoot).ToLowerInvariant() -replace '[^a-z0-9_-]', '')
+}
+
+if ($resolvedRuntimeMode -eq "Docker") {
+    $runtimeValues = Read-DockerRuntimeEnv $resolvedDockerProject
+    foreach ($entry in $runtimeValues.GetEnumerator()) {
+        $envValues[$entry.Key] = $entry.Value
+    }
+}
 
 $baseUri = $null
 if (-not [Uri]::TryCreate($BaseUrl.TrimEnd("/"), [UriKind]::Absolute, [ref] $baseUri) -or $baseUri.Scheme -notin @("http", "https")) {
@@ -295,6 +420,7 @@ if (-not [Uri]::TryCreate($BaseUrl.TrimEnd("/"), [UriKind]::Absolute, [ref] $bas
 }
 
 $baseHostWithPort = if ($baseUri.IsDefaultPort) { $baseUri.Host } else { "$($baseUri.Host):$($baseUri.Port)" }
+$isLoopbackBaseUrl = $baseUri.Host -match "^(localhost|127\.0\.0\.1|::1)$"
 $appEnv = Get-EnvValue $envValues "APP_ENV" "local"
 $appDebug = Get-EnvValue $envValues "APP_DEBUG" "true"
 $appUrl = Get-EnvValue $envValues "APP_URL" ""
@@ -314,6 +440,9 @@ $appScheme = Get-EnvValue $envValues "APP_SCHEME" ""
 
 Write-Host "Production readiness preflight for $BaseUrl"
 Write-Host "Project root: $ProjectRoot"
+Write-Host "Environment file: $envPath"
+Write-Host "Runtime mode: $resolvedRuntimeMode"
+if ($resolvedRuntimeMode -eq "Docker") { Write-Host "Docker project: $resolvedDockerProject" }
 
 if ($appEnv -eq "production") { Add-Pass "APP_ENV=production" } else { Add-Failure "APP_ENV must be production, current value is '$appEnv'" }
 if ($appDebug -eq "false") { Add-Pass "APP_DEBUG=false" } else { Add-Failure "APP_DEBUG must be false, current value is '$appDebug'" }
@@ -336,10 +465,10 @@ if ($baseUri.Scheme -eq "https") {
     Add-Failure "BaseUrl uses HTTP but HOSPITAL_ALLOW_INSECURE_HTTP is not 1. Enable HTTPS or explicitly document insecure LAN HTTP."
 }
 
-if ($BaseUrl -match "localhost|127\.0\.0\.1|::1") {
-    Add-Failure "BaseUrl must be the final LAN IP or local domain, not localhost"
+if ($isLoopbackBaseUrl) {
+    Add-Pass "BaseUrl uses loopback; validating single-machine local mode"
 } else {
-    Add-Pass "BaseUrl is not localhost"
+    Add-Pass "BaseUrl is LAN IP or local domain"
 }
 
 if ($dbConnection -match "^(mysql|mariadb)$") { Add-Pass "DB_CONNECTION=$dbConnection" } else { Add-Failure "DB_CONNECTION must be mysql or mariadb, current value is '$dbConnection'" }
@@ -378,7 +507,9 @@ if ([string]::IsNullOrWhiteSpace($backupEncryptionKey)) {
     Add-Pass "HOSPITAL_BACKUP_ENCRYPTION_KEY is configured"
 }
 
-if (Test-IsWindowsHost) {
+if ($resolvedRuntimeMode -eq "Docker") {
+    Test-DockerRuntimeServices $resolvedDockerProject
+} elseif (Test-IsWindowsHost) {
     Test-BackupScheduledTask "HospitalBillingOS-BackupWorker" @("Ready", "Running")
     Test-BackupScheduledTask "HospitalBillingOS-DailyBackup" @("Ready", "Running")
 } else {
@@ -455,39 +586,67 @@ if ($AllowMissingPhysicalProof) {
     Add-Strong-Warning "AllowMissingPhysicalProof was used. This run is only an environment preflight and MUST NOT be called PRODUCTION_READY."
     Add-Failure "Physical LAN/printer proof was bypassed. Re-run without -AllowMissingPhysicalProof before declaring PRODUCTION_READY."
 } else {
+    if ($isLoopbackBaseUrl) {
+        Test-ProofFile `
+            -path (Join-Path $ProjectRoot "qa\LOCAL_SERVER_VALIDATION_PROOF.md") `
+            -proofName "local server browser" `
+            -requiredFields @(
+                "Date/time",
+                "Responsible person",
+                "Server computer name",
+                "Local app URL",
+                "Browser/version",
+                "User/role used",
+                "Evidence/capture reference",
+                "Final conclusion"
+            ) `
+            -requiredChecks @(
+                "/up",
+                "/login",
+                "/verify-email",
+                "assets",
+                "Login",
+                "Cashbox",
+                "Invoice",
+                "Payment",
+                "Receipt",
+                "history",
+                "Reports",
+                "Backup"
+            )
+    } else {
+        Test-ProofFile `
+            -path (Join-Path $ProjectRoot "qa\LAN_CLIENT_VALIDATION_PROOF.md") `
+            -proofName "second-client LAN" `
+            -requiredFields @(
+                "Date/time",
+                "Responsible person",
+                "Client computer name",
+                "Server IP or LAN name",
+                "Server LAN URL",
+                "Client browser/version",
+                "User/role used",
+                "Evidence/capture reference",
+                "Final conclusion"
+            ) `
+            -requiredChecks @(
+                "/up",
+                "/login",
+                "/verify-email",
+                "assets",
+                "Login",
+                "Cashbox",
+                "Invoice",
+                "Payment",
+                "Receipt",
+                "history",
+                "Reports",
+                "Backup"
+            )
+    }
     Test-ProofFile `
-        -path (Join-Path $ProjectRoot "qa\LAN_CLIENT_VALIDATION_PROOF.md") `
-        -proofName "second-client LAN" `
-        -requiredFields @(
-            "Date/time",
-            "Responsible person",
-            "Client computer name",
-            "Server IP or LAN name",
-            "Server LAN URL",
-            "Client browser/version",
-            "User/role used",
-            "Evidence/capture reference",
-            "Final conclusion"
-        ) `
-        -requiredChecks @(
-            "/up",
-            "/login",
-            "/verify-email",
-            "assets",
-            "Realtime",
-            "Login",
-            "Cashbox",
-            "Invoice",
-            "Payment",
-            "Receipt",
-            "history",
-            "Reports",
-            "Backup"
-        )
-
-    Test-ProofFile `
-        -path (Join-Path $ProjectRoot "qa\THERMAL_PRINTER_PROOF.md") `
-        -proofName "physical thermal printer" `
+        -path (Join-Path $ProjectRoot "qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md") `
+        -proofName "primary institutional receipt printer" `
         -requiredFields @(
             "Date/time",
             "Responsible person",
@@ -497,8 +656,9 @@ if ($AllowMissingPhysicalProof) {
             "Browser/version",
             "Cashier computer",
             "Invoice used",
-            "80mm result",
-            "58mm result",
+            "Media carta result",
+            "Carta result",
+            "A5 result",
             "Reprint result",
             "Margins result",
             "Browser headers/footers result",
@@ -507,8 +667,9 @@ if ($AllowMissingPhysicalProof) {
             "Final conclusion"
         ) `
         -requiredChecks @(
-            "80mm",
-            "58mm",
+            "Media carta",
+            "Carta",
+            "A5",
             "Reprint",
             "headers/footers",
             "historical"

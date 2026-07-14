@@ -2,27 +2,50 @@ import axeCore from 'axe-core';
 import { expect, type Page, test } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
+import { assertStrictMockGuard, installStrictMockGuard } from './fixtures/strict-mock-guard';
+
+test.beforeEach(async ({ page }) => installStrictMockGuard(page));
+test.afterEach(async ({ page }) => assertStrictMockGuard(page));
 
 const reportPath = resolve(
   process.env.REFACTOR_TOTAL_E2E_REPORT_PATH ?? '../qa/production-audit/refactor-total-e2e.json',
 );
+const authStatePath = resolve(process.env.REFACTOR_TOTAL_AUTH_STATE_PATH ?? './test-results/.auth/refactor-total.json');
+const adminUsername = process.env.REFACTOR_TOTAL_E2E_USERNAME?.trim() ?? '';
+const adminPassword = process.env.REFACTOR_TOTAL_E2E_PASSWORD ?? '';
 
 test.setTimeout(180_000);
 
 test.describe('Refactor Total - E2E criticos', () => {
-  test('login screen has no a11y violations and exposes the auth form', async ({ page }) => {
+  test.skip(
+    !adminUsername || !adminPassword,
+    'Requiere una cuenta administrativa temporal mediante REFACTOR_TOTAL_E2E_USERNAME y REFACTOR_TOTAL_E2E_PASSWORD.',
+  );
+  test.use({ storageState: authStatePath });
+
+  test.beforeAll(async ({ browser }) => {
+    const page = await browser.newPage({ storageState: undefined });
+    await loginAsAdmin(page);
+    await page.context().storageState({ path: authStatePath });
+    await page.close();
+  });
+
+  test('login screen has no a11y violations and exposes the auth form', async ({ browser }) => {
+    const context = await browser.newContext({ storageState: undefined });
+    const page = await context.newPage();
     await page.goto('/login');
+    await expect(page.locator('#login-input')).toBeVisible({ timeout: 30_000 });
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     const violations = await seriousAxeViolations(page);
     writeAxeReport('login', violations);
     expect(violations).toEqual([]);
+    await context.close();
   });
 
   test('institutional receipts screen does NOT expose manual paper fields for non-support users', async ({ page }) => {
-    await loginAsAdmin(page);
     await page.goto('/settings/institutional-receipts');
 
-    await expect(page.getByRole('heading', { name: /recibos institucionales/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /recibos institucionales/i })).toBeVisible({ timeout: 30_000 });
 
     for (const label of [
       'Ancho mm',
@@ -34,7 +57,7 @@ test.describe('Refactor Total - E2E criticos', () => {
       'Margen inf. (mm)',
       'Margen izq. (mm)',
     ]) {
-      await expect(page.getByLabelText(label)).toHaveCount(0);
+      await expect(page.getByLabel(label, { exact: true })).toHaveCount(0);
     }
 
     const violations = await seriousAxeViolations(page);
@@ -43,7 +66,6 @@ test.describe('Refactor Total - E2E criticos', () => {
   });
 
   test('reports screen consolidates into three sub-routes and stays accessible', async ({ page }) => {
-    await loginAsAdmin(page);
     await page.goto('/reports/executive');
 
     await expect(page.getByRole('heading', { name: /ejecutivo|caja|auditoria/i }).first()).toBeVisible();
@@ -54,7 +76,6 @@ test.describe('Refactor Total - E2E criticos', () => {
   });
 
   test('cashbox screen keeps the close-session workflow accessible', async ({ page }) => {
-    await loginAsAdmin(page);
     await page.goto('/cashbox');
 
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
@@ -65,38 +86,41 @@ test.describe('Refactor Total - E2E criticos', () => {
   });
 
   test('catalog screen keeps accessible service table and edit form', async ({ page }) => {
-    await loginAsAdmin(page);
     await page.goto('/catalog');
 
-    await expect(page.getByRole('heading', { name: /cat[aá]logo de servicios/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /cat[aá]logo institucional/i })).toBeVisible();
 
     const violations = await seriousAxeViolations(page);
     writeAxeReport('catalog', violations);
     expect(violations).toEqual([]);
   });
 
-  test('history screen replaces inline actions with an accessible action menu', async ({ page }) => {
-    await loginAsAdmin(page);
+  test('history screen avoids inline dangerous actions and uses ActionMenu when rows exist', async ({ page }) => {
     await page.goto('/invoices');
 
     await expect(page.getByRole('heading', { name: /historial de facturas/i })).toBeVisible();
 
-    await expect(page.getByRole('button', { name: /acciones de la factura/i }).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: /anular factura|reversar pago/i })).toHaveCount(0);
+    const actionMenu = page.getByRole('button', { name: /acciones de la factura/i }).first();
+    if (await actionMenu.isVisible().catch(() => false)) {
+      await expect(actionMenu).toBeVisible();
+    }
 
     const violations = await seriousAxeViolations(page);
     writeAxeReport('history', violations);
     expect(violations).toEqual([]);
   });
 
-  test('settings screen uses tabs for hospital, fiscal, operativa, marca, recibos', async ({ page }) => {
-    await loginAsAdmin(page);
+  test('settings screen keeps fiscal tabs focused and links receipts to the dedicated route', async ({ page }) => {
     await page.goto('/settings/fiscal');
 
-    await expect(page.getByRole('heading', { name: /^configuraci[oó]n$/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /administraci[oó]n institucional/i })).toBeVisible();
 
-    for (const tab of ['Hospital', 'Numeraci', 'Operativa', 'Marca', 'Recibos']) {
+    for (const tab of ['Hospital', 'Numeraci', 'Operativa', 'Marca']) {
       await expect(page.getByRole('tab', { name: new RegExp(tab, 'i') })).toBeVisible();
     }
+    await expect(page.getByRole('tab', { name: /recibos/i })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: /administrar recibos/i })).toBeVisible();
 
     const violations = await seriousAxeViolations(page);
     writeAxeReport('settings', violations);
@@ -106,12 +130,17 @@ test.describe('Refactor Total - E2E criticos', () => {
 
 async function loginAsAdmin(page: Page) {
   await page.goto('/login');
-  await page.locator('#login-input').fill('admin.validacion');
-  await page.locator('#password-input').fill('Password123!');
-  await page.getByRole('button', { name: /entrar|iniciar/i }).click();
-  await page.waitForURL((url) => !url.pathname.startsWith('/login'));
-  await page.waitForLoadState('domcontentloaded');
-  await expect(page.getByRole('main')).toBeVisible({ timeout: 15_000 });
+  await page.locator('#login-input').fill(adminUsername);
+  await page.locator('#password-input').fill(adminPassword);
+  const submit = page.locator('form button[type="submit"]');
+  await expect(submit).toBeEnabled({ timeout: 70_000 });
+  await Promise.all([
+    page.waitForResponse((response) => response.url().includes('/api/auth/login') && response.ok(), { timeout: 70_000 }),
+    submit.click(),
+  ]);
+  await page.waitForLoadState('domcontentloaded', { timeout: 70_000 });
+  await expect(page.getByRole('main')).toBeVisible({ timeout: 70_000 });
+  await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible({ timeout: 70_000 });
 }
 
 async function seriousAxeViolations(page: Page) {

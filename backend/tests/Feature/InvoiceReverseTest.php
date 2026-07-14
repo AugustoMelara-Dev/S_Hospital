@@ -8,10 +8,13 @@ use App\Models\CashMovement;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
+use App\Models\InstitutionalReceipt;
+use App\Models\InstitutionalReceiptSeries;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Service;
 use App\Models\User;
+use Database\Seeders\ReceiptPrintProfileSeeder;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -58,6 +61,7 @@ class InvoiceReverseTest extends TestCase
             'action' => 'invoice.reversed',
             'entity_type' => Invoice::class,
             'entity_id' => $invoiceId,
+            'reason' => 'Factura cobrada por error tras reimprimir muestra',
         ]);
 
         $this->assertSame(1, CashMovement::query()
@@ -86,6 +90,7 @@ class InvoiceReverseTest extends TestCase
                 'cash_session_id' => $sessionId,
                 'method' => Payment::METHOD_CARD,
                 'amount' => '5.75',
+                'reference' => 'CARD-REV-1',
             ])->assertCreated()->json('data.payment.id');
 
         $this->actingAs($supervisor)
@@ -105,9 +110,48 @@ class InvoiceReverseTest extends TestCase
             ->count());
     }
 
+    public function test_reverse_paid_invoice_voids_issued_institutional_receipt_with_audit(): void
+    {
+        $this->seedBillingBase(createInstitutionalReceiptSeries: true);
+        $cashier = $this->cashier();
+        $supervisor = $this->supervisor();
+        $sessionId = $this->openSession($cashier);
+        $invoiceId = $this->createInvoice($cashier, 'Paciente con recibo', 'Glucosa');
+
+        $receiptId = $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_CASH,
+                'amount' => '17.25',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.institutional_receipt.status', InstitutionalReceipt::STATUS_ISSUED)
+            ->json('data.institutional_receipt.id');
+
+        $this->actingAs($supervisor)
+            ->postJson("/api/invoices/{$invoiceId}/reverse", [
+                'reason' => 'Factura cobrada con recibo institucional equivocado',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.status', Invoice::STATUS_VOID);
+
+        $this->assertDatabaseHas('institutional_receipts', [
+            'id' => $receiptId,
+            'status' => InstitutionalReceipt::STATUS_VOID,
+            'voided_by' => $supervisor->id,
+            'void_reason' => 'Reverso de factura: Factura cobrada con recibo institucional equivocado',
+        ]);
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $supervisor->id,
+            'action' => 'institutional_receipt.voided',
+            'entity_type' => InstitutionalReceipt::class,
+            'entity_id' => $receiptId,
+        ]);
+    }
+
     public function test_reverse_paid_invoice_after_cash_session_close_is_rejected_without_mutating_closed_cash(): void
     {
-        $this->seedBillingBase();
+        $this->seedBillingBase(createInstitutionalReceiptSeries: true);
         $cashier = $this->cashier();
         $supervisor = $this->supervisor();
         $sessionId = $this->openSession($cashier);
@@ -118,7 +162,10 @@ class InvoiceReverseTest extends TestCase
                 'cash_session_id' => $sessionId,
                 'method' => Payment::METHOD_CASH,
                 'amount' => '17.25',
-            ])->assertCreated()->json('data.payment.id');
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.institutional_receipt.receipt_number_full', 'REC-A-00000001')
+            ->json('data.payment.id');
 
         $this->actingAs($cashier)
             ->postJson("/api/cash-sessions/{$sessionId}/close", [
@@ -149,7 +196,7 @@ class InvoiceReverseTest extends TestCase
         ]);
     }
 
-    public function test_reverse_unpaid_invoice_works_without_payments_to_void(): void
+    public function test_reverse_unpaid_invoice_is_rejected_without_mutating_invoice(): void
     {
         $this->seedBillingBase();
         $cashier = $this->cashier();
@@ -161,13 +208,19 @@ class InvoiceReverseTest extends TestCase
             ->postJson("/api/invoices/{$invoiceId}/reverse", [
                 'reason' => 'Emitida por error antes de cobrar',
             ])
-            ->assertOk()
-            ->assertJsonPath('data.status', Invoice::STATUS_VOID)
-            ->assertJsonPath('data.paid_amount', '0.00');
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('invoice');
 
         $this->assertSame(0, CashMovement::query()
             ->where('type', CashMovement::TYPE_PAYMENT_VOID)
             ->count());
+
+        $this->assertDatabaseHas('invoices', [
+            'id' => $invoiceId,
+            'status' => Invoice::STATUS_ISSUED,
+            'void_reason' => null,
+            'voided_by' => null,
+        ]);
     }
 
     public function test_reverse_requires_the_invoices_reverse_permission(): void
@@ -222,13 +275,8 @@ class InvoiceReverseTest extends TestCase
             ->assertJsonValidationErrors('invoice');
     }
 
-    public function test_reverse_does_not_partial_violate_invoice_status_atomicity(): void
+    public function test_reverse_after_all_payments_are_voided_is_rejected_without_mutating_invoice(): void
     {
-        // If the invoice has no posted payments, reverse still voids the
-        // invoice (the action skips the payments loop and proceeds to
-        // mark the invoice itself). The atomicity property is that
-        // either EVERY step succeeds (all payment voids + the invoice
-        // void + the audit log) or NONE succeeds.
         $this->seedBillingBase();
         $cashier = $this->cashier();
         $supervisor = $this->supervisor();
@@ -255,27 +303,30 @@ class InvoiceReverseTest extends TestCase
             ->postJson("/api/invoices/{$invoiceId}/reverse", [
                 'reason' => 'Reverso final tras pago ya anulado',
             ])
-            ->assertOk()
-            ->assertJsonPath('data.status', Invoice::STATUS_VOID)
-            ->assertJsonPath('data.paid_amount', '0.00');
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('invoice');
 
-        // Both audit events present: payment.voided (manual) and
-        // invoice.reversed (the consolidated reverse).
         $this->assertDatabaseHas('audit_logs', [
             'action' => 'payment.voided',
             'entity_id' => $paymentId,
         ]);
-        $this->assertDatabaseHas('audit_logs', [
+        $this->assertDatabaseMissing('audit_logs', [
             'action' => 'invoice.reversed',
             'entity_id' => $invoiceId,
         ]);
+        $this->assertDatabaseHas('invoices', [
+            'id' => $invoiceId,
+            'status' => Invoice::STATUS_ISSUED,
+            'void_reason' => null,
+            'voided_by' => null,
+        ]);
     }
 
-    private function seedBillingBase(bool $partialPayments = false): void
+    private function seedBillingBase(bool $partialPayments = false, bool $createInstitutionalReceiptSeries = false): void
     {
-        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class, ReceiptPrintProfileSeeder::class]);
         FiscalSetting::query()->create([
-            'receipt_template_mode' => 'thermal',
+            'receipt_template_mode' => $createInstitutionalReceiptSeries ? 'institutional' : 'thermal',
             'hospital_name' => 'Hospital San Isidro',
             'rtn' => '08011999123456',
             'default_tax_rate' => '15.00',
@@ -292,6 +343,22 @@ class InvoiceReverseTest extends TestCase
             'valid_until' => now()->addYear()->toDateString(),
             'active' => true,
         ]);
+
+        if ($createInstitutionalReceiptSeries) {
+            InstitutionalReceiptSeries::query()->create([
+                'document_type' => InstitutionalReceiptSeries::DOCUMENT_TYPE,
+                'series' => 'REC-A',
+                'prefix' => 'RA',
+                'number_format' => '{series}-{number:08}',
+                'min_number' => 1,
+                'max_number' => 100,
+                'current_number' => 0,
+                'range_authorization' => 'AUT-REC',
+                'legal_text' => 'Suscribe. CERTIFICA haber enterado en esta oficina la suma de',
+                'receipt_number_color' => '#b91c1c',
+                'active' => true,
+            ]);
+        }
     }
 
     private function createInvoice(User $cashier, string $patientName, string $serviceName): int

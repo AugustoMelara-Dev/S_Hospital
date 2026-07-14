@@ -9,17 +9,22 @@ use Tests\TestCase;
 
 class OpenCashSessionActionConcurrencyTest extends TestCase
 {
-    public function test_cash_open_serializes_concurrent_requests_by_user_row(): void
+    public function test_cash_open_serializes_concurrent_requests_with_database_named_lock(): void
     {
         $source = file_get_contents(app_path('Actions/Cash/OpenCashSessionAction.php'));
 
         $this->assertIsString($source);
+        $namedLockPosition = strpos($source, '$lockAcquired = $this->acquireOpenSessionLock()');
         $userLockPosition = strpos($source, 'User::query()');
         $sessionCheckPosition = strpos($source, '$alreadyOpen = CashRegisterSession::query()');
 
+        $this->assertNotFalse($namedLockPosition);
         $this->assertNotFalse($userLockPosition);
         $this->assertNotFalse($sessionCheckPosition);
+        $this->assertLessThan($userLockPosition, $namedLockPosition);
         $this->assertLessThan($sessionCheckPosition, $userLockPosition);
+        $this->assertStringContainsString('GET_LOCK', $source);
+        $this->assertStringContainsString('RELEASE_LOCK', $source);
         $this->assertStringContainsString('->lockForUpdate()', $source);
     }
 

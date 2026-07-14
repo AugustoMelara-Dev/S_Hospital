@@ -15,9 +15,22 @@ describe('ServiceSearch', () => {
     expect(input).toHaveValue('glu');
     expect(input).toHaveAttribute('id', 'service-search');
     expect(input).toHaveAttribute('name', 'service_search');
-    expect(screen.getByRole('button', { name: /agregar glucosa por l 0\.00/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /agregar glucosa/i })).toBeInTheDocument();
     expect(document.body.textContent).toContain('L 0.00');
     expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|undefined/);
+  });
+
+  it('keeps normal service search free of scanner and internal code language', () => {
+    renderSearch({
+      scannerEnabled: false,
+      search: '',
+      selectedCategoryId: undefined,
+      selectedAreaId: undefined,
+    });
+
+    expect(screen.getByLabelText(/buscar por nombre, area o categoria/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/scanner|codigo|código|lector/i)).not.toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/scanner|lector|c[oó]digo/i);
   });
 
   it('keeps search and filter callbacks controlled by the consumer', () => {
@@ -76,27 +89,81 @@ describe('ServiceSearch', () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
-  it('keeps scanner value, callback and Enter behavior when scanner is enabled', () => {
-    const onScanCodeChange = vi.fn();
-    const onAddByScanCode = vi.fn();
-    const scannerInputRef = createRef<HTMLInputElement>();
+  it('ignores a duplicated Enter while the local add is still settling', () => {
+    vi.useFakeTimers();
+    const onAddService = vi.fn();
+    renderSearch({ services: [serviceFixture()], search: 'glu', onAddService });
+
+    const searchbox = screen.getByRole('textbox', { name: /buscar por nombre/i });
+    fireEvent.keyDown(searchbox, { key: 'Enter', code: 'Enter' });
+    fireEvent.keyDown(searchbox, { key: 'Enter', code: 'Enter' });
+
+    expect(onAddService).toHaveBeenCalledTimes(1);
+
+    vi.advanceTimersByTime(251);
+    fireEvent.keyDown(searchbox, { key: 'Enter', code: 'Enter' });
+    expect(onAddService).toHaveBeenCalledTimes(2);
+    vi.runOnlyPendingTimers();
+    vi.useRealTimers();
+  });
+
+  it('renders an operable add action and the EPO rule', () => {
     renderSearch({
-      scannerEnabled: true,
-      scanCode: 'LAB-001',
-      onScanCodeChange,
-      onAddByScanCode,
-      scannerInputRef,
+      services: [serviceFixture({
+        name: 'Eritropoyetina',
+        price: '25.00',
+        special_rule_code: 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION',
+      })],
+      search: 'eritro',
     });
 
-    const scanner = screen.getByLabelText(/scanner usb o código manual/i);
-    expect(scanner).toHaveValue('LAB-001');
+    const addButton = screen.getByRole('button', { name: 'Agregar Eritropoyetina' });
+    expect(addButton).toBeEnabled();
+    expect(screen.getByText('L 25.00')).toBeInTheDocument();
+    expect(screen.getByText(/gratis solo con receta de diálisis/i)).toBeInTheDocument();
+  });
 
-    fireEvent.change(scanner, { target: { value: 'LAB-002' } });
-    fireEvent.keyDown(scanner, { key: 'Enter', code: 'Enter' });
-    fireEvent.click(screen.getByRole('button', { name: /escanear/i }));
+  it('distinguishes service loading errors from an empty result', () => {
+    const { rerender } = renderSearch({ services: [], search: 'glu', error: 'No se pudo consultar el catálogo.' });
 
-    expect(onScanCodeChange).toHaveBeenCalledWith('LAB-002');
-    expect(onAddByScanCode).toHaveBeenCalledTimes(2);
+    expect(screen.getByRole('alert')).toHaveTextContent(/no se pudo consultar el catálogo/i);
+    expect(screen.queryByText(/sin servicios encontrados/i)).not.toBeInTheDocument();
+
+    rerender(defaultRender({ services: [], search: 'glu', error: undefined }));
+    expect(screen.getByRole('status')).toHaveTextContent(/sin servicios encontrados/i);
+  });
+
+  it('keeps scanner value, callback and Enter behavior when scanner is enabled', () => {
+    vi.useFakeTimers();
+    try {
+      const onScanCodeChange = vi.fn();
+      const onAddByScanCode = vi.fn();
+      const scannerInputRef = createRef<HTMLInputElement>();
+      renderSearch({
+        scannerEnabled: true,
+        scanCode: 'LAB-001',
+        onScanCodeChange,
+        onAddByScanCode,
+        scannerInputRef,
+      });
+
+      const scanner = screen.getByLabelText(/lector usb o entrada manual/i);
+      expect(scanner).toHaveValue('LAB-001');
+
+      fireEvent.change(scanner, { target: { value: 'LAB-002' } });
+      fireEvent.keyDown(scanner, { key: 'Enter', code: 'Enter' });
+      fireEvent.click(screen.getByRole('button', { name: /escanear/i }));
+
+      expect(onScanCodeChange).toHaveBeenCalledWith('LAB-002');
+      expect(onAddByScanCode).toHaveBeenCalledTimes(1);
+
+      vi.advanceTimersByTime(251);
+      fireEvent.click(screen.getByRole('button', { name: /escanear/i }));
+      expect(onAddByScanCode).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.runOnlyPendingTimers();
+      vi.useRealTimers();
+    }
   });
 
   it('keeps scanner controls disabled while a lookup is pending', () => {
@@ -106,8 +173,21 @@ describe('ServiceSearch', () => {
       scanCode: 'LAB-001',
     });
 
-    expect(screen.getByLabelText(/scanner usb o código manual/i)).toBeDisabled();
+    expect(screen.getByLabelText(/lector usb o entrada manual/i)).toBeDisabled();
     expect(screen.getByRole('button', { name: /buscando/i })).toBeDisabled();
+  });
+
+  it('keeps scanner and filter controls operable', () => {
+    renderSearch({
+      scannerEnabled: true,
+      serviceAreas: [{ id: 3, name: 'Laboratorio', slug: 'laboratorio', active: true }],
+      categories: [{ id: 2, name: 'Imágenes', slug: 'imagenes', active: true, sort_order: 2 }],
+    });
+
+    expect(screen.getByLabelText(/lector usb o entrada manual/i)).toBeEnabled();
+    expect(screen.getByRole('button', { name: /escanear/i })).toBeEnabled();
+    expect(screen.getAllByRole('radio')).not.toHaveLength(0);
+    expect(screen.getByRole('button', { name: 'Limpiar' })).toBeEnabled();
   });
 
   it('supports keyboard navigation in category radio groups', async () => {

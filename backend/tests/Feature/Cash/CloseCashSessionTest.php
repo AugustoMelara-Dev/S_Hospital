@@ -7,12 +7,18 @@ use App\Models\CashMovement;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
+use App\Models\InstitutionalReceipt;
+use App\Models\InstitutionalReceiptSeries;
+use App\Models\Invoice;
+use App\Models\Payment;
 use App\Models\Service;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
+use LogicException;
+use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
 class CloseCashSessionTest extends TestCase
@@ -42,13 +48,25 @@ class CloseCashSessionTest extends TestCase
             ])
             ->assertCreated();
 
+        $this->createIssuedInstitutionalReceipt($invoiceId, $sessionId, $cashier);
+
         Bus::fake([RunBackupJob::class]);
 
         $this->actingAs($cashier)
             ->postJson("/api/cash-sessions/{$sessionId}/close", [
                 'closing_amount' => '517.25',
             ])
-            ->assertOk();
+            ->assertOk()
+            ->assertJsonPath('data.payments_count', 1)
+            ->assertJsonPath('data.payments_total', '17.25')
+            ->assertJsonPath('data.payments_by_method.cash', '17.25')
+            ->assertJsonPath('data.payments_by_method.transfer', '0.00')
+            ->assertJsonPath('data.expected_cash_amount', '517.25')
+            ->assertJsonPath('data.pending_invoice_count', 0)
+            ->assertJsonPath('data.pending_amount', '0.00')
+            ->assertJsonPath('data.missing_institutional_receipt_count', 0)
+            ->assertJsonPath('data.reversed_payments_count', 0)
+            ->assertJsonPath('data.reversed_payments_total', '0.00');
 
         Bus::assertNotDispatched(RunBackupJob::class);
     }
@@ -95,6 +113,102 @@ class CloseCashSessionTest extends TestCase
         ]);
     }
 
+    public function test_closed_cash_session_and_movements_are_immutable(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashierWithOpenSession('0.00');
+        $sessionId = $this->currentOpenSessionIdFor($cashier);
+
+        $this->actingAs($cashier)
+            ->postJson("/api/cash-sessions/{$sessionId}/close", [
+                'closing_amount' => '0.00',
+            ])
+            ->assertOk();
+
+        $session = CashRegisterSession::query()->findOrFail($sessionId);
+        $movement = CashMovement::query()
+            ->where('cash_session_id', $sessionId)
+            ->where('type', CashMovement::TYPE_CLOSING)
+            ->firstOrFail();
+
+        try {
+            $session->forceFill(['closing_amount' => '1.00'])->save();
+            $this->fail('Closed cash sessions must reject later mutations.');
+        } catch (LogicException $exception) {
+            $this->assertStringContainsString('cerradas no se modifican', $exception->getMessage());
+        }
+
+        try {
+            $movement->forceFill(['amount' => '1.00'])->save();
+            $this->fail('Cash movements from closed sessions must reject later mutations.');
+        } catch (LogicException $exception) {
+            $this->assertStringContainsString('caja cerrada no se modifican', $exception->getMessage());
+        }
+
+        try {
+            CashMovement::query()->create([
+                'cash_session_id' => $sessionId,
+                'user_id' => $cashier->id,
+                'type' => CashMovement::TYPE_PAYMENT,
+                'method' => 'cash',
+                'amount' => '1.00',
+                'occurred_at' => now(),
+            ]);
+            $this->fail('Closed cash sessions must reject new cash movements.');
+        } catch (LogicException $exception) {
+            $this->assertStringContainsString('caja cerrada no se modifican', $exception->getMessage());
+        }
+
+        $this->assertSame('0.00', $session->refresh()->closing_amount);
+        $this->assertSame('0.00', $movement->refresh()->amount);
+        $this->assertSame(1, CashMovement::query()->where('cash_session_id', $sessionId)->count());
+    }
+
+    public function test_close_any_permission_can_close_another_users_session_without_cash_close(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashierWithOpenSession('0.00');
+        $sessionId = $this->currentOpenSessionIdFor($cashier);
+        $supervisor = User::factory()->create();
+        $supervisor->givePermissionTo([
+            Permission::findOrCreate('cash.view', 'web'),
+            Permission::findOrCreate('cash.close_any', 'web'),
+        ]);
+
+        $this->actingAs($supervisor)
+            ->postJson("/api/cash-sessions/{$sessionId}/close", [
+                'closing_amount' => '0.00',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.status', CashRegisterSession::STATUS_CLOSED)
+            ->assertJsonPath('data.user_id', $cashier->id);
+
+        $this->assertSame(CashRegisterSession::STATUS_CLOSED, CashRegisterSession::query()->findOrFail($sessionId)->status);
+    }
+
+    public function test_close_any_user_can_request_closable_current_cash_session_without_making_pos_current_global(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashierWithOpenSession('0.00');
+        $sessionId = $this->currentOpenSessionIdFor($cashier);
+        $supervisor = User::factory()->create();
+        $supervisor->givePermissionTo([
+            Permission::findOrCreate('cash.view', 'web'),
+            Permission::findOrCreate('cash.close_any', 'web'),
+        ]);
+
+        $this->actingAs($supervisor)
+            ->getJson('/api/cash-sessions/current')
+            ->assertOk()
+            ->assertJsonPath('data', null);
+
+        $this->actingAs($supervisor)
+            ->getJson('/api/cash-sessions/current?scope=closable')
+            ->assertOk()
+            ->assertJsonPath('data.id', $sessionId)
+            ->assertJsonPath('data.user_id', $cashier->id);
+    }
+
     private function seedBillingBase(): void
     {
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
@@ -130,6 +244,52 @@ class CloseCashSessionTest extends TestCase
         ]);
 
         return $cashier->refresh();
+    }
+
+    private function createIssuedInstitutionalReceipt(int $invoiceId, int $sessionId, User $cashier): void
+    {
+        $invoice = Invoice::query()->findOrFail($invoiceId);
+        $number = 91000000 + $invoice->id;
+        $series = InstitutionalReceiptSeries::query()->create([
+            'document_type' => InstitutionalReceiptSeries::DOCUMENT_TYPE,
+            'series' => 'REC-CLOSE',
+            'prefix' => 'RC',
+            'number_format' => '{series}-{number:08}',
+            'min_number' => 1,
+            'max_number' => 99999999,
+            'current_number' => $number,
+            'active' => false,
+        ]);
+
+        InstitutionalReceipt::query()->create([
+            'invoice_id' => $invoice->id,
+            'payment_id' => Payment::query()
+                ->where('invoice_id', $invoice->id)
+                ->where('cash_session_id', $sessionId)
+                ->where('status', Payment::STATUS_POSTED)
+                ->value('id'),
+            'cash_session_id' => $sessionId,
+            'series_id' => $series->id,
+            'receipt_number' => $number,
+            'receipt_number_full' => 'REC-CLOSE-'.str_pad((string) $number, 8, '0', STR_PAD_LEFT),
+            'status' => InstitutionalReceipt::STATUS_ISSUED,
+            'amount' => $invoice->total,
+            'amount_cents' => $invoice->total_cents,
+            'issued_at' => now(),
+            'issued_by' => $cashier->id,
+            'payer_name' => $invoice->patient_name,
+            'concept' => 'Servicios hospitalarios',
+            'amount_words' => 'Monto de prueba',
+            'template_code' => 'institutional_classic',
+            'print_profile_code' => 'half_letter',
+            'copy_mode' => 'original_only',
+            'institution_snapshot' => ['hospital_name' => 'Hospital San Isidro'],
+            'series_snapshot' => ['series' => 'REC-CLOSE'],
+            'profile_snapshot' => ['code' => 'half_letter'],
+            'invoice_snapshot' => ['invoice_number' => $invoice->invoice_number],
+            'payment_snapshot' => null,
+            'items_snapshot' => [],
+        ]);
     }
 
     private function currentOpenSessionIdFor(User $cashier): int

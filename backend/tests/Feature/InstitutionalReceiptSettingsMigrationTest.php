@@ -13,9 +13,9 @@ use App\Models\ReceiptPrintProfile;
 use App\Models\ReceiptProfileAssignment;
 use App\Models\User;
 use Database\Seeders\ReceiptPrintProfileSeeder;
-use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
+use LogicException;
 use Tests\TestCase;
 
 class InstitutionalReceiptSettingsMigrationTest extends TestCase
@@ -171,16 +171,41 @@ class InstitutionalReceiptSettingsMigrationTest extends TestCase
         try {
             $invoice->delete();
             $this->fail('Deleting an invoice linked to an institutional receipt must be restricted.');
-        } catch (QueryException $exception) {
-            $this->assertNotSame('', $exception->getMessage());
+        } catch (LogicException $exception) {
+            $this->assertSame('Las facturas no se eliminan; deben anularse con motivo y auditoria.', $exception->getMessage());
         }
 
         try {
             $receipt->delete();
             $this->fail('Deleting a receipt linked to a print event must be restricted.');
-        } catch (QueryException $exception) {
-            $this->assertNotSame('', $exception->getMessage());
+        } catch (LogicException $exception) {
+            $this->assertSame('Los recibos institucionales emitidos no se eliminan; deben anularse con motivo y auditoria.', $exception->getMessage());
         }
+    }
+
+    public function test_issued_institutional_receipt_cannot_be_deleted_even_without_print_events(): void
+    {
+        [
+            'receipt' => $receipt,
+            'event' => $event,
+        ] = $this->createReceiptGraph();
+
+        $event->delete();
+        $this->assertDatabaseMissing('institutional_receipt_print_events', [
+            'id' => $event->id,
+        ]);
+
+        try {
+            $receipt->delete();
+            $this->fail('Deleting an issued institutional receipt must be blocked even before print events exist.');
+        } catch (LogicException $exception) {
+            $this->assertSame('Los recibos institucionales emitidos no se eliminan; deben anularse con motivo y auditoria.', $exception->getMessage());
+        }
+
+        $this->assertDatabaseHas('institutional_receipts', [
+            'id' => $receipt->id,
+            'status' => InstitutionalReceipt::STATUS_ISSUED,
+        ]);
     }
 
     /**

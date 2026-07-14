@@ -8,10 +8,12 @@ use App\Models\AuditLog;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
+use App\Models\InstitutionalReceiptSeries;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Service;
 use App\Models\User;
+use Database\Seeders\ReceiptPrintProfileSeeder;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -158,7 +160,7 @@ class DoublePaymentTest extends TestCase
 
     public function test_double_close_on_same_session_is_rejected(): void
     {
-        $this->seedBillingBase();
+        $this->seedBillingBase(institutionalReceipts: true);
 
         $cashier = $this->cashierWithOpenSession();
         $sessionId = $this->openSessionFor($cashier, '500.00');
@@ -178,7 +180,8 @@ class DoublePaymentTest extends TestCase
                 'method' => Payment::METHOD_CASH,
                 'amount' => '17.25',
             ])
-            ->assertCreated();
+            ->assertCreated()
+            ->assertJsonPath('data.institutional_receipt.receipt_number_full', 'REC-A-00000001');
 
         $this->actingAs($cashier)
             ->postJson("/api/cash-sessions/{$sessionId}/close", [
@@ -322,11 +325,16 @@ class DoublePaymentTest extends TestCase
         $this->assertSame((int) $invoice->total_cents, (int) $invoice->paid_amount_cents + (int) $invoice->balance_due_cents);
     }
 
-    private function seedBillingBase(): void
+    private function seedBillingBase(bool $institutionalReceipts = false): void
     {
-        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $seeders = [RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class];
+        if ($institutionalReceipts) {
+            $seeders[] = ReceiptPrintProfileSeeder::class;
+        }
+
+        $this->seed($seeders);
         FiscalSetting::query()->create([
-            'receipt_template_mode' => 'thermal',
+            'receipt_template_mode' => $institutionalReceipts ? 'institutional' : 'thermal',
             'hospital_name' => 'Hospital San Isidro',
             'rtn' => '08011999123456',
             'default_tax_rate' => '15.00',
@@ -342,6 +350,22 @@ class DoublePaymentTest extends TestCase
             'valid_until' => now()->addYear()->toDateString(),
             'active' => true,
         ]);
+
+        if ($institutionalReceipts) {
+            InstitutionalReceiptSeries::query()->create([
+                'document_type' => InstitutionalReceiptSeries::DOCUMENT_TYPE,
+                'series' => 'REC-A',
+                'prefix' => 'RA',
+                'number_format' => '{series}-{number:08}',
+                'min_number' => 1,
+                'max_number' => 100,
+                'current_number' => 0,
+                'range_authorization' => 'AUT-REC',
+                'legal_text' => 'CERTIFICA haber enterado en esta oficina la suma de',
+                'receipt_number_color' => '#b91c1c',
+                'active' => true,
+            ]);
+        }
     }
 
     private function togglePartial(bool $enabled): void

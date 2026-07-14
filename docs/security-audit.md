@@ -8,18 +8,18 @@ Roles oficiales del sistema (definidos en `RolesAndPermissionsSeeder`):
 
 | Rol | Descripción |
 |---|---|
-| `admin` | Control total: usuarios, roles, configuración, respaldos, restauración. |
+| `admin` | Control operativo: usuarios, roles, configuración fiscal y respaldos; la restauración queda fuera de la app y se coordina desde servidor. |
 | `supervisor` | Operación ampliada: anulación, reversos, exportación, configuración fiscal, auditoría. |
 | `cajero` | Operación local: caja, facturación, cobros, reimpresión. |
 | `auditor` | Solo lectura de auditoría y reportes. |
 | `catalog` | Gestión de catálogo de servicios. |
-| `soporte` | Soporte técnico, incluye `receipt_settings.advanced`. |
+| `soporte` | Diagnóstico técnico local; puede conservar permisos legacy de compatibilidad, pero no obtiene controles manuales de impresión en la UI. |
 
 Permisos clave (no exhaustivo):
 
 - `users.assign_admin_role` — solo admin y root.
-- `backups.restore` — supervisor/admin (UI actualmente no expone esta acción por seguridad).
-- `receipt_settings.advanced` — soporte (nuevo en este refactor) — desbloquea los 8 campos manuales de impresión.
+- `backups.restore` - no operativo: no se siembra, se oculta si existe como legado y ninguna policy lo autoriza desde la app.
+- `receipt_settings.advanced` — permiso legacy conservado para compatibilidad y auditoría de API; no desbloquea campos manuales en la UI vigente.
 - `fiscal.sequences.reset` — admin (nuevo) — para reiniciar correlativo fiscal cuando no hay facturas emitidas.
 - `settings.fiscal.update`, `receipts.void`, `invoices.reverse`, `payments.void`, `cash.close_any`, `invoices.operate_any` — supervisor/admin (consolidado en `RoleCatalog::ELEVATED_ROLE_PERMISSIONS`).
 
@@ -28,33 +28,35 @@ Permisos clave (no exhaustivo):
 Leyenda:
 - **A** = audit log obligatorio (`audit_logs`).
 - **M** = motivo obligatorio (textarea, longitud mínima `5` caracteres, max `500`).
-- **I** = idempotencia verificada vía `OperationIdempotencyKey`.
+- **I** = idempotencia verificada via middleware `idempotency` y tabla `idempotency_keys`.
 - **P** = permiso específico del backend.
 
 | # | Acción | Endpoint | Permiso | A | M | I | Validaciones extra |
 |---|---|---|---|---|---|---|---|
 | 1 | Login OK | `POST /api/auth/login` | público | sí | – | – | lockout 5/15 min (`LoginAttempt`), CSRF |
 | 2 | Login FAIL | `POST /api/auth/login` | público | sí | – | – | lockout, motivo adicional si está bloqueado |
-| 3 | Crear factura | `POST /api/billing/invoices` | `invoices.create` | sí | – | sí | paciente no vacío, 1+ items, cantidades > 0, precios snapshot |
-| 4 | Anular factura | `POST /api/billing/invoices/{id}/void` | `invoices.void` | sí | sí (≥5) | sí | factura no anulada previamente, no pagada totalmente |
-| 5 | Reversar pago | `POST /api/payments/{id}/reverse` | `payments.void` | sí | sí (≥5) | sí | pago no reversado, factura activa |
-| 6 | Crear pago | `POST /api/cash-sessions/{id}/payments` | `payments.create` | sí | – | sí | caja abierta, factura existe, balance disponible |
-| 7 | Abrir caja | `POST /api/cash-sessions` | `cash.open` | sí | – | – | sin caja abierta del mismo usuario |
+| 3 | Crear factura | `POST /api/invoices` | `invoices.create` | sí | – | sí | paciente no vacío, 1+ items, cantidades > 0, precios snapshot, correlativo bajo transacción |
+| 4 | Anular factura | `POST /api/invoices/{invoice}/void` | `invoices.void` | sí | sí (≥5) | sí | factura no anulada previamente, no pagada totalmente |
+| 5 | Reversar factura | `POST /api/invoices/{invoice}/reverse` | `invoices.reverse` | sí | sí (≥5) | sí | factura activa, motivo y auditoría |
+| 6 | Crear pago | `POST /api/invoices/{invoice}/payments` | `payments.create` | sí | – | sí | caja abierta, factura existe, balance disponible, movimiento de caja |
+| 7 | Abrir caja | `POST /api/cash-sessions/open` | `cash.open` | sí | – | sí | sin caja abierta del mismo usuario |
 | 8 | Cerrar caja | `POST /api/cash-sessions/{id}/close` | `cash.close` | sí | sí si diff≠0 | sí | efectivo contado numérico, sin facturas pendientes |
 | 9 | Diferencia de caja | (auto al cerrar) | – | sí | sí | – | se registra `cash_session.difference` además del cierre |
-| 10 | Cambiar precio de servicio | `PUT /api/catalog/services/{id}` | `catalog.manage` | sí | sí (≥5) | – | precio anterior → `service_price_history` |
-| 11 | Cambiar perfil impresión (básico) | `PUT /api/receipts/profiles/{id}` | `receipt_settings.update` | sí | – | – | no permite los 8 campos manuales sin `receipt_settings.advanced` |
-| 12 | Cambiar perfil impresión (avanzado) | `PUT /api/receipts/profiles/{id}` | `receipt_settings.advanced` | sí | – | – | cualquier campo manual exige el permiso; sin él → 403 + audit |
-| 13 | Cambiar CAI / rango / prefijo | `PUT /api/fiscal/sequences/{id}` | `settings.fiscal.update` | sí | sí (≥10) | – | no reiniciar `current_number` sin `fiscal.sequences.reset` |
-| 14 | Resetear correlativo fiscal | `PUT /api/fiscal/sequences/{id}/reset` | `fiscal.sequences.reset` | sí | sí (≥20) | – | exige que no haya facturas emitidas con ese correlativo, o motivo documentado si las hay |
-| 15 | Crear respaldo | `POST /api/backups` | `backups.create` | sí | – | – | storage disponible |
-| 16 | Descargar respaldo | `GET /api/backups/{id}/download` | `backups.download` | sí | – | – | – |
-| 17 | Restaurar respaldo | `POST /api/backups/{id}/restore` | `backups.restore` | **no implementado** | – | – | ver §3 |
-| 18 | Crear usuario | `POST /api/admin/users` | `users.create` | sí | – | – | password policy (12+ chars, upper/lower/digit/symbol) |
-| 19 | Actualizar usuario | `PUT /api/admin/users/{id}` | `users.update` | sí | sí si cambia rol | – | impide auto-demote del último admin |
-| 20 | Cambiar rol | (subconjunto de update) | `users.update` | sí | sí | – | impide quitar todos los admin |
-| 21 | Cambiar permisos directos | `PUT /api/admin/users/{id}/permissions` | `users.assign_admin_role` si son reservados | sí | – | – | separa reservados/elevados vía `RoleCatalog` |
-| 22 | Crear/editar rol | `POST/PUT /api/admin/roles` | `users.assign_admin_role` | sí | – | – | rechazar nombre `admin`/`root` |
+| 10 | Anular pago | `POST /api/invoices/{invoice}/payments/{payment}/void` o `POST /api/payments/{payment}/void` | `payments.void` | sí | sí (≥5) | sí | pago no anulado, factura activa, caja cerrada no recibe movimiento nuevo |
+| 11 | Reimprimir recibo legacy | `POST /api/invoices/{invoice}/reprint` | `receipts.reprint` | sí | opcional | sí | no emite documento nuevo; registra auditoría de reimpresión |
+| 12 | Emitir recibo institucional | `POST /api/institutional-receipts` | `receipts.view`/flujo operativo | sí | – | sí | serie activa, rango vigente, recibo asociado a factura |
+| 13 | PDF/print event recibo institucional | `POST /api/institutional-receipts/{receipt}/pdf`, `POST /api/institutional-receipts/{receipt}/print-events` | `receipts.view`/`receipts.reprint` | sí | opcional | sí | reimpresión auditada sin consumir correlativo |
+| 14 | Cambiar precio de servicio | `PATCH /api/services/{service}` | `catalog.manage` | sí | sí (≥5) | – | precio anterior → historial y snapshot histórico en facturas |
+| 15 | Cambiar perfil impresión (básico) | `PATCH /api/settings/institutional-receipts/print-profiles/{profile}` | `receipt_settings.update` | sí | – | – | no permite campos manuales sin `receipt_settings.advanced` |
+| 16 | Cambiar perfil impresión (avanzado) | `PATCH /api/settings/institutional-receipts/print-profiles/{profile}` | `receipt_settings.advanced` | sí | – | – | cualquier campo manual exige permiso; sin él → 403 + audit |
+| 17 | Cambiar CAI / rango / prefijo | `PATCH /api/fiscal-sequences/{fiscalSequence}` | `settings.fiscal.update` | sí | sí (≥5) | – | no reiniciar `current_number` sin `fiscal.sequences.reset` |
+| 18 | Crear respaldo | `POST /api/backups` | `backups.create` | sí | – | sí | storage disponible, job local, checksum/auditoría al completar |
+| 19 | Descargar respaldo | `GET /api/backups/{backupLog}/download` | `backups.download` | sí | – | – | solo archivos registrados dentro de `storage/app/backups` |
+| 20 | Restaurar respaldo | `POST /api/backups/{id}/restore` | ninguno operativo | **no implementado** | - | - | ver seccion 3 |
+| 21 | Crear usuario | `POST /api/admin/users` | `users.create` | sí | – | – | password policy (12+ chars, upper/lower/digit/symbol) |
+| 22 | Actualizar usuario | `PATCH /api/admin/users/{user}` | `users.update` | sí | sí si cambia rol | – | impide auto-demote del último admin |
+| 23 | Cambiar rol | (subconjunto de update) | `users.update` | sí | sí | – | impide quitar todos los admin |
+| 24 | Crear/editar rol | `POST /api/admin/roles`, `PATCH /api/admin/roles/{role}` | `users.assign_admin_role` | sí | – | – | rechazar nombre `admin`/`root` |
 
 ## 3. Restauración de respaldos — **no disponible en UI**
 
@@ -71,7 +73,7 @@ Leyenda:
 
 Si en el futuro se requiere restaurar desde la app, el flujo será:
 
-1. Permiso `backups.restore`.
+1. Crear e introducir un permiso operativo nuevo para restauracion; `backups.restore` permanece fuera del seeder actual hasta que exista este flujo seguro.
 2. Verificación de integridad SHA256 del archivo.
 3. Confirmación visual con `ConfirmDialog` que exige motivo ≥ 20 caracteres.
 4. Bloqueo de la app durante la operación.
@@ -85,9 +87,11 @@ Hasta entonces, **la restauración se hace desde el servidor** por personal auto
 
 ### 4.1 Doble emisión
 
-- `POST /api/billing/invoices` requiere `OperationIdempotencyKey` válido (TTL 24h).
-- Doble click del mismo operador en la UI con la misma idempotency-key → `409 Conflict` con cuerpo claro.
-- El frontend genera y guarda el key con `createClientIdempotencyKey()`.
+- `POST /api/invoices` requiere header `Idempotency-Key` en el middleware `idempotency`.
+- La tabla `idempotency_keys` conserva `user_id`, ruta, clave, fingerprint del body, status y respuesta 2xx cifrada.
+- Reintento con la misma clave y mismo payload reproduce la respuesta original con `Idempotent-Replay: true`.
+- Reintento con misma clave y payload distinto devuelve error de conflicto/validación.
+- El frontend conserva la clave para reintentar el mismo payload fallido en factura, pago, apertura/cierre de caja y respaldo manual; la renueva cuando el backend confirma éxito o cuando el payload cambia.
 
 ### 4.2 Anti-XSS en nombres
 
@@ -100,7 +104,27 @@ Hasta entonces, **la restauración se hace desde el servidor** por personal auto
 
 ### 4.4 Idempotencia
 
-Todas las mutaciones críticas (`invoices.create`, `invoices.void`, `payments.create`, `payments.void`, `cash.open`, `cash.close`, `receipts.print`, `backups.create`, etc.) usan `OperationIdempotencyKey`.
+Las mutaciones criticas de tipo `POST` que pueden duplicarse por retry humano,
+timeout LAN o doble submit usan el middleware `idempotency`: `POST /api/invoices`,
+anulacion/reversion de factura, pagos, apertura/cierre de caja, reimpresion,
+recibos institucionales y respaldo manual. Otras mutaciones administrativas
+siguen protegidas por permisos, validaciones, auditoria y throttling, pero no se
+documentan como idempotentes si la ruta no usa ese middleware.
+
+Los clientes frontend que pueden sufrir reintento humano despues de timeout conservan una clave estable por intento:
+
+- `useCreateInvoice` / `NewInvoiceView` para emisión de factura.
+- `NewInvoiceView` para registro de pago.
+- `useOpenCashSession` y `useCloseCashSession` para apertura/cierre de caja.
+- `useCreateBackup` para respaldo manual.
+- `InvoiceHistoryView` para anular, reversar, reimprimir recibo legacy, generar recibo institucional faltante y abrir PDF institucional con motivo de reimpresion.
+
+### 4.5 CORS LAN y headers operativos
+
+- `backend/config/cors.php` permite metodos explicitos (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS`) en lugar de wildcard.
+- El preflight acepta `Idempotency-Key` y `X-XSRF-TOKEN` para clientes Vite/LAN autorizados.
+- Las respuestas pueden exponer `X-S-Hospital-Paper-Size-Warning` para que el frontend avise cambios de papel durante turno.
+- Produccion conserva rechazo de wildcards en origenes para no abrir CORS credentialed accidentalmente.
 
 ## 5. CSRF y sesión
 
@@ -222,7 +246,7 @@ Riesgos abiertos:
 - Motivo obligatorio: anular factura, reversar pago, cerrar caja con diferencia, cambiar precio, cambios fiscales criticos y cambios de roles/permisos.
 - Audit log: acciones criticas registran before/after cuando aplica; respaldos, usuarios, caja, fiscal, catalogo, recibos y facturacion tienen eventos auditables.
 - Campos manuales de impresion: backend rechaza `width_mm`, `height_mm`, `margin_*_mm`, `font_family`, `font_scale` sin `receipt_settings.advanced`.
-- Restore de backups: no hay ruta ni boton operativo de restauracion. Restaurar queda fuera hasta implementar permiso `backups.restore`, motivo minimo 20 caracteres, SHA256, backup previo automatico, bloqueo operativo y audit success/failure.
+- Restore de backups: no hay ruta ni boton operativo de restauracion. `backups.restore` no se siembra, se oculta si existe como legado y restaurar queda fuera hasta implementar permiso/flujo seguro con motivo minimo 20 caracteres, SHA256, backup previo automatico, bloqueo operativo y audit success/failure.
 - Stack traces / SQL crudo: tests de seguridad validan que errores SQL no se exponen al usuario; grep solo encontro `SQLSTATE` en tests/sanitizacion.
 - Logs de password/token: backups redactan password; login/change-password tienen tests que no ecoan password; no se encontro persistencia de token de sesion en frontend.
 
@@ -242,3 +266,114 @@ Controles finales confirmados:
 - Configuracion fiscal conserva sanitizacion de placeholders historicos antes de mostrar datos editables.
 - `php artisan test` paso con 746 pruebas y 12 omitidas; despues de formatear `FiscalSettingsTest.php`, `php artisan test tests/Feature/FiscalSettingsTest.php` paso 13 pruebas.
 - `vendor/bin/pint --test`, `vendor/bin/phpstan analyse`, `npm run lint`, `npm run test`, `npm run build` y `npm run visual:smoke` finalizaron OK.
+
+## 14. Actualizacion 2026-07-05 - Caja local y auditoria de usuarios
+
+Controles agregados/verificados:
+
+- La apertura de caja usa una regla backend de una sola caja abierta global para la instalacion monocomputadora.
+- `OpenCashSessionAction` serializa aperturas simultaneas con lock nombrado de MySQL/MariaDB antes de crear la sesion.
+- La segunda apertura devuelve error funcional controlado; no crea movimiento de apertura ni auditoria duplicada.
+- Desactivar usuarios sigue exigiendo motivo y el evento `user.deactivated` conserva ese motivo en `audit_logs.reason`.
+- El frontend traduce errores `cash_session` como `Caja` para el operador, pero la defensa real permanece en backend.
+
+Pruebas relevantes:
+
+- `CashPaymentsReceiptTest` cubre apertura unica global y reapertura despues de cierre.
+- `OpenCashSessionActionConcurrencyTest` cubre el lock nombrado y codigos de concurrencia DB.
+- `InternalControlAuditTest` cubre motivo auditado al desactivar usuario.
+- `CashBoxView.test.tsx` y `base.test.ts` cubren mensaje humano sin exponer `cash_session`.
+
+## 15. Actualizacion 2026-07-05 - Respaldos sin nombres tecnicos en payload normal
+
+Control agregado/verificado:
+
+- El listado normal de respaldos ya no devuelve `filename`, `path`, `disk` ni `checksum_sha256`.
+- El servidor conserva esos datos para descarga, integridad y auditoria interna; no se elimina evidencia tecnica necesaria.
+- La descarga sigue validando archivo registrado, ruta segura, tamano y SHA256 antes de entregar el archivo.
+- La UI genera un nombre de descarga humano desde fecha/id y no depende del nombre interno del archivo.
+
+Pruebas relevantes:
+
+- `BackupWorkflowTest` cubre listado sin detalles internos, descarga auditada, integridad alterada, path traversal y ausencia de endpoint restore.
+- `BackupsView.test.tsx`, `useBackups.test.tsx` y `backups.test.ts` cubren contrato frontend sin `filename` operativo.
+
+## 16. Actualizacion 2026-07-05 - Recibos normales con default institucional
+
+Control agregado/verificado:
+
+- El permiso `receipt_settings.advanced` ya no hace que el flujo normal de papel envie perfiles institucionales sin `is_global_default`.
+- `Carta`, `Media carta` y `A5` se guardan como perfiles activos/default desde `Guardar perfil`, incluso para cuentas de soporte/admin.
+- Los perfiles de soporte tecnico siguen separados y conservan sus banderas tecnicas dentro del modo soporte.
+
+Pruebas relevantes:
+
+- `InstitutionalReceiptSettingsView.test.tsx` cubre el caso con `canAdvancedPrintSettings=true` y panel avanzado cerrado.
+- `npm run typecheck` y `npm run lint` verifican el cambio frontend sin errores.
+
+## 17. Actualizacion 2026-07-05 - Reportes de auditoria requieren audit.view en UI
+
+Control agregado/verificado:
+
+- La subruta `/reports/audit` ya no se expone solo por `reports.managerial.view`.
+- El frontend deriva `canViewAuditReports` desde `audit.view`, alineado con `/api/reports/operations` y `/api/system/audit-logs`.
+- Si una cuenta gerencial sin auditoria intenta abrir `/reports/audit`, la pantalla cae a un reporte permitido en lugar de mostrar una vista que terminaria en 403.
+- Una cuenta con solo `audit.view` puede entrar a Reportes y aterriza directamente en Auditoria.
+
+Pruebas relevantes:
+
+- `ReportsView.subroutes.test.tsx` cubre usuario gerencial sin `audit.view` y usuario audit-only.
+- `ReportsAudit.test.tsx`, `npm run typecheck` y `npm run lint` verifican el cambio frontend.
+
+## 18. Actualizacion 2026-07-05 - Catalogo envia motivo de disponibilidad
+
+Control agregado/verificado:
+
+- La desactivacion de servicios desde Catalogo exige motivo visible antes de confirmar.
+- El frontend envia `availability_change_reason` junto con `active: false`, alineado con la validacion backend y auditoria de catalogo.
+- La accion sigue sin borrar servicios ni tocar facturas historicas.
+
+Pruebas relevantes:
+
+- `CatalogView.test.tsx` cubre boton deshabilitado sin motivo y payload con `availability_change_reason`.
+- `npm run typecheck` y `npm run lint` verifican el contrato TypeScript.
+
+## 19. Actualizacion 2026-07-05 - Eritropoyetina bloqueada en edicion de catalogo
+
+Control agregado/verificado:
+
+- La edicion de un servicio existente con regla `ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION` bloquea precio, regla especial e ISV en el formulario.
+- La UI conserva el alta asistida: al seleccionar eritropoyetina se fija L.25.00 y sin ISV, pero la seleccion puede corregirse antes de guardar.
+- El control reduce cambios accidentales sobre campos regulados; la autoridad fiscal y de facturacion sigue estando en backend, snapshots historicos y validaciones server-side.
+
+Pruebas relevantes:
+
+- `ServiceSheet.test.tsx` cubre el bloqueo de regla/precio/ISV al editar eritropoyetina y la normalizacion al crear.
+- `npm run typecheck` y `npm run lint` verifican el contrato frontend.
+
+## 20. Actualizacion 2026-07-05 - Exports de reportes respetan audit.view
+
+Control agregado/verificado:
+
+- `/api/reports/export` y `/api/reports/pdf` ya no exponen secciones derivadas de auditoria operativa a usuarios sin `audit.view`.
+- El XLSX conserva reportes financieros y hoja de cajeros, pero omite la hoja `Auditoria` sin permiso.
+- El PDF de periodo conserva servicios/detalle operativo, pero omite resumen de auditoria, anulaciones, reimpresiones, reversos, cambios de catalogo y respaldos sin permiso.
+- La respuesta JSON `/api/reports/operations` ya estaba protegida por `audit.view`; ahora los downloads quedan alineados con esa compuerta.
+
+Pruebas relevantes:
+
+- `ReportsTest` cubre export XLSX sin `audit.view`, PDF de periodo sin `audit.view`, y regresiones completas de reportes.
+- `pint --test` y `phpstan analyse --memory-limit=512M` verifican formato y analisis estatico backend.
+
+## 21. Actualizacion 2026-07-05 - Reporte ejecutivo respeta audit.view
+
+Control agregado/verificado:
+
+- El endpoint ejecutivo agrega `can_view_audit` y redacciona `voids_and_reversals`/`audit_summary` para usuarios sin `audit.view`.
+- El PDF ejecutivo omite secciones de anulaciones/reversas y resumen de auditoria cuando el payload no autoriza auditoria.
+- El XLSX ejecutivo omite las hojas `Anulaciones y reversas` y `Auditoria` sin `audit.view`, conservando resumen, cobros, servicios, cajeros, caja, pendientes y glosario.
+
+Pruebas relevantes:
+
+- `ExecutiveReportTest`, `ExecutivePdfExportTest` y `ExecutiveExcelExportTest` cubren redaccion sin `audit.view` y regresion completa con admin.
+- `pint --test` y `phpstan analyse --memory-limit=512M` pasan.

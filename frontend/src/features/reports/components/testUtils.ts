@@ -11,6 +11,13 @@ export function buildExecutiveReport(overrides: Partial<ExecutiveReport> = {}): 
       method: null,
       status: null,
     },
+    accounting_policy: {
+      scope: 'operational_cash',
+      expenses_supported: false,
+      exclusions_already_applied: true,
+      billed_definition: 'Facturas emitidas no anuladas. Las anulaciones ya estan excluidas.',
+      collected_definition: 'Pagos posteados no reversados. Los reversos ya estan excluidos.',
+    },
     comparison: {
       billed: { current: '0.00', previous: '0.00', delta_cents: 0, delta_percentage: null },
       collected: { current: '0.00', previous: '0.00', delta_cents: 0, delta_percentage: null },

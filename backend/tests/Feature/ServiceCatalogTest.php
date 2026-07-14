@@ -5,6 +5,9 @@ namespace Tests\Feature;
 use App\Models\Area;
 use App\Models\AuditLog;
 use App\Models\Category;
+use App\Models\FiscalSequence;
+use App\Models\Invoice;
+use App\Models\InvoiceItem;
 use App\Models\Service;
 use App\Models\ServiceArea;
 use App\Models\ServicePriceHistory;
@@ -13,6 +16,7 @@ use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
+use LogicException;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
@@ -43,6 +47,7 @@ class ServiceCatalogTest extends TestCase
             ->firstOrFail();
 
         $this->assertSame('25.00', $erythropoietin->price);
+        $this->assertFalse($erythropoietin->taxable);
         $this->assertSame(Service::ERYTHROPOIETIN_RULE, $erythropoietin->special_rule_code);
         $this->assertNotNull($erythropoietin->source_key);
         $this->assertNotNull($erythropoietin->source_hash);
@@ -81,6 +86,37 @@ class ServiceCatalogTest extends TestCase
         $this->assertSame(5, Category::query()->count());
         $this->assertSame(6, ServiceArea::query()->count());
         $this->assertSame(122, Service::query()->count());
+    }
+
+    public function test_service_catalog_seeder_preserves_existing_operational_service_changes(): void
+    {
+        $this->seed(ServiceCatalogSeeder::class);
+
+        $service = Service::query()
+            ->where('name', 'Glucosa')
+            ->firstOrFail();
+        $service->update([
+            'price' => '99.00',
+            'taxable' => false,
+            'active' => false,
+            'visible_in_billing' => false,
+            'is_billable' => false,
+            'scan_code' => 'LOCAL-GLU',
+            'barcode' => '7700000003999',
+            'qr_code' => 'QR-LOCAL-GLU',
+        ]);
+
+        $this->seed(ServiceCatalogSeeder::class);
+
+        $service->refresh();
+        $this->assertSame('99.00', $service->price);
+        $this->assertFalse($service->taxable);
+        $this->assertFalse($service->active);
+        $this->assertFalse($service->visible_in_billing);
+        $this->assertFalse($service->is_billable);
+        $this->assertSame('LOCAL-GLU', $service->scan_code);
+        $this->assertSame('7700000003999', $service->barcode);
+        $this->assertSame('QR-LOCAL-GLU', $service->qr_code);
     }
 
     public function test_service_catalog_seeder_does_not_clear_existing_non_validation_codes(): void
@@ -691,7 +727,8 @@ class ServiceCatalogTest extends TestCase
     {
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
         $admin = $this->admin();
-        $service = Service::query()->where('name', 'Eritropoyetina')->firstOrFail();
+        $service = Service::query()->where('name', 'Glucosa')->firstOrFail();
+        $originalPrice = (string) $service->price;
 
         $this->actingAs($admin)
             ->patchJson("/api/services/{$service->id}", [
@@ -701,7 +738,10 @@ class ServiceCatalogTest extends TestCase
             ->assertOk();
 
         $this->actingAs($admin)
-            ->patchJson("/api/services/{$service->id}", ['active' => false])
+            ->patchJson("/api/services/{$service->id}", [
+                'active' => false,
+                'availability_change_reason' => 'Servicio retirado temporalmente de caja',
+            ])
             ->assertOk();
 
         $this->assertDatabaseHas('audit_logs', [
@@ -719,11 +759,11 @@ class ServiceCatalogTest extends TestCase
 
         $priceAudit = AuditLog::query()->where('action', 'service.price_updated')->firstOrFail();
 
-        $this->assertSame('25.00', $priceAudit->old_values['price']);
+        $this->assertSame($originalPrice, $priceAudit->old_values['price']);
         $this->assertSame('30.00', $priceAudit->new_values['price']);
 
         $priceHistory = ServicePriceHistory::query()->where('service_id', $service->id)->firstOrFail();
-        $this->assertSame('25.00', $priceHistory->old_price);
+        $this->assertSame($originalPrice, $priceHistory->old_price);
         $this->assertSame('30.00', $priceHistory->new_price);
         $this->assertSame($admin->id, $priceHistory->changed_by);
         $this->assertSame('Actualizacion aprobada por administracion', $priceHistory->reason);
@@ -746,6 +786,163 @@ class ServiceCatalogTest extends TestCase
             'service_id' => $service->id,
             'new_price' => '30.00',
         ]);
+    }
+
+    public function test_billing_availability_change_requires_a_server_side_reason(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $admin = $this->admin();
+        $service = Service::query()->where('name', 'Glucosa')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->patchJson("/api/services/{$service->id}", ['visible_in_billing' => false])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('availability_change_reason');
+
+        $service->refresh();
+
+        $this->assertTrue($service->visible_in_billing);
+        $this->assertDatabaseMissing('audit_logs', [
+            'action' => 'service.visibility_updated',
+            'entity_type' => Service::class,
+            'entity_id' => $service->id,
+        ]);
+    }
+
+    public function test_billing_availability_change_with_reason_is_audited(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $admin = $this->admin();
+        $service = Service::query()->where('name', 'Glucosa')->firstOrFail();
+        $reason = 'Retirado temporalmente de caja por revision interna';
+
+        $this->actingAs($admin)
+            ->patchJson("/api/services/{$service->id}", [
+                'active' => false,
+                'visible_in_billing' => false,
+                'is_billable' => false,
+                'availability_change_reason' => $reason,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.active', false)
+            ->assertJsonPath('data.visible_in_billing', false)
+            ->assertJsonPath('data.is_billable', false);
+
+        foreach (['service.active_updated', 'service.visibility_updated', 'service.billability_updated'] as $action) {
+            $audit = AuditLog::query()
+                ->where('action', $action)
+                ->where('entity_type', Service::class)
+                ->where('entity_id', $service->id)
+                ->firstOrFail();
+
+            $this->assertSame($reason, $audit->new_values['availability_change_reason']);
+        }
+    }
+
+    public function test_erythropoietin_rule_requires_the_fixed_twenty_five_lempira_price(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $admin = $this->admin();
+        $service = Service::query()->where('name', 'Eritropoyetina')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->patchJson("/api/services/{$service->id}", [
+                'price' => '30.00',
+                'price_change_reason' => 'Intento de cambiar tarifa fija',
+                'special_rule_code' => Service::ERYTHROPOIETIN_RULE,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('price');
+
+        $this->assertSame('25.00', $service->refresh()->price);
+
+        $this->actingAs($admin)
+            ->postJson('/api/services', [
+                'category_id' => $service->category_id,
+                'area_id' => $service->area_id,
+                'name' => 'Eritropoyetina alterna',
+                'price' => '30.00',
+                'taxable' => false,
+                'active' => true,
+                'visible_in_billing' => true,
+                'is_billable' => true,
+                'special_rule_code' => Service::ERYTHROPOIETIN_RULE,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('price');
+    }
+
+    public function test_erythropoietin_rule_requires_non_taxable_service_on_create(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $admin = $this->admin();
+        $service = Service::query()->where('name', 'Eritropoyetina')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->postJson('/api/services', [
+                'category_id' => $service->category_id,
+                'area_id' => $service->area_id,
+                'name' => 'Eritropoyetina gravada',
+                'price' => '25.00',
+                'taxable' => true,
+                'active' => true,
+                'visible_in_billing' => true,
+                'is_billable' => true,
+                'special_rule_code' => Service::ERYTHROPOIETIN_RULE,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('taxable')
+            ->assertJsonMissingValidationErrors('price');
+    }
+
+    public function test_erythropoietin_rule_requires_non_taxable_service_on_update(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $admin = $this->admin();
+        $service = Service::query()->where('name', 'Glucosa')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->patchJson("/api/services/{$service->id}", [
+                'price' => '25.00',
+                'price_change_reason' => 'Correccion para regla fija de farmacia',
+                'special_rule_code' => Service::ERYTHROPOIETIN_RULE,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('taxable')
+            ->assertJsonMissingValidationErrors('price');
+
+        $service->refresh();
+
+        $this->assertTrue($service->taxable);
+        $this->assertNull($service->special_rule_code);
+    }
+
+    public function test_erythropoietin_catalog_rule_cannot_be_cleared_or_made_taxable(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $admin = $this->admin();
+        $service = Service::query()->where('name', 'Eritropoyetina')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->patchJson("/api/services/{$service->id}", [
+                'price' => '30.00',
+                'price_change_reason' => 'Intento de retirar regla fija',
+                'taxable' => true,
+                'tax_change_reason' => 'Intento de activar impuesto',
+                'special_rule_code' => null,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors([
+                'price',
+                'special_rule_code',
+                'taxable',
+            ]);
+
+        $service->refresh();
+
+        $this->assertSame('25.00', $service->price);
+        $this->assertFalse($service->taxable);
+        $this->assertSame(Service::ERYTHROPOIETIN_RULE, $service->special_rule_code);
     }
 
     public function test_invalid_price_update_returns_validation_error_before_price_reason_check(): void
@@ -772,13 +969,17 @@ class ServiceCatalogTest extends TestCase
         $hemogram = Service::query()->where('name', 'Hemograma Completo')->firstOrFail();
 
         $this->actingAs($admin)
-            ->patchJson("/api/services/{$glucose->id}", ['visible_in_billing' => false])
+            ->patchJson("/api/services/{$glucose->id}", [
+                'visible_in_billing' => false,
+                'availability_change_reason' => 'Servicio oculto temporalmente para caja',
+            ])
             ->assertOk();
 
         $this->actingAs($admin)
             ->patchJson("/api/services/{$hemogram->id}", [
                 'is_billable' => false,
                 'scan_code' => 'NO-BILL-HEMO',
+                'availability_change_reason' => 'Servicio no cobrable temporalmente en caja',
             ])
             ->assertOk();
 
@@ -817,6 +1018,25 @@ class ServiceCatalogTest extends TestCase
             'entity_type' => Service::class,
             'entity_id' => $hemogram->id,
         ]);
+    }
+
+    public function test_billing_filter_excludes_services_from_inactive_categories(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $cashier = $this->cashier();
+        $glucose = Service::query()->where('name', 'Glucosa')->firstOrFail();
+
+        $glucose->category->forceFill(['active' => false])->save();
+
+        $this->actingAs($cashier)
+            ->getJson('/api/services?active=1&billing=1&search=Glucosa')
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+
+        $this->actingAs($cashier)
+            ->getJson('/api/services?active=1&search=Glucosa')
+            ->assertOk()
+            ->assertJsonFragment(['name' => 'Glucosa']);
     }
 
     public function test_service_metadata_changes_are_audited_with_old_and_new_payloads(): void
@@ -881,11 +1101,104 @@ class ServiceCatalogTest extends TestCase
             ->assertJsonCount(0, 'data');
     }
 
+    public function test_deleting_unbilled_service_requires_reason_and_deactivates_instead_of_removing_it(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $admin = $this->admin();
+        $service = Service::query()->where('name', 'Glucosa')->firstOrFail();
+        $reason = 'Servicio retirado temporalmente de caja por revision operativa';
+
+        $this->actingAs($admin)
+            ->deleteJson("/api/services/{$service->id}")
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('availability_change_reason');
+
+        $this->assertTrue($service->refresh()->active);
+        $this->assertDatabaseMissing('audit_logs', [
+            'action' => 'service.deactivated',
+            'entity_type' => Service::class,
+            'entity_id' => $service->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->deleteJson("/api/services/{$service->id}", [
+                'availability_change_reason' => $reason,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.id', $service->id)
+            ->assertJsonPath('data.active', false);
+
+        $this->assertDatabaseHas('services', [
+            'id' => $service->id,
+            'active' => false,
+        ]);
+
+        $audit = AuditLog::query()
+            ->where('user_id', $admin->id)
+            ->where('action', 'service.deactivated')
+            ->where('entity_type', Service::class)
+            ->where('entity_id', $service->id)
+            ->where('result', 'success')
+            ->firstOrFail();
+
+        $this->assertSame($reason, $audit->new_values['availability_change_reason']);
+    }
+
+    public function test_deleting_invoiced_service_returns_conflict_and_keeps_it_active(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $admin = $this->admin();
+        $service = Service::query()->where('name', 'Glucosa')->firstOrFail();
+
+        $this->createIssuedInvoiceForService($service, $admin);
+
+        $this->actingAs($admin)
+            ->deleteJson("/api/services/{$service->id}")
+            ->assertStatus(409)
+            ->assertJsonPath('message', 'No se puede eliminar un servicio facturado. Desactive el servicio para ocultarlo de nuevos cobros.');
+
+        $this->assertTrue($service->fresh()->active);
+        $this->assertDatabaseMissing('audit_logs', [
+            'action' => 'service.deactivated',
+            'entity_type' => Service::class,
+            'entity_id' => $service->id,
+        ]);
+    }
+
+    public function test_invoiced_service_cannot_be_deleted_through_model(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $admin = $this->admin();
+        $service = Service::query()->where('name', 'Glucosa')->firstOrFail();
+
+        $this->createIssuedInvoiceForService($service, $admin);
+
+        try {
+            $service->delete();
+            $this->fail('Deleting an invoiced service through Eloquent should be blocked.');
+        } catch (LogicException $exception) {
+            $this->assertSame(
+                'Los servicios facturados no se eliminan; deben desactivarse para conservar el historico.',
+                $exception->getMessage(),
+            );
+        }
+
+        $this->assertDatabaseHas('services', [
+            'id' => $service->id,
+            'active' => true,
+        ]);
+        $this->assertDatabaseHas('invoice_items', [
+            'service_id' => $service->id,
+            'service_name' => 'Glucosa',
+        ]);
+    }
+
     public function test_service_change_rolls_back_when_audit_log_fails(): void
     {
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
         $admin = $this->admin();
-        $service = Service::query()->where('name', 'Eritropoyetina')->firstOrFail();
+        $service = Service::query()->where('name', 'Glucosa')->firstOrFail();
+        $originalPrice = (string) $service->price;
 
         Event::listen('eloquent.creating: '.AuditLog::class, function (): void {
             throw new \RuntimeException('audit failed');
@@ -902,7 +1215,7 @@ class ServiceCatalogTest extends TestCase
             Event::forget('eloquent.creating: '.AuditLog::class);
         }
 
-        $this->assertSame('25.00', $service->refresh()->price);
+        $this->assertSame($originalPrice, $service->refresh()->price);
     }
 
     private function admin(): User
@@ -919,5 +1232,67 @@ class ServiceCatalogTest extends TestCase
         $cashier->assignRole('cajero');
 
         return $cashier->refresh();
+    }
+
+    private function createIssuedInvoiceForService(Service $service, User $issuer): Invoice
+    {
+        $sequence = FiscalSequence::query()->create([
+            'document_type' => 'invoice',
+            'prefix' => '000-001-01',
+            'min_number' => 1,
+            'max_number' => 99999999,
+            'current_number' => 1,
+            'cai' => 'CATALOG-DELETE-TEST',
+            'valid_until' => now()->addYear()->toDateString(),
+            'active' => true,
+        ]);
+
+        $invoice = Invoice::query()->create([
+            'invoice_number' => 'CAT-DEL-00000001',
+            'fiscal_sequence_id' => $sequence->id,
+            'fiscal_cai' => $sequence->cai,
+            'tax_label' => 'ISV',
+            'tax_rate_snapshot' => '15.00',
+            'patient_name' => 'Paciente catalogo',
+            'subtotal' => '100.00',
+            'subtotal_cents' => 10000,
+            'tax_amount' => '15.00',
+            'tax_amount_cents' => 1500,
+            'discount_amount' => '0.00',
+            'discount_amount_cents' => 0,
+            'total' => '115.00',
+            'total_cents' => 11500,
+            'paid_amount' => '0.00',
+            'paid_amount_cents' => 0,
+            'balance_due' => '115.00',
+            'balance_due_cents' => 11500,
+            'status' => Invoice::STATUS_ISSUED,
+            'issued_by' => $issuer->id,
+            'issued_at' => now(),
+        ]);
+
+        InvoiceItem::query()->create([
+            'invoice_id' => $invoice->id,
+            'service_id' => $service->id,
+            'service_name' => $service->name,
+            'category_id' => $service->category_id,
+            'category_name' => $service->category->name,
+            'area_id' => $service->area_id,
+            'area_name' => $service->area->name,
+            'quantity' => '1.00',
+            'quantity_cents' => 100,
+            'unit_price' => '100.00',
+            'unit_price_cents' => 10000,
+            'tax_rate' => '15.00',
+            'tax_amount' => '15.00',
+            'tax_amount_cents' => 1500,
+            'line_subtotal' => '100.00',
+            'line_subtotal_cents' => 10000,
+            'line_total' => '115.00',
+            'line_total_cents' => 11500,
+            'special_rule_applied' => false,
+        ]);
+
+        return $invoice;
     }
 }

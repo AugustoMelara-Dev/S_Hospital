@@ -131,7 +131,7 @@ describe('AboutView', () => {
     render(<AboutView user={cashierUser} onStatus={vi.fn()} />);
 
     expect(screen.getByText('Hospital San Isidro')).toBeInTheDocument();
-    expect(document.body.textContent).not.toMatch(/tel[eÃ©]fono|correo|RTN|licencia/i);
+    expect(document.body.textContent).not.toMatch(/tel[eé]fono|correo|RTN|licencia/i);
   });
 
   it('shows protected administrative diagnostics with human-safe labels for admin users', async () => {
@@ -154,7 +154,7 @@ describe('AboutView', () => {
     expect(screen.getByText('Conectada')).toBeInTheDocument();
     expect(screen.getByText('Compilada y disponible')).toBeInTheDocument();
     expect(screen.getByText('Sin fallas registradas')).toBeInTheDocument();
-    expect(screen.getByText('Dirección LAN configurada')).toBeInTheDocument();
+    expect(screen.getByText('Direccion LAN configurada')).toBeInTheDocument();
     expect(screen.getByText('Base actualizada')).toBeInTheDocument();
     expect(screen.getByText(/192\.168\.1\.10:8000/i)).toBeInTheDocument();
     expect(screen.getByText(/America\/Tegucigalpa/i)).toBeInTheDocument();
@@ -163,6 +163,88 @@ describe('AboutView', () => {
     expect(document.body.textContent).not.toMatch(/queue:work|APP_KEY|DB_PASSWORD|\.env|C:\\\\/i);
     expect(useBackups).toHaveBeenCalledWith({ page: 1, perPage: 1, enabled: true });
     expect(useSystemStatusSnapshot).toHaveBeenCalledWith(true);
+  });
+
+  it('labels loopback diagnostics as single-machine local mode instead of missing LAN', async () => {
+    vi.mocked(useServerStatus).mockReturnValue({
+      checking: false,
+      isOnline: true,
+      lastCheck: new Date('2026-06-02T14:00:00.000Z'),
+      operationalHealth: null,
+      summary: {
+        description: 'Servidor local, base de datos y respaldos responden.',
+        label: 'Todo bien',
+        level: 'ok',
+      },
+    });
+    const baseStatus = mockSystemStatus();
+    vi.mocked(useSystemStatusSnapshot).mockReturnValue({
+      data: {
+        ...baseStatus,
+        environment: {
+          ...baseStatus.environment,
+          app_url: 'http://127.0.0.1:8000',
+        },
+        network: {
+          configured_host: '127.0.0.1',
+          host_type: 'loopback',
+          lan_ready: false,
+          client_url: 'http://127.0.0.1:8000',
+          guidance: 'Modo monocomputadora: valide desde el navegador local del servidor.',
+        },
+      },
+      isError: false,
+      error: null,
+      isPending: false,
+      isLoading: false,
+      isFetching: false,
+    } as unknown as ReturnType<typeof useSystemStatusSnapshot>);
+
+    render(<AboutView user={adminUser} onStatus={vi.fn()} />);
+
+    expect(await screen.findByRole('heading', { name: /diagnostico administrativo/i })).toBeInTheDocument();
+    expect(screen.getByText('Modo monocomputadora')).toBeInTheDocument();
+    expect(screen.getByText('Direccion local configurada')).toBeInTheDocument();
+    expect(screen.getByText(/Acceso local:/i)).toBeInTheDocument();
+    expect(screen.getByText(/127\.0\.0\.1:8000/i)).toBeInTheDocument();
+    expect(screen.queryByText('Falta dirección LAN')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Acceso LAN:/i)).not.toBeInTheDocument();
+  });
+
+  it('marks the latest backup diagnostic for review when the file is not confirmed', async () => {
+    vi.mocked(useServerStatus).mockReturnValue({
+      checking: false,
+      isOnline: true,
+      lastCheck: new Date('2026-06-02T14:00:00.000Z'),
+      operationalHealth: null,
+      summary: {
+        description: 'Hay trabajos o respaldos con alerta.',
+        label: 'Requiere revision',
+        level: 'review',
+      },
+    });
+    vi.mocked(useSystemStatusSnapshot).mockReturnValue({
+      data: {
+        ...mockSystemStatus(),
+        backups: {
+          ...mockSystemStatus().backups,
+          last_success_file_exists: false,
+          last_success_checksum_matches: false,
+        },
+      },
+      isError: false,
+      error: null,
+      isPending: false,
+      isLoading: false,
+      isFetching: false,
+    } as unknown as ReturnType<typeof useSystemStatusSnapshot>);
+
+    render(<AboutView user={adminUser} onStatus={vi.fn()} />);
+
+    expect(await screen.findByRole('heading', { name: /diagnostico administrativo/i })).toBeInTheDocument();
+    expect(screen.getByText('Respaldo no confirmado')).toBeInTheDocument();
+    expect(screen.getByText('Revisar')).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/hospital-backup|checksum|sha/i);
   });
 
   it('keeps the local diagnostic action callback without changing hooks', async () => {
@@ -226,7 +308,6 @@ function mockSystemStatus(): SystemStatus {
       pending_count: 0,
       worker_recently_active: true,
       last_success_at: '2026-06-02T13:00:00.000Z',
-      last_success_filename: 'hospital-backup.sql',
       last_failure_at: null,
       last_failure_message: null,
       dump_binary: { configured: true, available: true, name: 'mariadb-dump' },
@@ -237,8 +318,6 @@ function mockSystemStatus(): SystemStatus {
         failed_jobs_table_available: true,
         failed_jobs_count: 0,
         pending_backup_jobs: 0,
-        worker_command: 'php artisan queue:work --queue=backups --tries=1 --timeout=600',
-        scheduler_command: 'php artisan schedule:run',
       },
     },
     runtime: {
@@ -262,11 +341,6 @@ function mockSystemStatus(): SystemStatus {
       production_checks: [],
       public_routes: [],
       physical_proofs: [],
-      commands: {
-        preflight: 'powershell.exe -ExecutionPolicy Bypass -File scripts\\production_readiness_preflight.ps1',
-        backup_worker: 'php artisan queue:work --queue=backups --tries=1 --timeout=600',
-        scheduler: 'php artisan schedule:run',
-      },
     },
   };
 }

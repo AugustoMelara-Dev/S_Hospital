@@ -1,5 +1,5 @@
 # audit_offline_dependencies.ps1
-# S_Hospital - subagente 30 (Escenario Sin Internet)
+# S_Hospital - validacion de operacion sin internet
 # Audita dependencias externas que podrian romper el sistema si no hay internet.
 # Salida: consola + archivo Markdown bajo qa/.
 
@@ -96,9 +96,12 @@ if (Test-Path $srcDir) {
 
 # 5. Backend: idem (excluyendo vendor y node_modules)
 $backendDir = Join-Path $RepoRoot "backend"
-if (Test-Path $backendDir) {
-    Get-ChildItem -Path $backendDir -Recurse -Include *.php -File |
-        Where-Object { $_.FullName -notmatch '[\\/]vendor[\\/]' -and $_.FullName -notmatch '[\\/]node_modules[\\/]' } |
+$backendSourceDirs = @('app', 'bootstrap', 'config', 'database', 'routes') |
+    ForEach-Object { Join-Path $backendDir $_ } |
+    Where-Object { Test-Path -LiteralPath $_ }
+if ($backendSourceDirs.Count -gt 0) {
+    $backendSourceDirs |
+        ForEach-Object { Get-ChildItem -LiteralPath $_ -Recurse -Filter *.php -File } |
         ForEach-Object {
             $content = Get-Content -Raw $_.FullName
             $matches = [regex]::Matches($content, '(Http::|file_get_contents|curl_init|fsockopen|stream_socket_client)\s*\(\s*[\("''](https?://[^"''\)]+)')
@@ -113,13 +116,12 @@ if (Test-Path $backendDir) {
 
 # 6. Patrones de fuentes externas (excluyendo vendor y node_modules)
 $fontPatterns = @('fonts.googleapis.com', 'fonts.gstatic.com', 'use.typekit.net', 'cdn.jsdelivr.net', 'unpkg.com', 'cdnjs.cloudflare.com')
-$searchDirs = @($srcDir, $backendDir, (Join-Path $RepoRoot "frontend/index.html"))
+$searchDirs = @($srcDir) + $backendSourceDirs + @((Join-Path $RepoRoot "frontend/index.html"))
 foreach ($dir in $searchDirs) {
-    if (Test-Path $dir) {
-        $files = if ((Get-Item $dir).PSIsContainer) {
-            Get-ChildItem -Path $dir -Recurse -File |
-                Where-Object { $_.FullName -notmatch '[\\/]vendor[\\/]' -and $_.FullName -notmatch '[\\/]node_modules[\\/]' -and $_.FullName -notmatch '[\\/]dist[\\/]' -and $_.FullName -notmatch '[\\/]build[\\/]' }
-        } else { @($dir) }
+    if (Test-Path -LiteralPath $dir) {
+        $files = if ((Get-Item -LiteralPath $dir).PSIsContainer) {
+            Get-ChildItem -LiteralPath $dir -Recurse -File
+        } else { @(Get-Item -LiteralPath $dir) }
         foreach ($f in $files) {
             $content = Get-Content -Raw $f.FullName -ErrorAction SilentlyContinue
             foreach ($pat in $fontPatterns) {

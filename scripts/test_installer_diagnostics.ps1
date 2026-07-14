@@ -1,5 +1,5 @@
 # ==============================================================================
-# Hospital Billing OS - Suite de Auto-Test de Diagnósticos del Instalador
+# S_Hospital - Suite de Auto-Test de Diagnósticos del Instalador
 # ==============================================================================
 # Diseñado para Windows PowerShell 5.1. Seguro bajo StrictMode -Version Latest.
 # Verifica la correctitud de las funciones lógicas de diagnóstico sin tocar el host.
@@ -30,7 +30,7 @@ if (-not (Test-Path $envHelper)) { throw "Falta env_helpers.ps1" }
 . $envHelper
 
 Write-Host "==========================================================" -ForegroundColor Cyan
-Write-Host "     HOSPITAL BILLING OS - INICIANDO SUITE DE AUTO-TEST" -ForegroundColor Cyan -BackgroundColor DarkBlue
+Write-Host "     S_HOSPITAL - INICIANDO SUITE DE AUTO-TEST" -ForegroundColor Cyan -BackgroundColor DarkBlue
 Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host ""
 

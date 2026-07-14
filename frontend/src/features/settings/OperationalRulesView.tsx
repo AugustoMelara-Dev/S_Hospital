@@ -1,12 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { Save } from 'lucide-react';
-import { Alert } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
-import { FormSection } from '@/components/ui/form-section';
-import { Label } from '@/components/ui/label';
-import { type FiscalSettings, apiClient, userSafeErrorMessage } from '@/lib/api';
+import { SaveOutlined as Save } from '@ant-design/icons';
+import { Alert, Button, Card, Switch, Typography } from 'antd';
+import { type OperationalSettings, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { safeClientMessage } from '@/lib/support/clientIssueLog';
 
 type OperationalRulesViewProps = {
@@ -15,7 +10,7 @@ type OperationalRulesViewProps = {
 };
 
 export function OperationalRulesView({ canEdit, onStatus }: OperationalRulesViewProps) {
-  const [settings, setSettings] = useState<FiscalSettings | null>(null);
+  const [settings, setSettings] = useState<OperationalSettings | null>(null);
   const [scannerEnabled, setScannerEnabled] = useState(false);
   const [partialPaymentsEnabled, setPartialPaymentsEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -29,7 +24,7 @@ export function OperationalRulesView({ canEdit, onStatus }: OperationalRulesView
   async function load() {
     setLoading(true);
     try {
-      const data = await apiClient.getFiscalSettings();
+      const data = await apiClient.getOperationalSettings();
       setSettings(data);
       setScannerEnabled(data?.scanner_enabled === true);
       setPartialPaymentsEnabled(data?.partial_payments_enabled === true);
@@ -47,19 +42,11 @@ export function OperationalRulesView({ canEdit, onStatus }: OperationalRulesView
     setError('');
     onStatus('Guardando reglas operativas...');
     try {
-      const updated = await apiClient.updateFiscalSettings({
-        hospital_name: settings.hospital_name ?? '',
-        rtn: settings.rtn ?? '',
-        default_tax_rate: settings.default_tax_rate ?? '15.00',
-        primary_color: settings.primary_color ?? 'indigo',
-        address: settings.address ?? '',
-        slogan: settings.slogan ?? '',
+      const updated = await apiClient.updateOperationalSettings({
         scanner_enabled: scannerEnabled,
         partial_payments_enabled: partialPaymentsEnabled,
-        receipt_template_mode: 'institutional',
-        receipt_paper_size: settings.receipt_paper_size ?? 'half_letter',
       });
-      setSettings(updated);
+      setSettings((current) => (current ? { ...current, ...updated } : current));
       onStatus('Reglas operativas guardadas.');
     } catch (err) {
       const message = safeClientMessage(userSafeErrorMessage(err, 'No se pudo guardar reglas operativas.'));
@@ -79,60 +66,52 @@ export function OperationalRulesView({ canEdit, onStatus }: OperationalRulesView
   }
 
   return (
-    <FormSection
-      title="Reglas operativas"
-      description="Ajustes que afectan el flujo diario del POS. Cambios quedan auditados."
-    >
+    <section>
+      <Typography.Title level={3}>Reglas operativas</Typography.Title>
+      <Typography.Paragraph type="secondary">Ajustes que afectan el flujo diario del POS. Cambios quedan auditados.</Typography.Paragraph>
       {error ? (
-        <Alert variant="destructive" title="No se pudo guardar">
-          {error}
-        </Alert>
+        <Alert type="error" showIcon title="No se pudo guardar" description={error} />
       ) : null}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Punto de venta</CardTitle>
-          <CardDescription>Activa o desactiva funciones del flujo de facturación.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-start gap-3 rounded-md border border-operational-border bg-operational-panel p-4">
-            <Checkbox
+      <Card title="Punto de venta" extra={<Typography.Text type="secondary">Activa o desactiva funciones del flujo de facturación.</Typography.Text>}>
+        <div className="space-y-4">
+          <div className="flex items-start gap-4 border border-operational-border bg-muted/40 p-4">
+            <Switch
               id="scanner_enabled"
               checked={scannerEnabled}
-              onCheckedChange={(value) => setScannerEnabled(value === true)}
+              onChange={setScannerEnabled}
               disabled={!canEdit}
             />
-            <Label htmlFor="scanner_enabled" className="cursor-pointer">
+            <label htmlFor="scanner_enabled" className="cursor-pointer">
               <span className="block font-medium">Habilitar scanner/códigos en caja</span>
               <span className="mt-1 block text-sm font-normal text-muted-foreground">
                 Si está desactivado, el POS oculta los controles de scanner y códigos internos.
               </span>
-            </Label>
+            </label>
           </div>
 
-          <div className="flex items-start gap-3 rounded-md border border-operational-border bg-operational-panel p-4">
-            <Checkbox
+          <div className="flex items-start gap-4 border border-operational-border bg-muted/40 p-4">
+            <Switch
               id="partial_payments_enabled"
               checked={partialPaymentsEnabled}
-              onCheckedChange={(value) => setPartialPaymentsEnabled(value === true)}
+              onChange={setPartialPaymentsEnabled}
               disabled={!canEdit}
             />
-            <Label htmlFor="partial_payments_enabled" className="cursor-pointer">
+            <label htmlFor="partial_payments_enabled" className="cursor-pointer">
               <span className="block font-medium">Permitir abonos parciales</span>
               <span className="mt-1 block text-sm font-normal text-muted-foreground">
                 Si está desactivado, un monto menor al total no se registra como pago completo.
               </span>
-            </Label>
+            </label>
           </div>
-        </CardContent>
+        </div>
       </Card>
 
       <div className="flex justify-end">
-        <Button type="button" onClick={onSubmit} disabled={!canEdit}>
-          <Save data-icon aria-hidden="true" />
+        <Button htmlType="button" type="primary" icon={<Save aria-hidden="true" />} onClick={onSubmit} disabled={!canEdit}>
           Guardar reglas operativas
         </Button>
       </div>
-    </FormSection>
+    </section>
   );
 }

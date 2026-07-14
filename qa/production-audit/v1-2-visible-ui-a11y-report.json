@@ -1,5 +1,478 @@
 {
-  "generated_at": "2026-07-01T05:40:52.235Z",
+  "generated_at": "2026-07-10T05:09:39.121Z",
   "mode": "mocked-non-mutating-playwright",
-  "results": []
+  "results": [
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "320x640",
+      "path": "/dashboard",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "320x640",
+      "path": "/billing/new",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "320x640",
+      "path": "/cashbox",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "320x640",
+      "path": "/catalog",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "320x640",
+      "path": "/invoices",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "320x640",
+      "path": "/reports",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "320x640",
+      "path": "/backups",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "320x640",
+      "path": "/settings/fiscal",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "320x640",
+      "path": "/settings/institutional-receipts",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "320x640",
+      "path": "/admin/users",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "320x640",
+      "path": "/help",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "320x640",
+      "path": "/about",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "320x640",
+      "path": "/does-not-exist",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "375x667",
+      "path": "/dashboard",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "375x667",
+      "path": "/billing/new",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "375x667",
+      "path": "/cashbox",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "375x667",
+      "path": "/catalog",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "375x667",
+      "path": "/invoices",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "375x667",
+      "path": "/reports",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "375x667",
+      "path": "/backups",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "375x667",
+      "path": "/settings/fiscal",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "375x667",
+      "path": "/settings/institutional-receipts",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "375x667",
+      "path": "/admin/users",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "375x667",
+      "path": "/help",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "375x667",
+      "path": "/about",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "375x667",
+      "path": "/does-not-exist",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "768x1024",
+      "path": "/dashboard",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "768x1024",
+      "path": "/billing/new",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "768x1024",
+      "path": "/cashbox",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "768x1024",
+      "path": "/catalog",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "768x1024",
+      "path": "/invoices",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "768x1024",
+      "path": "/reports",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "768x1024",
+      "path": "/backups",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "768x1024",
+      "path": "/settings/fiscal",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "768x1024",
+      "path": "/settings/institutional-receipts",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "768x1024",
+      "path": "/admin/users",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "768x1024",
+      "path": "/help",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "768x1024",
+      "path": "/about",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "768x1024",
+      "path": "/does-not-exist",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1024x768",
+      "path": "/dashboard",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1024x768",
+      "path": "/billing/new",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1024x768",
+      "path": "/cashbox",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1024x768",
+      "path": "/catalog",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1024x768",
+      "path": "/invoices",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1024x768",
+      "path": "/reports",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1024x768",
+      "path": "/backups",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1024x768",
+      "path": "/settings/fiscal",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1024x768",
+      "path": "/settings/institutional-receipts",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1024x768",
+      "path": "/admin/users",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1024x768",
+      "path": "/help",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1024x768",
+      "path": "/about",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1024x768",
+      "path": "/does-not-exist",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1366x768",
+      "path": "/dashboard",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1366x768",
+      "path": "/billing/new",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1366x768",
+      "path": "/cashbox",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1366x768",
+      "path": "/catalog",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1366x768",
+      "path": "/invoices",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1366x768",
+      "path": "/reports",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1366x768",
+      "path": "/backups",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1366x768",
+      "path": "/settings/fiscal",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1366x768",
+      "path": "/settings/institutional-receipts",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1366x768",
+      "path": "/admin/users",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1366x768",
+      "path": "/help",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1366x768",
+      "path": "/about",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1366x768",
+      "path": "/does-not-exist",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1920x1080",
+      "path": "/dashboard",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1920x1080",
+      "path": "/billing/new",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1920x1080",
+      "path": "/cashbox",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1920x1080",
+      "path": "/catalog",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1920x1080",
+      "path": "/invoices",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1920x1080",
+      "path": "/reports",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1920x1080",
+      "path": "/backups",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1920x1080",
+      "path": "/settings/fiscal",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1920x1080",
+      "path": "/settings/institutional-receipts",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1920x1080",
+      "path": "/admin/users",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1920x1080",
+      "path": "/help",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1920x1080",
+      "path": "/about",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1920x1080",
+      "path": "/does-not-exist",
+      "status": "passed"
+    },
+    {
+      "name": "history reverse cancel path",
+      "status": "passed"
+    }
+  ]
 }

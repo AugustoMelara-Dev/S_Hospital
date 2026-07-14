@@ -1,0 +1,372 @@
+{
+  "route": "/admin/users",
+  "matrix": {
+    "id": "dark-1366x768",
+    "mode": "dark",
+    "width": 1366,
+    "height": 768,
+    "zoom": 1
+  },
+  "flatSurfaces": [
+    {
+      "selector": ".ant-btn",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<button aria-label=\"Reducir navegación\" type=\"button\" class=\"ant-btn css-dev-only-do-not-override-1pi45l5 s-hospital ant-btn-text ant-btn-color-default ant-btn-variant-text ant-btn-icon-only !size-11 shrink-0 hover:bg-sidebar-accent text-sidebar-foreground\"><span class=\"ant-btn-icon\"><span role=\"img\" aria-label=\"menu-fold\" class=\"anticon anticon-menu-fold text-lg text-sidebar-accent-foreground\"><svg viewBox=\"64 64 896 896\" focusable=\"false\" data-icon=\"menu-fold\" width=\"1em\" height=\"1em\" fill=\"cu"
+    },
+    {
+      "selector": ".ant-btn",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<button aria-label=\"Abrir comandos\" type=\"button\" class=\"ant-btn css-dev-only-do-not-override-1pi45l5 s-hospital ant-btn-default ant-btn-color-default ant-btn-variant-outlined hidden min-w-44 justify-start bg-surface text-muted-foreground sm:inline-flex\"><span class=\"ant-btn-icon\"><span role=\"img\" aria-label=\"search\" class=\"anticon anticon-search\"><svg viewBox=\"64 64 896 896\" focusable=\"false\" data-icon=\"search\" width=\"1em\" height=\"1em\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M909.6 854."
+    },
+    {
+      "selector": ".ant-btn",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<button aria-label=\"Ver atajos de teclado\" type=\"button\" class=\"ant-btn css-dev-only-do-not-override-1pi45l5 s-hospital ant-btn-text ant-btn-color-default ant-btn-variant-text ant-btn-icon-only hidden sm:inline-flex\"><span class=\"ant-btn-icon\"><span role=\"img\" aria-label=\"key\" class=\"anticon anticon-key\"><svg viewBox=\"64 64 896 896\" focusable=\"false\" data-icon=\"key\" width=\"1em\" height=\"1em\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M608 112c-167.9 0-304 136.1-304 304 0 70.3 23.9 135 63.9 1"
+    },
+    {
+      "selector": ".ant-btn",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<button aria-label=\"Abrir ayuda\" type=\"button\" class=\"ant-btn css-dev-only-do-not-override-1pi45l5 s-hospital ant-btn-text ant-btn-color-default ant-btn-variant-text ant-btn-icon-only hidden sm:inline-flex\"><span class=\"ant-btn-icon\"><span role=\"img\" aria-label=\"question-circle\" class=\"anticon anticon-question-circle\"><svg viewBox=\"64 64 896 896\" focusable=\"false\" data-icon=\"question-circle\" width=\"1em\" height=\"1em\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M512 64C264.6 64 64 264.6 64 512"
+    },
+    {
+      "selector": ".ant-btn",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<button type=\"button\" class=\"ant-btn css-dev-only-do-not-override-1pi45l5 s-hospital ant-btn-primary ant-btn-color-primary ant-btn-variant-solid\"><span class=\"ant-btn-icon\"><span role=\"img\" aria-label=\"user-add\" aria-hidden=\"true\" class=\"anticon anticon-user-add\"><svg viewBox=\"64 64 896 896\" focusable=\"false\" data-icon=\"user-add\" width=\"1em\" height=\"1em\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M678.3 642.4c24.2-13 51.9-20.4 81.4-20.4h.1c3 0 4.4-3.6 2.2-5.6a371.67 371.67 0 00-103.7-65.8c-"
+    },
+    {
+      "selector": ".ant-btn",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<button type=\"button\" class=\"ant-btn css-dev-only-do-not-override-1pi45l5 s-hospital ant-btn-default ant-btn-color-default ant-btn-variant-outlined\"><span>Nuevo rol</span></button>"
+    },
+    {
+      "selector": ".ant-btn",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<button aria-label=\"Editar permisos de Admin\" type=\"button\" class=\"ant-btn css-dev-only-do-not-override-1pi45l5 s-hospital ant-btn-default ant-btn-color-default ant-btn-variant-outlined ant-btn-sm mt-3 w-full\" disabled=\"\"><span>Editar permisos</span></button>"
+    },
+    {
+      "selector": ".ant-btn",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<button aria-controls=\"_r_a_\" aria-expanded=\"false\" type=\"button\" class=\"ant-btn css-dev-only-do-not-override-1pi45l5 s-hospital ant-btn-default ant-btn-color-default ant-btn-variant-outlined\"><span class=\"ant-btn-icon\"><span role=\"img\" aria-label=\"right\" aria-hidden=\"true\" class=\"anticon anticon-right\"><svg viewBox=\"64 64 896 896\" focusable=\"false\" data-icon=\"right\" width=\"1em\" height=\"1em\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M765.7 486.8L314.9 134.7A7.97 7.97 0 00302 141v77.3c0 4.9"
+    },
+    {
+      "selector": ".ant-btn",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<button aria-label=\"Ver detalle de Administradora Accesibilidad\" type=\"button\" class=\"ant-btn css-dev-only-do-not-override-1pi45l5 s-hospital ant-btn-default ant-btn-color-default ant-btn-variant-outlined ant-btn-sm min-h-11\"><span role=\"img\" aria-label=\"eye\" data-icon=\"true\" aria-hidden=\"true\" class=\"anticon anticon-eye\"><svg viewBox=\"64 64 896 896\" focusable=\"false\" data-icon=\"eye\" width=\"1em\" height=\"1em\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M942.2 486.2C847.4 286.5 704.1 186 512 1"
+    },
+    {
+      "selector": ".ant-btn",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<button aria-label=\"Acciones de usuario Administradora Accesibilidad\" type=\"button\" class=\"ant-btn css-dev-only-do-not-override-1pi45l5 s-hospital ant-btn-default ant-btn-color-default ant-btn-variant-outlined ant-btn-icon-only ant-dropdown-trigger\"><span class=\"ant-btn-icon\"><span role=\"img\" aria-label=\"more\" aria-hidden=\"true\" class=\"anticon anticon-more\"><svg viewBox=\"64 64 896 896\" focusable=\"false\" data-icon=\"more\" width=\"1em\" height=\"1em\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M45"
+    },
+    {
+      "selector": ".ant-input",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<input aria-label=\"Buscar usuarios\" placeholder=\"Buscar por nombre, correo o usuario...\" class=\"ant-input css-dev-only-do-not-override-1pi45l5\" type=\"text\" value=\"\">"
+    },
+    {
+      "selector": ".ant-tag",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<span class=\"ant-tag ant-tag-filled ant-tag-processing m-0 px-3 py-1 text-xs font-bold css-dev-only-do-not-override-1pi45l5 s-hospital\">Caja #7</span>"
+    },
+    {
+      "selector": ".ant-tag",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<span class=\"ant-tag ant-tag-filled ant-tag-processing css-dev-only-do-not-override-1pi45l5 s-hospital\"><span role=\"img\" aria-label=\"team\" aria-hidden=\"true\" class=\"anticon anticon-team\"><svg viewBox=\"64 64 896 896\" focusable=\"false\" data-icon=\"team\" width=\"1em\" height=\"1em\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M824.2 699.9a301.55 301.55 0 00-86.4-60.4C783.1 602.8 812 546.8 812 484c0-110.8-92.4-201.7-203.2-200-109.1 1.7-197 90.6-197 200 0 62.8 29 118.8 74.2 155.5a300.95 300.95 0 00-86"
+    },
+    {
+      "selector": ".ant-tag",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<span class=\"ant-tag ant-tag-filled ant-tag-warning css-dev-only-do-not-override-1pi45l5 s-hospital\">Base</span>"
+    },
+    {
+      "selector": ".ant-tag",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<span class=\"ant-tag ant-tag-filled ant-tag-default css-dev-only-do-not-override-1pi45l5 s-hospital\"><span>Admin</span></span>"
+    },
+    {
+      "selector": ".ant-tag",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<span class=\"ant-tag ant-tag-filled ant-tag-success css-dev-only-do-not-override-1pi45l5 s-hospital\">Activo</span>"
+    },
+    {
+      "selector": ".ag-root-wrapper",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<div class=\"ag-root-wrapper ag-layout-normal\" role=\"presentation\" grid-id=\"1\" style=\"content-visibility: visible;\"><div class=\"ag-root-wrapper-body ag-focus-managed ag-layout-normal\" role=\"presentation\"><div class=\"ag-tab-guard ag-tab-guard-top\" role=\"presentation\" tabindex=\"0\"></div><!-- AG Grid Body --><div class=\"ag-root ag-unselectable ag-layout-normal ag-body-horizontal-content-no-gap ag-body-horizontal-scroll\" role=\"presentation\" style=\"--ag-internal-pinned-left-sticky-offset: 0px; --ag-in"
+    }
+  ],
+  "impacts": {
+    "minor": 0,
+    "moderate": 0,
+    "serious": 0,
+    "critical": 0
+  },
+  "incomplete": 1,
+  "violations": [],
+  "incompleteDetails": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "help": "Elements must meet minimum color contrast ratio thresholds",
+      "nodes": [
+        {
+          "target": [
+            ".items-start > div > .text-foreground.font-semibold"
+          ],
+          "failure": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element",
+          "html": "<p class=\"font-semibold text-foreground\">Admin</p>",
+          "computed": {
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "effectiveBackgroundColor": "rgb(30, 41, 59)",
+            "contrastRatio": 13.98,
+            "color": "rgb(248, 250, 252)",
+            "display": "block",
+            "opacity": "1",
+            "visibility": "visible"
+          }
+        },
+        {
+          "target": [
+            ".items-start > div > .mt-1.text-muted-foreground"
+          ],
+          "failure": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element",
+          "html": "<p class=\"mt-1 text-xs text-muted-foreground\">5 permisos</p>",
+          "computed": {
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "effectiveBackgroundColor": "rgb(30, 41, 59)",
+            "contrastRatio": 9.85,
+            "color": "rgb(203, 213, 225)",
+            "display": "block",
+            "opacity": "1",
+            "visibility": "visible"
+          }
+        },
+        {
+          "target": [
+            ".ant-tag-warning"
+          ],
+          "failure": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element",
+          "html": "<span class=\"ant-tag ant-tag-filled ant-tag-warning css-dev-only-do-not-override-1pi45l5 s-hospital\">Base</span>",
+          "computed": {
+            "backgroundColor": "rgb(120, 53, 15)",
+            "effectiveBackgroundColor": "rgb(120, 53, 15)",
+            "contrastRatio": 5.37,
+            "color": "rgb(218, 199, 120)",
+            "display": "block",
+            "opacity": "1",
+            "visibility": "visible"
+          }
+        },
+        {
+          "target": [
+            ".ag-column-first[col-id=\"name\"][aria-colindex=\"1\"] > .ag-header-cell-comp-wrapper[role=\"presentation\"] > .ag-cell-label-container[role=\"presentation\"] > .ag-header-cell-label[data-ref=\"eLabel\"][role=\"presentation\"] > .ag-header-cell-text[data-ref=\"eText\"]"
+          ],
+          "failure": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element",
+          "html": "<span class=\"ag-header-cell-text\" data-ref=\"eText\">Usuario</span>",
+          "computed": {
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "effectiveBackgroundColor": "rgb(30, 41, 59)",
+            "contrastRatio": 13.98,
+            "color": "rgb(248, 250, 252)",
+            "display": "block",
+            "opacity": "1",
+            "visibility": "visible"
+          }
+        },
+        {
+          "target": [
+            ".ag-header-cell-sortable[col-id=\"username\"][aria-colindex=\"2\"] > .ag-header-cell-comp-wrapper[role=\"presentation\"] > .ag-cell-label-container[role=\"presentation\"] > .ag-header-cell-label[data-ref=\"eLabel\"][role=\"presentation\"] > .ag-header-cell-text[data-ref=\"eText\"]"
+          ],
+          "failure": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element",
+          "html": "<span class=\"ag-header-cell-text\" data-ref=\"eText\">Usuario de acceso</span>",
+          "computed": {
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "effectiveBackgroundColor": "rgb(30, 41, 59)",
+            "contrastRatio": 13.98,
+            "color": "rgb(248, 250, 252)",
+            "display": "block",
+            "opacity": "1",
+            "visibility": "visible"
+          }
+        }
+      ]
+    }
+  ],
+  "incompleteClassification": [
+    {
+      "id": "color-contrast",
+      "selector": [
+        ".items-start > div > .text-foreground.font-semibold"
+      ],
+      "computed": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "effectiveBackgroundColor": "rgb(30, 41, 59)",
+        "contrastRatio": 13.98,
+        "color": "rgb(248, 250, 252)",
+        "display": "block",
+        "opacity": "1",
+        "visibility": "visible"
+      },
+      "html": "<p class=\"font-semibold text-foreground\">Admin</p>",
+      "classification": "manual-false-positive",
+      "analysis": "Axe no puede resolver el fondo por superposición o pseudo-elemento; la comprobación computed-style shellContrastViolations valida el contraste efectivo del mismo estado."
+    },
+    {
+      "id": "color-contrast",
+      "selector": [
+        ".items-start > div > .mt-1.text-muted-foreground"
+      ],
+      "computed": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "effectiveBackgroundColor": "rgb(30, 41, 59)",
+        "contrastRatio": 9.85,
+        "color": "rgb(203, 213, 225)",
+        "display": "block",
+        "opacity": "1",
+        "visibility": "visible"
+      },
+      "html": "<p class=\"mt-1 text-xs text-muted-foreground\">5 permisos</p>",
+      "classification": "manual-false-positive",
+      "analysis": "Axe no puede resolver el fondo por superposición o pseudo-elemento; la comprobación computed-style shellContrastViolations valida el contraste efectivo del mismo estado."
+    },
+    {
+      "id": "color-contrast",
+      "selector": [
+        ".ant-tag-warning"
+      ],
+      "computed": {
+        "backgroundColor": "rgb(120, 53, 15)",
+        "effectiveBackgroundColor": "rgb(120, 53, 15)",
+        "contrastRatio": 5.37,
+        "color": "rgb(218, 199, 120)",
+        "display": "block",
+        "opacity": "1",
+        "visibility": "visible"
+      },
+      "html": "<span class=\"ant-tag ant-tag-filled ant-tag-warning css-dev-only-do-not-override-1pi45l5 s-hospital\">Base</span>",
+      "classification": "manual-false-positive",
+      "analysis": "Axe no puede resolver el fondo por superposición o pseudo-elemento; la comprobación computed-style shellContrastViolations valida el contraste efectivo del mismo estado."
+    },
+    {
+      "id": "color-contrast",
+      "selector": [
+        ".ag-column-first[col-id=\"name\"][aria-colindex=\"1\"] > .ag-header-cell-comp-wrapper[role=\"presentation\"] > .ag-cell-label-container[role=\"presentation\"] > .ag-header-cell-label[data-ref=\"eLabel\"][role=\"presentation\"] > .ag-header-cell-text[data-ref=\"eText\"]"
+      ],
+      "computed": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "effectiveBackgroundColor": "rgb(30, 41, 59)",
+        "contrastRatio": 13.98,
+        "color": "rgb(248, 250, 252)",
+        "display": "block",
+        "opacity": "1",
+        "visibility": "visible"
+      },
+      "html": "<span class=\"ag-header-cell-text\" data-ref=\"eText\">Usuario</span>",
+      "classification": "manual-false-positive",
+      "analysis": "Axe no puede resolver el fondo por superposición o pseudo-elemento; la comprobación computed-style shellContrastViolations valida el contraste efectivo del mismo estado."
+    },
+    {
+      "id": "color-contrast",
+      "selector": [
+        ".ag-header-cell-sortable[col-id=\"username\"][aria-colindex=\"2\"] > .ag-header-cell-comp-wrapper[role=\"presentation\"] > .ag-cell-label-container[role=\"presentation\"] > .ag-header-cell-label[data-ref=\"eLabel\"][role=\"presentation\"] > .ag-header-cell-text[data-ref=\"eText\"]"
+      ],
+      "computed": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "effectiveBackgroundColor": "rgb(30, 41, 59)",
+        "contrastRatio": 13.98,
+        "color": "rgb(248, 250, 252)",
+        "display": "block",
+        "opacity": "1",
+        "visibility": "visible"
+      },
+      "html": "<span class=\"ag-header-cell-text\" data-ref=\"eText\">Usuario de acceso</span>",
+      "classification": "manual-false-positive",
+      "analysis": "Axe no puede resolver el fondo por superposición o pseudo-elemento; la comprobación computed-style shellContrastViolations valida el contraste efectivo del mismo estado."
+    }
+  ],
+  "unclassifiedIncomplete": []
+}

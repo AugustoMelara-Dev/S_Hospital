@@ -21,3 +21,9 @@ export function openBlobInNewTab(blob: Blob, filename: string) {
 
   window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
+
+export function institutionalReceiptPdfFilename(receiptNumber: string): string {
+  return /^[A-Za-z0-9_-]+$/.test(receiptNumber)
+    ? `recibo-institucional-${receiptNumber}.pdf`
+    : 'recibo-institucional.pdf';
+}

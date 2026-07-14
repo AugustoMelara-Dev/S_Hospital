@@ -15,8 +15,8 @@ Artisan::command('auth:create-initial-admin
     {--email= : Email del admin inicial}
     {--name=Admin Local : Nombre visible del admin inicial}
     {--password= : Compatibilidad tecnica; preferir HOSPITAL_INITIAL_ADMIN_PASSWORD}', function () {
-    if (User::role('admin')->exists()) {
-        $this->error('Ya existe un usuario admin.');
+    if (User::role('admin')->where('active', true)->exists()) {
+        $this->error('Ya existe un usuario admin activo.');
 
         return 1;
     }

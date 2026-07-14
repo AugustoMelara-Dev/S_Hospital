@@ -16,6 +16,8 @@ class CurrentCashSessionRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [];
+        return [
+            'scope' => ['sometimes', 'string', 'in:own,closable'],
+        ];
     }
 }

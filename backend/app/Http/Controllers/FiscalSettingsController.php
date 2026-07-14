@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Fiscal\ShowFiscalSettingsRequest;
 use App\Http\Requests\Fiscal\UpdateFiscalSettingsRequest;
-use App\Models\CashRegisterSession;
+use App\Http\Requests\Fiscal\UpdateOperationalSettingsRequest;
 use App\Models\FiscalSetting;
 use App\Support\AuditLogger;
 use Illuminate\Http\JsonResponse;
@@ -44,8 +44,40 @@ class FiscalSettingsController extends Controller
                 'default_tax_rate' => $setting->default_tax_rate,
                 'scanner_enabled' => $setting->scanner_enabled,
                 'partial_payments_enabled' => $setting->partial_payments_enabled,
-                'receipt_paper_size' => $setting->receipt_paper_size,
             ] : null,
+        ]);
+    }
+
+    public function updateOperational(UpdateOperationalSettingsRequest $request, AuditLogger $auditLogger): JsonResponse
+    {
+        $fieldsToTrack = ['scanner_enabled', 'partial_payments_enabled'];
+
+        $setting = DB::transaction(function () use ($request, $auditLogger, $fieldsToTrack): FiscalSetting {
+            $setting = FiscalSetting::query()->firstOrFail();
+            $oldValues = $setting->only($fieldsToTrack);
+
+            $setting->fill($request->validated());
+            $setting->updated_by = $request->user()->id;
+            $setting->save();
+            $setting->refresh();
+
+            $auditLogger->log(
+                action: 'operational_settings.updated',
+                entity: $setting,
+                user: $request->user(),
+                request: $request,
+                oldValues: $oldValues,
+                newValues: $setting->only($fieldsToTrack),
+            );
+
+            return $setting;
+        });
+
+        return response()->json([
+            'data' => [
+                'scanner_enabled' => $setting->scanner_enabled,
+                'partial_payments_enabled' => $setting->partial_payments_enabled,
+            ],
         ]);
     }
 
@@ -53,13 +85,12 @@ class FiscalSettingsController extends Controller
     {
         $payload = [
             'setting' => null,
-            'paper_size_changed_mid_shift' => false,
-            'open_cash_session_id' => null,
         ];
 
         $setting = DB::transaction(function () use ($request, $auditLogger, &$payload): FiscalSetting {
             $setting = FiscalSetting::query()->first() ?? new FiscalSetting;
-            $fieldsToTrack = [
+            $settingExisted = $setting->exists;
+            $trackableFields = [
                 'hospital_name',
                 'rtn',
                 'default_tax_rate',
@@ -69,18 +100,23 @@ class FiscalSettingsController extends Controller
                 'scanner_enabled',
                 'partial_payments_enabled',
                 'receipt_template_mode',
-                'receipt_paper_size',
                 'government_line',
                 'secretariat_line',
                 'receipt_location',
                 'receipt_footer_text',
             ];
-            $oldValues = $setting->exists ? $setting->only($fieldsToTrack) : null;
-            $previousPaperSize = $setting->receipt_paper_size;
 
-            $setting->fill($request->validated());
+            $validated = $request->validated();
+            unset($validated['reason']);
 
-            if (! $setting->exists) {
+            $fieldsToTrack = $settingExisted
+                ? array_values(array_intersect($trackableFields, array_keys($validated)))
+                : $trackableFields;
+            $oldValues = $settingExisted ? $setting->only($fieldsToTrack) : null;
+
+            $setting->fill($validated);
+
+            if (! $settingExisted) {
                 $setting->created_by = $request->user()->id;
             }
 
@@ -88,62 +124,25 @@ class FiscalSettingsController extends Controller
             $setting->save();
 
             $auditLogger->log(
-                action: $oldValues ? 'fiscal_settings.updated' : 'fiscal_settings.created',
+                action: $settingExisted ? 'fiscal_settings.updated' : 'fiscal_settings.created',
                 entity: $setting,
                 user: $request->user(),
                 request: $request,
                 oldValues: $oldValues,
                 newValues: $setting->only($fieldsToTrack),
+                reason: $settingExisted ? $request->reason() : null,
             );
-
-            // Mid-shift paper size changes deserve a separate, auditable
-            // trail. The cashier UI surfaces this warning so the operator
-            // is aware that receipts already queued may render with the
-            // previous profile.
-            if (
-                $oldValues
-                && $previousPaperSize !== $setting->receipt_paper_size
-            ) {
-                $openSession = CashRegisterSession::query()
-                    ->where('status', CashRegisterSession::STATUS_OPEN)
-                    ->orderByDesc('id')
-                    ->first();
-
-                if ($openSession !== null) {
-                    $payload['paper_size_changed_mid_shift'] = true;
-                    $payload['open_cash_session_id'] = $openSession->id;
-
-                    $auditLogger->log(
-                        action: 'fiscal_settings.paper_size_changed_mid_shift',
-                        entity: $setting,
-                        user: $request->user(),
-                        request: $request,
-                        oldValues: ['receipt_paper_size' => $previousPaperSize],
-                        newValues: ['receipt_paper_size' => $setting->receipt_paper_size],
-                        reason: sprintf(
-                            'Cambio de papel con caja abierta (#%d).',
-                            $openSession->id,
-                        ),
-                    );
-                }
-            }
 
             $payload['setting'] = $setting;
 
             return $setting;
         });
 
-        $response = response()->json([
+        $responseData = [
             'data' => $setting->refresh(),
-            'meta' => [
-                'paper_size_changed_mid_shift' => $payload['paper_size_changed_mid_shift'],
-                'open_cash_session_id' => $payload['open_cash_session_id'],
-            ],
-        ]);
+        ];
 
-        if ($payload['paper_size_changed_mid_shift']) {
-            $response->headers->set('X-S-Hospital-Paper-Size-Warning', 'mid-shift-change');
-        }
+        $response = response()->json($responseData);
 
         return $response;
     }

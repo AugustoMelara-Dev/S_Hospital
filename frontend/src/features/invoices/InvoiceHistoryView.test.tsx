@@ -1,22 +1,30 @@
 import { act } from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { type ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { InvoiceHistoryView } from './InvoiceHistoryView';
 import { apiClient, institutionalReceipts, type AuthUser, type InstitutionalReceipt, type Invoice } from '../../lib/api';
-import { openBlobInNewTab } from '../../lib/download';
+import * as apiBase from '../../lib/api/base';
+import { downloadBlob, openBlobInNewTab } from '../../lib/download';
 
-vi.mock('../../lib/download', () => ({
-  openBlobInNewTab: vi.fn(),
-}));
+vi.mock('../../lib/download', async () => {
+  const actual = await vi.importActual<typeof import('../../lib/download')>('../../lib/download');
 
-function renderWithQueryClient(node: ReactNode) {
+  return {
+    ...actual,
+    downloadBlob: vi.fn(),
+    openBlobInNewTab: vi.fn(),
+  };
+});
+
+function renderWithQueryClient(node: ReactNode, initialEntries = ['/']) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter>{node}</MemoryRouter>
+      <MemoryRouter initialEntries={initialEntries}>{node}</MemoryRouter>
     </QueryClientProvider>
   );
 }
@@ -33,8 +41,15 @@ async function openInvoiceMenu(invoiceNumber: string) {
   return trigger;
 }
 
+async function submitReprintReason(reason: string) {
+  const dialog = await screen.findByRole('dialog');
+  fireEvent.change(within(dialog).getByRole('textbox', { name: /motivo/i }), { target: { value: reason } });
+  fireEvent.click(within(dialog).getByRole('button', { name: /^reimprimir$/i }));
+}
+
 describe('InvoiceHistoryView', () => {
   afterEach(() => {
+    vi.clearAllMocks();
     vi.restoreAllMocks();
   });
 
@@ -57,16 +72,107 @@ describe('InvoiceHistoryView', () => {
     renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
 
     expect(screen.getByRole('heading', { level: 1, name: /historial de facturas/i })).toBeInTheDocument();
-    expect(screen.getByRole('combobox', { name: /estado de factura/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/paciente/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/n.mero de factura/i)).toBeInTheDocument();
+    const advancedFilters = screen.getByRole('button', { name: /filtros avanzados/i });
+    expect(advancedFilters).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('combobox', { name: /estado de factura/i })).not.toBeInTheDocument();
+
+    fireEvent.click(advancedFilters);
+    expect(advancedFilters).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('combobox', { name: /estado de factura/i })).toBeInTheDocument();
 
     await waitFor(() => expect(screen.getByText('Paciente Accesible')).toBeInTheDocument());
 
     expect(screen.getByRole('region', { name: /listado de facturas/i })).toBeInTheDocument();
     expect(screen.getByRole('table', { name: /facturas filtradas/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /^Factura$/i })).toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: /^No\.$/i })).not.toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /saldo/i })).toHaveAttribute('data-numeric', 'true');
     expect(screen.getByRole('cell', { name: 'L 80.00' })).toHaveAttribute('data-numeric', 'true');
+  });
+
+  it('keeps invoice identity and row actions locked while optional columns can be hidden', async () => {
+    const user = userEvent.setup();
+    const invoice = invoiceFixture({
+      id: 12,
+      invoice_number: '000-001-01-00000012',
+      patient_name: 'Paciente Columnas',
+      total: '200.00',
+      paid_amount: '200.00',
+      balance_due: '0.00',
+      status: 'paid',
+    });
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [invoice],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente Columnas')).toBeInTheDocument());
+
+    const columnsButton = screen.getByRole('button', { name: /columnas/i });
+    columnsButton.focus();
+    await user.keyboard('{Enter}');
+
+    expect(screen.queryByRole('menuitem', { name: /^Factura$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /^Paciente$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /^Acciones$/i })).not.toBeInTheDocument();
+    expect(await screen.findByRole('menuitem', { name: /^Total$/i })).toBeInTheDocument();
+  });
+
+  it('shows institutional receipt traceability in the history table', async () => {
+    const invoice = invoiceFixture({
+      id: 13,
+      invoice_number: '000-001-01-00000013',
+      patient_name: 'Paciente Con Recibo',
+      total: '200.00',
+      paid_amount: '200.00',
+      balance_due: '0.00',
+      status: 'paid',
+      institutional_receipt: institutionalReceiptFixture({
+        receipt_number_full: 'REC-A-00000113',
+      }),
+    });
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [invoice],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente Con Recibo')).toBeInTheDocument());
+
+    expect(screen.getByRole('columnheader', { name: /^Recibo$/i })).toBeInTheDocument();
+    expect(screen.getByText('REC-A-00000113')).toBeInTheDocument();
+  });
+
+  it('uses a human receipt pending label when a paid invoice has no institutional receipt yet', async () => {
+    const invoice = invoiceFixture({
+      id: 14,
+      invoice_number: '000-001-01-00000014',
+      patient_name: 'Paciente Recibo Pendiente',
+      total: '200.00',
+      paid_amount: '200.00',
+      balance_due: '0.00',
+      status: 'paid',
+      institutional_receipt: null,
+    });
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [invoice],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente Recibo Pendiente')).toBeInTheDocument());
+
+    expect(screen.getByText('Recibo pendiente')).toBeInTheDocument();
+    expect(screen.queryByText(/pdf pendiente/i)).not.toBeInTheDocument();
   });
 
   it('keeps invoice filters controlled and preserves the same query contract', async () => {
@@ -88,6 +194,72 @@ describe('InvoiceHistoryView', () => {
       page: 1,
       per_page: 10,
     })));
+  });
+
+  it('returns to the first page when a search filter changes', async () => {
+    const getInvoices = vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [],
+      meta: { current_page: 3, per_page: 10, total: 40 },
+    });
+
+    renderWithQueryClient(
+      <InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />,
+      ['/invoices?page=3&per_page=10'],
+    );
+
+    await waitFor(() => expect(getInvoices).toHaveBeenCalledWith(expect.objectContaining({
+      page: 3,
+      per_page: 10,
+    })));
+
+    fireEvent.change(screen.getByLabelText(/paciente/i), { target: { value: 'Maria Lopez' } });
+
+    await waitFor(() => expect(getInvoices).toHaveBeenLastCalledWith(expect.objectContaining({
+      patient: 'Maria Lopez',
+      page: 1,
+      per_page: 10,
+    })));
+  });
+
+  it('sanitizes invalid pagination search params before querying invoice history', async () => {
+    const getInvoices = vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [],
+      meta: { current_page: 1, per_page: 10, total: 0 },
+    });
+
+    renderWithQueryClient(
+      <InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />,
+      ['/invoices?page=abc&per_page=0'],
+    );
+
+    await waitFor(() => expect(getInvoices).toHaveBeenCalledWith(expect.objectContaining({
+      page: 1,
+      per_page: 10,
+    })));
+    expect(getInvoices).not.toHaveBeenCalledWith(expect.objectContaining({
+      page: Number.NaN,
+    }));
+  });
+
+  it('treats advanced date changes as active filters in the empty state', async () => {
+    const getInvoices = vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [],
+      meta: { current_page: 1, per_page: 10, total: 0 },
+    });
+
+    renderWithQueryClient(
+      <InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />,
+      ['/invoices?date_from=2026-06-01'],
+    );
+
+    await waitFor(() => expect(getInvoices).toHaveBeenLastCalledWith(expect.objectContaining({
+      date_from: '2026-06-01',
+      page: 1,
+      per_page: 10,
+    })));
+
+    expect(await screen.findByText(/no se encontraron facturas con los filtros seleccionados/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /limpiar filtros/i })).toBeInTheDocument();
   });
 
   it('does not expose restricted history actions or invented payment actions without permissions', async () => {
@@ -116,6 +288,144 @@ describe('InvoiceHistoryView', () => {
     expect(screen.queryByRole('button', { name: /cobrar|registrar pago/i })).not.toBeInTheDocument();
   });
 
+  it('allows receipt viewers to open receipts without requiring reprint or void permissions', async () => {
+    const paid = invoiceFixture({
+      id: 42,
+      invoice_number: '000-001-01-00000042',
+      patient_name: 'Paciente Solo Lectura',
+      status: 'paid',
+      issued_at: new Date().toISOString(),
+      issuer: { id: 1, name: 'Admin Hospital', username: 'admin' },
+      institutional_receipt: institutionalReceiptFixture({ id: 142, receipt_number_full: 'REC-A-00000142' }),
+    });
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [paid],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+
+    renderWithQueryClient(<InvoiceHistoryView user={receiptViewerUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente Solo Lectura')).toBeInTheDocument());
+    await openInvoiceMenu(paid.invoice_number);
+
+    expect(await screen.findByRole('menuitem', { name: /Ver recibo/i })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: /Descargar/i })).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /Reimprimir/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /Anular factura/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /Reversar pago/i })).not.toBeInTheDocument();
+  });
+
+  it('does not offer institutional receipt generation to receipt viewers without payment permission', async () => {
+    const paid = invoiceFixture({
+      id: 43,
+      invoice_number: '000-001-01-00000043',
+      patient_name: 'Paciente PDF Solo Lectura',
+      status: 'paid',
+      issued_at: new Date().toISOString(),
+      paid_amount: '17.25',
+      balance_due: '0.00',
+      issuer: { id: 1, name: 'Admin Hospital', username: 'admin' },
+      institutional_receipt: null,
+    });
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [paid],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+
+    renderWithQueryClient(<InvoiceHistoryView user={receiptViewerUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente PDF Solo Lectura')).toBeInTheDocument());
+    await openInvoiceMenu(paid.invoice_number);
+
+    expect(await screen.findByRole('menuitem', { name: /Ver recibo/i })).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /Generar PDF/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /Descargar/i })).not.toBeInTheDocument();
+  });
+
+  it('does not expose receipt actions to receipt viewers for invoices outside their operational access', async () => {
+    const paid = invoiceFixture({
+      id: 44,
+      invoice_number: '000-001-01-00000044',
+      patient_name: 'Paciente Recibo Ajeno',
+      status: 'paid',
+      issued_at: '2026-06-01T12:00:00.000000Z',
+      paid_amount: '17.25',
+      balance_due: '0.00',
+      issuer: { id: 9, name: 'Otra Caja', username: 'otra-caja' },
+      institutional_receipt: null,
+    });
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [paid],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+
+    renderWithQueryClient(<InvoiceHistoryView user={receiptViewerUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente Recibo Ajeno')).toBeInTheDocument());
+
+    expect(screen.queryByRole('button', { name: `Acciones de la factura ${paid.invoice_number}` })).not.toBeInTheDocument();
+  });
+
+  it('does not offer missing receipt generation for invoices outside operational access', async () => {
+    const paid = invoiceFixture({
+      id: 49,
+      invoice_number: '000-001-01-00000049',
+      patient_name: 'Paciente PDF Ajeno',
+      status: 'paid',
+      issued_at: '2026-06-01T12:00:00.000000Z',
+      paid_amount: '17.25',
+      balance_due: '0.00',
+      issuer: { id: 9, name: 'Otra Caja', username: 'otra-caja' },
+      institutional_receipt: null,
+    });
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [paid],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+
+    renderWithQueryClient(
+      <InvoiceHistoryView user={historyUser(['invoices.view', 'receipts.view', 'payments.create'])} onStatus={vi.fn()} />,
+    );
+
+    await waitFor(() => expect(screen.getByText('Paciente PDF Ajeno')).toBeInTheDocument());
+
+    expect(screen.queryByRole('button', { name: `Acciones de la factura ${paid.invoice_number}` })).not.toBeInTheDocument();
+  });
+
+  it('does not let invoice void permission open unrelated institutional receipts', async () => {
+    const paid = invoiceFixture({
+      id: 45,
+      invoice_number: '000-001-01-00000045',
+      patient_name: 'Paciente Recibo Anulador',
+      status: 'paid',
+      issued_at: '2026-06-01T12:00:00.000000Z',
+      paid_amount: '17.25',
+      balance_due: '0.00',
+      issuer: { id: 9, name: 'Otra Caja', username: 'otra-caja' },
+      institutional_receipt: institutionalReceiptFixture({
+        id: 145,
+        receipt_number_full: 'REC-A-00000145',
+      }),
+    });
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [paid],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+
+    renderWithQueryClient(
+      <InvoiceHistoryView user={historyUser(['invoices.view', 'receipts.view', 'invoices.void'])} onStatus={vi.fn()} />,
+    );
+
+    await waitFor(() => expect(screen.getByText('Paciente Recibo Anulador')).toBeInTheDocument());
+
+    expect(screen.queryByRole('button', { name: `Acciones de la factura ${paid.invoice_number}` })).not.toBeInTheDocument();
+  });
+
   it('renders malformed invoice history amounts as safe financial values', async () => {
     vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
       data: [
@@ -141,43 +451,152 @@ describe('InvoiceHistoryView', () => {
 
     await waitFor(() => expect(screen.getByText('Paciente Historial')).toBeInTheDocument());
 
-    expect(screen.getByRole('combobox', { name: /estado de factura/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /filtros avanzados/i })).toHaveAttribute('aria-expanded', 'false');
     expect(document.body.textContent).toContain('L 0.00');
     expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-numero|undefined/);
   });
 
-  it.skip('opens void confirmation only for the latest loaded invoice detail (covered by integration)', async () => {
-    const first = invoiceFixture({ id: 1, invoice_number: '000-001-01-00000001', patient_name: 'Paciente Lento' });
-    const second = invoiceFixture({ id: 2, invoice_number: '000-001-01-00000002', patient_name: 'Paciente Correcto' });
-    let resolveFirst!: (invoice: Invoice) => void;
-    let resolveSecond!: (invoice: Invoice) => void;
-
+  it('shows a human fallback when the invoice date is unavailable', async () => {
     vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
-      data: [first, second],
-      meta: { current_page: 1, per_page: 10, total: 2 },
+      data: [
+        invoiceFixture({
+          id: 18,
+          invoice_number: '000-001-01-00000018',
+          patient_name: 'Paciente Fecha Invalida',
+          issued_at: 'fecha-danada',
+        }),
+      ],
+      meta: { current_page: 1, per_page: 10, total: 1 },
     });
-    vi.spyOn(apiClient, 'getInvoice')
-      .mockReturnValueOnce(new Promise((resolve) => { resolveFirst = resolve; }))
-      .mockReturnValueOnce(new Promise((resolve) => { resolveSecond = resolve; }));
 
     renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
 
-    await waitFor(() => expect(screen.getByText('Paciente Lento')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Paciente Fecha Invalida')).toBeInTheDocument());
 
-    // The ActionMenu keyboard/portal opening is jsdom-unstable, so we verify the
-    // intent (only the latest loaded invoice detail wins the dialog) by
-    // resolving both pending invoice-detail promises in inverted order and
-    // asserting the dialog never appears for the first invoice.
-    await act(async () => {
-      resolveFirst(first);
-      resolveSecond(second);
+    expect(screen.getByText(/fecha no disponible/i)).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/fecha-danada|invalid date/i);
+    expect(screen.queryByRole('cell', { name: '-' })).not.toBeInTheDocument();
+  });
+
+  it('shows a human patient fallback in the history table', async () => {
+    const invoice = invoiceFixture({
+      id: 34,
+      invoice_number: '000-001-01-00000034',
+      patient_name: '   ',
     });
 
-    await waitFor(() => expect(apiClient.getInvoice).toHaveBeenCalledTimes(2));
-    expect(screen.queryByText('¿Anular factura 000-001-01-00000001?')).not.toBeInTheDocument();
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [invoice],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText(invoice.invoice_number)).toBeInTheDocument());
+
+    expect(screen.getByText(/Paciente sin nombre/i)).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/\bundefined\b/);
+  });
+
+  it('does not offer reprint for an issued invoice that has no receipt yet', async () => {
+    const issued = invoiceFixture({
+      id: 47,
+      invoice_number: '000-001-01-00000047',
+      patient_name: 'Paciente Sin Recibo',
+      status: 'issued',
+      paid_amount: '0.00',
+      balance_due: '17.25',
+      institutional_receipt: null,
+    });
+    const reprintInvoice = vi.spyOn(apiClient, 'reprintInvoice');
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [issued],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente Sin Recibo')).toBeInTheDocument());
+    await openInvoiceMenu(issued.invoice_number);
+
+    expect(screen.queryByRole('menuitem', { name: /^Reimprimir$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /Reimprimir PDF/i })).not.toBeInTheDocument();
+    expect(reprintInvoice).not.toHaveBeenCalled();
+  });
+
+  it('does not send void request when void is unavailable for the current invoice', async () => {
+    const issued = invoiceFixture({
+      id: 7,
+      invoice_number: '000-001-01-00000007',
+      patient_name: 'Paciente No Anulable',
+      status: 'paid',
+    });
+    const voidInvoice = vi.spyOn(apiClient, 'voidInvoice');
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [issued],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente No Anulable')).toBeInTheDocument());
+
+    await openInvoiceMenu(issued.invoice_number);
+
+    const items = screen.queryAllByRole('menuitem');
+    const hasVoid = items.some((item) => /anular factura/i.test(item.textContent ?? ''));
+
+    expect(hasVoid).toBe(false);
+    expect(voidInvoice).not.toHaveBeenCalled();
+  });
+
+  it('does not expose void or reverse actions without operational invoice scope', async () => {
+    const issued = invoiceFixture({
+      id: 21,
+      invoice_number: '000-001-01-00000021',
+      patient_name: 'Paciente Ajeno Emitido',
+      status: 'issued',
+      issued_at: '2026-06-01T12:00:00.000000Z',
+      issuer: { id: 99, name: 'Otra Caja', username: 'otra-caja' },
+    });
+    const paid = invoiceFixture({
+      id: 22,
+      invoice_number: '000-001-01-00000022',
+      patient_name: 'Paciente Ajeno Pagado',
+      status: 'paid',
+      paid_amount: '17.25',
+      balance_due: '0.00',
+      issued_at: '2026-06-01T12:00:00.000000Z',
+      issuer: { id: 99, name: 'Otra Caja', username: 'otra-caja' },
+    });
+    const voidInvoice = vi.spyOn(apiClient, 'voidInvoice');
+    const reverseInvoice = vi.spyOn(apiClient, 'reverseInvoice');
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [issued, paid],
+      meta: { current_page: 1, per_page: 10, total: 2 },
+    });
+
+    renderWithQueryClient(
+      <InvoiceHistoryView
+        user={historyUser(['invoices.view', 'invoices.void', 'invoices.reverse'])}
+        onStatus={vi.fn()}
+      />,
+    );
+
+    await waitFor(() => expect(screen.getByText('Paciente Ajeno Emitido')).toBeInTheDocument());
+    expect(screen.getByText('Paciente Ajeno Pagado')).toBeInTheDocument();
+
+    expect(screen.queryByRole('button', { name: `Acciones de la factura ${issued.invoice_number}` })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: `Acciones de la factura ${paid.invoice_number}` })).not.toBeInTheDocument();
+    expect(voidInvoice).not.toHaveBeenCalled();
+    expect(reverseInvoice).not.toHaveBeenCalled();
   });
 
   it('exposes paid invoice reverse flow with reason', async () => {
+    vi.spyOn(apiBase, 'createClientIdempotencyKey').mockReturnValue('history-reverse-attempt-1');
     const paid = invoiceFixture({
       id: 3,
       invoice_number: '000-001-01-00000003',
@@ -207,7 +626,9 @@ describe('InvoiceHistoryView', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: /reversar factura/i }));
 
-    await waitFor(() => expect(reverseInvoice).toHaveBeenCalledWith(3, 'Pago aplicado a factura equivocada'));
+    await waitFor(() => expect(reverseInvoice).toHaveBeenCalledWith(3, 'Pago aplicado a factura equivocada', {
+      idempotencyKey: 'history-reverse-attempt-1',
+    }));
   });
 
   it('submits reverse only once while the critical action is in flight', async () => {
@@ -283,6 +704,108 @@ describe('InvoiceHistoryView', () => {
     expect(screen.getByText(/Anular factura 000-001-01-00000031/i)).toBeInTheDocument();
   });
 
+  it('shows a human patient fallback in the void confirmation dialog', async () => {
+    const invoice = invoiceFixture({
+      id: 37,
+      invoice_number: '000-001-01-00000037',
+      patient_name: '   ',
+    });
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [invoice],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+    vi.spyOn(apiClient, 'getInvoice').mockResolvedValue(invoice);
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText(invoice.invoice_number)).toBeInTheDocument());
+    await openInvoiceMenu(invoice.invoice_number);
+    fireEvent.click(await screen.findByRole('menuitem', { name: /Anular factura/i }));
+
+    await waitFor(() => expect(screen.getByText(/Anular factura 000-001-01-00000037/i)).toBeInTheDocument());
+    expect(within(screen.getByRole('dialog')).getByText(/Paciente sin nombre/i)).toBeInTheDocument();
+  });
+
+  it('voids invoices with a stable idempotency key from history', async () => {
+    vi.spyOn(apiBase, 'createClientIdempotencyKey').mockReturnValue('history-void-attempt-1');
+    const invoice = invoiceFixture({
+      id: 38,
+      invoice_number: '000-001-01-00000038',
+      patient_name: 'Paciente Anulacion Exitosa',
+    });
+    const voidInvoice = vi.spyOn(apiClient, 'voidInvoice').mockResolvedValue({ ...invoice, status: 'void' });
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [invoice],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+    vi.spyOn(apiClient, 'getInvoice').mockResolvedValue(invoice);
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente Anulacion Exitosa')).toBeInTheDocument());
+    await openInvoiceMenu(invoice.invoice_number);
+    fireEvent.click(await screen.findByRole('menuitem', { name: /Anular factura/i }));
+    await waitFor(() => expect(screen.getByText(/Anular factura 000-001-01-00000038/i)).toBeInTheDocument());
+
+    fireEvent.change(screen.getByLabelText(/motivo de anulación/i), {
+      target: { value: 'Factura emitida a paciente equivocado' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /anular factura/i }));
+
+    await waitFor(() => expect(voidInvoice).toHaveBeenCalledWith(38, 'Factura emitida a paciente equivocado', {
+      idempotencyKey: 'history-void-attempt-1',
+    }));
+  });
+
+  it('renews void idempotency key when a failed reason changes', async () => {
+    vi.spyOn(apiBase, 'createClientIdempotencyKey')
+      .mockReturnValueOnce('history-void-attempt-1')
+      .mockReturnValueOnce('history-void-attempt-2');
+    const invoice = invoiceFixture({
+      id: 43,
+      invoice_number: '000-001-01-00000043',
+      patient_name: 'Paciente Anulacion Reintento',
+    });
+    const onStatus = vi.fn();
+    const voidInvoice = vi.spyOn(apiClient, 'voidInvoice')
+      .mockRejectedValueOnce(new Error('void failed'))
+      .mockResolvedValueOnce({ ...invoice, status: 'void' });
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [invoice],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+    vi.spyOn(apiClient, 'getInvoice').mockResolvedValue(invoice);
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={onStatus} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente Anulacion Reintento')).toBeInTheDocument());
+    await openInvoiceMenu(invoice.invoice_number);
+    fireEvent.click(await screen.findByRole('menuitem', { name: /Anular factura/i }));
+    await waitFor(() => expect(screen.getByText(/Anular factura 000-001-01-00000043/i)).toBeInTheDocument());
+
+    fireEvent.change(screen.getByLabelText(/motivo de anulaci/i), {
+      target: { value: 'Factura emitida con paciente equivocado' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /anular factura/i }));
+
+    await waitFor(() => expect(voidInvoice).toHaveBeenCalledWith(43, 'Factura emitida con paciente equivocado', {
+      idempotencyKey: 'history-void-attempt-1',
+    }));
+    await waitFor(() => expect(onStatus).toHaveBeenCalledWith('void failed'));
+
+    fireEvent.change(screen.getByLabelText(/motivo de anulaci/i), {
+      target: { value: 'Factura duplicada durante cierre de caja' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /anular factura/i }));
+
+    await waitFor(() => expect(voidInvoice).toHaveBeenLastCalledWith(43, 'Factura duplicada durante cierre de caja', {
+      idempotencyKey: 'history-void-attempt-2',
+    }));
+  });
+
   it('keeps reverse confirmation open when reason is too short', async () => {
     const invoice = invoiceFixture({
       id: 32,
@@ -307,6 +830,7 @@ describe('InvoiceHistoryView', () => {
     await openInvoiceMenu(invoice.invoice_number);
     fireEvent.click(await screen.findByRole('menuitem', { name: /Reversar pago/i }));
     await waitFor(() => expect(screen.getByText(/Reversar factura 000-001-01-00000032/i)).toBeInTheDocument());
+    expect(within(screen.getByRole('dialog')).getByText(/mínimo 5 caracteres/i)).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText(/motivo de reversa/i), { target: { value: 'abc' } });
     const confirmButton = screen.getByRole('button', { name: /reversar factura/i });
@@ -318,6 +842,56 @@ describe('InvoiceHistoryView', () => {
     expect(screen.getByText(/Reversar factura 000-001-01-00000032/i)).toBeInTheDocument();
   });
 
+  it('renews reverse idempotency key when a failed reason changes', async () => {
+    vi.spyOn(apiBase, 'createClientIdempotencyKey')
+      .mockReturnValueOnce('history-reverse-attempt-1')
+      .mockReturnValueOnce('history-reverse-attempt-2');
+    const invoice = invoiceFixture({
+      id: 44,
+      invoice_number: '000-001-01-00000044',
+      patient_name: 'Paciente Reversa Reintento',
+      status: 'paid',
+      paid_amount: '17.25',
+      balance_due: '0.00',
+    });
+    const onStatus = vi.fn();
+    const reverseInvoice = vi.spyOn(apiClient, 'reverseInvoice')
+      .mockRejectedValueOnce(new Error('reverse failed'))
+      .mockResolvedValueOnce({ ...invoice, status: 'void' });
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [invoice],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+    vi.spyOn(apiClient, 'getInvoice').mockResolvedValue(invoice);
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={onStatus} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente Reversa Reintento')).toBeInTheDocument());
+    await openInvoiceMenu(invoice.invoice_number);
+    fireEvent.click(await screen.findByRole('menuitem', { name: /Reversar pago/i }));
+    await waitFor(() => expect(screen.getByText(/Reversar factura 000-001-01-00000044/i)).toBeInTheDocument());
+
+    fireEvent.change(screen.getByLabelText(/motivo de reversa/i), {
+      target: { value: 'Pago aplicado a factura equivocada' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /reversar factura/i }));
+
+    await waitFor(() => expect(reverseInvoice).toHaveBeenCalledWith(44, 'Pago aplicado a factura equivocada', {
+      idempotencyKey: 'history-reverse-attempt-1',
+    }));
+    await waitFor(() => expect(onStatus).toHaveBeenCalledWith('reverse failed'));
+
+    fireEvent.change(screen.getByLabelText(/motivo de reversa/i), {
+      target: { value: 'Pago duplicado por correccion de caja' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /reversar factura/i }));
+
+    await waitFor(() => expect(reverseInvoice).toHaveBeenLastCalledWith(44, 'Pago duplicado por correccion de caja', {
+      idempotencyKey: 'history-reverse-attempt-2',
+    }));
+  });
+
   it('opens institutional receipt pdf from history when the invoice has one', async () => {
     const paid = invoiceFixture({
       id: 4,
@@ -327,7 +901,8 @@ describe('InvoiceHistoryView', () => {
       institutional_receipt: institutionalReceiptFixture({ id: 90, receipt_number_full: 'REC-A-00000090' }),
     });
     const getReceipt = vi.spyOn(apiClient, 'getReceipt');
-    const registerPrint = vi.spyOn(apiClient, 'registerInstitutionalReceiptPrintEvent');
+    const registerPrint = vi.spyOn(apiClient, 'registerInstitutionalReceiptPrintEvent')
+      .mockResolvedValue({} as never);
     const getPdf = vi.spyOn(apiClient, 'getInstitutionalReceiptPdf')
       .mockResolvedValue(new Blob(['%PDF-institutional'], { type: 'application/pdf' }));
 
@@ -344,16 +919,145 @@ describe('InvoiceHistoryView', () => {
     await openInvoiceMenu(invoice.invoice_number);
     fireEvent.click(await screen.findByRole('menuitem', { name: /Ver recibo/i }));
 
-    await waitFor(() => expect(getPdf).toHaveBeenCalledWith(90));
+    await waitFor(() => expect(registerPrint).toHaveBeenCalledWith(90, undefined, {
+      idempotencyKey: expect.any(String),
+    }));
+    expect(getPdf).toHaveBeenCalledWith(90);
     expect(openBlobInNewTab).toHaveBeenCalledWith(
       expect.any(Blob),
       'recibo-institucional-REC-A-00000090.pdf',
     );
-    expect(registerPrint).not.toHaveBeenCalled();
+
     expect(getReceipt).not.toHaveBeenCalled();
   });
 
+  it('uses a safe institutional receipt pdf filename when the stored receipt number is malformed', async () => {
+    const paid = invoiceFixture({
+      id: 48,
+      invoice_number: '000-001-01-00000048',
+      patient_name: 'Paciente Recibo Alterado',
+      status: 'paid',
+      institutional_receipt: institutionalReceiptFixture({ id: 148, receipt_number_full: '../bad\r\nname"' }),
+    });
+    const registerPrint = vi.spyOn(apiClient, 'registerInstitutionalReceiptPrintEvent')
+      .mockResolvedValue({} as never);
+    vi.spyOn(apiClient, 'getInstitutionalReceiptPdf')
+      .mockResolvedValue(new Blob(['%PDF-institutional'], { type: 'application/pdf' }));
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [paid],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+    vi.spyOn(apiClient, 'getInvoice').mockResolvedValue(paid);
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente Recibo Alterado')).toBeInTheDocument());
+    await openInvoiceMenu(paid.invoice_number);
+    fireEvent.click(await screen.findByRole('menuitem', { name: /Ver recibo/i }));
+
+    await waitFor(() => expect(registerPrint).toHaveBeenCalledWith(148, undefined, {
+      idempotencyKey: expect.any(String),
+    }));
+    expect(apiClient.getInstitutionalReceiptPdf).toHaveBeenCalledWith(148);
+    expect(openBlobInNewTab).toHaveBeenCalledWith(
+      expect.any(Blob),
+      'recibo-institucional.pdf',
+    );
+  });
+
+  it('keeps the latest receipt selection when previous receipt requests finish late', async () => {
+    const first = invoiceFixture({
+      id: 51,
+      invoice_number: '000-001-01-00000051',
+      patient_name: 'Paciente Solicitud Lenta',
+      status: 'paid',
+      institutional_receipt: null,
+    });
+    const second = invoiceFixture({
+      id: 52,
+      invoice_number: '000-001-01-00000052',
+      patient_name: 'Paciente Solicitud Vigente',
+      status: 'paid',
+      institutional_receipt: null,
+    });
+    let resolveFirstInvoice!: (invoice: Invoice) => void;
+    const firstInvoiceRequest = new Promise<Invoice>((resolve) => {
+      resolveFirstInvoice = resolve;
+    });
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [first, second],
+      meta: { current_page: 1, per_page: 10, total: 2 },
+    });
+    vi.spyOn(apiClient, 'getInvoice').mockImplementation((invoiceId: number) => (
+      invoiceId === first.id ? firstInvoiceRequest : Promise.resolve(second)
+    ));
+    vi.spyOn(apiClient, 'getReceipt').mockImplementation((invoiceId: number) => (
+      Promise.resolve(receiptFixture(invoiceId === first.id ? first : second))
+    ));
+
+    renderWithQueryClient(<InvoiceHistoryView user={receiptFallbackOperator()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente Solicitud Lenta')).toBeInTheDocument());
+    await openInvoiceMenu(first.invoice_number);
+    fireEvent.click(await screen.findByRole('menuitem', { name: /Ver recibo/i }));
+
+    await openInvoiceMenu(second.invoice_number);
+    fireEvent.click(await screen.findByRole('menuitem', { name: /Ver recibo/i }));
+
+    await waitFor(() => expect(screen.getByRole('dialog', { name: new RegExp(second.invoice_number) })).toBeInTheDocument());
+
+    await act(async () => {
+      resolveFirstInvoice(first);
+    });
+
+    await waitFor(() => expect(screen.getByRole('dialog', { name: new RegExp(second.invoice_number) })).toBeInTheDocument());
+    expect(screen.queryByRole('dialog', { name: new RegExp(first.invoice_number) })).not.toBeInTheDocument();
+  });
+
+  it('audits the first institutional receipt print before downloading from history', async () => {
+    vi.spyOn(apiBase, 'createClientIdempotencyKey').mockReturnValue('history-download-receipt-attempt-1');
+    const paid = invoiceFixture({
+      id: 41,
+      invoice_number: '000-001-01-00000041',
+      patient_name: 'Paciente Descarga PDF',
+      status: 'paid',
+      institutional_receipt: institutionalReceiptFixture({ id: 141, receipt_number_full: 'REC-A-00000141' }),
+    });
+    const registerPrint = vi.spyOn(apiClient, 'registerInstitutionalReceiptPrintEvent')
+      .mockResolvedValue({} as never);
+    const getPdf = vi.spyOn(apiClient, 'getInstitutionalReceiptPdf')
+      .mockResolvedValue(new Blob(['%PDF-download'], { type: 'application/pdf' }));
+    const reprintInvoice = vi.spyOn(apiClient, 'reprintInvoice');
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [paid],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente Descarga PDF')).toBeInTheDocument());
+    await openInvoiceMenu(paid.invoice_number);
+    fireEvent.click(await screen.findByRole('menuitem', { name: /Descargar/i }));
+
+    await waitFor(() => expect(registerPrint).toHaveBeenCalledWith(141, undefined, {
+      idempotencyKey: 'history-download-receipt-attempt-1',
+    }));
+    await waitFor(() => expect(getPdf).toHaveBeenCalledWith(141));
+    expect(downloadBlob).toHaveBeenCalledWith(
+      expect.any(Blob),
+      'recibo-institucional-REC-A-00000141.pdf',
+    );
+    expect(openBlobInNewTab).not.toHaveBeenCalled();
+    expect(reprintInvoice).not.toHaveBeenCalled();
+  });
+
   it('generates a missing institutional receipt only once while the request is pending', async () => {
+    vi.spyOn(apiBase, 'createClientIdempotencyKey')
+      .mockReturnValueOnce('history-generate-receipt-attempt-1')
+      .mockReturnValueOnce('history-generate-print-attempt-1');
     const paid = invoiceFixture({
       id: 36,
       invoice_number: '000-001-01-00000036',
@@ -367,6 +1071,8 @@ describe('InvoiceHistoryView', () => {
     let resolveStore!: (receipt: InstitutionalReceipt) => void;
     const store = vi.spyOn(institutionalReceipts, 'store')
       .mockReturnValue(new Promise((resolve) => { resolveStore = resolve; }));
+    const registerPrint = vi.spyOn(apiClient, 'registerInstitutionalReceiptPrintEvent')
+      .mockResolvedValue({} as never);
     vi.spyOn(apiClient, 'getInstitutionalReceiptPdf')
       .mockResolvedValue(new Blob(['%PDF-generated'], { type: 'application/pdf' }));
 
@@ -388,17 +1094,185 @@ describe('InvoiceHistoryView', () => {
     fireEvent.click(generateButton);
     fireEvent.click(generateButton);
 
-    expect(store).toHaveBeenCalledTimes(1);
-    expect(store).toHaveBeenCalledWith({ invoice_id: 36 });
+    await waitFor(() => expect(store).toHaveBeenCalledTimes(1));
+    expect(store).toHaveBeenCalledWith({ invoice_id: 36 }, {
+      idempotencyKey: 'history-generate-receipt-attempt-1',
+    });
 
     await act(async () => {
       resolveStore(receipt);
     });
 
-    await waitFor(() => expect(apiClient.getInstitutionalReceiptPdf).toHaveBeenCalledWith(96, 'Emisión manual de recibo faltante.'));
+    await waitFor(() => expect(apiClient.getInstitutionalReceiptPdf).toHaveBeenCalledWith(96, 'Emisión manual de recibo faltante.', {
+      idempotencyKey: 'history-generate-receipt-attempt-1',
+    }));
+    await waitFor(() => expect(registerPrint).toHaveBeenCalledWith(96, undefined, {
+      idempotencyKey: 'history-generate-print-attempt-1',
+    }));
   });
 
-  it('requires a reprint reason before opening a previously printed institutional receipt from history', async () => {
+  it('generates a missing institutional receipt with the posted payment and cash session from invoice detail', async () => {
+    vi.spyOn(apiBase, 'createClientIdempotencyKey')
+      .mockReturnValueOnce('history-generate-receipt-payment-1')
+      .mockReturnValueOnce('history-generate-print-payment-1');
+    const paid = invoiceFixture({
+      id: 51,
+      invoice_number: '000-001-01-00000051',
+      patient_name: 'Paciente Caja Cerrada',
+      status: 'paid',
+      paid_amount: '17.25',
+      balance_due: '0.00',
+      institutional_receipt: null,
+    });
+    const receipt = institutionalReceiptRecord({
+      id: 151,
+      invoice_id: 51,
+      payment_id: 501,
+      cash_session_id: 71,
+      receipt_number_full: 'REC-A-00000151',
+    });
+    const store = vi.spyOn(institutionalReceipts, 'store').mockResolvedValue(receipt);
+    const registerPrint = vi.spyOn(apiClient, 'registerInstitutionalReceiptPrintEvent')
+      .mockResolvedValue({} as never);
+    vi.spyOn(apiClient, 'getInstitutionalReceiptPdf')
+      .mockResolvedValue(new Blob(['%PDF-generated'], { type: 'application/pdf' }));
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [paid],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+    vi.spyOn(apiClient, 'getInvoice').mockResolvedValue({
+      ...paid,
+      payments: [{
+        id: 501,
+        invoice_id: 51,
+        cash_session_id: 71,
+        user_id: 1,
+        method: 'cash',
+        amount: '17.25',
+        reference: null,
+        status: 'posted',
+        paid_at: '2026-06-01T12:05:00.000000Z',
+      }],
+      institutional_receipt: institutionalReceiptFixture({ id: 151, receipt_number_full: 'REC-A-00000151' }),
+    });
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente Caja Cerrada')).toBeInTheDocument());
+    await openInvoiceMenu(paid.invoice_number);
+    fireEvent.click(await screen.findByRole('menuitem', { name: /Generar PDF/i }));
+
+    await waitFor(() => expect(store).toHaveBeenCalledWith({
+      invoice_id: 51,
+      payment_id: 501,
+      cash_session_id: 71,
+    }, {
+      idempotencyKey: 'history-generate-receipt-payment-1',
+    }));
+    await waitFor(() => expect(apiClient.getInstitutionalReceiptPdf).toHaveBeenCalledWith(151, 'Emisión manual de recibo faltante.', {
+      idempotencyKey: 'history-generate-receipt-payment-1',
+    }));
+    await waitFor(() => expect(registerPrint).toHaveBeenCalledWith(151, undefined, {
+      idempotencyKey: 'history-generate-print-payment-1',
+    }));
+  });
+
+  it('renews receipt generation idempotency key when a failed invoice changes', async () => {
+    vi.spyOn(apiBase, 'createClientIdempotencyKey')
+      .mockReturnValueOnce('history-generate-receipt-attempt-1')
+      .mockReturnValueOnce('history-generate-receipt-attempt-2')
+      .mockReturnValueOnce('history-generate-print-attempt-2');
+    const firstPaid = invoiceFixture({
+      id: 47,
+      invoice_number: '000-001-01-00000047',
+      patient_name: 'Paciente Generacion Fallida',
+      status: 'paid',
+      paid_amount: '17.25',
+      balance_due: '0.00',
+      institutional_receipt: null,
+    });
+    const secondPaid = invoiceFixture({
+      id: 48,
+      invoice_number: '000-001-01-00000048',
+      patient_name: 'Paciente Generacion Nueva',
+      status: 'paid',
+      paid_amount: '17.25',
+      balance_due: '0.00',
+      institutional_receipt: null,
+    });
+    const receipt = institutionalReceiptRecord({ id: 148, invoice_id: 48, receipt_number_full: 'REC-A-00000148' });
+    const onStatus = vi.fn();
+    const store = vi.spyOn(institutionalReceipts, 'store')
+      .mockRejectedValueOnce(new Error('store failed'))
+      .mockResolvedValueOnce(receipt);
+    const registerPrint = vi.spyOn(apiClient, 'registerInstitutionalReceiptPrintEvent')
+      .mockResolvedValue({} as never);
+    vi.spyOn(apiClient, 'getInstitutionalReceiptPdf')
+      .mockResolvedValue(new Blob(['%PDF-generated'], { type: 'application/pdf' }));
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [firstPaid, secondPaid],
+      meta: { current_page: 1, per_page: 10, total: 2 },
+    });
+    vi.spyOn(apiClient, 'getInvoice').mockResolvedValue({
+      ...secondPaid,
+      institutional_receipt: institutionalReceiptFixture({ id: 148, receipt_number_full: 'REC-A-00000148' }),
+    });
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={onStatus} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente Generacion Fallida')).toBeInTheDocument());
+    await openInvoiceMenu(firstPaid.invoice_number);
+    fireEvent.click(await screen.findByRole('menuitem', { name: /Generar PDF/i }));
+
+    await waitFor(() => expect(store).toHaveBeenCalledWith({ invoice_id: 47 }, {
+      idempotencyKey: 'history-generate-receipt-attempt-1',
+    }));
+    await waitFor(() => expect(onStatus).toHaveBeenCalledWith('store failed'));
+
+    await openInvoiceMenu(secondPaid.invoice_number);
+    fireEvent.click(await screen.findByRole('menuitem', { name: /Generar PDF/i }));
+
+    await waitFor(() => expect(store).toHaveBeenLastCalledWith({ invoice_id: 48 }, {
+      idempotencyKey: 'history-generate-receipt-attempt-2',
+    }));
+    await waitFor(() => expect(apiClient.getInstitutionalReceiptPdf).toHaveBeenCalledWith(148, 'Emisión manual de recibo faltante.', {
+      idempotencyKey: 'history-generate-receipt-attempt-2',
+    }));
+    await waitFor(() => expect(registerPrint).toHaveBeenCalledWith(148, undefined, {
+      idempotencyKey: 'history-generate-print-attempt-2',
+    }));
+  });
+
+  it('does not offer fallback receipt actions when the cashier can generate the missing institutional receipt', async () => {
+    const paid = invoiceFixture({
+      id: 46,
+      invoice_number: '000-001-01-00000046',
+      patient_name: 'Paciente Recuperacion Institucional',
+      status: 'paid',
+      paid_amount: '17.25',
+      balance_due: '0.00',
+      institutional_receipt: null,
+    });
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [paid],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente Recuperacion Institucional')).toBeInTheDocument());
+    await openInvoiceMenu(paid.invoice_number);
+
+    expect(await screen.findByRole('menuitem', { name: /Generar PDF/i })).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /^Ver recibo$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /^Reimprimir$/i })).not.toBeInTheDocument();
+  });
+
+  it('requires a manual reason before reprinting a previously printed institutional PDF from history', async () => {
+    vi.spyOn(apiBase, 'createClientIdempotencyKey').mockReturnValue('history-institutional-reprint-attempt-1');
     const paid = invoiceFixture({
       id: 34,
       invoice_number: '000-001-01-00000034',
@@ -414,6 +1288,8 @@ describe('InvoiceHistoryView', () => {
     const onStatus = vi.fn();
     const getPdf = vi.spyOn(apiClient, 'getInstitutionalReceiptPdf')
       .mockResolvedValue(new Blob(['%PDF-reprint-history'], { type: 'application/pdf' }));
+    const registerPrint = vi.spyOn(apiClient, 'registerInstitutionalReceiptPrintEvent')
+      .mockResolvedValue({} as never);
     const getReceipt = vi.spyOn(apiClient, 'getReceipt');
 
     vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
@@ -425,28 +1301,32 @@ describe('InvoiceHistoryView', () => {
     renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={onStatus} />);
 
     await waitFor(() => expect(screen.getByText('Paciente Recibo Ya Impreso')).toBeInTheDocument());
-      const invoice = paid;
-    await openInvoiceMenu(invoice.invoice_number);
-    fireEvent.click(await screen.findByRole('menuitem', { name: /Ver recibo/i }));
+    await openInvoiceMenu(paid.invoice_number);
+    expect(screen.queryByRole('menuitem', { name: /^Ver recibo$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /^Descargar$/i })).not.toBeInTheDocument();
+    fireEvent.click(await screen.findByRole('menuitem', { name: /Reimprimir PDF/i }));
 
-    await waitFor(() => expect(screen.getByText(/Reimprimir 000-001-01-00000034/i)).toBeInTheDocument());
+    expect(await screen.findByRole('dialog', { name: /Reimprimir 000-001-01-00000034/i })).toBeInTheDocument();
+    expect(registerPrint).not.toHaveBeenCalled();
     expect(getPdf).not.toHaveBeenCalled();
+
+    await submitReprintReason('Copia solicitada por auditoria');
+
+    await waitFor(() => expect(registerPrint).toHaveBeenCalledWith(94, 'Copia solicitada por auditoria', {
+      idempotencyKey: 'history-institutional-reprint-attempt-1',
+    }));
+    expect(getPdf).toHaveBeenCalledWith(94);
+    expect(screen.queryByText(/Reimprimir 000-001-01-00000034/i)).not.toBeInTheDocument();
     expect(getReceipt).not.toHaveBeenCalled();
-    expect(onStatus).toHaveBeenCalledWith('Ingrese un motivo de reimpresión para abrir nuevamente el PDF institucional.');
-
-    fireEvent.change(screen.getByLabelText(/motivo de reimpresi/i), {
-      target: { value: 'Copia solicitada por auditoria interna' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: /registrar reimpresi/i }));
-
-    await waitFor(() => expect(getPdf).toHaveBeenCalledWith(94, 'Copia solicitada por auditoria interna'));
+    expect(onStatus).toHaveBeenCalledWith('PDF institucional REC-A-00000094 abierto.');
     expect(openBlobInNewTab).toHaveBeenCalledWith(
       expect.any(Blob),
       'recibo-institucional-REC-A-00000094.pdf',
     );
   });
 
-  it('reprints institutional receipt from history before falling back to legacy receipt', async () => {
+  it('reprints institutional receipt from history before falling back to fallback receipt', async () => {
+    vi.spyOn(apiBase, 'createClientIdempotencyKey').mockReturnValue('history-institutional-reprint-attempt-1');
     const paid = invoiceFixture({
       id: 5,
       invoice_number: '000-001-01-00000005',
@@ -469,16 +1349,15 @@ describe('InvoiceHistoryView', () => {
     renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
 
     await waitFor(() => expect(screen.getByText('Paciente Reimpresion Institucional')).toBeInTheDocument());
-      const invoice = paid;
-    await openInvoiceMenu(invoice.invoice_number);
+    await openInvoiceMenu(paid.invoice_number);
     fireEvent.click(await screen.findByRole('menuitem', { name: /Reimprimir/i }));
-    fireEvent.change(screen.getByLabelText(/motivo de reimpresi/i), {
-      target: { value: 'Copia solicitada por el paciente' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: /registrar reimpresi/i }));
+    await submitReprintReason('Copia solicitada por auditoria');
 
-    await waitFor(() => expect(getPdf).toHaveBeenCalledWith(91, 'Copia solicitada por el paciente'));
-    expect(registerPrint).not.toHaveBeenCalled();
+    await waitFor(() => expect(registerPrint).toHaveBeenCalledWith(91, 'Copia solicitada por auditoria', {
+      idempotencyKey: 'history-institutional-reprint-attempt-1',
+    }));
+    expect(getPdf).toHaveBeenCalledWith(91);
+    expect(screen.queryByText(/Reimprimir 000-001-01-00000005/i)).not.toBeInTheDocument();
     expect(openBlobInNewTab).toHaveBeenCalledWith(
       expect.any(Blob),
       'recibo-institucional-REC-A-00000091.pdf',
@@ -486,7 +1365,154 @@ describe('InvoiceHistoryView', () => {
     expect(reprintInvoice).not.toHaveBeenCalled();
   });
 
-  it('keeps institutional reprint confirmation open when reason is too short', async () => {
+  it('renews institutional reprint idempotency key when a failed receipt changes', async () => {
+    vi.spyOn(apiBase, 'createClientIdempotencyKey')
+      .mockReturnValueOnce('history-institutional-reprint-attempt-1')
+      .mockReturnValueOnce('history-institutional-reprint-attempt-2');
+    const firstPaid = invoiceFixture({
+      id: 41,
+      invoice_number: '000-001-01-00000041',
+      patient_name: 'Paciente Reimpresion Fallida',
+      status: 'paid',
+      institutional_receipt: institutionalReceiptFixture({ id: 141, receipt_number_full: 'REC-A-00000141' }),
+    });
+    const secondPaid = invoiceFixture({
+      id: 42,
+      invoice_number: '000-001-01-00000042',
+      patient_name: 'Paciente Reimpresion Nueva',
+      status: 'paid',
+      institutional_receipt: institutionalReceiptFixture({ id: 142, receipt_number_full: 'REC-A-00000142' }),
+    });
+    const onStatus = vi.fn();
+    const registerPrint = vi.spyOn(apiClient, 'registerInstitutionalReceiptPrintEvent')
+      .mockResolvedValue({} as never);
+    const getPdf = vi.spyOn(apiClient, 'getInstitutionalReceiptPdf')
+      .mockRejectedValueOnce(new Error('pdf failed'))
+      .mockResolvedValueOnce(new Blob(['%PDF-reprint'], { type: 'application/pdf' }));
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [firstPaid, secondPaid],
+      meta: { current_page: 1, per_page: 10, total: 2 },
+    });
+    vi.spyOn(apiClient, 'getInvoice').mockImplementation(async (invoiceId) => {
+      if (invoiceId === firstPaid.id) return firstPaid;
+      if (invoiceId === secondPaid.id) return secondPaid;
+
+      throw new Error('invoice not found');
+    });
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={onStatus} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente Reimpresion Fallida')).toBeInTheDocument());
+    await openInvoiceMenu(firstPaid.invoice_number);
+    fireEvent.click(await screen.findByRole('menuitem', { name: /Reimprimir/i }));
+    await submitReprintReason('Copia solicitada por auditoria');
+
+    await waitFor(() => expect(registerPrint).toHaveBeenCalledWith(141, 'Copia solicitada por auditoria', {
+      idempotencyKey: 'history-institutional-reprint-attempt-1',
+    }));
+    expect(getPdf).toHaveBeenCalledWith(141);
+    await waitFor(() => expect(onStatus).toHaveBeenCalledWith('pdf failed'));
+    fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: /cancelar/i }));
+
+    await openInvoiceMenu(secondPaid.invoice_number);
+    fireEvent.click(await screen.findByRole('menuitem', { name: /Reimprimir/i }));
+    await submitReprintReason('Copia solicitada por auditoria');
+
+    await waitFor(() => expect(registerPrint).toHaveBeenLastCalledWith(142, 'Copia solicitada por auditoria', {
+      idempotencyKey: 'history-institutional-reprint-attempt-2',
+    }));
+    expect(getPdf).toHaveBeenLastCalledWith(142);
+    expect(openBlobInNewTab).toHaveBeenCalledWith(
+      expect.any(Blob),
+      'recibo-institucional-REC-A-00000142.pdf',
+    );
+  });
+
+  it('reprints fallback receipts with a stable idempotency key from history', async () => {
+    vi.spyOn(apiBase, 'createClientIdempotencyKey').mockReturnValue('history-fallback-reprint-attempt-1');
+    const paid = invoiceFixture({
+      id: 37,
+      invoice_number: '000-001-01-00000037',
+      patient_name: 'Paciente Reimpresion Histórica',
+      status: 'paid',
+      institutional_receipt: null,
+    });
+    const receipt = receiptFixture(paid);
+    const reprintInvoice = vi.spyOn(apiClient, 'reprintInvoice').mockResolvedValue(receipt);
+    const getPdf = vi.spyOn(apiClient, 'getInstitutionalReceiptPdf');
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [paid],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+    vi.spyOn(apiClient, 'getInvoice').mockResolvedValue(paid);
+
+    renderWithQueryClient(<InvoiceHistoryView user={receiptFallbackOperator()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente Reimpresion Histórica')).toBeInTheDocument());
+    await openInvoiceMenu(paid.invoice_number);
+    fireEvent.click(await screen.findByRole('menuitem', { name: /Reimprimir/i }));
+    await submitReprintReason('Copia solicitada por auditoria');
+
+    await waitFor(() => expect(reprintInvoice).toHaveBeenCalledWith(37, {
+      width: 'half_letter',
+      reason: 'Copia solicitada por auditoria',
+    }, {
+      idempotencyKey: 'history-fallback-reprint-attempt-1',
+    }));
+    expect(screen.queryByText(/Reimprimir 000-001-01-00000037/i)).not.toBeInTheDocument();
+    expect(getPdf).not.toHaveBeenCalled();
+  });
+
+  it('submits a direct audited reprint only once while invoice detail is loading', async () => {
+    let resolveInvoice!: (invoice: Invoice) => void;
+    const paid = invoiceFixture({
+      id: 39,
+      invoice_number: '000-001-01-00000039',
+      patient_name: 'Paciente Reimpresion Pendiente',
+      status: 'paid',
+      institutional_receipt: institutionalReceiptFixture({ id: 99, receipt_number_full: 'REC-A-00000099' }),
+    });
+    const getPdf = vi.spyOn(apiClient, 'getInstitutionalReceiptPdf')
+      .mockResolvedValue(new Blob(['%PDF-reprint'], { type: 'application/pdf' }));
+    const registerPrint = vi.spyOn(apiClient, 'registerInstitutionalReceiptPrintEvent')
+      .mockResolvedValue({} as never);
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [paid],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+    vi.spyOn(apiClient, 'getInvoice').mockReturnValue(new Promise((resolve) => { resolveInvoice = resolve; }));
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente Reimpresion Pendiente')).toBeInTheDocument());
+    await openInvoiceMenu(paid.invoice_number);
+    fireEvent.click(await screen.findByRole('menuitem', { name: /Reimprimir/i }));
+
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.change(within(dialog).getByRole('textbox', { name: /motivo/i }), {
+      target: { value: 'Copia solicitada por auditoria' },
+    });
+    const confirmButton = within(dialog).getByRole('button', { name: /^reimprimir$/i });
+    fireEvent.click(confirmButton);
+    fireEvent.click(confirmButton);
+
+    await waitFor(() => expect(apiClient.getInvoice).toHaveBeenCalledWith(39));
+    expect(apiClient.getInvoice).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolveInvoice(paid);
+    });
+
+    await waitFor(() => expect(registerPrint).toHaveBeenCalledWith(99, 'Copia solicitada por auditoria', {
+      idempotencyKey: expect.any(String),
+    }));
+    expect(getPdf).toHaveBeenCalledWith(99);
+  });
+
+  it('requires a manual reason before direct institutional reprint from history', async () => {
     const paid = invoiceFixture({
       id: 33,
       invoice_number: '000-001-01-00000033',
@@ -495,7 +1521,10 @@ describe('InvoiceHistoryView', () => {
       institutional_receipt: institutionalReceiptFixture({ id: 93, receipt_number_full: 'REC-A-00000093' }),
     });
     const onStatus = vi.fn();
-    const getPdf = vi.spyOn(apiClient, 'getInstitutionalReceiptPdf');
+    const getPdf = vi.spyOn(apiClient, 'getInstitutionalReceiptPdf')
+      .mockResolvedValue(new Blob(['%PDF-reprint'], { type: 'application/pdf' }));
+    const registerPrint = vi.spyOn(apiClient, 'registerInstitutionalReceiptPrintEvent')
+      .mockResolvedValue({} as never);
 
     vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
       data: [paid],
@@ -506,27 +1535,24 @@ describe('InvoiceHistoryView', () => {
     renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={onStatus} />);
 
     await waitFor(() => expect(screen.getByText('Paciente Reimpresion Corta')).toBeInTheDocument());
-      const invoice = paid;
-    await openInvoiceMenu(invoice.invoice_number);
+    await openInvoiceMenu(paid.invoice_number);
     fireEvent.click(await screen.findByRole('menuitem', { name: /Reimprimir/i }));
-    await waitFor(() => expect(screen.getByText(/Reimprimir 000-001-01-00000033/i)).toBeInTheDocument());
+    await submitReprintReason('Copia solicitada por auditoria');
 
-    fireEvent.change(screen.getByLabelText(/motivo de reimpresi/i), { target: { value: 'abc' } });
-    const confirmButton = screen.getByRole('button', { name: /registrar reimpresi/i });
-    expect(confirmButton).toBeDisabled();
-    fireEvent.click(confirmButton);
-
-    expect(apiClient.getInvoice).not.toHaveBeenCalledWith(33);
-    expect(getPdf).not.toHaveBeenCalled();
-    expect(onStatus).not.toHaveBeenCalledWith('Ingrese un motivo de reimpresión de al menos 5 caracteres.');
-    expect(screen.getByText(/Reimprimir 000-001-01-00000033/i)).toBeInTheDocument();
+    await waitFor(() => expect(registerPrint).toHaveBeenCalledWith(93, 'Copia solicitada por auditoria', {
+      idempotencyKey: expect.any(String),
+    }));
+    expect(getPdf).toHaveBeenCalledWith(93);
+    expect(screen.queryByText(/Reimprimir 000-001-01-00000033/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/motivo de reimpresi/i)).not.toBeInTheDocument();
+    expect(onStatus).toHaveBeenCalledWith('PDF institucional REC-A-00000093 abierto.');
   });
 
-  it('keeps legacy receipt preview fallback when invoice has no institutional receipt', async () => {
+  it('keeps a human receipt preview message when invoice has no institutional receipt', async () => {
     const invoice = invoiceFixture({
       id: 6,
       invoice_number: '000-001-01-00000006',
-      patient_name: 'Paciente Legacy',
+      patient_name: 'Paciente Recibo Anterior',
       status: 'paid',
       institutional_receipt: null,
     });
@@ -541,14 +1567,16 @@ describe('InvoiceHistoryView', () => {
     vi.spyOn(apiClient, 'getInvoice').mockResolvedValue(paid);
     vi.spyOn(apiClient, 'getReceipt').mockResolvedValue(receipt);
 
-    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
+    renderWithQueryClient(<InvoiceHistoryView user={receiptFallbackOperator()} onStatus={vi.fn()} />);
 
-    await waitFor(() => expect(screen.getByText('Paciente Legacy')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Paciente Recibo Anterior')).toBeInTheDocument());
     await openInvoiceMenu(invoice.invoice_number);
     fireEvent.click(await screen.findByRole('menuitem', { name: /Ver recibo/i }));
 
-    await waitFor(() => expect(screen.getByText(/fallback legacy para facturas sin recibo institucional pdf/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/recibo disponible para esta factura/i)).toBeInTheDocument());
     expect(apiClient.getReceipt).toHaveBeenCalledWith(6, 'half_letter');
+    expect(screen.queryByLabelText(/tama/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/cambiar el tama/i)).not.toBeInTheDocument();
     expect(getPdf).not.toHaveBeenCalled();
   });
 });
@@ -666,7 +1694,7 @@ function adminUser(): AuthUser {
     username: 'admin',
     active: true,
     roles: ['admin'],
-    permissions: ['receipts.view', 'receipts.reprint', 'receipts.reprint_any', 'invoices.void', 'invoices.reverse'],
+    permissions: ['receipts.view', 'receipts.reprint', 'receipts.reprint_any', 'payments.create', 'invoices.void', 'invoices.reverse', 'invoices.operate_any'],
     must_change_password: false,
   };
 }
@@ -677,4 +1705,24 @@ function limitedUser(): AuthUser {
     roles: ['cashier'],
     permissions: ['invoices.view'],
   };
+}
+
+function historyUser(permissions: string[]): AuthUser {
+  return {
+    ...adminUser(),
+    roles: ['cashier'],
+    permissions,
+  };
+}
+
+function receiptViewerUser(): AuthUser {
+  return {
+    ...adminUser(),
+    roles: ['auditor'],
+    permissions: ['invoices.view', 'receipts.view'],
+  };
+}
+
+function receiptFallbackOperator(): AuthUser {
+  return historyUser(['invoices.view', 'receipts.view', 'receipts.reprint', 'receipts.reprint_any']);
 }

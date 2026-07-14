@@ -8,11 +8,13 @@ use App\Actions\Payments\RegisterPaymentAction;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
+use App\Models\InstitutionalReceiptPrintEvent;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Service;
 use App\Models\User;
 use App\Support\InvoiceAccess;
+use App\Support\Money;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -89,6 +91,13 @@ class ExecutiveReportTest extends TestCase
                         'days',
                     ],
                     'filters',
+                    'accounting_policy' => [
+                        'scope',
+                        'expenses_supported',
+                        'exclusions_already_applied',
+                        'billed_definition',
+                        'collected_definition',
+                    ],
                     'comparison' => [
                         'billed' => ['current', 'previous', 'delta_cents', 'delta_percentage'],
                         'collected' => ['current', 'previous', 'delta_cents', 'delta_percentage'],
@@ -166,7 +175,10 @@ class ExecutiveReportTest extends TestCase
                         'backup_events',
                     ],
                 ],
-            ]);
+            ])
+            ->assertJsonPath('data.accounting_policy.scope', 'operational_cash')
+            ->assertJsonPath('data.accounting_policy.expenses_supported', false)
+            ->assertJsonPath('data.accounting_policy.exclusions_already_applied', true);
     }
 
     public function test_executive_summary_excludes_voided_invoices_from_billed(): void
@@ -202,6 +214,36 @@ class ExecutiveReportTest extends TestCase
             ->assertJsonPath('data.payment_methods.0.method', 'cash')
             ->assertJsonPath('data.payment_methods.0.amount', $good->total)
             ->assertJsonPath('data.payment_methods.0.count', 1);
+    }
+
+    public function test_executive_summary_counts_invoices_voided_in_range_even_when_issued_earlier(): void
+    {
+        $this->seedBillingBase();
+        $admin = $this->admin();
+        $cashier = $this->cashier();
+        $voided = $this->createInvoice($cashier, 'Glucosa');
+
+        $voided->update([
+            'issued_at' => Carbon::now('America/Tegucigalpa')->subDay(),
+            'status' => Invoice::STATUS_VOID,
+            'voided_by' => $this->supervisor()->id,
+            'voided_at' => Carbon::now('America/Tegucigalpa'),
+            'void_reason' => 'Anulacion revisada en cierre diario',
+        ]);
+
+        $today = Carbon::now('America/Tegucigalpa')->toDateString();
+
+        $this->actingAs($admin)
+            ->getJson('/api/reports/executive?date_from='.$today.'&date_to='.$today)
+            ->assertOk()
+            ->assertJsonPath('data.summary.invoice_count', 0)
+            ->assertJsonPath('data.summary.billed_total', '0.00')
+            ->assertJsonPath('data.summary.voided_count', 1)
+            ->assertJsonPath('data.summary.voided_total', $voided->total)
+            ->assertJsonPath('data.daily_trend.0.invoice_count', 0)
+            ->assertJsonPath('data.daily_trend.0.voided_count', 1)
+            ->assertJsonPath('data.voids_and_reversals.0.kind', 'void')
+            ->assertJsonPath('data.voids_and_reversals.0.invoice_number', $voided->invoice_number);
     }
 
     public function test_executive_payment_methods_separate_cash_from_others(): void
@@ -289,6 +331,33 @@ class ExecutiveReportTest extends TestCase
             ->assertJsonPath('data.cash_sessions.0.closure_note', 'Faltante de 5 lempiras');
     }
 
+    public function test_executive_cash_sessions_show_live_expected_cash_for_open_sessions(): void
+    {
+        $this->seedBillingBase();
+        $admin = $this->admin();
+        $cashier = $this->cashier();
+        $session = $this->openSession($cashier);
+
+        $invoice = $this->createInvoice($cashier, 'Glucosa');
+        $this->payInvoice($cashier, $invoice->id, $session->id, Payment::METHOD_CASH, $invoice->total);
+
+        $expectedCash = Money::formatCents(
+            Money::parseCents($session->opening_amount, 'opening_amount')
+            + Money::parseCents($invoice->total, 'invoice_total'),
+        );
+        $today = Carbon::now('America/Tegucigalpa')->toDateString();
+
+        $this->actingAs($admin)
+            ->getJson('/api/reports/executive?date_from='.$today.'&date_to='.$today)
+            ->assertOk()
+            ->assertJsonPath('data.cash_sessions.0.id', $session->id)
+            ->assertJsonPath('data.cash_sessions.0.status', CashRegisterSession::STATUS_OPEN)
+            ->assertJsonPath('data.cash_sessions.0.opening_amount', '500.00')
+            ->assertJsonPath('data.cash_sessions.0.expected_cash', $expectedCash)
+            ->assertJsonPath('data.cash_sessions.0.counted_cash', null)
+            ->assertJsonPath('data.cash_sessions.0.difference', null);
+    }
+
     public function test_executive_includes_audit_summary_counts(): void
     {
         $this->seedBillingBase();
@@ -300,14 +369,68 @@ class ExecutiveReportTest extends TestCase
             ['action' => 'backup.created', 'entity_type' => 'backup', 'entity_id' => 1, 'user_id' => $admin->id, 'created_at' => now()],
         ]);
 
+        InstitutionalReceiptPrintEvent::query()->create([
+            'institutional_receipt_id' => null,
+            'event_type' => InstitutionalReceiptPrintEvent::TYPE_REPRINT,
+            'reason' => 'Copia institucional solicitada',
+            'user_id' => $admin->id,
+            'created_at' => now(),
+        ]);
+
         $today = Carbon::now('America/Tegucigalpa')->toDateString();
 
         $this->actingAs($admin)
             ->getJson('/api/reports/executive?date_from='.$today.'&date_to='.$today)
             ->assertOk()
-            ->assertJsonPath('data.audit_summary.reprints', 1)
+            ->assertJsonPath('data.audit_summary.reprints', 2)
             ->assertJsonPath('data.audit_summary.critical_events', 1)
             ->assertJsonPath('data.audit_summary.backup_events', 1);
+    }
+
+    public function test_executive_without_audit_view_redacts_audit_details(): void
+    {
+        $this->seedBillingBase();
+        $viewer = User::factory()->create();
+        $this->grantDirectPermissions($viewer, [
+            'reports.view',
+            'reports.managerial.view',
+        ]);
+        $cashier = $this->cashier();
+        $voided = $this->createInvoice($cashier, 'Glucosa');
+
+        $voided->update([
+            'status' => Invoice::STATUS_VOID,
+            'voided_by' => $this->supervisor()->id,
+            'voided_at' => Carbon::now('America/Tegucigalpa'),
+            'void_reason' => 'Motivo ejecutivo reservado',
+        ]);
+
+        \DB::table('audit_logs')->insert([
+            ['action' => 'invoice.voided', 'entity_type' => Invoice::class, 'entity_id' => $voided->id, 'user_id' => $viewer->id, 'created_at' => now()],
+        ]);
+
+        $today = Carbon::now('America/Tegucigalpa')->toDateString();
+
+        $this->actingAs($viewer)
+            ->getJson('/api/reports/executive?date_from='.$today.'&date_to='.$today)
+            ->assertOk()
+            ->assertJsonPath('data.can_view_audit', false)
+            ->assertJsonCount(0, 'data.voids_and_reversals')
+            ->assertJsonPath('data.audit_summary.critical_events', 0)
+            ->assertJsonMissing(['reason' => 'Motivo ejecutivo reservado']);
+    }
+
+    public function test_executive_generic_reports_view_without_concrete_permission_is_forbidden(): void
+    {
+        $this->seedBillingBase();
+        $viewer = User::factory()->create();
+        $this->grantDirectPermissions($viewer, ['reports.view']);
+
+        $today = Carbon::now('America/Tegucigalpa')->toDateString();
+
+        $this->actingAs($viewer)
+            ->getJson('/api/reports/executive?date_from='.$today.'&date_to='.$today)
+            ->assertForbidden();
     }
 
     public function test_executive_cajero_without_managerial_permission_is_forbidden(): void
@@ -422,6 +545,25 @@ class ExecutiveReportTest extends TestCase
 
     private function openSession(User $cashier): CashRegisterSession
     {
+        $existingSession = CashRegisterSession::query()
+            ->where('user_id', $cashier->id)
+            ->where('status', CashRegisterSession::STATUS_OPEN)
+            ->first();
+
+        if ($existingSession instanceof CashRegisterSession) {
+            return $existingSession;
+        }
+
+        if (CashRegisterSession::query()->where('status', CashRegisterSession::STATUS_OPEN)->exists()) {
+            return CashRegisterSession::query()->create([
+                'user_id' => $cashier->id,
+                'open_user_id' => $cashier->id,
+                'opening_amount' => '500.00',
+                'status' => CashRegisterSession::STATUS_OPEN,
+                'opened_at' => now(),
+            ]);
+        }
+
         return app(OpenCashSessionAction::class)
             ->execute(['opening_amount' => '500.00'], $cashier->fresh());
     }
@@ -459,6 +601,9 @@ class ExecutiveReportTest extends TestCase
                     'cash_session_id' => $sessionId,
                     'method' => $method,
                     'amount' => $amount,
+                    'reference' => in_array($method, [Payment::METHOD_CARD, Payment::METHOD_TRANSFER], true)
+                        ? "REF-{$method}-{$invoiceId}"
+                        : null,
                 ],
                 $cashier->fresh(),
                 app(InvoiceAccess::class),

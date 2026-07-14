@@ -106,6 +106,37 @@ class OperationalMetricsServiceTest extends TestCase
         $this->assertSame(4096, $snapshot['storage']['backup_bytes']);
     }
 
+    public function test_health_score_flags_latest_successful_backup_checksum_mismatch(): void
+    {
+        Storage::fake('local');
+        OperationalMetricsService::recordWorkerHeartbeat();
+
+        $path = 'backups/hospital-backup-integrity.sql.gz.enc';
+        Storage::disk('local')->put($path, 'tampered-payload');
+
+        BackupLog::query()->create([
+            'filename' => 'hospital-backup-integrity.sql.gz.enc',
+            'path' => $path,
+            'disk' => 'local',
+            'status' => BackupLog::STATUS_SUCCESS,
+            'type' => BackupLog::TYPE_SCHEDULED,
+            'size_bytes' => strlen('expected-payload'),
+            'checksum_sha256' => hash('sha256', 'expected-payload'),
+            'completed_at' => now(),
+        ]);
+
+        $snapshot = app(OperationalMetricsService::class)->snapshot();
+
+        $this->assertSame(1, $snapshot['backups']['success_last_24h']);
+        $this->assertTrue($snapshot['backups']['latest_success_file_exists']);
+        $this->assertFalse($snapshot['backups']['latest_success_checksum_matches']);
+
+        $score = app(OperationalMetricsService::class)->overallHealthScore();
+
+        $this->assertFalse($score['healthy']);
+        $this->assertContains('backup_latest_integrity_mismatch', $score['issues']);
+    }
+
     public function test_recent_errors_section_surfaces_failed_actions(): void
     {
         AuditLog::query()->create([

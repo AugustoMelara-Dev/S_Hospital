@@ -34,6 +34,7 @@ const adminUser = {
     'cash.close_any',
     'invoices.view',
     'invoices.create',
+    'invoices.operate_any',
     'invoices.void',
     'invoices.reverse',
     'payments.create',
@@ -167,6 +168,7 @@ const invoice = {
   balance_due: '0.00',
   status: 'paid',
   issued_at: issuedAt,
+  issuer: adminUser,
   items: [
     {
       id: 1,
@@ -375,7 +377,7 @@ test('dangerous history actions open a confirmation path that can be cancelled',
   await page.getByRole('button', { name: /acciones de la factura/i }).click();
   await page.getByRole('menuitem', { name: /reversar pago/i }).click();
   await expect(page.getByRole('alertdialog', { name: /reversar factura/i })).toBeVisible();
-  await expect(page.getByRole('alertdialog', { name: /reversar factura/i })).toHaveAccessibleDescription(/revise la informacion/i);
+  await expect(page.getByRole('alertdialog', { name: /reversar factura/i })).toHaveAccessibleDescription(/revise la informaci.n/i);
   await page.getByRole('button', { name: /cancelar/i }).click();
   await expect(page.getByRole('alertdialog', { name: /reversar factura/i })).toBeHidden();
 
@@ -415,7 +417,10 @@ test('refactor final screenshots evidence', async ({ page }) => {
   await page.getByRole('button', { name: /emitir y cobrar/i }).click();
   await expect(page.getByRole('dialog', { name: /confirmar emisi/i })).toBeVisible();
   await page.getByRole('button', { name: /emitir y abrir cobro/i }).click();
-  await expect(page.getByRole('dialog', { name: /factura emitida/i })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: /registrar pago/i })).toBeVisible();
+  await shot('billing-payment.png');
+  await page.getByRole('button', { name: /confirmar cobro/i }).click();
+  await expect(page.getByRole('dialog', { name: /factura pagada/i })).toBeVisible();
   await shot('billing-success.png');
 
   await page.goto('/cashbox');
@@ -476,10 +481,9 @@ test('refactor final screenshots evidence', async ({ page }) => {
   await page.goto('/settings/institutional-receipts');
   await waitForScreen(page, /recibos institucionales|recibos/i);
   await page.getByRole('tab', { name: /papel y copias/i }).click();
-  await page.getByRole('button', { name: /recibo peque/i }).click({ timeout: 5_000 });
-  await page.locator('summary').filter({ hasText: /modo soporte/i }).click();
-  await page.locator('#receipt-advanced-panel').scrollIntoViewIfNeeded();
-  await shot('receipt-settings-advanced.png');
+  await page.getByRole('radio', { name: /^A5\b/i }).click();
+  await expect(page.getByText(/margen|escala de fuente|modo soporte/i)).toHaveCount(0);
+  await shot('receipt-settings-a5.png');
 
   await page.evaluate(() => fetch('/api/auth/logout', { method: 'POST' }));
   await login(page, 'admin.validacion');
@@ -634,9 +638,11 @@ async function installApiMocks(page: Page) {
             subtotal: '40.00',
             tax_amount: '6.00',
             total: '46.00',
-            paid_amount: '46.00',
-            balance_due: '0.00',
-            status: 'paid',
+            paid_amount: '0.00',
+            balance_due: '46.00',
+            status: 'issued',
+            institutional_receipt: null,
+            payments: [],
             items: [
               invoice.items[0],
               {
@@ -655,6 +661,44 @@ async function installApiMocks(page: Page) {
       }
       return json(route, { data: [invoice], meta: { current_page: 1, per_page: 10, total: 1 } });
     }
+    if (path === '/api/invoices/100/payments' && method === 'POST') {
+      const paidInvoice = {
+        ...invoice,
+        patient_name: 'Paciente QA Visual',
+        subtotal: '40.00',
+        tax_amount: '6.00',
+        total: '46.00',
+        paid_amount: '46.00',
+        balance_due: '0.00',
+        status: 'paid',
+      };
+      const institutionalReceipt = {
+        ...invoice.institutional_receipt,
+        amount: '46.00',
+        amount_cents: 4600,
+        payer_name: paidInvoice.patient_name,
+      };
+
+      return json(route, {
+        data: {
+          payment: {
+            id: 51,
+            invoice_id: 100,
+            cash_session_id: 7,
+            user_id: adminUser.id,
+            method: 'cash',
+            amount: '46.00',
+            reference: null,
+            status: 'posted',
+            paid_at: paidAt,
+          },
+          invoice: { ...paidInvoice, institutional_receipt: institutionalReceipt },
+          institutional_receipt: institutionalReceipt,
+          institutional_receipt_error: null,
+          receipt_outcome: 'issued',
+        },
+      }, 201);
+    }
     if (path === '/api/invoices/100') {
       return json(route, { data: invoice });
     }
@@ -664,7 +708,10 @@ async function installApiMocks(page: Page) {
     if (path === '/api/invoices/100/receipt' || path === '/api/invoices/100/reprint') {
       return json(route, { data: { receipt: receiptData() } });
     }
-    if (path.startsWith('/api/institutional-receipts/')) {
+    if (path.endsWith('/print-events')) {
+      return json(route, { data: { id: 1, institutional_receipt_id: 90, reason: null, created_at: paidAt } }, 201);
+    }
+    if (path.endsWith('/pdf')) {
       return route.fulfill({ status: 200, contentType: 'application/pdf', body: '%PDF-smoke' });
     }
     if (path === '/api/backups') {
@@ -682,6 +729,9 @@ async function installApiMocks(page: Page) {
     }
     if (path === '/api/system/client-errors') {
       return route.fulfill({ status: 204 });
+    }
+    if (path === '/api/system/audit-logs') {
+      return json(route, { data: auditLogEntries(), meta: { current_page: 1, per_page: 25, total: 1 } });
     }
     if (path === '/api/reports/dashboard') {
       return json(route, { data: dashboardReport() });
@@ -1114,12 +1164,40 @@ function operationsReport() {
   };
 }
 
+function auditLogEntries() {
+  return [
+    {
+      id: 1,
+      action: 'invoice.voided',
+      result: 'success',
+      reason: 'Correccion auditada',
+      ip: '192.168.1.25',
+      entity_type: 'invoice',
+      entity_id: 77,
+      created_at: issuedAt,
+      user: { id: adminUser.id, name: adminUser.name, username: adminUser.username },
+    },
+  ];
+}
+
 function cashSessionReport() {
   return {
-    session: cashSession,
+    cash_session: cashSession,
+    totals_by_method: { cash: '17.25', transfer: '0.00', card: '0.00', other: '0.00' },
+    total_cash: '17.25',
+    total_transfer: '0.00',
+    total_card: '0.00',
+    total_other: '0.00',
+    payments_count: 1,
+    payments_total: '17.25',
+    expected_cash_amount: '517.25',
+    pending_invoice_count: 0,
+    pending_amount: '0.00',
+    missing_institutional_receipt_count: 0,
+    reversed_payments_count: 0,
+    reversed_payments_total: '0.00',
     payments: invoice.payments,
     movements: [],
-    summary: { total_collected: '17.25', expected_cash: '517.25', counted_cash: null, difference: null },
   };
 }
 

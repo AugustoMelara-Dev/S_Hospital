@@ -95,7 +95,9 @@ class AuditUserActionsTest extends TestCase
     {
         $this->actingAs($this->admin, 'web');
 
-        $response = $this->postJson("/api/admin/users/{$this->cashier->id}/toggle-active");
+        $response = $this->postJson("/api/admin/users/{$this->cashier->id}/toggle-active", [
+            'reason' => 'Usuario removido del turno de caja.',
+        ]);
 
         $response->assertStatus(200);
 
@@ -109,6 +111,7 @@ class AuditUserActionsTest extends TestCase
         $log = AuditLog::where('action', 'user.deactivated')->firstOrFail();
         $this->assertTrue($log->old_values['active']);
         $this->assertFalse($log->new_values['active']);
+        $this->assertSame('Usuario removido del turno de caja.', $log->reason);
     }
 
     public function test_it_audits_user_password_resets(): void
@@ -117,6 +120,7 @@ class AuditUserActionsTest extends TestCase
 
         $payload = [
             'password' => 'NewSecurePassword123!',
+            'reason' => 'Restablecimiento solicitado por administracion.',
         ];
 
         $response = $this->postJson("/api/admin/users/{$this->cashier->id}/reset-password", $payload);

@@ -14,7 +14,7 @@ Configuracion de hospital:
 - Telefono opcional.
 - Mensaje de recibo.
 - Tasa de impuesto por defecto.
-- Formato de recibo por defecto: media carta; el selector operativo muestra media carta, carta, A5, 80mm o 58mm.
+- Formato de recibo principal: institucional en carta, media carta o A5. 80mm/58mm son compatibilidad secundaria, no el flujo operativo normal.
 
 Secuencia fiscal:
 

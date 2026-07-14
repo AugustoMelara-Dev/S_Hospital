@@ -1,0 +1,18 @@
+.institutional-grid {
+  width: 100%;
+  height: var(--institutional-grid-height);
+  min-height: 12rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0;
+  overflow: hidden;
+}
+
+.institutional-grid--dark { border-color: var(--color-border); background: var(--color-background); color: var(--color-foreground); }
+.institutional-grid__actions { min-height: 2rem; border-bottom: 1px solid currentColor; }
+.institutional-grid__overlay { display: grid; min-height: 12rem; place-items: center; padding: 1rem; text-align: center; }
+.institutional-grid__cell--primary, .institutional-grid__header--primary { font-weight: 600; }
+.institutional-grid__cell--tertiary { color: var(--color-muted-foreground); }
+
+@media (max-width: 48rem) {
+  .institutional-grid__cell--tertiary, .institutional-grid__header--tertiary { display: none; }
+}

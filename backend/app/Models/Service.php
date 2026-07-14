@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use LogicException;
 
 /**
  * @property int $id
@@ -77,6 +78,15 @@ class Service extends Model
         ];
     }
 
+    protected static function booted(): void
+    {
+        static::deleting(function (Service $service): void {
+            if ($service->invoiceItems()->exists()) {
+                throw new LogicException('Los servicios facturados no se eliminan; deben desactivarse para conservar el historico.');
+            }
+        });
+    }
+
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
@@ -90,5 +100,10 @@ class Service extends Model
     public function priceHistories(): HasMany
     {
         return $this->hasMany(ServicePriceHistory::class);
+    }
+
+    public function invoiceItems(): HasMany
+    {
+        return $this->hasMany(InvoiceItem::class);
     }
 }

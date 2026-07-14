@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Support\HospitalName;
 use App\Support\Money;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Carbon;
 
 class PdfExportService
 {
@@ -319,6 +320,9 @@ class PdfExportService
         $areas = $data['areas']['areas'] ?? [];
         $services = $data['services']['services'] ?? [];
         $operations = $data['operations'];
+        $cashSessionReport = $data['cash_session_report'] ?? null;
+        $cashSessionClosureHtml = $this->buildCashSessionClosureHtml(is_array($cashSessionReport) ? $cashSessionReport : null);
+        $canViewAudit = ($operations['can_view_audit'] ?? true) === true;
         $categoryAmountBasis = $data['categories']['amount_basis'] ?? ReportAmountBasis::BILLED;
         $areaAmountBasis = $data['areas']['amount_basis'] ?? ReportAmountBasis::BILLED;
         $serviceAmountBasis = $data['services']['amount_basis'] ?? ReportAmountBasis::BILLED;
@@ -347,6 +351,7 @@ class PdfExportService
         $rtnEsc = $this->e($rtn);
         $dateFromEsc = $this->e($dateFrom);
         $dateToEsc = $this->e($dateTo);
+        $operationalSubtitle = $canViewAudit ? 'Auditoria y Desempeno' : 'Desempeno operativo';
         $appliedFiltersHtml = $this->buildAppliedFiltersHtml($this->appliedFilterRows($data['filters'] ?? []));
 
         $html = "
@@ -501,6 +506,7 @@ class PdfExportService
         <div class='clear'></div>
     </div>
 
+    {$cashSessionClosureHtml}
 
     <div class='section-title'>Lectura Financiera del Periodo</div>
     <table>
@@ -647,7 +653,7 @@ class PdfExportService
         </div>
         <div>
             <h1 class='header-title'>DETALLE OPERATIVO Y SERVICIOS</h1>
-            <div class='header-subtitle'>Auditoría y Desempeño</div>
+            <div class='header-subtitle'>".$this->e($operationalSubtitle)."</div>
         </div>
         <div class='clear'></div>
     </div>
@@ -678,10 +684,12 @@ class PdfExportService
                 </tr>";
             }
         }
-        $html .= "
+        $html .= '
         </tbody>
-    </table>
+    </table>';
 
+        if ($canViewAudit) {
+            $html .= "
     <div class='section-title'>Resumen de Auditoría Operativa</div>
     <div style='margin-bottom: 15px;'>
         <table style='width: 100%; border: 1px solid #e2e8f0;'>
@@ -706,8 +714,8 @@ class PdfExportService
         </table>
     </div>";
 
-        if (! empty($operations['voids'])) {
-            $html .= "
+            if (! empty($operations['voids'])) {
+                $html .= "
             <div class='section-title'>Detalle de Anulaciones</div>
             <table>
                 <thead>
@@ -719,22 +727,22 @@ class PdfExportService
                     </tr>
                 </thead>
                 <tbody>";
-            foreach (array_slice($operations['voids'], 0, 5) as $void) {
-                $html .= '
+                foreach (array_slice($operations['voids'], 0, 5) as $void) {
+                    $html .= '
                     <tr>
                         <td>'.$this->e($void['invoice_number'] ?? 'N/A').'</td>
                         <td>'.$this->e($void['voided_at'] ?? 'N/A').'</td>
                         <td>'.$this->e($void['user'] ?? $void['voided_by_name'] ?? 'N/A').'</td>
                         <td>'.$this->e($void['reason'] ?? $void['void_reason'] ?? 'Sin motivo').'</td>
                     </tr>';
-            }
-            $html .= '
+                }
+                $html .= '
                 </tbody>
             </table>';
-        }
+            }
 
-        if (! empty($operations['payment_voids'])) {
-            $html .= "
+            if (! empty($operations['payment_voids'])) {
+                $html .= "
             <div class='section-title'>Detalle de Reversos de Pago</div>
             <table>
                 <thead>
@@ -747,8 +755,8 @@ class PdfExportService
                     </tr>
                 </thead>
                 <tbody>";
-            foreach (array_slice($operations['payment_voids'], 0, 5) as $paymentVoid) {
-                $html .= '
+                foreach (array_slice($operations['payment_voids'], 0, 5) as $paymentVoid) {
+                    $html .= '
                     <tr>
                         <td>'.$this->e($paymentVoid['invoice_number'] ?? 'N/A').'</td>
                         <td>'.$this->e($this->translateMethod((string) ($paymentVoid['method'] ?? '')))."</td>
@@ -756,10 +764,11 @@ class PdfExportService
                         <td>'.$this->e($paymentVoid['reason'] ?? 'Sin motivo').'</td>
                         <td>'.$this->e($paymentVoid['voided_by'] ?? 'N/A').'</td>
                     </tr>';
-            }
-            $html .= '
+                }
+                $html .= '
                 </tbody>
             </table>';
+            }
         }
 
         $html .= "
@@ -772,6 +781,95 @@ class PdfExportService
 ';
 
         return $html;
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $report
+     */
+    private function buildCashSessionClosureHtml(?array $report): string
+    {
+        if ($report === null) {
+            return '';
+        }
+
+        $cashSession = $report['cash_session'] ?? [];
+        $totalsByMethod = array_merge([
+            'cash' => '0.00',
+            'transfer' => '0.00',
+            'card' => '0.00',
+            'other' => '0.00',
+        ], is_array($report['totals_by_method'] ?? null) ? $report['totals_by_method'] : []);
+
+        $rows = '';
+        foreach ($totalsByMethod as $method => $total) {
+            $rows .= '
+            <tr>
+                <td><strong>'.$this->e($this->translateMethod((string) $method))."</strong></td>
+                <td class='text-right'>L. ".$this->money($total).'</td>
+            </tr>';
+        }
+
+        return "
+    <div class='section-title'>Cierre de Caja</div>
+    <table>
+        <tbody>
+            <tr>
+                <td><strong>Caja</strong></td>
+                <td>".$this->e($cashSession['id'] ?? '').'</td>
+                <td><strong>Estado</strong></td>
+                <td>'.$this->e($cashSession['status'] ?? '').'</td>
+            </tr>
+            <tr>
+                <td><strong>Cajero</strong></td>
+                <td>'.$this->e(data_get($cashSession, 'user.name', 'Sin asignar')).'</td>
+                <td><strong>Cerrada por</strong></td>
+                <td>'.$this->e(data_get($cashSession, 'closed_by.name', 'N/A')).'</td>
+            </tr>
+            <tr>
+                <td><strong>Apertura</strong></td>
+                <td>'.$this->e($this->dateTimeLabel($cashSession['opened_at'] ?? null)).'</td>
+                <td><strong>Cierre</strong></td>
+                <td>'.$this->e($this->dateTimeLabel($cashSession['closed_at'] ?? null))."</td>
+            </tr>
+            <tr>
+                <td><strong>Esperado en caja</strong></td>
+                <td class='text-right'>L. ".$this->money($report['expected_cash_amount'] ?? $cashSession['expected_amount'] ?? 0)."</td>
+                <td><strong>Contado al cierre</strong></td>
+                <td class='text-right'>L. ".$this->money($cashSession['closing_amount'] ?? 0)."</td>
+            </tr>
+            <tr>
+                <td><strong>Diferencia</strong></td>
+                <td class='text-right'>L. ".$this->money($cashSession['difference_amount'] ?? 0).'</td>
+                <td><strong>Pagos registrados</strong></td>
+                <td>'.$this->e($report['payments_count'] ?? 0)."</td>
+            </tr>
+            <tr>
+                <td><strong>Total cobrado</strong></td>
+                <td class='text-right'>L. ".$this->money($report['payments_total'] ?? 0)."</td>
+                <td><strong>Monto pendiente</strong></td>
+                <td class='text-right'>L. ".$this->money($report['pending_amount'] ?? 0)."</td>
+            </tr>
+        </tbody>
+    </table>
+    <table>
+        <thead>
+            <tr>
+                <th>Metodo de pago</th>
+                <th class='text-right'>Total de cierre</th>
+            </tr>
+        </thead>
+        <tbody>{$rows}
+        </tbody>
+    </table>";
+    }
+
+    private function dateTimeLabel(mixed $value): string
+    {
+        if ($value === null || $value === '') {
+            return 'N/A';
+        }
+
+        return Carbon::parse((string) $value)->format('d/m/Y H:i');
     }
 
     public function generateRangeClosurePdf(array $data, array $fiscal): string

@@ -21,7 +21,6 @@ use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -50,11 +49,11 @@ class BackupRestoreRoundtripTest extends TestCase
 
         $encryptedDump = Storage::disk('local')->get((string) $backup->path);
         $this->assertIsString($encryptedDump);
-        $this->assertStringEndsWith('.sql.enc', (string) $backup->filename);
+        $this->assertStringEndsWith('.sql.gz.enc', (string) $backup->filename);
         $this->assertStringNotContainsString('CREATE TABLE', $encryptedDump);
         $this->assertStringNotContainsString('Maria Lopez', $encryptedDump);
 
-        $dump = $this->decryptBackupDump($encryptedDump);
+        $dump = $this->decryptBackupDump($backup);
         $this->assertStringContainsString('CREATE TABLE', $dump);
         $this->assertStringContainsString('BEGIN TRANSACTION', $dump);
         $this->assertStringContainsString('COMMIT', $dump);
@@ -80,7 +79,7 @@ class BackupRestoreRoundtripTest extends TestCase
         $this->assertStringNotContainsString('APP_KEY=', $encryptedDump);
         $this->assertStringNotContainsString('DB_PASSWORD=', $encryptedDump);
 
-        $dump = $this->decryptBackupDump($encryptedDump);
+        $dump = $this->decryptBackupDump($backup);
         $this->assertStringNotContainsString('sqlite-no-password', $dump);
         $this->assertStringNotContainsString('APP_KEY=', $dump);
         $this->assertStringNotContainsString('DB_PASSWORD=', $dump);
@@ -179,25 +178,17 @@ class BackupRestoreRoundtripTest extends TestCase
         ]);
     }
 
-    private function decryptBackupDump(string $encryptedDump): string
+    private function decryptBackupDump(BackupLog $backup): string
     {
-        $lines = preg_split('/\R/', $encryptedDump);
-        $this->assertIsArray($lines);
+        $decryptedPath = storage_path('framework/testing/roundtrip-backup-'.$backup->id.'.sql');
+        @unlink($decryptedPath);
 
-        if (($lines[0] ?? '') !== EncryptBackupFileAction::CHUNK_MARKER) {
-            return Crypt::decryptString($encryptedDump);
-        }
+        $this->artisan('hospital:decrypt-backup', [
+            'input' => Storage::disk('local')->path((string) $backup->path),
+            'output' => $decryptedPath,
+        ])->assertExitCode(0);
 
-        $dump = '';
-        foreach (array_slice($lines, 1) as $encryptedChunk) {
-            if ($encryptedChunk === '') {
-                continue;
-            }
-
-            $dump .= Crypt::decryptString($encryptedChunk);
-        }
-
-        return $dump;
+        return (string) file_get_contents($decryptedPath);
     }
 
     private function seedCriticalData(): void

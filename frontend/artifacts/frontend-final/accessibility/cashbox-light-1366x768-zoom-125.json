@@ -1,0 +1,240 @@
+{
+  "route": "/cashbox",
+  "matrix": {
+    "id": "light-1366x768-zoom-125",
+    "mode": "light",
+    "width": 1366,
+    "height": 768,
+    "zoom": 1.25
+  },
+  "flatSurfaces": [
+    {
+      "selector": ".ant-btn",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<button aria-label=\"Reducir navegación\" type=\"button\" class=\"ant-btn css-dev-only-do-not-override-1pi45l5 s-hospital ant-btn-text ant-btn-color-default ant-btn-variant-text ant-btn-icon-only !size-11 shrink-0 hover:bg-sidebar-accent text-sidebar-foreground\"><span class=\"ant-btn-icon\"><span role=\"img\" aria-label=\"menu-fold\" class=\"anticon anticon-menu-fold text-lg text-sidebar-accent-foreground\"><svg viewBox=\"64 64 896 896\" focusable=\"false\" data-icon=\"menu-fold\" width=\"1em\" height=\"1em\" fill=\"cu"
+    },
+    {
+      "selector": ".ant-btn",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<button aria-label=\"Abrir comandos\" type=\"button\" class=\"ant-btn css-dev-only-do-not-override-1pi45l5 s-hospital ant-btn-default ant-btn-color-default ant-btn-variant-outlined hidden min-w-44 justify-start bg-surface text-muted-foreground sm:inline-flex\"><span class=\"ant-btn-icon\"><span role=\"img\" aria-label=\"search\" class=\"anticon anticon-search\"><svg viewBox=\"64 64 896 896\" focusable=\"false\" data-icon=\"search\" width=\"1em\" height=\"1em\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M909.6 854."
+    },
+    {
+      "selector": ".ant-btn",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<button aria-label=\"Ver atajos de teclado\" type=\"button\" class=\"ant-btn css-dev-only-do-not-override-1pi45l5 s-hospital ant-btn-text ant-btn-color-default ant-btn-variant-text ant-btn-icon-only hidden sm:inline-flex\"><span class=\"ant-btn-icon\"><span role=\"img\" aria-label=\"key\" class=\"anticon anticon-key\"><svg viewBox=\"64 64 896 896\" focusable=\"false\" data-icon=\"key\" width=\"1em\" height=\"1em\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M608 112c-167.9 0-304 136.1-304 304 0 70.3 23.9 135 63.9 1"
+    },
+    {
+      "selector": ".ant-btn",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<button aria-label=\"Abrir ayuda\" type=\"button\" class=\"ant-btn css-dev-only-do-not-override-1pi45l5 s-hospital ant-btn-text ant-btn-color-default ant-btn-variant-text ant-btn-icon-only hidden sm:inline-flex\"><span class=\"ant-btn-icon\"><span role=\"img\" aria-label=\"question-circle\" class=\"anticon anticon-question-circle\"><svg viewBox=\"64 64 896 896\" focusable=\"false\" data-icon=\"question-circle\" width=\"1em\" height=\"1em\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M512 64C264.6 64 64 264.6 64 512"
+    },
+    {
+      "selector": ".ant-btn",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<button type=\"button\" class=\"ant-btn css-dev-only-do-not-override-1pi45l5 s-hospital ant-btn-primary ant-btn-color-primary ant-btn-variant-solid\"><span>Nueva factura</span></button>"
+    },
+    {
+      "selector": ".ant-btn",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<button type=\"button\" class=\"ant-btn css-dev-only-do-not-override-1pi45l5 s-hospital ant-btn-default ant-btn-color-default ant-btn-variant-outlined\"><span class=\"ant-btn-icon\"><span role=\"img\" aria-label=\"reload\" class=\"anticon anticon-reload\"><svg viewBox=\"64 64 896 896\" focusable=\"false\" data-icon=\"reload\" width=\"1em\" height=\"1em\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M909.1 209.3l-56.4 44.1C775.8 155.1 656.2 92 521.9 92 290 92 102.3 279.5 102 511.5 101.7 743.7 289.8 932 521.9 932c18"
+    },
+    {
+      "selector": ".ant-btn",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<button type=\"submit\" class=\"ant-btn css-dev-only-do-not-override-1pi45l5 s-hospital ant-btn-primary ant-btn-color-primary ant-btn-variant-solid min-h-11\"><span>Cerrar caja</span></button>"
+    },
+    {
+      "selector": ".ant-input",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<input autocomplete=\"off\" id=\"closing_amount\" inputmode=\"decimal\" placeholder=\"0.00\" aria-invalid=\"false\" class=\"ant-input css-dev-only-do-not-override-1pi45l5 ant-input-outlined min-h-11 font-mono text-lg tabular-nums s-hospital ant-input-css-var\" type=\"text\" value=\"\" name=\"closing_amount\">"
+    },
+    {
+      "selector": ".ant-input",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<textarea id=\"closing_notes\" name=\"closing_notes\" placeholder=\"Nota opcional...\" rows=\"2\" class=\"ant-input css-dev-only-do-not-override-1pi45l5 ant-input-outlined s-hospital ant-input-css-var\"></textarea>"
+    },
+    {
+      "selector": ".ant-alert",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<div data-show=\"true\" class=\"ant-alert ant-alert-success ant-alert-outlined ant-alert-with-description s-hospital css-dev-only-do-not-override-1pi45l5\" role=\"alert\"><span class=\"ant-alert-icon\"><span role=\"img\" aria-label=\"check-circle\" class=\"anticon anticon-check-circle\"><svg viewBox=\"64 64 896 896\" focusable=\"false\" data-icon=\"check-circle\" width=\"1em\" height=\"1em\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512"
+    },
+    {
+      "selector": ".ant-alert",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<div data-show=\"true\" class=\"ant-alert ant-alert-success ant-alert-outlined ant-alert-with-description s-hospital css-dev-only-do-not-override-1pi45l5\" role=\"alert\"><span class=\"ant-alert-icon\"><span role=\"img\" aria-label=\"check-circle\" class=\"anticon anticon-check-circle\"><svg viewBox=\"64 64 896 896\" focusable=\"false\" data-icon=\"check-circle\" width=\"1em\" height=\"1em\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512"
+    },
+    {
+      "selector": ".ant-tag",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<span class=\"ant-tag ant-tag-filled ant-tag-processing m-0 px-3 py-1 text-xs font-bold css-dev-only-do-not-override-1pi45l5 s-hospital\">Caja #7</span>"
+    },
+    {
+      "selector": ".ant-tag",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<span class=\"ant-tag ant-tag-filled css-dev-only-do-not-override-1pi45l5 s-hospital\">Caja abierta</span>"
+    },
+    {
+      "selector": ".ant-empty",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<div class=\"css-dev-only-do-not-override-1pi45l5 s-hospital ant-empty\"><div class=\"ant-empty-image\"><svg width=\"184\" height=\"152\" viewBox=\"0 0 184 152\" xmlns=\"http://www.w3.org/2000/svg\"><title>No hay datos</title><g fill=\"none\" fill-rule=\"evenodd\"><g transform=\"translate(24 31.7)\"><ellipse fill-opacity=\".8\" fill=\"#f1f2f3\" cx=\"67.8\" cy=\"106.9\" rx=\"67.8\" ry=\"12.7\"></ellipse><path fill=\"#c5c7cc\" d=\"M122 69.7 98.1 40.2a6 6 0 0 0-4.6-2.2H42.1a6 6 0 0 0-4.6 2.2l-24 29.5V85H122z\"></path><path fill=\"#f"
+    }
+  ],
+  "impacts": {
+    "minor": 0,
+    "moderate": 0,
+    "serious": 0,
+    "critical": 0
+  },
+  "incomplete": 1,
+  "violations": [],
+  "incompleteDetails": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "help": "Elements must meet minimum color contrast ratio thresholds",
+      "nodes": [
+        {
+          "target": [
+            ".md\\:grid-cols-2 > .ant-form-item.ant-form-item-with-help.ant-form-item-horizontal > .ant-row.ant-form-item-row.css-dev-only-do-not-override-1pi45l5 > .ant-form-item-control.ant-col.css-dev-only-do-not-override-1pi45l5 > .ant-form-item-additional > .ant-form-item-explain.ant-form-item-explain-connected.ant-form-css-var > div > .bg-surface.block.text-muted-foreground"
+          ],
+          "failure": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements",
+          "html": "<span class=\"block bg-surface text-muted-foreground\">Cuente el efectivo físico en gaveta. No incluya tarjeta ni transferencia.</span>",
+          "computed": {
+            "backgroundColor": "rgb(255, 255, 255)",
+            "effectiveBackgroundColor": "rgb(255, 255, 255)",
+            "contrastRatio": 7.58,
+            "color": "rgb(71, 85, 105)",
+            "display": "block",
+            "opacity": "1",
+            "visibility": "visible"
+          }
+        },
+        {
+          "target": [
+            "#closing_notes"
+          ],
+          "failure": "Fix any of the following:\n  Element's background color could not be determined because it's partially obscured by another element",
+          "html": "<textarea id=\"closing_notes\" name=\"closing_notes\" placeholder=\"Nota opcional...\" rows=\"2\" class=\"ant-input css-dev-only-do-not-override-1pi45l5 ant-input-outlined s-hospital ant-input-css-var\"></textarea>",
+          "computed": {
+            "backgroundColor": "rgb(255, 255, 255)",
+            "effectiveBackgroundColor": "rgb(255, 255, 255)",
+            "contrastRatio": 16.27,
+            "color": "rgb(23, 32, 51)",
+            "display": "inline-block",
+            "opacity": "1",
+            "visibility": "visible"
+          }
+        }
+      ]
+    }
+  ],
+  "incompleteClassification": [
+    {
+      "id": "color-contrast",
+      "selector": [
+        ".md\\:grid-cols-2 > .ant-form-item.ant-form-item-with-help.ant-form-item-horizontal > .ant-row.ant-form-item-row.css-dev-only-do-not-override-1pi45l5 > .ant-form-item-control.ant-col.css-dev-only-do-not-override-1pi45l5 > .ant-form-item-additional > .ant-form-item-explain.ant-form-item-explain-connected.ant-form-css-var > div > .bg-surface.block.text-muted-foreground"
+      ],
+      "computed": {
+        "backgroundColor": "rgb(255, 255, 255)",
+        "effectiveBackgroundColor": "rgb(255, 255, 255)",
+        "contrastRatio": 7.58,
+        "color": "rgb(71, 85, 105)",
+        "display": "block",
+        "opacity": "1",
+        "visibility": "visible"
+      },
+      "html": "<span class=\"block bg-surface text-muted-foreground\">Cuente el efectivo físico en gaveta. No incluya tarjeta ni transferencia.</span>",
+      "classification": "manual-false-positive",
+      "analysis": "Contraste manual 7.58:1 calculado entre rgb(71, 85, 105) y el ancestro opaco rgb(255, 255, 255); cumple 4.5:1."
+    },
+    {
+      "id": "color-contrast",
+      "selector": [
+        "#closing_notes"
+      ],
+      "computed": {
+        "backgroundColor": "rgb(255, 255, 255)",
+        "effectiveBackgroundColor": "rgb(255, 255, 255)",
+        "contrastRatio": 16.27,
+        "color": "rgb(23, 32, 51)",
+        "display": "inline-block",
+        "opacity": "1",
+        "visibility": "visible"
+      },
+      "html": "<textarea id=\"closing_notes\" name=\"closing_notes\" placeholder=\"Nota opcional...\" rows=\"2\" class=\"ant-input css-dev-only-do-not-override-1pi45l5 ant-input-outlined s-hospital ant-input-css-var\"></textarea>",
+      "classification": "manual-false-positive",
+      "analysis": "Contraste manual 16.27:1 calculado entre rgb(23, 32, 51) y el ancestro opaco rgb(255, 255, 255); cumple 4.5:1."
+    }
+  ],
+  "unclassifiedIncomplete": []
+}

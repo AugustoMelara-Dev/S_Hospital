@@ -12,7 +12,9 @@ use App\Models\CashRegisterSession;
 use App\Models\Category;
 use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
+use App\Models\InstitutionalReceipt;
 use App\Models\InstitutionalReceiptPrintEvent;
+use App\Models\InstitutionalReceiptSeries;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Service;
@@ -73,7 +75,7 @@ class ReportsTest extends TestCase
             ->getJson("/api/reports/services?date_from={$date}&date_to={$date}")
             ->assertForbidden();
 
-        $this->actingAs($cashier)
+        $this->actingAs($user)
             ->getJson("/api/reports/cash-sessions/{$sessionId}")
             ->assertForbidden();
     }
@@ -129,7 +131,7 @@ class ReportsTest extends TestCase
 
         $this->payInvoice($cashier, $cashInvoice, $sessionId, Payment::METHOD_CASH, '17.25');
         $this->payInvoice($cashier, $transferInvoice, $sessionId, Payment::METHOD_TRANSFER, '5.00');
-        $this->payInvoice($cashier, $voidInvoice, $sessionId, Payment::METHOD_CARD, '28.75');
+        $this->payInvoice($cashier, $voidInvoice, $sessionId, Payment::METHOD_CARD, '25.00');
 
         Invoice::query()->whereKey($voidInvoice)->update([
             'status' => Invoice::STATUS_VOID,
@@ -192,9 +194,9 @@ class ReportsTest extends TestCase
             ->getJson('/api/reports/monthly?month='.$dateOne->format('Y-m'))
             ->assertOk()
             ->assertJsonPath('data.month', $dateOne->format('Y-m'))
-            ->assertJsonPath('data.total_billed', '57.50')
+            ->assertJsonPath('data.total_billed', '53.75')
             ->assertJsonPath('data.total_collected', '22.25')
-            ->assertJsonPath('data.total_pending', '35.25')
+            ->assertJsonPath('data.total_pending', '31.50')
             ->assertJsonPath('data.total_partial', '11.50')
             ->assertJsonPath('data.total_voided', '17.25')
             ->assertJsonPath('data.payment_count', 2)
@@ -210,15 +212,44 @@ class ReportsTest extends TestCase
             ->assertJsonPath('data.daily_totals.0.total_billed', '17.25')
             ->assertJsonPath('data.daily_totals.0.total_collected', '17.25')
             ->assertJsonPath('data.daily_totals.1.date', $dateTwo->toDateString())
-            ->assertJsonPath('data.daily_totals.1.total_billed', '40.25')
+            ->assertJsonPath('data.daily_totals.1.total_billed', '36.50')
             ->assertJsonPath('data.daily_totals.1.total_collected', '5.00')
-            ->assertJsonPath('data.daily_totals.1.total_pending', '35.25')
+            ->assertJsonPath('data.daily_totals.1.total_pending', '31.50')
             ->assertJsonPath('data.daily_totals.1.total_voided', '17.25');
 
         $this->actingAs($this->admin())
             ->getJson('/api/reports/monthly?month=2026-13')
             ->assertUnprocessable()
             ->assertJsonValidationErrors('month');
+    }
+
+    public function test_monthly_report_counts_invoices_voided_in_month_even_when_issued_earlier(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $this->openSession($cashier);
+        $voidInvoice = $this->createInvoice($cashier, 'Glucosa');
+        $voidedAt = now()->startOfMonth()->addDays(4)->hour(10);
+
+        Invoice::query()->whereKey($voidInvoice)->update([
+            'status' => Invoice::STATUS_VOID,
+            'issued_at' => now()->startOfMonth()->subDay()->hour(15),
+            'voided_by' => $this->supervisor()->id,
+            'voided_at' => $voidedAt,
+            'void_reason' => 'Anulacion revisada en cierre mensual',
+        ]);
+
+        $this->actingAs($this->admin())
+            ->getJson('/api/reports/monthly?month='.$voidedAt->format('Y-m'))
+            ->assertOk()
+            ->assertJsonPath('data.invoice_count', 0)
+            ->assertJsonPath('data.total_billed', '0.00')
+            ->assertJsonPath('data.total_voided', '17.25')
+            ->assertJsonPath('data.invoices_by_status.void.count', 1)
+            ->assertJsonPath('data.invoices_by_status.void.total', '17.25')
+            ->assertJsonPath('data.daily_totals.0.date', $voidedAt->toDateString())
+            ->assertJsonPath('data.daily_totals.0.invoice_count', 0)
+            ->assertJsonPath('data.daily_totals.0.total_voided', '17.25');
     }
 
     public function test_income_report_respects_date_range_and_invalid_ranges_return_422(): void
@@ -629,7 +660,7 @@ class ReportsTest extends TestCase
         $laboratoryId = Service::query()->where('name', 'Glucosa')->firstOrFail()->category_id;
 
         $this->payInvoice($cashier, $glucoseInvoice, $sessionId, Payment::METHOD_CASH, '17.25');
-        $this->payInvoice($otherCashier, $erythropoietinInvoice, $otherSessionId, Payment::METHOD_CARD, '28.75');
+        $this->payInvoice($otherCashier, $erythropoietinInvoice, $otherSessionId, Payment::METHOD_CARD, '25.00');
 
         $filters = http_build_query([
             'date_from' => now()->toDateString(),
@@ -783,11 +814,36 @@ class ReportsTest extends TestCase
             ->assertJsonPath('data.services.0.total', '17.25');
     }
 
-    public function test_managerial_reports_without_close_any_are_scoped_to_own_activity(): void
+    public function test_auditor_managerial_reports_include_other_cashiers_without_close_permission(): void
+    {
+        $this->seedBillingBase();
+        $auditor = User::factory()->create();
+        $auditor->assignRole('auditor');
+        $auditor->refresh();
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $invoiceId = $this->createInvoice($cashier, 'Eritropoyetina');
+
+        $this->payInvoice($cashier, $invoiceId, $sessionId, Payment::METHOD_CARD, '25.00');
+
+        $query = 'date_from='.now()->toDateString().'&date_to='.now()->toDateString();
+
+        $this->assertTrue($auditor->can('reports.managerial.view'));
+        $this->assertFalse($auditor->can('cash.close_any'));
+
+        $this->actingAs($auditor)
+            ->getJson("/api/reports/categories?{$query}")
+            ->assertOk()
+            ->assertJsonCount(1, 'data.categories')
+            ->assertJsonPath('data.categories.0.category', 'Medicamentos')
+            ->assertJsonPath('data.categories.0.total', '25.00');
+    }
+
+    public function test_cash_session_reports_without_managerial_are_scoped_to_own_activity(): void
     {
         $this->seedBillingBase();
         $viewer = $this->cashier();
-        $this->grantPermissions($viewer, 'reports.view', 'reports.managerial.view', 'reports.export');
+        $this->grantPermissions($viewer, 'reports.cash_session.view', 'reports.export');
         $otherCashier = $this->cashier();
         $viewerSessionId = $this->openSession($viewer);
         $otherSessionId = $this->openSession($otherCashier);
@@ -795,26 +851,31 @@ class ReportsTest extends TestCase
         $otherInvoice = $this->createInvoice($otherCashier, 'Eritropoyetina');
 
         $this->payInvoice($viewer, $viewerInvoice, $viewerSessionId, Payment::METHOD_CASH, '17.25');
-        $this->payInvoice($otherCashier, $otherInvoice, $otherSessionId, Payment::METHOD_CARD, '28.75');
+        $this->payInvoice($otherCashier, $otherInvoice, $otherSessionId, Payment::METHOD_CARD, '25.00');
 
         $query = 'date_from='.now()->toDateString().'&date_to='.now()->toDateString();
+        $ownSessionQuery = $query.'&cash_session_id='.$viewerSessionId;
 
         $this->actingAs($viewer)
             ->getJson("/api/reports/categories?{$query}")
+            ->assertForbidden();
+
+        $this->actingAs($viewer)
+            ->getJson("/api/reports/categories?{$ownSessionQuery}")
             ->assertOk()
             ->assertJsonCount(1, 'data.categories')
             ->assertJsonPath('data.categories.0.category', 'Laboratorio')
             ->assertJsonPath('data.categories.0.total', '17.25');
 
         $this->actingAs($viewer)
-            ->getJson("/api/reports/services?{$query}")
+            ->getJson("/api/reports/services?{$ownSessionQuery}")
             ->assertOk()
             ->assertJsonCount(1, 'data.services')
             ->assertJsonPath('data.services.0.service', 'Glucosa')
             ->assertJsonPath('data.services.0.total', '17.25');
 
         $this->actingAs($viewer)
-            ->getJson("/api/reports/operations?{$query}")
+            ->getJson("/api/reports/operations?{$ownSessionQuery}")
             ->assertForbidden();
 
         $this->actingAs($viewer)
@@ -822,12 +883,52 @@ class ReportsTest extends TestCase
             ->assertForbidden();
 
         $xlsx = $this->actingAs($viewer)
-            ->get("/api/reports/export?{$query}")
+            ->get("/api/reports/export?{$ownSessionQuery}")
             ->assertOk()
             ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
             ->streamedContent();
 
         $this->assertStringStartsWith("PK\x03\x04", $xlsx);
+    }
+
+    public function test_report_export_without_audit_view_omits_audit_sheet_but_keeps_cashier_summary(): void
+    {
+        $this->seedBillingBase();
+        $viewer = User::factory()->create();
+        $this->grantPermissions($viewer, 'reports.view', 'reports.managerial.view', 'reports.export');
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+        $this->payInvoice($cashier, $invoiceId, $sessionId, Payment::METHOD_CASH, '17.25');
+
+        Invoice::query()->whereKey($invoiceId)->update([
+            'status' => Invoice::STATUS_VOID,
+            'voided_by' => $this->supervisor()->id,
+            'voided_at' => now(),
+            'void_reason' => 'Motivo reservado sin auditoria',
+        ]);
+
+        $xlsx = $this->actingAs($viewer)
+            ->get('/api/reports/export?date_from='.now()->toDateString().'&date_to='.now()->toDateString())
+            ->assertOk()
+            ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            ->streamedContent();
+
+        $path = tempnam(sys_get_temp_dir(), 'no-audit-export-');
+        file_put_contents($path, $xlsx);
+
+        try {
+            $spreadsheet = IOFactory::load($path);
+            $cashiersSheet = $spreadsheet->getSheetByName('Cajeros');
+
+            $this->assertNotNull($cashiersSheet);
+            $this->assertSame('Recaudaciones por Cajero', $cashiersSheet->getCell('B2')->getValue());
+            $this->assertNull($spreadsheet->getSheetByName('Auditoría'));
+        } finally {
+            if ($path !== false && file_exists($path)) {
+                unlink($path);
+            }
+        }
     }
 
     public function test_category_filtered_collections_are_allocated_to_matching_items(): void
@@ -849,7 +950,7 @@ class ReportsTest extends TestCase
             ->assertCreated()
             ->json('data.id');
 
-        $this->payInvoice($cashier, $invoiceId, $sessionId, Payment::METHOD_CASH, '46.00');
+        $this->payInvoice($cashier, $invoiceId, $sessionId, Payment::METHOD_CASH, '42.25');
 
         $filters = http_build_query([
             'date_from' => now()->toDateString(),
@@ -953,13 +1054,13 @@ class ReportsTest extends TestCase
             $this->assertSame('Monto', $sheet->getCell('C5')->getValue());
             $this->assertSame('Fuente', $sheet->getCell('D5')->getValue());
             $this->assertSame('Facturado', $sheet->getCell('B6')->getValue());
-            $this->assertSame(57.50, $sheet->getCell('C6')->getValue());
+            $this->assertSame(53.75, $sheet->getCell('C6')->getValue());
             $this->assertSame('Facturas no anuladas emitidas en el rango', $sheet->getCell('D6')->getValue());
             $this->assertSame('Cobrado', $sheet->getCell('B7')->getValue());
             $this->assertSame(22.25, $sheet->getCell('C7')->getValue());
             $this->assertSame('Pagos publicados no anulados en el rango', $sheet->getCell('D7')->getValue());
             $this->assertSame('Pendiente', $sheet->getCell('B8')->getValue());
-            $this->assertSame(35.25, $sheet->getCell('C8')->getValue());
+            $this->assertSame(31.50, $sheet->getCell('C8')->getValue());
             $this->assertSame('Saldo actual de facturas emitidas o parciales', $sheet->getCell('D8')->getValue());
             $this->assertSame('Parcial', $sheet->getCell('B9')->getValue());
             $this->assertSame(11.50, $sheet->getCell('C9')->getValue());
@@ -1308,7 +1409,9 @@ class ReportsTest extends TestCase
             ->assertJsonPath('data.voids.0.reason', 'Error de captura')
             ->assertJsonPath('data.reprints.0.reason', 'Copia institucional solicitada')
             ->assertJsonPath('data.reprints.0.source', 'institutional_receipt')
-            ->assertJsonPath('data.backups.0.filename', 'hospital-backup-test.sql')
+            ->assertJsonPath('data.backups.0.status', BackupLog::STATUS_SUCCESS)
+            ->assertJsonPath('data.backups.0.type', BackupLog::TYPE_MANUAL)
+            ->assertJsonMissingPath('data.backups.0.filename')
             ->assertJsonMissingPath('data.voids.0.invoice_id')
             ->assertJsonMissingPath('data.voids.0.patient_name')
             ->assertJsonMissingPath('data.reprints.0.invoice_id')
@@ -1341,6 +1444,38 @@ class ReportsTest extends TestCase
             ->assertJsonPath('data.catalog_changes.0.old_values.price', '15.00')
             ->assertJsonPath('data.catalog_changes.0.new_values.price', '18.00')
             ->assertJsonPath('data.catalog_changes.0.new_values.price_change_reason', 'Ajuste aprobado por administracion')
+            ->assertJsonMissingPath('data.catalog_changes.0.service_id')
+            ->assertJsonMissingPath('data.catalog_changes.0.entity_id')
+            ->assertJsonMissingPath('data.catalog_changes.0.old_values.category_id')
+            ->assertJsonMissingPath('data.catalog_changes.0.new_values.category_id');
+    }
+
+    public function test_operations_report_lists_catalog_tax_change_reason(): void
+    {
+        $this->seedBillingBase();
+        $admin = $this->admin();
+        $service = Service::query()->where('name', 'Glucosa')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->patchJson("/api/services/{$service->id}", [
+                'taxable' => false,
+                'tax_change_reason' => 'Cambio autorizado por exoneracion institucional documentada',
+            ])
+            ->assertOk();
+
+        $this->actingAs($admin)
+            ->getJson('/api/reports/operations?date_from='.now()->toDateString().'&date_to='.now()->toDateString())
+            ->assertOk()
+            ->assertJsonPath('data.summary.service_change_count', 1)
+            ->assertJsonCount(1, 'data.catalog_changes')
+            ->assertJsonPath('data.catalog_changes.0.action', 'service.tax_updated')
+            ->assertJsonPath('data.catalog_changes.0.service', 'Glucosa')
+            ->assertJsonPath('data.catalog_changes.0.old_values.taxable', true)
+            ->assertJsonPath('data.catalog_changes.0.new_values.taxable', false)
+            ->assertJsonPath(
+                'data.catalog_changes.0.new_values.tax_change_reason',
+                'Cambio autorizado por exoneracion institucional documentada',
+            )
             ->assertJsonMissingPath('data.catalog_changes.0.service_id')
             ->assertJsonMissingPath('data.catalog_changes.0.entity_id')
             ->assertJsonMissingPath('data.catalog_changes.0.old_values.category_id')
@@ -1424,7 +1559,9 @@ class ReportsTest extends TestCase
 
         $this->payInvoice($cashier, $cashInvoice, $sessionId, Payment::METHOD_CASH, '17.25');
         $this->payInvoice($cashier, $cardInvoice, $sessionId, Payment::METHOD_CARD, '11.50');
-        $this->payInvoice($cashier, $voidInvoice, $sessionId, Payment::METHOD_OTHER, '28.75');
+        $this->payInvoice($cashier, $voidInvoice, $sessionId, Payment::METHOD_OTHER, '25.00');
+        $this->createIssuedInstitutionalReceipt($cashInvoice, $sessionId, $cashier);
+        $this->createIssuedInstitutionalReceipt($cardInvoice, $sessionId, $cashier);
 
         Invoice::query()->whereKey($voidInvoice)->update([
             'status' => Invoice::STATUS_VOID,
@@ -1458,6 +1595,7 @@ class ReportsTest extends TestCase
             ->assertJsonPath('data.cash_session.expected_amount', '517.25')
             ->assertJsonPath('data.cash_session.closing_amount', '518.00')
             ->assertJsonPath('data.cash_session.difference_amount', '0.75')
+            ->assertJsonPath('data.cash_session.closing_notes', 'Diferencia validada para reporte')
             ->assertJsonPath('data.total_cash', '17.25')
             ->assertJsonPath('data.total_card', '11.50')
             ->assertJsonPath('data.total_other', '0.00')
@@ -1466,6 +1604,9 @@ class ReportsTest extends TestCase
             ->assertJsonPath('data.expected_cash_amount', '517.25')
             ->assertJsonPath('data.pending_invoice_count', 0)
             ->assertJsonPath('data.pending_amount', '0.00')
+            ->assertJsonPath('data.missing_institutional_receipt_count', 0)
+            ->assertJsonPath('data.reversed_payments_count', 0)
+            ->assertJsonPath('data.reversed_payments_total', '0.00')
             ->assertJsonCount(2, 'data.payments')
             ->assertJsonCount(5, 'data.movements');
 
@@ -1473,6 +1614,31 @@ class ReportsTest extends TestCase
             ->getJson("/api/reports/cash-sessions/{$sessionId}")
             ->assertOk()
             ->assertJsonPath('data.cash_session.id', $sessionId);
+    }
+
+    public function test_seeded_cashier_can_view_own_cash_session_report_only(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $otherCashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $otherSessionId = $this->openSession($otherCashier);
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+        $otherInvoiceId = $this->createInvoice($otherCashier, 'Eritropoyetina');
+
+        $this->payInvoice($cashier, $invoiceId, $sessionId, Payment::METHOD_CASH, '17.25');
+        $this->payInvoice($otherCashier, $otherInvoiceId, $otherSessionId, Payment::METHOD_CARD, '25.00');
+
+        $this->actingAs($cashier)
+            ->getJson("/api/reports/cash-sessions/{$sessionId}")
+            ->assertOk()
+            ->assertJsonPath('data.cash_session.id', $sessionId)
+            ->assertJsonPath('data.total_cash', '17.25')
+            ->assertJsonPath('data.total_card', '0.00');
+
+        $this->actingAs($cashier)
+            ->getJson("/api/reports/cash-sessions/{$otherSessionId}")
+            ->assertForbidden();
     }
 
     public function test_closed_cash_session_report_uses_close_snapshot_after_later_payment_correction(): void
@@ -1485,6 +1651,8 @@ class ReportsTest extends TestCase
 
         $this->payInvoice($cashier, $cashInvoice, $sessionId, Payment::METHOD_CASH, '17.25');
         $this->payInvoice($cashier, $cardInvoice, $sessionId, Payment::METHOD_CARD, '11.50');
+        $this->createIssuedInstitutionalReceipt($cashInvoice, $sessionId, $cashier);
+        $this->createIssuedInstitutionalReceipt($cardInvoice, $sessionId, $cashier);
 
         $this->actingAs($cashier)
             ->postJson("/api/cash-sessions/{$sessionId}/close", [
@@ -1537,9 +1705,12 @@ class ReportsTest extends TestCase
             ->assertJsonPath('data.payments_total', '22.25')
             ->assertJsonPath('data.expected_cash_amount', '517.25')
             ->assertJsonPath('data.pending_invoice_count', 1)
-            ->assertJsonPath('data.pending_amount', '23.75')
+            ->assertJsonPath('data.pending_amount', '20.00')
+            ->assertJsonPath('data.missing_institutional_receipt_count', 1)
+            ->assertJsonPath('data.reversed_payments_count', 0)
+            ->assertJsonPath('data.reversed_payments_total', '0.00')
             ->assertJsonPath('data.payments.1.invoice.status', Invoice::STATUS_PARTIAL)
-            ->assertJsonPath('data.payments.1.invoice.balance_due', '23.75');
+            ->assertJsonPath('data.payments.1.invoice.balance_due', '20.00');
     }
 
     public function test_cash_session_export_allows_cashier_scoped_permission_only_for_own_session(): void
@@ -1553,7 +1724,7 @@ class ReportsTest extends TestCase
         $otherInvoiceId = $this->createInvoice($otherCashier, 'Eritropoyetina');
 
         $this->payInvoice($cashier, $invoiceId, $sessionId, Payment::METHOD_CASH, '17.25');
-        $this->payInvoice($otherCashier, $otherInvoiceId, $otherSessionId, Payment::METHOD_CARD, '28.75');
+        $this->payInvoice($otherCashier, $otherInvoiceId, $otherSessionId, Payment::METHOD_CARD, '25.00');
 
         $this->grantPermissions($cashier,
             'reports.cash_session.view',
@@ -1577,6 +1748,56 @@ class ReportsTest extends TestCase
         $this->actingAs($cashier)
             ->get("/api/reports/export?{$query}")
             ->assertForbidden();
+    }
+
+    public function test_cash_session_export_includes_dedicated_close_sheet_from_snapshot(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $cashInvoice = $this->createInvoice($cashier, 'Glucosa');
+        $cardInvoice = $this->createInvoice($cashier, 'Hemograma Completo');
+
+        $this->payInvoice($cashier, $cashInvoice, $sessionId, Payment::METHOD_CASH, '17.25');
+        $this->payInvoice($cashier, $cardInvoice, $sessionId, Payment::METHOD_CARD, '11.50');
+        $this->createIssuedInstitutionalReceipt($cashInvoice, $sessionId, $cashier);
+        $this->createIssuedInstitutionalReceipt($cardInvoice, $sessionId, $cashier);
+
+        $this->actingAs($cashier)
+            ->postJson("/api/cash-sessions/{$sessionId}/close", [
+                'closing_amount' => '517.25',
+            ])
+            ->assertOk();
+
+        $this->grantPermissions($cashier, 'reports.cash_session.view', 'reports.export');
+
+        $xlsx = $this->actingAs($cashier)
+            ->get('/api/reports/export?date_from='.now()->toDateString().'&date_to='.now()->toDateString().'&cash_session_id='.$sessionId)
+            ->assertOk()
+            ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            ->streamedContent();
+
+        $path = tempnam(sys_get_temp_dir(), 'cash-session-close-sheet-');
+        file_put_contents($path, $xlsx);
+
+        try {
+            $spreadsheet = IOFactory::load($path);
+            $cashSheet = $spreadsheet->getSheetByName('Cierre de Caja');
+
+            $this->assertNotNull($cashSheet);
+            $this->assertSame('CIERRE DE CAJA', $cashSheet->getCell('B2')->getValue());
+            $this->assertSame($sessionId, $cashSheet->getCell('C5')->getValue());
+            $this->assertSame('closed', $cashSheet->getCell('C6')->getValue());
+            $this->assertSame(517.25, $cashSheet->getCell('C10')->getValue());
+            $this->assertSame(17.25, $cashSheet->getCell('C16')->getValue());
+            $this->assertSame(11.50, $cashSheet->getCell('C18')->getValue());
+            $this->assertSame(28.75, $cashSheet->getCell('C21')->getValue());
+            $this->assertSame(2, $cashSheet->getCell('C22')->getValue());
+        } finally {
+            if ($path !== false && file_exists($path)) {
+                unlink($path);
+            }
+        }
     }
 
     public function test_cash_session_export_uses_cash_session_dates_even_when_request_range_is_wrong(): void
@@ -1729,6 +1950,9 @@ class ReportsTest extends TestCase
                     'cash_session_id' => $sessionId,
                     'method' => $method,
                     'amount' => $amount,
+                    'reference' => in_array($method, [Payment::METHOD_CARD, Payment::METHOD_TRANSFER], true)
+                        ? "REF-{$method}-{$invoiceId}"
+                        : null,
                 ],
                 $cashier->fresh(),
                 app(InvoiceAccess::class),
@@ -1744,6 +1968,16 @@ class ReportsTest extends TestCase
 
         if ($existingSession) {
             return $existingSession->id;
+        }
+
+        if (CashRegisterSession::query()->where('status', CashRegisterSession::STATUS_OPEN)->exists()) {
+            return CashRegisterSession::query()->create([
+                'user_id' => $cashier->id,
+                'open_user_id' => $cashier->id,
+                'opening_amount' => '500.00',
+                'status' => CashRegisterSession::STATUS_OPEN,
+                'opened_at' => now(),
+            ])->id;
         }
 
         return app(OpenCashSessionAction::class)
@@ -1848,13 +2082,13 @@ class ReportsTest extends TestCase
         $this->assertIsString($capturedHtml);
         $this->assertStringContainsString('Lectura Financiera del Dia', $capturedHtml);
         $this->assertStringContainsString('Facturado', $capturedHtml);
-        $this->assertStringContainsString('L. 57.50', $capturedHtml);
+        $this->assertStringContainsString('L. 53.75', $capturedHtml);
         $this->assertStringContainsString('Facturas no anuladas emitidas en el dia', $capturedHtml);
         $this->assertStringContainsString('Cobrado', $capturedHtml);
         $this->assertStringContainsString('L. 22.25', $capturedHtml);
         $this->assertStringContainsString('Pagos publicados no anulados en el dia', $capturedHtml);
         $this->assertStringContainsString('Pendiente', $capturedHtml);
-        $this->assertStringContainsString('L. 35.25', $capturedHtml);
+        $this->assertStringContainsString('L. 31.50', $capturedHtml);
         $this->assertStringContainsString('Saldo actual de facturas emitidas o parciales del dia', $capturedHtml);
         $this->assertStringContainsString('Parcial', $capturedHtml);
         $this->assertStringContainsString('L. 11.50', $capturedHtml);
@@ -1933,6 +2167,57 @@ class ReportsTest extends TestCase
             $capturedHtml,
         );
         $this->assertStringContainsString('L. 17.25', $capturedHtml);
+    }
+
+    public function test_cash_session_period_pdf_includes_dedicated_close_snapshot_section(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $cashInvoice = $this->createInvoice($cashier, 'Glucosa');
+        $cardInvoice = $this->createInvoice($cashier, 'Hemograma Completo');
+
+        $this->payInvoice($cashier, $cashInvoice, $sessionId, Payment::METHOD_CASH, '17.25');
+        $this->payInvoice($cashier, $cardInvoice, $sessionId, Payment::METHOD_CARD, '11.50');
+        $this->createIssuedInstitutionalReceipt($cashInvoice, $sessionId, $cashier);
+        $this->createIssuedInstitutionalReceipt($cardInvoice, $sessionId, $cashier);
+
+        $this->actingAs($cashier)
+            ->postJson("/api/cash-sessions/{$sessionId}/close", [
+                'closing_amount' => '517.25',
+            ])
+            ->assertOk();
+
+        $this->grantPermissions($cashier, 'reports.cash_session.view', 'reports.export');
+
+        $capturedHtml = null;
+        Pdf::shouldReceive('loadHTML')
+            ->once()
+            ->with(\Mockery::on(function (string $html) use (&$capturedHtml): bool {
+                $capturedHtml = $html;
+
+                return true;
+            }))
+            ->andReturn(tap(\Mockery::mock(DomPdfWrapper::class), function ($pdf): void {
+                $pdf->shouldReceive('output')
+                    ->once()
+                    ->andReturn('%PDF-cash-session-close-snapshot');
+            }));
+
+        $this->actingAs($cashier)
+            ->get('/api/reports/pdf?date_from='.now()->toDateString().'&date_to='.now()->toDateString().'&cash_session_id='.$sessionId)
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf')
+            ->assertSee('%PDF-cash-session-close-snapshot', false);
+
+        $this->assertIsString($capturedHtml);
+        $this->assertStringContainsString('Cierre de Caja', $capturedHtml);
+        $this->assertStringContainsString('Esperado en caja', $capturedHtml);
+        $this->assertStringContainsString('L. 517.25', $capturedHtml);
+        $this->assertStringContainsString('Tarjeta', $capturedHtml);
+        $this->assertStringContainsString('L. 11.50', $capturedHtml);
+        $this->assertStringContainsString('Pagos registrados', $capturedHtml);
+        $this->assertStringContainsString('2', $capturedHtml);
     }
 
     public function test_period_closure_pdf_export_validates_range_filters(): void
@@ -2071,13 +2356,13 @@ class ReportsTest extends TestCase
         $this->assertStringNotContainsString('Cierre de Operaciones y Ventas', $capturedHtml);
         $this->assertStringContainsString('Lectura Financiera del Periodo', $capturedHtml);
         $this->assertStringContainsString('Facturado', $capturedHtml);
-        $this->assertStringContainsString('L. 57.50', $capturedHtml);
+        $this->assertStringContainsString('L. 53.75', $capturedHtml);
         $this->assertStringContainsString('Facturas no anuladas emitidas en el rango', $capturedHtml);
         $this->assertStringContainsString('Cobrado', $capturedHtml);
         $this->assertStringContainsString('L. 22.25', $capturedHtml);
         $this->assertStringContainsString('Pagos publicados no anulados en el rango', $capturedHtml);
         $this->assertStringContainsString('Pendiente', $capturedHtml);
-        $this->assertStringContainsString('L. 35.25', $capturedHtml);
+        $this->assertStringContainsString('L. 31.50', $capturedHtml);
         $this->assertStringContainsString('Saldo actual de facturas emitidas o parciales', $capturedHtml);
         $this->assertStringContainsString('Parcial', $capturedHtml);
         $this->assertStringContainsString('L. 11.50', $capturedHtml);
@@ -2200,6 +2485,51 @@ class ReportsTest extends TestCase
         $this->assertStringContainsString('Monto Facturado (LPS)', $servicesSection);
         $this->assertStringNotContainsString('Top Servicios Más Vendidos', $servicesSection);
         $this->assertStringNotContainsString('Total Recaudado (LPS)', $servicesSection);
+    }
+
+    public function test_period_closure_pdf_without_audit_view_omits_operational_audit_section(): void
+    {
+        $this->seedBillingBase();
+        $viewer = User::factory()->create();
+        $this->grantPermissions($viewer, 'reports.view', 'reports.managerial.view', 'reports.export');
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+        $this->payInvoice($cashier, $invoiceId, $sessionId, Payment::METHOD_CASH, '17.25');
+
+        Invoice::query()->whereKey($invoiceId)->update([
+            'status' => Invoice::STATUS_VOID,
+            'voided_by' => $this->supervisor()->id,
+            'voided_at' => now(),
+            'void_reason' => 'Motivo reservado sin auditoria',
+        ]);
+
+        $capturedHtml = null;
+        Pdf::shouldReceive('loadHTML')
+            ->once()
+            ->with(\Mockery::on(function (string $html) use (&$capturedHtml): bool {
+                $capturedHtml = $html;
+
+                return true;
+            }))
+            ->andReturn(tap(\Mockery::mock(DomPdfWrapper::class), function ($pdf): void {
+                $pdf->shouldReceive('output')
+                    ->once()
+                    ->andReturn('%PDF-no-audit-section');
+            }));
+
+        $date = now()->toDateString();
+        $this->actingAs($viewer)
+            ->get("/api/reports/pdf?date_from={$date}&date_to={$date}")
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf')
+            ->assertSee('%PDF-no-audit-section', false);
+
+        $this->assertIsString($capturedHtml);
+        $this->assertStringNotContainsString('Resumen de Auditor', $capturedHtml);
+        $this->assertStringNotContainsString('Detalle de Anulaciones', $capturedHtml);
+        $this->assertStringNotContainsString('Motivo reservado sin auditoria', $capturedHtml);
+        $this->assertStringContainsString('Servicios', $capturedHtml);
     }
 
     public function test_period_closure_pdf_labels_area_totals_as_billed_not_generic_income(): void
@@ -2417,6 +2747,52 @@ class ReportsTest extends TestCase
         ]);
 
         return $cashier->refresh();
+    }
+
+    private function createIssuedInstitutionalReceipt(int $invoiceId, int $sessionId, User $cashier): void
+    {
+        $invoice = Invoice::query()->findOrFail($invoiceId);
+        $number = 90000000 + $invoice->id;
+        $series = InstitutionalReceiptSeries::query()->create([
+            'document_type' => InstitutionalReceiptSeries::DOCUMENT_TYPE,
+            'series' => 'REC-TST',
+            'prefix' => 'RT',
+            'number_format' => '{series}-{number:08}',
+            'min_number' => 1,
+            'max_number' => 99999999,
+            'current_number' => $number,
+            'active' => false,
+        ]);
+
+        InstitutionalReceipt::query()->create([
+            'invoice_id' => $invoice->id,
+            'payment_id' => Payment::query()
+                ->where('invoice_id', $invoice->id)
+                ->where('cash_session_id', $sessionId)
+                ->where('status', Payment::STATUS_POSTED)
+                ->value('id'),
+            'cash_session_id' => $sessionId,
+            'series_id' => $series->id,
+            'receipt_number' => $number,
+            'receipt_number_full' => 'REC-TST-'.str_pad((string) $number, 8, '0', STR_PAD_LEFT),
+            'status' => InstitutionalReceipt::STATUS_ISSUED,
+            'amount' => $invoice->total,
+            'amount_cents' => $invoice->total_cents,
+            'issued_at' => now(),
+            'issued_by' => $cashier->id,
+            'payer_name' => $invoice->patient_name,
+            'concept' => 'Servicios hospitalarios',
+            'amount_words' => 'Monto de prueba',
+            'template_code' => 'institutional_classic',
+            'print_profile_code' => 'half_letter',
+            'copy_mode' => 'original_only',
+            'institution_snapshot' => ['hospital_name' => 'Hospital San Isidro'],
+            'series_snapshot' => ['series' => 'REC-TST'],
+            'profile_snapshot' => ['code' => 'half_letter'],
+            'invoice_snapshot' => ['invoice_number' => $invoice->invoice_number],
+            'payment_snapshot' => null,
+            'items_snapshot' => [],
+        ]);
     }
 
     /**

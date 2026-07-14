@@ -11,8 +11,14 @@ import type {
   ReceiptTestPrintPayload,
 } from './types';
 
-async function pdfPost(path: string, payload: Record<string, unknown>): Promise<Blob> {
-  return apiClient.postDownload(path, payload);
+async function pdfPost(
+  path: string,
+  payload: Record<string, unknown>,
+  options: { idempotencyKey?: string } = {},
+): Promise<Blob> {
+  return options.idempotencyKey
+    ? apiClient.postDownload(path, payload, { idempotencyKey: options.idempotencyKey })
+    : apiClient.postDownload(path, payload);
 }
 
 export const institutionalReceipts = {
@@ -32,9 +38,14 @@ export const institutionalReceipts = {
     return response.data;
   },
 
-  async store(payload: { invoice_id: number; payment_id?: number | null; cash_session_id?: number | null }): Promise<InstitutionalReceipt> {
+  async store(
+    payload: { invoice_id: number; payment_id?: number | null; cash_session_id?: number | null },
+    options: { idempotencyKey?: string } = {},
+  ): Promise<InstitutionalReceipt> {
     const response = await apiClient.request<{ data: InstitutionalReceipt }>('/api/institutional-receipts', {
       method: 'POST',
+      idempotencyKey: options.idempotencyKey,
+      headers: options.idempotencyKey ? { 'Idempotency-Key': options.idempotencyKey } : undefined,
       body: JSON.stringify(payload),
     });
     return response.data;
@@ -82,11 +93,17 @@ export const institutionalReceipts = {
     return pdfPost('/api/settings/institutional-receipts/test-print', payload);
   },
 
-  async registerPrintEvent(id: number, reason?: string | null): Promise<InstitutionalReceipt> {
+  async registerPrintEvent(
+    id: number,
+    reason?: string | null,
+    options: { idempotencyKey?: string } = {},
+  ): Promise<InstitutionalReceipt> {
     const response = await apiClient.request<{ data: { receipt: InstitutionalReceipt } }>(
       `/api/institutional-receipts/${id}/print-events`,
       {
         method: 'POST',
+        idempotencyKey: options.idempotencyKey,
+        headers: options.idempotencyKey ? { 'Idempotency-Key': options.idempotencyKey } : undefined,
         body: JSON.stringify({
           ...(reason?.trim() ? { reason: reason.trim() } : {}),
         }),
@@ -96,10 +113,10 @@ export const institutionalReceipts = {
     return response.data.receipt;
   },
 
-  async pdf(id: number, reason?: string | null): Promise<Blob> {
+  async pdf(id: number, reason?: string | null, options: { idempotencyKey?: string } = {}): Promise<Blob> {
     const trimmedReason = reason?.trim();
     if (trimmedReason) {
-      return pdfPost(`/api/institutional-receipts/${id}/pdf`, { reason: trimmedReason });
+      return pdfPost(`/api/institutional-receipts/${id}/pdf`, { reason: trimmedReason }, options);
     }
 
     return apiClient.download(`/api/institutional-receipts/${id}/pdf`);

@@ -25,7 +25,7 @@ function renderLogin() {
       <LoginView
         login=""
         password=""
-        status="Listo para iniciar sesion."
+        status="Listo para iniciar sesión."
         onLoginChange={vi.fn()}
         onPasswordChange={vi.fn()}
         onSubmit={vi.fn()}

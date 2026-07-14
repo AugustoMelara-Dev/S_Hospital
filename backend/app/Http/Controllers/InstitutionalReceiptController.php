@@ -37,14 +37,13 @@ class InstitutionalReceiptController extends Controller
 
         abort_unless($user instanceof User, 403);
 
-        $pdf = $pdfService->pdfForReceiptAndRecordPrintEvent(
+        $pdf = $pdfService->pdfForAuthorizedReceipt(
             $receipt,
             $user,
-            $this->reprintReason($request),
             $invoiceAccess,
         );
 
-        $filename = 'recibo-institucional-'.$receipt->receipt_number_full.'.pdf';
+        $filename = $this->safePdfFilename($receipt->receipt_number_full);
 
         return response($pdf, 200, [
             'Content-Type' => 'application/pdf',
@@ -86,5 +85,14 @@ class InstitutionalReceiptController extends Controller
         $reason = trim((string) $request->input('reason'));
 
         return $reason === '' ? null : $reason;
+    }
+
+    private function safePdfFilename(string $receiptNumber): string
+    {
+        if (preg_match('/^[A-Za-z0-9_-]+$/', $receiptNumber) === 1) {
+            return 'recibo-institucional-'.$receiptNumber.'.pdf';
+        }
+
+        return 'recibo-institucional.pdf';
     }
 }

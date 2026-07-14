@@ -1,29 +1,34 @@
-import { type FormEvent, useEffect, useRef, useState } from 'react';
+import { type FormEvent, type ReactNode, useEffect, useRef, useState } from 'react';
+import { ReloadOutlined, WarningOutlined } from '@ant-design/icons';
+import { Alert, Button, Empty, Modal, Result, Spin, Tag } from 'antd';
 import { Link } from 'react-router-dom';
-import { AlertTriangle } from 'lucide-react';
-import { Alert } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { EmptyState, ErrorState, LoadingState } from '@/components/ui/states';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type CashSession, apiClient, userSafeErrorMessage } from '@/lib/api';
-import { formatLempirasUI, parseCents, toFloat } from '@/lib/money';
+import { payloadScopedIdempotencyKey, resetPayloadScopedIdempotencyKey } from '@/lib/api/idempotency';
+import { finiteNumber, formatLempirasUI, parseCents, toFloat } from '@/lib/money';
+import { getVisibleRefetchInterval } from '@/lib/query/polling';
 import { invalidateBillingQueries } from '@/lib/queryInvalidation';
 import { queryKeys } from '@/lib/queryKeys';
-import { SessionStatusCard } from './components/SessionStatusCard';
+import { PageHeader } from '@/design-system/components/PageHeader';
+import { formatDateTimeEs } from '@/lib/format/formatDate';
 import { OpenSessionForm } from './components/OpenSessionForm';
 import { SessionSummary } from './components/SessionSummary';
-import { CloseSessionDialog } from './components/CloseSessionDialog';
+import { CashCloseSummaryPanel, CloseSessionDialog } from './components/CloseSessionDialog';
 import { CashMovementsTable } from './components/CashMovementsTable';
 import { CashClosingPanel } from './components/CashClosingPanel';
 import { CashMethodSummary } from './components/CashMethodSummary';
-import { CashSessionHeader } from './components/CashSessionHeader';
+import { AccountingControlPanel } from '@/modules/accounting/components/AccountingControlPanel';
 
 type CashBoxViewProps = {
   cashSession?: CashSession | null;
+  canCloseAnyCash?: boolean;
   canCloseCash?: boolean;
+  canCreateInvoices?: boolean;
   canOpenCash?: boolean;
+  canViewInvoices?: boolean;
   canViewCashSessionReport?: boolean;
   compact?: boolean;
+  currentUserId?: number;
   onStatus: (message: string) => void;
   onSessionChange?: (session: CashSession | null) => void;
 };
@@ -32,12 +37,20 @@ function centsToFloat(cents: number): number {
   return toFloat(cents);
 }
 
+function LoadingState({ label }: { label: string }) { return <div role="status" aria-label={label} className="p-8 text-center"><Spin /><p>{label}</p></div>; }
+function EmptyState({ description, title }: { description: string; title: string }) { return <Empty description={<><strong>{title}</strong><br />{description}</>} />; }
+function ErrorState({ action, description, title }: { action?: ReactNode; description: string; title: string }) { return <Result status="error" title={title} subTitle={description} extra={action} />; }
+
 export function CashBoxView({
   cashSession = null,
+  canCloseAnyCash = false,
   canCloseCash = true,
+  canCreateInvoices = false,
   canOpenCash = true,
+  canViewInvoices = false,
   canViewCashSessionReport = false,
-  compact = false,
+  compact: _compact = false,
+  currentUserId,
   onStatus,
   onSessionChange,
 }: CashBoxViewProps) {
@@ -47,9 +60,16 @@ export function CashBoxView({
   const [formAlert, setFormAlert] = useState<string | null>(null);
   const [closingAmountError, setClosingAmountError] = useState<string | null>(null);
   const [confirmingClose, setConfirmingClose] = useState(false);
+  const [pendingOpening, setPendingOpening] = useState<{ opening_amount: string } | null>(null);
+  const [closedSummarySession, setClosedSummarySession] = useState<CashSession | null>(null);
   const closingAmountRef = useRef<HTMLInputElement | null>(null);
   const openingSessionInFlightRef = useRef(false);
   const closingSessionInFlightRef = useRef(false);
+  const openSessionIdempotencyKeyRef = useRef<string | null>(null);
+  const closeSessionIdempotencyKeyRef = useRef<string | null>(null);
+  const openSessionIdempotencySignatureRef = useRef<string | null>(null);
+  const closeSessionIdempotencySignatureRef = useRef<string | null>(null);
+  const currentSessionScope = canCloseAnyCash ? 'closable' : 'own';
 
   const {
     data: session,
@@ -58,12 +78,12 @@ export function CashBoxView({
     isLoading,
     refetch,
   } = useQuery({
-    queryKey: queryKeys.cashSessions.current(),
-    queryFn: () => apiClient.getCurrentCashSession(),
+    queryKey: queryKeys.cashSessions.current(currentSessionScope),
+    queryFn: () => apiClient.getCurrentCashSession(canCloseAnyCash ? { scope: 'closable' } : undefined),
     // Multi-PC LAN: another cashier may close the box. Poll every
     // 10s so this UI shows "Sin caja" within the same window without
     // a manual refresh.
-    refetchInterval: 10_000,
+    refetchInterval: () => getVisibleRefetchInterval(10_000),
     refetchOnWindowFocus: true,
   });
 
@@ -77,10 +97,22 @@ export function CashBoxView({
     queryKey: queryKeys.cashSessions.movements(session?.id),
     queryFn: () =>
       session?.id && canViewCashSessionReport
-        ? apiClient.getCashSessionReport(String(session.id)).then((report) => report.movements)
+        ? apiClient.getCashSessionReport(String(session.id)).then((report) => {
+          const paymentsById = new Map(report.payments.map((payment) => [payment.id, payment]));
+
+          return report.movements.map((movement) => {
+            const payment = movement.payment_id ? paymentsById.get(movement.payment_id) : undefined;
+
+            return {
+              ...movement,
+              invoice_id: payment?.invoice_id ?? null,
+              invoice_number: payment?.invoice?.invoice_number ?? null,
+            };
+          });
+        })
         : Promise.resolve([] as Awaited<ReturnType<typeof apiClient.getCashSessionReport>>['movements']),
     enabled: !!session?.id && canViewCashSessionReport,
-    refetchInterval: 15_000,
+    refetchInterval: () => getVisibleRefetchInterval(15_000),
   });
   const movements = movementsData ?? [];
   const sessionLoadError = sessionIsError ? userSafeErrorMessage(sessionError, 'No se pudo cargar caja.') : '';
@@ -89,13 +121,24 @@ export function CashBoxView({
     : '';
 
   const openSessionMutation = useMutation({
-    mutationFn: (payload: { opening_amount: string; notes?: string | null }) =>
-      apiClient.openCashSession(payload),
+    mutationFn: (payload: { opening_amount: string; notes?: string | null }) => {
+      const idempotencyKey = payloadScopedIdempotencyKey(
+        openSessionIdempotencyKeyRef,
+        openSessionIdempotencySignatureRef,
+        payload,
+      );
+
+      return apiClient.openCashSession(payload, {
+        idempotencyKey,
+      });
+    },
     onSuccess: async (opened) => {
+      resetPayloadScopedIdempotencyKey(openSessionIdempotencyKeyRef, openSessionIdempotencySignatureRef);
       queryClient.setQueryData(queryKeys.cashSessions.current(), opened);
       await invalidateBillingQueries(queryClient);
       setClosingAmount('');
       setClosingNotes('');
+      setClosedSummarySession(null);
       setFormAlert(null);
       onSessionChange?.(opened);
       onStatus('Caja abierta.');
@@ -111,11 +154,22 @@ export function CashBoxView({
   });
 
   const closeSessionMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: number; payload: { closing_amount: string; notes?: string | null } }) =>
-      apiClient.closeCashSession(id, payload),
-    onSuccess: async () => {
+    mutationFn: ({ id, payload }: { id: number; payload: { closing_amount: string; notes?: string | null } }) => {
+      const idempotencyKey = payloadScopedIdempotencyKey(
+        closeSessionIdempotencyKeyRef,
+        closeSessionIdempotencySignatureRef,
+        { id, payload },
+      );
+
+      return apiClient.closeCashSession(id, payload, {
+        idempotencyKey,
+      });
+    },
+    onSuccess: async (closed) => {
+      resetPayloadScopedIdempotencyKey(closeSessionIdempotencyKeyRef, closeSessionIdempotencySignatureRef);
       queryClient.setQueryData(queryKeys.cashSessions.current(), null);
       await invalidateBillingQueries(queryClient);
+      setClosedSummarySession(closed);
       setClosingAmount('');
       setClosingNotes('');
       setFormAlert(null);
@@ -135,7 +189,7 @@ export function CashBoxView({
   const activeSession = session ?? cashSession;
   // Server-computed expected cash is authoritative. The fallback chain
   // (expected_cash_amount -> expected_amount -> opening_amount) is
-  // preserved for legacy backends, but a fresh `expected_cash_amount`
+  // preserved for historical server payloads, but a fresh `expected_cash_amount`
   // from the LAN server is what we trust.
   const expectedCashAmount = activeSession?.expected_cash_amount ?? activeSession?.expected_amount ?? activeSession?.opening_amount ?? '0.00';
   const hasValidClosingAmount = /^\d+(\.\d{1,2})?$/.test(closingAmount.trim());
@@ -144,10 +198,16 @@ export function CashBoxView({
     : null;
   const hasCashDifference = difference !== null && difference !== 0;
   const isOpen = activeSession?.status === 'open';
+  const isOwnSession = Boolean(activeSession && currentUserId === activeSession.user_id);
+  const cashier = activeSession
+    ? activeSession.user?.name ?? activeSession.user?.username ?? `Cajero #${activeSession.user_id}`
+    : null;
   const pendingInvoiceCount = activeSession?.pending_invoice_count ?? 0;
   const pendingAmount = activeSession?.pending_amount ?? '0.00';
+  const missingInstitutionalReceiptCount = activeSession?.missing_institutional_receipt_count ?? 0;
   const hasPendingBalance = pendingInvoiceCount > 0 || parseCents(pendingAmount) > 0;
   const canRenderOperationalState = Boolean(activeSession) || (!sessionLoadError && !isLoading);
+  const isOpenSessionFormLocked = pendingOpening !== null || openSessionMutation.isPending;
 
   useEffect(() => {
     if (isOpen) {
@@ -157,20 +217,22 @@ export function CashBoxView({
 
   function handleOpenSession(data: { opening_amount: string }) {
     if (openSessionMutation.isPending || openingSessionInFlightRef.current) return;
-    openingSessionInFlightRef.current = true;
-    onStatus('Abriendo caja...');
-    openSessionMutation.mutate({ opening_amount: data.opening_amount });
+    setPendingOpening({ opening_amount: data.opening_amount.trim() });
   }
 
-  function handleCloseConfirmation(event: FormEvent<HTMLFormElement>) {
+  function confirmOpenSession() {
+    if (!pendingOpening || openSessionMutation.isPending || openingSessionInFlightRef.current) return;
+    openingSessionInFlightRef.current = true;
+    onStatus('Abriendo caja...');
+    openSessionMutation.mutate({ opening_amount: pendingOpening.opening_amount });
+    setPendingOpening(null);
+  }
+
+  async function handleCloseConfirmation(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!activeSession) return;
     if (!canCloseCash) {
       setFormAlert('Este usuario no tiene permiso para cerrar caja.');
-      return;
-    }
-    if (hasPendingBalance) {
-      setFormAlert(`No se puede cerrar caja con ${pendingInvoiceCount} factura(s) pendientes o parciales por ${formatLempirasUI(pendingAmount)}.`);
       return;
     }
     if (closingAmount.trim() === '') {
@@ -185,6 +247,26 @@ export function CashBoxView({
       closingAmountRef.current?.focus();
       return;
     }
+    const refreshed = await refetch();
+    if (refreshed.isError) {
+      setClosingAmountError(null);
+      setFormAlert('No se pudo actualizar caja antes de cerrar. Revise la conexion local y vuelva a intentar.');
+      return;
+    }
+    const sessionForClose = refreshed.data ?? activeSession;
+    const refreshedPendingInvoiceCount = sessionForClose.pending_invoice_count ?? 0;
+    const refreshedPendingAmount = sessionForClose.pending_amount ?? '0.00';
+    const refreshedHasPendingBalance = refreshedPendingInvoiceCount > 0 || parseCents(refreshedPendingAmount) > 0;
+    const missingInstitutionalReceiptCount = sessionForClose.missing_institutional_receipt_count ?? 0;
+
+    if (refreshedHasPendingBalance) {
+      setFormAlert(`No se puede cerrar caja con ${refreshedPendingInvoiceCount} factura(s) pendientes o parciales por ${formatLempirasUI(refreshedPendingAmount)}.`);
+      return;
+    }
+    if (missingInstitutionalReceiptCount > 0) {
+      setFormAlert(`No se puede cerrar caja con ${missingInstitutionalReceiptCount} recibo institucional pendiente. Genere el recibo antes de cerrar.`);
+      return;
+    }
     setClosingAmountError(null);
     setConfirmingClose(true);
   }
@@ -195,11 +277,13 @@ export function CashBoxView({
     closingSessionInFlightRef.current = true;
     onStatus('Cerrando caja...');
     setConfirmingClose(false);
+    const trimmedClosingAmount = closingAmount.trim();
+    const trimmedClosingNotes = closingNotes.trim();
     closeSessionMutation.mutate({
       id: activeSession.id,
       payload: {
-        closing_amount: closingAmount,
-        notes: closingNotes.trim() === '' ? null : closingNotes,
+        closing_amount: trimmedClosingAmount,
+        notes: trimmedClosingNotes === '' ? null : trimmedClosingNotes,
       },
     });
   }
@@ -207,18 +291,39 @@ export function CashBoxView({
   const isPOSBlocked = !isOpen;
 
   return (
-    <section id="caja" className={compact ? 'flex flex-col gap-4' : 'cash-layout'} aria-label="Caja">
+    <section id="caja" className={'grid gap-6'} aria-label="Caja">
       <div className="flex flex-col gap-6">
-        <CashSessionHeader
-          isLoading={isLoading}
-          onRefresh={() => void refetch()}
-          session={activeSession ?? null}
+        <PageHeader
+          eyebrow="Operación de caja"
+          title="Caja"
+          description="Apertura, conciliación, movimientos auditados y cierre de efectivo."
+          actions={(
+            <>
+              {isOpen && isOwnSession && canCreateInvoices ? (
+                <Link to="/billing/new"><Button type="primary">Nueva factura</Button></Link>
+              ) : null}
+              <Button icon={<ReloadOutlined spin={isLoading} />} onClick={() => void refetch()} disabled={isLoading}>
+                Actualizar
+              </Button>
+            </>
+          )}
         />
+        <div className="flex flex-wrap items-center gap-3 text-sm">
+          <Tag>{isOpen ? 'Caja abierta' : 'Caja cerrada'}</Tag>
+          <p role="status" aria-live="polite">
+            {isLoading
+              ? 'Actualizando estado de caja.'
+              : isOpen && activeSession
+                ? `Abierta ${formatDateTimeEs(activeSession.opened_at)}`
+                : 'No hay una caja abierta actualmente.'}
+          </p>
+          {isOpen && cashier ? (
+            <p><strong>{cashier}</strong> · {isOwnSession ? 'Caja propia' : canCloseAnyCash ? 'Supervisión habilitada' : 'Sesión de otro cajero'}</p>
+          ) : null}
+        </div>
 
         {formAlert ? (
-          <Alert variant="destructive" title="No se pudo completar la operación">
-            {formAlert}
-          </Alert>
+          <Alert type="error" showIcon title="No se pudo completar la operación" description={formAlert} />
         ) : null}
 
         {sessionLoadError ? (
@@ -226,7 +331,7 @@ export function CashBoxView({
             title="No se pudo cargar caja"
             description={sessionLoadError}
             action={(
-              <Button type="button" variant="secondary" onClick={() => void refetch()}>
+              <Button htmlType="button" onClick={() => void refetch()}>
                 Reintentar
               </Button>
             )}
@@ -237,29 +342,38 @@ export function CashBoxView({
           <LoadingState label="Cargando estado de caja..." />
         ) : null}
 
-        {canRenderOperationalState ? (
-          <SessionStatusCard session={activeSession ?? null} />
-        ) : null}
-
-        {canRenderOperationalState && isOpen ? (
-          <Alert variant="success" title="Caja lista para facturar">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <span className="flex-1">
-                La caja está abierta. Puede pasar directamente al POS para crear y cobrar facturas.
-              </span>
-              <Button asChild size="sm">
-                <Link to="/billing/new">Nueva factura</Link>
-              </Button>
-            </div>
-          </Alert>
+        {canRenderOperationalState && isOpen && isOwnSession && canCreateInvoices ? (
+          <Alert type="success" showIcon title="Caja lista para facturar" description="La caja está abierta. La acción principal para crear y cobrar una factura está disponible en la cabecera." />
+        ) : canRenderOperationalState && isOpen && !isOwnSession ? (
+          <Alert type="warning" showIcon title="Caja abierta en supervisión" description="Esta sesión pertenece a otro cajero. Puede revisar y cerrar según sus permisos, pero no crear facturas desde esta caja." />
+        ) : canRenderOperationalState && isOpen ? (
+          <Alert type="info" showIcon title="Caja abierta en modo consulta" description="La sesión está activa, pero este usuario no tiene permiso para crear facturas." />
         ) : null}
 
         {canRenderOperationalState && isPOSBlocked ? (
-          <Alert variant="warning" icon={<AlertTriangle data-icon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />}>
+          <Alert type="warning" showIcon icon={<WarningOutlined aria-hidden="true" />} description={(
             <div>
               <strong>Pagos bloqueados.</strong> Abra caja antes de emitir y cobrar facturas.
             </div>
-          </Alert>
+          )} />
+        ) : null}
+
+        {canRenderOperationalState && !isOpen && closedSummarySession ? (
+          <CashCloseSummaryPanel
+            session={{
+              id: closedSummarySession.id,
+              opening_amount: closedSummarySession.opening_amount,
+              expected_cash_amount: closedSummarySession.expected_cash_amount ?? closedSummarySession.expected_amount ?? undefined,
+              expected_amount: closedSummarySession.expected_amount,
+              payments_by_method: closedSummarySession.payments_by_method,
+              pending_invoice_count: closedSummarySession.pending_invoice_count,
+              pending_amount: closedSummarySession.pending_amount,
+              closed_at: closedSummarySession.closed_at,
+            }}
+            closingAmount={closedSummarySession.closing_amount ?? '0.00'}
+            closingNotes={closedSummarySession.closing_notes ?? ''}
+            difference={finiteNumber(closedSummarySession.difference_amount)}
+          />
         ) : null}
 
         {canRenderOperationalState && isOpen && activeSession ? (
@@ -270,11 +384,21 @@ export function CashBoxView({
               difference={difference}
             />
 
-            <CashMethodSummary
-              paymentsByMethod={activeSession.payments_by_method}
-              paymentsCount={activeSession.payments_count}
-              pendingAmount={activeSession.pending_amount}
-            />
+            <div className="grid min-w-0 gap-4 xl:grid-cols-2 xl:items-start">
+              <CashMethodSummary
+                paymentsByMethod={activeSession.payments_by_method}
+                paymentsCount={activeSession.payments_count}
+                pendingAmount={activeSession.pending_amount}
+              />
+
+              <AccountingControlPanel
+                canViewInvoices={canViewInvoices}
+                reconciliation={{
+                  ...activeSession,
+                  difference_amount: difference,
+                }}
+              />
+            </div>
 
             <CashClosingPanel
               canCloseCash={canCloseCash}
@@ -285,6 +409,7 @@ export function CashBoxView({
               difference={difference}
               hasCashDifference={hasCashDifference}
               hasPendingBalance={hasPendingBalance}
+              missingInstitutionalReceiptCount={missingInstitutionalReceiptCount}
               isSubmitting={closeSessionMutation.isPending}
               onClosingAmountChange={(value) => {
                 setClosingAmount(value);
@@ -305,7 +430,7 @@ export function CashBoxView({
                 title="No se pudieron cargar movimientos"
                 description={movementsLoadError}
                 action={(
-                  <Button type="button" variant="secondary" onClick={() => void refetchMovements()}>
+                  <Button htmlType="button" onClick={() => void refetchMovements()}>
                     Reintentar
                   </Button>
                 )}
@@ -320,18 +445,16 @@ export function CashBoxView({
             ) : null}
 
             {canViewCashSessionReport && movements && movements.length > 0 ? (
-              <CashMovementsTable movements={movements} />
+              <CashMovementsTable canViewInvoices={canViewInvoices} movements={movements} />
             ) : null}
           </>
         ) : canRenderOperationalState && canOpenCash ? (
           <OpenSessionForm
-            isSubmitting={openSessionMutation.isPending}
+            isSubmitting={isOpenSessionFormLocked}
             onSubmit={handleOpenSession}
           />
         ) : canRenderOperationalState ? (
-          <Alert variant="warning" title="Caja en modo consulta">
-            Este usuario puede ver caja, pero no tiene permiso para abrir una nueva sesión.
-          </Alert>
+          <Alert type="warning" showIcon title="Caja en modo consulta" description="Este usuario puede ver caja, pero no tiene permiso para abrir una nueva sesión." />
         ) : null}
       </div>
 
@@ -344,6 +467,7 @@ export function CashBoxView({
           payments_by_method: activeSession?.payments_by_method,
           pending_invoice_count: activeSession?.pending_invoice_count,
           pending_amount: activeSession?.pending_amount,
+          missing_institutional_receipt_count: activeSession?.missing_institutional_receipt_count,
         }}
         closingAmount={closingAmount}
         closingNotes={closingNotes}
@@ -352,6 +476,27 @@ export function CashBoxView({
         onClosingNotesChange={setClosingNotes}
         onConfirm={handleCloseSession}
       />
+
+      <Modal
+        open={pendingOpening !== null}
+        title="Confirmar apertura de caja"
+        okText="Abrir caja"
+        confirmLoading={openSessionMutation.isPending}
+        okButtonProps={{ disabled: openSessionMutation.isPending }}
+        cancelButtonProps={{ disabled: openSessionMutation.isPending }}
+        onCancel={() => setPendingOpening(null)}
+        onOk={confirmOpenSession}
+      >
+        <div className="grid gap-3">
+          <p>
+            Revise el efectivo fisico antes de iniciar el turno. Esta apertura quedara auditada.
+          </p>
+          <div className="flex justify-between gap-4 border border-border bg-muted/40 p-4 text-sm">
+            <span>Monto inicial</span>
+            <strong>{formatLempirasUI(pendingOpening?.opening_amount ?? '0.00')}</strong>
+          </div>
+        </div>
+      </Modal>
     </section>
   );
 }

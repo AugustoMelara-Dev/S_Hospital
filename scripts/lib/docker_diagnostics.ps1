@@ -1,5 +1,5 @@
 # ==============================================================================
-# Hospital Billing OS - Librería Modular de Diagnósticos de Docker y WSL
+# S_Hospital - Librería Modular de Diagnósticos de Docker y WSL
 # ==============================================================================
 # Diseñada para Windows PowerShell 5.1. Seguro bajo StrictMode -Version Latest.
 
@@ -332,7 +332,7 @@ function Show-PreviousInstallMenu {
     
     Write-Host ""
     Write-Host "======================================================================" -ForegroundColor Yellow
-    Write-Host " [DETECTADO] INSTALACION PREVIA DE HOSPITAL BILLING OS DETECTADA" -ForegroundColor Yellow -BackgroundColor Black
+    Write-Host " [DETECTADO] INSTALACION PREVIA DE S_HOSPITAL DETECTADA" -ForegroundColor Yellow -BackgroundColor Black
     Write-Host "======================================================================" -ForegroundColor Yellow
     if ($containers.Count -gt 0) {
         Write-Host "  Contenedores previos: $($containers -join ', ')" -ForegroundColor White

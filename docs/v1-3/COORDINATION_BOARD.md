@@ -38,12 +38,12 @@ Local review date: 2026-06-28
 | Targeted billing test | PASS | `pnpm exec vitest run src/features/invoices/NewInvoiceView.test.tsx --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000`, now 23 tests after invoice idempotency coverage. |
 | Frontend tests | PASS | `pnpm run test`, 83 files and 499 tests after stabilizing lazy route tests. |
 | Backend Docker baseline | PASS WITH ENV | Docker works when `DB_PASSWORD`, `DB_ROOT_PASSWORD`, and alternate `DB_PORT=33307` are supplied; host port 3306 is unavailable. |
-| Backend focused tests | PASS | `UserManagementTest`, `InstitutionalReceiptSeriesSeederTest`, `InstitutionalReceiptPdfTest`, `IdempotencyKeyTest`, and `EncryptLegacyIdempotencyKeysTest` pass in Docker with warnings from missing container `.env`. |
+| Backend focused tests | PASS | `UserManagementTest` (42 tests), `RoleManagementTest` (11 tests), `InstitutionalReceiptPaymentIntegrationTest` receipt recovery focus, `InstitutionalReceiptSeriesSeederTest`, `InstitutionalReceiptPdfTest`, `IdempotencyKeyTest`, and `EncryptLegacyIdempotencyKeysTest` pass in Docker with warnings from missing container `.env`. |
 | Backend Pint | PASS | `docker compose run --rm backend vendor/bin/pint --test`, 410 files. |
 | Backend PHPStan | PASS | `docker compose run --rm backend vendor/bin/phpstan analyse --memory-limit=1G --no-progress`. |
-| Backend full tests | BLOCKED | `php artisan test` and full Feature partition timed out at 10 minutes without final output. Unit partition exposes container mount failures for repo-root files such as `../nginx/default.conf`, `../.env.example`, `../.gitignore`, `../setup.bat`, and `../.github/workflows/ci.yml`. |
+| Backend full tests | PASS BY SUITE | Docker Unit passed (151 passed, 2 skipped), Feature passed (698 passed, 10 skipped) and Coverage suite reported its expected coverage-driver skip on 2026-07-06. The old repo-root mount failure no longer reproduces. |
 | Build | PASS | `pnpm run build`; largest chunks: `charts` 418.64 kB, `vendor` 394.78 kB, app index 223.43 kB. |
-| E2E | PENDING | Release E2E auth/session failure remains open; no final Playwright PASS recorded. |
+| E2E | PASS WITH DOCKER/MARIADB | `scripts/run_release_e2e_mariadb.ps1` passed on 2026-07-06 against the live Docker MariaDB stack: cashier invoice/payment/institutional receipt/report flow plus RBAC user creation/navigation. Host SQLite runner still needs Composer vendor/local evidence, but its preflight now fails early without a default password and points operators to the MariaDB gate. |
 
 ## Research And Library Decisions
 
@@ -78,18 +78,18 @@ Local review date: 2026-06-28
 
 | Area | Severity | Finding | Next Slice |
 | --- | --- | --- | --- |
-| Users/Auth/RBAC | P0 | User managers with `users.create` or `users.update` can assign elevated non-admin roles such as `supervisor`; protected admin/root targets can be reset, deactivated, or demoted by lower permissions. | Add failing backend RBAC tests, enforce protected-target and assignable-role rules, wrap mutations in transactions, then update frontend row actions if contract exposes capabilities. |
-| QA/E2E | P0 | CI still assumes `npm ci` and `frontend/package-lock.json`, but frontend uses `pnpm-lock.yaml`; frontend CI install will fail. | Convert CI frontend setup to pnpm/frozen lockfile and use pnpm commands. |
-| QA/E2E | P0 | Release E2E is documented failing with expired session during admin/users access. | Re-run after auth/session investigation, fix session regression, and refresh evidence. |
-| QA/E2E | P1 | Release E2E uses SQLite and golden DB hash ignores prep/auth code changes. | Add invalidation inputs for E2E prep/auth/session files and define MariaDB-backed release gate. |
-| QA/E2E | P1 | E2E seed defaults receipt paper to `80mm`, conflicting with institutional paper as primary. | Change E2E seed default to letter/half-letter institutional profile and update assertions. |
+| Users/Auth/RBAC | RESOLVED | User managers with `users.create` or `users.update` could assign elevated roles or mutate protected admin/root targets. | Fixed in backend role/user contracts; verified on 2026-07-06 with `docker compose exec backend php artisan test tests/Feature/UserManagementTest.php` (42 tests) and `tests/Feature/RoleManagementTest.php` (11 tests). |
+| QA/E2E | RESOLVED | CI assumed `npm ci` and `frontend/package-lock.json` while frontend uses `pnpm-lock.yaml`. | `.github/workflows/ci.yml` now uses pnpm setup, `pnpm install --frozen-lockfile`, pnpm cache and pnpm frontend commands. |
+| QA/E2E | RESOLVED | Release E2E was documented failing with expired session during admin/users access. | Docker/MariaDB release specs passed on 2026-07-06 through `scripts/run_release_e2e_mariadb.ps1` with no 401/419 session regression. Host SQLite runner remains separate evidence because this workspace lacks `backend/vendor/autoload.php`. |
+| QA/E2E | RESOLVED | Release E2E needed a MariaDB-backed gate instead of only the host SQLite runner. | `scripts/run_release_e2e_mariadb.ps1` prepares non-production E2E users/cash/catalog data and runs the release specs against Docker MariaDB with container Chromium. |
+| QA/E2E | RESOLVED | E2E seed defaulted receipt paper to `80mm`, conflicting with institutional paper as primary. | `PrepareE2eReleaseDataCommand` and validation seed now default to `half_letter`; institutional print profiles remain primary. |
 | QA/E2E | P1 | E2E seed used thermal paper as primary. | Fixed by defaulting release seed receipt paper to `half_letter`. |
 | Receipts/Settings | P0 | Seeded institutional receipt series exposed placeholder authorization `AUT-REC-LOCAL`. | Fixed by seeding `range_authorization` as null and adding seeder regression test. |
 | Billing/POS | P0 | POS invoice creation retried with a fresh idempotency key after lost LAN response, risking duplicate fiscal invoice. | Fixed by caller-managed invoice idempotency key reused across retry until success or payload changes. |
 | API idempotency | P1 | Stale incomplete idempotency reservation could replay `200 {"data": null}`. | Fixed by returning 409 with recovery guidance when response is not replayable. |
-| A11y/Responsive | P1 | Mobile buttons can be 36px; reports tabs and receipt preview need 320px usability tests. | Pending. |
-| A11y/Responsive | P1 | Small and icon buttons used sub-44px mobile targets. | Fixed in button foundations; responsive Playwright proof still pending. |
-| Performance/LAN | P1 | Echo/Pusher are statically imported and polling cadence may stack across many LAN clients. | Pending. |
+| A11y/Responsive | RESOLVED | Mobile buttons can be 36px; reports tabs and receipt preview need 320px usability tests. | Mobile button floor is fixed; `reports-flow.spec.ts` and `print-profiles.spec.ts` now cover report navigation and receipt preview containment at 320px. |
+| A11y/Responsive | RESOLVED | Small and icon buttons used sub-44px mobile targets. | Fixed in button foundations; 320px report navigation and receipt preview Playwright proof now pass. |
+| Performance/LAN | RESOLVED | Echo/Pusher static load and polling cadence could add avoidable LAN/client pressure. | `frontend/src/lib/realtime/echo.ts` lazy-loads Echo/Pusher only when broadcasting is enabled, polling uses visibility-aware intervals, and `docker compose exec frontend npm run test -- src/lib/realtime/echo.test.ts src/hooks/useBackups.test.tsx --run` passed on 2026-07-06 (14 tests). |
 
 ## Implementation Queue
 
@@ -100,8 +100,8 @@ Local review date: 2026-06-28
    - Backend/env test bootstrap and Docker baseline. PARTIAL: Docker works with explicit env and alternate host port.
    - RBAC protected-role and role-assignment hardening. DONE.
    - CI pnpm migration. DONE.
-   - Release E2E session/golden DB repair. PARTIAL: golden DB hash now includes auth/bootstrap/prep inputs; session failure remains PENDING.
-   - Payment/receipt recovery semantics.
+   - Release E2E session/golden DB repair. DONE for Docker/MariaDB live stack: `scripts/run_release_e2e_mariadb.ps1` prepares non-production E2E data, release config honors system Chromium, and release specs pass without session expiry. Host SQLite runner evidence remains pending because this workspace lacks backend vendor on host.
+   - Payment/receipt recovery semantics. DONE: backend returns explicit receipt error/recovery contract; frontend prioritizes Historial recovery when payment is registered but institutional receipt is pending.
    - Zero-total erythropoietin/dialysis prescription invoice semantics.
    - POS invoice retry idempotency. DONE.
    - Stale idempotency reservation rejection. DONE.
@@ -118,4 +118,4 @@ Local review date: 2026-06-28
 - The old V1.3 branch was divergent from current `main`; it has now been synced locally but not pushed yet.
 - The local Git pre-commit hook is stale and points at a missing script; quality gates must be run explicitly until hook hygiene is fixed.
 - Full V1.3 scope is larger than a single safe commit; implementation must proceed in slices with tests.
-- Payment receipt failure recovery contract, release E2E auth/session, reports mobile nav/receipt preview proof, backend full-test container mount/timeout, and realtime/polling LAN performance remain open.
+- Host release runner evidence remains open because `backend/vendor/autoload.php` is absent on this host; the preflight is explicit and the Docker/MariaDB release gate is the current validated automated path. Final selected-mode browser and physical evidence also remain open; second-client LAN evidence is only required for multi-PC deployments.

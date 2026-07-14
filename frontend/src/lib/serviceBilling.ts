@@ -16,6 +16,8 @@ export type ServiceBillingSummary = {
   reasons: string[];
 };
 
+const ERYTHROPOIETIN_DIALYSIS_RULE = 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION';
+
 export function getServiceBillingSummary(service: Service): ServiceBillingSummary {
   const isActive = service.active !== false;
   const isVisibleInBilling = service.visible_in_billing !== false;
@@ -38,6 +40,10 @@ export function getServiceBillingSummary(service: Service): ServiceBillingSummar
 
   if (!hasConfiguredPrice) {
     reasons.push('Revise la tarifa antes de usar este servicio en caja.');
+  }
+
+  if (service.special_rule_code === ERYTHROPOIETIN_DIALYSIS_RULE) {
+    reasons.push('Gratis con receta de dialisis; cobra L 25.00 sin receta.');
   }
 
   const blockReason = !isActive
@@ -75,6 +81,12 @@ export function getServiceBillingSummary(service: Service): ServiceBillingSummar
         label: hasConfiguredPrice ? 'Tarifa configurada' : 'Sin tarifa',
         tone: hasConfiguredPrice ? 'secondary' : 'outline',
       },
+      ...(service.special_rule_code === ERYTHROPOIETIN_DIALYSIS_RULE
+        ? [{
+            label: 'Receta dialisis',
+            tone: 'outline' as const,
+          }]
+        : []),
     ],
     reasons,
   };

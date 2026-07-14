@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { InfoPanel, StatGrid } from '@/components/shared';
+import { useSearchParams } from 'react-router-dom';
+import { EditOutlined, PlusOutlined } from '@ant-design/icons';
+import { Alert, Button, Col, Input, Modal, Row, Statistic, Typography } from 'antd';
 import { type AuthUser, type Category, type Service, type ServiceFilters, apiClient, userSafeErrorMessage } from '../../lib/api';
 import { useAreas, useCategories } from '@/hooks/useCategories';
 import { useOperationalSettings } from '@/hooks/useFiscalSettings';
@@ -8,10 +10,10 @@ import { useServices } from '@/hooks/useServices';
 import { CatalogPagination } from './components/CatalogPagination';
 import { CatalogToolbar } from './components/CatalogToolbar';
 import { ServiceCatalogTable } from './components/ServiceCatalogTable';
-import { ServiceStatusSummary } from './components/ServiceStatusSummary';
-import { CategorySheet } from './components/CategorySheet';
-import { ServiceSheet } from './components/ServiceSheet';
+import { CategoryDrawer } from './components/CategoryDrawer';
+import { ServiceDrawer } from './components/ServiceDrawer';
 import { invalidateCatalogQueries } from '@/lib/queryInvalidation';
+import { PageHeader } from '@/design-system/components/PageHeader';
 import {
   CATALOG_DEBOUNCE_MS,
   CATEGORY_FILTER_ALL,
@@ -27,19 +29,17 @@ type CatalogViewProps = {
 const DEFAULT_PER_PAGE = 15;
 
 export function CatalogView({ user, onStatus }: CatalogViewProps) {
-  const [search, setSearch] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<string>(CATEGORY_FILTER_ALL);
-  const [activeFilter, setActiveFilter] = useState<string>(STATUS_FILTER_ALL);
-  const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(DEFAULT_PER_PAGE);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [search, setSearch] = useState(() => searchParams.get('q') ?? '');
+  const [debouncedSearch, setDebouncedSearch] = useState(() => searchParams.get('q') ?? '');
+  const [categoryFilter, setCategoryFilter] = useState<string>(() => searchParams.get('category') ?? CATEGORY_FILTER_ALL);
+  const [activeFilter, setActiveFilter] = useState<string>(() => searchParams.get('status') ?? STATUS_FILTER_ALL);
+  const [page, setPage] = useState(() => positiveUrlInteger(searchParams.get('page'), 1));
+  const [perPage, setPerPage] = useState(() => positiveUrlInteger(searchParams.get('per_page'), DEFAULT_PER_PAGE));
   const [lastServicesData, setLastServicesData] = useState<Awaited<ReturnType<typeof apiClient.getServicesPage>> | null>(null);
   const queryClient = useQueryClient();
 
-  const [serviceSheetOpen, setServiceSheetOpen] = useState(false);
-  const [editingService, setEditingService] = useState<Service | null>(null);
-  const [categorySheetOpen, setCategorySheetOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [servicePendingStatusChange, setServicePendingStatusChange] = useState<Service | null>(null);
 
   const canManageCatalog = useMemo(
     () => user.permissions.includes('catalog.manage'),
@@ -66,11 +66,13 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
   }, [servicesQuery.data]);
 
   const servicesData = servicesQuery.data ?? lastServicesData;
-  const categories = categoriesQuery.data ?? [];
+  const categories = useMemo(() => categoriesQuery.data ?? [], [categoriesQuery.data]);
   const areas = areasQuery.data ?? [];
-  const services = servicesData?.data ?? [];
+  const services = useMemo(() => servicesData?.data ?? [], [servicesData]);
+  const overlayState = catalogOverlayState(searchParams, services, categories);
   const meta = servicesData?.meta ?? { current_page: 1, per_page: DEFAULT_PER_PAGE, total: 0 };
   const scannerEnabled = operationalSettingsQuery.data?.scanner_enabled === true;
+  const serviceStatusActionLabel = servicePendingStatusChange?.active ? 'Desactivar servicio' : 'Activar servicio';
   const loadError = errorMessageFromQueries(servicesQuery.error, categoriesQuery.error, areasQuery.error);
   const isLoading = servicesQuery.isLoading && !servicesData;
 
@@ -81,9 +83,32 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
     const timeoutId = setTimeout(() => {
       setDebouncedSearch(search);
       setPage(1);
+      const trimmedSearch = search.trim();
+      if ((searchParams.get('q') ?? '') === trimmedSearch && !searchParams.has('page')) return;
+      const next = new URLSearchParams(searchParams);
+      setOrDelete(next, 'q', trimmedSearch);
+      next.delete('page');
+      setSearchParams(next, { replace: true });
     }, CATALOG_DEBOUNCE_MS);
     return () => clearTimeout(timeoutId);
+  // URL writes are intentionally driven by the search value after the debounce.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
+
+  useEffect(() => {
+    const nextSearch = searchParams.get('q') ?? '';
+    const nextCategory = searchParams.get('category') ?? CATEGORY_FILTER_ALL;
+    const nextStatus = searchParams.get('status') ?? STATUS_FILTER_ALL;
+    const nextPage = positiveUrlInteger(searchParams.get('page'), 1);
+    const nextPerPage = positiveUrlInteger(searchParams.get('per_page'), DEFAULT_PER_PAGE);
+
+    setSearch((current) => current === nextSearch ? current : nextSearch);
+    setDebouncedSearch((current) => current === nextSearch ? current : nextSearch);
+    setCategoryFilter((current) => current === nextCategory ? current : nextCategory);
+    setActiveFilter((current) => current === nextStatus ? current : nextStatus);
+    setPage((current) => current === nextPage ? current : nextPage);
+    setPerPage((current) => current === nextPerPage ? current : nextPerPage);
+  }, [searchParams]);
 
   useEffect(() => {
     if (loadError) {
@@ -103,16 +128,19 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
   function handleCategoryFilterChange(value: string) {
     setCategoryFilter(value);
     setPage(1);
+    updateCatalogUrl({ category: value === CATEGORY_FILTER_ALL ? null : value, page: null });
   }
 
   function handleActiveFilterChange(value: string) {
     setActiveFilter(value);
     setPage(1);
+    updateCatalogUrl({ status: value === STATUS_FILTER_ALL ? null : value, page: null });
   }
 
   function handlePerPageChange(value: number) {
     setPerPage(value);
     setPage(1);
+    updateCatalogUrl({ per_page: value === DEFAULT_PER_PAGE ? null : String(value), page: null });
   }
 
   function clearFilters() {
@@ -121,21 +149,44 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
     setCategoryFilter(CATEGORY_FILTER_ALL);
     setActiveFilter(STATUS_FILTER_ALL);
     setPage(1);
+    const next = new URLSearchParams(searchParams);
+    ['q', 'category', 'status', 'page', 'per_page'].forEach((key) => next.delete(key));
+    setSearchParams(next);
   }
 
   function openNewService() {
-    setEditingService(null);
-    setServiceSheetOpen(true);
+    updateCatalogUrl({ panel: 'new-service', service: null });
   }
 
   function openEditService(service: Service) {
-    setEditingService(service);
-    setServiceSheetOpen(true);
+    updateCatalogUrl({ service: String(service.id), panel: null });
   }
 
   function openNewCategory() {
-    setEditingCategory(null);
-    setCategorySheetOpen(true);
+    updateCatalogUrl({ panel: 'new-category', service: null, edit_category: null });
+  }
+
+  function openEditCategory(category: Category) {
+    updateCatalogUrl({ edit_category: String(category.id), panel: null, service: null });
+  }
+
+  function handleServiceDrawerOpenChange(open: boolean) {
+    if (!open) updateCatalogUrl({ service: null, panel: null });
+  }
+
+  function handleCategoryDrawerOpenChange(open: boolean) {
+    if (!open) updateCatalogUrl({ panel: null, edit_category: null });
+  }
+
+  function updateCatalogUrl(patch: Record<string, string | null>) {
+    const next = new URLSearchParams(searchParams);
+    Object.entries(patch).forEach(([key, value]) => setOrDelete(next, key, value));
+    setSearchParams(next);
+  }
+
+  function handlePageChange(nextPage: number) {
+    setPage(nextPage);
+    updateCatalogUrl({ page: nextPage > 1 ? String(nextPage) : null });
   }
 
   function handleServiceSuccess() {
@@ -150,37 +201,31 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
     onStatus('Categoría guardada exitosamente.');
   }
 
-  const toggleServiceActive = useCallback(
-    async (service: Service) => {
-      try {
-        await apiClient.saveService(
-          {
-            category_id: service.category_id,
-            area_id: service.area_id ?? undefined,
-            name: service.name,
-            price: service.price,
-            scan_code: service.scan_code ?? null,
-            barcode: service.barcode ?? null,
-            qr_code: service.qr_code ?? null,
-            taxable: service.taxable,
-            active: !service.active,
-            visible_in_billing: service.visible_in_billing ?? true,
-            is_billable: service.is_billable ?? true,
-            special_rule_code: service.special_rule_code,
-          },
-          service.id,
-        );
-        void invalidateCatalogQueries(queryClient);
-        void refetchCatalogData();
-        onStatus(service.active ? 'Servicio desactivado.' : 'Servicio activado.');
-      } catch {
-        onStatus('No se pudo cambiar el estado del servicio.');
-      }
-    },
-    [onStatus, queryClient, refetchCatalogData],
-  );
+  const toggleServiceActive = useCallback((service: Service) => {
+    setServicePendingStatusChange(service);
+  }, []);
 
-  function normalizeServiceForSheet(service: Service) {
+  const confirmServiceStatusChange = useCallback(async (reason: string | null) => {
+    const service = servicePendingStatusChange;
+
+    if (!service) {
+      return;
+    }
+
+    const nextActive = !service.active;
+
+    try {
+      await apiClient.saveService(serviceStatusPayload(service, nextActive, reason), service.id);
+      setServicePendingStatusChange(null);
+      void invalidateCatalogQueries(queryClient);
+      void refetchCatalogData();
+      onStatus(nextActive ? 'Servicio activado.' : 'Servicio desactivado.');
+    } catch {
+      onStatus('No se pudo cambiar el estado del servicio.');
+    }
+  }, [onStatus, queryClient, refetchCatalogData, servicePendingStatusChange]);
+
+  function normalizeServiceForDrawer(service: Service) {
     return {
       ...service,
       scan_code: service.scan_code ?? null,
@@ -196,23 +241,30 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
     <section
       id="catalogo"
       className="flex flex-col gap-6"
-      aria-labelledby="catalog-title"
+      aria-label="Catálogo institucional"
     >
-      <ServiceStatusSummary
-        canManage={canManageCatalog}
-        onNewCategory={openNewCategory}
-        onNewService={openNewService}
-        summary={{ count: services.length, total: meta.total }}
+      <PageHeader
+        eyebrow="Servicios y productos facturables"
+        title="Catálogo institucional"
+        description={canManageCatalog
+          ? 'Administre categorías, servicios y precios para mantener operativo el catálogo de caja.'
+          : 'Consulte el catálogo y sus precios vigentes sin modificar servicios.'}
+        actions={canManageCatalog ? (
+          <>
+            <Button onClick={openNewCategory} aria-label="Crear nueva categoría" icon={<PlusOutlined />}>Nueva categoría</Button>
+            <Button type="primary" onClick={openNewService} aria-label="Crear nuevo servicio" icon={<PlusOutlined />}>Nuevo servicio</Button>
+          </>
+        ) : undefined}
       />
-
-      <InfoPanel
-        title="Catálogo operativo de caja"
-        description="Servicios, categorías y estado de facturación se administran aquí. Los precios históricos de facturas ya emitidas siguen protegidos por snapshots."
-        tone={canManageCatalog ? 'info' : 'neutral'}
-      />
+      <Typography.Text role="status" aria-label="Resumen de servicios en el catálogo">
+        {meta.total} servicio{meta.total !== 1 ? 's' : ''} en el catálogo
+      </Typography.Text>
+      {!canManageCatalog ? (
+        <Alert type="info" title="Solo lectura" description="Esta cuenta puede consultar el catálogo, pero no modificar servicios ni categorías." />
+      ) : null}
 
       <StatGrid
-        className="sm:grid-cols-2 xl:grid-cols-4"
+        className="sm:grid-cols-2 xl:grid-cols-2"
         items={[
           {
             label: 'Total catálogo',
@@ -226,20 +278,33 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
             helper: 'Disponibles para filtrar servicios',
             tone: categories.length > 0 ? 'info' : 'warning',
           },
-          {
-            label: 'Áreas',
-            value: areas.length,
-            helper: 'Clasificación administrativa',
-            tone: areas.length > 0 ? 'info' : 'warning',
-          },
-          {
-            label: 'Escáner',
-            value: scannerEnabled ? 'Activo' : 'Oculto',
-            helper: scannerEnabled ? 'Códigos visibles para gestión' : 'Sin códigos en flujo principal',
-            tone: scannerEnabled ? 'info' : 'neutral',
-          },
         ]}
       />
+
+      {canManageCatalog && categories.length > 0 ? (
+        <section aria-labelledby="catalog-categories-title" className="border-y border-border py-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h2 id="catalog-categories-title" className="text-sm font-semibold text-foreground">Categorías del catálogo</h2>
+              <p className="mt-1 text-xs text-muted-foreground">Edite la organización sin perder la búsqueda ni la página actual.</p>
+            </div>
+            <ul className="flex flex-wrap gap-2" aria-label="Categorías editables">
+              {categories.map((category) => (
+                <li key={category.id}>
+                  <Button
+                    htmlType="button"
+                    aria-label={`Editar categoría ${category.name}`}
+                    onClick={() => openEditCategory(category)}
+                  >
+                    <EditOutlined aria-hidden="true" />
+                    {category.name}
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      ) : null}
 
       <CatalogToolbar
         categories={categories}
@@ -275,36 +340,138 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
           meta={meta}
           perPage={perPage}
           servicesCount={services.length}
-          onPageChange={setPage}
+          onPageChange={handlePageChange}
           onPerPageChange={handlePerPageChange}
         />
       ) : null}
 
       {canManageCatalog ? (
         <>
-          <ServiceSheet
-            open={serviceSheetOpen}
-            onOpenChange={setServiceSheetOpen}
-            service={editingService ? normalizeServiceForSheet(editingService) : null}
+          <ServiceDrawer
+            open={overlayState.serviceDrawerOpen}
+            onOpenChange={handleServiceDrawerOpenChange}
+            service={overlayState.editingService ? normalizeServiceForDrawer(overlayState.editingService) : null}
             categories={categories}
             areas={areas}
             scannerEnabled={scannerEnabled}
             onSuccess={handleServiceSuccess}
           />
 
-          <CategorySheet
-            open={categorySheetOpen}
-            onOpenChange={setCategorySheetOpen}
-            category={editingCategory}
+          <CategoryDrawer
+            open={overlayState.categoryDrawerOpen}
+            onOpenChange={handleCategoryDrawerOpenChange}
+            category={overlayState.editingCategory}
             onSuccess={handleCategorySuccess}
           />
+
+          <ConfirmDialog
+            danger={servicePendingStatusChange?.active === true}
+            confirmLabel={serviceStatusActionLabel}
+            onCancel={() => setServicePendingStatusChange(null)}
+            onConfirm={(reason) => void confirmServiceStatusChange(reason)}
+            open={servicePendingStatusChange !== null}
+            reasonHelpText="Minimo 5 caracteres. El motivo quedara registrado en auditoria del catalogo."
+            requireReasonMinLength={5}
+            requireReasonTextarea
+            title={serviceStatusActionLabel}
+          >
+            {servicePendingStatusChange?.active
+              ? `El servicio ${servicePendingStatusChange.name} quedara oculto para nuevos cobros. Las facturas historicas conservaran sus snapshots.`
+              : `El servicio ${servicePendingStatusChange?.name ?? ''} volvera a estar disponible para nuevos cobros. Las facturas historicas conservaran sus snapshots.`}
+          </ConfirmDialog>
         </>
       ) : null}
     </section>
   );
 }
 
+export function catalogOverlayState(
+  searchParams: URLSearchParams,
+  services: Service[],
+  categories: Category[],
+) {
+  const requestedServiceId = positiveUrlInteger(searchParams.get('service'), 0);
+  const requestedCategoryId = positiveUrlInteger(searchParams.get('edit_category'), 0);
+  const requestedPanel = searchParams.get('panel');
+  const editingService = requestedServiceId
+    ? services.find((candidate) => candidate.id === requestedServiceId) ?? null
+    : null;
+  const editingCategory = requestedCategoryId
+    ? categories.find((candidate) => candidate.id === requestedCategoryId) ?? null
+    : null;
+
+  return {
+    editingCategory,
+    editingService,
+    categoryDrawerOpen: requestedPanel === 'new-category' || editingCategory !== null,
+    serviceDrawerOpen: requestedPanel === 'new-service' || editingService !== null,
+  };
+}
+
+export function serviceStatusPayload(service: Service, active: boolean, availabilityChangeReason?: string | null) {
+  return {
+    category_id: service.category_id,
+    area_id: service.area_id ?? undefined,
+    name: service.name,
+    aliases: service.aliases ?? null,
+    price: service.price,
+    scan_code: service.scan_code ?? null,
+    barcode: service.barcode ?? null,
+    qr_code: service.qr_code ?? null,
+    taxable: service.taxable,
+    active,
+    visible_in_billing: service.visible_in_billing ?? true,
+    is_billable: service.is_billable ?? true,
+    availability_change_reason: availabilityChangeReason?.trim() || undefined,
+    special_rule_code: service.special_rule_code,
+  };
+}
+
 function errorMessageFromQueries(...errors: unknown[]): string {
   const firstError = errors.find(Boolean);
   return firstError ? userSafeErrorMessage(firstError, 'No se pudo cargar el catálogo.') : '';
+}
+
+function positiveUrlInteger(value: string | null, fallback: number) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function setOrDelete(params: URLSearchParams, key: string, value: string | null) {
+  if (value) params.set(key, value);
+  else params.delete(key);
+}
+
+function StatGrid({ items, className }: { className?: string; items: Array<{ label: string; value: number; helper?: string; tone?: string }> }) {
+  return <Row gutter={[16, 16]} className={className}>{items.map((item) => <Col xs={24} sm={12} key={item.label}><div className="border border-border p-3"><Statistic title={item.label} value={item.value} /><Typography.Text type="secondary">{item.helper}</Typography.Text></div></Col>)}</Row>;
+}
+
+export function ConfirmDialog({ open, title, children, confirmLabel, danger, onCancel, onConfirm, reasonHelpText, requireReasonMinLength = 0 }: {
+  open: boolean;
+  title: string;
+  children: React.ReactNode;
+  confirmLabel: string;
+  danger?: boolean;
+  onCancel: () => void;
+  onConfirm: (reason: string | null) => void;
+  reasonHelpText?: string;
+  requireReasonMinLength?: number;
+  requireReasonTextarea?: boolean;
+}) {
+  const [reason, setReason] = useState('');
+  return (
+    <Modal
+      open={open}
+      title={title}
+      okText={confirmLabel}
+      okButtonProps={{ danger, disabled: reason.trim().length < requireReasonMinLength }}
+      onCancel={() => { setReason(''); onCancel(); }}
+      onOk={() => { onConfirm(reason.trim() || null); setReason(''); }}
+    >
+      <Typography.Paragraph>{children}</Typography.Paragraph>
+      <label htmlFor="catalog-audit-reason">Motivo de auditoría</label>
+      <Input.TextArea id="catalog-audit-reason" value={reason} onChange={(event) => setReason(event.target.value)} aria-describedby="catalog-audit-help" />
+      <Typography.Text id="catalog-audit-help" type="secondary">{reasonHelpText}</Typography.Text>
+    </Modal>
+  );
 }

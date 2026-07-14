@@ -7,11 +7,14 @@ use App\Actions\Backups\DatabaseDumpWriter;
 use App\Actions\Backups\EncryptBackupFileAction;
 use App\Actions\Backups\PruneBackupsAction;
 use App\Jobs\RunBackupJob;
+use App\Models\AuditLog;
 use App\Models\BackupLog;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 use Tests\TestCase;
@@ -20,7 +23,7 @@ class BackupWorkflowTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_admin_can_list_backups_without_exposing_internal_paths(): void
+    public function test_admin_can_list_backups_without_exposing_internal_file_details(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
         $admin = $this->admin();
@@ -40,8 +43,9 @@ class BackupWorkflowTest extends TestCase
         $this->actingAs($admin)
             ->getJson('/api/backups')
             ->assertOk()
-            ->assertJsonPath('data.0.filename', 'hospital-backup.sql')
             ->assertJsonPath('data.0.creator.username', $admin->username)
+            ->assertJsonMissingPath('data.0.checksum_sha256')
+            ->assertJsonMissingPath('data.0.filename')
             ->assertJsonMissingPath('data.0.path')
             ->assertJsonMissingPath('data.0.disk')
             ->assertJsonMissingPath('data.0.error_message');
@@ -124,7 +128,7 @@ class BackupWorkflowTest extends TestCase
             ->getJson('/api/backups?status=failed&per_page=1')
             ->assertOk()
             ->assertJsonPath('meta.total', 1)
-            ->assertJsonPath('data.0.filename', 'failed.sql')
+            ->assertJsonMissingPath('data.0.filename')
             ->assertJsonPath('data.0.status', BackupLog::STATUS_FAILED);
     }
 
@@ -162,6 +166,19 @@ class BackupWorkflowTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_backup_creation_requires_view_and_create_permissions(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $misconfiguredUser = User::factory()->create();
+        $misconfiguredUser->givePermissionTo('backups.create');
+
+        $this->actingAs($misconfiguredUser)
+            ->postJson('/api/backups')
+            ->assertForbidden();
+
+        $this->assertSame(0, BackupLog::query()->count());
+    }
+
     public function test_manual_backup_endpoint_queues_local_backup(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
@@ -171,7 +188,8 @@ class BackupWorkflowTest extends TestCase
             ->postJson('/api/backups')
             ->assertAccepted()
             ->assertJsonPath('data.status', BackupLog::STATUS_PENDING)
-            ->assertJsonPath('data.type', BackupLog::TYPE_MANUAL);
+            ->assertJsonPath('data.type', BackupLog::TYPE_MANUAL)
+            ->assertJsonMissingPath('data.checksum_sha256');
 
         $backup = BackupLog::query()->findOrFail($response->json('data.id'));
 
@@ -224,18 +242,29 @@ class BackupWorkflowTest extends TestCase
         $this->assertSame(64, strlen((string) $backup->checksum_sha256));
         $this->assertGreaterThan(0, $backup->size_bytes);
         $this->assertTrue(Storage::disk('local')->exists((string) $backup->path));
-        $this->assertStringEndsWith('.sql.enc', $backup->filename);
+        $this->assertStringEndsWith('.sql.gz.enc', $backup->filename);
 
         $encrypted = Storage::disk('local')->get((string) $backup->path);
         $this->assertStringNotContainsString('CREATE TABLE', $encrypted);
         $this->assertStringNotContainsString('INSERT INTO', $encrypted);
+        $encryptedLines = explode(PHP_EOL, (string) $encrypted);
+        $this->assertSame(EncryptBackupFileAction::CHUNK_MARKER, $encryptedLines[0] ?? null);
+        try {
+            Crypt::decryptString($encryptedLines[1] ?? '');
+            $this->fail('El backup no debe descifrarse con APP_KEY.');
+        } catch (DecryptException) {
+            $this->assertTrue(true);
+        }
+
         $decryptedPath = storage_path('framework/testing/decrypted-backup.sql');
         @unlink($decryptedPath);
         $this->artisan('hospital:decrypt-backup', [
             'input' => Storage::disk('local')->path((string) $backup->path),
             'output' => $decryptedPath,
         ])->assertExitCode(0);
-        $this->assertNotEmpty(file_get_contents($decryptedPath));
+        $decryptedSql = (string) file_get_contents($decryptedPath);
+        $this->assertStringContainsString('CREATE TABLE', $decryptedSql);
+        $this->assertStringContainsString('INSERT INTO', $decryptedSql);
 
         $this->assertDatabaseHas('audit_logs', [
             'user_id' => $admin->id,
@@ -243,6 +272,43 @@ class BackupWorkflowTest extends TestCase
             'entity_type' => BackupLog::class,
             'entity_id' => $backup->id,
         ]);
+    }
+
+    public function test_backup_fails_operationally_when_backup_encryption_key_is_missing(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->admin();
+        Config::set('backups.encryption.key', null);
+
+        $backup = app(CreateBackupAction::class)->execute($admin, BackupLog::TYPE_MANUAL);
+
+        $this->assertSame(BackupLog::STATUS_FAILED, $backup->status);
+        $this->assertSame('Clave de cifrado de respaldos no configurada.', $backup->error_message);
+        $this->assertFalse(Storage::disk('local')->exists((string) $backup->path));
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $admin->id,
+            'action' => 'backup.failed',
+            'entity_type' => BackupLog::class,
+            'entity_id' => $backup->id,
+        ]);
+    }
+
+    public function test_decrypt_backup_command_supports_legacy_app_key_chunks(): void
+    {
+        $legacySql = 'CREATE TABLE legacy_backup_test (id integer);'.PHP_EOL.'INSERT INTO legacy_backup_test VALUES (1);';
+        $legacyPayload = EncryptBackupFileAction::CHUNK_MARKER.PHP_EOL.Crypt::encryptString((string) gzencode($legacySql)).PHP_EOL;
+        $legacyPath = Storage::disk('local')->path('backups/legacy-app-key.sql.gz.enc');
+        Storage::disk('local')->makeDirectory('backups');
+        file_put_contents($legacyPath, $legacyPayload);
+        $decryptedPath = storage_path('framework/testing/legacy-app-key-backup.sql');
+        @unlink($decryptedPath);
+
+        $this->artisan('hospital:decrypt-backup', [
+            'input' => $legacyPath,
+            'output' => $decryptedPath,
+        ])->assertExitCode(0);
+
+        $this->assertSame($legacySql, (string) file_get_contents($decryptedPath));
     }
 
     public function test_backup_prune_keeps_latest_successful_backups_and_never_prunes_failed_or_pending(): void
@@ -405,6 +471,40 @@ class BackupWorkflowTest extends TestCase
         ]);
     }
 
+    public function test_backup_fails_before_dump_when_free_space_is_insufficient(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->admin();
+
+        $writer = new class extends DatabaseDumpWriter
+        {
+            public bool $called = false;
+
+            public function dumpTo(string $absolutePath): void
+            {
+                $this->called = true;
+                file_put_contents($absolutePath, 'should-not-run');
+            }
+        };
+
+        $backup = (new CreateBackupAction(
+            $writer,
+            app(EncryptBackupFileAction::class),
+            app(PruneBackupsAction::class),
+            freeSpaceResolver: fn (string $backupRoot): int => 1024,
+        ))->execute($admin, BackupLog::TYPE_MANUAL);
+
+        $this->assertFalse($writer->called);
+        $this->assertSame(BackupLog::STATUS_FAILED, $backup->status);
+        $this->assertSame('Espacio insuficiente para crear respaldo local.', $backup->error_message);
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $admin->id,
+            'action' => 'backup.failed',
+            'entity_type' => BackupLog::class,
+            'entity_id' => $backup->id,
+        ]);
+    }
+
     public function test_backup_job_failure_marks_pending_log_failed_with_safe_message(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
@@ -503,6 +603,33 @@ class BackupWorkflowTest extends TestCase
         ]);
     }
 
+    public function test_download_refuses_backup_when_file_integrity_no_longer_matches_log(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->admin();
+        $backup = $this->successfulBackupLog($admin);
+
+        Storage::disk('local')->put((string) $backup->path, 'tampered backup contents');
+
+        $this->actingAs($admin)
+            ->get("/api/backups/{$backup->id}/download")
+            ->assertNotFound();
+
+        $audit = AuditLog::query()
+            ->where('action', 'backup.download_denied')
+            ->where('entity_type', BackupLog::class)
+            ->where('entity_id', $backup->id)
+            ->firstOrFail();
+
+        $this->assertSame('integrity_mismatch', $audit->new_values['reason'] ?? null);
+        $this->assertSame(BackupLog::STATUS_SUCCESS, $audit->new_values['status'] ?? null);
+        $this->assertDatabaseMissing('audit_logs', [
+            'action' => 'backup.downloaded',
+            'entity_type' => BackupLog::class,
+            'entity_id' => $backup->id,
+        ]);
+    }
+
     public function test_backup_download_guest_receives_json_unauthenticated_for_download_accept_header(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
@@ -555,13 +682,13 @@ class BackupWorkflowTest extends TestCase
     {
         $this->seed(RolesAndPermissionsSeeder::class);
         $admin = $this->admin();
-        $backup = $this->successfulBackupLog($admin, filename: "../bad\r\nname.sql.enc");
+        $backup = $this->successfulBackupLog($admin, filename: "../bad\r\nname.sql.gz.enc");
 
         $response = $this->actingAs($admin)
             ->get("/api/backups/{$backup->id}/download")
             ->assertOk();
 
-        $this->assertStringContainsString('filename=hospital-backup-download.sql.enc', $response->headers->get('Content-Disposition'));
+        $this->assertStringContainsString('filename=hospital-backup-download.sql.gz.enc', $response->headers->get('Content-Disposition'));
         $this->assertStringNotContainsString('bad', $response->headers->get('Content-Disposition'));
     }
 

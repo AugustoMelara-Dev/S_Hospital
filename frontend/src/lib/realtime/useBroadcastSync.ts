@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { getEcho } from './echo';
-import { notify } from '../../components/ui/toaster';
+import { useFeedback } from '@/design-system/providers/FeedbackProvider';
 import { invalidateBillingQueries } from '@/lib/queryInvalidation';
 import { queryKeys } from '@/lib/queryKeys';
 import type {
@@ -57,6 +57,7 @@ function humanCash(payload: CashSessionChangedEvent): string {
  */
 export function useBroadcastSync(): void {
   const queryClient = useQueryClient();
+  const feedback = useFeedback();
 
   useEffect(() => {
     let cancelled = false;
@@ -70,9 +71,9 @@ export function useBroadcastSync(): void {
         if (!isInvoiceChanged(payload)) return;
         void invalidateBillingQueries(queryClient);
         if (payload.change === 'voided' || payload.change === 'reversed') {
-          notify.warning(humanInvoice(payload));
+          feedback.warning(humanInvoice(payload));
         } else if (payload.change === 'created') {
-          notify.info(humanInvoice(payload));
+          feedback.info(humanInvoice(payload));
         }
       };
 
@@ -80,9 +81,9 @@ export function useBroadcastSync(): void {
         if (!isPaymentChanged(payload)) return;
         void invalidateBillingQueries(queryClient);
         if (payload.change === 'registered') {
-          notify.success(humanPayment(payload));
+          feedback.success(humanPayment(payload));
         } else {
-          notify.warning(humanPayment(payload));
+          feedback.warning(humanPayment(payload));
         }
       };
 
@@ -91,9 +92,9 @@ export function useBroadcastSync(): void {
         queryClient.invalidateQueries({ queryKey: queryKeys.cashSessions.all });
         queryClient.invalidateQueries({ queryKey: queryKeys.reports.dashboard() });
         if (payload.change === 'opened') {
-          notify.info(humanCash(payload));
+          feedback.info(humanCash(payload));
         } else {
-          notify.warning(humanCash(payload));
+          feedback.warning(humanCash(payload));
         }
       };
 
@@ -130,5 +131,5 @@ export function useBroadcastSync(): void {
       cancelled = true;
       if (cleanup) cleanup();
     };
-  }, [queryClient]);
+  }, [feedback, queryClient]);
 }

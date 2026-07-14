@@ -123,14 +123,18 @@ class IncomeReportService
 
         Invoice::query()
             ->whereBetween('issued_at', [$start, $end])
+            ->where('status', '!=', Invoice::STATUS_VOID)
             ->when(! empty($filters['user_id']), function (Builder $query) use ($filters): void {
                 $query->where('issued_by', $filters['user_id']);
             })
             ->when(! empty($filters['cash_session_id']), function (Builder $query) use ($filters): void {
                 $query->where('cash_session_id', $filters['cash_session_id']);
             })
-            ->when(! empty($filters['status']), function (Builder $query) use ($filters): void {
+            ->when(! empty($filters['status']) && $filters['status'] !== Invoice::STATUS_VOID, function (Builder $query) use ($filters): void {
                 $query->where('status', $filters['status']);
+            })
+            ->when(($filters['status'] ?? null) === Invoice::STATUS_VOID, function (Builder $query): void {
+                $query->whereRaw('1 = 0');
             })
             ->when(! empty($filters['method']), function (Builder $query) use ($filters, $start, $end): void {
                 $query->whereExists(function ($subquery) use ($filters, $start, $end): void {
@@ -171,6 +175,56 @@ class IncomeReportService
                     'total' => $this->centsToMoney($row->total_cents),
                 ];
             });
+
+        $voided = Invoice::query()
+            ->where('status', Invoice::STATUS_VOID)
+            ->whereBetween('voided_at', [$start, $end])
+            ->when(! empty($filters['user_id']), function (Builder $query) use ($filters): void {
+                $query->where('issued_by', $filters['user_id']);
+            })
+            ->when(! empty($filters['cash_session_id']), function (Builder $query) use ($filters): void {
+                $query->where('cash_session_id', $filters['cash_session_id']);
+            })
+            ->when(! empty($filters['status']) && $filters['status'] !== Invoice::STATUS_VOID, function (Builder $query): void {
+                $query->whereRaw('1 = 0');
+            })
+            ->when(! empty($filters['method']), function (Builder $query) use ($filters, $start, $end): void {
+                $query->whereExists(function ($subquery) use ($filters, $start, $end): void {
+                    $subquery
+                        ->selectRaw('1')
+                        ->from('payments')
+                        ->whereColumn('payments.invoice_id', 'invoices.id')
+                        ->where('payments.status', Payment::STATUS_POSTED)
+                        ->where('payments.method', $filters['method'])
+                        ->whereBetween('payments.paid_at', [$start, $end]);
+                });
+            })
+            ->when(! empty($filters['category_id']), function (Builder $query) use ($filters): void {
+                $query->whereExists(function ($subquery) use ($filters): void {
+                    $subquery
+                        ->selectRaw('1')
+                        ->from('invoice_items')
+                        ->whereColumn('invoice_items.invoice_id', 'invoices.id')
+                        ->where('invoice_items.category_id', $filters['category_id']);
+                });
+            })
+            ->when(! empty($filters['area_id']), function (Builder $query) use ($filters): void {
+                $query->whereExists(function ($subquery) use ($filters): void {
+                    $subquery
+                        ->selectRaw('1')
+                        ->from('invoice_items')
+                        ->whereColumn('invoice_items.invoice_id', 'invoices.id')
+                        ->where('invoice_items.area_id', $filters['area_id']);
+                });
+            })
+            ->selectRaw('COUNT(*) as count')
+            ->selectRaw('COALESCE(SUM(total_cents), 0) as total_cents')
+            ->first();
+
+        $statuses[Invoice::STATUS_VOID] = [
+            'count' => (int) ($voided->count ?? 0),
+            'total' => $this->centsToMoney($voided->total_cents ?? 0),
+        ];
 
         return $statuses;
     }

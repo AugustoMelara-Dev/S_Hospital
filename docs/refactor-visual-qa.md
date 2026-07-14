@@ -1,13 +1,13 @@
 # QA visual final del refactor
 
-Fecha: 2026-07-01  
-Viewport usado: 1366 x 768  
-Carpeta: `qa/refactor/screenshots/`  
-Comando: `pnpm exec playwright test e2e/v1-2-visible-ui-a11y.spec.ts -g "refactor final screenshots evidence"`
+Fecha: 2026-07-09
+Viewport usado: 1366 x 768
+Carpeta: `qa/refactor/screenshots/`
+Comando: `npx playwright test e2e/v1-2-visible-ui-a11y.spec.ts --workers=1`
 
 ## Resultado general
 
-Se generaron y revisaron 19 screenshots. No hay evidencia visual de tabs excesivos, campos manuales de impresion para usuario normal, restore inseguro, ni botones flotantes tapando contenido. `/admin/roles` no existe como ruta SPA separada; roles se gestionan dentro de `/admin/users`.
+Se generaron y revisaron 20 screenshots vigentes. No hay evidencia visual de tabs excesivos, campos manuales de impresion, restore inseguro, ni botones flotantes tapando contenido. `/admin/roles` no existe como ruta SPA separada; roles se gestionan dentro de `/admin/users`.
 
 ## Evidencia por ruta
 
@@ -16,6 +16,7 @@ Se generaron y revisaron 19 screenshots. No hay evidencia visual de tabs excesiv
 | `dashboard.png` | `/dashboard` | admin | Jerarquia compacta, KPIs y actividad sin cards decorativas excesivas. | Ninguno critico. | No aplica. | OK |
 | `billing-new-empty.png` | `/billing/new` vacia | cajero | Accion primaria clara, busqueda y paciente visibles, no dock flotante tapando. | Texto de confirmacion tenia mojibake en layout. | Texto corregido en `NewInvoiceViewLayout.tsx`. | OK |
 | `billing-new-cart.png` | `/billing/new` con 2 servicios | cajero | Carrito con 2 servicios, total visible, boton `Emitir y cobrar` claro. | Ninguno critico. | No aplica. | OK |
+| `billing-payment.png` | Cobro de factura emitida | cajero | Metodo, monto y referencia mantienen un flujo unico y claro antes de confirmar. | Ninguno critico. | No aplica. | OK |
 | `billing-success.png` | Exito de nueva factura | cajero | Muestra numero, paciente, total, estado, `Imprimir`, `Nueva factura`, `Ver detalle`. | Ninguno critico. | Test actualizado para exigir esos elementos. | OK |
 | `cashbox-closed.png` | `/cashbox` cerrada | cajero | Estado cerrado entendible y CTA para abrir caja. | Ninguno critico. | No aplica. | OK |
 | `cashbox-open.png` | `/cashbox` abierta | cajero | Estado abierta, resumen por metodo, movimientos compactos. | Ninguno critico. | No aplica. | OK |
@@ -29,8 +30,8 @@ Se generaron y revisaron 19 screenshots. No hay evidencia visual de tabs excesiv
 | `reports-audit.png` | `/reports/audit` | admin/auditor | Auditoria separada y enfocada en anulaciones/reversos/cambios. | Ninguno critico. | No aplica. | OK |
 | `backups.png` | `/backups` | admin | Tabla simple y estado de salud; no hay restore operativo. | Ninguno critico. | UI conserva restore fuera de operacion. | OK |
 | `settings-fiscal.png` | `/settings/fiscal` | admin | Datos fiscales separados, advertencias de impacto, cambios criticos con motivo. | Ninguno critico. | Tests fiscales pasan. | OK |
-| `receipt-settings-normal.png` | `/settings/institutional-receipts` normal | usuario con update sin advanced | No hay `width_mm`, `height_mm`, margenes, fuente, escala ni bloque soporte tecnico. | Visual QA detecto que el bloque "Modo soporte tecnico" se mostraba aunque deshabilitado. | UI ahora no renderiza el bloque si falta `receipt_settings.advanced`. | OK |
-| `receipt-settings-advanced.png` | `/settings/institutional-receipts` soporte | soporte con advanced | Acordeon avanzado muestra campos manuales solo en perfil personalizado. | Ninguno critico despues de correccion. | Prop `canAdvancedPrintSettings` desde permisos. | OK |
+| `receipt-settings-normal.png` | `/settings/institutional-receipts` | administrador | Solo papel, copias, logo, sello, vista previa, guardar y prueba. No hay medidas, margenes, fuente, escala ni modo soporte. | Los controles tecnicos historicos contradecian el contrato operativo. | Retirados de la interfaz para todos los roles. | OK |
+| `receipt-settings-a5.png` | `/settings/institutional-receipts` con A5 | administrador | Elegir A5 actualiza la vista previa sin pedir parametros tecnicos. | Ninguno critico. | No aplica. | OK |
 | `admin-users.png` | `/admin/users` | admin | Usuarios y roles agrupados por tarea; no abruma con rutas separadas. | `/admin/roles` separado no existe. | Documentado como no aplicable; roles viven aqui. | OK |
 
 ## Auditoria visual dura
@@ -39,7 +40,7 @@ Se generaron y revisaron 19 screenshots. No hay evidencia visual de tabs excesiv
 - Densidad: filtros de reportes quedan arriba y no dominan la pantalla; tablas de catalogo/historial/respaldos son escaneables.
 - Color: estados criticos usan texto y color; no hay fondos decorativos de un solo color dominando la operacion.
 - Accesibilidad: labels visibles, focus rings y modales con foco. Motivos obligatorios se muestran en dialog/textarea.
-- Operacion hospitalaria: nueva factura es rapida, cierre de caja muestra diferencia/motivo, reportes responden cobros/caja/auditoria, recibos no exponen tecnica a usuarios normales.
+- Operacion hospitalaria: nueva factura es rapida, cierre de caja muestra diferencia/motivo, reportes responden cobros/caja/auditoria, recibos no exponen configuracion tecnica a ningun rol.
 
 ## Screenshots generados
 

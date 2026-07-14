@@ -8,12 +8,71 @@ use App\Support\AuditLogger;
 use App\Support\RoleCatalog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 class RoleController extends Controller
 {
+    private const MODULE_LABELS = [
+        'audit' => 'Auditoria',
+        'backups' => 'Respaldos',
+        'cash' => 'Caja',
+        'catalog' => 'Catalogo',
+        'fiscal' => 'Configuracion fiscal',
+        'invoices' => 'Facturacion',
+        'patients' => 'Pacientes',
+        'payments' => 'Pagos',
+        'receipt_settings' => 'Recibos',
+        'receipts' => 'Recibos',
+        'reports' => 'Reportes',
+        'settings' => 'Configuracion',
+        'system' => 'Sistema',
+        'users' => 'Usuarios',
+    ];
+
+    private const PERMISSION_LABELS = [
+        'audit.view' => 'Ver auditoria',
+        'backups.create' => 'Crear respaldos',
+        'backups.download' => 'Descargar respaldos',
+        'backups.view' => 'Ver respaldos',
+        'cash.close' => 'Cerrar caja propia',
+        'cash.close_any' => 'Cerrar o revisar cajas de otros cajeros',
+        'cash.open' => 'Abrir caja',
+        'cash.view' => 'Ver caja',
+        'catalog.manage' => 'Administrar servicios y precios',
+        'catalog.view' => 'Ver catalogo',
+        'fiscal.sequences.reset' => 'Ajustar correlativos fiscales',
+        'invoices.create' => 'Crear facturas',
+        'invoices.operate_any' => 'Operar facturas de otros usuarios',
+        'invoices.reverse' => 'Reversar pagos y factura',
+        'invoices.view' => 'Ver historial de facturas',
+        'invoices.void' => 'Anular facturas',
+        'patients.mark_dialysis_prescription' => 'Marcar receta de dialisis',
+        'payments.create' => 'Cobrar facturas',
+        'payments.view' => 'Ver pagos',
+        'payments.void' => 'Reversar pagos',
+        'receipt_settings.advanced' => 'Soporte tecnico de impresion',
+        'receipt_settings.update' => 'Editar recibos y series',
+        'receipt_settings.view' => 'Ver configuracion de recibos',
+        'receipts.print_test' => 'Imprimir prueba de recibo',
+        'receipts.reprint' => 'Reimprimir recibos',
+        'receipts.reprint_any' => 'Reimprimir recibos de otros cajeros',
+        'receipts.view' => 'Ver recibos',
+        'reports.cash_session.view' => 'Ver reporte de caja',
+        'reports.export' => 'Exportar reportes',
+        'reports.managerial.view' => 'Ver reportes ejecutivos',
+        'settings.fiscal.update' => 'Editar configuracion fiscal',
+        'settings.fiscal.view' => 'Ver configuracion fiscal',
+        'settings.operational.update' => 'Editar reglas operativas',
+        'system.status.view' => 'Ver estado del sistema',
+        'users.create' => 'Crear usuarios',
+        'users.disable' => 'Desactivar usuarios',
+        'users.update' => 'Editar usuarios y roles',
+        'users.view' => 'Ver usuarios',
+    ];
+
     public function index(Request $request): JsonResponse
     {
         abort_unless($request->user()?->can('users.view'), 403);
@@ -34,23 +93,26 @@ class RoleController extends Controller
     {
         $validated = $request->validated();
 
-        $role = Role::query()->create([
-            'name' => $validated['name'],
-            'guard_name' => 'web',
-        ]);
-        $role->syncPermissions($validated['permissions']);
+        $role = DB::transaction(function () use ($validated, $auditLogger, $request): Role {
+            $role = Role::query()->create([
+                'name' => $validated['name'],
+                'guard_name' => 'web',
+            ]);
+            $role->syncPermissions($validated['permissions']);
+            $role->load('permissions');
+
+            $auditLogger->log(
+                action: 'role.created',
+                entity: $role,
+                user: $request->user(),
+                request: $request,
+                newValues: $this->auditPayload($role),
+            );
+
+            return $role;
+        });
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
-
-        $role->load('permissions');
-
-        $auditLogger->log(
-            action: 'role.created',
-            entity: $role,
-            user: $request->user(),
-            request: $request,
-            newValues: $this->auditPayload($role),
-        );
 
         return response()->json([
             'data' => $this->transformRole($role),
@@ -61,26 +123,27 @@ class RoleController extends Controller
     {
         $validated = $request->validated();
 
-        $oldValues = $this->auditPayload($role->load('permissions'));
+        DB::transaction(function () use ($role, $validated, $auditLogger, $request): void {
+            $oldValues = $this->auditPayload($role->load('permissions'));
 
-        $role->forceFill([
-            'name' => $validated['name'],
-            'guard_name' => 'web',
-        ])->save();
-        $role->syncPermissions($validated['permissions']);
+            $role->forceFill([
+                'name' => $validated['name'],
+                'guard_name' => 'web',
+            ])->save();
+            $role->syncPermissions($validated['permissions']);
+            $role->load('permissions');
+
+            $auditLogger->log(
+                action: 'role.updated',
+                entity: $role,
+                user: $request->user(),
+                request: $request,
+                oldValues: $oldValues,
+                newValues: $this->auditPayload($role),
+            );
+        });
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
-
-        $role->load('permissions');
-
-        $auditLogger->log(
-            action: 'role.updated',
-            entity: $role,
-            user: $request->user(),
-            request: $request,
-            oldValues: $oldValues,
-            newValues: $this->auditPayload($role),
-        );
 
         return response()->json([
             'data' => $this->transformRole($role),
@@ -100,6 +163,7 @@ class RoleController extends Controller
                 'name' => $permission->name,
                 'module' => $this->moduleForPermission($permission->name),
                 'label' => $this->labelForPermission($permission->name),
+                ...RoleCatalog::permissionRiskMetadata($permission->name),
             ];
         }
 
@@ -112,7 +176,7 @@ class RoleController extends Controller
     }
 
     /**
-     * @return list<array{module: string, label: string, permissions: list<array{name: string, module: string, label: string}>}>
+     * @return list<array{module: string, label: string, permissions: list<array{name: string, module: string, label: string, critical: bool, risk_level: 'critical'|'standard', risk_label: string|null}>}>
      */
     private function permissionCatalog(): array
     {
@@ -130,6 +194,7 @@ class RoleController extends Controller
                         'name' => $permission->name,
                         'module' => $module,
                         'label' => $this->labelForPermission($permission->name),
+                        ...RoleCatalog::permissionRiskMetadata($permission->name),
                     ])
                     ->values()
                     ->all(),
@@ -147,12 +212,12 @@ class RoleController extends Controller
 
     private function labelForModule(string $module): string
     {
-        return ucfirst(str_replace('_', ' ', $module));
+        return self::MODULE_LABELS[$module] ?? ucfirst(str_replace('_', ' ', $module));
     }
 
     private function labelForPermission(string $permission): string
     {
-        return ucfirst(str_replace(['.', '_'], [' - ', ' '], $permission));
+        return self::PERMISSION_LABELS[$permission] ?? ucfirst(str_replace(['.', '_'], [' - ', ' '], $permission));
     }
 
     /**

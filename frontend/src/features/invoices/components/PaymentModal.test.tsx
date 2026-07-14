@@ -27,7 +27,6 @@ function renderPaymentModal(overrides: Partial<PaymentModalTestProps> = {}) {
     onPaymentMethodChange: vi.fn(),
     onPaymentAmountChange: vi.fn(),
     onPaymentReferenceChange: vi.fn(),
-    onPreviewBeforePrintChange: vi.fn(),
     onConfirm: vi.fn(),
     ...overrides,
   } satisfies PaymentModalTestProps;
@@ -47,8 +46,8 @@ describe('PaymentModal', () => {
   it('exposes an accessible dialog title and description tied to the invoice', () => {
     renderPaymentModal({ invoiceNumber: '000-001-01-00000044' });
 
-    const dialog = screen.getByRole('dialog', { name: /registrar pago/i });
-    expect(dialog).toHaveAccessibleDescription(/factura 000-001-01-00000044/i);
+    expect(screen.getByRole('dialog', { name: /registrar pago/i })).toBeInTheDocument();
+    expect(screen.getByText(/factura 000-001-01-00000044.*pendiente de cobro/i)).toBeInTheDocument();
     expect(screen.getByText('000-001-01-00000044')).toBeInTheDocument();
   });
 
@@ -65,6 +64,30 @@ describe('PaymentModal', () => {
 
     rerender(<PaymentModal {...props} patientName="" invoiceNumber="000-001-01-00000045" />);
     expect(screen.getByText('Paciente no especificado')).toBeInTheDocument();
+  });
+
+  it('uses semantic theme colors for the invoice summary in light and dark themes', () => {
+    renderPaymentModal({
+      paymentAmount: '10.00',
+      partialPaymentsEnabled: true,
+    });
+
+    const summary = screen.getByRole('region', { name: 'Resumen de factura' });
+    expect(summary).toHaveClass('bg-surface');
+    expect(summary.innerHTML).not.toMatch(/(?:text|bg|border)-(?:white|black|neutral|amber)(?:-|\b)/);
+    expect(screen.getByText('L 7.25')).toHaveClass('text-warning-foreground');
+  });
+
+  it('selects the prefilled amount when opened for quick overwrite', async () => {
+    renderPaymentModal({ paymentAmount: '17.25' });
+
+    const amountInput = screen.getByLabelText(/monto recibido/i) as HTMLInputElement;
+
+    await waitFor(() => {
+      expect(amountInput).toHaveFocus();
+      expect(amountInput.selectionStart).toBe(0);
+      expect(amountInput.selectionEnd).toBe(amountInput.value.length);
+    });
   });
 
   it('applies received cash as balance due and keeps change visible', async () => {
@@ -90,6 +113,23 @@ describe('PaymentModal', () => {
     expect(confirmSpy).not.toHaveBeenCalled();
 
     fireEvent.submit(amountInput.closest('form')!);
+
+    await waitFor(() => {
+      expect(confirmSpy).toHaveBeenCalledTimes(1);
+    });
+    expect(confirmSpy).toHaveBeenCalledWith('17.25');
+  });
+
+  it('submits the payment with Ctrl+Enter from the amount field', async () => {
+    const confirmSpy = vi.fn();
+
+    renderPaymentModal({ onConfirm: confirmSpy });
+
+    fireEvent.keyDown(screen.getByLabelText(/monto recibido/i), {
+      key: 'Enter',
+      code: 'Enter',
+      ctrlKey: true,
+    });
 
     await waitFor(() => {
       expect(confirmSpy).toHaveBeenCalledTimes(1);
@@ -162,6 +202,19 @@ describe('PaymentModal', () => {
     });
   });
 
+  it('accepts pasted amount values with surrounding spaces', () => {
+    const onPaymentAmountChange = vi.fn();
+
+    renderPaymentModal({
+      paymentAmount: '',
+      onPaymentAmountChange,
+    });
+
+    fireEvent.change(screen.getByLabelText(/monto recibido/i), { target: { value: ' 17.25 ' } });
+
+    expect(onPaymentAmountChange).toHaveBeenCalledWith('17.25');
+  });
+
   it('keeps visible progress and prevents closing while a payment is being registered', () => {
     const onOpenChange = vi.fn();
 
@@ -171,10 +224,38 @@ describe('PaymentModal', () => {
       invoiceNumber: '000-001-01-00000012',
     });
 
-    expect(screen.getByRole('status')).toHaveTextContent(/registrando cobro/i);
+    expect(screen.getAllByRole('status').some((status) => /registrando cobro/i.test(status.textContent ?? ''))).toBe(true);
     expect(screen.getByRole('button', { name: /dejar pendiente/i })).toBeDisabled();
     fireEvent.click(screen.getByRole('button', { name: /dejar pendiente/i }));
     expect(onOpenChange).not.toHaveBeenCalled();
+  });
+
+  it('ignores direct form submits while a payment is already being registered', () => {
+    const confirmSpy = vi.fn();
+
+    renderPaymentModal({
+      submitting: true,
+      onConfirm: confirmSpy,
+    });
+
+    fireEvent.submit(screen.getByLabelText(/monto recibido/i).closest('form')!);
+
+    expect(confirmSpy).not.toHaveBeenCalled();
+  });
+
+  it('locks payment fields while a payment is already being registered', () => {
+    renderPaymentModal({
+      submitting: true,
+      paymentMethod: 'transfer',
+      paymentReference: 'TX-101',
+    });
+
+    expect(screen.getAllByRole('radio')).toHaveLength(4);
+    screen.getAllByRole('radio').forEach((method) => expect(method).toBeDisabled());
+    expect(screen.getByLabelText(/monto recibido/i)).toBeDisabled();
+    expect(screen.getByLabelText(/referencia de pago/i)).toBeDisabled();
+    expect(screen.getByText(/cobrando/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /confirmar cobro.*imprimir/i })).toBeDisabled();
   });
 
   it('disables the Pay button when a non-cash amount exceeds the pending balance', () => {
@@ -198,7 +279,7 @@ describe('PaymentModal', () => {
 
     for (const [method, label] of methods) {
       const { unmount } = renderPaymentModal({ paymentMethod: method });
-      expect(screen.getByRole('combobox', { name: /m[eé]todo de pago/i })).toHaveTextContent(label);
+      expect(screen.getByRole('radio', { name: label })).toHaveAttribute('aria-checked', 'true');
       unmount();
     }
 
@@ -232,6 +313,101 @@ describe('PaymentModal', () => {
 
     fireEvent.change(referenceInput, { target: { value: 'DEP-2026-06' } });
     expect(onPaymentReferenceChange).toHaveBeenCalledWith('DEP-2026-06');
+  });
+
+  it('does not request a reference for the other payment method', () => {
+    renderPaymentModal({ paymentMethod: 'other', paymentReference: '' });
+
+    expect(screen.queryByLabelText(/referencia de pago/i)).not.toBeInTheDocument();
+  });
+
+  it('exposes payment methods as accessible tiles and includes the total in the primary action', () => {
+    renderPaymentModal({ paymentMethod: 'cash', balanceDue: '17.25' });
+
+    expect(screen.getByRole('radiogroup', { name: /método de pago/i })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Efectivo' })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('button', { name: /confirmar cobro de l 17\.25 e imprimir/i })).toBeEnabled();
+  });
+
+  it('uses roving tab focus and arrow, Home and End navigation for payment methods', async () => {
+    const onPaymentMethodChange = vi.fn();
+    const { rerender, props } = renderPaymentModal({ paymentMethod: 'cash', onPaymentMethodChange });
+
+    const cash = screen.getByRole('radio', { name: 'Efectivo' });
+    const card = screen.getByRole('radio', { name: 'Tarjeta' });
+    const other = screen.getByRole('radio', { name: 'Otro' });
+    expect(cash).toHaveAttribute('tabindex', '0');
+    expect(card).toHaveAttribute('tabindex', '-1');
+
+    fireEvent.keyDown(cash, { key: 'ArrowRight' });
+    expect(onPaymentMethodChange).toHaveBeenLastCalledWith('card');
+    await waitFor(() => expect(card).toHaveFocus());
+
+    rerender(<PaymentModal {...props} paymentMethod="card" onPaymentMethodChange={onPaymentMethodChange} />);
+    expect(card).toHaveAttribute('tabindex', '0');
+    fireEvent.keyDown(card, { key: 'End' });
+    expect(onPaymentMethodChange).toHaveBeenLastCalledWith('other');
+    await waitFor(() => expect(other).toHaveFocus());
+
+    fireEvent.keyDown(other, { key: 'Home' });
+    expect(onPaymentMethodChange).toHaveBeenLastCalledWith('cash');
+    await waitFor(() => expect(cash).toHaveFocus());
+  });
+
+  it('does not navigate or change payment methods while submitting', () => {
+    const onPaymentMethodChange = vi.fn();
+    renderPaymentModal({ submitting: true, paymentMethod: 'cash', onPaymentMethodChange });
+
+    const cash = screen.getByRole('radio', { name: 'Efectivo' });
+    fireEvent.keyDown(cash, { key: 'ArrowDown' });
+
+    expect(onPaymentMethodChange).not.toHaveBeenCalled();
+    expect(cash).toHaveAttribute('tabindex', '0');
+  });
+
+  it('clears a residual reference when changing to a method that does not require it', () => {
+    const onPaymentMethodChange = vi.fn();
+    const onPaymentReferenceChange = vi.fn();
+    renderPaymentModal({
+      paymentMethod: 'transfer',
+      paymentReference: 'TX-RESIDUAL',
+      onPaymentMethodChange,
+      onPaymentReferenceChange,
+    });
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Otro' }));
+
+    expect(onPaymentMethodChange).toHaveBeenCalledWith('other');
+    expect(onPaymentReferenceChange).toHaveBeenCalledWith('');
+  });
+
+  it('submits only once when the cashier double clicks confirm', async () => {
+    const confirmSpy = vi.fn();
+    renderPaymentModal({ onConfirm: confirmSpy });
+
+    const confirmButton = screen.getByRole('button', { name: /confirmar cobro/i });
+    fireEvent.click(confirmButton);
+    fireEvent.click(confirmButton);
+
+    await waitFor(() => expect(confirmSpy).toHaveBeenCalledTimes(1));
+  });
+
+  it('requires a reference before confirming card or transfer payments', () => {
+    const confirmSpy = vi.fn();
+
+    renderPaymentModal({
+      paymentMethod: 'transfer',
+      paymentAmount: '17.25',
+      paymentReference: '   ',
+      onConfirm: confirmSpy,
+    });
+
+    const referenceInput = screen.getByLabelText(/referencia de pago/i);
+    fireEvent.submit(referenceInput.closest('form')!);
+
+    expect(referenceInput).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByRole('alert')).toHaveTextContent(/ingrese la referencia/i);
+    expect(confirmSpy).not.toHaveBeenCalled();
   });
 
   it('keeps partial payment blocked by default and allowed when the consumer enables it', async () => {
@@ -271,6 +447,13 @@ describe('PaymentModal', () => {
     expect(onOpenChange).not.toHaveBeenCalled();
   });
 
+  it('keeps amount guidance human and free of implementation wording', () => {
+    renderPaymentModal();
+
+    expect(screen.getByText(/use hasta dos decimales/i)).toHaveTextContent(/se registrara el monto aplicado a la factura/i);
+    expect(document.body.textContent).not.toMatch(/\bbackend\b/i);
+  });
+
   it('does not submit automatically or call receipt/pdf browser handoffs from the modal', () => {
     const confirmSpy = vi.fn();
     const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
@@ -281,20 +464,26 @@ describe('PaymentModal', () => {
     expect(openSpy).not.toHaveBeenCalled();
   });
 
-  it('keeps cancel, Escape and preview callbacks separate from submit', () => {
+  it('keeps payment focused on a single print action without preview-before-print controls', () => {
+    const onConfirm = vi.fn();
+
+    renderPaymentModal({
+      onConfirm,
+    });
+
+    expect(screen.queryByRole('checkbox', { name: /preview|vista previa/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/preview antes de imprimir/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /confirmar cobro.*imprimir/i })).toBeInTheDocument();
+  });
+
+  it('keeps cancel separate from submit', () => {
     const onOpenChange = vi.fn();
     const onConfirm = vi.fn();
-    const onPreviewBeforePrintChange = vi.fn();
 
     renderPaymentModal({
       onOpenChange,
       onConfirm,
-      onPreviewBeforePrintChange,
     });
-
-    fireEvent.click(screen.getByRole('checkbox', { name: /ver preview/i }));
-    expect(onPreviewBeforePrintChange).toHaveBeenCalledWith(true);
-    expect(onConfirm).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole('button', { name: /dejar pendiente/i }));
     expect(onOpenChange).toHaveBeenCalledWith(false);

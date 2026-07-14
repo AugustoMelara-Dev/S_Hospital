@@ -174,6 +174,29 @@ class TodayReportTest extends TestCase
             ->assertJsonPath('data.voided_amount', $voided->total);
     }
 
+    public function test_today_report_counts_invoices_voided_today_even_when_issued_earlier(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $voided = $this->createInvoice($cashier, 'Glucosa');
+
+        $voided->update([
+            'issued_at' => Carbon::now('America/Tegucigalpa')->subDay(),
+            'status' => Invoice::STATUS_VOID,
+            'voided_by' => $this->supervisor()->id,
+            'voided_at' => Carbon::now('America/Tegucigalpa'),
+            'void_reason' => 'Correccion administrativa del dia',
+        ]);
+
+        $this->actingAs($this->admin())
+            ->getJson('/api/reports/today')
+            ->assertOk()
+            ->assertJsonPath('data.issued_count', 0)
+            ->assertJsonPath('data.billed', '0.00')
+            ->assertJsonPath('data.voided_count', 1)
+            ->assertJsonPath('data.voided_amount', $voided->total);
+    }
+
     public function test_today_report_reports_backup_pending(): void
     {
         $this->seedBillingBase();
@@ -324,6 +347,25 @@ class TodayReportTest extends TestCase
 
     private function openSession(User $cashier): CashRegisterSession
     {
+        $existingSession = CashRegisterSession::query()
+            ->where('user_id', $cashier->id)
+            ->where('status', CashRegisterSession::STATUS_OPEN)
+            ->first();
+
+        if ($existingSession instanceof CashRegisterSession) {
+            return $existingSession;
+        }
+
+        if (CashRegisterSession::query()->where('status', CashRegisterSession::STATUS_OPEN)->exists()) {
+            return CashRegisterSession::query()->create([
+                'user_id' => $cashier->id,
+                'open_user_id' => $cashier->id,
+                'opening_amount' => '500.00',
+                'status' => CashRegisterSession::STATUS_OPEN,
+                'opened_at' => now(),
+            ]);
+        }
+
         return app(OpenCashSessionAction::class)
             ->execute(['opening_amount' => '500.00'], $cashier->fresh());
     }
@@ -361,6 +403,9 @@ class TodayReportTest extends TestCase
                     'cash_session_id' => $sessionId,
                     'method' => $method,
                     'amount' => $amount,
+                    'reference' => in_array($method, [Payment::METHOD_CARD, Payment::METHOD_TRANSFER], true)
+                        ? "REF-{$method}-{$invoiceId}"
+                        : null,
                 ],
                 $cashier->fresh(),
                 app(InvoiceAccess::class),

@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\AuditLog;
-use App\Models\CashRegisterSession;
 use App\Models\FiscalSetting;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
@@ -76,37 +75,58 @@ class FiscalSettingsTest extends TestCase
         ]);
     }
 
-    public function test_admin_can_save_institutional_and_thermal_receipt_paper_sizes(): void
+    public function test_fiscal_settings_update_rejects_legacy_receipt_paper_size_field(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
+
+        FiscalSetting::query()->create($this->validPayload());
 
         $admin = User::factory()->create();
         $admin->assignRole('admin');
 
-        foreach (['half_letter', 'letter', 'a5', '80mm', '58mm'] as $paperSize) {
-            $this->actingAs($admin)
-                ->putJson('/api/settings/fiscal', [
-                    ...$this->validPayload(),
-                    'receipt_paper_size' => $paperSize,
-                ])
-                ->assertOk()
-                ->assertJsonPath('data.receipt_paper_size', $paperSize);
+        $this->actingAs($admin)
+            ->putJson('/api/settings/fiscal', [
+                'receipt_paper_size' => 'letter',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('receipt_paper_size');
 
-            $this->assertDatabaseHas('fiscal_settings', [
-                'receipt_paper_size' => $paperSize,
-            ]);
-        }
+        $this->assertDatabaseHas('fiscal_settings', [
+            'receipt_paper_size' => 'half_letter',
+        ]);
+        $this->assertDatabaseMissing('audit_logs', [
+            'action' => 'fiscal_settings.paper_size_changed_mid_shift',
+        ]);
+    }
+
+    public function test_default_tax_rate_change_requires_reason_before_mutating_settings(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        FiscalSetting::query()->create($this->validPayload());
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
 
         $this->actingAs($admin)
             ->putJson('/api/settings/fiscal', [
                 ...$this->validPayload(),
-                'receipt_paper_size' => 'ticket-roll',
+                'default_tax_rate' => '18.00',
             ])
             ->assertUnprocessable()
-            ->assertJsonValidationErrors('receipt_paper_size');
+            ->assertJsonValidationErrors('reason');
+
+        $this->assertDatabaseHas('fiscal_settings', [
+            'default_tax_rate' => '15.00',
+        ]);
+
+        $this->assertDatabaseMissing('audit_logs', [
+            'action' => 'fiscal_settings.updated',
+            'reason' => null,
+        ]);
     }
 
-    public function test_paper_size_change_with_open_cash_session_emits_mid_shift_warning(): void
+    public function test_default_tax_rate_change_with_reason_is_audited(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
 
@@ -115,36 +135,24 @@ class FiscalSettingsTest extends TestCase
         $admin = User::factory()->create();
         $admin->assignRole('admin');
 
-        $cashier = User::factory()->create();
-        $cashier->assignRole('cajero');
-
-        $session = CashRegisterSession::query()->create([
-            'user_id' => $cashier->id,
-            'opening_amount' => '0.00',
-            'status' => CashRegisterSession::STATUS_OPEN,
-            'opened_at' => now(),
-        ]);
-
-        $response = $this->actingAs($admin)
+        $this->actingAs($admin)
             ->putJson('/api/settings/fiscal', [
                 ...$this->validPayload(),
-                'receipt_paper_size' => 'letter',
+                'default_tax_rate' => '18.00',
+                'reason' => 'Actualizacion autorizada del ISV',
             ])
-            ->assertOk();
-
-        $response->assertHeader('X-S-Hospital-Paper-Size-Warning', 'mid-shift-change');
-        $response->assertJsonPath('meta.paper_size_changed_mid_shift', true);
-        $response->assertJsonPath('meta.open_cash_session_id', $session->id);
+            ->assertOk()
+            ->assertJsonPath('data.default_tax_rate', '18.00');
 
         $this->assertDatabaseHas('audit_logs', [
             'user_id' => $admin->id,
-            'action' => 'fiscal_settings.paper_size_changed_mid_shift',
+            'action' => 'fiscal_settings.updated',
             'entity_type' => 'App\\Models\\FiscalSetting',
-            'reason' => "Cambio de papel con caja abierta (#{$session->id}).",
+            'reason' => 'Actualizacion autorizada del ISV',
         ]);
     }
 
-    public function test_paper_size_change_without_open_cash_session_does_not_warn(): void
+    public function test_rtn_change_requires_reason_before_mutating_settings(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
 
@@ -153,19 +161,87 @@ class FiscalSettingsTest extends TestCase
         $admin = User::factory()->create();
         $admin->assignRole('admin');
 
-        $response = $this->actingAs($admin)
+        $this->actingAs($admin)
             ->putJson('/api/settings/fiscal', [
                 ...$this->validPayload(),
-                'receipt_paper_size' => 'letter',
+                'rtn' => '08011999111111',
             ])
-            ->assertOk();
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('reason');
 
-        $response->assertJsonPath('meta.paper_size_changed_mid_shift', false);
-        $response->assertJsonPath('meta.open_cash_session_id', null);
-
-        $this->assertDatabaseMissing('audit_logs', [
-            'action' => 'fiscal_settings.paper_size_changed_mid_shift',
+        $this->assertDatabaseHas('fiscal_settings', [
+            'rtn' => '08011999123456',
         ]);
+    }
+
+    public function test_rtn_change_with_reason_is_audited(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        FiscalSetting::query()->create($this->validPayload());
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin)
+            ->putJson('/api/settings/fiscal', [
+                ...$this->validPayload(),
+                'rtn' => '08011999111111',
+                'reason' => 'Correccion documentada de RTN',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.rtn', '08011999111111');
+
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $admin->id,
+            'action' => 'fiscal_settings.updated',
+            'entity_type' => 'App\\Models\\FiscalSetting',
+            'reason' => 'Correccion documentada de RTN',
+        ]);
+    }
+
+    public function test_admin_can_update_brand_color_without_full_fiscal_payload(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        FiscalSetting::query()->create($this->validPayload());
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin)
+            ->putJson('/api/settings/fiscal', [
+                'primary_color' => 'blue',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.primary_color', 'blue')
+            ->assertJsonPath('data.rtn', '08011999123456')
+            ->assertJsonPath('data.default_tax_rate', '15.00');
+
+        $this->assertDatabaseHas('fiscal_settings', [
+            'hospital_name' => 'Hospital San Miguel',
+            'rtn' => '08011999123456',
+            'default_tax_rate' => '15.00',
+            'primary_color' => 'blue',
+        ]);
+
+        $audit = AuditLog::query()
+            ->where('action', 'fiscal_settings.updated')
+            ->where('entity_type', FiscalSetting::class)
+            ->firstOrFail();
+
+        $this->assertSame($admin->id, $audit->user_id);
+        $this->assertNull($audit->reason);
+        $this->assertSame('indigo', $audit->old_values['primary_color']);
+        $this->assertSame('blue', $audit->new_values['primary_color']);
+        $this->assertArrayNotHasKey('rtn', $audit->old_values);
+        $this->assertArrayNotHasKey('rtn', $audit->new_values);
+        $this->assertArrayNotHasKey('default_tax_rate', $audit->old_values);
+        $this->assertArrayNotHasKey('default_tax_rate', $audit->new_values);
+        $this->assertArrayNotHasKey('scanner_enabled', $audit->old_values);
+        $this->assertArrayNotHasKey('scanner_enabled', $audit->new_values);
+        $this->assertArrayNotHasKey('receipt_paper_size', $audit->old_values);
+        $this->assertArrayNotHasKey('receipt_paper_size', $audit->new_values);
     }
 
     public function test_legacy_receipt_width_field_is_not_updateable(): void
@@ -235,7 +311,7 @@ class FiscalSettingsTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_cashier_can_view_minimal_operational_settings_without_full_fiscal_data(): void
+    public function test_cashier_can_view_minimal_operational_settings_without_full_fiscal_or_receipt_profile_data(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
 
@@ -258,9 +334,127 @@ class FiscalSettingsTest extends TestCase
             ->assertJsonPath('data.default_tax_rate', '15.00')
             ->assertJsonPath('data.scanner_enabled', true)
             ->assertJsonPath('data.partial_payments_enabled', true)
-            ->assertJsonPath('data.receipt_paper_size', 'half_letter')
+            ->assertJsonMissingPath('data.receipt_paper_size')
             ->assertJsonMissingPath('data.rtn')
             ->assertJsonMissingPath('data.address');
+    }
+
+    public function test_admin_can_update_operational_settings_without_full_fiscal_payload(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        FiscalSetting::query()->create([
+            ...$this->validPayload(),
+            'scanner_enabled' => true,
+            'partial_payments_enabled' => false,
+        ]);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin)
+            ->putJson('/api/settings/operational', [
+                'scanner_enabled' => false,
+                'partial_payments_enabled' => true,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.scanner_enabled', false)
+            ->assertJsonPath('data.partial_payments_enabled', true)
+            ->assertJsonMissingPath('data.rtn')
+            ->assertJsonMissingPath('data.hospital_name')
+            ->assertJsonMissingPath('data.receipt_paper_size');
+
+        $this->assertDatabaseHas('fiscal_settings', [
+            'scanner_enabled' => false,
+            'partial_payments_enabled' => true,
+            'hospital_name' => 'Hospital San Miguel',
+            'rtn' => '08011999123456',
+        ]);
+
+        $audit = AuditLog::query()
+            ->where('action', 'operational_settings.updated')
+            ->where('entity_type', FiscalSetting::class)
+            ->firstOrFail();
+
+        $this->assertSame($admin->id, $audit->user_id);
+        $this->assertSame([
+            'scanner_enabled' => true,
+            'partial_payments_enabled' => false,
+        ], $audit->old_values);
+        $this->assertSame([
+            'scanner_enabled' => false,
+            'partial_payments_enabled' => true,
+        ], $audit->new_values);
+    }
+
+    public function test_fiscal_settings_update_rejects_operational_rule_fields(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        FiscalSetting::query()->create([
+            ...$this->validPayload(),
+            'scanner_enabled' => false,
+            'partial_payments_enabled' => false,
+        ]);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin)
+            ->putJson('/api/settings/fiscal', [
+                'scanner_enabled' => true,
+                'partial_payments_enabled' => true,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['scanner_enabled', 'partial_payments_enabled']);
+
+        $this->assertDatabaseHas('fiscal_settings', [
+            'hospital_name' => 'Hospital San Miguel',
+            'scanner_enabled' => false,
+            'partial_payments_enabled' => false,
+        ]);
+        $this->assertDatabaseMissing('audit_logs', [
+            'action' => 'fiscal_settings.updated',
+        ]);
+    }
+
+    public function test_operational_settings_update_uses_operational_permission_not_fiscal_update(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        FiscalSetting::query()->create([
+            ...$this->validPayload(),
+            'scanner_enabled' => false,
+            'partial_payments_enabled' => false,
+        ]);
+
+        $operator = User::factory()->create();
+        $operator->givePermissionTo('settings.operational.update');
+
+        $this->actingAs($operator)
+            ->putJson('/api/settings/fiscal', [
+                ...$this->validPayload(),
+                'hospital_name' => 'Nombre fiscal no autorizado',
+            ])
+            ->assertForbidden();
+
+        $this->actingAs($operator)
+            ->putJson('/api/settings/operational', [
+                'scanner_enabled' => true,
+                'partial_payments_enabled' => true,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.scanner_enabled', true)
+            ->assertJsonPath('data.partial_payments_enabled', true)
+            ->assertJsonMissingPath('data.rtn')
+            ->assertJsonMissingPath('data.hospital_name');
+
+        $this->assertDatabaseHas('fiscal_settings', [
+            'hospital_name' => 'Hospital San Miguel',
+            'rtn' => '08011999123456',
+            'scanner_enabled' => true,
+            'partial_payments_enabled' => true,
+        ]);
     }
 
     public function test_supervisor_can_view_but_not_update_fiscal_settings(): void
@@ -358,7 +552,6 @@ class FiscalSettingsTest extends TestCase
             'hospital_name' => 'Hospital San Miguel',
             'rtn' => '08011999123456',
             'default_tax_rate' => '15.00',
-            'receipt_paper_size' => 'half_letter',
             'primary_color' => 'indigo',
             'address' => 'Barrio El Centro',
             'slogan' => 'Tu salud es nuestra prioridad',

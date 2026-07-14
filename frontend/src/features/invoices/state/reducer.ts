@@ -34,8 +34,6 @@ export function newInvoiceReducer(state: NewInvoiceState, action: NewInvoiceActi
       return { ...state, paymentAmount: action.payload };
     case 'SET_PAYMENT_REFERENCE':
       return { ...state, paymentReference: action.payload };
-    case 'SET_PREVIEW_BEFORE_PRINT':
-      return { ...state, previewBeforePrint: action.payload };
     case 'SET_RECEIPT_WIDTH':
       return { ...state, receiptWidth: action.payload };
     case 'SET_SCANNER_ENABLED':
@@ -45,7 +43,13 @@ export function newInvoiceReducer(state: NewInvoiceState, action: NewInvoiceActi
     case 'SET_RECEIPT':
       return { ...state, receipt: action.payload };
     case 'SET_INSTITUTIONAL_RECEIPT':
-      return { ...state, institutionalReceipt: action.payload };
+      return {
+        ...state,
+        institutionalReceipt: action.payload,
+        institutionalReceiptRecoveryMessage: action.payload ? null : state.institutionalReceiptRecoveryMessage,
+      };
+    case 'SET_INSTITUTIONAL_RECEIPT_RECOVERY_MESSAGE':
+      return { ...state, institutionalReceiptRecoveryMessage: action.payload };
     case 'SET_POINT_OF_SALE_LOAD_ERROR':
       return { ...state, pointOfSaleLoadError: action.payload };
     case 'SET_ALERT_MESSAGE':
@@ -54,8 +58,6 @@ export function newInvoiceReducer(state: NewInvoiceState, action: NewInvoiceActi
       return { ...state, warningMessage: action.payload };
     case 'SET_SUCCESS_MESSAGE':
       return { ...state, successMessage: action.payload };
-    case 'SET_AUTO_PRINT_RECEIPT':
-      return { ...state, autoPrintReceipt: action.payload };
     case 'SET_SHOW_CONFIRMATION':
       return { ...state, showConfirmation: action.payload };
     case 'SET_SHOW_PAYMENT':
@@ -92,6 +94,7 @@ export function newInvoiceReducer(state: NewInvoiceState, action: NewInvoiceActi
         cartItems: nextCart,
         issuedInvoice: null,
         institutionalReceipt: null,
+        institutionalReceiptRecoveryMessage: null,
         patientError: undefined,
       };
     }
@@ -123,6 +126,7 @@ export function newInvoiceReducer(state: NewInvoiceState, action: NewInvoiceActi
         alertMessage: null,
         warningMessage: null,
         successMessage: null,
+        institutionalReceiptRecoveryMessage: null,
         pointOfSaleLoadError: null,
         search: '',
         scanCode: '',

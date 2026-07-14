@@ -1,16 +1,11 @@
 import { apiClient } from './base';
 import type {
-  DailyReport,
-  MonthlyReport,
-  IncomeReport,
-  CategoryReport,
-  AreaIncomeReport,
-  ServiceSalesReport,
-  OperationsReport,
   CashSessionReport,
   ReportFilters,
   PdfReportFilters,
   DashboardReport,
+  OperationsReport,
+  OperationsReportFilters,
 } from './types';
 
 function buildReportParams(filters: ReportFilters): URLSearchParams {
@@ -26,58 +21,6 @@ function buildReportParams(filters: ReportFilters): URLSearchParams {
 export const reports = {
   async getDashboardReport(): Promise<DashboardReport> {
     const response = await apiClient.request<{ data: DashboardReport }>(`/api/reports/dashboard`);
-    return response.data;
-  },
-
-  async getDailyReport(date?: string): Promise<DailyReport> {
-    const query = date ? `?date=${encodeURIComponent(date)}` : '';
-    const response = await apiClient.request<{ data: DailyReport }>(`/api/reports/daily${query}`);
-    return response.data;
-  },
-
-  async getMonthlyReport(month?: string): Promise<MonthlyReport> {
-    const query = month ? `?month=${encodeURIComponent(month)}` : '';
-    const response = await apiClient.request<{ data: MonthlyReport }>(`/api/reports/monthly${query}`);
-    return response.data;
-  },
-
-  async getIncomeReport(filters: ReportFilters): Promise<IncomeReport> {
-    const params = buildReportParams(filters);
-    const response = await apiClient.request<{ data: IncomeReport }>(
-      `/api/reports/income?${params.toString()}`,
-    );
-    return response.data;
-  },
-
-  async getCategoryReport(filters: ReportFilters): Promise<CategoryReport> {
-    const params = buildReportParams(filters);
-    const response = await apiClient.request<{ data: CategoryReport }>(
-      `/api/reports/categories?${params.toString()}`,
-    );
-    return response.data;
-  },
-
-  async getAreaIncomeReport(filters: ReportFilters): Promise<AreaIncomeReport> {
-    const params = buildReportParams(filters);
-    const response = await apiClient.request<{ data: AreaIncomeReport }>(
-      `/api/reports/areas?${params.toString()}`,
-    );
-    return response.data;
-  },
-
-  async getServiceSalesReport(filters: ReportFilters): Promise<ServiceSalesReport> {
-    const params = buildReportParams(filters);
-    const response = await apiClient.request<{ data: ServiceSalesReport }>(
-      `/api/reports/services?${params.toString()}`,
-    );
-    return response.data;
-  },
-
-  async getOperationsReport(filters: ReportFilters): Promise<OperationsReport> {
-    const params = buildReportParams(filters);
-    const response = await apiClient.request<{ data: OperationsReport }>(
-      `/api/reports/operations?${params.toString()}`,
-    );
     return response.data;
   },
 
@@ -97,6 +40,14 @@ export const reports = {
     const params = buildReportParams(filters);
     const response = await apiClient.request<{ data: import('./types').ExecutiveReport }>(
       `/api/reports/executive?${params.toString()}`,
+    );
+    return response.data;
+  },
+
+  async getOperationsReport(filters: OperationsReportFilters): Promise<OperationsReport> {
+    const params = buildReportParams(filters);
+    const response = await apiClient.request<{ data: OperationsReport }>(
+      `/api/reports/operations?${params.toString()}`,
     );
     return response.data;
   },
@@ -129,6 +80,15 @@ export const reports = {
     return apiClient.download(`/api/reports/pdf?${params.toString()}`);
   },
 
+  async downloadCashSessionReportExcel(filters: ReportFilters): Promise<Blob> {
+    const params = buildReportParams(filters);
+    return apiClient.download(`/api/reports/export?${params.toString()}`);
+  },
+
+  async downloadCashSessionReportPdf(filters: ReportFilters): Promise<Blob> {
+    const params = buildReportParams(filters);
+    return apiClient.download(`/api/reports/pdf?${params.toString()}`);
+  },
   async downloadExecutivePdf(filters: import('./types').ExecutiveReportFilters): Promise<Blob> {
     const params = buildReportParams(filters);
     return apiClient.download(`/api/reports/executive/pdf?${params.toString()}`);

@@ -7,6 +7,7 @@ use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
 class AuthTest extends TestCase
@@ -160,7 +161,11 @@ class AuthTest extends TestCase
 
         $user = User::factory()->create();
         $user->assignRole('cajero');
-        $user->syncPermissions([User::EXACT_ACCESS_MARKER_PERMISSION, 'cash.view', 'receipts.void']);
+        Permission::query()->firstOrCreate([
+            'name' => 'backups.restore',
+            'guard_name' => 'web',
+        ]);
+        $user->syncPermissions([User::EXACT_ACCESS_MARKER_PERMISSION, 'backups.restore', 'cash.view', 'receipts.void', 'reports.view']);
 
         $response = $this->actingAs($user)
             ->getJson('/api/auth/session')
@@ -168,7 +173,9 @@ class AuthTest extends TestCase
             ->assertJsonPath('data.permissions', ['cash.view']);
 
         $this->assertNotContains(User::EXACT_ACCESS_MARKER_PERMISSION, $response->json('data.permissions'));
+        $this->assertNotContains('backups.restore', $response->json('data.permissions'));
         $this->assertNotContains('receipts.void', $response->json('data.permissions'));
+        $this->assertNotContains('reports.view', $response->json('data.permissions'));
     }
 
     public function test_session_endpoint_does_not_hydrate_inactive_user_payload(): void

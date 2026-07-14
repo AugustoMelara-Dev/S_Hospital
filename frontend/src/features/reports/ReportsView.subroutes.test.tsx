@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
@@ -10,19 +10,18 @@ vi.mock('@/lib/api', async () => {
     apiClient: {
       ...actual.apiClient,
       getExecutiveReport: vi.fn().mockRejectedValue(new Error('empty')),
-      getDailyReport: vi.fn(),
-      getMonthlyReport: vi.fn(),
-      getIncomeReport: vi.fn(),
-      getCategoryReport: vi.fn(),
-      getAreaIncomeReport: vi.fn(),
-      getServiceSalesReport: vi.fn(),
-      getOperationsReport: vi.fn(),
+      getCashSessions: vi.fn().mockResolvedValue({
+        data: [],
+        meta: { current_page: 1, per_page: 5, total: 0 },
+      }),
       getCashSessionReport: vi.fn(),
       downloadExecutivePdf: vi.fn(),
       downloadExecutiveExcel: vi.fn(),
     },
   };
 });
+
+const { apiClient } = await import('@/lib/api');
 
 vi.mock('@/hooks/useCashSession', () => ({
   useCashSession: () => ({ data: null }),
@@ -40,7 +39,12 @@ vi.mock('@/hooks/useExecutiveReport', () => ({
 
 import { ReportsView } from './ReportsView';
 
-function renderReports(initialPath: string, canViewManagerial = true) {
+function renderReports(
+  initialPath: string,
+  canViewManagerial = true,
+  canViewCashSessionReport = true,
+  canViewAuditReports = canViewManagerial,
+) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
@@ -52,8 +56,10 @@ function renderReports(initialPath: string, canViewManagerial = true) {
             path="/reports/*"
             element={(
               <ReportsView
+                canBrowseCashSessions={canViewCashSessionReport}
                 canExport
-                canViewCashSessionReport
+                canViewCashSessionReport={canViewCashSessionReport}
+                canViewAuditReports={canViewAuditReports}
                 canViewManagerial={canViewManagerial}
                 onStatus={vi.fn()}
               />
@@ -63,8 +69,10 @@ function renderReports(initialPath: string, canViewManagerial = true) {
             path="/reports"
             element={(
               <ReportsView
+                canBrowseCashSessions={canViewCashSessionReport}
                 canExport
-                canViewCashSessionReport
+                canViewCashSessionReport={canViewCashSessionReport}
+                canViewAuditReports={canViewAuditReports}
                 canViewManagerial={canViewManagerial}
                 onStatus={vi.fn()}
               />
@@ -77,21 +85,89 @@ function renderReports(initialPath: string, canViewManagerial = true) {
 }
 
 describe('ReportsView (sub-routes)', () => {
-  it('renders the three sub-route tabs', () => {
+  it('renders the three report sub-route links without retired tabs', () => {
     renderReports('/reports');
+    expect(screen.getByRole('heading', { level: 1, name: /^informes y auditoría$/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /ejecutivo/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /caja/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /auditoria/i })).toBeInTheDocument();
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /control ejecutivo/i })).toBeInTheDocument();
   });
 
-  it('hides sub-routes when the user lacks managerial permission', () => {
+  it('exposes concise descriptions for each report section link', () => {
+    renderReports('/reports');
+
+    expect(screen.getByRole('link', { name: /ejecutivo/i })).toHaveAccessibleDescription(
+      /cobros, pendientes, ticket promedio, tendencia y servicios/i,
+    );
+    expect(screen.getByRole('link', { name: /caja/i })).toHaveAccessibleDescription(
+      /sesiones, cajeros, metodos y diferencias/i,
+    );
+    expect(screen.getByRole('link', { name: /auditoria/i })).toHaveAccessibleDescription(
+      /anulaciones, reversos, cambios de precio y fiscales/i,
+    );
+  });
+
+  it('hides sub-routes when the user lacks managerial permission', async () => {
     renderReports('/reports', false);
+    await waitFor(() => expect(apiClient.getCashSessions).toHaveBeenCalled());
     expect(screen.queryByRole('link', { name: /ejecutivo/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /auditoria/i })).not.toBeInTheDocument();
   });
 
+  it('opens the cash report from root when it is the only permitted report', async () => {
+    renderReports('/reports', false, true);
+    await waitFor(() => expect(apiClient.getCashSessions).toHaveBeenCalled());
+
+    expect(screen.getByRole('link', { name: /caja/i })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByText(/operación de caja/i)).toBeInTheDocument();
+    expect(screen.queryByText(/reporte ejecutivo no disponible/i)).not.toBeInTheDocument();
+  });
+
+  it('opens the cash report from a restricted report sub-route when it is the only permitted report', async () => {
+    renderReports('/reports/audit', false, true);
+    await waitFor(() => expect(apiClient.getCashSessions).toHaveBeenCalled());
+
+    expect(screen.getByRole('link', { name: /caja/i })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByText(/operación de caja/i)).toBeInTheDocument();
+    expect(screen.queryByText(/reporte de auditoria no disponible/i)).not.toBeInTheDocument();
+  });
+
+  it('hides the audit report when the user has managerial reports without audit permission', async () => {
+    renderReports('/reports/audit', true, true, false);
+
+    expect(screen.queryByRole('link', { name: /auditoria/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /caja/i })).toHaveAttribute('aria-current', 'page');
+    await waitFor(() => expect(apiClient.getCashSessions).toHaveBeenCalled());
+  });
+
+  it('opens audit from root when it is the only permitted report', () => {
+    renderReports('/reports', false, false, true);
+
+    expect(screen.getByRole('link', { name: /auditoria/i })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('heading', { name: /auditoria/i })).toBeInTheDocument();
+    expect(screen.queryByText(/reporte ejecutivo no disponible/i)).not.toBeInTheDocument();
+  });
+
+  it('falls back to executive when the report sub-route is unknown', () => {
+    renderReports('/reports/desconocido');
+
+    expect(screen.getByRole('link', { name: /ejecutivo/i })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('heading', { name: /control ejecutivo/i })).toBeInTheDocument();
+  });
+
   it('shows empty state in executive sub-route without permissions', () => {
-    renderReports('/reports/executive', false);
+    renderReports('/reports/executive', false, false);
     expect(screen.getByText(/reporte ejecutivo no disponible/i)).toBeInTheDocument();
+  });
+
+  it('does not expose cash lookup controls without cash report permission', () => {
+    renderReports('/reports/cash', false, false);
+
+    expect(screen.getByText(/reporte de caja no disponible/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/numero de caja/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /ver caja/i })).not.toBeInTheDocument();
+    expect(apiClient.getCashSessionReport).not.toHaveBeenCalled();
   });
 });

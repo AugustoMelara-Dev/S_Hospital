@@ -23,4 +23,14 @@ describe('catalog api client', () => {
 
     expect(mockedRequest).toHaveBeenCalledWith('/api/areas?active=1');
   });
+
+  it('uses valid active query strings for categories and service areas', async () => {
+    mockedRequest.mockResolvedValue({ data: [] });
+
+    await catalog.getCategories(true);
+    await catalog.getServiceAreas(false);
+
+    expect(mockedRequest).toHaveBeenNthCalledWith(1, '/api/categories?active=1');
+    expect(mockedRequest).toHaveBeenNthCalledWith(2, '/api/service-areas?active=0');
+  });
 });

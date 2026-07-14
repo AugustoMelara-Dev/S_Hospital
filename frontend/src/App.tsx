@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { lazy, Suspense, useCallback, useEffect } from 'react';
 import { BrowserRouter, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -6,27 +6,31 @@ import { AppRoutes } from './AppRoutes';
 import { useHospitalSession } from './app/useHospitalSession';
 import { useCashSession } from './hooks/useCashSession';
 import { AppErrorBoundary } from './components/AppErrorBoundary';
-import { Dialog } from './components/ui/dialog';
-import { EmptyState, LoadingState } from './components/ui/states';
+import { Empty, Modal, Spin } from 'antd';
 import { LoginView } from './features/auth/LoginView';
 import { PasswordChangeView } from './features/auth/PasswordChangeView';
-import { CashBoxView } from './features/cash/CashBoxView';
-import { NewInvoiceView } from './features/invoices/NewInvoiceView';
-import { AppShell } from './layout/AppShell';
+import { InstitutionalShell } from './shell/InstitutionalShell';
 import { queryClient } from './lib/query-client';
 import { apiClient } from './lib/api';
-import { notify, Toaster } from './components/ui/toaster';
+import { DesignSystemProvider } from './design-system/providers/DesignSystemProvider';
+import { FeedbackProvider, useFeedback } from './design-system/providers/FeedbackProvider';
 import { isErrorMessage } from './lib/api/user-error';
+import { appRoutes, canAccessRoute } from './navigation/appNavigation';
+
+const CashBoxView = lazy(() => import('./features/cash/CashBoxView').then((module) => ({ default: module.CashBoxView })));
 
 export function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AppErrorBoundary>
-          <HospitalApp />
-        </AppErrorBoundary>
-        <Toaster />
-      </BrowserRouter>
+      <DesignSystemProvider>
+        <FeedbackProvider>
+          <BrowserRouter>
+            <AppErrorBoundary>
+              <HospitalApp />
+            </AppErrorBoundary>
+          </BrowserRouter>
+        </FeedbackProvider>
+      </DesignSystemProvider>
     </QueryClientProvider>
   );
 }
@@ -34,7 +38,7 @@ export function App() {
 function HospitalApp() {
   const session = useHospitalSession();
   const navigate = useNavigate();
-  const [quickInvoiceOpen, setQuickInvoiceOpen] = useState(false);
+  const feedback = useFeedback();
   const [quickCashOpen, setQuickCashOpen] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const shouldLoadCashSession = Boolean(
@@ -52,12 +56,12 @@ function HospitalApp() {
     session.setStatus(message);
     if (message && message !== 'Listo para iniciar sesión local.') {
       if (isErrorMessage(message)) {
-        notify.error(message);
+        feedback.error(message);
       } else if (!isProgressStatusMessage(message)) {
-        notify.success(message);
+        feedback.success(message);
       }
     }
-  }, [session]);
+  }, [feedback, session]);
 
   useEffect(() => {
     if (session.sessionExpired) {
@@ -72,7 +76,7 @@ function HospitalApp() {
   }, [session.user]); // Refresh when user changes/logs in
 
   if (session.loading) {
-    return <LoadingState label="Cargando sesión..." />;
+    return <div role="status" aria-label="Cargando sesion" className="flex min-h-screen items-center justify-center"><Spin size="large" /></div>;
   }
 
   if (!session.user) {
@@ -101,7 +105,7 @@ function HospitalApp() {
   }
 
   return (
-    <AppShell
+    <InstitutionalShell
       cashSession={cashSession ?? null}
       onLogout={session.handleLogout}
       status={session.status}
@@ -109,17 +113,17 @@ function HospitalApp() {
       logoUrl={logoUrl}
     >
       {!session.hasAnyOperationalPermission ? (
-        <EmptyState
-          title="Sin permisos operativos"
-          description="No tiene permisos operativos asignados."
-        />
+        <Empty description="No tiene permisos operativos asignados." />
       ) : session.loading ? (
-        <LoadingState label="Validando caja para facturación..." />
+        <div role="status" aria-label="Validando caja para facturacion" className="flex min-h-48 items-center justify-center"><Spin /></div>
       ) : (
         <AppRoutes
           canCreateInvoices={session.canCreateInvoices}
           canEditFiscalSettings={session.canEditFiscalSettings}
+          canEditOperationalSettings={session.canEditOperationalSettings}
+          canManageCatalog={session.canManageCatalog}
           canOpenCash={session.canOpenCash}
+          canCloseAnyCash={session.canCloseAnyCash}
           canCloseCash={session.canCloseCash}
           canViewBackups={session.canViewBackups}
           canViewCash={session.canViewCash}
@@ -131,6 +135,7 @@ function HospitalApp() {
           canViewReports={session.canViewReports}
           canViewManagerialReports={session.canViewManagerialReports}
           canViewCashSessionReports={session.canViewCashSessionReports}
+          canViewAuditReports={session.canViewAuditReports}
           canExportReports={session.canExportReports}
           canViewUsers={session.canViewUsers}
           canCreateUsers={session.canCreateUsers}
@@ -141,50 +146,37 @@ function HospitalApp() {
           cashSession={cashSession ?? null}
           defaultAuthenticatedRoute={session.defaultAuthenticatedRoute}
           onQuickCash={() => setQuickCashOpen(true)}
-          onQuickInvoice={() => setQuickInvoiceOpen(true)}
           onStatus={handleStatus}
           user={session.user}
         />
       )}
 
-      <Dialog
-        open={quickInvoiceOpen}
-        onOpenChange={setQuickInvoiceOpen}
-        size="fullscreen"
-        title="Emitir factura"
-        description="Facturación rápida sin abandonar la pantalla actual."
-      >
-        <NewInvoiceView
-          cashSession={cashSession ?? null}
-          canCreatePayments={session.canCreatePayments}
-          canViewCatalog={session.canViewCatalog}
-          canViewReceipts={session.canViewReceipts}
-          canMarkDialysisPrescription={session.canMarkDialysisPrescription}
-          onOpenCash={() => {
-            setQuickInvoiceOpen(false);
-            setQuickCashOpen(true);
-          }}
-          onStatus={handleStatus}
-        />
-      </Dialog>
 
-      <Dialog
+      <Modal
         open={quickCashOpen}
-        onOpenChange={setQuickCashOpen}
-        size="lg"
+        onCancel={() => setQuickCashOpen(false)}
+        footer={null}
+        width={920}
+        destroyOnHidden
         title={cashSession ? 'Caja activa' : 'Abrir caja'}
-        description="Apertura y cierre de turno sin navegar a otra pantalla."
       >
-        <CashBoxView
+        <p className="mb-4 text-sm text-muted-foreground">Apertura y cierre de turno sin navegar a otra pantalla.</p>
+        <Suspense fallback={<div role="status" aria-label="Cargando caja rápida" className="flex min-h-48 items-center justify-center"><Spin /></div>}>
+          <CashBoxView
           cashSession={cashSession ?? null}
+          canCloseAnyCash={session.canCloseAnyCash}
           canCloseCash={session.canCloseCash}
+          canCreateInvoices={canAccessRoute(appRoutes.newInvoice, session.user.permissions)}
           canOpenCash={session.canOpenCash}
+          canViewInvoices={session.canViewInvoices}
           canViewCashSessionReport={session.canViewCashSessionReports || session.canViewManagerialReports}
+          currentUserId={session.user.id}
           onStatus={handleStatus}
           compact
-        />
-      </Dialog>
-    </AppShell>
+          />
+        </Suspense>
+      </Modal>
+    </InstitutionalShell>
   );
 }
 

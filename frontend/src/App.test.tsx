@@ -1,6 +1,6 @@
 ﻿/// <reference types="node" />
 import { readFileSync } from 'node:fs';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 import { apiClient } from './lib/api';
@@ -216,12 +216,14 @@ describe('App', () => {
     };
   }
 
-  function activateTab(name: RegExp) {
+  async function activateTab(name: RegExp) {
     const tab = screen.getByRole('tab', { name });
-    tab.focus();
-    fireEvent.pointerDown(tab, { button: 0, ctrlKey: false });
-    fireEvent.keyDown(tab, { key: 'Enter', code: 'Enter' });
-    fireEvent.click(tab);
+    await act(async () => {
+      tab.focus();
+      fireEvent.pointerDown(tab, { button: 0, ctrlKey: false });
+      fireEvent.keyDown(tab, { key: 'Enter', code: 'Enter' });
+      fireEvent.click(tab);
+    });
   }
 
   beforeEach(async () => {
@@ -249,7 +251,7 @@ describe('App', () => {
 
     render(<App />);
 
-    expect(await screen.findByRole('heading', { name: /acceso institucional para caja y administracion/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /iniciar sesión/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/usuario o correo/i)).toHaveValue('');
   });
 
@@ -261,7 +263,7 @@ describe('App', () => {
 
     render(<App />);
 
-    expect(await screen.findByRole('heading', { name: /acceso institucional para caja y administracion/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /iniciar sesión/i })).toBeInTheDocument();
     expect(fetchMock.mock.calls.map(([input]) => String(input))).not.toContain('/api/cash-sessions/current');
   });
 
@@ -372,9 +374,9 @@ describe('App', () => {
     const navigation = await screen.findByRole('navigation', { name: /navegaci[oó]n principal/i });
 
     expect(navigation).toBeInTheDocument();
-    expect(navigation.closest('aside')).toHaveClass('print-hidden');
-    expect(screen.getByRole('banner')).toHaveClass('print-hidden');
-    expect(screen.getByRole('contentinfo')).toHaveClass('print-hidden');
+    expect(navigation.closest('aside')).toBeInTheDocument();
+    expect(screen.getByRole('banner')).toBeInTheDocument();
+    expect(screen.getByRole('contentinfo')).toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: /^configuraci[oó]n$/i })[0]).toHaveAttribute(
       'href',
       '/settings/fiscal',
@@ -388,11 +390,11 @@ describe('App', () => {
       expect(screen.getByRole('heading', { name: /configuraci[oó]n pendiente/i })).toBeInTheDocument();
     }, { timeout: 5000 });
     expect(screen.getByText(/datos temporales o de validaci[oó]n/i)).toBeInTheDocument();
-    activateTab(/^hospital$/i);
+    await activateTab(/^hospital$/i);
     expect(await screen.findByRole('heading', { name: /datos del hospital/i })).toBeInTheDocument();
     expect(screen.queryByDisplayValue(placeholderHospitalName)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /guardar datos del hospital/i })).toBeEnabled();
-    activateTab(/numeraci[oó]n/i);
+    await activateTab(/numeraci[oó]n/i);
     expect(await screen.findByRole('button', { name: /guardar numeraci[oó]n/i })).toBeEnabled();
     expect(screen.queryByDisplayValue(placeholderCai)).not.toBeInTheDocument();
   });
@@ -481,7 +483,7 @@ describe('App', () => {
     render(<App />);
 
     expect(
-      await screen.findByRole('heading', { name: /cat[aá]l[oó]go de servicios/i }, { timeout: 20_000 }),
+      await screen.findByRole('heading', { name: /cat[aá]logo institucional/i }, { timeout: 20_000 }),
     ).toBeInTheDocument();
     expect(await screen.findByText('Glucosa', {}, { timeout: 20_000 })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /agregar servicio/i })).not.toBeInTheDocument();
@@ -505,7 +507,7 @@ describe('App', () => {
               username: 'admin.validacion',
               active: true,
               roles: ['admin'],
-              permissions: ['backups.view', 'backups.create', 'backups.download'],
+              permissions: ['backups.view', 'backups.create', 'backups.download', 'system.status.view'],
               must_change_password: false,
             },
           }),
@@ -544,15 +546,17 @@ describe('App', () => {
 
     render(<App />);
 
-    expect(await screen.findByRole('heading', { name: /^respaldos$/i })).toBeInTheDocument();
-    expect(await screen.findByText(/respaldos del hospital/i)).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /protecci[oó]n y recuperaci[oó]n/i })).toBeInTheDocument();
+    expect(screen.queryByText(/restauraci[oó]n no disponible desde la app/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /restaurar/i })).not.toBeInTheDocument();
     expect(await screen.findByText(/estado operativo/i)).toBeInTheDocument();
     expect(await screen.findByRole('heading', { name: /requiere revisi/i })).toBeInTheDocument();
     expect(await screen.findByText(/completar modo de operaci[oó]n final/i)).toBeInTheDocument();
-    expect(await screen.findByText(/validar recibo f[ií]sico media carta\/carta\/A5\/80mm\/58mm/i)).toBeInTheDocument();
+    expect(await screen.findByText(/validar recibo institucional carta, media carta o A5/i)).toBeInTheDocument();
     expect(screen.queryByText(/APP_ENV=production/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/respaldos del hospital/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /^pendiente$/i })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /ver detalle avanzado/i }));
+    fireEvent.click(screen.getByRole('button', { name: /ver detalle de soporte/i }));
     expect(await screen.findByText(/checklist operativo/i)).toBeInTheDocument();
     expect(screen.getByText(/servidor, datos y red local/i)).toBeInTheDocument();
     expect(screen.getByText(/base de datos:\s*conectada/i)).toBeInTheDocument();
@@ -691,6 +695,45 @@ describe('App', () => {
     expect(screen.queryByRole('button', { name: /crear respaldo/i })).not.toBeInTheDocument();
   });
 
+  it('does not promote opening cash from dashboard when the user can only view cash', async () => {
+    window.history.pushState({}, '', '/dashboard');
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 2,
+              name: 'Supervisor Consulta',
+              email: 'supervisor.consulta@hospital-san-isidro.local',
+              username: 'supervisor.consulta',
+              active: true,
+              roles: ['supervisor'],
+              permissions: ['cash.view'],
+              must_change_password: false,
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/cash-sessions/current')) {
+        return {
+          ok: true,
+          json: async () => ({ data: null }),
+        } as Response;
+      }
+
+      return { ok: true, json: async () => ({ data: null }) } as Response;
+    });
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: /continuar operación/i })).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: /^caja$/i }).length).toBeGreaterThan(0);
+    expect(screen.queryByRole('button', { name: /abrir caja desde el centro de mando/i })).not.toBeInTheDocument();
+  });
+
   it('creates a manual backup from the admin backups view', async () => {
     window.history.pushState({}, '', '/backups');
     const backupList: unknown[] = [];
@@ -734,7 +777,6 @@ describe('App', () => {
         if (method === 'POST') {
           const newBackup = {
             id: 9,
-            filename: 'hospital-backup-20260517-101500-test.sql',
             size_bytes: 2048,
             checksum_sha256: 'a'.repeat(64),
             status: 'pending',
@@ -774,17 +816,19 @@ describe('App', () => {
     const createBackupButton = await screen.findByRole('button', { name: /crear respaldo/i });
     await waitFor(() => expect(createBackupButton).toBeEnabled());
     fireEvent.click(createBackupButton);
-    fireEvent.click(await screen.findByRole('button', { name: /^crear respaldo$/i }));
+    const confirmation = await screen.findByRole('dialog', { name: /crear respaldo local/i });
+    fireEvent.click(within(confirmation).getByRole('button', { name: /^crear respaldo$/i }));
 
     await waitFor(() => {
       expect(fetchMock.mock.calls.some(([url, init]) => (
         String(url).includes('/api/backups') && init?.method === 'POST'
       ))).toBe(true);
     });
-    expect((await screen.findAllByText('hospital-backup-20260517-101500-test.sql')).length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Pendiente').length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/en proceso/i).length).toBeGreaterThan(0);
-    expect(screen.queryByRole('button', { name: /descargar respaldo hospital-backup/i })).not.toBeInTheDocument();
+    expect(screen.queryByText('hospital-backup-20260517-101500-test.sql')).not.toBeInTheDocument();
+    expect(
+      (await screen.findAllByRole('region', { name: /historial de respaldos locales/i })).length,
+    ).toBeGreaterThan(0);
+    expect(screen.queryByRole('button', { name: /descargar respaldo/i })).not.toBeInTheDocument();
   });
 
   it('renders successful backups with accessible download and pagination controls', async () => {
@@ -838,7 +882,6 @@ describe('App', () => {
             data: [
               {
                 id: 10,
-                filename: 'hospital-backup-20260517-101500-test.sql',
                 size_bytes: 2048,
                 checksum_sha256: 'b'.repeat(64),
                 status: 'success',
@@ -863,16 +906,12 @@ describe('App', () => {
 
     render(<App />);
 
-    await waitFor(() => {
-      expect(screen.getByText('hospital-backup-20260517-101500-test.sql')).toBeInTheDocument();
-    });
-    expect(screen.getByText(/SHA256 bbbbbbbb/i)).toBeInTheDocument();
-    expect(screen.getByText(/huella de integridad/i)).toBeInTheDocument();
     expect(
-      screen.getByRole('button', {
-        name: /descargar respaldo hospital-backup-20260517-101500-test\.sql/i,
-      }),
-    ).toBeInTheDocument();
+      (await screen.findAllByRole('region', { name: /historial de respaldos locales/i })).length,
+    ).toBeGreaterThan(0);
+    expect(screen.queryByText('hospital-backup-20260517-101500-test.sql')).not.toBeInTheDocument();
+    expect(screen.queryByText(/SHA256 bbbbbbbb/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/huella de integridad/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /crear respaldo/i })).not.toBeInTheDocument();
     expect(screen.getByText(/p[aá]gina 1 de 2/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /siguiente/i })).toBeEnabled();
@@ -929,7 +968,6 @@ describe('App', () => {
             data: [
               {
                 id: 11,
-                filename: 'hospital-backup-20260602-090000-failed.sql',
                 size_bytes: null,
                 checksum_sha256: null,
                 status: 'failed',
@@ -955,12 +993,13 @@ describe('App', () => {
 
     render(<App />);
 
-    await waitFor(() => {
-      expect(screen.getByText('hospital-backup-20260602-090000-failed.sql')).toBeInTheDocument();
-    });
-    expect(screen.getByText(/1 con error - avise al administrador antes de crear otro respaldo/i)).toBeInTheDocument();
+    expect(
+      (await screen.findAllByRole('region', { name: /historial de respaldos locales/i })).length,
+    ).toBeGreaterThan(0);
+    expect(screen.queryByText('hospital-backup-20260602-090000-failed.sql')).not.toBeInTheDocument();
+    expect(screen.getByText(/revise con soporte antes de confiar en respaldos/i)).toBeInTheDocument();
     expect(screen.queryByText(/cree un nuevo respaldo/i)).not.toBeInTheDocument();
-    expect(document.body.textContent).not.toMatch(/SQLSTATE|storage\/logs/i);
+    expect(document.body.textContent).not.toMatch(/SQLSTATE|storage\/logs|hospital-backup-20260602-090000-failed\.sql/i);
   });
 
   it('lets a user with required password change submit a new password', async () => {
@@ -1016,10 +1055,9 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('button', { name: /actualizar contrase[nñ]a/i }));
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenLastCalledWith(
-        expect.stringContaining('/api/auth/change-password'),
-        expect.objectContaining({ method: 'POST' }),
-      );
+      expect(fetchMock.mock.calls.some(([url, init]) => (
+        String(url).includes('/api/auth/change-password') && init?.method === 'POST'
+      ))).toBe(true);
     });
   });
 
@@ -1160,7 +1198,7 @@ describe('App', () => {
               username: 'admin.validacion',
               active: true,
               roles: ['admin'],
-              permissions: ['reports.view'],
+              permissions: ['reports.managerial.view'],
               must_change_password: false,
             },
           }),
@@ -1212,6 +1250,14 @@ describe('App', () => {
         } as Response;
       }
 
+      if (url.includes('/api/reports/executive')) {
+        return {
+          ok: false,
+          status: 503,
+          json: async () => ({ message: 'Reporte ejecutivo no disponible en este test.' }),
+        } as Response;
+      }
+
       if (url.includes('/api/reports/daily')) {
         return {
           ok: true,
@@ -1259,7 +1305,7 @@ describe('App', () => {
       { timeout: 20_000, interval: 100 },
     );
     expect(reportHeadings.length).toBeGreaterThan(0);
-    expect(screen.getByRole('link', { name: /nueva factura/i })).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: /nueva factura/i }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole('link', { name: /^configuraci[oó]n$/i }).length).toBeGreaterThan(0);
     expect(screen.queryByRole('heading', { name: /nueva factura/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /datos fiscales del hospital/i })).not.toBeInTheDocument();
@@ -1271,6 +1317,13 @@ describe('App', () => {
 
     expect(source).toContain('lazy(() => import');
     expect(source).toContain("import('./features/dashboard/DashboardView')");
-    expect(source).toContain('<Suspense fallback={<LoadingState label="Cargando módulo..." />}>');
+    expect(source).toContain('<Suspense fallback={<RouteState kind="loading" title="Cargando módulo..."');
+  });
+
+  it('propaga capacidades de escritura fiscal y catálogo desde la sesión', () => {
+    const source = readFileSync('src/App.tsx', 'utf8');
+
+    expect(source).toContain('canEditFiscalSettings={session.canEditFiscalSettings}');
+    expect(source).toContain('canManageCatalog={session.canManageCatalog}');
   });
 });

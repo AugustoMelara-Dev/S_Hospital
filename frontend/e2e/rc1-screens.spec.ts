@@ -149,6 +149,38 @@ function receiptFor(invoice: Record<string, unknown>, width: string) {
   };
 }
 
+function institutionalReceiptFor(invoice: Record<string, unknown>, paymentId: number | null) {
+  const invoiceId = Number(invoice.id);
+  const receiptNumber = invoiceId - 10;
+
+  return {
+    id: invoiceId,
+    invoice_id: invoiceId,
+    payment_id: paymentId,
+    cash_session_id: 7,
+    series_id: 1,
+    receipt_number: receiptNumber,
+    receipt_number_full: `REC-A-${String(receiptNumber).padStart(8, '0')}`,
+    status: 'issued',
+    amount: invoice.total,
+    amount_cents: Math.round(Number(invoice.total) * 100),
+    issued_at: operationalPaidAt,
+    issued_by: cashierUser.id,
+    payer_name: invoice.patient_name,
+    concept: `Pago de factura ${invoice.invoice_number}`,
+    amount_words: 'VEINTICINCO LEMPIRAS CON 00/100',
+    template_code: 'institutional_classic',
+    print_profile_code: 'media_carta_horizontal',
+    copy_mode: 'original_only',
+    reprint_count: 0,
+    print_events_count: 1,
+    has_print_events: true,
+    voided_by: null,
+    voided_at: null,
+    void_reason: null,
+  };
+}
+
 async function installApiMocks(page: Page) {
   let currentUser = cashierUser;
   let currentCashSession: Record<string, unknown> | null = null;
@@ -188,6 +220,30 @@ async function installApiMocks(page: Page) {
       logo_url: null,
     },
   }));
+  await page.route('**/api/settings/operational', (route) => json(route, {
+    data: {
+      scanner_enabled: false,
+      partial_payments_enabled: false,
+      receipt_paper_size: 'half_letter',
+      default_payment_method: 'cash',
+      require_cash_session: true,
+    },
+  }));
+  await page.route('**/api/fiscal-sequences**', (route) => json(route, {
+    data: [
+      {
+        id: 1,
+        document_type: 'invoice',
+        prefix: '000-001-01',
+        min_number: 1,
+        max_number: 99999999,
+        current_number: 1,
+        cai: 'VALIDACION-CAI',
+        valid_until: '2027-06-09',
+        active: true,
+      },
+    ],
+  }));
 
   await page.route('**/api/settings/branding', (route) => json(route, {
     data: {
@@ -215,6 +271,10 @@ async function installApiMocks(page: Page) {
   });
 
   await page.route('**/api/auth/session', (route) => {
+    if (isLogged) return json(route, { data: currentUser });
+    return route.fulfill({ status: 401, body: JSON.stringify({ message: 'Unauthenticated.' }) });
+  });
+  await page.route('**/api/auth/me', (route) => {
     if (isLogged) return json(route, { data: currentUser });
     return route.fulfill({ status: 401, body: JSON.stringify({ message: 'Unauthenticated.' }) });
   });
@@ -278,7 +338,7 @@ async function installApiMocks(page: Page) {
     }
     if (route.request().method() === 'POST') {
       const payload = await route.request().postDataJSON();
-      const hasDialysis = payload.items?.some((item: { dialysis_prescription?: boolean }) => item.dialysis_prescription);
+      const hasDialysis = payload.dialysis_prescription === true;
       const id = 100 + invoiceCounter;
       const invoice = {
         id,
@@ -326,23 +386,45 @@ async function installApiMocks(page: Page) {
     invoice.paid_amount = invoice.total;
     invoice.balance_due = '0.00';
     invoice.status = 'paid';
+    const payment = {
+      id: 50,
+      invoice_id: invoiceId,
+      cash_session_id: 7,
+      user_id: currentUser.id,
+      method: 'cash',
+      amount: invoice.total,
+      reference: null,
+      status: 'posted',
+      paid_at: operationalPaidAt,
+    };
+    const institutionalReceipt = institutionalReceiptFor(invoice, payment.id);
+    invoice.payments = [payment];
+    invoice.institutional_receipt = institutionalReceipt;
     return json(route, {
       data: {
-        payment: {
-          id: 50,
-          invoice_id: invoiceId,
-          cash_session_id: 7,
-          user_id: currentUser.id,
-          method: 'cash',
-          amount: invoice.total,
-          reference: null,
-          status: 'posted',
-          paid_at: operationalPaidAt,
-        },
+        payment,
         invoice,
+        institutional_receipt: institutionalReceipt,
+        institutional_receipt_error: null,
+        receipt_outcome: 'issued',
       },
     }, 201);
   });
+
+  await page.route('**/api/institutional-receipts/*/print-events**', (route) => json(route, {
+    data: {
+      id: 1,
+      institutional_receipt_id: Number(route.request().url().match(/institutional-receipts\/(\d+)/)?.[1]),
+      reason: null,
+      created_at: operationalPaidAt,
+    },
+  }, 201));
+
+  await page.route('**/api/institutional-receipts/*/pdf**', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/pdf',
+    body: '%PDF-1.4 institutional receipt',
+  }));
 
   await page.route('**/api/invoices/*/receipt**', (route) => {
     const invoiceId = Number(route.request().url().match(/invoices\/(\d+)\/receipt/)?.[1]);
@@ -366,6 +448,68 @@ async function installApiMocks(page: Page) {
       expected_cash_amount: '525.00',
       cash_difference: '0.00',
       permissions: { can_close: true, can_view_any: false },
+    },
+  }));
+  await page.route('**/api/reports/executive**', (route) => json(route, {
+    data: {
+      period: { from: operationalDate, to: operationalDate, timezone: 'America/Tegucigalpa', days: 1 },
+      filters: { cash_session_id: null, user_id: null, category_id: null, area_id: null, method: null, status: null },
+      comparison: {
+        billed: { current: '25.00', previous: '0.00', delta_cents: 2500, delta_percentage: null },
+        collected: { current: '25.00', previous: '0.00', delta_cents: 2500, delta_percentage: null },
+        previous_period: { from: operationalDate, to: operationalDate },
+      },
+      summary: {
+        billed_total: '25.00',
+        collected_total: '25.00',
+        collected_total_cents: 2500,
+        pending_total: '0.00',
+        voided_total: '0.00',
+        reversed_total: '0.00',
+        invoice_count: 1,
+        receipt_count: 1,
+        paid_count: 1,
+        partial_count: 0,
+        pending_count: 0,
+        voided_count: 0,
+        average_ticket: '25.00',
+      },
+      payment_methods: [
+        { method: 'cash', label: 'Efectivo', amount: '25.00', count: 1, percentage: 100 },
+        { method: 'transfer', label: 'Transferencia', amount: '0.00', count: 0, percentage: 0 },
+        { method: 'card', label: 'Tarjeta', amount: '0.00', count: 0, percentage: 0 },
+        { method: 'other', label: 'Otro', amount: '0.00', count: 0, percentage: 0 },
+      ],
+      daily_trend: [{ date: operationalDate, billed: '25.00', collected: '25.00', pending: '0.00', voided_count: 0, invoice_count: 1 }],
+      services: {
+        top_by_amount: [{ service: 'Eritropoyetina', category: 'Medicamentos', item_count: 1, quantity: '1.00', total: '25.00', collected: '25.00' }],
+        top_by_quantity: [{ service: 'Eritropoyetina', category: 'Medicamentos', item_count: 1, quantity: '1.00', total: '25.00' }],
+        by_category: [{ category: 'Medicamentos', quantity: '1.00', total: '25.00', collected: '25.00', item_count: 1 }],
+        by_area: [{ area_id: null, area: 'Sin area', item_count: 1, quantity: '1.00', total: '25.00' }],
+      },
+      cashiers: [{
+        user_id: currentUser.id,
+        name: currentUser.name,
+        username: currentUser.username,
+        invoice_count: 1,
+        payment_count: 1,
+        collected: '25.00',
+        cash: '25.00',
+        transfer: '0.00',
+        card: '0.00',
+        other: '0.00',
+        voided_count: 0,
+        difference_total: '0.00',
+      }],
+      cash_sessions: [],
+      pending_aging: {
+        '0_7_days': { count: 0, amount: '0.00' },
+        '8_30_days': { count: 0, amount: '0.00' },
+        '31_plus_days': { count: 0, amount: '0.00' },
+        items: [],
+      },
+      voids_and_reversals: [],
+      audit_summary: { critical_events: 0, reprints: 1, fiscal_changes: 0, cash_differences: 0, backup_events: 1 },
     },
   }));
 
@@ -549,7 +693,7 @@ test.describe('RC1 cashier flow screens', () => {
     ]);
     await setTheme(page, 'light');
     await page.goto('/dashboard');
-    await expect(page.getByRole('heading', { name: /inicio|dashboard/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /centro de mando|inicio|dashboard/i })).toBeVisible();
     await page.waitForTimeout(500);
     await page.waitForTimeout(500);
     await captureScreen(page, 'dashboard-light');
@@ -560,58 +704,55 @@ test.describe('RC1 cashier flow screens', () => {
     await setTheme(page, 'light');
   });
 
-  test('POS billing - new, cart, payment modal, receipt (light + dark)', async ({ page }) => {
+  test('POS billing - new, cart, payment and institutional outcome (light + dark)', async ({ page }) => {
     await installApiMocks(page);
     await loginAs(page, 'cajero.validacion');
     await setTheme(page, 'light');
     await page.goto('/cashbox');
     await expect(page.getByRole('heading', { name: /^caja$/i })).toBeVisible();
     await page.getByRole('main').getByRole('button', { name: /abrir caja/i }).click();
-    await expect(page.getByRole('heading', { name: /cerrar caja/i })).toBeVisible();
+    await expect(page.getByRole('alertdialog', { name: /confirmar apertura de caja/i })).toBeVisible();
+    await page.getByRole('alertdialog', { name: /confirmar apertura de caja/i }).getByRole('button', { name: /abrir caja/i }).click();
     if (await page.getByRole('dialog', { name: /caja activa/i }).isVisible().catch(() => false)) {
       await page.getByRole('button', { name: /cerrar modal/i }).click({ force: true });
     }
     await page.waitForTimeout(500);
     await captureScreen(page, 'cashbox-open-light');
 
-    await page.getByLabel('Navegacion principal').getByRole('link', { name: /nueva factura/i }).click();
+    await page.goto('/billing/new');
     await expect(page.getByRole('heading', { name: /nueva factura/i })).toBeVisible();
     await page.waitForTimeout(500);
     await captureScreen(page, 'billing-new-empty-light');
 
+    await expect(page.getByLabel(/nombre del paciente/i)).toBeEditable();
     await page.getByLabel(/nombre del paciente/i).fill('Maria Lopez');
     await page.getByLabel(/buscar por nombre/i).fill('eritropoyetina');
     await page.getByRole('button', { name: /eritropoyetina/i }).click();
-    await expect(page.getByText(/Total estimado:\s*L\.\s*25\.00/)).toBeVisible();
+    const invoiceDraft = page.getByRole('region', { name: /factura en curso/i });
+    await expect(invoiceDraft.getByText(/^Total estimado:$/i)).toBeVisible();
+    await expect(invoiceDraft.getByText(/L\s*25\.00/).first()).toBeVisible();
     await page.waitForTimeout(500);
     await captureScreen(page, 'billing-new-cart-light');
 
     await page.getByRole('button', { name: /emitir y cobrar/i }).click();
-    await page.getByRole('button', { name: /emitir y abrir cobro/i }).click();
+    const confirmIssueDialog = page.getByRole('dialog', { name: /confirmar emisi/i });
+    await expect(confirmIssueDialog).toBeVisible();
+    await confirmIssueDialog.getByRole('button', { name: /emitir y abrir cobro/i }).click();
     await expect(page.getByRole('heading', { name: /registrar pago/i })).toBeVisible();
     await page.waitForTimeout(500);
     await captureScreen(page, 'payment-modal-light');
 
     await page.getByLabel(/monto recibido/i).fill('25.00');
     await page.getByRole('button', { name: /confirmar cobro/i }).click();
-    await expect(page.getByRole('heading', { name: /vista previa del recibo/i })).toBeVisible();
+    await expect(page.getByRole('dialog', { name: /factura pagada/i })).toBeVisible();
+    await expect(page.getByText(/REC-A-00000091/i).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: /imprimir recibo institucional/i })).toBeVisible();
     await page.waitForTimeout(500);
-    await captureScreen(page, 'receipt-preview-light');
-
-    await page.getByRole('combobox', { name: /tama(?:ñ|n)o del recibo/i }).click();
-    await page.getByRole('option', { name: 'A5', exact: true }).click({ force: true });
-    await expect(page.getByLabel(/recibo institucional/i)).toHaveClass(/receipt-a5/);
-    await page.waitForTimeout(500);
-    await captureScreen(page, 'receipt-preview-a5-light');
-
-    await page.getByRole('combobox', { name: /tama(?:ñ|n)o del recibo/i }).click();
-    await page.getByRole('option', { name: /Carta|Letter|80mm/i }).first().click();
-    await page.waitForTimeout(500);
-    await captureScreen(page, 'receipt-preview-letter-light');
+    await captureScreen(page, 'institutional-receipt-issued-light');
 
     await setTheme(page, 'dark');
     await page.waitForTimeout(500);
-    await captureScreen(page, 'receipt-preview-dark');
+    await captureScreen(page, 'institutional-receipt-issued-dark');
     await setTheme(page, 'light');
   });
 
@@ -621,20 +762,23 @@ test.describe('RC1 cashier flow screens', () => {
     await setTheme(page, 'light');
     await page.goto('/cashbox');
     await page.getByRole('main').getByRole('button', { name: /abrir caja/i }).click();
+    await expect(page.getByRole('alertdialog', { name: /confirmar apertura de caja/i })).toBeVisible();
+    await page.getByRole('alertdialog', { name: /confirmar apertura de caja/i }).getByRole('button', { name: /abrir caja/i }).click();
     if (await page.getByRole('dialog', { name: /caja activa/i }).isVisible().catch(() => false)) {
       await page.getByRole('button', { name: /cerrar modal/i }).click({ force: true });
     }
-    await page.getByLabel('Navegacion principal').getByRole('link', { name: /nueva factura/i }).click();
+    await page.goto('/billing/new');
+    await expect(page.getByLabel(/nombre del paciente/i)).toBeEditable();
     await page.getByLabel(/nombre del paciente/i).fill('Maria Lopez');
     await page.getByLabel(/buscar por nombre/i).fill('eritropoyetina');
     await page.getByRole('button', { name: /eritropoyetina/i }).click();
     await page.getByRole('button', { name: /emitir y cobrar/i }).click();
-    await page.getByRole('button', { name: /emitir y abrir cobro/i }).click();
+    const confirmIssueDialog = page.getByRole('dialog', { name: /confirmar emisi/i });
+    await expect(confirmIssueDialog).toBeVisible();
+    await confirmIssueDialog.getByRole('button', { name: /emitir y abrir cobro/i }).click();
     await page.getByLabel(/monto recibido/i).fill('25.00');
     await page.getByRole('button', { name: /confirmar cobro/i }).click();
-    await expect(page.getByRole('heading', { name: /vista previa del recibo/i })).toBeVisible();
-    await page.getByRole('button', { name: /cerrar modal/i }).click({ force: true });
-    await page.getByRole('button', { name: /crear otra factura/i }).click();
+    await page.getByRole('button', { name: /nueva factura|crear otra factura/i }).click();
 
     await page.getByRole('link', { name: /historial/i }).click();
     await expect(page.getByRole('heading', { name: /historial de facturas/i })).toBeVisible();
@@ -642,11 +786,17 @@ test.describe('RC1 cashier flow screens', () => {
     await captureScreen(page, 'invoice-history-light');
 
     await page.getByRole('button', { name: /buscar/i }).click();
-    await page.getByRole('button', { name: /^reimprimir$/i }).first().click();
-    await page.getByRole('button', { name: /registrar reimpresi.n/i }).click();
-    await expect(page.getByRole('heading', { name: /recibo - 000-001-01-00000001/i })).toBeVisible();
+    await page.getByRole('button', { name: /acciones de la factura/i }).first().click();
+    const reprintItem = page.getByRole('menuitem', { name: 'Reimprimir', exact: true });
+    await expect(reprintItem).toBeVisible();
+    await reprintItem.click({ force: true });
+    const reprintDialog = page.getByRole('alertdialog', { name: /reimprimir 000-001-01-00000001/i });
+    await reprintDialog.getByRole('textbox', { name: /^motivo$/i }).fill('Copia solicitada por paciente para expediente administrativo.');
+    await captureScreen(page, 'reprint-reason-light');
+    await reprintDialog.getByRole('button', { name: /^reimprimir$/i }).click();
+    await expect(page.getByText(/PDF institucional REC-A-00000091 abierto/i).first()).toBeVisible();
     await page.waitForTimeout(500);
-    await captureScreen(page, 'reprint-modal-light');
+    await captureScreen(page, 'reprint-complete-light');
   });
 
   test('cashbox close flow (light)', async ({ page }) => {
@@ -655,6 +805,8 @@ test.describe('RC1 cashier flow screens', () => {
     await setTheme(page, 'light');
     await page.goto('/cashbox');
     await page.getByRole('main').getByRole('button', { name: /abrir caja/i }).click();
+    await expect(page.getByRole('alertdialog', { name: /confirmar apertura de caja/i })).toBeVisible();
+    await page.getByRole('alertdialog', { name: /confirmar apertura de caja/i }).getByRole('button', { name: /abrir caja/i }).click();
     if (await page.getByRole('dialog', { name: /caja activa/i }).isVisible().catch(() => false)) {
       await page.getByRole('button', { name: /cerrar modal/i }).click({ force: true });
     }
@@ -728,7 +880,7 @@ test.describe('RC1 cashier flow screens', () => {
     await captureScreen(page, 'backups-light');
 
     const createBtn = page.getByRole('button', { name: /crear respaldo/i }).first();
-    if (await createBtn.isVisible().catch(() => false)) {
+    if (await createBtn.isVisible().catch(() => false) && await createBtn.isEnabled()) {
       await createBtn.click();
       const confirmBtn = page.getByRole('button', { name: /^crear respaldo$/i });
       if (await confirmBtn.isVisible().catch(() => false)) {
@@ -768,7 +920,7 @@ test.describe('RC1 cashier flow screens', () => {
     if (await page.getByRole('dialog', { name: /caja activa/i }).isVisible().catch(() => false)) {
       await page.getByRole('button', { name: /cerrar modal/i }).click({ force: true });
     }
-    await page.getByLabel('Navegacion principal').getByRole('link', { name: /nueva factura/i }).click();
+    await page.goto('/billing/new');
     await expect(page.getByRole('button', { name: /emitir y cobrar/i })).toBeDisabled();
     await captureScreen(page, 'billing-validation-light');
   });

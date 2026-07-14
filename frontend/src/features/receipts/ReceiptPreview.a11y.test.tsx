@@ -1,17 +1,12 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { render } from '@testing-library/react';
 import { axe } from 'vitest-axe';
 import { ReceiptPreview } from './ReceiptPreview';
 import type { ReceiptData } from '../../lib/api';
 
-vi.mock('react-to-print', () => ({
-  useReactToPrint: () => () => undefined,
-}));
-
 function buildReceipt(): ReceiptData {
   return {
     invoice: {
-      id: 1,
       invoice_number: '000-001-01-00000001',
       issued_at: '2026-06-02T08:00:00Z',
       patient_name: 'Paciente Validacion',
@@ -62,7 +57,6 @@ function buildReceipt(): ReceiptData {
     ],
     payments: [
       {
-        id: 1,
         method: 'cash',
         amount: '17.25',
         reference: null,
@@ -77,7 +71,7 @@ function buildReceipt(): ReceiptData {
 describe('ReceiptPreview accessibility', () => {
   it('has no axe-core violations on the half-letter render', async () => {
     const { container } = render(
-      <ReceiptPreview receipt={buildReceipt()} onWidthChange={() => undefined} />,
+      <ReceiptPreview receipt={buildReceipt()} />,
     );
 
     expect(await axe(container)).toHaveNoViolations();
@@ -85,7 +79,7 @@ describe('ReceiptPreview accessibility', () => {
 
   it('labels the printable institutional receipt container for assistive technologies', () => {
     const { getByLabelText } = render(
-      <ReceiptPreview receipt={buildReceipt()} onWidthChange={() => undefined} />,
+      <ReceiptPreview receipt={buildReceipt()} />,
     );
 
     expect(getByLabelText('Vista previa del recibo')).toBeInTheDocument();

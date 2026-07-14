@@ -13,7 +13,7 @@ class CashSessionReportService
 
     public function report(CashRegisterSession $session): array
     {
-        $session->load('user:id,name,username');
+        $session->load(['user:id,name,username', 'closedBy:id,name,username']);
         $reconciliation = $this->buildCashReconciliation->execute($session);
         $snapshot = $this->closedSnapshot($session);
         $methods = $snapshot['payments_by_method'] ?? $reconciliation['payments_by_method'];
@@ -57,10 +57,12 @@ class CashSessionReportService
                 'id' => $session->id,
                 'status' => $session->status,
                 'user' => $session->user,
+                'closed_by' => $session->closedBy,
                 'opening_amount' => (string) $session->opening_amount,
                 'expected_amount' => $session->expected_amount === null ? null : (string) $session->expected_amount,
                 'closing_amount' => $session->closing_amount === null ? null : (string) $session->closing_amount,
                 'difference_amount' => $session->difference_amount === null ? null : (string) $session->difference_amount,
+                'closing_notes' => $session->closing_notes,
                 'opened_at' => $session->opened_at,
                 'closed_at' => $session->closed_at,
             ],
@@ -74,6 +76,9 @@ class CashSessionReportService
             'expected_cash_amount' => $expectedCashAmount,
             'pending_invoice_count' => $pendingInvoiceCount,
             'pending_amount' => $pendingAmount,
+            'missing_institutional_receipt_count' => $reconciliation['missing_institutional_receipt_count'],
+            'reversed_payments_count' => $reconciliation['reversed_payments_count'],
+            'reversed_payments_total' => $reconciliation['reversed_payments_total'],
             'payments' => $payments,
             'movements' => $movements,
         ];
