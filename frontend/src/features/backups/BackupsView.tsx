@@ -20,10 +20,11 @@ import {
 } from './backupPresentation';
 import { type AuthUser, type BackupLog, apiClient } from '../../lib/api';
 import { downloadBlob } from '../../lib/download';
+import type { OperationalStatusReporter } from '@/app/operationalStatus';
 
 type BackupsViewProps = {
   user: AuthUser;
-  onStatus: (message: string) => void;
+  onStatus: OperationalStatusReporter;
 };
 
 export function BackupsView({ user, onStatus }: BackupsViewProps) {
@@ -81,32 +82,20 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
   const advancedStatusId = 'backups-advanced-status';
 
   useEffect(() => {
-    if (backupsQuery.isLoading) {
-      onStatus('Cargando respaldos locales...');
-    }
-  }, [backupsQuery.isLoading, onStatus]);
-
-  useEffect(() => {
-    if (backupsQuery.isSuccess && !backupsQuery.isFetching) {
-      onStatus('Respaldos locales cargados.');
-    }
-  }, [backupsQuery.isFetching, backupsQuery.isSuccess, backupsQuery.dataUpdatedAt, onStatus]);
-
-  useEffect(() => {
     if (backupsQueryError) {
-      onStatus(backupsQueryError);
+      onStatus({ key: 'backups:list:error', level: 'error', message: backupsQueryError });
     }
   }, [backupsQueryError, onStatus]);
 
   useEffect(() => {
     if (systemStatusError) {
-      onStatus(systemStatusError);
+      onStatus({ key: 'backups:status:error', level: 'error', message: systemStatusError });
     }
   }, [systemStatusError, onStatus]);
 
   function refreshOperationalStatus() {
     setManualError('');
-    onStatus('Actualizando respaldos locales...');
+    onStatus({ key: 'backups:refresh', level: 'info', message: 'Actualizando respaldos locales...' });
     void backupsQuery.refetch();
     if (canViewSystemStatus) {
       void systemStatusQuery.refetch();
@@ -115,26 +104,28 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
 
   async function handleCreateBackup() {
     if (creatingBackupRef.current) {
-      onStatus('Espere a que termine el respaldo en curso.');
+      onStatus({ key: 'backups:create:busy', level: 'warning', message: 'Espere a que termine el respaldo en curso.' });
       return;
     }
 
     creatingBackupRef.current = true;
     setManualError('');
-    onStatus('Creando respaldo local...');
+    onStatus({ key: 'backups:create:progress', level: 'info', message: 'Creando respaldo local...', toast: false });
 
     try {
       const backup = await createBackupMutation.mutateAsync();
       setPage(1);
-      onStatus(
-        backup.status === 'success'
+      onStatus({
+        key: 'backups:create:success',
+        level: backup.status === 'success' ? 'success' : 'info',
+        message: backup.status === 'success'
           ? 'Respaldo completado correctamente.'
           : 'Respaldo registrado. Revise su estado en la lista.',
-      );
+      });
     } catch (error) {
       const message = safeBackupsErrorMessage(error, 'No se pudo crear el respaldo.');
       setManualError(message);
-      onStatus(message);
+      onStatus({ key: 'backups:create:error', level: 'error', message });
     } finally {
       creatingBackupRef.current = false;
     }
@@ -142,7 +133,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
 
   async function handleDownloadBackup(backup: BackupLog) {
     if (downloadingBackupRef.current !== null) {
-      onStatus('Espere a que termine la descarga actual.');
+      onStatus({ key: 'backups:download:busy', level: 'warning', message: 'Espere a que termine la descarga actual.' });
       return;
     }
 
@@ -153,11 +144,11 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
     try {
       const blob = await apiClient.downloadBackup(backup.id);
       downloadBlob(blob, backupDownloadFilename(backup));
-      onStatus('Respaldo descargado correctamente.');
+      onStatus({ key: 'backups:download:success', level: 'success', message: 'Respaldo descargado correctamente.' });
     } catch (error) {
       const message = safeBackupsErrorMessage(error, 'No se pudo descargar el respaldo.');
       setManualError(message);
-      onStatus(message);
+      onStatus({ key: 'backups:download:error', level: 'error', message });
     } finally {
       downloadingBackupRef.current = null;
       setDownloadingBackupId(null);
@@ -182,6 +173,12 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
             />
           ) : undefined}
       />
+
+      {backupsQuery.dataUpdatedAt > 0 ? (
+        <p className="text-sm text-muted-foreground" role="status">
+          Última actualización: {new Date(backupsQuery.dataUpdatedAt).toLocaleString('es-HN')}
+        </p>
+      ) : null}
 
       <div className="space-y-6">
         <section aria-label="Indicadores principales de respaldos">

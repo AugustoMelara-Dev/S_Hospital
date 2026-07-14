@@ -24,6 +24,17 @@ const adminUser: AuthUser = {
 };
 
 describe('BackupsView', () => {
+  it('keeps query refreshes silent and exposes the last update in the page', async () => {
+    const onStatus = vi.fn();
+
+    renderWithQueryClient(<BackupsView user={adminUser} onStatus={onStatus} />);
+
+    expect(await screen.findByText(/respaldo protegido m.s reciente/i)).toBeInTheDocument();
+    await waitFor(() => expect(apiClient.getBackups).toHaveBeenCalledTimes(1));
+    expect(onStatus).not.toHaveBeenCalled();
+    expect(screen.getByText(/.ltima actualizaci.n/i)).toBeInTheDocument();
+  });
+
   beforeEach(() => {
     vi.spyOn(apiClient, 'getBackups').mockResolvedValue({
       data: [backupFixture()],
@@ -770,9 +781,14 @@ describe('BackupsView', () => {
     fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^crear respaldo$/i }));
 
     await waitFor(() => {
-      expect(onStatus).toHaveBeenCalledWith('Respaldo completado correctamente.');
+      expect(onStatus).toHaveBeenCalledWith(expect.objectContaining({
+        level: 'success',
+        message: 'Respaldo completado correctamente.',
+      }));
     });
-    expect(onStatus.mock.calls.flat().join(' ')).not.toMatch(/sha256|checksum|huella/i);
+    expect(onStatus.mock.calls.map(([status]) => (
+      typeof status === 'string' ? status : status.message
+    )).join(' ')).not.toMatch(/sha256|checksum|huella/i);
   });
 
   it('describes stale pending backups without worker or scheduler jargon', async () => {
@@ -889,9 +905,14 @@ describe('BackupsView', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: /^descargar$/i }));
 
     await waitFor(() => {
-      expect(onStatus).toHaveBeenCalledWith('Respaldo descargado correctamente.');
+      expect(onStatus).toHaveBeenCalledWith(expect.objectContaining({
+        level: 'success',
+        message: 'Respaldo descargado correctamente.',
+      }));
     });
-    expect(onStatus.mock.calls.flat().join(' ')).not.toMatch(/hospital-backup-.*\.sql\.enc/i);
+    expect(onStatus.mock.calls.map(([status]) => (
+      typeof status === 'string' ? status : status.message
+    )).join(' ')).not.toMatch(/hospital-backup-.*\.sql\.enc/i);
     await waitFor(() => {
       expect(HTMLAnchorElement.prototype.click).toHaveBeenCalled();
     });

@@ -323,6 +323,28 @@ export function HelpView() {
     ? incidentGuides.filter((guide) => normalizeHelpText(`${guide.title} ${guide.answer}`).includes(normalizedQuery))
     : incidentGuides;
   const resultCount = visibleGuides.length + visibleIncidents.length;
+  const guideItems = visibleGuides.map((guide) => {
+    const guideId = helpGuideId(guide.title);
+
+    return {
+      key: guideId,
+      label: <h2 id={guideId}>{guide.title}</h2>,
+      forceRender: true,
+      children: (
+        <div className="space-y-3">
+          <ol className="space-y-2">
+            {guide.steps.map((step, index) => (
+              <li key={step} className="flex gap-2 text-sm leading-6 text-muted-foreground">
+                <span className="font-semibold text-foreground">{index + 1}.</span>
+                <span>{step}</span>
+              </li>
+            ))}
+          </ol>
+          <a href="#help-task-index" className="text-sm font-semibold text-secondary">Volver al índice</a>
+        </div>
+      ),
+    };
+  });
 
   return (
     <section className="space-y-6" aria-label="Ayuda institucional">
@@ -353,39 +375,20 @@ export function HelpView() {
         </p>
       </div>
 
-      <div className="grid gap-4">
-        {visibleGuides.map((guide, guideIndex) => {
-          const Icon = guide.icon;
+      <nav id="help-task-index" aria-label="Índice de tareas" className="border border-border p-4">
+        <h2 className="mb-3 text-base font-semibold">Índice de tareas</h2>
+        <div className="flex flex-wrap gap-x-4 gap-y-2">
+          {visibleGuides.map((guide) => (
+            <a key={guide.title} href={`#${helpGuideId(guide.title)}`} className="text-sm font-semibold text-secondary">
+              {guide.title}
+            </a>
+          ))}
+        </div>
+      </nav>
 
-          return (
-            <Card key={guide.title} className={guideIndex === 0 ? 'overflow-hidden md:col-span-2' : 'overflow-hidden'}>
-              <div className="mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex size-11 items-center justify-center bg-accent text-secondary">
-                    <Icon aria-hidden="true" className="size-5" />
-                  </div>
-                  <div>
-                    <Typography.Title level={2} className="text-base">{guide.title}</Typography.Title>
-                    <Typography.Text type="secondary">Pasos principales</Typography.Text>
-                  </div>
-                </div>
-              </div>
-              <div>
-                <ol className="space-y-2">
-                  {guide.steps.map((step, index) => (
-                    <li key={step} className="flex gap-2 text-sm leading-6 text-muted-foreground">
-                      <span className="flex size-5 shrink-0 items-center justify-center bg-muted font-bold text-foreground">
-                        {index + 1}
-                      </span>
-                      <span>{step}</span>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            </Card>
-          );
-        })}
-      </div>
+      <section aria-label="Guías por tarea" className="border border-border">
+        <Collapse accordion items={guideItems} />
+      </section>
 
       <Card>
         <div className="mb-4">
@@ -519,4 +522,8 @@ export function HelpView() {
 
 function normalizeHelpText(value: string): string {
   return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+
+function helpGuideId(title: string): string {
+  return `help-guide-${normalizeHelpText(title).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`;
 }

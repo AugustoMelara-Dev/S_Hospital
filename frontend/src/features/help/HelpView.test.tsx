@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { HelpView } from './HelpView';
 
@@ -93,5 +93,19 @@ describe('HelpView', () => {
     expect(screen.getByRole('heading', { name: /^cobrar$/i })).toBeVisible();
     expect(screen.queryByRole('heading', { name: /abrir el sistema/i })).not.toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveTextContent(/guía relacionada/i);
+  });
+  it('offers a task index with anchored compact topics and a return path', () => {
+    render(<HelpView />);
+
+    const index = screen.getByRole('navigation', { name: /ndice de tareas/i });
+    const chargeLink = within(index).getByRole('link', { name: /^cobrar$/i });
+    expect(chargeLink).toHaveAttribute('href', '#help-guide-cobrar');
+    expect(document.querySelector('#help-guide-cobrar')).not.toBeNull();
+
+    fireEvent.click(chargeLink);
+    const chargeTopic = screen.getByRole('tab', { name: /cobrar/i });
+    fireEvent.click(chargeTopic);
+    expect(screen.getByText(/seleccione el m.todo de pago/i)).toBeVisible();
+    expect(screen.getAllByRole('link', { name: /volver al .ndice/i }).length).toBeGreaterThan(0);
   });
 });

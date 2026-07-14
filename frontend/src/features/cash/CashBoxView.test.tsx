@@ -11,8 +11,50 @@ import { resetRequestChain } from '../../lib/api/base';
 import { CashBoxView } from './CashBoxView';
 
 describe('CashBoxView', () => {
+  it('opens on Resumen and focuses the counted amount only when Cierre is activated', async () => {
+    vi.spyOn(apiClient, 'getCurrentCashSession').mockResolvedValue(cashSessionFixture());
+
+    renderCashBox(<CashBoxView canViewCashSessionReport onStatus={vi.fn()} />);
+
+    const summaryTab = await screen.findByRole('tab', { name: /^resumen$/i });
+    expect(summaryTab).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: /^movimientos$/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /^arqueo$/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /^cierre$/i })).toBeInTheDocument();
+    expect(screen.queryByLabelText(/monto contado/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /control contable de caja/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /cierre guiado/i })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: /^cierre$/i }));
+
+    const countedAmount = await screen.findByLabelText(/monto contado/i);
+    await waitFor(() => expect(countedAmount).toHaveFocus());
+
+    fireEvent.click(screen.getByRole('tab', { name: /^resumen$/i }));
+    expect(screen.queryByLabelText(/monto contado/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /^resumen$/i })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('reports the manual refresh as a typed user action', async () => {
+    vi.spyOn(apiClient, 'getCurrentCashSession').mockResolvedValue(cashSessionFixture());
+    const onStatus = vi.fn();
+
+    renderCashBox(<CashBoxView onStatus={onStatus} />);
+    await screen.findByRole('tab', { name: /^resumen$/i });
+    onStatus.mockClear();
+
+    fireEvent.click(screen.getByRole('button', { name: /actualizar/i }));
+
+    expect(onStatus).toHaveBeenCalledWith({
+      key: 'cash:refresh',
+      level: 'info',
+      message: 'Actualizando caja...',
+    });
+  });
+
   beforeEach(async () => {
     vi.restoreAllMocks();
+    vi.stubGlobal('scrollTo', vi.fn());
     resetRequestChain();
     await queryClient.cancelQueries();
     queryClient.clear();
@@ -171,6 +213,7 @@ describe('CashBoxView', () => {
     });
 
     render(<App />);
+    await activateCashView('Cierre');
 
     expect(await screen.findByLabelText(/monto contado/i)).toBeInTheDocument();
     expect(screen.queryByText(/hay una diferencia/i)).not.toBeInTheDocument();
@@ -270,6 +313,7 @@ describe('CashBoxView', () => {
 
     expect((await screen.findAllByText(/saldo pendiente/i)).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/L 23\.75/i).length).toBeGreaterThan(0);
+    await activateCashView('Cierre');
     expect(await screen.findByText(/revise los cobros antes de cerrar/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^cerrar caja$/i })).toBeDisabled();
   });
@@ -453,7 +497,10 @@ describe('CashBoxView', () => {
     await waitFor(() => expect(openCashSession).toHaveBeenCalledTimes(1));
     expect(await screen.findByText(/Caja: Ya existe una caja abierta/i)).toBeInTheDocument();
     expect(screen.queryByText(/caja lista para facturar/i)).not.toBeInTheDocument();
-    expect(onStatus).toHaveBeenLastCalledWith(expect.stringMatching(/Caja: Ya existe una caja abierta/i));
+    expect(onStatus).toHaveBeenLastCalledWith(expect.objectContaining({
+      level: 'error',
+      message: expect.stringMatching(/Caja: Ya existe una caja abierta/i),
+    }));
   });
 
   it('locks the open cash form while the opening confirmation is active', async () => {
@@ -497,6 +544,7 @@ describe('CashBoxView', () => {
     vi.spyOn(apiClient, 'getCurrentCashSession').mockResolvedValue(cashSessionFixture());
 
     renderCashBox(<CashBoxView canCloseCash={false} onStatus={vi.fn()} />);
+    await activateCashView('Cierre');
 
     const closeButton = await screen.findByRole('button', { name: /^cerrar caja$/i });
     expect(closeButton).toBeDisabled();
@@ -506,6 +554,7 @@ describe('CashBoxView', () => {
     cleanup();
     vi.spyOn(apiClient, 'getCurrentCashSession').mockResolvedValue(cashSessionFixture());
     renderCashBox(<CashBoxView onStatus={vi.fn()} />);
+    await activateCashView('Cierre');
 
     const counted = await screen.findByLabelText(/monto contado/i);
     expect(document.activeElement).toHaveAttribute('id', 'closing_amount');
@@ -532,6 +581,7 @@ describe('CashBoxView', () => {
     }));
 
     renderCashBox(<CashBoxView onStatus={vi.fn()} />);
+    await activateCashView('Cierre');
 
     fireEvent.change(await screen.findByLabelText(/monto contado/i), {
       target: { value: '120.00' },
@@ -585,6 +635,7 @@ describe('CashBoxView', () => {
       .mockResolvedValue(null);
 
     renderCashBox(<CashBoxView onStatus={vi.fn()} />);
+    await activateCashView('Cierre');
 
     fireEvent.change(await screen.findByLabelText(/monto contado/i), { target: { value: '101.00' } });
     fireEvent.change(screen.getByLabelText(/nota de cierre/i), { target: { value: 'Sobrante confirmado' } });
@@ -613,6 +664,7 @@ describe('CashBoxView', () => {
     vi.spyOn(apiClient, 'getCurrentCashSession').mockResolvedValue(cashSessionFixture());
 
     renderCashBox(<CashBoxView onStatus={vi.fn()} />);
+    await activateCashView('Cierre');
 
     fireEvent.change(await screen.findByLabelText(/monto contado/i), { target: { value: '99.00' } });
     fireEvent.change(screen.getByLabelText(/nota de cierre/i), { target: { value: '  Faltante validado  ' } });
@@ -635,6 +687,7 @@ describe('CashBoxView', () => {
     vi.spyOn(apiClient, 'getCurrentCashSession').mockResolvedValue(cashSessionFixture());
 
     renderCashBox(<CashBoxView onStatus={vi.fn()} />);
+    await activateCashView('Cierre');
 
     fireEvent.change(await screen.findByLabelText(/monto contado/i), { target: { value: ' 100.00 ' } });
     fireEvent.click(screen.getByRole('button', { name: /^cerrar caja$/i }));
@@ -662,6 +715,7 @@ describe('CashBoxView', () => {
     const closeCashSession = vi.spyOn(apiClient, 'closeCashSession').mockResolvedValue(cashSessionFixture({ status: 'closed' }));
 
     renderCashBox(<CashBoxView onStatus={vi.fn()} />);
+    await activateCashView('Cierre');
 
     fireEvent.change(await screen.findByLabelText(/monto contado/i), { target: { value: '100.00' } });
     fireEvent.click(screen.getByRole('button', { name: /^cerrar caja$/i }));
@@ -682,6 +736,7 @@ describe('CashBoxView', () => {
     const closeCashSession = vi.spyOn(apiClient, 'closeCashSession').mockResolvedValue(cashSessionFixture({ status: 'closed' }));
 
     renderCashBox(<CashBoxView onStatus={vi.fn()} />);
+    await activateCashView('Cierre');
 
     fireEvent.change(await screen.findByLabelText(/monto contado/i), { target: { value: '100.00' } });
     fireEvent.click(screen.getByRole('button', { name: /^cerrar caja$/i }));
@@ -700,12 +755,14 @@ describe('CashBoxView', () => {
     }));
 
     renderCashBox(<CashBoxView canViewInvoices onStatus={vi.fn()} />);
+    await activateCashView('Arqueo');
 
     expect(await screen.findByRole('heading', { name: /control contable de caja/i })).toBeInTheDocument();
     expect(screen.getByText(/2 recibos institucionales pendientes/i)).toBeInTheDocument();
     expect(screen.getByText(/1 pago reversado/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^cerrar caja$/i })).toBeDisabled();
     expect(screen.getByRole('link', { name: /resolver en historial/i })).toHaveAttribute('href', '/invoices');
+    await activateCashView('Cierre');
+    expect(screen.getByRole('button', { name: /^cerrar caja$/i })).toBeDisabled();
   });
 
   it('does not open close confirmation when the reconciliation refresh fails', async () => {
@@ -715,6 +772,7 @@ describe('CashBoxView', () => {
     const closeCashSession = vi.spyOn(apiClient, 'closeCashSession').mockResolvedValue(cashSessionFixture({ status: 'closed' }));
 
     renderCashBox(<CashBoxView onStatus={vi.fn()} />);
+    await activateCashView('Cierre');
 
     fireEvent.change(await screen.findByLabelText(/monto contado/i), { target: { value: '100.00' } });
     fireEvent.click(screen.getByRole('button', { name: /^cerrar caja$/i }));
@@ -733,6 +791,7 @@ describe('CashBoxView', () => {
     vi.spyOn(apiClient, 'getCurrentCashSession').mockResolvedValue(cashSessionFixture());
 
     renderCashBox(<CashBoxView onStatus={vi.fn()} />);
+    await activateCashView('Cierre');
 
     fireEvent.change(await screen.findByLabelText(/monto contado/i), { target: { value: '100.00' } });
     fireEvent.change(screen.getByLabelText(/nota de cierre/i), { target: { value: 'Turno contado' } });
@@ -758,6 +817,10 @@ function renderCashBox(node: ReactNode) {
       <MemoryRouter>{node}</MemoryRouter>
     </QueryClientProvider>,
   );
+}
+
+async function activateCashView(name: 'Resumen' | 'Movimientos' | 'Arqueo' | 'Cierre') {
+  fireEvent.click(await screen.findByRole('tab', { name: new RegExp(`^${name}$`, 'i') }));
 }
 
 function cashSessionFixture(overrides: Partial<CashSession> = {}): CashSession {
