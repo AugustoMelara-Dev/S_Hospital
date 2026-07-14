@@ -1,4 +1,8 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
+import { assertStrictMockGuard, installStrictMockGuard } from './fixtures/strict-mock-guard';
+
+test.beforeEach(async ({ page }) => installStrictMockGuard(page));
+test.afterEach(async ({ page }) => assertStrictMockGuard(page));
 
 const settingsAdminUser = {
   id: 21,
@@ -73,7 +77,7 @@ async function installSettingsMocks(page: Page) {
   }));
   await page.route('**/api/settings/logo', (route) => {
     if (route.request().method() === 'GET') {
-      return route.fulfill({ status: 404, body: '' });
+      return route.fulfill({ status: 200, contentType: 'image/png', body: '' });
     }
 
     return json(route, { message: 'ok', logo_url: '/api/settings/logo/file?t=1' });

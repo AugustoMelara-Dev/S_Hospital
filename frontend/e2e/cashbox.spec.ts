@@ -1,4 +1,8 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
+import { assertStrictMockGuard, installStrictMockGuard } from './fixtures/strict-mock-guard';
+
+test.beforeEach(async ({ page }) => installStrictMockGuard(page));
+test.afterEach(async ({ page }) => assertStrictMockGuard(page));
 
 const cashierUser = {
   id: 71,
@@ -151,7 +155,7 @@ async function installCommonMocks(page: Page, sessionUser: typeof cashierUser) {
       receipt_location: 'Tocoa',
     },
   }));
-  await page.route('**/api/settings/logo', (route) => route.fulfill({ status: 404, body: '' }));
+  await page.route('**/api/settings/logo', (route) => route.fulfill({ status: 200, contentType: 'image/png', body: '' }));
   await page.route('**/api/system/health', (route) => json(route, { ok: true }));
   await page.route('**/api/system/echo-config', (route) => json(route, {
     data: {

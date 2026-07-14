@@ -1,4 +1,5 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
+import { assertStrictMockGuard, installStrictMockGuard } from './fixtures/strict-mock-guard';
 
 const reportUser = {
   id: 81,
@@ -14,6 +15,8 @@ const reportUser = {
 const reportPeriod = { from: '2026-06-15', to: '2026-06-16', days: 2, timezone: 'America/Tegucigalpa' };
 
 test.describe('Reports - critical mocked e2e (3 sub-routes)', () => {
+  test.beforeEach(async ({ page }) => installStrictMockGuard(page));
+  test.afterEach(async ({ page }) => assertStrictMockGuard(page));
   test('executive report applies date filters and requests PDF and Excel exports', async ({ page }) => {
     let lastExecutiveQuery = new URLSearchParams();
     let pdfExports = 0;
@@ -78,10 +81,11 @@ test.describe('Reports - critical mocked e2e (3 sub-routes)', () => {
 
     await page.goto('/reports/audit');
 
-    await expect(page.getByRole('region', { name: /auditoría institucional/i })).toBeVisible();
-    await expect(page.getByText(/eventos críticos/i)).toBeVisible();
-    await expect(page.getByText(/reimpresiones/i)).toBeVisible();
-    await expect(page.getByText(/eventos de respaldo/i)).toBeVisible();
+    const institutionalAudit = page.getByRole('region', { name: /auditoría institucional/i });
+    await expect(institutionalAudit).toBeVisible();
+    await expect(institutionalAudit.getByText(/eventos críticos/i)).toBeVisible();
+    await expect(institutionalAudit.getByText(/reimpresiones/i)).toBeVisible();
+    await expect(institutionalAudit.getByText(/eventos de respaldo/i)).toBeVisible();
   });
 
   test('mobile report navigation wraps without horizontal page overflow at 320px', async ({ page }) => {
@@ -133,6 +137,17 @@ async function installReportsMocks(
     const id = new URL(route.request().url()).pathname.split('/').pop() ?? '';
     options.onCashReport?.(id);
     return json(route, { data: cashSessionReport(Number(id)) });
+  });
+  await page.route(/\/api\/reports\/operations(?:\?.*)?$/, (route) => {
+    expect(route.request().method()).toBe('GET');
+    return json(route, { data: operationsReport() });
+  });
+  await page.route(/\/api\/system\/audit-logs(?:\?.*)?$/, (route) => {
+    expect(route.request().method()).toBe('GET');
+    return json(route, {
+      data: auditLogEntries(),
+      meta: { current_page: 1, per_page: 25, total: 1 },
+    });
   });
 }
 
@@ -314,7 +329,47 @@ function cashSessionReport(id: number) {
   };
 }
 
+function operationsReport() {
+  return {
+    date_from: '2026-07-01',
+    date_to: '2026-07-13',
+    filters: {},
+    summary: {
+      void_count: 1,
+      reprint_count: 1,
+      payment_void_count: 0,
+      service_change_count: 0,
+      audit_event_count: 1,
+      backup_count: 1,
+      failed_backup_count: 0,
+      cashier_count: 1,
+    },
+    voids: [],
+    reprints: [],
+    payment_voids: [],
+    catalog_changes: [],
+    audit_events: [],
+    backups: [],
+    cashiers: [],
+  };
+}
+
+function auditLogEntries() {
+  return [{
+    id: 1,
+    action: 'invoice.voided',
+    result: 'success',
+    reason: 'Corrección auditada',
+    ip: '192.168.1.25',
+    entity_type: 'invoice',
+    entity_id: 77,
+    created_at: '2026-07-13T08:00:00-06:00',
+    user: { id: reportUser.id, name: reportUser.name, username: reportUser.username },
+  }];
+}
+
 async function installCommonMocks(page: Page) {
+  await page.route('**/favicon.ico', (route) => route.fulfill({ status: 204 }));
   await page.route('**/sanctum/csrf-cookie', (route) => route.fulfill({ status: 204 }));
   await page.route('**/api/auth/session', (route) => json(route, { data: reportUser }));
   await page.route('**/api/settings/branding', (route) => json(route, {
@@ -327,7 +382,7 @@ async function installCommonMocks(page: Page) {
       receipt_location: 'Tocoa',
     },
   }));
-  await page.route('**/api/settings/logo', (route) => route.fulfill({ status: 404, body: '' }));
+  await page.route('**/api/settings/logo', (route) => route.fulfill({ status: 200, contentType: 'image/png', body: '' }));
   await page.route('**/api/system/health', (route) => json(route, { ok: true }));
   await page.route('**/api/system/echo-config', (route) => json(route, {
     data: {

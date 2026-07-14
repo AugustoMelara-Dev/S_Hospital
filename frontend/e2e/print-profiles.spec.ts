@@ -1,4 +1,6 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 
 const adminUser = {
   id: 1,
@@ -299,4 +301,167 @@ function json(route: Route, body: unknown, status = 200) {
     contentType: 'application/json',
     body: JSON.stringify(body),
   });
+}
+
+const printingArtifacts = join(process.cwd(), 'test-results', 'frontend-final', 'printing');
+
+const certifiedPaperProfiles = [
+  { code: 'letter', className: 'receipt-letter', widthPt: 792, heightPt: 612 },
+  { code: 'half-letter', className: 'receipt-half-letter', widthPt: 612, heightPt: 396 },
+  { code: 'a5', className: 'receipt-a5', widthPt: 595.28, heightPt: 419.53 },
+  { code: '80mm', className: 'receipt-80mm', widthPt: 226.77, heightPt: 841.89, pdfWidth: '80mm', pdfHeight: '297mm' },
+  { code: '58mm', className: 'receipt-58mm', widthPt: 164.41, heightPt: 841.89, pdfWidth: '58mm', pdfHeight: '297mm' },
+  { code: 'custom-190x140', className: 'receipt-custom', widthPt: 538.58, heightPt: 396.85 },
+] as const;
+
+const certifiedCopies = [
+  { code: 'original', label: 'Original' },
+  { code: 'first-copy', label: 'Primera copia' },
+  { code: 'second-copy', label: 'Segunda copia' },
+] as const;
+
+test.describe.serial('Print profiles - browser PDF certification', () => {
+  const evidence: Array<Record<string, unknown>> = [];
+
+  test.beforeAll(async () => {
+    await rm(printingArtifacts, { recursive: true, force: true });
+    await mkdir(printingArtifacts, { recursive: true });
+  });
+
+  test.afterAll(async () => {
+    await writeFile(
+      join(printingArtifacts, 'printing-evidence.json'),
+      `${JSON.stringify(evidence, null, 2)}\n`,
+      'utf8',
+    );
+  });
+
+  for (const paper of certifiedPaperProfiles) {
+    for (const copy of certifiedCopies) {
+      test(`${paper.code} - ${copy.label}`, async ({ page }) => {
+        await page.route('**/api/**', (route) => json(route, { data: null }));
+        await page.goto('/login');
+        const printCss = await readFile(join(process.cwd(), 'src', 'printing', 'styles', 'receipt-print.css'), 'utf8');
+        await installPrintableReceiptFixture(page, paper.className, copy.label, printCss);
+        await page.emulateMedia({ media: 'print' });
+
+        const inspection = await page.evaluate(() => {
+          const receipt = document.querySelector<HTMLElement>('[data-receipt-print-root]');
+          const shell = document.querySelector<HTMLElement>('[data-testid="print-shell"]');
+          const actions = document.querySelector<HTMLElement>('[data-testid="print-actions"]');
+          if (!receipt || !shell || !actions) throw new Error('Print fixture incompleto');
+          const receiptStyle = getComputedStyle(receipt);
+          return {
+            actionsDisplay: getComputedStyle(actions).display,
+            boxShadow: receiptStyle.boxShadow,
+            content: receipt.textContent ?? '',
+            fontsLocal: performance.getEntriesByType('resource')
+              .filter((entry) => /\.(?:woff2?|ttf|otf)(?:\?|$)/i.test(entry.name))
+              .every((entry) => new URL(entry.name).origin === location.origin),
+            overflow: receipt.scrollWidth <= receipt.clientWidth + 1,
+            position: receiptStyle.position,
+            shellDisplay: getComputedStyle(shell).display,
+          };
+        });
+
+        expect(inspection.shellDisplay).toBe('none');
+        expect(inspection.actionsDisplay).toBe('none');
+        expect(inspection.boxShadow).toBe('none');
+        expect(inspection.position).toBe('static');
+        expect(inspection.overflow).toBe(true);
+        expect(inspection.fontsLocal).toBe(true);
+        for (const requiredText of [
+          'Hospital San Isidro',
+          'RTN: 08011999123456',
+          'REC-A-00000005',
+          'L 1,250.00',
+          'MIL DOSCIENTOS CINCUENTA LEMPIRAS EXACTOS',
+          'Firma y sello',
+          'Original: Oficina Recaudadora',
+          copy.label,
+        ]) {
+          expect(inspection.content).toContain(requiredText);
+        }
+
+        const pdfPath = join(printingArtifacts, `${paper.code}-${copy.code}.pdf`);
+        const thermalPdfOptions = 'pdfWidth' in paper
+          ? { preferCSSPageSize: false, width: paper.pdfWidth, height: paper.pdfHeight }
+          : { preferCSSPageSize: true };
+        await page.pdf({
+          path: pdfPath,
+          printBackground: true,
+          tagged: true,
+          ...thermalPdfOptions,
+        });
+
+        const pdf = await readFile(pdfPath);
+        expect(pdf.subarray(0, 5).toString('ascii')).toBe('%PDF-');
+        expect(pdf.byteLength).toBeGreaterThan(5_000);
+        const pageCount = pdf.toString('latin1').match(/\/Type\s*\/Page(?!s)\b/g)?.length ?? 0;
+        expect(pageCount).toBe(1);
+        const mediaBox = pdf.toString('latin1').match(/\/MediaBox\s*\[\s*0\s+0\s+([\d.]+)\s+([\d.]+)\s*\]/);
+        expect(mediaBox, 'El PDF debe declarar MediaBox').not.toBeNull();
+        const widthPt = Number(mediaBox?.[1]);
+        const heightPt = Number(mediaBox?.[2]);
+        expect(Math.abs(widthPt - paper.widthPt)).toBeLessThanOrEqual(1);
+        if ('heightPt' in paper) expect(Math.abs(heightPt - paper.heightPt)).toBeLessThanOrEqual(1);
+
+        evidence.push({
+          copy: copy.label,
+          file: pdfPath,
+          heightPt,
+          paper: paper.code,
+          validations: inspection,
+          widthPt,
+        });
+      });
+    }
+  }
+});
+
+async function installPrintableReceiptFixture(page: Page, paperClass: string, copyLabel: string, printCss: string) {
+  await page.evaluate(({ paperClass, copyLabel, printCss }) => {
+    const printStyles = document.createElement('style');
+    printStyles.textContent = printCss;
+    document.head.append(printStyles);
+    document.head.insertAdjacentHTML('beforeend', `
+      <style>
+        @media print { .institutional-receipt.receipt-custom { box-sizing: border-box; page: receipt-custom; width: 174mm; min-height: 124mm; padding: 4mm; font-size: 9px; line-height: 1.2; } }
+        @page receipt-custom { size: 190mm 140mm; margin: 8mm; }
+      </style>
+    `);
+    document.body.dataset.printingReceipt = 'true';
+    document.body.innerHTML = `
+      <aside class="print-hidden" data-testid="print-shell">Navegación y sesión</aside>
+      <div class="no-print" data-testid="print-actions">Imprimir | Nueva factura</div>
+      <main class="institutional-receipt ${paperClass}" data-receipt-print-root>
+        <header class="receipt-header">
+          <span>Gobierno de Honduras</span>
+          <span>Secretaría de Salud</span>
+          <strong class="hospital-name">Hospital San Isidro</strong>
+          <span>Tocoa, Colón</span>
+          <span>RTN: 08011999123456</span>
+        </header>
+        <div class="receipt-rule"></div>
+        <div class="receipt-title-row"><h1 class="receipt-title">RECIBO INSTITUCIONAL</h1><span>${copyLabel}</span></div>
+        <table class="receipt-meta-table"><tbody>
+          <tr><th>Serie / No.</th><td>REC-A-00000005</td><th>Fecha</th><td>13/07/2026</td></tr>
+          <tr><th>Paciente / enterante</th><td>Paciente Validación</td><th>Estado</th><td>Pagada</td></tr>
+        </tbody></table>
+        <div class="receipt-rule"></div>
+        <table class="receipt-items-table">
+          <caption>Detalle de servicios</caption>
+          <thead><tr><th>Concepto / servicio</th><th>Cant.</th><th>Precio</th><th>ISV</th><th>Importe</th></tr></thead>
+          <tbody><tr><td>Servicio hospitalario institucional con descripción extensa para certificar saltos y ausencia de overflow</td><td>1</td><td>L 1,250.00</td><td>L 0.00</td><td>L 1,250.00</td></tr></tbody>
+        </table>
+        <table class="receipt-totals-table"><tbody><tr class="strong"><th>TOTAL</th><td>L 1,250.00</td></tr></tbody></table>
+        <p>MIL DOSCIENTOS CINCUENTA LEMPIRAS EXACTOS</p>
+        <footer class="receipt-footer">
+          <div class="receipt-signature-line"></div>
+          <span>Firma y sello</span>
+          <span>Original: Oficina Recaudadora</span>
+        </footer>
+      </main>
+    `;
+  }, { paperClass, copyLabel, printCss });
 }

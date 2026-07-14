@@ -2,6 +2,10 @@ import { expect, test, type Page, type Route } from '@playwright/test';
 import axeCore from 'axe-core';
 import { resolve } from 'node:path';
 import { writeButtonSmokeReport } from '../scripts/button-smoke-report.mjs';
+import { assertStrictMockGuard, installStrictMockGuard } from './fixtures/strict-mock-guard';
+
+test.beforeEach(async ({ page }) => installStrictMockGuard(page));
+test.afterEach(async ({ page }) => assertStrictMockGuard(page));
 
 const reportPath = resolve(process.env.E2E_BUTTON_SMOKE_REPORT_PATH ?? '../qa/production-audit/button-smoke-report.json');
 const smokeResults: Array<Record<string, unknown>> = [];

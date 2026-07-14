@@ -1,8 +1,3 @@
-html.dark {
-  --color-receipt-border: #d1d5db;
-  --color-receipt-paper: #ffffff;
-  --color-receipt-muted: #374151;
-}
 @layer base {
   .print-hidden {
     print-color-adjust: exact;
@@ -78,14 +73,14 @@ html.dark {
   }
 
   .institutional-receipt {
+    box-sizing: border-box;
     margin: 0 auto;
-    background: #ffffff;
-    color: #111827;
+    background: var(--color-receipt-paper);
+    color: var(--color-receipt-ink);
     font-family: Georgia, "Times New Roman", serif;
     font-size: 12px;
     line-height: 1.35;
-    border: 1px solid #253f47;
-    box-shadow: 0 18px 42px -28px rgb(15 35 42 / 0.42);
+    border: 1px solid var(--color-receipt-accent);
     padding: 0.42in;
   }
 
@@ -126,7 +121,7 @@ html.dark {
   }
 
   .receipt-header {
-    color: #153d48;
+    color: var(--color-receipt-accent-foreground);
     letter-spacing: 0.025em;
   }
 
@@ -139,7 +134,7 @@ html.dark {
   .receipt-rule {
     height: 1px;
     margin: 0.14in 0;
-    background: #274c56;
+    background: var(--color-receipt-accent);
   }
 
   .receipt-title-row,
@@ -153,7 +148,7 @@ html.dark {
 
   .receipt-title {
     margin: 0;
-    color: #153d48;
+    color: var(--color-receipt-accent-foreground);
     font-size: 1.2em;
     letter-spacing: 0;
   }
@@ -184,7 +179,7 @@ html.dark {
   .receipt-meta-table th {
     width: 1.2in;
     padding: 0.025in 0.06in 0.025in 0;
-    color: #374151;
+    color: var(--color-receipt-muted);
     font-size: 0.82em;
     text-align: left;
     text-transform: uppercase;
@@ -198,7 +193,7 @@ html.dark {
   .receipt-table-head {
     margin-bottom: 0.08in;
     font-weight: 700;
-    border-bottom: 1px solid #111827;
+    border-bottom: 1px solid var(--color-receipt-ink);
     padding-bottom: 0.04in;
   }
 
@@ -213,7 +208,7 @@ html.dark {
 
   .receipt-items-table caption {
     margin: 0 0 0.05in;
-    color: #111827;
+    color: var(--color-receipt-ink);
     font-weight: 700;
     text-align: left;
     text-transform: uppercase;
@@ -235,12 +230,12 @@ html.dark {
 
   .receipt-items-table th,
   .receipt-items-table td {
-    border-bottom: 1px solid #d1d5db;
+    border-bottom: 1px solid var(--color-receipt-border-soft);
     padding: 0.045in 0.04in;
   }
 
   .receipt-items-table th {
-    color: #374151;
+    color: var(--color-receipt-muted);
     font-size: 0.82em;
     text-align: left;
     text-transform: uppercase;
@@ -263,7 +258,7 @@ html.dark {
 
   .item-name .category,
   .item-name .qty {
-    color: #374151;
+    color: var(--color-receipt-muted);
   }
 
   .special-rule-badge {
@@ -287,15 +282,15 @@ html.dark {
   }
 
   .receipt-totals-table th {
-    color: #374151;
+    color: var(--color-receipt-muted);
     font-weight: 600;
     text-align: left;
   }
 
   .receipt-totals-table .strong th,
   .receipt-totals-table .strong td {
-    border-top: 1px solid #111827;
-    color: #111827;
+    border-top: 1px solid var(--color-receipt-ink);
+    color: var(--color-receipt-ink);
     font-weight: 700;
     padding-top: 0.04in;
   }
@@ -303,27 +298,29 @@ html.dark {
   .receipt-signature-line {
     margin: 0.32in auto 0.08in;
     width: min(3in, 70%);
-    border-top: 1px solid #111827;
+    border-top: 1px solid var(--color-receipt-ink);
   }
 }
 
 @media print {
+  body[data-printing-receipt="true"] {
+    margin: 0 !important;
+  }
+
   :root {
-    --color-operational-bg: #ffffff;
-    --color-operational-surface: #ffffff;
-    --color-operational-panel: #ffffff;
-    --color-operational-border: #d1d5db;
-    --color-receipt-border: #111827;
-    --shadow-operational: none;
+    --color-operational-bg: var(--color-receipt-paper);
+    --color-operational-surface: var(--color-receipt-paper);
+    --color-operational-panel: var(--color-receipt-paper);
+    --color-operational-border: var(--color-receipt-border-soft);
+    --color-receipt-border: var(--color-receipt-ink);
   }
 
   html.dark {
-    --color-operational-bg: #ffffff;
-    --color-operational-surface: #ffffff;
-    --color-operational-panel: #ffffff;
-    --color-operational-border: #d1d5db;
-    --color-receipt-border: #111827;
-    --shadow-operational: none;
+    --color-operational-bg: var(--color-receipt-paper);
+    --color-operational-surface: var(--color-receipt-paper);
+    --color-operational-panel: var(--color-receipt-paper);
+    --color-operational-border: var(--color-receipt-border-soft);
+    --color-receipt-border: var(--color-receipt-ink);
   }
 
   .print-hidden {
@@ -340,8 +337,7 @@ html.dark {
   }
 
   body[data-printing-receipt="true"] [data-receipt-print-root] {
-    position: absolute !important;
-    inset: 0 auto auto 0 !important;
+    position: static !important;
     width: 100% !important;
     box-shadow: none !important;
   }
@@ -374,12 +370,23 @@ html.dark {
     page: receipt-half-letter;
     width: 7.8in;
     min-height: 4.8in;
+    padding: 0.22in;
+    font-size: 9px;
+    line-height: 1.2;
   }
 
   .institutional-receipt.receipt-a5 {
     page: receipt-a5;
     width: 7.6in;
     min-height: 5.1in;
+    padding: 0.25in;
+    font-size: 10px;
+    line-height: 1.2;
+  }
+
+  .institutional-receipt.receipt-half-letter .receipt-signature-line,
+  .institutional-receipt.receipt-a5 .receipt-signature-line {
+    margin-top: 0.14in;
   }
 
   .institutional-receipt.receipt-80mm {
@@ -393,8 +400,8 @@ html.dark {
   }
 
   .institutional-receipt {
-    background: #fff !important;
-    color: #111827 !important;
+    background: var(--color-receipt-paper) !important;
+    color: var(--color-receipt-ink) !important;
     box-shadow: none !important;
   }
 
@@ -405,7 +412,7 @@ html.dark {
 
   .receipt-preview-container {
     border: 0 !important;
-    background: #fff !important;
+    background: var(--color-receipt-paper) !important;
     padding: 0 !important;
     overflow: visible !important;
   }

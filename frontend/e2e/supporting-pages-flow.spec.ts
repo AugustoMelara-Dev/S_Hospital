@@ -1,4 +1,8 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
+import { assertStrictMockGuard, installStrictMockGuard } from './fixtures/strict-mock-guard';
+
+test.beforeEach(async ({ page }) => installStrictMockGuard(page));
+test.afterEach(async ({ page }) => assertStrictMockGuard(page));
 
 const operatorUser = {
   id: 27,

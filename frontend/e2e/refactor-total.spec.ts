@@ -2,6 +2,10 @@ import axeCore from 'axe-core';
 import { expect, type Page, test } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
+import { assertStrictMockGuard, installStrictMockGuard } from './fixtures/strict-mock-guard';
+
+test.beforeEach(async ({ page }) => installStrictMockGuard(page));
+test.afterEach(async ({ page }) => assertStrictMockGuard(page));
 
 const reportPath = resolve(
   process.env.REFACTOR_TOTAL_E2E_REPORT_PATH ?? '../qa/production-audit/refactor-total-e2e.json',
@@ -30,6 +34,7 @@ test.describe('Refactor Total - E2E criticos', () => {
     const context = await browser.newContext({ storageState: undefined });
     const page = await context.newPage();
     await page.goto('/login');
+    await expect(page.locator('#login-input')).toBeVisible({ timeout: 30_000 });
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     const violations = await seriousAxeViolations(page);
     writeAxeReport('login', violations);
@@ -40,7 +45,7 @@ test.describe('Refactor Total - E2E criticos', () => {
   test('institutional receipts screen does NOT expose manual paper fields for non-support users', async ({ page }) => {
     await page.goto('/settings/institutional-receipts');
 
-    await expect(page.getByRole('heading', { name: /recibos institucionales/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /recibos institucionales/i })).toBeVisible({ timeout: 30_000 });
 
     for (const label of [
       'Ancho mm',
@@ -83,7 +88,7 @@ test.describe('Refactor Total - E2E criticos', () => {
   test('catalog screen keeps accessible service table and edit form', async ({ page }) => {
     await page.goto('/catalog');
 
-    await expect(page.getByRole('heading', { name: /cat[aá]logo de servicios/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /cat[aá]logo institucional/i })).toBeVisible();
 
     const violations = await seriousAxeViolations(page);
     writeAxeReport('catalog', violations);
@@ -109,7 +114,7 @@ test.describe('Refactor Total - E2E criticos', () => {
   test('settings screen keeps fiscal tabs focused and links receipts to the dedicated route', async ({ page }) => {
     await page.goto('/settings/fiscal');
 
-    await expect(page.getByRole('heading', { name: /^configuraci[oó]n$/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /administraci[oó]n institucional/i })).toBeVisible();
 
     for (const tab of ['Hospital', 'Numeraci', 'Operativa', 'Marca']) {
       await expect(page.getByRole('tab', { name: new RegExp(tab, 'i') })).toBeVisible();

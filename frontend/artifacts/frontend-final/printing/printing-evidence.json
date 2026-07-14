@@ -1,0 +1,290 @@
+[
+  {
+    "copy": "Original",
+    "file": "C:\\Projects\\S_Hospital\\frontend\\test-results\\frontend-final\\printing\\letter-original.pdf",
+    "heightPt": 612,
+    "paper": "letter",
+    "validations": {
+      "actionsDisplay": "none",
+      "boxShadow": "none",
+      "content": "\n        \n          Gobierno de Honduras\n          Secretaría de Salud\n          Hospital San Isidro\n          Tocoa, Colón\n          RTN: 08011999123456\n        \n        \n        RECIBO INSTITUCIONALOriginal\n        \n          Serie / No.REC-A-00000005Fecha13/07/2026\n          Paciente / enterantePaciente ValidaciónEstadoPagada\n        \n        \n        \n          Detalle de servicios\n          Concepto / servicioCant.PrecioISVImporte\n          Servicio hospitalario institucional con descripción extensa para certificar saltos y ausencia de overflow1L 1,250.00L 0.00L 1,250.00\n        \n        TOTALL 1,250.00\n        MIL DOSCIENTOS CINCUENTA LEMPIRAS EXACTOS\n        \n          \n          Firma y sello\n          Original: Oficina Recaudadora\n        \n      ",
+      "fontsLocal": true,
+      "overflow": true,
+      "position": "static",
+      "shellDisplay": "none"
+    },
+    "widthPt": 792
+  },
+  {
+    "copy": "Primera copia",
+    "file": "C:\\Projects\\S_Hospital\\frontend\\test-results\\frontend-final\\printing\\letter-first-copy.pdf",
+    "heightPt": 612,
+    "paper": "letter",
+    "validations": {
+      "actionsDisplay": "none",
+      "boxShadow": "none",
+      "content": "\n        \n          Gobierno de Honduras\n          Secretaría de Salud\n          Hospital San Isidro\n          Tocoa, Colón\n          RTN: 08011999123456\n        \n        \n        RECIBO INSTITUCIONALPrimera copia\n        \n          Serie / No.REC-A-00000005Fecha13/07/2026\n          Paciente / enterantePaciente ValidaciónEstadoPagada\n        \n        \n        \n          Detalle de servicios\n          Concepto / servicioCant.PrecioISVImporte\n          Servicio hospitalario institucional con descripción extensa para certificar saltos y ausencia de overflow1L 1,250.00L 0.00L 1,250.00\n        \n        TOTALL 1,250.00\n        MIL DOSCIENTOS CINCUENTA LEMPIRAS EXACTOS\n        \n          \n          Firma y sello\n          Original: Oficina Recaudadora\n        \n      ",
+      "fontsLocal": true,
+      "overflow": true,
+      "position": "static",
+      "shellDisplay": "none"
+    },
+    "widthPt": 792
+  },
+  {
+    "copy": "Segunda copia",
+    "file": "C:\\Projects\\S_Hospital\\frontend\\test-results\\frontend-final\\printing\\letter-second-copy.pdf",
+    "heightPt": 612,
+    "paper": "letter",
+    "validations": {
+      "actionsDisplay": "none",
+      "boxShadow": "none",
+      "content": "\n        \n          Gobierno de Honduras\n          Secretaría de Salud\n          Hospital San Isidro\n          Tocoa, Colón\n          RTN: 08011999123456\n        \n        \n        RECIBO INSTITUCIONALSegunda copia\n        \n          Serie / No.REC-A-00000005Fecha13/07/2026\n          Paciente / enterantePaciente ValidaciónEstadoPagada\n        \n        \n        \n          Detalle de servicios\n          Concepto / servicioCant.PrecioISVImporte\n          Servicio hospitalario institucional con descripción extensa para certificar saltos y ausencia de overflow1L 1,250.00L 0.00L 1,250.00\n        \n        TOTALL 1,250.00\n        MIL DOSCIENTOS CINCUENTA LEMPIRAS EXACTOS\n        \n          \n          Firma y sello\n          Original: Oficina Recaudadora\n        \n      ",
+      "fontsLocal": true,
+      "overflow": true,
+      "position": "static",
+      "shellDisplay": "none"
+    },
+    "widthPt": 792
+  },
+  {
+    "copy": "Original",
+    "file": "C:\\Projects\\S_Hospital\\frontend\\test-results\\frontend-final\\printing\\half-letter-original.pdf",
+    "heightPt": 396,
+    "paper": "half-letter",
+    "validations": {
+      "actionsDisplay": "none",
+      "boxShadow": "none",
+      "content": "\n        \n          Gobierno de Honduras\n          Secretaría de Salud\n          Hospital San Isidro\n          Tocoa, Colón\n          RTN: 08011999123456\n        \n        \n        RECIBO INSTITUCIONALOriginal\n        \n          Serie / No.REC-A-00000005Fecha13/07/2026\n          Paciente / enterantePaciente ValidaciónEstadoPagada\n        \n        \n        \n          Detalle de servicios\n          Concepto / servicioCant.PrecioISVImporte\n          Servicio hospitalario institucional con descripción extensa para certificar saltos y ausencia de overflow1L 1,250.00L 0.00L 1,250.00\n        \n        TOTALL 1,250.00\n        MIL DOSCIENTOS CINCUENTA LEMPIRAS EXACTOS\n        \n          \n          Firma y sello\n          Original: Oficina Recaudadora\n        \n      ",
+      "fontsLocal": true,
+      "overflow": true,
+      "position": "static",
+      "shellDisplay": "none"
+    },
+    "widthPt": 612
+  },
+  {
+    "copy": "Primera copia",
+    "file": "C:\\Projects\\S_Hospital\\frontend\\test-results\\frontend-final\\printing\\half-letter-first-copy.pdf",
+    "heightPt": 396,
+    "paper": "half-letter",
+    "validations": {
+      "actionsDisplay": "none",
+      "boxShadow": "none",
+      "content": "\n        \n          Gobierno de Honduras\n          Secretaría de Salud\n          Hospital San Isidro\n          Tocoa, Colón\n          RTN: 08011999123456\n        \n        \n        RECIBO INSTITUCIONALPrimera copia\n        \n          Serie / No.REC-A-00000005Fecha13/07/2026\n          Paciente / enterantePaciente ValidaciónEstadoPagada\n        \n        \n        \n          Detalle de servicios\n          Concepto / servicioCant.PrecioISVImporte\n          Servicio hospitalario institucional con descripción extensa para certificar saltos y ausencia de overflow1L 1,250.00L 0.00L 1,250.00\n        \n        TOTALL 1,250.00\n        MIL DOSCIENTOS CINCUENTA LEMPIRAS EXACTOS\n        \n          \n          Firma y sello\n          Original: Oficina Recaudadora\n        \n      ",
+      "fontsLocal": true,
+      "overflow": true,
+      "position": "static",
+      "shellDisplay": "none"
+    },
+    "widthPt": 612
+  },
+  {
+    "copy": "Segunda copia",
+    "file": "C:\\Projects\\S_Hospital\\frontend\\test-results\\frontend-final\\printing\\half-letter-second-copy.pdf",
+    "heightPt": 396,
+    "paper": "half-letter",
+    "validations": {
+      "actionsDisplay": "none",
+      "boxShadow": "none",
+      "content": "\n        \n          Gobierno de Honduras\n          Secretaría de Salud\n          Hospital San Isidro\n          Tocoa, Colón\n          RTN: 08011999123456\n        \n        \n        RECIBO INSTITUCIONALSegunda copia\n        \n          Serie / No.REC-A-00000005Fecha13/07/2026\n          Paciente / enterantePaciente ValidaciónEstadoPagada\n        \n        \n        \n          Detalle de servicios\n          Concepto / servicioCant.PrecioISVImporte\n          Servicio hospitalario institucional con descripción extensa para certificar saltos y ausencia de overflow1L 1,250.00L 0.00L 1,250.00\n        \n        TOTALL 1,250.00\n        MIL DOSCIENTOS CINCUENTA LEMPIRAS EXACTOS\n        \n          \n          Firma y sello\n          Original: Oficina Recaudadora\n        \n      ",
+      "fontsLocal": true,
+      "overflow": true,
+      "position": "static",
+      "shellDisplay": "none"
+    },
+    "widthPt": 612
+  },
+  {
+    "copy": "Original",
+    "file": "C:\\Projects\\S_Hospital\\frontend\\test-results\\frontend-final\\printing\\a5-original.pdf",
+    "heightPt": 420,
+    "paper": "a5",
+    "validations": {
+      "actionsDisplay": "none",
+      "boxShadow": "none",
+      "content": "\n        \n          Gobierno de Honduras\n          Secretaría de Salud\n          Hospital San Isidro\n          Tocoa, Colón\n          RTN: 08011999123456\n        \n        \n        RECIBO INSTITUCIONALOriginal\n        \n          Serie / No.REC-A-00000005Fecha13/07/2026\n          Paciente / enterantePaciente ValidaciónEstadoPagada\n        \n        \n        \n          Detalle de servicios\n          Concepto / servicioCant.PrecioISVImporte\n          Servicio hospitalario institucional con descripción extensa para certificar saltos y ausencia de overflow1L 1,250.00L 0.00L 1,250.00\n        \n        TOTALL 1,250.00\n        MIL DOSCIENTOS CINCUENTA LEMPIRAS EXACTOS\n        \n          \n          Firma y sello\n          Original: Oficina Recaudadora\n        \n      ",
+      "fontsLocal": true,
+      "overflow": true,
+      "position": "static",
+      "shellDisplay": "none"
+    },
+    "widthPt": 594.95996
+  },
+  {
+    "copy": "Primera copia",
+    "file": "C:\\Projects\\S_Hospital\\frontend\\test-results\\frontend-final\\printing\\a5-first-copy.pdf",
+    "heightPt": 420,
+    "paper": "a5",
+    "validations": {
+      "actionsDisplay": "none",
+      "boxShadow": "none",
+      "content": "\n        \n          Gobierno de Honduras\n          Secretaría de Salud\n          Hospital San Isidro\n          Tocoa, Colón\n          RTN: 08011999123456\n        \n        \n        RECIBO INSTITUCIONALPrimera copia\n        \n          Serie / No.REC-A-00000005Fecha13/07/2026\n          Paciente / enterantePaciente ValidaciónEstadoPagada\n        \n        \n        \n          Detalle de servicios\n          Concepto / servicioCant.PrecioISVImporte\n          Servicio hospitalario institucional con descripción extensa para certificar saltos y ausencia de overflow1L 1,250.00L 0.00L 1,250.00\n        \n        TOTALL 1,250.00\n        MIL DOSCIENTOS CINCUENTA LEMPIRAS EXACTOS\n        \n          \n          Firma y sello\n          Original: Oficina Recaudadora\n        \n      ",
+      "fontsLocal": true,
+      "overflow": true,
+      "position": "static",
+      "shellDisplay": "none"
+    },
+    "widthPt": 594.95996
+  },
+  {
+    "copy": "Segunda copia",
+    "file": "C:\\Projects\\S_Hospital\\frontend\\test-results\\frontend-final\\printing\\a5-second-copy.pdf",
+    "heightPt": 420,
+    "paper": "a5",
+    "validations": {
+      "actionsDisplay": "none",
+      "boxShadow": "none",
+      "content": "\n        \n          Gobierno de Honduras\n          Secretaría de Salud\n          Hospital San Isidro\n          Tocoa, Colón\n          RTN: 08011999123456\n        \n        \n        RECIBO INSTITUCIONALSegunda copia\n        \n          Serie / No.REC-A-00000005Fecha13/07/2026\n          Paciente / enterantePaciente ValidaciónEstadoPagada\n        \n        \n        \n          Detalle de servicios\n          Concepto / servicioCant.PrecioISVImporte\n          Servicio hospitalario institucional con descripción extensa para certificar saltos y ausencia de overflow1L 1,250.00L 0.00L 1,250.00\n        \n        TOTALL 1,250.00\n        MIL DOSCIENTOS CINCUENTA LEMPIRAS EXACTOS\n        \n          \n          Firma y sello\n          Original: Oficina Recaudadora\n        \n      ",
+      "fontsLocal": true,
+      "overflow": true,
+      "position": "static",
+      "shellDisplay": "none"
+    },
+    "widthPt": 594.95996
+  },
+  {
+    "copy": "Original",
+    "file": "C:\\Projects\\S_Hospital\\frontend\\test-results\\frontend-final\\printing\\80mm-original.pdf",
+    "heightPt": 841.91998,
+    "paper": "80mm",
+    "validations": {
+      "actionsDisplay": "none",
+      "boxShadow": "none",
+      "content": "\n        \n          Gobierno de Honduras\n          Secretaría de Salud\n          Hospital San Isidro\n          Tocoa, Colón\n          RTN: 08011999123456\n        \n        \n        RECIBO INSTITUCIONALOriginal\n        \n          Serie / No.REC-A-00000005Fecha13/07/2026\n          Paciente / enterantePaciente ValidaciónEstadoPagada\n        \n        \n        \n          Detalle de servicios\n          Concepto / servicioCant.PrecioISVImporte\n          Servicio hospitalario institucional con descripción extensa para certificar saltos y ausencia de overflow1L 1,250.00L 0.00L 1,250.00\n        \n        TOTALL 1,250.00\n        MIL DOSCIENTOS CINCUENTA LEMPIRAS EXACTOS\n        \n          \n          Firma y sello\n          Original: Oficina Recaudadora\n        \n      ",
+      "fontsLocal": true,
+      "overflow": true,
+      "position": "static",
+      "shellDisplay": "none"
+    },
+    "widthPt": 227.03999
+  },
+  {
+    "copy": "Primera copia",
+    "file": "C:\\Projects\\S_Hospital\\frontend\\test-results\\frontend-final\\printing\\80mm-first-copy.pdf",
+    "heightPt": 841.91998,
+    "paper": "80mm",
+    "validations": {
+      "actionsDisplay": "none",
+      "boxShadow": "none",
+      "content": "\n        \n          Gobierno de Honduras\n          Secretaría de Salud\n          Hospital San Isidro\n          Tocoa, Colón\n          RTN: 08011999123456\n        \n        \n        RECIBO INSTITUCIONALPrimera copia\n        \n          Serie / No.REC-A-00000005Fecha13/07/2026\n          Paciente / enterantePaciente ValidaciónEstadoPagada\n        \n        \n        \n          Detalle de servicios\n          Concepto / servicioCant.PrecioISVImporte\n          Servicio hospitalario institucional con descripción extensa para certificar saltos y ausencia de overflow1L 1,250.00L 0.00L 1,250.00\n        \n        TOTALL 1,250.00\n        MIL DOSCIENTOS CINCUENTA LEMPIRAS EXACTOS\n        \n          \n          Firma y sello\n          Original: Oficina Recaudadora\n        \n      ",
+      "fontsLocal": true,
+      "overflow": true,
+      "position": "static",
+      "shellDisplay": "none"
+    },
+    "widthPt": 227.03999
+  },
+  {
+    "copy": "Segunda copia",
+    "file": "C:\\Projects\\S_Hospital\\frontend\\test-results\\frontend-final\\printing\\80mm-second-copy.pdf",
+    "heightPt": 841.91998,
+    "paper": "80mm",
+    "validations": {
+      "actionsDisplay": "none",
+      "boxShadow": "none",
+      "content": "\n        \n          Gobierno de Honduras\n          Secretaría de Salud\n          Hospital San Isidro\n          Tocoa, Colón\n          RTN: 08011999123456\n        \n        \n        RECIBO INSTITUCIONALSegunda copia\n        \n          Serie / No.REC-A-00000005Fecha13/07/2026\n          Paciente / enterantePaciente ValidaciónEstadoPagada\n        \n        \n        \n          Detalle de servicios\n          Concepto / servicioCant.PrecioISVImporte\n          Servicio hospitalario institucional con descripción extensa para certificar saltos y ausencia de overflow1L 1,250.00L 0.00L 1,250.00\n        \n        TOTALL 1,250.00\n        MIL DOSCIENTOS CINCUENTA LEMPIRAS EXACTOS\n        \n          \n          Firma y sello\n          Original: Oficina Recaudadora\n        \n      ",
+      "fontsLocal": true,
+      "overflow": true,
+      "position": "static",
+      "shellDisplay": "none"
+    },
+    "widthPt": 227.03999
+  },
+  {
+    "copy": "Original",
+    "file": "C:\\Projects\\S_Hospital\\frontend\\test-results\\frontend-final\\printing\\58mm-original.pdf",
+    "heightPt": 841.91998,
+    "paper": "58mm",
+    "validations": {
+      "actionsDisplay": "none",
+      "boxShadow": "none",
+      "content": "\n        \n          Gobierno de Honduras\n          Secretaría de Salud\n          Hospital San Isidro\n          Tocoa, Colón\n          RTN: 08011999123456\n        \n        \n        RECIBO INSTITUCIONALOriginal\n        \n          Serie / No.REC-A-00000005Fecha13/07/2026\n          Paciente / enterantePaciente ValidaciónEstadoPagada\n        \n        \n        \n          Detalle de servicios\n          Concepto / servicioCant.PrecioISVImporte\n          Servicio hospitalario institucional con descripción extensa para certificar saltos y ausencia de overflow1L 1,250.00L 0.00L 1,250.00\n        \n        TOTALL 1,250.00\n        MIL DOSCIENTOS CINCUENTA LEMPIRAS EXACTOS\n        \n          \n          Firma y sello\n          Original: Oficina Recaudadora\n        \n      ",
+      "fontsLocal": true,
+      "overflow": true,
+      "position": "static",
+      "shellDisplay": "none"
+    },
+    "widthPt": 165.119995
+  },
+  {
+    "copy": "Primera copia",
+    "file": "C:\\Projects\\S_Hospital\\frontend\\test-results\\frontend-final\\printing\\58mm-first-copy.pdf",
+    "heightPt": 841.91998,
+    "paper": "58mm",
+    "validations": {
+      "actionsDisplay": "none",
+      "boxShadow": "none",
+      "content": "\n        \n          Gobierno de Honduras\n          Secretaría de Salud\n          Hospital San Isidro\n          Tocoa, Colón\n          RTN: 08011999123456\n        \n        \n        RECIBO INSTITUCIONALPrimera copia\n        \n          Serie / No.REC-A-00000005Fecha13/07/2026\n          Paciente / enterantePaciente ValidaciónEstadoPagada\n        \n        \n        \n          Detalle de servicios\n          Concepto / servicioCant.PrecioISVImporte\n          Servicio hospitalario institucional con descripción extensa para certificar saltos y ausencia de overflow1L 1,250.00L 0.00L 1,250.00\n        \n        TOTALL 1,250.00\n        MIL DOSCIENTOS CINCUENTA LEMPIRAS EXACTOS\n        \n          \n          Firma y sello\n          Original: Oficina Recaudadora\n        \n      ",
+      "fontsLocal": true,
+      "overflow": true,
+      "position": "static",
+      "shellDisplay": "none"
+    },
+    "widthPt": 165.119995
+  },
+  {
+    "copy": "Segunda copia",
+    "file": "C:\\Projects\\S_Hospital\\frontend\\test-results\\frontend-final\\printing\\58mm-second-copy.pdf",
+    "heightPt": 841.91998,
+    "paper": "58mm",
+    "validations": {
+      "actionsDisplay": "none",
+      "boxShadow": "none",
+      "content": "\n        \n          Gobierno de Honduras\n          Secretaría de Salud\n          Hospital San Isidro\n          Tocoa, Colón\n          RTN: 08011999123456\n        \n        \n        RECIBO INSTITUCIONALSegunda copia\n        \n          Serie / No.REC-A-00000005Fecha13/07/2026\n          Paciente / enterantePaciente ValidaciónEstadoPagada\n        \n        \n        \n          Detalle de servicios\n          Concepto / servicioCant.PrecioISVImporte\n          Servicio hospitalario institucional con descripción extensa para certificar saltos y ausencia de overflow1L 1,250.00L 0.00L 1,250.00\n        \n        TOTALL 1,250.00\n        MIL DOSCIENTOS CINCUENTA LEMPIRAS EXACTOS\n        \n          \n          Firma y sello\n          Original: Oficina Recaudadora\n        \n      ",
+      "fontsLocal": true,
+      "overflow": true,
+      "position": "static",
+      "shellDisplay": "none"
+    },
+    "widthPt": 165.119995
+  },
+  {
+    "copy": "Original",
+    "file": "C:\\Projects\\S_Hospital\\frontend\\test-results\\frontend-final\\printing\\custom-190x140-original.pdf",
+    "heightPt": 396.95999,
+    "paper": "custom-190x140",
+    "validations": {
+      "actionsDisplay": "none",
+      "boxShadow": "none",
+      "content": "\n        \n          Gobierno de Honduras\n          Secretaría de Salud\n          Hospital San Isidro\n          Tocoa, Colón\n          RTN: 08011999123456\n        \n        \n        RECIBO INSTITUCIONALOriginal\n        \n          Serie / No.REC-A-00000005Fecha13/07/2026\n          Paciente / enterantePaciente ValidaciónEstadoPagada\n        \n        \n        \n          Detalle de servicios\n          Concepto / servicioCant.PrecioISVImporte\n          Servicio hospitalario institucional con descripción extensa para certificar saltos y ausencia de overflow1L 1,250.00L 0.00L 1,250.00\n        \n        TOTALL 1,250.00\n        MIL DOSCIENTOS CINCUENTA LEMPIRAS EXACTOS\n        \n          \n          Firma y sello\n          Original: Oficina Recaudadora\n        \n      ",
+      "fontsLocal": true,
+      "overflow": true,
+      "position": "static",
+      "shellDisplay": "none"
+    },
+    "widthPt": 539.03998
+  },
+  {
+    "copy": "Primera copia",
+    "file": "C:\\Projects\\S_Hospital\\frontend\\test-results\\frontend-final\\printing\\custom-190x140-first-copy.pdf",
+    "heightPt": 396.95999,
+    "paper": "custom-190x140",
+    "validations": {
+      "actionsDisplay": "none",
+      "boxShadow": "none",
+      "content": "\n        \n          Gobierno de Honduras\n          Secretaría de Salud\n          Hospital San Isidro\n          Tocoa, Colón\n          RTN: 08011999123456\n        \n        \n        RECIBO INSTITUCIONALPrimera copia\n        \n          Serie / No.REC-A-00000005Fecha13/07/2026\n          Paciente / enterantePaciente ValidaciónEstadoPagada\n        \n        \n        \n          Detalle de servicios\n          Concepto / servicioCant.PrecioISVImporte\n          Servicio hospitalario institucional con descripción extensa para certificar saltos y ausencia de overflow1L 1,250.00L 0.00L 1,250.00\n        \n        TOTALL 1,250.00\n        MIL DOSCIENTOS CINCUENTA LEMPIRAS EXACTOS\n        \n          \n          Firma y sello\n          Original: Oficina Recaudadora\n        \n      ",
+      "fontsLocal": true,
+      "overflow": true,
+      "position": "static",
+      "shellDisplay": "none"
+    },
+    "widthPt": 539.03998
+  },
+  {
+    "copy": "Segunda copia",
+    "file": "C:\\Projects\\S_Hospital\\frontend\\test-results\\frontend-final\\printing\\custom-190x140-second-copy.pdf",
+    "heightPt": 396.95999,
+    "paper": "custom-190x140",
+    "validations": {
+      "actionsDisplay": "none",
+      "boxShadow": "none",
+      "content": "\n        \n          Gobierno de Honduras\n          Secretaría de Salud\n          Hospital San Isidro\n          Tocoa, Colón\n          RTN: 08011999123456\n        \n        \n        RECIBO INSTITUCIONALSegunda copia\n        \n          Serie / No.REC-A-00000005Fecha13/07/2026\n          Paciente / enterantePaciente ValidaciónEstadoPagada\n        \n        \n        \n          Detalle de servicios\n          Concepto / servicioCant.PrecioISVImporte\n          Servicio hospitalario institucional con descripción extensa para certificar saltos y ausencia de overflow1L 1,250.00L 0.00L 1,250.00\n        \n        TOTALL 1,250.00\n        MIL DOSCIENTOS CINCUENTA LEMPIRAS EXACTOS\n        \n          \n          Firma y sello\n          Original: Oficina Recaudadora\n        \n      ",
+      "fontsLocal": true,
+      "overflow": true,
+      "position": "static",
+      "shellDisplay": "none"
+    },
+    "widthPt": 539.03998
+  }
+]

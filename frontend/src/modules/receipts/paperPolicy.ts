@@ -1,7 +1,7 @@
 import type { ReceiptPaperSize, ReceiptPrintProfile } from '../../lib/api/types';
 
 export type InstitutionalPaper = Extract<ReceiptPaperSize, 'letter' | 'half_letter' | 'a5'>;
-export type ThermalCompatibilityPaper = Extract<ReceiptPaperSize, '80mm' | '58mm'>;
+export type ThermalSupportPaper = Extract<ReceiptPaperSize, '80mm' | '58mm'>;
 
 export type PaperChoiceDefinition = {
   value: InstitutionalPaper;
@@ -11,8 +11,8 @@ export type PaperChoiceDefinition = {
   aspectRatio: string;
 };
 
-export type ThermalCompatibilityChoiceDefinition = {
-  value: ThermalCompatibilityPaper;
+export type ThermalSupportChoiceDefinition = {
+  value: ThermalSupportPaper;
   label: string;
   description: string;
   group: 'compatibility';
@@ -46,16 +46,16 @@ export const THERMAL_COMPATIBILITY_CHOICES = [
   {
     value: '80mm',
     label: '80 mm',
-    description: 'Compatibilidad secundaria para impresora térmica de 80 mm.',
+    description: 'Soporte secundario para impresora térmica de 80 mm.',
     group: 'compatibility',
   },
   {
     value: '58mm',
     label: '58 mm',
-    description: 'Compatibilidad secundaria para impresora térmica de 58 mm.',
+    description: 'Soporte secundario para impresora térmica de 58 mm.',
     group: 'compatibility',
   },
-] as const satisfies readonly ThermalCompatibilityChoiceDefinition[];
+] as const satisfies readonly ThermalSupportChoiceDefinition[];
 
 export const INSTITUTIONAL_PAPER_OPTIONS = PAPER_CHOICES;
 
@@ -108,6 +108,6 @@ export function institutionalPaperFromProfile(
   return profile ? PROFILE_TO_PAPER[profile.code] ?? 'half_letter' : 'half_letter';
 }
 
-export function isLegacyThermalPaper(value: unknown): value is ThermalCompatibilityPaper {
+export function isThermalPaper(value: unknown): value is ThermalSupportPaper {
   return value === '80mm' || value === '58mm';
 }

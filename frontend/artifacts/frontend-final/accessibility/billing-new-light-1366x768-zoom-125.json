@@ -1,0 +1,143 @@
+{
+  "route": "/billing/new",
+  "matrix": {
+    "id": "light-1366x768-zoom-125",
+    "mode": "light",
+    "width": 1366,
+    "height": 768,
+    "zoom": 1.25
+  },
+  "flatSurfaces": [
+    {
+      "selector": ".ant-btn",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<button aria-label=\"Reducir navegación\" type=\"button\" class=\"ant-btn css-dev-only-do-not-override-1pi45l5 s-hospital ant-btn-text ant-btn-color-default ant-btn-variant-text ant-btn-icon-only !size-11 shrink-0 hover:bg-sidebar-accent text-sidebar-foreground\"><span class=\"ant-btn-icon\"><span role=\"img\" aria-label=\"menu-fold\" class=\"anticon anticon-menu-fold text-white text-lg\"><svg viewBox=\"64 64 896 896\" focusable=\"false\" data-icon=\"menu-fold\" width=\"1em\" height=\"1em\" fill=\"currentColor\" aria-hid"
+    },
+    {
+      "selector": ".ant-btn",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<button aria-label=\"Abrir comandos\" type=\"button\" class=\"ant-btn css-dev-only-do-not-override-1pi45l5 s-hospital ant-btn-default ant-btn-color-default ant-btn-variant-outlined hidden min-w-44 justify-start bg-surface text-muted-foreground sm:inline-flex\"><span class=\"ant-btn-icon\"><span role=\"img\" aria-label=\"search\" class=\"anticon anticon-search\"><svg viewBox=\"64 64 896 896\" focusable=\"false\" data-icon=\"search\" width=\"1em\" height=\"1em\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M909.6 854."
+    },
+    {
+      "selector": ".ant-btn",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<button aria-label=\"Ver atajos de teclado\" type=\"button\" class=\"ant-btn css-dev-only-do-not-override-1pi45l5 s-hospital ant-btn-text ant-btn-color-default ant-btn-variant-text ant-btn-icon-only hidden sm:inline-flex\"><span class=\"ant-btn-icon\"><span role=\"img\" aria-label=\"key\" class=\"anticon anticon-key\"><svg viewBox=\"64 64 896 896\" focusable=\"false\" data-icon=\"key\" width=\"1em\" height=\"1em\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M608 112c-167.9 0-304 136.1-304 304 0 70.3 23.9 135 63.9 1"
+    },
+    {
+      "selector": ".ant-btn",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<button aria-label=\"Abrir ayuda\" type=\"button\" class=\"ant-btn css-dev-only-do-not-override-1pi45l5 s-hospital ant-btn-text ant-btn-color-default ant-btn-variant-text ant-btn-icon-only hidden sm:inline-flex\"><span class=\"ant-btn-icon\"><span role=\"img\" aria-label=\"question-circle\" class=\"anticon anticon-question-circle\"><svg viewBox=\"64 64 896 896\" focusable=\"false\" data-icon=\"question-circle\" width=\"1em\" height=\"1em\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M512 64C264.6 64 64 264.6 64 512"
+    },
+    {
+      "selector": ".ant-btn",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<button type=\"button\" class=\"ant-btn css-dev-only-do-not-override-1pi45l5 s-hospital ant-btn-default ant-btn-color-default ant-btn-variant-outlined\"><span class=\"ant-btn-icon\"><span role=\"img\" aria-label=\"history\" aria-hidden=\"true\" class=\"anticon anticon-history\"><svg viewBox=\"64 64 896 896\" focusable=\"false\" data-icon=\"history\" width=\"1em\" height=\"1em\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M536.1 273H488c-4.4 0-8 3.6-8 8v275.3c0 2.6 1.2 5 3.3 6.5l165.3 120.7c3.6 2.6 8.6 1.9 11.2-1.7l"
+    },
+    {
+      "selector": ".ant-btn",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<button aria-current=\"step\" type=\"button\" class=\"ant-btn css-dev-only-do-not-override-1pi45l5 s-hospital ant-btn-primary ant-btn-color-primary ant-btn-variant-solid h-auto min-h-14 w-full min-w-0 justify-start gap-2 px-3 py-3 text-left sm:px-4\"><span class=\"flex size-8 shrink-0 items-center justify-center text-xs font-bold bg-primary-foreground text-primary\">1</span><span class=\"truncate text-xs font-semibold sm:text-sm\">Paciente</span></button>"
+    },
+    {
+      "selector": ".ant-btn",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<button type=\"button\" class=\"ant-btn css-dev-only-do-not-override-1pi45l5 s-hospital ant-btn-text ant-btn-color-default ant-btn-variant-text h-auto min-h-14 w-full min-w-0 justify-start gap-2 px-3 py-3 text-left sm:px-4\" disabled=\"\"><span class=\"flex size-8 shrink-0 items-center justify-center text-xs font-bold bg-muted text-muted-foreground\">2</span><span class=\"truncate text-xs font-semibold sm:text-sm\">Servicios</span></button>"
+    },
+    {
+      "selector": ".ant-btn",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<button type=\"button\" class=\"ant-btn css-dev-only-do-not-override-1pi45l5 s-hospital ant-btn-text ant-btn-color-default ant-btn-variant-text h-auto min-h-14 w-full min-w-0 justify-start gap-2 px-3 py-3 text-left sm:px-4\" disabled=\"\"><span class=\"flex size-8 shrink-0 items-center justify-center text-xs font-bold bg-muted text-muted-foreground\">3</span><span class=\"truncate text-xs font-semibold sm:text-sm\">Cuenta</span></button>"
+    },
+    {
+      "selector": ".ant-btn",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<button aria-label=\"Continuar a servicios\" type=\"button\" class=\"ant-btn css-dev-only-do-not-override-1pi45l5 s-hospital ant-btn-primary ant-btn-color-primary ant-btn-variant-solid min-h-11 flex-1 flex items-center justify-center gap-1\"><span>Continuar</span><span role=\"img\" aria-label=\"right\" aria-hidden=\"true\" class=\"anticon anticon-right size-4\"><svg viewBox=\"64 64 896 896\" focusable=\"false\" data-icon=\"right\" width=\"1em\" height=\"1em\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M765.7 486.8"
+    },
+    {
+      "selector": ".ant-input",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<input autocomplete=\"name\" id=\"patient-name\" maxlength=\"180\" aria-invalid=\"false\" aria-describedby=\"patient-name-help\" placeholder=\"Ej. Maria Lopez…\" class=\"ant-input css-dev-only-do-not-override-1pi45l5\" type=\"text\" value=\"\" name=\"patient_name\">"
+    },
+    {
+      "selector": ".ant-tag",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<span class=\"ant-tag ant-tag-filled ant-tag-processing m-0 px-3 py-1 text-xs font-bold css-dev-only-do-not-override-1pi45l5 s-hospital\">Caja #7</span>"
+    },
+    {
+      "selector": ".ant-tag",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<span class=\"ant-tag ant-tag-filled ant-tag-success min-h-11 px-3 font-mono text-sm tabular-nums sm:min-h-9 flex items-center border-0 m-0 css-dev-only-do-not-override-1pi45l5 s-hospital\">Caja #7 · Abierta</span>"
+    }
+  ],
+  "impacts": {
+    "minor": 0,
+    "moderate": 0,
+    "serious": 0,
+    "critical": 0
+  },
+  "incomplete": 0,
+  "violations": [],
+  "incompleteDetails": [],
+  "incompleteClassification": [],
+  "unclassifiedIncomplete": []
+}

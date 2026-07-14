@@ -1,5 +1,11 @@
 import { expect, test, type Page, type Route, type TestInfo } from '@playwright/test';
 import axeCore from 'axe-core';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { assertStrictMockGuard, installStrictMockGuard } from './fixtures/strict-mock-guard';
+
+test.beforeEach(async ({ page }) => installStrictMockGuard(page));
+test.afterEach(async ({ page }) => assertStrictMockGuard(page));
 
 const today = '2026-07-02';
 const issuedAt = `${today}T08:00:00-06:00`;
@@ -50,6 +56,7 @@ const adminUser = {
   ],
   must_change_password: false,
 };
+const passwordChangeUser = { ...adminUser, must_change_password: true };
 
 const category = { id: 1, name: 'Laboratorio', slug: 'laboratorio', active: true, sort_order: 1 };
 const service = {
@@ -155,7 +162,7 @@ const backup = {
 };
 
 const routeExpectations = [
-  { path: '/dashboard', heading: /centro de mando/i },
+  { path: '/dashboard', heading: /continuar operaci.n/i },
   { path: '/billing/new', heading: /nueva factura/i },
   { path: '/cashbox', heading: /^caja$/i },
   { path: '/catalog', heading: /catalogo|cat.logo/i },
@@ -163,7 +170,28 @@ const routeExpectations = [
   { path: '/reports/executive', heading: /control ejecutivo/i },
   { path: '/backups', heading: /respaldos|backups/i },
   { path: '/settings/fiscal', heading: /configuracion|configuraci.n/i },
+  { path: '/settings/institutional-receipts', heading: /recibos institucionales/i },
   { path: '/admin/users', heading: /usuarios/i },
+  { path: '/help', heading: /ayuda institucional/i },
+  { path: '/support', heading: /asistencia operativa/i },
+  { path: '/about', heading: /informacion del sistema/i },
+] as const;
+
+const visualMatrix = [
+  { id: 'light-1366x768', mode: 'light', width: 1366, height: 768, zoom: 1 },
+  { id: 'dark-1366x768', mode: 'dark', width: 1366, height: 768, zoom: 1 },
+  { id: 'light-1920x1080', mode: 'light', width: 1920, height: 1080, zoom: 1 },
+  { id: 'dark-1920x1080', mode: 'dark', width: 1920, height: 1080, zoom: 1 },
+  { id: 'light-390x844', mode: 'light', width: 390, height: 844, zoom: 1 },
+  { id: 'dark-390x844', mode: 'dark', width: 390, height: 844, zoom: 1 },
+  { id: 'light-1366x768-zoom-125', mode: 'light', width: 1366, height: 768, zoom: 1.25 },
+] as const;
+
+const flatSurfaceSelectors = [
+  '.ant-btn', '.ant-input', '.ant-select-selector', '.ant-picker', '.ant-modal', '.ant-drawer',
+  '.ant-dropdown', '.ant-menu', '.ant-tooltip', '.ant-popover', '.ant-notification', '.ant-alert',
+  '.ant-tag', '.ant-table', '.ag-root-wrapper', '.ant-steps', '.ant-upload', '.ant-empty',
+  '.ant-skeleton', '.ant-progress',
 ] as const;
 
 test.describe('Accessibility - critical mocked e2e (WCAG AA)', () => {
@@ -311,18 +339,142 @@ test.describe('Accessibility - critical mocked e2e (WCAG AA)', () => {
     await expect(await visibleUnnamedControls(page), 'login unnamed controls').toEqual([]);
   });
 
-  test('critical protected routes expose one main landmark, one h1 and named controls', async ({ page }) => {
+  test('critical protected routes satisfy the complete visual and axe matrix', async ({ page }, testInfo) => {
+    test.setTimeout(1_200_000);
     await installAccessibilityMocks(page, { authenticated: true });
+    const unclassifiedIncomplete: Array<{ route: string; details: unknown[] }> = [];
+    const routeViolations: Array<{ route: string; details: unknown[] }> = [];
+    const unnamedControls: Array<{ route: string; details: unknown[] }> = [];
+    const overflowFailures: Array<{ route: string; matrix: string; metrics: unknown }> = [];
+    const radiusFailures: Array<{ route: string; matrix: string; details: unknown[] }> = [];
+    const radiusCoverage = Object.fromEntries(flatSurfaceSelectors.map((selector) => [selector, 0]));
+    const screenshotDirectory = resolve('test-results/frontend-final/screenshots');
+    const accessibilityDirectory = resolve('test-results/frontend-final/accessibility');
+    rmSync(screenshotDirectory, { force: true, recursive: true });
+    rmSync(accessibilityDirectory, { force: true, recursive: true });
+    mkdirSync(screenshotDirectory, { recursive: true });
+    mkdirSync(accessibilityDirectory, { recursive: true });
 
-    for (const route of routeExpectations) {
+    for (const matrix of visualMatrix) {
+      await page.setViewportSize({ width: matrix.width, height: matrix.height });
+      await page.goto(routeExpectations[0].path);
+      await page.evaluate((mode) => {
+        localStorage.setItem('hospital-billing-theme', mode);
+      }, matrix.mode);
+
+      for (const route of routeExpectations) {
+        await page.goto(route.path);
+        await waitForScreen(page, route.heading);
+        if (matrix.zoom !== 1) {
+          await page.evaluate((zoom) => { document.documentElement.style.zoom = String(zoom); }, matrix.zoom);
+        }
+
+        const state = `${route.path.replaceAll('/', '-').replace(/^-/, '') || 'root'}-${matrix.id}`;
+        await expect(page.getByRole('main'), `${state} main landmark`).toBeVisible();
+        await expect(page.getByRole('heading', { level: 1 }), `${state} h1 count`).toHaveCount(1);
+        const routeUnnamedControls = await visibleUnnamedControls(page);
+        if (routeUnnamedControls.length > 0) unnamedControls.push({ route: state, details: routeUnnamedControls });
+        const overflow = await page.evaluate(() => ({
+          clientWidth: document.documentElement.clientWidth,
+          scrollWidth: document.documentElement.scrollWidth,
+        }));
+        if (overflow.scrollWidth > overflow.clientWidth + 1) {
+          overflowFailures.push({ route: route.path, matrix: matrix.id, metrics: overflow });
+        }
+        const flatSurfaces = await page.evaluate((selectors) => selectors.flatMap((selector) => (
+          Array.from(document.querySelectorAll(selector)).flatMap((element) => {
+            const rect = element.getBoundingClientRect();
+            const style = getComputedStyle(element);
+            if (rect.width <= 0 || rect.height <= 0 || style.visibility === 'hidden' || style.display === 'none') return [];
+            return [{
+              selector,
+              radii: [
+                style.borderTopLeftRadius,
+                style.borderTopRightRadius,
+                style.borderBottomLeftRadius,
+                style.borderBottomRightRadius,
+              ],
+              html: element.outerHTML.slice(0, 500),
+            }];
+          })
+        )), flatSurfaceSelectors);
+        for (const surface of flatSurfaces) radiusCoverage[surface.selector] += 1;
+        const nonFlatSurfaces = flatSurfaces.filter((surface) => surface.radii.some((radius) => radius !== '0px'));
+        if (nonFlatSurfaces.length > 0) {
+          radiusFailures.push({ route: route.path, matrix: matrix.id, details: nonFlatSurfaces });
+        }
+        const routeReport = await expectShellAxeReport(page, state, testInfo, true);
+        writeFileSync(
+          resolve(accessibilityDirectory, `${state}.json`),
+          `${JSON.stringify({ route: route.path, matrix, flatSurfaces, ...routeReport }, null, 2)}\n`,
+          'utf8',
+        );
+        if (routeReport.violations.length > 0) {
+          routeViolations.push({ route: state, details: routeReport.violations });
+        }
+        if (routeReport.unclassifiedIncomplete.length > 0) {
+          unclassifiedIncomplete.push({ route: state, details: routeReport.unclassifiedIncomplete });
+        }
+        await page.screenshot({
+          fullPage: true,
+          path: resolve(screenshotDirectory, `${state}.png`),
+        });
+      }
+    }
+    await testInfo.attach('border-radius-coverage', {
+      body: Buffer.from(JSON.stringify(radiusCoverage, null, 2)),
+      contentType: 'application/json',
+    });
+    console.log(`[flat-surface-coverage] ${JSON.stringify(radiusCoverage)}`);
+    expect(overflowFailures, 'horizontal overflow by route and matrix').toEqual([]);
+    expect(radiusFailures, 'visible Ant Design and AG Grid surfaces with non-zero radius').toEqual([]);
+    expect(unnamedControls, 'unnamed controls by route').toEqual([]);
+    expect(routeViolations, 'axe violations by route').toEqual([]);
+    expect(unclassifiedIncomplete, 'unclassified axe incomplete results by route').toEqual([]);
+  });
+
+  test('E2 routes keep runtime accessibility findings closed', async ({ page }, testInfo) => {
+    test.setTimeout(120_000);
+    await installAccessibilityMocks(page, { authenticated: true });
+    const paths = new Set(['/billing/new', '/cashbox', '/catalog', '/invoices', '/reports/executive', '/about']);
+
+    for (const route of routeExpectations.filter((item) => paths.has(item.path))) {
       await page.goto(route.path);
       await waitForScreen(page, route.heading);
-
-      await expect(page.getByRole('main'), `${route.path} main landmark`).toBeVisible();
-      await expect(page.getByRole('heading', { level: 1 }), `${route.path} h1 count`).toHaveCount(1);
       await expect(await visibleUnnamedControls(page), `${route.path} unnamed controls`).toEqual([]);
-      await expect(await seriousAxeViolations(page), `${route.path} serious axe violations`).toEqual([]);
+      await expectShellAxeReport(page, `e2-${route.path.replaceAll('/', '-')}`, testInfo);
     }
+  });
+});
+
+test.describe('Accessibility - authentication visual matrix', () => {
+  test('login matrix', async ({ page }, testInfo) => {
+    rmSync(resolve('test-results/frontend-final/auth'), { force: true, recursive: true });
+    await installAccessibilityMocks(page, { authenticated: false });
+    await runAuthenticationMatrix(page, testInfo, {
+      id: 'login',
+      navigatePath: '/login',
+      heading: /iniciar sesi.n/i,
+    });
+  });
+
+  test('required password change matrix', async ({ page }, testInfo) => {
+    await installAccessibilityMocks(page, { authenticated: true, user: passwordChangeUser });
+    await runAuthenticationMatrix(page, testInfo, {
+      id: 'password-change',
+      navigatePath: '/',
+      heading: /cambio obligatorio de contrase/i,
+    });
+  });
+
+  test('expired session matrix', async ({ page }, testInfo) => {
+    await installAccessibilityMocks(page, { authenticated: true, expireSession: true });
+    await runAuthenticationMatrix(page, testInfo, {
+      id: 'session-expired',
+      navigatePath: '/dashboard',
+      heading: /iniciar sesi.n/i,
+      status: /sesi.n (?:vencida|cerrada por el servidor)/i,
+    });
   });
 });
 
@@ -356,6 +508,40 @@ async function shellAxeReport(page: Page) {
         values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'],
       },
     });
+    const parseRgb = (value: string) => {
+      if (!/^rgba?\(/i.test(value.trim())) return null;
+      const channels = value.match(/[\d.]+/g)?.slice(0, 4).map(Number);
+      if (!channels || channels.length < 3) return null;
+      return { red: channels[0], green: channels[1], blue: channels[2], alpha: channels[3] ?? 1 };
+    };
+    const relativeLuminance = ({ red, green, blue }: { red: number; green: number; blue: number }) => {
+      const channels = [red, green, blue].map((channel) => {
+        const normalized = channel / 255;
+        return normalized <= 0.03928 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4;
+      });
+      return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+    };
+    const effectiveContrast = (element: Element | null, foreground: string) => {
+      let ancestor = element;
+      let background = '';
+      while (ancestor) {
+        const candidate = getComputedStyle(ancestor).backgroundColor;
+        const parsed = parseRgb(candidate);
+        if (parsed && parsed.alpha > 0.99) {
+          background = candidate;
+          break;
+        }
+        ancestor = ancestor.parentElement;
+      }
+      const foregroundRgb = parseRgb(foreground);
+      const backgroundRgb = parseRgb(background);
+      if (!foregroundRgb || !backgroundRgb) return { background, ratio: null };
+      const foregroundLuminance = relativeLuminance(foregroundRgb);
+      const backgroundLuminance = relativeLuminance(backgroundRgb);
+      const ratio = (Math.max(foregroundLuminance, backgroundLuminance) + 0.05)
+        / (Math.min(foregroundLuminance, backgroundLuminance) + 0.05);
+      return { background, ratio: Number(ratio.toFixed(2)) };
+    };
     const impacts = { minor: 0, moderate: 0, serious: 0, critical: 0 };
     for (const violation of result.violations) {
       const impact = String(violation.impact) as keyof typeof impacts;
@@ -368,30 +554,96 @@ async function shellAxeReport(page: Page) {
         id: violation.id,
         impact: violation.impact,
         help: violation.help,
-        nodes: violation.nodes.slice(0, 5).map((node) => ({ target: node.target, failure: node.failureSummary })),
+        nodes: violation.nodes.slice(0, 5).map((node) => {
+          const element = document.querySelector(node.target.join(' '));
+          const computed = element ? getComputedStyle(element) : null;
+          return {
+            target: node.target,
+            failure: node.failureSummary,
+            html: node.html,
+            computed: computed ? {
+              backgroundColor: computed.backgroundColor,
+              color: computed.color,
+              display: computed.display,
+              opacity: computed.opacity,
+              visibility: computed.visibility,
+            } : null,
+          };
+        }),
       })),
       incompleteDetails: result.incomplete.map((entry) => ({
         id: entry.id,
         impact: entry.impact,
         help: entry.help,
-        nodes: entry.nodes.slice(0, 5).map((node) => ({ target: node.target, failure: node.failureSummary })),
+        nodes: entry.nodes.slice(0, 5).map((node) => {
+          const element = document.querySelector(node.target.join(' '));
+          const computed = element ? getComputedStyle(element) : null;
+          const contrast = effectiveContrast(element, computed?.color ?? '');
+          return {
+            target: node.target,
+            failure: node.failureSummary,
+            html: node.html,
+            computed: computed ? {
+              backgroundColor: computed.backgroundColor,
+              effectiveBackgroundColor: contrast.background,
+              contrastRatio: contrast.ratio,
+              color: computed.color,
+              display: computed.display,
+              opacity: computed.opacity,
+              visibility: computed.visibility,
+            } : null,
+          };
+        }),
       })),
     };
   });
 }
 
-async function expectShellAxeReport(page: Page, state: string, testInfo: TestInfo) {
+async function expectShellAxeReport(page: Page, state: string, testInfo: TestInfo, deferUnclassified = false) {
   const report = await shellAxeReport(page);
+  const incompleteClassification = report.incompleteDetails.flatMap((entry) => entry.nodes.map((node) => {
+    const isOverlapContrastProbe = entry.id === 'color-contrast'
+      && /background color could not be determined because (?:it(?: is|'s)?\s+)?(?:partially )?(?:obscured|overlapped|overlaps?)/i.test(node.failure ?? '');
+    const isVerifiedOverlapContrast = isOverlapContrastProbe
+      && typeof node.computed?.contrastRatio === 'number'
+      && node.computed.contrastRatio >= 4.5;
+    const isPseudoElementProbe = entry.id === 'color-contrast' && /due to a pseudo element/i.test(node.failure ?? '');
+    const isShortDataProbe = entry.id === 'color-contrast' && /content is too short to determine/i.test(node.failure ?? '');
+    const hasVerifiedContrast = typeof node.computed?.contrastRatio === 'number'
+      && node.computed.contrastRatio >= 4.5;
+    const classifiedManually = isVerifiedOverlapContrast
+      || ((isPseudoElementProbe || isShortDataProbe) && hasVerifiedContrast);
+    return {
+      id: entry.id,
+      selector: node.target,
+      computed: node.computed,
+      html: node.html,
+      classification: classifiedManually ? 'manual-false-positive' : 'unclassified',
+      analysis: classifiedManually
+        ? isVerifiedOverlapContrast
+          ? `Contraste manual ${node.computed?.contrastRatio}:1 calculado entre ${node.computed?.color} y el ancestro opaco ${node.computed?.effectiveBackgroundColor}; cumple 4.5:1.`
+          : isShortDataProbe
+          ? 'El nodo es un valor numérico visible y significativo; Axe lo deja incompleto únicamente por la longitud del contenido.'
+          : 'Axe no puede resolver el fondo por superposición o pseudo-elemento; la comprobación computed-style shellContrastViolations valida el contraste efectivo del mismo estado.'
+        : node.failure,
+    };
+  }));
   await testInfo.attach(`${state}-axe`, {
-    body: Buffer.from(JSON.stringify({ state, ...report }, null, 2)),
+    body: Buffer.from(JSON.stringify({ state, ...report, incompleteClassification }, null, 2)),
     contentType: 'application/json',
   });
   console.log(`[axe-shell] ${state} ${JSON.stringify({ ...report.impacts, incomplete: report.incomplete })}`);
   if (report.incompleteDetails.length > 0) {
     console.log(`[axe-shell-incomplete] ${state} ${JSON.stringify(report.incompleteDetails)}`);
   }
-  await expect(report.violations, `${state} axe violations`).toEqual([]);
-  return report;
+  if (!deferUnclassified) {
+    await expect(report.violations, `${state} axe violations`).toEqual([]);
+  }
+  const unclassifiedIncomplete = incompleteClassification.filter((item) => item.classification === 'unclassified');
+  if (!deferUnclassified) {
+    await expect(unclassifiedIncomplete, `${state} unclassified axe incomplete results`).toEqual([]);
+  }
+  return { ...report, incompleteClassification, unclassifiedIncomplete };
 }
 
 async function expectFlatSurface(locator: ReturnType<Page['locator']>) {
@@ -418,8 +670,80 @@ async function expectFlatSurface(locator: ReturnType<Page['locator']>) {
   });
 }
 
-async function installAccessibilityMocks(page: Page, options: { authenticated: boolean }) {
+async function runAuthenticationMatrix(
+  page: Page,
+  testInfo: TestInfo,
+  state: { id: string; navigatePath: string; heading: RegExp; status?: RegExp },
+) {
+  test.setTimeout(300_000);
+  const artifactDirectory = resolve('test-results/frontend-final/auth');
+  mkdirSync(artifactDirectory, { recursive: true });
+  const failures = {
+    overflow: [] as unknown[],
+    radius: [] as unknown[],
+    unnamed: [] as unknown[],
+    violations: [] as unknown[],
+    unclassified: [] as unknown[],
+  };
+
+  for (const matrix of visualMatrix) {
+    await page.setViewportSize({ width: matrix.width, height: matrix.height });
+    await page.goto(state.navigatePath);
+    await page.evaluate((mode) => localStorage.setItem('hospital-billing-theme', mode), matrix.mode);
+    await page.goto(state.navigatePath);
+    await page.waitForLoadState('networkidle').catch(() => undefined);
+    await expect(page.getByRole('main')).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: state.heading })).toHaveCount(1);
+    if (state.status) await expect(page.getByText(state.status).first()).toBeVisible();
+    if (matrix.zoom !== 1) {
+      await page.evaluate((zoom) => { document.documentElement.style.zoom = String(zoom); }, matrix.zoom);
+    }
+    const artifact = `${state.id}-${matrix.id}`;
+    const unnamed = await visibleUnnamedControls(page);
+    if (unnamed.length > 0) failures.unnamed.push({ artifact, unnamed });
+    const overflow = await page.evaluate(() => ({
+      clientWidth: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+    }));
+    if (overflow.scrollWidth > overflow.clientWidth + 1) failures.overflow.push({ artifact, overflow });
+    const flatSurfaces = await page.evaluate((selectors) => selectors.flatMap((selector) => (
+      Array.from(document.querySelectorAll(selector)).flatMap((element) => {
+        const rect = element.getBoundingClientRect();
+        const style = getComputedStyle(element);
+        if (rect.width <= 0 || rect.height <= 0 || style.visibility === 'hidden' || style.display === 'none') return [];
+        return [{
+          selector,
+          radii: [style.borderTopLeftRadius, style.borderTopRightRadius, style.borderBottomLeftRadius, style.borderBottomRightRadius],
+          html: element.outerHTML.slice(0, 500),
+        }];
+      })
+    )), flatSurfaceSelectors);
+    const nonFlat = flatSurfaces.filter((surface) => surface.radii.some((radius) => radius !== '0px'));
+    if (nonFlat.length > 0) failures.radius.push({ artifact, nonFlat });
+    const axe = await expectShellAxeReport(page, artifact, testInfo, true);
+    if (axe.violations.length > 0) failures.violations.push({ artifact, violations: axe.violations });
+    if (axe.unclassifiedIncomplete.length > 0) failures.unclassified.push({ artifact, incomplete: axe.unclassifiedIncomplete });
+    writeFileSync(
+      resolve(artifactDirectory, `${artifact}.json`),
+      `${JSON.stringify({ state: state.id, matrix, overflow, flatSurfaces, ...axe }, null, 2)}\n`,
+      'utf8',
+    );
+    await page.screenshot({ fullPage: true, path: resolve(artifactDirectory, `${artifact}.png`) });
+  }
+
+  expect(failures.overflow, `${state.id} horizontal overflow`).toEqual([]);
+  expect(failures.radius, `${state.id} non-zero radii`).toEqual([]);
+  expect(failures.unnamed, `${state.id} unnamed controls`).toEqual([]);
+  expect(failures.violations, `${state.id} axe violations`).toEqual([]);
+  expect(failures.unclassified, `${state.id} unclassified axe incomplete`).toEqual([]);
+}
+
+async function installAccessibilityMocks(
+  page: Page,
+  options: { authenticated: boolean; user?: typeof adminUser; expireSession?: boolean },
+) {
   let authenticated = options.authenticated;
+  const sessionUser = options.user ?? adminUser;
 
   await page.route('**/favicon.ico', (route) => route.fulfill({ status: 204 }));
   await page.route('**/sanctum/csrf-cookie', (route) => route.fulfill({ status: 204 }));
@@ -431,20 +755,20 @@ async function installAccessibilityMocks(page: Page, options: { authenticated: b
 
     if (path === '/api/auth/login' && method === 'POST') {
       authenticated = true;
-      return json(route, { data: adminUser });
+      return json(route, { data: sessionUser });
     }
     if (path === '/api/auth/logout') {
       authenticated = false;
       return json(route, { ok: true });
     }
     if (path === '/api/auth/session' || path === '/api/auth/me') {
-      return authenticated ? json(route, { data: adminUser }) : json(route, { message: 'Unauthenticated.' }, 401);
+      return authenticated ? json(route, { data: sessionUser }) : json(route, { data: null });
     }
     if (path === '/api/settings/branding' || path === '/api/public/branding') {
       return json(route, { data: branding() });
     }
     if (path === '/api/settings/logo') {
-      return route.fulfill({ status: 404, body: '' });
+      return route.fulfill({ status: 200, contentType: 'image/png', body: '' });
     }
     if (path === '/api/settings/fiscal' || path === '/api/settings/operational') {
       return json(route, { data: fiscalSettings() });
@@ -462,6 +786,14 @@ async function installAccessibilityMocks(page: Page, options: { authenticated: b
       return json(route, { data: [service], meta: { current_page: 1, per_page: 24, total: 1 } });
     }
     if (path === '/api/cash-sessions/current') {
+      if (options.expireSession) {
+        return route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          headers: { 'X-Force-Logout': '1' },
+          body: JSON.stringify({ data: cashSession }),
+        });
+      }
       return json(route, { data: cashSession });
     }
     if (path === '/api/cash-sessions') {

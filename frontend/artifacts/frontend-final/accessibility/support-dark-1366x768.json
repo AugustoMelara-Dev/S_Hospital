@@ -1,0 +1,103 @@
+{
+  "route": "/support",
+  "matrix": {
+    "id": "dark-1366x768",
+    "mode": "dark",
+    "width": 1366,
+    "height": 768,
+    "zoom": 1
+  },
+  "flatSurfaces": [
+    {
+      "selector": ".ant-btn",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<button aria-label=\"Reducir navegación\" type=\"button\" class=\"ant-btn css-dev-only-do-not-override-1pi45l5 s-hospital ant-btn-text ant-btn-color-default ant-btn-variant-text ant-btn-icon-only !size-11 shrink-0 hover:bg-sidebar-accent text-sidebar-foreground\"><span class=\"ant-btn-icon\"><span role=\"img\" aria-label=\"menu-fold\" class=\"anticon anticon-menu-fold text-white text-lg\"><svg viewBox=\"64 64 896 896\" focusable=\"false\" data-icon=\"menu-fold\" width=\"1em\" height=\"1em\" fill=\"currentColor\" aria-hid"
+    },
+    {
+      "selector": ".ant-btn",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<button aria-label=\"Abrir comandos\" type=\"button\" class=\"ant-btn css-dev-only-do-not-override-1pi45l5 s-hospital ant-btn-default ant-btn-color-default ant-btn-variant-outlined hidden min-w-44 justify-start bg-surface text-muted-foreground sm:inline-flex\"><span class=\"ant-btn-icon\"><span role=\"img\" aria-label=\"search\" class=\"anticon anticon-search\"><svg viewBox=\"64 64 896 896\" focusable=\"false\" data-icon=\"search\" width=\"1em\" height=\"1em\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M909.6 854."
+    },
+    {
+      "selector": ".ant-btn",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<button aria-label=\"Ver atajos de teclado\" type=\"button\" class=\"ant-btn css-dev-only-do-not-override-1pi45l5 s-hospital ant-btn-text ant-btn-color-default ant-btn-variant-text ant-btn-icon-only hidden sm:inline-flex\"><span class=\"ant-btn-icon\"><span role=\"img\" aria-label=\"key\" class=\"anticon anticon-key\"><svg viewBox=\"64 64 896 896\" focusable=\"false\" data-icon=\"key\" width=\"1em\" height=\"1em\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M608 112c-167.9 0-304 136.1-304 304 0 70.3 23.9 135 63.9 1"
+    },
+    {
+      "selector": ".ant-btn",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<button aria-label=\"Abrir ayuda\" type=\"button\" class=\"ant-btn css-dev-only-do-not-override-1pi45l5 s-hospital ant-btn-text ant-btn-color-default ant-btn-variant-text ant-btn-icon-only hidden sm:inline-flex\"><span class=\"ant-btn-icon\"><span role=\"img\" aria-label=\"question-circle\" class=\"anticon anticon-question-circle\"><svg viewBox=\"64 64 896 896\" focusable=\"false\" data-icon=\"question-circle\" width=\"1em\" height=\"1em\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M512 64C264.6 64 64 264.6 64 512"
+    },
+    {
+      "selector": ".ant-btn",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<button aria-label=\"Actualizar diagnostico operativo\" type=\"button\" class=\"ant-btn css-dev-only-do-not-override-1pi45l5 s-hospital ant-btn-default ant-btn-color-default ant-btn-variant-outlined ant-btn-sm\"><span role=\"img\" aria-label=\"reload\" aria-hidden=\"true\" class=\"anticon anticon-reload size-4\"><svg viewBox=\"64 64 896 896\" focusable=\"false\" data-icon=\"reload\" width=\"1em\" height=\"1em\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M909.1 209.3l-56.4 44.1C775.8 155.1 656.2 92 521.9 92 290 92 "
+    },
+    {
+      "selector": ".ant-alert",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<div data-show=\"true\" class=\"ant-alert ant-alert-info ant-alert-outlined ant-alert-with-description s-hospital css-dev-only-do-not-override-1pi45l5\" role=\"alert\"><span class=\"ant-alert-icon\"><span role=\"img\" aria-label=\"info-circle\" class=\"anticon anticon-info-circle\"><svg viewBox=\"64 64 896 896\" focusable=\"false\" data-icon=\"info-circle\" width=\"1em\" height=\"1em\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm3"
+    },
+    {
+      "selector": ".ant-tag",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<span class=\"ant-tag ant-tag-filled ant-tag-processing m-0 px-3 py-1 text-xs font-bold css-dev-only-do-not-override-1pi45l5 s-hospital\">Caja #7</span>"
+    },
+    {
+      "selector": ".ant-tag",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<span class=\"ant-tag ant-tag-filled ant-tag-success css-dev-only-do-not-override-1pi45l5 s-hospital\">Correcto</span>"
+    }
+  ],
+  "impacts": {
+    "minor": 0,
+    "moderate": 0,
+    "serious": 0,
+    "critical": 0
+  },
+  "incomplete": 0,
+  "violations": [],
+  "incompleteDetails": [],
+  "incompleteClassification": [],
+  "unclassifiedIncomplete": []
+}

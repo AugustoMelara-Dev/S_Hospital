@@ -5,7 +5,7 @@ import {
   PAPER_CHOICES,
   THERMAL_COMPATIBILITY_CHOICES,
   institutionalPaperFromProfile,
-  isLegacyThermalPaper,
+  isThermalPaper,
   normalizeInstitutionalPaper,
   paperChoiceFor,
   paperPresentation,
@@ -78,8 +78,8 @@ describe('institutional receipt paper policy', () => {
   });
 
   it('identifies thermal compatibility formats without treating standard paper as thermal', () => {
-    expect(isLegacyThermalPaper('80mm')).toBe(true);
-    expect(isLegacyThermalPaper('58mm')).toBe(true);
-    expect(isLegacyThermalPaper('letter')).toBe(false);
+    expect(isThermalPaper('80mm')).toBe(true);
+    expect(isThermalPaper('58mm')).toBe(true);
+    expect(isThermalPaper('letter')).toBe(false);
   });
 });
