@@ -1,33 +1,51 @@
-import { readdirSync, statSync } from 'node:fs';
-import { resolve, relative } from 'node:path';
+import { readFileSync, readdirSync } from 'node:fs';
+import { relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { gzipSync } from 'node:zlib';
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const assetsDir = resolve(root, 'dist', 'assets');
 const maxChunkBytes = Number(process.env.BUNDLE_MAX_CHUNK_BYTES ?? 750_000);
-const maxTotalBytes = Number(process.env.BUNDLE_MAX_TOTAL_BYTES ?? 2_800_000);
+const maxStartupGzipBytes = Number(process.env.BUNDLE_MAX_STARTUP_GZIP_BYTES ?? 500_000);
+const maxTotalGzipBytes = Number(process.env.BUNDLE_MAX_TOTAL_GZIP_BYTES ?? 1_100_000);
 
 let files;
 try {
   files = readdirSync(assetsDir)
     .filter((name) => name.endsWith('.js'))
-    .map((name) => ({ name, bytes: statSync(resolve(assetsDir, name)).size }))
+    .map((name) => {
+      const content = readFileSync(resolve(assetsDir, name));
+      return { name, bytes: content.length, gzipBytes: gzipSync(content).length };
+    })
     .sort((a, b) => b.bytes - a.bytes);
 } catch {
   process.stderr.write('Bundle budget: falta frontend/dist/assets. Ejecute npm run build primero.\n');
   process.exit(1);
 }
 
+const html = readFileSync(resolve(root, 'dist', 'index.html'), 'utf8');
 const totalBytes = files.reduce((sum, file) => sum + file.bytes, 0);
-const oversized = files.filter((file) => file.bytes > maxChunkBytes);
+const totalGzipBytes = files.reduce((sum, file) => sum + file.gzipBytes, 0);
+const startupFiles = files.filter((file) => html.includes(`/assets/${file.name}`));
+const startupGzipBytes = startupFiles.reduce((sum, file) => sum + file.gzipBytes, 0);
+const oversizedStartup = startupFiles.filter((file) => file.bytes > maxChunkBytes);
+const justifiedAsync = files.filter((file) => !startupFiles.includes(file) && file.bytes > 500_000);
 
 process.stdout.write('Bundle JavaScript:\n');
-for (const file of files) process.stdout.write(`- ${relative(root, resolve(assetsDir, file.name))}: ${formatBytes(file.bytes)}\n`);
-process.stdout.write(`Total JS: ${formatBytes(totalBytes)} (límite ${formatBytes(maxTotalBytes)})\n`);
+for (const file of files) {
+  const startup = html.includes(`/assets/${file.name}`) ? 'inicio' : 'asíncrono';
+  process.stdout.write(`- ${relative(root, resolve(assetsDir, file.name))}: ${formatBytes(file.bytes)} raw / ${formatBytes(file.gzipBytes)} gzip [${startup}]\n`);
+}
+process.stdout.write(`Inicio JS: ${formatBytes(startupGzipBytes)} gzip (límite ${formatBytes(maxStartupGzipBytes)})\n`);
+process.stdout.write(`Total JS: ${formatBytes(totalBytes)} raw / ${formatBytes(totalGzipBytes)} gzip (límite gzip ${formatBytes(maxTotalGzipBytes)})\n`);
+if (justifiedAsync.length > 0) {
+  process.stdout.write(`Chunks pesados asíncronos para documentar: ${justifiedAsync.map((file) => file.name).join(', ')}\n`);
+}
 
-if (oversized.length > 0 || totalBytes > maxTotalBytes) {
-  if (oversized.length > 0) process.stderr.write(`Chunks sobre ${formatBytes(maxChunkBytes)}: ${oversized.map((file) => file.name).join(', ')}\n`);
-  if (totalBytes > maxTotalBytes) process.stderr.write('El total JavaScript excede el presupuesto.\n');
+if (oversizedStartup.length > 0 || startupGzipBytes > maxStartupGzipBytes || totalGzipBytes > maxTotalGzipBytes) {
+  if (oversizedStartup.length > 0) process.stderr.write(`Chunks de inicio sobre ${formatBytes(maxChunkBytes)}: ${oversizedStartup.map((file) => file.name).join(', ')}\n`);
+  if (startupGzipBytes > maxStartupGzipBytes) process.stderr.write('El arranque JavaScript excede el presupuesto gzip.\n');
+  if (totalGzipBytes > maxTotalGzipBytes) process.stderr.write('El total JavaScript excede el presupuesto gzip.\n');
   process.exit(1);
 }
 

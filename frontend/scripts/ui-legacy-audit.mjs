@@ -7,6 +7,7 @@ export const legacyImports = [
   'cmdk',
   'react-day-picker',
   '@tanstack/react-table',
+  '@tanstack/react-virtual',
 ];
 
 export const prohibitedClasses = [
@@ -61,6 +62,17 @@ export function scanSource(file, rawSource) {
   const module = classifyModule(file);
   const violations = [];
 
+  if (/(?:^|\/)[^/]*(?:Compat|Legacy|Adapter|Antd)\.(?:ts|tsx)$/.test(file) || /\b\w*Compat\b/.test(source)) {
+    violations.push(makeViolation({
+      file,
+      line: findLine(source, /\b\w*Compat\b/),
+      kind: 'compat-surface',
+      module,
+      message: 'superficie de compatibilidad legacy prohibida',
+      risk: 'high',
+    }));
+  }
+
   source.split(/\r?\n/).forEach((line, index) => {
     const lineNumber = index + 1;
     for (const dependency of legacyImports) {
@@ -103,6 +115,60 @@ export function scanSource(file, rawSource) {
       }
     }
 
+    const isModuleDeclaration = /^\s*(?:import|export)\b/.test(line);
+    const broadVisualClasses = isModuleDeclaration
+      ? []
+      : line.match(/\b(?:rounded|shadow|from|via|to|backdrop-blur)(?:-[\w[\].:/%-]+)+\b|\bglass\b/g) ?? [];
+    for (const cssClass of broadVisualClasses) {
+      if (prohibitedClasses.includes(cssClass)) continue;
+      violations.push(makeViolation({
+        file,
+        line: lineNumber,
+        kind: 'prohibited-class',
+        cssClass,
+        module,
+        message: `clase visual prohibida "${cssClass}"`,
+        risk: /^(?:from|via|to|bg-gradient)/.test(cssClass) ? 'high' : 'medium',
+      }));
+    }
+
+    const arbitraryClasses = line.match(/\b[\w-]+-\[[^\]\r\n]+\]/g) ?? [];
+    for (const cssClass of arbitraryClasses) {
+      violations.push(makeViolation({
+        file,
+        line: lineNumber,
+        kind: 'arbitrary-tailwind',
+        cssClass,
+        module,
+        message: `valor arbitrario de Tailwind prohibido "${cssClass}"`,
+        risk: 'medium',
+      }));
+    }
+
+    if (/\bstyle\s*=\s*\{\{/.test(line)) {
+      violations.push(makeViolation({
+        file,
+        line: lineNumber,
+        kind: 'inline-style',
+        module,
+        message: 'estilo inline visual prohibido',
+        risk: 'medium',
+      }));
+    }
+
+    const isCentralTokenFile = file.startsWith('src/design-system/themes/')
+      || file.startsWith('src/design-system/tokens/');
+    if (!isCentralTokenFile && /(?:#[\da-fA-F]{3,8}\b|\brgba?\s*\(|\bhsla?\s*\()/.test(line)) {
+      violations.push(makeViolation({
+        file,
+        line: lineNumber,
+        kind: 'color-literal',
+        module,
+        message: 'color literal fuera de tokens institucionales',
+        risk: 'medium',
+      }));
+    }
+
     const radiusProperty = line.match(/\bborderRadius(?:LG|SM|XS|Outer)?\s*:\s*([^,}\n]+)/);
     if (radiusProperty && !/^0(?:\s|$)/.test(radiusProperty[1].trim()) && !line.includes('// Allow inline radius')) {
       violations.push(makeViolation({
@@ -120,11 +186,18 @@ export function scanSource(file, rawSource) {
 }
 
 export function filterViolationsForMode(violations, mode) {
-  if (mode === 'inventory' || mode === 'final') return violations;
+  if (mode === 'inventory') return violations;
+  if (mode === 'final') return violations.filter((violation) => !/\.(?:test|spec|stories)\.(?:ts|tsx)$/.test(violation.file));
   if (mode === 'strict') {
-    return violations.filter((violation) => strictModulePrefixes.some((prefix) => violation.file.startsWith(prefix)));
+    return violations.filter((violation) => strictModulePrefixes.some((prefix) => violation.file.startsWith(prefix))
+      && !/\.(?:test|spec|stories)\.(?:ts|tsx)$/.test(violation.file));
   }
   throw new Error(`Modo desconocido: ${mode}`);
+}
+
+function findLine(source, pattern) {
+  const index = source.search(pattern);
+  return index < 0 ? 1 : source.slice(0, index).split(/\r?\n/).length;
 }
 
 function makeViolation(violation) {

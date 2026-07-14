@@ -2,8 +2,6 @@ import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { PermissionGate } from './components/PermissionGate';
 import { RouteState } from './design-system/patterns/RouteState';
-import { CashBoxView } from './features/cash/CashBoxView';
-import { NewInvoiceView } from './features/invoices/NewInvoiceView';
 import { type AuthUser, type CashSession } from './lib/api';
 import { appRoutes, canAccessRoute } from './navigation/appNavigation';
 
@@ -15,9 +13,11 @@ const FiscalSettingsView = lazy(() => import('./features/settings/FiscalSettings
 const HelpView = lazy(() => import('./features/help/HelpView').then((module) => ({ default: module.HelpView })));
 const InstitutionalReceiptSettingsView = lazy(() => import('./features/receipt-settings/InstitutionalReceiptSettingsView').then((module) => ({ default: module.InstitutionalReceiptSettingsView })));
 const InvoiceHistoryView = lazy(() => import('./features/invoices/InvoiceHistoryView').then((module) => ({ default: module.InvoiceHistoryView })));
+const NewInvoiceView = lazy(() => import('./features/invoices/NewInvoiceView').then((module) => ({ default: module.NewInvoiceView })));
 const ReportsView = lazy(() => import('./features/reports/ReportsView').then((module) => ({ default: module.ReportsView })));
 const SupportCenterView = lazy(() => import('./features/support/SupportCenterView').then((module) => ({ default: module.SupportCenterView })));
 const UsersView = lazy(() => import('./features/admin/UsersView').then((module) => ({ default: module.UsersView })));
+const CashBoxView = lazy(() => import('./features/cash/CashBoxView').then((module) => ({ default: module.CashBoxView })));
 
 type AppRoutesProps = {
   canCreateInvoices: boolean;
@@ -116,7 +116,8 @@ export function AppRoutes({
             allowed={canAccessRoute(appRoutes.newInvoice, user.permissions)}
             reason={appRoutes.newInvoice.deniedReason}
           >
-<NewInvoiceView
+            <Suspense fallback={<RouteState kind="loading" title="Cargando facturación..." description="Espere mientras se carga el módulo local." headingLevel={2} />}>
+              <NewInvoiceView
                 cashSession={cashSession}
                 canCreatePayments={canCreatePayments}
                 canOpenCash={canOpenCash}
@@ -126,6 +127,7 @@ export function AppRoutes({
                 onOpenCash={canOpenCash ? onQuickCash : undefined}
                 onStatus={onStatus}
               />
+            </Suspense>
           </PermissionGate>
         }
       />
@@ -133,7 +135,8 @@ export function AppRoutes({
         path={appRoutes.cashbox.path}
         element={
           <PermissionGate allowed={canAccessRoute(appRoutes.cashbox, user.permissions)} reason={appRoutes.cashbox.deniedReason}>
-            <CashBoxView
+            <Suspense fallback={<RouteState kind="loading" title="Cargando caja..." description="Espere mientras se carga el módulo local." headingLevel={2} />}>
+              <CashBoxView
               cashSession={cashSession}
               canCloseAnyCash={canCloseAnyCash}
               canCloseCash={canCloseCash}
@@ -143,7 +146,8 @@ export function AppRoutes({
               canViewCashSessionReport={canViewCashSessionReports || canViewManagerialReports}
               currentUserId={user.id}
               onStatus={onStatus}
-            />
+              />
+            </Suspense>
           </PermissionGate>
         }
       />

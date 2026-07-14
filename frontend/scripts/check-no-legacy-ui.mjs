@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { filterViolationsForMode, scanSource, strictModulePrefixes } from './ui-legacy-audit.mjs';
 
 const projectRoot = resolve(fileURLToPath(new URL('..', import.meta.url)));
-const excludedDirs = new Set(['node_modules', 'coverage', 'dist', '.storybook', 'i18n', 'printing']);
+const excludedDirs = new Set(['node_modules', 'coverage', 'dist', '.storybook', 'i18n']);
 const mode = readArgument('--mode') ?? 'inventory';
 const format = readArgument('--format') ?? 'text';
 
@@ -58,7 +58,7 @@ async function walk(directory) {
       continue;
     }
     if (entryStat.isDirectory()) output.push(...await walk(absolutePath));
-    else if (/\.(ts|tsx)$/.test(entry)) output.push(absolutePath);
+    else if (/\.(css|ts|tsx)$/.test(entry)) output.push(absolutePath);
   }
   return output.sort();
 }

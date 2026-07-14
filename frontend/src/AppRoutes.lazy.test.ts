@@ -69,7 +69,9 @@ describe('AppRoutes lazy-loading', () => {
       'HelpView',
       'InstitutionalReceiptSettingsView',
       'InvoiceHistoryView',
+      'NewInvoiceView',
       'ReportsView',
+      'CashBoxView',
       'UsersView',
     ];
 
@@ -77,6 +79,13 @@ describe('AppRoutes lazy-loading', () => {
       const lazyBinding = source.match(new RegExp(`lazy\\(\\(\\) => import\\([^)]*${view}[^)]*\\)`));
       expect(lazyBinding, `Expected ${view} to be lazy-loaded`).not.toBeNull();
     }
+  });
+
+  it('does not pull the cash module through the application entry barrel', () => {
+    const appSource = readFileSync(resolve(__dirname, 'App.tsx'), 'utf8');
+
+    expect(appSource).not.toMatch(/import\s+\{\s*CashBoxView\s*\}/);
+    expect(appSource).not.toContain("from './design-system'");
   });
 
   it('wraps the Routes in a Suspense fallback so the cashier never sees a blank screen', () => {

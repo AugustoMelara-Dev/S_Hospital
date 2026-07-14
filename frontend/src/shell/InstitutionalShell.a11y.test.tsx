@@ -2,7 +2,7 @@ import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { configureAxe } from 'vitest-axe';
 import { describe, expect, it, vi } from 'vitest';
-import { ClinicalShell } from './ClinicalShell';
+import { InstitutionalShell } from './InstitutionalShell';
 
 const axe = configureAxe({ rules: { 'color-contrast': { enabled: false } } });
 
@@ -34,14 +34,14 @@ const user = {
 function renderShell() {
   return render(
     <MemoryRouter initialEntries={['/settings/institutional-receipts']}>
-      <ClinicalShell cashSession={null} onLogout={vi.fn()} status="Servidor local disponible" user={user}>
+      <InstitutionalShell cashSession={null} onLogout={vi.fn()} status="Servidor local disponible" user={user}>
         <h1>Panel operativo</h1>
-      </ClinicalShell>
+      </InstitutionalShell>
     </MemoryRouter>,
   );
 }
 
-describe('ClinicalShell accessibility', () => {
+describe('InstitutionalShell accessibility', () => {
   it('no tiene violaciones axe en el shell autenticado', async () => {
     const { container } = renderShell();
     expect(await axe(container)).toHaveNoViolations();
