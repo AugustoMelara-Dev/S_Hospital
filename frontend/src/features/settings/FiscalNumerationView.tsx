@@ -308,7 +308,7 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
         <div className="flex justify-end">
           <Button type="submit" disabled={!canEdit || form.formState.isSubmitting || saving}>
             <Save data-icon aria-hidden="true" />
-            Guardar numeraci?fún
+            Guardar numeración
           </Button>
         </div>
       </form>

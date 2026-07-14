@@ -1,7 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { PermissionGate } from './components/PermissionGate';
-import { LoadingState } from './components/ui/states';
 import { RouteState } from './design-system/patterns/RouteState';
 import { CashBoxView } from './features/cash/CashBoxView';
 import { NewInvoiceView } from './features/invoices/NewInvoiceView';
@@ -92,7 +91,7 @@ export function AppRoutes({
       <Route
         path={appRoutes.dashboard.path}
         element={
-          <Suspense fallback={<LoadingState label="Cargando módulo..." />}>
+          <Suspense fallback={<RouteState kind="loading" title="Cargando módulo..." description="Espere mientras se carga el modulo local." headingLevel={2} />}>
             <DashboardView
               canCreateInvoices={canCreateInvoices}
               canEditFiscalSettings={canEditFiscalSettings}
@@ -153,7 +152,7 @@ export function AppRoutes({
         path={appRoutes.catalog.path}
         element={
           <PermissionGate allowed={canAccessRoute(appRoutes.catalog, user.permissions)} reason={appRoutes.catalog.deniedReason}>
-            <Suspense fallback={<LoadingState label="Cargando catálogo..." />}>
+            <Suspense fallback={<RouteState kind="loading" title="Cargando catálogo..." description="Espere mientras se carga el modulo local." headingLevel={2} />}>
               <CatalogView user={user} onStatus={onStatus} />
             </Suspense>
           </PermissionGate>
@@ -163,7 +162,7 @@ export function AppRoutes({
         path={appRoutes.invoices.path}
         element={
           <PermissionGate allowed={canAccessRoute(appRoutes.invoices, user.permissions)} reason={appRoutes.invoices.deniedReason}>
-            <Suspense fallback={<LoadingState label="Cargando historial..." />}>
+            <Suspense fallback={<RouteState kind="loading" title="Cargando historial..." description="Espere mientras se carga el modulo local." headingLevel={2} />}>
               <InvoiceHistoryView user={user} onStatus={onStatus} />
             </Suspense>
           </PermissionGate>
@@ -176,7 +175,7 @@ export function AppRoutes({
             allowed={canAccessRoute(appRoutes.reports, user.permissions)}
             reason={appRoutes.reports.deniedReason}
           >
-            <Suspense fallback={<LoadingState label="Cargando reportes..." />}>
+            <Suspense fallback={<RouteState kind="loading" title="Cargando reportes..." description="Espere mientras se carga el modulo local." headingLevel={2} />}>
               <ReportsView
                 canBrowseCashSessions={canViewCash}
                 canExport={canExportReports}
@@ -193,7 +192,7 @@ export function AppRoutes({
         path={appRoutes.backups.path}
         element={
           <PermissionGate allowed={canAccessRoute(appRoutes.backups, user.permissions)} reason={appRoutes.backups.deniedReason}>
-            <Suspense fallback={<LoadingState label="Cargando respaldos..." />}>
+            <Suspense fallback={<RouteState kind="loading" title="Cargando respaldos..." description="Espere mientras se carga el modulo local." headingLevel={2} />}>
               <BackupsView user={user} onStatus={onStatus} />
             </Suspense>
           </PermissionGate>
@@ -203,7 +202,7 @@ export function AppRoutes({
         path={appRoutes.fiscalSettings.path}
         element={
           <PermissionGate allowed={canAccessRoute(appRoutes.fiscalSettings, user.permissions)} reason={appRoutes.fiscalSettings.deniedReason}>
-            <Suspense fallback={<LoadingState label="Cargando configuracion fiscal..." />}>
+            <Suspense fallback={<RouteState kind="loading" title="Cargando configuracion fiscal..." description="Espere mientras se carga el modulo local." headingLevel={2} />}>
               <FiscalSettingsView
                 canEdit={canEditFiscalSettings}
                 canEditOperationalRules={canEditOperationalSettings}
@@ -218,9 +217,10 @@ export function AppRoutes({
         path={appRoutes.receiptSettings.path}
         element={
           <PermissionGate allowed={canAccessRoute(appRoutes.receiptSettings, user.permissions)} reason={appRoutes.receiptSettings.deniedReason}>
-            <Suspense fallback={<LoadingState label="Cargando recibos institucionales..." />}>
+            <Suspense fallback={<RouteState kind="loading" title="Cargando recibos institucionales..." description="Espere mientras se carga el modulo local." headingLevel={2} />}>
               <InstitutionalReceiptSettingsView
                 canEdit={user.permissions.includes('receipt_settings.update')}
+                canEditAdvanced={user.permissions.includes('receipt_settings.advanced')}
                 onStatus={onStatus}
               />
             </Suspense>
@@ -231,7 +231,7 @@ export function AppRoutes({
         path={appRoutes.users.path}
         element={
           <PermissionGate allowed={canAccessRoute(appRoutes.users, user.permissions)} reason={appRoutes.users.deniedReason}>
-            <Suspense fallback={<LoadingState label="Cargando usuarios..." />}>
+            <Suspense fallback={<RouteState kind="loading" title="Cargando usuarios..." description="Espere mientras se carga el modulo local." headingLevel={2} />}>
               <UsersView
                 onStatus={onStatus}
                 canCreateUsers={canCreateUsers}
@@ -248,7 +248,7 @@ export function AppRoutes({
       <Route
         path={appRoutes.support.path}
         element={
-          <Suspense fallback={<LoadingState label="Cargando soporte..." />}>
+          <Suspense fallback={<RouteState kind="loading" title="Cargando soporte..." description="Espere mientras se carga el modulo local." headingLevel={2} />}>
             <SupportCenterView user={user} onStatus={onStatus} />
           </Suspense>
         }
@@ -256,7 +256,7 @@ export function AppRoutes({
       <Route
         path={appRoutes.help.path}
         element={
-          <Suspense fallback={<LoadingState label="Cargando ayuda..." />}>
+          <Suspense fallback={<RouteState kind="loading" title="Cargando ayuda..." description="Espere mientras se carga el modulo local." headingLevel={2} />}>
             <HelpView />
           </Suspense>
         }
@@ -264,7 +264,7 @@ export function AppRoutes({
       <Route
         path={appRoutes.about.path}
         element={
-          <Suspense fallback={<LoadingState label="Cargando acerca de..." />}>
+          <Suspense fallback={<RouteState kind="loading" title="Cargando acerca de..." description="Espere mientras se carga el modulo local." headingLevel={2} />}>
             <AboutView user={user} onStatus={onStatus} />
           </Suspense>
         }
