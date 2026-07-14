@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { InstitutionalReceiptSettingsView } from './InstitutionalReceiptSettingsView';
 import type { InstitutionalReceiptSettings, ReceiptPrintProfile } from '@/lib/api';
@@ -94,7 +95,7 @@ vi.mock('@/lib/download', () => ({
   downloadBlob: vi.fn(),
 }));
 
-function renderView() {
+function renderView({ canEditAdvanced = false }: { canEditAdvanced?: boolean } = {}) {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
@@ -106,6 +107,7 @@ function renderView() {
     <QueryClientProvider client={queryClient}>
       <InstitutionalReceiptSettingsView
         canEdit
+        canEditAdvanced={canEditAdvanced}
         onStatus={vi.fn()}
       />
     </QueryClientProvider>,
@@ -127,9 +129,9 @@ describe('InstitutionalReceiptSettingsView', () => {
   it('permite elegir papel sin controles técnicos', async () => {
     renderView();
 
-    expect(await screen.findByRole('radio', { name: /Carta/ })).toBeVisible();
-    expect(screen.getByRole('radio', { name: /Media carta/ })).toBeVisible();
-    expect(screen.getByRole('radio', { name: /A5/ })).toBeVisible();
+    expect(await screen.findByRole('radio', { name: /Carta/ })).toBeEnabled();
+    expect(screen.getByRole('radio', { name: /Media carta/ })).toBeEnabled();
+    expect(screen.getByRole('radio', { name: /A5/ })).toBeEnabled();
     expect(screen.queryByLabelText(/margen|escala|fuente|tamaño/i)).not.toBeInTheDocument();
   });
 
@@ -167,23 +169,25 @@ describe('InstitutionalReceiptSettingsView', () => {
     expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
     await activateTab(/instituci/i);
 
-    expect(screen.getByLabelText(/direcci/i)).toHaveValue('Tocoa, Colon');
+    await waitFor(() => expect(screen.getByLabelText(/direcci/i)).toHaveValue('Tocoa, Colon'));
   });
 
   it('trims receipt institution identity fields before saving', async () => {
     const { apiClient } = await import('@/lib/api');
+    const user = userEvent.setup();
     renderView();
 
     expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
     await activateTab(/instituci/i);
 
-    fireEvent.change(screen.getByLabelText(/nombre del hospital/i), {
-      target: { value: '  Hospital Regional del Norte  ' },
-    });
-    fireEvent.change(screen.getByLabelText(/rtn si aplica/i), {
-      target: { value: '  08011999123456  ' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: /guardar instituci/i }));
+    const hospitalName = screen.getByLabelText(/nombre del hospital/i);
+    await waitFor(() => expect(hospitalName).toHaveValue('Hospital San Isidro'));
+    await user.clear(hospitalName);
+    await user.type(hospitalName, '  Hospital Regional del Norte  ');
+    const rtn = screen.getByLabelText(/rtn si aplica/i);
+    await user.clear(rtn);
+    await user.type(rtn, '  08011999123456  ');
+    await user.click(screen.getByRole('button', { name: /guardar instituci/i }));
 
     await waitFor(() => {
       expect(apiClient.updateReceiptInstitution).toHaveBeenCalledWith(
@@ -219,6 +223,18 @@ describe('InstitutionalReceiptSettingsView', () => {
     expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
     await activateTab('Papel y copias');
 
+    expect(screen.queryByText('receipt_settings.advanced')).not.toBeInTheDocument();
+  });
+
+  it('protects technical paper controls behind the advanced receipt permission', async () => {
+    renderView({ canEditAdvanced: true });
+
+    await activateTab('Papel y copias');
+    fireEvent.click(screen.getByText(/ajustes técnicos avanzados/i));
+
+    expect(screen.getByLabelText('Ancho mm')).toBeVisible();
+    expect(screen.getByLabelText('Alto mm')).toBeVisible();
+    expect(screen.getByLabelText(/motivo de soporte/i)).toBeVisible();
     expect(screen.queryByText('receipt_settings.advanced')).not.toBeInTheDocument();
   });
 
@@ -435,14 +451,20 @@ describe('InstitutionalReceiptSettingsView', () => {
 
   it('blocks saving a receipt series when the range end is below the start', async () => {
     const { apiClient } = await import('@/lib/api');
+    const user = userEvent.setup();
     renderView();
 
     expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
     await activateTab('Serie');
 
-    fireEvent.change(screen.getByLabelText(/n.mero inicial/i), { target: { value: '100' } });
-    fireEvent.change(screen.getByLabelText(/n.mero final/i), { target: { value: '50' } });
-    fireEvent.click(screen.getByRole('button', { name: /guardar serie/i }));
+    const minimum = screen.getByLabelText(/n.mero inicial/i);
+    await waitFor(() => expect(minimum).toHaveValue('1'));
+    await user.clear(minimum);
+    await user.type(minimum, '100');
+    const maximum = screen.getByLabelText(/n.mero final/i);
+    await user.clear(maximum);
+    await user.type(maximum, '50');
+    await user.click(screen.getByRole('button', { name: /guardar serie/i }));
 
     expect(await screen.findByText(/el n.mero final debe ser mayor o igual al inicial/i)).toBeInTheDocument();
     expect(apiClient.updateReceiptSeries).not.toHaveBeenCalled();
@@ -450,14 +472,18 @@ describe('InstitutionalReceiptSettingsView', () => {
 
   it('blocks saving a receipt series when the current number exceeds the range end', async () => {
     const { apiClient } = await import('@/lib/api');
+    const user = userEvent.setup();
     renderView();
 
     expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
     await activateTab('Serie');
 
-    fireEvent.change(screen.getByLabelText(/n.mero final/i), { target: { value: '100' } });
-    fireEvent.change(screen.getByLabelText(/correlativo actual/i), { target: { value: '150' } });
-    fireEvent.click(screen.getByRole('button', { name: /guardar serie/i }));
+    const maximum = screen.getByLabelText(/n.mero final/i);
+    await waitFor(() => expect(maximum).toHaveValue('100'));
+    const current = screen.getByLabelText(/correlativo actual/i);
+    await user.clear(current);
+    await user.type(current, '150');
+    await user.click(screen.getByRole('button', { name: /guardar serie/i }));
 
     expect(await screen.findByText(/el correlativo actual no puede superar el numero final/i)).toBeInTheDocument();
     expect(apiClient.updateReceiptSeries).not.toHaveBeenCalled();
@@ -465,14 +491,18 @@ describe('InstitutionalReceiptSettingsView', () => {
 
   it('blocks saving an active receipt series when the next number leaves the authorized range', async () => {
     const { apiClient } = await import('@/lib/api');
+    const user = userEvent.setup();
     renderView();
 
     expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
     await activateTab('Serie');
 
-    fireEvent.change(screen.getByLabelText(/n.mero final/i), { target: { value: '100' } });
-    fireEvent.change(screen.getByLabelText(/correlativo actual/i), { target: { value: '100' } });
-    fireEvent.click(screen.getByRole('button', { name: /guardar serie/i }));
+    const maximum = screen.getByLabelText(/n.mero final/i);
+    await waitFor(() => expect(maximum).toHaveValue('100'));
+    const current = screen.getByLabelText(/correlativo actual/i);
+    await user.clear(current);
+    await user.type(current, '100');
+    await user.click(screen.getByRole('button', { name: /guardar serie/i }));
 
     expect(await screen.findByText(/el siguiente recibo debe quedar dentro del rango autorizado/i)).toBeInTheDocument();
     expect(apiClient.updateReceiptSeries).not.toHaveBeenCalled();
@@ -480,15 +510,24 @@ describe('InstitutionalReceiptSettingsView', () => {
 
   it('trims receipt series identity fields before saving', async () => {
     const { apiClient } = await import('@/lib/api');
+    const user = userEvent.setup();
     renderView();
 
     expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
     await activateTab('Serie');
 
-    fireEvent.change(screen.getByRole('textbox', { name: /^Serie$/i }), { target: { value: '  REC-B  ' } });
-    fireEvent.change(screen.getByRole('textbox', { name: /prefijo/i }), { target: { value: '  RB  ' } });
-    fireEvent.change(screen.getByRole('textbox', { name: /formato/i }), { target: { value: '  {series}-{number:08}  ' } });
-    fireEvent.click(screen.getByRole('button', { name: /guardar serie/i }));
+    const series = screen.getByRole('textbox', { name: /^Serie$/i });
+    await waitFor(() => expect(series).toHaveValue('REC-A'));
+    await user.clear(series);
+    await user.type(series, '  REC-B  ');
+    const prefix = screen.getByRole('textbox', { name: /prefijo/i });
+    await user.clear(prefix);
+    await user.type(prefix, '  RB  ');
+    const format = screen.getByRole('textbox', { name: /formato/i });
+    await user.clear(format);
+    await user.click(format);
+    await user.paste('  {series}-{number:08}  ');
+    await user.click(screen.getByRole('button', { name: /guardar serie/i }));
 
     await waitFor(() => {
       expect(apiClient.updateReceiptSeries).toHaveBeenCalledWith(

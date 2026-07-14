@@ -45,10 +45,8 @@ test.describe('Print profiles - normal flow', () => {
     await expect(page.getByLabel(/espacio para sello\/firma/i)).toBeVisible();
     await expect(page.getByRole('button', { name: /imprimir prueba/i })).toBeVisible();
     await expect(page.getByRole('button', { name: /guardar perfil/i })).toBeVisible();
-    await expect(page.getByText(/vista previa/i)).toBeVisible();
-    await expect(page.getByText(/m.rgenes se calculan autom.ticamente/i)).toBeVisible();
-    await expect(page.getByText(/fuente|layout/i)).toHaveCount(0);
-
+    await expect(page.getByRole('tab', { name: /vista previa/i })).toBeVisible();
+    await expect(page.getByText(/ajusta márgenes, fuente y escala automáticamente/i)).toBeVisible();
     for (const label of [
       'Ancho mm',
       'Alto mm',
@@ -79,9 +77,9 @@ test.describe('Print profiles - normal flow', () => {
     await expectNoHorizontalPageOverflow(page);
 
     await page.getByRole('tab', { name: /vista previa/i }).click();
-    const preview = page.getByTestId('receipt-settings-preview');
+    const preview = page.locator('[data-testid="receipt-settings-preview"]:visible');
     await expect(preview).toBeVisible();
-    await expect(page.getByRole('region', { name: /vista previa original del recibo institucional/i })).toBeVisible();
+    await expect(page.getByRole('region', { name: /vista previa de recibo media carta/i })).toBeVisible();
     await expectNoHorizontalPageOverflow(page);
 
     const previewBox = await preview.boundingBox();

@@ -83,6 +83,9 @@
   --color-error-foreground: var(--institutional-error-foreground);
   --color-info: var(--institutional-info);
   --color-info-foreground: var(--institutional-info-foreground);
+  --color-receipt-border: #1f2937;
+  --color-receipt-paper: #ffffff;
+  --color-receipt-muted: #374151;
 
   --color-sidebar: var(--institutional-sidebar);
   --color-sidebar-foreground: var(--institutional-sidebar-foreground);

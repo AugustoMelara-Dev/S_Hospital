@@ -1,20 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
+import { CheckCircleOutlined, PrinterOutlined, SaveOutlined } from '@ant-design/icons';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, Printer, Save } from 'lucide-react';
-import { type ReactElement, ReactNode, cloneElement, isValidElement, useRef } from 'react';
-import { useForm } from 'react-hook-form';
+import { Alert, Button, Checkbox, Collapse, Form, Input, InputNumber, Radio, Select, Spin, Tabs } from 'antd';
+import { ReactNode, useRef } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Alert } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { PageHeader } from '@/components/ui/page-header';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { LoadingState } from '@/components/ui/states';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Textarea } from '@/components/ui/textarea';
 import { SectionCard, StatCard } from '@/components/shared';
 import { ReceiptSettingsPreview } from './components/ReceiptSettingsPreview';
 import { type InstitutionalReceiptSeries, type ReceiptPrintProfile, apiClient, userSafeErrorMessage } from '@/lib/api';
@@ -35,6 +27,7 @@ import {
 
 type InstitutionalReceiptSettingsViewProps = {
   canEdit: boolean;
+  canEditAdvanced?: boolean;
   onStatus: (message: string) => void;
 };
 
@@ -80,11 +73,27 @@ const seriesSchema = z.object({
   message: 'El siguiente recibo debe quedar dentro del rango autorizado.',
 });
 
+const advancedProfileSchema = z.object({
+  width_mm: z.number().positive('Debe ser mayor que cero.'),
+  height_mm: z.number().positive('Debe ser mayor que cero.'),
+  margin_top_mm: z.number().min(0),
+  margin_right_mm: z.number().min(0),
+  margin_bottom_mm: z.number().min(0),
+  margin_left_mm: z.number().min(0),
+  orientation: z.enum(['landscape', 'portrait']),
+  font_family: z.string().trim().min(1),
+  font_scale: z.number().min(0.5).max(2),
+  support_reason: z.string().trim().min(10, 'Documente el motivo de soporte.'),
+});
+
 type InstitutionFormData = z.infer<typeof institutionSchema>;
 type SeriesFormData = z.infer<typeof seriesSchema>;
 type ProfileFormData = ReceiptProfileForm;
+type AdvancedProfileFormData = z.infer<typeof advancedProfileSchema>;
+const { TextArea } = Input;
 export function InstitutionalReceiptSettingsView({
   canEdit,
+  canEditAdvanced = false,
   onStatus,
 }: InstitutionalReceiptSettingsViewProps) {
   const queryClient = useQueryClient();
@@ -142,6 +151,22 @@ export function InstitutionalReceiptSettingsView({
     defaultValues: PROFILE_FORM_DEFAULTS,
   });
 
+  const advancedProfileForm = useForm<AdvancedProfileFormData>({
+    resolver: zodResolver(advancedProfileSchema),
+    defaultValues: {
+      width_mm: 215.9,
+      height_mm: 139.7,
+      margin_top_mm: 6,
+      margin_right_mm: 6,
+      margin_bottom_mm: 6,
+      margin_left_mm: 6,
+      orientation: 'landscape',
+      font_family: 'Arial, sans-serif',
+      font_scale: 1,
+      support_reason: '',
+    },
+  });
+
   useEffect(() => {
     if (!settings) return;
 
@@ -185,7 +210,19 @@ export function InstitutionalReceiptSettingsView({
       active: selectedProfile.active ?? PROFILE_FORM_DEFAULTS.active,
       is_global_default: selectedProfile.is_global_default ?? PROFILE_FORM_DEFAULTS.is_global_default,
     });
-  }, [selectedProfile, profileForm]);
+    advancedProfileForm.reset({
+      width_mm: Number(selectedProfile.width_mm ?? 215.9),
+      height_mm: Number(selectedProfile.height_mm ?? 139.7),
+      margin_top_mm: Number(selectedProfile.margin_top_mm ?? 6),
+      margin_right_mm: Number(selectedProfile.margin_right_mm ?? 6),
+      margin_bottom_mm: Number(selectedProfile.margin_bottom_mm ?? 6),
+      margin_left_mm: Number(selectedProfile.margin_left_mm ?? 6),
+      orientation: selectedProfile.orientation ?? 'landscape',
+      font_family: selectedProfile.font_family ?? 'Arial, sans-serif',
+      font_scale: Number(selectedProfile.font_scale ?? 1),
+      support_reason: '',
+    });
+  }, [selectedProfile, profileForm, advancedProfileForm]);
 
   const invalidate = () =>
     queryClient.invalidateQueries({ queryKey: queryKeys.settings.institutionalReceipts() });
@@ -227,6 +264,9 @@ export function InstitutionalReceiptSettingsView({
         active: true,
         is_global_default: true,
         template_code: 'institutional_classic',
+        ...(canEditAdvanced
+          ? advancedProfilePayload(advancedProfileForm.getValues())
+          : {}),
       });
     },
     onSuccess: async () => {
@@ -255,7 +295,17 @@ export function InstitutionalReceiptSettingsView({
   });
 
   if (settingsQuery.isLoading) {
-    return <LoadingState label="Cargando ajustes de recibos..." />;
+    return (
+      <div className="flex flex-col gap-6">
+        <PageHeader
+          title="Preparando ajustes de recibos"
+          description="Papel, copias, logo y firma. El sistema prepara la impresión según el perfil seleccionado."
+        />
+        <div className="flex min-h-48 items-center justify-center" role="status" aria-label="Cargando ajustes de recibos...">
+          <Spin size="large" description="Cargando ajustes de recibos..." />
+        </div>
+      </div>
+    );
   }
 
   if (settingsQuery.isError) {
@@ -265,10 +315,13 @@ export function InstitutionalReceiptSettingsView({
           title="Recibos institucionales"
           description="Configuración del recibo clásico, serie, papel y copias para impresora normal."
         />
-        <Alert variant="destructive" title="No se pudieron cargar los ajustes de recibos">
-          {userSafeErrorMessage(settingsQuery.error, 'Revise el servidor local y vuelva a intentar.')}
-        </Alert>
-        <Button type="button" variant="secondary" onClick={() => void settingsQuery.refetch()}>
+        <Alert
+          type="error"
+          showIcon
+          title="No se pudieron cargar los ajustes de recibos"
+          description={userSafeErrorMessage(settingsQuery.error, 'Revise el servidor local y vuelva a intentar.')}
+        />
+        <Button htmlType="button" onClick={() => void settingsQuery.refetch()}>
           Reintentar
         </Button>
       </>
@@ -336,29 +389,27 @@ export function InstitutionalReceiptSettingsView({
       </div>
 
       {!canEdit && (
-        <Alert variant="warning" title="Modo solo lectura">
-          Solo usuarios autorizados pueden cambiar serie, perfiles o textos institucionales.
-        </Alert>
+        <Alert
+          type="warning"
+          showIcon
+          title="Modo solo lectura"
+          description="Solo usuarios autorizados pueden cambiar serie, perfiles o textos institucionales."
+        />
       )}
 
       {error && (
-        <Alert variant="destructive" title="Error">
-          {error}
-        </Alert>
+        <Alert type="error" showIcon title="Error" description={error} />
       )}
 
-      <Tabs defaultValue="papel" className="grid items-start gap-5 lg:grid-cols-[15rem_minmax(0,1fr)]">
-        <div className="overflow-x-auto rounded-xl border border-operational-border bg-operational-surface p-2 shadow-operational lg:sticky lg:top-24 lg:overflow-visible">
-          <p className="hidden px-3 pb-3 pt-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground lg:block">Configurar recibo</p>
-          <TabsList className="min-w-max border-0 bg-transparent p-0 lg:flex lg:min-w-0 lg:flex-col lg:items-stretch lg:gap-1">
-            <TabsTrigger value="institucion">Institución</TabsTrigger>
-            <TabsTrigger value="serie">Serie</TabsTrigger>
-            <TabsTrigger value="papel">Papel y copias</TabsTrigger>
-            <TabsTrigger value="vista">Vista previa</TabsTrigger>
-          </TabsList>
-        </div>
-
-        <TabsContent value="institucion" className="mt-0 min-w-0 space-y-6">
+      <Tabs
+        defaultActiveKey="papel"
+        destroyOnHidden={false}
+        items={[
+          {
+            key: 'institucion',
+            label: 'Institución',
+            children: (
+              <div className="min-w-0 space-y-6">
           <SectionCard
             title="Datos del recibo"
             description="Encabezado, ubicación y leyenda del documento institucional."
@@ -376,38 +427,42 @@ export function InstitutionalReceiptSettingsView({
             >
               <div className="grid gap-4 md:grid-cols-2">
                 <Field label="Nombre del hospital" id="hospital_name" error={institutionForm.formState.errors.hospital_name?.message}>
-                  <Input id="hospital_name" disabled={!canEdit} {...institutionForm.register('hospital_name')} />
+                  <Controller name="hospital_name" control={institutionForm.control} render={({ field }) => <Input id="hospital_name" disabled={!canEdit} {...field} />} />
                 </Field>
                 <Field label="RTN si aplica" id="rtn">
-                  <Input id="rtn" disabled={!canEdit} {...institutionForm.register('rtn')} />
+                  <Controller name="rtn" control={institutionForm.control} render={({ field }) => <Input id="rtn" disabled={!canEdit} {...field} />} />
                 </Field>
                 <Field label="Dependencia superior" id="government_line" hint="Déjelo en blanco si no existe un encabezado oficial.">
-                  <Input id="government_line" disabled={!canEdit} {...institutionForm.register('government_line')} />
+                  <Controller name="government_line" control={institutionForm.control} render={({ field }) => <Input id="government_line" disabled={!canEdit} {...field} />} />
                 </Field>
                 <Field label="Secretaría o unidad" id="secretariat_line">
-                  <Input id="secretariat_line" disabled={!canEdit} {...institutionForm.register('secretariat_line')} />
+                  <Controller name="secretariat_line" control={institutionForm.control} render={({ field }) => <Input id="secretariat_line" disabled={!canEdit} {...field} />} />
                 </Field>
                 <Field label="Ciudad o lugar" id="receipt_location" hint="No se completa automáticamente desde la dirección.">
-                  <Input id="receipt_location" disabled={!canEdit} {...institutionForm.register('receipt_location')} />
+                  <Controller name="receipt_location" control={institutionForm.control} render={({ field }) => <Input id="receipt_location" disabled={!canEdit} {...field} />} />
                 </Field>
                 <Field label="Dirección o referencia" id="address">
-                  <Input id="address" disabled={!canEdit} {...institutionForm.register('address')} />
+                  <Controller name="address" control={institutionForm.control} render={({ field }) => <Input id="address" disabled={!canEdit} {...field} />} />
                 </Field>
               </div>
               <Field label="Leyenda de copias o pie" id="receipt_footer_text">
-                <Textarea id="receipt_footer_text" disabled={!canEdit} {...institutionForm.register('receipt_footer_text')} />
+                <Controller name="receipt_footer_text" control={institutionForm.control} render={({ field }) => <TextArea id="receipt_footer_text" disabled={!canEdit} {...field} />} />
               </Field>
               <div className="flex justify-end">
-                <Button type="submit" disabled={!canEdit || institutionMutation.isPending}>
-                  <Save className="size-4" data-icon aria-hidden="true" />
+                <Button htmlType="submit" type="primary" loading={institutionMutation.isPending} disabled={!canEdit} icon={<SaveOutlined />}>
                   Guardar institución
                 </Button>
               </div>
             </form>
           </SectionCard>
-        </TabsContent>
-
-        <TabsContent value="serie" className="space-y-6">
+              </div>
+            ),
+          },
+          {
+            key: 'serie',
+            label: 'Serie',
+            children: (
+              <div className="space-y-6">
           <SectionCard
             title="Serie y control fiscal"
             description="Rango, formato y correlativo actual del recibo institucional."
@@ -423,24 +478,27 @@ export function InstitutionalReceiptSettingsView({
                     })(),
               )}
             >
-              <Alert variant="warning" title="Correlativo sensible">
-                Cambie el correlativo solo con autorización documentada. No lo use para corregir recibos ya emitidos.
-              </Alert>
+              <Alert
+                type="warning"
+                showIcon
+                title="Correlativo sensible"
+                description="Cambie el correlativo solo con autorización documentada. No lo use para corregir recibos ya emitidos."
+              />
               <div className="grid gap-4 md:grid-cols-3">
                 <Field label="Serie" id="series" error={seriesForm.formState.errors.series?.message}>
-                  <Input id="series" disabled={!canEdit} {...seriesForm.register('series')} />
+                  <Controller name="series" control={seriesForm.control} render={({ field }) => <Input id="series" disabled={!canEdit} {...field} />} />
                 </Field>
                 <Field label="Prefijo" id="prefix" error={seriesForm.formState.errors.prefix?.message}>
-                  <Input id="prefix" disabled={!canEdit} {...seriesForm.register('prefix')} />
+                  <Controller name="prefix" control={seriesForm.control} render={({ field }) => <Input id="prefix" disabled={!canEdit} {...field} />} />
                 </Field>
                 <Field label="Formato" id="number_format">
-                  <Input id="number_format" disabled={!canEdit} {...seriesForm.register('number_format')} />
+                  <Controller name="number_format" control={seriesForm.control} render={({ field }) => <Input id="number_format" disabled={!canEdit} {...field} />} />
                 </Field>
                 <Field label="Número inicial" id="min_number">
-                  <Input id="min_number" type="number" disabled={!canEdit} {...seriesForm.register('min_number', { valueAsNumber: true })} />
+                  <Controller name="min_number" control={seriesForm.control} render={({ field }) => <InputNumber id="min_number" disabled={!canEdit} className="w-full" {...field} />} />
                 </Field>
                 <Field label="Número final" id="max_number" error={seriesForm.formState.errors.max_number?.message}>
-                  <Input id="max_number" type="number" disabled={!canEdit} {...seriesForm.register('max_number', { valueAsNumber: true })} />
+                  <Controller name="max_number" control={seriesForm.control} render={({ field }) => <InputNumber id="max_number" disabled={!canEdit} className="w-full" {...field} />} />
                 </Field>
                 <Field
                   label="Correlativo actual"
@@ -448,38 +506,43 @@ export function InstitutionalReceiptSettingsView({
                   error={seriesForm.formState.errors.current_number?.message}
                   hint="El próximo recibo usará este valor + 1."
                 >
-                  <Input id="current_number" type="number" disabled={!canEdit} {...seriesForm.register('current_number', { valueAsNumber: true })} />
+                  <Controller name="current_number" control={seriesForm.control} render={({ field }) => <InputNumber id="current_number" disabled={!canEdit} className="w-full" {...field} />} />
                 </Field>
                 <Field label="Color del número" id="receipt_number_color">
-                  <Input id="receipt_number_color" type="color" disabled={!canEdit} {...seriesForm.register('receipt_number_color')} />
+                  <Controller name="receipt_number_color" control={seriesForm.control} render={({ field }) => <Input id="receipt_number_color" type="color" disabled={!canEdit} {...field} />} />
                 </Field>
                 <Field label="Rango autorizado" id="range_authorization">
-                  <Input id="range_authorization" disabled={!canEdit} {...seriesForm.register('range_authorization')} />
+                  <Controller name="range_authorization" control={seriesForm.control} render={({ field }) => <Input id="range_authorization" disabled={!canEdit} {...field} />} />
                 </Field>
                 <div className="flex items-center gap-2 pt-7">
                   <Checkbox
                     id="active"
                     checked={seriesForm.watch('active')}
                     disabled={!canEdit}
-                    onCheckedChange={(value) => seriesForm.setValue('active', value === true)}
-                  />
-                  <Label htmlFor="active">Serie activa</Label>
+                    onChange={(event) => seriesForm.setValue('active', event.target.checked)}
+                  >
+                    Serie activa
+                  </Checkbox>
                 </div>
               </div>
               <Field label="Texto legal del recibo" id="legal_text">
-                <Textarea id="legal_text" disabled={!canEdit} {...seriesForm.register('legal_text')} />
+                <Controller name="legal_text" control={seriesForm.control} render={({ field }) => <TextArea id="legal_text" disabled={!canEdit} {...field} />} />
               </Field>
               <div className="flex justify-end">
-                <Button type="submit" disabled={!canEdit || seriesMutation.isPending}>
-                  <Save className="size-4" data-icon aria-hidden="true" />
+                <Button htmlType="submit" type="primary" loading={seriesMutation.isPending} disabled={!canEdit} icon={<SaveOutlined />}>
                   Guardar serie
                 </Button>
               </div>
             </form>
           </SectionCard>
-        </TabsContent>
-
-        <TabsContent value="papel" className="space-y-6">
+              </div>
+            ),
+          },
+          {
+            key: 'papel',
+            label: 'Papel y copias',
+            children: (
+              <div className="space-y-6">
           <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] xl:items-start">
             <SectionCard
               title="Papel del recibo"
@@ -487,50 +550,50 @@ export function InstitutionalReceiptSettingsView({
             >
               <fieldset disabled={profileControlsDisabled} className="min-w-0 space-y-3">
                 <legend className="text-sm font-semibold text-foreground">Formatos institucionales</legend>
-                <div className="grid gap-3 sm:grid-cols-3">
+                <Radio.Group
+                  name="institutional-receipt-paper"
+                  aria-label="Formatos institucionales: tipo de papel del recibo"
+                  value={paper}
+                  disabled={profileControlsDisabled}
+                  onChange={(event) => setPaper(event.target.value as InstitutionalPaper)}
+                  className="grid gap-3 sm:grid-cols-3"
+                >
                   {PAPER_CHOICES.map((choice) => {
                     const selected = choice.value === paper;
                     return (
-                      <label
+                      <Radio
                         key={choice.value}
-                        className={`flex min-h-11 cursor-pointer items-start gap-3 rounded-panel border p-3 text-left transition-colors focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 ${
+                        value={choice.value}
+                        className={`min-h-11 border p-3 text-left ${
                           selected
-                            ? 'border-hospital-primary bg-hospital-primary/5 ring-1 ring-hospital-primary/40'
+                            ? 'border-hospital-primary bg-hospital-primary/5'
                             : 'border-operational-border bg-operational-surface'
-                        } ${profileControlsDisabled ? 'cursor-not-allowed opacity-60' : ''}`}
+                        }`}
                       >
-                        <input
-                          type="radio"
-                          name="institutional-receipt-paper"
-                          value={choice.value}
-                          checked={selected}
-                          onChange={() => setPaper(choice.value)}
-                          className="mt-0.5 size-5 shrink-0 accent-[var(--color-hospital-primary)]"
-                        />
                         <span className="min-w-0">
                           <span className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
                             {choice.label}
-                            {selected ? <CheckCircle2 className="size-4" aria-hidden="true" /> : null}
+                            {selected ? <CheckCircleOutlined aria-hidden="true" /> : null}
                           </span>
                           <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
                             {choice.description}
                           </span>
                           {selected ? <span className="mt-1 block text-xs font-semibold">Seleccionado</span> : null}
                         </span>
-                      </label>
+                      </Radio>
                     );
                   })}
-                </div>
+                </Radio.Group>
               </fieldset>
 
-              <fieldset className="mt-5 min-w-0 rounded-panel border border-dashed border-operational-border p-3">
+              <fieldset className="mt-5 min-w-0 border border-dashed border-operational-border p-3">
                 <legend className="px-1 text-sm font-semibold text-foreground">Compatibilidad térmica</legend>
                 <p className="text-xs leading-relaxed text-muted-foreground">
                   Disponibles solo para compatibilidad secundaria; no reemplazan el recibo institucional.
                 </p>
                 <ul className="mt-3 grid gap-2 sm:grid-cols-2">
                   {THERMAL_COMPATIBILITY_CHOICES.map((choice) => (
-                    <li key={choice.value} className="min-h-11 rounded-md border border-operational-border bg-muted/40 p-3">
+                    <li key={choice.value} className="min-h-11 border border-operational-border bg-muted/40 p-3">
                       <span className="text-sm font-semibold text-foreground">{choice.label}</span>
                       <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
                         {choice.description}
@@ -542,29 +605,27 @@ export function InstitutionalReceiptSettingsView({
 
               <form
                 className="mt-5 space-y-4"
-                onSubmit={profileForm.handleSubmit((data) =>
-                  profileSavingRef.current
-                    ? undefined
-                    : (() => {
-                        profileSavingRef.current = true;
-                        profileMutation.mutate(data);
-                      })(),
-                )}
+                onSubmit={profileForm.handleSubmit(async (data) => {
+                  if (profileSavingRef.current) return;
+                  if (canEditAdvanced && !(await advancedProfileForm.trigger())) return;
+                  profileSavingRef.current = true;
+                  profileMutation.mutate(data);
+                })}
               >
                 <div className="grid gap-4 md:grid-cols-3">
                   <Field label="Copias" id="copies_mode">
                     <Select
+                      id="copies_mode"
+                      aria-label="Copias"
                       value={profileForm.watch('copies_mode')}
-                      onValueChange={(value) => profileForm.setValue('copies_mode', value as ProfileFormData['copies_mode'])}
+                      onChange={(value) => profileForm.setValue('copies_mode', value as ProfileFormData['copies_mode'])}
                       disabled={profileControlsDisabled}
-                    >
-                      <SelectTrigger id="copies_mode"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="original_only">Solo original</SelectItem>
-                        <SelectItem value="original_first">Original + primera copia</SelectItem>
-                        <SelectItem value="original_first_second">Original + dos copias</SelectItem>
-                      </SelectContent>
-                    </Select>
+                      options={[
+                        { value: 'original_only', label: 'Solo original' },
+                        { value: 'original_first', label: 'Original + primera copia' },
+                        { value: 'original_first_second', label: 'Original + dos copias' },
+                      ]}
+                    />
                   </Field>
                   <CheckboxField
                     id="profile_show_seal_space"
@@ -582,13 +643,92 @@ export function InstitutionalReceiptSettingsView({
                   />
                 </div>
 
+                {canEditAdvanced ? (
+                  <Collapse
+                    items={[{
+                      key: 'advanced',
+                      label: 'Ajustes técnicos avanzados',
+                      children: (
+                        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                          {([
+                            ['width_mm', 'Ancho mm'],
+                            ['height_mm', 'Alto mm'],
+                            ['margin_top_mm', 'Margen sup. (mm)'],
+                            ['margin_right_mm', 'Margen der. (mm)'],
+                            ['margin_bottom_mm', 'Margen inf. (mm)'],
+                            ['margin_left_mm', 'Margen izq. (mm)'],
+                          ] as const).map(([name, label]) => (
+                            <Controller
+                              key={name}
+                              control={advancedProfileForm.control}
+                              name={name}
+                              render={({ field, fieldState }) => (
+                                <Field id={`advanced_${name}`} label={label} error={fieldState.error?.message}>
+                                  <InputNumber
+                                    id={`advanced_${name}`}
+                                    min={0}
+                                    step={0.1}
+                                    value={field.value}
+                                    onBlur={field.onBlur}
+                                    onChange={(value) => field.onChange(value ?? 0)}
+                                    className="w-full"
+                                  />
+                                </Field>
+                              )}
+                            />
+                          ))}
+                          <Controller
+                            control={advancedProfileForm.control}
+                            name="orientation"
+                            render={({ field }) => (
+                              <Field id="advanced_orientation" label="Orientación">
+                                <Select
+                                  id="advanced_orientation"
+                                  value={field.value}
+                                  onChange={field.onChange}
+                                  options={[
+                                    { value: 'landscape', label: 'Horizontal' },
+                                    { value: 'portrait', label: 'Vertical' },
+                                  ]}
+                                />
+                              </Field>
+                            )}
+                          />
+                          <Field id="advanced_font_family" label="Fuente" error={advancedProfileForm.formState.errors.font_family?.message}>
+                            <Input id="advanced_font_family" {...advancedProfileForm.register('font_family')} />
+                          </Field>
+                          <Controller
+                            control={advancedProfileForm.control}
+                            name="font_scale"
+                            render={({ field, fieldState }) => (
+                              <Field id="advanced_font_scale" label="Escala" error={fieldState.error?.message}>
+                                <InputNumber
+                                  id="advanced_font_scale"
+                                  min={0.5}
+                                  max={2}
+                                  step={0.05}
+                                  value={field.value}
+                                  onChange={(value) => field.onChange(value ?? 1)}
+                                />
+                              </Field>
+                            )}
+                          />
+                          <div className="md:col-span-2 xl:col-span-3">
+                            <Field id="advanced_support_reason" label="Motivo de soporte" error={advancedProfileForm.formState.errors.support_reason?.message}>
+                              <TextArea id="advanced_support_reason" rows={3} {...advancedProfileForm.register('support_reason')} />
+                            </Field>
+                          </div>
+                        </div>
+                      ),
+                    }]}
+                  />
+                ) : null}
+
                 <div className="flex flex-wrap justify-end gap-2">
-                  <Button type="button" variant="secondary" disabled={profileControlsDisabled || testPrintMutation.isPending} onClick={() => testPrintMutation.mutate()}>
-                    <Printer className="size-4" data-icon aria-hidden="true" />
+                  <Button htmlType="button" disabled={profileControlsDisabled} loading={testPrintMutation.isPending} onClick={() => testPrintMutation.mutate()} icon={<PrinterOutlined />}>
                     Imprimir prueba
                   </Button>
-                  <Button type="submit" disabled={!canEdit || profileMutation.isPending || !selectedProfile}>
-                    <Save className="size-4" data-icon aria-hidden="true" />
+                  <Button htmlType="submit" type="primary" loading={profileMutation.isPending} disabled={!canEdit || !selectedProfile} icon={<SaveOutlined />}>
                     Guardar perfil
                   </Button>
                 </div>
@@ -609,9 +749,13 @@ export function InstitutionalReceiptSettingsView({
               />
             </div>
           </div>
-        </TabsContent>
-
-        <TabsContent value="vista">
+              </div>
+            ),
+          },
+          {
+            key: 'vista',
+            label: 'Vista previa',
+            children: (
           <ReceiptSettingsPreview
             hospitalName={institutionValues.hospital_name}
             governmentLine={institutionValues.government_line ?? ''}
@@ -623,10 +767,29 @@ export function InstitutionalReceiptSettingsView({
             paper={paper}
             draft
           />
-        </TabsContent>
-      </Tabs>
+            ),
+          },
+        ]}
+      />
     </>
   );
+}
+
+function advancedProfilePayload(values: AdvancedProfileFormData) {
+  const decimal = (value: number) => value.toFixed(2);
+  return {
+    width_mm: decimal(values.width_mm),
+    height_mm: decimal(values.height_mm),
+    margin_top_mm: decimal(values.margin_top_mm),
+    margin_right_mm: decimal(values.margin_right_mm),
+    margin_bottom_mm: decimal(values.margin_bottom_mm),
+    margin_left_mm: decimal(values.margin_left_mm),
+    orientation: values.orientation,
+    font_family: values.font_family,
+    font_scale: decimal(values.font_scale),
+    show_technical_fields: true,
+    support_reason: values.support_reason,
+  };
 }
 
 function Field({
@@ -642,35 +805,16 @@ function Field({
   id: string;
   label: string;
 }) {
-  const errorId = `${id}-error`;
-  const hintId = `${id}-hint`;
-  let control = children;
-
-  if (isValidElement(children)) {
-    const child = children as ReactElement<Record<string, unknown>>;
-    control = cloneElement(child, {
-      'aria-describedby': error || hint
-        ? [child.props['aria-describedby'], hint ? hintId : null, error ? errorId : null].filter(Boolean).join(' ')
-        : child.props['aria-describedby'],
-      'aria-invalid': error ? true : child.props['aria-invalid'],
-    });
-  }
-
   return (
-    <div className="space-y-2">
-      <Label htmlFor={id}>{label}</Label>
-      {control}
-      {hint && (
-        <p id={hintId} className="text-xs leading-5 text-muted-foreground">
-          {hint}
-        </p>
-      )}
-      {error && (
-        <p id={errorId} role="alert" className="text-sm text-destructive">
-          {error}
-        </p>
-      )}
-    </div>
+    <Form.Item
+      label={label}
+      htmlFor={id}
+      validateStatus={error ? 'error' : undefined}
+      help={error ?? hint}
+      className="mb-0"
+    >
+      {children}
+    </Form.Item>
   );
 }
 
@@ -688,17 +832,16 @@ function CheckboxField({
   onChange: (value: boolean) => void;
 }) {
   return (
-    <div className="flex items-center gap-2 rounded-md border border-operational-border bg-operational-panel p-3 text-sm">
+    <div className="flex items-center gap-2 border border-operational-border bg-operational-panel p-3 text-sm">
       <Checkbox
         id={id}
         aria-label={label}
         checked={checked}
         disabled={disabled}
-        onCheckedChange={(value) => onChange(value === true)}
-      />
-      <Label htmlFor={id} className="cursor-pointer text-sm font-normal">
+        onChange={(event) => onChange(event.target.checked)}
+      >
         {label}
-      </Label>
+      </Checkbox>
     </div>
   );
 }

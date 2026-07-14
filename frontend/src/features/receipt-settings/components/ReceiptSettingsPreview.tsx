@@ -77,14 +77,14 @@ export function ReceiptSettingsPreview({
       data-testid="receipt-settings-preview"
       title="Vista previa institucional"
       description={`${paperChoice.label}. El contenido de muestra no genera ni modifica recibos.`}
-      className="bg-operational-panel"
+      className="overflow-hidden border border-border bg-muted"
     >
       <div className="space-y-4">
         {labels.map((label) => (
           <ReceiptPreviewSheet
             key={label}
             className={cn(
-              'receipt-paper-preview mx-auto w-full max-w-3xl rounded-sm border border-neutral-400 bg-white p-0 text-black shadow-[0_18px_45px_-28px_rgba(15,23,42,0.28)]',
+              'receipt-paper-preview mx-auto w-full max-w-3xl border border-neutral-400 bg-white p-0 text-black',
               presentation.previewClass,
             )}
             aspectRatio={paperChoice.aspectRatio}

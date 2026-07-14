@@ -1,9 +1,8 @@
 ﻿import { useEffect, useRef, useState } from 'react';
 import type React from 'react';
+import { Alert, Button } from 'antd';
 import { useReactToPrint } from 'react-to-print';
-import { Alert } from '../../components/ui/alert';
-import { Badge } from '../../components/ui/badge';
-import { Button } from '../../components/ui/button';
+import { StatusTag } from '../../components/ui/status-tag';
 import { type ReceiptData } from '../../lib/api';
 import { receiptPrintPaperSize } from '../../lib/institutionalReceiptPaper';
 import { formatLempirasFromCents, parseCents } from '../../lib/moneyCents';
@@ -62,12 +61,12 @@ export function ReceiptPreview({ onNewInvoice, onPrint, receipt }: ReceiptPrevie
 
   return (
     <div className="receipt-preview-panel" aria-label="Vista previa del recibo">
-      <div className="receipt-preview-controls no-print" role="group" aria-label="Acciones del recibo">
-        <Button type="button" className="min-h-11" onClick={handlePrintClick}>
+      <div className="receipt-preview-controls no-print border border-border bg-background p-3" role="group" aria-label="Acciones del recibo">
+        <Button htmlType="button" type="primary" className="min-h-11" onClick={handlePrintClick}>
           Imprimir
         </Button>
         {onNewInvoice ? (
-          <Button type="button" variant="secondary" className="min-h-11" onClick={onNewInvoice}>
+          <Button htmlType="button" className="min-h-11" onClick={onNewInvoice}>
             Nueva factura
           </Button>
         ) : null}
@@ -75,9 +74,7 @@ export function ReceiptPreview({ onNewInvoice, onPrint, receipt }: ReceiptPrevie
 
       {printError ? (
         <div className="no-print mb-3">
-          <Alert variant="warning" title="Impresión no completada">
-            {printError}
-          </Alert>
+          <Alert type="warning" showIcon title="Impresión no completada" description={printError} />
         </div>
       ) : null}
 
@@ -233,7 +230,7 @@ function ItemName({ item }: { item: ReceiptData['items'][number] }) {
       <span className="name">{item.service_name}</span>
       {Number(item.quantity) !== 1 ? <span className="qty"> x {item.quantity}</span> : null}
       {item.special_rule_applied ? (
-        <Badge variant="secondary" className="special-rule-badge">Regla</Badge>
+        <StatusTag kind="info" className="special-rule-badge">Regla</StatusTag>
       ) : null}
     </span>
   );
