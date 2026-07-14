@@ -109,16 +109,6 @@
       "html": "<input aria-label=\"Buscar usuarios\" placeholder=\"Buscar por nombre, correo o usuario...\" class=\"ant-input css-dev-only-do-not-override-1pi45l5\" type=\"text\" value=\"\">"
     },
     {
-      "selector": ".ant-alert",
-      "radii": [
-        "0px",
-        "0px",
-        "0px",
-        "0px"
-      ],
-      "html": "<div data-show=\"true\" class=\"ant-alert ant-alert-info ant-alert-outlined ant-alert-with-description ant-alert-no-icon s-hospital css-dev-only-do-not-override-1pi45l5\" role=\"alert\"><div class=\"ant-alert-section\"><div class=\"ant-alert-title\"><h1>Usuarios y funciones</h1></div><div class=\"ant-alert-description\"><p>Administre cuentas individuales, roles operativos y permisos por modulo sin cambiar la politica de acceso del servidor.</p><span class=\"ant-tag ant-tag-filled ant-tag-processing css-dev-o"
-    },
-    {
       "selector": ".ant-tag",
       "radii": [
         "0px",

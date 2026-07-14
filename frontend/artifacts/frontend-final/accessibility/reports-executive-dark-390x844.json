@@ -86,7 +86,7 @@
         "0px",
         "0px"
       ],
-      "html": "<div class=\"ant-picker ant-picker-outlined css-dev-only-do-not-override-1pi45l5 s-hospital ant-picker-css-var\"><div class=\"ant-picker-input\"><input aria-invalid=\"false\" autocomplete=\"off\" aria-label=\"Fin ejecutivo\" size=\"12\" id=\"report-to\" placeholder=\"Seleccionar fecha\" value=\"2026-07-13\"><span class=\"ant-picker-suffix\"><span role=\"img\" aria-label=\"calendar\" aria-hidden=\"true\" class=\"anticon anticon-calendar\"><svg viewBox=\"64 64 896 896\" focusable=\"false\" data-icon=\"calendar\" width=\"1em\" height"
+      "html": "<div class=\"ant-picker ant-picker-outlined css-dev-only-do-not-override-1pi45l5 s-hospital ant-picker-css-var\"><div class=\"ant-picker-input\"><input aria-invalid=\"false\" autocomplete=\"off\" aria-label=\"Fin ejecutivo\" size=\"12\" id=\"report-to\" placeholder=\"Seleccionar fecha\" value=\"2026-07-14\"><span class=\"ant-picker-suffix\"><span role=\"img\" aria-label=\"calendar\" aria-hidden=\"true\" class=\"anticon anticon-calendar\"><svg viewBox=\"64 64 896 896\" focusable=\"false\" data-icon=\"calendar\" width=\"1em\" height"
     },
     {
       "selector": ".ant-alert",
