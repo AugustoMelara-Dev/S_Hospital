@@ -1,57 +1,50 @@
-# Certificación final del refactor frontend
+# Certificación final del nuevo frontend
 
-Fecha: 2026-07-13, zona `America/Tegucigalpa`.
+Fecha: 2026-07-14 (`America/Tegucigalpa`).
 
-## Arquitectura resultante
+## Resultado
 
-- Ant Design 6.5.0 para UI e iconos.
-- AG Grid Community 36.0.0 para grids operativos, sin Enterprise.
-- Apache ECharts 6.1.0 con imports modulares desde `echarts/core`.
-- React Hook Form 7.76.0 y Zod 4.4.3 para formularios.
-- TanStack Query 5.100.10 para estado remoto.
-- Day.js 1.11.21 para fechas.
-- Tokens institucionales centralizados y `borderRadius: 0` global.
-- Vitest, Testing Library, Storybook, Playwright y axe para QA.
+S_Hospital tiene un frontend institucional único. Todas las rutas usan Ant Design/Ant Design Icons, los grids operativos usan AG Grid Community y los gráficos usan Apache ECharts modular. Formularios, estado remoto y fechas usan React Hook Form + Zod, TanStack Query y Day.js. Los tokens y fuentes son locales; `borderRadius` es 0 global.
 
-## Gates ejecutados
+La facturación conserva búsqueda/filtros de servicios, paciente obligatorio, carrito/totales, cobro, confirmación, éxito, historial, detalle, anulación, reverso y reimpresión. El recibo institucional comparte contenido entre preview/PDF/impresión y cubre seis formatos con original y copias.
 
-| Comando | Resultado |
+## Gates previos al merge
+
+| Comando | Resultado exacto |
 |---|---|
 | `git diff --check` | PASS |
+| `npm dedupe` | PASS; 0 vulnerabilidades |
 | `npm ci` | 612 paquetes; 0 vulnerabilidades |
+| `npm ls --depth=0` | exit 0 |
 | `npm run typecheck` | PASS |
 | `npm run lint` | PASS |
-| `npm run test:segmented` | 133/133 archivos; 967/967 tests; 12/12 segmentos; 0 omitidos |
-| `npm run test:storybook` | 3/3 archivos; 16/16 tests |
-| `npm run test:e2e:mock` | 39/39 tests |
-| `npm run check:ui-legacy:strict` | 335 archivos runtime; 0 violaciones |
-| `npm run check:ui-legacy:final` | 335 archivos runtime; 0 violaciones; allowlist 0 |
-| `npm run build` | PASS; sin warning `@theme` |
-| `npm run analyze:bundle` | PASS; inicio 328.7 KiB gzip; total 1,053.3 KiB gzip |
+| `npm run test:segmented` | 132/132 archivos; 965/965 tests; 12/12 segmentos; 0 omitidos; 1,307.3 s |
+| `npm run test:storybook` | 3/3 archivos; 14/14 tests |
+| `npm run test:e2e:mock` | 39/39; 118.7 s |
+| matriz visual/axe | 4/4; 112 PNG + 112 JSON; 342.9 s |
+| `npm run check:ui-legacy` | inventory: 329 archivos; 0 violaciones |
+| `npm run check:ui-legacy:strict` | 329 archivos; 0 violaciones |
+| `npm run check:ui-legacy:final` | 329 archivos; 0 violaciones; allowlist 0 |
+| `npm run build` | PASS; 3,973 módulos; sin warning `@theme` |
+| `npm run analyze:bundle` | PASS; 336,667 B gzip inicial; 1,077,880 B gzip total |
 
-El modo `inventory` conserva cinco coincidencias exclusivamente dentro de tests que prueban el detector o sus fixtures de color. Los modos `strict` y `final` auditan todo el runtime, incluidos TS, TSX y CSS, y terminan en cero sin allowlist ni excepción temporal.
+## QA, impresión y bundle
 
-## QA visual y accesibilidad
+- Axe: minor 0, moderate 0, serious 0, critical 0; 191 nodos incomplete clasificados; 0 sin clasificar.
+- Computed styles: 1,218 superficies; 0 radios distintos de `0px`; 0 overflow.
+- Consola/red: 0 `console.error`, 0 `pageerror`, 0 `requestfailed`, 0 endpoints inesperados.
+- Impresión: 18/18 PDFs para Carta, Media Carta, A5, 80 mm, 58 mm y 190×140 mm; original, primera y segunda copia.
+- Bundle lazy justificado: AG Grid 866,247 B raw/239,949 B gzip; reportes/ECharts 614,226 B raw/204,756 B gzip. Ninguno forma parte del arranque.
 
-- 13 rutas protegidas y 3 estados de autenticación.
-- 7 variantes por recorrido: claro/oscuro, 1366×768, 1920×1080, 390×844 y zoom 125 %.
-- 112 capturas y 112 informes JSON.
-- Axe: minor 0, moderate 0, serious 0, critical 0.
-- 191 incompletes clasificados manual y computacionalmente; 0 sin clasificar.
-- 1,225 superficies: 0 radios distintos de `0px`.
-- 0 overflow, 0 controles sin nombre, 0 errores de consola, 0 `pageerror`, 0 requests inesperados.
+## Eliminación legacy
 
-## Impresión
+Línea base 177 violaciones/406 archivos. Resultado inventory/strict/final: 0/329. `src/components/ui` y `src/components/shared`: eliminados. Dependencias reemplazadas e imports prohibidos: 0. Archivos o símbolos `Compat|Legacy|Old|V1`: 0. Ramas runtime específicas de test: 0. APIs estáticas Ant Design de feedback: 0.
 
-Se generaron y validaron 18 PDFs: Carta, Media Carta, A5, 80 mm, 58 mm y personalizado 190×140 mm, cada uno como original, primera copia y segunda copia. Todos tienen una página, MediaBox correcto, contenido institucional obligatorio, fuentes locales y cero overflow.
+## Integración
 
-## Dependencias reemplazadas
-
-Eliminadas: todos los paquetes `@radix-ui/*`, `lucide-react`, `recharts`, `sonner`, `vaul`, `cmdk`, `motion`, `react-day-picker`, `@tanstack/react-table`, `@tanstack/react-virtual`, `class-variance-authority` y `react-to-print`.
-
-La búsqueda exacta sobre `src` y `package.json` devuelve cero coincidencias para dependencias legacy. `src/components/ui` ya no existe.
+Rama del refactor: `codex/refactor-total`. Rama objetivo verificada: `main`. Los hashes de merge y certificación post-merge se registrarán en este mismo documento después de ejecutar de nuevo todos los gates sobre `main`.
 
 ## Bloqueos externos
 
-- `E2E_RELEASE_PASSWORD_SET=False` y `E2E_SEED_PASSWORD_SET=False`. `npm run test:e2e:release` falla antes de sembrar datos con el mensaje explícito requerido. **BLOQUEADO EXTERNAMENTE: CREDENCIAL RELEASE NO PROPORCIONADA**.
-- No hay impresora física accesible. **VALIDACIÓN FÍSICA EXTERNA PENDIENTE** según los pasos de `docs/frontend-printing-verification.md`.
+- `E2E_RELEASE_PASSWORD_present=False`; `E2E_SEED_PASSWORD_present=False`. El comando termina antes de sembrar datos con “E2E release password is required”. **BLOQUEO EXTERNO: NO SE PROPORCIONÓ E2E_RELEASE_PASSWORD NI E2E_SEED_PASSWORD**.
+- No existe impresora física accesible. **VALIDACIÓN FÍSICA EN IMPRESORA PENDIENTE POR HARDWARE EXTERNO**.

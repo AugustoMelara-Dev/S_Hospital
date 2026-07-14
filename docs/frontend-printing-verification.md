@@ -1,12 +1,12 @@
 # Verificación final de impresión del frontend
 
+Fecha: 2026-07-14.
+
 ## Evidencia automatizada
 
-- Pruebas unitarias focales: 25/25.
-- Playwright impresión: 21/21.
-- PDFs generados: 18, más `printing-evidence.json`, bajo `frontend/test-results/frontend-final/printing/`.
-- Cada PDF tiene una página; `pypdf` confirmó MediaBox y texto obligatorio en 18/18.
-- Recursos externos de fuentes durante la generación: 0.
+- Playwright mock del bloque recibos/reportes: 27/27.
+- PDFs generados y versionados: 18, más `printing-evidence.json`.
+- Cada PDF tiene una página, MediaBox correcto, fuentes locales, contenido institucional obligatorio y cero overflow.
 
 | Formato | MediaBox verificado | Copias |
 |---|---|---|
@@ -17,19 +17,16 @@
 | 58 mm | 165.12 × 841.92 pt | Original, primera, segunda |
 | Personalizado 190 × 140 mm | 539.04 × 396.96 pt | Original, primera, segunda |
 
-Los recorridos comprobaron tamaño, orientación, una página, márgenes del perfil, ausencia de overflow, shell y acciones ocultos, sombra desactivada, encabezado, pie, RTN, correlativo, monto, monto en letras, firma, sello y leyenda de copia.
+Los recorridos verifican orientación, márgenes, una página, salto, escalado, shell/acciones ocultos, encabezado, pie, correlativo, RTN, monto, monto en letras, firma, sello y leyenda de copia.
 
-## VALIDACIÓN FÍSICA EXTERNA PENDIENTE
+## VALIDACIÓN FÍSICA EN IMPRESORA PENDIENTE POR HARDWARE EXTERNO
 
-No existe una impresora física accesible en este entorno. Una persona debe:
+1. Registrar modelo, driver, sistema operativo, fecha y operador.
+2. Configurar el tamaño exacto de cada perfil y escala 100 %, sin “ajustar a página”.
+3. Imprimir original, primera y segunda copia de los seis perfiles: 18 salidas.
+4. Medir ancho, alto y cuatro márgenes; comparar con el perfil.
+5. Verificar cortes, páginas en blanco, overflow y escalado.
+6. Confirmar legibilidad de identidad, RTN, correlativo, montos, firma, sello, pie y copia.
+7. Adjuntar fotografías o escaneos y anotar ajustes exclusivos del driver.
 
-1. Registrar modelo de impresora, versión de driver, sistema operativo, fecha y operador.
-2. Configurar en el driver el tamaño exacto de cada uno de los seis perfiles.
-3. Seleccionar la orientación indicada por el PDF y escala 100 %, sin “ajustar a página”.
-4. Imprimir original, primera copia y segunda copia de cada perfil: 18 salidas.
-5. Medir ancho, alto y cuatro márgenes con regla; comparar con el perfil seleccionado.
-6. Verificar que no existan cortes, páginas en blanco, desbordes ni escalado inesperado.
-7. Confirmar legibilidad de encabezado, RTN, correlativo, monto en número y letras, firma, sello, pie y leyenda de copia.
-8. Adjuntar fotografías/escaneos y anotar cualquier ajuste exclusivo del driver.
-
-Este pendiente es validación de hardware externo, no deuda de implementación.
+Este punto es validación de hardware externo, no deuda de implementación.

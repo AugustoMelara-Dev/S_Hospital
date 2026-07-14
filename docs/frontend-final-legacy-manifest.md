@@ -323,9 +323,9 @@ La línea base coincide exactamente con 177 violaciones en 406 archivos.
 ## Cierre verificado
 
 - Línea base preservada: 177 violaciones individuales en 406 archivos.
-- Gate final: 335 archivos runtime TS/TSX/CSS, 0 violaciones.
+- Gate final e inventory: 329 archivos TS/TSX/CSS, 0 violaciones.
 - Allowlist: 0.
 - Excepciones temporales: 0.
 - `src/components/ui`: eliminado.
 - Dependencias e imports reemplazados: 0 coincidencias en `src` y `package.json`.
-- Commits de resolución: `238c33c6` y `d4a274a4`.
+- Commits de resolución principales: `238c33c6`, `d4a274a4`, `9b04b62a`, `962d0983`, `3155b187` y `eada8b6e`.
