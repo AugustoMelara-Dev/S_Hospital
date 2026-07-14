@@ -1,12 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { StatGrid } from '@/components/shared';
+import { Alert, Button, Col, Modal, Pagination, Result, Row, Spin, Statistic } from 'antd';
+import { PageHeader } from '@/components/ui/page-header';
 import { useBackups, useCreateBackup } from '@/hooks/useBackups';
 import { useSystemStatusSnapshot } from '@/hooks/useServerStatus';
-import { Alert } from '../../components/ui/alert';
-import { ConfirmDialog } from '../../components/ui/confirm-dialog';
-import { PaginationControls } from '../../components/ui/pagination';
-import { PageHeader } from '../../components/ui/page-header';
-import { ErrorState, LoadingState } from '../../components/ui/states';
 import { BackupEmptyState } from './components/BackupExplanationCard';
 import { BackupHistoryTable } from './components/BackupHistoryTable';
 import { BackupPageActions } from './components/BackupPageActions';
@@ -174,8 +170,8 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
   return (
     <section id="backups" aria-labelledby="backups-title" className="flex flex-col gap-6">
       <PageHeader
-        title="Respaldos"
-        description="Copias de seguridad de facturación, caja y reportes"
+        title="Protección y recuperación"
+        description="Estado, creación y descarga autorizada de copias locales de facturación, caja y reportes."
         actions={
           canCreate ? (
             <BackupPageActions
@@ -191,9 +187,8 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
 
       <div className="space-y-6">
         <section aria-label="Indicadores principales de respaldos">
-          <StatGrid
-            className="sm:grid-cols-2 xl:grid-cols-3"
-            items={[
+          <Row gutter={[16, 16]}>
+            {[
               {
                 label: 'Ultimo exitoso',
                 value: lastSuccessAt ? formatRelativeTime(lastSuccessAt) : 'Sin respaldo',
@@ -212,14 +207,12 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                 helper: failedCount > 0 ? 'Revise con soporte antes de confiar en respaldos' : 'Sin errores registrados',
                 tone: failedCount > 0 ? 'destructive' : 'success',
               },
-            ]}
-          />
+            ].map((item) => <Col xs={24} sm={12} xl={8} key={item.label}><article aria-label={item.label}><Statistic title={item.label} value={item.value} /><p>{item.helper}</p></article></Col>)}
+          </Row>
         </section>
 
         {systemStatusError ? (
-          <Alert variant="destructive" title="Estado operativo no disponible">
-            {systemStatusError}
-          </Alert>
+          <Alert type="error" showIcon title="Estado operativo no disponible" description={systemStatusError} />
         ) : null}
 
         {systemStatus && operationalStatus ? (
@@ -235,43 +228,37 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
         ) : null}
 
         {latestBackupNotConfirmed ? (
-          <Alert variant="warning" title="Respaldo reciente no confirmado">
-            El ultimo respaldo exitoso registrado no se puede confirmar en el servidor local. Cree un respaldo nuevo antes de confiar en la recuperacion.
-          </Alert>
+          <Alert type="warning" showIcon title="Respaldo reciente no confirmado" description="El último respaldo exitoso registrado no se puede confirmar en el servidor local. Cree un respaldo nuevo antes de confiar en la recuperación." />
         ) : null}
 
         {stalePendingCount > 0 ? (
-          <Alert title="Respaldos pendientes por demasiado tiempo">
-            {stalePendingCount} respaldo(s) siguen pendientes por mas de {stalePendingThresholdMinutes} minutos. Revise el estado del servidor local antes de confiar en la automatizacion.
-          </Alert>
+          <Alert type="warning" showIcon title="Respaldos pendientes por demasiado tiempo" description={`${stalePendingCount} respaldo(s) siguen pendientes por más de ${stalePendingThresholdMinutes} minutos. Revise el estado del servidor local antes de confiar en la automatización.`} />
         ) : null}
 
         {visibleReadinessBlockers.length ? (
-          <Alert title="Pendientes antes de operar">
-            {visibleReadinessBlockers.map((blocker) => friendlyReadinessBlocker(blocker.code, blocker.label)).join(' - ')}
-          </Alert>
+          <Alert type="warning" showIcon title="Pendientes antes de operar" description={visibleReadinessBlockers.map((blocker) => friendlyReadinessBlocker(blocker.code, blocker.label)).join(' - ')} />
         ) : null}
 
         {initialLoading ? (
-          <LoadingState label="Cargando respaldos locales..." />
+          <div role="status" aria-label="Cargando respaldos locales..."><Spin /> Cargando respaldos locales...</div>
         ) : null}
 
         {error ? (
-          <ErrorState
+          <div role="alert"><Result
+            status="error"
             title="Error al cargar respaldos"
-            message={error}
-            onRetry={() => {
+            subTitle={error}
+            extra={<Button onClick={() => {
               setManualError('');
               void backupsQuery.refetch();
-            }}
-            retryLabel="Reintentar carga"
-          />
+            }}>Reintentar carga</Button>}
+          /></div>
         ) : null}
 
         {showHistory ? (
-          <div className="overflow-hidden rounded-xl border border-operational-border bg-operational-surface p-4 shadow-operational sm:p-5">
+          <section aria-label="Historial de respaldos locales" className="overflow-hidden border border-operational-border bg-operational-surface p-4 sm:p-6">
             <div className="mb-4">
-              <h2 className="text-lg font-semibold tracking-tight">Historial de respaldos</h2>
+              <h2 className="text-xl font-semibold tracking-tight">Historial de respaldos</h2>
               <p className="text-sm text-muted-foreground">Ejecuciones locales, estado y descarga autorizada.</p>
             </div>
             <BackupHistoryTable
@@ -287,9 +274,9 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
             />
 
             {meta ? (
-              <PaginationControls loading={busy} meta={meta} onPageChange={setPage} />
+              <Pagination disabled={busy} current={meta.current_page} pageSize={meta.per_page} total={meta.total} showSizeChanger={false} onChange={setPage} />
             ) : null}
-          </div>
+          </section>
         ) : null}
 
         {isEmpty ? (
@@ -297,12 +284,12 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
         ) : null}
       </div>
 
-      <ConfirmDialog
-        confirmDisabled={creatingBackup}
-        cancelDisabled={creatingBackup}
-        confirmLabel={creatingBackup ? 'Creando...' : 'Crear respaldo'}
+      <Modal
+        okButtonProps={{ disabled: creatingBackup }}
+        cancelButtonProps={{ disabled: creatingBackup }}
+        okText={creatingBackup ? 'Creando...' : 'Crear respaldo'}
         onCancel={() => setConfirmCreateOpen(false)}
-        onConfirm={() => {
+        onOk={() => {
           setConfirmCreateOpen(false);
           void handleCreateBackup();
         }}
@@ -310,14 +297,14 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
         title="¿Crear respaldo local?"
       >
         Se creará una copia de seguridad local. Confirme que aparezca como protegida antes de cerrar esta pantalla.
-      </ConfirmDialog>
+      </Modal>
 
-      <ConfirmDialog
-        confirmDisabled={downloadTarget ? downloadingBackupId === downloadTarget.id : false}
-        cancelDisabled={downloadTarget ? downloadingBackupId === downloadTarget.id : false}
-        confirmLabel={downloadTarget && downloadingBackupId === downloadTarget.id ? 'Descargando...' : 'Descargar'}
+      <Modal
+        okButtonProps={{ disabled: downloadTarget ? downloadingBackupId === downloadTarget.id : false }}
+        cancelButtonProps={{ disabled: downloadTarget ? downloadingBackupId === downloadTarget.id : false }}
+        okText={downloadTarget && downloadingBackupId === downloadTarget.id ? 'Descargando...' : 'Descargar'}
         onCancel={() => setDownloadTarget(null)}
-        onConfirm={() => {
+        onOk={() => {
           const target = downloadTarget;
           setDownloadTarget(null);
           if (target) void handleDownloadBackup(target);
@@ -328,7 +315,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
         <div className="space-y-3 text-sm">
           <p>Descargará el respaldo seleccionado. Esta acción queda auditada.</p>
           {downloadTarget ? (
-            <dl className="grid gap-2 rounded-md border border-border bg-muted/35 p-3 sm:grid-cols-2">
+            <dl className="grid gap-2 border border-border bg-muted/35 p-3 sm:grid-cols-2">
               <div>
                 <dt className="text-xs font-medium text-muted-foreground">Fecha</dt>
                 <dd className="font-semibold">{formatDate(downloadTarget.completed_at ?? downloadTarget.created_at)}</dd>
@@ -344,7 +331,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
             </dl>
           ) : null}
         </div>
-      </ConfirmDialog>
+      </Modal>
     </section>
   );
 }

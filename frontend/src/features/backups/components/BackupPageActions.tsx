@@ -1,6 +1,5 @@
-import { Archive, RefreshCw } from 'lucide-react';
-import { ActionBar } from '@/components/ui/action-bar';
-import { Button } from '@/components/ui/button';
+import { DatabaseOutlined as Archive, ReloadOutlined as RefreshCw } from '@ant-design/icons';
+import { Button, Space } from 'antd';
 
 type BackupPageActionsProps = {
   busy: boolean;
@@ -18,31 +17,31 @@ export function BackupPageActions({
   onRefresh,
 }: BackupPageActionsProps) {
   return (
-    <ActionBar align="end" fullWidthOnMobile>
+    <Space wrap className="border border-white/15 bg-white/5 p-2">
       {createDisabled ? (
         <p className="text-sm text-muted-foreground">Espere a que termine el respaldo pendiente antes de crear otro.</p>
       ) : null}
       <Button
-        type="button"
-        variant="outline"
-        size="sm"
+        htmlType="button"
+        size="small"
+        icon={<RefreshCw aria-hidden="true" />}
         onClick={onRefresh}
         disabled={busy}
         aria-label="Actualizar respaldos y estado operativo"
       >
-        <RefreshCw aria-hidden="true" className="h-4 w-4 mr-2" />
         Actualizar
       </Button>
       <Button
-        type="button"
-        size="sm"
+        type="primary"
+        htmlType="button"
+        size="small"
+        icon={<Archive aria-hidden="true" />}
         aria-busy={creatingBackup}
         onClick={onCreateRequest}
         disabled={creatingBackup || createDisabled}
       >
-        <Archive aria-hidden="true" className="h-4 w-4 mr-2" />
         {creatingBackup ? 'Creando...' : 'Crear respaldo'}
       </Button>
-    </ActionBar>
+    </Space>
   );
 }

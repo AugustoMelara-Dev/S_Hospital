@@ -37,22 +37,22 @@ test.describe('Backups - critical mocked e2e', () => {
 
     await page.goto('/backups');
 
-    await expect(page.getByRole('heading', { level: 1, name: /respaldos/i })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: /protección y recuperación/i })).toBeVisible();
     const primaryIndicators = page.getByLabel(/indicadores principales de respaldos/i);
     await expect(primaryIndicators.getByText(/ultimo exitoso/i)).toBeVisible();
     await expect(primaryIndicators.getByText(/^pendientes$/i)).toBeVisible();
     await expect(primaryIndicators.getByText(/^fallidos$/i)).toBeVisible();
-    await expect(page.getByRole('cell', { name: /administradora hospital/i })).toBeVisible();
+    await expect(page.getByRole('gridcell', { name: /administradora hospital/i })).toBeVisible();
     await expect(page.getByRole('button', { name: /crear respaldo/i })).toBeVisible();
     await expect(page.getByRole('button', { name: /descargar respaldo/i })).toBeVisible();
     await expect(page.getByText(/sha256|checksum|storage\/|\.env|sqlstate/i)).toHaveCount(0);
     await expect(page.getByRole('button', { name: /restaurar|eliminar/i })).toHaveCount(0);
 
     await page.getByRole('button', { name: /crear respaldo/i }).click();
-    await expect(page.getByRole('alertdialog', { name: /crear respaldo local/i })).toBeVisible();
-    await page.getByRole('button', { name: /^crear respaldo$/i }).click();
+    await expect(page.getByRole('dialog', { name: /crear respaldo local/i })).toBeVisible();
+    await page.getByRole('dialog', { name: /crear respaldo local/i }).getByRole('button', { name: /^crear respaldo$/i }).click();
 
-    await expect(page.getByRole('alertdialog', { name: /crear respaldo local/i })).toHaveCount(0);
+    await expect(page.getByRole('dialog', { name: /crear respaldo local/i })).toHaveCount(0);
     await expect.poll(() => createCalls).toBe(1);
     await expect(page.getByText(/respaldo registrado/i).first()).toBeVisible();
     await expect(page.getByRole('button', { name: /restaurar|eliminar/i })).toHaveCount(0);

@@ -32,6 +32,7 @@ export const strictModulePrefixes = [
   'src/features/invoices/',
   'src/features/catalog/',
   'src/features/admin/',
+  'src/features/backups/',
   'src/features/receipt-settings/',
   'src/features/receipts/',
   'src/printing/',

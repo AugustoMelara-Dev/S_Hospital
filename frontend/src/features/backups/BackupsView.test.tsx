@@ -1,9 +1,16 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReactNode } from 'react';
 import { BackupsView } from './BackupsView';
 import { apiClient, type AuthUser, type BackupLog, type SystemStatus } from '../../lib/api';
+
+vi.mock('@/design-system/ag-grid/InstitutionalDataGrid', () => ({
+  InstitutionalDataGrid: ({ ariaLabel, columns, emptyMessage, rows }: any) => rows.length === 0
+    ? <div role="status">{emptyMessage}</div>
+    : <table aria-label={ariaLabel}><caption>Historial de respaldos locales con fecha, tamaño, estado, usuario y acciones disponibles.</caption><thead><tr>{columns.map((column: any) => <th key={column.headerName} data-numeric={column.type === 'numericColumn' ? 'true' : undefined}>{column.headerName}</th>)}</tr></thead><tbody>{rows.map((row: any) => <tr key={row.id}>{columns.map((column: any) => { const raw = column.valueGetter ? column.valueGetter({ data: row }) : row[column.field]; const value = column.valueFormatter ? column.valueFormatter({ value: raw, data: row }) : raw; return <td key={column.headerName} data-numeric={column.type === 'numericColumn' ? 'true' : undefined}>{column.cellRenderer ? column.cellRenderer({ data: row }) : value}</td>; })}</tr>)}</tbody></table>,
+}));
 
 const adminUser: AuthUser = {
   id: 1,
@@ -42,7 +49,7 @@ describe('BackupsView', () => {
   it('renders concise backup guidance without restore or delete actions', async () => {
     renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
 
-    expect(await screen.findByRole('heading', { level: 1, name: /respaldos/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: /protección y recuperación/i })).toBeInTheDocument();
     expect(screen.queryByText(/restauraci.n no disponible desde la app/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/restaurar|restauraci.n/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/^1\. crear$/i)).not.toBeInTheDocument();
@@ -83,7 +90,7 @@ describe('BackupsView', () => {
     renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
 
     const pendingTitle = await screen.findByText(/pendientes antes de operar/i);
-    const pendingAlert = pendingTitle.closest('[data-slot="alert"]');
+    const pendingAlert = pendingTitle.closest('[role="alert"]');
 
     expect(pendingAlert).not.toBeNull();
     expect(pendingAlert).toHaveTextContent(/recuperacion con soporte/i);
@@ -168,7 +175,7 @@ describe('BackupsView', () => {
     renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
 
     const pendingTitle = await screen.findByText(/pendientes antes de operar/i);
-    const pendingAlert = pendingTitle.closest('[data-slot="alert"]');
+    const pendingAlert = pendingTitle.closest('[role="alert"]');
 
     expect(pendingAlert).not.toBeNull();
     expect(pendingAlert).toHaveTextContent(/recibo institucional carta, media carta o A5/i);
@@ -279,7 +286,7 @@ describe('BackupsView', () => {
     renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
 
     const pendingTitle = await screen.findByText(/pendientes antes de operar/i);
-    const pendingAlert = pendingTitle.closest('[data-slot="alert"]');
+    const pendingAlert = pendingTitle.closest('[role="alert"]');
 
     expect(pendingAlert).not.toBeNull();
     expect(pendingAlert).toHaveTextContent(/segunda PC LAN/i);
@@ -305,12 +312,12 @@ describe('BackupsView', () => {
     fireEvent.click(await screen.findByRole('button', { name: /ver detalle de soporte/i }));
 
     const supportCardTitle = await screen.findByText(/servidor, datos y red local/i);
-    const supportCard = supportCardTitle.closest('[data-slot="card"]');
+    const supportCard = supportCardTitle.closest('section');
 
     expect(supportCard).not.toBeNull();
     expect(supportCard).toHaveTextContent(/acceso cliente:\s*http:\/\/127\.0\.0\.1:8081/i);
     expect(supportCard).not.toHaveTextContent(/configurar ip lan/i);
-    expect(supportCard).toHaveClass('status-success');
+    expect(supportCard).toHaveTextContent(/correcto/i);
   });
 
   it('keeps the primary backup KPIs limited to last success, pending and failed backups', async () => {
@@ -373,7 +380,7 @@ describe('BackupsView', () => {
 
     const kpis = await screen.findByRole('region', { name: /indicadores principales de respaldos/i });
     const lastSuccessLabel = within(kpis).getByText(/^ultimo exitoso$/i);
-    const lastSuccessCard = lastSuccessLabel.closest('[data-slot="stat-grid-item"]');
+    const lastSuccessCard = lastSuccessLabel.closest('article');
 
     expect(lastSuccessCard).not.toBeNull();
     await waitFor(() => expect(lastSuccessCard as HTMLElement).not.toHaveTextContent(/sin respaldo/i));
@@ -406,7 +413,7 @@ describe('BackupsView', () => {
 
     const kpis = await screen.findByRole('region', { name: /indicadores principales de respaldos/i });
     const pendingLabel = within(kpis).getByText(/^pendientes$/i);
-    const pendingCard = pendingLabel.closest('[data-slot="stat-grid-item"]');
+    const pendingCard = pendingLabel.closest('article');
 
     expect(pendingCard).not.toBeNull();
     await waitFor(() => {
@@ -433,7 +440,7 @@ describe('BackupsView', () => {
 
     const kpis = await screen.findByRole('region', { name: /indicadores principales de respaldos/i });
     const failedLabel = within(kpis).getByText(/^fallidos$/i);
-    const failedCard = failedLabel.closest('[data-slot="stat-grid-item"]');
+    const failedCard = failedLabel.closest('article');
 
     expect(failedCard).not.toBeNull();
     await waitFor(() => {
@@ -456,7 +463,7 @@ describe('BackupsView', () => {
     renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
 
     expect(await screen.findByText(/respaldo reciente no confirmado/i)).toBeInTheDocument();
-    expect(screen.getByText(/cree un respaldo nuevo antes de confiar en la recuperacion/i)).toBeInTheDocument();
+    expect(screen.getByText(/cree un respaldo nuevo antes de confiar en la recuperación/i)).toBeInTheDocument();
     expect(screen.queryByText(/hospital-backup-.*\.sql/i)).not.toBeInTheDocument();
   });
 
@@ -575,7 +582,7 @@ describe('BackupsView', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /descargar respaldo del/i }));
 
-    const dialog = screen.getByRole('alertdialog');
+    const dialog = screen.getByRole('dialog');
     expect(dialog).toHaveTextContent(/tama.o no disponible/i);
     expect(dialog).not.toHaveTextContent(/\bNaN\b|Infinity/);
   });
@@ -705,7 +712,7 @@ describe('BackupsView', () => {
     renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
 
     fireEvent.click(await screen.findByRole('button', { name: /^crear respaldo$/i }));
-    const dialog = screen.getByRole('alertdialog');
+    const dialog = screen.getByRole('dialog');
     const confirm = within(dialog).getByRole('button', { name: /^crear respaldo$/i });
     fireEvent.click(confirm);
     fireEvent.click(confirm);
@@ -749,7 +756,7 @@ describe('BackupsView', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /^crear respaldo$/i }));
 
-    expect(screen.queryByRole('alertdialog', { name: /crear respaldo local/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: /crear respaldo local/i })).not.toBeInTheDocument();
     expect(createBackup).not.toHaveBeenCalled();
   });
 
@@ -760,7 +767,7 @@ describe('BackupsView', () => {
     renderWithQueryClient(<BackupsView user={adminUser} onStatus={onStatus} />);
 
     fireEvent.click(await screen.findByRole('button', { name: /^crear respaldo$/i }));
-    fireEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: /^crear respaldo$/i }));
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^crear respaldo$/i }));
 
     await waitFor(() => {
       expect(onStatus).toHaveBeenCalledWith('Respaldo completado correctamente.');
@@ -835,7 +842,7 @@ describe('BackupsView', () => {
       name: /descargar respaldo del/i,
     });
     fireEvent.click(downloadButton);
-    const dialog = screen.getByRole('alertdialog');
+    const dialog = screen.getByRole('dialog');
     const confirm = within(dialog).getByRole('button', { name: /^descargar$/i });
     fireEvent.click(confirm);
     fireEvent.click(confirm);
@@ -869,7 +876,7 @@ describe('BackupsView', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: /descargar respaldo del/i }));
 
-    const dialog = screen.getByRole('alertdialog');
+    const dialog = screen.getByRole('dialog');
     expect(dialog).toHaveTextContent(/descargará el respaldo seleccionado/i);
     expect(dialog).toHaveTextContent(/esta acción queda auditada/i);
     expect(dialog).toHaveTextContent(/3\.0 MB/i);
@@ -903,7 +910,7 @@ describe('BackupsView', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: /descargar respaldo del/i }));
 
-    const dialog = screen.getByRole('alertdialog');
+    const dialog = screen.getByRole('dialog');
     expect(dialog).toHaveTextContent(/tamaño no disponible/i);
     expect(dialog).not.toHaveTextContent(/^-$|^—$/);
   });

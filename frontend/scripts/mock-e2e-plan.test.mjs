@@ -14,6 +14,7 @@ test('mock E2E covers shell, billing, catalog and administration without release
   assert.match(serialized, /users-flow\.spec\.ts/);
   assert.match(serialized, /print-profiles\.spec\.ts/);
   assert.match(serialized, /reports-flow\.spec\.ts/);
+  assert.match(serialized, /backups-flow\.spec\.ts/);
   assert.doesNotMatch(serialized, /PASSWORD|SEED|secret/i);
   assert.equal(runs.length, 3);
 });

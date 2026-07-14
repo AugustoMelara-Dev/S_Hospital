@@ -1,8 +1,6 @@
-import { HardDrive, Server, ShieldAlert } from 'lucide-react';
+import { HddOutlined as HardDrive, CloudServerOutlined as Server, WarningOutlined as ShieldAlert } from '@ant-design/icons';
 
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { StatusBadge } from '@/components/ui/status-badge';
+import { Button, Card, Tag } from 'antd';
 import type { SystemStatus } from '@/lib/api';
 import {
   automaticBackupHeartbeatLabel,
@@ -50,34 +48,33 @@ export function BackupSupportStatusPanel({
 
   return (
     <div className="space-y-4">
-      <Card className={`${operationalStatus.className} shadow-operational`}>
-        <CardContent className="flex flex-col gap-3 pt-6 md:flex-row md:items-center md:justify-between">
+      <Card className={`${operationalStatus.className} overflow-hidden `}>
+        <div className="flex flex-col gap-3 pt-6 md:flex-row md:items-center md:justify-between">
           <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-normal">Estado operativo</p>
             <div className="mt-1 flex flex-wrap items-center gap-2">
               <h3 className="text-xl font-semibold">{operationalStatus.label}</h3>
-              <StatusBadge status={operationalStatusBadge(operationalStatus.level)}>
+              <Tag color={operationalStatusBadge(operationalStatus.level)}>
                 {operationalStatus.level === 'ok' ? 'Correcto' : operationalStatus.level === 'error' ? 'Error' : 'Atencion'}
-              </StatusBadge>
+              </Tag>
             </div>
             <p className="mt-1 max-w-3xl text-sm leading-6">{operationalStatus.description}</p>
           </div>
           <Button
-            type="button"
-            variant="outline"
-            size="sm"
+            htmlType="button"
+            size="small"
             aria-controls={advancedStatusId}
             aria-expanded={showAdvancedStatus}
             onClick={onToggleAdvancedStatus}
           >
             {showAdvancedStatus ? 'Ocultar detalle de soporte' : 'Ver detalle de soporte'}
           </Button>
-        </CardContent>
+        </div>
       </Card>
 
       <section aria-labelledby="backup-recovery-support-title">
-        <Card className={`${recoveryStatus.className} shadow-operational`}>
-          <CardContent className="pt-6">
+        <Card className={`${recoveryStatus.className} overflow-hidden `}>
+          <div className="pt-6">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0">
                 <p className="text-xs font-semibold uppercase tracking-normal">Guia de soporte</p>
@@ -88,19 +85,19 @@ export function BackupSupportStatusPanel({
                   {recoveryStatus.description}
                 </p>
               </div>
-              <StatusBadge status={recoveryStatus.badgeStatus}>{recoveryStatus.label}</StatusBadge>
+              <Tag color={recoveryStatus.badgeStatus}>{recoveryStatus.label}</Tag>
             </div>
-          </CardContent>
+          </div>
         </Card>
       </section>
 
       {showAdvancedStatus ? (
         <>
           <div id={advancedStatusId} className="grid grid-cols-1 gap-4 xl:grid-cols-4">
-            <Card className={`${systemStatus.database.connected && systemStatus.frontend.dist_index_exists && systemStatus.frontend.assets_present && localAccessIsReady(systemStatus) ? 'status-success' : 'status-warning'} shadow-operational`}>
-              <CardContent className="pt-6">
+            <Card className={`${systemStatus.database.connected && systemStatus.frontend.dist_index_exists && systemStatus.frontend.assets_present && localAccessIsReady(systemStatus) ? 'border-success/30 bg-success/10 text-success-foreground' : 'border-warning/30 bg-warning/10 text-warning-foreground'} `}>
+              <div className="pt-6">
                 <div className="flex items-start gap-3">
-                  <div className="rounded-lg bg-background/80 p-2.5">
+                  <div className="bg-background/80 p-2.5">
                     <Server aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
                   </div>
                   <div className="min-w-0 space-y-1">
@@ -119,13 +116,13 @@ export function BackupSupportStatusPanel({
                     </p>
                   </div>
                 </div>
-              </CardContent>
+              </div>
             </Card>
 
-            <Card className={`${systemStatus.backups.dump_binary.available && systemStatus.backups.storage.writable ? 'status-success' : 'status-warning'} shadow-operational`}>
-              <CardContent className="pt-6">
+            <Card className={`${systemStatus.backups.dump_binary.available && systemStatus.backups.storage.writable ? 'border-success/30 bg-success/10 text-success-foreground' : 'border-warning/30 bg-warning/10 text-warning-foreground'} `}>
+              <div className="pt-6">
                 <div className="flex items-start gap-3">
-                  <div className="rounded-lg bg-background/80 p-2.5">
+                  <div className="bg-background/80 p-2.5">
                     <HardDrive aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
                   </div>
                   <div className="min-w-0 space-y-1">
@@ -145,13 +142,13 @@ export function BackupSupportStatusPanel({
                     )}
                   </div>
                 </div>
-              </CardContent>
+              </div>
             </Card>
 
-            <Card className={`${systemStatus.backups.pending_count > 0 ? 'status-warning' : 'bg-muted/30'} shadow-operational`}>
-              <CardContent className="pt-6">
+            <Card className={`${systemStatus.backups.pending_count > 0 ? 'border-warning/30 bg-warning/10 text-warning-foreground' : 'bg-muted/30'} `}>
+              <div className="pt-6">
                 <div className="flex items-start gap-3">
-                  <div className="rounded-lg bg-background/80 p-2.5">
+                  <div className="bg-background/80 p-2.5">
                     <Server aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
                   </div>
                   <div className="min-w-0 space-y-1">
@@ -176,13 +173,13 @@ export function BackupSupportStatusPanel({
                     </p>
                   </div>
                 </div>
-              </CardContent>
+              </div>
             </Card>
 
-            <Card className="status-info shadow-operational">
-              <CardContent className="pt-6">
+            <Card className="border-info/30 bg-info/10 text-info-foreground ">
+              <div className="pt-6">
                 <div className="flex items-start gap-3">
-                  <div className="rounded-lg bg-background/80 p-2.5">
+                  <div className="bg-background/80 p-2.5">
                     <ShieldAlert aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
                   </div>
                   <div className="min-w-0 space-y-1">
@@ -204,13 +201,13 @@ export function BackupSupportStatusPanel({
                     </p>
                   </div>
                 </div>
-              </CardContent>
+              </div>
             </Card>
           </div>
 
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-            <Card className="border-operational-border bg-operational-surface shadow-operational">
-              <CardContent className="pt-6">
+            <Card className="border-operational-border bg-operational-surface ">
+              <div className="pt-6">
                 <div className="mb-4 flex items-start justify-between gap-3">
                   <div>
                     <h3 className="text-sm font-semibold">Checklist operativo</h3>
@@ -218,26 +215,26 @@ export function BackupSupportStatusPanel({
                       Estos puntos ayudan a confirmar que los respaldos y la instalacion estan listos.
                     </p>
                   </div>
-                  <span className="rounded-md border border-info/30 bg-info/10 px-2 py-1 text-xs font-semibold text-info">
+                  <span className="border border-info/30 bg-info/10 px-2 py-1 text-xs font-semibold text-info">
                     {systemStatus.readiness.production_ready ? 'Listo' : 'Pendiente'}
                   </span>
                 </div>
                 <div className="grid gap-2 md:grid-cols-2">
                   {systemStatus.preflight.production_checks.map((check) => (
-                    <div key={check.code} className="rounded-md border border-border p-3">
+                    <div key={check.code} className="border border-border p-3">
                       <div className="flex items-start justify-between gap-3">
                         <p className="text-sm font-medium">{friendlyProductionCheck(check.code, check.label)}</p>
-                        <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusClass(check.status)}`}>
+                        <span className={`shrink-0 border px-2 py-0.5 text-[11px] font-semibold ${statusClass(check.status)}`}>
                           {statusLabel(check.status)}
                         </span>
                       </div>
                       <p className="mt-1 break-words text-xs text-muted-foreground">{friendlyProductionDetail(check.code, check.detail)}</p>
                     </div>
                   ))}
-                  <div className="rounded-md border border-border p-3">
+                  <div className="border border-border p-3">
                     <div className="flex items-start justify-between gap-3">
                       <p className="text-sm font-medium">Estado de datos</p>
-                      <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
+                      <span className={`shrink-0 border px-2 py-0.5 text-[11px] font-semibold ${
                         systemStatus.runtime.pending_migration_count === null
                           ? 'border-warning/30 bg-warning/10 text-warning'
                           : systemStatus.runtime.pending_migration_count > 0
@@ -259,10 +256,10 @@ export function BackupSupportStatusPanel({
                           : `Migraciones aplicadas: ${systemStatus.runtime.migration_count ?? 0}.`}
                     </p>
                   </div>
-                  <div className="rounded-md border border-border p-3">
+                  <div className="border border-border p-3">
                     <div className="flex items-start justify-between gap-3">
                       <p className="text-sm font-medium">Tareas con problema</p>
-                      <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${systemStatus.backups.queue.failed_jobs_count ? 'border-warning/30 bg-warning/10 text-warning' : 'border-success/30 bg-success/10 text-success-foreground'}`}>
+                      <span className={`shrink-0 border px-2 py-0.5 text-[11px] font-semibold ${systemStatus.backups.queue.failed_jobs_count ? 'border-warning/30 bg-warning/10 text-warning' : 'border-success/30 bg-success/10 text-success-foreground'}`}>
                         {systemStatus.backups.queue.failed_jobs_count ?? 'Sin dato'}
                       </span>
                     </div>
@@ -270,10 +267,10 @@ export function BackupSupportStatusPanel({
                       Si aparece un numero mayor a cero, revise el ultimo respaldo con error.
                     </p>
                   </div>
-                  <div className="rounded-md border border-border p-3">
+                  <div className="border border-border p-3">
                     <div className="flex items-start justify-between gap-3">
                       <p className="text-sm font-medium">Registro operativo</p>
-                      <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${systemStatus.runtime.laravel_log.exists ? 'border-info/30 bg-info/10 text-info' : 'border-warning/30 bg-warning/10 text-warning'}`}>
+                      <span className={`shrink-0 border px-2 py-0.5 text-[11px] font-semibold ${systemStatus.runtime.laravel_log.exists ? 'border-info/30 bg-info/10 text-info' : 'border-warning/30 bg-warning/10 text-warning'}`}>
                         {systemStatus.runtime.laravel_log.exists ? formatBytes(systemStatus.runtime.laravel_log.size_bytes) : 'no existe'}
                       </span>
                     </div>
@@ -281,10 +278,10 @@ export function BackupSupportStatusPanel({
                       Ultima actividad: {systemStatus.runtime.laravel_log.modified_at ? formatDate(systemStatus.runtime.laravel_log.modified_at) : 'sin registro'}
                     </p>
                   </div>
-                  <div className="rounded-md border border-border p-3">
+                  <div className="border border-border p-3">
                     <div className="flex items-start justify-between gap-3">
                       <p className="text-sm font-medium">Actividad de respaldos</p>
-                      <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${systemStatus.runtime.backup_automation_log.exists ? 'border-info/30 bg-info/10 text-info' : 'border-warning/30 bg-warning/10 text-warning'}`}>
+                      <span className={`shrink-0 border px-2 py-0.5 text-[11px] font-semibold ${systemStatus.runtime.backup_automation_log.exists ? 'border-info/30 bg-info/10 text-info' : 'border-warning/30 bg-warning/10 text-warning'}`}>
                         {systemStatus.runtime.backup_automation_log.exists ? formatBytes(systemStatus.runtime.backup_automation_log.size_bytes) : 'no existe'}
                       </span>
                     </div>
@@ -293,25 +290,25 @@ export function BackupSupportStatusPanel({
                     </p>
                   </div>
                 </div>
-              </CardContent>
+              </div>
             </Card>
 
-            <Card className="border-operational-border bg-operational-surface shadow-operational">
-              <CardContent className="pt-6">
+            <Card className="border-operational-border bg-operational-surface ">
+              <div className="pt-6">
                 <h3 className="text-sm font-semibold">Pruebas de campo obligatorias</h3>
                 <div className="mt-3 space-y-3">
                   <div>
                     <p className="text-xs font-semibold uppercase text-muted-foreground">Prueba en red local</p>
                     <ul className="mt-2 space-y-2">
                       {systemStatus.preflight.public_routes.map((route) => (
-                        <li key={route.path} className="flex items-start justify-between gap-3 rounded-md border border-border p-2">
+                        <li key={route.path} className="flex items-start justify-between gap-3 border border-border p-2">
                           <span>
                             <span className="block text-sm font-medium">
                               {route.path === '/up' ? 'Servidor responde' : route.path === '/login' ? 'Pantalla de ingreso abre' : 'Pantalla de verificacion abre'}
                             </span>
                             <span className="text-xs text-muted-foreground">{route.expected}</span>
                           </span>
-                          <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusClass(route.status)}`}>
+                          <span className={`shrink-0 border px-2 py-0.5 text-[11px] font-semibold ${statusClass(route.status)}`}>
                             {statusLabel(route.status)}
                           </span>
                         </li>
@@ -322,10 +319,10 @@ export function BackupSupportStatusPanel({
                     <p className="text-xs font-semibold uppercase text-muted-foreground">Pruebas fisicas</p>
                     <ul className="mt-2 space-y-2">
                       {systemStatus.preflight.physical_proofs.map((proof) => (
-                        <li key={proof.code} className="rounded-md border border-border p-2">
+                        <li key={proof.code} className="border border-border p-2">
                           <div className="flex items-start justify-between gap-3">
                             <span className="text-sm font-medium">{proof.label}</span>
-                            <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusClass(proof.status)}`}>
+                            <span className={`shrink-0 border px-2 py-0.5 text-[11px] font-semibold ${statusClass(proof.status)}`}>
                               {statusLabel(proof.status)}
                             </span>
                           </div>
@@ -335,7 +332,7 @@ export function BackupSupportStatusPanel({
                     </ul>
                   </div>
                 </div>
-              </CardContent>
+              </div>
             </Card>
           </div>
         </>
@@ -353,7 +350,7 @@ function recoverySupportStatus(
   if (!systemStatus.backups.last_success_at) {
     return {
       badgeStatus: 'pending',
-      className: 'status-warning',
+      className: 'border-warning/30 bg-warning/10 text-warning-foreground',
       description: 'Cree un respaldo local y pida a soporte validar una copia protegida antes de operar sin supervision.',
       label: 'Requiere soporte',
     };
@@ -362,7 +359,7 @@ function recoverySupportStatus(
   if (latestBackupNotConfirmed || hasRestoreBlocker) {
     return {
       badgeStatus: 'pending',
-      className: 'status-warning',
+      className: 'border-warning/30 bg-warning/10 text-warning-foreground',
       description: 'Pida a soporte validar una copia protegida antes de confiar en la recuperacion del sistema.',
       label: 'Requiere soporte',
     };
@@ -370,7 +367,7 @@ function recoverySupportStatus(
 
   return {
     badgeStatus: 'success',
-    className: 'status-success',
+    className: 'border-success/30 bg-success/10 text-success-foreground',
     description: 'Hay respaldo protegido reciente. Mantenga la validacion de recuperacion como tarea de soporte controlada.',
     label: 'Guia lista',
   };

@@ -1,23 +1,22 @@
-import { CheckCircle, Clock, XCircle } from 'lucide-react';
-import { Badge } from '../../../components/ui/badge';
-import { cn } from '../../../lib/utils';
+import { CheckCircleOutlined as CheckCircle, ClockCircleOutlined as Clock, CloseCircleOutlined as XCircle } from '@ant-design/icons';
+import { Tag } from 'antd';
 
 type BackupStatus = 'pending' | 'success' | 'failed';
 
 const statusConfig = {
   pending: {
     label: 'Pendiente',
-    className: 'border-warning/30 bg-warning/10 text-warning',
+    color: 'warning',
     icon: Clock,
   },
   success: {
     label: 'Completado',
-    className: 'border-success/30 bg-success/10 text-success-foreground',
+    color: 'success',
     icon: CheckCircle,
   },
   failed: {
     label: 'Error',
-    className: 'border-destructive/30 bg-destructive/10 text-destructive',
+    color: 'error',
     icon: XCircle,
   },
 };
@@ -32,17 +31,9 @@ export function BackupStatusBadge({ status, className }: BackupStatusBadgeProps)
   const Icon = config.icon;
 
   return (
-    <Badge
-      variant="outline"
-      className={cn(
-        'inline-flex items-center gap-1.5 font-semibold',
-        config.className,
-        className,
-      )}
-    >
-      <Icon aria-hidden="true" className="h-3.5 w-3.5" />
+    <Tag color={config.color} className={className} icon={<Icon aria-hidden="true" />}>
       {config.label}
-    </Badge>
+    </Tag>
   );
 }
 
