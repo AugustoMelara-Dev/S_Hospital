@@ -461,7 +461,7 @@ export const apiClient = {
 
     let response = await send();
 
-    // 419 (CSRF mismatch) auto-retry is ONLY safe when the same
+    // 419 (CSRF mismatch) automatic retry is ONLY safe when the same
     // Idempotency-Key is reused. We retry the request at most once
     // and re-send the SAME key so the backend middleware de-duplicates
     // and replays the original 2xx response instead of double-charging
