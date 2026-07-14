@@ -122,5 +122,6 @@ npm run check:ui-legacy:final
 | Ajustes de recibos | 190 globales v2 | 1 | 7 | 0 Compat nuevos | 182 globales v2 | estricta; impresión física pendiente |
 | Reportes | 182 globales v2 | 2 | 3 | 0 Compat nuevos | 177 globales v2 | estricta; ECharts institucional |
 | Respaldos | 177 globales v2 | 0 | 0 | 1 Compat eliminado | 177 globales v2 | estricta; Ant Design directo |
+| Ayuda, Soporte y Acerca de | 177 globales v2 | 3 (`lucide-react`) | 21 | 2 adaptadores locales eliminados | 177 globales v2 | estricta; Ant Design directo |
 
-Las primitivas no se eliminarán hasta migrar todos sus consumidores. La reducción comparable con gate v2 es **190/409 → 177/408**: 13 violaciones y un archivo Compat eliminados con la misma regla/configuración. El modo estricto cubre Shell, Auth, Dashboard, Caja, Facturación, Catálogo, Administración, Respaldos, Ajustes de recibos, Recibos, impresión TypeScript, Reportes y Contabilidad; todos están en cero. Este estado no equivale a certificación transversal.
+Las primitivas no se eliminarán hasta migrar todos sus consumidores. La reducción comparable con gate v2 es **190/409 → 177/406**: 13 violaciones y tres archivos adaptadores eliminados con la misma regla/configuración. El modo estricto cubre Shell, Auth, Dashboard, Caja, Facturación, Catálogo, Administración, Respaldos, Ayuda, Soporte, Acerca de, Ajustes de recibos, Recibos, impresión TypeScript, Reportes y Contabilidad; todos están en cero. Este estado no equivale a certificación transversal.

@@ -1,30 +1,28 @@
 import { useMemo, useState } from 'react';
 import {
-  Archive,
-  AlertTriangle,
-  Banknote,
-  ClipboardCheck,
-  ClipboardList,
-  HelpCircle,
-  Keyboard,
-  LifeBuoy,
-  LogIn,
-  Monitor,
-  Printer,
-  ReceiptText,
-  RefreshCw,
-  Search,
-  WalletCards,
-  WifiOff,
-} from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
+  AlertOutlined as AlertTriangle,
+  BankOutlined as Archive,
+  CheckSquareOutlined as ClipboardCheck,
+  CopyOutlined as ClipboardList,
+  CustomerServiceOutlined as LifeBuoy,
+  DesktopOutlined as Monitor,
+  DollarOutlined as Banknote,
+  FileTextOutlined as ReceiptText,
+  LoginOutlined as LogIn,
+  PrinterOutlined as Printer,
+  QuestionCircleOutlined as HelpCircle,
+  ReloadOutlined as RefreshCw,
+  SearchOutlined as Search,
+  WalletOutlined as WalletCards,
+  WifiOutlined as WifiOff,
+  WindowsOutlined as Keyboard,
+} from '@ant-design/icons';
+import { Button, Card, Collapse, Flex, Input, Typography } from 'antd';
 import { PageHeader } from '../../components/ui/page-header';
-import { ActionBar } from '../../components/ui/action-bar';
-import { Button } from '../../components/ui/button';
-import { Textarea } from '../../components/ui/textarea';
-import { Input } from '../../components/ui/input';
 import { type ShortcutScope, shortcutLabel, shortcutsByScope } from '../../lib/shortcuts';
 import { buildClientIssueSupportSummary, getClientIssues } from '../../lib/support/clientIssueLog';
+
+const Textarea = Input.TextArea;
 
 const guides = [
   {
@@ -255,31 +253,30 @@ function SupportEvidenceCard() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Evidencia local para soporte</CardTitle>
-        <CardDescription>Mensajes seguros guardados en este navegador cuando una pantalla o conexión falla.</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      <div className="mb-4">
+        <Typography.Title level={2}>Evidencia local para soporte</Typography.Title>
+        <Typography.Text type="secondary">Mensajes seguros guardados en este navegador cuando una pantalla o conexión falla.</Typography.Text>
+      </div>
+      <div className="space-y-4">
+        <div className="flex flex-col gap-3">
           <p className="text-sm leading-6 text-muted-foreground">
             Incidentes guardados: <span className="font-semibold text-foreground">{issues.length}</span>. No incluye contraseñas, tokens ni claves.
           </p>
-          <ActionBar align="start" fullWidthOnMobile>
-            <Button type="button" variant="outline" size="sm" onClick={handlePrepareSummary}>
+          <Flex gap="small" wrap>
+            <Button htmlType="button" size="small" onClick={handlePrepareSummary}>
               <ClipboardList aria-hidden="true" className="size-4" />
               Preparar resumen
             </Button>
             <Button
-              type="button"
-              variant="outline"
-              size="sm"
+              htmlType="button"
+              size="small"
               aria-controls={detailsId}
               aria-expanded={showDetails}
               onClick={() => setShowDetails((current) => !current)}
             >
               {showDetails ? 'Ocultar evidencia' : 'Ver evidencia'}
             </Button>
-          </ActionBar>
+          </Flex>
         </div>
         {copyStatus ? <p role="status" aria-live="polite" className="text-sm font-medium text-secondary">{copyStatus}</p> : null}
 
@@ -297,7 +294,7 @@ function SupportEvidenceCard() {
             {latestIssues.length > 0 ? (
             <ul className="space-y-2">
               {latestIssues.map((issue) => (
-                <li key={`${issue.occurred_at}-${issue.action ?? 'acción'}`} className="rounded-md border border-border bg-muted/30 p-3">
+                <li key={`${issue.occurred_at}-${issue.action ?? 'acción'}`} className="border border-border p-3">
                   <p className="text-sm font-semibold text-foreground">{issue.module ?? 'sistema'} - {issue.action ?? 'acción no indicada'}</p>
                   <p className="mt-1 break-words text-sm text-muted-foreground">{issue.safe_message}</p>
                   <p className="mt-1 break-words text-xs text-muted-foreground">{issue.route} - {new Date(issue.occurred_at).toLocaleString()}</p>
@@ -305,13 +302,13 @@ function SupportEvidenceCard() {
               ))}
             </ul>
             ) : (
-            <p className="rounded-md border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
+            <p className="border border-border p-3 text-sm text-muted-foreground">
               No hay incidentes guardados en este navegador.
             </p>
             )}
           </div>
         ) : null}
-      </CardContent>
+      </div>
     </Card>
   );
 }
@@ -330,27 +327,28 @@ export function HelpView() {
   return (
     <section className="space-y-6" aria-labelledby="help-title">
       <PageHeader
+        id="help-title"
         title="Ayuda institucional"
         description="Guía rápida para operar caja, facturación, recibos, reportes y respaldos."
         actions={
-          <div className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-xs font-semibold text-muted-foreground">
+          <div className="inline-flex items-center gap-2 border px-3 py-2 text-xs font-semibold text-white">
             <HelpCircle aria-hidden="true" className="size-4" />
             Manual operativo
           </div>
         }
       />
 
-      <div className="rounded-xl border border-border bg-card p-5 shadow-operational">
+      <div className="border border-border bg-card p-5">
         <label htmlFor="help-task-search" className="text-sm font-semibold text-foreground">¿Qué necesita hacer?</label>
         <div className="relative mt-2 max-w-2xl">
-          <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Search aria-hidden="true" className="pointer-events-none absolute left-3 size-4 text-muted-foreground" />
           <Input
             id="help-task-search"
             type="search"
             value={taskQuery}
             onChange={(event) => setTaskQuery(event.target.value)}
             placeholder="Buscar: cobrar, cerrar caja, imprimir, respaldo…"
-            className="min-h-11 pl-9"
+            className="min-h-14 pl-10 text-base"
           />
         </div>
         <p className="mt-2 text-sm text-muted-foreground" role={normalizedQuery ? 'status' : undefined} aria-live="polite">
@@ -358,57 +356,57 @@ export function HelpView() {
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4">
         {visibleGuides.map((guide, guideIndex) => {
           const Icon = guide.icon;
 
           return (
             <Card key={guide.title} className={guideIndex === 0 ? 'overflow-hidden md:col-span-2' : 'overflow-hidden'}>
-              <CardHeader>
+              <div className="mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex size-10 items-center justify-center rounded-md bg-secondary/10 text-secondary">
+                  <div className="flex size-11 items-center justify-center bg-accent text-secondary">
                     <Icon aria-hidden="true" className="size-5" />
                   </div>
                   <div>
-                    <CardTitle className="text-base">{guide.title}</CardTitle>
-                    <CardDescription>Pasos principales</CardDescription>
+                    <Typography.Title level={2} className="text-base">{guide.title}</Typography.Title>
+                    <Typography.Text type="secondary">Pasos principales</Typography.Text>
                   </div>
                 </div>
-              </CardHeader>
-              <CardContent>
+              </div>
+              <div>
                 <ol className="space-y-2">
                   {guide.steps.map((step, index) => (
                     <li key={step} className="flex gap-2 text-sm leading-6 text-muted-foreground">
-                      <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-muted text-[11px] font-bold text-foreground">
+                      <span className="flex size-5 shrink-0 items-center justify-center bg-muted font-bold text-foreground">
                         {index + 1}
                       </span>
                       <span>{step}</span>
                     </li>
                   ))}
                 </ol>
-              </CardContent>
+              </div>
             </Card>
           );
         })}
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+        <div className="mb-4">
+          <Typography.Title level={2} className="flex items-center gap-2">
             <Keyboard aria-hidden="true" className="size-5 text-secondary" />
             Atajos de teclado
-          </CardTitle>
-          <CardDescription>Referencia para operar con teclado sin memorizar comandos externos.</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-3 md:grid-cols-3">
+          </Typography.Title>
+          <Typography.Text type="secondary">Referencia para operar con teclado sin memorizar comandos externos.</Typography.Text>
+        </div>
+        <div className="grid gap-3">
           {shortcutSections.map((section) => (
-            <div key={section.scope} className="rounded-md border border-border bg-muted/30 p-4">
+            <div key={section.scope} className="border border-border p-4">
               <h3 className="text-sm font-semibold text-foreground">{section.title}</h3>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">{section.helper}</p>
               <dl className="mt-4 space-y-3">
                 {shortcutsByScope(section.scope).map((shortcut) => (
                   <div key={`${section.scope}-${shortcut.scope}-${shortcutLabel(shortcut)}`} className="flex items-start justify-between gap-3">
-                    <dt className="shrink-0 rounded-md border border-border bg-card px-2 py-1 font-mono text-xs font-semibold text-foreground">
+                    <dt className="shrink-0 border border-border bg-card px-2 py-1 font-mono text-xs font-semibold text-foreground">
                       {shortcutLabel(shortcut)}
                     </dt>
                     <dd className="text-right text-sm leading-5 text-muted-foreground">{shortcut.description}</dd>
@@ -417,106 +415,104 @@ export function HelpView() {
               </dl>
             </div>
           ))}
-        </CardContent>
+        </div>
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+        <div className="mb-4">
+          <Typography.Title level={2} className="flex items-center gap-2">
             <WifiOff aria-hidden="true" className="size-5 text-secondary" />
             Incidentes durante el turno
-          </CardTitle>
-          <CardDescription>Acciones seguras antes de continuar facturando.</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-3 md:grid-cols-2">
-          {visibleIncidents.map((item) => (
-            <div key={item.title} className="rounded-md border border-border bg-muted/30 p-4">
-              <h3 className="text-sm font-semibold text-foreground">{item.title}</h3>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">{item.answer}</p>
-            </div>
-          ))}
-        </CardContent>
+          </Typography.Title>
+          <Typography.Text type="secondary">Acciones seguras antes de continuar facturando.</Typography.Text>
+        </div>
+        <div>
+          <Collapse
+            accordion
+            items={visibleIncidents.map((item) => ({ key: item.title, label: <h3>{item.title}</h3>, children: <p className="leading-6 text-muted-foreground">{item.answer}</p>, forceRender: true }))}
+          />
+        </div>
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Responsabilidades por rol</CardTitle>
-          <CardDescription>Referencia corta para saber quién debe actuar en cada caso.</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-3 md:grid-cols-3">
+        <div className="mb-4">
+          <Typography.Title level={2}>Responsabilidades por rol</Typography.Title>
+          <Typography.Text type="secondary">Referencia corta para saber quién debe actuar en cada caso.</Typography.Text>
+        </div>
+        <div className="grid gap-3">
           {roleGuides.map((item) => (
-            <div key={item.title} className="rounded-md border border-border bg-muted/30 p-4">
+            <div key={item.title} className="border border-border p-4">
               <h3 className="text-sm font-semibold text-foreground">{item.title}</h3>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">{item.answer}</p>
             </div>
           ))}
-        </CardContent>
+        </div>
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+        <div className="mb-4">
+          <Typography.Title level={2} className="flex items-center gap-2">
             <ClipboardCheck aria-hidden="true" className="size-5 text-secondary" />
             Checklist diario por rol
-          </CardTitle>
-          <CardDescription>Pasos cortos para iniciar, cerrar y revisar el turno sin depender de soporte técnico.</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-3 md:grid-cols-3">
+          </Typography.Title>
+          <Typography.Text type="secondary">Pasos cortos para iniciar, cerrar y revisar el turno sin depender de soporte técnico.</Typography.Text>
+        </div>
+        <div className="grid gap-3">
           {dailyChecklists.map((checklist) => (
-            <div key={checklist.title} className="rounded-md border border-border bg-muted/30 p-4">
+            <div key={checklist.title} className="border border-border p-4">
               <h3 className="text-sm font-semibold text-foreground">{checklist.title}</h3>
               <ul className="mt-3 space-y-2">
                 {checklist.items.map((item) => (
                   <li key={item} className="flex gap-2 text-sm leading-6 text-muted-foreground">
-                    <span aria-hidden="true" className="mt-2 size-1.5 shrink-0 rounded-full bg-secondary" />
+                    <span aria-hidden="true" className="mt-2 shrink-0 bg-secondary" />
                     <span>{item}</span>
                   </li>
                 ))}
               </ul>
             </div>
           ))}
-        </CardContent>
+        </div>
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+        <div className="mb-4">
+          <Typography.Title level={2} className="flex items-center gap-2">
             <AlertTriangle aria-hidden="true" className="size-5 text-warning-foreground" />
             Acciones delicadas
-          </CardTitle>
-          <CardDescription>Advertencias antes de tocar datos, caja, respaldos o configuración de red.</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-3 md:grid-cols-2">
+          </Typography.Title>
+          <Typography.Text type="secondary">Advertencias antes de tocar datos, caja, respaldos o configuración de red.</Typography.Text>
+        </div>
+        <div className="grid gap-3">
           {delicateActions.map((item) => (
-            <div key={item.title} className="rounded-md border border-warning/35 bg-warning/10 p-4">
+            <div key={item.title} className="border p-4">
               <h3 className="text-sm font-semibold text-warning-foreground">{item.title}</h3>
-              <p className="mt-2 text-sm leading-6 text-warning-foreground/90">{item.warning}</p>
+              <p className="mt-2 text-sm leading-6">{item.warning}</p>
             </div>
           ))}
-        </CardContent>
+        </div>
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Capacitación segura</CardTitle>
-          <CardDescription>Practique sin afectar facturas, caja ni respaldos reales.</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-3 md:grid-cols-2">
-          <div className="rounded-md border border-border bg-muted/30 p-4">
+        <div className="mb-4">
+          <Typography.Title level={2}>Capacitación segura</Typography.Title>
+          <Typography.Text type="secondary">Practique sin afectar facturas, caja ni respaldos reales.</Typography.Text>
+        </div>
+        <div className="grid gap-3">
+          <div className="border border-border p-4">
             <h3 className="text-sm font-semibold text-foreground">Checklist diario</h3>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
               Cajero: abrir caja, facturar, cobrar, imprimir y cerrar. Supervisor: revisar diferencias y anulaciones.
               Administrador: revisar usuarios, respaldos, espacio y evidencia de respaldos; la recuperación de datos se coordina con soporte.
             </p>
           </div>
-          <div className="rounded-md border border-warning/35 bg-warning/10 p-4">
+          <div className="border p-4">
             <h3 className="text-sm font-semibold text-warning-foreground">Modo práctica</h3>
-            <p className="mt-2 text-sm leading-6 text-warning-foreground/90">
+            <p className="mt-2 text-sm leading-6">
               Si no existe un entorno de práctica aislado, capacite en una instalación separada o una base descartable.
               No use la base de producción para ensayar anulaciones, recuperación de datos o cobros ficticios.
             </p>
           </div>
-        </CardContent>
+        </div>
       </Card>
 
       <SupportEvidenceCard />

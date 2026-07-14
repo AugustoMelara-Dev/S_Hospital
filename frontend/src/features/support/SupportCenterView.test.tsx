@@ -34,7 +34,7 @@ describe('SupportCenterView', () => {
 
     render(<SupportCenterView user={cashierUser} onStatus={onStatus} />);
 
-    expect(screen.getByText(/cargando diagnostico operativo/i)).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: /cargando diagnóstico operativo/i })).toBeInTheDocument();
     expect((await screen.findAllByText('Todo bien')).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/servidor local disponible/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/diagnostico tecnico detallado se mantiene reservado/i)).toBeInTheDocument();
@@ -87,11 +87,11 @@ describe('SupportCenterView', () => {
 
     render(<SupportCenterView user={cashierUser} onStatus={onStatus} />);
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(/no se pudo cargar el diagnostico operativo/i);
+    expect(await screen.findByText(/no se pudo cargar el diagnostico operativo/i)).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/DB_PASSWORD=secret/i);
     expect(screen.getByRole('heading', { name: /cajero/i })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /reintentar diagnostico/i }));
+    fireEvent.click(screen.getByRole('button', { name: /reintentar diagnóstico/i }));
 
     expect((await screen.findAllByText('Requiere revision')).length).toBeGreaterThan(0);
     await waitFor(() => expect(getSummary).toHaveBeenCalledTimes(2));

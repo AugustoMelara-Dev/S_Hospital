@@ -23,4 +23,4 @@ for (const run of buildMockE2eRuns()) {
   }
 }
 
-console.log('\n[mock-e2e] Shell, Facturación, Catálogo, Administración, Recibos y Reportes aprobados.');
+console.log('\n[mock-e2e] Shell, Facturación, Catálogo, Administración, Recibos, Reportes, Respaldos, Ayuda, Soporte y Acerca de aprobados.');

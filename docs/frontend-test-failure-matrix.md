@@ -80,3 +80,12 @@ Administración cerró **84/84** y Playwright **1/1**. En total quedaron 21 fall
 | App | 8 | 0; 20/20 | expectativas del shell/rutas/providers actuales; portales completos permanecen en Playwright |
 
 Fallos después: **0**. `npm run test:segmented` cubrió exactamente una vez los **145/145 archivos** y aprobó **1046/1046 tests** en **12/12 segmentos**, sin omitidos, duplicados, no cubiertos ni archivos sin reporte (1751.0 s).
+
+## Continuidad operativa: Respaldos, Ayuda, Soporte y Acerca de (2026-07-13)
+
+| Área | Vitest | Playwright mock | Estado |
+| --- | ---: | ---: | --- |
+| Respaldos | 55/55 | 1/1 | Ant Design e InstitutionalDataGrid directos; sin Compat |
+| Ayuda, Soporte y Acerca de | 14/14 | 1/1 | Ant Design directo; navegación, búsqueda y diagnóstico seguro |
+
+El E2E de páginas operativas valida consola limpia y ausencia de secretos visibles. Estos cambios son posteriores al reporte segmentado de 1046 tests; por ello conservan estado **QA TRANSVERSAL PENDIENTE** hasta la siguiente ejecución completa versionada.

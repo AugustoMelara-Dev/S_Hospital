@@ -1,5 +1,7 @@
 import { BuildOutlined as MonitorCheck, ClockCircleOutlined as Clock3, HddOutlined as HardDrive, HeartOutlined as HeartHandshake, HomeOutlined as Building2, SafetyCertificateOutlined as ShieldCheck, WifiOutlined as Network } from '@ant-design/icons';
-import { ActionBar, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, PageHeader, StatusBadge } from './aboutAntd';
+import { Button, Card, Flex, Typography } from 'antd';
+import { PageHeader } from '../../components/ui/page-header';
+import { StatusTag } from '../../components/ui/status-tag';
 import { useBackups } from '../../hooks/useBackups';
 import { usePublicBranding } from '../../hooks/useFiscalSettings';
 import { useServerStatus, useSystemStatusSnapshot } from '../../hooks/useServerStatus';
@@ -41,25 +43,26 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
   return (
     <section id="about" className="flex flex-col gap-6" aria-labelledby="about-title">
       <PageHeader
+        id="about-title"
         title="Informacion del sistema"
         description="Identidad del hospital, estado de la red local, continuidad operativa y diagnóstico autorizado."
       />
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         <Card className="overflow-hidden md:col-span-2">
-          <CardHeader className="flex flex-row items-start gap-4 pb-4">
+          <div className="mb-4 flex flex-row items-start gap-4 pb-4">
             <div className="flex size-12 items-center justify-center bg-secondary/10 text-secondary">
               <Building2 aria-hidden="true" className="h-6 w-6" />
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <CardTitle className="text-xl font-bold">{hospitalName}</CardTitle>
-                <StatusBadge status="active">Activo</StatusBadge>
+                <Typography.Title level={2} className="text-xl font-bold">{hospitalName}</Typography.Title>
+                <StatusTag kind="success">Activo</StatusTag>
               </div>
-              <CardDescription>Sistema de caja y facturacion hospitalaria local.</CardDescription>
+              <Typography.Text type="secondary">Sistema de caja y facturacion hospitalaria local.</Typography.Text>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-4 text-sm text-muted-foreground">
+          </div>
+          <div className="space-y-4 text-sm text-muted-foreground">
             <p>
               Disenado para operar dentro del hospital con facturacion, caja, reportes,
               recibos institucionales y respaldos locales.
@@ -81,36 +84,36 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
               <div className="mt-4 border-t border-border pt-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">Resumen operativo</p>
-                  <StatusBadge status={statusForLevel(summary.level)}>{summary.label}</StatusBadge>
+                  <StatusTag kind={statusForLevel(summary.level)}>{summary.label}</StatusTag>
                 </div>
                 <p className="mt-2 text-sm text-foreground">{summary.description}</p>
               </div>
             </div>
 
-            <ActionBar align="start" fullWidthOnMobile>
-              <Button type="button" onClick={triggerDiagnosticTest} variant="secondary" size="sm">
+            <Flex gap="small" wrap>
+              <Button htmlType="button" onClick={triggerDiagnosticTest} size="small">
                 Revisar conexion local
               </Button>
-            </ActionBar>
-          </CardContent>
+            </Flex>
+          </div>
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base font-bold">Estado local</CardTitle>
-            <CardDescription>Senales utiles para soporte del hospital.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+          <div className="mb-4">
+            <Typography.Title level={2} className="text-base font-bold">Estado local</Typography.Title>
+            <Typography.Text type="secondary">Senales utiles para soporte del hospital.</Typography.Text>
+          </div>
+          <div className="space-y-4">
             <div className="flex items-center justify-between border-b border-border py-1.5">
               <span className="text-xs font-semibold text-muted-foreground">Servidor local</span>
-              <StatusBadge status={isOnline ? 'success' : 'failed'}>
+              <StatusTag kind={isOnline ? 'success' : 'failed'}>
                 {isOnline ? 'Conectado' : 'Desconectado'}
-              </StatusBadge>
+              </StatusTag>
             </div>
 
             <div className="flex items-center justify-between border-b border-border py-1.5">
               <span className="text-xs font-semibold text-muted-foreground">Diagnostico</span>
-              <StatusBadge status={statusForLevel(summary.level)}>{summary.label}</StatusBadge>
+              <StatusTag kind={statusForLevel(summary.level)}>{summary.label}</StatusTag>
             </div>
 
             <div className="flex items-center justify-between border-b border-border py-1.5">
@@ -123,19 +126,19 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
             <div className="pt-2 text-center text-[11px] text-muted-foreground">
               Última revisión: {lastCheck ? lastCheck.toLocaleTimeString() : 'pendiente'}
             </div>
-          </CardContent>
+          </div>
         </Card>
       </div>
 
       {canViewAdminDiagnostics && (
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base font-bold">
+          <div className="mb-4">
+            <Typography.Title level={2} className="flex items-center gap-2 text-base font-bold">
               <MonitorCheck aria-hidden="true" className="h-5 w-5 text-secondary" /> Diagnostico administrativo
-            </CardTitle>
-            <CardDescription>Lectura resumida para soporte local, sin claves ni rutas internas.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+            </Typography.Title>
+            <Typography.Text type="secondary">Lectura resumida para soporte local, sin claves ni rutas internas.</Typography.Text>
+          </div>
+          <div className="space-y-4">
             {systemStatusError ? (
               <div className="border p-4 text-sm text-destructive">
                 {systemStatusError}
@@ -147,7 +150,7 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
                     <div key={item.label} className="border border-border p-4">
                       <div className="flex items-center justify-between gap-3">
                         <p className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">{item.label}</p>
-                        <StatusBadge status={statusForLevel(item.level)}>{diagnosticLevelLabel(item.level)}</StatusBadge>
+                        <StatusTag kind={statusForLevel(item.level)}>{diagnosticLevelLabel(item.level)}</StatusTag>
                       </div>
                       <p className="mt-2 break-words text-sm font-semibold text-foreground">{item.value}</p>
                     </div>
@@ -174,18 +177,18 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
                 Cargando diagnóstico administrativo...
               </div>
             )}
-          </CardContent>
+          </div>
         </Card>
       )}
 
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base font-bold">
+        <div className="mb-4">
+          <Typography.Title level={2} className="flex items-center gap-2 text-base font-bold">
             <HeartHandshake aria-hidden="true" className="h-5 w-5 text-secondary" /> Soporte
-          </CardTitle>
-          <CardDescription>Informacion para continuidad operativa.</CardDescription>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 gap-4 text-sm text-muted-foreground sm:grid-cols-2">
+          </Typography.Title>
+          <Typography.Text type="secondary">Informacion para continuidad operativa.</Typography.Text>
+        </div>
+        <div className="grid grid-cols-1 gap-4 text-sm text-muted-foreground sm:grid-cols-2">
           <div className="space-y-1">
             <p className="font-semibold text-foreground">Continuidad de caja</p>
             <p>Ante una incidencia, contacte al responsable del sistema antes de seguir facturando.</p>
@@ -194,7 +197,7 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
             <p className="font-semibold text-foreground">Respaldos</p>
             <p>Confirme respaldos completados y conserve una copia externa cuando corresponda.</p>
           </div>
-        </CardContent>
+        </div>
       </Card>
     </section>
   );

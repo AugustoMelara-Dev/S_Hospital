@@ -35,6 +35,7 @@ export function buildMockE2eRuns() {
         'e2e/print-profiles.spec.ts',
         'e2e/reports-flow.spec.ts',
         'e2e/backups-flow.spec.ts',
+        'e2e/supporting-pages-flow.spec.ts',
         '--project=chromium',
       ],
     },
