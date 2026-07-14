@@ -15,11 +15,16 @@ class StorePaymentRequest extends FormRequest
 
     public function rules(): array
     {
+        $requiresReference = in_array($this->input('method'), [
+            Payment::METHOD_CARD,
+            Payment::METHOD_TRANSFER,
+        ], true);
+
         return [
             'cash_session_id' => ['required', 'integer', 'exists:cash_register_sessions,id'],
             'method' => ['required', Rule::in(Payment::METHODS)],
             'amount' => ['required', 'decimal:0,2', 'min:0.01'],
-            'reference' => ['nullable', 'string', 'max:120'],
+            'reference' => ['nullable', Rule::requiredIf($requiresReference), 'string', 'max:120'],
         ];
     }
 }

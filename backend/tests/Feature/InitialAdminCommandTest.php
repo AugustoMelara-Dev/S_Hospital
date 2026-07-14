@@ -42,6 +42,29 @@ class InitialAdminCommandTest extends TestCase
         ])->assertFailed();
     }
 
+    public function test_initial_admin_command_allows_recovery_when_only_admin_is_inactive(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $inactiveAdmin = User::factory()->create([
+            'username' => 'admin.inactive',
+            'email' => 'admin.inactive@hospital.test',
+            'active' => false,
+        ]);
+        $inactiveAdmin->assignRole('admin');
+
+        $this->artisan('auth:create-initial-admin', [
+            '--username' => 'admin.recovery',
+            '--email' => 'admin.recovery@hospital.test',
+            '--password' => 'Temporary123!',
+        ])->assertSuccessful();
+
+        $admin = User::query()->where('username', 'admin.recovery')->firstOrFail();
+
+        $this->assertTrue($admin->active);
+        $this->assertTrue($admin->hasRole('admin'));
+    }
+
     public function test_initial_admin_command_accepts_password_from_environment(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);

@@ -213,17 +213,28 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\restore_hospital
 ```
 
 Para restaurar un backup en una base descartable usando las credenciales de
-`backend\.env` pero sin usar la base activa:
+`backend\.env` pero sin usar la base activa, calcular primero el SHA-256 del
+paquete cifrado:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\restore_hospital_windows.ps1 -UseExistingEnv -TargetDatabase hospital_restore_validation -BackupFile C:\backups\hospital-backup.sql
+Get-FileHash C:\backups\hospital-backup.sql.gz.enc -Algorithm SHA256
+```
+
+Luego ejecutar el helper seguro contra una base descartable. El helper descifra
+el `.sql.gz.enc` internamente a un SQL temporal y exige el checksum esperado:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\restore_hospital_windows.ps1 `
+  -UseExistingEnv `
+  -TargetDatabase hospital_restore_validation `
+  -BackupFile C:\backups\hospital-backup.sql.gz.enc `
+  -ExpectedSha256 <sha256>
 ```
 
 El nombre de `-TargetDatabase` debe contener `test`, `restore`, `validation`,
 `disposable` o `proof`, y solo puede usar letras, numeros y `_`. El script
 rechaza `hospital_billing`, `hospital_billing_production` y bases del sistema.
-Los backups nuevos son `.sql.gz.enc`; deben descifrarse y descomprimirse con la
-clave del servidor antes de alimentar `mysql`.
+Los backups nuevos son `.sql.gz.enc`; el helper seguro los descifra a un SQL temporal con la clave local antes de alimentar `mysql`.
 
 Pasos para MySQL/MariaDB:
 
@@ -234,7 +245,13 @@ Pasos para MySQL/MariaDB:
 Get-FileHash C:\backups\hospital-backup.sql.gz.enc -Algorithm SHA256
 ```
 
-3. Descifrar/descomprimir en una ubicacion temporal protegida del servidor de validacion. Borrar el `.sql` temporal al terminar.
+3. Descifrar/descomprimir en una ubicacion temporal protegida del servidor de validacion. Borrar el `.sql` temporal al terminar:
+
+```powershell
+cd backend
+php artisan hospital:decrypt-backup C:\backups\hospital-backup.sql.gz.enc C:\backups\hospital-backup.sql
+```
+
 4. Crear base de prueba limpia:
 
 ```powershell

@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Actions\Reports;
 
+use App\Models\BackupLog;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 /**
@@ -102,6 +104,17 @@ class OperationalMetricsService
                 ->where('status', 'failed')
                 ->where('completed_at', '>=', now()->subDay())
                 ->count();
+
+            $latestSuccessfulBackup = BackupLog::query()
+                ->where('status', BackupLog::STATUS_SUCCESS)
+                ->orderByDesc('completed_at')
+                ->orderByDesc('id')
+                ->first(['id', 'path', 'disk', 'checksum_sha256']);
+
+            $latestIntegrity = $this->latestSuccessfulBackupIntegrity($latestSuccessfulBackup);
+
+            $stats['latest_success_file_exists'] = $latestIntegrity['exists'];
+            $stats['latest_success_checksum_matches'] = $latestIntegrity['checksum_matches'];
         } catch (Throwable $exception) {
             Log::warning('OperationalMetricsService: backup probe failed', ['message' => $exception->getMessage()]);
             $stats['error'] = 'probe_failed';
@@ -196,6 +209,58 @@ class OperationalMetricsService
     }
 
     /**
+     * @return array{exists: bool|null, checksum_matches: bool|null}
+     */
+    private function latestSuccessfulBackupIntegrity(?BackupLog $backupLog): array
+    {
+        if ($backupLog === null) {
+            return [
+                'exists' => null,
+                'checksum_matches' => null,
+            ];
+        }
+
+        if ($backupLog->path === null || $backupLog->checksum_sha256 === null) {
+            return [
+                'exists' => false,
+                'checksum_matches' => false,
+            ];
+        }
+
+        try {
+            $disk = Storage::disk($backupLog->disk);
+
+            if (! $disk->exists($backupLog->path)) {
+                return [
+                    'exists' => false,
+                    'checksum_matches' => false,
+                ];
+            }
+
+            $absolutePath = $disk->path($backupLog->path);
+            $checksum = is_file($absolutePath)
+                ? hash_file('sha256', $absolutePath)
+                : hash('sha256', $disk->get($backupLog->path));
+
+            return [
+                'exists' => true,
+                'checksum_matches' => is_string($checksum)
+                    && hash_equals($backupLog->checksum_sha256, $checksum),
+            ];
+        } catch (Throwable $exception) {
+            Log::warning('OperationalMetricsService: backup integrity probe failed', [
+                'backup_log_id' => $backupLog->id,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return [
+                'exists' => false,
+                'checksum_matches' => false,
+            ];
+        }
+    }
+
+    /**
      * Called by the backup worker after every successful job so the
      * health probe can flag a stopped worker.
      */
@@ -231,6 +296,12 @@ class OperationalMetricsService
 
         if (($snapshot['backups']['failed_last_24h'] ?? 0) > 0) {
             $issues[] = 'backup_failures_in_24h';
+        }
+
+        if (($snapshot['backups']['latest_success_file_exists'] ?? null) === false) {
+            $issues[] = 'backup_latest_file_missing';
+        } elseif (($snapshot['backups']['latest_success_checksum_matches'] ?? null) === false) {
+            $issues[] = 'backup_latest_integrity_mismatch';
         }
 
         if (($snapshot['audit']['permission_audit_observer']['last_failure'] ?? null) !== null) {

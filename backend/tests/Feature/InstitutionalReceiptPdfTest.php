@@ -76,6 +76,21 @@ class InstitutionalReceiptPdfTest extends TestCase
         $this->assertStringContainsString('page-break-inside: avoid', $html);
     }
 
+    public function test_classic_receipt_keeps_totals_words_and_signatures_in_one_print_block(): void
+    {
+        $context = $this->createIssuedReceiptContext();
+        $html = app(InstitutionalReceiptPdfService::class)->htmlForReceipt($context['receipt']);
+
+        $this->assertMatchesRegularExpression(
+            '/\.receipt-closing-block\s*\{[^}]*page-break-inside:\s*avoid;[^}]*break-inside:\s*avoid;/s',
+            $html,
+        );
+        $this->assertMatchesRegularExpression(
+            '/<div class="receipt-closing-block">.*<table class="totals-table">.*Monto en letras.*<table class="signature-grid">.*<\/div>/s',
+            $html,
+        );
+    }
+
     public function test_receipt_html_escapes_patient_services_notes_and_reference_without_raw_snapshot_data(): void
     {
         $context = $this->createIssuedReceiptContext();
@@ -337,11 +352,49 @@ class InstitutionalReceiptPdfTest extends TestCase
 
         $this->assertStringContainsString('El', $capturedHtml);
         $this->assertSame([0, 0, 612, 396], $capturedPaper);
-        $this->assertDatabaseHas('institutional_receipt_print_events', [
+        $this->assertDatabaseMissing('institutional_receipt_print_events', [
             'institutional_receipt_id' => $receipt->id,
-            'event_type' => InstitutionalReceiptPrintEvent::TYPE_ISSUED_PRINT,
-            'user_id' => $user->id,
         ]);
+    }
+
+    public function test_receipt_pdf_uses_safe_content_disposition_filename_when_receipt_number_is_tampered(): void
+    {
+        $context = $this->createIssuedReceiptContext();
+        $user = $context['user'];
+        $receipt = $context['receipt'];
+        $tamperedReceiptNumber = "../bad\r\nname\"";
+
+        $receipt->forceFill([
+            'receipt_number_full' => $tamperedReceiptNumber,
+        ])->save();
+
+        Pdf::shouldReceive('loadHTML')
+            ->once()
+            ->andReturn(tap(\Mockery::mock(DomPdfWrapper::class), function ($pdf): void {
+                $pdf->shouldReceive('setPaper')
+                    ->once()
+                    ->with([0, 0, 612, 396])
+                    ->andReturnSelf();
+                $pdf->shouldReceive('output')
+                    ->once()
+                    ->andReturn('%PDF-issued');
+            }));
+
+        $response = $this->actingAs($user)
+            ->get("/api/institutional-receipts/{$receipt->id}/pdf")
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf')
+            ->assertSee('%PDF-issued', false);
+
+        $contentDisposition = $response->headers->get('Content-Disposition');
+
+        $this->assertSame('inline; filename="recibo-institucional.pdf"', $contentDisposition);
+        $this->assertStringNotContainsString('bad', (string) $contentDisposition);
+        $this->assertStringNotContainsString("\r", (string) $contentDisposition);
+        $this->assertStringNotContainsString("\n", (string) $contentDisposition);
+        $this->assertStringNotContainsString('"name', (string) $contentDisposition);
+        $this->assertStringNotContainsString('..', (string) $contentDisposition);
+        $this->assertSame($tamperedReceiptNumber, $receipt->fresh()->receipt_number_full);
     }
 
     public function test_cashier_cannot_stream_other_cashiers_receipt_pdf(): void
@@ -355,21 +408,21 @@ class InstitutionalReceiptPdfTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_repeated_receipt_pdf_requires_reprint_permission_reason_and_tracks_reprint(): void
+    public function test_repeated_receipt_pdf_is_read_only_and_print_events_track_reprints(): void
     {
         $context = $this->createIssuedReceiptContext();
         $user = $context['user'];
         $receipt = $context['receipt'];
 
         Pdf::shouldReceive('loadHTML')
-            ->twice()
+            ->times(4)
             ->andReturn(tap(\Mockery::mock(DomPdfWrapper::class), function ($pdf): void {
                 $pdf->shouldReceive('setPaper')
-                    ->twice()
+                    ->times(4)
                     ->with([0, 0, 612, 396])
                     ->andReturnSelf();
                 $pdf->shouldReceive('output')
-                    ->twice()
+                    ->times(4)
                     ->andReturn('%PDF-issued');
             }));
 
@@ -379,19 +432,28 @@ class InstitutionalReceiptPdfTest extends TestCase
 
         $this->actingAs($user)
             ->get("/api/institutional-receipts/{$receipt->id}/pdf")
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors('reason');
+            ->assertOk();
 
         $this->actingAs($user)
             ->get("/api/institutional-receipts/{$receipt->id}/pdf?reason=Reposicion%20solicitada")
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors('reason');
+            ->assertOk();
 
         $this->actingAs($user)
             ->postJson("/api/institutional-receipts/{$receipt->id}/pdf", [
                 'reason' => 'Reposicion solicitada',
             ])
             ->assertOk();
+
+        $this->assertSame(0, $receipt->fresh()->reprint_count);
+        $this->assertDatabaseMissing('institutional_receipt_print_events', [
+            'institutional_receipt_id' => $receipt->id,
+        ]);
+
+        $this->actingAs($user)
+            ->postJson("/api/institutional-receipts/{$receipt->id}/print-events")
+            ->assertCreated()
+            ->assertJsonPath('data.event.event_type', InstitutionalReceiptPrintEvent::TYPE_ISSUED_PRINT)
+            ->assertJsonPath('data.receipt.reprint_count', 0);
 
         $this->actingAs($user)
             ->postJson("/api/institutional-receipts/{$receipt->id}/print-events")
@@ -403,9 +465,10 @@ class InstitutionalReceiptPdfTest extends TestCase
                 'reason' => 'Reposicion solicitada',
             ])
             ->assertCreated()
-            ->assertJsonPath('data.event.event_type', InstitutionalReceiptPrintEvent::TYPE_REPRINT);
+            ->assertJsonPath('data.event.event_type', InstitutionalReceiptPrintEvent::TYPE_REPRINT)
+            ->assertJsonPath('data.receipt.reprint_count', 1);
 
-        $this->assertSame(2, $receipt->fresh()->reprint_count);
+        $this->assertSame(1, $receipt->fresh()->reprint_count);
         $this->assertDatabaseHas('institutional_receipt_print_events', [
             'institutional_receipt_id' => $receipt->id,
             'event_type' => InstitutionalReceiptPrintEvent::TYPE_REPRINT,
@@ -414,7 +477,7 @@ class InstitutionalReceiptPdfTest extends TestCase
         ]);
     }
 
-    public function test_reprint_pdf_post_with_idempotency_header_still_streams_pdf_not_json_replay(): void
+    public function test_receipt_pdf_post_with_idempotency_header_still_streams_pdf_without_print_audit(): void
     {
         $context = $this->createIssuedReceiptContext();
         $user = $context['user'];
@@ -452,7 +515,10 @@ class InstitutionalReceiptPdfTest extends TestCase
             ->assertHeader('Idempotent-Replay', 'true')
             ->assertSee('%PDF-issued', false);
 
-        $this->assertSame(1, $receipt->fresh()->reprint_count);
+        $this->assertSame(0, $receipt->fresh()->reprint_count);
+        $this->assertDatabaseMissing('institutional_receipt_print_events', [
+            'institutional_receipt_id' => $receipt->id,
+        ]);
     }
 
     public function test_locked_print_event_path_requires_reason_when_receipt_already_has_print_event(): void

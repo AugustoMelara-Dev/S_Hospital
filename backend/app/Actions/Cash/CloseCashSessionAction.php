@@ -17,6 +17,8 @@ use Illuminate\Validation\ValidationException;
 
 class CloseCashSessionAction
 {
+    private const MIN_DIFFERENCE_NOTE_LENGTH = 5;
+
     public function __construct(private readonly BuildCashReconciliationAction $buildCashReconciliation) {}
 
     /**
@@ -55,6 +57,14 @@ class CloseCashSessionAction
                 ]);
             }
 
+            $missingInstitutionalReceiptCount = $reconciliation['missing_institutional_receipt_count'];
+
+            if ($missingInstitutionalReceiptCount > 0) {
+                throw ValidationException::withMessages([
+                    'cash_session' => "No se puede cerrar la caja con {$missingInstitutionalReceiptCount} factura(s) pagadas sin recibo institucional emitido. Genere el recibo institucional pendiente antes de cerrar.",
+                ]);
+            }
+
             $expectedCents = Money::parseCents($reconciliation['expected_cash_amount'], 'expected_cash_amount');
             $closingCents = Money::parseCents($payload['closing_amount'], 'closing_amount');
             $differenceCents = $closingCents - $expectedCents;
@@ -66,6 +76,21 @@ class CloseCashSessionAction
                 ]);
             }
 
+            if ($differenceCents !== 0 && mb_strlen($notes) < self::MIN_DIFFERENCE_NOTE_LENGTH) {
+                throw ValidationException::withMessages([
+                    'notes' => 'Explique la diferencia de caja con al menos 5 caracteres.',
+                ]);
+            }
+
+            CashMovement::query()->create([
+                'cash_session_id' => $lockedSession->id,
+                'user_id' => $user->id,
+                'type' => CashMovement::TYPE_CLOSING,
+                'method' => CashMovement::TYPE_CLOSING,
+                'amount' => Money::formatCents($closingCents),
+                'notes' => $notes === '' ? null : $notes,
+                'occurred_at' => now(),
+            ]);
             $lockedSession->forceFill([
                 'closing_amount' => Money::formatCents($closingCents),
                 'expected_amount' => Money::formatCents($expectedCents),
@@ -77,19 +102,10 @@ class CloseCashSessionAction
                 'pending_amount_snapshot' => $reconciliation['pending_amount'],
                 'status' => CashRegisterSession::STATUS_CLOSED,
                 'open_user_id' => null,
+                'closed_by_user_id' => $user->id,
                 'closing_notes' => $notes === '' ? null : $notes,
                 'closed_at' => now(),
             ])->save();
-
-            CashMovement::query()->create([
-                'cash_session_id' => $lockedSession->id,
-                'user_id' => $user->id,
-                'type' => CashMovement::TYPE_CLOSING,
-                'method' => CashMovement::TYPE_CLOSING,
-                'amount' => Money::formatCents($closingCents),
-                'notes' => $notes === '' ? null : $notes,
-                'occurred_at' => now(),
-            ]);
 
             AuditLog::query()->create([
                 'user_id' => $user->id,
@@ -106,6 +122,7 @@ class CloseCashSessionAction
                     'payments_count' => $reconciliation['payments_count'],
                     'pending_invoice_count' => $pendingInvoiceCount,
                     'pending_amount' => $reconciliation['pending_amount'],
+                    'closed_by_user_id' => $user->id,
                 ],
                 'reason' => $notes === '' ? null : $notes,
                 'ip_address' => $request?->ip(),
@@ -140,7 +157,7 @@ class CloseCashSessionAction
                 CashSessionChanged::dispatch($lockedSession->fresh(), 'closed');
             });
 
-            return $lockedSession->load('user:id,name,username');
+            return $lockedSession->load(['user:id,name,username', 'closedBy:id,name,username']);
         });
     }
 }

@@ -17,11 +17,24 @@ export const fiscal = {
     return response?.data ?? null;
   },
 
-  async updateFiscalSettings(payload: FiscalSettings): Promise<FiscalSettings> {
+  async updateFiscalSettings(payload: Partial<FiscalSettings>): Promise<FiscalSettings> {
     const response = await apiClient.request<{ data: FiscalSettings }>('/api/settings/fiscal', {
       method: 'PUT',
       body: JSON.stringify(payload),
     });
+    return response.data;
+  },
+
+  async updateOperationalSettings(
+    payload: Pick<OperationalSettings, 'scanner_enabled' | 'partial_payments_enabled'>,
+  ): Promise<Pick<OperationalSettings, 'scanner_enabled' | 'partial_payments_enabled'>> {
+    const response = await apiClient.request<{ data: Pick<OperationalSettings, 'scanner_enabled' | 'partial_payments_enabled'> }>(
+      '/api/settings/operational',
+      {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      },
+    );
     return response.data;
   },
 

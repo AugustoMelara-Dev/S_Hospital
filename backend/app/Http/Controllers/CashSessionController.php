@@ -19,10 +19,13 @@ class CashSessionController extends Controller
         CurrentCashSessionRequest $request,
         BuildCashReconciliationAction $buildCashReconciliation,
     ): JsonResponse {
+        $scope = (string) ($request->validated()['scope'] ?? 'own');
+        $canViewClosableSession = $scope === 'closable' && $request->user()->can('cash.close_any');
+
         $session = CashRegisterSession::query()
-            ->with('user:id,name,username')
-            ->where('user_id', $request->user()->id)
+            ->with(['user:id,name,username', 'closedBy:id,name,username'])
             ->where('status', CashRegisterSession::STATUS_OPEN)
+            ->when(! $canViewClosableSession, fn ($query) => $query->where('user_id', $request->user()->id))
             ->latest('opened_at')
             ->first();
 
@@ -34,7 +37,7 @@ class CashSessionController extends Controller
     public function index(IndexCashSessionRequest $request): JsonResponse
     {
         $query = CashRegisterSession::query()
-            ->with('user:id,name,username')
+            ->with(['user:id,name,username', 'closedBy:id,name,username'])
             ->latest('opened_at');
 
         if (! $request->user()->can('cash.close_any')) {
@@ -70,12 +73,15 @@ class CashSessionController extends Controller
         CloseCashSessionRequest $request,
         CashRegisterSession $cashSession,
         CloseCashSessionAction $closeCashSession,
+        BuildCashReconciliationAction $buildCashReconciliation,
     ): JsonResponse {
         Gate::authorize('close', $cashSession);
 
         $session = $closeCashSession->execute($cashSession, $request->validated(), $request->user(), $request);
 
-        return response()->json(['data' => $session]);
+        return response()->json([
+            'data' => $this->closedSessionPayload($session, $buildCashReconciliation),
+        ]);
     }
 
     /**
@@ -86,5 +92,28 @@ class CashSessionController extends Controller
         BuildCashReconciliationAction $buildCashReconciliation,
     ): array {
         return array_merge($session->toArray(), $buildCashReconciliation->execute($session));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function closedSessionPayload(
+        CashRegisterSession $session,
+        BuildCashReconciliationAction $buildCashReconciliation,
+    ): array {
+        $reconciliation = $buildCashReconciliation->execute($session);
+        $methods = $session->method_totals_snapshot ?? $reconciliation['payments_by_method'];
+
+        return array_merge($session->toArray(), [
+            'payments_count' => $session->payments_count_snapshot ?? $reconciliation['payments_count'],
+            'payments_total' => (string) ($session->payments_total_snapshot ?? $reconciliation['payments_total']),
+            'payments_by_method' => $methods,
+            'expected_cash_amount' => (string) ($session->expected_amount ?? $reconciliation['expected_cash_amount']),
+            'pending_invoice_count' => $session->pending_invoice_count_snapshot ?? $reconciliation['pending_invoice_count'],
+            'pending_amount' => (string) ($session->pending_amount_snapshot ?? $reconciliation['pending_amount']),
+            'missing_institutional_receipt_count' => $reconciliation['missing_institutional_receipt_count'],
+            'reversed_payments_count' => $reconciliation['reversed_payments_count'],
+            'reversed_payments_total' => $reconciliation['reversed_payments_total'],
+        ]);
     }
 }

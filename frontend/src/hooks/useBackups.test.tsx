@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 
 import { useBackups, useBackupWorkerHealth, useCreateBackup } from './useBackups';
 import { apiClient } from '@/lib/api';
+import { createClientIdempotencyKey } from '@/lib/api/base';
 
 vi.mock('@/lib/api', () => ({
   apiClient: {
@@ -14,9 +15,26 @@ vi.mock('@/lib/api', () => ({
   },
 }));
 
+vi.mock('@/lib/api/base', () => ({
+  createClientIdempotencyKey: vi.fn(),
+}));
+
 const mockedGetBackups = vi.mocked(apiClient.getBackups);
 const mockedCreateBackup = vi.mocked(apiClient.createBackup);
 const mockedGetSystemHealth = vi.mocked(apiClient.getSystemHealth);
+const mockedCreateClientIdempotencyKey = vi.mocked(createClientIdempotencyKey);
+
+beforeEach(() => {
+  stubVisibilityState('visible');
+  mockedGetBackups.mockReset();
+  mockedCreateBackup.mockReset();
+  mockedGetSystemHealth.mockReset();
+  mockedCreateClientIdempotencyKey.mockReset();
+});
+
+afterEach(() => {
+  vi.clearAllMocks();
+});
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -31,23 +49,19 @@ function createWrapper() {
   );
 }
 
+function stubVisibilityState(value: DocumentVisibilityState) {
+  Object.defineProperty(document, 'visibilityState', {
+    configurable: true,
+    value,
+  });
+}
+
 describe('useBackups', () => {
-  beforeEach(() => {
-    mockedGetBackups.mockReset();
-    mockedCreateBackup.mockReset();
-    mockedGetSystemHealth.mockReset();
-  });
-
-  afterEach(() => {
-    vi.clearAllMocks();
-  });
-
   it('exposes the api result and computes hasPending from the data', async () => {
     mockedGetBackups.mockResolvedValue({
       data: [
         {
           id: 1,
-          filename: 'b1.sql',
           size_bytes: 1024,
           status: 'pending',
           type: 'manual',
@@ -59,7 +73,6 @@ describe('useBackups', () => {
         },
         {
           id: 2,
-          filename: 'b2.sql',
           size_bytes: 2048,
           status: 'success',
           type: 'manual',
@@ -91,7 +104,6 @@ describe('useBackups', () => {
       data: [
         {
           id: 1,
-          filename: 'b1.sql',
           size_bytes: 1024,
           status: 'success',
           type: 'manual',
@@ -114,6 +126,55 @@ describe('useBackups', () => {
     });
 
     expect(result.current.hasPending).toBe(false);
+    expect(result.current.pollIntervalMs).toBe(false);
+  });
+
+  it('fails closed instead of crashing when the backup collection is malformed', async () => {
+    mockedGetBackups.mockResolvedValue({
+      data: { unexpected: 'payload' },
+      meta: { current_page: 1, per_page: 25, total: 0 },
+    } as never);
+
+    const { result } = renderHook(() => useBackups(), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(result.current.hasPending).toBe(false);
+    expect(result.current.pollIntervalMs).toBe(false);
+  });
+
+  it('does not poll pending backups while the tab is hidden', async () => {
+    stubVisibilityState('hidden');
+    mockedGetBackups.mockResolvedValue({
+      data: [
+        {
+          id: 1,
+          size_bytes: 1024,
+          status: 'pending',
+          type: 'manual',
+          created_by: 1,
+          completed_at: null,
+          created_at: '2026-06-01T00:00:00Z',
+          updated_at: '2026-06-01T00:00:00Z',
+          checksum_sha256: null,
+        },
+      ],
+      meta: { current_page: 1, per_page: 25, total: 1 },
+    });
+
+    const { result } = renderHook(() => useBackups(), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(result.current.hasPending).toBe(true);
     expect(result.current.pollIntervalMs).toBe(false);
   });
 });
@@ -193,9 +254,9 @@ describe('useBackupWorkerHealth polling', () => {
 
 describe('useCreateBackup', () => {
   it('invalidates the backups query key on success', async () => {
+    mockedCreateClientIdempotencyKey.mockReturnValue('manual-backup-attempt-1');
     mockedCreateBackup.mockResolvedValue({
       id: 99,
-      filename: 'new.sql',
       size_bytes: 0,
       status: 'pending',
       type: 'manual',
@@ -216,7 +277,82 @@ describe('useCreateBackup', () => {
 
     await result.current.create.mutateAsync();
 
-    expect(mockedCreateBackup).toHaveBeenCalledTimes(1);
+    expect(mockedCreateBackup).toHaveBeenCalledWith({
+      idempotencyKey: 'manual-backup-attempt-1',
+    });
+  });
+
+  it('reuses the idempotency key while retrying the same failed manual backup attempt', async () => {
+    mockedCreateClientIdempotencyKey.mockReturnValue('manual-backup-attempt-1');
+    mockedCreateBackup
+      .mockRejectedValueOnce(new Error('LAN timeout'))
+      .mockResolvedValueOnce({
+        id: 99,
+        size_bytes: 0,
+        status: 'pending',
+        type: 'manual',
+        created_by: 1,
+        completed_at: null,
+        created_at: '2026-06-01T00:00:00Z',
+        updated_at: '2026-06-01T00:00:00Z',
+        checksum_sha256: null,
+      });
+
+    const wrapper = createWrapper();
+    const { result } = renderHook(() => useCreateBackup(), { wrapper });
+
+    await expect(result.current.mutateAsync()).rejects.toThrow('LAN timeout');
+    await result.current.mutateAsync();
+
+    expect(mockedCreateBackup).toHaveBeenNthCalledWith(1, {
+      idempotencyKey: 'manual-backup-attempt-1',
+    });
+    expect(mockedCreateBackup).toHaveBeenNthCalledWith(2, {
+      idempotencyKey: 'manual-backup-attempt-1',
+    });
+    expect(mockedCreateClientIdempotencyKey).toHaveBeenCalledTimes(1);
+  });
+
+  it('renews the idempotency key after a confirmed manual backup request', async () => {
+    mockedCreateClientIdempotencyKey
+      .mockReturnValueOnce('manual-backup-attempt-1')
+      .mockReturnValueOnce('manual-backup-attempt-2');
+    mockedCreateBackup
+      .mockResolvedValueOnce({
+        id: 99,
+        size_bytes: 0,
+        status: 'pending',
+        type: 'manual',
+        created_by: 1,
+        completed_at: null,
+        created_at: '2026-06-01T00:00:00Z',
+        updated_at: '2026-06-01T00:00:00Z',
+        checksum_sha256: null,
+      })
+      .mockResolvedValueOnce({
+        id: 100,
+        size_bytes: 0,
+        status: 'pending',
+        type: 'manual',
+        created_by: 1,
+        completed_at: null,
+        created_at: '2026-06-01T00:00:00Z',
+        updated_at: '2026-06-01T00:00:00Z',
+        checksum_sha256: null,
+      });
+
+    const wrapper = createWrapper();
+    const { result } = renderHook(() => useCreateBackup(), { wrapper });
+
+    await result.current.mutateAsync();
+    await result.current.mutateAsync();
+
+    expect(mockedCreateBackup).toHaveBeenNthCalledWith(1, {
+      idempotencyKey: 'manual-backup-attempt-1',
+    });
+    expect(mockedCreateBackup).toHaveBeenNthCalledWith(2, {
+      idempotencyKey: 'manual-backup-attempt-2',
+    });
   });
 });
 

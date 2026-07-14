@@ -1,5 +1,5 @@
 # ==============================================================================
-# Hospital Billing OS - Generador de Paquete de Instalación Offline
+# S_Hospital - Generador de Paquete de Instalación Offline
 # ==============================================================================
 # Este script se ejecuta en una máquina con acceso a internet.
 # Compila e instala de forma local las imágenes Docker de producción y las exporta
@@ -12,7 +12,7 @@ Set-StrictMode -Version Latest
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
 Write-Host "======================================================================" -ForegroundColor Cyan
-Write-Host "     [HOSPITAL BILLING OS - CREADOR DE PAQUETE OFFLINE]              " -ForegroundColor Cyan -BackgroundColor DarkBlue
+Write-Host "     [S_HOSPITAL - CREADOR DE PAQUETE OFFLINE]                      " -ForegroundColor Cyan -BackgroundColor DarkBlue
 Write-Host "======================================================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -51,6 +51,10 @@ $env:SERVER_IP = "127.0.0.1"
 $env:APP_KEY = "base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
 $env:DB_PASSWORD = "password"
 $env:DB_ROOT_PASSWORD = "root_password"
+$env:HOSPITAL_BACKUP_ENCRYPTION_KEY = "base64:BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB="
+$env:PUSHER_APP_ID = "offline-build"
+$env:PUSHER_APP_KEY = "offline-build-key"
+$env:PUSHER_APP_SECRET = "offline-build-secret"
 
 $composePath = Join-Path $projectRoot "docker-compose.prod.yml"
 docker compose -f $composePath build
@@ -60,53 +64,44 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Host "[OK] Construcción de imágenes completada con éxito." -ForegroundColor Green
 
+$runtimeImages = @(
+    "nginx:1.25.4-alpine",
+    "mariadb:11.4.3",
+    "quay.io/soketi/soketi:1.6-16-alpine"
+)
+foreach ($runtimeImage in $runtimeImages) {
+    Write-Host "[*] Descargando imagen runtime $runtimeImage..." -ForegroundColor Yellow
+    docker pull $runtimeImage
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "[FAIL] No se pudo descargar $runtimeImage para el paquete offline." -ForegroundColor Red
+        exit 1
+    }
+}
+
 # 3. Detectar nombres reales de las imágenes y guardarlas
 Write-Host "[*] Detectando y exportando imágenes..." -ForegroundColor Yellow
 
-# Obtenemos la información de imágenes usando docker compose config o docker compose images
-# Para asegurar robustez, podemos listar las imágenes correspondientes a los servicios definidos
-# nginx -> nginx:1.25-alpine
-# mysql -> mariadb:11
-# backend -> s_hospital-backend (o similar)
-# queue-worker -> s_hospital-queue-worker (o similar)
-
-# Intentamos obtener la imagen del backend construida
-$backendImage = "s_hospital-backend"
-$workerImage = "s_hospital-queue-worker"
-
-# Intentamos extraer el nombre real de la imagen compilada por docker compose
-$composeImages = docker compose -f $composePath images
-Write-Host "Imágenes detectadas en Docker Compose:" -ForegroundColor Gray
-Write-Host $composeImages
-
-# Guardar imágenes pre-descargadas de las bibliotecas y las construidas localmente
+# Guardar todas las imagenes que docker-compose.prod.yml necesita. Los nombres
+# exactos conservan las etiquetas que Compose buscara en el servidor offline.
 $imagesToSave = @(
-    @{ Service = "backend"; Image = "s_hospital-backend"; Target = "backend.tar" }
-    @{ Service = "queue-worker"; Image = "s_hospital-queue-worker"; Target = "queue-worker.tar" }
-    @{ Service = "nginx"; Image = "nginx:1.25-alpine"; Target = "nginx.tar" }
-    @{ Service = "mysql"; Image = "mariadb:11"; Target = "mariadb.tar" }
+    @{ Image = "s_hospital-backend:latest"; Target = "backend.tar" }
+    @{ Image = "s_hospital-queue-worker:latest"; Target = "queue-worker.tar" }
+    @{ Image = "s_hospital-scheduler:latest"; Target = "scheduler.tar" }
+    @{ Image = "nginx:1.25.4-alpine"; Target = "nginx.tar" }
+    @{ Image = "mariadb:11.4.3"; Target = "mariadb.tar" }
+    @{ Image = "quay.io/soketi/soketi:1.6-16-alpine"; Target = "soketi.tar" }
 )
 
 foreach ($item in $imagesToSave) {
     $img = $item.Image
     $tgt = Join-Path $imagesDir $item.Target
-    
-    # Si por casualidad el nombre del proyecto varía en docker compose (ej. s_hospital vs s_hospital_backend)
-    # buscamos el ID de imagen o nombre correcto
-    if ($item.Service -eq "backend" -or $item.Service -eq "queue-worker") {
-        # Intentar obtener la imagen del servicio específico mediante docker compose images
-        $foundImage = docker compose -f $composePath images --quiet $item.Service
-        if (-not [string]::IsNullOrWhiteSpace($foundImage)) {
-            $img = $foundImage.Trim()
-            Write-Host "[*] Identificada imagen para el servicio '$($item.Service)' por ID: $img" -ForegroundColor Gray
-        } else {
-            # Fallback a nombre de etiqueta por defecto (preservando guiones bajos)
-            $projectName = (Split-Path $projectRoot -Leaf).ToLower().Replace("-", "_")
-            $img = "${projectName}-$($item.Service)"
-            Write-Host "[*] Usando fallback para servicio '$($item.Service)': $img" -ForegroundColor Gray
-        }
+
+    docker image inspect $img *> $null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "[FAIL] La imagen requerida no existe localmente: $img" -ForegroundColor Red
+        exit 1
     }
-    
+
     Write-Host "[*] Exportando $img a $tgt..." -ForegroundColor Yellow
     docker save -o $tgt $img
     if ($LASTEXITCODE -ne 0) {
@@ -120,7 +115,7 @@ foreach ($item in $imagesToSave) {
 Write-Host "[*] Copiando archivos de código y configuración al paquete de release..." -ForegroundColor Yellow
 
 $dirsToCopy = @("nginx", "scripts")
-$filesToCopy = @("setup.bat", "docker-compose.prod.yml")
+$filesToCopy = @("setup.bat", "docker-compose.prod.yml", ".env.example", "README.md")
 
 foreach ($dir in $dirsToCopy) {
     $srcDir = Join-Path $projectRoot $dir
@@ -197,7 +192,7 @@ $totalSizeMB = [Math]::Round($totalSizeBytes / 1MB, 2)
 
 $manifestContent = @"
 ======================================================================
-     HOSPITAL BILLING OS - OFFLINE RELEASE MANIFEST
+S_HOSPITAL - OFFLINE RELEASE MANIFEST
 ======================================================================
 Fecha de Generacion : $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
 Rama Git            : $gitBranch

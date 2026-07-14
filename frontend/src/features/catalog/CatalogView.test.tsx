@@ -1,15 +1,20 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { type ReactNode } from 'react';
+import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { CatalogView } from './CatalogView';
+import { CatalogView, ConfirmDialog, serviceStatusPayload } from './CatalogView';
 import { apiClient, ApiError, type AuthUser, type Service } from '../../lib/api';
 
 function renderWithQueryClient(node: ReactNode) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  return render(<QueryClientProvider client={queryClient}>{node}</QueryClientProvider>);
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>{node}</MemoryRouter>
+    </QueryClientProvider>,
+  );
 }
 
 function setupBasicMocks() {
@@ -76,7 +81,6 @@ describe('CatalogView', () => {
     expect(screen.getByText('Oculto en facturación')).toBeInTheDocument();
     expect(screen.getByText('No facturable')).toBeInTheDocument();
     expect(screen.getByText('Sin tarifa')).toBeInTheDocument();
-    expect(screen.getByText('Sin tarifa operativa')).toBeInTheDocument();
   });
 });
 
@@ -100,7 +104,7 @@ describe('CatalogView modernized structure', () => {
 
     const headings = await screen.findAllByRole('heading', { level: 1 });
     expect(headings).toHaveLength(1);
-    expect(headings[0]).toHaveTextContent(/cat[aá]logo de servicios/i);
+    expect(headings[0]).toHaveTextContent(/cat[aá]logo institucional/i);
   });
 
   it('shows the total services summary with the existing wording', async () => {
@@ -127,6 +131,29 @@ describe('CatalogView modernized structure', () => {
     expect(await screen.findByText('2 servicios en el catálogo')).toBeInTheDocument();
   });
 
+  it('keeps the catalog metrics focused on at most two operational cards', async () => {
+    setupBasicMocks();
+    vi.spyOn(apiClient, 'getCategories').mockResolvedValue([
+      { id: 1, name: 'Laboratorio', slug: 'laboratorio', active: true, sort_order: 1 },
+    ]);
+    vi.spyOn(apiClient, 'getAreas').mockResolvedValue([
+      { id: 1, name: 'Laboratorio', slug: 'laboratorio', active: true },
+    ]);
+    vi.spyOn(apiClient, 'getOperationalSettings').mockResolvedValue({
+      scanner_enabled: true,
+    } as Awaited<ReturnType<typeof apiClient.getOperationalSettings>>);
+    vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({
+      data: [serviceFixture()],
+      meta: { current_page: 1, per_page: 15, total: 1 },
+    });
+
+    renderWithQueryClient(<CatalogView user={catalogUser()} onStatus={vi.fn()} />);
+
+    expect(await screen.findByText(/total cat[aá]logo/i)).toBeInTheDocument();
+    expect(screen.getByText(/^categor[ií]as$/i)).toBeInTheDocument();
+    expect(screen.queryByText(/^esc[aá]ner$/i)).not.toBeInTheDocument();
+  });
+
   it('exposes the search input with an accessible name', async () => {
     setupBasicMocks();
     vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({
@@ -136,7 +163,9 @@ describe('CatalogView modernized structure', () => {
 
     renderWithQueryClient(<CatalogView user={catalogUser()} onStatus={vi.fn()} />);
 
-    expect(await screen.findByLabelText(/buscar servicio/i)).toBeInTheDocument();
+    const search = await screen.findByLabelText(/buscar servicio/i);
+    expect(search).toHaveAttribute('placeholder', 'Buscar por nombre, categoria o area...');
+    expect(search).not.toHaveAttribute('placeholder', expect.stringMatching(/c[oó]digo/i));
   });
 
   it('clears the search input and resets the filter state via the clear button', async () => {
@@ -246,6 +275,56 @@ describe('CatalogView modernized structure', () => {
     ).toBeInTheDocument();
   });
 
+  it('requires confirmation before deactivating an active service without deleting it', async () => {
+    const onConfirm = vi.fn();
+    render(
+      <ConfirmDialog
+        open
+        title="Desactivar servicio"
+        confirmLabel="Desactivar servicio"
+        danger
+        onCancel={vi.fn()}
+        onConfirm={onConfirm}
+        reasonHelpText="Mínimo 5 caracteres"
+        requireReasonMinLength={5}
+      >
+        El servicio Glucosa quedará oculto para nuevos cobros.
+      </ConfirmDialog>,
+    );
+
+    expect(await screen.findByRole('dialog', { name: /desactivar servicio/i })).toBeInTheDocument();
+    expect(screen.getByText(/el servicio glucosa quedará oculto/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /desactivar servicio/i })).toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText(/motivo/i), {
+      target: { value: 'Servicio retirado temporalmente de caja' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /desactivar servicio/i }));
+
+    expect(onConfirm).toHaveBeenCalledWith('Servicio retirado temporalmente de caja');
+    expect(serviceStatusPayload(
+      serviceFixture({ aliases: 'azucar, laboratorio rapido' }),
+      false,
+      ' Servicio retirado temporalmente de caja ',
+    )).toEqual(expect.objectContaining({
+      active: false,
+      aliases: 'azucar, laboratorio rapido',
+      availability_change_reason: 'Servicio retirado temporalmente de caja',
+    }));
+  });
+
+  it('builds the audited payload when activating an inactive service', () => {
+    expect(serviceStatusPayload(
+      serviceFixture({ active: false, aliases: 'azucar, laboratorio rapido' }),
+      true,
+      'Servicio reactivado por administracion',
+    )).toEqual(expect.objectContaining({
+      active: true,
+      aliases: 'azucar, laboratorio rapido',
+      availability_change_reason: 'Servicio reactivado por administracion',
+    }));
+  });
+
   it('renders error sanitized message and exposes a retry callback on the table', async () => {
     setupBasicMocks();
     const getServicesPage = vi
@@ -261,7 +340,7 @@ describe('CatalogView modernized structure', () => {
     renderWithQueryClient(<CatalogView user={catalogUser()} onStatus={vi.fn()} />);
 
     expect(
-      await screen.findByText(/el servidor lan no pudo completar la operaci[oó]n/i),
+      await screen.findByText(/el servidor local no pudo completar la operaci[oó]n/i),
     ).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/SQLSTATE|stack trace|storage\/logs/i);
 

@@ -9,6 +9,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
 use Laravel\Sanctum\HasApiTokens;
+use LogicException;
 use Spatie\Permission\Exceptions\PermissionDoesNotExist;
 use Spatie\Permission\Traits\HasRoles;
 
@@ -60,6 +61,13 @@ class User extends Authenticatable
         'password',
         'remember_token',
     ];
+
+    protected static function booted(): void
+    {
+        static::deleting(function (): never {
+            throw new LogicException('Los usuarios no se eliminan; deben desactivarse con motivo y auditoria.');
+        });
+    }
 
     /**
      * Get the attributes that should be cast.

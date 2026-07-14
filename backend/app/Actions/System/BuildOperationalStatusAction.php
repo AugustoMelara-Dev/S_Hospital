@@ -185,13 +185,26 @@ class BuildOperationalStatusAction
     private function lanAccessCheck(array $status): array
     {
         $proofs = collect($status['preflight']['physical_proofs'] ?? []);
-        $lan = $proofs->firstWhere('code', 'LAN_CLIENT_VALIDATION_PROOF');
+        $isLocalMode = ($status['network']['host_type'] ?? null) === 'loopback';
+        $proof = $proofs->firstWhere('code', $isLocalMode ? 'LOCAL_SERVER_VALIDATION_PROOF' : 'LAN_CLIENT_VALIDATION_PROOF');
+        $validated = ($proof['status'] ?? 'pending') === 'validated';
+
+        if ($isLocalMode) {
+            return $this->check(
+                'LOCAL_ACCESS',
+                'Acceso local',
+                $validated ? 'validated' : 'manual_required',
+                $validated
+                    ? 'Validado desde el navegador local del servidor.'
+                    : 'Debe validarse desde el navegador local del servidor.'
+            );
+        }
 
         return $this->check(
             'LAN_ACCESS',
             'Acceso por red local',
-            ($lan['status'] ?? 'pending') === 'validated' ? 'validated' : 'manual_required',
-            ($lan['status'] ?? 'pending') === 'validated'
+            $validated ? 'validated' : 'manual_required',
+            $validated
                 ? 'Validado desde una computadora cliente.'
                 : 'Debe probarse desde otra computadora del hospital.'
         );

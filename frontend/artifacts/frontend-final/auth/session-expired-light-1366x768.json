@@ -1,0 +1,77 @@
+{
+  "state": "session-expired",
+  "matrix": {
+    "id": "light-1366x768",
+    "mode": "light",
+    "width": 1366,
+    "height": 768,
+    "zoom": 1
+  },
+  "overflow": {
+    "clientWidth": 1366,
+    "scrollWidth": 1366
+  },
+  "flatSurfaces": [
+    {
+      "selector": ".ant-btn",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<button aria-label=\"Mostrar contraseña\" type=\"button\" class=\"ant-btn css-dev-only-do-not-override-1pi45l5 s-hospital ant-btn-text ant-btn-color-default ant-btn-variant-text ant-btn-icon-only text-muted-foreground p-0 min-h-0 min-w-0\"><span class=\"ant-btn-icon\"><span role=\"img\" aria-label=\"eye\" class=\"anticon anticon-eye\"><svg viewBox=\"64 64 896 896\" focusable=\"false\" data-icon=\"eye\" width=\"1em\" height=\"1em\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M942.2 486.2C847.4 286.5 704.1 186 512 18"
+    },
+    {
+      "selector": ".ant-btn",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<button type=\"submit\" class=\"ant-btn css-dev-only-do-not-override-1pi45l5 s-hospital ant-btn-primary ant-btn-color-primary ant-btn-variant-solid ant-btn-lg mt-1 h-12 w-full font-semibold\"><span>Iniciar sesión</span></button>"
+    },
+    {
+      "selector": ".ant-input",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<input autocomplete=\"username\" id=\"login-input\" placeholder=\"ej. cajero_01\" class=\"ant-input ant-input-lg css-dev-only-do-not-override-1pi45l5\" type=\"text\" value=\"\">"
+    },
+    {
+      "selector": ".ant-input",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<input autocomplete=\"current-password\" id=\"password-input\" placeholder=\"********\" class=\"ant-input ant-input-lg css-dev-only-do-not-override-1pi45l5\" type=\"password\">"
+    },
+    {
+      "selector": ".ant-alert",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<div data-show=\"true\" class=\"ant-alert ant-alert-warning ant-alert-outlined ant-alert-with-description s-hospital css-dev-only-do-not-override-1pi45l5\" role=\"alert\"><span class=\"ant-alert-icon\"><span role=\"img\" aria-label=\"exclamation-circle\" class=\"anticon anticon-exclamation-circle\"><svg viewBox=\"64 64 896 896\" focusable=\"false\" data-icon=\"exclamation-circle\" width=\"1em\" height=\"1em\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 44"
+    }
+  ],
+  "impacts": {
+    "minor": 0,
+    "moderate": 0,
+    "serious": 0,
+    "critical": 0
+  },
+  "incomplete": 0,
+  "violations": [],
+  "incompleteDetails": [],
+  "incompleteClassification": [],
+  "unclassifiedIncomplete": []
+}

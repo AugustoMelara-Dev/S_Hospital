@@ -1,14 +1,6 @@
-import { type FormEvent, useEffect, useRef, useState } from 'react';
-import { Banknote, Printer, ReceiptText } from 'lucide-react';
-import { Alert } from '../../../components/ui/alert';
-import { Button } from '../../../components/ui/button';
-import { Checkbox } from '../../../components/ui/checkbox';
-import { Dialog } from '../../../components/ui/dialog';
-import { Input } from '../../../components/ui/input';
-import { Label } from '../../../components/ui/label';
-import { MoneyText } from '../../../components/ui/money-text';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
-import { Separator } from '../../../components/ui/separator';
+import { DollarOutlined as Banknote, PrinterOutlined as Printer, FileTextOutlined as ReceiptText } from '@ant-design/icons';
+import { Alert, Button, Divider, Input, Modal, Typography, type InputRef } from 'antd';
+import { type FormEvent, type KeyboardEvent, useEffect, useRef, useState } from 'react';
 import type { Payment } from '../../../lib/api';
 import { formatLempirasUIFromCents, parseCents as parseCentsNullable } from '../../../lib/moneyCents';
 import { parseCents } from '../../../lib/money';
@@ -16,7 +8,6 @@ import { parseCents } from '../../../lib/money';
 type PaymentModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  previewBeforePrint?: boolean;
   invoiceNumber: string;
   patientName: string;
   total: string;
@@ -27,7 +18,6 @@ type PaymentModalProps = {
   onPaymentMethodChange: (method: Payment['method']) => void;
   onPaymentAmountChange: (amount: string) => void;
   onPaymentReferenceChange?: (reference: string) => void;
-  onPreviewBeforePrintChange?: (enabled: boolean) => void;
   onConfirm: (appliedAmount: string) => void;
   submitting?: boolean;
   partialPaymentsEnabled?: boolean;
@@ -40,10 +30,16 @@ const methodHelp: Record<Payment['method'], string> = {
   other: 'Este método queda separado del efectivo esperado de caja.',
 };
 
+const paymentMethods: Array<{ value: Payment['method']; label: string }> = [
+  { value: 'cash', label: 'Efectivo' },
+  { value: 'card', label: 'Tarjeta' },
+  { value: 'transfer', label: 'Transferencia' },
+  { value: 'other', label: 'Otro' },
+];
+
 export function PaymentModal({
   open,
   onOpenChange,
-  previewBeforePrint = false,
   invoiceNumber,
   patientName,
   total,
@@ -54,14 +50,17 @@ export function PaymentModal({
   onPaymentMethodChange,
   onPaymentAmountChange,
   onPaymentReferenceChange = () => undefined,
-  onPreviewBeforePrintChange,
   onConfirm,
   submitting,
   partialPaymentsEnabled = false,
 }: PaymentModalProps) {
   const [error, setError] = useState<string | null>(null);
+  const [referenceError, setReferenceError] = useState<string | null>(null);
   const [capNotice, setCapNotice] = useState<string | null>(null);
-  const amountInputRef = useRef<HTMLInputElement | null>(null);
+  const amountInputRef = useRef<InputRef | null>(null);
+  const referenceInputRef = useRef<InputRef | null>(null);
+  const formRef = useRef<HTMLFormElement | null>(null);
+  const submitLockRef = useRef(false);
 
   const balanceCents = parseMoneyCents(balanceDue);
   const paymentCents = parseMoneyCents(paymentAmount);
@@ -78,6 +77,7 @@ export function PaymentModal({
     : paymentCents;
   const needsAmount = paymentCents === null || paymentCents <= 0;
   const exceedsPending = !cashCanReturnChange && paymentCents !== null && balanceCents !== null && paymentCents > balanceCents;
+  const requiresReference = paymentMethod === 'card' || paymentMethod === 'transfer';
   const pendingAmountLabel = balanceCents !== null ? formatMoneyCents(balanceCents) : '0.00';
   const amountDescribedBy = [
     'payment-amount-help',
@@ -89,14 +89,24 @@ export function PaymentModal({
   useEffect(() => {
     if (open) {
       setError(null);
+      setReferenceError(null);
       setCapNotice(null);
-      window.setTimeout(() => amountInputRef.current?.focus(), 0);
+      window.setTimeout(() => {
+        amountInputRef.current?.focus();
+        amountInputRef.current?.select();
+      }, 0);
     }
   }, [open, invoiceNumber]);
 
+  useEffect(() => {
+    if (!submitting) {
+      submitLockRef.current = false;
+    }
+  }, [submitting]);
+
   function handleAmountChange(value: string) {
     setError(null);
-    const normalizedValue = value.replace(',', '.');
+    const normalizedValue = value.trim().replace(',', '.');
     if (normalizedValue === '') {
       setCapNotice(null);
       onPaymentAmountChange('');
@@ -120,8 +130,56 @@ export function PaymentModal({
     onPaymentAmountChange(normalizedValue);
   }
 
+  function handlePaymentMethodChange(method: Payment['method']) {
+    setReferenceError(null);
+    onPaymentMethodChange(method);
+    if (method === 'cash' || method === 'other') {
+      onPaymentReferenceChange('');
+    }
+  }
+
+  function handlePaymentMethodKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (submitting) return;
+
+    const offsets: Partial<Record<string, number>> = {
+      ArrowRight: 1,
+      ArrowDown: 1,
+      ArrowLeft: -1,
+      ArrowUp: -1,
+    };
+    const radios = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="radio"]'));
+    const targetIndex = radios.indexOf(event.target as HTMLButtonElement);
+    const currentIndex = targetIndex >= 0
+      ? targetIndex
+      : paymentMethods.findIndex((method) => method.value === paymentMethod);
+    let nextIndex: number;
+
+    if (event.key === 'Home') {
+      nextIndex = 0;
+    } else if (event.key === 'End') {
+      nextIndex = paymentMethods.length - 1;
+    } else if (offsets[event.key] !== undefined) {
+      nextIndex = (currentIndex + (offsets[event.key] ?? 0) + paymentMethods.length) % paymentMethods.length;
+    } else {
+      return;
+    }
+
+    event.preventDefault();
+    handlePaymentMethodChange(paymentMethods[nextIndex].value);
+    window.setTimeout(() => radios[nextIndex]?.focus(), 0);
+  }
+
+  function handleReferenceChange(value: string) {
+    setReferenceError(null);
+    onPaymentReferenceChange(value);
+  }
+
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (submitting || submitLockRef.current) {
+      return;
+    }
+
     const amountCents = parseMoneyCents(paymentAmount);
     if (amountCents === null || amountCents <= 0) {
       setError('Ingrese un monto válido');
@@ -138,8 +196,24 @@ export function PaymentModal({
       amountInputRef.current?.focus();
       return;
     }
+    if (requiresReference && paymentReference.trim() === '') {
+      setReferenceError('Ingrese la referencia del comprobante.');
+      referenceInputRef.current?.focus();
+      return;
+    }
     setError(null);
+    setReferenceError(null);
+    submitLockRef.current = true;
     onConfirm(formatMoneyCents(appliedAmountCents ?? amountCents));
+  }
+
+  function handleAmountKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    if (!e.ctrlKey || e.key !== 'Enter' || submitting) {
+      return;
+    }
+
+    e.preventDefault();
+    formRef.current?.requestSubmit();
   }
 
   function requestClose() {
@@ -149,29 +223,32 @@ export function PaymentModal({
   }
 
   return (
-    <Dialog
+    <Modal
       open={open}
-      onOpenChange={(nextOpen) => {
-        if (!submitting) {
-          onOpenChange(nextOpen);
-        }
-      }}
-      size="lg"
+      onCancel={requestClose}
       title="Registrar pago"
-      description={`Factura ${invoiceNumber} ya fue emitida. Si sale de este paso quedara pendiente de cobro.`}
+      aria-describedby="payment-dialog-description"
+      footer={null}
+      width={720}
+      destroyOnHidden
     >
+      <Typography.Paragraph id="payment-dialog-description">
+        Factura {invoiceNumber} ya fue emitida. Si sale de este paso quedara pendiente de cobro.
+      </Typography.Paragraph>
       <form
+        ref={formRef}
         aria-busy={submitting ? 'true' : undefined}
         onSubmit={handleSubmit}
         className="flex min-w-0 flex-col gap-5"
       >
+        {submitting ? <p role="status">Registrando cobro...</p> : null}
         <section
           aria-label="Resumen de factura"
-          className="rounded-panel border border-operational-border bg-operational-panel/70 p-4"
+          className="overflow-hidden border border-border bg-surface p-5"
         >
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
-              <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-primary-foreground">
                 <ReceiptText className="size-3.5 text-secondary" aria-hidden="true" />
                 Factura
               </p>
@@ -179,26 +256,26 @@ export function PaymentModal({
               <p className="mt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Paciente</p>
               <p className="break-words font-medium text-foreground">{patientLabel}</p>
             </div>
-            <div className="grid gap-1 rounded-md border border-secondary/25 bg-secondary/10 px-3 py-2 text-sm sm:min-w-44 sm:text-right">
+            <div className="grid gap-1 border border-border bg-muted px-4 py-3 text-sm sm:min-w-48 sm:text-right">
               <span className="text-muted-foreground">Saldo pendiente</span>
-              <MoneyText emphasis="strong" className="text-xl">
+              <Typography.Text strong className="text-xl text-foreground">
                 {moneyLabel(balanceDue)}
-              </MoneyText>
+              </Typography.Text>
             </div>
           </div>
-          <Separator className="my-4" />
+          <Divider className="my-4" />
           <dl className="grid gap-2 text-sm sm:grid-cols-2">
             <div className="flex justify-between gap-3 sm:block">
               <dt className="text-muted-foreground">Total:</dt>
               <dd className="font-medium">
-                <MoneyText>{moneyLabel(total)}</MoneyText>
+                <Typography.Text className="text-foreground">{moneyLabel(total)}</Typography.Text>
               </dd>
             </div>
             <div className="flex justify-between gap-3 sm:block sm:text-right">
               <dt className="text-muted-foreground">Pago aplicado:</dt>
               <dd className="font-medium">
                 {appliedAmountCents !== null && appliedAmountCents > 0 ? (
-                  <MoneyText>{moneyLabelFromCents(appliedAmountCents)}</MoneyText>
+                  <Typography.Text className="text-foreground">{moneyLabelFromCents(appliedAmountCents)}</Typography.Text>
                 ) : (
                   <span className="tabular-nums text-muted-foreground">L 0.00</span>
                 )}
@@ -208,7 +285,7 @@ export function PaymentModal({
               <div className="flex justify-between gap-3 sm:block">
                 <dt className="text-muted-foreground">Cambio:</dt>
                 <dd className="font-semibold">
-                  <MoneyText tone="success">{moneyLabelFromCents(changeCents)}</MoneyText>
+                  <Typography.Text className="text-primary-foreground">{moneyLabelFromCents(changeCents)}</Typography.Text>
                 </dd>
               </div>
             ) : null}
@@ -216,7 +293,7 @@ export function PaymentModal({
               <div className="flex justify-between gap-3 sm:block sm:text-right">
                 <dt className="text-muted-foreground">Saldo pendiente:</dt>
                 <dd className="font-semibold">
-                  <MoneyText tone="warning">{moneyLabelFromCents(remainingBalanceCents)}</MoneyText>
+                  <Typography.Text className="text-warning-foreground">{moneyLabelFromCents(remainingBalanceCents)}</Typography.Text>
                 </dd>
               </div>
             ) : null}
@@ -225,51 +302,57 @@ export function PaymentModal({
 
         <div className="grid gap-3">
           {needsAmount && !error ? (
-            <Alert variant="warning" className="py-3">
-              Ingrese el monto recibido para registrar el cobro.
-            </Alert>
+            <Alert type="warning" showIcon className="py-3" title="Ingrese el monto recibido para registrar el cobro." />
           ) : null}
 
           {remainingBalanceCents !== null && !partialPaymentsEnabled ? (
-            <Alert variant="destructive" className="py-3">
-              El monto recibido es menor al total.
-            </Alert>
+            <Alert type="error" showIcon className="py-3" title="El monto recibido es menor al total." />
           ) : null}
 
           {remainingBalanceCents !== null && partialPaymentsEnabled ? (
-            <Alert variant="warning" className="py-3">
-              Este pago quedara como abono parcial y mantendra saldo pendiente.
-            </Alert>
+            <Alert type="warning" showIcon className="py-3" title="Este pago quedara como abono parcial y mantendra saldo pendiente." />
           ) : null}
 
           {submitting ? (
-            <Alert variant="default" className="py-3" aria-live="polite">
-              Registrando cobro, no repita la operacion.
-            </Alert>
+            <Alert type="info" showIcon className="py-3" aria-live="polite" title="Registrando cobro, no repita la operacion." />
           ) : null}
         </div>
 
-        <section aria-label="Datos del pago" className="grid gap-4 rounded-panel border border-operational-border bg-card p-4">
-          <div className="grid gap-1.5">
-            <Label htmlFor="payment-method">Método de pago</Label>
-            <Select value={paymentMethod} onValueChange={(v) => onPaymentMethodChange(v as Payment['method'])}>
-              <SelectTrigger id="payment-method" aria-describedby="payment-method-help">
-                <SelectValue placeholder="Seleccione método" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="cash">Efectivo</SelectItem>
-                <SelectItem value="card">Tarjeta</SelectItem>
-                <SelectItem value="transfer">Transferencia</SelectItem>
-                <SelectItem value="other">Otro</SelectItem>
-              </SelectContent>
-            </Select>
+        <section aria-label="Datos del pago" className="grid gap-5 border border-operational-border bg-card p-5">
+          <fieldset className="grid gap-1.5">
+            <legend className="text-sm font-medium">Método de pago</legend>
+            <div
+              role="radiogroup"
+              aria-label="Método de pago"
+              aria-describedby="payment-method-help"
+              tabIndex={-1}
+              className="grid grid-cols-2 gap-2 bg-muted p-2 sm:grid-cols-4"
+              onKeyDown={handlePaymentMethodKeyDown}
+            >
+              {paymentMethods.map((method) => (
+                <Button
+                  key={method.value}
+                  htmlType="button"
+                  role="radio"
+                  aria-checked={paymentMethod === method.value}
+                  aria-label={method.label}
+                  tabIndex={paymentMethod === method.value ? 0 : -1}
+                  type={paymentMethod === method.value ? 'primary' : 'default'}
+                  className="min-h-11"
+                  disabled={submitting}
+                  onClick={() => handlePaymentMethodChange(method.value)}
+                >
+                  {method.label}
+                </Button>
+              ))}
+            </div>
             <p id="payment-method-help" className="text-xs text-muted-foreground">
               {methodHelp[paymentMethod]}
             </p>
-          </div>
+          </fieldset>
 
           <div className="grid gap-1.5">
-            <Label htmlFor="payment-amount">Monto recibido (L.)</Label>
+            <label htmlFor="payment-amount">Monto recibido (L.)</label>
             <div className="relative">
               <Banknote className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-secondary" aria-hidden="true" />
               <Input
@@ -279,17 +362,19 @@ export function PaymentModal({
                 inputMode="decimal"
                 value={paymentAmount}
                 onChange={(e) => handleAmountChange(e.target.value)}
+                onKeyDown={handleAmountKeyDown}
                 placeholder="0.00"
+                disabled={submitting}
                 aria-invalid={error ? 'true' : 'false'}
                 aria-describedby={amountDescribedBy || undefined}
                 className="min-h-12 pl-10 text-lg font-semibold tabular-nums"
               />
             </div>
             <p id="payment-amount-help" className="text-xs text-muted-foreground">
-              Use hasta dos decimales. El backend registra el pago final.
+              Use hasta dos decimales. Se registrara el monto aplicado a la factura.
             </p>
             {capNotice && !error ? (
-              <p id="payment-amount-cap" className="text-sm text-warning-foreground" role="status">
+              <p id="payment-amount-cap" className="text-sm text-warning" role="status">
                 {capNotice}
               </p>
             ) : null}
@@ -300,65 +385,57 @@ export function PaymentModal({
             ) : null}
           </div>
 
-          {paymentMethod !== 'cash' ? (
+          {requiresReference ? (
             <div className="grid gap-1.5">
-              <Label htmlFor="payment-reference">Referencia de pago</Label>
+              <label htmlFor="payment-reference">Referencia de pago</label>
               <Input
+                ref={referenceInputRef}
                 id="payment-reference"
                 value={paymentReference}
-                onChange={(e) => onPaymentReferenceChange(e.target.value)}
+                onChange={(e) => handleReferenceChange(e.target.value)}
+                disabled={submitting}
                 placeholder="Número de transacción o comprobante"
-                aria-describedby="payment-reference-help"
+                aria-invalid={referenceError ? 'true' : 'false'}
+                aria-describedby={referenceError ? 'payment-reference-help payment-reference-error' : 'payment-reference-help'}
                 className="break-words"
               />
               <p id="payment-reference-help" className="text-xs text-muted-foreground">
                 Use la referencia real del comprobante cuando aplique.
               </p>
+              {referenceError ? (
+                <p id="payment-reference-error" className="text-sm text-destructive" role="alert">
+                  {referenceError}
+                </p>
+              ) : null}
             </div>
           ) : null}
         </section>
-
-        <div className="flex items-start gap-3 rounded-md border border-operational-border bg-operational-panel/70 px-3 py-2.5 text-sm">
-          <Checkbox
-            id="preview-before-print"
-            checked={previewBeforePrint}
-            onCheckedChange={(checked) => onPreviewBeforePrintChange?.(checked === true)}
-            className="mt-0.5"
-          />
-          <Label htmlFor="preview-before-print" className="grid cursor-pointer select-none gap-0.5 leading-none">
-            <span className="font-medium text-foreground">
-              Ver preview antes de imprimir
-            </span>
-            <span className="mt-0.5 text-xs font-normal text-muted-foreground">
-              Desactivado: al confirmar cobro se registra el pago y se abre impresión directa.
-            </span>
-          </Label>
-        </div>
 
         <p className="text-xs text-muted-foreground">
           Cancelar la ventana de impresión no revierte el pago. Si necesita corregir una factura pagada, use el flujo de anulación autorizado.
         </p>
 
         <div className="flex flex-col-reverse gap-3 border-t border-border pt-4 sm:flex-row sm:justify-end">
-          <Button type="button" variant="secondary" className="sm:min-w-36" onClick={requestClose} disabled={submitting}>
+          <Button htmlType="button" className="sm:min-w-36" onClick={requestClose} disabled={submitting}>
             Dejar pendiente
           </Button>
           <Button
-            type="submit"
-            className="sm:min-w-56"
+            htmlType="submit"
+            type="primary"
+            className="min-h-11 sm:min-w-56"
             disabled={submitting || exceedsPending || needsAmount}
-            aria-label={previewBeforePrint ? 'Confirmar cobro y ver preview' : 'Confirmar cobro e imprimir'}
+            aria-label={`Confirmar cobro de ${moneyLabel(balanceDue)} e imprimir`}
           >
-            {submitting ? 'Cobrando...' : previewBeforePrint ? 'Registrar cobro y ver preview' : (
+            {submitting ? 'Cobrando...' : (
               <span className="inline-flex items-center gap-2">
                 <Printer className="size-4" aria-hidden="true" />
-                Registrar cobro e imprimir
+                Cobrar {moneyLabel(balanceDue)} e imprimir
               </span>
             )}
           </Button>
         </div>
       </form>
-    </Dialog>
+    </Modal>
   );
 }
 

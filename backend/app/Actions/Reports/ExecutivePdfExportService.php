@@ -32,24 +32,26 @@ class ExecutivePdfExportService
         $cashiers = $report['cashiers'] ?? [];
         $cashSessions = $report['cash_sessions'] ?? [];
         $pendingAging = $report['pending_aging'] ?? [];
+        $canViewAudit = ($report['can_view_audit'] ?? true) === true;
         $voids = $report['voids_and_reversals'] ?? [];
         $audit = $report['audit_summary'] ?? [];
         $comparison = $report['comparison'] ?? [];
+        $accountingPolicy = $report['accounting_policy'] ?? [];
 
         $css = $this->buildCss();
         $html = $this->wrapHtml(
             $css,
             $this->renderHeader($hospitalName, $rtn, $address, $governmentLine, $secretariatLine, $period, $now, $generatedBy)
             .$this->renderExecutiveSummary($summary, $comparison)
-            .$this->renderFinancialReading($summary, $paymentMethods)
+            .$this->renderFinancialReading($summary, $paymentMethods, $accountingPolicy)
             .$this->renderPaymentMethods($paymentMethods)
             .$this->renderDailyTrend($dailyTrend)
             .$this->renderServices($services)
             .$this->renderCashiers($cashiers)
             .$this->renderCashSessions($cashSessions)
             .$this->renderPendingAging($pendingAging)
-            .$this->renderVoidsAndReversals($voids)
-            .$this->renderAudit($audit)
+            .($canViewAudit ? $this->renderVoidsAndReversals($voids) : '')
+            .($canViewAudit ? $this->renderAudit($audit) : '')
             .$this->renderFooter($now),
             $hospitalName
         );
@@ -203,7 +205,7 @@ HTML;
             .'</div>';
     }
 
-    private function renderFinancialReading(array $summary, array $paymentMethods): string
+    private function renderFinancialReading(array $summary, array $paymentMethods, array $accountingPolicy): string
     {
         $billed = $this->money($summary['billed_total'] ?? '0.00');
         $collected = $this->money($summary['collected_total'] ?? '0.00');
@@ -220,12 +222,12 @@ HTML;
 
         $rows = [
             ['Concepto', 'Monto', 'Fuente / definicion'],
-            ['Facturado', $billed, 'Total de facturas emitidas no anuladas en el periodo.'],
-            ['Cobrado', $collected, 'Total de pagos registrados no anulados en el periodo.'],
+            ['Facturado', $billed, (string) ($accountingPolicy['billed_definition'] ?? 'Facturas emitidas no anuladas; anulaciones ya excluidas.')],
+            ['Cobrado', $collected, (string) ($accountingPolicy['collected_definition'] ?? 'Pagos posteados no reversados; reversos ya excluidos.')],
             ['Efectivo recaudado', $cash, 'Pagos con metodo efectivo. Afecta efectivo esperado de caja.'],
             ['Pendiente', $pending, 'Saldo abierto de facturas emitidas o parciales.'],
-            ['Anulado', $voided, 'Facturas anuladas. Fuera del ingreso neto.'],
-            ['Reversado', $reversed, 'Operaciones revertidas con auditoria. Fuera del ingreso neto.'],
+            ['Anulado', $voided, 'Dato de control. Ya esta excluido del total facturado y no se resta otra vez.'],
+            ['Reversado', $reversed, 'Dato de control. Ya esta excluido del total cobrado y no se resta otra vez.'],
         ];
 
         return $this->sectionTitle(
@@ -503,7 +505,7 @@ HTML;
         return <<<HTML
 <div class="page-footer">
     <p>Documento generado por S_Hospital el {$this->e($stamp)} (America/Tegucigalpa).</p>
-    <p>Los montos anulados y reversados no forman parte del ingreso neto.</p>
+    <p>Los montos anulados y reversados ya estan excluidos de los totales activos; no se restan una segunda vez.</p>
 </div>
 HTML;
     }

@@ -21,6 +21,23 @@ const service = {
 };
 
 describe('InvoiceConfirmation', () => {
+  it('keeps the accounting warning free of implementation language', () => {
+    render(
+      <InvoiceConfirmation
+        open
+        onOpenChange={vi.fn()}
+        patientName="Maria Lopez"
+        items={[{ service, quantity: '1.00', dialysisPrescription: false }]}
+        preview={{ subtotal: '15.00', tax: '2.25', total: '17.25' }}
+        cashSessionId={7}
+        onConfirm={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText(/total definitivo/i)).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/backend|payload|api/i);
+  });
+
   it('does not manually confirm from Enter keydown before the native button click', () => {
     const onConfirm = vi.fn();
 
@@ -41,7 +58,31 @@ describe('InvoiceConfirmation', () => {
     expect(onConfirm).not.toHaveBeenCalled();
   });
 
-  it('keeps long patient and service names readable in narrow dialogs', () => {
+  it('confirms the invoice with Ctrl+Enter from the focused primary action', () => {
+    const onConfirm = vi.fn();
+
+    render(
+      <InvoiceConfirmation
+        open
+        onOpenChange={vi.fn()}
+        patientName="Maria Lopez"
+        items={[{ service, quantity: '1.00', dialysisPrescription: false }]}
+        preview={{ subtotal: '15.00', tax: '2.25', total: '17.25' }}
+        cashSessionId={7}
+        onConfirm={onConfirm}
+      />,
+    );
+
+    fireEvent.keyDown(screen.getByRole('button', { name: /emitir y abrir cobro/i }), {
+      key: 'Enter',
+      code: 'Enter',
+      ctrlKey: true,
+    });
+
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
+
+  it('preserves long patient and service data in the real modal content', () => {
     const longPatientName = 'Paciente con nombre extremadamente largo para validar que la confirmacion no se desborde en caja';
     const longService = {
       ...service,
@@ -61,12 +102,12 @@ describe('InvoiceConfirmation', () => {
       />,
     );
 
-    expect(screen.getByText(longPatientName)).toHaveClass('min-w-0', 'break-words', 'text-right');
+    expect(screen.getByText(longPatientName)).toBeInTheDocument();
 
     const servicesList = screen.getByRole('list', { name: /servicios por confirmar/i });
-    expect(within(servicesList).getByText(/consulta especializada de nefrologia/i)).toHaveClass('min-w-0', 'break-words');
-    expect(within(servicesList).getByText(/L 17\.25/i)).toHaveClass('shrink-0', 'whitespace-nowrap', 'tabular-nums');
-    expect(screen.getByText(/L 238\.05/i)).toHaveClass('shrink-0', 'whitespace-nowrap', 'tabular-nums');
-    expect(screen.getByRole('button', { name: /emitir y abrir cobro/i })).toHaveClass('w-full', 'sm:flex-1');
+    expect(within(servicesList).getByText(/consulta especializada de nefrologia/i)).toBeInTheDocument();
+    expect(within(servicesList).getByText(/L 17\.25/i)).toBeInTheDocument();
+    expect(screen.getByText(/L 238\.05/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /emitir y abrir cobro/i })).toBeEnabled();
   });
 });

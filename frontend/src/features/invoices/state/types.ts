@@ -17,17 +17,16 @@ export interface NewInvoiceState {
   paymentMethod: Payment['method'];
   paymentAmount: string;
   paymentReference: string;
-  previewBeforePrint: boolean;
   receiptWidth: ReceiptData['width'];
   scannerEnabled: boolean;
   partialPaymentsEnabled: boolean;
   receipt: ReceiptData | null;
   institutionalReceipt: InstitutionalReceipt | null;
+  institutionalReceiptRecoveryMessage: string | null;
   pointOfSaleLoadError: string | null;
   alertMessage: string | null;
   warningMessage: string | null;
   successMessage: string | null;
-  autoPrintReceipt: boolean;
   showConfirmation: boolean;
   showPayment: boolean;
   showSuccess: boolean;
@@ -55,17 +54,16 @@ export type NewInvoiceAction =
   | { type: 'SET_PAYMENT_METHOD'; payload: Payment['method'] }
   | { type: 'SET_PAYMENT_AMOUNT'; payload: string }
   | { type: 'SET_PAYMENT_REFERENCE'; payload: string }
-  | { type: 'SET_PREVIEW_BEFORE_PRINT'; payload: boolean }
   | { type: 'SET_RECEIPT_WIDTH'; payload: ReceiptData['width'] }
   | { type: 'SET_SCANNER_ENABLED'; payload: boolean }
   | { type: 'SET_PARTIAL_PAYMENTS_ENABLED'; payload: boolean }
   | { type: 'SET_RECEIPT'; payload: ReceiptData | null }
   | { type: 'SET_INSTITUTIONAL_RECEIPT'; payload: InstitutionalReceipt | null }
+  | { type: 'SET_INSTITUTIONAL_RECEIPT_RECOVERY_MESSAGE'; payload: string | null }
   | { type: 'SET_POINT_OF_SALE_LOAD_ERROR'; payload: string | null }
   | { type: 'SET_ALERT_MESSAGE'; payload: string | null }
   | { type: 'SET_WARNING_MESSAGE'; payload: string | null }
   | { type: 'SET_SUCCESS_MESSAGE'; payload: string | null }
-  | { type: 'SET_AUTO_PRINT_RECEIPT'; payload: boolean }
   | { type: 'SET_SHOW_CONFIRMATION'; payload: boolean }
   | { type: 'SET_SHOW_PAYMENT'; payload: boolean }
   | { type: 'SET_SHOW_SUCCESS'; payload: boolean }
@@ -102,17 +100,16 @@ export function getInitialNewInvoiceState(cashSession: CashSession | null): NewI
     paymentMethod: 'cash',
     paymentAmount: '',
     paymentReference: '',
-    previewBeforePrint: false,
     receiptWidth: 'half_letter',
     scannerEnabled: false,
     partialPaymentsEnabled: false,
     receipt: null,
     institutionalReceipt: null,
+    institutionalReceiptRecoveryMessage: null,
     pointOfSaleLoadError: null,
     alertMessage: null,
     warningMessage: null,
     successMessage: null,
-    autoPrintReceipt: false,
     showConfirmation: false,
     showPayment: false,
     showSuccess: false,

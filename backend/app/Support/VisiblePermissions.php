@@ -9,7 +9,10 @@ class VisiblePermissions
 {
     private const HIDDEN_PERMISSION_NAMES = [
         User::EXACT_ACCESS_MARKER_PERMISSION,
+        'backups.restore',
         'receipts.void',
+        'reports.view',
+        'users.assign_admin_role',
     ];
 
     /**

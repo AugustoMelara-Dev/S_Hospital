@@ -2,24 +2,24 @@
 
 ## Runbook corto de instalacion en servidor
 
-Objetivo: dejar una PC servidor lista para operar por LAN sin internet obligatorio.
+Objetivo: dejar una PC local lista para operar como monocomputadora, o como servidor LAN si el despliegue multi-PC se habilita despues, sin internet obligatorio.
 No ejecutar `migrate:fresh` en el servidor real.
 
 1. Instalar PHP, extensiones requeridas y MySQL/MariaDB local.
 2. Copiar el proyecto aprobado con `backend/vendor` y `frontend/dist` ya generado.
 3. Crear `backend\.env` real fuera de Git con secretos locales.
-4. Configurar `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL=http://IP_DEL_SERVIDOR`, `SANCTUM_STATEFUL_DOMAINS=IP_DEL_SERVIDOR` y CORS con el host LAN final.
+4. Configurar `APP_ENV=production`, `APP_DEBUG=false` y la URL final: `APP_URL=http://127.0.0.1:PUERTO` para monocomputadora o `APP_URL=http://IP_DEL_SERVIDOR` para multi-PC. Ajustar `SANCTUM_STATEFUL_DOMAINS` y CORS al mismo host final.
 5. Configurar `HOSPITAL_DUMP_BINARY` si `mysqldump.exe` o `mariadb-dump.exe` no esta en PATH.
 6. Ejecutar `php artisan migrate --force`.
 7. Crear admin real con `php artisan auth:create-initial-admin`.
 8. Ejecutar `php artisan config:cache --no-ansi`.
 9. Registrar tareas Windows para backup worker y scheduler con `scripts\install_backup_tasks_windows.ps1`.
-10. Abrir la app como admin, entrar a Backups y revisar el checklist operativo: `APP_ENV=production`, `APP_DEBUG=false`, MySQL/MariaDB, dump tool, storage local, worker continuo, rutas `/up`, `/login`, `/verify-email` y evidencias LAN/impresora.
+10. Abrir la app como admin, entrar a Backups y revisar el checklist operativo: `APP_ENV=production`, `APP_DEBUG=false`, MySQL/MariaDB, dump tool, storage local, worker continuo, rutas `/up`, `/login`, `/verify-email` y evidencias local/impresora.
 11. Crear un backup manual y confirmar que cambia de `pending` a `success`.
-12. Preparar archivos de evidencia con `scripts\init_production_proofs.ps1`.
-13. Desde una segunda PC cliente, ejecutar `scripts\validate_lan_client.ps1 -BaseUrl http://IP_DEL_SERVIDOR -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md` y completar los checks manuales de login, caja, factura, pago, reportes y backup.
-14. Completar `qa\THERMAL_PRINTER_PROOF.md` con la impresora fisica 80mm/58mm.
-15. Ejecutar `scripts\production_readiness_preflight.ps1 -BaseUrl http://IP_DEL_SERVIDOR` sin `-AllowMissingPhysicalProof` solo cuando ya existan pruebas de segunda PC LAN e impresora.
+12. Preparar archivos de evidencia copiando las plantillas `qa\LOCAL_SERVER_VALIDATION_PROOF.example.md`, `qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md` si existe, `qa\FINAL_RESTORE_PROOF.example.md` y `qa\FINAL_CONCURRENCY_PROOF.example.md` al nombre `.md` final que corresponda.
+13. Para monocomputadora, copiar `qa\LOCAL_SERVER_VALIDATION_PROOF.example.md` a `qa\LOCAL_SERVER_VALIDATION_PROOF.md` y completarlo desde el navegador local del servidor. Para multi-PC, ejecutar desde una segunda PC cliente `scripts\validate_lan_client.ps1 -BaseUrl http://IP_DEL_SERVIDOR -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md` y completar los checks manuales.
+14. Completar `qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` con la impresora fisica principal en media carta, carta y A5.
+15. Ejecutar `scripts\production_readiness_preflight.ps1 -BaseUrl http://127.0.0.1:PUERTO` para monocomputadora o `-BaseUrl http://IP_DEL_SERVIDOR` para multi-PC, sin `-AllowMissingPhysicalProof`, solo cuando ya existan las evidencias fisicas requeridas de navegador local/LAN, recibo institucional y restore/concurrencia.
 
 ## Preparación y Despliegue Automatizado (Recomendado)
 
@@ -37,12 +37,11 @@ El despliegue está completamente automatizado a través de un asistente intelig
 
 ---
 
-## Arquitectura de Red LAN Local Hospitalaria
+## Arquitectura local hospitalaria
 
-- **Servidor LAN:** Una única PC local de alto rendimiento ejecuta el sistema completo, base de datos y automatización de backups. Debe contar con una **IP fija estática** configurada en Windows para evitar que el router cambie su IP.
-- **Estaciones Cliente (3+ terminales):** Computadoras de caja, consultorios y admisión. No instalan absolutamente nada. Abren el navegador (Chrome/Edge) e ingresan a: `http://IP_DEL_SERVIDOR:8000`.
-- **⚠️ ADVERTENCIA DE SEGURIDAD Y FISCAL:** *No instalar el sistema local por PC individual.* Cada estación de cobro debe conectarse a la misma base de datos del servidor para evitar la duplicación de números fiscales correlativos de facturación y para garantizar un único flujo consolidado de arqueo de caja diario.
-
+- **Modo monocomputadora aprobado:** una unica PC ejecuta la app, MySQL/MariaDB, backups y el navegador operativo. Usar `APP_URL=http://127.0.0.1:PUERTO` o dominio local equivalente y completar `qa\LOCAL_SERVER_VALIDATION_PROOF.md`.
+- **Modo multi-PC opcional:** una unica PC servidor ejecuta la app, base de datos y backups; las estaciones cliente no instalan nada y entran por navegador a `http://IP_DEL_SERVIDOR:8000`.
+- **Advertencia de seguridad y fiscal:** no instalar copias independientes con bases separadas. Si hay varias estaciones, todas deben usar la misma base MySQL/MariaDB del servidor para evitar duplicacion de correlativos fiscales y arqueos de caja fragmentados.
 
 ## Worker de backups
 
@@ -62,8 +61,8 @@ php artisan queue:work --queue=backups --tries=1 --timeout=600
 
 ## Validacion post-instalacion
 
-- `/up` responde OK desde servidor.
-- `/login` carga desde cliente LAN.
+- `/up` responde OK desde el servidor.
+- `/login` carga desde el navegador local en monocomputadora o desde cliente LAN en multi-PC.
 - `/verify-email` responde segun ruta instalada.
 - Admin puede entrar.
 - Cajero puede abrir caja, facturar, cobrar e imprimir.
@@ -75,4 +74,4 @@ php artisan queue:work --queue=backups --tries=1 --timeout=600
 - Ejecutar `scripts/e2e_gate.sh` en la maquina de build.
 - Ejecutar `scripts/validate_restore_mysql.sh` en entorno MySQL/MariaDB con herramienta dump.
 - Ejecutar `scripts/validate_mysql_concurrency.sh` contra servidor Laravel conectado a MySQL/MariaDB.
-- Completar checklist de impresora termica 80mm/58mm en la PC de caja.
+- Completar checklist de impresion institucional en media carta, carta y A5 en la PC de caja. 80mm/58mm queda como compatibilidad secundaria si se habilita.

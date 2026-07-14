@@ -4,11 +4,11 @@
     Restaurar base de datos Hospital desde backup SQL cifrado.
 
 .DESCRIPTION
-    Script guiado para restaurar la base de datos desde un archivo .sql.enc, .sql o .tar.gz.
+    Script guiado para restaurar la base de datos desde un archivo .sql.gz.enc, .sql.enc, .sql o .tar.gz.
     ADVERTENCIA: Este script sobreescribe datos. Usar solo en base de datos de PRUEBA.
 
 .PARAMETER BackupFile
-    Ruta al archivo de backup .sql.enc, .sql o .tar.gz
+    Ruta al archivo de backup .sql.gz.enc, .sql.enc, .sql o .tar.gz
 
 .PARAMETER ExpectedSha256
     SHA256 esperado del archivo de backup original. Obligatorio para restaurar.
@@ -20,7 +20,7 @@
     Usa la configuracion de backend\.env existente para conexion
 
 .EXAMPLE
-    .\restore_hospital_windows.ps1 -BackupFile "C:\backups\hospital_2026-06-01.sql.enc" -ExpectedSha256 "<sha256>"
+    .\restore_hospital_windows.ps1 -BackupFile "C:\backups\hospital_2026-06-01.sql.gz.enc" -ExpectedSha256 "<sha256>"
 #>
 
 param(
@@ -191,7 +191,7 @@ function Test-DisposableDatabaseName {
     $lower = $Database.ToLowerInvariant()
     
     if ($lower -in @('hospital_billing', 'hospital_billing_production')) {
-        return [bool]$ForceProduction
+        return $false
     }
     
     if ($lower -in @('mysql', 'information_schema', 'performance_schema', 'sys')) {
@@ -205,6 +205,12 @@ function Test-SafeMysqlArgument {
     param([string]$Value)
 
     return $Value -match '^[A-Za-z0-9_.:-]+$'
+}
+
+function Test-AllowedBackupFileFormat {
+    param([string]$Path)
+
+    return $Path -match '\.(sql|sql\.enc|sql\.gz\.enc|tar\.gz)$'
 }
 
 function Assert-SafeConnectionConfig {
@@ -229,8 +235,8 @@ function Assert-SafeConnectionConfig {
     }
 
     if (-not (Test-DisposableDatabaseName -Database ([string]$Config.Database) -ForceProduction:$ForceProduction)) {
-        Write-Error "La base de datos '$($Config.Database)' no parece ser de prueba o no se uso el flag --ForceProductionRestore."
-        Write-Error "Use un nombre como 'hospital_billing_test' o 'hospital_restore_validation', o agregue -ForceProductionRestore si esta seguro."
+        Write-Error "La base de datos '$($Config.Database)' no parece ser descartable de prueba."
+        Write-Error "Use un nombre como 'hospital_billing_test' o 'hospital_restore_validation'. El helper no restaura sobre produccion."
         exit 1
     }
 }
@@ -266,6 +272,10 @@ function Invoke-SelfTest {
             exit 1
         }
     }
+    if (Test-DisposableDatabaseName -Database "hospital_billing" -ForceProduction) {
+        Write-Error "Self-test fallo: ForceProductionRestore acepto la base activa."
+        exit 1
+    }
 
     $safeConfig = @{
         Host = "127.0.0.1"
@@ -275,6 +285,16 @@ function Invoke-SelfTest {
         Password = "ignored"
     }
     Assert-SafeConnectionConfig $safeConfig
+
+    if (-not (Test-AllowedBackupFileFormat "C:\backups\hospital-backup.sql.gz.enc")) {
+        Write-Error "Self-test fallo: .sql.gz.enc valido fue rechazado."
+        exit 1
+    }
+
+    if (Test-AllowedBackupFileFormat "C:\backups\hospital-backup.zip") {
+        Write-Error "Self-test fallo: formato inseguro aceptado."
+        exit 1
+    }
 
     Write-Success "Self-test completado. No se tocaron bases ni backups."
     exit 0
@@ -295,14 +315,18 @@ Write-Warning "ADVERTENCIA: Este proceso sobreescribe datos."
 Write-Warning "Usar SOLO en base de datos de prueba o desarrollo."
 Write-Host ""
 
+if ($ForceProductionRestore) {
+    Write-Error "-ForceProductionRestore ya no esta soportado. Use este helper solo con una base descartable; el restore productivo requiere el runbook manual con parada operativa."
+    exit 1
+}
 if (-not (Test-DisposableDatabaseName -Database $TargetDatabase -ForceProduction:$ForceProductionRestore)) {
     Write-Error "No se puede restaurar a '$TargetDatabase'."
-    Write-Error "Use una base descartable con nombre como 'hospital_billing_test' o 'hospital_restore_validation', o agregue -ForceProductionRestore si esta seguro."
+    Write-Error "Use una base descartable con nombre como 'hospital_billing_test' o 'hospital_restore_validation'. El helper no restaura sobre produccion."
     exit 1
 }
 
 if (-not $UseExistingEnv -and -not $BackupFile) {
-    Write-Step "Ingrese la ruta del archivo de backup (.sql o .tar.gz)"
+    Write-Step "Ingrese la ruta del archivo de backup (.sql.gz.enc, .sql.enc, .sql o .tar.gz)"
     $BackupFile = Read-Host "Ruta del backup"
 }
 
@@ -313,8 +337,8 @@ if ($BackupFile) {
         exit 1
     }
 
-    if ($BackupFile -notmatch '\.(sql|sql\.enc|tar\.gz)$') {
-        Write-Error "Formato de backup no permitido. Use .sql, .sql.enc o .tar.gz."
+    if (-not (Test-AllowedBackupFileFormat $BackupFile)) {
+        Write-Error "Formato de backup no permitido. Use .sql.gz.enc, .sql.enc, .sql o .tar.gz."
         exit 1
     }
 
@@ -421,11 +445,11 @@ if ($BackupFile -and $BackupFile -match '\.tar\.gz$') {
     }
 }
 
-if ($BackupFile -and $BackupFile -match '\.sql\.enc$') {
+if ($BackupFile -and $BackupFile -match '\.sql(\.gz)?\.enc$') {
     Write-Step "Descifrando backup cifrado a SQL temporal..."
     $artisan = Join-Path $projectRoot "backend\artisan"
     if (-not (Test-Path -LiteralPath $artisan)) {
-        Write-Error "No se encontro backend\artisan para descifrar el backup con APP_KEY local."
+        Write-Error "No se encontro backend\artisan para descifrar el backup con la clave local de respaldos."
         exit 1
     }
 

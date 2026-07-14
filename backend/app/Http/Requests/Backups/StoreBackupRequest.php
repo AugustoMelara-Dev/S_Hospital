@@ -8,7 +8,10 @@ class StoreBackupRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('backups.create') === true;
+        $user = $this->user();
+
+        return $user?->can('backups.view') === true
+            && $user->can('backups.create') === true;
     }
 
     /**

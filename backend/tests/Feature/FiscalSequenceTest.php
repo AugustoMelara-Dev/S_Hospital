@@ -222,6 +222,23 @@ class FiscalSequenceTest extends TestCase
         ]);
     }
 
+    public function test_fiscal_sequence_policy_requires_update_permission_for_mutations(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $viewer = User::factory()->create();
+        $viewer->givePermissionTo('settings.fiscal.view');
+
+        $editor = User::factory()->create();
+        $editor->givePermissionTo('settings.fiscal.update');
+
+        $sequence = FiscalSequence::query()->create($this->validPayload());
+
+        $this->assertTrue($viewer->can('view', $sequence));
+        $this->assertFalse($viewer->can('update', $sequence));
+        $this->assertTrue($editor->can('update', $sequence));
+    }
+
     public function test_cashier_cannot_create_fiscal_sequence(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);

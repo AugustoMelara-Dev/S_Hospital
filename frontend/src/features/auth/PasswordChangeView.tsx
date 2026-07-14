@@ -1,27 +1,25 @@
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { CheckCircle2, KeyRound, LockKeyhole, ShieldCheck } from 'lucide-react';
-import { Alert } from '../../components/ui/alert';
-import { Button } from '../../components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
-import { FormField } from '../../components/ui/form-field';
-import { Input } from '../../components/ui/input';
-import { InfoPanel } from '../../components/shared';
+import { CheckOutlined, KeyOutlined, LockOutlined, SafetyOutlined } from '@ant-design/icons';
+import { useForm, type UseFormRegisterReturn } from 'react-hook-form';
+import { z } from 'zod';
+import { Alert, Button, Input } from 'antd';
 
-export const passwordChangeSchema = z.object({
-  current_password: z.string().min(1, 'La contrasena actual es requerida'),
-  password: z.string()
-    .min(12, 'La nueva contrasena debe tener al menos 12 caracteres')
-    .regex(/\p{Ll}/u, 'La nueva contrasena debe incluir minuscula')
-    .regex(/\p{Lu}/u, 'La nueva contrasena debe incluir mayuscula')
-    .regex(/\d/, 'La nueva contrasena debe incluir numero')
-    .regex(/[^\p{L}\p{N}]/u, 'La nueva contrasena debe incluir simbolo'),
-  password_confirmation: z.string().min(1, 'Confirme la nueva contrasena'),
-}).refine((data) => data.password === data.password_confirmation, {
-  message: 'Las contrasenas no coinciden',
-  path: ['password_confirmation'],
-});
+export const passwordChangeSchema = z
+  .object({
+    current_password: z.string().min(1, 'La contraseña actual es requerida'),
+    password: z
+      .string()
+      .min(12, 'La nueva contraseña debe tener al menos 12 caracteres')
+      .regex(/\p{Ll}/u, 'La nueva contraseña debe incluir minúscula')
+      .regex(/\p{Lu}/u, 'La nueva contraseña debe incluir mayúscula')
+      .regex(/\d/, 'La nueva contraseña debe incluir número')
+      .regex(/[^\p{L}\p{N}]/u, 'La nueva contraseña debe incluir símbolo'),
+    password_confirmation: z.string().min(1, 'Confirme la nueva contraseña'),
+  })
+  .refine((data) => data.password === data.password_confirmation, {
+    message: 'Las contraseñas no coinciden',
+    path: ['password_confirmation'],
+  });
 
 export type PasswordChangeForm = z.infer<typeof passwordChangeSchema>;
 
@@ -32,8 +30,6 @@ type PasswordChangeViewProps = {
 };
 
 export function PasswordChangeView({ onSubmit, submitting = false, status }: PasswordChangeViewProps) {
-  const showStatus = Boolean(status?.trim());
-
   const {
     register,
     handleSubmit,
@@ -48,126 +44,140 @@ export function PasswordChangeView({ onSubmit, submitting = false, status }: Pas
   });
 
   return (
-    <main className="flex min-h-[100dvh] items-center justify-center bg-operational-bg p-4 text-foreground sm:p-6">
-      <Card className="w-full max-w-2xl overflow-hidden border-operational-border bg-operational-surface shadow-operational">
-        <CardHeader className="gap-4 border-b border-operational-border bg-operational-panel/60">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-            <div className="flex size-12 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
-              <ShieldCheck aria-hidden="true" />
+    <main className="min-h-screen overflow-x-hidden bg-operational-bg p-4 text-foreground sm:p-6 lg:flex lg:items-center">
+      <div className="mx-auto grid w-full max-w-5xl overflow-hidden border border-operational-border bg-operational-surface lg:grid-cols-2">
+        <aside className="border-b border-operational-border bg-sidebar px-5 py-7 text-sidebar-foreground sm:px-8 lg:border-b-0 lg:border-r lg:py-10">
+          <span className="flex size-11 items-center justify-center bg-sidebar-primary text-sidebar-primary-foreground">
+            <SafetyOutlined aria-hidden="true" className="text-xl" />
+          </span>
+          <p className="mt-6 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/65">
+            Seguridad de cuenta
+          </p>
+          <h1 className="mt-2 text-2xl font-semibold leading-tight">Cambio obligatorio de contraseña</h1>
+          <p className="mt-3 text-sm leading-6 text-sidebar-foreground/75">
+            Complete el cambio antes de operar facturación, caja o reportes.
+          </p>
+
+          <section aria-labelledby="password-requirements" className="mt-7 border-l border-sidebar-border pl-4">
+            <h2 id="password-requirements" className="text-sm font-semibold">
+              Requisitos de contraseña
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-sidebar-foreground/75">
+              Mínimo 12 caracteres, con mayúscula, minúscula, número y símbolo.
+            </p>
+            <ul className="mt-4 space-y-2 text-sm text-sidebar-foreground/75">
+              <li className="flex gap-2">
+                <CheckOutlined aria-hidden="true" className="mt-0.5 text-base shrink-0" />
+                Use una clave individual.
+              </li>
+              <li className="flex gap-2">
+                <CheckOutlined aria-hidden="true" className="mt-0.5 text-base shrink-0" />
+                Evite claves compartidas entre turnos.
+              </li>
+            </ul>
+          </section>
+        </aside>
+
+        <section className="min-w-0 px-5 py-7 sm:px-8 lg:px-10 lg:py-10" aria-labelledby="password-form-title">
+          <header className="mb-7">
+            <div className="flex items-center gap-3">
+              <LockOutlined aria-hidden="true" className="text-xl text-primary" />
+              <h2 id="password-form-title" className="text-xl font-semibold">Defina su nueva clave</h2>
             </div>
-            <div className="min-w-0">
-              <CardDescription className="text-xs font-semibold uppercase tracking-normal text-primary">
-                Seguridad de cuenta
-              </CardDescription>
-              <CardTitle className="text-2xl">Cambio obligatorio de contraseña</CardTitle>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                Actualice su contraseña antes de operar facturacion, caja o reportes. Esta pantalla mantiene la sesion en modo restringido hasta completar el cambio.
-              </p>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-5 p-5 sm:p-6">
-          <InfoPanel
-            title="Requisitos de contraseña"
-            description="Minimo 12 caracteres, con mayuscula, minuscula, numero y simbolo. Use una clave individual de turno, no una clave compartida."
-            tone="warning"
-            icon={<LockKeyhole data-icon aria-hidden="true" />}
-          />
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              La sesión permanecerá restringida hasta completar este formulario.
+            </p>
+          </header>
 
           <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
-            {showStatus ? (
-              <Alert variant="warning" title="Revise la contraseña">
-                {status}
-              </Alert>
+            {status?.trim() ? (
+              <Alert
+                type="warning"
+                title="Revise la contraseña"
+                description={status}
+                showIcon
+                role="alert"
+                className="mb-2"
+              />
             ) : null}
 
-            <FormField
+            <PasswordField
               id="current_password"
               label="Contraseña actual"
+              autoComplete="current-password"
+              disabled={submitting}
               error={errors.current_password?.message}
-              required
-            >
-              {({ describedBy, id, invalid }) => (
-                <div className="relative">
-                  <KeyRound className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-                  <Input
-                    id={id}
-                    type="password"
-                    autoComplete="current-password"
-                    disabled={submitting}
-                    aria-describedby={describedBy}
-                    aria-invalid={invalid}
-                    className="pl-10"
-                    {...register('current_password')}
-                  />
-                </div>
-              )}
-            </FormField>
-
-            <FormField
+              registration={register('current_password')}
+            />
+            <PasswordField
               id="password"
               label="Nueva contraseña"
-              hint="Use al menos 12 caracteres, con mayúscula, minúscula, número y símbolo."
+              autoComplete="new-password"
+              disabled={submitting}
               error={errors.password?.message}
-              required
-            >
-              {({ describedBy, id, invalid }) => (
-                <div className="relative">
-                  <KeyRound className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-                  <Input
-                    id={id}
-                    type="password"
-                    autoComplete="new-password"
-                    disabled={submitting}
-                    aria-describedby={describedBy}
-                    aria-invalid={invalid}
-                    className="pl-10"
-                    {...register('password')}
-                  />
-                </div>
-              )}
-            </FormField>
-
-            <FormField
+              registration={register('password')}
+            />
+            <PasswordField
               id="password_confirmation"
               label="Confirmar nueva contraseña"
+              autoComplete="new-password"
+              disabled={submitting}
               error={errors.password_confirmation?.message}
-              required
-            >
-              {({ describedBy, id, invalid }) => (
-                <div className="relative">
-                  <KeyRound className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-                  <Input
-                    id={id}
-                    type="password"
-                    autoComplete="new-password"
-                    disabled={submitting}
-                    aria-describedby={describedBy}
-                    aria-invalid={invalid}
-                    className="pl-10"
-                    {...register('password_confirmation')}
-                  />
-                </div>
-              )}
-            </FormField>
+              registration={register('password_confirmation')}
+            />
 
-            <Button type="submit" disabled={submitting} className="min-h-11">
+            <Button
+              type="primary"
+              htmlType="submit"
+              disabled={submitting}
+              loading={submitting}
+              className="mt-1 h-12 w-full sm:w-auto sm:self-start font-semibold"
+              size="large"
+            >
               {submitting ? 'Actualizando credenciales...' : 'Actualizar contraseña'}
             </Button>
           </form>
-
-          <div className="grid gap-3 border-t border-operational-border pt-5 text-sm sm:grid-cols-2">
-            <div className="flex gap-2 text-muted-foreground">
-              <CheckCircle2 aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-success" />
-              <span>Despues del cambio podra continuar con sus permisos asignados.</span>
-            </div>
-            <div className="flex gap-2 text-muted-foreground">
-              <ShieldCheck aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-primary" />
-              <span>La administracion puede restablecer el acceso si olvida la clave.</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        </section>
+      </div>
     </main>
+  );
+}
+
+type PasswordFieldProps = {
+  id: string;
+  label: string;
+  autoComplete: 'current-password' | 'new-password';
+  disabled: boolean;
+  error?: string;
+  registration: UseFormRegisterReturn;
+};
+
+function PasswordField({ autoComplete, disabled, error, id, label, registration }: PasswordFieldProps) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center gap-1">
+        <label htmlFor={id} className="text-sm font-semibold text-foreground">
+          {label}
+        </label>
+        <span className="text-destructive" aria-hidden="true">*</span>
+      </div>
+      <Input.Password
+        id={id}
+        autoComplete={autoComplete}
+        disabled={disabled}
+        prefix={<KeyOutlined className="text-muted-foreground mr-1" />}
+        size="large"
+        className="h-11"
+        {...registration}
+        ref={(element) => {
+          registration.ref(element?.input ?? null);
+        }}
+      />
+      {error ? (
+        <p className="text-sm font-semibold text-destructive" role="alert">
+          {error}
+        </p>
+      ) : null}
+    </div>
   );
 }

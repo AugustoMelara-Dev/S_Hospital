@@ -26,7 +26,7 @@ class FinancialFactsService
             'total_billed' => $this->centsToMoney($invoiceFacts->billed_cents ?? 0),
             'total_pending' => $this->centsToMoney($invoiceFacts->pending_cents ?? 0),
             'total_partial' => $this->centsToMoney($invoiceFacts->partial_cents ?? 0),
-            'total_voided' => $this->centsToMoney($invoiceFacts->voided_cents ?? 0),
+            'total_voided' => $this->centsToMoney($this->voidedInvoiceCents($start, $end, $filters)),
             'invoice_count' => (int) ($invoiceFacts->invoice_count ?? 0),
             'payment_count' => (int) ($paymentFacts['payment_count'] ?? 0),
             'total_collected' => $this->centsToMoney($paymentFacts['collected_cents'] ?? 0),
@@ -68,6 +68,30 @@ class FinancialFactsService
                 [Invoice::STATUS_VOID],
             )
             ->first() ?? (object) [];
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     */
+    private function voidedInvoiceCents(Carbon $start, Carbon $end, array $filters): int
+    {
+        $query = Invoice::query()
+            ->where('invoices.status', Invoice::STATUS_VOID)
+            ->whereBetween('invoices.voided_at', [$start, $end]);
+
+        if ($this->hasItemFilter($filters)) {
+            $query
+                ->joinSub($this->itemTotalsSubquery($filters), 'filtered_items', function ($join): void {
+                    $join->on('filtered_items.invoice_id', '=', 'invoices.id');
+                })
+                ->tap(fn (Builder $query) => $this->applyInvoiceFilters($query, $filters, includeItemFilters: false));
+
+            return (int) $query->sum('filtered_items.item_total_cents');
+        }
+
+        $query->tap(fn (Builder $query) => $this->applyInvoiceFilters($query, $filters));
+
+        return (int) $query->sum('invoices.total_cents');
     }
 
     /**

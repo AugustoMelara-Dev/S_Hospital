@@ -56,7 +56,6 @@ class GenerateReceiptDataAction
                 'valid_until' => $hasFiscalAuthorization ? $invoice->fiscal_valid_until->toDateString() : null,
             ],
             'invoice' => [
-                'id' => $invoice->id,
                 'invoice_number' => $invoice->invoice_number,
                 'issued_at' => $invoice->issued_at?->toISOString(),
                 'cashier' => $cashierName,
@@ -83,7 +82,6 @@ class GenerateReceiptDataAction
                 'notes' => $item->notes,
             ])->values(),
             'payments' => $postedPayments->map(fn ($payment): array => [
-                'id' => $payment->id,
                 'method' => $payment->method,
                 'amount' => $this->moneyFromCents($payment->amount_cents, $payment->amount),
                 'reference' => $payment->reference,

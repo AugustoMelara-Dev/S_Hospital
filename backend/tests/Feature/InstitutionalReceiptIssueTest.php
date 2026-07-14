@@ -11,6 +11,7 @@ use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Payment;
 use App\Models\ReceiptPrintProfile;
+use App\Models\ReceiptProfileAssignment;
 use App\Models\User;
 use Database\Seeders\ReceiptPrintProfileSeeder;
 use Database\Seeders\RolesAndPermissionsSeeder;
@@ -59,6 +60,65 @@ class InstitutionalReceiptIssueTest extends TestCase
         $this->assertNull($receipt->pdf_disk);
         $this->assertNull($receipt->pdf_path);
         $this->assertNull($receipt->pdf_sha256);
+    }
+
+    public function test_issue_rejects_secondary_thermal_profile_when_requested_directly(): void
+    {
+        $context = $this->createIssueContext();
+        $thermalProfile = ReceiptPrintProfile::query()
+            ->where('code', ReceiptPrintProfile::CODE_THERMAL_80)
+            ->firstOrFail();
+        $thermalProfile->update(['active' => true]);
+
+        $this->actingAs($context['user'])
+            ->postJson('/api/institutional-receipts', [
+                'invoice_id' => $context['invoice']->id,
+                'payment_id' => $context['payment']->id,
+                'profile_code' => ReceiptPrintProfile::CODE_THERMAL_80,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('profile_code');
+
+        $this->actingAs($context['user'])
+            ->postJson('/api/institutional-receipts', [
+                'invoice_id' => $context['invoice']->id,
+                'payment_id' => $context['payment']->id,
+                'profile_id' => $thermalProfile->id,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('profile_id');
+
+        $this->assertDatabaseCount('institutional_receipts', 0);
+        $this->assertSame(0, $context['series']->fresh()->current_number);
+    }
+
+    public function test_issue_rejects_secondary_thermal_profile_from_assignment(): void
+    {
+        $context = $this->createIssueContext();
+        $thermalProfile = ReceiptPrintProfile::query()
+            ->where('code', ReceiptPrintProfile::CODE_THERMAL_80)
+            ->firstOrFail();
+        $thermalProfile->update(['active' => true]);
+
+        ReceiptProfileAssignment::query()->create([
+            'receipt_print_profile_id' => $thermalProfile->id,
+            'scope_type' => ReceiptProfileAssignment::SCOPE_GLOBAL,
+            'scope_id' => null,
+            'active' => true,
+            'created_by' => $context['user']->id,
+            'updated_by' => $context['user']->id,
+        ]);
+
+        $this->actingAs($context['user'])
+            ->postJson('/api/institutional-receipts', [
+                'invoice_id' => $context['invoice']->id,
+                'payment_id' => $context['payment']->id,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('print_profile');
+
+        $this->assertDatabaseCount('institutional_receipts', 0);
+        $this->assertSame(0, $context['series']->fresh()->current_number);
     }
 
     public function test_exhausted_series_rejects_issue_without_creating_receipt(): void

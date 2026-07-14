@@ -7,9 +7,14 @@ import { InvoiceHistoryView } from './InvoiceHistoryView';
 import { apiClient, type AuthUser, type Invoice, type ReceiptData } from '../../lib/api';
 import { openBlobInNewTab } from '../../lib/download';
 
-vi.mock('../../lib/download', () => ({
-  openBlobInNewTab: vi.fn(),
-}));
+vi.mock('../../lib/download', async () => {
+  const actual = await vi.importActual<typeof import('../../lib/download')>('../../lib/download');
+
+  return {
+    ...actual,
+    openBlobInNewTab: vi.fn(),
+  };
+});
 
 describe('InstitutionalReceiptFlow', () => {
   afterEach(() => {
@@ -31,7 +36,8 @@ describe('InstitutionalReceiptFlow', () => {
       },
     });
     const getReceipt = vi.spyOn(apiClient, 'getReceipt');
-    const registerPrint = vi.spyOn(apiClient, 'registerInstitutionalReceiptPrintEvent');
+    const registerPrint = vi.spyOn(apiClient, 'registerInstitutionalReceiptPrintEvent')
+      .mockResolvedValue({} as never);
     const getPdf = vi.spyOn(apiClient, 'getInstitutionalReceiptPdf')
       .mockResolvedValue(new Blob(['%PDF-institutional'], { type: 'application/pdf' }));
 
@@ -51,17 +57,19 @@ describe('InstitutionalReceiptFlow', () => {
     const menuItem = await screen.findByRole('menuitem', { name: /Ver recibo/i });
     fireEvent.click(menuItem);
 
-    await waitFor(() => expect(getPdf).toHaveBeenCalledWith(501));
+    await waitFor(() => expect(registerPrint).toHaveBeenCalledWith(501, undefined, {
+      idempotencyKey: expect.any(String),
+    }));
+    expect(getPdf).toHaveBeenCalledWith(501);
     expect(openBlobInNewTab).toHaveBeenCalledWith(expect.any(Blob), 'recibo-institucional-REC-A-00000501.pdf');
-    expect(registerPrint).not.toHaveBeenCalled();
     expect(getReceipt).not.toHaveBeenCalled();
   });
 
-  it('falls back to legacy receipt preview for old invoices without institutional receipt', async () => {
+  it('falls back to historical receipt preview for earlier invoices without institutional receipt', async () => {
     const invoice = invoiceFixture({
       id: 11,
       invoice_number: '000-001-01-00000011',
-      patient_name: 'Paciente Legacy',
+      patient_name: 'Paciente histórico',
       status: 'paid',
       institutional_receipt: null,
     });
@@ -76,7 +84,7 @@ describe('InstitutionalReceiptFlow', () => {
 
     renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
 
-    await waitFor(() => expect(screen.getByText('Paciente Legacy')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Paciente histórico')).toBeInTheDocument());
     const trigger = await screen.findByRole('button', { name: 'Acciones de la factura 000-001-01-00000011' });
     trigger.focus();
     fireEvent.keyDown(trigger, { key: 'Enter', code: 'Enter', keyCode: 13, charCode: 13 });
@@ -142,7 +150,6 @@ function receiptFixture(invoice: Invoice): ReceiptData {
       valid_until: null,
     },
     invoice: {
-      id: invoice.id,
       invoice_number: invoice.invoice_number,
       patient_name: invoice.patient_name,
       subtotal: invoice.subtotal,

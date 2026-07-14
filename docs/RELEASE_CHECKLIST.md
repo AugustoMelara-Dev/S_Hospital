@@ -1,8 +1,9 @@
 # Release checklist - demo vendible y produccion real
 
-Estado actual documentado: `DEMO_READY` y `PRODUCTION_CANDIDATE`. No declarar
-`PRODUCTION_READY` hasta cerrar validacion fisica de cliente LAN, hardware de
-impresora termica y configuracion final del servidor real.
+Estado actual documentado: `LOCAL_RELEASE_CANDIDATE` para instalacion local en
+una sola PC. No declarar `PRODUCTION_READY` hasta cerrar configuracion final del
+servidor real, backup worker, restore, impresion institucional y, si aplica,
+validacion fisica de clientes LAN.
 
 ## Quality gate seguro
 
@@ -15,7 +16,6 @@ impresora termica y configuracion final del servidor real.
 - `npm.cmd run lint`
 - `npm.cmd run test`
 - `npm.cmd run build`
-- `bash scripts/quality_gate.sh` si Bash esta disponible en el entorno.
 
 El quality gate normal es no destructivo. No ejecuta `php artisan migrate:fresh --seed` contra el `.env` activo.
 El gate de supply chain es local/offline-friendly y revisa locks/manifests contra IOCs conocidos antes de build.
@@ -39,38 +39,37 @@ Validado durante el pase de arquitectura/mantenibilidad/UX/metadata:
 - Frontend build: `npm.cmd run build`.
 - E2E mockeado: `npm.cmd run e2e`.
 
-Estos gates no sustituyen validacion fisica de segunda PC LAN, impresora
-termica, restore final, concurrencia final ni backup worker en el servidor real.
+Estos gates no sustituyen impresion institucional real/PDF, restore final,
+concurrencia final ni backup worker en el servidor real. La segunda PC LAN es
+evidencia necesaria solo para despliegues multi-PC.
 
 ## Gate E2E Fase 10
 
 Playwright queda separado del gate seguro para que los fallos de navegador no se oculten dentro del build normal:
 
 ```bash
-bash scripts/e2e_gate.sh
+docker compose exec -e PLAYWRIGHT_EXTERNAL_SERVER=1 -e PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser frontend npx playwright test e2e/auth.spec.ts e2e/rbac.spec.ts e2e/new-invoice-flow.spec.ts e2e/cashbox.spec.ts e2e/invoice-history-flow.spec.ts e2e/reports-flow.spec.ts e2e/backups-flow.spec.ts e2e/settings-flow.spec.ts e2e/catalog-flow.spec.ts e2e/users-flow.spec.ts e2e/print-profiles.spec.ts e2e/pwa.spec.ts --workers=2 --reporter=list
 ```
 
-Equivalente Windows:
-
-```powershell
-cd C:\Projects\S_Hospital
-& "C:\Program Files\Git\usr\bin\bash.exe" scripts/e2e_gate.sh
-```
-
-El E2E local usa ambiente seguro y API mockeada para cubrir login, caja, factura, eritropoyetina normal/gratis, pago, recibo 80mm/58mm, historial, reimpresion, reportes y backup pending. No valida MySQL/MariaDB real ni hardware.
+El E2E local usa ambiente seguro y API mockeada para cubrir login, caja,
+factura, eritropoyetina normal/gratis, pago, recibo institucional, historial,
+reimpresion, reportes y backup pending. No valida MySQL/MariaDB real ni
+hardware. El full matrix historico de Playwright puede exceder el tiempo del
+contenedor; usar estos specs divididos como gate operativo hasta resolver ese
+timeout.
 
 ## Reset dev/testing con base descartable
 
 `php artisan migrate:fresh --seed` solo puede usarse para validar migraciones y seeders en una base descartable de desarrollo, testing o demo. No ejecutar `migrate:fresh` en el servidor real del hospital.
 
-Usar el script destructivo solo si se cumplen todas las condiciones:
+Usar `migrate:fresh --seed` solo si se cumplen todas las condiciones:
 
 - `APP_ENV` es `local` o `testing`.
 - `HOSPITAL_ALLOW_DESTRUCTIVE_RESET=1`.
 - `DB_DATABASE` contiene `test`, `demo` o `local`, o se usa `DB_CONNECTION=sqlite` en `testing`.
 
 ```bash
-HOSPITAL_ALLOW_DESTRUCTIVE_RESET=1 bash scripts/quality_gate_destructive.sh
+HOSPITAL_ALLOW_DESTRUCTIVE_RESET=1 php artisan migrate:fresh --seed
 ```
 
 ## Validacion en servidor real sin reset
@@ -99,36 +98,23 @@ Preflight ejecutable en el servidor final:
 ```powershell
 cd C:\Projects\S_Hospital
 powershell.exe -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 `
+  -BaseUrl http://127.0.0.1:PUERTO  # monocomputadora
+# o, para multi-PC:
+powershell.exe -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 `
   -BaseUrl http://IP_DEL_SERVIDOR
 ```
-
-Handoff guiado de cierre final:
-
-```powershell
-cd C:\Projects\S_Hospital
-powershell.exe -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps1 `
-  -BaseUrl http://IP_DEL_SERVIDOR `
-  -PhpPath C:\xampp\php\php.exe `
-  -InitializeProofFiles
-```
-
-Este helper no aprueba produccion por si solo: crea o muestra archivos de
-evidencia pendientes, muestra el estado de tareas de backup y ejecuta el
-preflight sin `-AllowMissingPhysicalProof`. Si faltan `qa/LAN_CLIENT_VALIDATION_PROOF.md`
-o `qa/THERMAL_PRINTER_PROOF.md` completos, el resultado correcto sigue siendo
-`PRODUCTION_CANDIDATE`. Tambien deja un resumen operativo en
-`qa/FINAL_PRODUCTION_HANDOFF_RESULT.md` con la decision, bloqueantes y comandos
-siguientes.
 
 Este preflight falla si el servidor no usa `APP_ENV=production`, si `APP_DEBUG`
 no es `false`, si falta `frontend/dist`, si faltan `mysql`/`mysqldump` o
 `mariadb-dump`, si las rutas publicas no responden, o si no existen las pruebas
-documentadas de cliente LAN, impresora fisica, restore final y concurrencia final.
+documentadas de impresion institucional, restore final, concurrencia final y
+navegador local cuando `BaseUrl` sea loopback, o cliente LAN cuando el despliegue sea multi-PC.
 
 En Windows tambien falla si no existen `HospitalBillingOS-BackupWorker` y
 `HospitalBillingOS-DailyBackup`, o si el worker continuo no esta `Running`.
 
-La evidencia fisica de LAN e impresora es obligatoria por defecto. El flag
+La evidencia fisica de impresion institucional es obligatoria por defecto. La
+evidencia local aplica a monocomputadora; evidencia LAN externa aplica a despliegues multi-PC. El flag
 `-AllowMissingPhysicalProof` solo permite una corrida parcial de entorno y deja
 un warning fuerte mas salida no cero: ese resultado no puede llamarse
 `PRODUCTION_READY` ni usarse como gate automatico de produccion.
@@ -137,30 +123,31 @@ un warning fuerte mas salida no cero: ese resultado no puede llamarse
 
 Restore MySQL/MariaDB:
 
-```bash
-HOSPITAL_VALIDATE_RESTORE_MYSQL=1 RESTORE_TEST_DATABASE=hospital_restore_test HOSPITAL_CONFIRM_RESTORE_DATABASE=hospital_restore_test bash scripts/validate_restore_mysql.sh
-```
-
-Este script es destructivo sobre `RESTORE_TEST_DATABASE`: hace `DROP DATABASE` y restaura el backup en esa base descartable. Nunca usarlo contra la base activa ni contra nombres sensibles. El nombre debe contener `test`, `restore`, `validation` o `disposable`.
+No existe actualmente un script `validate_restore_mysql.sh` en este repositorio.
+La restauracion debe validarse con el runbook y, en Windows, con
+`scripts/restore_hospital_windows.ps1` contra una base descartable. Nunca usarla
+contra la base activa ni contra nombres sensibles. El nombre debe contener
+`test`, `restore`, `validation` o `disposable`.
 
 Evidencia Fase 11: ejecutado en MariaDB XAMPP local contra `hospital_restore_validation_test` con backup `hospital-backup-20260517-204322-lcsexyiz.sql`, SHA256 `5975701b3c288ae4b9cd4e75d1881a38173e2bc3c3e799bc4b77ab7ac3630362`. Repetir en servidor final si cambia el entorno.
 
 Concurrencia MySQL/MariaDB por HTTP contra servidor de validacion:
 
-```bash
-HOSPITAL_VALIDATE_REAL_MYSQL=1 HOSPITAL_CONCURRENCY_BASE_URL=http://127.0.0.1:8000 HOSPITAL_CONCURRENCY_TARGET_ENV=local HOSPITAL_CONFIRM_CONCURRENCY_TARGET=http://127.0.0.1:8000 HOSPITAL_ALLOW_DEMO_VALIDATION=1 bash scripts/validate_mysql_concurrency.sh
-```
-
-Este script es mutante: abre caja, crea facturas y registra pagos con un `RUN_ID`. No borra facturas porque son registros auditables; requiere snapshot/base descartable antes de ejecutarlo.
+No existe actualmente un script `validate_mysql_concurrency.sh` en este
+repositorio. La validacion final debe ejecutarse con evidencia manual o con un
+script nuevo versionado antes de declararlo gate oficial. La prueba es mutante:
+abre caja, crea facturas y registra pagos con un identificador de corrida. No
+borra facturas porque son registros auditables; requiere snapshot/base
+descartable antes de ejecutarla.
 
 Evidencia Fase 11: ejecutado contra `http://192.168.1.7:8000` con `HOSPITAL_CONCURRENCY_TARGET_ENV=local` y `RUN_ID=concurrency-validation-20260517T20435`; valido doble apertura de caja, doble emision de factura y doble pago. Repetir en servidor/base final descartable antes de declarar produccion.
 
-LAN fisica:
+Validacion local/LAN fisica:
 
-- Desde otra computadora cliente, abrir `http://IP_DEL_SERVIDOR/login`.
+- En monocomputadora, abrir `http://127.0.0.1:PUERTO/login` en el servidor. En multi-PC, abrir `http://IP_DEL_SERVIDOR/login` desde otra computadora cliente.
 - Validar `/up`, `/login` y `/verify-email`.
-- Confirmar que los clientes no usan `localhost`.
-- Crear factura, cobrar, ver recibo y reporte desde navegador cliente.
+- Confirmar que el modo coincide con el alcance aprobado: loopback solo para monocomputadora; IP/dominio LAN para multi-PC.
+- Crear factura, cobrar, ver recibo y reporte desde el navegador validado.
 
 ## Analisis estatico opcional
 
@@ -184,7 +171,7 @@ LAN fisica:
 - Eritropoyetina normal L.25.
 - Eritropoyetina con receta de dialisis L.0.
 - Cobrar factura.
-- Ver recibo 80mm y 58mm.
+- Ver recibo institucional en carta, media carta o A5.
 - Reimprimir desde historial.
 - Anular factura sin pagos con motivo.
 - Ver reportes.
@@ -228,20 +215,14 @@ Para removerlas: `powershell.exe -ExecutionPolicy Bypass -File scripts\install_b
 ## Antes de produccion final
 
 - Probar restore real en una base descartable del servidor final y guardar checksum/conteos.
-- Probar desde una segunda PC en LAN usando la IP fija o dominio LAN, nunca `localhost`.
-- Probar impresora fisica termica 80mm/58mm desde la PC o cliente que imprimira.
-- Crear `qa/LAN_CLIENT_VALIDATION_PROOF.md` usando `qa/LAN_CLIENT_VALIDATION_PROOF.example.md`.
-- Crear `qa/THERMAL_PRINTER_PROOF.md` usando `qa/THERMAL_PRINTER_PROOF.example.md`.
+- Para despliegue multi-PC, probar desde una segunda PC en LAN usando la IP fija o dominio LAN, nunca `localhost`.
+- Probar impresion institucional/PDF en carta, media carta o A5 desde la PC o cliente que imprimira. 80mm/58mm queda como compatibilidad secundaria si se habilita.
+- Para monocomputadora, crear `qa/LOCAL_SERVER_VALIDATION_PROOF.md` usando `qa/LOCAL_SERVER_VALIDATION_PROOF.example.md`.
+- Para despliegue multi-PC, crear `qa/LAN_CLIENT_VALIDATION_PROOF.md` usando `qa/LAN_CLIENT_VALIDATION_PROOF.example.md`.
+- Crear evidencia de impresion institucional en `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` con media carta, carta y A5.
 - Crear `qa/FINAL_RESTORE_PROOF.md` usando `qa/FINAL_RESTORE_PROOF.example.md`.
 - Crear `qa/FINAL_CONCURRENCY_PROOF.md` usando `qa/FINAL_CONCURRENCY_PROOF.example.md`.
-- Para preparar ambos archivos sin escribir evidencia falsa:
-
-```powershell
-cd C:\Projects\S_Hospital
-powershell.exe -ExecutionPolicy Bypass -File scripts\init_production_proofs.ps1
-```
-
-- Desde la segunda PC cliente LAN, generar evidencia inicial de rutas:
+- Para multi-PC, generar evidencia inicial de rutas desde la segunda PC cliente LAN:
 
 ```powershell
 cd C:\Projects\S_Hospital

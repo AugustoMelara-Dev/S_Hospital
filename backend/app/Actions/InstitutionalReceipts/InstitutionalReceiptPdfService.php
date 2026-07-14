@@ -41,22 +41,16 @@ class InstitutionalReceiptPdfService
             ->output();
     }
 
-    public function pdfForReceiptAndRecordPrintEvent(
+    public function pdfForAuthorizedReceipt(
         InstitutionalReceipt $receipt,
         User $user,
-        ?string $reason,
         InvoiceAccess $invoiceAccess,
     ): string {
-        return DB::transaction(function () use ($receipt, $user, $reason, $invoiceAccess): string {
-            $lockedReceipt = $this->lockedReceipt($receipt);
+        $receipt = $this->receiptForPdf($receipt);
 
-            $this->authorizeLockedReceiptPrint($lockedReceipt, $user, $reason, $invoiceAccess);
+        $this->authorizeLockedReceiptPdfView($receipt, $user, $invoiceAccess);
 
-            $pdf = $this->pdfForReceipt($lockedReceipt);
-            $this->recordLockedPrintEvent($lockedReceipt, $user, $reason);
-
-            return $pdf;
-        });
+        return $this->pdfForReceipt($receipt);
     }
 
     /**
@@ -111,6 +105,14 @@ class InstitutionalReceiptPdfService
         ]);
     }
 
+    private function receiptForPdf(InstitutionalReceipt $receipt): InstitutionalReceipt
+    {
+        return InstitutionalReceipt::query()
+            ->with('invoice')
+            ->whereKey($receipt->id)
+            ->firstOrFail();
+    }
+
     private function lockedReceipt(InstitutionalReceipt $receipt): InstitutionalReceipt
     {
         return InstitutionalReceipt::query()
@@ -118,6 +120,22 @@ class InstitutionalReceiptPdfService
             ->whereKey($receipt->id)
             ->lockForUpdate()
             ->firstOrFail();
+    }
+
+    private function authorizeLockedReceiptPdfView(
+        InstitutionalReceipt $receipt,
+        User $user,
+        InvoiceAccess $invoiceAccess,
+    ): void {
+        abort_unless($user->can('receipts.view'), 403);
+
+        if ($receipt->status !== InstitutionalReceipt::STATUS_ISSUED) {
+            throw $this->validationException([
+                'receipt' => 'Solo se puede generar PDF para recibos institucionales emitidos.',
+            ]);
+        }
+
+        $this->authorizeReceiptView($user, $receipt, $invoiceAccess);
     }
 
     private function authorizeLockedReceiptPrint(
@@ -153,7 +171,7 @@ class InstitutionalReceiptPdfService
 
     private function authorizeReceiptView(User $user, InstitutionalReceipt $receipt, InvoiceAccess $invoiceAccess): void
     {
-        if ($user->can('receipts.reprint_any') || $user->can('invoices.void')) {
+        if ($user->can('receipts.reprint_any')) {
             return;
         }
 

@@ -142,4 +142,26 @@ describe('posMath', () => {
     expect(estimate.tax).toBe('0.00');
     expect(estimate.total).toBe('0.00');
   });
+
+  it('keeps erythropoietin fixed at L 25 without ISV even if stale catalog data marks it taxable', () => {
+    const estimate = computeSimpleEstimate(
+      [
+        buildCartItem({
+          quantity: '1.00',
+          dialysisPrescription: false,
+          service: {
+            ...buildCartItem().service,
+            price: '25.00',
+            taxable: true,
+            special_rule_code: 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION',
+          },
+        }),
+      ],
+      '15.00',
+    );
+
+    expect(estimate.subtotal).toBe('25.00');
+    expect(estimate.tax).toBe('0.00');
+    expect(estimate.total).toBe('25.00');
+  });
 });

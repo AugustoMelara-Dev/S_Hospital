@@ -18,6 +18,7 @@ services:
       APP_ENV: production
       APP_DEBUG: "false"
       APP_KEY: ${APP_KEY:?APP_KEY is required}
+      HOSPITAL_BACKUP_ENCRYPTION_KEY: ${HOSPITAL_BACKUP_ENCRYPTION_KEY:?HOSPITAL_BACKUP_ENCRYPTION_KEY is required}
       APP_URL: ${APP_SCHEME:-http}://${SERVER_IP:?SERVER_IP is required}:${APP_PORT:-8000}
       DB_CONNECTION: mysql
       DB_HOST: mysql
@@ -137,6 +138,7 @@ services:
       APP_ENV: production
       APP_DEBUG: "false"
       APP_KEY: ${APP_KEY:?APP_KEY is required}
+      HOSPITAL_BACKUP_ENCRYPTION_KEY: ${HOSPITAL_BACKUP_ENCRYPTION_KEY:?HOSPITAL_BACKUP_ENCRYPTION_KEY is required}
       DB_CONNECTION: mysql
       DB_HOST: mysql
       DB_PORT: 3306
@@ -215,6 +217,7 @@ services:
       APP_ENV: production
       APP_DEBUG: "false"
       APP_KEY: ${APP_KEY:?APP_KEY is required}
+      HOSPITAL_BACKUP_ENCRYPTION_KEY: ${HOSPITAL_BACKUP_ENCRYPTION_KEY:?HOSPITAL_BACKUP_ENCRYPTION_KEY is required}
       DB_CONNECTION: mysql
       DB_HOST: mysql
       DB_PORT: 3306

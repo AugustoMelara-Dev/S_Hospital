@@ -34,7 +34,7 @@ describe('SupportCenterView', () => {
 
     render(<SupportCenterView user={cashierUser} onStatus={onStatus} />);
 
-    expect(screen.getByText(/cargando diagnostico operativo/i)).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: /cargando diagnóstico operativo/i })).toBeInTheDocument();
     expect((await screen.findAllByText('Todo bien')).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/servidor local disponible/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/diagnostico tecnico detallado se mantiene reservado/i)).toBeInTheDocument();
@@ -50,10 +50,31 @@ describe('SupportCenterView', () => {
 
     render(<SupportCenterView user={supportUser} onStatus={vi.fn()} />);
 
-    expect(await screen.findByText('hospital-backup.sql')).toBeInTheDocument();
+    expect((await screen.findAllByText(/2\/6\/2026/)).length).toBeGreaterThan(0);
+    expect(screen.getByText(/fecha protegida mas reciente/i)).toBeInTheDocument();
+    expect(screen.queryByText('hospital-backup.sql')).not.toBeInTheDocument();
     expect(screen.getByText('MySQL/MariaDB')).toBeInTheDocument();
     expect(screen.getByText(/hora servidor/i)).toBeInTheDocument();
     expect(getStatus).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not show an unconfirmed backup as protected in advanced metrics', async () => {
+    vi.spyOn(apiClient, 'getSystemStatusSummary').mockResolvedValue(systemStatusSummary({ label: 'Requiere revision', severity: 'warning', problem_count: 1 }));
+    vi.spyOn(apiClient, 'getSystemStatus').mockResolvedValue({
+      ...systemStatus(),
+      backups: {
+        ...systemStatus().backups,
+        last_success_file_exists: false,
+        last_success_checksum_matches: false,
+      },
+    });
+
+    render(<SupportCenterView user={supportUser} onStatus={vi.fn()} />);
+
+    expect(await screen.findByText('Pendiente')).toBeInTheDocument();
+    expect(screen.getByText(/cree un respaldo nuevo/i)).toBeInTheDocument();
+    expect(screen.queryByText(/fecha protegida mas reciente/i)).not.toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/hospital-backup|checksum|sha/i);
   });
 
   it('renders an accessible error with retry and keeps support playbooks visible', async () => {
@@ -66,11 +87,11 @@ describe('SupportCenterView', () => {
 
     render(<SupportCenterView user={cashierUser} onStatus={onStatus} />);
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(/no se pudo cargar el diagnostico operativo/i);
+    expect(await screen.findByText(/no se pudo cargar el diagnostico operativo/i)).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/DB_PASSWORD=secret/i);
     expect(screen.getByRole('heading', { name: /cajero/i })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /reintentar diagnostico/i }));
+    fireEvent.click(screen.getByRole('button', { name: /reintentar diagnóstico/i }));
 
     expect((await screen.findAllByText('Requiere revision')).length).toBeGreaterThan(0);
     await waitFor(() => expect(getSummary).toHaveBeenCalledTimes(2));
@@ -154,7 +175,6 @@ function systemStatus(): SystemStatus {
       pending_count: 0,
       worker_recently_active: true,
       last_success_at: '2026-06-02T13:00:00.000Z',
-      last_success_filename: 'hospital-backup.sql',
       last_failure_at: null,
       last_failure_message: null,
       dump_binary: { configured: true, available: true, name: 'mariadb-dump' },
@@ -165,8 +185,6 @@ function systemStatus(): SystemStatus {
         failed_jobs_table_available: true,
         failed_jobs_count: 0,
         pending_backup_jobs: 0,
-        worker_command: 'php artisan queue:work --queue=backups --tries=1 --timeout=600',
-        scheduler_command: 'php artisan schedule:run',
       },
     },
     runtime: {
@@ -190,11 +208,6 @@ function systemStatus(): SystemStatus {
       production_checks: [],
       public_routes: [],
       physical_proofs: [],
-      commands: {
-        preflight: 'powershell.exe -ExecutionPolicy Bypass -File scripts\\production_readiness_preflight.ps1',
-        backup_worker: 'php artisan queue:work --queue=backups --tries=1 --timeout=600',
-        scheduler: 'php artisan schedule:run',
-      },
     },
   };
 }

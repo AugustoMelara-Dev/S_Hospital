@@ -172,6 +172,11 @@
             margin-top: 1px;
         }
 
+        .receipt-closing-block {
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
         .totals-table {
             margin-left: auto;
             margin-top: 8px;
@@ -381,55 +386,57 @@
             </tbody>
         </table>
 
-        <table class="totals-table">
-            <tr>
-                <td>Subtotal</td>
-                <td class="money">L. {{ $invoice['subtotal'] }}</td>
-            </tr>
-            @if (($invoice['discount_amount'] ?? '0.00') !== '0.00')
+        <div class="receipt-closing-block">
+            <table class="totals-table">
                 <tr>
-                    <td>Descuento</td>
-                    <td class="money">L. {{ $invoice['discount_amount'] }}</td>
+                    <td>Subtotal</td>
+                    <td class="money">L. {{ $invoice['subtotal'] }}</td>
                 </tr>
+                @if (($invoice['discount_amount'] ?? '0.00') !== '0.00')
+                    <tr>
+                        <td>Descuento</td>
+                        <td class="money">L. {{ $invoice['discount_amount'] }}</td>
+                    </tr>
+                @endif
+                <tr>
+                    <td>{{ $taxLabel ?: 'Impuesto' }}</td>
+                    <td class="money">L. {{ $invoice['tax_amount'] }}</td>
+                </tr>
+                <tr class="grand-total">
+                    <td>Total</td>
+                    <td class="money">L. {{ $invoice['total'] }}</td>
+                </tr>
+                <tr>
+                    <td>Pagado</td>
+                    <td class="money">L. {{ $invoice['paid_amount'] }}</td>
+                </tr>
+                <tr>
+                    <td>Saldo</td>
+                    <td class="money">L. {{ $invoice['balance_due'] }}</td>
+                </tr>
+            </table>
+
+            @if (! empty($page['amount_statement']))
+                <div class="amount-words">
+                    <span class="label">Monto en letras</span><br>
+                    {{ $page['amount_statement'] }}
+                </div>
             @endif
-            <tr>
-                <td>{{ $taxLabel ?: 'Impuesto' }}</td>
-                <td class="money">L. {{ $invoice['tax_amount'] }}</td>
-            </tr>
-            <tr class="grand-total">
-                <td>Total</td>
-                <td class="money">L. {{ $invoice['total'] }}</td>
-            </tr>
-            <tr>
-                <td>Pagado</td>
-                <td class="money">L. {{ $invoice['paid_amount'] }}</td>
-            </tr>
-            <tr>
-                <td>Saldo</td>
-                <td class="money">L. {{ $invoice['balance_due'] }}</td>
-            </tr>
-        </table>
 
-        @if (! empty($page['amount_statement']))
-            <div class="amount-words">
-                <span class="label">Monto en letras</span><br>
-                {{ $page['amount_statement'] }}
-            </div>
-        @endif
-
-        <table class="signature-grid">
-            <tr>
-                <td>
-                    <span class="signature-line">Firma del enterante</span>
-                </td>
-                <td>
-                    @if ($profile['show_physical_seal_space'])
-                        <span class="blank-area"></span><br>
-                    @endif
-                    <span class="signature-line">Sello y firma autorizada</span>
-                </td>
-            </tr>
-        </table>
+            <table class="signature-grid">
+                <tr>
+                    <td>
+                        <span class="signature-line">Firma del enterante</span>
+                    </td>
+                    <td>
+                        @if ($profile['show_physical_seal_space'])
+                            <span class="blank-area"></span><br>
+                        @endif
+                        <span class="signature-line">Sello y firma autorizada</span>
+                    </td>
+                </tr>
+            </table>
+        </div>
 
         @if ($profile['show_copy_legend'])
             <div class="copy-legend">{{ $page['copy_label'] }}@if (! empty($page['institution']['receipt_footer_text'])) - {{ $page['institution']['receipt_footer_text'] }}@endif</div>

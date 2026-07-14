@@ -12,6 +12,7 @@ class RolesAndPermissionsSeeder extends Seeder
     public const PERMISSIONS = [
         'settings.fiscal.view',
         'settings.fiscal.update',
+        'settings.operational.update',
         'catalog.view',
         'catalog.manage',
         'invoices.view',
@@ -46,7 +47,6 @@ class RolesAndPermissionsSeeder extends Seeder
         'backups.view',
         'backups.create',
         'backups.download',
-        'backups.restore',
         'system.status.view',
         'audit.view',
         'patients.mark_dialysis_prescription',
@@ -90,7 +90,6 @@ class RolesAndPermissionsSeeder extends Seeder
             'receipts.void',
             'receipts.print_test',
             'receipt_settings.view',
-            'reports.view',
             'reports.managerial.view',
             'reports.cash_session.view',
             'reports.export',
@@ -104,7 +103,6 @@ class RolesAndPermissionsSeeder extends Seeder
             'cash.view',
             'payments.view',
             'receipts.view',
-            'reports.view',
             'reports.managerial.view',
             'backups.view',
             'audit.view',
@@ -128,6 +126,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'payments.view',
             'receipts.view',
             'receipts.reprint',
+            'reports.cash_session.view',
+            'patients.mark_dialysis_prescription',
         ]));
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();

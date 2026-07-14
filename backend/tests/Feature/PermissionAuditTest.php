@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Actions\Reports\OperationalMetricsService;
+use App\Models\Area;
 use App\Models\BackupLog;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
@@ -186,6 +187,21 @@ class PermissionAuditTest extends TestCase
         $this->assertFalse($supervisor->can('catalog.manage'));
     }
 
+    public function test_default_non_admin_roles_do_not_receive_legacy_reports_view(): void
+    {
+        foreach (['supervisor', 'auditor', 'cajero', 'soporte_tecnico'] as $roleName) {
+            $user = User::factory()->create([
+                'username' => $roleName.'-without-legacy-reports-view',
+                'email' => $roleName.'-without-legacy-reports-view@hospital.local',
+                'password' => Hash::make('Password123!'),
+                'must_change_password' => false,
+                'active' => true,
+            ])->assignRole($roleName);
+
+            $this->assertFalse($user->can('reports.view'), $roleName.' should not receive reports.view');
+        }
+    }
+
     public function test_user_policy_uses_seeded_user_management_permissions_only(): void
     {
         $target = User::factory()->create([
@@ -218,7 +234,22 @@ class PermissionAuditTest extends TestCase
         $this->assertFalse(Gate::forUser($disabler)->allows('toggleActive', $disabler));
     }
 
-    public function test_backup_restore_policy_uses_seeded_admin_only_permission(): void
+    public function test_area_policy_uses_managerial_report_permission_not_legacy_reports_view(): void
+    {
+        $catalogViewer = User::factory()->create();
+        $managerialReporter = User::factory()->create();
+        $legacyReporter = User::factory()->create();
+
+        $catalogViewer->givePermissionTo('catalog.view');
+        $managerialReporter->givePermissionTo('reports.managerial.view');
+        $legacyReporter->givePermissionTo('reports.view');
+
+        $this->assertTrue(Gate::forUser($catalogViewer)->allows('viewAny', Area::class));
+        $this->assertTrue(Gate::forUser($managerialReporter)->allows('viewAny', Area::class));
+        $this->assertFalse(Gate::forUser($legacyReporter)->allows('viewAny', Area::class));
+    }
+
+    public function test_backup_restore_is_not_seeded_or_authorizable_from_the_app(): void
     {
         $admin = User::factory()->create([
             'username' => 'admin-backup-restore-policy',
@@ -246,11 +277,11 @@ class PermissionAuditTest extends TestCase
             'completed_at' => now(),
         ]);
 
-        $this->assertContains('backups.restore', RolesAndPermissionsSeeder::PERMISSIONS);
-        $this->assertDatabaseHas('permissions', ['name' => 'backups.restore']);
-        $this->assertTrue($admin->can('backups.restore'));
+        $this->assertNotContains('backups.restore', RolesAndPermissionsSeeder::PERMISSIONS);
+        $this->assertDatabaseMissing('permissions', ['name' => 'backups.restore']);
+        $this->assertFalse($admin->can('backups.restore'));
         $this->assertFalse($auditor->can('backups.restore'));
-        $this->assertTrue(Gate::forUser($admin)->allows('restore', $backup));
+        $this->assertFalse(Gate::forUser($admin)->allows('restore', $backup));
         $this->assertFalse(Gate::forUser($auditor)->allows('restore', $backup));
     }
 

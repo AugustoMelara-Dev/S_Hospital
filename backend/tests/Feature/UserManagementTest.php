@@ -7,6 +7,8 @@ use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use LogicException;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
@@ -36,6 +38,7 @@ class UserManagementTest extends TestCase
         $this->actingAs($admin)
             ->postJson("/api/admin/users/{$target->id}/reset-password", [
                 'password' => 'Temporary123!',
+                'reason' => 'Credencial temporal entregada al cajero titular.',
             ])
             ->assertOk()
             ->assertJsonPath('data.must_change_password', true);
@@ -56,6 +59,7 @@ class UserManagementTest extends TestCase
 
         $this->assertSame($admin->id, $audit->user_id);
         $this->assertSame('success', $audit->result);
+        $this->assertSame('Credencial temporal entregada al cajero titular.', $audit->reason);
         $this->assertSame(true, $audit->new_values['must_change_password'] ?? null);
         $this->assertArrayNotHasKey('password', $audit->new_values ?? []);
         $this->assertArrayNotHasKey('password', $audit->old_values ?? []);
@@ -90,7 +94,9 @@ class UserManagementTest extends TestCase
         $target->assignRole('cajero');
 
         $this->actingAs($admin)
-            ->postJson("/api/admin/users/{$target->id}/toggle-active")
+            ->postJson("/api/admin/users/{$target->id}/toggle-active", [
+                'reason' => 'Usuario operativo ya no trabaja en caja.',
+            ])
             ->assertOk()
             ->assertJsonPath('data.active', false);
 
@@ -103,6 +109,97 @@ class UserManagementTest extends TestCase
             ->assertJsonValidationErrors('active');
 
         $this->assertTrue($admin->refresh()->active);
+    }
+
+    public function test_deactivating_user_requires_reason(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->userWithRole('admin');
+        $target = $this->userWithRole('cajero');
+
+        $this->actingAs($admin)
+            ->postJson("/api/admin/users/{$target->id}/toggle-active")
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('reason');
+
+        $this->assertTrue($target->refresh()->active);
+    }
+
+    public function test_deactivating_user_stores_audit_reason(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->userWithRole('admin');
+        $target = $this->userWithRole('cajero');
+        $reason = 'Cajero removido de operacion diaria';
+
+        $this->actingAs($admin)
+            ->postJson("/api/admin/users/{$target->id}/toggle-active", [
+                'reason' => $reason,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.active', false);
+
+        $this->assertFalse($target->refresh()->active);
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $admin->id,
+            'action' => 'user.deactivated',
+            'entity_type' => User::class,
+            'entity_id' => $target->id,
+            'reason' => $reason,
+        ]);
+    }
+
+    public function test_user_cannot_be_deleted_and_must_be_deactivated(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->userWithRole('admin');
+        $target = $this->userWithRole('cajero');
+
+        try {
+            $target->delete();
+            $this->fail('Deleting a user must be blocked; use audited deactivation instead.');
+        } catch (LogicException $exception) {
+            $this->assertSame('Los usuarios no se eliminan; deben desactivarse con motivo y auditoria.', $exception->getMessage());
+        }
+
+        $this->assertDatabaseHas('users', [
+            'id' => $target->id,
+            'active' => true,
+        ]);
+
+        $this->actingAs($admin)
+            ->postJson("/api/admin/users/{$target->id}/toggle-active", [
+                'reason' => 'Usuario retirado de operacion diaria',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.active', false);
+
+        $this->assertFalse($target->refresh()->active);
+    }
+
+    public function test_deactivating_user_revokes_existing_api_tokens(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->userWithRole('admin');
+        $target = $this->userWithRole('cajero');
+        $target->createToken('terminal-caja');
+
+        $this->assertDatabaseHas('personal_access_tokens', [
+            'tokenable_type' => User::class,
+            'tokenable_id' => $target->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->postJson("/api/admin/users/{$target->id}/toggle-active", [
+                'reason' => 'Usuario retirado de operacion diaria',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.active', false);
+
+        $this->assertDatabaseMissing('personal_access_tokens', [
+            'tokenable_type' => User::class,
+            'tokenable_id' => $target->id,
+        ]);
     }
 
     public function test_toggle_user_active_requires_disable_permission(): void
@@ -130,6 +227,29 @@ class UserManagementTest extends TestCase
             ->assertJsonValidationErrors('password');
     }
 
+    public function test_reset_user_password_requires_reason(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->userWithRole('admin');
+        $target = $this->userWithRole('cajero');
+        $originalPassword = $target->password;
+
+        $this->actingAs($admin)
+            ->postJson("/api/admin/users/{$target->id}/reset-password", [
+                'password' => 'Temporary123!',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('reason');
+
+        $target->refresh();
+        $this->assertSame($originalPassword, $target->password);
+        $this->assertDatabaseMissing('audit_logs', [
+            'action' => 'user.password_reset',
+            'entity_type' => User::class,
+            'entity_id' => $target->id,
+        ]);
+    }
+
     public function test_reset_user_password_requires_users_update_permission(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
@@ -139,6 +259,7 @@ class UserManagementTest extends TestCase
         $this->actingAs($cashier)
             ->postJson("/api/admin/users/{$target->id}/reset-password", [
                 'password' => 'Temporary123!',
+                'reason' => 'Intento no autorizado de cambio de credencial.',
             ])
             ->assertForbidden();
     }
@@ -152,6 +273,7 @@ class UserManagementTest extends TestCase
         $this->actingAs($admin)
             ->postJson("/api/admin/users/{$admin->id}/reset-password", [
                 'password' => 'Temporary123!',
+                'reason' => 'Intento de restablecer la propia credencial.',
             ])
             ->assertForbidden();
 
@@ -208,6 +330,146 @@ class UserManagementTest extends TestCase
         ]);
         $this->assertDatabaseMissing('users', [
             'username' => 'nuevo-auditor',
+        ]);
+    }
+
+    public function test_user_manager_without_admin_assignment_permission_cannot_assign_custom_role_with_advanced_receipt_permission(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $manager = User::factory()->create();
+        $manager->givePermissionTo(['users.create', 'users.view']);
+        $role = Role::query()->create([
+            'name' => 'soporte_recibos_avanzado',
+            'guard_name' => 'web',
+        ]);
+        $role->givePermissionTo('receipt_settings.advanced');
+
+        $this->actingAs($manager)
+            ->postJson('/api/admin/users', [
+                'name' => 'Soporte Recibos',
+                'email' => 'soporte-recibos@hospital.local',
+                'username' => 'soporte-recibos',
+                'password' => 'Temporary123!',
+                'role' => 'soporte_recibos_avanzado',
+                'active' => true,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('role');
+
+        $this->assertDatabaseMissing('users', [
+            'username' => 'soporte-recibos',
+        ]);
+    }
+
+    public function test_user_manager_without_admin_assignment_permission_cannot_assign_custom_role_with_fiscal_sequence_reset_permission(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $manager = User::factory()->create();
+        $manager->givePermissionTo(['users.create', 'users.view']);
+        $role = Role::query()->create([
+            'name' => 'soporte_correlativos_fiscales',
+            'guard_name' => 'web',
+        ]);
+        $role->givePermissionTo('fiscal.sequences.reset');
+
+        $this->actingAs($manager)
+            ->postJson('/api/admin/users', [
+                'name' => 'Soporte Fiscal',
+                'email' => 'soporte-fiscal@hospital.local',
+                'username' => 'soporte-fiscal',
+                'password' => 'Temporary123!',
+                'role' => 'soporte_correlativos_fiscales',
+                'active' => true,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('role');
+
+        $this->assertDatabaseMissing('users', [
+            'username' => 'soporte-fiscal',
+        ]);
+    }
+
+    public function test_user_manager_without_admin_assignment_permission_cannot_assign_custom_role_with_backup_create_permission(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $manager = User::factory()->create();
+        $manager->givePermissionTo(['users.create', 'users.view']);
+        $role = Role::query()->create([
+            'name' => 'creador_respaldos_operativo',
+            'guard_name' => 'web',
+        ]);
+        $role->givePermissionTo('backups.create');
+
+        $this->actingAs($manager)
+            ->postJson('/api/admin/users', [
+                'name' => 'Creador Respaldos',
+                'email' => 'creador-respaldos@hospital.local',
+                'username' => 'creador-respaldos',
+                'password' => 'Temporary123!',
+                'role' => 'creador_respaldos_operativo',
+                'active' => true,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('role');
+
+        $this->assertDatabaseMissing('users', [
+            'username' => 'creador-respaldos',
+        ]);
+    }
+
+    public function test_user_manager_without_admin_assignment_permission_cannot_assign_custom_role_with_user_update_permission(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $manager = User::factory()->create();
+        $manager->givePermissionTo(['users.create', 'users.view']);
+        $role = Role::query()->create([
+            'name' => 'editor_usuarios_operativo',
+            'guard_name' => 'web',
+        ]);
+        $role->givePermissionTo('users.update');
+
+        $this->actingAs($manager)
+            ->postJson('/api/admin/users', [
+                'name' => 'Editor Usuarios',
+                'email' => 'editor-usuarios@hospital.local',
+                'username' => 'editor-usuarios',
+                'password' => 'Temporary123!',
+                'role' => 'editor_usuarios_operativo',
+                'active' => true,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('role');
+
+        $this->assertDatabaseMissing('users', [
+            'username' => 'editor-usuarios',
+        ]);
+    }
+
+    public function test_user_manager_without_admin_assignment_permission_cannot_assign_custom_role_with_user_disable_permission(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $manager = User::factory()->create();
+        $manager->givePermissionTo(['users.create', 'users.view']);
+        $role = Role::query()->create([
+            'name' => 'desactivador_usuarios_operativo',
+            'guard_name' => 'web',
+        ]);
+        $role->givePermissionTo('users.disable');
+
+        $this->actingAs($manager)
+            ->postJson('/api/admin/users', [
+                'name' => 'Desactivador Usuarios',
+                'email' => 'desactivador-usuarios@hospital.local',
+                'username' => 'desactivador-usuarios',
+                'password' => 'Temporary123!',
+                'role' => 'desactivador_usuarios_operativo',
+                'active' => true,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('role');
+
+        $this->assertDatabaseMissing('users', [
+            'username' => 'desactivador-usuarios',
         ]);
     }
 
@@ -320,6 +582,7 @@ class UserManagementTest extends TestCase
         $this->actingAs($manager)
             ->postJson("/api/admin/users/{$admin->id}/reset-password", [
                 'password' => 'Temporary123!',
+                'reason' => 'Intento no autorizado sobre usuario protegido.',
             ])
             ->assertForbidden();
 
@@ -496,9 +759,9 @@ class UserManagementTest extends TestCase
             'email' => 'exact-access-user@hospital.local',
         ]);
         $target->assignRole('cajero');
-        $target->syncPermissions([User::EXACT_ACCESS_MARKER_PERMISSION, 'reports.view']);
+        $target->syncPermissions([User::EXACT_ACCESS_MARKER_PERMISSION, 'catalog.view']);
 
-        $this->assertTrue($target->can('reports.view'));
+        $this->assertTrue($target->can('catalog.view'));
         $this->assertFalse($target->can('cash.open'));
         $this->assertFalse($target->can('invoices.create'));
     }
@@ -535,7 +798,7 @@ class UserManagementTest extends TestCase
                 'active' => true,
             ])
             ->assertUnprocessable()
-            ->assertJsonValidationErrors('permissions');
+            ->assertJsonValidationErrors('permissions.0');
     }
 
     public function test_user_manager_without_role_management_permission_cannot_assign_any_direct_permissions(): void
@@ -603,19 +866,50 @@ class UserManagementTest extends TestCase
     {
         $this->seed(RolesAndPermissionsSeeder::class);
         $admin = $this->userWithRole('admin');
+        Permission::query()->firstOrCreate([
+            'name' => 'backups.restore',
+            'guard_name' => 'web',
+        ]);
 
-        $this->actingAs($admin)
-            ->postJson('/api/admin/users', [
-                'name' => 'Permiso Inoperable',
-                'email' => 'permiso-inoperable@hospital.local',
-                'username' => 'permiso-inoperable',
-                'password' => 'Temporary123!',
-                'role' => 'cajero',
-                'permissions' => ['receipts.void'],
-                'active' => true,
-            ])
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors('permissions.0');
+        foreach (['backups.restore', 'receipts.void', 'users.assign_admin_role', 'reports.view'] as $permission) {
+            $permissionSlug = str_replace('.', '-', $permission);
+            $this->actingAs($admin)
+                ->postJson('/api/admin/users', [
+                    'name' => 'Permiso Inoperable',
+                    'email' => 'permiso-inoperable-'.$permissionSlug.'@hospital.local',
+                    'username' => 'permiso-inoperable-'.$permissionSlug,
+                    'password' => 'Temporary123!',
+                    'role' => 'cajero',
+                    'permissions' => [$permission],
+                    'active' => true,
+                ])
+                ->assertUnprocessable()
+                ->assertJsonValidationErrors('permissions.0');
+        }
+    }
+
+    public function test_user_listing_hides_reserved_admin_assignment_direct_permission(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->userWithRole('admin');
+        $target = User::factory()->create([
+            'username' => 'reserved-direct-permission-user',
+            'email' => 'reserved-direct-permission-user@hospital.local',
+        ]);
+        $target->assignRole('cajero');
+        $target->syncPermissions([User::EXACT_ACCESS_MARKER_PERMISSION, 'users.assign_admin_role', 'catalog.view']);
+
+        $response = $this->actingAs($admin)
+            ->getJson('/api/admin/users')
+            ->assertOk();
+
+        $payload = collect($response->json('data'))
+            ->firstWhere('username', 'reserved-direct-permission-user');
+
+        $this->assertIsArray($payload);
+        $this->assertSame(['catalog.view'], $payload['direct_permissions']);
+        $this->assertSame(['catalog.view'], $payload['permissions']);
+        $this->assertStringNotContainsString('users.assign_admin_role', $response->getContent());
     }
 
     public function test_user_editor_rejects_legacy_custom_roles_with_reserved_admin_permissions(): void
@@ -666,6 +960,54 @@ class UserManagementTest extends TestCase
             ])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('role');
+    }
+
+    public function test_cannot_demote_the_only_active_admin(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $operator = User::factory()->create();
+        $operator->givePermissionTo(['users.update', 'users.assign_admin_role']);
+        $admin = User::factory()->create([
+            'username' => 'only-active-admin-demote',
+            'email' => 'only-active-admin-demote@hospital.local',
+            'active' => true,
+        ]);
+        $admin->assignRole('admin');
+
+        $this->actingAs($operator)
+            ->patchJson("/api/admin/users/{$admin->id}", [
+                'name' => $admin->name,
+                'email' => $admin->email,
+                'username' => $admin->username,
+                'role' => 'cajero',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('role');
+
+        $this->assertTrue($admin->refresh()->hasRole('admin'));
+    }
+
+    public function test_cannot_deactivate_the_only_active_admin(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $operator = User::factory()->create();
+        $operator->givePermissionTo(['users.disable', 'users.assign_admin_role']);
+        $admin = User::factory()->create([
+            'username' => 'only-active-admin-disable',
+            'email' => 'only-active-admin-disable@hospital.local',
+            'active' => true,
+        ]);
+        $admin->assignRole('admin');
+
+        $this->actingAs($operator)
+            ->postJson("/api/admin/users/{$admin->id}/toggle-active", [
+                'reason' => 'Intento de desactivar ultimo administrador',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('active');
+
+        $this->assertTrue($admin->refresh()->active);
+        $this->assertTrue($admin->hasRole('admin'));
     }
 
     public function test_admin_cannot_change_own_direct_permissions_from_user_editor(): void

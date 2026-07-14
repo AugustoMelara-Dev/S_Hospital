@@ -1,56 +1,34 @@
 import { useEffect, useMemo, useState } from 'react';
+import { CheckCircleOutlined, PrinterOutlined, SaveOutlined } from '@ant-design/icons';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, Printer, Save, Settings2 } from 'lucide-react';
-import { type ReactElement, ReactNode, cloneElement, isValidElement, useRef } from 'react';
-import { useForm } from 'react-hook-form';
+import { Alert, Button, Checkbox, Collapse, Form, Input, InputNumber, Radio, Select, Spin, Tabs, theme as antdTheme } from 'antd';
+import { ReactNode, useRef } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Alert } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { PageHeader } from '@/components/ui/page-header';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { LoadingState } from '@/components/ui/states';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Textarea } from '@/components/ui/textarea';
-import { PaperProfileSelector, SectionCard, StatCard } from '@/components/shared';
+import { SectionCard, StatCard } from '@/design-system/components/InstitutionalComponents';
+import { PageHeader } from '@/design-system/components/PageHeader';
 import { ReceiptSettingsPreview } from './components/ReceiptSettingsPreview';
 import { type InstitutionalReceiptSeries, type ReceiptPrintProfile, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { downloadBlob } from '@/lib/download';
 import { queryKeys } from '@/lib/queryKeys';
+import {
+  PAPER_CHOICES,
+  THERMAL_COMPATIBILITY_CHOICES,
+  institutionalPaperFromProfile,
+  paperChoiceFor,
+  paperProfileCode,
+  type InstitutionalPaper,
+} from '@/modules/receipts/paperPolicy';
+import {
+  receiptProfileSchema,
+  type ReceiptProfileForm,
+} from './receiptSettings.schema';
 
 type InstitutionalReceiptSettingsViewProps = {
-  canAdvancedPrintSettings: boolean;
   canEdit: boolean;
+  canEditAdvanced?: boolean;
   onStatus: (message: string) => void;
-};
-
-type PaperProfileCode = 'carta' | 'media_carta' | 'a5' | '80mm' | '58mm';
-
-const PAPER_LABELS: Record<PaperProfileCode, string> = {
-  carta: 'Carta',
-  media_carta: 'Media carta',
-  a5: 'A5',
-  '80mm': 'Ticket 80 mm',
-  '58mm': 'Ticket 58 mm',
-};
-
-const RECEIPT_PROFILE_TO_PAPER: Record<string, PaperProfileCode> = {
-  carta_horizontal: 'carta',
-  media_carta_horizontal: 'media_carta',
-  a5_horizontal: 'a5',
-  thermal_80mm: '80mm',
-  thermal_58mm: '58mm',
-};
-
-const PAPER_TO_RECEIPT_CODE: Record<PaperProfileCode, ReceiptPrintProfile['code']> = {
-  carta: 'carta_horizontal',
-  media_carta: 'media_carta_horizontal',
-  a5: 'a5_horizontal',
-  '80mm': 'thermal_80mm',
-  '58mm': 'thermal_58mm',
 };
 
 const PROFILE_FORM_DEFAULTS = {
@@ -63,8 +41,8 @@ const PROFILE_FORM_DEFAULTS = {
 } as const;
 
 const institutionSchema = z.object({
-  hospital_name: z.string().min(1, 'Requerido'),
-  rtn: z.string().max(64).optional(),
+  hospital_name: z.string().trim().min(1, 'Requerido'),
+  rtn: z.string().trim().max(64).optional(),
   address: z.string().max(255).optional(),
   slogan: z.string().max(255).optional(),
   government_line: z.string().max(120).optional(),
@@ -74,9 +52,9 @@ const institutionSchema = z.object({
 });
 
 const seriesSchema = z.object({
-  series: z.string().min(1, 'Requerido'),
-  prefix: z.string().min(1, 'Requerido'),
-  number_format: z.string().min(1, 'Requerido'),
+  series: z.string().trim().min(1, 'Requerido'),
+  prefix: z.string().trim().min(1, 'Requerido'),
+  number_format: z.string().trim().min(1, 'Requerido'),
   min_number: z.number().int().min(1),
   max_number: z.number().int().min(1),
   current_number: z.number().int().min(0),
@@ -84,52 +62,46 @@ const seriesSchema = z.object({
   legal_text: z.string().max(255).optional(),
   receipt_number_color: z.string().max(16),
   active: z.boolean(),
+}).refine((data) => data.max_number >= data.min_number, {
+  path: ['max_number'],
+  message: 'El numero final debe ser mayor o igual al inicial.',
+}).refine((data) => data.current_number <= data.max_number, {
+  path: ['current_number'],
+  message: 'El correlativo actual no puede superar el numero final.',
+}).refine((data) => !data.active || (data.current_number + 1 >= data.min_number && data.current_number + 1 <= data.max_number), {
+  path: ['current_number'],
+  message: 'El siguiente recibo debe quedar dentro del rango autorizado.',
 });
 
-const profileSchema = z.object({
-  copies_mode: z.enum(['original_only', 'original_first', 'original_first_second']),
-  show_copy_legend: z.boolean(),
-  show_physical_seal_space: z.boolean(),
-  use_logo: z.boolean(),
-  active: z.boolean(),
-  is_global_default: z.boolean(),
-});
-
-const advancedSchema = z.object({
-  width_mm: z.number().min(80).max(300),
-  height_mm: z.number().min(50).max(220),
-  margin_top_mm: z.number().min(0).max(50),
-  margin_right_mm: z.number().min(0).max(50),
-  margin_bottom_mm: z.number().min(0).max(50),
-  margin_left_mm: z.number().min(0).max(50),
-  font_family: z.string().max(120).nullable(),
-  font_scale: z.number().min(0.7).max(1.3),
+const advancedProfileSchema = z.object({
+  width_mm: z.number().positive('Debe ser mayor que cero.'),
+  height_mm: z.number().positive('Debe ser mayor que cero.'),
+  margin_top_mm: z.number().min(0),
+  margin_right_mm: z.number().min(0),
+  margin_bottom_mm: z.number().min(0),
+  margin_left_mm: z.number().min(0),
+  orientation: z.enum(['landscape', 'portrait']),
+  font_family: z.string().trim().min(1),
+  font_scale: z.number().min(0.5).max(2),
+  support_reason: z.string().trim().min(10, 'Documente el motivo de soporte.'),
 });
 
 type InstitutionFormData = z.infer<typeof institutionSchema>;
 type SeriesFormData = z.infer<typeof seriesSchema>;
-type ProfileFormData = z.infer<typeof profileSchema>;
-type AdvancedFormData = z.infer<typeof advancedSchema>;
-
-function asMoney(value: string | number): string {
-  return Number(value).toFixed(2);
-}
-
+type ProfileFormData = ReceiptProfileForm;
+type AdvancedProfileFormData = z.infer<typeof advancedProfileSchema>;
+const { TextArea } = Input;
 export function InstitutionalReceiptSettingsView({
-  canAdvancedPrintSettings,
   canEdit,
+  canEditAdvanced = false,
   onStatus,
 }: InstitutionalReceiptSettingsViewProps) {
   const queryClient = useQueryClient();
-  const [paper, setPaper] = useState<PaperProfileCode>('media_carta');
-  const [selectedCode, setSelectedCode] = useState<string>('media_carta_horizontal');
+  const [paper, setPaper] = useState<InstitutionalPaper>('half_letter');
   const [error, setError] = useState('');
-  const [advancedOpen, setAdvancedOpen] = useState(false);
-  const [advancedSupported, setAdvancedSupported] = useState(false);
   const institutionSavingRef = useRef(false);
   const seriesSavingRef = useRef(false);
   const profileSavingRef = useRef(false);
-  const advancedSavingRef = useRef(false);
 
   const settingsQuery = useQuery({
     queryKey: queryKeys.settings.institutionalReceipts(),
@@ -140,10 +112,8 @@ export function InstitutionalReceiptSettingsView({
   const activeSeries = settings?.active_series ?? settings?.series[0] ?? null;
   const selectedProfile = useMemo(
     () =>
-      settings?.print_profiles.find((candidate) => candidate.code === selectedCode)
-      ?? settings?.resolved_profile
-      ?? null,
-    [selectedCode, settings],
+      settings?.print_profiles.find((candidate) => candidate.code === paperProfileCode(paper)) ?? null,
+    [paper, settings],
   );
 
   const institutionForm = useForm<InstitutionFormData>({
@@ -171,18 +141,18 @@ export function InstitutionalReceiptSettingsView({
       current_number: 0,
       range_authorization: '',
       legal_text: '',
-      receipt_number_color: '#b91c1c',
+      receipt_number_color: String(antdTheme.getDesignToken().colorError),
       active: true,
     },
   });
 
   const profileForm = useForm<ProfileFormData>({
-    resolver: zodResolver(profileSchema),
+    resolver: zodResolver(receiptProfileSchema),
     defaultValues: PROFILE_FORM_DEFAULTS,
   });
 
-  const advancedForm = useForm<AdvancedFormData>({
-    resolver: zodResolver(advancedSchema),
+  const advancedProfileForm = useForm<AdvancedProfileFormData>({
+    resolver: zodResolver(advancedProfileSchema),
     defaultValues: {
       width_mm: 215.9,
       height_mm: 139.7,
@@ -190,8 +160,10 @@ export function InstitutionalReceiptSettingsView({
       margin_right_mm: 6,
       margin_bottom_mm: 6,
       margin_left_mm: 6,
+      orientation: 'landscape',
       font_family: 'Arial, sans-serif',
       font_scale: 1,
+      support_reason: '',
     },
   });
 
@@ -202,8 +174,8 @@ export function InstitutionalReceiptSettingsView({
     institutionForm.reset({
       hospital_name: institution?.hospital_name ?? '',
       rtn: institution?.rtn ?? '',
-      address: '',
-      slogan: '',
+      address: institution?.address ?? '',
+      slogan: institution?.slogan ?? '',
       government_line: institution?.government_line ?? '',
       secretariat_line: institution?.secretariat_line ?? '',
       receipt_location: institution?.receipt_location ?? '',
@@ -225,10 +197,7 @@ export function InstitutionalReceiptSettingsView({
       });
     }
 
-    const resolvedCode = settings.resolved_profile?.code ?? 'media_carta_horizontal';
-    const initialPaper = RECEIPT_PROFILE_TO_PAPER[resolvedCode] ?? 'media_carta';
-    setPaper(initialPaper);
-    setSelectedCode(resolvedCode);
+    setPaper(institutionalPaperFromProfile(settings.resolved_profile));
   }, [settings, activeSeries, institutionForm, seriesForm]);
 
   useEffect(() => {
@@ -241,18 +210,19 @@ export function InstitutionalReceiptSettingsView({
       active: selectedProfile.active ?? PROFILE_FORM_DEFAULTS.active,
       is_global_default: selectedProfile.is_global_default ?? PROFILE_FORM_DEFAULTS.is_global_default,
     });
-    advancedForm.reset({
+    advancedProfileForm.reset({
       width_mm: Number(selectedProfile.width_mm ?? 215.9),
       height_mm: Number(selectedProfile.height_mm ?? 139.7),
       margin_top_mm: Number(selectedProfile.margin_top_mm ?? 6),
       margin_right_mm: Number(selectedProfile.margin_right_mm ?? 6),
       margin_bottom_mm: Number(selectedProfile.margin_bottom_mm ?? 6),
       margin_left_mm: Number(selectedProfile.margin_left_mm ?? 6),
+      orientation: selectedProfile.orientation ?? 'landscape',
       font_family: selectedProfile.font_family ?? 'Arial, sans-serif',
       font_scale: Number(selectedProfile.font_scale ?? 1),
+      support_reason: '',
     });
-    setAdvancedSupported(selectedProfile.code === 'recibo_pequeno_personalizado');
-  }, [selectedProfile, profileForm, advancedForm]);
+  }, [selectedProfile, profileForm, advancedProfileForm]);
 
   const invalidate = () =>
     queryClient.invalidateQueries({ queryKey: queryKeys.settings.institutionalReceipts() });
@@ -288,8 +258,15 @@ export function InstitutionalReceiptSettingsView({
     mutationFn: (payload: ProfileFormData) => {
       if (!selectedProfile) throw new Error('Seleccione un perfil de impresión.');
       return apiClient.updateReceiptPrintProfile(selectedProfile.id, {
-        ...payload,
+        copies_mode: payload.copies_mode,
+        show_physical_seal_space: payload.show_physical_seal_space,
+        use_logo: payload.use_logo,
+        active: true,
+        is_global_default: true,
         template_code: 'institutional_classic',
+        ...(canEditAdvanced
+          ? advancedProfilePayload(advancedProfileForm.getValues())
+          : {}),
       });
     },
     onSuccess: async () => {
@@ -302,36 +279,10 @@ export function InstitutionalReceiptSettingsView({
     },
   });
 
-  const advancedMutation = useMutation({
-    mutationFn: (payload: AdvancedFormData) => {
-      if (!selectedProfile) throw new Error('Seleccione un perfil de impresión.');
-      return apiClient.updateReceiptPrintProfile(selectedProfile.id, {
-        ...profileForm.watch(),
-        width_mm: asMoney(payload.width_mm),
-        height_mm: asMoney(payload.height_mm),
-        margin_top_mm: asMoney(payload.margin_top_mm),
-        margin_right_mm: asMoney(payload.margin_right_mm),
-        margin_bottom_mm: asMoney(payload.margin_bottom_mm),
-        margin_left_mm: asMoney(payload.margin_left_mm),
-        font_family: payload.font_family,
-        font_scale: asMoney(payload.font_scale),
-        template_code: 'institutional_classic',
-      });
-    },
-    onSuccess: async () => {
-      await invalidate();
-      onStatus('Ajustes avanzados del perfil guardados.');
-    },
-    onError: (err) => setError(userSafeErrorMessage(err, 'No se pudo guardar el perfil avanzado.')),
-    onSettled: () => {
-      advancedSavingRef.current = false;
-    },
-  });
-
   const testPrintMutation = useMutation({
     mutationFn: () =>
       apiClient.testPrintInstitutionalReceipt({
-        profile_code: PAPER_TO_RECEIPT_CODE[paper],
+        profile_code: selectedProfile?.code ?? paperProfileCode(paper),
         payer_name: 'Paciente de prueba',
         concept: 'Servicios hospitalarios de prueba',
         amount: '25.00',
@@ -344,7 +295,17 @@ export function InstitutionalReceiptSettingsView({
   });
 
   if (settingsQuery.isLoading) {
-    return <LoadingState label="Cargando ajustes de recibos..." />;
+    return (
+      <div className="flex flex-col gap-6">
+        <PageHeader
+          title="Preparando ajustes de recibos"
+          description="Papel, copias, logo y firma. El sistema prepara la impresión según el perfil seleccionado."
+        />
+        <div className="flex min-h-48 items-center justify-center" role="status" aria-label="Cargando ajustes de recibos...">
+          <Spin size="large" description="Cargando ajustes de recibos..." />
+        </div>
+      </div>
+    );
   }
 
   if (settingsQuery.isError) {
@@ -354,10 +315,13 @@ export function InstitutionalReceiptSettingsView({
           title="Recibos institucionales"
           description="Configuración del recibo clásico, serie, papel y copias para impresora normal."
         />
-        <Alert variant="destructive" title="No se pudieron cargar los ajustes de recibos">
-          {userSafeErrorMessage(settingsQuery.error, 'Revise el servidor local y vuelva a intentar.')}
-        </Alert>
-        <Button type="button" variant="secondary" onClick={() => void settingsQuery.refetch()}>
+        <Alert
+          type="error"
+          showIcon
+          title="No se pudieron cargar los ajustes de recibos"
+          description={userSafeErrorMessage(settingsQuery.error, 'Revise el servidor local y vuelva a intentar.')}
+        />
+        <Button htmlType="button" onClick={() => void settingsQuery.refetch()}>
           Reintentar
         </Button>
       </>
@@ -370,7 +334,6 @@ export function InstitutionalReceiptSettingsView({
     ? { ...activeSeries, ...seriesValues }
     : null;
   const watchedProfile = profileForm.watch();
-  const watchedAdvanced = advancedForm.watch();
   const baseProfile = selectedProfile
     ? {
         ...selectedProfile,
@@ -382,21 +345,7 @@ export function InstitutionalReceiptSettingsView({
         is_global_default: watchedProfile.is_global_default,
       }
     : null;
-  const previewProfile = ((): ReceiptPrintProfile | null => {
-    if (!baseProfile) return null;
-    if (!canAdvancedPrintSettings || !advancedOpen) return baseProfile;
-    return {
-      ...baseProfile,
-      width_mm: asMoney(watchedAdvanced.width_mm),
-      height_mm: asMoney(watchedAdvanced.height_mm),
-      margin_top_mm: asMoney(watchedAdvanced.margin_top_mm),
-      margin_right_mm: asMoney(watchedAdvanced.margin_right_mm),
-      margin_bottom_mm: asMoney(watchedAdvanced.margin_bottom_mm),
-      margin_left_mm: asMoney(watchedAdvanced.margin_left_mm),
-      font_family: watchedAdvanced.font_family ?? null,
-      font_scale: asMoney(watchedAdvanced.font_scale),
-    };
-  })();
+  const previewProfile: ReceiptPrintProfile | null = baseProfile;
 
   const copiesCount =
     watchedProfile.copies_mode === 'original_first_second'
@@ -404,18 +353,19 @@ export function InstitutionalReceiptSettingsView({
       : watchedProfile.copies_mode === 'original_first'
         ? '2'
         : '1';
+  const profileControlsDisabled = !canEdit || profileMutation.isPending;
 
   return (
     <>
       <PageHeader
         title="Recibos institucionales"
-        description="Papel, copias, logo y firma. El sistema resuelve márgenes, CSS de impresión y fuente."
+        description="Papel, copias, logo y firma. El sistema prepara la impresión según el perfil seleccionado."
       />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Papel"
-          value={PAPER_LABELS[paper]}
+          value={paperChoiceFor(paper).label}
           helper="Tamaño resuelto por el sistema"
           tone="success"
         />
@@ -439,28 +389,27 @@ export function InstitutionalReceiptSettingsView({
       </div>
 
       {!canEdit && (
-        <Alert variant="warning" title="Modo solo lectura">
-          Solo usuarios autorizados pueden cambiar serie, perfiles o textos institucionales.
-        </Alert>
+        <Alert
+          type="warning"
+          showIcon
+          title="Modo solo lectura"
+          description="Solo usuarios autorizados pueden cambiar serie, perfiles o textos institucionales."
+        />
       )}
 
       {error && (
-        <Alert variant="destructive" title="Error">
-          {error}
-        </Alert>
+        <Alert type="error" showIcon title="Error" description={error} />
       )}
 
-      <Tabs defaultValue="papel" className="space-y-6">
-        <div className="overflow-x-auto pb-1">
-          <TabsList className="min-w-max border border-operational-border bg-operational-panel p-1">
-            <TabsTrigger value="institucion">Institución</TabsTrigger>
-            <TabsTrigger value="serie">Serie</TabsTrigger>
-            <TabsTrigger value="papel">Papel y copias</TabsTrigger>
-            <TabsTrigger value="vista">Vista previa</TabsTrigger>
-          </TabsList>
-        </div>
-
-        <TabsContent value="institucion" className="space-y-6">
+      <Tabs
+        defaultActiveKey="papel"
+        destroyOnHidden={false}
+        items={[
+          {
+            key: 'institucion',
+            label: 'Institución',
+            children: (
+              <div className="min-w-0 space-y-6">
           <SectionCard
             title="Datos del recibo"
             description="Encabezado, ubicación y leyenda del documento institucional."
@@ -478,38 +427,42 @@ export function InstitutionalReceiptSettingsView({
             >
               <div className="grid gap-4 md:grid-cols-2">
                 <Field label="Nombre del hospital" id="hospital_name" error={institutionForm.formState.errors.hospital_name?.message}>
-                  <Input id="hospital_name" disabled={!canEdit} {...institutionForm.register('hospital_name')} />
+                  <Controller name="hospital_name" control={institutionForm.control} render={({ field }) => <Input id="hospital_name" disabled={!canEdit} {...field} />} />
                 </Field>
                 <Field label="RTN si aplica" id="rtn">
-                  <Input id="rtn" disabled={!canEdit} {...institutionForm.register('rtn')} />
+                  <Controller name="rtn" control={institutionForm.control} render={({ field }) => <Input id="rtn" disabled={!canEdit} {...field} />} />
                 </Field>
                 <Field label="Dependencia superior" id="government_line" hint="Déjelo en blanco si no existe un encabezado oficial.">
-                  <Input id="government_line" disabled={!canEdit} {...institutionForm.register('government_line')} />
+                  <Controller name="government_line" control={institutionForm.control} render={({ field }) => <Input id="government_line" disabled={!canEdit} {...field} />} />
                 </Field>
                 <Field label="Secretaría o unidad" id="secretariat_line">
-                  <Input id="secretariat_line" disabled={!canEdit} {...institutionForm.register('secretariat_line')} />
+                  <Controller name="secretariat_line" control={institutionForm.control} render={({ field }) => <Input id="secretariat_line" disabled={!canEdit} {...field} />} />
                 </Field>
                 <Field label="Ciudad o lugar" id="receipt_location" hint="No se completa automáticamente desde la dirección.">
-                  <Input id="receipt_location" disabled={!canEdit} {...institutionForm.register('receipt_location')} />
+                  <Controller name="receipt_location" control={institutionForm.control} render={({ field }) => <Input id="receipt_location" disabled={!canEdit} {...field} />} />
                 </Field>
                 <Field label="Dirección o referencia" id="address">
-                  <Input id="address" disabled={!canEdit} {...institutionForm.register('address')} />
+                  <Controller name="address" control={institutionForm.control} render={({ field }) => <Input id="address" disabled={!canEdit} {...field} />} />
                 </Field>
               </div>
               <Field label="Leyenda de copias o pie" id="receipt_footer_text">
-                <Textarea id="receipt_footer_text" disabled={!canEdit} {...institutionForm.register('receipt_footer_text')} />
+                <Controller name="receipt_footer_text" control={institutionForm.control} render={({ field }) => <TextArea id="receipt_footer_text" disabled={!canEdit} {...field} />} />
               </Field>
               <div className="flex justify-end">
-                <Button type="submit" disabled={!canEdit || institutionMutation.isPending}>
-                  <Save className="size-4" data-icon aria-hidden="true" />
+                <Button htmlType="submit" type="primary" loading={institutionMutation.isPending} disabled={!canEdit} icon={<SaveOutlined />}>
                   Guardar institución
                 </Button>
               </div>
             </form>
           </SectionCard>
-        </TabsContent>
-
-        <TabsContent value="serie" className="space-y-6">
+              </div>
+            ),
+          },
+          {
+            key: 'serie',
+            label: 'Serie',
+            children: (
+              <div className="space-y-6">
           <SectionCard
             title="Serie y control fiscal"
             description="Rango, formato y correlativo actual del recibo institucional."
@@ -525,24 +478,27 @@ export function InstitutionalReceiptSettingsView({
                     })(),
               )}
             >
-              <Alert variant="warning" title="Correlativo sensible">
-                Cambie el correlativo solo con autorización documentada. No lo use para corregir recibos ya emitidos.
-              </Alert>
+              <Alert
+                type="warning"
+                showIcon
+                title="Correlativo sensible"
+                description="Cambie el correlativo solo con autorización documentada. No lo use para corregir recibos ya emitidos."
+              />
               <div className="grid gap-4 md:grid-cols-3">
                 <Field label="Serie" id="series" error={seriesForm.formState.errors.series?.message}>
-                  <Input id="series" disabled={!canEdit} {...seriesForm.register('series')} />
+                  <Controller name="series" control={seriesForm.control} render={({ field }) => <Input id="series" disabled={!canEdit} {...field} />} />
                 </Field>
                 <Field label="Prefijo" id="prefix" error={seriesForm.formState.errors.prefix?.message}>
-                  <Input id="prefix" disabled={!canEdit} {...seriesForm.register('prefix')} />
+                  <Controller name="prefix" control={seriesForm.control} render={({ field }) => <Input id="prefix" disabled={!canEdit} {...field} />} />
                 </Field>
                 <Field label="Formato" id="number_format">
-                  <Input id="number_format" disabled={!canEdit} {...seriesForm.register('number_format')} />
+                  <Controller name="number_format" control={seriesForm.control} render={({ field }) => <Input id="number_format" disabled={!canEdit} {...field} />} />
                 </Field>
                 <Field label="Número inicial" id="min_number">
-                  <Input id="min_number" type="number" disabled={!canEdit} {...seriesForm.register('min_number', { valueAsNumber: true })} />
+                  <Controller name="min_number" control={seriesForm.control} render={({ field }) => <InputNumber id="min_number" disabled={!canEdit} className="w-full" {...field} />} />
                 </Field>
                 <Field label="Número final" id="max_number" error={seriesForm.formState.errors.max_number?.message}>
-                  <Input id="max_number" type="number" disabled={!canEdit} {...seriesForm.register('max_number', { valueAsNumber: true })} />
+                  <Controller name="max_number" control={seriesForm.control} render={({ field }) => <InputNumber id="max_number" disabled={!canEdit} className="w-full" {...field} />} />
                 </Field>
                 <Field
                   label="Correlativo actual"
@@ -550,238 +506,256 @@ export function InstitutionalReceiptSettingsView({
                   error={seriesForm.formState.errors.current_number?.message}
                   hint="El próximo recibo usará este valor + 1."
                 >
-                  <Input id="current_number" type="number" disabled={!canEdit} {...seriesForm.register('current_number', { valueAsNumber: true })} />
+                  <Controller name="current_number" control={seriesForm.control} render={({ field }) => <InputNumber id="current_number" disabled={!canEdit} className="w-full" {...field} />} />
                 </Field>
                 <Field label="Color del número" id="receipt_number_color">
-                  <Input id="receipt_number_color" type="color" disabled={!canEdit} {...seriesForm.register('receipt_number_color')} />
+                  <Controller name="receipt_number_color" control={seriesForm.control} render={({ field }) => <Input id="receipt_number_color" type="color" disabled={!canEdit} {...field} />} />
                 </Field>
                 <Field label="Rango autorizado" id="range_authorization">
-                  <Input id="range_authorization" disabled={!canEdit} {...seriesForm.register('range_authorization')} />
+                  <Controller name="range_authorization" control={seriesForm.control} render={({ field }) => <Input id="range_authorization" disabled={!canEdit} {...field} />} />
                 </Field>
                 <div className="flex items-center gap-2 pt-7">
                   <Checkbox
                     id="active"
                     checked={seriesForm.watch('active')}
                     disabled={!canEdit}
-                    onCheckedChange={(value) => seriesForm.setValue('active', value === true)}
-                  />
-                  <Label htmlFor="active">Serie activa</Label>
+                    onChange={(event) => seriesForm.setValue('active', event.target.checked)}
+                  >
+                    Serie activa
+                  </Checkbox>
                 </div>
               </div>
               <Field label="Texto legal del recibo" id="legal_text">
-                <Textarea id="legal_text" disabled={!canEdit} {...seriesForm.register('legal_text')} />
+                <Controller name="legal_text" control={seriesForm.control} render={({ field }) => <TextArea id="legal_text" disabled={!canEdit} {...field} />} />
               </Field>
               <div className="flex justify-end">
-                <Button type="submit" disabled={!canEdit || seriesMutation.isPending}>
-                  <Save className="size-4" data-icon aria-hidden="true" />
+                <Button htmlType="submit" type="primary" loading={seriesMutation.isPending} disabled={!canEdit} icon={<SaveOutlined />}>
                   Guardar serie
                 </Button>
               </div>
             </form>
           </SectionCard>
-        </TabsContent>
-
-        <TabsContent value="papel" className="space-y-6">
-          <div className="grid gap-6 lg:grid-cols-[0.85fr_1.15fr]">
-            <SectionCard
-              title="Perfiles disponibles"
-              description="Carta, media carta y A5 son los perfiles institucionales principales."
-            >
-              <div className="space-y-3">
-                {(settings?.print_profiles ?? []).map((profile) => {
-                  const paperCode = RECEIPT_PROFILE_TO_PAPER[profile.code];
-                  const isActive = selectedCode === profile.code;
-                  return (
-                    <Button
-                      key={profile.code}
-                      type="button"
-                      aria-pressed={isActive}
-                      variant={isActive ? 'secondary' : 'outline'}
-                      className="h-auto w-full justify-between gap-3 p-3 text-left"
-                      onClick={() => {
-                        setSelectedCode(profile.code);
-                        if (paperCode) setPaper(paperCode);
-                      }}
-                    >
-                      <span>{profile.code === 'recibo_pequeno_personalizado' ? 'Recibo pequeño personalizado' : PAPER_LABELS[paperCode as PaperProfileCode] ?? profile.code}</span>
-                      <span className="text-xs font-normal">{profile.active ? 'Activo' : 'Disponible'}</span>
-                    </Button>
-                  );
-                })}
               </div>
-            </SectionCard>
-
+            ),
+          },
+          {
+            key: 'papel',
+            label: 'Papel y copias',
+            children: (
+              <div className="space-y-6">
+          <div className="grid min-w-0 gap-6 xl:grid-cols-2 xl:items-start">
             <SectionCard
-              title="Tipo de papel institucional"
-              description="El hospital elige el papel. El sistema resuelve márgenes y CSS de impresión."
+              title="Papel del recibo"
+              description="El sistema ajusta márgenes, fuente y escala automáticamente."
             >
-              <PaperProfileSelector
-                value={paper}
-                onChange={(code) => {
-                  setPaper(code);
-                  const mapped = PAPER_TO_RECEIPT_CODE[code];
-                  if (mapped) setSelectedCode(mapped);
-                }}
-                disabled={!canEdit}
-                helperText="Los márgenes, la fuente y el layout se calculan automáticamente según el perfil seleccionado."
-              />
+              <fieldset disabled={profileControlsDisabled} className="min-w-0 space-y-3">
+                <legend className="text-sm font-semibold text-foreground">Formatos institucionales</legend>
+                <Radio.Group
+                  name="institutional-receipt-paper"
+                  aria-label="Formatos institucionales: tipo de papel del recibo"
+                  value={paper}
+                  disabled={profileControlsDisabled}
+                  onChange={(event) => setPaper(event.target.value as InstitutionalPaper)}
+                  className="grid gap-3 sm:grid-cols-3"
+                >
+                  {PAPER_CHOICES.map((choice) => {
+                    const selected = choice.value === paper;
+                    return (
+                      <Radio
+                        key={choice.value}
+                        value={choice.value}
+                        className={`min-h-11 border p-3 text-left ${
+                          selected
+                            ? 'border-hospital-primary bg-hospital-primary/5'
+                            : 'border-operational-border bg-operational-surface'
+                        }`}
+                      >
+                        <span className="min-w-0">
+                          <span className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                            {choice.label}
+                            {selected ? <CheckCircleOutlined aria-hidden="true" /> : null}
+                          </span>
+                          <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
+                            {choice.description}
+                          </span>
+                          {selected ? <span className="mt-1 block text-xs font-semibold">Seleccionado</span> : null}
+                        </span>
+                      </Radio>
+                    );
+                  })}
+                </Radio.Group>
+              </fieldset>
+
+              <fieldset className="mt-5 min-w-0 border border-dashed border-operational-border p-3">
+                <legend className="px-1 text-sm font-semibold text-foreground">Formatos térmicos secundarios</legend>
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  Disponibles solo para compatibilidad secundaria; no reemplazan el recibo institucional.
+                </p>
+                <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+                  {THERMAL_COMPATIBILITY_CHOICES.map((choice) => (
+                    <li key={choice.value} className="min-h-11 border border-operational-border bg-muted/40 p-3">
+                      <span className="text-sm font-semibold text-foreground">{choice.label}</span>
+                      <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
+                        {choice.description}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </fieldset>
 
               <form
                 className="mt-5 space-y-4"
-                onSubmit={profileForm.handleSubmit((data) =>
-                  profileSavingRef.current
-                    ? undefined
-                    : (() => {
-                        profileSavingRef.current = true;
-                        profileMutation.mutate(data);
-                      })(),
-                )}
+                onSubmit={profileForm.handleSubmit(async (data) => {
+                  if (profileSavingRef.current) return;
+                  if (canEditAdvanced && !(await advancedProfileForm.trigger())) return;
+                  profileSavingRef.current = true;
+                  profileMutation.mutate(data);
+                })}
               >
                 <div className="grid gap-4 md:grid-cols-3">
                   <Field label="Copias" id="copies_mode">
                     <Select
+                      id="copies_mode"
+                      aria-label="Copias"
                       value={profileForm.watch('copies_mode')}
-                      onValueChange={(value) => profileForm.setValue('copies_mode', value as ProfileFormData['copies_mode'])}
-                      disabled={!canEdit}
-                    >
-                      <SelectTrigger id="copies_mode"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="original_only">Solo original</SelectItem>
-                        <SelectItem value="original_first">Original + primera copia</SelectItem>
-                        <SelectItem value="original_first_second">Original + dos copias</SelectItem>
-                      </SelectContent>
-                    </Select>
+                      onChange={(value) => profileForm.setValue('copies_mode', value as ProfileFormData['copies_mode'])}
+                      disabled={profileControlsDisabled}
+                      options={[
+                        { value: 'original_only', label: 'Solo original' },
+                        { value: 'original_first', label: 'Original + primera copia' },
+                        { value: 'original_first_second', label: 'Original + dos copias' },
+                      ]}
+                    />
                   </Field>
-                  <CheckboxField
-                    id="profile_show_copy_legend"
-                    label="Leyenda de copias"
-                    checked={Boolean(profileForm.watch('show_copy_legend'))}
-                    disabled={!canEdit}
-                    onChange={(value) => profileForm.setValue('show_copy_legend', value === true)}
-                  />
                   <CheckboxField
                     id="profile_show_seal_space"
                     label="Espacio para sello/firma"
                     checked={Boolean(profileForm.watch('show_physical_seal_space'))}
-                    disabled={!canEdit}
+                    disabled={profileControlsDisabled}
                     onChange={(value) => profileForm.setValue('show_physical_seal_space', value === true)}
                   />
                   <CheckboxField
                     id="profile_use_logo"
                     label="Mostrar logo autorizado"
                     checked={Boolean(profileForm.watch('use_logo'))}
-                    disabled={!canEdit}
+                    disabled={profileControlsDisabled}
                     onChange={(value) => profileForm.setValue('use_logo', value === true)}
-                  />
-                  <CheckboxField
-                    id="profile_active"
-                    label="Perfil activo"
-                    checked={Boolean(profileForm.watch('active'))}
-                    disabled={!canEdit}
-                    onChange={(value) => profileForm.setValue('active', value === true)}
-                  />
-                  <CheckboxField
-                    id="profile_is_global_default"
-                    label="Predeterminado global"
-                    checked={Boolean(profileForm.watch('is_global_default'))}
-                    disabled={!canEdit}
-                    onChange={(value) => profileForm.setValue('is_global_default', value === true)}
                   />
                 </div>
 
+                {canEditAdvanced ? (
+                  <Collapse
+                    items={[{
+                      key: 'advanced',
+                      label: 'Ajustes técnicos avanzados',
+                      children: (
+                        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                          {([
+                            ['width_mm', 'Ancho mm'],
+                            ['height_mm', 'Alto mm'],
+                            ['margin_top_mm', 'Margen sup. (mm)'],
+                            ['margin_right_mm', 'Margen der. (mm)'],
+                            ['margin_bottom_mm', 'Margen inf. (mm)'],
+                            ['margin_left_mm', 'Margen izq. (mm)'],
+                          ] as const).map(([name, label]) => (
+                            <Controller
+                              key={name}
+                              control={advancedProfileForm.control}
+                              name={name}
+                              render={({ field, fieldState }) => (
+                                <Field id={`advanced_${name}`} label={label} error={fieldState.error?.message}>
+                                  <InputNumber
+                                    id={`advanced_${name}`}
+                                    min={0}
+                                    step={0.1}
+                                    value={field.value}
+                                    onBlur={field.onBlur}
+                                    onChange={(value) => field.onChange(value ?? 0)}
+                                    className="w-full"
+                                  />
+                                </Field>
+                              )}
+                            />
+                          ))}
+                          <Controller
+                            control={advancedProfileForm.control}
+                            name="orientation"
+                            render={({ field }) => (
+                              <Field id="advanced_orientation" label="Orientación">
+                                <Select
+                                  id="advanced_orientation"
+                                  value={field.value}
+                                  onChange={field.onChange}
+                                  options={[
+                                    { value: 'landscape', label: 'Horizontal' },
+                                    { value: 'portrait', label: 'Vertical' },
+                                  ]}
+                                />
+                              </Field>
+                            )}
+                          />
+                          <Field id="advanced_font_family" label="Fuente" error={advancedProfileForm.formState.errors.font_family?.message}>
+                            <Input id="advanced_font_family" {...advancedProfileForm.register('font_family')} />
+                          </Field>
+                          <Controller
+                            control={advancedProfileForm.control}
+                            name="font_scale"
+                            render={({ field, fieldState }) => (
+                              <Field id="advanced_font_scale" label="Escala" error={fieldState.error?.message}>
+                                <InputNumber
+                                  id="advanced_font_scale"
+                                  min={0.5}
+                                  max={2}
+                                  step={0.05}
+                                  value={field.value}
+                                  onChange={(value) => field.onChange(value ?? 1)}
+                                />
+                              </Field>
+                            )}
+                          />
+                          <div className="md:col-span-2 xl:col-span-3">
+                            <Field id="advanced_support_reason" label="Motivo de soporte" error={advancedProfileForm.formState.errors.support_reason?.message}>
+                              <TextArea id="advanced_support_reason" rows={3} {...advancedProfileForm.register('support_reason')} />
+                            </Field>
+                          </div>
+                        </div>
+                      ),
+                    }]}
+                  />
+                ) : null}
+
                 <div className="flex flex-wrap justify-end gap-2">
-                  <Button type="button" variant="secondary" disabled={testPrintMutation.isPending} onClick={() => testPrintMutation.mutate()}>
-                    <Printer className="size-4" data-icon aria-hidden="true" />
+                  <Button htmlType="button" disabled={profileControlsDisabled} loading={testPrintMutation.isPending} onClick={() => testPrintMutation.mutate()} icon={<PrinterOutlined />}>
                     Imprimir prueba
                   </Button>
-                  <Button type="submit" disabled={!canEdit || profileMutation.isPending}>
-                    <Save className="size-4" data-icon aria-hidden="true" />
+                  <Button htmlType="submit" type="primary" loading={profileMutation.isPending} disabled={!canEdit || !selectedProfile} icon={<SaveOutlined />}>
                     Guardar perfil
                   </Button>
                 </div>
               </form>
-
-              {canAdvancedPrintSettings && advancedSupported && (
-                <details
-                  id="receipt-advanced-panel"
-                  className="mt-5 rounded-md border border-warning/40 bg-warning/10 p-3 text-sm"
-                  open={advancedOpen}
-                  onToggle={(event) => setAdvancedOpen((event.currentTarget as HTMLDetailsElement).open)}
-                >
-                  <summary className="cursor-pointer font-semibold text-warning-foreground">
-                    <span className="inline-flex items-center gap-2">
-                      <AlertTriangle className="size-4" aria-hidden="true" />
-                      Modo soporte técnico
-                    </span>
-                  </summary>
-                  <p className="mt-2 text-current/85">
-                    Estos ajustes modifican medidas manuales del recibo pequeño personalizado. Documente el motivo antes de continuar; el cambio queda auditado.
-                  </p>
-                  {advancedOpen && (
-                    <form
-                      className="mt-4 space-y-4"
-                      onSubmit={advancedForm.handleSubmit((data) =>
-                        advancedSavingRef.current
-                          ? undefined
-                          : (() => {
-                              advancedSavingRef.current = true;
-                              advancedMutation.mutate(data);
-                            })(),
-                      )}
-                    >
-                      <div className="grid gap-4 md:grid-cols-4">
-                        <Field label="Ancho mm" id="adv_width" hint="Solo recibo pequeño personalizado.">
-                          <Input id="adv_width" type="number" step="0.01" disabled={!canEdit} {...advancedForm.register('width_mm', { valueAsNumber: true })} />
-                        </Field>
-                        <Field label="Alto mm" id="adv_height" hint="Solo recibo pequeño personalizado.">
-                          <Input id="adv_height" type="number" step="0.01" disabled={!canEdit} {...advancedForm.register('height_mm', { valueAsNumber: true })} />
-                        </Field>
-                        <Field label="Fuente" id="adv_font_family">
-                          <Input id="adv_font_family" disabled={!canEdit} {...advancedForm.register('font_family')} />
-                        </Field>
-                        <Field label="Escala" id="adv_font_scale">
-                          <Input id="adv_font_scale" type="number" step="0.05" disabled={!canEdit} {...advancedForm.register('font_scale', { valueAsNumber: true })} />
-                        </Field>
-                        <Field label="Margen sup. (mm)" id="adv_margin_top">
-                          <Input id="adv_margin_top" type="number" step="0.01" disabled={!canEdit} {...advancedForm.register('margin_top_mm', { valueAsNumber: true })} />
-                        </Field>
-                        <Field label="Margen der. (mm)" id="adv_margin_right">
-                          <Input id="adv_margin_right" type="number" step="0.01" disabled={!canEdit} {...advancedForm.register('margin_right_mm', { valueAsNumber: true })} />
-                        </Field>
-                        <Field label="Margen inf. (mm)" id="adv_margin_bottom">
-                          <Input id="adv_margin_bottom" type="number" step="0.01" disabled={!canEdit} {...advancedForm.register('margin_bottom_mm', { valueAsNumber: true })} />
-                        </Field>
-                        <Field label="Margen izq. (mm)" id="adv_margin_left">
-                          <Input id="adv_margin_left" type="number" step="0.01" disabled={!canEdit} {...advancedForm.register('margin_left_mm', { valueAsNumber: true })} />
-                        </Field>
-                      </div>
-                      <div className="flex justify-end">
-                        <Button type="submit" variant="danger" disabled={!canEdit || advancedMutation.isPending}>
-                          <Settings2 className="size-4" data-icon aria-hidden="true" />
-                          Guardar ajustes avanzados
-                        </Button>
-                      </div>
-                    </form>
-                  )}
-                </details>
-              )}
-
-              {canAdvancedPrintSettings && !advancedSupported && (
-                <Alert title="Modo soporte no aplica aquí">
-                  Los ajustes avanzados solo aplican al perfil personalizado de recibo pequeño.
-                </Alert>
-              )}
-
-              {!canAdvancedPrintSettings && (
-                <Alert title="Modo soporte no disponible">
-                  Su usuario no tiene permiso <code>receipt_settings.advanced</code>. Para modificar márgenes, fuente o escala contacte a soporte técnico.
-                </Alert>
-              )}
             </SectionCard>
-          </div>
-        </TabsContent>
 
-        <TabsContent value="vista">
+            <div className="min-w-0">
+              <ReceiptSettingsPreview
+                hospitalName={institutionValues.hospital_name}
+                governmentLine={institutionValues.government_line ?? ''}
+                secretariatLine={institutionValues.secretariat_line ?? ''}
+                location={institutionValues.receipt_location ?? ''}
+                footerText={institutionValues.receipt_footer_text ?? ''}
+                series={previewSeries}
+                profile={previewProfile}
+                paper={paper}
+                draft
+              />
+            </div>
+          </div>
+              </div>
+            ),
+          },
+          {
+            key: 'vista',
+            label: 'Vista previa',
+            children: (
           <ReceiptSettingsPreview
             hospitalName={institutionValues.hospital_name}
             governmentLine={institutionValues.government_line ?? ''}
@@ -790,12 +764,32 @@ export function InstitutionalReceiptSettingsView({
             footerText={institutionValues.receipt_footer_text ?? ''}
             series={previewSeries}
             profile={previewProfile}
+            paper={paper}
             draft
           />
-        </TabsContent>
-      </Tabs>
+            ),
+          },
+        ]}
+      />
     </>
   );
+}
+
+function advancedProfilePayload(values: AdvancedProfileFormData) {
+  const decimal = (value: number) => value.toFixed(2);
+  return {
+    width_mm: decimal(values.width_mm),
+    height_mm: decimal(values.height_mm),
+    margin_top_mm: decimal(values.margin_top_mm),
+    margin_right_mm: decimal(values.margin_right_mm),
+    margin_bottom_mm: decimal(values.margin_bottom_mm),
+    margin_left_mm: decimal(values.margin_left_mm),
+    orientation: values.orientation,
+    font_family: values.font_family,
+    font_scale: decimal(values.font_scale),
+    show_technical_fields: true,
+    support_reason: values.support_reason,
+  };
 }
 
 function Field({
@@ -811,35 +805,16 @@ function Field({
   id: string;
   label: string;
 }) {
-  const errorId = `${id}-error`;
-  const hintId = `${id}-hint`;
-  let control = children;
-
-  if (isValidElement(children)) {
-    const child = children as ReactElement<Record<string, unknown>>;
-    control = cloneElement(child, {
-      'aria-describedby': error || hint
-        ? [child.props['aria-describedby'], hint ? hintId : null, error ? errorId : null].filter(Boolean).join(' ')
-        : child.props['aria-describedby'],
-      'aria-invalid': error ? true : child.props['aria-invalid'],
-    });
-  }
-
   return (
-    <div className="space-y-2">
-      <Label htmlFor={id}>{label}</Label>
-      {control}
-      {hint && (
-        <p id={hintId} className="text-xs leading-5 text-muted-foreground">
-          {hint}
-        </p>
-      )}
-      {error && (
-        <p id={errorId} role="alert" className="text-sm text-destructive">
-          {error}
-        </p>
-      )}
-    </div>
+    <Form.Item
+      label={label}
+      htmlFor={id}
+      validateStatus={error ? 'error' : undefined}
+      help={error ?? hint}
+      className="mb-0"
+    >
+      {children}
+    </Form.Item>
   );
 }
 
@@ -857,17 +832,16 @@ function CheckboxField({
   onChange: (value: boolean) => void;
 }) {
   return (
-    <div className="flex items-center gap-2 rounded-md border border-operational-border bg-operational-panel p-3 text-sm">
+    <div className="flex items-center gap-2 border border-operational-border bg-operational-panel p-3 text-sm">
       <Checkbox
         id={id}
         aria-label={label}
         checked={checked}
         disabled={disabled}
-        onCheckedChange={(value) => onChange(value === true)}
-      />
-      <Label htmlFor={id} className="cursor-pointer text-sm font-normal">
+        onChange={(event) => onChange(event.target.checked)}
+      >
         {label}
-      </Label>
+      </Checkbox>
     </div>
   );
 }

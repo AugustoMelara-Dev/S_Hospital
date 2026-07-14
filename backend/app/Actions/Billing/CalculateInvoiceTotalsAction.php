@@ -37,11 +37,12 @@ class CalculateInvoiceTotalsAction
             $service = $item['service'];
             $quantityUnits = $this->parseDecimalUnits($item['quantity'], 'items.quantity');
             $specialRuleApplied = $this->appliesErythropoietinRule($service, $patientDialysisPrescription);
+            $lineTaxable = $service->taxable && ! $this->hasErythropoietinRule($service);
             $unitPriceCents = $specialRuleApplied ? 0 : $this->parseMoneyCents((string) $service->price);
             $lineSubtotalCents = intdiv(($unitPriceCents * $quantityUnits) + 50, 100);
 
             $subtotal = $subtotal->plus(Money::fromCents($lineSubtotalCents));
-            if ($service->taxable) {
+            if ($lineTaxable) {
                 $taxableSubtotalCents += $lineSubtotalCents;
             }
 
@@ -49,7 +50,7 @@ class CalculateInvoiceTotalsAction
             $areaName = $service->area?->name ?? $categoryName;
 
             $calculatedItems[] = [
-                '_taxable' => $service->taxable,
+                '_taxable' => $lineTaxable,
                 '_tax_remainder' => ($lineSubtotalCents * $taxRateBasisPoints) % 10000,
                 'service_id' => $service->id,
                 'service_name' => $service->name,
@@ -59,14 +60,14 @@ class CalculateInvoiceTotalsAction
                 'area_name' => $areaName,
                 'service_area_id' => $this->legacyServiceAreaId($service),
                 'service_area_name' => $areaName,
-                'scan_code' => $service->scan_code,
-                'barcode' => $service->barcode,
-                'qr_code' => $service->qr_code,
+                'scan_code' => null,
+                'barcode' => null,
+                'qr_code' => null,
                 'quantity' => $this->formatDecimalUnits($quantityUnits),
                 'quantity_cents' => $quantityUnits,
                 'unit_price' => $this->formatMoney($unitPriceCents),
                 'unit_price_cents' => $unitPriceCents,
-                'tax_rate' => $service->taxable ? $this->formatRate($taxRateBasisPoints) : '0.00',
+                'tax_rate' => $lineTaxable ? $this->formatRate($taxRateBasisPoints) : '0.00',
                 'line_subtotal' => $this->formatMoney($lineSubtotalCents),
                 'line_subtotal_cents' => $lineSubtotalCents,
                 'special_rule_code' => $service->special_rule_code,
@@ -142,7 +143,12 @@ class CalculateInvoiceTotalsAction
     private function appliesErythropoietinRule(Service $service, bool $patientDialysisPrescription): bool
     {
         return $patientDialysisPrescription
-            && $service->special_rule_code === Service::ERYTHROPOIETIN_RULE;
+            && $this->hasErythropoietinRule($service);
+    }
+
+    private function hasErythropoietinRule(Service $service): bool
+    {
+        return $service->special_rule_code === Service::ERYTHROPOIETIN_RULE;
     }
 
     private function legacyServiceAreaId(Service $service): ?int

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -97,5 +98,15 @@ class SecurityHeadersTest extends TestCase
         $this->assertMatchesRegularExpression("/script-src 'self' 'nonce-[A-Fa-f0-9]{32}'/", $csp);
         $this->assertStringContainsString("style-src 'self' 'unsafe-inline'", $csp);
         $this->assertStringContainsString("style-src-elem 'self' 'unsafe-inline'", $csp);
+    }
+
+    public function test_authenticated_api_responses_are_not_indexable(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user, 'web')->getJson('/api/auth/me');
+
+        $response->assertOk();
+        $this->assertSame('noindex, nofollow, noarchive', $response->headers->get('X-Robots-Tag'));
     }
 }

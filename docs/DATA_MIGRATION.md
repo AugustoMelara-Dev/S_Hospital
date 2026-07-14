@@ -8,7 +8,7 @@ Evitar el encierro de datos y permitir rescatar informacion si el sistema cambia
 
 | Tipo | Formato | Uso |
 |------|---------|-----|
-| Backup completo de base | `.sql.enc` (cifrado con `APP_KEY`) | Restore total, archivo del hospital |
+| Backup completo de base | `.sql.gz.enc` (gzip + `HOSPITAL_BACKUP_ENCRYPTION_KEY`) | Restore total, archivo del hospital |
 | Exportacion de pacientes | CSV | Reportes administrativos, auditoria |
 | Exportacion de facturas | CSV | Reportes contables, declaraciones |
 | Exportacion de pagos | CSV | Cuadres de caja, conciliaciones |
@@ -40,8 +40,8 @@ Evitar el encierro de datos y permitir rescatar informacion si el sistema cambia
 ### Backups SQL
 
 - Los backups completos se generan desde la UI de Respaldos o con `php artisan hospital:backup --type=manual`.
-- Resultado: archivo `.sql.enc` bajo `backend/storage/app/private/backups/`.
-- Cifrado con `APP_KEY` (Laravel Crypt). Solo el sistema puede descifrar.
+- Resultado: archivo `.sql.gz.enc` bajo `backend/storage/app/private/backups/`.
+- Cifrado con `HOSPITAL_BACKUP_ENCRYPTION_KEY`. Solo el sistema con esa clave puede descifrar. Backups legacy `.sql.enc` pueden requerir el `APP_KEY` historico.
 - SHA256 del archivo cifrado queda en `backup_logs.checksum_sha256`.
 
 ## Importar datos
@@ -92,13 +92,13 @@ Evitar el encierro de datos y permitir rescatar informacion si el sistema cambia
 1. Crear backup fresco de la base actual.
 2. Copiar `.env` real y el paquete `offline-release/` actualizado a USB.
 3. Instalar la misma version en la maquina destino con `setup.bat`.
-4. Restaurar `.env` y backup `.sql.enc` con `restore_hospital_windows.ps1`.
+4. Restaurar `.env` y backup `.sql.gz.enc` con `restore_hospital_windows.ps1`.
 5. Validar checksum, conteos minimos, login admin.
 6. Documentar en `qa/MIGRATION-YYYY-MM-DD.md`: maquina origen, maquina destino, fecha, responsable, SHA256, resultado.
 
 ## Criterio de listo
 
 - Los datos pueden exportarse en formatos abiertos (CSV, SQL) desde la UI o CLI.
-- Los backups completos son `.sql.enc` con SHA256 verificable.
+- Los backups completos son `.sql.gz.enc` con SHA256 verificable.
 - Las exportaciones quedan auditadas y limitadas por rol.
 - La migracion entre maquinas o entre versiones es posible y esta documentada.

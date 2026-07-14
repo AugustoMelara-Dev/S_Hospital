@@ -192,8 +192,8 @@ Cambios aplicados en esta iteracion:
 - Se elimino el dock fijo inferior en `NewInvoiceViewLayout`; la accion principal queda dentro del carrito para no tapar servicios, totales ni alertas en movil.
 - `ReportsView` mantiene 3 secciones navegables: Ejecutivo, Caja y Auditoria. Se retiraron tarjetas de caja con valores inventados y un bloque JSON tecnico.
 - `PaymentMethodPanel` dejo de usar donut y ahora muestra barras horizontales + tabla accesible.
-- `InstitutionalReceiptSettingsView` recibe explicitamente `canAdvancedPrintSettings`; los campos manuales de ancho, alto, margenes, fuente y escala solo aparecen con permiso `receipt_settings.advanced` y dentro del panel de soporte tecnico.
-- La UI normal de recibos ya no muestra medidas en mm como parte de la operacion diaria; solo muestra papel, copias, logo, sello/firma, prueba y guardar.
+- La politica final de impresion supersede esta iteracion: `InstitutionalReceiptSettingsView` ya no muestra ancho, alto, margenes, fuente ni escala para ningun rol.
+- La UI de recibos solo muestra papel, copias, logo, sello/firma, prueba y guardar; Carta, Media carta y A5 resuelven internamente el diseno.
 
 ## 12. Cierre final 2026-07-01
 

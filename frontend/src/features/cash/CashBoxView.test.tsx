@@ -1,11 +1,11 @@
 /// <reference types="node" />
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { type ReactNode } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { App } from '../../App';
-import { apiClient, type CashSession } from '../../lib/api';
+import { ApiError, apiClient, type CashSession } from '../../lib/api';
 import { queryClient } from '../../lib/query-client';
 import { resetRequestChain } from '../../lib/api/base';
 import { CashBoxView } from './CashBoxView';
@@ -24,6 +24,7 @@ describe('CashBoxView', () => {
 
   afterEach(async () => {
     cleanup();
+    vi.unstubAllGlobals();
     await queryClient.cancelQueries();
     queryClient.clear();
   });
@@ -58,7 +59,7 @@ describe('CashBoxView', () => {
               username: 'cajero.validacion',
               active: true,
               roles: ['cajero'],
-              permissions: ['cash.view', 'cash.open', 'cash.close'],
+              permissions: ['cash.view', 'cash.open', 'cash.close', 'invoices.create'],
               must_change_password: false,
             },
           }),
@@ -88,12 +89,14 @@ describe('CashBoxView', () => {
 
     render(<App />);
 
-    expect(await screen.findByRole('link', { name: /caja/i })).toHaveAttribute('href', '/cashbox');
+    expect((await screen.findAllByRole('link', { name: /caja/i }))[0]).toHaveAttribute('href', '/cashbox');
     expect(screen.queryByRole('link', { name: /backups/i })).not.toBeInTheDocument();
     expect((await screen.findAllByRole('heading', { name: /^caja$/i })).length).toBeGreaterThan(0);
     expect(await screen.findByText(/no hay una caja abierta actualmente/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/monto inicial/i)).toHaveValue('0.00');
     fireEvent.click(screen.getByRole('button', { name: /abrir caja/i }));
+    const openingDialog = await screen.findByRole('dialog', { name: /confirmar apertura de caja/i });
+    fireEvent.click(within(openingDialog).getByRole('button', { name: /^abrir caja$/i }));
 
     await waitFor(() => {
       expect(
@@ -104,8 +107,9 @@ describe('CashBoxView', () => {
       ).toBe(true);
     });
     expect((await screen.findAllByText(/caja abierta/i)).length).toBeGreaterThan(0);
-    expect(await screen.findByText(/caja lista para facturar/i)).toBeInTheDocument();
-    expect(screen.getAllByRole('link', { name: /nueva factura/i }).length).toBeGreaterThan(0);
+    expect(await screen.findByText(/caja abierta en modo consulta/i)).toBeInTheDocument();
+    expect(screen.queryByText(/caja lista para facturar/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /nueva factura/i })).not.toBeInTheDocument();
   });
 
   it('keeps close-session difference hidden until counted amount is entered', async () => {
@@ -233,7 +237,7 @@ describe('CashBoxView', () => {
         } as Response;
       }
 
-      if (url.includes('/api/reports/cash-sessions/11')) {
+      if (url.includes('/api/reports/cash-sessions/10')) {
         return {
           ok: true,
           json: async () => ({
@@ -350,6 +354,32 @@ describe('CashBoxView', () => {
     expect(getCurrentCashSession).toHaveBeenCalledTimes(1);
   });
 
+  it('requests a closable session when the operator can close any cashbox', async () => {
+    const getCurrentCashSession = vi.spyOn(apiClient, 'getCurrentCashSession').mockResolvedValue(cashSessionFixture({
+      user_id: 77,
+    }));
+
+    renderCashBox(<CashBoxView canCloseAnyCash currentUserId={2} onStatus={vi.fn()} />);
+
+    expect(await screen.findByRole('heading', { level: 1, name: /^caja$/i })).toBeInTheDocument();
+    expect(getCurrentCashSession).toHaveBeenCalledWith({ scope: 'closable' });
+    expect(await screen.findByText(/cajero #77/i)).toBeVisible();
+    expect(screen.queryByRole('link', { name: /nueva factura/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/caja lista para facturar/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/supervisión habilitada/i)).toBeVisible();
+  });
+
+  it('offers billing only for the own session with invoices.create', async () => {
+    vi.spyOn(apiClient, 'getCurrentCashSession').mockResolvedValue(cashSessionFixture({ user_id: 2 }));
+
+    renderCashBox(
+      <CashBoxView canCreateInvoices currentUserId={2} onStatus={vi.fn()} />,
+    );
+
+    expect(await screen.findByRole('link', { name: /nueva factura/i })).toHaveAttribute('href', '/billing/new');
+    expect(screen.getByText(/caja lista para facturar/i)).toBeVisible();
+  });
+
   it('shows a sanitized load error with retry and does not present a closed cashbox as loaded data', async () => {
     const getCurrentCashSession = vi.spyOn(apiClient, 'getCurrentCashSession')
       .mockRejectedValueOnce(new Error('SQLSTATE[40001]: Deadlock found in cash_register_sessions'))
@@ -366,7 +396,7 @@ describe('CashBoxView', () => {
     await waitFor(() => expect(getCurrentCashSession).toHaveBeenCalledTimes(2));
   });
 
-  it('preserves open cash payload and prevents duplicate opening while pending', async () => {
+  it('requires confirmation before opening cash and prevents duplicate opening while pending', async () => {
     let resolveOpen!: (session: CashSession) => void;
     const opened = cashSessionFixture({ id: 51, opening_amount: '0.00' });
     const openCashSession = vi.spyOn(apiClient, 'openCashSession')
@@ -383,12 +413,83 @@ describe('CashBoxView', () => {
     fireEvent.click(openButton);
     fireEvent.click(openButton);
 
+    expect(openCashSession).not.toHaveBeenCalled();
+
+    const dialog = await screen.findByRole('dialog', { name: /confirmar apertura de caja/i });
+    expect(dialog).toHaveTextContent(/monto inicial/i);
+    expect(dialog).toHaveTextContent(/L 0\.00/i);
+
+    fireEvent.click(within(dialog).getByRole('button', { name: /^abrir caja$/i }));
+
     await waitFor(() => expect(openCashSession).toHaveBeenCalledTimes(1));
-    expect(openCashSession).toHaveBeenCalledWith({ opening_amount: '0.00' });
+    expect(openCashSession).toHaveBeenCalledWith(
+      { opening_amount: '0.00' },
+      { idempotencyKey: expect.any(String) },
+    );
 
     await act(async () => {
       resolveOpen(opened);
     });
+  });
+
+  it('shows a clear local drawer conflict when another cash session is already open', async () => {
+    const onStatus = vi.fn();
+    const openCashSession = vi.spyOn(apiClient, 'openCashSession').mockRejectedValue(new ApiError(
+      'Revise los datos del formulario.',
+      422,
+      {
+        cash_session: ['Ya existe una caja abierta en esta terminal. Cierre la caja actual antes de abrir otra.'],
+      },
+    ));
+    vi.spyOn(apiClient, 'getCurrentCashSession').mockResolvedValue(null);
+
+    renderCashBox(<CashBoxView onStatus={onStatus} />);
+
+    expect(await screen.findByLabelText(/monto inicial/i)).toHaveValue('0.00');
+    fireEvent.click(screen.getByRole('button', { name: /abrir caja/i }));
+    fireEvent.click(within(await screen.findByRole('dialog', { name: /confirmar apertura de caja/i }))
+      .getByRole('button', { name: /^abrir caja$/i }));
+
+    await waitFor(() => expect(openCashSession).toHaveBeenCalledTimes(1));
+    expect(await screen.findByText(/Caja: Ya existe una caja abierta/i)).toBeInTheDocument();
+    expect(screen.queryByText(/caja lista para facturar/i)).not.toBeInTheDocument();
+    expect(onStatus).toHaveBeenLastCalledWith(expect.stringMatching(/Caja: Ya existe una caja abierta/i));
+  });
+
+  it('locks the open cash form while the opening confirmation is active', async () => {
+    vi.spyOn(apiClient, 'openCashSession').mockResolvedValue(cashSessionFixture({ id: 53, opening_amount: '75.00' }));
+    vi.spyOn(apiClient, 'getCurrentCashSession').mockResolvedValue(null);
+
+    renderCashBox(<CashBoxView onStatus={vi.fn()} />);
+
+    const amount = await screen.findByLabelText(/monto inicial/i);
+    fireEvent.change(amount, { target: { value: '75.00' } });
+    fireEvent.click(screen.getByRole('button', { name: /abrir caja/i }));
+
+    expect(await screen.findByRole('dialog', { name: /confirmar apertura de caja/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/monto inicial/i)).toBeDisabled();
+    expect(within(amount.closest('form')!).getByText(/abriendo/i).closest('button')).toBeDisabled();
+  });
+
+  it('accepts a pasted opening amount with spaces and sends the trimmed value', async () => {
+    const opened = cashSessionFixture({ id: 52, opening_amount: '100.00' });
+    const openCashSession = vi.spyOn(apiClient, 'openCashSession').mockResolvedValue(opened);
+    vi.spyOn(apiClient, 'getCurrentCashSession').mockResolvedValue(null);
+
+    renderCashBox(<CashBoxView onStatus={vi.fn()} />);
+
+    const amount = await screen.findByLabelText(/monto inicial/i);
+    fireEvent.change(amount, { target: { value: ' 100.00 ' } });
+    fireEvent.click(screen.getByRole('button', { name: /abrir caja/i }));
+
+    const dialog = await screen.findByRole('dialog', { name: /confirmar apertura de caja/i });
+    expect(dialog).toHaveTextContent(/L 100\.00/i);
+    fireEvent.click(within(dialog).getByRole('button', { name: /^abrir caja$/i }));
+
+    await waitFor(() => expect(openCashSession).toHaveBeenCalledWith(
+      { opening_amount: '100.00' },
+      { idempotencyKey: expect.any(String) },
+    ));
   });
 
   it('preserves close cash payload, permission gating and focus before confirmation', async () => {
@@ -411,14 +512,241 @@ describe('CashBoxView', () => {
     fireEvent.change(counted, { target: { value: '100.00' } });
     fireEvent.click(screen.getByRole('button', { name: /^cerrar caja$/i }));
 
-    expect(await screen.findByRole('alertdialog')).toBeInTheDocument();
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
     const confirmButtons = screen.getAllByRole('button', { name: /^cerrar caja$/i });
     fireEvent.click(confirmButtons[confirmButtons.length - 1]);
 
-    await waitFor(() => expect(closeCashSession).toHaveBeenCalledWith(1, {
-      closing_amount: '100.00',
-      notes: null,
+    await waitFor(() => expect(closeCashSession).toHaveBeenCalledWith(
+      1,
+      {
+        closing_amount: '100.00',
+        notes: null,
+      },
+      { idempotencyKey: expect.any(String) },
+    ));
+  });
+
+  it('shows an accessible live difference while counting cash before opening the close dialog', async () => {
+    vi.spyOn(apiClient, 'getCurrentCashSession').mockResolvedValue(cashSessionFixture({
+      expected_cash_amount: '125.00',
     }));
+
+    renderCashBox(<CashBoxView onStatus={vi.fn()} />);
+
+    fireEvent.change(await screen.findByLabelText(/monto contado/i), {
+      target: { value: '120.00' },
+    });
+
+    expect(screen.getByRole('status', { name: /diferencia en vivo/i }))
+      .toHaveTextContent(/- L 5\.00/i);
+    expect(screen.queryByRole('dialog', { name: /cierre de caja/i })).not.toBeInTheDocument();
+  });
+
+  it('keeps a confirmed close summary printable after the cash session closes', async () => {
+    const print = vi.fn(() => {
+      expect(document.body.dataset.printingCashClose).toBe('true');
+    });
+    vi.stubGlobal('print', print);
+    const createObjectURL = vi.fn((blob: Blob) => {
+      void blob;
+      return 'blob:cash-close-confirmed-summary';
+    });
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal('URL', {
+      ...URL,
+      createObjectURL,
+      revokeObjectURL,
+    });
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+    const closedSession = cashSessionFixture({
+      id: 12,
+      status: 'closed',
+      closing_amount: '101.00',
+      difference_amount: '1.00',
+      closing_notes: 'Sobrante confirmado',
+      closed_at: '2026-07-06T17:30:00-06:00',
+      payments_by_method: {
+        cash: '1.00',
+        transfer: '0.00',
+        card: '0.00',
+        other: '0.00',
+      },
+    });
+    const closeCashSession = vi.spyOn(apiClient, 'closeCashSession').mockResolvedValue(closedSession);
+    vi.spyOn(apiClient, 'getCurrentCashSession')
+      .mockResolvedValueOnce(cashSessionFixture({
+        expected_cash_amount: '100.00',
+        payments_by_method: closedSession.payments_by_method,
+      }))
+      .mockResolvedValueOnce(cashSessionFixture({
+        expected_cash_amount: '100.00',
+        payments_by_method: closedSession.payments_by_method,
+      }))
+      .mockResolvedValue(null);
+
+    renderCashBox(<CashBoxView onStatus={vi.fn()} />);
+
+    fireEvent.change(await screen.findByLabelText(/monto contado/i), { target: { value: '101.00' } });
+    fireEvent.change(screen.getByLabelText(/nota de cierre/i), { target: { value: 'Sobrante confirmado' } });
+    fireEvent.click(screen.getByRole('button', { name: /^cerrar caja$/i }));
+    const closeDialog = await screen.findByRole('dialog');
+    fireEvent.click(within(closeDialog).getByRole('button', { name: /^cerrar caja$/i }));
+
+    const confirmedSummary = await screen.findByRole('region', { name: /resumen de cierre confirmado/i });
+    expect(confirmedSummary).toHaveTextContent(/caja:\s*caja #12/i);
+    expect(confirmedSummary).toHaveTextContent(/cerrada:\s*06\/07\/2026/i);
+    expect(confirmedSummary).toHaveTextContent(/monto contado:\s*L 101\.00/i);
+    expect(confirmedSummary).toHaveTextContent(/diferencia:\s*L 1\.00/i);
+    expect(closeCashSession).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(within(confirmedSummary).getByRole('button', { name: /imprimir resumen/i }));
+    fireEvent.click(within(confirmedSummary).getByRole('button', { name: /exportar resumen/i }));
+
+    expect(print).toHaveBeenCalledTimes(1);
+    expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:cash-close-confirmed-summary');
+    expect(closeCashSession).toHaveBeenCalledTimes(1);
+  });
+
+  it('trims close difference notes before sending the audited payload', async () => {
+    const closeCashSession = vi.spyOn(apiClient, 'closeCashSession').mockResolvedValue(cashSessionFixture({ status: 'closed' }));
+    vi.spyOn(apiClient, 'getCurrentCashSession').mockResolvedValue(cashSessionFixture());
+
+    renderCashBox(<CashBoxView onStatus={vi.fn()} />);
+
+    fireEvent.change(await screen.findByLabelText(/monto contado/i), { target: { value: '99.00' } });
+    fireEvent.change(screen.getByLabelText(/nota de cierre/i), { target: { value: '  Faltante validado  ' } });
+    fireEvent.click(screen.getByRole('button', { name: /^cerrar caja$/i }));
+    const closeDialog = await screen.findByRole('dialog');
+    fireEvent.click(within(closeDialog).getByRole('button', { name: /^cerrar caja$/i }));
+
+    await waitFor(() => expect(closeCashSession).toHaveBeenCalledWith(
+      1,
+      {
+        closing_amount: '99.00',
+        notes: 'Faltante validado',
+      },
+      { idempotencyKey: expect.any(String) },
+    ));
+  });
+
+  it('trims the counted amount before sending the close payload', async () => {
+    const closeCashSession = vi.spyOn(apiClient, 'closeCashSession').mockResolvedValue(cashSessionFixture({ status: 'closed' }));
+    vi.spyOn(apiClient, 'getCurrentCashSession').mockResolvedValue(cashSessionFixture());
+
+    renderCashBox(<CashBoxView onStatus={vi.fn()} />);
+
+    fireEvent.change(await screen.findByLabelText(/monto contado/i), { target: { value: ' 100.00 ' } });
+    fireEvent.click(screen.getByRole('button', { name: /^cerrar caja$/i }));
+    const closeDialog = await screen.findByRole('dialog');
+    fireEvent.click(within(closeDialog).getByRole('button', { name: /^cerrar caja$/i }));
+
+    await waitFor(() => expect(closeCashSession).toHaveBeenCalledWith(
+      1,
+      {
+        closing_amount: '100.00',
+        notes: null,
+      },
+      { idempotencyKey: expect.any(String) },
+    ));
+  });
+
+  it('refreshes cash reconciliation before opening the close confirmation', async () => {
+    const getCurrentCashSession = vi.spyOn(apiClient, 'getCurrentCashSession')
+      .mockResolvedValueOnce(cashSessionFixture())
+      .mockResolvedValueOnce(cashSessionFixture({
+        expected_cash_amount: '125.00',
+        pending_invoice_count: 1,
+        pending_amount: '25.00',
+      }));
+    const closeCashSession = vi.spyOn(apiClient, 'closeCashSession').mockResolvedValue(cashSessionFixture({ status: 'closed' }));
+
+    renderCashBox(<CashBoxView onStatus={vi.fn()} />);
+
+    fireEvent.change(await screen.findByLabelText(/monto contado/i), { target: { value: '100.00' } });
+    fireEvent.click(screen.getByRole('button', { name: /^cerrar caja$/i }));
+
+    await waitFor(() => expect(getCurrentCashSession).toHaveBeenCalledTimes(2), { timeout: 250 });
+    expect(screen.queryByRole('dialog', { name: /cierre de caja/i })).not.toBeInTheDocument();
+    expect(await screen.findByText(/no se puede cerrar caja con 1 factura\(s\) pendientes/i)).toBeInTheDocument();
+    expect(closeCashSession).not.toHaveBeenCalled();
+  });
+
+  it('blocks close after refresh when paid invoices are missing institutional receipts', async () => {
+    const getCurrentCashSession = vi.spyOn(apiClient, 'getCurrentCashSession')
+      .mockResolvedValueOnce(cashSessionFixture())
+      .mockResolvedValueOnce(cashSessionFixture({
+        expected_cash_amount: '125.00',
+        missing_institutional_receipt_count: 1,
+      } as Partial<CashSession>));
+    const closeCashSession = vi.spyOn(apiClient, 'closeCashSession').mockResolvedValue(cashSessionFixture({ status: 'closed' }));
+
+    renderCashBox(<CashBoxView onStatus={vi.fn()} />);
+
+    fireEvent.change(await screen.findByLabelText(/monto contado/i), { target: { value: '100.00' } });
+    fireEvent.click(screen.getByRole('button', { name: /^cerrar caja$/i }));
+
+    await waitFor(() => expect(getCurrentCashSession).toHaveBeenCalledTimes(2), { timeout: 250 });
+    expect(screen.queryByRole('dialog', { name: /cierre de caja/i })).not.toBeInTheDocument();
+    expect((await screen.findAllByText(/recibo institucional pendiente/i)).length).toBeGreaterThan(0);
+    expect(closeCashSession).not.toHaveBeenCalled();
+  });
+
+  it('shows known receipt blockers before the cashier attempts to close', async () => {
+    vi.spyOn(apiClient, 'getCurrentCashSession').mockResolvedValue(cashSessionFixture({
+      missing_institutional_receipt_count: 2,
+      reversed_payments_count: 1,
+      reversed_payments_total: '10.00',
+    }));
+
+    renderCashBox(<CashBoxView canViewInvoices onStatus={vi.fn()} />);
+
+    expect(await screen.findByRole('heading', { name: /control contable de caja/i })).toBeInTheDocument();
+    expect(screen.getByText(/2 recibos institucionales pendientes/i)).toBeInTheDocument();
+    expect(screen.getByText(/1 pago reversado/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^cerrar caja$/i })).toBeDisabled();
+    expect(screen.getByRole('link', { name: /resolver en historial/i })).toHaveAttribute('href', '/invoices');
+  });
+
+  it('does not open close confirmation when the reconciliation refresh fails', async () => {
+    const getCurrentCashSession = vi.spyOn(apiClient, 'getCurrentCashSession')
+      .mockResolvedValueOnce(cashSessionFixture())
+      .mockRejectedValueOnce(new Error('SQLSTATE[HY000]: LAN timeout'));
+    const closeCashSession = vi.spyOn(apiClient, 'closeCashSession').mockResolvedValue(cashSessionFixture({ status: 'closed' }));
+
+    renderCashBox(<CashBoxView onStatus={vi.fn()} />);
+
+    fireEvent.change(await screen.findByLabelText(/monto contado/i), { target: { value: '100.00' } });
+    fireEvent.click(screen.getByRole('button', { name: /^cerrar caja$/i }));
+
+    await waitFor(() => expect(getCurrentCashSession).toHaveBeenCalledTimes(2), { timeout: 250 });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(await screen.findByText(/no se pudo actualizar caja antes de cerrar/i)).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/SQLSTATE|LAN timeout/i);
+    expect(closeCashSession).not.toHaveBeenCalled();
+  });
+
+  it('locks close cash fields while the close request is pending', async () => {
+    let resolveClose!: (session: CashSession) => void;
+    const closeCashSession = vi.spyOn(apiClient, 'closeCashSession')
+      .mockReturnValue(new Promise((resolve) => { resolveClose = resolve; }));
+    vi.spyOn(apiClient, 'getCurrentCashSession').mockResolvedValue(cashSessionFixture());
+
+    renderCashBox(<CashBoxView onStatus={vi.fn()} />);
+
+    fireEvent.change(await screen.findByLabelText(/monto contado/i), { target: { value: '100.00' } });
+    fireEvent.change(screen.getByLabelText(/nota de cierre/i), { target: { value: 'Turno contado' } });
+    fireEvent.click(screen.getByRole('button', { name: /^cerrar caja$/i }));
+    const closeDialog = await screen.findByRole('dialog');
+    fireEvent.click(within(closeDialog).getByRole('button', { name: /^cerrar caja$/i }));
+
+    await waitFor(() => expect(closeCashSession).toHaveBeenCalledTimes(1));
+    expect(screen.getByLabelText(/monto contado/i)).toBeDisabled();
+    expect(screen.getByLabelText(/nota de cierre/i)).toBeDisabled();
+
+    await act(async () => {
+      resolveClose(cashSessionFixture({ status: 'closed' }));
+    });
   });
 });
 

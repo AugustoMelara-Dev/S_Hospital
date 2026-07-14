@@ -1,23 +1,17 @@
 import { useState, useEffect } from 'react';
-import { Dialog } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Alert } from '@/components/ui/alert';
+import { Alert, Button, Input, Modal, Progress, Steps, Form, Space, Flex, Typography } from 'antd';
 import { apiClient, userSafeErrorMessage } from '@/lib/api';
-import { INSTITUTIONAL_RECEIPT_PAPER_OPTIONS, type InstitutionalReceiptPaperOption, institutionalReceiptPaperSize } from '@/lib/institutionalReceiptPaper';
 import { parseCents } from '@/lib/moneyCents';
 import {
-  Building2,
-  FileCheck,
-  PackagePlus,
-  ArrowRight,
-  ArrowLeft,
-  CheckCircle,
-  Loader2,
-} from 'lucide-react';
+  ArrowLeftOutlined,
+  ArrowRightOutlined,
+  CheckCircleOutlined,
+  FileDoneOutlined,
+  MedicineBoxOutlined,
+  UploadOutlined,
+} from '@ant-design/icons';
+
+const { TextArea } = Input;
 
 type SetupWizardDialogProps = {
   open: boolean;
@@ -25,11 +19,15 @@ type SetupWizardDialogProps = {
   onComplete: () => void;
 };
 
-type InstitutionalReceiptPaperSize = InstitutionalReceiptPaperOption;
-
-function institutionalPaperSize(value: unknown): InstitutionalReceiptPaperSize {
-  return institutionalReceiptPaperSize(typeof value === 'string' ? value : undefined);
-}
+export type SetupStatus = {
+  needs_setup: boolean;
+  steps: {
+    fiscal_settings: boolean;
+    admin_exists: boolean;
+    catalog_has_services: boolean;
+    fiscal_sequence_exists: boolean;
+  };
+};
 
 export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizardDialogProps) {
   const [step, setStep] = useState(1);
@@ -41,7 +39,6 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
     hospital_name: '',
     rtn: '',
     default_tax_rate: '15.00',
-    receipt_paper_size: 'half_letter' as InstitutionalReceiptPaperSize,
     primary_color: 'indigo' as 'teal' | 'blue' | 'indigo' | 'green' | 'rose',
     address: '',
     slogan: '',
@@ -81,7 +78,6 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
           hospital_name: settings.hospital_name || '',
           rtn: settings.rtn || '',
           default_tax_rate: settings.default_tax_rate || '15.00',
-          receipt_paper_size: institutionalPaperSize(settings.receipt_paper_size),
           primary_color: settings.primary_color || 'indigo',
           address: settings.address || '',
           slogan: settings.slogan || '',
@@ -116,7 +112,6 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
         hospital_name: hospitalForm.hospital_name,
         rtn: hospitalForm.rtn,
         default_tax_rate: hospitalForm.default_tax_rate,
-        receipt_paper_size: hospitalForm.receipt_paper_size,
         primary_color: hospitalForm.primary_color,
         address: hospitalForm.address,
         slogan: hospitalForm.slogan,
@@ -156,12 +151,11 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
     }
   }
 
-  // Parses CSV lines: Category, Area, Service, Price, Taxable. Old four-column CSVs use category as area.
+  // Parses CSV lines: Category, Area, Service, Price, Taxable.
   function parseCSV(text: string): Array<{ category: string; area: string; service: string; price: string; taxable: boolean }> {
     const lines = text.split('\n');
     const result: Array<{ category: string; area: string; service: string; price: string; taxable: boolean }> = [];
 
-    // Skip header line if it looks like one
     const startIdx = lines[0].toLowerCase().includes('categor') ? 1 : 0;
 
     for (let i = startIdx; i < lines.length; i++) {
@@ -200,7 +194,6 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
     setImportProgress({ current: 0, total: parsed.length });
 
     try {
-      // First, get existing categories and active areas for accountable reporting.
       const [existingCats, existingAreas] = await Promise.all([
         apiClient.getCategories(),
         apiClient.getAreas(true),
@@ -217,7 +210,6 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
           throw new Error(`No existe el área "${item.area}". Revise el catálogo base antes de importar servicios.`);
         }
 
-        // Ensure category exists
         let categoryId = catMap.get(item.category.toLowerCase());
         if (!categoryId) {
           const newCat = await apiClient.saveCategory({
@@ -229,7 +221,6 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
           catMap.set(item.category.toLowerCase(), categoryId);
         }
 
-        // Create service
         await apiClient.saveService({
           category_id: categoryId,
           area_id: areaId,
@@ -259,81 +250,69 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
   };
 
   return (
-    <Dialog
+    <Modal
       open={open}
-      onOpenChange={onOpenChange}
-      size="lg"
-      title="Preparar caja"
-      description="Complete los datos minimos para comenzar a facturar."
+      onCancel={() => onOpenChange(false)}
+      width={760}
+      title={<Typography.Title level={3} className="m-0">Preparar caja</Typography.Title>}
+      footer={null}
+      destroyOnHidden
     >
-      <div className="space-y-6 py-2">
-        {/* Step Indicators */}
-        <div className="flex items-center justify-between border-b border-border pb-4">
-          <div className="flex items-center gap-6">
-            <div className={`flex items-center gap-2 text-xs font-semibold ${step >= 1 ? 'text-secondary' : 'text-muted-foreground'}`}>
-              <span className={`flex size-6 items-center justify-center rounded-full text-[10px] ${step === 1 ? 'bg-secondary text-secondary-foreground animate-pulse' : step > 1 ? 'bg-secondary/10 text-secondary' : 'bg-muted'}`}>1</span>
-              <span>Hospital</span>
-            </div>
-            <div className="h-px w-8 bg-border" />
-            <div className={`flex items-center gap-2 text-xs font-semibold ${step >= 2 ? 'text-secondary' : 'text-muted-foreground'}`}>
-              <span className={`flex size-6 items-center justify-center rounded-full text-[10px] ${step === 2 ? 'bg-secondary text-secondary-foreground animate-pulse' : step > 2 ? 'bg-secondary/10 text-secondary' : 'bg-muted'}`}>2</span>
-              <span>Numeración</span>
-            </div>
-            <div className="h-px w-8 bg-border" />
-            <div className={`flex items-center gap-2 text-xs font-semibold ${step >= 3 ? 'text-secondary' : 'text-muted-foreground'}`}>
-              <span className={`flex size-6 items-center justify-center rounded-full text-[10px] ${step === 3 ? 'bg-secondary text-secondary-foreground animate-pulse' : step > 3 ? 'bg-secondary/10 text-secondary' : 'bg-muted'}`}>3</span>
-              <span>Catalogo</span>
-            </div>
-            <div className="h-px w-8 bg-border" />
-            <div className={`flex items-center gap-2 text-xs font-semibold ${step >= 4 ? 'text-secondary' : 'text-muted-foreground'}`}>
-              <span className={`flex size-6 items-center justify-center rounded-full text-[10px] ${step === 4 ? 'bg-secondary text-secondary-foreground' : 'bg-muted'}`}>4</span>
-              <span>Finalizar</span>
-            </div>
-          </div>
-        </div>
+      <Typography.Paragraph className="mb-6">
+        Complete los datos mínimos para comenzar a facturar.
+      </Typography.Paragraph>
 
+      <Steps
+        current={step - 1}
+        size="small"
+        className="mb-8"
+        items={[
+          { title: 'Hospital' },
+          { title: 'Numeración' },
+          { title: 'Catálogo' },
+          { title: 'Finalizar' },
+        ]}
+      />
+
+      <Space direction="vertical" size="large" className="w-full">
         {error && (
-          <Alert variant="destructive" title="No se pudo guardar">
-            {error}
-          </Alert>
+          <Alert type="error" showIcon title="No se pudo guardar" description={error} />
         )}
 
         {/* Step 1: Hospital details form */}
         {step === 1 && (
-          <div className="space-y-4">
-            <div className="flex gap-4 p-4 rounded-lg bg-accent border border-secondary/10">
-              <Building2 className="size-10 text-secondary shrink-0" />
-              <div>
-                <h4 className="font-semibold text-foreground text-sm">Paso 1: Datos del hospital</h4>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Estos datos aparecen en facturas, recibos y pantalla de ingreso.
-                </p>
-              </div>
-            </div>
+          <Form layout="vertical" onFinish={handleSaveHospital} className="w-full">
+            <Alert
+              type="info"
+              showIcon
+              icon={<MedicineBoxOutlined />}
+              title={<Typography.Text strong>Paso 1: Datos del hospital</Typography.Text>}
+              description="Estos datos aparecen en facturas, recibos y pantalla de ingreso."
+              className="mb-6"
+            />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="wiz-hosp-name">Nombre del hospital *</Label>
+            <Flex vertical gap="middle">
+              <Form.Item label={<label htmlFor="wiz-hosp-name">Nombre del hospital *</label>} required>
                 <Input
                   id="wiz-hosp-name"
                   value={hospitalForm.hospital_name}
                   onChange={(e) => setHospitalForm({ ...hospitalForm, hospital_name: e.target.value })}
                   placeholder="Hospital General El Buen Pastor"
+                  size="large"
                 />
-              </div>
+              </Form.Item>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="wiz-hosp-rtn">RTN *</Label>
+              <Form.Item label={<label htmlFor="wiz-hosp-rtn">RTN *</label>} required>
                 <Input
                   id="wiz-hosp-rtn"
                   value={hospitalForm.rtn}
                   onChange={(e) => setHospitalForm({ ...hospitalForm, rtn: e.target.value })}
                   placeholder="0801-1990-123456"
+                  size="large"
                 />
-              </div>
+              </Form.Item>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="wiz-hosp-tax">Impuesto general (%)</Label>
+              <Form.Item label={<label htmlFor="wiz-hosp-tax">Impuesto general (%)</label>}>
                 <Input
                   id="wiz-hosp-tax"
                   type="number"
@@ -341,216 +320,180 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
                   value={hospitalForm.default_tax_rate}
                   onChange={(e) => setHospitalForm({ ...hospitalForm, default_tax_rate: e.target.value })}
                   placeholder="15.00"
+                  size="large"
                 />
-              </div>
+              </Form.Item>
+            </Flex>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="wiz-hosp-width">Tamaño del recibo institucional</Label>
-                <Select
-                  value={hospitalForm.receipt_paper_size}
-                  onValueChange={(val: string) => setHospitalForm({ ...hospitalForm, receipt_paper_size: val as InstitutionalReceiptPaperSize })}
-                >
-                  <SelectTrigger id="wiz-hosp-width">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {INSTITUTIONAL_RECEIPT_PAPER_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="flex justify-end pt-4">
-              <Button onClick={handleSaveHospital} disabled={loading} className="gap-2">
+            <Flex justify="end" className="mt-6">
+              <Button type="primary" htmlType="submit" disabled={loading} size="large" icon={<ArrowRightOutlined />} iconPosition="end">
                 Siguiente
-                <ArrowRight className="size-4" />
               </Button>
-            </div>
-          </div>
+            </Flex>
+          </Form>
         )}
 
         {/* Step 2: Fiscal sequence form */}
         {step === 2 && (
-          <div className="space-y-4">
-            <div className="flex gap-4 p-4 rounded-lg bg-accent border border-secondary/10">
-              <FileCheck className="size-10 text-secondary shrink-0" />
-              <div>
-                <h4 className="font-semibold text-foreground text-sm">Paso 2: Numeración de facturas</h4>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Registre el CAI, prefijo y rango autorizado para imprimir facturas.
-                </p>
-              </div>
-            </div>
+          <Form layout="vertical" onFinish={handleSaveSequence} className="w-full">
+            <Alert
+              type="info"
+              showIcon
+              icon={<FileDoneOutlined />}
+              title={<Typography.Text strong>Paso 2: Numeración de facturas</Typography.Text>}
+              description="Registre el CAI, prefijo y rango autorizado para imprimir facturas."
+              className="mb-6"
+            />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="wiz-seq-prefix">Prefijo *</Label>
+            <Flex vertical gap="middle">
+              <Form.Item label={<label htmlFor="wiz-seq-prefix">Prefijo *</label>} required>
                 <Input
                   id="wiz-seq-prefix"
                   value={sequenceForm.prefix}
                   onChange={(e) => setSequenceForm({ ...sequenceForm, prefix: e.target.value })}
                   placeholder="000-001-01"
+                  size="large"
                 />
-              </div>
+              </Form.Item>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="wiz-seq-cai">CAI *</Label>
+              <Form.Item label={<label htmlFor="wiz-seq-cai">CAI *</label>} required>
                 <Input
                   id="wiz-seq-cai"
                   value={sequenceForm.cai}
                   onChange={(e) => setSequenceForm({ ...sequenceForm, cai: e.target.value.toUpperCase() })}
                   placeholder="4D82C1-30AAFF-8C4212-..."
+                  size="large"
                 />
-              </div>
+              </Form.Item>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="wiz-seq-min">Desde el número *</Label>
+              <Form.Item label={<label htmlFor="wiz-seq-min">Desde el número *</label>} required>
                 <Input
                   id="wiz-seq-min"
                   type="number"
                   value={sequenceForm.min_number}
                   onChange={(e) => setSequenceForm({ ...sequenceForm, min_number: parseInt(e.target.value) || 1 })}
+                  size="large"
                 />
-              </div>
+              </Form.Item>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="wiz-seq-max">Hasta el número *</Label>
+              <Form.Item label={<label htmlFor="wiz-seq-max">Hasta el número *</label>} required>
                 <Input
                   id="wiz-seq-max"
                   type="number"
                   value={sequenceForm.max_number}
                   onChange={(e) => setSequenceForm({ ...sequenceForm, max_number: parseInt(e.target.value) || 99999999 })}
+                  size="large"
                 />
-              </div>
+              </Form.Item>
 
-              <div className="space-y-1.5 md:col-span-2">
-                <Label htmlFor="wiz-seq-date">Fecha limite *</Label>
+              <Form.Item label={<label htmlFor="wiz-seq-date">Fecha límite *</label>} required>
                 <Input
                   id="wiz-seq-date"
                   type="date"
                   value={sequenceForm.valid_until}
                   onChange={(e) => setSequenceForm({ ...sequenceForm, valid_until: e.target.value })}
+                  size="large"
                 />
-              </div>
-            </div>
+              </Form.Item>
+            </Flex>
 
-            <div className="flex justify-between pt-4">
-              <Button type="button" variant="secondary" onClick={() => setStep(1)} className="gap-2">
-                <ArrowLeft className="size-4" />
-                Atras
+            <Flex justify="space-between" className="mt-6">
+              <Button onClick={() => setStep(1)} size="large" icon={<ArrowLeftOutlined />}>
+                Atrás
               </Button>
-              <Button onClick={handleSaveSequence} disabled={loading} className="gap-2">
+              <Button type="primary" htmlType="submit" disabled={loading} size="large" icon={<ArrowRightOutlined />} iconPosition="end">
                 Siguiente
-                <ArrowRight className="size-4" />
               </Button>
-            </div>
-          </div>
+            </Flex>
+          </Form>
         )}
 
         {/* Step 3: Catalog Import form */}
         {step === 3 && (
-          <div className="space-y-4">
-            <div className="flex gap-4 p-4 rounded-lg bg-accent border border-secondary/10">
-              <PackagePlus className="size-10 text-secondary shrink-0" />
-              <div>
-                <h4 className="font-semibold text-foreground text-sm">Paso 3: Catalogo de servicios</h4>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Pegue la lista inicial de servicios. Luego podra editarla desde Catalogo.
-                </p>
-              </div>
-            </div>
+          <Form layout="vertical" onFinish={handleImportCatalog} className="w-full">
+            <Alert
+              type="info"
+              showIcon
+              icon={<UploadOutlined />}
+              title={<Typography.Text strong>Paso 3: Catálogo de servicios</Typography.Text>}
+              description="Pegue la lista inicial de servicios. Luego podrá editarla desde Catálogo."
+              className="mb-6"
+            />
 
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="wiz-cat-csv">Servicios: categoria, servicio, precio, impuesto</Label>
-                <span className="text-[10px] text-muted-foreground">Use S para impuesto o N para exento</span>
-              </div>
-              <Textarea
+            <Form.Item
+              label={
+                <Flex justify="space-between" className="w-full">
+                  <label htmlFor="wiz-cat-csv">Servicios: categoría, servicio, precio, impuesto</label>
+                  <Typography.Text type="secondary" className="text-xs">Use S para impuesto o N para exento</Typography.Text>
+                </Flex>
+              }
+              required
+            >
+              <TextArea
                 id="wiz-cat-csv"
-                className="h-44 bg-card text-xs"
+                rows={8}
                 value={csvText}
                 onChange={(e) => setCsvText(e.target.value)}
                 disabled={loading}
+                className="font-mono text-xs"
               />
-            </div>
+            </Form.Item>
 
             {importProgress && (
-              <div className="space-y-1 bg-muted p-3 rounded border border-border">
-                <div className="flex justify-between text-xs font-semibold">
-                  <span>Importando servicios...</span>
-                  <span>{importProgress.current} / {importProgress.total}</span>
-                </div>
-                <div className="h-2 w-full bg-background rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-secondary transition-[width] duration-200"
-                    style={{ width: `${(importProgress.current / importProgress.total) * 100}%` }}
-                  />
-                </div>
+              <div className="border border-border p-4 bg-muted/40">
+                <Flex justify="space-between" className="mb-2 font-semibold">
+                  <Typography.Text>Importando servicios...</Typography.Text>
+                  <Typography.Text>{importProgress.current} / {importProgress.total}</Typography.Text>
+                </Flex>
+                <Progress percent={Math.round((importProgress.current / importProgress.total) * 100)} status="active" />
               </div>
             )}
 
-            <div className="flex justify-between pt-4">
-              <Button type="button" variant="secondary" onClick={() => setStep(2)} className="gap-2" disabled={loading}>
-                <ArrowLeft className="size-4" />
-                Atras
+            <Flex justify="space-between" className="mt-6">
+              <Button onClick={() => setStep(2)} size="large" icon={<ArrowLeftOutlined />} disabled={loading}>
+                Atrás
               </Button>
-              <Button onClick={handleImportCatalog} disabled={loading} className="gap-2">
-                {loading ? (
-                  <>
-                    <Loader2 className="size-4 animate-spin" />
-                    Procesando...
-                  </>
-                ) : (
-                  <>
-                    Importar catálogo
-                    <ArrowRight className="size-4" />
-                  </>
-                )}
+              <Button type="primary" htmlType="submit" loading={loading} disabled={loading} size="large" icon={<ArrowRightOutlined />} iconPosition="end">
+                {loading ? 'Procesando...' : 'Importar catálogo'}
               </Button>
-            </div>
-          </div>
+            </Flex>
+          </Form>
         )}
 
         {/* Step 4: Complete */}
         {step === 4 && (
-          <div className="space-y-6 text-center py-6">
-            <div className="flex justify-center">
-              <CheckCircle className="size-16 text-success fill-success/15 animate-bounce" />
+          <Flex vertical align="center" gap="large" className="py-6 text-center">
+            <CheckCircleOutlined className="text-6xl text-success" />
+
+            <div>
+              <Typography.Title level={3}>Configuración lista</Typography.Title>
+              <Typography.Paragraph type="secondary" className="max-w-md">
+                Ya puede iniciar la operación con datos del hospital, numeración y servicios base.
+              </Typography.Paragraph>
             </div>
 
-            <div className="space-y-2">
-              <h3 className="text-xl font-bold text-foreground">Configuración lista</h3>
-              <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                Ya puede iniciar la operacion con datos del hospital, numeracion y servicios base.
-              </p>
-            </div>
-
-            <div className="rounded-lg border border-border p-4 max-w-sm mx-auto text-left space-y-3 bg-muted/50">
-              <div className="flex items-center gap-2.5 text-xs text-success font-semibold">
-                <span className="flex size-4 items-center justify-center rounded-full bg-success/15 text-[10px]">✓</span>
+            <Flex vertical gap="small" className="w-full max-w-sm border border-border p-5 bg-muted/20 text-left">
+              <Flex gap="small" align="center" className="text-success font-semibold text-xs">
+                <CheckCircleOutlined />
                 <span>Datos del hospital guardados</span>
-              </div>
-              <div className="flex items-center gap-2.5 text-xs text-success font-semibold">
-                <span className="flex size-4 items-center justify-center rounded-full bg-success/15 text-[10px]">✓</span>
+              </Flex>
+              <Flex gap="small" align="center" className="text-success font-semibold text-xs">
+                <CheckCircleOutlined />
                 <span>Numeración lista para facturar</span>
-              </div>
-              <div className="flex items-center gap-2.5 text-xs text-success font-semibold">
-                <span className="flex size-4 items-center justify-center rounded-full bg-success/15 text-[10px]">✓</span>
-                <span>Catalogo importado</span>
-              </div>
-            </div>
+              </Flex>
+              <Flex gap="small" align="center" className="text-success font-semibold text-xs">
+                <CheckCircleOutlined />
+                <span>Catálogo importado</span>
+              </Flex>
+            </Flex>
 
-            <div className="flex justify-center pt-4">
-              <Button onClick={handleFinish} className="px-8">
-                Entrar
-              </Button>
-            </div>
-          </div>
+            <Button type="primary" onClick={handleFinish} size="large" className="px-8 mt-4">
+              Entrar
+            </Button>
+          </Flex>
         )}
-      </div>
-    </Dialog>
+      </Space>
+    </Modal>
   );
 }
 

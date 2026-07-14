@@ -1,0 +1,332 @@
+{
+  "route": "/reports/executive",
+  "matrix": {
+    "id": "dark-1920x1080",
+    "mode": "dark",
+    "width": 1920,
+    "height": 1080,
+    "zoom": 1
+  },
+  "flatSurfaces": [
+    {
+      "selector": ".ant-btn",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<button aria-label=\"Reducir navegación\" type=\"button\" class=\"ant-btn css-dev-only-do-not-override-1pi45l5 s-hospital ant-btn-text ant-btn-color-default ant-btn-variant-text ant-btn-icon-only !size-11 shrink-0 hover:bg-sidebar-accent text-sidebar-foreground\"><span class=\"ant-btn-icon\"><span role=\"img\" aria-label=\"menu-fold\" class=\"anticon anticon-menu-fold text-lg text-sidebar-accent-foreground\"><svg viewBox=\"64 64 896 896\" focusable=\"false\" data-icon=\"menu-fold\" width=\"1em\" height=\"1em\" fill=\"cu"
+    },
+    {
+      "selector": ".ant-btn",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<button aria-label=\"Abrir comandos\" type=\"button\" class=\"ant-btn css-dev-only-do-not-override-1pi45l5 s-hospital ant-btn-default ant-btn-color-default ant-btn-variant-outlined hidden min-w-44 justify-start bg-surface text-muted-foreground sm:inline-flex\"><span class=\"ant-btn-icon\"><span role=\"img\" aria-label=\"search\" class=\"anticon anticon-search\"><svg viewBox=\"64 64 896 896\" focusable=\"false\" data-icon=\"search\" width=\"1em\" height=\"1em\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M909.6 854."
+    },
+    {
+      "selector": ".ant-btn",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<button aria-label=\"Ver atajos de teclado\" type=\"button\" class=\"ant-btn css-dev-only-do-not-override-1pi45l5 s-hospital ant-btn-text ant-btn-color-default ant-btn-variant-text ant-btn-icon-only hidden sm:inline-flex\"><span class=\"ant-btn-icon\"><span role=\"img\" aria-label=\"key\" class=\"anticon anticon-key\"><svg viewBox=\"64 64 896 896\" focusable=\"false\" data-icon=\"key\" width=\"1em\" height=\"1em\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M608 112c-167.9 0-304 136.1-304 304 0 70.3 23.9 135 63.9 1"
+    },
+    {
+      "selector": ".ant-btn",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<button aria-label=\"Abrir ayuda\" type=\"button\" class=\"ant-btn css-dev-only-do-not-override-1pi45l5 s-hospital ant-btn-text ant-btn-color-default ant-btn-variant-text ant-btn-icon-only hidden sm:inline-flex\"><span class=\"ant-btn-icon\"><span role=\"img\" aria-label=\"question-circle\" class=\"anticon anticon-question-circle\"><svg viewBox=\"64 64 896 896\" focusable=\"false\" data-icon=\"question-circle\" width=\"1em\" height=\"1em\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M512 64C264.6 64 64 264.6 64 512"
+    },
+    {
+      "selector": ".ant-btn",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<button type=\"button\" class=\"ant-btn css-dev-only-do-not-override-1pi45l5 s-hospital ant-btn-primary ant-btn-color-primary ant-btn-variant-solid\"><span class=\"ant-btn-icon\"><span role=\"img\" aria-label=\"reload\" class=\"anticon anticon-reload\"><svg viewBox=\"64 64 896 896\" focusable=\"false\" data-icon=\"reload\" width=\"1em\" height=\"1em\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M909.1 209.3l-56.4 44.1C775.8 155.1 656.2 92 521.9 92 290 92 102.3 279.5 102 511.5 101.7 743.7 289.8 932 521.9 932c181.3"
+    },
+    {
+      "selector": ".ant-btn",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<button type=\"button\" class=\"ant-btn css-dev-only-do-not-override-1pi45l5 s-hospital ant-btn-default ant-btn-color-default ant-btn-variant-outlined\"><span class=\"ant-btn-icon\"><span role=\"img\" aria-label=\"file-pdf\" class=\"anticon anticon-file-pdf\"><svg viewBox=\"64 64 896 896\" focusable=\"false\" data-icon=\"file-pdf\" width=\"1em\" height=\"1em\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M531.3 574.4l.3-1.4c5.8-23.9 13.1-53.7 7.4-80.7-3.8-21.3-19.5-29.6-32.9-30.2-15.8-.7-29.9 8.3-33.4 21.4-6.6 24-"
+    },
+    {
+      "selector": ".ant-btn",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<button type=\"button\" class=\"ant-btn css-dev-only-do-not-override-1pi45l5 s-hospital ant-btn-default ant-btn-color-default ant-btn-variant-outlined\"><span class=\"ant-btn-icon\"><span role=\"img\" aria-label=\"download\" class=\"anticon anticon-download\"><svg viewBox=\"64 64 896 896\" focusable=\"false\" data-icon=\"download\" width=\"1em\" height=\"1em\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M505.7 661a8 8 0 0012.6 0l112-141.7c4.1-5.2.4-12.9-6.3-12.9h-74.1V168c0-4.4-3.6-8-8-8h-60c-4.4 0-8 3.6-8 8v338."
+    },
+    {
+      "selector": ".ant-picker",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<div class=\"ant-picker ant-picker-outlined css-dev-only-do-not-override-1pi45l5 s-hospital ant-picker-css-var\"><div class=\"ant-picker-input\"><input aria-invalid=\"false\" autocomplete=\"off\" aria-label=\"Inicio ejecutivo\" size=\"12\" id=\"report-from\" placeholder=\"Seleccionar fecha\" value=\"2026-07-01\"><span class=\"ant-picker-suffix\"><span role=\"img\" aria-label=\"calendar\" aria-hidden=\"true\" class=\"anticon anticon-calendar\"><svg viewBox=\"64 64 896 896\" focusable=\"false\" data-icon=\"calendar\" width=\"1em\" h"
+    },
+    {
+      "selector": ".ant-picker",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<div class=\"ant-picker ant-picker-outlined css-dev-only-do-not-override-1pi45l5 s-hospital ant-picker-css-var\"><div class=\"ant-picker-input\"><input aria-invalid=\"false\" autocomplete=\"off\" aria-label=\"Fin ejecutivo\" size=\"12\" id=\"report-to\" placeholder=\"Seleccionar fecha\" value=\"2026-07-14\"><span class=\"ant-picker-suffix\"><span role=\"img\" aria-label=\"calendar\" aria-hidden=\"true\" class=\"anticon anticon-calendar\"><svg viewBox=\"64 64 896 896\" focusable=\"false\" data-icon=\"calendar\" width=\"1em\" height"
+    },
+    {
+      "selector": ".ant-alert",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<div data-show=\"true\" class=\"ant-alert ant-alert-info ant-alert-outlined ant-alert-with-description s-hospital css-dev-only-do-not-override-1pi45l5\" role=\"alert\"><span class=\"ant-alert-icon\"><span role=\"img\" aria-label=\"info-circle\" class=\"anticon anticon-info-circle\"><svg viewBox=\"64 64 896 896\" focusable=\"false\" data-icon=\"info-circle\" width=\"1em\" height=\"1em\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm3"
+    },
+    {
+      "selector": ".ant-tag",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<span class=\"ant-tag ant-tag-filled ant-tag-processing m-0 px-3 py-1 text-xs font-bold css-dev-only-do-not-override-1pi45l5 s-hospital\">Caja #7</span>"
+    },
+    {
+      "selector": ".ag-root-wrapper",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<div class=\"ag-root-wrapper ag-layout-normal\" role=\"presentation\" grid-id=\"1\" style=\"content-visibility: visible;\"><div class=\"ag-root-wrapper-body ag-focus-managed ag-layout-normal\" role=\"presentation\"><div class=\"ag-tab-guard ag-tab-guard-top\" role=\"presentation\" tabindex=\"0\"></div><!-- AG Grid Body --><div class=\"ag-root ag-unselectable ag-layout-normal ag-body-horizontal-content-no-gap\" role=\"presentation\" style=\"--ag-internal-pinned-left-sticky-offset: 0px; --ag-internal-pinned-right-sticky"
+    },
+    {
+      "selector": ".ag-root-wrapper",
+      "radii": [
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ],
+      "html": "<div class=\"ag-root-wrapper ag-layout-normal\" role=\"presentation\" grid-id=\"2\" style=\"content-visibility: visible;\"><div class=\"ag-root-wrapper-body ag-focus-managed ag-layout-normal\" role=\"presentation\"><div class=\"ag-tab-guard ag-tab-guard-top\" role=\"presentation\" tabindex=\"0\"></div><!-- AG Grid Body --><div class=\"ag-root ag-unselectable ag-layout-normal ag-body-horizontal-content-no-gap\" role=\"presentation\" style=\"--ag-internal-pinned-left-sticky-offset: 0px; --ag-internal-pinned-right-sticky"
+    }
+  ],
+  "impacts": {
+    "minor": 0,
+    "moderate": 0,
+    "serious": 0,
+    "critical": 0
+  },
+  "incomplete": 1,
+  "violations": [],
+  "incompleteDetails": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "help": "Elements must meet minimum color contrast ratio thresholds",
+      "nodes": [
+        {
+          "target": [
+            ".ant-select-content"
+          ],
+          "failure": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element",
+          "html": "<div class=\"ant-select-content ant-select-content-has-value\" title=\"Este mes\">",
+          "computed": {
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "effectiveBackgroundColor": "rgb(30, 41, 59)",
+            "contrastRatio": 13.98,
+            "color": "rgb(248, 250, 252)",
+            "display": "block",
+            "opacity": "1",
+            "visibility": "visible"
+          }
+        },
+        {
+          "target": [
+            ".institutional-grid__header--primary[col-id=\"label\"][aria-colindex=\"2\"] > .ag-header-cell-comp-wrapper[role=\"presentation\"] > .ag-cell-label-container[role=\"presentation\"] > .ag-header-cell-label[data-ref=\"eLabel\"][role=\"presentation\"] > .ag-header-cell-text[data-ref=\"eText\"]"
+          ],
+          "failure": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element",
+          "html": "<span class=\"ag-header-cell-text\" data-ref=\"eText\">Método</span>",
+          "computed": {
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "effectiveBackgroundColor": "rgb(30, 41, 59)",
+            "contrastRatio": 13.98,
+            "color": "rgb(248, 250, 252)",
+            "display": "block",
+            "opacity": "1",
+            "visibility": "visible"
+          }
+        },
+        {
+          "target": [
+            ".institutional-grid__header--primary[col-id=\"amount\"][aria-colindex=\"3\"] > .ag-header-cell-comp-wrapper[role=\"presentation\"] > .ag-cell-label-container[role=\"presentation\"] > .ag-header-cell-label[data-ref=\"eLabel\"][role=\"presentation\"] > .ag-header-cell-text[data-ref=\"eText\"]"
+          ],
+          "failure": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element",
+          "html": "<span class=\"ag-header-cell-text\" data-ref=\"eText\">Monto</span>",
+          "computed": {
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "effectiveBackgroundColor": "rgb(30, 41, 59)",
+            "contrastRatio": 13.98,
+            "color": "rgb(248, 250, 252)",
+            "display": "block",
+            "opacity": "1",
+            "visibility": "visible"
+          }
+        },
+        {
+          "target": [
+            ".institutional-grid__header--secondary[col-id=\"count\"][aria-colindex=\"4\"] > .ag-header-cell-comp-wrapper[role=\"presentation\"] > .ag-cell-label-container[role=\"presentation\"] > .ag-header-cell-label[data-ref=\"eLabel\"][role=\"presentation\"] > .ag-header-cell-text[data-ref=\"eText\"]"
+          ],
+          "failure": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element",
+          "html": "<span class=\"ag-header-cell-text\" data-ref=\"eText\">Pagos</span>",
+          "computed": {
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "effectiveBackgroundColor": "rgb(30, 41, 59)",
+            "contrastRatio": 13.98,
+            "color": "rgb(248, 250, 252)",
+            "display": "block",
+            "opacity": "1",
+            "visibility": "visible"
+          }
+        },
+        {
+          "target": [
+            ".institutional-grid__header--secondary.ag-column-last[col-id=\"percentage\"] > .ag-header-cell-comp-wrapper[role=\"presentation\"] > .ag-cell-label-container[role=\"presentation\"] > .ag-header-cell-label[data-ref=\"eLabel\"][role=\"presentation\"] > .ag-header-cell-text[data-ref=\"eText\"]"
+          ],
+          "failure": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element",
+          "html": "<span class=\"ag-header-cell-text\" data-ref=\"eText\">% del total</span>",
+          "computed": {
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "effectiveBackgroundColor": "rgb(30, 41, 59)",
+            "contrastRatio": 13.98,
+            "color": "rgb(248, 250, 252)",
+            "display": "block",
+            "opacity": "1",
+            "visibility": "visible"
+          }
+        }
+      ]
+    }
+  ],
+  "incompleteClassification": [
+    {
+      "id": "color-contrast",
+      "selector": [
+        ".ant-select-content"
+      ],
+      "computed": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "effectiveBackgroundColor": "rgb(30, 41, 59)",
+        "contrastRatio": 13.98,
+        "color": "rgb(248, 250, 252)",
+        "display": "block",
+        "opacity": "1",
+        "visibility": "visible"
+      },
+      "html": "<div class=\"ant-select-content ant-select-content-has-value\" title=\"Este mes\">",
+      "classification": "manual-false-positive",
+      "analysis": "Contraste manual 13.98:1 calculado entre rgb(248, 250, 252) y el ancestro opaco rgb(30, 41, 59); cumple 4.5:1."
+    },
+    {
+      "id": "color-contrast",
+      "selector": [
+        ".institutional-grid__header--primary[col-id=\"label\"][aria-colindex=\"2\"] > .ag-header-cell-comp-wrapper[role=\"presentation\"] > .ag-cell-label-container[role=\"presentation\"] > .ag-header-cell-label[data-ref=\"eLabel\"][role=\"presentation\"] > .ag-header-cell-text[data-ref=\"eText\"]"
+      ],
+      "computed": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "effectiveBackgroundColor": "rgb(30, 41, 59)",
+        "contrastRatio": 13.98,
+        "color": "rgb(248, 250, 252)",
+        "display": "block",
+        "opacity": "1",
+        "visibility": "visible"
+      },
+      "html": "<span class=\"ag-header-cell-text\" data-ref=\"eText\">Método</span>",
+      "classification": "manual-false-positive",
+      "analysis": "Axe no puede resolver el fondo por superposición o pseudo-elemento; la comprobación computed-style shellContrastViolations valida el contraste efectivo del mismo estado."
+    },
+    {
+      "id": "color-contrast",
+      "selector": [
+        ".institutional-grid__header--primary[col-id=\"amount\"][aria-colindex=\"3\"] > .ag-header-cell-comp-wrapper[role=\"presentation\"] > .ag-cell-label-container[role=\"presentation\"] > .ag-header-cell-label[data-ref=\"eLabel\"][role=\"presentation\"] > .ag-header-cell-text[data-ref=\"eText\"]"
+      ],
+      "computed": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "effectiveBackgroundColor": "rgb(30, 41, 59)",
+        "contrastRatio": 13.98,
+        "color": "rgb(248, 250, 252)",
+        "display": "block",
+        "opacity": "1",
+        "visibility": "visible"
+      },
+      "html": "<span class=\"ag-header-cell-text\" data-ref=\"eText\">Monto</span>",
+      "classification": "manual-false-positive",
+      "analysis": "Axe no puede resolver el fondo por superposición o pseudo-elemento; la comprobación computed-style shellContrastViolations valida el contraste efectivo del mismo estado."
+    },
+    {
+      "id": "color-contrast",
+      "selector": [
+        ".institutional-grid__header--secondary[col-id=\"count\"][aria-colindex=\"4\"] > .ag-header-cell-comp-wrapper[role=\"presentation\"] > .ag-cell-label-container[role=\"presentation\"] > .ag-header-cell-label[data-ref=\"eLabel\"][role=\"presentation\"] > .ag-header-cell-text[data-ref=\"eText\"]"
+      ],
+      "computed": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "effectiveBackgroundColor": "rgb(30, 41, 59)",
+        "contrastRatio": 13.98,
+        "color": "rgb(248, 250, 252)",
+        "display": "block",
+        "opacity": "1",
+        "visibility": "visible"
+      },
+      "html": "<span class=\"ag-header-cell-text\" data-ref=\"eText\">Pagos</span>",
+      "classification": "manual-false-positive",
+      "analysis": "Axe no puede resolver el fondo por superposición o pseudo-elemento; la comprobación computed-style shellContrastViolations valida el contraste efectivo del mismo estado."
+    },
+    {
+      "id": "color-contrast",
+      "selector": [
+        ".institutional-grid__header--secondary.ag-column-last[col-id=\"percentage\"] > .ag-header-cell-comp-wrapper[role=\"presentation\"] > .ag-cell-label-container[role=\"presentation\"] > .ag-header-cell-label[data-ref=\"eLabel\"][role=\"presentation\"] > .ag-header-cell-text[data-ref=\"eText\"]"
+      ],
+      "computed": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "effectiveBackgroundColor": "rgb(30, 41, 59)",
+        "contrastRatio": 13.98,
+        "color": "rgb(248, 250, 252)",
+        "display": "block",
+        "opacity": "1",
+        "visibility": "visible"
+      },
+      "html": "<span class=\"ag-header-cell-text\" data-ref=\"eText\">% del total</span>",
+      "classification": "manual-false-positive",
+      "analysis": "Axe no puede resolver el fondo por superposición o pseudo-elemento; la comprobación computed-style shellContrastViolations valida el contraste efectivo del mismo estado."
+    }
+  ],
+  "unclassifiedIncomplete": []
+}

@@ -56,7 +56,7 @@ function Show-TaskStatus([string] $taskName) {
 $workerArgs = "/c `"$workerScript`" `"$PhpPath`""
 $backupArgs = "/c `"$dailyScript`" `"$PhpPath`""
 
-Write-Host "Preparing Windows scheduled tasks for Hospital Billing OS backups."
+Write-Host "Preparing Windows scheduled tasks for S_Hospital backups."
 Write-Host "ProjectRoot: $ProjectRoot"
 Write-Host "PhpPath: $PhpPath"
 Write-Host "Worker wrapper: $workerScript"
@@ -106,7 +106,7 @@ foreach ($taskName in @($workerTaskName, $dailyTaskName)) {
 }
 
 if ($UpdateExisting) {
-    Write-Host "UpdateExisting enabled. Existing Hospital Billing OS backup tasks will be replaced."
+    Write-Host "UpdateExisting enabled. Existing S_Hospital backup tasks will be replaced."
     foreach ($taskName in @($workerTaskName, $dailyTaskName)) {
         if (Get-TaskIfExists $taskName) {
             Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
@@ -124,7 +124,7 @@ Register-ScheduledTask `
     -Action $workerAction `
     -Trigger $workerTrigger `
     -Settings $workerSettings `
-    -Description "Hospital Billing OS continuous backup queue worker." | Out-Null
+    -Description "S_Hospital continuous backup queue worker." | Out-Null
 
 $dailyAction = New-ScheduledTaskAction -Execute "cmd.exe" -Argument $backupArgs -WorkingDirectory $ProjectRoot
 $dailyTrigger = New-ScheduledTaskTrigger -Daily -At $DailyBackupTime
@@ -135,7 +135,7 @@ Register-ScheduledTask `
     -Action $dailyAction `
     -Trigger $dailyTrigger `
     -Settings $dailySettings `
-    -Description "Hospital Billing OS scheduled local database backup." | Out-Null
+    -Description "S_Hospital scheduled local database backup." | Out-Null
 
 Write-Host "Registered scheduled tasks."
 Write-Host "Start the worker now with: Start-ScheduledTask -TaskName '$workerTaskName'"

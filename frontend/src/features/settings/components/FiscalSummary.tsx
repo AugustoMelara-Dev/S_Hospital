@@ -1,8 +1,6 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
 import type { FiscalSequence, FiscalSettings } from '@/lib/api';
 import { displayHospitalName } from '@/lib/hospital-name';
-import { receiptPaperSizeLabel } from '@/lib/institutionalReceiptPaper';
+import { Card, Typography } from 'antd';
 
 function formatDate(dateStr: string): string {
   const date = new Date(dateStr);
@@ -26,57 +24,47 @@ export function FiscalSummary({ settings, sequence }: FiscalSummaryProps) {
     ? new Date(sequence.valid_until) < new Date()
     : false;
   const cai = isPlaceholderCai(sequence?.cai) ? '' : sequence?.cai;
-  const receiptPaperSize = settings?.receipt_paper_size ? receiptPaperSizeLabel(settings.receipt_paper_size) : null;
 
   return (
-    <Card className="border-operational-border bg-operational-surface shadow-operational">
-      <CardHeader>
-        <CardTitle>Resumen fiscal</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <Card title="Resumen fiscal" className="border-operational-border bg-operational-surface">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <div className="min-w-0 rounded-panel border border-operational-border bg-operational-panel p-3">
-            <Label className="text-muted-foreground">Hospital</Label>
+          <div className="min-w-0 border border-operational-border bg-muted/40 p-4">
+            <Typography.Text type="secondary">Hospital</Typography.Text>
             <p className="break-words font-medium">{settings ? displayHospitalName(settings.hospital_name) : '-'}</p>
           </div>
-          <div className="min-w-0 rounded-panel border border-operational-border bg-operational-panel p-3">
-            <Label className="text-muted-foreground">RTN</Label>
+          <div className="min-w-0 border border-operational-border bg-muted/40 p-4">
+            <Typography.Text type="secondary">RTN</Typography.Text>
             <p className="break-words font-mono font-medium tabular-nums">{settings?.rtn || '-'}</p>
           </div>
-          <div className="min-w-0 rounded-panel border border-operational-border bg-operational-panel p-3">
-            <Label className="text-muted-foreground">CAI</Label>
+          <div className="min-w-0 border border-operational-border bg-muted/40 p-4">
+            <Typography.Text type="secondary">CAI</Typography.Text>
             <p className="break-words font-mono font-medium">
               {cai ? cai : <span className="text-destructive">No configurado</span>}
             </p>
           </div>
-          <div className="min-w-0 rounded-panel border border-operational-border bg-operational-panel p-3">
-            <Label className="text-muted-foreground">Rango Autorizado</Label>
+          <div className="min-w-0 border border-operational-border bg-muted/40 p-4">
+            <Typography.Text type="secondary">Rango Autorizado</Typography.Text>
             <p className="break-words font-mono font-medium tabular-nums">
               {sequence?.prefix && sequence?.min_number != null && sequence?.max_number != null && cai
                 ? `${sequence.prefix}-${String(sequence.min_number).padStart(8, '0')} a ${sequence.prefix}-${String(sequence.max_number).padStart(8, '0')}`
                 : '-'}
             </p>
           </div>
-          <div className="min-w-0 rounded-panel border border-operational-border bg-operational-panel p-3">
-            <Label className="text-muted-foreground">Siguiente Correlativo</Label>
+          <div className="min-w-0 border border-operational-border bg-muted/40 p-4">
+            <Typography.Text type="secondary">Siguiente Correlativo</Typography.Text>
             <p className="break-words font-mono font-medium tabular-nums">
               {sequence?.prefix && sequence?.current_number != null && cai
                 ? `${sequence.prefix}-${String(sequence.current_number + 1).padStart(8, '0')}`
                 : '-'}
             </p>
           </div>
-          <div className="min-w-0 rounded-panel border border-operational-border bg-operational-panel p-3">
-            <Label className="text-muted-foreground">Recibo institucional</Label>
-            <p className="font-medium">{receiptPaperSize ?? 'Pendiente'}</p>
-          </div>
-          <div className="min-w-0 rounded-panel border border-operational-border bg-operational-panel p-3">
-            <Label className="text-muted-foreground">Válido hasta</Label>
+          <div className="min-w-0 border border-operational-border bg-muted/40 p-4">
+            <Typography.Text type="secondary">Válido hasta</Typography.Text>
             <p className={`font-medium ${isExpired ? 'text-destructive' : ''}`}>
               {sequence?.valid_until && cai ? formatDate(sequence.valid_until) : '-'}
             </p>
           </div>
         </div>
-      </CardContent>
     </Card>
   );
 }

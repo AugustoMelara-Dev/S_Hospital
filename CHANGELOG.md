@@ -1,5 +1,124 @@
 # Changelog - Sistema de Caja Hospitalaria
 
+## 2026-07-09 - Reescritura total, Fase 6: instalacion y cierre de liberacion
+
+- Reemplaza el instalador legado por un flujo PowerShell reproducible para
+  Docker, produccion LAN y paquetes offline, sin contrasenas predeterminadas.
+- Empaqueta y valida versiones exactas de backend, worker, scheduler, Nginx,
+  MariaDB y Soketi; el cargador offline falla de forma cerrada si falta una
+  imagen o etiqueta requerida.
+- Documenta variables de entorno, migraciones, seeders, administrador inicial,
+  desarrollo, pruebas, build, produccion, LAN, respaldos y aceptacion de sitio.
+- Migra los recorridos E2E antiguos al resultado de cobro y PDF institucional;
+  una factura pendiente no ofrece recibo y toda reimpresion exige motivo
+  auditado.
+- Retira credenciales fijas del E2E administrativo: solo acepta una cuenta
+  temporal inyectada por entorno y omite el gate con una razon explicita si no
+  fue provisionada.
+- Endurece respaldos ante respuestas malformadas para evitar que un payload
+  invalido derribe la pantalla completa.
+- Corrige el preflight de Windows para instalaciones Docker: lee el entorno
+  efectivo del backend y valida worker/scheduler como contenedores en vez de
+  exigir tareas programadas que no pertenecen al despliegue oficial.
+- Regenera matrices de accesibilidad y capturas con los flujos vigentes para
+  seis viewports, desde 320x640 hasta 1920x1080.
+- Verificacion final: Laravel 860 pruebas / 5641 aserciones (13 skips de
+  entorno); frontend 129 archivos / 852 pruebas; cobertura 79.45% lineas,
+  78.17% funciones, 74.11% ramas y 77.86% sentencias; 53 E2E mock aprobados,
+  22 matrices E2E de accesibilidad aprobadas y 2 E2E reales sobre MariaDB;
+  Pint, PHPStan, lint, typecheck, build, auditorias de dependencias e instalador
+  en verde.
+
+## 2026-07-09 - Reescritura total, Fase 5: integridad administrativa
+
+- Refuerza `AuditLog` como modelo append-only: Eloquent rechaza actualizaciones
+  y borrados, ademas de los triggers ya existentes en MariaDB.
+- Mantiene la poda como comando tecnico privilegiado por query builder, sin
+  abrir borrado operativo en UI o API.
+- Hace atomicas la creacion y edicion de roles con su evento de auditoria; si
+  falla la auditoria, se revierten nombre, rol y permisos.
+- Agrega pruebas de rollback deliberado para evitar cambios de privilegios sin
+  trazabilidad.
+- Reconfirma controles de ultimo administrador, autoacciones, roles elevados,
+  contrasenas temporales, payloads de respaldo seguros, cifrado, idempotencia,
+  rutas, descargas y auditoria.
+- Verificacion fresca: 100 pruebas backend / 450 aserciones (1 skip de entorno),
+  109 pruebas frontend, PHPStan 216/216, Pint, lint, typecheck y build en verde.
+
+## 2026-07-09 - Reescritura total, Fase 4: semantica de reportes y acciones
+
+- Publica `accounting_policy` en el reporte ejecutivo para declarar alcance de
+  caja operativa, egresos no soportados y exclusiones ya aplicadas.
+- Alinea UI, PDF y glosario Excel: facturas anuladas ya estan fuera de
+  Facturado y pagos reversados ya estan fuera de Cobrado; no se restan otra vez.
+- Elimina la formula incorrecta `facturado - anulado - reversado` del glosario
+  y la reemplaza por la definicion de cobrado neto operativo.
+- Agrega un panel de criterio contable reutilizable al reporte ejecutivo.
+- Extrae la elegibilidad de acciones de Historial a
+  `modules/invoices/application/invoiceActionPolicy`, cubriendo estado,
+  propiedad, permisos, primera apertura, descarga, reimpresion, recuperacion,
+  anulacion y reverso.
+- Reconfirma por pruebas que catalogo y fiscal exigen motivos auditados y que
+  la regla fija de eritropoyetina permanece protegida.
+- Verificacion fresca: 27 pruebas backend ejecutivas / 292 aserciones, 8
+  pruebas catalogo/fiscal / 49 aserciones, 102 pruebas frontend, 4 E2E de
+  reportes, PHPStan 216/216, Pint, lint, typecheck y build en verde.
+
+## 2026-07-09 - Reescritura total, Fase 3: conciliacion de caja
+
+- Unifica el contrato publico de caja abierta, cierre confirmado y reporte de
+  sesion con los mismos nombres y totales calculados por el servidor.
+- Corrige el resumen posterior al cierre para conservar pagos y metodos del
+  snapshot; ya no puede mostrar ceros por una diferencia de forma en la API.
+- Separa pagos posteados de pagos reversados y expone cantidad y monto de
+  reversos sin sumarlos al cobrado ni al efectivo esperado.
+- Agrega `modules/accounting` con un interprete puro y un panel reutilizable de
+  control contable para pendientes, recibos faltantes y reversos.
+- Bloquea visualmente el cierre cuando ya se conocen facturas o recibos
+  pendientes, manteniendo la actualizacion previa y el bloqueo transaccional
+  del backend como controles definitivos.
+- Declara que los egresos operativos no estan modelados; no muestra un cero que
+  pueda confundirse con ausencia de gastos.
+- Verificacion fresca: 103 pruebas backend / 1308 aserciones, 53 pruebas
+  frontend de caja/reportes, 206 pruebas frontend criticas, 2 E2E de caja,
+  PHPStan 216/216, Pint, lint, typecheck y build en verde.
+
+## 2026-07-09 - Reescritura total, Fase 2: resultado seguro de cobro
+
+- Agrega al contrato de pagos `receipt_outcome` con estados cerrados:
+  `issued`, `not_required` y `recovery_required`.
+- El backend confirma de forma explicita si emitio el recibo, si el pago parcial
+  aun no lo requiere o si el pago quedo registrado y el recibo debe recuperarse.
+- Evita que el frontend deduzca el resultado desde campos nulos o sugiera repetir
+  un cobro que ya fue confirmado.
+- Extrae la interpretacion del resultado a
+  `modules/billing/application/paymentOutcome` y conserva una ruta visible hacia
+  Historial cuando la emision del recibo falla.
+- Agrega cobertura backend para pagos sin permiso de recibos y cobertura E2E que
+  demuestra un solo cargo, cero solicitudes de PDF y recuperacion operativa.
+- Verificacion fresca: 125 archivos / 837 pruebas frontend; cobertura V8 de
+  79.33% lineas / 78.04% funciones / 73.92% ramas / 77.73% sentencias; lint,
+  typecheck y build en verde; PHPStan 216/216; Pint; 46 pruebas backend / 509
+  aserciones y 2 E2E del flujo emitir-cobrar-recuperar.
+
+## 2026-07-09 - Reescritura total, Fase 1: contrato de impresión
+
+- Elimina `autoPrint`, su temporizador, estado del reducer y dispatches; un
+  recibo solo puede imprimirse mediante una acción explícita.
+- Crea `modules/receipts/paperPolicy` como frontera inicial de la nueva
+  arquitectura modular.
+- Limita el selector público a Carta, Media carta y A5.
+- Retira de la aplicación el modo soporte técnico, medidas, márgenes, fuente y
+  escala, incluso para usuarios con permisos heredados.
+- Conserva perfiles térmicos y personalizados únicamente como compatibilidad
+  histórica del backend y de snapshots existentes.
+- Reescribe `docs/print-profiles.md` para describir el contrato operativo real.
+- Aísla Playwright en el puerto 4173 con `strictPort` y desactiva la
+  reutilización silenciosa de servidores ajenos.
+- Verificación fresca: 124 archivos / 833 pruebas frontend, cobertura V8 de
+  79.31% líneas / 78.03% funciones / 73.89% ramas / 77.71% sentencias,
+  typecheck, lint y build en verde; 3 E2E de perfiles pasan en Chromium.
+
 ## 2026-06-15 - v1.1 Critical Hardening post-OFFLINE
 
 Cherry-picked from `hardening-audit-complete-2026-06-15` (commits 680e7d2e + 6cecb4af) sobre la base OFF-A..OFF-E. Ademas del merge, esta ronda agrega:

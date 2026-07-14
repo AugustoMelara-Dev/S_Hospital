@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\DB;
  * (America/Tegucigalpa) so the cashier never sees data from
  * another day even near midnight.
  *
- * The shape is stable and consumed by frontend/src/hooks/useTodayReport
+ * The shape remains stable for API clients and release smoke mocks
  * (see HOSPITAL FRONTEND CONTRACTS).
  */
 class TodayReportService
@@ -94,7 +94,7 @@ class TodayReportService
 
         $voidedInvoices = Invoice::query()
             ->where('status', Invoice::STATUS_VOID)
-            ->whereBetween('issued_at', [$today, $end])
+            ->whereBetween('voided_at', [$today, $end])
             ->when(! empty($filters['user_id']), function ($query) use ($filters): void {
                 $query->where('issued_by', $filters['user_id']);
             })

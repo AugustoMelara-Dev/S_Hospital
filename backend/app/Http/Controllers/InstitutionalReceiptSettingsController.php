@@ -33,6 +33,15 @@ class InstitutionalReceiptSettingsController extends Controller
             $resolvedProfile = null;
         }
 
+        $canViewAdvanced = $request->user()->can('receipt_settings.advanced');
+        $printProfiles = $this->profilesQuery()->get();
+        $assignments = ReceiptProfileAssignment::query()
+            ->with('printProfile')
+            ->orderBy('scope_type')
+            ->orderBy('scope_id')
+            ->orderByDesc('active')
+            ->get();
+
         return response()->json([
             'data' => [
                 'institution' => FiscalSetting::query()->first(),
@@ -41,14 +50,9 @@ class InstitutionalReceiptSettingsController extends Controller
                     ->where('active', true)
                     ->first(),
                 'series' => $this->seriesQuery()->get(),
-                'print_profiles' => $this->profilesQuery()->get(),
-                'assignments' => ReceiptProfileAssignment::query()
-                    ->with('printProfile')
-                    ->orderBy('scope_type')
-                    ->orderBy('scope_id')
-                    ->orderByDesc('active')
-                    ->get(),
-                'resolved_profile' => $resolvedProfile,
+                'print_profiles' => $this->serializePrintProfiles($printProfiles, $canViewAdvanced),
+                'assignments' => $this->serializeAssignments($assignments, $canViewAdvanced),
+                'resolved_profile' => $this->serializePrintProfile($resolvedProfile, $canViewAdvanced),
             ],
         ]);
     }
@@ -163,8 +167,10 @@ class InstitutionalReceiptSettingsController extends Controller
 
     public function printProfiles(ViewReceiptSettingsRequest $request): JsonResponse
     {
+        $canViewAdvanced = $request->user()->can('receipt_settings.advanced');
+
         return response()->json([
-            'data' => $this->profilesQuery()->get(),
+            'data' => $this->serializePrintProfiles($this->profilesQuery()->get(), $canViewAdvanced),
         ]);
     }
 
@@ -177,14 +183,14 @@ class InstitutionalReceiptSettingsController extends Controller
                 request: $request,
                 newValues: ['attempted_fields' => $request->advancedFieldsPresent()],
                 reason: 'Intento de modificar campos avanzados sin permiso.',
-                result: 'denied',
+                result: 'failed',
             );
 
             return response()->json([
                 'message' => 'Este cambio requiere el permiso receipt_settings.advanced.',
                 'errors' => [
                     'receipt_settings.advanced' => [
-                        'No tiene permiso para modificar margenes, tamano, fuente o escala del recibo. Solicite soporte tecnico.',
+                        'No tiene permiso para modificar papel, orientacion, margenes, tamano, fuente, escala o campos tecnicos del recibo. Solicite soporte tecnico.',
                     ],
                 ],
             ], 403);
@@ -193,13 +199,15 @@ class InstitutionalReceiptSettingsController extends Controller
         $profile = DB::transaction(function () use ($request, $profile): ReceiptPrintProfile {
             $oldValues = $this->profileAuditPayload($profile);
             $values = $request->validated();
+            $auditReason = $request->hasAdvancedFields() ? $request->supportReason() : null;
+            unset($values['support_reason']);
 
             if (($values['is_global_default'] ?? false) === true) {
                 ReceiptPrintProfile::query()
                     ->whereKeyNot($profile->id)
                     ->where('is_global_default', true)
                     ->get()
-                    ->each(function (ReceiptPrintProfile $defaultProfile) use ($request): void {
+                    ->each(function (ReceiptPrintProfile $defaultProfile) use ($request, $auditReason): void {
                         $oldDefaultValues = $this->profileAuditPayload($defaultProfile);
 
                         $defaultProfile->is_global_default = false;
@@ -211,7 +219,8 @@ class InstitutionalReceiptSettingsController extends Controller
                             ReceiptPrintProfile::class,
                             $defaultProfile->id,
                             $oldDefaultValues,
-                            $this->profileAuditPayload($defaultProfile->refresh())
+                            $this->profileAuditPayload($defaultProfile->refresh()),
+                            $auditReason
                         );
                     });
 
@@ -227,7 +236,8 @@ class InstitutionalReceiptSettingsController extends Controller
                 ReceiptPrintProfile::class,
                 $profile->id,
                 $oldValues,
-                $this->profileAuditPayload($profile->refresh())
+                $this->profileAuditPayload($profile->refresh()),
+                $auditReason
             );
 
             return $profile->refresh();
@@ -307,6 +317,10 @@ class InstitutionalReceiptSettingsController extends Controller
         $profile = $request->filled('profile_id') || $request->filled('profile_code')
             ? $this->profileFromRequest($request->validated())
             : $resolver->execute($user);
+        $deniedResponse = $this->denySupportOnlyTestProfileWithoutAdvanced($request, $profile);
+        if ($deniedResponse instanceof JsonResponse) {
+            return $deniedResponse;
+        }
 
         $series = InstitutionalReceiptSeries::query()
             ->where('document_type', InstitutionalReceiptSeries::DOCUMENT_TYPE)
@@ -352,6 +366,10 @@ class InstitutionalReceiptSettingsController extends Controller
         $profile = $request->filled('profile_id') || $request->filled('profile_code')
             ? $this->profileFromRequest($request->validated())
             : $resolver->execute($user);
+        $deniedResponse = $this->denySupportOnlyTestProfileWithoutAdvanced($request, $profile);
+        if ($deniedResponse instanceof JsonResponse) {
+            return $deniedResponse;
+        }
 
         $series = InstitutionalReceiptSeries::query()
             ->where('document_type', InstitutionalReceiptSeries::DOCUMENT_TYPE)
@@ -366,6 +384,128 @@ class InstitutionalReceiptSettingsController extends Controller
             'Content-Disposition' => 'inline; filename="recibo-institucional-prueba.pdf"',
             'X-Receipt-Test-Print' => 'PRUEBA - SIN VALIDEZ',
         ]);
+    }
+
+    /**
+     * @param  iterable<ReceiptPrintProfile>  $profiles
+     * @return array<int, array<string, mixed>>
+     */
+    private function serializePrintProfiles(iterable $profiles, bool $canViewAdvanced): array
+    {
+        $payload = [];
+
+        foreach ($profiles as $profile) {
+            if (! $canViewAdvanced && $this->isSupportOnlyProfile($profile)) {
+                continue;
+            }
+
+            $serialized = $this->serializePrintProfile($profile, $canViewAdvanced);
+            if ($serialized !== null) {
+                $payload[] = $serialized;
+            }
+        }
+
+        return $payload;
+    }
+
+    /**
+     * @param  iterable<ReceiptProfileAssignment>  $assignments
+     * @return array<int, array<string, mixed>>
+     */
+    private function serializeAssignments(iterable $assignments, bool $canViewAdvanced): array
+    {
+        $payload = [];
+
+        foreach ($assignments as $assignment) {
+            $profile = $assignment->printProfile;
+            if (! $canViewAdvanced && $profile instanceof ReceiptPrintProfile && $this->isSupportOnlyProfile($profile)) {
+                continue;
+            }
+
+            if ($canViewAdvanced) {
+                $payload[] = $assignment->toArray();
+
+                continue;
+            }
+
+            $payload[] = [
+                'id' => $assignment->id,
+                'scope_type' => $assignment->scope_type,
+                'scope_id' => $assignment->scope_id,
+                'active' => $assignment->active,
+                'print_profile' => $profile instanceof ReceiptPrintProfile
+                    ? $this->serializePrintProfile($profile, false)
+                    : null,
+            ];
+        }
+
+        return $payload;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function serializePrintProfile(?ReceiptPrintProfile $profile, bool $canViewAdvanced): ?array
+    {
+        if (! $profile instanceof ReceiptPrintProfile) {
+            return null;
+        }
+
+        if ($canViewAdvanced) {
+            return $profile->toArray();
+        }
+
+        if ($this->isSupportOnlyProfile($profile)) {
+            return null;
+        }
+
+        return [
+            'id' => $profile->id,
+            'code' => $profile->code,
+            'name' => $profile->name,
+            'copies_mode' => $profile->copies_mode,
+            'show_copy_legend' => $profile->show_copy_legend,
+            'show_physical_seal_space' => $profile->show_physical_seal_space,
+            'use_logo' => $profile->use_logo,
+            'active' => $profile->active,
+            'is_global_default' => $profile->is_global_default,
+        ];
+    }
+
+    private function isSupportOnlyProfile(ReceiptPrintProfile $profile): bool
+    {
+        return $profile->isSupportOnly();
+    }
+
+    private function denySupportOnlyTestProfileWithoutAdvanced(
+        TestReceiptPreviewRequest $request,
+        ReceiptPrintProfile $profile,
+    ): ?JsonResponse {
+        if (! $this->isSupportOnlyProfile($profile) || $request->user()->can('receipt_settings.advanced')) {
+            return null;
+        }
+
+        AuditLogger::log(
+            action: 'receipt_settings.advanced_denied',
+            entity: $profile,
+            request: $request,
+            newValues: [
+                'attempted_fields' => ['profile_code'],
+                'profile_code' => $profile->code,
+                'flow' => str_contains($request->path(), 'test-print') ? 'test-print' : 'test-preview',
+            ],
+            reason: 'Intento de usar perfil de soporte en impresion de prueba sin permiso avanzado.',
+            result: 'failed',
+        );
+
+        return response()->json([
+            'message' => 'Este perfil requiere el permiso receipt_settings.advanced.',
+            'errors' => [
+                'receipt_settings.advanced' => [
+                    'Los perfiles de soporte tecnico solo pueden usarse con permiso receipt_settings.advanced.',
+                ],
+            ],
+        ], 403);
     }
 
     /**
@@ -394,6 +534,9 @@ class InstitutionalReceiptSettingsController extends Controller
             ->orderByDesc('id');
     }
 
+    /**
+     * @return Builder<ReceiptPrintProfile>
+     */
     private function profilesQuery(): Builder
     {
         return ReceiptPrintProfile::query()
@@ -488,7 +631,7 @@ class InstitutionalReceiptSettingsController extends Controller
      * @param  array<string, mixed>|array<int, mixed>|null  $oldValues
      * @param  array<string, mixed>|array<int, mixed>|null  $newValues
      */
-    private function audit(int $userId, string $action, string $entityType, ?int $entityId, ?array $oldValues, ?array $newValues): void
+    private function audit(int $userId, string $action, string $entityType, ?int $entityId, ?array $oldValues, ?array $newValues, ?string $reason = null): void
     {
         AuditLog::query()->create([
             'user_id' => $userId,
@@ -497,6 +640,7 @@ class InstitutionalReceiptSettingsController extends Controller
             'entity_id' => $entityId,
             'old_values' => $oldValues,
             'new_values' => $newValues,
+            'reason' => $reason,
         ]);
     }
 }

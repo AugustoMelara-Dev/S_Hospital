@@ -30,6 +30,6 @@ class FiscalSequencePolicy
 
     public function update(User $user, FiscalSequence $sequence): bool
     {
-        return $this->viewAny($user);
+        return $user->can('settings.fiscal.update');
     }
 }

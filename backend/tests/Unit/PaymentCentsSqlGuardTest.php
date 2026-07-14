@@ -124,6 +124,7 @@ class PaymentCentsSqlGuardTest extends TestCase
             'app/Actions/Reports/DashboardReportService.php',
             'app/Actions/Reports/DailyReportService.php',
             'app/Actions/Reports/MonthlyReportService.php',
+            'app/Actions/Reports/AreaReportService.php',
             'app/Actions/Reports/AreaIncomeReportService.php',
             'app/Actions/Reports/ServiceSalesReportService.php',
             'app/Actions/Reports/CategoryReportService.php',

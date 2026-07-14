@@ -57,11 +57,14 @@ export const billing = {
     invoiceId: number,
     paymentId: number,
     payload: { reason: string },
+    options: { idempotencyKey?: string } = {},
   ): Promise<{ payment: Payment; invoice: Invoice }> {
     const response = await apiClient.request<{ data: { payment: Payment; invoice: Invoice } }>(
       `/api/invoices/${invoiceId}/payments/${paymentId}/void`,
       {
         method: 'POST',
+        idempotencyKey: options.idempotencyKey,
+        headers: options.idempotencyKey ? { 'Idempotency-Key': options.idempotencyKey } : undefined,
         body: JSON.stringify(payload),
       },
     );
@@ -79,28 +82,35 @@ export const billing = {
   async reprintInvoice(
     invoiceId: number,
     payload: { width: ReceiptData['width']; reason?: string | null },
+    options: { idempotencyKey?: string } = {},
   ): Promise<ReceiptData> {
     const response = await apiClient.request<{ data: { receipt: ReceiptData } }>(
       `/api/invoices/${invoiceId}/reprint`,
       {
         method: 'POST',
+        idempotencyKey: options.idempotencyKey,
+        headers: options.idempotencyKey ? { 'Idempotency-Key': options.idempotencyKey } : undefined,
         body: JSON.stringify(payload),
       },
     );
     return response.data.receipt;
   },
 
-  async voidInvoice(invoiceId: number, reason: string): Promise<Invoice> {
+  async voidInvoice(invoiceId: number, reason: string, options: { idempotencyKey?: string } = {}): Promise<Invoice> {
     const response = await apiClient.request<{ data: Invoice }>(`/api/invoices/${invoiceId}/void`, {
       method: 'POST',
+      idempotencyKey: options.idempotencyKey,
+      headers: options.idempotencyKey ? { 'Idempotency-Key': options.idempotencyKey } : undefined,
       body: JSON.stringify({ reason }),
     });
     return response.data;
   },
 
-  async reverseInvoice(invoiceId: number, reason: string): Promise<Invoice> {
+  async reverseInvoice(invoiceId: number, reason: string, options: { idempotencyKey?: string } = {}): Promise<Invoice> {
     const response = await apiClient.request<{ data: Invoice }>(`/api/invoices/${invoiceId}/reverse`, {
       method: 'POST',
+      idempotencyKey: options.idempotencyKey,
+      headers: options.idempotencyKey ? { 'Idempotency-Key': options.idempotencyKey } : undefined,
       body: JSON.stringify({ reason }),
     });
     return response.data;

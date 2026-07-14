@@ -2,6 +2,7 @@
 
 namespace App\Actions\Billing;
 
+use App\Actions\InstitutionalReceipts\ResolveReceiptPrintProfileAction;
 use App\Events\InvoiceChanged;
 use App\Models\AuditLog;
 use App\Models\CashRegisterSession;
@@ -56,6 +57,16 @@ class CreateInvoiceAction
                     throw new \RuntimeException('Invariante fallido: la suma de las lineas no coincide con el total de la factura.');
                 }
 
+                $paperSize = 'half_letter';
+                try {
+                    $printProfile = app(ResolveReceiptPrintProfileAction::class)->execute($issuer, $cashSession);
+                    $paperSize = ReceiptPaperSize::fromProfilePaperKind($printProfile->paper_kind);
+                } catch (\Exception $e) {
+                    if ($settings?->receipt_paper_size) {
+                        $paperSize = $settings->receipt_paper_size;
+                    }
+                }
+
                 $invoice = Invoice::query()->create([
                     'invoice_number' => $fiscal['invoice_number'],
                     'fiscal_sequence_id' => $sequence->id,
@@ -69,7 +80,7 @@ class CreateInvoiceAction
                     'hospital_address' => $settings?->address,
                     'hospital_slogan' => $settings?->slogan,
                     'receipt_template_mode' => $settings?->receipt_template_mode ?? 'institutional',
-                    'receipt_paper_size' => ReceiptPaperSize::normalize($settings?->receipt_paper_size),
+                    'receipt_paper_size' => ReceiptPaperSize::normalize($paperSize),
                     'receipt_government_line' => $settings?->government_line,
                     'receipt_secretariat_line' => $settings?->secretariat_line,
                     'receipt_location' => $settings?->receipt_location ?? $settings?->address,
@@ -281,7 +292,7 @@ class CreateInvoiceAction
     {
         $serviceIds = collect($items)->pluck('service_id')->unique()->values();
         $services = Service::query()
-            ->with(['category:id,name', 'area:id,name,slug'])
+            ->with(['category:id,name,active', 'area:id,name,slug'])
             ->whereIn('id', $serviceIds)
             ->get()
             ->keyBy('id');
@@ -305,6 +316,12 @@ class CreateInvoiceAction
                 ]);
             }
 
+            if (! $service->category?->active) {
+                throw ValidationException::withMessages([
+                    $field => 'La categoria del servicio seleccionado esta inactiva.',
+                ]);
+            }
+
             if (! $service->visible_in_billing) {
                 throw ValidationException::withMessages([
                     $field => 'El servicio seleccionado no esta visible para facturacion.',
@@ -320,11 +337,22 @@ class CreateInvoiceAction
             $prepared[] = [
                 'service' => $service,
                 'quantity' => $item['quantity'],
-                'notes' => $item['notes'] ?? null,
+                'notes' => $this->normalizeItemNotes($item['notes'] ?? null),
             ];
         }
 
         return $prepared;
+    }
+
+    private function normalizeItemNotes(mixed $notes): ?string
+    {
+        if (! is_string($notes)) {
+            return null;
+        }
+
+        $normalized = trim($notes);
+
+        return $normalized === '' ? null : $normalized;
     }
 
     private function isZeroAmount(string $amount): bool

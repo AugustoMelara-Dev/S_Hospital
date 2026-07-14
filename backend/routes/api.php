@@ -2,6 +2,7 @@
 
 use App\Actions\Reports\OpenApiExporter;
 use App\Http\Controllers\AreaController;
+use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\CashSessionController;
@@ -84,6 +85,8 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle.user:240,1'])->gr
 
     Route::middleware('password.changed')->group(function () {
         Route::get('/settings/operational', [FiscalSettingsController::class, 'operational']);
+        Route::put('/settings/operational', [FiscalSettingsController::class, 'updateOperational'])
+            ->middleware('throttle.user:30,1');
 
         Route::get('/settings/fiscal', [FiscalSettingsController::class, 'show']);
         Route::put('/settings/fiscal', [FiscalSettingsController::class, 'update'])
@@ -139,6 +142,8 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle.user:240,1'])->gr
             ->middleware('throttle.user:60,1');
         Route::patch('/services/{service}', [ServiceController::class, 'update'])
             ->middleware('throttle.user:60,1');
+        Route::delete('/services/{service}', [ServiceController::class, 'destroy'])
+            ->middleware('throttle.user:30,1');
 
         Route::get('/invoices', [InvoiceController::class, 'index']);
         Route::post('/invoices', [InvoiceController::class, 'store'])
@@ -195,6 +200,8 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle.user:240,1'])->gr
 
         Route::get('/system/status-summary', [SystemStatusController::class, 'summary']);
         Route::get('/system/status', [SystemStatusController::class, 'show']);
+        Route::get('/system/audit-logs', [AuditLogController::class, 'index'])
+            ->middleware('throttle.user:60,1');
         Route::post('/system/client-errors', [ClientErrorLogController::class, 'store'])
             ->middleware('throttle:30,1');
 

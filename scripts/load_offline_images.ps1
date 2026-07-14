@@ -1,5 +1,5 @@
 # ==============================================================================
-# Hospital Billing OS - Cargador de Imágenes Docker Offline
+# S_Hospital - Cargador de Imágenes Docker Offline
 # ==============================================================================
 # Este script se ejecuta en el servidor del hospital.
 # Busca y carga las imágenes Docker exportadas en la carpeta offline-images/.
@@ -11,7 +11,7 @@ Set-StrictMode -Version Latest
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
 Write-Host "======================================================================" -ForegroundColor Cyan
-Write-Host "     [HOSPITAL BILLING OS - INSTALADOR DE IMAGENES OFFLINE]          " -ForegroundColor Cyan -BackgroundColor DarkBlue
+Write-Host "     [S_HOSPITAL - INSTALADOR DE IMAGENES OFFLINE]                  " -ForegroundColor Cyan -BackgroundColor DarkBlue
 Write-Host "======================================================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -65,29 +65,33 @@ foreach ($tar in $tarFiles) {
 Write-Host "[*] Validando disponibilidad en el registro local de Docker..." -ForegroundColor Yellow
 $localImages = docker images --format "{{.Repository}}:{{.Tag}}"
 
-# Imágenes requeridas
-# Nota: s_hospital-backend y s_hospital-queue-worker se listarán de acuerdo al ID cargado o al tag.
-# Al importar de docker load, mantienen sus tags originales (ej. s_hospital-backend:latest o con hashes).
-# Verificamos simplemente que existan palabras clave si no podemos garantizar el prefijo exacto.
-$requiredKeywords = @("backend", "queue-worker", "nginx", "mariadb")
-$missingCount = 0
+$requiredImages = @(
+    "s_hospital-backend:latest",
+    "s_hospital-queue-worker:latest",
+    "s_hospital-scheduler:latest",
+    "nginx:1.25.4-alpine",
+    "mariadb:11.4.3",
+    "quay.io/soketi/soketi:1.6-16-alpine"
+)
+$missingImages = @()
 
-foreach ($keyword in $requiredKeywords) {
-    $matched = $localImages | Where-Object { $_ -match $keyword }
-    if ($matched) {
-        Write-Host "[OK] Imagen para '$keyword' confirmada: $($matched -join ', ')" -ForegroundColor Green
-    } else {
-        Write-Host "[WARN] No se detectó ninguna imagen cargada que coincida con '$keyword'." -ForegroundColor Yellow
-        $missingCount++
+foreach ($requiredImage in $requiredImages) {
+    if ($localImages -contains $requiredImage) {
+        Write-Host "[OK] Imagen confirmada: $requiredImage" -ForegroundColor Green
+    }
+    else {
+        Write-Host "[FAIL] Falta la imagen requerida: $requiredImage" -ForegroundColor Red
+        $missingImages += $requiredImage
     }
 }
 
-if ($missingCount -gt 0) {
+if ($missingImages.Count -gt 0) {
     Write-Host ""
-    Write-Host "[WARN] Algunas imagenes recomendadas no fueron encontradas. Es posible que el arranque falle si no hay internet." -ForegroundColor Yellow
-} else {
-    Write-Host ""
-    Write-Host "[SUCCESS] Todas las imagenes requeridas se encuentran cargadas y listas en el servidor." -ForegroundColor Green
+    Write-Host "[FAIL] El paquete offline esta incompleto. No se intentara iniciar con descargas de internet." -ForegroundColor Red
+    exit 1
 }
+
+Write-Host ""
+Write-Host "[SUCCESS] Todas las imagenes requeridas estan cargadas y listas en el servidor." -ForegroundColor Green
 
 Write-Host "======================================================================" -ForegroundColor Cyan

@@ -1,13 +1,7 @@
-import { Link } from 'react-router-dom';
-import type { RefObject } from 'react';
-import { Banknote, ClipboardList } from 'lucide-react';
-import { Alert } from '../../../components/ui/alert';
-import { Badge } from '../../../components/ui/badge';
-import { Button } from '../../../components/ui/button';
-import { Card, CardContent } from '../../../components/ui/card';
-import { Dialog } from '../../../components/ui/dialog';
-import { ConfirmDialog } from '../../../components/ui/confirm-dialog';
-import { CashStatusCard, OperationalBanner } from '../../../components/shared/design-system';
+import { useNavigate } from 'react-router-dom';
+import { useEffect, useRef, useState, type RefObject } from 'react';
+import { LeftOutlined as ChevronLeft, RightOutlined as ChevronRight, ClearOutlined as Eraser, HistoryOutlined as History } from '@ant-design/icons';
+import { Alert, Button, Modal, Tag } from 'antd';
 import { ReceiptPreview } from '../../receipts/ReceiptPreview';
 import { PatientStep } from './PatientStep';
 import { ServiceSearch } from './ServiceSearch';
@@ -15,12 +9,13 @@ import { InvoiceCart } from './InvoiceCart';
 import { InvoiceConfirmation } from './InvoiceConfirmation';
 import { PaymentModal } from './PaymentModal';
 import { InvoiceSuccess } from './InvoiceSuccess';
-import type { Payment, ReceiptData, Service } from '../../../lib/api';
+import type { Payment, Service } from '../../../lib/api';
 import type { NewInvoiceState } from '../state/types';
-import { formatLempirasUIFromCents, parseCents } from '../../../lib/moneyCents';
+import { PageHeader } from '@/design-system/components/PageHeader';
 
 export type NewInvoiceLayoutProps = {
   state: NewInvoiceState;
+  paymentResult?: Pick<Payment, 'method' | 'paid_at'> | null;
   preview: { subtotal: string; tax: string; total: string };
   emitBlockReasons: string[];
   canEmit: boolean;
@@ -45,28 +40,28 @@ export type NewInvoiceLayoutProps = {
   onPaymentMethodChange: (val: Payment['method']) => void;
   onPaymentAmountChange: (val: string) => void;
   onPaymentReferenceChange: (val: string) => void;
-  onPreviewBeforePrintChange: (val: boolean) => void;
   onSubmitInvoice: () => void;
   onCobrar: () => void;
   onRetryLoad: () => void;
   onPaymentOpenChange: (val: boolean) => void;
   onSubmitPayment: (appliedAmount: string) => void;
-  onLoadReceipt: (width: ReceiptData['width']) => void;
   onPrintIssuedReceipt: () => void;
+  onSaveIssuedReceiptPdf?: () => void;
   onNuevaFactura: () => void;
   onSuccessDialogChange: (val: boolean) => void;
   onReceiptOpenChange: (val: boolean) => void;
   onClearCart: () => void;
   onClearConfirmChange: (val: boolean) => void;
-  onAutoPrintChange: (val: boolean) => void;
   patientInputRef: RefObject<HTMLInputElement | null>;
   searchInputRef: RefObject<HTMLInputElement | null>;
   scannerInputRef: RefObject<HTMLInputElement | null>;
 };
 
 export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
+  const navigate = useNavigate();
   const {
     state,
+    paymentResult,
     preview,
     emitBlockReasons,
     canEmit,
@@ -90,182 +85,233 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
     onPaymentMethodChange,
     onPaymentAmountChange,
     onPaymentReferenceChange,
-    onPreviewBeforePrintChange,
     onSubmitInvoice,
     onCobrar,
     onRetryLoad,
     onPaymentOpenChange,
     onSubmitPayment,
-    onLoadReceipt,
     onPrintIssuedReceipt,
+    onSaveIssuedReceiptPdf,
     onNuevaFactura,
     onSuccessDialogChange,
     onReceiptOpenChange,
     onClearCart,
     onClearConfirmChange,
-    onAutoPrintChange,
     patientInputRef,
     searchInputRef,
     scannerInputRef,
   } = props;
   const cashIsOpen = Boolean(state.loadedCashSession);
   const cashSessionLabel = state.loadedCashSession ? `Caja #${state.loadedCashSession.id}` : 'Caja cerrada';
+  const postedPayments = state.issuedInvoice?.payments?.filter((payment) => payment.status === 'posted') ?? [];
+  const latestPayment = paymentResult ?? postedPayments[postedPayments.length - 1];
+  const [mobileStep, setMobileStep] = useState<0 | 1 | 2>(0);
+  const patientRegionRef = useRef<HTMLElement | null>(null);
+  const servicesRegionRef = useRef<HTMLElement | null>(null);
+  const ticketRegionRef = useRef<HTMLElement | null>(null);
+  const hasChangedStepRef = useRef(false);
+  const stepLabels = ['Paciente', 'Servicios', 'Cuenta'] as const;
+
+  useEffect(() => {
+    if (!hasChangedStepRef.current) return;
+
+    const stepRegion = [patientRegionRef, servicesRegionRef, ticketRegionRef][mobileStep];
+    window.setTimeout(() => stepRegion.current?.focus(), 0);
+  }, [mobileStep]);
+
+  function goToStep(nextStep: 0 | 1 | 2) {
+    hasChangedStepRef.current = true;
+    setMobileStep(nextStep);
+  }
+
+  function continueMobileFlow() {
+    if (mobileStep === 0) {
+      onPatientSubmit();
+      if (state.patientName.trim() === '') return;
+      goToStep(1);
+      return;
+    }
+
+    if (mobileStep === 1) {
+      goToStep(2);
+    }
+  }
 
   return (
-    <section id="nueva-factura" className="flex h-full flex-col gap-4 pb-28 lg:pb-0">
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
-        <OperationalBanner
-          className="border-hospital-primary/25 bg-[linear-gradient(135deg,var(--color-operational-surface),var(--color-accent))]"
-          meta="Punto de venta hospitalario"
-          title="Nueva factura"
-          description="Registre paciente, agregue servicios facturables y continue al cobro institucional sin salir del flujo de caja."
-          status={
-            <Badge variant={cashIsOpen ? 'success' : 'destructive'} className="font-mono text-sm tabular-nums">
-              {cashIsOpen ? `${cashSessionLabel} - Abierta` : cashSessionLabel}
-            </Badge>
-          }
-        />
-        <CashStatusCard
-          status={cashIsOpen ? 'open' : 'attention'}
-          amount={cashSessionLabel}
-          label="Operacion de caja"
-          helper={cashIsOpen ? 'Lista para emitir y cobrar facturas.' : 'Debe abrir caja antes de emitir facturas.'}
-          actions={!cashIsOpen && canOpenCash && onOpenCash ? (
-              <Button type="button" variant="secondary" size="sm" onClick={onOpenCash}>
-                Abrir Caja
-              </Button>
+    <section id="nueva-factura" className="flex h-full min-w-0 flex-col gap-5 pb-36 md:pb-8">
+      <PageHeader
+        eyebrow="Operaciones financieras"
+        title="Nueva factura"
+        actions={(
+          <>
+          <Tag color={cashIsOpen ? 'success' : 'error'} className="min-h-11 px-3 font-mono text-sm tabular-nums sm:min-h-9 flex items-center border-0 m-0">
+            {cashIsOpen ? `${cashSessionLabel} · Abierta` : cashSessionLabel}
+          </Tag>
+          <Button type="default" icon={<History aria-hidden="true" />} onClick={() => navigate('/invoices')}>
+            Historial
+          </Button>
+          {(state.patientName || state.cartItems.length > 0) ? (
+            <Button type="text" onClick={() => onClearConfirmChange(true)} className="flex items-center gap-2">
+              <Eraser className="size-4" aria-hidden="true" />
+              Limpiar borrador
+            </Button>
           ) : null}
-        />
-      </div>
+          </>
+        )}
+      />
 
       <div role="status" aria-live="polite" aria-atomic="false" className="flex flex-col gap-3">
-        {state.pointOfSaleLoadError && (
-          <Alert variant="destructive" title="No se pudo cargar el punto de venta">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <span className="flex-1">{state.pointOfSaleLoadError}</span>
-              <Button type="button" variant="secondary" size="sm" onClick={onRetryLoad} disabled={state.loadingServices}>
-                {state.loadingServices ? 'Reintentando...' : 'Reintentar'}
-              </Button>
-            </div>
-          </Alert>
-        )}
-
         {!state.loadedCashSession && !state.pointOfSaleLoadError && (
-          <Alert variant="warning" title="Caja no abierta">
+          <Alert type="warning" showIcon title="Caja no abierta" description={
             <div className="flex flex-col sm:flex-row sm:items-center gap-3">
               <span className="flex-1">Debe abrir la caja antes de emitir facturas.</span>
               {canOpenCash && onOpenCash ? (
-                <Button type="button" variant="secondary" size="sm" onClick={onOpenCash}>
+                <Button type="default" onClick={onOpenCash}>
                   Abrir Caja
                 </Button>
               ) : (
                 <div className="flex flex-col gap-1 sm:items-end">
-                  <Button asChild variant="secondary" size="sm">
-                    <Link to="/cashbox">Ir a caja</Link>
-                  </Button>
+                  <Button type="default" onClick={() => navigate('/cashbox')}>Ir a caja</Button>
                   {!canOpenCash ? (
                     <span className="text-xs text-muted-foreground">Solicite apertura a un usuario autorizado.</span>
                   ) : null}
                 </div>
               )}
             </div>
-          </Alert>
+          } />
         )}
 
         {state.alertMessage && state.alertMessage !== state.pointOfSaleLoadError && (
-          <Alert variant="destructive" title="Revise antes de continuar">
-            {state.alertMessage}
-          </Alert>
+          <Alert type="error" showIcon title="Revise antes de continuar" description={state.alertMessage} />
         )}
 
         {state.warningMessage && (
-          <Alert variant="warning" title="Factura pendiente">
-            {state.warningMessage}
-          </Alert>
+          <Alert type="warning" showIcon title="Factura pendiente" description={state.warningMessage} />
         )}
 
         {state.successMessage && (
-          <Alert variant="success" title="Servicio agregado">
-            {state.successMessage.replace(/^Agregado: /, '')}
-          </Alert>
+          <Alert type="success" showIcon title="Servicio agregado" description={state.successMessage.replace(/^Agregado: /, '')} />
         )}
       </div>
 
-      <div className="grid flex-1 gap-4 lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_400px] xl:grid-cols-[minmax(0,1fr)_430px]">
-        <div className="flex flex-col gap-4 lg:min-h-0 lg:overflow-hidden">
-          <Card className="border-secondary/25 bg-operational-surface shadow-operational lg:shrink-0">
-            <CardContent className="pt-5">
-              <PatientStep
-                ref={patientInputRef}
-                patientName={state.patientName}
-                onPatientNameChange={onPatientNameChange}
-                onPatientSubmit={onPatientSubmit}
-                error={state.patientError}
-              />
-            </CardContent>
-          </Card>
-
-          <Card className="border-operational-border bg-operational-surface shadow-operational lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
-            <CardContent className="lg:min-h-0 lg:flex-1 lg:overflow-hidden">
-              <ServiceSearch
-                categories={state.categories}
-                serviceAreas={state.serviceAreas}
-                services={state.services}
-                selectedAreaId={state.selectedAreaId}
-                selectedCategoryId={state.selectedCategoryId}
-                onAreaChange={onAreaChange}
-                onCategoryChange={onCategoryChange}
-                search={state.search}
-                onSearchChange={onSearchChange}
-                scanCode={state.scanCode}
-                onScanCodeChange={onScanCodeChange}
-                onAddService={onAddService}
-                onAddByScanCode={onAddByScanCode}
-                searchInputRef={searchInputRef}
-                scannerInputRef={scannerInputRef}
-                loading={state.loadingServices}
-                scanningCode={state.scanningCode}
-                scannerEnabled={state.scannerEnabled}
-              />
-            </CardContent>
-          </Card>
-        </div>
-
-        <Card className="border-operational-border bg-operational-surface shadow-operational lg:sticky lg:top-20 lg:h-fit lg:shrink-0">
-          <CardContent className="pt-5">
-            <div className="mb-4 grid grid-cols-2 gap-2">
-              <div className="rounded-md border border-operational-border bg-operational-panel px-3 py-2">
-                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                  <ClipboardList className="size-3.5" aria-hidden="true" />
-                  Items
-                </div>
-                <p className="mt-1 font-mono text-lg font-semibold tabular-nums">{state.cartItems.length}</p>
-              </div>
-              <div className="rounded-md border border-secondary/25 bg-secondary/10 px-3 py-2">
-                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                  <Banknote className="size-3.5" aria-hidden="true" />
-                  Total
-                </div>
-                <p className="mt-1 font-mono text-lg font-semibold tabular-nums text-foreground">{moneyLabel(preview.total)}</p>
-              </div>
-            </div>
-            <InvoiceCart
-              items={state.cartItems}
-              preview={preview}
-              onUpdateQuantity={onUpdateQuantity}
-              onUpdateDialysisPrescription={onUpdateDialysisPrescription}
-              onRemoveItem={onRemoveItem}
-              onConfirm={onConfirm}
-              disabled={state.submitting || !canEmit}
-              disabledReasons={emitBlockReasons}
-              actionLabel={canCreatePayments && canViewReceipts ? 'Emitir y cobrar' : 'Emitir factura'}
-              emptyActionLabel="Agregue servicios"
-              submitting={state.submitting}
-              canMarkDialysisPrescription={props.canMarkDialysisPrescription}
-            />
-          </CardContent>
-        </Card>
+      <div aria-live="polite" className="mx-auto w-full max-w-5xl">
+        <ol className="grid grid-cols-3 overflow-hidden border border-border bg-surface">
+          {stepLabels.map((label, index) => (
+            <li key={label} className="min-w-0 border-r border-border last:border-r-0">
+              <Button type={mobileStep === index ? 'primary' : 'text'} aria-current={mobileStep === index ? 'step' : undefined} onClick={() => index <= mobileStep ? goToStep(index as 0 | 1 | 2) : undefined} disabled={index > mobileStep} className="h-auto min-h-14 w-full min-w-0 justify-start gap-2 px-3 py-3 text-left sm:px-4">
+                <span className={`flex size-8 shrink-0 items-center justify-center text-xs font-bold ${mobileStep === index ? 'bg-primary-foreground text-primary' : 'bg-muted text-muted-foreground'}`}>{index + 1}</span>
+                <span className="truncate text-xs font-semibold sm:text-sm">{label}</span>
+              </Button>
+            </li>
+          ))}
+        </ol>
       </div>
+
+      <div
+        data-billing-workspace
+        className="mx-auto grid w-full max-w-5xl min-w-0 flex-1 gap-4"
+      >
+        <section
+          ref={patientRegionRef}
+          aria-label="Paciente"
+          data-billing-region="patient"
+          data-billing-step="patient"
+          aria-hidden={mobileStep !== 0}
+          inert={mobileStep !== 0}
+          tabIndex={-1}
+          className={`${mobileStep === 0 ? 'block' : 'hidden'} min-w-0 border border-operational-border bg-operational-surface p-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:p-7`}
+        >
+          <PatientStep
+            ref={patientInputRef}
+            patientName={state.patientName}
+            onPatientNameChange={onPatientNameChange}
+            onPatientSubmit={onPatientSubmit}
+            error={state.patientError}
+          />
+        </section>
+
+        <section
+          ref={servicesRegionRef}
+          aria-label="Servicios"
+          data-billing-region="services"
+          data-billing-step="services"
+          aria-hidden={mobileStep !== 1}
+          inert={mobileStep !== 1}
+          tabIndex={-1}
+          className={`${mobileStep === 1 ? 'block' : 'hidden'} min-w-0 border border-operational-border bg-operational-surface p-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:p-7`}
+        >
+          <ServiceSearch
+            categories={state.categories}
+            serviceAreas={state.serviceAreas}
+            services={state.services}
+            selectedAreaId={state.selectedAreaId}
+            selectedCategoryId={state.selectedCategoryId}
+            onAreaChange={onAreaChange}
+            onCategoryChange={onCategoryChange}
+            search={state.search}
+            onSearchChange={onSearchChange}
+            scanCode={state.scanCode}
+            onScanCodeChange={onScanCodeChange}
+            onAddService={onAddService}
+            onAddByScanCode={onAddByScanCode}
+            searchInputRef={searchInputRef}
+            scannerInputRef={scannerInputRef}
+            loading={state.loadingServices}
+            scanningCode={state.scanningCode}
+            scannerEnabled={state.scannerEnabled}
+            error={state.pointOfSaleLoadError ?? undefined}
+            onRetry={onRetryLoad}
+          />
+        </section>
+
+        <aside
+          ref={ticketRegionRef}
+          aria-label="Cuenta actual"
+          data-billing-region="ticket"
+          data-billing-step="review"
+          aria-hidden={mobileStep !== 2}
+          inert={mobileStep !== 2}
+          tabIndex={-1}
+          className={`${mobileStep === 2 ? 'block' : 'hidden'} min-w-0 border border-secondary/25 bg-accent/25 p-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:p-7`}
+        >
+          <InvoiceCart
+            items={state.cartItems}
+            preview={preview}
+            onUpdateQuantity={onUpdateQuantity}
+            onUpdateDialysisPrescription={onUpdateDialysisPrescription}
+            onRemoveItem={onRemoveItem}
+            onConfirm={onConfirm}
+            disabled={state.submitting || !canEmit}
+            disabledReasons={emitBlockReasons}
+            actionLabel={canCreatePayments && canViewReceipts ? 'Emitir y cobrar' : 'Emitir factura'}
+            emptyActionLabel="Agregue servicios"
+            submitting={state.submitting}
+            canMarkDialysisPrescription={props.canMarkDialysisPrescription}
+          />
+        </aside>
+      </div>
+
+      <nav aria-label="Pasos de facturación" className="fixed inset-x-0 bottom-16 z-30 border-t border-operational-border bg-background p-3 md:static md:mx-auto md:w-full md:max-w-5xl md:border md:bg-surface">
+        <div className="mx-auto flex max-w-2xl gap-3 md:justify-end">
+          {mobileStep > 0 ? (
+            <Button type="default" className="min-h-11 flex-1 flex items-center justify-center gap-1" onClick={() => goToStep((mobileStep - 1) as 0 | 1)}>
+              <ChevronLeft className="size-4" aria-hidden="true" />
+              Atrás
+            </Button>
+          ) : null}
+          {mobileStep < 2 ? (
+            <Button
+              type="primary"
+              className="min-h-11 flex-1 flex items-center justify-center gap-1"
+              aria-label={mobileStep === 0 ? 'Continuar a servicios' : 'Continuar a cuenta'}
+              onClick={continueMobileFlow}
+            >
+              Continuar
+              <ChevronRight className="size-4" aria-hidden="true" />
+            </Button>
+          ) : null}
+        </div>
+      </nav>
 
       <InvoiceConfirmation
         open={state.showConfirmation}
@@ -274,6 +320,7 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
         items={state.cartItems}
         preview={preview}
         cashSessionId={state.loadedCashSession?.id}
+        canOpenPayment={canCreatePayments && canViewReceipts}
         onConfirm={onSubmitInvoice}
         submitting={state.submitting}
       />
@@ -289,12 +336,10 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
           paymentMethod={state.paymentMethod}
           paymentAmount={state.paymentAmount}
           paymentReference={state.paymentReference}
-          previewBeforePrint={state.previewBeforePrint}
           partialPaymentsEnabled={state.partialPaymentsEnabled}
           onPaymentMethodChange={onPaymentMethodChange}
           onPaymentAmountChange={onPaymentAmountChange}
           onPaymentReferenceChange={onPaymentReferenceChange}
-          onPreviewBeforePrintChange={onPreviewBeforePrintChange}
           onConfirm={onSubmitPayment}
           submitting={state.paying}
         />
@@ -308,47 +353,53 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
           patientName={state.issuedInvoice.patient_name}
           total={state.issuedInvoice.total}
           status={state.issuedInvoice.status}
+          canCollectPayment={canCreatePayments && canViewReceipts}
+          canPrintReceipt={canViewReceipts && Boolean(state.institutionalReceipt || state.receipt)}
+          canSavePdf={canViewReceipts && Boolean(state.institutionalReceipt) && Boolean(onSaveIssuedReceiptPdf)}
+          receiptRecoveryMessage={state.institutionalReceiptRecoveryMessage ?? undefined}
+          paymentMethod={latestPayment?.method ?? (state.issuedInvoice.status === 'paid' ? state.paymentMethod : undefined)}
+          paymentDate={latestPayment?.paid_at}
           onCobrar={onCobrar}
           onImprimir={onPrintIssuedReceipt}
+          onGuardarPdf={onSaveIssuedReceiptPdf}
           onNuevaFactura={onNuevaFactura}
         />
       )}
 
-      <Dialog
+      <Modal
         open={state.showReceipt && Boolean(state.receipt)}
-        onOpenChange={onReceiptOpenChange}
-        size="lg"
+        onCancel={() => onReceiptOpenChange(false)}
         title="Comprobante de factura"
-        description="Formato de compatibilidad para facturas antiguas o cuando el PDF institucional no esta disponible."
+        footer={null}
+        width={760}
+        destroyOnHidden
       >
+        <p className="text-sm text-muted-foreground mb-4">
+          Formato de compatibilidad para facturas antiguas o cuando el PDF institucional no esta disponible.
+        </p>
         {state.receipt ? (
           <ReceiptPreview
-            autoPrint={state.autoPrintReceipt}
             receipt={state.receipt}
-            onWidthChange={onLoadReceipt}
             onNewInvoice={onNuevaFactura}
-            onPrint={() => onAutoPrintChange(false)}
           />
         ) : null}
-      </Dialog>
+      </Modal>
 
-      <ConfirmDialog
+      <Modal
         open={state.showClearConfirm}
         title="Limpiar factura en curso"
-        confirmLabel="Limpiar"
-        cancelLabel="Seguir editando"
+        okText="Limpiar"
+        cancelText="Seguir editando"
         onCancel={() => onClearConfirmChange(false)}
-        onConfirm={() => {
+        onOk={() => {
           onClearConfirmChange(false);
           onClearCart();
         }}
       >
-        Se borraran paciente, busqueda y servicios agregados. Use esta accion solo si quiere empezar de nuevo.
-      </ConfirmDialog>
+        <p className="text-sm text-muted-foreground">
+          Se borraran paciente, busqueda y servicios agregados. Use esta accion solo si quiere empezar de nuevo.
+        </p>
+      </Modal>
     </section>
   );
-}
-
-function moneyLabel(value: string | number | null | undefined): string {
-  return formatLempirasUIFromCents(parseCents(value));
 }

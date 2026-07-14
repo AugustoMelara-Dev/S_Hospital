@@ -39,13 +39,16 @@ services:
              php artisan serve --host=0.0.0.0 --port=8000"
 
   frontend:
-    image: node:22-alpine
+    build:
+      context: ./frontend
     working_dir: /app
     volumes:
       - ./frontend:/app
       - frontend_node_modules:/app/node_modules
+      - ./qa:/qa
     environment:
       VITE_DEV_API_PROXY_TARGET: http://backend:8000
+      PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH: /usr/bin/chromium-browser
     ports:
       - "${FRONTEND_PORT:-5173}:5173"
     command: sh -c "npm install && npm run dev -- --host 0.0.0.0"

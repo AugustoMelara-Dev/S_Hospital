@@ -1,6 +1,32 @@
 # Current Release Truth - S_Hospital
 
-Fecha de verificacion: 2026-06-15
+Fecha de verificacion inicial: 2026-06-15
+
+## Actualizacion 2026-07-05
+
+Esta seccion corrige evidencia obsoleta sin declarar produccion lista.
+
+- Rama actual verificada: `codex/refactor-total`.
+- Este documento conserva secciones historicas de auditoria. Para evidencia
+  ejecutable vigente, usar `docs/testing-report.md`.
+- El objetivo actual es una release local monocomputadora. La prueba desde una
+  segunda PC LAN queda como validacion fisica para despliegues multi-PC, no como
+  siguiente blocker de ingenieria para el objetivo local.
+- No fijar un HEAD en esta seccion mientras el worktree siga avanzando por
+  fases; verificarlo con `git rev-parse HEAD` al cerrar cada commit.
+- `docker compose exec backend composer validate --no-interaction`: PASO, `./composer.json is valid`.
+- `docker compose exec backend composer audit --no-interaction`: PASO, `No security vulnerability advisories found.`
+- `composer validate/audit` ya no es un bloqueante cuando se ejecuta en el contenedor backend soportado.
+- `docker compose exec frontend npm audit --audit-level=high --json`: PASO, 0 vulnerabilidades totales.
+- `npm audit` ya no es un bloqueante cuando se ejecuta en el contenedor frontend soportado.
+- `docker compose exec frontend npm run typecheck`, `npm run lint` y `npm run build`: PASO el 2026-07-05.
+- Gate backend enfocado del nucleo (`InvoiceCreationTest`, `CashPaymentsReceiptTest`, `InvoiceHistoryReprintVoidTest`, `InvoiceReverseTest`, `ServiceCatalogTest`, `BackupWorkflowTest`, `UserManagementTest`, `ReportsTest`, `Reports/TodayReportTest`): PASO, 254 tests / 2032 aserciones.
+- `npm.cmd run e2e` ya no falla por password seed; ahora falla temprano por preflight si falta `backend/vendor/autoload.php` en el host. El camino containerizado de navegador tiene evidencia fresca en `docs/testing-report.md`.
+- `qa/production-audit/button-smoke-report.json` fue regenerado el 2026-07-05 con 79 resultados `passed`.
+- El estado global sigue siendo `NOT_READY`: faltan cierre del worktree, E2E
+  host o equivalente final, evidencia de impresion institucional/restore/backup
+  worker, configuracion production real, admin real y paquete offline final. La
+  evidencia fisica LAN externa aplica cuando el despliegue sea multi-PC.
 
 ## 1. HEAD actual
 
@@ -100,24 +126,22 @@ Estado unico actual: `NOT_READY`.
 Motivo:
 
 - No se puede declarar `PRODUCTION_READY`: faltan evidencias fisicas/finales requeridas.
-- No se puede declarar `PRODUCTION_CANDIDATE` limpio: `npm audit` falla, `composer audit/validate` no se pudo ejecutar, `npm run e2e` falla y el worktree esta sucio.
+- No se puede declarar `PRODUCTION_CANDIDATE` limpio: `npm run e2e` host falla por preflight de dependencias Composer locales y el worktree esta sucio.
 - No se puede declarar `READY_FOR_REAL_LAN_OFFLINE_INSTALLATION_TEST` vigente: ese estado requiere gates actuales cerrados; el E2E actual falla.
-- El nucleo funcional tiene evidencia fuerte por backend full test, frontend tests, build, Pint y PHPStan pasando, pero el release actual no esta cerrado.
+- El nucleo funcional tiene evidencia fuerte por backend full test historico, backend gate enfocado fresco, frontend tests, build, Pint y PHPStan pasando, pero el release actual no esta cerrado.
 
 ## 9. Bloqueantes actuales
 
 1. Worktree sucio con cambios no cerrados y archivos no rastreados.
-2. `npm.cmd audit --audit-level=high` falla con 6 vulnerabilidades altas.
-3. `composer validate` y `composer audit --no-interaction` no ejecutables porque Composer no esta instalado en PATH.
-4. `npm.cmd run e2e` falla por falta de `E2E_SEED_PASSWORD` o `--password`.
-5. Falta prueba desde segunda PC LAN.
-6. Falta impresora fisica institucional.
-7. Falta restore final en servidor/base descartable final.
-8. Falta worker continuo de backups validado en servidor final.
-9. Falta configuracion production real (`APP_ENV=production`, `APP_DEBUG=false`, dominios/IP LAN reales, herramientas MySQL dump).
-10. Falta admin real creado sin seeders de validacion.
-11. Falta paquete offline regenerado desde el commit final.
-12. Falta guard de release limpio sobre ese paquete final.
+2. `npm.cmd run e2e` host requiere `backend/vendor/autoload.php`; el preflight indica correr `composer install` en `backend/` antes de ese gate.
+3. Falta prueba de impresion institucional/PDF final.
+4. Falta prueba desde segunda PC LAN si el despliegue final sera multi-PC.
+5. Falta restore final en servidor/base descartable final.
+6. Falta worker continuo de backups validado en servidor final.
+7. Falta configuracion production real (`APP_ENV=production`, `APP_DEBUG=false`, dominios/IP LAN reales, herramientas MySQL dump).
+8. Falta admin real creado sin seeders de validacion.
+9. Falta paquete offline regenerado desde el commit final.
+10. Falta guard de release limpio sobre ese paquete final.
 
 ## 10. Pendientes no bloqueantes
 
@@ -155,21 +179,20 @@ No prometer:
 - Worker continuo de backups instalado y funcionando en servidor final.
 - Paquete offline final regenerado y limpio desde commit final.
 - Modulos clinicos completos.
-- Que `npm audit` esta limpio.
-- Que `composer audit` fue ejecutado en este host.
+- Que `npm audit` fue ejecutado en este host; la evidencia vigente es containerizada y limpia.
+- Que `composer audit` fue ejecutado en este host; la evidencia vigente es containerizada.
 
 ## 13. Proximo paso exacto para llegar a PRODUCTION_READY
 
 Orden recomendado:
 
-1. Arreglar el runner E2E: definir `E2E_SEED_PASSWORD` en el entorno del comando o ajustar `frontend/scripts/run-release-e2e.mjs` para pasar un password temporal seguro solo en `local/testing`; repetir `npm.cmd run e2e`.
-2. Resolver `npm.cmd audit --audit-level=high` con actualizacion de dependencias o excepcion documentada y aprobada si aplica solo a tooling no productivo.
-3. Instalar Composer en PATH o ejecutar `composer validate` y `composer audit --no-interaction` dentro de un entorno backend soportado.
-4. Revisar el worktree sucio, separar cambios por fase, ejecutar gates y commitear.
-5. Regenerar paquete offline desde el commit final.
-6. Ejecutar guard de release limpio.
-7. En servidor final: configurar production real, admin real y worker continuo de backups.
-8. Ejecutar y documentar segunda PC LAN, impresora fisica, restore final y concurrencia final.
-9. Ejecutar `scripts/final_production_handoff.ps1` sin bypass y sin evidencia faltante.
+1. Cerrar el E2E host: instalar dependencias Composer locales en `backend/` (`composer install`) o definir un runner host soportado equivalente; repetir `npm.cmd run e2e`.
+2. Revisar el worktree sucio, separar cambios por fase, ejecutar gates y commitear.
+3. Regenerar paquete offline desde el commit final.
+4. Ejecutar guard de release limpio.
+5. En servidor final: configurar production real, admin real y worker continuo de backups.
+6. Ejecutar y documentar impresion institucional, restore final, concurrencia final y segunda PC LAN si el despliegue sera multi-PC.
+7. Ejecutar `scripts/production_readiness_preflight.ps1` sin bypass de evidencia
+   cuando existan todos los archivos de prueba requeridos.
 
 Solo despues de esos pasos se puede evaluar `PRODUCTION_READY`.

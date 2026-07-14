@@ -62,6 +62,26 @@ describe('useServerStatus', () => {
     expect(screen.getByText(/base de datos local no responde/i)).toBeInTheDocument();
   });
 
+  it('asks for review when the latest successful backup fails integrity checks', async () => {
+    mockedGetSystemHealth.mockResolvedValue(
+      healthySnapshot({
+        backups: {
+          failed_last_24h: 0,
+          latest_success_checksum_matches: false,
+          latest_success_file_exists: true,
+          pending: 0,
+          success_last_24h: 1,
+          worker_recently_active: true,
+        },
+      }),
+    );
+
+    render(<ServerStatusProbe />, { wrapper: createWrapper() });
+
+    expect(await screen.findByText('Requiere revision')).toBeInTheDocument();
+    expect(await screen.findByText(/ultimo respaldo exitoso no pudo validarse/i)).toBeInTheDocument();
+  });
+
   it('does not describe 401 health responses as offline network failures', async () => {
     mockedGetSystemHealth.mockRejectedValue(new ApiError('Unauthenticated.', 401));
 
@@ -130,6 +150,8 @@ type OperationalHealthFixture = {
     pending: number;
     success_last_24h: number;
     worker_recently_active: boolean;
+    latest_success_file_exists?: boolean | null;
+    latest_success_checksum_matches?: boolean | null;
   };
   storage: {
     backup_bytes: number;

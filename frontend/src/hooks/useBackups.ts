@@ -1,6 +1,8 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { apiClient, type BackupLog } from '@/lib/api';
+import { createClientIdempotencyKey } from '@/lib/api/base';
+import { getVisibleRefetchInterval } from '@/lib/query/polling';
 import { invalidateBackupQueries } from '@/lib/queryInvalidation';
 import { queryKeys } from '@/lib/queryKeys';
 
@@ -15,6 +17,15 @@ const PENDING_POLL_INTERVAL_MS = 5_000;
 const STALE_TIME_MS = 30_000;
 const HEALTH_POLL_INTERVAL_MS = 60_000;
 
+function backupRows(result: unknown): BackupLog[] {
+  if (!result || typeof result !== 'object' || !('data' in result)) {
+    return [];
+  }
+
+  const data = (result as { data?: unknown }).data;
+  return Array.isArray(data) ? data as BackupLog[] : [];
+}
+
 export function useBackups(filters: BackupsFilters = {}) {
   const { enabled = true, ...apiFilters } = filters;
   const query = useQuery({
@@ -24,31 +35,39 @@ export function useBackups(filters: BackupsFilters = {}) {
     placeholderData: keepPreviousData,
     staleTime: STALE_TIME_MS,
     refetchInterval: (currentQuery) => {
-      const backups = currentQuery.state.data?.data ?? [];
+      const backups = backupRows(currentQuery.state.data);
       return backups.some((backup: BackupLog) => backup.status === 'pending')
-        ? PENDING_POLL_INTERVAL_MS
+        ? getVisibleRefetchInterval(PENDING_POLL_INTERVAL_MS)
         : false;
     },
   });
 
   const hasPending = useMemo(
-    () => (query.data?.data ?? []).some((backup: BackupLog) => backup.status === 'pending'),
+    () => backupRows(query.data).some((backup) => backup.status === 'pending'),
     [query.data],
   );
 
   return {
     ...query,
     hasPending,
-    pollIntervalMs: hasPending ? PENDING_POLL_INTERVAL_MS : false,
+    pollIntervalMs: hasPending ? getVisibleRefetchInterval(PENDING_POLL_INTERVAL_MS) : false,
   };
 }
 
 export function useCreateBackup() {
   const queryClient = useQueryClient();
+  const idempotencyKeyRef = useRef<string | null>(null);
 
   return useMutation({
-    mutationFn: () => apiClient.createBackup(),
+    mutationFn: () => {
+      idempotencyKeyRef.current ??= createClientIdempotencyKey();
+
+      return apiClient.createBackup({
+        idempotencyKey: idempotencyKeyRef.current,
+      });
+    },
     onSuccess: () => {
+      idempotencyKeyRef.current = null;
       return invalidateBackupQueries(queryClient);
     },
   });
@@ -75,7 +94,7 @@ export function useBackupWorkerHealth(enabled = true) {
       };
     },
     enabled,
-    refetchInterval: HEALTH_POLL_INTERVAL_MS,
+    refetchInterval: () => getVisibleRefetchInterval(HEALTH_POLL_INTERVAL_MS),
     staleTime: HEALTH_POLL_INTERVAL_MS / 2,
   });
 }

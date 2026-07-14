@@ -53,6 +53,36 @@ function LoginProbe() {
   );
 }
 
+function PermissionProbe() {
+  const session = useHospitalSession();
+
+  return (
+    <output>
+      {`${session.loading ? 'loading' : 'ready'}:reports=${session.canViewReports ? 'yes' : 'no'}:operational=${session.hasAnyOperationalPermission ? 'yes' : 'no'}`}
+    </output>
+  );
+}
+
+function CashPermissionProbe() {
+  const session = useHospitalSession();
+
+  return (
+    <output>
+      {`${session.loading ? 'loading' : 'ready'}:close=${session.canCloseCash ? 'yes' : 'no'}:close-any=${session.canCloseAnyCash ? 'yes' : 'no'}`}
+    </output>
+  );
+}
+
+function SetupPermissionProbe() {
+  const session = useHospitalSession();
+
+  return (
+    <output>
+      {`${session.loading ? 'loading' : 'ready'}:fiscal-edit=${session.canEditFiscalSettings ? 'yes' : 'no'}:catalog-manage=${session.canManageCatalog ? 'yes' : 'no'}`}
+    </output>
+  );
+}
+
 describe('useHospitalSession', () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -137,6 +167,59 @@ describe('useHospitalSession', () => {
         permissions: [],
         must_change_password: false,
       });
+    });
+  });
+
+  it('does not treat generic reports.view as a usable report permission', async () => {
+    vi.spyOn(apiClient, 'session').mockResolvedValue({
+      id: 1,
+      name: 'Operador reportes legado',
+      email: 'reportes.legado@hospital.local',
+      username: 'reportes.legado',
+      active: true,
+      roles: ['operador'],
+      permissions: ['reports.view'],
+      must_change_password: false,
+    });
+
+    render(<PermissionProbe />, { wrapper: makeWrapper() });
+
+    await waitFor(() => expect(screen.getByText('ready:reports=no:operational=no')).toBeInTheDocument());
+  });
+
+  it('treats cash.close_any as a usable close permission for supervisor rescue', async () => {
+    vi.spyOn(apiClient, 'session').mockResolvedValue({
+      id: 1,
+      name: 'Supervisor caja',
+      email: 'supervisor.caja@hospital.local',
+      username: 'supervisor.caja',
+      active: true,
+      roles: ['supervisor'],
+      permissions: ['cash.view', 'cash.close_any'],
+      must_change_password: false,
+    });
+
+    render(<CashPermissionProbe />, { wrapper: makeWrapper() });
+
+    await waitFor(() => expect(screen.getByText('ready:close=yes:close-any=yes')).toBeInTheDocument());
+  });
+
+  it('deriva por separado edición fiscal y gestión de catálogo', async () => {
+    vi.spyOn(apiClient, 'session').mockResolvedValue({
+      id: 1,
+      name: 'Configurador',
+      email: 'configurador@hospital.local',
+      username: 'configurador',
+      active: true,
+      roles: ['configurador'],
+      permissions: ['settings.fiscal.update', 'catalog.manage'],
+      must_change_password: false,
+    });
+
+    render(<SetupPermissionProbe />, { wrapper: makeWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByText('ready:fiscal-edit=yes:catalog-manage=yes')).toBeInTheDocument();
     });
   });
 });

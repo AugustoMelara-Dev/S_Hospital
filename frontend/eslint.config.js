@@ -1,3 +1,6 @@
+// For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
+import storybook from "eslint-plugin-storybook";
+
 import js from '@eslint/js';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
@@ -5,7 +8,7 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
 
 export default tseslint.config(
-  { ignores: ['dist', 'coverage', 'node_modules', 'playwright-report', 'test-results', '**/.agents/**', '**/.claude/**'] },
+  { ignores: ['dist', 'coverage', 'node_modules', 'playwright-report', 'test-results', 'storybook-static', '**/.agents/**', '**/.claude/**'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
@@ -68,4 +71,5 @@ export default tseslint.config(
       'jsx-a11y/label-has-associated-control': 'off',
     },
   },
+  storybook.configs["flat/recommended"]
 );

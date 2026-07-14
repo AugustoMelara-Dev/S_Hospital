@@ -72,6 +72,39 @@ class HealthCheckTest extends TestCase
             ->assertHeaderMissing('Access-Control-Allow-Origin');
     }
 
+    public function test_local_vite_preflight_allows_idempotency_header_and_exposes_paper_warning(): void
+    {
+        $response = $this
+            ->withHeaders([
+                'Origin' => 'http://127.0.0.1:5173',
+                'Access-Control-Request-Method' => 'POST',
+                'Access-Control-Request-Headers' => 'Idempotency-Key, X-XSRF-TOKEN',
+            ])
+            ->options('/api/invoices');
+
+        $response
+            ->assertNoContent()
+            ->assertHeader('Access-Control-Allow-Origin', 'http://127.0.0.1:5173')
+            ->assertHeader('Access-Control-Allow-Credentials', 'true');
+
+        $allowedMethods = $response->headers->get('Access-Control-Allow-Methods', '');
+        $allowedHeaders = strtolower($response->headers->get('Access-Control-Allow-Headers', ''));
+
+        $this->assertStringContainsString('POST', $allowedMethods);
+        $this->assertStringContainsString('idempotency-key', $allowedHeaders);
+        $this->assertStringContainsString('x-xsrf-token', $allowedHeaders);
+
+        $actualResponse = $this
+            ->withHeaders(['Origin' => 'http://127.0.0.1:5173'])
+            ->getJson('/api/health');
+
+        $actualResponse
+            ->assertOk()
+            ->assertHeader('Access-Control-Allow-Origin', 'http://127.0.0.1:5173');
+
+        $this->assertStringContainsString('X-S-Hospital-Paper-Size-Warning', $actualResponse->headers->get('Access-Control-Expose-Headers', ''));
+    }
+
     public function test_health_endpoint_has_rate_limit_applied(): void
     {
         $routes = app('router')->getRoutes();

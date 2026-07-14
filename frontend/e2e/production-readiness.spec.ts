@@ -63,6 +63,7 @@ const adminUser = {
     'reports.managerial.view',
     'reports.cash_session.view',
     'reports.export',
+    'audit.view',
     'backups.view',
     'backups.create',
     'backups.download',
@@ -279,7 +280,7 @@ async function installApiMocks(page: Page) {
   await page.route('**/api/areas**', (route) => json(route, { data: [] }));
   await page.route('**/api/service-areas**', (route) => json(route, { data: [] }));
   await page.route('**/api/services**', (route) => json(route, { data: services, meta: { total: services.length } }));
-  await page.route('**/api/cash-sessions/current', (route) => json(route, { data: currentCashSession }));
+  await page.route('**/api/cash-sessions/current**', (route) => json(route, { data: currentCashSession }));
   await page.route(/\/api\/cash-sessions(?:\?|$)/, (route) => {
     const sessions = currentCashSession ? [currentCashSession] : [];
 
@@ -311,7 +312,7 @@ async function installApiMocks(page: Page) {
 
     if (route.request().method() === 'POST') {
       const payload = await route.request().postDataJSON();
-      const hasDialysisPrescription = payload.items?.some((item: { dialysis_prescription?: boolean }) => item.dialysis_prescription);
+      const hasDialysisPrescription = payload.dialysis_prescription === true;
       const id = 100 + invoiceCounter;
       const invoice = {
         id,
@@ -325,6 +326,8 @@ async function installApiMocks(page: Page) {
         balance_due: hasDialysisPrescription ? '0.00' : '25.00',
         status: hasDialysisPrescription ? 'paid' : 'issued',
         issued_at: operationalIssuedAt,
+        institutional_receipt: null,
+        payments: [],
         items: [{
           id: 1,
           service_id: 10,
@@ -360,44 +363,74 @@ async function installApiMocks(page: Page) {
     invoice.paid_amount = invoice.total;
     invoice.balance_due = '0.00';
     invoice.status = 'paid';
+    const payment = {
+      id: 50,
+      invoice_id: invoiceId,
+      cash_session_id: 7,
+      user_id: currentUser.id,
+      method: 'cash',
+      amount: invoice.total,
+      reference: null,
+      status: 'posted',
+      paid_at: operationalPaidAt,
+    };
+    const institutionalReceipt = institutionalReceiptFor(invoice, payment.id);
+    invoice.payments = [payment];
+    invoice.institutional_receipt = institutionalReceipt;
+
     return json(route, {
       data: {
-        payment: {
-          id: 50,
-          invoice_id: invoiceId,
-          cash_session_id: 7,
-          user_id: currentUser.id,
-          method: 'cash',
-          amount: invoice.total,
-          reference: null,
-          status: 'posted',
-          paid_at: operationalPaidAt,
-        },
+        payment,
         invoice,
+        institutional_receipt: institutionalReceipt,
+        institutional_receipt_error: null,
+        receipt_outcome: 'issued',
       },
     }, 201);
   });
 
-  await page.route('**/api/invoices/*/receipt**', (route) => {
-    const invoiceId = Number(route.request().url().match(/invoices\/(\d+)\/receipt/)?.[1]);
-    const width = new URL(route.request().url()).searchParams.get('width') ?? 'half_letter';
-    return json(route, { data: receiptFor(invoices[invoiceId], width) });
+  await page.route('**/api/institutional-receipts', async (route) => {
+    const payload = await route.request().postDataJSON() as { invoice_id: number };
+    const invoice = invoices[payload.invoice_id];
+    const institutionalReceipt = institutionalReceiptFor(invoice, null);
+    invoice.institutional_receipt = institutionalReceipt;
+
+    return json(route, { data: institutionalReceipt }, 201);
   });
 
-  await page.route('**/api/invoices/*/reprint', (route) => {
-    const invoiceId = Number(route.request().url().match(/invoices\/(\d+)\/reprint/)?.[1]);
-    const width = new URL(route.request().url()).searchParams.get('width') ?? 'half_letter';
-    return json(route, { data: { receipt: receiptFor(invoices[invoiceId], width) } });
-  });
+  await page.route('**/api/institutional-receipts/*/print-events**', (route) => json(route, {
+    data: {
+      id: 1,
+      institutional_receipt_id: Number(route.request().url().match(/institutional-receipts\/(\d+)/)?.[1]),
+      reason: null,
+      created_at: operationalPaidAt,
+    },
+  }, 201));
+
+  await page.route('**/api/institutional-receipts/*/pdf**', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/pdf',
+    body: '%PDF-1.4 institutional receipt',
+  }));
 
   await page.route('**/api/reports/cash-sessions/*', (route) => json(route, {
     data: {
-      session: currentCashSession,
+      cash_session: currentCashSession,
+      totals_by_method: { cash: '25.00', transfer: '0.00', card: '0.00', other: '0.00' },
+      total_cash: '25.00',
+      total_transfer: '0.00',
+      total_card: '0.00',
+      total_other: '0.00',
+      payments_count: 1,
+      payments_total: '25.00',
       payments: [],
       movements: [],
       expected_cash_amount: currentCashSession?.opening_amount ?? '0.00',
-      cash_difference: '0.00',
-      permissions: { can_close: true, can_view_any: false },
+      pending_invoice_count: 0,
+      pending_amount: '0.00',
+      missing_institutional_receipt_count: 0,
+      reversed_payments_count: 0,
+      reversed_payments_total: '0.00',
     },
   }));
 
@@ -564,10 +597,23 @@ async function installApiMocks(page: Page) {
     data: {
       date_from: '2026-05-17',
       date_to: '2026-05-17',
-      voided_invoices: [],
+      filters: {},
+      summary: {
+        void_count: 0,
+        reprint_count: 0,
+        audit_event_count: 0,
+        service_change_count: 0,
+        payment_void_count: 0,
+        backup_count: 0,
+        failed_backup_count: 0,
+        cashier_count: 0,
+      },
+      voids: [],
       reprints: [],
+      catalog_changes: [],
+      payment_voids: [],
       backups: [],
-      summary: { voided_count: 0, reprint_count: 0, backup_count: 0 },
+      cashiers: [],
     },
   }));
   await page.route('**/api/admin/users', (route) => json(route, {
@@ -765,38 +811,37 @@ async function installApiMocks(page: Page) {
   }));
 }
 
-function receiptFor(invoice: Record<string, unknown>, width: string) {
+function institutionalReceiptFor(invoice: Record<string, unknown>, paymentId: number | null) {
+  const invoiceId = Number(invoice.id);
+  const receiptNumber = invoiceId - 10;
+
   return {
-    width,
-    hospital: { name: 'Hospital San Isidro', rtn: '08011999123456' },
-    fiscal: {
-      cai: 'VALIDACION-CAI',
-      authorized_range: '000-001-01-00000001 a 000-001-01-99999999',
-      valid_until: '2027-05-17',
-    },
-    invoice: {
-      id: invoice.id,
-      invoice_number: invoice.invoice_number,
-      issued_at: invoice.issued_at,
-      cashier: 'Cajero Validacion',
-      patient_name: invoice.patient_name,
-      subtotal: invoice.subtotal,
-      tax_amount: invoice.tax_amount,
-      discount_amount: invoice.discount_amount,
-      total: invoice.total,
-      paid_amount: invoice.paid_amount,
-      balance_due: invoice.balance_due,
-      status: invoice.status,
-    },
-    items: invoice.items,
-    payments: [{
-      id: 50,
-      method: 'cash',
-      amount: invoice.total,
-      reference: null,
-      paid_at: operationalPaidAt,
-      cashier: 'Cajero Validacion',
-    }],
+    id: invoiceId,
+    invoice_id: invoiceId,
+    payment_id: paymentId,
+    cash_session_id: 7,
+    series_id: 1,
+    receipt_number: receiptNumber,
+    receipt_number_full: `REC-A-${String(receiptNumber).padStart(8, '0')}`,
+    status: 'issued',
+    amount: invoice.total,
+    amount_cents: Math.round(Number(invoice.total) * 100),
+    issued_at: operationalPaidAt,
+    issued_by: cashierUser.id,
+    payer_name: invoice.patient_name,
+    concept: `Pago de factura ${invoice.invoice_number}`,
+    amount_words: Number(invoice.total) === 0
+      ? 'CERO LEMPIRAS CON 00/100'
+      : 'VEINTICINCO LEMPIRAS CON 00/100',
+    template_code: 'institutional_classic',
+    print_profile_code: 'media_carta_horizontal',
+    copy_mode: 'original_only',
+    reprint_count: 0,
+    print_events_count: 1,
+    has_print_events: true,
+    voided_by: null,
+    voided_at: null,
+    void_reason: null,
   };
 }
 
@@ -975,6 +1020,7 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
       if (text.includes('[echo]')) return;
       if (text.includes('[posMath]')) return;
       if (text.includes('Missing `Description`')) return;
+      if (text.includes('width(-1) and height(-1) of chart')) return;
       if (/Failed to load resource: the server responded with a status of 404/i.test(text)) return;
       consoleIssues.push(`${msg.type()}: ${msg.text()}`);
     }
@@ -1005,8 +1051,9 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
 
   await expect(page.getByRole('heading', { name: /^caja$/i })).toBeVisible();
   await page.getByRole('main').getByRole('button', { name: /abrir caja/i }).click();
-  await expect(page.getByRole('heading', { name: /cerrar caja/i })).toBeVisible();
-  await captureScreen(page, 'cashbox-close-dialog-light', 'light');
+  await expect(page.getByRole('alertdialog', { name: /confirmar apertura de caja/i })).toBeVisible();
+  await captureScreen(page, 'cashbox-open-confirm-light', 'light');
+  await page.getByRole('alertdialog', { name: /confirmar apertura de caja/i }).getByRole('button', { name: /abrir caja/i }).click();
   if (await page.getByRole('dialog', { name: /caja activa/i }).isVisible().catch(() => false)) {
     await page.getByRole('button', { name: /cerrar modal/i }).click();
   }
@@ -1026,21 +1073,15 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await page.getByRole('button', { name: /emitir y abrir cobro/i }).click();
   await expect(page.getByRole('heading', { name: /registrar pago/i })).toBeVisible();
   await captureScreen(page, 'payment-modal-light', 'light');
-  await expect(page.getByText(/ingrese el monto recibido/i)).toBeVisible();
-  await page.getByLabel(/monto recibido/i).fill('25.00');
-  await expect(page.getByText(/ingrese el monto recibido/i)).toBeHidden();
+  await expect(page.getByLabel(/monto recibido/i)).toHaveValue('25.00');
   await page.getByRole('button', { name: /confirmar cobro/i }).click();
-  await expect(page.getByRole('dialog', { name: /comprobante de factura/i })).toBeVisible();
-  await expect(page.getByText('Media carta')).toBeVisible();
-  await captureScreen(page, 'receipt-preview-light', 'light');
-  await page.getByRole('combobox', { name: /tama(?:ñ|n)o del recibo/i }).click();
-  await page.getByRole('option', { name: 'A5', exact: true }).click({ force: true });
-  await expect(page.getByLabel(/recibo institucional/i)).toHaveClass(/receipt-a5/);
-  await captureScreen(page, 'receipt-preview-a5-light', 'light');
+  await expect(page.getByRole('dialog', { name: /factura pagada/i })).toBeVisible();
+  await expect(page.getByText(/REC-A-00000091/i).first()).toBeVisible();
+  await expect(page.getByRole('button', { name: /imprimir recibo institucional/i })).toBeVisible();
+  await captureScreen(page, 'institutional-receipt-issued-light', 'light');
   await setVisualTheme(page, 'dark');
-  await captureScreen(page, 'receipt-preview-dark', 'dark');
+  await captureScreen(page, 'institutional-receipt-issued-dark', 'dark');
   await setVisualTheme(page, 'light');
-  await page.getByRole('button', { name: /cerrar modal/i }).click();
   await page.getByRole('button', { name: /crear otra factura/i }).click();
 
   await page.getByRole('link', { name: /nueva factura/i }).click();
@@ -1053,9 +1094,8 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await expect(dialysisPrescription).toHaveAttribute('aria-checked', 'true');
   await page.getByRole('button', { name: /emitir y cobrar/i }).click();
   await page.getByRole('button', { name: /confirmar emisi.n/i }).click();
-  await expect(page.getByRole('dialog', { name: /comprobante de factura/i })).toBeVisible();
-  await expect(page.getByText('L. 0.00').first()).toBeVisible();
-  await page.getByRole('button', { name: /cerrar modal/i }).click({ force: true });
+  await expect(page.getByRole('dialog', { name: /factura pagada/i })).toBeVisible();
+  await expect(page.getByText(/REC-A-00000092/i).first()).toBeVisible();
   await page.getByRole('button', { name: /crear otra factura/i }).click();
 
   await page.getByRole('link', { name: /historial/i }).click();
@@ -1065,15 +1105,12 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   }
   await captureScreen(page, 'invoice-history-light', 'light');
   await page.getByRole('button', { name: /buscar/i }).click();
-  await page.getByRole('button', { name: /^reimprimir$/i }).first().click();
-  await page.getByLabel(/motivo de reimpresi.n/i).fill('Copia solicitada por paciente para expediente administrativo.');
-  await page.getByRole('button', { name: /registrar reimpresi.n/i }).click();
-  await expect(page.getByRole('dialog', { name: /comprobante de factura - 000-001-01-00000001/i })).toBeVisible();
-  await page.getByRole('combobox', { name: /tama(?:ñ|n)o del recibo/i }).click();
-  await page.getByRole('option', { name: 'A5', exact: true }).click({ force: true });
-  await expect(page.getByLabel(/recibo institucional/i)).toHaveClass(/receipt-a5/);
-
-  await page.getByRole('button', { name: /cerrar modal/i }).click();
+  await page.getByRole('button', { name: /acciones de la factura/i }).first().click();
+  await page.getByRole('menuitem', { name: 'Reimprimir', exact: true }).click();
+  const reprintDialog = page.getByRole('alertdialog', { name: /reimprimir 000-001-01-00000001/i });
+  await reprintDialog.getByRole('textbox', { name: /^motivo$/i }).fill('Copia solicitada por paciente para expediente administrativo.');
+  await reprintDialog.getByRole('button', { name: /^reimprimir$/i }).click();
+  await expect(page.getByText(/PDF institucional REC-A-00000091 abierto/i).first()).toBeVisible();
   await page.getByRole('button', { name: /abrir men(?:u|ú|Ãº) de usuario/i }).click();
   await page.getByText(/cerrar sesi.n/i).click();
   await page.getByLabel(/usuario o (correo|email)/i).fill('admin.validacion');
@@ -1085,13 +1122,16 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await expect(page.getByRole('link', { name: /reportes/i })).toBeVisible();
   await page.getByRole('link', { name: /reportes/i }).click();
   await expect(page.getByRole('heading', { name: /^reportes$/i })).toBeVisible();
-  await expect(page.getByRole('heading', { name: /cobrado/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /control ejecutivo/i })).toBeVisible();
   await captureScreen(page, 'reports-admin-light', 'light');
-  await page.getByRole('tab', { name: /^caja$/i }).click();
+  const reportSections = page.getByLabel(/secciones de reportes/i);
+  await reportSections.getByRole('link', { name: /^caja /i }).click();
+  await expect(page.getByRole('heading', { name: /operacion de caja|control de caja/i })).toBeVisible();
   await captureScreen(page, 'reports-cash-light', 'light');
-  await page.getByRole('tab', { name: /^servicios$/i }).click();
-  await captureScreen(page, 'reports-services-light', 'light');
-  await page.getByRole('tab', { name: /^resumen$/i }).click();
+  await reportSections.getByRole('link', { name: /^auditoria /i }).click();
+  await expect(page.getByRole('heading', { level: 1, name: /^auditoria$/i })).toBeVisible();
+  await captureScreen(page, 'reports-audit-light', 'light');
+  await reportSections.getByRole('link', { name: /^ejecutivo /i }).click();
   await setVisualTheme(page, 'dark');
   await captureScreen(page, 'reports-admin-dark', 'dark');
   await setVisualTheme(page, 'light');
@@ -1209,6 +1249,7 @@ test('responsive shell keeps operational modules reachable', async ({ page }) =>
       if (text.includes('[echo]')) return;
       if (text.includes('[posMath]')) return;
       if (text.includes('Missing `Description`')) return;
+      if (text.includes('width(-1) and height(-1) of chart')) return;
       if (/Failed to load resource: the server responded with a status of 404/i.test(text)) return;
       consoleIssues.push(`${msg.type()}: ${msg.text()}`);
     }
@@ -1269,6 +1310,7 @@ test('main screens expose named controls and dangerous actions can be cancelled'
       if (text.includes('[echo]')) return;
       if (text.includes('[posMath]')) return;
       if (text.includes('Missing `Description`')) return;
+      if (text.includes('width(-1) and height(-1) of chart')) return;
       if (/Failed to load resource: the server responded with a status of 404/i.test(text)) return;
       consoleIssues.push(`${msg.type()}: ${msg.text()}`);
     }

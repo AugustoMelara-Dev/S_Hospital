@@ -321,7 +321,6 @@ class OperationsReportService
                 ->limit(25)
                 ->get()
                 ->map(fn (BackupLog $backup): array => [
-                    'filename' => $backup->filename,
                     'status' => $backup->status,
                     'type' => $backup->type,
                     'size_bytes' => $backup->size_bytes,
@@ -579,6 +578,7 @@ class OperationsReportService
             'is_billable',
             'special_rule_code',
             'price_change_reason',
+            'tax_change_reason',
         ] as $field) {
             if (array_key_exists($field, $values)) {
                 $safe[$field] = $values[$field];

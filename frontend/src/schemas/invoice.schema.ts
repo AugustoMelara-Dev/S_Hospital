@@ -11,12 +11,12 @@ export const invoiceItemSchema = z.object({
       const parsed = parseFloat(val);
       return parsed > 0 && parsed <= 999999.99;
     }, 'La cantidad debe ser mayor que cero y menor que 1,000,000'),
-  dialysis_prescription: z.boolean().optional(),
   notes: z.string().nullable().optional(),
 });
 
 export const invoiceSchema = z.object({
   patient_name: z.string()
+    .trim()
     .min(1, 'Nombre del paciente es requerido')
     .max(PATIENT_NAME_MAX_LENGTH, `Nombre del paciente no puede superar ${PATIENT_NAME_MAX_LENGTH} caracteres`),
   dialysis_prescription: z.boolean().optional(),

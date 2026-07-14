@@ -1,8 +1,9 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { Grid } from 'antd';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FiscalSettingsView } from './FiscalSettingsView';
-import { apiClient, type FiscalSettings } from '@/lib/api';
+import { apiClient, type FiscalSequence, type FiscalSettings } from '@/lib/api';
 
 const fiscalSettings: FiscalSettings = {
   id: 1,
@@ -22,11 +23,32 @@ const fiscalSettings: FiscalSettings = {
   receipt_footer_text: '',
 };
 
-function renderView(props: { canEdit?: boolean; onStatus?: (message: string) => void } = {}) {
+const fiscalSequence: FiscalSequence = {
+  id: 1,
+  document_type: 'invoice',
+  prefix: 'A',
+  min_number: 1,
+  max_number: 1000,
+  current_number: 10,
+  cai: 'CAI-TEST',
+  valid_until: '2026-12-31',
+  active: true,
+};
+
+function renderView(
+  props: {
+    canEdit?: boolean;
+    canEditOperationalRules?: boolean;
+    canViewFiscalSettings?: boolean;
+    onStatus?: (message: string) => void;
+  } = {},
+) {
   return render(
     <MemoryRouter>
       <FiscalSettingsView
         canEdit={props.canEdit ?? true}
+        canEditOperationalRules={props.canEditOperationalRules ?? props.canEdit ?? true}
+        canViewFiscalSettings={props.canViewFiscalSettings ?? true}
         onStatus={props.onStatus ?? vi.fn()}
       />
     </MemoryRouter>,
@@ -37,8 +59,17 @@ describe('FiscalSettingsView (separated sections)', () => {
   beforeEach(() => {
     vi.spyOn(apiClient, 'getFiscalSettings').mockResolvedValue(fiscalSettings);
     vi.spyOn(apiClient, 'getFiscalSequences').mockResolvedValue([]);
+    vi.spyOn(apiClient, 'getOperationalSettings').mockResolvedValue({
+      default_tax_rate: '15.00',
+      scanner_enabled: false,
+      partial_payments_enabled: false,
+    });
     vi.spyOn(apiClient, 'getLogo').mockResolvedValue(null);
     vi.spyOn(apiClient, 'updateFiscalSettings').mockResolvedValue(fiscalSettings);
+    vi.spyOn(apiClient, 'updateOperationalSettings').mockResolvedValue({
+      scanner_enabled: true,
+      partial_payments_enabled: false,
+    });
     vi.spyOn(apiClient, 'saveFiscalSequence').mockResolvedValue({
       id: 1,
       document_type: 'invoice',
@@ -61,7 +92,7 @@ describe('FiscalSettingsView (separated sections)', () => {
     document.documentElement.removeAttribute('data-color-theme');
   });
 
-  it('renders a single accessible h1 and the sectioned configuration tabs', async () => {
+  it('renders a single accessible h1 and keeps receipts as a dedicated route, not a fiscal tab', async () => {
     renderView();
 
     expect(
@@ -73,7 +104,23 @@ describe('FiscalSettingsView (separated sections)', () => {
     expect(screen.getByRole('tab', { name: /numeraci[oó]n/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /operativa/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /^marca$/i })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /^recibos$/i })).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: /^recibos$/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /administrar recibos/i })).toHaveAttribute(
+      'href',
+      '/settings/institutional-receipts',
+    );
+  });
+
+  it('uses vertical tabs on narrow screens so every tab remains a direct tablist child', async () => {
+    vi.spyOn(Grid, 'useBreakpoint').mockReturnValue({ md: false });
+
+    renderView();
+
+    await screen.findByRole('heading', { level: 1 });
+    const tabList = screen.getByRole('tablist');
+    expect(tabList.closest('.ant-tabs')).toHaveClass('ant-tabs-left');
+    expect(tabList).toHaveAttribute('aria-orientation', 'vertical');
+    expect(tabList.querySelector('.ant-tabs-nav-operations')).toHaveClass('ant-tabs-nav-operations-hidden');
   });
 
   it('renders a sanitized load error when the API fails', async () => {
@@ -96,5 +143,42 @@ describe('FiscalSettingsView (separated sections)', () => {
     expect(
       screen.queryByText(/prueba de impresi[oó]n|pdf de prueba|perfil de impresi[oó]n|serie de recibo/i),
     ).not.toBeInTheDocument();
+  });
+
+  it('uses the active fiscal sequence in the summary', async () => {
+    vi.mocked(apiClient.getFiscalSequences).mockResolvedValueOnce([fiscalSequence]);
+
+    renderView();
+
+    expect(await screen.findByText('CAI-TEST')).toBeInTheDocument();
+    expect(screen.getByText('A-00000001 a A-00001000')).toBeInTheDocument();
+    expect(screen.getByText('A-00000011')).toBeInTheDocument();
+    expect(screen.queryByText(/CAI y prefijo fiscal/i)).not.toBeInTheDocument();
+  });
+
+  it('allows editing only operational rules with the operational settings permission', async () => {
+    renderView({ canEdit: false, canEditOperationalRules: true });
+
+    await screen.findByRole('heading', { level: 1, name: /^configuraci.n$/i });
+    const operationalTab = screen.getByRole('tab', { name: /operativa/i });
+    fireEvent.mouseDown(operationalTab);
+    fireEvent.click(operationalTab);
+
+    expect(await screen.findByLabelText(/scanner/i)).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: /guardar reglas operativas/i })).not.toBeDisabled();
+    expect(screen.getByText(/edici.n operativa/i)).toBeInTheDocument();
+  });
+
+  it('does not request fiscal settings when the user only edits operational rules', async () => {
+    renderView({ canEdit: false, canEditOperationalRules: true, canViewFiscalSettings: false });
+
+    expect(await screen.findByRole('heading', { level: 1, name: /^configuraci.n$/i })).toBeInTheDocument();
+    expect(await screen.findByLabelText(/scanner/i)).not.toBeDisabled();
+    expect(apiClient.getOperationalSettings).toHaveBeenCalledTimes(1);
+    expect(apiClient.getFiscalSettings).not.toHaveBeenCalled();
+    expect(apiClient.getFiscalSequences).not.toHaveBeenCalled();
+    expect(screen.queryByRole('tab', { name: /hospital/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: /numeraci.n/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: /^marca$/i })).not.toBeInTheDocument();
   });
 });

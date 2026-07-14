@@ -1,25 +1,30 @@
-import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Search, UserCog, UserPlus, Users } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   type AuthUser,
   type PermissionCatalogGroup,
   type RoleDefinition,
-  type UserPayload,
   apiClient,
   userSafeErrorMessage,
 } from '@/lib/api';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
-import { ErrorState, LoadingState } from '@/components/ui/states';
-import { Input } from '@/components/ui/input';
-import { OperationalBanner, PermissionState, StatGrid } from '@/components/shared';
-import { Badge } from '@/components/ui/badge';
-import { StatusBadge } from '@/components/ui/status-badge';
-import { UserFormDialog, roleLabel, type UserFormData } from './components/UserFormDialog';
+import { Alert, Button, Skeleton } from 'antd';
+import { PageHeader } from '@/design-system/components/PageHeader';
+import { UserFormDialog, type UserFormData } from './components/UserFormDialog';
+import { UserManagementOverview } from './components/UserManagementOverview';
 import { RoleFormDialog } from './components/RoleFormDialog';
 import { PasswordResetDialog } from './components/PasswordResetDialog';
+import { UserRolesPanel } from './components/UserRolesPanel';
+import { UsersDirectoryPanel } from './components/UsersDirectoryPanel';
+import { UserStatusToggleDialog } from './components/UserStatusToggleDialog';
+import {
+  buildCreateUserPayload,
+  buildUpdateUserPayload,
+  hasProtectedRole,
+  isHiddenPermission,
+  sanitizePermissionCatalog,
+  sanitizeRole,
+  sanitizeRoles,
+  visiblePermissionNames,
+} from './users-view.helpers';
 
 type UsersViewProps = {
   onStatus: (message: string) => void;
@@ -27,14 +32,17 @@ type UsersViewProps = {
   canUpdateUsers?: boolean;
   canDisableUsers?: boolean;
   canManageRoles: boolean;
+  canAssignAdminRole?: boolean;
+  currentUserId?: number;
 };
-
 export function UsersView({
   onStatus,
   canCreateUsers,
   canUpdateUsers = false,
   canDisableUsers = false,
   canManageRoles,
+  canAssignAdminRole = false,
+  currentUserId,
 }: UsersViewProps) {
   const [users, setUsers] = useState<AuthUser[]>([]);
   const [roles, setRoles] = useState<RoleDefinition[]>([]);
@@ -49,13 +57,13 @@ export function UsersView({
 
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<RoleDefinition | null>(null);
-  const [roleName, setRoleName] = useState('');
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
   const [roleGlobalError, setRoleGlobalError] = useState('');
   const [isSavingRole, setIsSavingRole] = useState(false);
   const saveRoleInFlightRef = useRef(false);
 
   const [selectedUserPermissions, setSelectedUserPermissions] = useState<string[]>([]);
+  const [advancedUserPermissionsMode, setAdvancedUserPermissionsMode] = useState(false);
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [targetResetUser, setTargetResetUser] = useState<AuthUser | null>(null);
   const [resetGlobalError, setResetGlobalError] = useState('');
@@ -89,8 +97,8 @@ export function UsersView({
         apiClient.getRoles(),
       ]);
       setUsers(data);
-      setRoles(roleData.roles);
-      setPermissionCatalog(roleData.permissionCatalog);
+      setRoles(sanitizeRoles(roleData.roles));
+      setPermissionCatalog(sanitizePermissionCatalog(roleData.permissionCatalog));
     } catch (err) {
       const msg = userSafeErrorMessage(err, 'No se pudieron cargar los usuarios.');
       setLoadError(msg);
@@ -114,6 +122,8 @@ export function UsersView({
   }), [users, searchTerm]);
 
   const activeUsersCount = users.filter((user) => user.active).length;
+  const activeProtectedUsers = users.filter((user) => user.active && hasProtectedRole(user));
+  const onlyActiveProtectedUserIds = activeProtectedUsers.length === 1 ? [activeProtectedUsers[0].id] : [];
   const pendingPasswordUsersCount = users.filter((user) => user.must_change_password).length;
   const editableRolesCount = roles.filter((role) => !role.protected).length;
 
@@ -121,13 +131,13 @@ export function UsersView({
     const role = defaultRoleName();
     setEditingUser(null);
     setSelectedUserPermissions(canManageRoles ? permissionsForRole(role) : []);
+    setAdvancedUserPermissionsMode(false);
     setFormGlobalError('');
     setIsUserModalOpen(true);
   };
 
   const handleOpenCreateRole = () => {
     setEditingRole(null);
-    setRoleName('');
     setSelectedPermissions([]);
     setRoleGlobalError('');
     setIsRoleModalOpen(true);
@@ -135,13 +145,16 @@ export function UsersView({
 
   const handleOpenEditRole = (role: RoleDefinition) => {
     setEditingRole(role);
-    setRoleName(role.name);
     setSelectedPermissions(role.permissions.map((permission) => permission.name));
     setRoleGlobalError('');
     setIsRoleModalOpen(true);
   };
 
   const togglePermission = (permissionName: string, checked: boolean) => {
+    if (isHiddenPermission(permissionName)) {
+      return;
+    }
+
     setSelectedPermissions((current) => {
       if (checked) {
         return current.includes(permissionName) ? current : [...current, permissionName].sort();
@@ -151,6 +164,10 @@ export function UsersView({
   };
 
   const toggleUserPermission = (permissionName: string, checked: boolean) => {
+    if (isHiddenPermission(permissionName)) {
+      return;
+    }
+
     setSelectedUserPermissions((current) => {
       if (checked) {
         return current.includes(permissionName) ? current : [...current, permissionName].sort();
@@ -159,16 +176,16 @@ export function UsersView({
     });
   };
 
-  const handleRoleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleRoleSubmit = async (data: { name: string; permissions: string[] }) => {
     setRoleGlobalError('');
 
-    const normalizedName = roleName.trim();
+    const normalizedName = data.name.trim();
+    const visiblePermissions = visiblePermissionNames(data.permissions);
     if (!/^[A-Za-z0-9_-]{3,80}$/.test(normalizedName)) {
       setRoleGlobalError('Use un nombre de rol entre 3 y 80 caracteres, solo letras, numeros, _ o -.');
       return;
     }
-    if (selectedPermissions.length === 0) {
+    if (visiblePermissions.length === 0) {
       setRoleGlobalError('Seleccione al menos un permiso para el rol.');
       return;
     }
@@ -180,16 +197,17 @@ export function UsersView({
 
     try {
       const saved = editingRole
-        ? await apiClient.updateRole(editingRole.id, { name: normalizedName, permissions: selectedPermissions })
-        : await apiClient.createRole({ name: normalizedName, permissions: selectedPermissions });
+        ? await apiClient.updateRole(editingRole.id, { name: normalizedName, permissions: visiblePermissions })
+        : await apiClient.createRole({ name: normalizedName, permissions: visiblePermissions });
+      const visibleSavedRole = sanitizeRole(saved);
 
       setRoles((current) => {
-        const exists = current.some((role) => role.id === saved.id);
-        return (exists ? current.map((role) => (role.id === saved.id ? saved : role)) : [...current, saved])
+        const exists = current.some((role) => role.id === visibleSavedRole.id);
+        return (exists ? current.map((role) => (role.id === visibleSavedRole.id ? visibleSavedRole : role)) : [...current, visibleSavedRole])
           .sort((a, b) => a.name.localeCompare(b.name));
       });
       setIsRoleModalOpen(false);
-      onStatus(`Rol ${saved.name} ${editingRole ? 'actualizado' : 'creado'} correctamente.`);
+      onStatus(`Rol ${visibleSavedRole.name} ${editingRole ? 'actualizado' : 'creado'} correctamente.`);
     } catch (err) {
       const msg = userSafeErrorMessage(err, 'No se pudo guardar el rol.');
       setRoleGlobalError(msg);
@@ -204,17 +222,19 @@ export function UsersView({
     setEditingUser(user);
     setSelectedUserPermissions(canManageRoles
       ? (user.uses_exact_permission_map
-        ? [...(user.direct_permissions ?? [])].sort()
+        ? visiblePermissionNames(user.direct_permissions ?? [])
         : permissionsForRole(user.roles[0] || defaultRoleName()))
       : []);
+    setAdvancedUserPermissionsMode(Boolean(canManageRoles && user.uses_exact_permission_map));
     setFormGlobalError('');
     setIsUserModalOpen(true);
   };
 
   const onUserSubmit = async (data: UserFormData) => {
     setFormGlobalError('');
+    const editingSelf = Boolean(editingUser && currentUserId === editingUser.id);
 
-    if (canManageRoles && selectedUserPermissions.length === 0 && editingUser?.active !== false) {
+    if (!editingSelf && advancedUserPermissionsMode && selectedUserPermissions.length === 0 && editingUser?.active !== false) {
       const msg = 'Seleccione al menos un modulo para un usuario activo, o desactive el usuario antes de dejarlo sin acceso.';
       setFormGlobalError(msg);
       onStatus(msg);
@@ -224,30 +244,12 @@ export function UsersView({
     onStatus('Guardando usuario...');
     try {
       if (editingUser) {
-        const payload: Omit<UserPayload, 'password'> = {
-          name: data.name,
-          email: data.email,
-          username: data.username,
-          role: data.role,
-        };
-        if (canManageRoles) {
-          payload.permissions = selectedUserPermissions;
-        }
+        const payload = buildUpdateUserPayload(data, selectedUserPermissions, editingSelf ? false : advancedUserPermissionsMode);
         const updated = await apiClient.updateUser(editingUser.id, payload);
         setUsers((current) => current.map((u) => (u.id === editingUser.id ? updated : u)));
         onStatus(`Usuario ${updated.name} actualizado correctamente.`);
       } else {
-        const payload: UserPayload = {
-          name: data.name,
-          email: data.email,
-          username: data.username,
-          password: data.password || '',
-          role: data.role,
-          active: true,
-        };
-        if (canManageRoles) {
-          payload.permissions = selectedUserPermissions;
-        }
+        const payload = buildCreateUserPayload(data, selectedUserPermissions, advancedUserPermissionsMode);
         const created = await apiClient.createUser(payload);
         setUsers((current) => [...current, created]);
         onStatus(`Usuario ${created.name} creado correctamente.`);
@@ -265,14 +267,17 @@ export function UsersView({
     setIsToggleDialogOpen(true);
   };
 
-  const handleConfirmToggle = async () => {
+  const handleConfirmToggle = async (reason: string | null) => {
     if (!targetToggleUser) return;
     if (toggleUserInFlightRef.current) return;
     toggleUserInFlightRef.current = true;
     setIsTogglingUser(true);
     onStatus('Cambiando estado de usuario...');
     try {
-      const updated = await apiClient.toggleUserActive(targetToggleUser.id);
+      const updated = await apiClient.toggleUserActive(
+        targetToggleUser.id,
+        targetToggleUser.active ? reason : null,
+      );
       setUsers((current) => current.map((u) => (u.id === targetToggleUser.id ? updated : u)));
       const action = updated.active ? 'activado' : 'desactivado';
       onStatus(`Usuario ${updated.name} ha sido ${action} con éxito.`);
@@ -293,12 +298,12 @@ export function UsersView({
     setIsResetModalOpen(true);
   };
 
-  const onResetSubmit = async (data: { newPassword: string }) => {
+  const onResetSubmit = async (data: { newPassword: string; reason: string }) => {
     if (!targetResetUser) return;
     setResetGlobalError('');
     onStatus('Restableciendo contraseña...');
     try {
-      await apiClient.resetUserPassword(targetResetUser.id, data.newPassword);
+      await apiClient.resetUserPassword(targetResetUser.id, data.newPassword, data.reason);
       onStatus(`Contraseña restablecida con éxito para ${targetResetUser.name}. Se solicitará cambio de contraseña en su siguiente inicio de sesión.`);
       setIsResetModalOpen(false);
     } catch (err) {
@@ -309,18 +314,20 @@ export function UsersView({
   };
 
   if (loading) {
-    return <LoadingState label="Cargando usuarios..." />;
+    return <><PageHeader title="Cargando usuarios" description="Preparando cuentas, roles y permisos operativos." /><div role="status"><Skeleton active={false} />Cargando usuarios...</div></>;
   }
 
   if (loadError) {
     return (
       <>
-        <h1 className="text-2xl font-semibold leading-tight">Usuarios</h1>
-        <ErrorState
-          title="No se pudieron cargar los usuarios"
+        <PageHeader title="Usuarios y funciones" description="Administre cuentas individuales, roles operativos y permisos por módulo." />
+        <Alert
+          type="error"
+          showIcon
+          title={<h2>No se pudieron cargar los usuarios</h2>}
           description={loadError}
           action={(
-            <Button type="button" variant="secondary" onClick={() => void fetchUsers()}>
+            <Button onClick={() => void fetchUsers()}>
               Reintentar
             </Button>
           )}
@@ -329,234 +336,58 @@ export function UsersView({
     );
   }
 
-  const userColumns: Array<DataTableColumn<AuthUser>> = [
-    {
-      key: 'name',
-      header: 'Usuario',
-      headerClassName: 'w-[30%]',
-      cellClassName: 'font-medium',
-      render: (user) => (
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary font-bold">
-            {user.name.charAt(0).toUpperCase()}
-          </div>
-          <div>
-            <p className="font-semibold text-foreground">{user.name}</p>
-            <p className="text-xs text-muted-foreground">{user.email}</p>
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: 'username',
-      header: 'Usuario de acceso',
-      render: (user) => <span className="font-mono text-xs">{user.username}</span>,
-    },
-    {
-      key: 'roles',
-      header: 'Rol',
-      render: (user) => (
-        <div className="flex flex-wrap gap-1">
-          {user.roles.map((role) => (
-            <Badge
-              key={role}
-              variant={role === 'admin' ? 'destructive' : role === 'supervisor' ? 'default' : 'secondary'}
-              className="capitalize font-semibold"
-            >
-              {role}
-            </Badge>
-          ))}
-        </div>
-      ),
-    },
-    {
-      key: 'status',
-      header: 'Estado',
-      render: (user) => (
-        <StatusBadge status={user.active ? 'active' : 'closed'}>
-          {user.active ? 'Activo' : 'Inactivo'}
-        </StatusBadge>
-      ),
-    },
-    {
-      key: 'actions',
-      header: 'Acciones',
-      headerClassName: 'text-right',
-      cellClassName: 'text-right',
-      render: (user) => (
-        <div className="flex flex-wrap justify-end gap-2">
-          {canUpdateUsers && (
-            <Button
-              variant="secondary"
-              size="sm"
-              aria-label={`Editar usuario ${user.name}`}
-              onClick={() => handleOpenEditModal(user)}
-            >
-              Editar
-            </Button>
-          )}
-          {canUpdateUsers && (
-            <Button
-              variant="secondary"
-              size="sm"
-              aria-label={`Restablecer clave de ${user.name}`}
-              onClick={() => handleOpenResetModal(user)}
-            >
-              Restablecer clave
-            </Button>
-          )}
-          {canDisableUsers && (
-            <Button
-              variant="secondary"
-              size="sm"
-              aria-label={user.active ? `Desactivar usuario ${user.name}` : `Activar usuario ${user.name}`}
-              className={user.active ? 'text-destructive' : 'text-success-foreground'}
-              onClick={() => handleOpenToggleDialog(user)}
-            >
-              {user.active ? 'Desactivar' : 'Activar'}
-            </Button>
-          )}
-        </div>
-      ),
-    },
-  ];
-
   return (
     <>
-      <OperationalBanner
-        title="Usuarios y permisos"
-        meta="Administracion segura"
-        description="Administre cuentas individuales, roles operativos y permisos por modulo sin cambiar la politica de acceso del servidor."
-        status={(
-          <Badge variant="info">
-            <Users data-icon aria-hidden="true" />
-            RBAC activo
-          </Badge>
-        )}
-        actions={canCreateUsers ? (
-          <Button onClick={handleOpenCreateModal}>
-            <UserPlus data-icon aria-hidden="true" />
-            Crear usuario
-          </Button>
-        ) : undefined}
+      <UserManagementOverview
+        activeUsersCount={activeUsersCount}
+        editableRolesCount={editableRolesCount}
+        onCreateUser={handleOpenCreateModal}
+        pendingPasswordUsersCount={pendingPasswordUsersCount}
+        showCreateAction={canCreateUsers}
+        totalRolesCount={roles.length}
+        totalUsersCount={users.length}
+      />
+      <UserRolesPanel
+        canAssignAdminRole={canAssignAdminRole}
+        canManageRoles={canManageRoles}
+        onCreateRole={handleOpenCreateRole}
+        onEditRole={handleOpenEditRole}
+        permissionCatalog={permissionCatalog}
+        roles={roles}
       />
 
-      <StatGrid
-        className="xl:grid-cols-3"
-        items={[
-          {
-            label: 'Usuarios activos',
-            value: activeUsersCount,
-            helper: `${users.length} cuenta${users.length === 1 ? '' : 's'} registrada${users.length === 1 ? '' : 's'}`,
-            icon: <Users aria-hidden="true" className="size-4" />,
-            tone: 'success',
-          },
-          {
-            label: 'Cambio pendiente',
-            value: pendingPasswordUsersCount,
-            helper: 'Usuarios que deberan cambiar clave al ingresar.',
-            tone: pendingPasswordUsersCount > 0 ? 'warning' : 'neutral',
-          },
-          {
-            label: 'Roles editables',
-            value: editableRolesCount,
-            helper: `${roles.length} rol${roles.length === 1 ? '' : 'es'} disponible${roles.length === 1 ? '' : 's'} en total.`,
-            icon: <UserCog aria-hidden="true" className="size-4" />,
-          },
-        ]}
+      <UsersDirectoryPanel
+        canAssignAdminRole={canAssignAdminRole}
+        canDisableUsers={canDisableUsers}
+        canUpdateUsers={canUpdateUsers}
+        currentUserId={currentUserId}
+        onEdit={handleOpenEditModal}
+        onResetPassword={handleOpenResetModal}
+        onSearchTermChange={setSearchTerm}
+        onToggleActive={handleOpenToggleDialog}
+        onlyActiveProtectedUserIds={onlyActiveProtectedUserIds}
+        readOnly={!canUpdateUsers && !canDisableUsers}
+        searchTerm={searchTerm}
+        users={filteredUsers}
       />
-
-      {canManageRoles && (
-        <Card className="border border-operational-border bg-operational-surface shadow-operational">
-          <CardContent className="space-y-4 p-4">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div>
-                <h2 className="text-base font-semibold text-foreground">Roles y modulos</h2>
-                <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-                  Defina que modulos puede usar cada tipo de usuario. Los roles base protegidos se conservan para no perder acceso administrativo.
-                </p>
-              </div>
-              <Button type="button" variant="outline" onClick={handleOpenCreateRole}>
-                Nuevo rol
-              </Button>
-            </div>
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {roles.map((role) => (
-                <div key={role.id} className="rounded-md border border-operational-border bg-operational-panel/55 p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-semibold text-foreground">{roleLabel(role.name)}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {role.permissions.length} permiso{role.permissions.length === 1 ? '' : 's'}
-                      </p>
-                    </div>
-                    <Badge variant={role.protected ? 'warning' : 'secondary'}>
-                      {role.protected ? 'Base' : 'Editable'}
-                    </Badge>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    className="mt-3 w-full"
-                    onClick={() => handleOpenEditRole(role)}
-                    disabled={role.protected}
-                  >
-                    Editar permisos
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {!canManageRoles && (
-        <PermissionState
-          state="readonly"
-          className="mb-6"
-          title="Roles en modo consulta"
-          description="Su usuario puede revisar cuentas autorizadas, pero la asignacion directa de permisos requiere permiso de administracion de roles."
-        />
-      )}
-
-      {!canUpdateUsers && !canDisableUsers && (
-        <p className="text-sm text-muted-foreground">Solo lectura</p>
-      )}
-
-      <Card className="border border-operational-border bg-operational-surface shadow-operational">
-        <CardContent className="space-y-4 p-4">
-          <div className="relative max-w-xl">
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-            <Input
-              aria-label="Buscar usuarios"
-              placeholder="Buscar por nombre, correo o usuario..."
-              className="pl-9"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-        </CardContent>
-        <CardContent className="p-0">
-          <DataTable
-            containerLabel="Usuarios autorizados"
-            rows={filteredUsers}
-            columns={userColumns}
-            getRowKey={(user) => user.id}
-            emptyTitle={searchTerm ? 'Sin coincidencias' : 'No hay usuarios cargados'}
-            emptyDescription={searchTerm ? 'Ajuste la busqueda por nombre, correo o usuario.' : 'Cuando se creen usuarios autorizados apareceran en este directorio.'}
-          />
-        </CardContent>
-      </Card>
-
       <UserFormDialog
         open={isUserModalOpen}
         onOpenChange={setIsUserModalOpen}
         editingUser={editingUser}
         roles={roles}
         canManageRoles={canManageRoles}
+        canAssignAdminRole={canAssignAdminRole}
+        protectedRoleLocked={editingUser ? onlyActiveProtectedUserIds.includes(editingUser.id) : false}
+        identityOnly={Boolean(editingUser && currentUserId === editingUser.id)}
         selectedUserPermissions={selectedUserPermissions}
+        advancedPermissionMode={advancedUserPermissionsMode}
+        onAdvancedPermissionModeChange={setAdvancedUserPermissionsMode}
         onToggleUserPermission={toggleUserPermission}
+        onRoleChange={(roleNameValue) => {
+          if (canManageRoles) {
+            setSelectedUserPermissions(permissionsForRole(roleNameValue));
+          }
+        }}
         permissionCatalog={permissionCatalog}
         globalError={formGlobalError}
         onSubmit={onUserSubmit}
@@ -582,29 +413,16 @@ export function UsersView({
         onSubmit={onResetSubmit}
       />
 
-      <ConfirmDialog
+      <UserStatusToggleDialog
         open={isToggleDialogOpen}
-        title={targetToggleUser?.active ? '¿Desactivar usuario?' : '¿Activar usuario?'}
-        confirmLabel={isTogglingUser ? 'Cambiando...' : targetToggleUser?.active ? 'Desactivar' : 'Activar'}
-        confirmDisabled={isTogglingUser}
-        cancelDisabled={isTogglingUser}
-        danger={targetToggleUser?.active}
+        isToggling={isTogglingUser}
+        targetUser={targetToggleUser}
         onCancel={() => {
           setIsToggleDialogOpen(false);
           setTargetToggleUser(null);
         }}
         onConfirm={handleConfirmToggle}
-      >
-        {targetToggleUser?.active ? (
-          <p>
-            Al desactivar a <strong>{targetToggleUser?.name}</strong>, este no podrá iniciar sesión ni operar en el sistema. Las transacciones y reportes de caja históricos del usuario permanecerán intactos para fines de auditoría.
-          </p>
-        ) : (
-          <p>
-            Al reactivar a <strong>{targetToggleUser?.name}</strong>, el usuario volverá a tener acceso operativo al sistema con sus credenciales habituales.
-          </p>
-        )}
-      </ConfirmDialog>
+      />
     </>
   );
 }

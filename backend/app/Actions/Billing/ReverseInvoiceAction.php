@@ -94,6 +94,12 @@ class ReverseInvoiceAction
             /** @var Collection<int, Payment> $postedPayments */
             $postedPayments = $lockedInvoice->payments;
 
+            if ($postedPayments->isEmpty()) {
+                throw ValidationException::withMessages([
+                    'invoice' => 'No se puede reversar una factura sin pagos vigentes. Use anulacion normal.',
+                ]);
+            }
+
             $oldValues = [
                 'status' => $lockedInvoice->status,
                 'paid_amount' => (string) $lockedInvoice->paid_amount,
@@ -144,6 +150,7 @@ class ReverseInvoiceAction
                     'paid_amount_after' => (string) $reloaded->paid_amount,
                     'balance_due_after' => (string) $reloaded->balance_due,
                 ],
+                'reason' => $reason,
                 'created_at' => now(),
             ]);
 

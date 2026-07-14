@@ -26,13 +26,6 @@ export type ServiceSummary = {
   total: number;
 };
 
-export type ServiceStatusSummaryProps = {
-  canManage: boolean;
-  onNewCategory: () => void;
-  onNewService: () => void;
-  summary: ServiceSummary;
-};
-
 export type ServiceBillingBadges = {
   active: boolean;
   hasConfiguredPrice: boolean;
@@ -103,20 +96,6 @@ export type CategoryFormSectionProps = {
   errorMessage?: string;
   isEditing: boolean;
   onActiveChange: (checked: boolean) => void;
-};
-
-export type ServiceSheetFooterProps = {
-  cancelLabel: string;
-  isEditing: boolean;
-  isSubmitting: boolean;
-  onCancel: () => void;
-};
-
-export type CategorySheetFooterProps = {
-  cancelLabel: string;
-  isEditing: boolean;
-  isSubmitting: boolean;
-  onCancel: () => void;
 };
 
 export const CATEGORY_FILTER_ALL = 'all';

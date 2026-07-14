@@ -56,6 +56,7 @@ class PaymentController extends Controller
                     'invoice' => $freshInvoice,
                     'institutional_receipt' => $receiptResult['receipt'],
                     'institutional_receipt_error' => $receiptResult['error'],
+                    'receipt_outcome' => $receiptResult['outcome'],
                 ],
             ], 201);
         });
@@ -97,7 +98,11 @@ class PaymentController extends Controller
     }
 
     /**
-     * @return array{receipt: InstitutionalReceipt|null, error: string|null}
+     * @return array{
+     *     receipt: InstitutionalReceipt|null,
+     *     error: string|null,
+     *     outcome: 'issued'|'not_required'|'recovery_required'
+     * }
      */
     private function issueInstitutionalReceiptAfterPaidPayment(
         StorePaymentRequest $request,
@@ -108,13 +113,16 @@ class PaymentController extends Controller
     ): array {
         $user = $request->user();
 
-        if (
-            ! ($user instanceof User)
-            || $invoice->status !== Invoice::STATUS_PAID
-            || $invoice->balance_due_cents !== 0
-            || ! $user->can('receipts.view')
-        ) {
-            return ['receipt' => null, 'error' => null];
+        if ($invoice->status !== Invoice::STATUS_PAID || $invoice->balance_due_cents !== 0) {
+            return ['receipt' => null, 'error' => null, 'outcome' => 'not_required'];
+        }
+
+        if (! ($user instanceof User) || ! $user->can('receipts.view')) {
+            return [
+                'receipt' => null,
+                'error' => 'Pago registrado. Un usuario autorizado debe emitir el recibo institucional desde Historial de facturas.',
+                'outcome' => 'recovery_required',
+            ];
         }
 
         try {
@@ -124,17 +132,19 @@ class PaymentController extends Controller
                 'cash_session_id' => $payment->cash_session_id,
             ], $user, $invoiceAccess);
 
-            return ['receipt' => $receipt, 'error' => null];
+            return ['receipt' => $receipt, 'error' => null, 'outcome' => 'issued'];
         } catch (ValidationException $exception) {
             return [
                 'receipt' => null,
                 'error' => collect($exception->errors())->flatten()->first()
                     ?? 'Pago registrado, pero no se pudo emitir el recibo institucional.',
+                'outcome' => 'recovery_required',
             ];
         } catch (ModelNotFoundException) {
             return [
                 'receipt' => null,
                 'error' => 'Pago registrado, pero falta configurar una serie o perfil activo de recibos institucionales.',
+                'outcome' => 'recovery_required',
             ];
         }
     }

@@ -2,9 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Models\AuditLog;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use RuntimeException;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
@@ -35,6 +37,73 @@ class RoleManagementTest extends TestCase
 
         $this->assertStringNotContainsString(User::EXACT_ACCESS_MARKER_PERMISSION, $response->getContent());
         $this->assertStringNotContainsString('receipts.void', $response->getContent());
+        $this->assertStringNotContainsString('reports.view', $response->getContent());
+    }
+
+    public function test_permission_catalog_labels_operational_settings_as_human_configuration_rule(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->userWithRole('admin');
+
+        $response = $this->actingAs($admin)
+            ->getJson('/api/admin/roles')
+            ->assertOk()
+            ->json('permission_catalog');
+
+        $settingsGroup = collect($response)->firstWhere('module', 'settings');
+
+        $this->assertSame('Configuracion', $settingsGroup['label'] ?? null);
+        $permission = collect($settingsGroup['permissions'] ?? [])
+            ->firstWhere('name', 'settings.operational.update');
+
+        $this->assertSame('settings', $permission['module'] ?? null);
+        $this->assertSame('Editar reglas operativas', $permission['label'] ?? null);
+    }
+
+    public function test_permission_catalog_uses_human_labels_for_operational_permissions(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->userWithRole('admin');
+
+        $catalog = collect($this->actingAs($admin)
+            ->getJson('/api/admin/roles')
+            ->assertOk()
+            ->json('permission_catalog'));
+
+        $permissions = $catalog
+            ->flatMap(fn (array $group): array => $group['permissions'] ?? [])
+            ->keyBy('name');
+
+        $this->assertSame('Cerrar o revisar cajas de otros cajeros', $permissions['cash.close_any']['label'] ?? null);
+        $this->assertSame('Ver reporte de caja', $permissions['reports.cash_session.view']['label'] ?? null);
+        $this->assertSame('Ver reportes ejecutivos', $permissions['reports.managerial.view']['label'] ?? null);
+        $this->assertSame('Soporte tecnico de impresion', $permissions['receipt_settings.advanced']['label'] ?? null);
+        $this->assertSame('Editar usuarios y roles', $permissions['users.update']['label'] ?? null);
+        $this->assertSame('Marcar receta de dialisis', $permissions['patients.mark_dialysis_prescription']['label'] ?? null);
+    }
+
+    public function test_permission_catalog_marks_elevated_permissions_with_risk_metadata(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->userWithRole('admin');
+
+        $catalog = collect($this->actingAs($admin)
+            ->getJson('/api/admin/roles')
+            ->assertOk()
+            ->json('permission_catalog'));
+
+        $permissions = $catalog
+            ->flatMap(fn (array $group): array => $group['permissions'] ?? [])
+            ->keyBy('name');
+
+        $this->assertSame(true, $permissions['backups.download']['critical'] ?? null);
+        $this->assertSame('critical', $permissions['backups.download']['risk_level'] ?? null);
+        $this->assertSame('Permite descargar respaldos con datos hospitalarios.', $permissions['backups.download']['risk_label'] ?? null);
+
+        $this->assertSame(false, $permissions['cash.view']['critical'] ?? null);
+        $this->assertSame('standard', $permissions['cash.view']['risk_level'] ?? null);
+        $this->assertNull($permissions['cash.view']['risk_label'] ?? null);
+        $this->assertArrayNotHasKey('users.assign_admin_role', $permissions->all());
     }
 
     public function test_admin_can_create_custom_role_and_assign_it_to_user(): void
@@ -66,6 +135,52 @@ class RoleManagementTest extends TestCase
         $created = User::query()->where('username', 'gestora-catalogo')->firstOrFail();
         $this->assertTrue($created->can('catalog.manage'));
         $this->assertFalse($created->can('invoices.create'));
+    }
+
+    public function test_role_creation_rolls_back_when_audit_write_fails(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->userWithRole('admin');
+        AuditLog::creating(static function (): never {
+            throw new RuntimeException('simulated audit failure');
+        });
+
+        $this->actingAs($admin)
+            ->postJson('/api/admin/roles', [
+                'name' => 'rollback_role_create',
+                'permissions' => ['catalog.view'],
+            ])
+            ->assertServerError();
+
+        $this->assertDatabaseMissing('roles', [
+            'name' => 'rollback_role_create',
+            'guard_name' => 'web',
+        ]);
+    }
+
+    public function test_role_update_rolls_back_when_audit_write_fails(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->userWithRole('admin');
+        $role = Role::query()->create([
+            'name' => 'rollback_role_original',
+            'guard_name' => 'web',
+        ]);
+        $role->syncPermissions(['catalog.view']);
+        AuditLog::creating(static function (): never {
+            throw new RuntimeException('simulated audit failure');
+        });
+
+        $this->actingAs($admin)
+            ->patchJson("/api/admin/roles/{$role->id}", [
+                'name' => 'rollback_role_changed',
+                'permissions' => ['catalog.manage'],
+            ])
+            ->assertServerError();
+
+        $role->refresh()->load('permissions');
+        $this->assertSame('rollback_role_original', $role->name);
+        $this->assertSame(['catalog.view'], $role->permissions->pluck('name')->sort()->values()->all());
     }
 
     public function test_user_manager_without_admin_assignment_permission_cannot_manage_roles(): void

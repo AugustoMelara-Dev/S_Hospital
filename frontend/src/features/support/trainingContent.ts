@@ -1,4 +1,4 @@
-import { Archive, Banknote, ClipboardCheck, GraduationCap, Printer, ReceiptText, RefreshCw, WifiOff } from 'lucide-react';
+import { BankOutlined as Archive, CheckSquareOutlined as ClipboardCheck, DollarOutlined as Banknote, FileTextOutlined as ReceiptText, PrinterOutlined as Printer, ReadOutlined as GraduationCap, ReloadOutlined as RefreshCw, WifiOutlined as WifiOff } from '@ant-design/icons';
 
 export const roleChecklists = {
   cajero: [

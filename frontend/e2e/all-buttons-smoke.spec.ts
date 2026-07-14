@@ -1,7 +1,11 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
 import axeCore from 'axe-core';
-import { mkdirSync, writeFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { resolve } from 'node:path';
+import { writeButtonSmokeReport } from '../scripts/button-smoke-report.mjs';
+import { assertStrictMockGuard, installStrictMockGuard } from './fixtures/strict-mock-guard';
+
+test.beforeEach(async ({ page }) => installStrictMockGuard(page));
+test.afterEach(async ({ page }) => assertStrictMockGuard(page));
 
 const reportPath = resolve(process.env.E2E_BUTTON_SMOKE_REPORT_PATH ?? '../qa/production-audit/button-smoke-report.json');
 const smokeResults: Array<Record<string, unknown>> = [];
@@ -32,6 +36,7 @@ const adminUser = {
     'invoices.create',
     'invoices.void',
     'invoices.reverse',
+    'invoices.operate_any',
     'payments.create',
     'payments.view',
     'payments.void',
@@ -226,7 +231,7 @@ const executiveReport = {
   audit_summary: { critical_events: 0, reprints: 1, fiscal_changes: 0, cash_differences: 0, backup_events: 1 },
 };
 const routeExpectations = [
-  { path: '/dashboard', heading: /centro de mando/i },
+  { path: '/dashboard', heading: /continuar operaci[oó]n/i },
   { path: '/billing/new', heading: /nueva factura/i },
   { path: '/cashbox', heading: /^caja$/i },
   { path: '/catalog', heading: /catalogo|cat.logo/i },
@@ -251,16 +256,11 @@ const smokeViewports = [
 ];
 
 test.afterAll(() => {
-  mkdirSync(dirname(reportPath), { recursive: true });
-  writeFileSync(reportPath, `${JSON.stringify({
-    generated_at: new Date().toISOString(),
-    mode: 'mocked-non-mutating-playwright',
-    results: smokeResults,
-  }, null, 2)}\n`);
+  if (smokeResults.length > 0) writeButtonSmokeReport(reportPath, smokeResults);
 });
 
 for (const viewport of smokeViewports) {
-  test(`main screens expose named controls and have no serious axe issues at ${viewport.name}`, async ({ page }) => {
+  test(`main screens expose named controls and have no serious axe issues at ${viewport.name}`, async ({ page }, testInfo) => {
     const consoleIssues: string[] = [];
     captureConsoleIssues(page, consoleIssues);
     await installApiMocks(page);
@@ -272,9 +272,20 @@ for (const viewport of smokeViewports) {
       await waitForScreen(page, route.heading);
       const unnamedControls = await findVisibleUnnamedControls(page);
       const axeViolations = await seriousAxeViolations(page);
+      const viewportMetrics = await page.evaluate(() => ({
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+        headings: document.querySelectorAll('main h1').length,
+      }));
 
       expect(unnamedControls, `${viewport.name} ${route.path} unnamed controls`).toEqual([]);
       expect(axeViolations, `${viewport.name} ${route.path} serious axe violations`).toEqual([]);
+      expect(viewportMetrics.scrollWidth, `${viewport.name} ${route.path} horizontal overflow`).toBeLessThanOrEqual(viewportMetrics.clientWidth + 1);
+      expect(viewportMetrics.headings, `${viewport.name} ${route.path} should expose one main h1`).toBe(1);
+      await page.screenshot({
+        path: testInfo.outputPath(`${route.path.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'root'}-${viewport.name}.png`),
+        fullPage: true,
+      });
 
       smokeResults.push({
         name: 'screen controls and axe smoke',
@@ -296,7 +307,8 @@ test('dangerous history actions open a confirmation path that can be cancelled',
   await page.goto('/invoices');
   await waitForScreen(page, /historial/i);
 
-  await page.getByRole('button', { name: /reversar/i }).click();
+  await page.getByRole('button', { name: /acciones de la factura/i }).click();
+  await page.getByRole('menuitem', { name: /reversar pago/i }).click();
   await expect(page.getByRole('alertdialog', { name: /reversar factura/i })).toBeVisible();
   await page.getByRole('button', { name: /cancelar/i }).click();
   await expect(page.getByRole('alertdialog', { name: /reversar factura/i })).toBeHidden();
@@ -310,7 +322,7 @@ async function login(page: Page) {
   await page.locator('#login-input').fill('admin.validacion');
   await page.locator('#password-input').fill('Password123!');
   await page.getByRole('button', { name: /entrar|iniciar/i }).click();
-  await waitForScreen(page, /centro de mando/i);
+  await waitForScreen(page, /continuar operaci[oó]n/i);
 }
 
 async function waitForScreen(page: Page, heading: RegExp) {
@@ -429,6 +441,9 @@ async function installApiMocks(page: Page) {
     }
     if (path === '/api/system/client-errors') {
       return route.fulfill({ status: 204 });
+    }
+    if (path === '/api/system/audit-logs') {
+      return json(route, { data: auditLogEntries(), meta: { current_page: 1, per_page: 25, total: 1 } });
     }
     if (path === '/api/reports/dashboard') {
       return json(route, { data: dashboardReport() });
@@ -709,6 +724,22 @@ function operationsReport() {
     backups: [{ filename: 'hospital-backup.sql.enc', status: 'success', created_at: issuedAt }],
     cashiers: [{ name: 'Administradora Hospital', payment_count: 1, total_collected: '17.25' }],
   };
+}
+
+function auditLogEntries() {
+  return [
+    {
+      id: 1,
+      action: 'invoice.voided',
+      result: 'success',
+      reason: 'Correccion auditada',
+      ip: '192.168.1.25',
+      entity_type: 'invoice',
+      entity_id: 77,
+      created_at: issuedAt,
+      user: { id: adminUser.id, name: adminUser.name, username: adminUser.username },
+    },
+  ];
 }
 
 function cashSessionReport() {

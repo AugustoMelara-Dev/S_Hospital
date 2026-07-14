@@ -1,39 +1,24 @@
 ﻿import { useEffect, useRef, useState } from 'react';
 import type React from 'react';
-import { useReactToPrint } from 'react-to-print';
-import { Alert } from '../../components/ui/alert';
-import { Badge } from '../../components/ui/badge';
-import { Button } from '../../components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../../components/ui/select';
+import { Alert, Button, Tag } from 'antd';
 import { type ReceiptData } from '../../lib/api';
-import { INSTITUTIONAL_RECEIPT_PAPER_OPTIONS, institutionalReceiptPaperSize } from '../../lib/institutionalReceiptPaper';
+import { receiptPrintPaperSize } from '../../lib/institutionalReceiptPaper';
 import { formatLempirasFromCents, parseCents } from '../../lib/moneyCents';
 import { formatLocalizedDateTime } from '../../lib/format/formatDate';
+import { receiptPaperPresentation } from '../../modules/receipts/paperPolicy';
+import { printReceiptDocument } from '../../printing/browserPrint';
 
 type ReceiptPreviewProps = {
-  autoPrint?: boolean;
   onNewInvoice?: () => void;
   onPrint?: () => void | Promise<void>;
   receipt: ReceiptData;
-  onWidthChange: (width: ReceiptData['width']) => void;
 };
 
-export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, receipt, onWidthChange }: ReceiptPreviewProps) {
+export function ReceiptPreview({ onNewInvoice, onPrint, receipt }: ReceiptPreviewProps) {
   const receiptRef = useRef<HTMLDivElement>(null);
-  const autoPrintedReceiptRef = useRef<string | null>(null);
   const [printError, setPrintError] = useState('');
-  const receiptWidth = institutionalReceiptPaperSize(receipt.width);
-  const receiptWidthClass = receiptWidth.replace('_', '-');
-
-  const handlePrint = useReactToPrint({
-    contentRef: receiptRef,
-  });
+  const receiptWidth = receiptPrintPaperSize(receipt.width);
+  const receiptPresentation = receiptPaperPresentation(receiptWidth);
 
   async function handlePrintClick() {
     setPrintError('');
@@ -49,11 +34,7 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
     }
 
     try {
-      printReceiptDocument(receiptWidth, () => {
-        if (!navigator.userAgent.toLowerCase().includes('jsdom')) {
-          handlePrint();
-        }
-      });
+      printReceiptDocument(receiptWidth);
     } catch {
       setPrintError(
         'No se pudo abrir la ventana de impresión. Verifique la impresora y reimprima desde Historial con motivo cuando el supervisor lo autorice.',
@@ -63,38 +44,20 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
   }
 
   useEffect(() => {
-    if (!autoPrint || autoPrintedReceiptRef.current === receipt.invoice.invoice_number) {
-      return;
-    }
-
-    autoPrintedReceiptRef.current = receipt.invoice.invoice_number;
-    window.setTimeout(() => {
-      void handlePrintClick();
-    }, 150);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoPrint, receipt.invoice.invoice_number]);
+    setPrintError('');
+  }, [receipt.invoice.invoice_number]);
 
   const location = receipt.institutional?.location ?? receipt.hospital.address;
   const taxLabel = `${receipt.invoice.tax_label ?? 'ISV'}${receipt.invoice.tax_rate ? ` ${receipt.invoice.tax_rate}%` : ''}`;
 
   return (
     <div className="receipt-preview-panel" aria-label="Vista previa del recibo">
-      <div className="receipt-preview-controls no-print">
-        <Select value={receiptWidth} onValueChange={(v) => onWidthChange(institutionalReceiptPaperSize(v))}>
-          <SelectTrigger aria-label="Tamaño del recibo" className="w-[170px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {INSTITUTIONAL_RECEIPT_PAPER_OPTIONS.map((option) => (
-              <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Button type="button" onClick={handlePrintClick}>
+      <div className="receipt-preview-controls no-print border border-border bg-background p-3" role="group" aria-label="Acciones del recibo">
+        <Button htmlType="button" type="primary" className="min-h-11" onClick={handlePrintClick}>
           Imprimir
         </Button>
         {onNewInvoice ? (
-          <Button type="button" variant="secondary" onClick={onNewInvoice}>
+          <Button htmlType="button" className="min-h-11" onClick={onNewInvoice}>
             Nueva factura
           </Button>
         ) : null}
@@ -102,16 +65,14 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
 
       {printError ? (
         <div className="no-print mb-3">
-          <Alert variant="warning" title="Impresión no completada">
-            {printError}
-          </Alert>
+          <Alert type="warning" showIcon title="Impresión no completada" description={printError} />
         </div>
       ) : null}
 
       <div className="receipt-preview-container">
         <div
           ref={receiptRef}
-          className={`institutional-receipt receipt-${receiptWidthClass}`}
+          className={`institutional-receipt ${receiptPresentation.printClass}`}
           aria-label="Recibo institucional"
           data-receipt-print-root
         >
@@ -151,16 +112,6 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
                   <td colSpan={3}>{receipt.invoice.cashier}</td>
                 </tr>
               ) : null}
-              <tr>
-                <th scope="row">CAI</th>
-                <td>{receipt.fiscal.cai ?? 'Configuración pendiente'}</td>
-                <th scope="row">Vence</th>
-                <td>{receipt.fiscal.valid_until ? formatDate(receipt.fiscal.valid_until) : 'Configuración pendiente'}</td>
-              </tr>
-              <tr>
-                <th scope="row">Rango</th>
-                <td colSpan={3}>{receipt.fiscal.authorized_range ?? 'Configuración pendiente'}</td>
-              </tr>
             </tbody>
           </table>
 
@@ -214,8 +165,8 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
               <div className="receipt-rule" aria-hidden="true" />
               <h2 className="receipt-section-title">Pagos</h2>
               <div className="receipt-items">
-                {receipt.payments.map((payment) => (
-                  <Row key={payment.id}>
+                {receipt.payments.map((payment, index) => (
+                  <Row key={`${payment.method}-${payment.paid_at}-${payment.reference ?? 'sin-referencia'}-${index}`}>
                     <span>
                       {paymentLabel(payment.method)}
                       {payment.reference ? ` / Ref: ${payment.reference}` : ''}
@@ -270,7 +221,7 @@ function ItemName({ item }: { item: ReceiptData['items'][number] }) {
       <span className="name">{item.service_name}</span>
       {Number(item.quantity) !== 1 ? <span className="qty"> x {item.quantity}</span> : null}
       {item.special_rule_applied ? (
-        <Badge variant="secondary" className="special-rule-badge">Regla</Badge>
+        <Tag color="processing" className="special-rule-badge">Regla</Tag>
       ) : null}
     </span>
   );
@@ -318,35 +269,4 @@ function statusLabel(status: ReceiptData['invoice']['status']): string {
     paid: 'Pagada',
     void: 'Anulada',
   }[status] ?? status;
-}
-
-function printReceiptDocument(width: ReceiptData['width'], print: () => void) {
-  const previousWidth = document.body.dataset.receiptWidth;
-  const previousPrinting = document.body.dataset.printingReceipt;
-
-  function restorePrintState() {
-    if (previousWidth) {
-      document.body.dataset.receiptWidth = previousWidth;
-    } else {
-      delete document.body.dataset.receiptWidth;
-    }
-
-    if (previousPrinting) {
-      document.body.dataset.printingReceipt = previousPrinting;
-    } else {
-      delete document.body.dataset.printingReceipt;
-    }
-  }
-
-  document.body.dataset.receiptWidth = width;
-  document.body.dataset.printingReceipt = 'true';
-
-  try {
-    print();
-  } catch (error) {
-    restorePrintState();
-    throw error;
-  } finally {
-    restorePrintState();
-  }
 }

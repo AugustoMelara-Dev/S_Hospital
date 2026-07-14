@@ -27,7 +27,7 @@ export const queryKeys = {
   },
   cashSessions: {
     all: ['cash-sessions'] as const,
-    current: () => ['cash-sessions', 'current'] as const,
+    current: (scope: 'own' | 'closable' = 'own') => ['cash-sessions', 'current', scope] as const,
     movements: (id: number | undefined) => ['cash-sessions', id ?? 'unknown', 'movements'] as const,
   },
   settings: {

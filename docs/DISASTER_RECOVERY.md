@@ -66,10 +66,13 @@ cajero).
    volver a iniciar sesion.
 4. Despues de generarla, `php artisan config:cache` y reinicie el
    servicio backend (`docker compose restart backend`).
+5. Los respaldos nuevos usan `HOSPITAL_BACKUP_ENCRYPTION_KEY`, no `APP_KEY`.
+   Backups legacy creados antes de esa separacion pueden requerir el
+   `APP_KEY` historico.
 
-## Escenario 5 - Tengo un backup `.sql.enc` y necesito restaurar
+## Escenario 5 - Tengo un backup `.sql.gz.enc` y necesito restaurar
 
-1. Confirme que el archivo termina en `.sql.enc` y tiene tamano mayor a
+1. Confirme que el archivo termina en `.sql.gz.enc` y tiene tamano mayor a
    100KB (un backup vacio indica problema).
 2. Calcule SHA256 del archivo y compare con el que aparece en la UI
    de Respaldos. Si difiere, el archivo esta danado.
@@ -82,14 +85,14 @@ cajero).
    powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\restore_hospital_windows.ps1 `
      -UseExistingEnv `
      -TargetDatabase hospital_restore_validation `
-     -BackupFile C:\backups\hospital-backup.sql.enc `
+     -BackupFile C:\backups\hospital-backup.sql.gz.enc `
      -ExpectedSha256 $hash `
      -WhatIf
 
    powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\restore_hospital_windows.ps1 `
      -UseExistingEnv `
      -TargetDatabase hospital_restore_validation `
-     -BackupFile C:\backups\hospital-backup.sql.enc `
+     -BackupFile C:\backups\hospital-backup.sql.gz.enc `
      -ExpectedSha256 $hash
    ```
 

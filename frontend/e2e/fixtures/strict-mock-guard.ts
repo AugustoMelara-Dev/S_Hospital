@@ -1,0 +1,45 @@
+import { expect, type Page } from '@playwright/test';
+
+type GuardState = { issues: string[]; navigating: boolean };
+
+const guardStates = new WeakMap<Page, GuardState>();
+
+export async function installStrictMockGuard(page: Page): Promise<void> {
+  const state: GuardState = { issues: [], navigating: false };
+  guardStates.set(page, state);
+
+  page.on('console', (message) => {
+    const text = message.text();
+    if (message.type() === 'error') state.issues.push(`console.error: ${text}`);
+    if (message.type() === 'warning' && /\[antd:.*(?:deprecated|will be removed)/i.test(text)) {
+      state.issues.push(`antd.deprecation: ${text}`);
+    }
+  });
+  page.on('pageerror', (error) => state.issues.push(`pageerror: ${error.message}`));
+  page.on('request', (request) => {
+    if (request.isNavigationRequest() && request.frame() === page.mainFrame()) state.navigating = true;
+  });
+  page.on('load', () => { state.navigating = false; });
+  page.on('requestfailed', (request) => {
+    const failure = request.failure()?.errorText ?? '';
+    const pathname = new URL(request.url()).pathname;
+    if (failure.includes('ERR_ABORTED') && (!pathname.startsWith('/api/') || state.navigating)) return;
+    state.issues.push(`requestfailed: ${request.method()} ${request.url()} ${failure}`.trim());
+  });
+  page.on('response', (response) => {
+    if (response.status() >= 500) {
+      state.issues.push(`http.${response.status()}: ${response.request().method()} ${response.url()}`);
+    }
+  });
+
+  await page.route((url) => url.pathname.startsWith('/api/'), async (route) => {
+    const request = route.request();
+    state.issues.push(`unexpected-api: ${request.method()} ${new URL(request.url()).pathname}${new URL(request.url()).search}`);
+    await route.fulfill({ status: 418, contentType: 'application/json', body: JSON.stringify({ message: 'Unexpected mocked E2E request' }) });
+  });
+}
+
+export function assertStrictMockGuard(page: Page): void {
+  const issues = guardStates.get(page)?.issues ?? ['strict mock guard was not installed'];
+  expect(issues, issues.join('\n')).toEqual([]);
+}
