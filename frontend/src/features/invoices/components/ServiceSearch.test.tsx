@@ -46,6 +46,7 @@ describe('ServiceSearch', () => {
     });
 
     fireEvent.change(screen.getByLabelText(/buscar por nombre/i), { target: { value: 'hemograma' } });
+    fireEvent.click(screen.getByRole('button', { name: /más filtros/i }));
     fireEvent.click(screen.getByRole('radio', { name: 'Laboratorio' }));
     fireEvent.click(screen.getByRole('radio', { name: 'Imagenes' }));
 
@@ -121,6 +122,65 @@ describe('ServiceSearch', () => {
     expect(addButton).toBeEnabled();
     expect(screen.getByText('L 25.00')).toBeInTheDocument();
     expect(screen.getByText(/gratis solo con receta de diálisis/i)).toBeInTheDocument();
+  });
+
+  it('makes the complete service result operable by click and Enter', () => {
+    vi.useFakeTimers();
+    const onAddService = vi.fn();
+    renderSearch({ services: [serviceFixture()], search: 'glu', onAddService });
+
+    const serviceRow = screen.getByRole('button', { name: /agregar glucosa/i });
+    fireEvent.click(serviceRow);
+    expect(onAddService).toHaveBeenCalledTimes(1);
+
+    vi.advanceTimersByTime(251);
+    fireEvent.keyDown(serviceRow, { key: 'Enter', code: 'Enter' });
+    expect(onAddService).toHaveBeenCalledTimes(2);
+    vi.runOnlyPendingTimers();
+    vi.useRealTimers();
+  });
+
+  it('keeps category visible and reveals the secondary area filter with keyboard', () => {
+    renderSearch({
+      categories: [{ id: 2, name: 'Imagenes', slug: 'imagenes', active: true, sort_order: 2 }],
+      serviceAreas: [{ id: 3, name: 'Radiologia', slug: 'radiologia', active: true }],
+    });
+
+    const categoryGroup = screen.getByRole('radiogroup', { name: /categor/i });
+    expect(categoryGroup).toHaveAttribute('data-filter-priority', 'primary');
+    expect(screen.queryByRole('radiogroup', { name: /area/i })).not.toBeInTheDocument();
+
+    const moreFilters = screen.getByRole('button', { name: /más filtros/i });
+    moreFilters.focus();
+    fireEvent.keyDown(moreFilters, { key: 'Enter', code: 'Enter' });
+
+    const areaGroup = screen.getByRole('radiogroup', { name: /area/i });
+    expect(areaGroup).toBeVisible();
+    expect(areaGroup).toHaveAttribute('data-filter-priority', 'secondary');
+    expect(categoryGroup.compareDocumentPosition(areaGroup) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('renders service results as a compact single-column operational list', () => {
+    const { container } = renderSearch({ services: [serviceFixture()], search: 'glu' });
+
+    const results = container.querySelector('[data-service-results]');
+    const row = screen.getByRole('button', { name: /agregar glucosa/i });
+    expect(results).toHaveAttribute('data-density', 'compact');
+    expect(results).not.toHaveClass('sm:grid-cols-2');
+    expect(row).toHaveAttribute('data-service-row', 'compact');
+  });
+
+  it('does not duplicate equal category and area labels in a service row', () => {
+    const { rerender } = renderSearch({ services: [serviceFixture()], search: 'glu' });
+
+    const row = screen.getByRole('button', { name: /agregar glucosa/i });
+    expect(row.textContent?.match(/Laboratorio/g)).toHaveLength(1);
+
+    rerender(defaultRender({
+      services: [serviceFixture({ area: { id: 2, name: 'Consulta externa', slug: 'consulta-externa', active: true } })],
+      search: 'glu',
+    }));
+    expect(screen.getByRole('button', { name: /agregar glucosa/i }).textContent?.match(/Laboratorio|Consulta externa/g)).toHaveLength(2);
   });
 
   it('distinguishes service loading errors from an empty result', () => {

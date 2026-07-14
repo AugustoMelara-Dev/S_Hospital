@@ -21,6 +21,18 @@ describe('InvoiceCart', () => {
     const action = screen.getByRole('button', { name: 'Cobrar L 138.00' });
     expect(action).toBeEnabled();
     expect(action).toHaveTextContent(/^Cobrar L 138\.00$/);
+    expect(action.closest('[data-billing-cart-action]')).toBeInTheDocument();
+  });
+
+  it('prevents duplicate invoice confirmation from a rapid double action', () => {
+    const onConfirm = vi.fn();
+    renderCart({ onConfirm });
+
+    const action = screen.getByRole('button', { name: /emitir factura/i });
+    fireEvent.click(action);
+    fireEvent.click(action);
+
+    expect(onConfirm).toHaveBeenCalledTimes(1);
   });
 
   it('renders an accessible empty cart without treating it as an error', () => {

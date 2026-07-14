@@ -4,7 +4,14 @@ import { PATIENT_NAME_MAX_LENGTH } from '../../../schemas/invoice.schema';
 import { PatientStep } from './PatientStep';
 
 describe('PatientStep', () => {
-  it('keeps the patient field and character count in a vertical stack at every viewport', () => {
+  it('uses an operational patient label without wizard step language', () => {
+    render(<PatientStep patientName="" onPatientNameChange={vi.fn()} />);
+
+    expect(screen.getByText('Paciente')).toBeVisible();
+    expect(screen.queryByText(/Paso 1/i)).not.toBeInTheDocument();
+  });
+
+  it('uses a compact split layout on desktop while keeping the field accessible', () => {
     const { container } = render(
       <PatientStep
         patientName="Maria Lopez"
@@ -12,8 +19,8 @@ describe('PatientStep', () => {
       />,
     );
 
-    expect(container.querySelector('[class*="md:grid-cols"]')).not.toBeInTheDocument();
-    expect(screen.getByText('Dato requerido')).toBeVisible();
+    expect(container.querySelector('[class*="lg:grid-cols"]')).toBeInTheDocument();
+    expect(screen.getByText('Identificar paciente')).toBeVisible();
     expect(screen.getByLabelText(/nombre del paciente/i)).toHaveAttribute('placeholder', 'Ej. Maria Lopez…');
     expect(screen.getByText(/La factura no necesita expediente clínico/)).toBeInTheDocument();
   });

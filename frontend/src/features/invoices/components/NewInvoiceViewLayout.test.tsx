@@ -57,59 +57,55 @@ function renderLayout(overrides: Partial<React.ComponentProps<typeof NewInvoiceV
 }
 
 describe('NewInvoiceViewLayout', () => {
-  it('expone paciente, servicios y cuenta como estación de trabajo', () => {
+  it('expone paciente, servicios y cuenta simultaneamente como estacion POS', () => {
     renderLayout();
 
     expect(screen.getByRole('region', { name: 'Paciente' })).toHaveAttribute('data-billing-region', 'patient');
     const servicesRegion = document.querySelector('[data-billing-region="services"]');
     const ticketRegion = document.querySelector('[data-billing-region="ticket"]');
-    expect(servicesRegion).toHaveAttribute('aria-hidden', 'true');
-    expect(ticketRegion).toHaveAttribute('aria-hidden', 'true');
+    expect(servicesRegion).not.toHaveAttribute('aria-hidden', 'true');
+    expect(ticketRegion).not.toHaveAttribute('aria-hidden', 'true');
     for (const region of [
       screen.getByRole('region', { name: 'Paciente' }),
       servicesRegion,
       ticketRegion,
     ]) {
-      expect(region).toHaveAttribute('tabindex', '-1');
+      expect(region).not.toHaveAttribute('inert');
     }
   });
 
-  it('usa un asistente de una sola columna en escritorio y móvil', () => {
+  it('usa workspace de dos columnas sin asistente vertical', () => {
     const { container } = renderLayout();
 
     expect(container.querySelector('[data-billing-workspace]')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /1 paciente/i })).toBeEnabled();
-    expect(screen.getByRole('button', { name: /2 servicios/i })).toBeDisabled();
+    expect(container.querySelector('[data-billing-cart-sticky]')).toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: /pasos de facturaci/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /continuar a|atrás/i })).not.toBeInTheDocument();
   });
 
-  it('bloquea el avance sin paciente y mantiene el asistente en identificación', () => {
+  it('validates patient input without hiding services or the current account', () => {
     const onPatientSubmit = vi.fn();
-    const { container } = renderLayout({ onPatientSubmit });
+    renderLayout({ onPatientSubmit });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Continuar a servicios' }));
+    fireEvent.keyDown(screen.getByLabelText(/nombre del paciente/i), { key: 'Enter', code: 'Enter' });
 
     expect(onPatientSubmit).toHaveBeenCalledTimes(1);
-    expect(screen.getByRole('button', { name: /1 paciente/i })).toBeEnabled();
-    expect(container.querySelectorAll('[data-billing-region]')).toHaveLength(3);
-    expect(screen.getByRole('region', { name: 'Paciente' })).toHaveAttribute('aria-hidden', 'false');
-    expect(container.querySelector('[data-billing-region="services"]')).toHaveAttribute('aria-hidden', 'true');
+    expect(screen.getByRole('region', { name: 'Servicios' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Cuenta actual' })).toBeInTheDocument();
   });
 
-  it('avanza y retrocede entre etapas sin desmontar el borrador', () => {
+  it('preserves a populated draft while every POS region stays mounted', () => {
     const { container } = renderLayout({
       state: {
         ...getInitialNewInvoiceState(null),
         loadingServices: false,
         patientName: 'Maria Lopez',
+        cartItems: [{ service: serviceFixture(), quantity: '1.00', dialysisPrescription: false }],
       },
     });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Continuar a servicios' }));
-    expect(screen.getByRole('button', { name: /2 servicios/i })).toBeEnabled();
-    expect(screen.getByRole('region', { name: 'Servicios' })).toHaveAttribute('aria-hidden', 'false');
-    fireEvent.click(screen.getByRole('button', { name: 'Atrás' }));
-
-    expect(screen.getByRole('region', { name: 'Paciente' })).toHaveAttribute('aria-hidden', 'false');
+    expect(screen.getByLabelText(/nombre del paciente/i)).toHaveValue('Maria Lopez');
+    expect(screen.getByRole('list', { name: /servicios agregados/i })).toContainElement(screen.getByText('Hemograma'));
     expect(container.querySelectorAll('[data-billing-region]')).toHaveLength(3);
   });
 
@@ -144,6 +140,26 @@ describe('NewInvoiceViewLayout', () => {
     expect(billingAction).toBeEnabled();
     expect(billingAction).toHaveTextContent('L 138.00');
     fireEvent.click(billingAction);
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps a compact mobile total and action available outside the cart scroll position', () => {
+    const onConfirm = vi.fn();
+    const { container } = renderLayout({
+      state: {
+        ...getInitialNewInvoiceState(null),
+        loadingServices: false,
+        patientName: 'Maria Lopez',
+        cartItems: [{ service: serviceFixture(), quantity: '1.00', dialysisPrescription: false }],
+      },
+      preview: { subtotal: '120.00', tax: '18.00', total: '138.00' },
+      canEmit: true,
+      onConfirm,
+    });
+
+    const mobileSummary = container.querySelector('[data-billing-mobile-summary]');
+    expect(mobileSummary).toHaveTextContent('L 138.00');
+    fireEvent.click(screen.getByRole('button', { name: /confirmar cuenta móvil/i }));
     expect(onConfirm).toHaveBeenCalledTimes(1);
   });
 

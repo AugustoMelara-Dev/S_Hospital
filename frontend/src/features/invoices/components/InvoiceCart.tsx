@@ -1,5 +1,6 @@
 import { DollarOutlined as Banknote, MinusOutlined as Minus, PlusOutlined as Plus, FileTextOutlined as ReceiptText, DeleteOutlined as Trash2 } from '@ant-design/icons';
 import { Alert, Button, Checkbox, Input, Tag } from 'antd';
+import { useRef } from 'react';
 import { formatLempirasUIFromCents, parseCents } from '../../../lib/moneyCents';
 
 export type CartItem = {
@@ -41,6 +42,7 @@ export function InvoiceCart({
   submitting,
   canMarkDialysisPrescription = false,
 }: InvoiceCartProps) {
+  const confirmLockRef = useRef(false);
   const isEmpty = items.length === 0;
   const primaryBlockReason = disabledReasons[0];
   const disabledActionLabel = isEmpty
@@ -178,7 +180,7 @@ export function InvoiceCart({
         )}
       </div>
 
-      <div className="sticky bottom-0 mt-5 border-t border-operational-border bg-operational-surface pt-5">
+      <div data-billing-cart-action className="sticky bottom-0 z-10 mt-5 border-t border-operational-border bg-operational-surface pt-5">
         <dl className="mb-4 border border-primary/15 bg-primary p-5 text-primary-foreground">
           <div className="mb-3 flex items-center justify-between gap-3">
             <dt className="flex items-center gap-2 text-sm font-semibold text-primary-foreground">
@@ -212,7 +214,14 @@ export function InvoiceCart({
           disabled={disabled || isEmpty}
           aria-describedby={disabledReasonId}
           aria-label={actionAriaLabel}
-          onClick={onConfirm}
+          onClick={() => {
+            if (confirmLockRef.current) return;
+            confirmLockRef.current = true;
+            onConfirm();
+            window.setTimeout(() => {
+              confirmLockRef.current = false;
+            }, 300);
+          }}
         >
           {submitting ? (
             <>

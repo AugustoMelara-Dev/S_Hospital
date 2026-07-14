@@ -24,9 +24,9 @@ import { createClientIdempotencyKey } from '@/lib/api/base';
 import { payloadScopedIdempotencyKey, resetPayloadScopedIdempotencyKey } from '@/lib/api/idempotency';
 import { queryKeys } from '@/lib/queryKeys';
 import { interpretPaymentOutcome } from '@/modules/billing/application/paymentOutcome';
+import type { OperationalStatusReporter } from '@/app/operationalStatus';
 
 const POS_SERVICE_PAGE_SIZE = 24;
-
 type NewInvoiceViewProps = {
   cashSession: CashSession | null;
   canCreatePayments?: boolean;
@@ -36,7 +36,7 @@ type NewInvoiceViewProps = {
   canMarkDialysisPrescription?: boolean;
   onCashSessionChange?: (session: CashSession | null) => void;
   onOpenCash?: () => void;
-  onStatus: (message: string) => void;
+  onStatus: OperationalStatusReporter;
 };
 
 export function NewInvoiceView({
@@ -68,7 +68,8 @@ export function NewInvoiceView({
   const receiptGenerationIdempotencySignatureRef = useRef<string | null>(null);
   const receiptPdfIdempotencyKeyRef = useRef<string | null>(null);
   const scanCodeInFlightRef = useRef(false);
-  const skipInitialServiceSearchRef = useRef(true);
+  const pointOfSaleLoadInFlightRef = useRef(false);
+  const pointOfSaleDataLoadedRef = useRef(false);
   const latestPaymentResultRef = useRef<import('../../lib/api').Payment | null>(null);
   useEffect(() => {
     void loadPointOfSaleData();
@@ -82,11 +83,7 @@ export function NewInvoiceView({
     searchInputRef,
   });
   useEffect(() => {
-    if (!canViewCatalog) {
-      return;
-    }
-    if (skipInitialServiceSearchRef.current) {
-      skipInitialServiceSearchRef.current = false;
+    if (!canViewCatalog || !pointOfSaleDataLoadedRef.current) {
       return;
     }
     const timeoutId = window.setTimeout(() => {
@@ -164,11 +161,14 @@ export function NewInvoiceView({
   }, [state.cartItems, operationalSettings?.default_tax_rate, canMarkDialysisPrescription]);
 
   async function loadPointOfSaleData() {
+    if (pointOfSaleLoadInFlightRef.current) return;
+
     if (!canViewCatalog) {
       dispatch({ type: 'SET_ALERT_MESSAGE', payload: 'Este usuario no tiene permiso para consultar el catálogo de servicios.' });
       dispatch({ type: 'SET_LOADING_SERVICES', payload: false });
       return;
     }
+    pointOfSaleLoadInFlightRef.current = true;
     dispatch({ type: 'SET_LOADING_SERVICES', payload: true });
     dispatch({ type: 'SET_POINT_OF_SALE_LOAD_ERROR', payload: null });
     try {
@@ -187,13 +187,15 @@ export function NewInvoiceView({
           services: Array.isArray(nextServices) ? nextServices : [],
         },
       });
+      pointOfSaleDataLoadedRef.current = true;
       onCashSessionChange?.(currentCashSession);
     } catch (error) {
       const message = userSafeErrorMessage(error, 'No se pudo cargar servicios y caja desde el servidor local.');
       dispatch({ type: 'SET_POINT_OF_SALE_LOAD_ERROR', payload: message });
       dispatch({ type: 'SET_ALERT_MESSAGE', payload: message });
-      onStatus(message);
+      onStatus({ message, level: 'error', key: 'billing-services-load', toast: false });
     } finally {
+      pointOfSaleLoadInFlightRef.current = false;
       dispatch({ type: 'SET_LOADING_SERVICES', payload: false });
     }
   }
@@ -215,7 +217,7 @@ export function NewInvoiceView({
       const message = userSafeErrorMessage(error, 'No se pudo buscar servicios activos.');
       dispatch({ type: 'SEARCH_SERVICES_SUCCESS', payload: [] });
       dispatch({ type: 'SET_ALERT_MESSAGE', payload: message });
-      onStatus(message);
+      onStatus({ message, level: 'error', key: 'billing-services-load', toast: false });
       window.setTimeout(() => searchInputRef.current?.focus(), 0);
     } finally {
       dispatch({ type: 'SET_LOADING_SERVICES', payload: false });
@@ -227,7 +229,7 @@ export function NewInvoiceView({
     dispatch({ type: 'SET_WARNING_MESSAGE', payload: null });
     const message = `Agregado: ${service.name}`;
     dispatch({ type: 'SET_SUCCESS_MESSAGE', payload: message });
-    onStatus(message);
+    onStatus({ message, level: 'success', key: 'billing-service-added', toast: false });
     window.setTimeout(() => {
       dispatch({ type: 'CLEAR_SUCCESS_MESSAGE', payload: message });
     }, 2200);
@@ -242,7 +244,7 @@ export function NewInvoiceView({
     if (code === '') {
       const message = 'Ingrese o escanee un código.';
       dispatch({ type: 'SET_ALERT_MESSAGE', payload: message });
-      onStatus(message);
+      onStatus({ message, level: 'warning', key: 'billing-service-added', toast: false });
       refocusScanner();
       return;
     }
@@ -253,26 +255,26 @@ export function NewInvoiceView({
       if (!service) {
         const message = 'No se encontró servicio activo para este código.';
         dispatch({ type: 'SET_ALERT_MESSAGE', payload: message });
-        onStatus(message);
+        onStatus({ message, level: 'warning', key: 'billing-service-added', toast: false });
         refocusScanner();
         return;
       }
       if (!service.active) {
         const message = 'El servicio esta inactivo y no puede facturarse.';
         dispatch({ type: 'SET_ALERT_MESSAGE', payload: message });
-        onStatus(message);
+        onStatus({ message, level: 'warning', key: 'billing-service-added', toast: false });
         refocusScanner();
         return;
       }
       addToCart(service);
       dispatch({ type: 'SET_SCAN_CODE', payload: '' });
       dispatch({ type: 'SET_ALERT_MESSAGE', payload: null });
-      onStatus(`Servicio agregado por código: ${service.name}.`);
+      onStatus({ message: `Servicio agregado por código: ${service.name}.`, level: 'success', key: 'billing-service-added', toast: false });
       refocusScanner();
     } catch (error) {
       const message = userSafeErrorMessage(error, 'No se pudo buscar el código escaneado.');
       dispatch({ type: 'SET_ALERT_MESSAGE', payload: message });
-      onStatus(message);
+      onStatus({ message, level: 'error', key: 'billing-service-added', toast: false });
       refocusScanner();
     } finally {
       scanCodeInFlightRef.current = false;
@@ -325,7 +327,7 @@ export function NewInvoiceView({
       if (!openCashSession) {
         const message = 'Abra caja antes de emitir y cobrar una factura.';
         dispatch({ type: 'SET_ALERT_MESSAGE', payload: message });
-        onStatus(message);
+        onStatus({ message, level: 'warning', key: 'billing-cash-load', toast: false });
         return;
       }
 
@@ -333,7 +335,7 @@ export function NewInvoiceView({
     } catch (error) {
       const message = userSafeErrorMessage(error, 'No se pudo validar la caja abierta antes de emitir.');
       dispatch({ type: 'SET_ALERT_MESSAGE', payload: message });
-      onStatus(message);
+      onStatus({ message, level: 'error', key: 'billing-cash-load', toast: false });
     } finally {
       emitConfirmationInFlightRef.current = false;
       dispatch({ type: 'SET_SUBMITTING', payload: false });
@@ -478,7 +480,7 @@ export function NewInvoiceView({
         dispatch({ type: 'SET_SHOW_SUCCESS', payload: true });
         try {
           await openInstitutionalReceiptPdf(paymentOutcome.receipt);
-          onStatus(`Pago registrado. PDF institucional ${paymentOutcome.receipt.receipt_number_full} abierto.`);
+          onStatus({ message: `Pago registrado. PDF institucional ${paymentOutcome.receipt.receipt_number_full} abierto.`, level: 'success', key: 'billing-payment' });
         } catch (error) {
           const message = userSafeErrorMessage(
             error,
@@ -487,7 +489,7 @@ export function NewInvoiceView({
           const recoveryMessage = `Recibo institucional ${paymentOutcome.receipt.receipt_number_full} emitido, pero no se pudo abrir el PDF. Use Imprimir recibo institucional para intentar de nuevo o reimprima desde Historial.`;
           dispatch({ type: 'SET_INSTITUTIONAL_RECEIPT_RECOVERY_MESSAGE', payload: recoveryMessage });
           dispatch({ type: 'SET_WARNING_MESSAGE', payload: recoveryMessage });
-          onStatus(message);
+          onStatus({ message, level: 'warning', key: 'billing-payment' });
         }
         return;
       }
@@ -502,7 +504,7 @@ export function NewInvoiceView({
         dispatch({ type: 'SET_SHOW_SUCCESS', payload: true });
         dispatch({ type: 'SET_ALERT_MESSAGE', payload: null });
         dispatch({ type: 'SET_WARNING_MESSAGE', payload: recoveryMessage });
-        onStatus(recoveryMessage);
+        onStatus({ message: recoveryMessage, level: 'warning', key: 'billing-payment' });
 
         return;
       }
@@ -515,12 +517,12 @@ export function NewInvoiceView({
       dispatch({ type: 'SET_SHOW_SUCCESS', payload: true });
       dispatch({ type: 'SET_ALERT_MESSAGE', payload: null });
       dispatch({ type: 'SET_WARNING_MESSAGE', payload: null });
-      onStatus(paymentOutcome.message);
+      onStatus({ message: paymentOutcome.message, level: 'success', key: 'billing-payment' });
     } catch (error) {
       const message = userSafeErrorMessage(error, 'No se pudo registrar el pago.');
       dispatch({ type: 'SET_ALERT_MESSAGE', payload: message });
       dispatch({ type: 'SET_SHOW_PAYMENT', payload: true });
-      onStatus(message);
+      onStatus({ message, level: 'error', key: 'billing-payment' });
     } finally {
       submitPaymentInFlightRef.current = false;
       dispatch({ type: 'SET_PAYING', payload: false });

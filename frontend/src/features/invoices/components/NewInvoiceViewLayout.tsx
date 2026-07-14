@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
-import { useEffect, useRef, useState, type RefObject } from 'react';
-import { LeftOutlined as ChevronLeft, RightOutlined as ChevronRight, ClearOutlined as Eraser, HistoryOutlined as History } from '@ant-design/icons';
+import { type RefObject, useRef } from 'react';
+import { ClearOutlined as Eraser, HistoryOutlined as History } from '@ant-design/icons';
 import { Alert, Button, Modal, Tag } from 'antd';
 import { ReceiptPreview } from '../../receipts/ReceiptPreview';
 import { PatientStep } from './PatientStep';
@@ -59,6 +59,7 @@ export type NewInvoiceLayoutProps = {
 
 export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
   const navigate = useNavigate();
+  const confirmLockRef = useRef(false);
   const {
     state,
     paymentResult,
@@ -105,40 +106,16 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
   const cashSessionLabel = state.loadedCashSession ? `Caja #${state.loadedCashSession.id}` : 'Caja cerrada';
   const postedPayments = state.issuedInvoice?.payments?.filter((payment) => payment.status === 'posted') ?? [];
   const latestPayment = paymentResult ?? postedPayments[postedPayments.length - 1];
-  const [mobileStep, setMobileStep] = useState<0 | 1 | 2>(0);
-  const patientRegionRef = useRef<HTMLElement | null>(null);
-  const servicesRegionRef = useRef<HTMLElement | null>(null);
-  const ticketRegionRef = useRef<HTMLElement | null>(null);
-  const hasChangedStepRef = useRef(false);
-  const stepLabels = ['Paciente', 'Servicios', 'Cuenta'] as const;
-
-  useEffect(() => {
-    if (!hasChangedStepRef.current) return;
-
-    const stepRegion = [patientRegionRef, servicesRegionRef, ticketRegionRef][mobileStep];
-    window.setTimeout(() => stepRegion.current?.focus(), 0);
-  }, [mobileStep]);
-
-  function goToStep(nextStep: 0 | 1 | 2) {
-    hasChangedStepRef.current = true;
-    setMobileStep(nextStep);
-  }
-
-  function continueMobileFlow() {
-    if (mobileStep === 0) {
-      onPatientSubmit();
-      if (state.patientName.trim() === '') return;
-      goToStep(1);
-      return;
-    }
-
-    if (mobileStep === 1) {
-      goToStep(2);
-    }
-  }
-
+  const requestConfirmation = () => {
+    if (confirmLockRef.current) return;
+    confirmLockRef.current = true;
+    onConfirm();
+    window.setTimeout(() => {
+      confirmLockRef.current = false;
+    }, 300);
+  };
   return (
-    <section id="nueva-factura" className="flex h-full min-w-0 flex-col gap-5 pb-36 md:pb-8">
+    <section id="nueva-factura" className="flex h-full min-w-0 flex-col gap-5 pb-24 xl:pb-8">
       <PageHeader
         eyebrow="Operaciones financieras"
         title="Nueva factura"
@@ -194,85 +171,52 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
         )}
       </div>
 
-      <div aria-live="polite" className="mx-auto w-full max-w-5xl">
-        <ol className="grid grid-cols-3 overflow-hidden border border-border bg-surface">
-          {stepLabels.map((label, index) => (
-            <li key={label} className="min-w-0 border-r border-border last:border-r-0">
-              <Button type={mobileStep === index ? 'primary' : 'text'} aria-current={mobileStep === index ? 'step' : undefined} onClick={() => index <= mobileStep ? goToStep(index as 0 | 1 | 2) : undefined} disabled={index > mobileStep} className="h-auto min-h-14 w-full min-w-0 justify-start gap-2 px-3 py-3 text-left sm:px-4">
-                <span className={`flex size-8 shrink-0 items-center justify-center text-xs font-bold ${mobileStep === index ? 'bg-primary-foreground text-primary' : 'bg-muted text-muted-foreground'}`}>{index + 1}</span>
-                <span className="truncate text-xs font-semibold sm:text-sm">{label}</span>
-              </Button>
-            </li>
-          ))}
-        </ol>
-      </div>
-
       <div
         data-billing-workspace
-        className="mx-auto grid w-full max-w-5xl min-w-0 flex-1 gap-4"
+        className="grid w-full min-w-0 flex-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(22rem,26rem)] xl:items-start"
       >
-        <section
-          ref={patientRegionRef}
-          aria-label="Paciente"
-          data-billing-region="patient"
-          data-billing-step="patient"
-          aria-hidden={mobileStep !== 0}
-          inert={mobileStep !== 0}
-          tabIndex={-1}
-          className={`${mobileStep === 0 ? 'block' : 'hidden'} min-w-0 border border-operational-border bg-operational-surface p-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:p-7`}
-        >
-          <PatientStep
-            ref={patientInputRef}
-            patientName={state.patientName}
-            onPatientNameChange={onPatientNameChange}
-            onPatientSubmit={onPatientSubmit}
-            error={state.patientError}
-          />
-        </section>
+        <div className="flex min-w-0 flex-col gap-4">
+          <section aria-label="Paciente" data-billing-region="patient" className="min-w-0 border border-operational-border bg-operational-surface p-5 sm:p-6">
+            <PatientStep
+              ref={patientInputRef}
+              patientName={state.patientName}
+              onPatientNameChange={onPatientNameChange}
+              onPatientSubmit={onPatientSubmit}
+              error={state.patientError}
+            />
+          </section>
 
-        <section
-          ref={servicesRegionRef}
-          aria-label="Servicios"
-          data-billing-region="services"
-          data-billing-step="services"
-          aria-hidden={mobileStep !== 1}
-          inert={mobileStep !== 1}
-          tabIndex={-1}
-          className={`${mobileStep === 1 ? 'block' : 'hidden'} min-w-0 border border-operational-border bg-operational-surface p-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:p-7`}
-        >
-          <ServiceSearch
-            categories={state.categories}
-            serviceAreas={state.serviceAreas}
-            services={state.services}
-            selectedAreaId={state.selectedAreaId}
-            selectedCategoryId={state.selectedCategoryId}
-            onAreaChange={onAreaChange}
-            onCategoryChange={onCategoryChange}
-            search={state.search}
-            onSearchChange={onSearchChange}
-            scanCode={state.scanCode}
-            onScanCodeChange={onScanCodeChange}
-            onAddService={onAddService}
-            onAddByScanCode={onAddByScanCode}
-            searchInputRef={searchInputRef}
-            scannerInputRef={scannerInputRef}
-            loading={state.loadingServices}
-            scanningCode={state.scanningCode}
-            scannerEnabled={state.scannerEnabled}
-            error={state.pointOfSaleLoadError ?? undefined}
-            onRetry={onRetryLoad}
-          />
-        </section>
+          <section aria-label="Servicios" data-billing-region="services" className="min-w-0">
+            <ServiceSearch
+              categories={state.categories}
+              serviceAreas={state.serviceAreas}
+              services={state.services}
+              selectedAreaId={state.selectedAreaId}
+              selectedCategoryId={state.selectedCategoryId}
+              onAreaChange={onAreaChange}
+              onCategoryChange={onCategoryChange}
+              search={state.search}
+              onSearchChange={onSearchChange}
+              scanCode={state.scanCode}
+              onScanCodeChange={onScanCodeChange}
+              onAddService={onAddService}
+              onAddByScanCode={onAddByScanCode}
+              searchInputRef={searchInputRef}
+              scannerInputRef={scannerInputRef}
+              loading={state.loadingServices}
+              scanningCode={state.scanningCode}
+              scannerEnabled={state.scannerEnabled}
+              error={state.pointOfSaleLoadError ?? undefined}
+              onRetry={onRetryLoad}
+            />
+          </section>
+        </div>
 
         <aside
-          ref={ticketRegionRef}
           aria-label="Cuenta actual"
           data-billing-region="ticket"
-          data-billing-step="review"
-          aria-hidden={mobileStep !== 2}
-          inert={mobileStep !== 2}
-          tabIndex={-1}
-          className={`${mobileStep === 2 ? 'block' : 'hidden'} min-w-0 border border-secondary/25 bg-accent/25 p-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:p-7`}
+          data-billing-cart-sticky
+          className="min-w-0 border border-secondary/25 bg-accent/25 p-5 xl:sticky xl:top-4 xl:max-h-[calc(100vh-8rem)] xl:overflow-y-auto"
         >
           <InvoiceCart
             items={state.cartItems}
@@ -280,7 +224,7 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
             onUpdateQuantity={onUpdateQuantity}
             onUpdateDialysisPrescription={onUpdateDialysisPrescription}
             onRemoveItem={onRemoveItem}
-            onConfirm={onConfirm}
+            onConfirm={requestConfirmation}
             disabled={state.submitting || !canEmit}
             disabledReasons={emitBlockReasons}
             actionLabel={canCreatePayments && canViewReceipts ? 'Emitir y cobrar' : 'Emitir factura'}
@@ -291,27 +235,22 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
         </aside>
       </div>
 
-      <nav aria-label="Pasos de facturación" className="fixed inset-x-0 bottom-16 z-30 border-t border-operational-border bg-background p-3 md:static md:mx-auto md:w-full md:max-w-5xl md:border md:bg-surface">
-        <div className="mx-auto flex max-w-2xl gap-3 md:justify-end">
-          {mobileStep > 0 ? (
-            <Button type="default" className="min-h-11 flex-1 flex items-center justify-center gap-1" onClick={() => goToStep((mobileStep - 1) as 0 | 1)}>
-              <ChevronLeft className="size-4" aria-hidden="true" />
-              Atrás
-            </Button>
-          ) : null}
-          {mobileStep < 2 ? (
-            <Button
-              type="primary"
-              className="min-h-11 flex-1 flex items-center justify-center gap-1"
-              aria-label={mobileStep === 0 ? 'Continuar a servicios' : 'Continuar a cuenta'}
-              onClick={continueMobileFlow}
-            >
-              Continuar
-              <ChevronRight className="size-4" aria-hidden="true" />
-            </Button>
-          ) : null}
+      {state.cartItems.length > 0 ? (
+        <div data-billing-mobile-summary className="fixed inset-x-0 bottom-16 z-30 flex items-center gap-3 border-t border-operational-border bg-operational-surface p-3 xl:hidden">
+          <div className="min-w-0 flex-1">
+            <span className="block text-xs font-medium uppercase tracking-wide text-muted-foreground">Total estimado</span>
+            <strong className="block font-mono text-lg tabular-nums text-foreground">L {preview.total}</strong>
+          </div>
+          <Button
+            type="primary"
+            disabled={state.submitting || !canEmit}
+            aria-label={`Confirmar cuenta móvil, total L ${preview.total}`}
+            onClick={requestConfirmation}
+          >
+            {state.submitting ? 'Emitiendo...' : canCreatePayments && canViewReceipts ? 'Emitir y cobrar' : 'Emitir factura'}
+          </Button>
         </div>
-      </nav>
+      ) : null}
 
       <InvoiceConfirmation
         open={state.showConfirmation}

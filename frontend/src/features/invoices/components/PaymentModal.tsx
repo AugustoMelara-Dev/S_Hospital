@@ -78,6 +78,7 @@ export function PaymentModal({
   const needsAmount = paymentCents === null || paymentCents <= 0;
   const exceedsPending = !cashCanReturnChange && paymentCents !== null && balanceCents !== null && paymentCents > balanceCents;
   const requiresReference = paymentMethod === 'card' || paymentMethod === 'transfer';
+  const summaryColumnCount = 2 + (cashCanReturnChange ? 1 : 0) + (remainingBalanceCents !== null ? 1 : 0);
   const pendingAmountLabel = balanceCents !== null ? formatMoneyCents(balanceCents) : '0.00';
   const amountDescribedBy = [
     'payment-amount-help',
@@ -128,6 +129,13 @@ export function PaymentModal({
 
     setCapNotice(null);
     onPaymentAmountChange(normalizedValue);
+  }
+
+  function applyCashPreset(cents: number) {
+    setError(null);
+    setCapNotice(null);
+    onPaymentAmountChange(formatMoneyCents(cents));
+    window.setTimeout(() => amountInputRef.current?.focus(), 0);
   }
 
   function handlePaymentMethodChange(method: Payment['method']) {
@@ -246,7 +254,7 @@ export function PaymentModal({
           aria-label="Resumen de factura"
           className="overflow-hidden border border-border bg-surface p-5"
         >
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex flex-col gap-3">
             <div className="min-w-0">
               <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-primary-foreground">
                 <ReceiptText className="size-3.5 text-secondary" aria-hidden="true" />
@@ -256,48 +264,34 @@ export function PaymentModal({
               <p className="mt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Paciente</p>
               <p className="break-words font-medium text-foreground">{patientLabel}</p>
             </div>
-            <div className="grid gap-1 border border-border bg-muted px-4 py-3 text-sm sm:min-w-48 sm:text-right">
-              <span className="text-muted-foreground">Saldo pendiente</span>
-              <Typography.Text strong className="text-xl text-foreground">
-                {moneyLabel(balanceDue)}
-              </Typography.Text>
-            </div>
           </div>
           <Divider className="my-4" />
-          <dl className="grid gap-2 text-sm sm:grid-cols-2">
-            <div className="flex justify-between gap-3 sm:block">
-              <dt className="text-muted-foreground">Total:</dt>
-              <dd className="font-medium">
-                <Typography.Text className="text-foreground">{moneyLabel(total)}</Typography.Text>
-              </dd>
+          <section
+            aria-label="Resumen del cobro"
+            data-summary-columns={String(summaryColumnCount)}
+            className={`grid border border-border bg-muted ${summaryColumnCount === 4 ? 'grid-cols-2 sm:grid-cols-4' : summaryColumnCount === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}
+          >
+            <div className={cashCanReturnChange ? 'border-r border-border p-3' : 'p-3'}>
+              <span className="block text-xs font-medium uppercase tracking-wide text-muted-foreground">Total</span>
+              <strong className="mt-1 block font-mono text-lg tabular-nums text-foreground">{moneyLabel(total)}</strong>
             </div>
-            <div className="flex justify-between gap-3 sm:block sm:text-right">
-              <dt className="text-muted-foreground">Pago aplicado:</dt>
-              <dd className="font-medium">
-                {appliedAmountCents !== null && appliedAmountCents > 0 ? (
-                  <Typography.Text className="text-foreground">{moneyLabelFromCents(appliedAmountCents)}</Typography.Text>
-                ) : (
-                  <span className="tabular-nums text-muted-foreground">L 0.00</span>
-                )}
-              </dd>
+            <div className="border-r border-border p-3">
+              <span className="block text-xs font-medium uppercase tracking-wide text-muted-foreground">Recibido</span>
+              <strong className="mt-1 block font-mono text-lg tabular-nums text-foreground">{moneyLabelFromCents(paymentCents ?? 0)}</strong>
             </div>
-            {changeCents !== null ? (
-              <div className="flex justify-between gap-3 sm:block">
-                <dt className="text-muted-foreground">Cambio:</dt>
-                <dd className="font-semibold">
-                  <Typography.Text className="text-primary-foreground">{moneyLabelFromCents(changeCents)}</Typography.Text>
-                </dd>
+            {cashCanReturnChange ? (
+              <div className="p-3">
+                <span className="block text-xs font-medium uppercase tracking-wide text-muted-foreground">Cambio:</span>
+                <strong className="mt-1 block font-mono text-lg tabular-nums text-foreground">{moneyLabelFromCents(changeCents ?? 0)}</strong>
               </div>
             ) : null}
             {remainingBalanceCents !== null ? (
-              <div className="flex justify-between gap-3 sm:block sm:text-right">
-                <dt className="text-muted-foreground">Saldo pendiente:</dt>
-                <dd className="font-semibold">
-                  <Typography.Text className="text-warning-foreground">{moneyLabelFromCents(remainingBalanceCents)}</Typography.Text>
-                </dd>
+              <div className="border-l border-border p-3">
+                <span className="block text-xs font-medium uppercase tracking-wide text-muted-foreground">Saldo después del pago</span>
+                <strong className="mt-1 block font-mono text-lg tabular-nums text-warning-foreground">{moneyLabelFromCents(remainingBalanceCents)}</strong>
               </div>
             ) : null}
-          </dl>
+          </section>
         </section>
 
         <div className="grid gap-3">
@@ -370,6 +364,16 @@ export function PaymentModal({
                 className="min-h-12 pl-10 text-lg font-semibold tabular-nums"
               />
             </div>
+            {paymentMethod === 'cash' ? (
+              <div className="grid grid-cols-4 gap-2" aria-label="Montos rápidos de efectivo">
+                <Button htmlType="button" disabled={submitting} onClick={() => applyCashPreset(balanceCents ?? 0)}>Exacto</Button>
+                {[100, 200, 500].map((amount) => (
+                  <Button key={amount} htmlType="button" disabled={submitting} onClick={() => applyCashPreset(amount * 100)}>
+                    L {amount}
+                  </Button>
+                ))}
+              </div>
+            ) : null}
             <p id="payment-amount-help" className="text-xs text-muted-foreground">
               Use hasta dos decimales. Se registrara el monto aplicado a la factura.
             </p>

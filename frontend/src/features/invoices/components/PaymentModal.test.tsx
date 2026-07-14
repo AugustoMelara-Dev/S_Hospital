@@ -75,6 +75,7 @@ describe('PaymentModal', () => {
     const summary = screen.getByRole('region', { name: 'Resumen de factura' });
     expect(summary).toHaveClass('bg-surface');
     expect(summary.innerHTML).not.toMatch(/(?:text|bg|border)-(?:white|black|neutral|amber)(?:-|\b)/);
+    expect(screen.getByText('Saldo después del pago')).toBeInTheDocument();
     expect(screen.getByText('L 7.25')).toHaveClass('text-warning-foreground');
   });
 
@@ -150,7 +151,7 @@ describe('PaymentModal', () => {
 
     expect(screen.getByText('Cambio:')).toBeInTheDocument();
     expect(screen.getByText('L 32.75')).toBeInTheDocument();
-    expect(screen.getByText('Pago aplicado:')).toBeInTheDocument();
+    expect(screen.getByText('Recibido')).toBeInTheDocument();
     expect(screen.getAllByText('L 17.25').length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByRole('button', { name: /confirmar cobro/i }));
@@ -313,6 +314,46 @@ describe('PaymentModal', () => {
 
     fireEvent.change(referenceInput, { target: { value: 'DEP-2026-06' } });
     expect(onPaymentReferenceChange).toHaveBeenCalledWith('DEP-2026-06');
+  });
+
+  it('offers cash presets for exact, 100, 200 and 500 only when paying cash', () => {
+    const onPaymentAmountChange = vi.fn();
+    const { rerender, props } = renderPaymentModal({
+      paymentMethod: 'cash',
+      balanceDue: '17.25',
+      onPaymentAmountChange,
+    });
+
+    for (const label of ['Exacto', 'L 100', 'L 200', 'L 500']) {
+      expect(screen.getByRole('button', { name: label })).toBeEnabled();
+    }
+    fireEvent.click(screen.getByRole('button', { name: 'Exacto' }));
+    fireEvent.click(screen.getByRole('button', { name: 'L 200' }));
+    expect(onPaymentAmountChange).toHaveBeenNthCalledWith(1, '17.25');
+    expect(onPaymentAmountChange).toHaveBeenNthCalledWith(2, '200.00');
+
+    rerender(<PaymentModal {...props} paymentMethod="card" onPaymentAmountChange={onPaymentAmountChange} />);
+    expect(screen.queryByRole('button', { name: 'Exacto' })).not.toBeInTheDocument();
+  });
+
+  it('presents total, received and change as the primary collection summary', () => {
+    renderPaymentModal({ balanceDue: '17.25', paymentAmount: '20.00' });
+
+    const summary = screen.getByRole('region', { name: /resumen del cobro/i });
+    expect(summary).toHaveTextContent(/Total/);
+    expect(summary).toHaveTextContent(/Recibido/);
+    expect(summary).toHaveTextContent(/Cambio/);
+    expect(summary).toHaveTextContent('L 17.25');
+    expect(summary).toHaveTextContent('L 20.00');
+    expect(summary).toHaveTextContent('L 2.75');
+  });
+
+  it.each(['card', 'transfer', 'other'] as const)('hides change and uses two summary columns for %s', (paymentMethod) => {
+    renderPaymentModal({ paymentMethod, balanceDue: '17.25', paymentAmount: '17.25' });
+
+    const summary = screen.getByRole('region', { name: /resumen del cobro/i });
+    expect(summary).not.toHaveTextContent(/Cambio/);
+    expect(summary).toHaveAttribute('data-summary-columns', '2');
   });
 
   it('does not request a reference for the other payment method', () => {
