@@ -6,10 +6,11 @@ import { safeClientMessage } from '../../lib/support/clientIssueLog';
 import { OperationalStatusSummary } from './components/OperationalStatusSummary';
 import { RoleChecklist } from './components/RoleChecklist';
 import { SupportPlaybookList } from './components/SupportPlaybookList';
+import type { OperationalStatusReporter } from '@/app/operationalStatus';
 
 type Props = {
   user: AuthUser;
-  onStatus: (message: string) => void;
+  onStatus: OperationalStatusReporter;
 };
 
 export function SupportCenterView({ user, onStatus }: Props) {
@@ -33,13 +34,23 @@ export function SupportCenterView({ user, onStatus }: Props) {
         setStatus(null);
       }
 
-      onStatus('Diagnostico operativo actualizado.');
+      onStatus({
+        key: 'support:diagnostic:refresh',
+        level: 'success',
+        message: 'Diagnostico operativo actualizado.',
+        toast: false,
+      });
     } catch (error) {
       const fallback = 'No se pudo cargar el diagnostico operativo.';
       const safeMessage = safeClientMessage(userSafeErrorMessage(error, fallback));
       const message = safeMessage.includes('[redacted]') ? fallback : (safeMessage || fallback);
       setError(message);
-      onStatus(message);
+      onStatus({
+        key: 'support:diagnostic:refresh',
+        level: 'error',
+        message,
+        toast: false,
+      });
     } finally {
       setLoading(false);
     }

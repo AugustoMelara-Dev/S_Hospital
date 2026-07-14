@@ -395,7 +395,11 @@ describe('UsersView', () => {
 
     expect(await screen.findByRole('heading', { name: /no se pudieron cargar los usuarios/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /reintentar/i })).toBeInTheDocument();
-    expect(onStatus).toHaveBeenCalledWith(expect.stringMatching(/demasiados intentos/i));
+    expect(onStatus).toHaveBeenCalledWith(expect.objectContaining({
+      key: 'admin:users:load',
+      level: 'error',
+      message: expect.stringMatching(/demasiados intentos/i),
+    }));
 
     fireEvent.click(screen.getByRole('button', { name: /reintentar/i }));
 
@@ -791,7 +795,11 @@ describe('UsersView', () => {
     await waitFor(() => {
       expect(within(dialog).getByText(/seleccione al menos un modulo/i)).toBeInTheDocument();
     });
-    expect(onStatus).toHaveBeenCalledWith(expect.stringMatching(/seleccione al menos un modulo/i));
+    expect(onStatus).toHaveBeenCalledWith(expect.objectContaining({
+      key: 'admin:users:save',
+      level: 'warning',
+      message: expect.stringMatching(/seleccione al menos un modulo/i),
+    }));
     expect(createUser).not.toHaveBeenCalled();
   });
 

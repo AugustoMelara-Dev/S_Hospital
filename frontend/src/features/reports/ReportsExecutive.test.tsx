@@ -253,8 +253,9 @@ describe('ReportsExecutive', () => {
 
   it('shows export progress while an executive PDF is being prepared', async () => {
     downloadExecutivePdf.mockReturnValue(new Promise(() => undefined));
+    const onStatus = vi.fn();
 
-    renderExecutive();
+    renderExecutive({ onStatus });
 
     fireEvent.click(screen.getByRole('button', { name: /pdf ejecutivo/i }));
 
@@ -266,6 +267,35 @@ describe('ReportsExecutive', () => {
     expect(screen.getByLabelText(/per[ií]odo r[aá]pido/i)).toBeDisabled();
     expect(screen.getByLabelText(/inicio ejecutivo/i)).toBeDisabled();
     expect(screen.getByLabelText(/fin ejecutivo/i)).toBeDisabled();
+    expect(onStatus).toHaveBeenCalledWith({
+      key: 'reports:executive:export-pdf',
+      level: 'info',
+      message: 'Preparando PDF ejecutivo...',
+      toast: false,
+    });
+  });
+
+  it('reports PDF export completion and failure with the same operation key', async () => {
+    const onStatus = vi.fn();
+    downloadExecutivePdf.mockResolvedValueOnce(new Blob(['pdf'], { type: 'application/pdf' }));
+    const view = renderExecutive({ onStatus });
+
+    fireEvent.click(screen.getByRole('button', { name: /pdf ejecutivo/i }));
+    await waitFor(() => expect(onStatus).toHaveBeenCalledWith(expect.objectContaining({
+      key: 'reports:executive:export-pdf',
+      level: 'success',
+    })));
+
+    view.unmount();
+    onStatus.mockClear();
+    downloadExecutivePdf.mockRejectedValueOnce(new Error('Fallo controlado'));
+    renderExecutive({ onStatus });
+    fireEvent.click(screen.getByRole('button', { name: /pdf ejecutivo/i }));
+
+    await waitFor(() => expect(onStatus).toHaveBeenCalledWith(expect.objectContaining({
+      key: 'reports:executive:export-pdf',
+      level: 'error',
+    })));
   });
 });
 

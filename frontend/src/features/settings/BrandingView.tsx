@@ -4,10 +4,11 @@ import { Alert, Button, Card, ColorPicker, Input, Typography } from 'antd';
 import { useTheme, COLOR_THEMES, type ColorTheme } from '@/hooks/useTheme';
 import { type FiscalSettings, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { safeClientMessage } from '@/lib/support/clientIssueLog';
+import type { OperationalStatusReporter } from '@/app/operationalStatus';
 
 type BrandingViewProps = {
   canEdit: boolean;
-  onStatus: (message: string) => void;
+  onStatus: OperationalStatusReporter;
 };
 
 export function BrandingView({ canEdit, onStatus }: BrandingViewProps) {
@@ -45,16 +46,25 @@ export function BrandingView({ canEdit, onStatus }: BrandingViewProps) {
     if (!canEdit || !settings) return;
     setColorTheme(newColor);
     savingRef.current = true;
-    onStatus('Guardando color de marca...');
+    onStatus({
+      key: 'settings:branding:color',
+      level: 'info',
+      message: 'Guardando color de marca...',
+      toast: false,
+    });
     try {
       const updated = await apiClient.updateFiscalSettings({
         primary_color: newColor,
       });
       setSettings(updated);
-      onStatus(`Color de marca cambiado a ${COLOR_THEMES[newColor].name}.`);
+      onStatus({
+        key: 'settings:branding:color',
+        level: 'success',
+        message: `Color de marca cambiado a ${COLOR_THEMES[newColor].name}.`,
+      });
     } catch (err) {
       const message = safeClientMessage(userSafeErrorMessage(err, 'No se pudo guardar el color.'));
-      onStatus(message);
+      onStatus({ key: 'settings:branding:color', level: 'error', message });
     } finally {
       savingRef.current = false;
     }
@@ -65,16 +75,25 @@ export function BrandingView({ canEdit, onStatus }: BrandingViewProps) {
     uploadingRef.current = true;
     setUploading(true);
     setError('');
-    onStatus('Subiendo logo institucional...');
+    onStatus({
+      key: 'settings:branding:logo',
+      level: 'info',
+      message: 'Subiendo logo institucional...',
+      toast: false,
+    });
     try {
       const url = await apiClient.uploadLogo(logoFile);
       setLogoUrl(url);
-      onStatus('Logo institucional actualizado.');
+      onStatus({
+        key: 'settings:branding:logo',
+        level: 'success',
+        message: 'Logo institucional actualizado.',
+      });
       setLogoFile(null);
     } catch (err) {
       const message = safeClientMessage(userSafeErrorMessage(err, 'No se pudo subir el logo.'));
       setError(message);
-      onStatus(message);
+      onStatus({ key: 'settings:branding:logo', level: 'error', message });
     } finally {
       uploadingRef.current = false;
       setUploading(false);

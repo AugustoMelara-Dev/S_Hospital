@@ -25,9 +25,10 @@ import {
   sanitizeRoles,
   visiblePermissionNames,
 } from './users-view.helpers';
+import type { OperationalStatusReporter } from '@/app/operationalStatus';
 
 type UsersViewProps = {
-  onStatus: (message: string) => void;
+  onStatus: OperationalStatusReporter;
   canCreateUsers: boolean;
   canUpdateUsers?: boolean;
   canDisableUsers?: boolean;
@@ -102,7 +103,7 @@ export function UsersView({
     } catch (err) {
       const msg = userSafeErrorMessage(err, 'No se pudieron cargar los usuarios.');
       setLoadError(msg);
-      onStatus(msg);
+      onStatus({ key: 'admin:users:load', level: 'error', message: msg });
     } finally {
       setLoading(false);
     }
@@ -193,7 +194,12 @@ export function UsersView({
 
     saveRoleInFlightRef.current = true;
     setIsSavingRole(true);
-    onStatus(editingRole ? 'Actualizando rol...' : 'Creando rol...');
+    onStatus({
+      key: 'admin:roles:save',
+      level: 'info',
+      message: editingRole ? 'Actualizando rol...' : 'Creando rol...',
+      toast: false,
+    });
 
     try {
       const saved = editingRole
@@ -207,11 +213,15 @@ export function UsersView({
           .sort((a, b) => a.name.localeCompare(b.name));
       });
       setIsRoleModalOpen(false);
-      onStatus(`Rol ${visibleSavedRole.name} ${editingRole ? 'actualizado' : 'creado'} correctamente.`);
+      onStatus({
+        key: 'admin:roles:save',
+        level: 'success',
+        message: `Rol ${visibleSavedRole.name} ${editingRole ? 'actualizado' : 'creado'} correctamente.`,
+      });
     } catch (err) {
       const msg = userSafeErrorMessage(err, 'No se pudo guardar el rol.');
       setRoleGlobalError(msg);
-      onStatus(msg);
+      onStatus({ key: 'admin:roles:save', level: 'error', message: msg });
     } finally {
       saveRoleInFlightRef.current = false;
       setIsSavingRole(false);
@@ -237,28 +247,28 @@ export function UsersView({
     if (!editingSelf && advancedUserPermissionsMode && selectedUserPermissions.length === 0 && editingUser?.active !== false) {
       const msg = 'Seleccione al menos un modulo para un usuario activo, o desactive el usuario antes de dejarlo sin acceso.';
       setFormGlobalError(msg);
-      onStatus(msg);
+      onStatus({ key: 'admin:users:save', level: 'warning', message: msg });
       return;
     }
 
-    onStatus('Guardando usuario...');
+    onStatus({ key: 'admin:users:save', level: 'info', message: 'Guardando usuario...', toast: false });
     try {
       if (editingUser) {
         const payload = buildUpdateUserPayload(data, selectedUserPermissions, editingSelf ? false : advancedUserPermissionsMode);
         const updated = await apiClient.updateUser(editingUser.id, payload);
         setUsers((current) => current.map((u) => (u.id === editingUser.id ? updated : u)));
-        onStatus(`Usuario ${updated.name} actualizado correctamente.`);
+        onStatus({ key: 'admin:users:save', level: 'success', message: `Usuario ${updated.name} actualizado correctamente.` });
       } else {
         const payload = buildCreateUserPayload(data, selectedUserPermissions, advancedUserPermissionsMode);
         const created = await apiClient.createUser(payload);
         setUsers((current) => [...current, created]);
-        onStatus(`Usuario ${created.name} creado correctamente.`);
+        onStatus({ key: 'admin:users:save', level: 'success', message: `Usuario ${created.name} creado correctamente.` });
       }
       setIsUserModalOpen(false);
     } catch (err) {
       const msg = userSafeErrorMessage(err, 'No se pudo guardar el usuario.');
       setFormGlobalError(msg);
-      onStatus(msg);
+      onStatus({ key: 'admin:users:save', level: 'error', message: msg });
     }
   };
 
@@ -272,7 +282,7 @@ export function UsersView({
     if (toggleUserInFlightRef.current) return;
     toggleUserInFlightRef.current = true;
     setIsTogglingUser(true);
-    onStatus('Cambiando estado de usuario...');
+    onStatus({ key: 'admin:users:toggle', level: 'info', message: 'Cambiando estado de usuario...', toast: false });
     try {
       const updated = await apiClient.toggleUserActive(
         targetToggleUser.id,
@@ -280,10 +290,10 @@ export function UsersView({
       );
       setUsers((current) => current.map((u) => (u.id === targetToggleUser.id ? updated : u)));
       const action = updated.active ? 'activado' : 'desactivado';
-      onStatus(`Usuario ${updated.name} ha sido ${action} con éxito.`);
+      onStatus({ key: 'admin:users:toggle', level: 'success', message: `Usuario ${updated.name} ha sido ${action} con éxito.` });
     } catch (err) {
       const msg = userSafeErrorMessage(err, 'No se pudo cambiar el estado del usuario.');
-      onStatus(msg);
+      onStatus({ key: 'admin:users:toggle', level: 'error', message: msg });
     } finally {
       toggleUserInFlightRef.current = false;
       setIsTogglingUser(false);
@@ -301,15 +311,19 @@ export function UsersView({
   const onResetSubmit = async (data: { newPassword: string; reason: string }) => {
     if (!targetResetUser) return;
     setResetGlobalError('');
-    onStatus('Restableciendo contraseña...');
+    onStatus({ key: 'admin:users:reset-password', level: 'info', message: 'Restableciendo contraseña...', toast: false });
     try {
       await apiClient.resetUserPassword(targetResetUser.id, data.newPassword, data.reason);
-      onStatus(`Contraseña restablecida con éxito para ${targetResetUser.name}. Se solicitará cambio de contraseña en su siguiente inicio de sesión.`);
+      onStatus({
+        key: 'admin:users:reset-password',
+        level: 'success',
+        message: `Contraseña restablecida con éxito para ${targetResetUser.name}. Se solicitará cambio de contraseña en su siguiente inicio de sesión.`,
+      });
       setIsResetModalOpen(false);
     } catch (err) {
       const msg = userSafeErrorMessage(err, 'No se pudo restablecer la contraseña.');
       setResetGlobalError(msg);
-      onStatus(msg);
+      onStatus({ key: 'admin:users:reset-password', level: 'error', message: msg });
     }
   };
 

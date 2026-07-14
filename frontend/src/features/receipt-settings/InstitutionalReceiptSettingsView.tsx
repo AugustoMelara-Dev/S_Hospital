@@ -10,6 +10,7 @@ import { SectionCard, StatCard } from '@/design-system/components/InstitutionalC
 import { PageHeader } from '@/design-system/components/PageHeader';
 import { ReceiptSettingsPreview } from './components/ReceiptSettingsPreview';
 import { type InstitutionalReceiptSeries, type ReceiptPrintProfile, apiClient, userSafeErrorMessage } from '@/lib/api';
+import type { OperationalStatusReporter } from '@/app/operationalStatus';
 import { downloadBlob } from '@/lib/download';
 import { queryKeys } from '@/lib/queryKeys';
 import {
@@ -28,7 +29,7 @@ import {
 type InstitutionalReceiptSettingsViewProps = {
   canEdit: boolean;
   canEditAdvanced?: boolean;
-  onStatus: (message: string) => void;
+  onStatus: OperationalStatusReporter;
 };
 
 const PROFILE_FORM_DEFAULTS = {
@@ -229,11 +230,21 @@ export function InstitutionalReceiptSettingsView({
 
   const institutionMutation = useMutation({
     mutationFn: (payload: InstitutionFormData) => apiClient.updateReceiptInstitution(payload),
+    onMutate: () => onStatus({
+      key: 'receipt-settings:institution',
+      level: 'info',
+      message: 'Guardando datos institucionales del recibo...',
+      toast: false,
+    }),
     onSuccess: async () => {
       await invalidate();
-      onStatus('Datos institucionales del recibo guardados.');
+      onStatus({ key: 'receipt-settings:institution', level: 'success', message: 'Datos institucionales del recibo guardados.' });
     },
-    onError: (err) => setError(userSafeErrorMessage(err, 'No se pudo guardar la institución del recibo.')),
+    onError: (err) => {
+      const message = userSafeErrorMessage(err, 'No se pudo guardar la institución del recibo.');
+      setError(message);
+      onStatus({ key: 'receipt-settings:institution', level: 'error', message });
+    },
     onSettled: () => {
       institutionSavingRef.current = false;
     },
@@ -244,11 +255,21 @@ export function InstitutionalReceiptSettingsView({
       activeSeries
         ? apiClient.updateReceiptSeries(activeSeries.id, payload)
         : apiClient.storeReceiptSeries({ ...payload, document_type: 'institutional_receipt' }),
+    onMutate: () => onStatus({
+      key: 'receipt-settings:series',
+      level: 'info',
+      message: 'Guardando serie y correlativo del recibo...',
+      toast: false,
+    }),
     onSuccess: async () => {
       await invalidate();
-      onStatus('Serie y correlativo del recibo guardados.');
+      onStatus({ key: 'receipt-settings:series', level: 'success', message: 'Serie y correlativo del recibo guardados.' });
     },
-    onError: (err) => setError(userSafeErrorMessage(err, 'No se pudo guardar la serie del recibo.')),
+    onError: (err) => {
+      const message = userSafeErrorMessage(err, 'No se pudo guardar la serie del recibo.');
+      setError(message);
+      onStatus({ key: 'receipt-settings:series', level: 'error', message });
+    },
     onSettled: () => {
       seriesSavingRef.current = false;
     },
@@ -269,11 +290,21 @@ export function InstitutionalReceiptSettingsView({
           : {}),
       });
     },
+    onMutate: () => onStatus({
+      key: 'receipt-settings:profile',
+      level: 'info',
+      message: 'Guardando perfil de impresión del recibo...',
+      toast: false,
+    }),
     onSuccess: async () => {
       await invalidate();
-      onStatus('Perfil de impresión del recibo guardado.');
+      onStatus({ key: 'receipt-settings:profile', level: 'success', message: 'Perfil de impresión del recibo guardado.' });
     },
-    onError: (err) => setError(userSafeErrorMessage(err, 'No se pudo guardar el perfil de impresión.')),
+    onError: (err) => {
+      const message = userSafeErrorMessage(err, 'No se pudo guardar el perfil de impresión.');
+      setError(message);
+      onStatus({ key: 'receipt-settings:profile', level: 'error', message });
+    },
     onSettled: () => {
       profileSavingRef.current = false;
     },
@@ -287,11 +318,21 @@ export function InstitutionalReceiptSettingsView({
         concept: 'Servicios hospitalarios de prueba',
         amount: '25.00',
       }),
+    onMutate: () => onStatus({
+      key: 'receipt-settings:test-print',
+      level: 'info',
+      message: 'Generando PDF de prueba...',
+      toast: false,
+    }),
     onSuccess: (blob) => {
       downloadBlob(blob, 'recibo-institucional-prueba.pdf');
-      onStatus('PDF de prueba generado sin reservar correlativo.');
+      onStatus({ key: 'receipt-settings:test-print', level: 'success', message: 'PDF de prueba generado sin reservar correlativo.' });
     },
-    onError: (err) => setError(userSafeErrorMessage(err, 'No se pudo generar la impresión de prueba.')),
+    onError: (err) => {
+      const message = userSafeErrorMessage(err, 'No se pudo generar la impresión de prueba.');
+      setError(message);
+      onStatus({ key: 'receipt-settings:test-print', level: 'error', message });
+    },
   });
 
   if (settingsQuery.isLoading) {
