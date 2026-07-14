@@ -68,3 +68,15 @@ La ejecución segmentada aprobó 197/208 pruebas del bloque no migrado y dejó 1
 | `modules/receipts/paperPolicy.test.ts` | 1 | busca CSS de impresión retirado de `styles.css` | Backlog Recibos/Impresión |
 
 Administración cerró **84/84** y Playwright **1/1**. En total quedaron 21 fallos reproducibles en 9 archivos no migrados. El E2E release global no inicia sin `E2E_RELEASE_PASSWORD`/`E2E_SEED_PASSWORD`; el preflight falla deliberadamente para impedir una contraseña comprometida en el repositorio.
+
+## Cierre del backlog de 21 fallos (2026-07-13)
+
+| Área | Fallos antes | Resultado focal | Resolución |
+| --- | ---: | ---: | --- |
+| API system | 1 | 0 | se corrigió la expectativa corrupta `áction`; el contrato conserva `?action=` y tiene regresión contra mojibake |
+| Política de papel | 1 | 0 | la geometría `@page` vive en `printing/styles/receipt-print.css`; se verifican cinco formatos, orientación y fallback |
+| Ajustes de recibos | 1 | 0; 61/61 | hidratación controlada y componentes Ant reales, sin ramas de test |
+| Reportes | 10 | 0; 95/95 | DatePicker/AG Grid/ECharts institucional y fixtures actualizados al contrato real |
+| App | 8 | 0; 20/20 | expectativas del shell/rutas/providers actuales; portales completos permanecen en Playwright |
+
+Fallos después: **0**. `npm run test:segmented` cubrió exactamente una vez los **145/145 archivos** y aprobó **1046/1046 tests** en **12/12 segmentos**, sin omitidos, duplicados, no cubiertos ni archivos sin reporte (1751.0 s).

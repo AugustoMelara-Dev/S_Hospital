@@ -232,3 +232,16 @@ Este documento registra el progreso fase por fase del refactor del frontend. Se 
 | `npm run test:e2e` release | bloqueado antes de ejecutar: falta `E2E_RELEASE_PASSWORD` o `E2E_SEED_PASSWORD` |
 
 La invocación monolítica de Vitest agotó memoria y la variante serial completa dejó procesos huérfanos; la evidencia global se ejecutó en segmentos explícitos. Hay 21 fallos reproducibles en 9 archivos fuera de Facturación, Catálogo y Administración. No se declara certificación mientras permanezcan y falte la credencial del E2E release.
+
+---
+
+### Tramo Recibos, Reportes y regresión determinista (2026-07-13)
+
+* **Ajustes de recibos:** IMPLEMENTADA — QA TRANSVERSAL PENDIENTE. Form/Form.Item, Select, InputNumber, Collapse y Alert reales; perfil normal separado de soporte avanzado por `receipt_settings.advanced`; Carta, Media Carta, A5, 80 mm y 58 mm conservados. Vitest focal: **61/61**. Playwright mock: **3/3**.
+* **Reportes:** IMPLEMENTADA — QA TRANSVERSAL PENDIENTE. Ejecutivo, Caja y Auditoría usan DatePicker, InstitutionalDataGrid, Statistic/Descriptions y ECharts modular con aria, resumen y alternativa tabular. Vitest focal: **95/95**. Playwright mock: **4/4**.
+* **App:** la integración se alineó a InstitutionalShell, providers, rutas, sesión, permisos, lazy loading, logout y cambio obligatorio de contraseña. **20/20**.
+* **E2E reproducible:** `test:e2e:mock` aprobó **19/19** sin secretos. `test:e2e:release` exige `E2E_RELEASE_PASSWORD` o `E2E_SEED_PASSWORD` y falla de forma explícita si faltan.
+* **Gate legacy v2 comparable:** **190 → 177** violaciones sobre los mismos **409** archivos. El estricto ampliado aprobó con cero en Shell, Auth, Dashboard, Caja, Facturación, Catálogo, Administración, Recibos, Reportes y Contabilidad.
+* **Build:** aprobado. Se eliminó el warning Lightning CSS de `@theme`; el vendor monolítico bajó de 2,763.67 kB a 177.11 kB al separar Ant Design (1,160.12 kB), AG Grid (873.95 kB) y ECharts (556.20 kB). Permanecen warnings >500 kB de esas tres bibliotecas, documentados y no silenciados.
+* **Impresión física:** pendiente y declarada como deuda; la automatización no se presenta como certificación de impresora real.
+* **Regresión Vitest segmentada final:** **145/145 archivos**, **1046 aprobados**, **0 fallidos**, **0 omitidos**, **12/12 segmentos**, 0 archivos no cubiertos, duplicados o sin reporte; 1751.0 s. Reporte agregado: `frontend/test-results/segmented-tests-summary.json`.
