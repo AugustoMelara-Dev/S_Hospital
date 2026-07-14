@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
-import { EditOutlined } from '@ant-design/icons';
-import { Button, Col, Input, Modal, Row, Statistic, Typography } from 'antd';
+import { EditOutlined, PlusOutlined } from '@ant-design/icons';
+import { Alert, Button, Col, Input, Modal, Row, Statistic, Typography } from 'antd';
 import { type AuthUser, type Category, type Service, type ServiceFilters, apiClient, userSafeErrorMessage } from '../../lib/api';
 import { useAreas, useCategories } from '@/hooks/useCategories';
 import { useOperationalSettings } from '@/hooks/useFiscalSettings';
@@ -10,10 +10,10 @@ import { useServices } from '@/hooks/useServices';
 import { CatalogPagination } from './components/CatalogPagination';
 import { CatalogToolbar } from './components/CatalogToolbar';
 import { ServiceCatalogTable } from './components/ServiceCatalogTable';
-import { ServiceStatusSummary } from './components/ServiceStatusSummary';
 import { CategoryDrawer } from './components/CategoryDrawer';
 import { ServiceDrawer } from './components/ServiceDrawer';
 import { invalidateCatalogQueries } from '@/lib/queryInvalidation';
+import { PageHeader } from '@/design-system/components/PageHeader';
 import {
   CATALOG_DEBOUNCE_MS,
   CATEGORY_FILTER_ALL,
@@ -241,14 +241,27 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
     <section
       id="catalogo"
       className="flex flex-col gap-6"
-      aria-labelledby="catalog-title"
+      aria-label="Catálogo institucional"
     >
-      <ServiceStatusSummary
-        canManage={canManageCatalog}
-        onNewCategory={openNewCategory}
-        onNewService={openNewService}
-        summary={{ count: services.length, total: meta.total }}
+      <PageHeader
+        eyebrow="Servicios y productos facturables"
+        title="Catálogo institucional"
+        description={canManageCatalog
+          ? 'Administre categorías, servicios y precios para mantener operativo el catálogo de caja.'
+          : 'Consulte el catálogo y sus precios vigentes sin modificar servicios.'}
+        actions={canManageCatalog ? (
+          <>
+            <Button onClick={openNewCategory} aria-label="Crear nueva categoría" icon={<PlusOutlined />}>Nueva categoría</Button>
+            <Button type="primary" onClick={openNewService} aria-label="Crear nuevo servicio" icon={<PlusOutlined />}>Nuevo servicio</Button>
+          </>
+        ) : undefined}
       />
+      <Typography.Text role="status" aria-label="Resumen de servicios en el catálogo">
+        {meta.total} servicio{meta.total !== 1 ? 's' : ''} en el catálogo
+      </Typography.Text>
+      {!canManageCatalog ? (
+        <Alert type="info" title="Solo lectura" description="Esta cuenta puede consultar el catálogo, pero no modificar servicios ni categorías." />
+      ) : null}
 
       <StatGrid
         className="sm:grid-cols-2 xl:grid-cols-2"

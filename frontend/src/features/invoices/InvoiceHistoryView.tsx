@@ -12,7 +12,8 @@ import {
   userSafeErrorMessage,
 } from '../../lib/api';
 import { useInvoices } from '../../hooks/useInvoices';
-import { Alert, Button, Empty, Input, Modal, Pagination, Skeleton, type PaginationProps } from 'antd';
+import { Alert, Button, Empty, Input, Modal, Pagination, Skeleton, Tag, type PaginationProps } from 'antd';
+import { FileTextOutlined } from '@ant-design/icons';
 import type { ReactNode } from 'react';
 import { ReceiptPreview } from '../receipts/ReceiptPreview';
 import { institutionalReceiptPaperSize } from '../../lib/institutionalReceiptPaper';
@@ -31,9 +32,9 @@ import { formatLocalizedDateTime } from '../../lib/format/formatDate';
 import { invalidateBillingQueries } from '@/lib/queryInvalidation';
 import { payloadScopedIdempotencyKey, resetPayloadScopedIdempotencyKey } from '../../lib/api/idempotency';
 import { InvoiceHistoryFilters } from './history/InvoiceHistoryFilters';
-import { InvoiceHistoryHeader } from './history/InvoiceHistoryHeader';
 import { InvoiceHistoryTable, issuedInstitutionalReceipt } from './history/InvoiceHistoryTable';
 import { InvoiceDetailDrawer } from './history/InvoiceDetailDrawer';
+import { PageHeader } from '@/design-system/components/PageHeader';
 
 type InvoiceHistoryViewProps = {
   user: AuthUser;
@@ -627,7 +628,12 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       aria-label="Historial de facturas"
       tabIndex={-1}
     >
-      <InvoiceHistoryHeader loading={loading} meta={meta} />
+      <PageHeader
+        eyebrow="Facturación"
+        title="Historial de facturas"
+        description="Consulta, reimpresión y acciones autorizadas sobre facturas emitidas."
+        actions={<Tag icon={<FileTextOutlined aria-hidden="true" />}>{meta.total} facturas</Tag>}
+      />
       <InvoiceHistoryFilters
         filters={filters}
         hasActiveFilters={hasActiveFilters}

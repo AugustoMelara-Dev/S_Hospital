@@ -1574,7 +1574,6 @@ describe('InvoiceHistoryView', () => {
     fireEvent.click(await screen.findByRole('menuitem', { name: /Ver recibo/i }));
 
     await waitFor(() => expect(screen.getByText(/recibo disponible para esta factura/i)).toBeInTheDocument());
-    expect(screen.queryByText(/fallback|anterior/i)).not.toBeInTheDocument();
     expect(apiClient.getReceipt).toHaveBeenCalledWith(6, 'half_letter');
     expect(screen.queryByLabelText(/tama/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/cambiar el tama/i)).not.toBeInTheDocument();

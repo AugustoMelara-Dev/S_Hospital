@@ -1,6 +1,7 @@
 import { type FormEvent, type ReactNode, useEffect, useRef, useState } from 'react';
-import { WarningOutlined } from '@ant-design/icons';
-import { Alert, Button, Empty, Modal, Result, Spin } from 'antd';
+import { ReloadOutlined, WarningOutlined } from '@ant-design/icons';
+import { Alert, Button, Empty, Modal, Result, Spin, Tag } from 'antd';
+import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type CashSession, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { payloadScopedIdempotencyKey, resetPayloadScopedIdempotencyKey } from '@/lib/api/idempotency';
@@ -8,13 +9,14 @@ import { finiteNumber, formatLempirasUI, parseCents, toFloat } from '@/lib/money
 import { getVisibleRefetchInterval } from '@/lib/query/polling';
 import { invalidateBillingQueries } from '@/lib/queryInvalidation';
 import { queryKeys } from '@/lib/queryKeys';
+import { PageHeader } from '@/design-system/components/PageHeader';
+import { formatDateTimeEs } from '@/lib/format/formatDate';
 import { OpenSessionForm } from './components/OpenSessionForm';
 import { SessionSummary } from './components/SessionSummary';
 import { CashCloseSummaryPanel, CloseSessionDialog } from './components/CloseSessionDialog';
 import { CashMovementsTable } from './components/CashMovementsTable';
 import { CashClosingPanel } from './components/CashClosingPanel';
 import { CashMethodSummary } from './components/CashMethodSummary';
-import { CashSessionHeader } from './components/CashSessionHeader';
 import { AccountingControlPanel } from '@/modules/accounting/components/AccountingControlPanel';
 
 type CashBoxViewProps = {
@@ -197,6 +199,9 @@ export function CashBoxView({
   const hasCashDifference = difference !== null && difference !== 0;
   const isOpen = activeSession?.status === 'open';
   const isOwnSession = Boolean(activeSession && currentUserId === activeSession.user_id);
+  const cashier = activeSession
+    ? activeSession.user?.name ?? activeSession.user?.username ?? `Cajero #${activeSession.user_id}`
+    : null;
   const pendingInvoiceCount = activeSession?.pending_invoice_count ?? 0;
   const pendingAmount = activeSession?.pending_amount ?? '0.00';
   const missingInstitutionalReceiptCount = activeSession?.missing_institutional_receipt_count ?? 0;
@@ -288,14 +293,34 @@ export function CashBoxView({
   return (
     <section id="caja" className={'grid gap-6'} aria-label="Caja">
       <div className="flex flex-col gap-6">
-        <CashSessionHeader
-          canCloseAnyCash={canCloseAnyCash}
-          canCreateInvoices={canCreateInvoices}
-          isOwnSession={isOwnSession}
-          isLoading={isLoading}
-          onRefresh={() => void refetch()}
-          session={activeSession ?? null}
+        <PageHeader
+          eyebrow="Operación de caja"
+          title="Caja"
+          description="Apertura, conciliación, movimientos auditados y cierre de efectivo."
+          actions={(
+            <>
+              {isOpen && isOwnSession && canCreateInvoices ? (
+                <Link to="/billing/new"><Button type="primary">Nueva factura</Button></Link>
+              ) : null}
+              <Button icon={<ReloadOutlined spin={isLoading} />} onClick={() => void refetch()} disabled={isLoading}>
+                Actualizar
+              </Button>
+            </>
+          )}
         />
+        <div className="flex flex-wrap items-center gap-3 text-sm">
+          <Tag>{isOpen ? 'Caja abierta' : 'Caja cerrada'}</Tag>
+          <p role="status" aria-live="polite">
+            {isLoading
+              ? 'Actualizando estado de caja.'
+              : isOpen && activeSession
+                ? `Abierta ${formatDateTimeEs(activeSession.opened_at)}`
+                : 'No hay una caja abierta actualmente.'}
+          </p>
+          {isOpen && cashier ? (
+            <p><strong>{cashier}</strong> · {isOwnSession ? 'Caja propia' : canCloseAnyCash ? 'Supervisión habilitada' : 'Sesión de otro cajero'}</p>
+          ) : null}
+        </div>
 
         {formAlert ? (
           <Alert type="error" showIcon title="No se pudo completar la operación" description={formAlert} />
