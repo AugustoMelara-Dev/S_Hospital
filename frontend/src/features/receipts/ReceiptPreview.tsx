@@ -141,24 +141,26 @@ export function ReceiptPreview({ onNewInvoice, onPrint, receipt }: ReceiptPrevie
             </tbody>
           </table>
 
-          <div className="receipt-rule" aria-hidden="true" />
+          <div className="receipt-summary" data-receipt-summary>
+            <div className="receipt-rule" aria-hidden="true" />
 
-          <table className="receipt-totals-table">
-            <tbody>
-              <ReceiptTotalRow label="Subtotal" value={moneyLabel(receipt.invoice.subtotal)} />
-              {(parseCents(receipt.invoice.discount_amount) ?? 0) > 0 ? (
-                <ReceiptTotalRow label="Descuento" value={moneyLabel(receipt.invoice.discount_amount)} />
-              ) : null}
-              <ReceiptTotalRow label={taxLabel} value={moneyLabel(receipt.invoice.tax_amount)} />
-              <ReceiptTotalRow label="TOTAL" value={moneyLabel(receipt.invoice.total)} strong />
-              {(parseCents(receipt.invoice.paid_amount) ?? 0) > 0 ? (
-                <ReceiptTotalRow label="Pagado" value={moneyLabel(receipt.invoice.paid_amount)} />
-              ) : null}
-              {(parseCents(receipt.invoice.balance_due) ?? 0) > 0 ? (
-                <ReceiptTotalRow label="Saldo" value={moneyLabel(receipt.invoice.balance_due)} />
-              ) : null}
-            </tbody>
-          </table>
+            <table className="receipt-totals-table">
+              <tbody>
+                <ReceiptTotalRow label="Subtotal" value={moneyLabel(receipt.invoice.subtotal)} />
+                {(parseCents(receipt.invoice.discount_amount) ?? 0) > 0 ? (
+                  <ReceiptTotalRow label="Descuento" value={moneyLabel(receipt.invoice.discount_amount)} />
+                ) : null}
+                <ReceiptTotalRow label={taxLabel} value={moneyLabel(receipt.invoice.tax_amount)} />
+                <ReceiptTotalRow label="TOTAL" value={moneyLabel(receipt.invoice.total)} strong />
+                {(parseCents(receipt.invoice.paid_amount) ?? 0) > 0 ? (
+                  <ReceiptTotalRow label="Pagado" value={moneyLabel(receipt.invoice.paid_amount)} />
+                ) : null}
+                {(parseCents(receipt.invoice.balance_due) ?? 0) > 0 ? (
+                  <ReceiptTotalRow label="Saldo" value={moneyLabel(receipt.invoice.balance_due)} />
+                ) : null}
+              </tbody>
+            </table>
+          </div>
 
           {receipt.payments.length > 0 ? (
             <>

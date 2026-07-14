@@ -11,4 +11,12 @@ describe('receipt print css boundary', () => {
       expect(printCss).toContain(`@page ${profile}`);
     }
   });
+
+  it('keeps only the financial summary indivisible from the signature footer', () => {
+    const printCss = readFileSync(join(process.cwd(), 'src/printing/styles/receipt-print.css'), 'utf8');
+
+    expect(printCss).toMatch(/\.receipt-summary\s*\{[^}]*break-inside:\s*avoid;[^}]*page-break-inside:\s*avoid;/s);
+    expect(printCss).toMatch(/\.receipt-footer\s*\{[^}]*break-inside:\s*avoid;[^}]*page-break-inside:\s*avoid;/s);
+    expect(printCss).not.toMatch(/\.receipt-closing-block\s*\{/);
+  });
 });

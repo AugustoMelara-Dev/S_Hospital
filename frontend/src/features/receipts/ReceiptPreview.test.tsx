@@ -231,6 +231,19 @@ describe('ReceiptPreview', () => {
     expect(printRoot?.textContent).not.toMatch(/qr|barcode|codigo interno|código interno/i);
   });
 
+  it('keeps the financial summary compact without making the signature footer part of the same indivisible block', () => {
+    render(<ReceiptPreview receipt={receiptFixture()} onPrint={vi.fn()} />);
+
+    const printRoot = document.querySelector('[data-receipt-print-root]');
+    const summary = printRoot?.querySelector('[data-receipt-summary]');
+    const footer = printRoot?.querySelector('footer');
+
+    expect(summary).toHaveClass('receipt-summary');
+    expect(summary).toContainElement(within(printRoot as HTMLElement).getByRole('rowheader', { name: /^total$/i }));
+    expect(summary).not.toContainElement(footer as HTMLElement);
+    expect(footer).toHaveClass('receipt-footer');
+  });
+
   it('keeps long service names printable without exposing QR or barcode artifacts', () => {
     const receipt = receiptFixture();
     const longServiceName =
