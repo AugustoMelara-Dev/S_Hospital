@@ -4,7 +4,7 @@ namespace App\Support;
 
 final class HospitalName
 {
-    private const FALLBACK = 'Hospital San Isidro';
+    private const FALLBACK = 'Hospital General San Isidro';
 
     public static function display(?string $name): string
     {
@@ -31,6 +31,7 @@ final class HospitalName
         $legacyPlaceholderName = 'hospital '.('de'.'mo');
 
         return [
+            'hospital san isidro',
             $legacyProductName,
             's_hospital '.$legacyProductName,
             $legacyProductName.' offline',

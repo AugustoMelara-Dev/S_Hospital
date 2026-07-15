@@ -4,6 +4,7 @@ export const receiptInstitutionSchema = z.object({
   hospital_name: z.string().min(1, 'El nombre del hospital es requerido').max(255),
   rtn: z.string().max(32).optional().nullable(),
   address: z.string().max(255).optional().nullable(),
+  phone: z.string().max(64).optional().nullable(),
   slogan: z.string().max(255).optional().nullable(),
   government_line: z.string().max(120).optional().nullable(),
   secretariat_line: z.string().max(160).optional().nullable(),

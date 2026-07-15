@@ -2,6 +2,7 @@
 
 namespace App\Actions\Receipts;
 
+use App\Actions\InstitutionalReceipts\AmountToSpanishWords;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Support\HospitalName;
@@ -9,6 +10,8 @@ use App\Support\ReceiptPaperSize;
 
 class GenerateReceiptDataAction
 {
+    public function __construct(private readonly AmountToSpanishWords $amountToSpanishWords) {}
+
     public function execute(Invoice $invoice, string $width, ?string $copyLabel = null): array
     {
         $paperSize = ReceiptPaperSize::normalize($width);
@@ -36,6 +39,7 @@ class GenerateReceiptDataAction
                 'name' => HospitalName::display($invoice->hospital_name),
                 'rtn' => $invoice->hospital_rtn,
                 'address' => $invoice->hospital_address,
+                'phone' => $invoice->hospital_phone,
                 'slogan' => $invoice->hospital_slogan,
             ],
             'institutional' => [
@@ -59,6 +63,7 @@ class GenerateReceiptDataAction
                 'invoice_number' => $invoice->invoice_number,
                 'issued_at' => $invoice->issued_at?->toISOString(),
                 'cashier' => $cashierName,
+                'cash_register_label' => $invoice->cash_session_id ? 'Caja #'.$invoice->cash_session_id : null,
                 'patient_name' => $invoice->patient_name,
                 'subtotal' => $this->moneyFromCents($invoice->subtotal_cents, $invoice->subtotal),
                 'tax_amount' => $this->moneyFromCents($invoice->tax_amount_cents, $invoice->tax_amount),
@@ -70,6 +75,13 @@ class GenerateReceiptDataAction
                 'tax_label' => $invoice->tax_label ?? 'ISV',
                 'tax_rate' => $invoice->tax_rate_snapshot,
             ],
+            'amount_words' => $this->amountToSpanishWords->forCents((int) $invoice->total_cents),
+            'exempt_amount' => $this->moneyFromCents(
+                $invoice->items
+                    ->filter(fn ($item): bool => (float) $item->tax_rate === 0.0)
+                    ->sum(fn ($item): int => (int) $item->line_subtotal_cents),
+                null,
+            ),
             'items' => $invoice->items->map(fn ($item): array => [
                 'service_name' => $item->service_name,
                 'category_name' => $item->category_name,

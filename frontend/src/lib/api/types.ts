@@ -42,6 +42,7 @@ export type FiscalSettings = {
   receipt_paper_size?: InstitutionalReceiptPaperSize;
   primary_color: 'teal' | 'blue' | 'indigo' | 'green' | 'rose';
   address?: string;
+  phone?: string | null;
   slogan?: string;
   scanner_enabled?: boolean;
   partial_payments_enabled?: boolean;
@@ -257,6 +258,7 @@ export type ReceiptData = {
     rtn: string | null;
     address?: string | null;
     slogan?: string | null;
+    phone?: string | null;
   };
   institutional?: {
     template_mode: 'institutional' | string;
@@ -287,9 +289,12 @@ export type ReceiptData = {
   > & {
     issued_at: string;
     cashier: string | null;
+    cash_register_label?: string | null;
     tax_label?: string | null;
     tax_rate?: string | null;
   };
+  amount_words?: string;
+  exempt_amount?: string;
   items: Array<
     Pick<
       InvoiceItem,
@@ -1017,6 +1022,7 @@ export type ReceiptInstitutionPayload = {
   hospital_name: string;
   rtn?: string | null;
   address?: string | null;
+  phone?: string | null;
   slogan?: string | null;
   government_line?: string | null;
   secretariat_line?: string | null;

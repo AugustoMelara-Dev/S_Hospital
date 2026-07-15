@@ -166,6 +166,8 @@ describe('ReceiptPreview', () => {
     render(<ReceiptPreview receipt={receipt} onPrint={vi.fn()} />);
 
     expect(document.querySelector('[data-receipt-print-root]')).toHaveClass('receipt-58mm');
+    expect(screen.queryByRole('columnheader', { name: 'Precio' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: /ISV/i })).not.toBeInTheDocument();
   });
 
   it('renders malformed historical receipt amounts as safe financial values', () => {
@@ -205,9 +207,15 @@ describe('ReceiptPreview', () => {
     expect(screen.queryByRole('heading', { name: 'COMPROBANTE DE FACTURA' })).not.toBeInTheDocument();
     expect(screen.queryByText(/comprobante de compatibilidad/i)).not.toBeInTheDocument();
     expect(screen.getByText('Estado')).toBeInTheDocument();
+    expect(screen.getByText('RTN: 08011999123456')).toBeInTheDocument();
+    expect(screen.getByText('Tel. 2444-0000')).toBeInTheDocument();
+    expect(screen.getByText('Caja #7')).toBeInTheDocument();
+    expect(screen.getByRole('rowheader', { name: 'Exento' })).toBeInTheDocument();
+    expect(screen.getByText('DIECISIETE LEMPIRAS CON 25/100 CENTAVOS')).toBeInTheDocument();
     const printRoot = document.querySelector('[data-receipt-print-root]');
     expect(printRoot).toBeInTheDocument();
-    expect(printRoot?.textContent).not.toMatch(/\bCAI\b|Rango|Vence|TEST-CAI|000-001-01-99999999/i);
+    expect(printRoot?.textContent).toMatch(/Rango autorizado|000-001-01-99999999/i);
+    expect(printRoot?.textContent).not.toMatch(/\bCAI\b|TEST-CAI/i);
   });
 
   it('renders semantic receipt tables while keeping controls outside the printable document', () => {
@@ -278,6 +286,7 @@ function receiptFixture(): ReceiptData {
       rtn: '08011999123456',
       address: 'Tocoa, Colon',
       slogan: null,
+      phone: '2444-0000',
     },
     institutional: {
       template_mode: 'institutional',
@@ -306,9 +315,12 @@ function receiptFixture(): ReceiptData {
       status: 'paid',
       issued_at: '2026-06-01T12:00:00',
       cashier: 'Cajero Validacion',
+      cash_register_label: 'Caja #7',
       tax_label: 'ISV',
       tax_rate: '15.00',
     },
+    amount_words: 'DIECISIETE LEMPIRAS CON 25/100 CENTAVOS',
+    exempt_amount: '0.00',
     items: [
       {
         service_name: 'Glucosa',

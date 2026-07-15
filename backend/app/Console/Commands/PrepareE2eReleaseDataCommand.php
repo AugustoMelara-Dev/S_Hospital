@@ -54,14 +54,15 @@ class PrepareE2eReleaseDataCommand extends Command
         FiscalSetting::query()->updateOrCreate(
             ['id' => 1],
             [
-                'hospital_name' => 'Hospital San Isidro E2E',
+                'hospital_name' => 'Hospital General San Isidro',
                 'rtn' => '08011999123456',
                 'default_tax_rate' => '15.00',
                 'receipt_paper_size' => 'half_letter',
                 'receipt_template_mode' => 'institutional',
                 'government_line' => 'Gobierno de Honduras',
                 'secretariat_line' => 'Secretaria de Salud Publica',
-                'receipt_location' => 'Tocoa, Colon',
+                'receipt_location' => 'Tocoa, Colón, Honduras',
+                'phone' => '2444-0000',
                 'receipt_footer_text' => 'Datos de prueba E2E no productivos.',
                 'scanner_enabled' => false,
                 'partial_payments_enabled' => false,

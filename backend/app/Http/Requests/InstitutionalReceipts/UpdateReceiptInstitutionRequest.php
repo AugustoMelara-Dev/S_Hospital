@@ -20,6 +20,7 @@ class UpdateReceiptInstitutionRequest extends FormRequest
             'hospital_name' => ['required', 'string', 'max:255'],
             'rtn' => ['nullable', 'string', 'max:32'],
             'address' => ['nullable', 'string', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:64'],
             'slogan' => ['nullable', 'string', 'max:255'],
             'government_line' => ['nullable', 'string', 'max:120'],
             'secretariat_line' => ['nullable', 'string', 'max:160'],

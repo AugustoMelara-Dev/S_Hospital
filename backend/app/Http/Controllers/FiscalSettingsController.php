@@ -96,6 +96,7 @@ class FiscalSettingsController extends Controller
                 'default_tax_rate',
                 'primary_color',
                 'address',
+                'phone',
                 'slogan',
                 'scanner_enabled',
                 'partial_payments_enabled',

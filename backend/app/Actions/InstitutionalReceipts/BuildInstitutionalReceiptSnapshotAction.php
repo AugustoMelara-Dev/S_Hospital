@@ -9,6 +9,7 @@ use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\ReceiptPrintProfile;
 use App\Models\User;
+use App\Support\HospitalName;
 use Illuminate\Support\Facades\Storage;
 
 class BuildInstitutionalReceiptSnapshotAction
@@ -65,9 +66,10 @@ class BuildInstitutionalReceiptSnapshotAction
             'payer_name' => $invoice->patient_name,
             'concept' => $this->conceptFromItems($items),
             'institution_snapshot' => [
-                'hospital_name' => $settings->hospital_name ?: $invoice->hospital_name,
+                'hospital_name' => HospitalName::display($settings->hospital_name ?: $invoice->hospital_name),
                 'rtn' => $settings->rtn ?: $invoice->hospital_rtn,
                 'address' => $settings->address ?: $invoice->hospital_address,
+                'phone' => $settings->phone ?: $invoice->hospital_phone,
                 'slogan' => $settings->slogan ?: $invoice->hospital_slogan,
                 'government_line' => $settings->government_line ?: $invoice->receipt_government_line,
                 'secretariat_line' => $settings->secretariat_line ?: $invoice->receipt_secretariat_line,
@@ -111,6 +113,8 @@ class BuildInstitutionalReceiptSnapshotAction
                 'tax_rate_snapshot' => (string) $invoice->tax_rate_snapshot,
                 'subtotal' => $this->moneyFromCents($invoice->subtotal_cents, $invoice->subtotal),
                 'subtotal_cents' => (int) $invoice->subtotal_cents,
+                'exempt_amount' => $this->moneyFromCents($this->exemptAmountCents($items), null),
+                'exempt_amount_cents' => $this->exemptAmountCents($items),
                 'tax_amount' => $this->moneyFromCents($invoice->tax_amount_cents, $invoice->tax_amount),
                 'tax_amount_cents' => (int) $invoice->tax_amount_cents,
                 'discount_amount' => $this->moneyFromCents($invoice->discount_amount_cents, $invoice->discount_amount),
@@ -128,6 +132,7 @@ class BuildInstitutionalReceiptSnapshotAction
                     ->map(fn (Payment $payment): array => $this->paymentSnapshot($payment))
                     ->all(),
                 'cash_context' => [
+                    'cash_register_label' => 'Caja #'.$cashSession->id,
                     'cashier_name' => $cashSession->user->name,
                     'opened_at' => $cashSession->opened_at?->toIso8601String(),
                 ],
@@ -204,5 +209,15 @@ class BuildInstitutionalReceiptSnapshotAction
         }
 
         return number_format((float) $fallback, 2, '.', '');
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $items
+     */
+    private function exemptAmountCents(array $items): int
+    {
+        return collect($items)
+            ->filter(fn (array $item): bool => (float) ($item['tax_rate'] ?? 0) === 0.0)
+            ->sum(fn (array $item): int => (int) ($item['line_subtotal_cents'] ?? 0));
     }
 }

@@ -11,11 +11,12 @@ class HospitalNameTest extends TestCase
     {
         $legacyProductName = 'Hospital '.('Bill'.'ing').' OS';
 
-        $this->assertSame('Hospital San Isidro', HospitalName::display(null));
-        $this->assertSame('Hospital San Isidro', HospitalName::display(''));
-        $this->assertSame('Hospital San Isidro', HospitalName::display($legacyProductName));
-        $this->assertSame('Hospital San Isidro', HospitalName::display('S_Hospital '.$legacyProductName));
-        $this->assertSame('Hospital San Isidro', HospitalName::display('Hospital '.('De'.'mo')));
+        $this->assertSame('Hospital General San Isidro', HospitalName::display(null));
+        $this->assertSame('Hospital General San Isidro', HospitalName::display(''));
+        $this->assertSame('Hospital General San Isidro', HospitalName::display('Hospital San Isidro'));
+        $this->assertSame('Hospital General San Isidro', HospitalName::display($legacyProductName));
+        $this->assertSame('Hospital General San Isidro', HospitalName::display('S_Hospital '.$legacyProductName));
+        $this->assertSame('Hospital General San Isidro', HospitalName::display('Hospital '.('De'.'mo')));
     }
 
     public function test_it_keeps_the_configured_hospital_name_when_it_is_not_a_legacy_internal_name(): void

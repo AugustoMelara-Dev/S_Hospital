@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Actions\InstitutionalReceipts\AmountToSpanishWords;
 use App\Actions\InstitutionalReceipts\InstitutionalReceiptPdfService;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSequence;
@@ -19,6 +20,7 @@ use Barryvdh\DomPDF\PDF as DomPdfWrapper;
 use Database\Seeders\ReceiptPrintProfileSeeder;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
@@ -35,8 +37,10 @@ class InstitutionalReceiptPdfTest extends TestCase
         foreach ([
             'Gobierno de Honduras',
             'Secretaria de Salud',
-            'Hospital San Isidro',
-            'La Esperanza',
+            'Hospital General San Isidro',
+            'RTN 08011999123456',
+            'Tel. 2444-0000',
+            'Tocoa, Colón, Honduras',
             'Recibo No.',
             'Serie',
             'Factura',
@@ -46,6 +50,7 @@ class InstitutionalReceiptPdfTest extends TestCase
             'Detalle de servicios',
             'Consulta general',
             'Subtotal',
+            'Exento',
             'ISV 15.00%',
             'Total',
             'Pagado',
@@ -59,6 +64,8 @@ class InstitutionalReceiptPdfTest extends TestCase
         ] as $needle) {
             $this->assertStringContainsString($needle, $html);
         }
+
+        $this->assertMatchesRegularExpression('/>Caja<.*#\d+/s', $html);
 
         foreach ([
             'CAI',
@@ -101,6 +108,20 @@ class InstitutionalReceiptPdfTest extends TestCase
         $receipt = $context['receipt'];
         $baseItem = $receipt->items_snapshot[0];
         $receipt->forceFill([
+            'amount' => '4938.24',
+            'amount_cents' => 493824,
+            'amount_words' => app(AmountToSpanishWords::class)->forCents(493824),
+            'invoice_snapshot' => [
+                ...$receipt->invoice_snapshot,
+                'subtotal' => '4294.12',
+                'subtotal_cents' => 429412,
+                'tax_amount' => '644.12',
+                'tax_amount_cents' => 64412,
+                'total' => '4938.24',
+                'total_cents' => 493824,
+                'paid_amount' => '4938.24',
+                'paid_amount_cents' => 493824,
+            ],
             'items_snapshot' => collect(range(1, 4))
                 ->map(fn (int $index): array => [
                     ...$baseItem,
@@ -108,6 +129,8 @@ class InstitutionalReceiptPdfTest extends TestCase
                 ])
                 ->all(),
         ])->save();
+
+        $qaOutputDirectory = trim((string) env('RECEIPT_QA_OUTPUT_DIR'));
 
         foreach ([
             ReceiptPrintProfile::CODE_LETTER => 'letter_landscape',
@@ -132,6 +155,34 @@ class InstitutionalReceiptPdfTest extends TestCase
             $pageCount = preg_match_all('/\/Type\s*\/Page\b/', $pdf);
 
             $this->assertSame(1, $pageCount, $code);
+
+            if ($qaOutputDirectory !== '') {
+                File::ensureDirectoryExists($qaOutputDirectory);
+                File::put($qaOutputDirectory.DIRECTORY_SEPARATOR.$code.'.pdf', $pdf);
+            }
+        }
+
+        if ($qaOutputDirectory !== '') {
+            foreach ([ReceiptPrintProfile::CODE_THERMAL_80, ReceiptPrintProfile::CODE_THERMAL_58] as $code) {
+                $profile = ReceiptPrintProfile::query()->where('code', $code)->firstOrFail();
+                $receipt->forceFill([
+                    'print_profile_code' => $code,
+                    'profile_snapshot' => [
+                        ...$receipt->profile_snapshot,
+                        'code' => $code,
+                        'name' => $profile->name,
+                        'paper_kind' => $profile->paper_kind,
+                        'width_mm' => (string) $profile->width_mm,
+                        'height_mm' => (string) $profile->height_mm,
+                        'font_scale' => (string) $profile->font_scale,
+                    ],
+                ])->save();
+
+                File::put(
+                    $qaOutputDirectory.DIRECTORY_SEPARATOR.$code.'.pdf',
+                    app(InstitutionalReceiptPdfService::class)->pdfForReceipt($receipt->fresh()),
+                );
+            }
         }
     }
 
@@ -645,8 +696,9 @@ class InstitutionalReceiptPdfTest extends TestCase
             'receipt_paper_size' => 'half_letter',
             'government_line' => 'Gobierno de Honduras',
             'secretariat_line' => 'Secretaria de Salud',
-            'receipt_location' => 'La Esperanza',
+            'receipt_location' => 'Tocoa, Colón, Honduras',
             'receipt_footer_text' => 'Copia generada desde datos del recibo',
+            'phone' => '2444-0000',
         ]);
 
         $profile = ReceiptPrintProfile::query()

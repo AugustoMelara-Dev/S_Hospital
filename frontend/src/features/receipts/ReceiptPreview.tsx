@@ -19,6 +19,7 @@ export function ReceiptPreview({ onNewInvoice, onPrint, receipt }: ReceiptPrevie
   const [printError, setPrintError] = useState('');
   const receiptWidth = receiptPrintPaperSize(receipt.width);
   const receiptPresentation = receiptPaperPresentation(receiptWidth);
+  const isThermal = receiptWidth === '80mm' || receiptWidth === '58mm';
 
   async function handlePrintClick() {
     setPrintError('');
@@ -82,6 +83,7 @@ export function ReceiptPreview({ onNewInvoice, onPrint, receipt }: ReceiptPrevie
             <strong className="hospital-name">{receipt.hospital.name}</strong>
             {location ? <span>{location}</span> : null}
             {receipt.hospital.rtn ? <span>RTN: {receipt.hospital.rtn}</span> : null}
+            {receipt.hospital.phone ? <span>Tel. {receipt.hospital.phone}</span> : null}
             {receipt.hospital.slogan ? <span>{receipt.hospital.slogan}</span> : null}
           </header>
 
@@ -106,10 +108,12 @@ export function ReceiptPreview({ onNewInvoice, onPrint, receipt }: ReceiptPrevie
                 <th scope="row">Estado</th>
                 <td>{statusLabel(receipt.invoice.status)}</td>
               </tr>
-              {receipt.invoice.cashier ? (
+              {receipt.invoice.cashier || receipt.invoice.cash_register_label ? (
                 <tr>
                   <th scope="row">Cajero</th>
-                  <td colSpan={3}>{receipt.invoice.cashier}</td>
+                  <td>{receipt.invoice.cashier ?? 'No registrado'}</td>
+                  <th scope="row">Caja</th>
+                  <td>{receipt.invoice.cash_register_label ?? 'No registrada'}</td>
                 </tr>
               ) : null}
             </tbody>
@@ -123,8 +127,8 @@ export function ReceiptPreview({ onNewInvoice, onPrint, receipt }: ReceiptPrevie
               <tr>
                 <th scope="col">Concepto / servicio</th>
                 <th scope="col" data-numeric="true">Cant.</th>
-                <th scope="col" data-numeric="true">Precio</th>
-                <th scope="col" data-numeric="true">{taxLabel}</th>
+                {!isThermal ? <th scope="col" data-numeric="true">Precio</th> : null}
+                {!isThermal ? <th scope="col" data-numeric="true">{taxLabel}</th> : null}
                 <th scope="col" data-numeric="true">Importe</th>
               </tr>
             </thead>
@@ -133,8 +137,8 @@ export function ReceiptPreview({ onNewInvoice, onPrint, receipt }: ReceiptPrevie
                 <tr key={index}>
                   <td><ItemName item={item} /></td>
                   <td data-numeric="true">{item.quantity}</td>
-                  <td data-numeric="true">{moneyLabel(item.unit_price)}</td>
-                  <td data-numeric="true">{moneyLabel(item.tax_amount)}</td>
+                  {!isThermal ? <td data-numeric="true">{moneyLabel(item.unit_price)}</td> : null}
+                  {!isThermal ? <td data-numeric="true">{moneyLabel(item.tax_amount)}</td> : null}
                   <td data-numeric="true"><ItemPrice item={item} /></td>
                 </tr>
               ))}
@@ -147,6 +151,7 @@ export function ReceiptPreview({ onNewInvoice, onPrint, receipt }: ReceiptPrevie
             <table className="receipt-totals-table">
               <tbody>
                 <ReceiptTotalRow label="Subtotal" value={moneyLabel(receipt.invoice.subtotal)} />
+                <ReceiptTotalRow label="Exento" value={moneyLabel(receipt.exempt_amount ?? 0)} />
                 {(parseCents(receipt.invoice.discount_amount) ?? 0) > 0 ? (
                   <ReceiptTotalRow label="Descuento" value={moneyLabel(receipt.invoice.discount_amount)} />
                 ) : null}
@@ -160,7 +165,20 @@ export function ReceiptPreview({ onNewInvoice, onPrint, receipt }: ReceiptPrevie
                 ) : null}
               </tbody>
             </table>
+            {receipt.amount_words ? (
+              <div className="receipt-amount-words">
+                <strong>Monto en letras</strong>
+                <span>{receipt.amount_words}</span>
+              </div>
+            ) : null}
           </div>
+
+          {receipt.fiscal.authorized_range ? (
+            <div className="receipt-fiscal-data">
+              <strong>Rango autorizado</strong>
+              <span>{receipt.fiscal.authorized_range}</span>
+            </div>
+          ) : null}
 
           {receipt.payments.length > 0 ? (
             <>

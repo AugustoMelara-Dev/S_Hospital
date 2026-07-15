@@ -52,6 +52,27 @@
             font-size: {{ 9.2 * $profile['font_scale'] }}px;
         }
 
+        .thermal-58mm {
+            font-size: {{ 8.6 * $profile['font_scale'] }}px;
+            line-height: 1.2;
+        }
+
+        .thermal-80mm .document-header,
+        .thermal-58mm .document-header {
+            padding-bottom: 4px;
+        }
+
+        .thermal-80mm .document-band,
+        .thermal-58mm .document-band {
+            margin: 5px 0;
+            padding-bottom: 4px;
+        }
+
+        .thermal-80mm .section-title,
+        .thermal-58mm .section-title {
+            margin: 6px 0 3px;
+        }
+
         .draft-watermark {
             border: 1.5px solid #111827;
             font-size: 18px;
@@ -356,13 +377,14 @@
 @foreach ($pages as $page)
     @php
         $isThermal = in_array($profile['paper_kind'] ?? '', ['thermal_80mm', 'thermal_58mm'], true);
+        $paperClass = $isThermal ? str_replace('_', '-', (string) $profile['paper_kind']) : 'primary-paper';
         $invoice = $page['invoice'];
         $payment = $page['payment'];
         $items = $page['items'];
         $taxLabel = trim(($invoice['tax_label'] ?? 'ISV').' '.($invoice['tax_rate_snapshot'] ? $invoice['tax_rate_snapshot'].'%' : ''));
         $cashier = $payment['selected_payment']['cashier_name'] ?? $payment['issued_by']['name'] ?? $payment['cash_context']['cashier_name'] ?? null;
     @endphp
-    <section class="receipt-page {{ $isThermal ? 'thermal' : 'primary-paper' }}">
+    <section class="receipt-page {{ $isThermal ? 'thermal '.$paperClass : $paperClass }}">
         @if ($page['draft'])
             <div class="draft-watermark">{{ $page['watermark'] }}</div>
         @endif
@@ -383,6 +405,13 @@
             @endif
             @if (! empty($page['institution']['receipt_location']))
                 <div>{{ $page['institution']['receipt_location'] }}</div>
+            @endif
+            @if (! empty($page['institution']['rtn']) || ! empty($page['institution']['phone']))
+                <div class="institution-contact">
+                    @if (! empty($page['institution']['rtn']))RTN {{ $page['institution']['rtn'] }}@endif
+                    @if (! empty($page['institution']['rtn']) && ! empty($page['institution']['phone'])) · @endif
+                    @if (! empty($page['institution']['phone']))Tel. {{ $page['institution']['phone'] }}@endif
+                </div>
             @endif
         </header>
 
@@ -422,6 +451,7 @@
             <tr>
                 <td style="width: 34%;"><span class="label">Paciente / enterante</span><br>{{ $page['payer_name'] }}</td>
                 <td><span class="label">Cajero</span><br>{{ $cashier ?: 'No registrado' }}</td>
+                <td><span class="label">Caja</span><br>{{ $payment['cash_context']['cash_register_label'] ?? 'No registrada' }}</td>
                 <td><span class="label">Método</span><br>{{ $paymentLabel($payment['selected_payment']['method'] ?? ($payment['posted_payments'][0]['method'] ?? null)) }}</td>
             </tr>
             @if (! empty($payment['selected_payment']['reference']))
@@ -478,6 +508,10 @@
                 <tr>
                     <td>Subtotal</td>
                     <td class="money">L. {{ $invoice['subtotal'] }}</td>
+                </tr>
+                <tr>
+                    <td>Exento</td>
+                    <td class="money">L. {{ $invoice['exempt_amount'] }}</td>
                 </tr>
                 @if (($invoice['discount_amount'] ?? '0.00') !== '0.00')
                     <tr>

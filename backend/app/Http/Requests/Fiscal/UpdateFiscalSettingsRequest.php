@@ -32,6 +32,7 @@ class UpdateFiscalSettingsRequest extends FormRequest
             ],
             'primary_color' => [$presenceRule, 'string', 'in:teal,blue,indigo,green,rose'],
             'address' => ['nullable', 'string', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:64'],
             'slogan' => ['nullable', 'string', 'max:255'],
             'scanner_enabled' => ['prohibited'],
             'partial_payments_enabled' => ['prohibited'],

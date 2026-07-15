@@ -45,6 +45,7 @@ const institutionSchema = z.object({
   hospital_name: z.string().trim().min(1, 'Requerido'),
   rtn: z.string().trim().max(64).optional(),
   address: z.string().max(255).optional(),
+  phone: z.string().max(64).optional(),
   slogan: z.string().max(255).optional(),
   government_line: z.string().max(120).optional(),
   secretariat_line: z.string().max(160).optional(),
@@ -123,6 +124,7 @@ export function InstitutionalReceiptSettingsView({
       hospital_name: '',
       rtn: '',
       address: '',
+      phone: '',
       slogan: '',
       government_line: '',
       secretariat_line: '',
@@ -176,6 +178,7 @@ export function InstitutionalReceiptSettingsView({
       hospital_name: institution?.hospital_name ?? '',
       rtn: institution?.rtn ?? '',
       address: institution?.address ?? '',
+      phone: institution?.phone ?? '',
       slogan: institution?.slogan ?? '',
       government_line: institution?.government_line ?? '',
       secretariat_line: institution?.secretariat_line ?? '',
@@ -484,6 +487,9 @@ export function InstitutionalReceiptSettingsView({
                 </Field>
                 <Field label="Dirección o referencia" id="address">
                   <Controller name="address" control={institutionForm.control} render={({ field }) => <Input id="address" disabled={!canEdit} {...field} />} />
+                </Field>
+                <Field label="Teléfono" id="phone">
+                  <Controller name="phone" control={institutionForm.control} render={({ field }) => <Input id="phone" disabled={!canEdit} {...field} />} />
                 </Field>
               </div>
               <Field label="Leyenda de copias o pie" id="receipt_footer_text">

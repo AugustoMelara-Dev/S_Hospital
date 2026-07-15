@@ -78,6 +78,7 @@ class CreateInvoiceAction
                     'hospital_name' => $settings?->hospital_name,
                     'hospital_rtn' => $settings?->rtn,
                     'hospital_address' => $settings?->address,
+                    'hospital_phone' => $settings?->phone,
                     'hospital_slogan' => $settings?->slogan,
                     'receipt_template_mode' => $settings?->receipt_template_mode ?? 'institutional',
                     'receipt_paper_size' => ReceiptPaperSize::normalize($paperSize),

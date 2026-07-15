@@ -148,6 +148,7 @@ describe('HospitalSettingsView', () => {
       hospital_name: 'Hospital San Isidro',
       rtn: '08011999111111',
       address: 'Tocoa, Colon',
+      phone: null,
       slogan: 'Servicio publico',
       government_line: 'Gobierno de Honduras',
       secretariat_line: 'Secretaria de Salud Publica',

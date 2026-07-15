@@ -13,6 +13,7 @@ use Illuminate\Support\Carbon;
  * @property string $receipt_width
  * @property string $primary_color
  * @property string|null $address
+ * @property string|null $phone
  * @property string|null $slogan
  * @property bool $scanner_enabled
  * @property bool $partial_payments_enabled
@@ -40,6 +41,7 @@ class FiscalSetting extends Model
         'receipt_width',
         'primary_color',
         'address',
+        'phone',
         'slogan',
         'scanner_enabled',
         'partial_payments_enabled',

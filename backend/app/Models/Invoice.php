@@ -21,6 +21,7 @@ use LogicException;
  * @property string|null $hospital_name
  * @property string|null $hospital_rtn
  * @property string|null $hospital_address
+ * @property string|null $hospital_phone
  * @property string|null $hospital_slogan
  * @property string|null $receipt_template_mode
  * @property string|null $receipt_paper_size
@@ -77,6 +78,7 @@ class Invoice extends Model
         'hospital_name',
         'hospital_rtn',
         'hospital_address',
+        'hospital_phone',
         'hospital_slogan',
         'receipt_template_mode',
         'receipt_paper_size',

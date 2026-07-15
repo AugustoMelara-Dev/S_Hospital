@@ -16,6 +16,7 @@ const hospitalSchema = z.object({
   hospital_name: z.string().trim().min(1, 'El nombre del hospital es requerido'),
   rtn: z.string().trim().max(32, 'RTN muy largo').optional().or(z.literal('')),
   address: z.string().max(255).optional().or(z.literal('')),
+  phone: z.string().max(64).optional().or(z.literal('')),
   slogan: z.string().max(255).optional().or(z.literal('')),
   government_line: z.string().max(120).optional().or(z.literal('')),
   secretariat_line: z.string().max(160).optional().or(z.literal('')),
@@ -74,6 +75,7 @@ export function HospitalSettingsView({ canEdit, onStatus }: HospitalSettingsView
       hospital_name: '',
       rtn: '',
       address: '',
+      phone: '',
       slogan: '',
       government_line: '',
       secretariat_line: '',
@@ -92,6 +94,7 @@ export function HospitalSettingsView({ canEdit, onStatus }: HospitalSettingsView
         hospital_name: isPlaceholderHospitalName(data?.hospital_name) ? '' : data?.hospital_name ?? '',
         rtn: data?.rtn ?? '',
         address: data?.address ?? '',
+        phone: data?.phone ?? '',
         slogan: data?.slogan ?? '',
         government_line: data?.government_line ?? '',
         secretariat_line: data?.secretariat_line ?? '',
@@ -145,6 +148,7 @@ export function HospitalSettingsView({ canEdit, onStatus }: HospitalSettingsView
         hospital_name: data.hospital_name,
         rtn: data.rtn ?? '',
         address: optionalText(data.address ?? '') ?? '',
+        phone: optionalText(data.phone ?? ''),
         slogan: optionalText(data.slogan ?? '') ?? '',
         government_line: optionalText(data.government_line ?? ''),
         secretariat_line: optionalText(data.secretariat_line ?? ''),
@@ -158,6 +162,7 @@ export function HospitalSettingsView({ canEdit, onStatus }: HospitalSettingsView
         hospital_name: updated.hospital_name,
         rtn: updated.rtn ?? '',
         address: updated.address ?? '',
+        phone: updated.phone ?? '',
         slogan: updated.slogan ?? '',
         government_line: updated.government_line ?? '',
         secretariat_line: updated.secretariat_line ?? '',
@@ -274,6 +279,18 @@ export function HospitalSettingsView({ canEdit, onStatus }: HospitalSettingsView
                   id={id}
                   registration={form.register('address')}
                   placeholder="Barrio Centro, Avenida Principal..."
+                  aria-invalid={invalid}
+                  aria-describedby={describedBy}
+                  disabled={!canEdit}
+                />
+              )}
+            </HospitalField>
+            <HospitalField id="phone" label="Teléfono" error={form.formState.errors.phone?.message}>
+              {({ id, invalid, describedBy }) => (
+                <RegisteredInput
+                  id={id}
+                  registration={form.register('phone')}
+                  placeholder="2444-0000"
                   aria-invalid={invalid}
                   aria-describedby={describedBy}
                   disabled={!canEdit}

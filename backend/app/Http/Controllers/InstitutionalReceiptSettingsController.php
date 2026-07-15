@@ -517,6 +517,7 @@ class InstitutionalReceiptSettingsController extends Controller
             'hospital_name',
             'rtn',
             'address',
+            'phone',
             'slogan',
             'government_line',
             'secretariat_line',

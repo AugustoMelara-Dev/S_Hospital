@@ -6,6 +6,7 @@ use App\Models\FiscalSetting;
 use App\Models\InstitutionalReceipt;
 use App\Models\InstitutionalReceiptSeries;
 use App\Models\ReceiptPrintProfile;
+use App\Support\HospitalName;
 use App\Support\Money;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\View;
@@ -49,8 +50,10 @@ class InstitutionalReceiptHtmlBuilder
                     'institution' => [
                         'government_line' => $settings->government_line ?: '',
                         'secretariat_line' => $settings->secretariat_line ?: '',
-                        'hospital_name' => $settings->hospital_name ?: 'SIN CONFIGURAR',
+                        'hospital_name' => HospitalName::display($settings->hospital_name),
+                        'rtn' => $settings->rtn ?: '',
                         'address' => $settings->address ?: '',
+                        'phone' => $settings->phone ?: '',
                         'receipt_location' => $settings->receipt_location ?: '',
                         'receipt_footer_text' => $settings->receipt_footer_text ?: '',
                         'logo_data_uri' => $this->logoDataUriForProfile($profile),
@@ -75,6 +78,7 @@ class InstitutionalReceiptHtmlBuilder
                         'tax_label' => 'ISV',
                         'tax_rate_snapshot' => null,
                         'subtotal' => $amount,
+                        'exempt_amount' => $amount,
                         'tax_amount' => '0.00',
                         'discount_amount' => '0.00',
                         'total' => $amount,
@@ -85,6 +89,7 @@ class InstitutionalReceiptHtmlBuilder
                         'selected_payment' => null,
                         'posted_payments' => [],
                         'cash_context' => [
+                            'cash_register_label' => null,
                             'cashier_name' => null,
                             'opened_at' => null,
                         ],
@@ -147,6 +152,8 @@ class InstitutionalReceiptHtmlBuilder
             'secretariat_line' => $snapshot['secretariat_line'] ?? '',
             'hospital_name' => $snapshot['hospital_name'] ?? 'SIN CONFIGURAR',
             'address' => $snapshot['address'] ?? '',
+            'rtn' => $snapshot['rtn'] ?? '',
+            'phone' => $snapshot['phone'] ?? '',
             'receipt_location' => $snapshot['receipt_location'] ?? '',
             'receipt_footer_text' => $snapshot['receipt_footer_text'] ?? '',
             'logo_data_uri' => $this->safeImageDataUri($snapshot['logo_data_uri'] ?? null),
@@ -218,6 +225,7 @@ class InstitutionalReceiptHtmlBuilder
             'tax_label' => $snapshot['tax_label'] ?? 'ISV',
             'tax_rate_snapshot' => $snapshot['tax_rate_snapshot'] ?? null,
             'subtotal' => $this->moneyValue($snapshot['subtotal_cents'] ?? null, $snapshot['subtotal'] ?? '0.00'),
+            'exempt_amount' => $this->moneyValue($snapshot['exempt_amount_cents'] ?? null, $snapshot['exempt_amount'] ?? '0.00'),
             'tax_amount' => $this->moneyValue($snapshot['tax_amount_cents'] ?? null, $snapshot['tax_amount'] ?? '0.00'),
             'discount_amount' => $this->moneyValue($snapshot['discount_amount_cents'] ?? null, $snapshot['discount_amount'] ?? '0.00'),
             'total' => $this->moneyValue($snapshot['total_cents'] ?? null, $snapshot['total'] ?? '0.00'),
