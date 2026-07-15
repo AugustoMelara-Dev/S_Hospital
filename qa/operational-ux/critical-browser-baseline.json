@@ -1,0 +1,50 @@
+{
+  "generated_at": "2026-07-14T23:45:00-06:00",
+  "base_url": "http://127.0.0.1:5173",
+  "threshold_ms": 2000,
+  "source": "Playwright real-chromium",
+  "attempts": [
+    {
+      "method": "POST",
+      "path": "/api/auth/login",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/system/setup-status",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/system/setup-status",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/services",
+      "query": "?active=1&billing=1&visible_in_billing=1&is_billable=1&per_page=24"
+    }
+  ],
+  "completed": [
+    {
+      "method": "POST",
+      "path": "/api/auth/login",
+      "query": "",
+      "duration_ms": 4311,
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/system/setup-status",
+      "query": "",
+      "duration_ms": 8464,
+      "status": 200
+    }
+  ],
+  "findings": [
+    "setup-status se inició dos veces; uno de los intentos fue abortado",
+    "login y setup-status superaron 2000 ms",
+    "facturación solicitó servicios sin búsqueda o filtro explícito",
+    "la búsqueda glucosa no comenzó mientras la solicitud inicial seguía activa"
+  ]
+}

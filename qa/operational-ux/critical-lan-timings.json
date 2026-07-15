@@ -1,0 +1,35 @@
+﻿{
+    "generated_at":  "2026-07-14T23:38:48.6081622-06:00",
+    "base_url":  "http://127.0.0.1:8000",
+    "threshold_ms":  2000,
+    "iterations":  1,
+    "results":  [
+                    {
+                        "name":  "setup-status",
+                        "method":  "GET",
+                        "path":  "/api/system/setup-status",
+                        "status":  200,
+                        "duration_ms":  1451,
+                        "error":  null,
+                        "iteration":  1
+                    },
+                    {
+                        "name":  "login",
+                        "method":  "POST",
+                        "path":  "/api/auth/login",
+                        "status":  200,
+                        "duration_ms":  3416,
+                        "error":  null,
+                        "iteration":  1
+                    },
+                    {
+                        "name":  "billing-service-search",
+                        "method":  "GET",
+                        "path":  "/api/services?billing=1\u0026search=glucosa\u0026per_page=24",
+                        "status":  200,
+                        "duration_ms":  2108,
+                        "error":  null,
+                        "iteration":  1
+                    }
+                ]
+}
