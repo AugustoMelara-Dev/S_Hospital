@@ -100,6 +100,28 @@ test.describe('Invoice history - critical mocked e2e', () => {
     });
   });
 
+  test('uses a complete invoice list without horizontal overflow at 390px and 320px', async ({ page }) => {
+    await installInvoiceHistoryMocks(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/invoices');
+
+    const list = page.getByRole('list', { name: /facturas filtradas en m.vil/i });
+    await expect(list).toBeVisible();
+    await expect(page.getByRole('table', { name: /facturas filtradas/i })).toHaveCount(0);
+    const issued = list.getByRole('listitem').filter({ hasText: 'A-0001' });
+    await expect(issued).toContainText('Maria Lopez');
+    await expect(issued).toContainText('L 250.00');
+    await expect(issued).toContainText('Emitida');
+    await expect(issued.getByRole('button', { name: /ver detalle de la factura A-0001/i })).toBeVisible();
+    await expect(issued.getByRole('button', { name: /acciones de la factura A-0001/i })).toBeVisible();
+    await expect(page.locator('.ant-pagination')).toHaveCount(1);
+    await expectNoPageOverflow(page);
+
+    await page.setViewportSize({ width: 320, height: 720 });
+    await expect(list).toBeVisible();
+    await expectNoPageOverflow(page);
+  });
+
   test('keeps AG Grid, column menu, DatePicker and Drawer keyboard behavior real', async ({ page }) => {
     await installInvoiceHistoryMocks(page);
     await page.goto('/invoices');
@@ -200,7 +222,11 @@ test.describe('Invoice history - critical mocked e2e', () => {
 
     await expect(page.getByRole('row', { name: /A-0002.*Carlos Rivera/i })).toBeVisible();
     await page.getByRole('button', { name: /acciones de la factura A-0002/i }).click();
-    await page.getByRole('menuitem', { name: /reimprimir pdf/i }).click();
+    await page.getByRole('menuitem', { name: /ver recibo/i }).click();
+
+    const receiptDialog = page.getByRole('dialog', { name: /comprobante de factura - A-0002/i });
+    await expect(receiptDialog).toBeVisible();
+    await receiptDialog.getByRole('button', { name: /^reimprimir$/i }).click();
 
     const reprintDialog = page.getByRole('dialog', { name: /reimprimir A-0002/i });
     await expect(reprintDialog).toBeVisible();
@@ -222,6 +248,7 @@ async function installInvoiceHistoryMocks(
   options: {
     onInstitutionalPrintEvent?: (payload: Record<string, unknown>, idempotencyKey: string | null) => void;
     onInstitutionalPdf?: () => void;
+    onInstitutionalPreview?: () => void;
     onLegacyReceipt?: () => void;
     onLegacyReprint?: () => void;
     onVoid?: (payload: Record<string, unknown>) => void;
@@ -282,6 +309,14 @@ async function installInvoiceHistoryMocks(
     return json(route, { data: { receipt: paidInvoice.institutional_receipt } });
   });
   await page.route(/\/api\/institutional-receipts\/\d+\/pdf(?:[/?]|$)/, (route) => {
+    if (new URL(route.request().url()).searchParams.get('preview') === '1') {
+      options.onInstitutionalPreview?.();
+      return route.fulfill({
+        status: 200,
+        contentType: 'text/html; charset=utf-8',
+        body: '<!doctype html><html><body><h1>REC-00000070</h1></body></html>',
+      });
+    }
     options.onInstitutionalPdf?.();
 
     return route.fulfill({
@@ -364,4 +399,12 @@ function json(route: Route, body: unknown, status = 200) {
     contentType: 'application/json',
     body: JSON.stringify(body),
   });
+}
+
+async function expectNoPageOverflow(page: Page) {
+  const overflow = await page.evaluate(() => Math.max(
+    0,
+    document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  ));
+  expect(overflow).toBe(0);
 }

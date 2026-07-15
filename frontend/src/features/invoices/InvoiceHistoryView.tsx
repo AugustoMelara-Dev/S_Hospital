@@ -5,6 +5,7 @@ import {
   type AuthUser,
   type Invoice,
   type InvoiceFilters,
+  type Payment,
   type PaginatedMeta,
   type ReceiptData,
   apiClient,
@@ -16,6 +17,7 @@ import { Alert, Button, Empty, Input, Modal, Pagination, Skeleton, Tag, type Pag
 import { FileTextOutlined } from '@ant-design/icons';
 import type { ReactNode } from 'react';
 import { ReceiptPreview } from '../receipts/ReceiptPreview';
+import { InstitutionalReceiptPreviewFrame } from '../receipts/InstitutionalReceiptPreviewFrame';
 import { institutionalReceiptPaperSize } from '../../lib/institutionalReceiptPaper';
 import { downloadBlob, institutionalReceiptPdfFilename, openBlobInNewTab } from '../../lib/download';
 import { formatLempirasUIFromCents, parseCents } from '../../lib/moneyCents';
@@ -35,6 +37,7 @@ import { InvoiceHistoryFilters } from './history/InvoiceHistoryFilters';
 import { InvoiceHistoryTable, issuedInstitutionalReceipt } from './history/InvoiceHistoryTable';
 import { InvoiceDetailDrawer } from './history/InvoiceDetailDrawer';
 import { PageHeader } from '@/design-system/components/PageHeader';
+import { PaymentModal } from './components/PaymentModal';
 
 type InvoiceHistoryViewProps = {
   user: AuthUser;
@@ -81,6 +84,12 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   const [confirmingReverse, setConfirmingReverse] = useState(false);
   const [confirmingReprint, setConfirmingReprint] = useState(false);
   const [receiptModalOpen, setReceiptModalOpen] = useState(false);
+  const [collectionInvoice, setCollectionInvoice] = useState<Invoice | null>(null);
+  const [collectionMethod, setCollectionMethod] = useState<Payment['method']>('cash');
+  const [collectionAmount, setCollectionAmount] = useState('');
+  const [collectionReference, setCollectionReference] = useState('');
+  const [collectionError, setCollectionError] = useState<string | null>(null);
+  const [collectingPayment, setCollectingPayment] = useState(false);
   const [loadingActionInvoiceId, setLoadingActionInvoiceId] = useState<number | null>(null);
   const [voidingInvoice, setVoidingInvoice] = useState(false);
   const [reversingInvoice, setReversingInvoice] = useState(false);
@@ -95,12 +104,14 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   const reverseIdempotencySignatureRef = useRef<string | null>(null);
   const reprintIdempotencyKeyRef = useRef<string | null>(null);
   const reprintIdempotencySignatureRef = useRef<string | null>(null);
-  const downloadReceiptIdempotencyKeyRef = useRef<string | null>(null);
-  const downloadReceiptIdempotencySignatureRef = useRef<string | null>(null);
+  const previewPrintIdempotencyKeyRef = useRef<string | null>(null);
+  const previewPrintIdempotencySignatureRef = useRef<string | null>(null);
   const receiptGenerationIdempotencyKeyRef = useRef<string | null>(null);
   const receiptGenerationIdempotencySignatureRef = useRef<string | null>(null);
   const receiptGenerationPrintIdempotencyKeyRef = useRef<string | null>(null);
   const receiptGenerationPrintIdempotencySignatureRef = useRef<string | null>(null);
+  const collectionIdempotencyKeyRef = useRef<string | null>(null);
+  const collectionIdempotencySignatureRef = useRef<string | null>(null);
   const actionRequestRef = useRef(0);
   const receiptRequestRef = useRef(0);
   const detailRequestRef = useRef(0);
@@ -113,6 +124,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   const canReprintAny = user.permissions.includes('receipts.reprint_any');
   const canViewReceipt = user.permissions.includes('receipts.view');
   const canIssueInstitutionalReceipt = canViewReceipt && user.permissions.includes('payments.create');
+  const canCollectPayment = user.permissions.includes('payments.create');
   const canOperateAnyInvoice = user.permissions.includes('invoices.operate_any');
   const canVoid = user.permissions.includes('invoices.void');
   const canReverse = user.permissions.includes('invoices.reverse');
@@ -283,22 +295,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       setSelectedInvoice(invoice);
       const institutionalReceipt = issuedInstitutionalReceipt(invoice);
       if (institutionalReceipt) {
-        if (hasInstitutionalPrintEvents(institutionalReceipt)) {
-          requestReprintInvoice(invoice);
-
-          return;
-        }
-
-        const idempotencyKey = payloadScopedIdempotencyKey(reprintIdempotencyKeyRef, reprintIdempotencySignatureRef, {
-          action: 'history-initial-print',
-          receiptId: institutionalReceipt.id,
-        });
-        await apiClient.registerInstitutionalReceiptPrintEvent(institutionalReceipt.id, undefined, { idempotencyKey });
-        await openInstitutionalReceiptPdf(institutionalReceipt);
-        resetPayloadScopedIdempotencyKey(reprintIdempotencyKeyRef, reprintIdempotencySignatureRef);
-        queryClient.invalidateQueries({ queryKey: ['audit'] });
-        onStatus(`PDF institucional ${institutionalReceipt.receipt_number_full} abierto.`);
-
+        setReceiptModalOpen(true);
         return;
       }
 
@@ -391,28 +388,93 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
 
     setLoadingActionInvoiceId(invoice.id);
     try {
-      const idempotencyKey = payloadScopedIdempotencyKey(
-        downloadReceiptIdempotencyKeyRef,
-        downloadReceiptIdempotencySignatureRef,
-        {
-          action: 'history-initial-download',
-          receiptId: institutionalReceipt.id,
-        },
-      );
-      await apiClient.registerInstitutionalReceiptPrintEvent(institutionalReceipt.id, undefined, { idempotencyKey });
       const blob = await apiClient.getInstitutionalReceiptPdf(institutionalReceipt.id);
       downloadBlob(blob, institutionalReceiptPdfFilename(institutionalReceipt.receipt_number_full));
-      resetPayloadScopedIdempotencyKey(
-        downloadReceiptIdempotencyKeyRef,
-        downloadReceiptIdempotencySignatureRef,
-      );
-      queryClient.invalidateQueries({ queryKey: ['audit'] });
-      await invalidateBillingQueries(queryClient);
       onStatus(`PDF institucional ${institutionalReceipt.receipt_number_full} descargado.`);
     } catch (error) {
       onStatus(userSafeErrorMessage(error, 'No se pudo descargar el recibo institucional.'));
     } finally {
       setLoadingActionInvoiceId(null);
+    }
+  }
+
+  async function printInstitutionalReceiptFromPreview() {
+    if (!selectedInvoice || !selectedInstitutionalReceipt) return;
+
+    if (hasInstitutionalPrintEvents(selectedInstitutionalReceipt)) {
+      setReceiptModalOpen(false);
+      requestReprintInvoice(selectedInvoice);
+      return;
+    }
+
+    setLoadingActionInvoiceId(selectedInvoice.id);
+    try {
+      const idempotencyKey = payloadScopedIdempotencyKey(
+        previewPrintIdempotencyKeyRef,
+        previewPrintIdempotencySignatureRef,
+        { action: 'history-preview-first-print', receiptId: selectedInstitutionalReceipt.id },
+      );
+      const blob = await apiClient.getInstitutionalReceiptPdf(selectedInstitutionalReceipt.id);
+      await apiClient.registerInstitutionalReceiptPrintEvent(selectedInstitutionalReceipt.id, undefined, { idempotencyKey });
+      resetPayloadScopedIdempotencyKey(previewPrintIdempotencyKeyRef, previewPrintIdempotencySignatureRef);
+      openBlobInNewTab(blob, institutionalReceiptPdfFilename(selectedInstitutionalReceipt.receipt_number_full));
+      queryClient.invalidateQueries({ queryKey: ['audit'] });
+      await invalidateBillingQueries(queryClient);
+      setSelectedInvoice({
+        ...selectedInvoice,
+        institutional_receipt: {
+          ...selectedInstitutionalReceipt,
+          has_print_events: true,
+          print_events_count: (selectedInstitutionalReceipt.print_events_count ?? 0) + 1,
+        },
+      });
+      onStatus(`PDF institucional ${selectedInstitutionalReceipt.receipt_number_full} abierto.`);
+    } catch (error) {
+      onStatus(userSafeErrorMessage(error, 'No se pudo imprimir el recibo institucional.'));
+    } finally {
+      setLoadingActionInvoiceId(null);
+    }
+  }
+
+  function openPaymentCollection(invoice: Invoice) {
+    setCollectionInvoice(invoice);
+    setCollectionMethod('cash');
+    setCollectionAmount(invoice.balance_due);
+    setCollectionReference('');
+    setCollectionError(null);
+  }
+
+  async function collectInvoicePayment(appliedAmount: string) {
+    if (!collectionInvoice || collectingPayment) return;
+    setCollectingPayment(true);
+    setCollectionError(null);
+    try {
+      const cashSession = await apiClient.getCurrentCashSession();
+      if (!cashSession || cashSession.status !== 'open') {
+        setCollectionError('Abra caja antes de registrar el cobro.');
+        return;
+      }
+      const payload = {
+        cash_session_id: cashSession.id,
+        method: collectionMethod,
+        amount: appliedAmount,
+        reference: collectionReference.trim() || null,
+      };
+      await apiClient.registerPayment(collectionInvoice.id, payload, {
+        idempotencyKey: payloadScopedIdempotencyKey(
+          collectionIdempotencyKeyRef,
+          collectionIdempotencySignatureRef,
+          { invoiceId: collectionInvoice.id, payload },
+        ),
+      });
+      resetPayloadScopedIdempotencyKey(collectionIdempotencyKeyRef, collectionIdempotencySignatureRef);
+      await invalidateBillingQueries(queryClient);
+      onStatus(`Cobro registrado para la factura ${collectionInvoice.invoice_number}.`);
+      setCollectionInvoice(null);
+    } catch (error) {
+      setCollectionError(userSafeErrorMessage(error, 'No se pudo registrar el pago. Revise los datos e intente de nuevo.'));
+    } finally {
+      setCollectingPayment(false);
     }
   }
 
@@ -528,8 +590,9 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
           reason,
           receiptId: institutionalReceipt.id,
         });
+        const blob = await apiClient.getInstitutionalReceiptPdf(institutionalReceipt.id);
         await apiClient.registerInstitutionalReceiptPrintEvent(institutionalReceipt.id, reason, { idempotencyKey });
-        await openInstitutionalReceiptPdf(institutionalReceipt);
+        openBlobInNewTab(blob, institutionalReceiptPdfFilename(institutionalReceipt.receipt_number_full));
         queryClient.invalidateQueries({ queryKey: ['audit'] });
         onStatus(`PDF institucional ${institutionalReceipt.receipt_number_full} abierto.`);
         resetPayloadScopedIdempotencyKey(reprintIdempotencyKeyRef, reprintIdempotencySignatureRef);
@@ -614,6 +677,9 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   );
 
   const isEmpty = invoicesList.length === 0;
+  const selectedInstitutionalReceipt = selectedInvoice
+    ? issuedInstitutionalReceipt(selectedInvoice)
+    : null;
 
   return (
     <section
@@ -684,6 +750,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
           </header>
           <div className="p-0">
             <InvoiceHistoryTable
+              canCollectPayment={canCollectPayment}
               canReprint={canReprint}
               canReprintAny={canReprintAny}
               canReverse={canReverse}
@@ -697,6 +764,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
               loadingActionInvoiceId={loadingActionInvoiceId}
               moneyLabel={moneyLabel}
               onGenerateInstitutionalReceipt={(invoiceId) => void generateInstitutionalReceipt(invoiceId)}
+              onCollectPayment={openPaymentCollection}
               onDownloadInstitutionalReceipt={(invoice) => void downloadInstitutionalReceipt(invoice)}
               onOpenReceipt={(invoiceId) => void openReceiptModal(invoiceId)}
               onOpenDetail={(invoice, trigger) => void openInvoiceDetail(invoice, true, trigger)}
@@ -739,6 +807,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
         onReprint={requestReprintInvoice}
         open={detailInvoiceId > 0}
         permissions={detailInvoice ? {
+          canCollectPayment,
           canIssueInstitutionalReceipt,
           canOperateAnyInvoice,
           canReprint,
@@ -750,19 +819,67 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
         } : null}
       />
 
+      {collectionInvoice ? (
+        <PaymentModal
+          open
+          onOpenChange={(open) => {
+            if (!open && !collectingPayment) {
+              resetPayloadScopedIdempotencyKey(collectionIdempotencyKeyRef, collectionIdempotencySignatureRef);
+              setCollectionInvoice(null);
+              setCollectionError(null);
+            }
+          }}
+          invoiceNumber={collectionInvoice.invoice_number}
+          patientName={collectionInvoice.patient_name}
+          total={collectionInvoice.total}
+          balanceDue={collectionInvoice.balance_due}
+          paymentMethod={collectionMethod}
+          paymentAmount={collectionAmount}
+          paymentReference={collectionReference}
+          onPaymentMethodChange={(method) => { setCollectionMethod(method); setCollectionError(null); }}
+          onPaymentAmountChange={(amount) => { setCollectionAmount(amount); setCollectionError(null); }}
+          onPaymentReferenceChange={(reference) => { setCollectionReference(reference); setCollectionError(null); }}
+          onConfirm={(amount) => void collectInvoicePayment(amount)}
+          submitting={collectingPayment}
+          errorMessage={collectionError}
+        />
+      ) : null}
+
       <Modal
         open={receiptModalOpen}
         zIndex={1200}
         onCancel={() => setReceiptModalOpen(false)}
         title={`Comprobante de factura - ${selectedInvoice?.invoice_number ?? ''}`}
-        footer={null}
+        footer={selectedInstitutionalReceipt ? [
+          <Button key="close" onClick={() => setReceiptModalOpen(false)}>Cerrar</Button>,
+          <Button
+            key="save"
+            loading={loadingActionInvoiceId === selectedInvoice?.id}
+            onClick={() => selectedInvoice && void downloadInstitutionalReceipt(selectedInvoice)}
+          >
+            Guardar PDF
+          </Button>,
+          <Button
+            key="print"
+            type="primary"
+            loading={loadingActionInvoiceId === selectedInvoice?.id}
+            onClick={() => void printInstitutionalReceiptFromPreview()}
+          >
+            {hasInstitutionalPrintEvents(selectedInstitutionalReceipt) ? 'Reimprimir' : 'Imprimir recibo'}
+          </Button>,
+        ] : null}
         width={760}
         destroyOnHidden
       >
         <p className="text-sm text-muted-foreground mb-4">
           Recibo disponible para esta factura. Usa el perfil de papel configurado.
         </p>
-        {receipt && selectedInvoice && (
+        {selectedInstitutionalReceipt ? (
+          <InstitutionalReceiptPreviewFrame
+            receiptId={selectedInstitutionalReceipt.id}
+            receiptNumber={selectedInstitutionalReceipt.receipt_number_full}
+          />
+        ) : receipt && selectedInvoice ? (
           <div className="space-y-4">
             <ReceiptPreview
               receipt={receipt}
@@ -777,7 +894,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
               }}
             />
           </div>
-        )}
+        ) : null}
       </Modal>
 
       <LocalConfirmDialog

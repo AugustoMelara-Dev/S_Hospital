@@ -192,6 +192,18 @@ describe('InvoiceCart', () => {
     expect(screen.queryByLabelText(/descuento|precio manual|precio editable/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /arrastrar|reordenar/i })).not.toBeInTheDocument();
   });
+
+  it('keeps the fiscal preview complete with exempt amount and a fixed action zone', () => {
+    const { container } = renderCart({
+      items: [cartItemFixture({ service: serviceFixture({ taxable: false }) })],
+      preview: { subtotal: '120.00', exempt: '120.00', tax: '0.00', total: '120.00' },
+    });
+
+    expect(screen.getByText('Exento')).toBeVisible();
+    expect(screen.getAllByText('L 120.00').length).toBeGreaterThan(0);
+    expect(container.querySelector('[data-billing-cart-lines]')).toHaveClass('overflow-y-auto');
+    expect(container.querySelector('[data-billing-cart-action]')).toHaveClass('shrink-0');
+  });
 });
 
 function renderCart(overrides: Partial<ComponentProps<typeof InvoiceCart>> = {}) {

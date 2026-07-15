@@ -2,11 +2,12 @@ import { BarcodeOutlined as Barcode, FilterOutlined as Filter, PlusOutlined as P
 import { type KeyboardEvent, type RefObject, useCallback, useDeferredValue, useEffect, useRef, useState } from 'react';
 import { Alert, Button, Collapse, Input, Skeleton, Tag } from 'antd';
 import type { Category, Service, ServiceArea } from '../../../lib/api';
+import type { CartItem } from './InvoiceCart';
 import { cn } from '../../../lib/utils';
 import { formatLempirasUIFromCents, parseCents } from '../../../lib/moneyCents';
 
 const ERYTHROPOIETIN_RULE = 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION';
-const SERVICE_RESULT_LIMIT = 24;
+const COLLAPSED_CATEGORY_LIMIT = 6;
 
 type ServiceSearchProps = {
   categories: Category[];
@@ -29,6 +30,10 @@ type ServiceSearchProps = {
   scannerEnabled?: boolean;
   error?: string;
   onRetry?: () => void;
+  cartItems?: CartItem[];
+  hasMore?: boolean;
+  loadingMore?: boolean;
+  onLoadMore?: () => void;
 };
 
 export function ServiceSearch({
@@ -52,8 +57,13 @@ export function ServiceSearch({
   scannerEnabled = false,
   error,
   onRetry,
+  cartItems = [],
+  hasMore = false,
+  loadingMore = false,
+  onLoadMore = () => undefined,
 }: ServiceSearchProps) {
   const [addFirstForSearch, setAddFirstForSearch] = useState<string | null>(null);
+  const [categoriesExpanded, setCategoriesExpanded] = useState(false);
   const addLockRef = useRef<number | null>(null);
   const addLockTimeoutRef = useRef<number | null>(null);
   const scanLockRef = useRef(false);
@@ -79,11 +89,11 @@ export function ServiceSearch({
     return matchesArea && matchesCategory && matchesSearch;
   });
   const hasIntent = Boolean(search.trim()) || selectedAreaId !== undefined || selectedCategoryId !== undefined;
-  const visibleServices = hasIntent ? filteredServices.slice(0, SERVICE_RESULT_LIMIT) : [];
-  const hiddenCount = Math.max(0, filteredServices.length - visibleServices.length);
+  const visibleServices = hasIntent ? filteredServices : [];
   const firstVisibleService = visibleServices[0];
   const areaOptions = ['all', ...serviceAreas.map((area) => area.id)] as Array<number | 'all'>;
-  const categoryOptions = ['all', ...categories.map((category) => category.id)] as Array<number | 'all'>;
+  const visibleCategories = categoriesExpanded ? categories : categories.slice(0, COLLAPSED_CATEGORY_LIMIT);
+  const categoryOptions = ['all', ...visibleCategories.map((category) => category.id)] as Array<number | 'all'>;
   const activeFilterCount = [search.trim(), selectedAreaId, selectedCategoryId].filter((value) => {
     return value !== '' && value !== undefined && value !== 'all';
   }).length;
@@ -295,7 +305,7 @@ export function ServiceSearch({
                 label="Todos"
                 onClick={() => onCategoryChange('all')}
               />
-              {categories.map((cat) => (
+              {visibleCategories.map((cat) => (
                 <CategoryButton
                   key={cat.id}
                   active={selectedCategoryId === cat.id}
@@ -304,6 +314,16 @@ export function ServiceSearch({
                 />
               ))}
             </div>
+            {categories.length > COLLAPSED_CATEGORY_LIMIT ? (
+              <Button
+                type="link"
+                className="mt-1 min-h-11 px-0"
+                aria-expanded={categoriesExpanded}
+                onClick={() => setCategoriesExpanded((expanded) => !expanded)}
+              >
+                {categoriesExpanded ? 'Ver menos categorías' : 'Ver todas las categorías'}
+              </Button>
+            ) : null}
           </div>
 
           {serviceAreas.length > 0 && (
@@ -403,12 +423,14 @@ export function ServiceSearch({
                 const categoryName = service.category?.name ?? 'Sin categoría';
                 const areaName = service.area?.name;
                 const showArea = Boolean(areaName && areaName.trim().toLocaleLowerCase('es') !== categoryName.trim().toLocaleLowerCase('es'));
+                const accountItem = cartItems.find((item) => item.service.id === service.id);
+                const accountStatus = accountItem ? `${accountItem.quantity} en la cuenta` : 'Disponible';
 
                 return (
                   <li key={service.id} className="min-w-0 list-none">
                     <button
                       type="button"
-                      aria-label={`Agregar ${service.name}`}
+                      aria-label={`Agregar ${service.name}, ${accountStatus}`}
                       data-service-row="compact"
                       className="flex min-h-16 w-full min-w-0 items-center gap-3 bg-operational-surface px-3 py-2 text-left hover:bg-accent/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                       onClick={() => handleAddService(service)}
@@ -444,20 +466,20 @@ export function ServiceSearch({
                         </p>
                       ) : null}
                       </div>
-                      <span className="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 border-l border-secondary pl-3 font-semibold text-secondary">
-                        <Plus className="size-4" aria-hidden="true" />
-                        Agregar
+                      <span className="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 border-l border-secondary pl-3 text-sm font-semibold text-secondary">
+                        {accountItem ? null : <Plus className="size-4" aria-hidden="true" />}
+                        {accountStatus}
                       </span>
                     </button>
                   </li>
                 );
               })}
             </ul>
-            {hiddenCount > 0 && (
-              <p className="mt-3 border border-border bg-muted px-3 py-2 text-sm text-muted-foreground">
-                Mostrando {visibleServices.length} resultados. Afine la búsqueda para ver los {hiddenCount} restantes.
-              </p>
-            )}
+            {hasMore ? (
+              <Button block className="mt-3 min-h-11" loading={loadingMore} disabled={loadingMore} onClick={onLoadMore}>
+                {loadingMore ? 'Cargando servicios...' : 'Cargar más servicios'}
+              </Button>
+            ) : null}
           </>
         )}
       </div>

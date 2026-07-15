@@ -62,4 +62,12 @@ describe('InstitutionalShell accessibility', () => {
     expect(screen.getByText('Recibos institucionales', { selector: '[data-current-location]' })).toBeVisible();
     expect(screen.queryByRole('navigation', { name: 'Ruta actual' })).not.toBeInTheDocument();
   });
+
+  it('keeps the content title as the only level-one heading', () => {
+    renderShell();
+
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Panel operativo');
+    expect(screen.getByText('Recibos institucionales', { selector: '[data-current-location]' }).tagName).toBe('P');
+  });
 });

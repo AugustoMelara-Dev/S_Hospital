@@ -17,7 +17,7 @@ export function InstitutionalMobileNav({ activeItem, navigation, onOpenChange, o
 
   return (
     <>
-      <nav aria-label="Accesos móviles" className="print-hidden fixed inset-x-0 bottom-0 z-30 flex min-h-16 items-stretch border-t border-sidebar-border bg-sidebar px-1 pb-4 text-sidebar-foreground lg:hidden">
+      <nav aria-label="Accesos móviles" className="print-hidden fixed inset-x-0 bottom-0 z-30 flex min-h-20 items-stretch border-t border-sidebar-border bg-sidebar px-1 pb-4 text-sidebar-foreground lg:hidden">
         {dockItems.length === 0 ? (
           <p className="flex flex-1 items-center justify-center px-4 text-center text-xs text-sidebar-foreground/70">
             No hay destinos móviles disponibles.
@@ -32,7 +32,7 @@ export function InstitutionalMobileNav({ activeItem, navigation, onOpenChange, o
               to={item.path}
               aria-current={active ? 'page' : undefined}
               className={cn(
-                'flex min-w-0 flex-1 flex-col items-center justify-center gap-1 px-1 py-2 text-xs font-medium',
+                'flex min-w-0 flex-1 flex-col items-center justify-center gap-1 px-1 py-2 text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
                 active ? 'bg-sidebar-accent text-sidebar-primary' : 'text-sidebar-foreground/65'
               )}
             >
@@ -44,7 +44,7 @@ export function InstitutionalMobileNav({ activeItem, navigation, onOpenChange, o
         {remainingItems.length > 0 ? (
           <button
             type="button"
-            className="flex h-auto min-w-14 flex-1 cursor-pointer flex-col items-center justify-center gap-1 px-2 py-2 text-xs text-sidebar-foreground/65 outline-none transition hover:bg-sidebar-accent hover:text-sidebar-foreground"
+            className="flex h-auto min-w-14 flex-1 cursor-pointer flex-col items-center justify-center gap-1 px-2 py-2 text-xs text-sidebar-foreground/65 outline-none transition hover:bg-sidebar-accent hover:text-sidebar-foreground focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
             aria-label="Más destinos"
             onClick={() => onOpenChange(true)}
           >

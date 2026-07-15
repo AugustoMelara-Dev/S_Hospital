@@ -77,6 +77,8 @@ test.describe('New invoice - critical mocked e2e', () => {
     let invoicePayload: unknown = null;
     let paymentPayload: unknown = null;
     let receiptPdfRequests = 0;
+    let receiptPreviewRequests = 0;
+    let receiptPrintEvents = 0;
 
     await installNewInvoiceMocks(page, {
       onCreateInvoice: (payload) => {
@@ -87,6 +89,12 @@ test.describe('New invoice - critical mocked e2e', () => {
       },
       onReceiptPdf: () => {
         receiptPdfRequests += 1;
+      },
+      onReceiptPreview: () => {
+        receiptPreviewRequests += 1;
+      },
+      onReceiptPrintEvent: () => {
+        receiptPrintEvents += 1;
       },
     });
 
@@ -127,7 +135,7 @@ test.describe('New invoice - critical mocked e2e', () => {
 
     const paymentAmountInput = page.getByLabel(/monto recibido/i);
     await expect(paymentAmountInput).toHaveValue('17.25');
-    await page.getByRole('button', { name: /confirmar cobro de .* e imprimir/i }).click();
+    await page.getByRole('button', { name: /confirmar cobro de /i }).click();
 
     await expect.poll(() => paymentPayload).toEqual({
       cash_session_id: openCashSession.id,
@@ -135,9 +143,15 @@ test.describe('New invoice - critical mocked e2e', () => {
       amount: '17.25',
       reference: null,
     });
-    await expect.poll(() => receiptPdfRequests).toBe(1);
     await expect(page.getByRole('dialog', { name: /factura pagada/i })).toBeVisible();
     await expect(page.getByRole('status').filter({ hasText: /REC-A-00000077/i })).toBeVisible();
+    expect(receiptPdfRequests).toBe(0);
+    expect(receiptPrintEvents).toBe(0);
+    await page.getByRole('button', { name: /ver recibo/i }).click();
+    await expect(page.getByTitle(/vista previa del recibo institucional REC-A-00000077/i)).toBeVisible();
+    await expect.poll(() => receiptPreviewRequests).toBe(1);
+    expect(receiptPdfRequests).toBe(0);
+    expect(receiptPrintEvents).toBe(0);
   });
 
   test('keeps a completed payment recoverable when receipt issuance fails', async ({ page }) => {
@@ -163,7 +177,7 @@ test.describe('New invoice - critical mocked e2e', () => {
       .getByRole('button', { name: /emitir y abrir cobro/i })
       .click();
     await page.getByRole('dialog', { name: /registrar pago/i })
-      .getByRole('button', { name: /confirmar cobro de .* e imprimir/i })
+      .getByRole('button', { name: /confirmar cobro de /i })
       .click();
 
     await expect(page.getByRole('dialog', { name: /factura pagada/i })).toBeVisible();
@@ -269,6 +283,8 @@ async function installNewInvoiceMocks(
     onCreateInvoice?: (payload: unknown) => void;
     onRegisterPayment?: (payload: unknown) => void;
     onReceiptPdf?: () => void;
+    onReceiptPreview?: () => void;
+    onReceiptPrintEvent?: () => void;
     receiptOutcome?: 'issued' | 'recovery_required';
   } = {},
 ) {
@@ -354,15 +370,26 @@ async function installNewInvoiceMocks(
       },
     }, 201);
   });
-  await page.route(/\/api\/institutional-receipts\/77\/print-events(?:[/?]|$)/, (route) => json(route, {
+  await page.route(/\/api\/institutional-receipts\/77\/print-events(?:[/?]|$)/, (route) => {
+    options.onReceiptPrintEvent?.();
+    return json(route, {
     data: {
       id: 77,
       institutional_receipt_id: 77,
       reason: null,
       created_at: '2026-07-02T08:15:02-06:00',
     },
-  }, 201));
+    }, 201);
+  });
   await page.route(/\/api\/institutional-receipts\/77\/pdf(?:[/?]|$)/, (route) => {
+    if (new URL(route.request().url()).searchParams.get('preview') === '1') {
+      options.onReceiptPreview?.();
+      return route.fulfill({
+        status: 200,
+        contentType: 'text/html; charset=UTF-8',
+        body: '<!doctype html><html lang="es"><body><h1>Recibo institucional REC-A-00000077</h1></body></html>',
+      });
+    }
     options.onReceiptPdf?.();
     return route.fulfill({ status: 200, contentType: 'application/pdf', body: '%PDF-receipt' });
   });

@@ -92,6 +92,7 @@ export function effectiveUnitPriceCents(item: CartItem): number {
 
 export interface InvoiceEstimate {
   subtotal: string;
+  exempt?: string;
   tax: string;
   total: string;
 }
@@ -107,6 +108,7 @@ export function computeSimpleEstimate(items: CartItem[], taxRate?: string): Invo
   const rateBasisPoints = parseTaxRateBasisPoints(taxRate);
   let subtotal = 0;
   let taxableSubtotal = 0;
+  let exemptSubtotal = 0;
 
   for (const item of items) {
     const quantity = parseQuantityUnits(item.quantity);
@@ -115,6 +117,8 @@ export function computeSimpleEstimate(items: CartItem[], taxRate?: string): Invo
 
     if (isTaxableForPreview(item) && rateBasisPoints > 0) {
       taxableSubtotal += lineSubtotal;
+    } else {
+      exemptSubtotal += lineSubtotal;
     }
   }
 
@@ -122,6 +126,7 @@ export function computeSimpleEstimate(items: CartItem[], taxRate?: string): Invo
 
   return {
     subtotal: formatCentsFromMoneyCents(subtotal),
+    exempt: formatCentsFromMoneyCents(exemptSubtotal),
     tax: formatCentsFromMoneyCents(tax),
     total: formatCentsFromMoneyCents(subtotal + tax),
   };

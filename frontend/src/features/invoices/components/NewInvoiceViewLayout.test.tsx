@@ -7,6 +7,12 @@ import { NewInvoiceViewLayout } from './NewInvoiceViewLayout';
 import { getInitialNewInvoiceState } from '../state/types';
 import type { Service } from '../../../lib/api';
 
+vi.mock('../../receipts/InstitutionalReceiptPreviewFrame', () => ({
+  InstitutionalReceiptPreviewFrame: ({ receiptId, receiptNumber }: { receiptId: number; receiptNumber: string }) => (
+    <div data-testid="institutional-receipt-preview">{receiptId}:{receiptNumber}</div>
+  ),
+}));
+
 function renderLayout(overrides: Partial<React.ComponentProps<typeof NewInvoiceViewLayout>> = {}) {
   const noop = vi.fn();
 
@@ -204,6 +210,43 @@ describe('NewInvoiceViewLayout', () => {
     renderLayout();
 
     expect(screen.getByRole('button', { name: /ver cuenta, 0 servicios, total l 0\.00/i })).toBeVisible();
+  });
+
+  it('shows the exact institutional receipt preview when one is available', () => {
+    renderLayout({
+      state: {
+        ...getInitialNewInvoiceState(null),
+        loadingServices: false,
+        showReceipt: true,
+        institutionalReceipt: {
+          id: 71,
+          invoice_id: 4,
+          payment_id: 8,
+          cash_session_id: 2,
+          series_id: 1,
+          receipt_number: 71,
+          receipt_number_full: 'REC-000071',
+          status: 'issued',
+          amount: '138.00',
+          amount_cents: 13800,
+          issued_at: '2026-07-15T09:00:00-06:00',
+          issued_by: 3,
+          payer_name: 'Maria Lopez',
+          concept: 'Servicios hospitalarios',
+          amount_words: 'Ciento treinta y ocho lempiras exactos',
+          template_code: 'institutional_classic',
+          print_profile_code: 'carta_horizontal',
+          copy_mode: 'original_only',
+          reprint_count: 0,
+          voided_by: null,
+          voided_at: null,
+          void_reason: null,
+        },
+      },
+    });
+
+    expect(screen.getByTestId('institutional-receipt-preview')).toHaveTextContent('71:REC-000071');
+    expect(screen.queryByText(/formato de compatibilidad/i)).not.toBeInTheDocument();
   });
 });
 

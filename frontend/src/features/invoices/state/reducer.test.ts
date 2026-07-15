@@ -112,6 +112,33 @@ describe('newInvoiceReducer', () => {
     expect(next.cartItems[0]?.service.id).toBe(2);
   });
 
+  it('appends a service result page and tracks whether another page is available', () => {
+    const state: NewInvoiceState = {
+      ...getInitialNewInvoiceState(cashSession),
+      services: [{ id: 1, name: 'Primero' } as never],
+    };
+
+    const next = newInvoiceReducer(state, {
+      type: 'APPEND_SERVICES_PAGE',
+      payload: { services: [{ id: 2, name: 'Segundo' } as never], page: 2, hasMore: true },
+    });
+
+    expect(next.services.map((service) => service.id)).toEqual([1, 2]);
+    expect(next.servicePage).toBe(2);
+    expect(next.hasMoreServices).toBe(true);
+  });
+
+  it('stores the cash received and change as the completed payment snapshot', () => {
+    const state = getInitialNewInvoiceState(cashSession);
+    const next = newInvoiceReducer(state, {
+      type: 'SET_COMPLETED_PAYMENT_CASH',
+      payload: { receivedAmount: '50.00', changeAmount: '32.75' },
+    });
+
+    expect(next.completedPaymentReceivedAmount).toBe('50.00');
+    expect(next.completedPaymentChangeAmount).toBe('32.75');
+  });
+
   it('resets the cart completely without touching the cash session', () => {
     const state: NewInvoiceState = {
       ...getInitialNewInvoiceState(cashSession),

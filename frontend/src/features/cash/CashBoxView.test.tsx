@@ -24,6 +24,7 @@ describe('CashBoxView', () => {
     expect(screen.queryByLabelText(/monto contado/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /control contable de caja/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /cierre guiado/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: /Conciliaci.n de caja/i })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('tab', { name: /^cierre$/i }));
 
@@ -311,6 +312,9 @@ describe('CashBoxView', () => {
 
     render(<App />);
 
+    expect(await screen.findByText(/^Ingresos$/i)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText(/^Ingresos$/i).closest('dl')).toHaveTextContent(/33\.75/));
+    expect(screen.getByText(/^Recibos pendientes$/i).closest('dl')).toHaveTextContent('0');
     expect((await screen.findAllByText(/saldo pendiente/i)).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/L 23\.75/i).length).toBeGreaterThan(0);
     await activateCashView('Cierre');
@@ -425,7 +429,7 @@ describe('CashBoxView', () => {
     const operationalHeader = screen.getByRole('region', { name: /estado operativo de caja/i });
     expect(within(operationalHeader).getByText(/^apertura$/i)).toBeVisible();
     expect(within(operationalHeader).getByText(/^efectivo esperado$/i)).toBeVisible();
-    expect(within(operationalHeader).getByText(/^pendiente$/i)).toBeVisible();
+    expect(within(operationalHeader).getByText(/^saldo pendiente$/i)).toBeVisible();
   });
 
   it('shows a sanitized load error with retry and does not present a closed cashbox as loaded data', async () => {
@@ -504,6 +508,7 @@ describe('CashBoxView', () => {
     expect(onStatus).toHaveBeenLastCalledWith(expect.objectContaining({
       level: 'error',
       message: expect.stringMatching(/Caja: Ya existe una caja abierta/i),
+      toast: false,
     }));
   });
 

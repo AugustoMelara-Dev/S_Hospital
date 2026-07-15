@@ -58,9 +58,12 @@ export function FiscalSettingsView({ canEdit, canEditOperationalRules, canViewFi
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2 border-b border-border pb-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="max-w-3xl text-sm text-muted-foreground">
-          Identidad hospitalaria, numeración fiscal, reglas operativas, marca y documentos institucionales.
-        </p>
+        <div className="min-w-0">
+          <h1 className="text-xl font-semibold leading-tight text-foreground sm:text-2xl">Configuración hospitalaria</h1>
+          <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
+            Identidad hospitalaria, numeración fiscal, reglas operativas, marca y documentos institucionales.
+          </p>
+        </div>
         <Tag className="w-fit" color={canEdit || canEditOperationalRules ? 'success' : 'default'}>
           {canEdit ? 'Edición habilitada' : canEditOperationalRules ? 'Edición operativa' : 'Solo lectura'}
         </Tag>

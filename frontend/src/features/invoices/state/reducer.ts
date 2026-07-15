@@ -18,6 +18,19 @@ export function newInvoiceReducer(state: NewInvoiceState, action: NewInvoiceActi
       return { ...state, serviceAreas: action.payload };
     case 'SET_SERVICES':
       return { ...state, services: action.payload };
+    case 'APPEND_SERVICES_PAGE': {
+      const existingIds = new Set(state.services.map((service) => service.id));
+      return {
+        ...state,
+        services: [...state.services, ...action.payload.services.filter((service) => !existingIds.has(service.id))],
+        servicePage: action.payload.page,
+        hasMoreServices: action.payload.hasMore,
+      };
+    }
+    case 'SET_SERVICE_PAGE_STATE':
+      return { ...state, servicePage: action.payload.page, hasMoreServices: action.payload.hasMore };
+    case 'SET_LOADING_MORE_SERVICES':
+      return { ...state, loadingMoreServices: action.payload };
     case 'SET_LOADED_CASH_SESSION':
       return { ...state, loadedCashSession: action.payload };
     case 'SET_SELECTED_AREA_ID':
@@ -34,6 +47,14 @@ export function newInvoiceReducer(state: NewInvoiceState, action: NewInvoiceActi
       return { ...state, paymentAmount: action.payload };
     case 'SET_PAYMENT_REFERENCE':
       return { ...state, paymentReference: action.payload };
+    case 'SET_PAYMENT_ERROR':
+      return { ...state, paymentError: action.payload };
+    case 'SET_COMPLETED_PAYMENT_CASH':
+      return {
+        ...state,
+        completedPaymentReceivedAmount: action.payload.receivedAmount,
+        completedPaymentChangeAmount: action.payload.changeAmount,
+      };
     case 'SET_RECEIPT_WIDTH':
       return { ...state, receiptWidth: action.payload };
     case 'SET_SCANNER_ENABLED':
@@ -86,7 +107,7 @@ export function newInvoiceReducer(state: NewInvoiceState, action: NewInvoiceActi
         pointOfSaleLoadError: null,
       };
     case 'SEARCH_SERVICES_SUCCESS':
-      return { ...state, services: action.payload };
+      return { ...state, services: action.payload, servicePage: 1 };
     case 'ADD_TO_CART': {
       const nextCart = addServiceToCart(state.cartItems, action.payload);
       return {

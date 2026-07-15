@@ -3,6 +3,12 @@ import { describe, expect, it } from 'vitest';
 import { InstitutionalIdentity } from './InstitutionalIdentity';
 
 describe('InstitutionalIdentity', () => {
+  it('keeps the fallback monogram legible on the receipt-paper surface in every theme', () => {
+    render(<InstitutionalIdentity hospitalName="Hospital General San Isidro" location="Tocoa, Colón" provisional />);
+
+    expect(screen.getByText('HGSI')).toHaveClass('text-receipt-ink');
+  });
+
   it('uses the canonical institution and marks a missing logo provisional', () => {
     render(
       <InstitutionalIdentity

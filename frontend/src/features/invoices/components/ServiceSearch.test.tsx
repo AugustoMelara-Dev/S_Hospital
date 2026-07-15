@@ -128,7 +128,7 @@ describe('ServiceSearch', () => {
       search: 'eritro',
     });
 
-    const addButton = screen.getByRole('button', { name: 'Agregar Eritropoyetina' });
+    const addButton = screen.getByRole('button', { name: /Agregar Eritropoyetina/ });
     expect(addButton).toBeEnabled();
     expect(screen.getByText('L 25.00')).toBeInTheDocument();
     expect(screen.getByText(/gratis solo con receta de diálisis/i)).toBeInTheDocument();
@@ -305,6 +305,48 @@ describe('ServiceSearch', () => {
 
     expect(screen.getByText(/disponible para lector/i)).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/SECRET-SCAN|SECRET-BAR|SECRET-QR/);
+  });
+
+  it('shows the quantity already in the account without a dominant repeated Add label', () => {
+    renderSearch({
+      services: [serviceFixture()],
+      search: 'glu',
+      cartItems: [{ service: serviceFixture(), quantity: '3', dialysisPrescription: false }],
+    });
+
+    const row = screen.getByRole('button', { name: /glucosa.*3 en la cuenta/i });
+    expect(row).toHaveTextContent('3 en la cuenta');
+    expect(row).not.toHaveTextContent(/^Agregar$|Agregar$/);
+  });
+
+  it('loads another service page without replacing the current results', () => {
+    const onLoadMore = vi.fn();
+    renderSearch({
+      services: Array.from({ length: 24 }, (_, index) => serviceFixture({ id: index + 1, name: `Servicio ${index + 1}` })),
+      search: 'servicio',
+      hasMore: true,
+      onLoadMore,
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /cargar m[aá]s servicios/i }));
+    expect(onLoadMore).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: /servicio 24/i })).toBeVisible();
+  });
+
+  it('keeps a large category catalog compact until the cashier asks to expand it', () => {
+    const categories = Array.from({ length: 12 }, (_, index) => ({
+      id: index + 1,
+      name: `Categoria ${index + 1}`,
+      slug: `categoria-${index + 1}`,
+      active: true,
+      sort_order: index + 1,
+    }));
+    renderSearch({ categories, selectedCategoryId: 'all' });
+
+    expect(screen.getByRole('radio', { name: 'Categoria 6' })).toBeVisible();
+    expect(screen.queryByRole('radio', { name: 'Categoria 12' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /ver todas las categor[ií]as/i }));
+    expect(screen.getByRole('radio', { name: 'Categoria 12' })).toBeVisible();
   });
 });
 

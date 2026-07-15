@@ -1,4 +1,4 @@
-import { ExclamationCircleOutlined, RightOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined, ExclamationCircleOutlined, RightOutlined } from '@ant-design/icons';
 import { Button, Flex, Space, Tag, Typography } from 'antd';
 
 export type OperationalQueueItem = {
@@ -27,12 +27,12 @@ export function OperationalQueue({ items }: { items: OperationalQueueItem[] }) {
         <Typography.Title id="operational-queue-title" level={2} className="m-0">Próxima acción</Typography.Title>
       </header>
       <Flex vertical role="list" className="px-5">
-        {items.map((item, index) => (
+        {items.map((item) => (
           <Flex key={item.id} role="listitem" justify="space-between" align="start" gap="middle" className="border-b border-border py-4 last:border-b-0">
             <Flex align="start" gap="middle">
-              {index === 0
-                ? <ExclamationCircleOutlined aria-hidden="true" className="mt-1 text-lg" />
-                : <Typography.Text type="secondary">{index + 1}</Typography.Text>}
+              {item.priority === 'normal'
+                ? <CheckCircleOutlined aria-hidden="true" className="mt-1 text-lg text-success" />
+                : <ExclamationCircleOutlined aria-hidden="true" className="mt-1 text-lg" />}
               <Flex vertical gap="small">
                 <Space>
                   <Typography.Text strong>{item.title}</Typography.Text>

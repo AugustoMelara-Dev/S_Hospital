@@ -9,6 +9,9 @@ export interface NewInvoiceState {
   categories: Category[];
   serviceAreas: ServiceArea[];
   services: Service[];
+  servicePage: number;
+  hasMoreServices: boolean;
+  loadingMoreServices: boolean;
   loadedCashSession: CashSession | null;
   selectedAreaId: number | 'all' | undefined;
   selectedCategoryId: number | 'all' | undefined;
@@ -17,6 +20,9 @@ export interface NewInvoiceState {
   paymentMethod: Payment['method'];
   paymentAmount: string;
   paymentReference: string;
+  paymentError: string | null;
+  completedPaymentReceivedAmount: string | null;
+  completedPaymentChangeAmount: string | null;
   receiptWidth: ReceiptData['width'];
   scannerEnabled: boolean;
   partialPaymentsEnabled: boolean;
@@ -46,6 +52,9 @@ export type NewInvoiceAction =
   | { type: 'SET_CATEGORIES'; payload: Category[] }
   | { type: 'SET_SERVICE_AREAS'; payload: ServiceArea[] }
   | { type: 'SET_SERVICES'; payload: Service[] }
+  | { type: 'APPEND_SERVICES_PAGE'; payload: { services: Service[]; page: number; hasMore: boolean } }
+  | { type: 'SET_SERVICE_PAGE_STATE'; payload: { page: number; hasMore: boolean } }
+  | { type: 'SET_LOADING_MORE_SERVICES'; payload: boolean }
   | { type: 'SET_LOADED_CASH_SESSION'; payload: CashSession | null }
   | { type: 'SET_SELECTED_AREA_ID'; payload: number | 'all' | undefined }
   | { type: 'SET_SELECTED_CATEGORY_ID'; payload: number | 'all' | undefined }
@@ -54,6 +63,8 @@ export type NewInvoiceAction =
   | { type: 'SET_PAYMENT_METHOD'; payload: Payment['method'] }
   | { type: 'SET_PAYMENT_AMOUNT'; payload: string }
   | { type: 'SET_PAYMENT_REFERENCE'; payload: string }
+  | { type: 'SET_PAYMENT_ERROR'; payload: string | null }
+  | { type: 'SET_COMPLETED_PAYMENT_CASH'; payload: { receivedAmount: string | null; changeAmount: string | null } }
   | { type: 'SET_RECEIPT_WIDTH'; payload: ReceiptData['width'] }
   | { type: 'SET_SCANNER_ENABLED'; payload: boolean }
   | { type: 'SET_PARTIAL_PAYMENTS_ENABLED'; payload: boolean }
@@ -92,6 +103,9 @@ export function getInitialNewInvoiceState(cashSession: CashSession | null): NewI
     categories: [],
     serviceAreas: [],
     services: [],
+    servicePage: 1,
+    hasMoreServices: false,
+    loadingMoreServices: false,
     loadedCashSession: cashSession,
     selectedAreaId: undefined,
     selectedCategoryId: undefined,
@@ -100,6 +114,9 @@ export function getInitialNewInvoiceState(cashSession: CashSession | null): NewI
     paymentMethod: 'cash',
     paymentAmount: '',
     paymentReference: '',
+    paymentError: null,
+    completedPaymentReceivedAmount: null,
+    completedPaymentChangeAmount: null,
     receiptWidth: 'half_letter',
     scannerEnabled: false,
     partialPaymentsEnabled: false,

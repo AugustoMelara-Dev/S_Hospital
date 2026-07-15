@@ -383,7 +383,7 @@ describe('App', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /^configuraci[oó]n$/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /^configuraci[oó]n hospitalaria$/i })).toBeInTheDocument();
     }, { timeout: 5000 });
 
     await waitFor(() => {

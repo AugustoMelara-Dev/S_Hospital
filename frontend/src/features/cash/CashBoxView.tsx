@@ -12,7 +12,6 @@ import { queryKeys } from '@/lib/queryKeys';
 import { PageHeader } from '@/design-system/components/PageHeader';
 import { formatDateTimeEs } from '@/lib/format/formatDate';
 import { OpenSessionForm } from './components/OpenSessionForm';
-import { SessionSummary } from './components/SessionSummary';
 import { CashCloseSummaryPanel, CloseSessionDialog } from './components/CloseSessionDialog';
 import { CashMovementsTable } from './components/CashMovementsTable';
 import { CashClosingPanel } from './components/CashClosingPanel';
@@ -151,7 +150,7 @@ export function CashBoxView({
     onError: (error) => {
       const message = userSafeErrorMessage(error, 'No se pudo abrir caja.');
       setFormAlert(message);
-      onStatus({ key: 'cash:open:error', level: 'error', message });
+      onStatus({ key: 'cash:open:error', level: 'error', message, toast: false });
     },
     onSettled: () => {
       openingSessionInFlightRef.current = false;
@@ -185,7 +184,7 @@ export function CashBoxView({
     onError: (error) => {
       const message = userSafeErrorMessage(error, 'No se pudo cerrar caja.');
       setFormAlert(message);
-      onStatus({ key: 'cash:close:error', level: 'error', message });
+      onStatus({ key: 'cash:close:error', level: 'error', message, toast: false });
     },
     onSettled: () => {
       closingSessionInFlightRef.current = false;
@@ -219,7 +218,7 @@ export function CashBoxView({
     if (isOpen && activeView === 'close') {
       window.setTimeout(() => closingAmountRef.current?.focus(), 0);
     }
-  }, [activeView, isOpen, activeSession?.id]);
+  }, [activeView, isOpen]);
 
   function handleOpenSession(data: { opening_amount: string }) {
     if (openSessionMutation.isPending || openingSessionInFlightRef.current) return;
@@ -342,10 +341,16 @@ export function CashBoxView({
           </div>
           <OperationalMetric label="Apertura" value={isOpen && activeSession ? formatLempirasUI(activeSession.opening_amount) : '—'} />
           <OperationalMetric label="Efectivo esperado" value={isOpen ? formatLempirasUI(expectedCashAmount) : '—'} />
+          <OperationalMetric label="Ingresos" value={isOpen ? formatLempirasUI(activeSession?.payments_total ?? '0.00') : '—'} />
           <OperationalMetric
-            label="Pendiente"
+            label="Saldo pendiente"
             value={isOpen ? formatLempirasUI(pendingAmount) : '—'}
             detail={isOpen ? `${pendingInvoiceCount} factura${pendingInvoiceCount === 1 ? '' : 's'}` : undefined}
+          />
+          <OperationalMetric
+            label="Recibos pendientes"
+            value={isOpen ? String(missingInstitutionalReceiptCount) : '—'}
+            detail={isOpen && missingInstitutionalReceiptCount > 0 ? 'bloquean cierre' : undefined}
           />
         </section>
 
@@ -416,11 +421,6 @@ export function CashBoxView({
 
             {activeView === 'summary' ? (
               <div className="grid min-w-0 gap-4">
-                <SessionSummary
-                  session={activeSession}
-                  closingAmount={hasValidClosingAmount ? closingAmount : null}
-                  difference={difference}
-                />
                 <CashMethodSummary
                   paymentsByMethod={activeSession.payments_by_method}
                   paymentsCount={activeSession.payments_count}

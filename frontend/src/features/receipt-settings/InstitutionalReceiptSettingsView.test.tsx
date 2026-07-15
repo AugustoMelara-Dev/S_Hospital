@@ -148,7 +148,7 @@ describe('InstitutionalReceiptSettingsView', () => {
     const institutional = await screen.findByRole('group', { name: 'Formatos institucionales' });
     const compatibility = screen.getByRole('group', { name: 'Formatos térmicos secundarios' });
 
-    expect(within(institutional).getAllByRole('radio')).toHaveLength(3);
+    expect(within(institutional).getAllByRole('radio')).toHaveLength(4);
     expect(within(compatibility).queryAllByRole('radio')).toHaveLength(0);
     expect(within(compatibility).getAllByRole('listitem')).toHaveLength(2);
   });
@@ -375,7 +375,7 @@ describe('InstitutionalReceiptSettingsView', () => {
     expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
     await activateTab('Papel y copias');
 
-    expect(screen.getAllByRole('radio')).toHaveLength(3);
+    expect(screen.getAllByRole('radio')).toHaveLength(4);
     expect(screen.queryByText(/activar modo soporte/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/ajustes avanzados/i)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/ancho mm/i)).not.toBeInTheDocument();

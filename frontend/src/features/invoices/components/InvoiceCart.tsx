@@ -11,7 +11,7 @@ export type CartItem = {
 
 type InvoiceCartProps = {
   items: CartItem[];
-  preview: { subtotal: string; tax: string; total: string };
+  preview: { subtotal: string; exempt?: string; tax: string; total: string };
   taxRate?: string;
   onUpdateQuantity: (index: number, quantity: string) => void;
   onUpdateDialysisPrescription: (index: number, checked: boolean) => void;
@@ -61,7 +61,7 @@ export function InvoiceCart({
   const enabledActionLabel = actionLabel.includes(totalLabel) ? actionLabel : `${actionLabel} · ${totalLabel}`;
 
   return (
-    <section className="flex h-full min-w-0 flex-col" aria-labelledby="invoice-cart-title" aria-busy={submitting ? 'true' : undefined}>
+    <section className="flex h-full min-h-0 min-w-0 flex-col" aria-labelledby="invoice-cart-title" aria-busy={submitting ? 'true' : undefined}>
       <div className="mb-3 flex items-start gap-3 border-b border-operational-border pb-3">
         <div className="min-w-0">
           <h2 id="invoice-cart-title" className="text-xl font-semibold tracking-tight text-foreground block">Cuenta actual</h2>
@@ -74,7 +74,7 @@ export function InvoiceCart({
         )}
       </div>
 
-      <div className="min-h-0 flex-1">
+      <div data-billing-cart-lines className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
         {isEmpty ? (
           <div className="border border-dashed border-operational-border bg-muted/30 px-4 py-10 text-center text-muted-foreground" role="status" aria-live="polite">
             <p className="text-sm font-semibold text-foreground">No hay servicios agregados</p>
@@ -183,18 +183,20 @@ export function InvoiceCart({
         )}
       </div>
 
-      <div data-billing-cart-action className="sticky bottom-0 z-10 mt-4 border-t border-operational-border bg-operational-surface pt-4">
+      <div data-billing-cart-action className="z-10 mt-4 shrink-0 border-t border-operational-border bg-operational-surface pt-4">
         <dl className="mb-3 border border-operational-border bg-muted p-3">
           <div className="flex justify-between gap-3 text-sm">
             <dt className="text-muted-foreground">Subtotal</dt>
             <dd className="font-mono tabular-nums">{moneyLabel(preview.subtotal)}</dd>
           </div>
-          {taxRate && (
-            <div className="mt-1.5 flex justify-between gap-3 text-sm">
-              <dt className="text-muted-foreground">ISV ({taxRate}%)</dt>
-              <dd className="font-mono tabular-nums">{moneyLabel(preview.tax)}</dd>
-            </div>
-          )}
+          <div className="mt-1.5 flex justify-between gap-3 text-sm">
+            <dt className="text-muted-foreground">Exento</dt>
+            <dd className="font-mono tabular-nums">{moneyLabel(preview.exempt ?? '0.00')}</dd>
+          </div>
+          <div className="mt-1.5 flex justify-between gap-3 text-sm">
+            <dt className="text-muted-foreground">{taxRate ? `ISV (${taxRate}%)` : 'ISV'}</dt>
+            <dd className="font-mono tabular-nums">{moneyLabel(preview.tax)}</dd>
+          </div>
           <div className="mt-2 flex justify-between gap-3 border-t border-border pt-2">
             <dt className="font-bold">Total</dt>
             <dd className="whitespace-nowrap font-mono text-xl font-bold tabular-nums">{moneyLabel(preview.total)}</dd>

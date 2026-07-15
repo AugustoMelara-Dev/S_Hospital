@@ -20,6 +20,7 @@ type PaymentModalProps = {
   onConfirm: (appliedAmount: string) => void;
   submitting?: boolean;
   partialPaymentsEnabled?: boolean;
+  errorMessage?: string | null;
 };
 
 const methodHelp: Record<Payment['method'], string> = {
@@ -52,6 +53,7 @@ export function PaymentModal({
   onConfirm,
   submitting,
   partialPaymentsEnabled = false,
+  errorMessage,
 }: PaymentModalProps) {
   const [error, setError] = useState<string | null>(null);
   const [referenceError, setReferenceError] = useState<string | null>(null);
@@ -281,6 +283,15 @@ export function PaymentModal({
         </section>
 
         <div className="grid gap-3">
+          {errorMessage ? (
+            <Alert
+              type="error"
+              showIcon
+              role="alert"
+              title="No se completó el cobro"
+              description={`${errorMessage} Revise los datos y vuelva a intentar.`}
+            />
+          ) : null}
           {needsAmount && !error ? (
             <Alert type="warning" showIcon className="py-3" title="Ingrese el monto recibido para registrar el cobro." />
           ) : null}
@@ -395,7 +406,7 @@ export function PaymentModal({
         </section>
 
         <p className="text-xs text-muted-foreground">
-          Cancelar la ventana de impresión no revierte el pago. Si necesita corregir una factura pagada, use el flujo de anulación autorizado.
+          Confirmar registra el cobro. Ver, guardar o imprimir el recibo son acciones separadas y no revierten el pago.
         </p>
 
         <div className="flex flex-col-reverse gap-3 border-t border-border pt-4 sm:flex-row sm:justify-end">
@@ -407,12 +418,12 @@ export function PaymentModal({
             type="primary"
             className="min-h-11 sm:min-w-56"
             disabled={submitting || needsAmount}
-            aria-label={`Confirmar cobro de ${moneyLabel(balanceDue)} e imprimir`}
+            aria-label={`${errorMessage ? 'Reintentar cobro' : 'Confirmar cobro'} de ${moneyLabel(balanceDue)}`}
           >
             {submitting ? 'Cobrando...' : (
               <span className="inline-flex items-center gap-2">
                 <Printer className="size-4" aria-hidden="true" />
-                Cobrar {moneyLabel(balanceDue)} e imprimir
+                {errorMessage ? 'Reintentar cobro' : `Cobrar ${moneyLabel(balanceDue)}`}
               </span>
             )}
           </Button>

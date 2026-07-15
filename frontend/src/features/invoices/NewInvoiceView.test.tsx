@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { StrictMode, type ComponentProps } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -463,7 +463,8 @@ describe('NewInvoiceView critical flows', () => {
       expect(screen.getAllByText('Eritropoyetina').length).toBeGreaterThan(0);
     });
 
-    expect(screen.getByText(/patient name: requerido/i)).toBeInTheDocument();
+    expect(within(screen.getByRole('region', { name: /paciente/i })).getByRole('alert')).toHaveTextContent(/requerido/i);
+    expect(screen.getByLabelText(/nombre del paciente/i)).toHaveAttribute('aria-invalid', 'true');
   });
 
   it('rejects whitespace-only patient names from keyboard emission', async () => {
@@ -916,7 +917,7 @@ describe('NewInvoiceView critical flows', () => {
     });
 
     fireEvent.change(screen.getByLabelText(/monto recibido/i), { target: { value: '25.00' } });
-    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro.*imprimir/i }));
+    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro/i }));
 
     await waitFor(() => {
       expect(fetchMock.mock.calls.some(([url]) => String(url).endsWith('/api/invoices/57/payments'))).toBe(true);
@@ -1048,7 +1049,7 @@ describe('NewInvoiceView critical flows', () => {
     });
 
     fireEvent.change(screen.getByLabelText(/monto recibido/i), { target: { value: '15.00' } });
-    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro.*imprimir/i }));
+    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro/i }));
 
     await waitFor(() => {
       expect(fetchMock.mock.calls.some(([url]) => String(url).endsWith('/api/invoices/65/payments'))).toBe(true);
@@ -1205,7 +1206,7 @@ describe('NewInvoiceView critical flows', () => {
     });
 
     fireEvent.change(screen.getByLabelText(/monto recibido/i), { target: { value: '25.00' } });
-    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro.*imprimir/i }));
+    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro/i }));
 
     await waitFor(() => {
       expect(fetchMock.mock.calls.some(([url]) => String(url).endsWith('/api/invoices/61/payments'))).toBe(true);
@@ -1429,15 +1430,12 @@ describe('NewInvoiceView critical flows', () => {
       }]);
     });
 
-    await waitFor(() => {
-      expect(registerPrint).toHaveBeenCalledWith(98, undefined, {
-        idempotencyKey: 'zero-receipt-print-attempt-1',
-      });
-    });
-    expect(getInstitutionalReceiptPdf).toHaveBeenCalledWith(98);
+    expect(registerPrint).not.toHaveBeenCalled();
+    expect(getInstitutionalReceiptPdf).not.toHaveBeenCalled();
     expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/api/invoices/64/receipt'))).toBe(false);
     expect(screen.queryByRole('dialog', { name: /comprobante de factura/i })).not.toBeInTheDocument();
     expect(await screen.findByRole('dialog', { name: /factura pagada/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /ver recibo/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /imprimir recibo$/i })).toBeInTheDocument();
   });
 
@@ -1570,32 +1568,19 @@ describe('NewInvoiceView critical flows', () => {
     });
 
     fireEvent.change(screen.getByLabelText(/monto recibido/i), { target: { value: '25.00' } });
-    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro.*imprimir/i }));
-
-    await waitFor(() => {
-      expect(registerPrint).toHaveBeenCalledWith(96, undefined, {
-        idempotencyKey: 'sale-reprint-attempt-1',
-      });
-    });
-    expect(getInstitutionalReceiptPdf).toHaveBeenCalledWith(96);
-    expect(openBlobInNewTab).toHaveBeenCalledWith(
-      expect.any(Blob),
-      'recibo-institucional-REC-A-00000096.pdf',
-    );
-    registerPrint.mockClear();
-    getInstitutionalReceiptPdf.mockClear();
-    vi.mocked(openBlobInNewTab).mockClear();
-    vi.mocked(downloadBlob).mockClear();
+    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro/i }));
 
     await waitFor(() => {
       expect(screen.getByRole('dialog', { name: /factura pagada/i })).toBeInTheDocument();
     });
+    expect(registerPrint).not.toHaveBeenCalled();
+    expect(getInstitutionalReceiptPdf).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: /imprimir recibo$/i }));
 
     await waitFor(() => {
       expect(registerPrint).toHaveBeenCalledWith(
         96,
-        'Reimpresion desde venta/cobro.',
+        undefined,
         { idempotencyKey: 'sale-reprint-attempt-1' },
       );
     });
@@ -1604,6 +1589,16 @@ describe('NewInvoiceView critical flows', () => {
       expect.any(Blob),
       'recibo-institucional-REC-A-00000096.pdf',
     );
+
+    registerPrint.mockClear();
+    getInstitutionalReceiptPdf.mockClear();
+    vi.mocked(openBlobInNewTab).mockClear();
+    fireEvent.click(screen.getByRole('button', { name: /imprimir recibo$/i }));
+    await waitFor(() => expect(registerPrint).toHaveBeenCalledWith(
+      96,
+      'Reimpresion desde venta/cobro.',
+      { idempotencyKey: 'sale-reprint-attempt-1' },
+    ));
 
     registerPrint.mockClear();
     getInstitutionalReceiptPdf.mockClear();
@@ -1769,23 +1764,20 @@ describe('NewInvoiceView critical flows', () => {
     });
 
     fireEvent.change(screen.getByLabelText(/monto recibido/i), { target: { value: '25.00' } });
-    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro.*imprimir/i }));
-
-    await waitFor(() => {
-      expect(registerPrint).toHaveBeenCalledWith(97, undefined, {
-        idempotencyKey: expect.any(String),
-      });
-    });
-    expect(getInstitutionalReceiptPdf).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro/i }));
 
     expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/api/invoices/62/receipt'))).toBe(false);
     expect(await screen.findByRole('dialog', { name: /factura pagada/i })).toBeInTheDocument();
-    expect(screen.getAllByText(/recibo institucional REC-A-00000097 emitido/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/no se pudo abrir el PDF/i).length).toBeGreaterThan(0);
+    expect(registerPrint).not.toHaveBeenCalled();
+    expect(getInstitutionalReceiptPdf).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: /imprimir recibo$/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /imprimir recibo$/i }));
+    await waitFor(() => expect(getInstitutionalReceiptPdf).toHaveBeenCalledTimes(1));
+    expect(registerPrint).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: /imprimir recibo$/i })).toBeInTheDocument();
     expect(onStatus).toHaveBeenCalledWith(expect.objectContaining({
-      key: 'billing-payment',
-      level: 'warning',
+      key: 'billing-receipt',
+      level: 'error',
       message: expect.stringMatching(/no se pudo abrir el PDF/i),
     }));
   });
@@ -1914,14 +1906,14 @@ describe('NewInvoiceView critical flows', () => {
     });
 
     fireEvent.change(screen.getByLabelText(/monto recibido/i), { target: { value: '10.00' } });
-    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro.*imprimir/i }));
+    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro/i }));
     await waitFor(() => {
       expect(paymentIdempotencyKeys).toEqual(['payment-attempt-1']);
     });
     expect(screen.getByRole('dialog', { name: /registrar pago/i })).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText(/monto recibido/i), { target: { value: '15.00' } });
-    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro.*imprimir/i }));
+    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro/i }));
 
     await waitFor(() => {
       expect(paymentIdempotencyKeys).toEqual(['payment-attempt-1', 'payment-attempt-2']);

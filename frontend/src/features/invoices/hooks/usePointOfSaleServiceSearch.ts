@@ -36,6 +36,7 @@ export function usePointOfSaleServiceSearch({
       serviceSearchAbortRef.current?.abort();
       serviceSearchAbortRef.current = null;
       dispatch({ type: 'SEARCH_SERVICES_SUCCESS', payload: [] });
+      dispatch({ type: 'SET_SERVICE_PAGE_STATE', payload: { page: 1, hasMore: false } });
       dispatch({ type: 'SET_LOADING_SERVICES', payload: false });
       return;
     }

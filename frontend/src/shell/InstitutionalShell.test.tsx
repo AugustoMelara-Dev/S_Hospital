@@ -243,6 +243,19 @@ describe('InstitutionalShell', () => {
     expect(within(dock).getAllByRole('link')).toHaveLength(4);
   });
 
+  it('reserves the full mobile dock height and exposes keyboard focus styles', () => {
+    renderShell({ user: administrator });
+
+    const contentColumn = screen.getByRole('main').parentElement;
+    const dock = screen.getByRole('navigation', { name: /Accesos m/ });
+    expect(contentColumn).toHaveClass('pb-20');
+    expect(dock).toHaveClass('min-h-20');
+    for (const link of within(dock).getAllByRole('link')) {
+      expect(link.className).toMatch(/focus-visible:/);
+    }
+    expect(within(dock).getByRole('button', { name: /s destinos/ }).className).toMatch(/focus-visible:/);
+  });
+
   it('explica la navegación vacía dentro del shell móvil', () => {
     render(
       <MemoryRouter>

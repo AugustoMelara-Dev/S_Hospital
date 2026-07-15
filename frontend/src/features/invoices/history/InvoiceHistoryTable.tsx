@@ -1,7 +1,7 @@
-import { DownloadOutlined as Download, PrinterOutlined as Printer, FileDoneOutlined as Receipt, FileTextOutlined as ReceiptText, UserOutlined as User, CloseCircleOutlined as XCircle, MoreOutlined } from '@ant-design/icons';
+import { DollarOutlined, DownloadOutlined as Download, PrinterOutlined as Printer, FileDoneOutlined as Receipt, FileTextOutlined as ReceiptText, UserOutlined as User, CloseCircleOutlined as XCircle, MoreOutlined } from '@ant-design/icons';
 import { Button, Dropdown, Tag } from 'antd';
 import type { MenuProps } from 'antd';
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { InstitutionalDataGrid, type InstitutionalColumn } from '@/design-system/ag-grid/InstitutionalDataGrid';
 import type { Invoice } from '../../../lib/api';
 import {
@@ -11,6 +11,7 @@ import {
 
 type InvoiceHistoryTableProps = {
   canIssueInstitutionalReceipt: boolean;
+  canCollectPayment: boolean;
   canOperateAnyInvoice: boolean;
   canReprint: boolean;
   canReprintAny: boolean;
@@ -23,6 +24,7 @@ type InvoiceHistoryTableProps = {
   loadingActionInvoiceId: number | null;
   moneyLabel: (value: string | number | null | undefined) => string;
   onDownloadInstitutionalReceipt: (invoice: Invoice) => void;
+  onCollectPayment: (invoice: Invoice) => void;
   onGenerateInstitutionalReceipt: (invoiceId: number) => void;
   onOpenReceipt: (invoiceId: number) => void;
   onOpenDetail: (invoice: Invoice, trigger: HTMLButtonElement) => void;
@@ -62,31 +64,19 @@ export function ActionMenu({ ariaLabel, groups }: { ariaLabel: string; groups: A
 
   return (
     <Dropdown menu={{ items }} trigger={['click']}>
-      <Button aria-label={ariaLabel} icon={<MoreOutlined aria-hidden="true" />} />
+      <Button className="min-h-11 min-w-11" aria-label={ariaLabel} icon={<MoreOutlined aria-hidden="true" />} />
     </Dropdown>
   );
 }
 
-export function InvoiceHistoryTable({
-  canIssueInstitutionalReceipt,
-  canOperateAnyInvoice,
-  canReprint,
-  canReprintAny,
-  canReverse,
-  canViewReceipt,
-  canVoid,
-  formatDate,
-  invoices,
-  isOwnInvoiceFromToday,
-  loadingActionInvoiceId,
-  moneyLabel,
-  onDownloadInstitutionalReceipt,
-  onGenerateInstitutionalReceipt,
-  onOpenReceipt,
-  onOpenDetail,
-  onPrepareInvoiceAction,
-  onReprint,
-}: InvoiceHistoryTableProps) {
+export function InvoiceHistoryTable(props: InvoiceHistoryTableProps) {
+  const {
+    formatDate,
+    invoices,
+    moneyLabel,
+    onOpenDetail,
+  } = props;
+  const isMobile = useMobileInvoiceList();
   const [visibleKeys, setVisibleKeys] = useState<string[]>([
     'invoice_number',
     'issued_at',
@@ -121,7 +111,7 @@ export function InvoiceHistoryTable({
     {
       colId: 'invoice_number',
       headerName: 'Factura',
-      width: 165,
+      width: 205,
       cellRenderer: ({ data }: { data?: Invoice }) => {
         if (!data) return null;
         return (
@@ -201,7 +191,7 @@ export function InvoiceHistoryTable({
     {
       colId: 'receipt',
       headerName: 'Recibo',
-      width: 145,
+      width: 180,
       cellRenderer: ({ data }: { data?: Invoice }) => data ? <ReceiptTrace invoice={data} /> : null,
     },
     {
@@ -214,103 +204,14 @@ export function InvoiceHistoryTable({
       filter: false,
       cellRenderer: ({ data }: { data?: Invoice }) => {
         if (!data) return null;
-        const isOwn = isOwnInvoiceFromToday(data);
-        const institutionalReceipt = issuedInstitutionalReceipt(data);
-        const actions = invoiceActionPolicy(data, {
-          canIssueInstitutionalReceipt,
-          canOperateAnyInvoice,
-          canReprint,
-          canReprintAny,
-          canReverse,
-          canViewReceipt,
-          canVoid,
-          isOwnInvoiceFromToday: isOwn,
-        });
-        const groups: ActionMenuGroup[] = [];
-
-        const primaryGroup: ActionMenuGroup = {
-          key: 'receipt',
-          items: [],
-        };
-        if (actions.openReceipt) {
-          primaryGroup.items.push({
-            key: 'view',
-            label: actions.auditedOpen ? 'Reimprimir PDF' : 'Ver recibo',
-            icon: actions.auditedOpen
-              ? <Printer aria-hidden="true" className="size-4" />
-              : <Receipt aria-hidden="true" className="size-4" />,
-            onSelect: () => onOpenReceipt(data.id),
-          });
-        }
-        if (
-          actions.downloadInstitutionalReceipt
-          && institutionalReceipt
-        ) {
-          primaryGroup.items.push({
-            key: 'download',
-            label: 'Descargar',
-            icon: <Download aria-hidden="true" className="size-4" />,
-            disabled: loadingActionInvoiceId === data.id,
-            onSelect: () => onDownloadInstitutionalReceipt(data),
-          });
-        }
-        if (actions.generateInstitutionalReceipt) {
-          primaryGroup.items.push({
-            key: 'generate',
-            label: 'Generar PDF',
-            icon: <ReceiptText aria-hidden="true" className="size-4" />,
-            disabled: loadingActionInvoiceId === data.id,
-            onSelect: () => onGenerateInstitutionalReceipt(data.id),
-          });
-        }
-        if (actions.reprint) {
-          primaryGroup.items.push({
-            key: 'reprint',
-            label: 'Reimprimir',
-            icon: <Printer aria-hidden="true" className="size-4" />,
-            onSelect: () => onReprint(data),
-          });
-        }
-        if (primaryGroup.items.length > 0) {
-          groups.push(primaryGroup);
-        }
-
-        const dangerGroup: ActionMenuGroup = { key: 'danger', items: [] };
-        if (actions.reverse) {
-          dangerGroup.items.push({
-            key: 'reverse',
-            label: 'Reversar pago',
-            icon: <XCircle aria-hidden="true" className="size-4" />,
-            destructive: true,
-            onSelect: () => onPrepareInvoiceAction(data.id, 'reverse'),
-          });
-        }
-        if (actions.void) {
-          dangerGroup.items.push({
-            key: 'void',
-            label: 'Anular factura',
-            icon: <XCircle aria-hidden="true" className="size-4" />,
-            destructive: true,
-            onSelect: () => onPrepareInvoiceAction(data.id, 'void'),
-          });
-        }
-        if (dangerGroup.items.length > 0) {
-          groups.push(dangerGroup);
-        }
-
-        if (groups.length === 0) {
-          return null;
-        }
-
-        return (
-          <ActionMenu
-            ariaLabel={`Acciones de la factura ${data.invoice_number}`}
-            groups={groups}
-          />
-        );
+        return <InvoiceRowActions invoice={data} tableProps={props} />;
       },
     },
   ];
+
+  if (isMobile) {
+    return <InvoiceHistoryMobileList tableProps={props} />;
+  }
 
   return (
     <div className="space-y-2">
@@ -352,6 +253,175 @@ export function InvoiceHistoryTable({
       />
     </div>
   );
+}
+
+function useMobileInvoiceList() {
+  const query = '(max-width: 767px)';
+  const [matches, setMatches] = useState(() => typeof window !== 'undefined' && Boolean(window.matchMedia?.(query).matches));
+
+  useEffect(() => {
+    const media = window.matchMedia?.(query);
+    if (!media) return undefined;
+    const update = () => setMatches(media.matches);
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
+
+  return matches;
+}
+
+function InvoiceHistoryMobileList({ tableProps }: { tableProps: InvoiceHistoryTableProps }) {
+  const { formatDate, invoices, moneyLabel, onOpenDetail } = tableProps;
+
+  return (
+    <ul aria-label="Facturas filtradas en móvil" className="min-w-0 divide-y divide-border">
+      {invoices.map((invoice) => (
+        <li key={invoice.id} className="min-w-0 overflow-visible p-4">
+          <div className="flex min-w-0 items-start justify-between gap-3">
+            <button
+              type="button"
+              data-invoice-detail-trigger={invoice.id}
+              className="min-h-11 min-w-0 break-all text-left font-semibold text-foreground underline-offset-4 hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              aria-label={`Ver detalle de la factura ${invoice.invoice_number}`}
+              onClick={(event) => onOpenDetail(invoice, event.currentTarget)}
+            >
+              {invoice.invoice_number}
+            </button>
+            <InvoiceRowActions invoice={invoice} tableProps={tableProps} />
+          </div>
+          <p className="mt-1 break-words text-sm text-foreground">{patientNameLabel(invoice)}</p>
+          <p className="text-xs text-muted-foreground">{formatDate(invoice.issued_at)}</p>
+          <dl className="mt-3 grid min-w-0 grid-cols-2 gap-x-4 gap-y-3 text-sm">
+            <MobileValue label="Total" value={moneyLabel(invoice.total)} />
+            <MobileValue label="Pagado" value={moneyLabel(invoice.paid_amount)} />
+            <MobileValue label="Saldo" value={moneyLabel(invoice.balance_due)} emphasize={invoice.status === 'partial' || invoice.status === 'issued'} />
+            <div className="min-w-0">
+              <dt className="text-xs text-muted-foreground">Estado</dt>
+              <dd className="mt-1"><InvoiceStatusBadge status={invoice.status} /></dd>
+            </div>
+            <div className="col-span-2 min-w-0">
+              <dt className="text-xs text-muted-foreground">Recibo</dt>
+              <dd className="mt-1 break-words"><ReceiptTrace invoice={invoice} /></dd>
+            </div>
+          </dl>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function MobileValue({ emphasize = false, label, value }: { emphasize?: boolean; label: string; value: string }) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className={`break-words tabular-nums ${emphasize ? 'font-semibold text-warning' : 'text-foreground'}`}>{value}</dd>
+    </div>
+  );
+}
+
+function InvoiceRowActions({ invoice, tableProps }: { invoice: Invoice; tableProps: InvoiceHistoryTableProps }) {
+  const {
+    canIssueInstitutionalReceipt,
+    canCollectPayment,
+    canOperateAnyInvoice,
+    canReprint,
+    canReprintAny,
+    canReverse,
+    canViewReceipt,
+    canVoid,
+    isOwnInvoiceFromToday,
+    loadingActionInvoiceId,
+    onDownloadInstitutionalReceipt,
+    onCollectPayment,
+    onGenerateInstitutionalReceipt,
+    onOpenReceipt,
+    onPrepareInvoiceAction,
+    onReprint,
+  } = tableProps;
+  const institutionalReceipt = issuedInstitutionalReceipt(invoice);
+  const actions = invoiceActionPolicy(invoice, {
+    canIssueInstitutionalReceipt,
+    canCollectPayment,
+    canOperateAnyInvoice,
+    canReprint,
+    canReprintAny,
+    canReverse,
+    canViewReceipt,
+    canVoid,
+    isOwnInvoiceFromToday: isOwnInvoiceFromToday(invoice),
+  });
+  const groups: ActionMenuGroup[] = [];
+  const primaryGroup: ActionMenuGroup = { key: 'receipt', items: [] };
+
+  if (actions.collectPayment) {
+    primaryGroup.items.push({
+      key: 'collect',
+      label: 'Cobrar',
+      icon: <DollarOutlined aria-hidden="true" className="size-4" />,
+      onSelect: () => onCollectPayment(invoice),
+    });
+  }
+
+  if (actions.openReceipt) {
+    primaryGroup.items.push({
+      key: 'view',
+      label: 'Ver recibo',
+      icon: <Receipt aria-hidden="true" className="size-4" />,
+      onSelect: () => onOpenReceipt(invoice.id),
+    });
+  }
+  if (actions.downloadInstitutionalReceipt && institutionalReceipt) {
+    primaryGroup.items.push({
+      key: 'download',
+      label: 'Descargar',
+      icon: <Download aria-hidden="true" className="size-4" />,
+      disabled: loadingActionInvoiceId === invoice.id,
+      onSelect: () => onDownloadInstitutionalReceipt(invoice),
+    });
+  }
+  if (actions.generateInstitutionalReceipt) {
+    primaryGroup.items.push({
+      key: 'generate',
+      label: 'Generar PDF',
+      icon: <ReceiptText aria-hidden="true" className="size-4" />,
+      disabled: loadingActionInvoiceId === invoice.id,
+      onSelect: () => onGenerateInstitutionalReceipt(invoice.id),
+    });
+  }
+  if (actions.reprint) {
+    primaryGroup.items.push({
+      key: 'reprint',
+      label: 'Reimprimir',
+      icon: <Printer aria-hidden="true" className="size-4" />,
+      onSelect: () => onReprint(invoice),
+    });
+  }
+  if (primaryGroup.items.length > 0) groups.push(primaryGroup);
+
+  const dangerGroup: ActionMenuGroup = { key: 'danger', items: [] };
+  if (actions.reverse) {
+    dangerGroup.items.push({
+      key: 'reverse',
+      label: 'Reversar pago',
+      icon: <XCircle aria-hidden="true" className="size-4" />,
+      destructive: true,
+      onSelect: () => onPrepareInvoiceAction(invoice.id, 'reverse'),
+    });
+  }
+  if (actions.void) {
+    dangerGroup.items.push({
+      key: 'void',
+      label: 'Anular factura',
+      icon: <XCircle aria-hidden="true" className="size-4" />,
+      destructive: true,
+      onSelect: () => onPrepareInvoiceAction(invoice.id, 'void'),
+    });
+  }
+  if (dangerGroup.items.length > 0) groups.push(dangerGroup);
+  if (groups.length === 0) return null;
+
+  return <ActionMenu ariaLabel={`Acciones de la factura ${invoice.invoice_number}`} groups={groups} />;
 }
 
 export function issuedInstitutionalReceipt(invoice: Invoice): NonNullable<Invoice['institutional_receipt']> | null {
