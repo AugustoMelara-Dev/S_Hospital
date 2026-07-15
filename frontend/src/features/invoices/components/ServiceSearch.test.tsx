@@ -90,6 +90,16 @@ describe('ServiceSearch', () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
+  it('keeps Enter queued for the same search until its first result arrives', async () => {
+    const onAddService = vi.fn();
+    const { rerender } = renderSearch({ loading: true, search: 'glu', services: [], onAddService });
+
+    fireEvent.keyDown(screen.getByLabelText(/buscar por nombre/i), { key: 'Enter', code: 'Enter' });
+    rerender(defaultRender({ loading: false, search: 'glu', services: [serviceFixture()], onAddService }));
+
+    await waitFor(() => expect(onAddService).toHaveBeenCalledWith(expect.objectContaining({ name: 'Glucosa' })));
+  });
+
   it('ignores a duplicated Enter while the local add is still settling', () => {
     vi.useFakeTimers();
     const onAddService = vi.fn();

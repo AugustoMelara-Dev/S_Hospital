@@ -1,5 +1,5 @@
 import { DollarOutlined as Banknote, PrinterOutlined as Printer, FileTextOutlined as ReceiptText } from '@ant-design/icons';
-import { Alert, Button, Divider, Input, Modal, Typography, type InputRef } from 'antd';
+import { Alert, Button, Input, Modal, Typography, type InputRef } from 'antd';
 import { type FormEvent, type KeyboardEvent, useEffect, useRef, useState } from 'react';
 import type { Payment } from '../../../lib/api';
 import { formatLempirasUIFromCents, parseCents as parseCentsNullable } from '../../../lib/moneyCents';
@@ -220,38 +220,40 @@ export function PaymentModal({
       aria-describedby="payment-dialog-description"
       footer={null}
       width={720}
+      style={{ top: 24 }}
       destroyOnHidden
     >
-      <Typography.Paragraph id="payment-dialog-description">
+      <Typography.Paragraph id="payment-dialog-description" className="mb-3">
         Factura {invoiceNumber} ya fue emitida. Si sale de este paso quedara pendiente de cobro.
       </Typography.Paragraph>
       <form
         ref={formRef}
         aria-busy={submitting ? 'true' : undefined}
         onSubmit={handleSubmit}
-        className="flex min-w-0 flex-col gap-5"
+        className="flex min-w-0 flex-col gap-3"
       >
         {submitting ? <p role="status">Registrando cobro...</p> : null}
         <section
           aria-label="Resumen de factura"
-          className="overflow-hidden border border-border bg-surface p-5"
+          className="overflow-hidden border border-border bg-surface p-3"
         >
-          <div className="flex flex-col gap-3">
+          <div className="grid gap-2 sm:grid-cols-2">
             <div className="min-w-0">
               <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-primary-foreground">
                 <ReceiptText className="size-3.5 text-secondary" aria-hidden="true" />
                 Factura
               </p>
               <p className="break-words font-semibold tabular-nums text-foreground">{invoiceNumber}</p>
-              <p className="mt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Paciente</p>
+            </div>
+            <div className="min-w-0 sm:text-right">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Paciente</p>
               <p className="break-words font-medium text-foreground">{patientLabel}</p>
             </div>
           </div>
-          <Divider className="my-4" />
           <section
             aria-label="Resumen del cobro"
             data-summary-columns={String(summaryColumnCount)}
-            className={`grid border border-border bg-muted ${summaryColumnCount === 4 ? 'grid-cols-2 sm:grid-cols-4' : summaryColumnCount === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}
+            className={`mt-3 grid border border-border bg-muted ${summaryColumnCount === 4 ? 'grid-cols-2 sm:grid-cols-4' : summaryColumnCount === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}
           >
             <div className="border-r border-border p-3">
               <span className="block text-xs font-medium uppercase tracking-wide text-muted-foreground">Total</span>
@@ -296,7 +298,7 @@ export function PaymentModal({
           ) : null}
         </div>
 
-        <section aria-label="Datos del pago" className="grid gap-5 border border-operational-border bg-card p-5">
+        <section aria-label="Datos del pago" className="grid gap-3 border border-operational-border bg-card p-3">
           <fieldset className="grid gap-1.5">
             <legend className="text-sm font-medium">Método de pago</legend>
             <div

@@ -53,7 +53,7 @@ export function ServiceSearch({
   error,
   onRetry,
 }: ServiceSearchProps) {
-  const [addFirstWhenReady, setAddFirstWhenReady] = useState(false);
+  const [addFirstForSearch, setAddFirstForSearch] = useState<string | null>(null);
   const addLockRef = useRef<number | null>(null);
   const addLockTimeoutRef = useRef<number | null>(null);
   const scanLockRef = useRef(false);
@@ -92,7 +92,7 @@ export function ServiceSearch({
     if (addLockRef.current === service.id) return;
 
     addLockRef.current = service.id;
-    setAddFirstWhenReady(false);
+    setAddFirstForSearch(null);
     onAddService(service);
     window.setTimeout(() => searchInputRef?.current?.focus(), 0);
     if (addLockTimeoutRef.current !== null) {
@@ -171,27 +171,27 @@ export function ServiceSearch({
   }, []);
 
   useEffect(() => {
-    if (!addFirstWhenReady || loading || !firstVisibleService) return;
+    if (addFirstForSearch === null || addFirstForSearch !== search.trim() || loading || !firstVisibleService) return;
     handleAddService(firstVisibleService);
-  }, [addFirstWhenReady, firstVisibleService, loading, handleAddService]);
+  }, [addFirstForSearch, firstVisibleService, loading, handleAddService, search]);
 
   useEffect(() => {
-    setAddFirstWhenReady(false);
-  }, [search, selectedAreaId, selectedCategoryId]);
-
-  useEffect(() => {
-    if (!loading && addFirstWhenReady && !firstVisibleService) {
-      setAddFirstWhenReady(false);
+    if (addFirstForSearch !== null && addFirstForSearch !== search.trim()) {
+      setAddFirstForSearch(null);
     }
-  }, [addFirstWhenReady, firstVisibleService, loading]);
+  }, [addFirstForSearch, search]);
+
+  useEffect(() => {
+    setAddFirstForSearch(null);
+  }, [selectedAreaId, selectedCategoryId]);
 
   return (
-    <div className="flex flex-col gap-5">
-      <div className="flex flex-col gap-5 border border-operational-border bg-muted/40 p-4 sm:p-5">
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3 border border-operational-border bg-muted/40 p-3 sm:p-4">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
-            <h2 className="text-xl font-semibold tracking-tight text-foreground">Selección de servicios</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <h2 className="text-lg font-semibold tracking-tight text-foreground">Selección de servicios</h2>
+            <p className="sr-only">
               {scannerEnabled
                 ? 'Filtre por area, categoria, texto o lector sin exponer datos internos.'
                 : 'Filtre por nombre, area o categoria para agregar servicios.'}
@@ -229,12 +229,12 @@ export function ServiceSearch({
                       return;
                     }
                     if (loading || search.trim()) {
-                      setAddFirstWhenReady(true);
+                      setAddFirstForSearch(search.trim());
                     }
                   }
                 }}
                 autoComplete="off"
-                className="min-h-16 pl-12 text-base font-semibold"
+                className="min-h-12 pl-12 text-base font-semibold"
               />
             </div>
           </div>

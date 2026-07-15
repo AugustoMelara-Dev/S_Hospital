@@ -140,7 +140,7 @@ export function InvoiceCart({
                     <div className="flex items-center gap-1">
                     <Button
                       type="default"
-                      className="size-9 p-0"
+                      className="size-11 p-0 sm:size-9"
                       onClick={() => onUpdateQuantity(index, formatQuantity(Math.max(100, parseQuantityUnits(item.quantity) - 100)))}
                       aria-label={`Disminuir cantidad de ${item.service.name}`}
                       icon={<Minus className="size-3" aria-hidden="true" />}
@@ -148,14 +148,14 @@ export function InvoiceCart({
                     <Input
                       value={item.quantity}
                       onChange={(e) => onUpdateQuantity(index, e.target.value)}
-                      className="h-9 w-14 px-1 text-center font-mono text-sm tabular-nums"
+                      className="h-11 min-w-0 flex-1 px-1 text-center font-mono text-sm tabular-nums sm:h-9 sm:w-14 sm:flex-none"
                       inputMode="decimal"
                       name={`quantity-${item.service.id}`}
                       aria-label={`Cantidad de ${item.service.name}`}
                     />
                     <Button
                       type="default"
-                      className="size-9 p-0"
+                      className="size-11 p-0 sm:size-9"
                       onClick={() => onUpdateQuantity(index, formatQuantity(parseQuantityUnits(item.quantity) + 100))}
                       aria-label={`Aumentar cantidad de ${item.service.name}`}
                       icon={<Plus className="size-3" aria-hidden="true" />}
@@ -170,7 +170,7 @@ export function InvoiceCart({
                     <Button
                       type="text"
                       onClick={() => onRemoveItem(index)}
-                      className="size-9 p-0 text-muted-foreground hover:text-destructive"
+                      className="size-11 p-0 text-muted-foreground hover:text-destructive sm:size-9"
                       aria-label={`Quitar ${item.service.name}`}
                       icon={<Trash2 className="size-4" aria-hidden="true" />}
                     />

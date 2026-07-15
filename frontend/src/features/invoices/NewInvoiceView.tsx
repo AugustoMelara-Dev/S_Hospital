@@ -18,6 +18,7 @@ import { NewInvoiceViewLayout } from './components/NewInvoiceViewLayout';
 import { useNewInvoiceScreenGuards } from './hooks/useNewInvoiceScreenGuards';
 import { useNewInvoiceShortcuts } from './hooks/useNewInvoiceShortcuts';
 import { useNewInvoiceValidation } from './hooks/useNewInvoiceValidation';
+import { usePointOfSaleServiceSearch } from './hooks/usePointOfSaleServiceSearch';
 import { buildInvoicePayload } from './invoicePayload';
 import { downloadBlob, institutionalReceiptPdfFilename, openBlobInNewTab } from '@/lib/download';
 import { createClientIdempotencyKey } from '@/lib/api/base';
@@ -74,46 +75,16 @@ export function NewInvoiceView({
     void loadPointOfSaleData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
   useNewInvoiceScreenGuards({
     cartItemsLength: state.cartItems.length,
     patientInputRef,
     patientName: state.patientName,
     searchInputRef,
   });
-  useEffect(() => {
-    if (!canViewCatalog || !pointOfSaleDataLoadedRef.current) {
-      return;
-    }
-
-    const hasSearchIntent = Boolean(
-      state.search.trim()
-      || (state.selectedAreaId && state.selectedAreaId !== 'all')
-      || (state.selectedCategoryId && state.selectedCategoryId !== 'all'),
-    );
-
-    if (!hasSearchIntent) {
-      serviceSearchAbortRef.current?.abort();
-      serviceSearchAbortRef.current = null;
-      dispatch({ type: 'SEARCH_SERVICES_SUCCESS', payload: [] });
-      dispatch({ type: 'SET_LOADING_SERVICES', payload: false });
-      return;
-    }
-
-    const controller = new AbortController();
-    serviceSearchAbortRef.current = controller;
-    const timeoutId = window.setTimeout(() => {
-      void searchPointOfSaleServices(controller.signal);
-    }, 250);
-    return () => {
-      window.clearTimeout(timeoutId);
-      controller.abort();
-      if (serviceSearchAbortRef.current === controller) {
-        serviceSearchAbortRef.current = null;
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canViewCatalog, state.search, state.selectedAreaId, state.selectedCategoryId]);
+  usePointOfSaleServiceSearch({
+    canViewCatalog, dispatch, pointOfSaleDataLoadedRef, serviceSearchAbortRef,
+    searchServices: searchPointOfSaleServices, searchState: state,
+  });
   useEffect(() => {
     dispatch({ type: 'SET_LOADED_CASH_SESSION', payload: cashSession });
   }, [cashSession]);

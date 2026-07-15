@@ -19,10 +19,27 @@ export const PatientStep = forwardRef<HTMLInputElement, PatientStepProps>(functi
 
   return (
     <div className="min-w-0">
-      <header className="mb-3 flex min-w-0 flex-wrap items-center gap-2">
+      <header className="mb-2 flex min-w-0 flex-wrap items-center gap-2">
         <UserOutlined aria-hidden="true" className="text-secondary" />
         <h2 id="patient-step-title" className="text-base font-semibold text-foreground">Paciente</h2>
         <span className="text-sm text-muted-foreground">Solo el nombre es obligatorio.</span>
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-3 text-sm">
+          <Button
+            type="link"
+            className="h-auto min-h-9 px-0"
+            aria-expanded={optionalDataOpen}
+            aria-controls="patient-optional-data"
+            onClick={() => setOptionalDataOpen((open) => !open)}
+          >
+            Datos opcionales
+          </Button>
+          {patientName.trim() ? (
+            <span role="status" className="inline-flex items-center gap-1.5 font-medium text-success">
+              <CheckCircleOutlined aria-hidden="true" />
+              Paciente identificado
+            </span>
+          ) : null}
+        </div>
       </header>
 
       <div className="min-w-0">
@@ -30,7 +47,7 @@ export const PatientStep = forwardRef<HTMLInputElement, PatientStepProps>(functi
 
         <Form layout="vertical" onFinish={onPatientSubmit}>
           <label className="font-medium" htmlFor="patient-name">Nombre del paciente *</label>
-          <Form.Item required validateStatus={error ? 'error' : undefined} className="mb-1">
+          <Form.Item required validateStatus={error ? 'error' : undefined} className="!mb-0">
             <Input
               ref={(control) => {
                 const input = control?.input ?? null;
@@ -53,25 +70,8 @@ export const PatientStep = forwardRef<HTMLInputElement, PatientStepProps>(functi
           </Form.Item>
         </Form>
 
-        <div className="mt-1 flex flex-wrap items-center justify-between gap-2 text-sm">
-          <Button
-            type="link"
-            className="h-auto min-h-11 px-0"
-            aria-expanded={optionalDataOpen}
-            aria-controls="patient-optional-data"
-            onClick={() => setOptionalDataOpen((open) => !open)}
-          >
-            Datos opcionales
-          </Button>
-          {patientName.trim() ? (
-            <span role="status" className="inline-flex items-center gap-1.5 font-medium text-success">
-              <CheckCircleOutlined aria-hidden="true" />
-              Paciente identificado
-            </span>
-          ) : null}
-        </div>
         {optionalDataOpen ? (
-          <p id="patient-optional-data" className="border-t border-border pt-2 text-sm text-muted-foreground">
+          <p id="patient-optional-data" className="mt-2 border-t border-border pt-2 text-sm text-muted-foreground">
             La factura no necesita expediente clínico, identidad ni otros datos del paciente. El nombre es suficiente.
           </p>
         ) : null}

@@ -182,7 +182,12 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
         )}
 
         {state.successMessage && (
-          <Alert type="success" showIcon title="Servicio agregado" description={state.successMessage.replace(/^Agregado: /, '')} />
+          <Alert
+            type="success"
+            showIcon
+            className="py-2"
+            title={`Servicio agregado: ${state.successMessage.replace(/^Agregado: /, '')}`}
+          />
         )}
       </div>
 
@@ -191,7 +196,7 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
         className="grid w-full min-w-0 flex-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(360px,420px)] xl:items-start"
       >
         <div data-audit-panel="billing-main" className="flex min-w-0 flex-col gap-4">
-          <section aria-label="Paciente" data-billing-region="patient" className="min-w-0 border border-operational-border bg-operational-surface p-5 sm:p-6">
+          <section aria-label="Paciente" data-billing-region="patient" className="min-w-0 border border-operational-border bg-operational-surface p-3 sm:p-4">
             <PatientStep
               ref={patientInputRef}
               patientName={state.patientName}
