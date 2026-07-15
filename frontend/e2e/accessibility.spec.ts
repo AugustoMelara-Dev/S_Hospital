@@ -270,12 +270,13 @@ test.describe('Accessibility - critical mocked e2e (WCAG AA)', () => {
     await page.keyboard.press('Escape');
     await expect(commandButton).toBeFocused();
 
-    const shortcutsButton = page.getByRole('button', { name: /atajos de teclado/i });
-    await shortcutsButton.hover();
-    const tooltip = page.getByRole('tooltip', { name: /atajos/i });
-    await expect(tooltip).toBeVisible();
-    await expectFlatSurface(tooltip);
+    await page.keyboard.press('?');
+    const shortcutsDialog = page.getByRole('dialog', { name: /atajos de teclado/i });
+    await expect(shortcutsDialog).toBeVisible();
+    await expectFlatSurface(shortcutsDialog);
+    await expectShellAxeReport(page, 'shell-shortcuts-open', testInfo);
     await page.keyboard.press('Escape');
+    await expect(commandButton).toBeFocused();
 
     const helpButton = page.getByRole('button', { name: /abrir ayuda/i });
     await helpButton.click();
@@ -322,6 +323,41 @@ test.describe('Accessibility - critical mocked e2e (WCAG AA)', () => {
         await page.keyboard.press('Escape');
         await expect(moreButton).toBeFocused();
       }
+    }
+  });
+
+  test('required hospital viewports and zoom-equivalent CSS widths reflow without page overflow', async ({ page }, testInfo) => {
+    test.setTimeout(180_000);
+    await installAccessibilityMocks(page, { authenticated: true });
+
+    const requiredViewports = [
+      { id: '1920x1080', width: 1920, height: 1080 },
+      { id: '1600x900', width: 1600, height: 900 },
+      { id: '1366x768', width: 1366, height: 768 },
+      { id: '1280x720', width: 1280, height: 720 },
+      { id: '1024x768', width: 1024, height: 768 },
+      { id: '768x1024', width: 768, height: 1024 },
+      { id: '390x844', width: 390, height: 844 },
+      { id: 'zoom-125-equivalent', width: 1024, height: 576 },
+      { id: 'zoom-200-equivalent', width: 640, height: 360 },
+      { id: 'reflow-320-css-px', width: 320, height: 720 },
+    ] as const;
+
+    for (const viewport of requiredViewports) {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.goto('/dashboard');
+      await waitForScreen(page, /continuar operaci.n/i);
+
+      const geometry = await page.evaluate(() => ({
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+      }));
+      expect(geometry.scrollWidth, `${viewport.id} page overflow`).toBeLessThanOrEqual(geometry.clientWidth + 1);
+      await expectShellAxeReport(page, `required-${viewport.id}`, testInfo);
+      await testInfo.attach(`required-${viewport.id}`, {
+        body: await page.screenshot({ fullPage: true }),
+        contentType: 'image/png',
+      });
     }
   });
 

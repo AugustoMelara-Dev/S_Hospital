@@ -25,11 +25,11 @@
       "x": 224,
       "y": 64,
       "width": 800,
-      "height": 854
+      "height": 930
     },
     "billing-main": {
       "x": 252,
-      "y": 196,
+      "y": 272,
       "width": 744,
       "height": 586
     },
@@ -43,7 +43,7 @@
   "scrollContainers": [],
   "stickyElements": [
     {
-      "text": "Nueva factura\nCaja #7\nConexión local disponible\nBuscar\nCtrl K\nC\nCajera Facturaci",
+      "text": "Nueva factura\n\nCaja #7\nConexión local disponible\nBuscar\nCtrl K\nC\nCajera Facturac",
       "top": 0,
       "bottom": 64
     }
