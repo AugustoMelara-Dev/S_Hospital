@@ -7,13 +7,14 @@ import dayjs from 'dayjs';
 import { InstitutionalDataGrid, type InstitutionalColumn } from '@/design-system/ag-grid';
 import { apiClient, system } from '@/lib/api';
 import type { AuditLogEntry as ApiAuditLogEntry, AuditLogPage, OperationsReport } from '@/lib/api/types';
+import { formatLocalizedDateTime } from '@/lib/format/formatDate';
 import { useExecutiveReport } from '@/hooks/useExecutiveReport';
 import { AuditSummaryPanel } from './components/AuditSummaryPanel';
 import { computePresetRange, parseReportDate } from './components/reportDateRanges';
 import { ReportScope } from './components/ReportScope';
 
 type AuditLogEntry = { action: string; created_at: string; reason?: string | null; result?: string; user?: { name: string } | null };
-function AuditLogList({ entries }: { entries: AuditLogEntry[] }) { const columns: InstitutionalColumn<AuditLogEntry>[] = [{ field: 'created_at', headerName: 'Fecha', priority: 'secondary' }, { field: 'action', headerName: 'Acción', priority: 'primary', flex: 1 }, { colId: 'user', headerName: 'Usuario', priority: 'secondary', valueGetter: ({ data }) => data?.user?.name ?? 'Sistema' }, { field: 'reason', headerName: 'Motivo', priority: 'primary', flex: 1 }, { field: 'result', headerName: 'Resultado', priority: 'tertiary' }]; return <InstitutionalDataGrid ariaLabel="Bitácora de auditoría" rows={entries} columns={columns} getRowId={(entry) => `${entry.created_at}-${entry.action}-${entry.user?.name ?? ''}`} state={entries.length ? 'ready' : 'empty'} density="compact" />; }
+function AuditLogList({ entries }: { entries: AuditLogEntry[] }) { const columns: InstitutionalColumn<AuditLogEntry>[] = [{ field: 'created_at', headerName: 'Fecha', priority: 'secondary', valueFormatter: ({ value }) => formatLocalizedDateTime(String(value ?? '')) }, { field: 'action', headerName: 'Acción', priority: 'primary', flex: 1 }, { colId: 'user', headerName: 'Usuario', priority: 'secondary', valueGetter: ({ data }) => data?.user?.name ?? 'Sistema' }, { field: 'reason', headerName: 'Motivo', priority: 'primary', flex: 1 }, { field: 'result', headerName: 'Resultado', priority: 'tertiary' }]; return <InstitutionalDataGrid ariaLabel="Bitácora de auditoría" rows={entries} columns={columns} getRowId={(entry) => `${entry.created_at}-${entry.action}-${entry.user?.name ?? ''}`} state={entries.length ? 'ready' : 'empty'} density="compact" />; }
 
 type AuditLogFilters = {
   action: string;

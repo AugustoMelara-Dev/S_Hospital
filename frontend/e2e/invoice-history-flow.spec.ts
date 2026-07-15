@@ -1,4 +1,5 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
+import { resolve } from 'node:path';
 import { assertStrictMockGuard, installStrictMockGuard } from './fixtures/strict-mock-guard';
 
 test.beforeEach(async ({ page }) => installStrictMockGuard(page));
@@ -70,6 +71,35 @@ const paidInvoice = invoiceFixture({
 });
 
 test.describe('Invoice history - critical mocked e2e', () => {
+  test('uses one Spanish pagination and a content-height grid at 1366px', async ({ page }) => {
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await installInvoiceHistoryMocks(page);
+    await page.goto('/invoices');
+
+    await expect(page.getByRole('row', { name: /A-0001.*Maria Lopez/i })).toBeVisible();
+    await expect(page.locator('.ag-paging-panel')).toBeHidden();
+    await expect(page.getByText(/Page Size/i)).toHaveCount(0);
+    await expect(page.locator('.ant-pagination')).toHaveCount(1);
+    await expect(page.getByText(/2\/7\/26.*9:30/i).first()).toBeVisible();
+
+    const metrics = await page.locator('.institutional-grid').evaluate((grid) => ({
+      height: grid.getBoundingClientRect().height,
+      horizontalOverflow: Math.max(0, grid.scrollWidth - grid.clientWidth),
+      pageOverflow: Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth),
+    }));
+    expect(metrics.height).toBeLessThan(180);
+    expect(metrics.horizontalOverflow).toBe(0);
+    expect(metrics.pageOverflow).toBe(0);
+
+    await page.evaluate(() => new Promise<void>((resolveFrame) => {
+      requestAnimationFrame(() => requestAnimationFrame(() => resolveFrame()));
+    }));
+    await page.screenshot({
+      path: resolve(process.cwd(), '..', 'qa', 'operational-ux', 'after', 'history-1366.png'),
+      fullPage: true,
+    });
+  });
+
   test('keeps AG Grid, column menu, DatePicker and Drawer keyboard behavior real', async ({ page }) => {
     await installInvoiceHistoryMocks(page);
     await page.goto('/invoices');

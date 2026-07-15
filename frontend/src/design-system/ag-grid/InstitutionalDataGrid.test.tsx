@@ -20,16 +20,27 @@ const columns = [
 ];
 
 describe('InstitutionalDataGrid', () => {
-  it('creates keyboard-friendly sortable, filterable and paginated defaults', () => {
+  it('creates keyboard-friendly sortable defaults without duplicate pagination', () => {
     const options = createInstitutionalGridOptions<Row>({ mode: 'dark', density: 'compact' });
 
-    expect(options.pagination).toBe(true);
+    expect(options.pagination).toBe(false);
+    expect(options.paginationPageSizeSelector).toBe(false);
     expect(options.defaultColDef).toMatchObject({ sortable: true, filter: true, resizable: true });
-    expect(options.rowSelection).toMatchObject({ mode: 'multiRow', enableClickSelection: true });
+    expect(options.rowSelection).toBeUndefined();
     expect(options.suppressColumnVirtualisation).toBe(true);
     expect(options.theme).toBeDefined();
     expect(options.localeText?.page).toBe('Página');
+    expect(options.localeText?.pageSizeSelectorLabel).toBe('Filas por página:');
     expect(options.rowHeight).toBeLessThan(40);
+  });
+
+  it('sizes a short grid from its actual rows instead of reserving an empty panel', () => {
+    render(<InstitutionalDataGrid<Row> ariaLabel="Facturas" columns={columns} rows={[
+      { id: '1', patient: 'Ana', total: 2500 },
+      { id: '2', patient: 'Luis', total: 1000 },
+    ]} getRowId={(row) => row.id} density="compact" />);
+
+    expect(screen.getByRole('region', { name: 'Facturas' })).toHaveStyle('--institutional-grid-height: 110px');
   });
 
   it('renders the modern provider and typed grid contract', () => {
@@ -37,7 +48,7 @@ describe('InstitutionalDataGrid', () => {
 
     expect(screen.getByRole('region', { name: 'Facturas' })).toBeInTheDocument();
     expect(screen.getByTestId('ag-provider')).toBeInTheDocument();
-    expect(screen.getByTestId('ag-grid')).toHaveAttribute('data-props', expect.stringContaining('multiRow'));
+    expect(screen.getByTestId('ag-grid')).toHaveAttribute('data-props', expect.stringContaining('"pagination":false'));
   });
 
   it('keeps column visibility in the adapter contract passed to AG Grid', () => {

@@ -92,7 +92,6 @@ export function InvoiceHistoryTable({
     'issued_at',
     'patient_name',
     'total',
-    'paid_amount',
     'balance_due',
     'status',
     'receipt',
@@ -122,6 +121,7 @@ export function InvoiceHistoryTable({
     {
       colId: 'invoice_number',
       headerName: 'Factura',
+      width: 165,
       cellRenderer: ({ data }: { data?: Invoice }) => {
         if (!data) return null;
         return (
@@ -143,11 +143,14 @@ export function InvoiceHistoryTable({
     {
       colId: 'issued_at',
       headerName: 'Fecha',
+      width: 160,
       cellRenderer: ({ data }: { data?: Invoice }) => data ? formatDate(data.issued_at) : null,
     },
     {
       colId: 'patient_name',
       headerName: 'Paciente',
+      flex: 1,
+      minWidth: 160,
       cellRenderer: ({ data }: { data?: Invoice }) => {
         if (!data) return null;
         return (
@@ -161,18 +164,24 @@ export function InvoiceHistoryTable({
     {
       colId: 'total',
       headerName: 'Total',
+      width: 105,
+      cellClass: 'tabular-nums',
       type: 'rightAligned',
       cellRenderer: ({ data }: { data?: Invoice }) => data ? moneyLabel(data.total) : null,
     },
     {
       colId: 'paid_amount',
       headerName: 'Pagado',
+      width: 105,
+      cellClass: 'tabular-nums',
       type: 'rightAligned',
       cellRenderer: ({ data }: { data?: Invoice }) => data ? moneyLabel(data.paid_amount) : null,
     },
     {
       colId: 'balance_due',
       headerName: 'Saldo',
+      width: 105,
+      cellClass: 'tabular-nums',
       type: 'rightAligned',
       cellRenderer: ({ data }: { data?: Invoice }) => {
         if (!data) return null;
@@ -186,16 +195,23 @@ export function InvoiceHistoryTable({
     {
       colId: 'status',
       headerName: 'Estado',
+      width: 90,
       cellRenderer: ({ data }: { data?: Invoice }) => data ? <InvoiceStatusBadge status={data.status} /> : null,
     },
     {
       colId: 'receipt',
       headerName: 'Recibo',
+      width: 145,
       cellRenderer: ({ data }: { data?: Invoice }) => data ? <ReceiptTrace invoice={data} /> : null,
     },
     {
       colId: 'actions',
       headerName: 'Acciones',
+      width: 90,
+      minWidth: 90,
+      maxWidth: 90,
+      sortable: false,
+      filter: false,
       cellRenderer: ({ data }: { data?: Invoice }) => {
         if (!data) return null;
         const isOwn = isOwnInvoiceFromToday(data);

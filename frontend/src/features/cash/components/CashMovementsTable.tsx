@@ -29,7 +29,7 @@ export function CashMovementsTable({ canViewInvoices = false, movements }: CashM
         <p className="text-sm text-muted-foreground">Cada movimiento conserva su hora, método y referencia de pago o factura.</p>
       </header>
       <div className="hidden p-4 md:block">
-        <InstitutionalDataGrid ariaLabel="Movimientos de caja" columns={columns} rows={movements} getRowId={(row) => String(row.id)} emptyMessage="Sin movimientos de caja" density="compact" height={360} />
+        <InstitutionalDataGrid ariaLabel="Movimientos de caja" columns={columns} rows={movements} getRowId={(row) => String(row.id)} emptyMessage="Sin movimientos de caja" density="compact" />
       </div>
       <ol className="md:hidden" aria-label="Movimientos de caja en móvil">
         {movements.map((movement) => (

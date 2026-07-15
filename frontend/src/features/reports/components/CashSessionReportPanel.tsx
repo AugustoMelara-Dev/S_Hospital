@@ -40,6 +40,7 @@ const methodTotalColumns: InstitutionalColumn<MethodTotalRow>[] = [
   },
   {
     colId: 'total', headerName: 'Total', field: 'total', priority: 'secondary',
+    type: 'rightAligned', cellClass: 'tabular-nums',
     valueFormatter: ({ value }) => moneyLabel(String(value)),
   },
 ];
@@ -59,6 +60,7 @@ const paymentColumns: InstitutionalColumn<RegisteredPayment>[] = [
   },
   {
     colId: 'amount', headerName: 'Monto', field: 'amount', priority: 'secondary',
+    type: 'rightAligned', cellClass: 'tabular-nums',
     valueFormatter: ({ value }) => moneyLabel(String(value)),
   },
   {
@@ -78,6 +80,7 @@ const movementColumns: InstitutionalColumn<CashMovement>[] = [
   },
   {
     colId: 'amount', headerName: 'Monto', field: 'amount', priority: 'secondary',
+    type: 'rightAligned', cellClass: 'tabular-nums',
     valueFormatter: ({ value }) => signedMoneyLabel(String(value)),
   },
   {

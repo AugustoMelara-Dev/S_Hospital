@@ -30,7 +30,7 @@ export function BackupHistoryTable({ backups, canDownload, downloadingBackupId, 
       ))}
     </div>
     {isMobile ? backups.length ? <ul aria-label="Historial de respaldos locales">{backups.map((backup) => <li key={backup.id} className="border-b border-border p-4"><div className="flex justify-between gap-3"><div><strong>{formatDate(backup.completed_at ?? backup.created_at)}</strong><p>{backup.creator?.name ?? 'Sistema'} · {formatBytes(backup.size_bytes)}</p></div><BackupStatusBadge status={backup.status} /></div><p>{getStatusDescription(backup.status)}</p>{backup.status === 'failed' ? <Tag color="red">No se completó. Revise con soporte técnico.</Tag> : null}{canDownload && backup.status === 'success' ? <Button aria-label={`Descargar respaldo del ${formatDate(backup.completed_at ?? backup.created_at)}`} icon={<DownloadOutlined />} disabled={downloadingBackupId !== null} onClick={() => onDownloadRequest(backup)}>Descargar</Button> : <span>Sin descarga</span>}</li>)}</ul> : <Empty description={statusFilter === 'all' ? 'No hay respaldos registrados' : 'No hay respaldos con este estado'} />
-      : <InstitutionalDataGrid ariaLabel="Historial de respaldos locales" columns={columns} rows={backups} getRowId={(row) => String(row.id)} density="compact" height={420} emptyMessage={statusFilter === 'all' ? 'No hay respaldos registrados' : 'No hay respaldos con este estado'} />}
+      : <InstitutionalDataGrid ariaLabel="Historial de respaldos locales" columns={columns} rows={backups} getRowId={(row) => String(row.id)} density="compact" emptyMessage={statusFilter === 'all' ? 'No hay respaldos registrados' : 'No hay respaldos con este estado'} />}
   </div>;
 }
 function formatDate(value: string) { return formatLocalizedDateTime(value); }

@@ -60,6 +60,7 @@ const localeText: Record<string, string> = {
   applyFilter: 'Aplicar',
   resetFilter: 'Restablecer',
   clearFilter: 'Limpiar',
+  pageSizeSelectorLabel: 'Filas por página:',
 };
 
 const lightTheme = themeQuartz.withParams({
@@ -95,16 +96,15 @@ export function createInstitutionalGridOptions<TData>({ mode = 'light', density 
   return {
     theme: mode === 'dark' ? darkTheme : lightTheme,
     localeText,
-    pagination: true,
+    pagination: false,
     paginationPageSize: 25,
-    paginationPageSizeSelector: [10, 25, 50, 100],
-    rowHeight: density === 'compact' ? 32 : 40,
-    headerHeight: density === 'compact' ? 32 : 40,
+    paginationPageSizeSelector: false,
+    rowHeight: density === 'compact' ? 36 : 48,
+    headerHeight: density === 'compact' ? 36 : 40,
     animateRows: false,
     ensureDomOrder: true,
     suppressColumnVirtualisation: true,
     suppressCellFocus: false,
-    rowSelection: { mode: 'multiRow', enableClickSelection: true, checkboxes: true, headerCheckbox: true },
     defaultColDef: { sortable: true, filter: true, resizable: true, minWidth: 96 },
   };
 }
@@ -146,7 +146,7 @@ export function InstitutionalDataGrid<TData>({
   errorMessage = 'No se pudo cargar la información.',
   emptyMessage = 'No hay registros para mostrar.',
   loadingMessage = 'Cargando registros…',
-  height = 420,
+  height,
   gridOptions,
   actions,
 }: InstitutionalDataGridProps<TData>) {
@@ -163,7 +163,13 @@ export function InstitutionalDataGrid<TData>({
     cellClass: [column.cellClass, column.priority ? `institutional-grid__cell--${column.priority}` : undefined].filter(Boolean).join(' '),
     headerClass: [column.headerClass, column.priority ? `institutional-grid__header--${column.priority}` : undefined].filter(Boolean).join(' '),
   }));
-  const style = { '--institutional-grid-height': typeof height === 'number' ? `${height}px` : height } as CSSProperties;
+  const rowHeight = typeof gridOptions?.rowHeight === 'number' ? gridOptions.rowHeight : density === 'compact' ? 36 : 48;
+  const headerHeight = typeof gridOptions?.headerHeight === 'number' ? gridOptions.headerHeight : density === 'compact' ? 36 : 40;
+  const calculatedHeight = state === 'ready'
+    ? Math.min(460, headerHeight + rows.length * rowHeight + (actions ? 40 : 0) + 2)
+    : 128 + (actions ? 40 : 0);
+  const resolvedHeight = height ?? calculatedHeight;
+  const style = { '--institutional-grid-height': typeof resolvedHeight === 'number' ? `${resolvedHeight}px` : resolvedHeight } as CSSProperties;
   const getRowIdAdapter = (params: GetRowIdParams<TData>) => getRowId(params.data);
 
   return (

@@ -7,7 +7,7 @@ import type { ExecutiveReport } from '@/lib/api';
 type PaymentMethodPanelProps = { report: ExecutiveReport };
 type Row = { key: string; label: string; amount: number; count: number; percentage: number };
 const tooltipMoney = (value: unknown) => formatHnl(Number(value));
-const columns: InstitutionalColumn<Row>[] = [{ field: 'label', headerName: 'Método', priority: 'primary', flex: 1 }, { field: 'amount', headerName: 'Monto', priority: 'primary', valueFormatter: ({ value }) => formatHnl(Number(value)) }, { field: 'count', headerName: 'Pagos', priority: 'secondary' }, { field: 'percentage', headerName: '% del total', priority: 'secondary', valueFormatter: ({ value }) => `${Number(value).toFixed(2)}%` }];
+const columns: InstitutionalColumn<Row>[] = [{ field: 'label', headerName: 'Método', priority: 'primary', flex: 1 }, { field: 'amount', headerName: 'Monto', priority: 'primary', type: 'rightAligned', cellClass: 'tabular-nums', valueFormatter: ({ value }) => formatHnl(Number(value)) }, { field: 'count', headerName: 'Pagos', priority: 'secondary', type: 'rightAligned', cellClass: 'tabular-nums' }, { field: 'percentage', headerName: '% del total', priority: 'secondary', type: 'rightAligned', cellClass: 'tabular-nums', valueFormatter: ({ value }) => `${Number(value).toFixed(2)}%` }];
 
 export function PaymentMethodPanel({ report }: PaymentMethodPanelProps) {
   const methods = report.payment_methods.map((method) => ({ key: method.method, label: method.label, amount: finiteNumber(method.amount), count: Math.max(0, Math.trunc(finiteNumber(method.count))), percentage: Math.max(0, Math.min(100, finiteNumber(method.percentage))) }));

@@ -116,6 +116,7 @@ export function ServiceCatalogTable({
         emptyMessage={emptyMessage}
         gridOptions={{
           pagination: false,
+          rowHeight: 56,
           rowSelection: { mode: 'singleRow', enableClickSelection: true },
         }}
         actions={
