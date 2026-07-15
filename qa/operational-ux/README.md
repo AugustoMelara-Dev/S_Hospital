@@ -44,6 +44,11 @@ Cada auditoría de página incluye:
 Las duraciones de red se registran por método y ruta en el informe de
 rendimiento LAN, separado de la geometría visual.
 
+El estado consolidado de la fase 1 vive en `baseline-report.md`. Ese informe
+distingue entre el código del worktree verificado localmente y la aplicación
+real que continúa desplegada desde otro checkout; una prueba del primero no se
+usa para declarar corregido el segundo.
+
 ## Criterio de revisión
 
 Cada comparación registra overflow, scrolls internos, controles cubiertos,
