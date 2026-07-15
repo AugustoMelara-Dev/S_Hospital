@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { CheckOutlined as Check, CloudUploadOutlined as UploadCloud, SaveOutlined as Save } from '@ant-design/icons';
+import { CheckOutlined as Check, SaveOutlined as Save } from '@ant-design/icons';
 import { Alert, Button, Card, ColorPicker, Input, Typography } from 'antd';
 import { useTheme, COLOR_THEMES, type ColorTheme } from '@/hooks/useTheme';
 import { type FiscalSettings, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { safeClientMessage } from '@/lib/support/clientIssueLog';
 import type { OperationalStatusReporter } from '@/app/operationalStatus';
+import { InstitutionalIdentity } from '@/design-system';
+import { displayHospitalName } from '@/lib/hospital-name';
 
 type BrandingViewProps = {
   canEdit: boolean;
@@ -111,19 +113,17 @@ export function BrandingView({ canEdit, onStatus }: BrandingViewProps) {
       <div className="grid gap-4 md:grid-cols-2">
         <Card title="Logo institucional" extra={<Typography.Text type="secondary">Aparece en recibos y cabecera de la app.</Typography.Text>}>
           <div className="space-y-4">
-            <div className="flex flex-col items-center justify-center border-2 border-dashed border-operational-border bg-muted/40 p-8">
-              {logoUrl ? (
-                <img
-                  src={logoUrl}
-                  alt="Logo institucional"
-                  className="max-h-24 border border-border bg-receipt-paper object-contain p-2"
-                />
-              ) : (
-                <div className="flex flex-col items-center text-muted-foreground">
-                  <UploadCloud aria-hidden="true" className="size-10" />
-                  <span className="mt-2 text-xs">Sin logo cargado.</span>
-                </div>
-              )}
+            <div className="border border-operational-border bg-muted/40 p-5">
+              <InstitutionalIdentity
+                hospitalName={displayHospitalName(settings?.hospital_name)}
+                location={settings?.receipt_location?.trim() || 'Tocoa, Colón, Honduras'}
+                logoUrl={logoUrl}
+              />
+              {!logoUrl ? (
+                <Typography.Paragraph type="secondary" className="mb-0 mt-4 text-xs">
+                  Se usa un wordmark tipográfico provisional. Reemplácelo aquí cuando el hospital entregue un SVG o PNG oficial autorizado.
+                </Typography.Paragraph>
+              ) : null}
             </div>
             {canEdit && (
               <div className="space-y-2">

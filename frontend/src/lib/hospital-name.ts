@@ -3,6 +3,7 @@ function internalHospitalNames(): string[] {
   const retiredPlaceholderName = `hospital ${'de' + 'mo'}`;
 
   return [
+    'hospital san isidro',
     retiredProductName,
     `s_hospital ${retiredProductName}`,
     `${retiredProductName} offline`,
@@ -10,7 +11,7 @@ function internalHospitalNames(): string[] {
   ];
 }
 
-export const DEFAULT_HOSPITAL_NAME = 'Hospital San Isidro';
+export const DEFAULT_HOSPITAL_NAME = 'Hospital General San Isidro';
 
 export function displayHospitalName(value: string | null | undefined): string {
   const normalized = value?.trim();

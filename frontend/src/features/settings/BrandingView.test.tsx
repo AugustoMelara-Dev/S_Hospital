@@ -5,18 +5,18 @@ import { apiClient, type FiscalSettings } from '@/lib/api';
 
 const fiscalSettings: FiscalSettings = {
   id: 1,
-  hospital_name: 'Hospital San Isidro',
+  hospital_name: 'Hospital General San Isidro',
   rtn: '08011999000001',
   default_tax_rate: '15.00',
   primary_color: 'teal',
-  address: 'Tocoa, Colon',
+  address: 'Tocoa, Colón, Honduras',
   slogan: 'Servicio publico',
   scanner_enabled: true,
   partial_payments_enabled: true,
   receipt_template_mode: 'institutional',
   government_line: 'Gobierno de Honduras',
   secretariat_line: 'Secretaria de Salud Publica',
-  receipt_location: 'Tocoa, Colon',
+  receipt_location: 'Tocoa, Colón, Honduras',
   receipt_footer_text: '',
 };
 
@@ -34,6 +34,25 @@ describe('BrandingView', () => {
     cleanup();
     vi.restoreAllMocks();
     localStorage.clear();
+  });
+
+  it('shows a replaceable provisional wordmark while no official logo is loaded', async () => {
+    render(<BrandingView canEdit onStatus={vi.fn()} />);
+
+    expect(await screen.findByText('Hospital General San Isidro')).toBeVisible();
+    expect(screen.getByText('Tocoa, Colón, Honduras')).toBeVisible();
+    expect(screen.getByText('Identidad provisional')).toBeVisible();
+    expect(screen.getByText(/wordmark tipográfico provisional/i)).toBeVisible();
+  });
+
+  it('uses the same stable identity box for an uploaded logo', async () => {
+    vi.mocked(apiClient.getLogo).mockResolvedValueOnce('/api/settings/logo/file?t=123');
+
+    render(<BrandingView canEdit onStatus={vi.fn()} />);
+
+    const logo = await screen.findByRole('img', { name: /hospital general san isidro/i });
+    expect(logo.parentElement).toHaveClass('institutional-logo-box');
+    expect(screen.queryByText('Identidad provisional')).not.toBeInTheDocument();
   });
 
   it('updates brand color without sending fiscal or operational settings', async () => {
