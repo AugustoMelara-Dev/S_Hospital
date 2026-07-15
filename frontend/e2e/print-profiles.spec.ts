@@ -32,7 +32,7 @@ test.describe('Print profiles - normal flow', () => {
 
     await page.goto('/settings/institutional-receipts');
 
-    await expect(page.getByRole('heading', { name: /recibos institucionales/i })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Recibos institucionales', exact: true })).toBeVisible();
     await page.getByRole('tab', { name: /papel y copias/i }).click();
 
     await expect(page.getByRole('radiogroup', { name: /tipo de papel del recibo/i })).toBeVisible();

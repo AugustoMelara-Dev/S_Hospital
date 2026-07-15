@@ -321,7 +321,7 @@ export function CashBoxView({
         />
         <section
           aria-label="Estado operativo de caja"
-          className="grid gap-3 border border-border bg-background px-4 py-3 md:grid-cols-[minmax(15rem,1.3fr)_repeat(3,minmax(7rem,1fr))] md:items-center"
+          className="cashbox-status-grid grid gap-3 border border-border bg-background px-4 py-3 md:items-center"
         >
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">

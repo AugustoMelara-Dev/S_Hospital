@@ -80,7 +80,7 @@ class ExecutivePdfExportTest extends TestCase
         $html = $service->buildHtml($report, $fiscal->toArray(), 'Admin Test', Carbon::now('America/Tegucigalpa'));
 
         $this->assertStringContainsString('Gobierno de Honduras', $html);
-        $this->assertStringContainsString('Hospital San Isidro', $html);
+        $this->assertStringContainsString('Hospital General San Isidro', $html);
         $this->assertStringContainsString('Resumen Ejecutivo', $html);
         $this->assertStringContainsString('Lectura Financiera', $html);
         $this->assertStringContainsString('Recaudacion por Metodo', $html);

@@ -65,7 +65,7 @@ describe('NewInvoiceViewLayout', () => {
     setDesktopViewport(true);
     renderLayout();
 
-    expect(screen.getByTestId('billing-account-desktop')).toHaveStyle({ width: 'min(420px, 31vw)' });
+    expect(screen.getByTestId('billing-account-desktop')).toHaveClass('billing-account-desktop');
     expect(screen.queryByRole('button', { name: /ver cuenta/i })).not.toBeInTheDocument();
   });
 

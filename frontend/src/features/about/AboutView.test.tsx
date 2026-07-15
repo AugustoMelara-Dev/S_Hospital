@@ -130,7 +130,7 @@ describe('AboutView', () => {
 
     render(<AboutView user={cashierUser} onStatus={vi.fn()} />);
 
-    expect(screen.getByText('Hospital San Isidro')).toBeInTheDocument();
+    expect(screen.getByText('Hospital General San Isidro')).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/tel[eé]fono|correo|RTN|licencia/i);
   });
 

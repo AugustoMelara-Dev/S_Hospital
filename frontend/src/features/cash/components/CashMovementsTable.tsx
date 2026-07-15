@@ -82,7 +82,7 @@ export function CashMovementsTable({ canViewInvoices = false, movements }: CashM
         size="default"
       >
         {selectedMovement ? (
-          <dl className="grid grid-cols-[8rem_1fr] gap-x-4 gap-y-3 text-sm">
+          <dl className="cash-movement-detail-grid grid gap-x-4 gap-y-3 text-sm">
             <MovementDetail label="Hora">{formatMovementTime(selectedMovement.occurred_at)}</MovementDetail>
             <MovementDetail label="Tipo">{movementLabel(selectedMovement.type)}</MovementDetail>
             <MovementDetail label="Método">{methodLabel(selectedMovement.method)}</MovementDetail>

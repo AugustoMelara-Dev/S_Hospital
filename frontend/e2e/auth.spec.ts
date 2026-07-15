@@ -38,7 +38,8 @@ test.describe('Auth - critical mocked e2e', () => {
     await page.goto('/');
 
     await expect(page).toHaveURL(/\/(?:login)?$/);
-    await expect(page.getByRole('heading', { level: 1, name: /hospital san isidro/i })).toBeVisible();
+    await expect(page.getByText('Hospital General San Isidro')).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: /iniciar sesi.n/i })).toBeVisible();
     await expect(page.locator('#login-input')).toBeVisible();
     await expect(page.locator('#password-input')).toBeVisible();
     await expect(page.getByRole('button', { name: /iniciar sesi.n|entrar/i })).toHaveCount(1);

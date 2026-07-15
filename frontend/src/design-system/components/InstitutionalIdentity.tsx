@@ -29,7 +29,7 @@ export function InstitutionalIdentity({
             className="max-h-full max-w-full object-contain p-1"
           />
         ) : (
-          <span className="font-semibold tracking-[0.12em] text-primary">HGSI</span>
+          <span className="font-semibold tracking-wider text-primary">HGSI</span>
         )}
       </div>
       <div className="min-w-0 leading-tight">

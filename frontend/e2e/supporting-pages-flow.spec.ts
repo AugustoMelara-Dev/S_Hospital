@@ -36,7 +36,7 @@ test.describe('Ayuda, soporte y acerca de - mocked e2e', () => {
 
     await page.goto('/about');
     await expect(page.getByRole('heading', { level: 1, name: /informacion del sistema/i })).toBeVisible();
-    await expect(page.getByText('Hospital San Isidro').first()).toBeVisible();
+    await expect(page.getByText('Hospital General San Isidro').first()).toBeVisible();
     await expect(page.getByText(/sistema disponible en la red del hospital/i)).toBeVisible();
     await expect(page.getByRole('heading', { name: /diagnostico administrativo/i })).toHaveCount(0);
     await expect(page.getByText(/DB_PASSWORD|APP_KEY|\.env|queue:work/i)).toHaveCount(0);

@@ -193,7 +193,7 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
 
       <div
         data-billing-workspace
-        className="grid w-full min-w-0 flex-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(360px,420px)] xl:items-start"
+        className="billing-workspace-grid grid w-full min-w-0 flex-1 gap-4 xl:items-start"
       >
         <div data-audit-panel="billing-main" className="flex min-w-0 flex-col gap-4">
           <section aria-label="Paciente" data-billing-region="patient" className="min-w-0 border border-operational-border bg-operational-surface p-3 sm:p-4">
@@ -239,8 +239,7 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
             data-audit-panel="billing-account"
             data-billing-region="ticket"
             data-billing-cart-sticky
-            className="min-w-0 self-start border border-secondary/25 bg-accent/25 p-5 xl:sticky xl:top-20"
-            style={{ width: 'min(420px, 31vw)' }}
+            className="billing-account-desktop min-w-0 self-start border border-secondary/25 bg-accent/25 p-5 xl:sticky xl:top-20"
           >
             {account}
           </aside>

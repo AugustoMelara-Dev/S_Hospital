@@ -220,7 +220,7 @@ export function PaymentModal({
       aria-describedby="payment-dialog-description"
       footer={null}
       width={720}
-      style={{ top: 24 }}
+      rootClassName="payment-modal-compact"
       destroyOnHidden
     >
       <Typography.Paragraph id="payment-dialog-description" className="mb-3">

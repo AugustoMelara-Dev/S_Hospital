@@ -6,7 +6,7 @@ export function CatalogToolbar({ categories, categoryFilter, hasActiveFilters, i
   return (
     <section className="border border-border p-3" aria-labelledby="catalog-filters-title">
       <h2 id="catalog-filters-title" className="mb-3 text-sm font-semibold">Filtros del catálogo</h2>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(16rem,2fr)_minmax(10rem,1fr)_minmax(8rem,0.8fr)_auto] lg:items-end">
+      <div className="catalog-toolbar-grid grid gap-3 lg:items-end">
         <div className="grid gap-1">
           <label className="text-xs font-medium" htmlFor={searchInputId}>Buscar servicio</label>
           <Input id={searchInputId} name="catalog_search" placeholder="Buscar por nombre, categoria o area..." value={searchValue} onChange={(event) => onSearchChange(event.target.value)} prefix={<SearchOutlined aria-hidden />} allowClear />

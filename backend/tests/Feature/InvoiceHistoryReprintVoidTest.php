@@ -221,7 +221,7 @@ class InvoiceHistoryReprintVoidTest extends TestCase
                 'reason' => 'Copia solicitada por paciente',
             ])
             ->assertOk()
-            ->assertJsonPath('data.receipt.hospital.name', 'Hospital San Isidro')
+            ->assertJsonPath('data.receipt.hospital.name', 'Hospital General San Isidro')
             ->assertJsonPath('data.receipt.hospital.rtn', '08011999123456')
             ->assertJsonPath('data.receipt.fiscal.cai', 'REAL-CAI-2026')
             ->assertJsonPath('data.receipt.fiscal.authorized_range', '000-001-01-00000001 a 000-001-01-99999999')

@@ -29,7 +29,7 @@ class DevelopmentValidationSeederTest extends TestCase
         $this->assertFalse($admin->must_change_password);
         $this->assertDatabaseHas('fiscal_settings', [
             'id' => 1,
-            'hospital_name' => 'Hospital San Isidro',
+            'hospital_name' => 'Hospital General San Isidro',
             'receipt_paper_size' => 'half_letter',
         ]);
         $this->assertTrue(FiscalSequence::query()->where('document_type', 'invoice')->where('active', true)->exists());

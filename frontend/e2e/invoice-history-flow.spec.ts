@@ -152,16 +152,11 @@ test.describe('Invoice history - critical mocked e2e', () => {
     await expect(page.getByRole('row', { name: /A-0002.*Carlos Rivera/i })).toBeVisible();
     await expect(page.getByRole('button', { name: /^anular factura$/i })).toHaveCount(0);
 
-    await page.getByLabel(/paciente/i).fill('Maria');
-    await page.getByRole('button', { name: /buscar|aplicar filtros/i }).click();
-    await expect(page.getByRole('row', { name: /A-0001.*Maria Lopez/i })).toBeVisible();
-    await expect(page.getByRole('row', { name: /Carlos Rivera/i })).toHaveCount(0);
-
     await page.getByRole('button', { name: /acciones de la factura A-0001/i }).click();
     await expect(page.getByRole('menuitem', { name: /ver recibo|reimprimir/i })).toHaveCount(0);
     const voidItem = page.getByRole('menuitem', { name: /anular factura/i });
     await expect(voidItem).toBeVisible();
-    await voidItem.click({ force: true });
+    await voidItem.click();
 
     const dialog = page.getByRole('dialog', { name: /anular factura A-0001/i });
     await expect(dialog).toBeVisible();

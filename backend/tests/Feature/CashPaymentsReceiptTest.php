@@ -1275,7 +1275,7 @@ class CashPaymentsReceiptTest extends TestCase
             ->getJson("/api/invoices/{$invoiceId}/receipt?width=half_letter")
             ->assertOk()
             ->assertJsonPath('data.width', 'half_letter')
-            ->assertJsonPath('data.hospital.name', 'Hospital San Isidro')
+            ->assertJsonPath('data.hospital.name', 'Hospital General San Isidro')
             ->assertJsonPath('data.hospital.rtn', '08011999123456')
             ->assertJsonPath('data.fiscal.cai', 'REAL-CAI-2026')
             ->assertJsonPath('data.fiscal.authorized_range', '000-001-01-00000001 a 000-001-01-99999999')

@@ -34,7 +34,7 @@ class PrepareE2eReleaseDataCommandTest extends TestCase
         ]);
         $this->assertDatabaseHas('fiscal_settings', [
             'id' => 1,
-            'hospital_name' => 'Hospital San Isidro E2E',
+            'hospital_name' => 'Hospital General San Isidro',
             'default_tax_rate' => '15.00',
             'receipt_paper_size' => 'half_letter',
         ]);
@@ -54,7 +54,7 @@ class PrepareE2eReleaseDataCommandTest extends TestCase
             ->where('user_id', $cashier->id)
             ->where('status', CashRegisterSession::STATUS_OPEN)
             ->count());
-        $this->assertSame('Hospital San Isidro E2E', FiscalSetting::query()->firstOrFail()->hospital_name);
+        $this->assertSame('Hospital General San Isidro', FiscalSetting::query()->firstOrFail()->hospital_name);
     }
 
     public function test_command_fails_without_password(): void

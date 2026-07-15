@@ -389,12 +389,18 @@ describe('App', () => {
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: /configuraci[oó]n pendiente/i })).toBeInTheDocument();
     }, { timeout: 5000 });
-    expect(screen.getByText(/datos temporales o de validaci[oó]n/i)).toBeInTheDocument();
+    expect(screen.getByText(/complete los datos autorizados/i)).toBeInTheDocument();
     await activateTab(/^hospital$/i);
     expect(await screen.findByRole('heading', { name: /datos del hospital/i })).toBeInTheDocument();
     expect(screen.queryByDisplayValue(placeholderHospitalName)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /guardar datos del hospital/i })).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/nombre del hospital/i), {
+      target: { value: 'Hospital Regional' },
+    });
     expect(screen.getByRole('button', { name: /guardar datos del hospital/i })).toBeEnabled();
     await activateTab(/numeraci[oó]n/i);
+    expect(screen.queryByRole('button', { name: /guardar numeraci[oó]n/i })).not.toBeInTheDocument();
+    fireEvent.change(await screen.findByLabelText(/prefijo/i), { target: { value: 'A' } });
     expect(await screen.findByRole('button', { name: /guardar numeraci[oó]n/i })).toBeEnabled();
     expect(screen.queryByDisplayValue(placeholderCai)).not.toBeInTheDocument();
   });

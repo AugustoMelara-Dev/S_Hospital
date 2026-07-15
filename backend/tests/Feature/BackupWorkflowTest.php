@@ -247,7 +247,7 @@ class BackupWorkflowTest extends TestCase
         $encrypted = Storage::disk('local')->get((string) $backup->path);
         $this->assertStringNotContainsString('CREATE TABLE', $encrypted);
         $this->assertStringNotContainsString('INSERT INTO', $encrypted);
-        $encryptedLines = explode(PHP_EOL, (string) $encrypted);
+        $encryptedLines = preg_split('/\R/u', (string) $encrypted) ?: [];
         $this->assertSame(EncryptBackupFileAction::CHUNK_MARKER, $encryptedLines[0] ?? null);
         try {
             Crypt::decryptString($encryptedLines[1] ?? '');
