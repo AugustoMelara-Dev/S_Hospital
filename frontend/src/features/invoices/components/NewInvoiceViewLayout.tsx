@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
-import { type RefObject, useRef } from 'react';
+import { type RefObject, useRef, useState } from 'react';
 import { ClearOutlined as Eraser, HistoryOutlined as History } from '@ant-design/icons';
-import { Alert, Button, Modal, Tag } from 'antd';
+import { Alert, Button, Modal } from 'antd';
 import { ReceiptPreview } from '../../receipts/ReceiptPreview';
 import { PatientStep } from './PatientStep';
 import { ServiceSearch } from './ServiceSearch';
@@ -11,7 +11,9 @@ import { PaymentModal } from './PaymentModal';
 import { InvoiceSuccess } from './InvoiceSuccess';
 import type { Payment, Service } from '../../../lib/api';
 import type { NewInvoiceState } from '../state/types';
-import { PageHeader } from '@/design-system/components/PageHeader';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { BillingAccountDrawer } from './BillingAccountDrawer';
+import { BillingBottomBar } from './BillingBottomBar';
 
 export type NewInvoiceLayoutProps = {
   state: NewInvoiceState;
@@ -60,6 +62,8 @@ export type NewInvoiceLayoutProps = {
 export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
   const navigate = useNavigate();
   const confirmLockRef = useRef(false);
+  const isDesktop = useMediaQuery('(min-width: 1280px)');
+  const [accountOpen, setAccountOpen] = useState(false);
   const {
     state,
     paymentResult,
@@ -102,8 +106,6 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
     searchInputRef,
     scannerInputRef,
   } = props;
-  const cashIsOpen = Boolean(state.loadedCashSession);
-  const cashSessionLabel = state.loadedCashSession ? `Caja #${state.loadedCashSession.id}` : 'Caja cerrada';
   const postedPayments = state.issuedInvoice?.payments?.filter((payment) => payment.status === 'posted') ?? [];
   const latestPayment = paymentResult ?? postedPayments[postedPayments.length - 1];
   const requestConfirmation = () => {
@@ -114,16 +116,31 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
       confirmLockRef.current = false;
     }, 300);
   };
+  const closeAccount = () => {
+    setAccountOpen(false);
+    window.setTimeout(() => {
+      document.querySelector<HTMLElement>('[data-billing-account-trigger]')?.focus();
+    }, 0);
+  };
+  const account = (
+    <InvoiceCart
+      items={state.cartItems}
+      preview={preview}
+      onUpdateQuantity={onUpdateQuantity}
+      onUpdateDialysisPrescription={onUpdateDialysisPrescription}
+      onRemoveItem={onRemoveItem}
+      onConfirm={requestConfirmation}
+      disabled={state.submitting || !canEmit}
+      disabledReasons={emitBlockReasons}
+      actionLabel={canCreatePayments && canViewReceipts ? 'Emitir y cobrar' : 'Emitir factura'}
+      emptyActionLabel="Agregue servicios"
+      submitting={state.submitting}
+      canMarkDialysisPrescription={props.canMarkDialysisPrescription}
+    />
+  );
   return (
-    <section id="nueva-factura" className="flex h-full min-w-0 flex-col gap-5 pb-24 xl:pb-8">
-      <PageHeader
-        eyebrow="Operaciones financieras"
-        title="Nueva factura"
-        actions={(
-          <>
-          <Tag color={cashIsOpen ? 'success' : 'error'} className="min-h-11 px-3 font-mono text-sm tabular-nums sm:min-h-9 flex items-center border-0 m-0">
-            {cashIsOpen ? `${cashSessionLabel} · Abierta` : cashSessionLabel}
-          </Tag>
+    <section id="nueva-factura" className={`flex h-full min-w-0 flex-col gap-4 ${isDesktop ? 'pb-8' : 'pb-28'}`}>
+      <div className="flex min-h-9 flex-wrap items-center justify-end gap-2" aria-label="Acciones de facturación">
           <Button type="default" icon={<History aria-hidden="true" />} onClick={() => navigate('/invoices')}>
             Historial
           </Button>
@@ -133,9 +150,7 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
               Limpiar borrador
             </Button>
           ) : null}
-          </>
-        )}
-      />
+      </div>
 
       <div role="status" aria-live="polite" aria-atomic="false" className="flex flex-col gap-3">
         {!state.loadedCashSession && !state.pointOfSaleLoadError && (
@@ -173,9 +188,9 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
 
       <div
         data-billing-workspace
-        className="grid w-full min-w-0 flex-1 gap-4 xl:grid-cols-5 xl:items-start"
+        className="grid w-full min-w-0 flex-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(360px,420px)] xl:items-start"
       >
-        <div className="flex min-w-0 flex-col gap-4 xl:col-span-3">
+        <div data-audit-panel="billing-main" className="flex min-w-0 flex-col gap-4">
           <section aria-label="Paciente" data-billing-region="patient" className="min-w-0 border border-operational-border bg-operational-surface p-5 sm:p-6">
             <PatientStep
               ref={patientInputRef}
@@ -212,44 +227,26 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
           </section>
         </div>
 
-        <aside
-          aria-label="Cuenta actual"
-          data-billing-region="ticket"
-          data-billing-cart-sticky
-          className="min-w-0 border border-secondary/25 bg-accent/25 p-5 xl:col-span-2 xl:sticky xl:top-20 xl:max-h-160 xl:overflow-y-auto"
-        >
-          <InvoiceCart
-            items={state.cartItems}
-            preview={preview}
-            onUpdateQuantity={onUpdateQuantity}
-            onUpdateDialysisPrescription={onUpdateDialysisPrescription}
-            onRemoveItem={onRemoveItem}
-            onConfirm={requestConfirmation}
-            disabled={state.submitting || !canEmit}
-            disabledReasons={emitBlockReasons}
-            actionLabel={canCreatePayments && canViewReceipts ? 'Emitir y cobrar' : 'Emitir factura'}
-            emptyActionLabel="Agregue servicios"
-            submitting={state.submitting}
-            canMarkDialysisPrescription={props.canMarkDialysisPrescription}
-          />
-        </aside>
+        {isDesktop ? (
+          <aside
+            aria-label="Cuenta actual"
+            data-testid="billing-account-desktop"
+            data-audit-panel="billing-account"
+            data-billing-region="ticket"
+            data-billing-cart-sticky
+            className="min-w-0 self-start border border-secondary/25 bg-accent/25 p-5 xl:sticky xl:top-20"
+            style={{ width: 'min(420px, 31vw)' }}
+          >
+            {account}
+          </aside>
+        ) : null}
       </div>
 
-      {state.cartItems.length > 0 ? (
-        <div data-billing-mobile-summary className="fixed inset-x-0 bottom-16 z-30 flex items-center gap-3 border-t border-operational-border bg-operational-surface p-3 xl:hidden">
-          <div className="min-w-0 flex-1">
-            <span className="block text-xs font-medium uppercase tracking-wide text-muted-foreground">Total estimado</span>
-            <strong className="block font-mono text-lg tabular-nums text-foreground">L {preview.total}</strong>
-          </div>
-          <Button
-            type="primary"
-            disabled={state.submitting || !canEmit}
-            aria-label={`Confirmar cuenta móvil, total L ${preview.total}`}
-            onClick={requestConfirmation}
-          >
-            {state.submitting ? 'Emitiendo...' : canCreatePayments && canViewReceipts ? 'Emitir y cobrar' : 'Emitir factura'}
-          </Button>
-        </div>
+      {!isDesktop ? (
+        <>
+          <BillingBottomBar itemCount={state.cartItems.length} total={preview.total} onOpen={() => setAccountOpen(true)} />
+          <BillingAccountDrawer open={accountOpen} onClose={closeAccount}>{account}</BillingAccountDrawer>
+        </>
       ) : null}
 
       <InvoiceConfirmation

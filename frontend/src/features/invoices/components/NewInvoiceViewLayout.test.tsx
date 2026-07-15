@@ -1,7 +1,8 @@
 import { createRef } from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NewInvoiceViewLayout } from './NewInvoiceViewLayout';
 import { getInitialNewInvoiceState } from '../state/types';
 import type { Service } from '../../../lib/api';
@@ -57,6 +58,37 @@ function renderLayout(overrides: Partial<React.ComponentProps<typeof NewInvoiceV
 }
 
 describe('NewInvoiceViewLayout', () => {
+  beforeEach(() => setDesktopViewport(true));
+  afterEach(() => vi.restoreAllMocks());
+
+  it('uses a bounded account aside on desktop', () => {
+    setDesktopViewport(true);
+    renderLayout();
+
+    expect(screen.getByTestId('billing-account-desktop')).toHaveStyle({ width: 'min(420px, 31vw)' });
+    expect(screen.queryByRole('button', { name: /ver cuenta/i })).not.toBeInTheDocument();
+  });
+
+  it('uses a bottom bar and account drawer below desktop', async () => {
+    setDesktopViewport(false);
+    const user = userEvent.setup();
+    renderLayout({
+      state: {
+        ...getInitialNewInvoiceState(null),
+        loadingServices: false,
+        cartItems: [{ service: serviceFixture(), quantity: '1.00', dialysisPrescription: false }],
+      },
+      preview: { subtotal: '120.00', tax: '18.00', total: '138.00' },
+    });
+
+    const trigger = screen.getByRole('button', { name: /ver cuenta, 1 servicio, total l 138\.00/i });
+    await user.click(trigger);
+    expect(screen.getByRole('dialog', { name: /cuenta actual/i })).toBeVisible();
+
+    await user.click(screen.getByRole('button', { name: /cerrar cuenta/i }));
+    await waitFor(() => expect(trigger).toHaveFocus());
+  });
+
   it('expone paciente, servicios y cuenta simultaneamente como estacion POS', () => {
     renderLayout();
 
@@ -143,9 +175,11 @@ describe('NewInvoiceViewLayout', () => {
     expect(onConfirm).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps a compact mobile total and action available outside the cart scroll position', () => {
+  it('keeps mobile account access available outside the cart scroll position', async () => {
+    setDesktopViewport(false);
     const onConfirm = vi.fn();
-    const { container } = renderLayout({
+    const user = userEvent.setup();
+    renderLayout({
       state: {
         ...getInitialNewInvoiceState(null),
         loadingServices: false,
@@ -157,16 +191,18 @@ describe('NewInvoiceViewLayout', () => {
       onConfirm,
     });
 
-    const mobileSummary = container.querySelector('[data-billing-mobile-summary]');
-    expect(mobileSummary).toHaveTextContent('L 138.00');
-    fireEvent.click(screen.getByRole('button', { name: /confirmar cuenta móvil/i }));
+    const trigger = screen.getByRole('button', { name: /ver cuenta, 1 servicio, total l 138\.00/i });
+    expect(trigger).toBeVisible();
+    await user.click(trigger);
+    await user.click(screen.getByRole('button', { name: /emitir y cobrar/i }));
     expect(onConfirm).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps the mobile total summary hidden while the cart is empty', () => {
+  it('keeps the mobile account trigger available while the cart is empty', () => {
+    setDesktopViewport(false);
     renderLayout();
 
-    expect(screen.queryByText(/^Total estimado$/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /ver cuenta, 0 servicios, total l 0\.00/i })).toBeVisible();
   });
 });
 
@@ -191,4 +227,17 @@ function serviceFixture(overrides: Partial<Service> = {}): Service {
     area: { id: 1, name: 'Laboratorio', slug: 'laboratorio', active: true },
     ...overrides,
   };
+}
+
+function setDesktopViewport(matches: boolean) {
+  vi.spyOn(window, 'matchMedia').mockImplementation((query) => ({
+    matches: query === '(min-width: 1280px)' ? matches : false,
+    media: query,
+    onchange: null,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  }));
 }

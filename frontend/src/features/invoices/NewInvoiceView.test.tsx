@@ -135,6 +135,16 @@ function addErythropoietinAndOpenAccount(options: { openAccount?: boolean } = {}
 describe('NewInvoiceView critical flows', () => {
   beforeEach(() => {
     mockFetchForOpenCashWithService();
+    vi.spyOn(window, 'matchMedia').mockImplementation((query) => ({
+      matches: query === '(min-width: 1280px)',
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
   });
 
   afterEach(() => {
