@@ -13,7 +13,7 @@ const axe = configureAxe({
 vi.mock('../../hooks/useFiscalSettings', () => ({
   usePublicBranding: () => ({
     data: {
-      hospital_name: 'Hospital San Isidro',
+      hospital_name: 'Hospital General San Isidro',
       rtn: '08011999123456',
     },
   }),

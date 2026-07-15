@@ -32,7 +32,7 @@ describe('LoginView', () => {
   it('renders local institutional reassurance without changing the login controls', () => {
     render(<LoginView {...defaultProps} />, { wrapper: Wrapper });
 
-    expect(screen.getAllByText(/sistema hospitalario local/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/identidad provisional/i)).toBeVisible();
     expect(screen.getByText(/conexión local/i)).toBeInTheDocument();
     expect(document.body).not.toHaveTextContent(/clientes LAN|sistema hospitalario LAN|offline\/LAN/i);
     expect(screen.getByLabelText(/usuario o correo/i)).toHaveAttribute('autocomplete', 'username');
@@ -84,6 +84,27 @@ describe('LoginView', () => {
 
     expect(screen.getByRole('status')).toHaveTextContent(/conectando con el servidor local/i);
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('uses neutral feedback and blocks duplicate submit while validating credentials', () => {
+    const onSubmit = vi.fn();
+    render(
+      <LoginView
+        {...defaultProps}
+        submitting
+        status="Validando credenciales"
+        onSubmit={onSubmit}
+      />,
+      { wrapper: Wrapper },
+    );
+
+    const button = screen.getByRole('button', { name: /validando credenciales/i });
+    expect(button).toBeDisabled();
+    expect(screen.getByRole('status')).toHaveTextContent('Validando credenciales');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+
+    fireEvent.submit(button.closest('form')!);
+    expect(onSubmit).not.toHaveBeenCalled();
   });
 
   it('announces an expired session as a warning with a stable recovery action', () => {
@@ -160,6 +181,6 @@ describe('LoginView', () => {
   it('expone una sola identidad hospitalaria por composición', () => {
     render(<LoginView {...defaultProps} />, { wrapper: Wrapper });
 
-    expect(screen.getAllByText('Hospital San Isidro')).toHaveLength(1);
+    expect(screen.getAllByText('Hospital General San Isidro')).toHaveLength(1);
   });
 });

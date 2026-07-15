@@ -1,6 +1,5 @@
 import { type FormEvent, type KeyboardEvent, useEffect, useState } from 'react';
 import {
-  SafetyCertificateOutlined,
   EyeInvisibleOutlined,
   EyeOutlined,
   LockOutlined,
@@ -9,6 +8,7 @@ import {
 import { Input, Button, Alert } from 'antd';
 import { usePublicBranding } from '../../hooks/useFiscalSettings';
 import { displayHospitalName } from '../../lib/hospital-name';
+import { InstitutionalIdentity } from '../../design-system/components/InstitutionalIdentity';
 
 type LoginViewProps = {
   login: string;
@@ -36,7 +36,8 @@ export function LoginView({
   const [capsLockActive, setCapsLockActive] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const hospitalName = displayHospitalName(fiscal?.hospital_name);
-  const normalizedStatus = status.toLocaleLowerCase('es-HN');
+  const displayStatus = submitting ? 'Validando credenciales' : status;
+  const normalizedStatus = displayStatus.toLocaleLowerCase('es-HN');
   const isLockoutStatus =
     normalizedStatus.includes('demasiados intentos') ||
     normalizedStatus.includes('bloqueado temporalmente') ||
@@ -70,14 +71,13 @@ export function LoginView({
       normalizedStatus.includes('error') ||
       normalizedStatus.includes('no se pudo') ||
       normalizedStatus.includes('incorrecta') ||
-      normalizedStatus.includes('invál') ||
-      normalizedStatus.includes('credenciales')
+      normalizedStatus.includes('invál')
     ? 'error'
     : isSessionStatus ? 'warning' : 'info';
   const statusRole = statusType === 'error' || statusType === 'warning' ? 'alert' : 'status';
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    if (countdown > 0) {
+    if (submitting || countdown > 0) {
       event.preventDefault();
       return;
     }
@@ -98,21 +98,12 @@ export function LoginView({
         <section className="flex min-w-0 flex-1 items-center px-5 py-8 sm:px-10">
           <div className="mx-auto w-full max-w-md">
             <div className="flex items-center gap-3 pb-6">
-              {logoUrl ? (
-                <img
-                  src={logoUrl}
-                  alt="Logo institucional"
-                  className="size-11 shrink-0 border border-border bg-receipt-paper object-contain p-1"
-                />
-              ) : (
-                <span className="flex size-11 shrink-0 items-center justify-center bg-primary text-primary-foreground">
-                  <SafetyCertificateOutlined aria-hidden="true" className="text-xl" />
-                </span>
-              )}
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold">{hospitalName}</p>
-                <p className="text-xs text-muted-foreground">Sistema hospitalario local</p>
-              </div>
+              <InstitutionalIdentity
+                hospitalName={hospitalName}
+                location="Tocoa, Colón, Honduras"
+                logoUrl={logoUrl}
+                compact
+              />
               <span className="ml-auto hidden items-center gap-2 text-xs font-medium text-success sm:flex">
                 <span aria-hidden="true" className="size-2 bg-success" />
                 Red local segura
@@ -188,15 +179,15 @@ export function LoginView({
                 className="mt-1 h-12 w-full font-semibold"
                 size="large"
               >
-                {submitting ? 'Validando acceso...' : countdown > 0 ? `Bloqueado (${countdown}s)` : 'Iniciar sesión'}
+                {submitting ? 'Validando credenciales' : countdown > 0 ? `Bloqueado (${countdown}s)` : 'Iniciar sesión'}
               </Button>
             </form>
 
-            {status ? (
-              <div className="mt-5 text-sm">
-                <Alert description={status} type={statusType} showIcon role={statusRole} />
-              </div>
-            ) : null}
+            <div className="mt-5 min-h-14 text-sm" aria-live="polite">
+              {displayStatus ? (
+                <Alert description={displayStatus} type={statusType} showIcon role={statusRole} />
+              ) : null}
+            </div>
 
             <p className="mt-6 border-t border-border pt-5 text-xs leading-5 text-muted-foreground">
               Conexión local · No comparta usuarios entre turnos.

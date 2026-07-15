@@ -333,6 +333,7 @@ describe('DashboardView', () => {
     renderDashboard(makeBaseProps({ cashSession: makeCashSession() }));
 
     expect(await screen.findByRole('heading', { level: 2, name: 'No se pudo verificar la configuración' })).toBeVisible();
+    expect(screen.getByText('L 125.00')).toBeVisible();
     expect(document.body.textContent).not.toMatch(/SQLSTATE setup-status/i);
     expect(screen.queryByRole('link', { name: /nueva factura|abrir caja/i })).not.toBeInTheDocument();
 
