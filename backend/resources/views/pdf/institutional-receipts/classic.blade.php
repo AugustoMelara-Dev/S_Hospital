@@ -26,7 +26,7 @@
             width: 100%;
         }
 
-        thead {
+        .items-table thead {
             display: table-header-group;
         }
 
@@ -34,8 +34,9 @@
             display: table-footer-group;
         }
 
-        tr {
+        .items-table tbody tr {
             page-break-inside: avoid;
+            break-inside: avoid;
         }
 
         .receipt-page {
@@ -258,12 +259,14 @@
         }
 
         .primary-paper .totals-table {
-            margin-top: 4px;
+            font-size: 0.9em;
+            line-height: 1.05;
+            margin-top: 3px;
         }
 
         .primary-paper .totals-table td {
-            padding-bottom: 1px;
-            padding-top: 1px;
+            padding-bottom: 0;
+            padding-top: 0;
         }
 
         .thermal .totals-table {
@@ -288,8 +291,10 @@
         }
 
         .primary-paper .amount-words {
-            margin-top: 4px;
-            padding: 4px;
+            font-size: 0.9em;
+            line-height: 1.1;
+            margin-top: 3px;
+            padding: 3px;
         }
 
         .signature-grid {
@@ -300,7 +305,7 @@
         }
 
         .primary-paper .signature-grid {
-            margin-top: 6px;
+            margin-top: 4px;
         }
 
         .signature-grid td {
@@ -324,7 +329,7 @@
         }
 
         .primary-paper .blank-area {
-            height: 18px;
+            height: 14px;
             margin-bottom: 2px;
         }
 
@@ -345,6 +350,60 @@
         .primary-paper .copy-legend {
             margin-top: 5px;
             padding-top: 3px;
+        }
+
+        .custom-small {
+            font-size: {{ 8.2 * $profile['font_scale'] }}px;
+            line-height: 1.06;
+        }
+
+        .custom-small .document-header {
+            padding-bottom: 2px;
+        }
+
+        .custom-small .hospital {
+            font-size: 1.12em;
+        }
+
+        .custom-small .document-band {
+            margin: 2px 0;
+            padding-bottom: 1px;
+        }
+
+        .custom-small .copy-label {
+            padding: 1px 4px;
+        }
+
+        .custom-small .section-title {
+            margin: 2px 0 1px;
+            padding-bottom: 1px;
+        }
+
+        .custom-small .items-table th,
+        .custom-small .items-table td {
+            padding-bottom: 1px;
+            padding-top: 1px;
+        }
+
+        .custom-small .totals-table,
+        .custom-small .amount-words,
+        .custom-small .signature-grid,
+        .custom-small .copy-legend {
+            margin-top: 2px;
+        }
+
+        .custom-small .amount-words {
+            padding: 2px;
+        }
+
+        .custom-small .blank-area {
+            height: 7px;
+            margin-bottom: 1px;
+        }
+
+        .custom-small .signature-line,
+        .custom-small .copy-legend {
+            padding-top: 1px;
         }
     </style>
 </head>
@@ -378,13 +437,14 @@
     @php
         $isThermal = in_array($profile['paper_kind'] ?? '', ['thermal_80mm', 'thermal_58mm'], true);
         $paperClass = $isThermal ? str_replace('_', '-', (string) $profile['paper_kind']) : 'primary-paper';
+        $isCustomSmall = ($profile['code'] ?? '') === \App\Models\ReceiptPrintProfile::CODE_CUSTOM_SMALL;
         $invoice = $page['invoice'];
         $payment = $page['payment'];
         $items = $page['items'];
         $taxLabel = trim(($invoice['tax_label'] ?? 'ISV').' '.($invoice['tax_rate_snapshot'] ? $invoice['tax_rate_snapshot'].'%' : ''));
         $cashier = $payment['selected_payment']['cashier_name'] ?? $payment['issued_by']['name'] ?? $payment['cash_context']['cashier_name'] ?? null;
     @endphp
-    <section class="receipt-page {{ $isThermal ? 'thermal '.$paperClass : $paperClass }}">
+    <section class="receipt-page {{ $isThermal ? 'thermal '.$paperClass : $paperClass }}{{ $isCustomSmall ? ' custom-small' : '' }}">
         @if ($page['draft'])
             <div class="draft-watermark">{{ $page['watermark'] }}</div>
         @endif
@@ -442,6 +502,21 @@
             @if (! empty($page['series']['range_authorization']))
                 <tr>
                     <td colspan="4"><span class="label">Rango autorizado</span><br>{{ $page['series']['range_authorization'] }}</td>
+                </tr>
+            @endif
+            @if (! empty($invoice['fiscal_cai']) || ! empty($invoice['fiscal_range_from']) || ! empty($invoice['fiscal_range_to']))
+                <tr>
+                    <td colspan="2">
+                        <span class="label">CAI fiscal</span><br>{{ $invoice['fiscal_cai'] ?: 'No registrado' }}
+                    </td>
+                    <td colspan="2">
+                        <span class="label">Rango fiscal autorizado</span><br>
+                        @if (! empty($invoice['fiscal_range_from']) && ! empty($invoice['fiscal_range_to']))
+                            {{ $invoice['fiscal_range_from'] }} a {{ $invoice['fiscal_range_to'] }}
+                        @else
+                            {{ $invoice['fiscal_range_from'] ?: ($invoice['fiscal_range_to'] ?: 'No registrado') }}
+                        @endif
+                    </td>
                 </tr>
             @endif
         </table>

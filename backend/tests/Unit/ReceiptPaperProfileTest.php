@@ -4,6 +4,7 @@ namespace Tests\Unit;
 
 use App\Support\PaperSize;
 use InvalidArgumentException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class ReceiptPaperProfileTest extends TestCase
@@ -19,6 +20,31 @@ class ReceiptPaperProfileTest extends TestCase
         $this->assertSame([0, 0], array_slice($paper, 0, 2));
         $this->assertEqualsWithDelta(510.2362204724, $paper[2], 0.000001);
         $this->assertEqualsWithDelta(269.2913385827, $paper[3], 0.000001);
+    }
+
+    #[DataProvider('invalidCustomDimensions')]
+    public function test_custom_mm_profile_rejects_dimensions_outside_the_supported_contract(
+        string $width,
+        string $height,
+    ): void {
+        $this->expectException(InvalidArgumentException::class);
+
+        PaperSize::fromProfileSnapshot([
+            'paper_kind' => 'custom_mm',
+            'width_mm' => $width,
+            'height_mm' => $height,
+        ]);
+    }
+
+    /**
+     * @return iterable<string, array{string, string}>
+     */
+    public static function invalidCustomDimensions(): iterable
+    {
+        yield 'width below 80mm' => ['79.99', '95.00'];
+        yield 'width above 300mm' => ['300.01', '95.00'];
+        yield 'height below 50mm' => ['180.00', '49.99'];
+        yield 'height above 220mm' => ['180.00', '220.01'];
     }
 
     public function test_standard_profiles_use_exact_pdf_points(): void

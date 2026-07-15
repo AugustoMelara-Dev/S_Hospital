@@ -16,7 +16,7 @@ import {
 
 describe('institutional receipt paper policy', () => {
   it('defines each API-backed institutional paper exactly once', () => {
-    const expected: InstitutionalPaper[] = ['letter', 'half_letter', 'a5'];
+    const expected: InstitutionalPaper[] = ['letter', 'half_letter', 'a5', 'custom'];
 
     expect(PAPER_CHOICES.map(({ value }) => value)).toEqual(expected);
     expect(new Set(PAPER_CHOICES.map(({ value }) => value)).size).toBe(expected.length);
@@ -66,13 +66,16 @@ describe('institutional receipt paper policy', () => {
     expect(receiptPaperPresentation('a5').printClass).toBe('receipt-a5');
     expect(receiptPaperPresentation('80mm').printClass).toBe('receipt-80mm');
     expect(receiptPaperPresentation('58mm').printClass).toBe('receipt-58mm');
+    expect(receiptPaperPresentation('custom').printClass).toBe('receipt-custom');
   });
 
   it('maps only institutional paper to backend default profile codes', () => {
     expect(paperProfileCode('letter')).toBe('carta_horizontal');
     expect(paperProfileCode('half_letter')).toBe('media_carta_horizontal');
     expect(paperProfileCode('a5')).toBe('a5_horizontal');
+    expect(paperProfileCode('custom')).toBe('recibo_pequeno_personalizado');
     expect(institutionalPaperFromProfile({ code: 'carta_horizontal' })).toBe('letter');
+    expect(institutionalPaperFromProfile({ code: 'recibo_pequeno_personalizado' })).toBe('custom');
     expect(institutionalPaperFromProfile({ code: 'thermal_80mm' })).toBe('half_letter');
     expect(institutionalPaperFromProfile(null)).toBe('half_letter');
   });

@@ -170,6 +170,28 @@ describe('ReceiptPreview', () => {
     expect(screen.queryByRole('columnheader', { name: /ISV/i })).not.toBeInTheDocument();
   });
 
+  it('preserves a valid custom paper contract instead of falling back to half letter', () => {
+    const receipt = receiptFixture();
+    receipt.width = 'custom';
+    receipt.institutional = {
+      ...receipt.institutional!,
+      paper_width_mm: '180.00',
+      paper_height_mm: '100.00',
+    };
+
+    render(<ReceiptPreview receipt={receipt} onPrint={vi.fn()} />);
+
+    const printRoot = document.querySelector('[data-receipt-print-root]');
+    expect(printRoot).toHaveClass('receipt-custom');
+    expect(printRoot).toHaveStyle({
+      '--receipt-custom-width': '180mm',
+      '--receipt-custom-height': '100mm',
+    });
+    expect(document.querySelector('[data-receipt-custom-page]')).toHaveTextContent(
+      '@page receipt-custom { size: 180mm 100mm; margin: 6mm; }',
+    );
+  });
+
   it('renders malformed historical receipt amounts as safe financial values', () => {
     const receipt = receiptFixture();
     receipt.invoice.subtotal = 'monto-danado';

@@ -248,7 +248,7 @@ export type Payment = {
   paid_at: string;
 };
 
-export type InstitutionalReceiptPaperSize = 'letter' | 'half_letter' | 'a5' | '80mm' | '58mm';
+export type InstitutionalReceiptPaperSize = 'letter' | 'half_letter' | 'a5' | 'custom' | '80mm' | '58mm';
 export type ReceiptPaperSize = InstitutionalReceiptPaperSize;
 
 export type ReceiptData = {
@@ -269,6 +269,12 @@ export type ReceiptData = {
     footer_text: string | null;
     copy_label: string | null;
     signature_label: string | null;
+    paper_width_mm?: string | null;
+    paper_height_mm?: string | null;
+    margin_top_mm?: string | null;
+    margin_right_mm?: string | null;
+    margin_bottom_mm?: string | null;
+    margin_left_mm?: string | null;
   };
   fiscal: {
     cai: string | null;
@@ -334,6 +340,8 @@ export type InstitutionalReceipt = {
   print_profile_code: ReceiptPrintProfile['code'];
   copy_mode: ReceiptPrintProfile['copies_mode'];
   reprint_count: number;
+  print_events_count?: number;
+  has_print_events?: boolean;
   voided_by: number | null;
   voided_at: string | null;
   void_reason: string | null;

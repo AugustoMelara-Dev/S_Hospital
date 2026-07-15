@@ -53,6 +53,18 @@ class InstitutionalReceiptPdfService
         return $this->pdfForReceipt($receipt);
     }
 
+    public function htmlForAuthorizedReceipt(
+        InstitutionalReceipt $receipt,
+        User $user,
+        InvoiceAccess $invoiceAccess,
+    ): string {
+        $receipt = $this->receiptForPdf($receipt);
+
+        $this->authorizeLockedReceiptPdfView($receipt, $user, $invoiceAccess);
+
+        return $this->htmlForReceipt($receipt);
+    }
+
     /**
      * @param  array<string, mixed>  $data
      */

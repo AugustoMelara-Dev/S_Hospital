@@ -72,6 +72,11 @@ export function ReceiptSettingsPreview({
   const showSealSpace = profile?.show_physical_seal_space !== false;
   const paperChoice = paperChoiceFor(paper);
   const presentation = paperPresentation(paper);
+  const customWidth = positiveDimension(profile?.width_mm);
+  const customHeight = positiveDimension(profile?.height_mm);
+  const previewAspectRatio = paper === 'custom' && customWidth && customHeight
+    ? `${customWidth} / ${customHeight}`
+    : paperChoice.aspectRatio;
 
   return (
     <PrintPreviewFrame
@@ -88,7 +93,7 @@ export function ReceiptSettingsPreview({
               'receipt-paper-preview mx-auto w-full max-w-3xl border border-receipt-border-soft bg-receipt-paper p-0 text-receipt-ink',
               presentation.previewClass,
             )}
-            aspectRatio={paperChoice.aspectRatio}
+            aspectRatio={previewAspectRatio}
             label={`Vista previa de recibo ${paperChoice.label}`}
             paper={paper}
           >
@@ -182,6 +187,11 @@ export function ReceiptSettingsPreview({
       </div>
     </PrintPreviewFrame>
   );
+}
+
+function positiveDimension(value: string | undefined): number | null {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
 function ReceiptDocumentPreview({

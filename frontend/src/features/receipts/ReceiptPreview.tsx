@@ -20,6 +20,9 @@ export function ReceiptPreview({ onNewInvoice, onPrint, receipt }: ReceiptPrevie
   const receiptWidth = receiptPrintPaperSize(receipt.width);
   const receiptPresentation = receiptPaperPresentation(receiptWidth);
   const isThermal = receiptWidth === '80mm' || receiptWidth === '58mm';
+  const customPaper = receiptWidth === 'custom'
+    ? customReceiptPaper(receipt.institutional)
+    : undefined;
 
   async function handlePrintClick() {
     setPrintError('');
@@ -53,6 +56,9 @@ export function ReceiptPreview({ onNewInvoice, onPrint, receipt }: ReceiptPrevie
 
   return (
     <div className="receipt-preview-panel" aria-label="Vista previa del recibo">
+      {customPaper ? (
+        <style data-receipt-custom-page>{customPaper.pageRule}</style>
+      ) : null}
       <div className="receipt-preview-controls no-print border border-border bg-background p-3" role="group" aria-label="Acciones del recibo">
         <Button htmlType="button" type="primary" className="min-h-11" onClick={handlePrintClick}>
           Imprimir
@@ -74,6 +80,7 @@ export function ReceiptPreview({ onNewInvoice, onPrint, receipt }: ReceiptPrevie
         <div
           ref={receiptRef}
           className={`institutional-receipt ${receiptPresentation.printClass}`}
+          style={customPaper?.style}
           aria-label="Recibo institucional"
           data-receipt-print-root
         >
@@ -249,6 +256,27 @@ function ItemName({ item }: { item: ReceiptData['items'][number] }) {
 
 function ItemPrice({ item }: { item: ReceiptData['items'][number] }) {
   return <strong className="item-price">{moneyLabel(item.line_total)}</strong>;
+}
+
+function customReceiptPaper(
+  institutional: ReceiptData['institutional'],
+): { pageRule: string; style: React.CSSProperties } | undefined {
+  const width = positiveMillimetres(institutional?.paper_width_mm);
+  const height = positiveMillimetres(institutional?.paper_height_mm);
+  if (width === null || height === null) return undefined;
+
+  return {
+    pageRule: `@page receipt-custom { size: ${width}mm ${height}mm; margin: 6mm; }`,
+    style: {
+      '--receipt-custom-width': `${width}mm`,
+      '--receipt-custom-height': `${height}mm`,
+    } as React.CSSProperties,
+  };
+}
+
+function positiveMillimetres(value: string | null | undefined): number | null {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
 function ReceiptTotalRow({ label, value, strong }: { label: string; value: string; strong?: boolean }) {

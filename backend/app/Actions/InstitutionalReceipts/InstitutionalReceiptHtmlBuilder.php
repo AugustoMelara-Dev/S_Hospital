@@ -73,6 +73,9 @@ class InstitutionalReceiptHtmlBuilder
                     'status' => 'issued',
                     'invoice' => [
                         'invoice_number' => 'PRUEBA-SIN-FACTURA',
+                        'fiscal_cai' => null,
+                        'fiscal_range_from' => null,
+                        'fiscal_range_to' => null,
                         'patient_name' => (string) ($data['payer_name'] ?? 'Paciente de prueba'),
                         'issued_at' => now()->toIso8601String(),
                         'tax_label' => 'ISV',
@@ -182,6 +185,7 @@ class InstitutionalReceiptHtmlBuilder
     private function normalizedProfile(array $snapshot): array
     {
         return [
+            'code' => (string) ($snapshot['code'] ?? ''),
             'font_family' => $this->safeFontFamily($snapshot['font_family'] ?? null),
             'font_scale' => (float) ($snapshot['font_scale'] ?? 1),
             'margin_top_mm' => (float) ($snapshot['margin_top_mm'] ?? 6),
@@ -200,6 +204,7 @@ class InstitutionalReceiptHtmlBuilder
     private function profileFromModel(ReceiptPrintProfile $profile): array
     {
         return $this->normalizedProfile([
+            'code' => $profile->code,
             'font_family' => $profile->font_family,
             'font_scale' => $profile->font_scale,
             'margin_top_mm' => $profile->margin_top_mm,
@@ -220,6 +225,9 @@ class InstitutionalReceiptHtmlBuilder
     {
         return [
             'invoice_number' => $snapshot['invoice_number'] ?? '',
+            'fiscal_cai' => $snapshot['fiscal_cai'] ?? null,
+            'fiscal_range_from' => $snapshot['fiscal_range_from'] ?? null,
+            'fiscal_range_to' => $snapshot['fiscal_range_to'] ?? null,
             'patient_name' => $snapshot['patient_name'] ?? '',
             'issued_at' => $snapshot['issued_at'] ?? null,
             'tax_label' => $snapshot['tax_label'] ?? 'ISV',

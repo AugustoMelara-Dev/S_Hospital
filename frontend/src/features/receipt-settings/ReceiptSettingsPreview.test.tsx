@@ -190,6 +190,33 @@ describe('ReceiptSettingsPreview', () => {
     );
   });
 
+  it('uses the configured millimetre geometry for a custom receipt profile', () => {
+    render(
+      <ReceiptSettingsPreview
+        hospitalName="Hospital San Isidro"
+        governmentLine="Gobierno de Honduras"
+        secretariatLine="Secretaria de Salud"
+        location="Tocoa, Colon"
+        footerText="Original: Oficina Recaudadora"
+        series={series}
+        paper="custom"
+        profile={{
+          ...profile,
+          code: 'recibo_pequeno_personalizado',
+          name: 'Recibo personalizado',
+          paper_kind: 'custom_mm',
+          width_mm: '180.00',
+          height_mm: '100.00',
+        }}
+      />,
+    );
+
+    const paper = screen.getByRole('region', { name: 'Vista previa de recibo Personalizado' });
+    expect(paper).toHaveStyle({ aspectRatio: '180 / 100' });
+    expect(paper).toHaveClass('receipt-paper-preview--custom');
+    expect(paper).toHaveAttribute('data-receipt-preview-paper', 'custom');
+  });
+
   it('provides a scalable content surface inside the paper container', () => {
     render(
       <ReceiptSettingsPreview

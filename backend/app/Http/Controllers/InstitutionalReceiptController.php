@@ -37,6 +37,16 @@ class InstitutionalReceiptController extends Controller
 
         abort_unless($user instanceof User, 403);
 
+        if ($request->boolean('preview')) {
+            return response($pdfService->htmlForAuthorizedReceipt(
+                $receipt,
+                $user,
+                $invoiceAccess,
+            ), 200, [
+                'Content-Type' => 'text/html; charset=UTF-8',
+            ]);
+        }
+
         $pdf = $pdfService->pdfForAuthorizedReceipt(
             $receipt,
             $user,
