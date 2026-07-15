@@ -285,7 +285,7 @@ export function ServiceSearch({
             <div
               aria-labelledby="service-category-label"
               data-filter-priority="primary"
-              className="grid max-h-32 grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3 xl:grid-cols-3"
+              className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-3"
               onKeyDown={(event) => handleRadioGroupKeyDown(event, categoryOptions, selectedCategoryId, onCategoryChange)}
               role="radiogroup"
               tabIndex={-1}
@@ -319,7 +319,7 @@ export function ServiceSearch({
                     <div
                       aria-labelledby="service-area-label"
                       data-filter-priority="secondary"
-                      className="flex max-h-24 flex-wrap gap-2 overflow-y-auto pr-1"
+                      className="flex flex-wrap gap-2"
                       onKeyDown={(event) => handleRadioGroupKeyDown(event, areaOptions, selectedAreaId, onAreaChange)}
                       role="radiogroup"
                       tabIndex={-1}

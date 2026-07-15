@@ -170,6 +170,20 @@ describe('ServiceSearch', () => {
     expect(row).toHaveAttribute('data-service-row', 'compact');
   });
 
+  it('keeps categories, areas and results in normal document flow', () => {
+    const { container } = renderSearch({
+      services: [serviceFixture()],
+      search: 'glu',
+      categories: [{ id: 1, name: 'Laboratorio', slug: 'laboratorio', active: true, sort_order: 1 }],
+      serviceAreas: [{ id: 1, name: 'Laboratorio', slug: 'laboratorio', active: true }],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /más filtros/i }));
+
+    expect(container.querySelectorAll('[class*="overflow-y-auto"]')).toHaveLength(0);
+    expect(container.querySelectorAll('[class*="max-h-"]')).toHaveLength(0);
+  });
+
   it('does not duplicate equal category and area labels in a service row', () => {
     const { rerender } = renderSearch({ services: [serviceFixture()], search: 'glu' });
 

@@ -11,18 +11,18 @@ describe('PatientStep', () => {
     expect(screen.queryByText(/Paso 1/i)).not.toBeInTheDocument();
   });
 
-  it('uses a compact split layout on desktop while keeping the field accessible', () => {
-    const { container } = render(
+  it('shows one compact required field before optional data', () => {
+    render(
       <PatientStep
         patientName="Maria Lopez"
         onPatientNameChange={vi.fn()}
       />,
     );
 
-    expect(container.querySelector('[class*="lg:grid-cols"]')).toBeInTheDocument();
-    expect(screen.getByText('Identificar paciente')).toBeVisible();
+    expect(screen.getByLabelText(/nombre del paciente/i)).toBeVisible();
+    expect(screen.getByRole('button', { name: /datos opcionales/i })).toBeVisible();
+    expect(screen.queryByText(/identificar paciente/i)).not.toBeInTheDocument();
     expect(screen.getByLabelText(/nombre del paciente/i)).toHaveAttribute('placeholder', 'Ej. Maria Lopez…');
-    expect(screen.getByText(/La factura no necesita expediente clínico/)).toBeInTheDocument();
   });
 
   it('renders an accessible patient label, controlled value and backend-aligned character limit', () => {
@@ -100,8 +100,13 @@ describe('PatientStep', () => {
       />,
     );
 
-    const disclosure = screen.getByText('Datos opcionales');
-    expect(disclosure.closest('details')).not.toHaveAttribute('open');
+    const disclosure = screen.getByRole('button', { name: /datos opcionales/i });
+    expect(disclosure).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByText(/no necesita expediente clínico/i)).not.toBeInTheDocument();
+
+    fireEvent.click(disclosure);
+
+    expect(disclosure).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByText(/no necesita expediente clínico/i)).toBeInTheDocument();
   });
 
