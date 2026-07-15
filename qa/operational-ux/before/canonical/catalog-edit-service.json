@@ -1,0 +1,71 @@
+{
+  "viewport": {
+    "width": 1366,
+    "height": 768
+  },
+  "document": {
+    "scrollWidth": 1366,
+    "clientWidth": 1366,
+    "horizontalOverflow": 0
+  },
+  "panels": {},
+  "scrollContainers": [
+    {
+      "selector": "nav",
+      "overflowY": "auto",
+      "scrollHeight": 680,
+      "clientHeight": 545
+    },
+    {
+      "selector": "div",
+      "overflowY": "auto",
+      "scrollHeight": 1004,
+      "clientHeight": 670
+    }
+  ],
+  "stickyElements": [
+    {
+      "text": "Catálogo\n\nInicio\n/\nCatálogo\nCaja cerrada\nBuscar\nCtrl K\nA\nAdministradora Hospital",
+      "top": 0,
+      "bottom": 67
+    },
+    {
+      "text": "Servicio\nCategoría\nÁrea\nPrecio\nEstado\nAcciones",
+      "top": 691.453125,
+      "bottom": 732.453125
+    },
+    {
+      "text": "",
+      "top": 0,
+      "bottom": 0
+    },
+    {
+      "text": "Acciones",
+      "top": 691.453125,
+      "bottom": 731.453125
+    },
+    {
+      "text": "",
+      "top": 732.453125,
+      "bottom": 772.453125
+    },
+    {
+      "text": "",
+      "top": 772.453125,
+      "bottom": 812.453125
+    },
+    {
+      "text": "",
+      "top": 0,
+      "bottom": 0
+    }
+  ],
+  "primaryAction": null,
+  "consoleErrors": [],
+  "pageErrors": [],
+  "failedRequests": [
+    "GET http://127.0.0.1:4173/sanctum/csrf-cookie",
+    "GET http://127.0.0.1:4173/sanctum/csrf-cookie",
+    "GET http://127.0.0.1:4173/sanctum/csrf-cookie"
+  ]
+}

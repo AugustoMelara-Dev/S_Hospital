@@ -11,7 +11,7 @@ export type OperationalPageAudit = {
     clientHeight: number;
   }>;
   stickyElements: Array<{ text: string; top: number; bottom: number }>;
-  primaryAction: { visible: boolean; covered: boolean } | null;
+  primaryAction: { visible: boolean; inViewport: boolean; covered: boolean } | null;
   consoleErrors: string[];
   pageErrors: string[];
   failedRequests: string[];
@@ -100,6 +100,18 @@ export function observeOperationalPage(page: Page) {
       const primaryAction = await primary.count()
         ? {
             visible: await primary.isVisible(),
+            inViewport: await primary.evaluate((element) => {
+              const box = element.getBoundingClientRect();
+
+              return (
+                box.width > 0
+                && box.height > 0
+                && box.top >= 0
+                && box.left >= 0
+                && box.bottom <= innerHeight
+                && box.right <= innerWidth
+              );
+            }),
             covered: await primary.evaluate((element) => {
               const box = element.getBoundingClientRect();
               const hit = document.elementFromPoint(

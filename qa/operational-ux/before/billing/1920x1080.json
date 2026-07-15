@@ -1,0 +1,38 @@
+{
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
+  "document": {
+    "scrollWidth": 1920,
+    "clientWidth": 1920,
+    "horizontalOverflow": 0
+  },
+  "panels": {},
+  "scrollContainers": [],
+  "stickyElements": [
+    {
+      "text": "Nueva factura\n\nInicio\n/\nNueva factura\nCaja #7\nBuscar\nCtrl K\nA\nAdministradora Hos",
+      "top": 0,
+      "bottom": 67
+    },
+    {
+      "text": "Cuenta actual\n\nRevise servicios, cantidades y total estimado antes de emitir.\n\nN",
+      "top": 198,
+      "bottom": 828.890625
+    },
+    {
+      "text": "Resumen de factura\n0 items\nSubtotal:\nL 0.00\nTotal estimado:\nL 0.00\nAgregue servi",
+      "top": 476.75,
+      "bottom": 807.890625
+    }
+  ],
+  "primaryAction": {
+    "visible": true,
+    "inViewport": true,
+    "covered": false
+  },
+  "consoleErrors": [],
+  "pageErrors": [],
+  "failedRequests": []
+}

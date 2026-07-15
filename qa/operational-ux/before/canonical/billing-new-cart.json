@@ -1,0 +1,53 @@
+{
+  "viewport": {
+    "width": 1366,
+    "height": 768
+  },
+  "document": {
+    "scrollWidth": 1366,
+    "clientWidth": 1366,
+    "horizontalOverflow": 0
+  },
+  "panels": {},
+  "scrollContainers": [
+    {
+      "selector": "nav",
+      "overflowY": "auto",
+      "scrollHeight": 680,
+      "clientHeight": 545
+    },
+    {
+      "selector": "aside",
+      "overflowY": "auto",
+      "scrollHeight": 942,
+      "clientHeight": 638
+    }
+  ],
+  "stickyElements": [
+    {
+      "text": "Nueva factura\n\nInicio\n/\nNueva factura\nCaja #7\nBuscar\nCtrl K\nA\nAdministradora Hos",
+      "top": 0,
+      "bottom": 67
+    },
+    {
+      "text": "Cuenta actual\n\nRevise servicios, cantidades y total estimado antes de emitir.\n\n2",
+      "top": 80,
+      "bottom": 720
+    },
+    {
+      "text": "Resumen de factura\n2 items\nSubtotal:\nL 40.00\nTotal estimado:\nL 42.25\nEmitir y co",
+      "top": 475,
+      "bottom": 699
+    }
+  ],
+  "primaryAction": {
+    "visible": true,
+    "inViewport": true,
+    "covered": false
+  },
+  "consoleErrors": [],
+  "pageErrors": [],
+  "failedRequests": [
+    "GET http://127.0.0.1:4173/sanctum/csrf-cookie"
+  ]
+}

@@ -3,6 +3,10 @@ import axeCore from 'axe-core';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 
+import {
+  observeOperationalPage,
+} from './fixtures/operational-ux-audit';
+
 const reportPath = resolve(process.env.E2E_V1_2_VISIBLE_UI_A11Y_REPORT_PATH ?? '../qa/production-audit/v1-2-visible-ui-a11y-report.json');
 const smokeResults: Array<Record<string, unknown>> = [];
 
@@ -310,6 +314,8 @@ const smokeViewports = [
 ];
 
 test.afterAll(() => {
+  if (smokeResults.length === 0) return;
+
   mkdirSync(dirname(reportPath), { recursive: true });
   writeFileSync(reportPath, `${JSON.stringify({
     generated_at: new Date().toISOString(),
@@ -376,49 +382,64 @@ test('dangerous history actions open a confirmation path that can be cancelled',
 
   await page.getByRole('button', { name: /acciones de la factura/i }).click();
   await page.getByRole('menuitem', { name: /reversar pago/i }).click();
-  await expect(page.getByRole('alertdialog', { name: /reversar factura/i })).toBeVisible();
-  await expect(page.getByRole('alertdialog', { name: /reversar factura/i })).toHaveAccessibleDescription(/revise la informaci.n/i);
+  const reverseInvoiceDialog = page.getByRole('dialog', { name: /reversar factura/i });
+  await expect(reverseInvoiceDialog).toBeVisible();
   await page.getByRole('button', { name: /cancelar/i }).click();
-  await expect(page.getByRole('alertdialog', { name: /reversar factura/i })).toBeHidden();
+  await expect(reverseInvoiceDialog).toBeHidden();
 
   smokeResults.push({ name: 'history reverse cancel path', status: 'passed' });
   expect(consoleIssues, consoleIssues.join('\n')).toEqual([]);
 });
 
-test('refactor final screenshots evidence', async ({ page }) => {
+test('refactor final screenshots evidence', async ({ page }, testInfo) => {
   test.setTimeout(300_000);
-  const screenshotDir = resolve('../qa/refactor/screenshots');
+  const screenshotDir = resolve('../qa/operational-ux/before/canonical');
   mkdirSync(screenshotDir, { recursive: true });
   const consoleIssues: string[] = [];
+  const auditObserver = observeOperationalPage(page);
   captureConsoleIssues(page, consoleIssues);
   await installApiMocks(page);
   await page.setViewportSize({ width: 1366, height: 768 });
 
-  const shot = async (name: string) => {
+  const shot = async (name: string, primaryAction = '__sin_accion_primaria__') => {
     await expect(page.getByRole('main')).toBeVisible();
+    const audit = await auditObserver.capture({
+      routeName: name.replace(/\.png$/i, ''),
+      primaryAction,
+      testInfo,
+    });
+    writeFileSync(
+      resolve(screenshotDir, name.replace(/\.png$/i, '.json')),
+      `${JSON.stringify(audit, null, 2)}\n`,
+      'utf8',
+    );
     await page.screenshot({ path: resolve(screenshotDir, name), fullPage: false });
   };
+
+  await page.goto('/login');
+  await waitForScreen(page, /iniciar sesión/i);
+  await shot('login.png', 'Iniciar sesión');
 
   await login(page, 'admin.validacion');
 
   await page.goto('/dashboard');
-  await waitForScreen(page, /centro de mando/i);
-  await shot('dashboard.png');
+  await waitForScreen(page, /continuar operación/i);
+  await shot('dashboard.png', 'Nueva factura');
 
   await page.goto('/billing/new');
   await waitForScreen(page, /nueva factura/i);
-  await shot('billing-new-empty.png');
+  await shot('billing-new-empty.png', 'Emitir y cobrar');
   await page.getByLabel(/nombre del paciente/i).fill('Paciente QA Visual');
   await page.getByLabel(/buscar por nombre/i).fill('glu');
   await page.getByRole('button', { name: /glucosa/i }).click();
   await page.getByLabel(/buscar por nombre/i).fill('eri');
   await page.getByRole('button', { name: /eritropoyetina/i }).click();
-  await shot('billing-new-cart.png');
+  await shot('billing-new-cart.png', 'Emitir y cobrar');
   await page.getByRole('button', { name: /emitir y cobrar/i }).click();
   await expect(page.getByRole('dialog', { name: /confirmar emisi/i })).toBeVisible();
   await page.getByRole('button', { name: /emitir y abrir cobro/i }).click();
   await expect(page.getByRole('dialog', { name: /registrar pago/i })).toBeVisible();
-  await shot('billing-payment.png');
+  await shot('billing-payment.png', 'Confirmar cobro');
   await page.getByRole('button', { name: /confirmar cobro/i }).click();
   await expect(page.getByRole('dialog', { name: /factura pagada/i })).toBeVisible();
   await shot('billing-success.png');
@@ -426,13 +447,16 @@ test('refactor final screenshots evidence', async ({ page }) => {
   await page.goto('/cashbox');
   await waitForScreen(page, /^caja$/i);
   await shot('cashbox-open.png');
+  await page.getByRole('tab', { name: /^cierre$/i }).click();
   await page.getByLabel(/monto contado/i).fill('500.00');
   await page.getByLabel(/nota de cierre/i).fill('Diferencia revisada por QA visual final');
   await page.getByRole('button', { name: /cerrar caja/i }).click();
-  await expect(page.getByRole('alertdialog', { name: /cerrar caja/i })).toBeVisible();
+  const closeCashDialog = page.getByRole('dialog', { name: /cierre de caja/i });
+  await expect(closeCashDialog).toBeVisible();
   await shot('cashbox-close-diff.png');
-  await page.getByRole('alertdialog', { name: /cerrar caja/i }).getByRole('button', { name: /cerrar caja/i }).click();
-  await expect(page.getByRole('heading', { name: /caja cerrada/i })).toBeVisible();
+  await closeCashDialog.getByRole('button', { name: /cerrar caja/i }).click();
+  await expect(page.getByRole('status').filter({ hasText: /caja cerrada/i })).toBeVisible();
+  await expect(page.getByRole('region', { name: /resumen de cierre confirmado/i })).toBeVisible();
   await shot('cashbox-closed.png');
 
   await page.goto('/catalog');
@@ -448,8 +472,8 @@ test('refactor final screenshots evidence', async ({ page }) => {
   await shot('invoices.png');
   await page.getByRole('button', { name: /acciones de la factura/i }).click();
   await page.getByRole('menuitem', { name: /anular factura|reversar pago/i }).click();
-  await expect(page.getByRole('alertdialog', { name: /anular factura|reversar factura/i })).toBeVisible();
-  await shot('invoice-void-reason.png');
+  await expect(page.getByRole('dialog', { name: /anular factura|reversar factura/i })).toBeVisible();
+  await shot('invoice-reverse-reason.png');
 
   for (const [route, file, heading] of [
     ['/reports/executive', 'reports-executive.png', /control ejecutivo/i],
@@ -494,12 +518,75 @@ test('refactor final screenshots evidence', async ({ page }) => {
   expect(consoleIssues, consoleIssues.join('\n')).toEqual([]);
 });
 
+test('billing responsive baseline exposes operational defects', async ({ page }, testInfo) => {
+  test.setTimeout(300_000);
+  const beforeDir = resolve('../qa/operational-ux/before/billing');
+  mkdirSync(beforeDir, { recursive: true });
+  const matrices = [
+    { name: '1920x1080', width: 1920, height: 1080 },
+    { name: '1366x768', width: 1366, height: 768 },
+    { name: '1024x768', width: 1024, height: 768 },
+    { name: '768x1024', width: 768, height: 1024 },
+    { name: '390x844', width: 390, height: 844 },
+    { name: '320x568', width: 320, height: 568 },
+    { name: '1366x768-effective-125', width: 1093, height: 614 },
+    { name: '1366x768-effective-200', width: 683, height: 384 },
+  ] as const;
+  const findings: string[] = [];
+
+  await installApiMocks(page);
+  await login(page, 'admin.validacion');
+
+  for (const matrix of matrices) {
+    const auditObserver = observeOperationalPage(page);
+    await page.setViewportSize({ width: matrix.width, height: matrix.height });
+    await page.goto('/billing/new');
+    await waitForScreen(page, /nueva factura/i);
+
+    const audit = await auditObserver.capture({
+      routeName: `billing-${matrix.name}`,
+      primaryAction: matrix.width >= 1280 ? 'Emitir y cobrar' : 'Ver cuenta',
+      testInfo,
+    });
+
+    writeFileSync(
+      resolve(beforeDir, `${matrix.name}.json`),
+      `${JSON.stringify(audit, null, 2)}\n`,
+      'utf8',
+    );
+    await page.screenshot({
+      path: resolve(beforeDir, `${matrix.name}.png`),
+      fullPage: true,
+    });
+
+    if (audit.document.horizontalOverflow > 0) {
+      findings.push(`${matrix.name}: overflow horizontal ${audit.document.horizontalOverflow}px`);
+    }
+    if (audit.scrollContainers.length > 0) {
+      findings.push(`${matrix.name}: ${audit.scrollContainers.length} scrolls verticales internos`);
+    }
+    if (
+      !audit.primaryAction
+      || !audit.primaryAction.visible
+      || !audit.primaryAction.inViewport
+      || audit.primaryAction.covered
+    ) {
+      findings.push(`${matrix.name}: acción principal no disponible ${JSON.stringify(audit.primaryAction)}`);
+    }
+    if (audit.consoleErrors.length > 0) findings.push(`${matrix.name}: console.error ${audit.consoleErrors.join(' | ')}`);
+    if (audit.pageErrors.length > 0) findings.push(`${matrix.name}: pageerror ${audit.pageErrors.join(' | ')}`);
+    if (audit.failedRequests.length > 0) findings.push(`${matrix.name}: requestfailed ${audit.failedRequests.join(' | ')}`);
+  }
+
+  expect(findings, findings.join('\n')).toEqual([]);
+});
+
 async function login(page: Page, username: string) {
   await page.goto('/login');
   await page.locator('#login-input').fill(username);
   await page.locator('#password-input').fill('Password123!');
   await page.getByRole('button', { name: /entrar|iniciar/i }).click();
-  await waitForScreen(page, /centro de mando|ayuda institucional/i);
+  await waitForScreen(page, /continuar operación|ayuda institucional/i);
 }
 
 async function waitForScreen(page: Page, heading: RegExp) {

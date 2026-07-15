@@ -17,6 +17,7 @@ test('records geometry, scroll and browser failures', async ({ page }, testInfo)
   expect(audit.document.horizontalOverflow).toBe(0);
   expect(audit.panels.main.width).toBeGreaterThan(0);
   expect(audit.primaryAction?.visible).toBe(true);
+  expect(audit.primaryAction?.inViewport).toBe(true);
   expect(audit.primaryAction?.covered).toBe(false);
   expect(audit.consoleErrors).toEqual([]);
   expect(audit.pageErrors).toEqual([]);

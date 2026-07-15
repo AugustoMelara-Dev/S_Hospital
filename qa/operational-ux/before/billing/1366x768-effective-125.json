@@ -1,0 +1,36 @@
+{
+  "viewport": {
+    "width": 1093,
+    "height": 614
+  },
+  "document": {
+    "scrollWidth": 1093,
+    "clientWidth": 1093,
+    "horizontalOverflow": 0
+  },
+  "panels": {},
+  "scrollContainers": [
+    {
+      "selector": "nav",
+      "overflowY": "auto",
+      "scrollHeight": 680,
+      "clientHeight": 391
+    }
+  ],
+  "stickyElements": [
+    {
+      "text": "Nueva factura\n\nInicio\n/\nNueva factura\nCaja #7\nBuscar\nCtrl K\nA\nAdministradora Hos",
+      "top": 0,
+      "bottom": 67
+    },
+    {
+      "text": "Resumen de factura\n0 items\nSubtotal:\nL 0.00\nTotal estimado:\nL 0.00\nAgregue servi",
+      "top": 1050,
+      "bottom": 1381.140625
+    }
+  ],
+  "primaryAction": null,
+  "consoleErrors": [],
+  "pageErrors": [],
+  "failedRequests": []
+}

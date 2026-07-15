@@ -1,0 +1,29 @@
+{
+  "viewport": {
+    "width": 768,
+    "height": 1024
+  },
+  "document": {
+    "scrollWidth": 768,
+    "clientWidth": 768,
+    "horizontalOverflow": 0
+  },
+  "panels": {},
+  "scrollContainers": [],
+  "stickyElements": [
+    {
+      "text": "HOSPITAL SAN ISIDRO\n\nNueva factura\n\nInicio\n/\nNueva factura\nCaja #7\nBuscar\nCtrl K",
+      "top": 0,
+      "bottom": 83
+    },
+    {
+      "text": "Resumen de factura\n0 items\nSubtotal:\nL 0.00\nTotal estimado:\nL 0.00\nAgregue servi",
+      "top": 1147,
+      "bottom": 1478.140625
+    }
+  ],
+  "primaryAction": null,
+  "consoleErrors": [],
+  "pageErrors": [],
+  "failedRequests": []
+}

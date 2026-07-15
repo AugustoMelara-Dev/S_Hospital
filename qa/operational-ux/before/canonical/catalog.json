@@ -1,0 +1,65 @@
+{
+  "viewport": {
+    "width": 1366,
+    "height": 768
+  },
+  "document": {
+    "scrollWidth": 1366,
+    "clientWidth": 1366,
+    "horizontalOverflow": 0
+  },
+  "panels": {},
+  "scrollContainers": [
+    {
+      "selector": "nav",
+      "overflowY": "auto",
+      "scrollHeight": 680,
+      "clientHeight": 545
+    }
+  ],
+  "stickyElements": [
+    {
+      "text": "Catálogo\n\nInicio\n/\nCatálogo\nCaja cerrada\nBuscar\nCtrl K\nA\nAdministradora Hospital",
+      "top": 0,
+      "bottom": 67
+    },
+    {
+      "text": "Servicio\nCategoría\nÁrea\nPrecio\nEstado\nAcciones",
+      "top": 714.453125,
+      "bottom": 755.453125
+    },
+    {
+      "text": "",
+      "top": 0,
+      "bottom": 0
+    },
+    {
+      "text": "Acciones",
+      "top": 714.453125,
+      "bottom": 754.453125
+    },
+    {
+      "text": "",
+      "top": 755.453125,
+      "bottom": 795.453125
+    },
+    {
+      "text": "",
+      "top": 795.453125,
+      "bottom": 835.453125
+    },
+    {
+      "text": "",
+      "top": 0,
+      "bottom": 0
+    }
+  ],
+  "primaryAction": null,
+  "consoleErrors": [],
+  "pageErrors": [],
+  "failedRequests": [
+    "GET http://127.0.0.1:4173/sanctum/csrf-cookie",
+    "GET http://127.0.0.1:4173/sanctum/csrf-cookie",
+    "GET http://127.0.0.1:4173/sanctum/csrf-cookie"
+  ]
+}
