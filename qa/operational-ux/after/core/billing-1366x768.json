@@ -1,0 +1,69 @@
+{
+  "viewport": {
+    "width": 1366,
+    "height": 768
+  },
+  "document": {
+    "scrollWidth": 1366,
+    "clientWidth": 1366,
+    "horizontalOverflow": 0
+  },
+  "panels": {
+    "navigation": {
+      "x": 0,
+      "y": 0,
+      "width": 224,
+      "height": 768
+    },
+    "context-bar": {
+      "x": 224,
+      "y": 0,
+      "width": 1142,
+      "height": 64
+    },
+    "content": {
+      "x": 224,
+      "y": 64,
+      "width": 1142,
+      "height": 774
+    },
+    "billing-main": {
+      "x": 256,
+      "y": 196,
+      "width": 642,
+      "height": 586
+    },
+    "billing-account": {
+      "x": 914,
+      "y": 196,
+      "width": 420,
+      "height": 418
+    }
+  },
+  "scrollContainers": [],
+  "stickyElements": [
+    {
+      "text": "Nueva factura\nCaja #7\nConexión local disponible\nBuscar\nCtrl K\nC\nCajera Facturaci",
+      "top": 0,
+      "bottom": 64
+    },
+    {
+      "text": "Cuenta actual\n\nRevise servicios y cantidades antes de emitir.\n\n1 línea\nSERVICIO\t",
+      "top": 196,
+      "bottom": 614
+    },
+    {
+      "text": "Subtotal\nL 15.00\nTotal\nL 17.25\nEmitir y cobrar · L 17.25",
+      "top": 441,
+      "bottom": 593
+    }
+  ],
+  "primaryAction": {
+    "visible": true,
+    "inViewport": true,
+    "covered": false
+  },
+  "consoleErrors": [],
+  "pageErrors": [],
+  "failedRequests": []
+}

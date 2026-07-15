@@ -1,0 +1,59 @@
+{
+  "viewport": {
+    "width": 768,
+    "height": 1024
+  },
+  "document": {
+    "scrollWidth": 768,
+    "clientWidth": 768,
+    "horizontalOverflow": 0
+  },
+  "panels": {
+    "navigation": {
+      "x": 0,
+      "y": 0,
+      "width": 0,
+      "height": 0
+    },
+    "context-bar": {
+      "x": 0,
+      "y": 0,
+      "width": 768,
+      "height": 64
+    },
+    "content": {
+      "x": 0,
+      "y": 64,
+      "width": 768,
+      "height": 896
+    },
+    "billing-main": {
+      "x": 20,
+      "y": 188,
+      "width": 728,
+      "height": 586
+    },
+    "billing-bottom-bar": {
+      "x": 0,
+      "y": 887,
+      "width": 768,
+      "height": 73
+    }
+  },
+  "scrollContainers": [],
+  "stickyElements": [
+    {
+      "text": "HOSPITAL GENERAL SAN ISIDRO\n\nNueva factura\nCaja #7\nConexión local disponible\nBus",
+      "top": 0,
+      "bottom": 64
+    }
+  ],
+  "primaryAction": {
+    "visible": true,
+    "inViewport": true,
+    "covered": false
+  },
+  "consoleErrors": [],
+  "pageErrors": [],
+  "failedRequests": []
+}

@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { observeOperationalPage } from './fixtures/operational-ux-audit';
+import { assertNoDocumentOverflow, observeOperationalPage } from './fixtures/operational-ux-audit';
 
 test('records geometry, scroll and browser failures', async ({ page }, testInfo) => {
   const auditObserver = observeOperationalPage(page);
@@ -14,7 +14,7 @@ test('records geometry, scroll and browser failures', async ({ page }, testInfo)
   });
 
   expect(audit.viewport.width).toBeGreaterThan(0);
-  expect(audit.document.horizontalOverflow).toBe(0);
+  assertNoDocumentOverflow(audit);
   expect(audit.panels.main.width).toBeGreaterThan(0);
   expect(audit.primaryAction?.visible).toBe(true);
   expect(audit.primaryAction?.inViewport).toBe(true);

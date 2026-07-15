@@ -1,0 +1,59 @@
+{
+  "viewport": {
+    "width": 1024,
+    "height": 768
+  },
+  "document": {
+    "scrollWidth": 1024,
+    "clientWidth": 1024,
+    "horizontalOverflow": 0
+  },
+  "panels": {
+    "navigation": {
+      "x": 0,
+      "y": 0,
+      "width": 224,
+      "height": 768
+    },
+    "context-bar": {
+      "x": 224,
+      "y": 0,
+      "width": 800,
+      "height": 64
+    },
+    "content": {
+      "x": 224,
+      "y": 64,
+      "width": 800,
+      "height": 854
+    },
+    "billing-main": {
+      "x": 252,
+      "y": 196,
+      "width": 744,
+      "height": 586
+    },
+    "billing-bottom-bar": {
+      "x": 0,
+      "y": 695,
+      "width": 1024,
+      "height": 73
+    }
+  },
+  "scrollContainers": [],
+  "stickyElements": [
+    {
+      "text": "Nueva factura\nCaja #7\nConexión local disponible\nBuscar\nCtrl K\nC\nCajera Facturaci",
+      "top": 0,
+      "bottom": 64
+    }
+  ],
+  "primaryAction": {
+    "visible": true,
+    "inViewport": true,
+    "covered": false
+  },
+  "consoleErrors": [],
+  "pageErrors": [],
+  "failedRequests": []
+}

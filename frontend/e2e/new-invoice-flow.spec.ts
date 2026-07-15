@@ -1,5 +1,8 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { assertStrictMockGuard, installStrictMockGuard } from './fixtures/strict-mock-guard';
+import { assertNoDocumentOverflow, observeOperationalPage } from './fixtures/operational-ux-audit';
 
 test.beforeEach(async ({ page }) => installStrictMockGuard(page));
 test.afterEach(async ({ page }) => assertStrictMockGuard(page));
@@ -90,7 +93,7 @@ test.describe('New invoice - critical mocked e2e', () => {
     await page.goto('/billing/new');
 
     await expect(page.getByRole('heading', { level: 1, name: /nueva factura/i })).toBeVisible();
-    await expect(page.getByText(/caja #7.*abierta/i)).toBeVisible();
+    await expect(page.getByText('Caja #7', { exact: true })).toBeVisible();
     await expect(page.getByLabel(/nombre del paciente/i)).toBeEditable();
     await expect(page.getByRole('region', { name: /servicios/i })).toBeVisible();
     await expect(page.getByRole('region', { name: /cuenta actual/i })).toBeVisible();
@@ -99,7 +102,7 @@ test.describe('New invoice - critical mocked e2e', () => {
     await page.getByLabel(/buscar por nombre/i).fill('glucosa');
     await page.getByRole('button', { name: /agregar glucosa basal/i }).click();
 
-    await expect(page.getByRole('list', { name: /servicios agregados/i })).toContainText('Glucosa basal');
+    await expect(page.getByRole('table', { name: /cuenta actual/i })).toContainText('Glucosa basal');
     const emitButton = page.getByRole('button', { name: /emitir y cobrar/i });
     await expect(emitButton).toBeEnabled();
     await expect(emitButton).toBeInViewport();
@@ -170,6 +173,94 @@ test.describe('New invoice - critical mocked e2e', () => {
     await expect.poll(() => paymentRequests).toBe(1);
     await expect.poll(() => receiptPdfRequests).toBe(0);
   });
+
+  const requiredViewports = [
+    { name: '1440x900', width: 1440, height: 900, desktopAccount: true },
+    { name: '1366x768', width: 1366, height: 768, desktopAccount: true },
+    { name: '1024x768', width: 1024, height: 768, desktopAccount: false },
+    { name: '768x1024', width: 768, height: 1024, desktopAccount: false },
+    { name: '390x844', width: 390, height: 844, desktopAccount: false },
+    { name: '360x800', width: 360, height: 800, desktopAccount: false },
+    { name: '320x568', width: 320, height: 568, desktopAccount: false },
+  ];
+
+  for (const viewport of requiredViewports) {
+    test(`keeps billing operable at ${viewport.name}`, async ({ page }, testInfo) => {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await installNewInvoiceMocks(page);
+      const auditObserver = observeOperationalPage(page);
+
+      await page.goto('/billing/new');
+      await page.getByLabel(/nombre del paciente/i).fill('Paciente QA');
+      const search = page.getByLabel(/buscar por nombre/i);
+      await search.fill('glucosa');
+      await search.press('Enter');
+
+      const accountTrigger = page.getByRole('button', { name: /ver cuenta/i });
+      if (viewport.desktopAccount) {
+        await expect(page.getByRole('table', { name: /cuenta actual/i })).toContainText('Glucosa basal');
+      } else {
+        await expect(accountTrigger).toBeVisible();
+        await expect(accountTrigger).toContainText('1 servicio');
+      }
+
+      const audit = await auditObserver.capture({
+        routeName: `billing-${viewport.name}`,
+        primaryAction: viewport.desktopAccount ? 'Emitir y cobrar' : 'Ver cuenta',
+        testInfo,
+      });
+      assertNoDocumentOverflow(audit);
+      expect(audit.scrollContainers).toEqual([]);
+      expect(audit.primaryAction).toMatchObject({ visible: true, covered: false });
+
+      if (viewport.desktopAccount) {
+        expect(audit.panels['billing-account'].width).toBeGreaterThanOrEqual(360);
+        expect(audit.panels['billing-account'].width).toBeLessThanOrEqual(420);
+      } else {
+        const bottomBar = page.locator('[data-audit-panel="billing-bottom-bar"]');
+        const bottomBarBounds = await bottomBar.boundingBox();
+        await accountTrigger.click();
+        const quantity = page.getByRole('textbox', { name: /^cantidad de glucosa basal$/i });
+        await quantity.focus();
+        const quantityBounds = await quantity.boundingBox();
+        expect(bottomBarBounds).not.toBeNull();
+        expect(quantityBounds).not.toBeNull();
+        expect(quantityBounds!.y + quantityBounds!.height).toBeLessThanOrEqual(bottomBarBounds!.y);
+      }
+
+      const evidenceDirectory = resolve('../qa/operational-ux/after/core');
+      mkdirSync(evidenceDirectory, { recursive: true });
+      writeFileSync(resolve(evidenceDirectory, `billing-${viewport.name}.json`), JSON.stringify(audit, null, 2));
+      await page.screenshot({
+        path: resolve(evidenceDirectory, `billing-${viewport.name}.png`),
+        fullPage: false,
+      });
+
+      if (viewport.name === '1366x768') {
+        await page.getByRole('button', { name: /emitir y cobrar/i }).click();
+        await page.getByRole('dialog', { name: /confirmar emisi/i })
+          .getByRole('button', { name: /emitir y abrir cobro/i })
+          .click();
+        const paymentDialog = page.getByRole('dialog', { name: /registrar pago/i });
+        await expect(paymentDialog.getByLabel(/monto recibido/i)).toBeVisible();
+        await paymentDialog.screenshot({
+          path: resolve(evidenceDirectory, 'payment-cash-1366x768.png'),
+          animations: 'disabled',
+        });
+
+        await paymentDialog.getByRole('radio', { name: 'Transferencia' }).click();
+        await expect(paymentDialog.getByLabel(/monto recibido/i)).toHaveCount(0);
+        await paymentDialog.getByLabel(/referencia de pago/i).fill('TX-QA-001');
+        await paymentDialog.getByLabel(/referencia de pago/i).evaluate(() => new Promise<void>((resolveFrame) => {
+          requestAnimationFrame(() => requestAnimationFrame(() => resolveFrame()));
+        }));
+        await paymentDialog.screenshot({
+          path: resolve(evidenceDirectory, 'payment-transfer-1366x768.png'),
+          animations: 'disabled',
+        });
+      }
+    });
+  }
 });
 
 async function installNewInvoiceMocks(
