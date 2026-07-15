@@ -1,7 +1,10 @@
-import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { fireEvent, render, screen, within } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Service } from '@/lib/api';
 import type { InstitutionalColumn } from '@/design-system/ag-grid';
+
+const mediaState = vi.hoisted(() => ({ isMobile: false }));
+vi.mock('@/hooks/useMediaQuery', () => ({ useMediaQuery: () => mediaState.isMobile }));
 
 vi.mock('@/design-system/ag-grid', () => ({
   InstitutionalDataGrid: ({ ariaLabel, rows, columns, state, errorMessage, emptyMessage, actions }: { ariaLabel: string; rows: Service[]; columns: InstitutionalColumn<Service>[]; state: string; errorMessage?: string; emptyMessage?: string; actions?: React.ReactNode }) => {
@@ -12,6 +15,7 @@ vi.mock('@/design-system/ag-grid', () => ({
 import { ServiceCatalogTable } from './ServiceCatalogTable';
 
 describe('ServiceCatalogTable', () => {
+  beforeEach(() => { mediaState.isMobile = false; });
   it('renders institutional loading, empty and error actions', () => {
     const clear = vi.fn(); const retry = vi.fn();
     const { rerender } = render(<ServiceCatalogTable {...baseProps()} isLoading />);
@@ -23,10 +27,30 @@ describe('ServiceCatalogTable', () => {
     expect(clear).toHaveBeenCalledOnce(); expect(retry).toHaveBeenCalledOnce();
   });
 
-  it('renders prioritized operational columns without scanner identifiers', () => {
+  it('renders prioritized operational columns and a visible distinguishing code', () => {
     render(<ServiceCatalogTable {...baseProps()} scannerEnabled services={[serviceFixture({ scan_code: 'LAB-1', barcode: '123', qr_code: 'QR-1' })]} />);
     ['Servicio', 'Categoría', 'Área', 'Precio', 'Estado', 'Acciones'].forEach((name) => expect(screen.getByRole('columnheader', { name })).toBeInTheDocument());
-    expect(screen.queryByText(/LAB-1|123|QR-1/)).not.toBeInTheDocument();
+    expect(screen.getAllByText(/código LAB-1/i).length).toBeGreaterThan(0);
+  });
+
+  it('uses a mobile list that distinguishes same-name services by category, area and code', () => {
+    mediaState.isMobile = true;
+    render(<ServiceCatalogTable {...baseProps()} services={[
+      serviceFixture({ id: 1, name: 'Consulta', scan_code: 'CON-EXT' }),
+      serviceFixture({
+        id: 2,
+        name: 'Consulta',
+        scan_code: 'CON-EME',
+        category: { id: 2, name: 'Emergencia', slug: 'emergencia', active: true, sort_order: 2 },
+        area: { id: 2, name: 'Urgencias', slug: 'urgencias', active: true },
+      }),
+    ]} />);
+
+    const mobileList = screen.getByRole('list', { name: /servicios del catálogo en móvil/i });
+    const items = within(mobileList).getAllByRole('listitem');
+    expect(items).toHaveLength(2);
+    expect(items[0]).toHaveTextContent(/Consulta.*Laboratorio.*Código CON-EXT/i);
+    expect(items[1]).toHaveTextContent(/Consulta.*Emergencia.*Urgencias.*Código CON-EME/i);
   });
 
   it('renders billing summaries and HNL prices through column renderers', () => {

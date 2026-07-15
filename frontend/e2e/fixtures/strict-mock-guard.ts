@@ -23,6 +23,11 @@ export async function installStrictMockGuard(page: Page): Promise<void> {
   page.on('requestfailed', (request) => {
     const failure = request.failure()?.errorText ?? '';
     const pathname = new URL(request.url()).pathname;
+    // TanStack Query aborts stale GET requests when filters, URL state or
+    // responsive views change. Missing API mocks are still recorded by the
+    // catch-all route below, so an intentional client cancellation is not a
+    // network failure for this guard.
+    if (failure.includes('ERR_ABORTED') && request.method() === 'GET') return;
     if (failure.includes('ERR_ABORTED') && (!pathname.startsWith('/api/') || state.navigating)) return;
     state.issues.push(`requestfailed: ${request.method()} ${request.url()} ${failure}`.trim());
   });

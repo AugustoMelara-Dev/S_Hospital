@@ -131,7 +131,7 @@ describe('CatalogView modernized structure', () => {
     expect(await screen.findByText('2 servicios en el catálogo')).toBeInTheDocument();
   });
 
-  it('keeps the catalog metrics focused on at most two operational cards', async () => {
+  it('puts filters and results before category maintenance without decorative metric cards', async () => {
     setupBasicMocks();
     vi.spyOn(apiClient, 'getCategories').mockResolvedValue([
       { id: 1, name: 'Laboratorio', slug: 'laboratorio', active: true, sort_order: 1 },
@@ -147,11 +147,15 @@ describe('CatalogView modernized structure', () => {
       meta: { current_page: 1, per_page: 15, total: 1 },
     });
 
-    renderWithQueryClient(<CatalogView user={catalogUser()} onStatus={vi.fn()} />);
+    renderWithQueryClient(<CatalogView user={catalogUser(['catalog.view', 'catalog.manage'])} onStatus={vi.fn()} />);
 
-    expect(await screen.findByText(/total cat[aá]logo/i)).toBeInTheDocument();
-    expect(screen.getByText(/^categor[ií]as$/i)).toBeInTheDocument();
-    expect(screen.queryByText(/^esc[aá]ner$/i)).not.toBeInTheDocument();
+    const filters = await screen.findByRole('heading', { name: /filtros del cat[aá]logo/i });
+    const results = screen.getByRole('heading', { name: /servicios disponibles/i });
+    const categories = await screen.findByRole('button', { name: /categorías del catálogo/i });
+    expect(screen.queryByText(/total cat[aá]logo/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^categor[ií]as$/i)).not.toBeInTheDocument();
+    expect(filters.compareDocumentPosition(results) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(results.compareDocumentPosition(categories) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('keeps editable categories in a compact collapsed section until requested', async () => {

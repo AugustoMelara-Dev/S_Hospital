@@ -5,6 +5,7 @@ import { InstitutionalDataGrid, type InstitutionalColumn } from '@/design-system
 import { formatLempirasUIFromCents, parseCents } from '../../../lib/moneyCents';
 import { getServiceBillingSummary } from '../../../lib/serviceBilling';
 import type { Service } from '../../../lib/api';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import type { ServiceCatalogTableProps } from './catalogTypes';
 
 export function ServiceCatalogTable({
@@ -18,6 +19,7 @@ export function ServiceCatalogTable({
   hasActiveFilters,
   isEmpty,
 }: ServiceCatalogTableProps) {
+  const isMobile = useMediaQuery('(max-width: 767px)');
   const [openActionsServiceId, setOpenActionsServiceId] = useState<number | null>(null);
   const columns: InstitutionalColumn<Service>[] = [
     {
@@ -94,39 +96,81 @@ export function ServiceCatalogTable({
 
   return (
     <section aria-labelledby="service-catalog-results-title">
-      <Space className="w-full justify-between">
-        <div>
-          <Typography.Title id="service-catalog-results-title" level={3}>
-            Servicios disponibles
-          </Typography.Title>
-          <Typography.Paragraph>
-            Precio vigente, disponibilidad en caja y reglas especiales.
-          </Typography.Paragraph>
-        </div>
-        <Typography.Text>{services.length} en esta vista</Typography.Text>
-      </Space>
+      <div>
+        <Typography.Title id="service-catalog-results-title" level={3}>
+          Servicios disponibles
+        </Typography.Title>
+        <Typography.Paragraph>
+          Precio vigente, disponibilidad en caja y reglas especiales.
+        </Typography.Paragraph>
+      </div>
 
-      <InstitutionalDataGrid<Service>
-        ariaLabel="Listado de servicios del catálogo"
-        rows={services}
-        columns={columns}
-        getRowId={(service) => String(service.id)}
-        state={state}
-        errorMessage={loadError}
-        emptyMessage={emptyMessage}
-        gridOptions={{
-          pagination: false,
-          rowHeight: 56,
-          rowSelection: { mode: 'singleRow', enableClickSelection: true },
-        }}
-        actions={
-          loadError ? (
-            <Button onClick={onRetry}>Reintentar</Button>
-          ) : hasActiveFilters && isEmpty ? (
-            <Button onClick={onClearFilters}>Limpiar filtros</Button>
-          ) : null
-        }
-      />
+      {state === 'ready' ? (
+        isMobile ? (
+          <ul className="divide-y divide-border border border-border" aria-label="Servicios del catálogo en móvil">
+            {services.map((service) => {
+              const code = visibleServiceCode(service);
+              const summary = getServiceBillingSummary(service);
+              return (
+                <li key={service.id} className="grid gap-2 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <strong className="min-w-0 text-base">{service.name}</strong>
+                    <span className="shrink-0 font-semibold tabular-nums">{formatLempirasUIFromCents(parseCents(service.price))}</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {service.category?.name ?? 'Sin categoría'} · {service.area?.name ?? 'Sin área'}
+                  </p>
+                  {code ? <p className="font-mono text-xs text-muted-foreground">Código {code}</p> : null}
+                  {summary.reasons[0] ? <p className="text-xs text-muted-foreground">{summary.reasons[0]}</p> : null}
+                  <div className="flex items-center justify-between gap-3">
+                    <Tag color={service.active ? 'green' : 'default'}>{service.active ? 'Activo' : 'Inactivo'}</Tag>
+                    {canManage ? (
+                      <ServiceActions
+                        service={service}
+                        open={openActionsServiceId === service.id}
+                        onOpenChange={(open) => setOpenActionsServiceId(open ? service.id : null)}
+                        onEdit={onRowActions.onEdit}
+                        onToggle={onRowActions.onToggleActive}
+                        ariaLabel={`Acciones móviles de servicio ${service.name}`}
+                      />
+                    ) : null}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+            <InstitutionalDataGrid<Service>
+              ariaLabel="Listado de servicios del catálogo"
+              rows={services}
+              columns={columns}
+              getRowId={(service) => String(service.id)}
+              state={state}
+              emptyMessage={emptyMessage}
+              gridOptions={{
+                pagination: false,
+                rowHeight: 64,
+              }}
+            />
+        )
+      ) : (
+        <InstitutionalDataGrid<Service>
+          ariaLabel="Listado de servicios del catálogo"
+          rows={services}
+          columns={columns}
+          getRowId={(service) => String(service.id)}
+          state={state}
+          errorMessage={loadError}
+          emptyMessage={emptyMessage}
+          actions={
+            loadError ? (
+              <Button onClick={onRetry}>Reintentar</Button>
+            ) : hasActiveFilters && isEmpty ? (
+              <Button onClick={onClearFilters}>Limpiar filtros</Button>
+            ) : null
+          }
+        />
+      )}
 
     </section>
   );
@@ -134,12 +178,14 @@ export function ServiceCatalogTable({
 
 function ServiceName({ service }: { service: Service }) {
   const summary = getServiceBillingSummary(service);
+  const code = visibleServiceCode(service);
+  const secondary = [code ? `Código ${code}` : null, summary.reasons[0]].filter(Boolean).join(' · ');
   return (
     <div>
       <Typography.Text strong>{service.name}</Typography.Text>
-      {summary.reasons[0] ? (
-        <Typography.Text type="secondary" className="block">
-          {summary.reasons[0]}
+      {secondary ? (
+        <Typography.Text type="secondary" className="block truncate text-xs">
+          {secondary}
         </Typography.Text>
       ) : null}
     </div>
@@ -167,12 +213,14 @@ function ServiceState({ service }: { service: Service }) {
 
 // Inline dropdown for desktop AG Grid column (visual only).
 function ServiceActions({
+  ariaLabel,
   service,
   open,
   onOpenChange,
   onEdit,
   onToggle,
 }: {
+  ariaLabel?: string;
   service: Service;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -193,10 +241,14 @@ function ServiceActions({
   return (
     <Dropdown menu={{ items }} open={open} onOpenChange={onOpenChange} trigger={['click']}>
       <Button
-        aria-label={`Acciones de servicio ${service.name}`}
+        aria-label={ariaLabel ?? `Acciones de servicio ${service.name}`}
         icon={<MoreOutlined />}
         onClick={(event) => event.stopPropagation()}
       />
     </Dropdown>
   );
+}
+
+function visibleServiceCode(service: Service): string | null {
+  return service.scan_code ?? service.barcode ?? service.qr_code ?? null;
 }

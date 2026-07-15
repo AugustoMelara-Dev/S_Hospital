@@ -1,3 +1,4 @@
+import { resolve } from 'node:path';
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { assertStrictMockGuard, installStrictMockGuard } from './fixtures/strict-mock-guard';
 
@@ -29,6 +30,9 @@ const laboratoryArea = {
   slug: 'laboratorio',
   active: true,
 };
+
+const emergencyCategory = { id: 2, name: 'Emergencia', slug: 'emergencia', active: true, sort_order: 2 };
+const emergencyArea = { id: 2, name: 'Urgencias', slug: 'urgencias', active: true };
 
 const baseService = {
   id: 1,
@@ -87,13 +91,13 @@ test.describe('Catalog - critical mocked e2e', () => {
     await expect(page.getByLabel(/resumen de servicios/i)).toContainText(/2 servicios/i);
     await expect(page.getByRole('button', { name: /crear nuevo servicio/i })).toBeVisible();
     await expect(page.getByRole('button', { name: /crear nueva categor.a/i })).toBeVisible();
-    await expect(page.getByRole('gridcell', { name: 'Glucosa basal', exact: true })).toBeVisible();
-    await expect(page.getByRole('gridcell', { name: 'Hemograma completo', exact: true })).toBeVisible();
+    await expect(page.getByText('Glucosa basal', { exact: true })).toBeVisible();
+    await expect(page.getByText('Hemograma completo', { exact: true })).toBeVisible();
 
     await page.getByLabel(/buscar servicio/i).fill('hemo');
 
-    await expect(page.getByRole('gridcell', { name: 'Hemograma completo', exact: true })).toBeVisible();
-    await expect(page.getByRole('gridcell', { name: 'Glucosa basal', exact: true })).toHaveCount(0);
+    await expect(page.getByText('Hemograma completo', { exact: true })).toBeVisible();
+    await expect(page.getByText('Glucosa basal', { exact: true })).toHaveCount(0);
 
     await page.getByRole('button', { name: /acciones de servicio hemograma completo/i }).click();
     await page.getByRole('menuitem', { name: /desactivar/i }).click();
@@ -113,6 +117,7 @@ test.describe('Catalog - critical mocked e2e', () => {
     expect(deleteCalls).toBe(0);
     await expect(statusDialog).toHaveCount(0);
     await expect(page.getByRole('button', { name: /restaurar|eliminar/i })).toHaveCount(0);
+    await page.waitForLoadState('networkidle');
   });
 
   test('keeps URL continuity and real Drawer keyboard behavior', async ({ page }) => {
@@ -143,16 +148,66 @@ test.describe('Catalog - critical mocked e2e', () => {
 
     await page.goBack();
     await expect(page.getByRole('dialog', { name: /editar servicio/i })).toBeVisible();
+    await page.waitForLoadState('networkidle');
+  });
+
+  test('shows filters and distinguishable services first, then switches to a mobile list', async ({ page }) => {
+    const duplicateServices = [
+      serviceFixture({ id: 10, name: 'Consulta médica', slug: 'consulta-externa', scan_code: 'CON-EXT' }),
+      serviceFixture({
+        id: 11,
+        name: 'Consulta médica',
+        slug: 'consulta-emergencia',
+        scan_code: 'CON-EME',
+        category_id: emergencyCategory.id,
+        area_id: emergencyArea.id,
+        category: emergencyCategory,
+        area: emergencyArea,
+      }),
+    ];
+    await installCatalogMocks(page, { services: duplicateServices });
+
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await page.goto('/catalog');
+    await expect(page.getByRole('heading', { name: /filtros del catálogo/i })).toBeVisible();
+    await expect(page.getByText('Código CON-EXT', { exact: true })).toBeVisible();
+    await expect(page.getByText('Código CON-EME', { exact: true })).toBeVisible();
+    const desktopMetrics = await page.evaluate(() => ({
+      tableTop: document.querySelector('[aria-label="Listado de servicios del catálogo"]')?.getBoundingClientRect().top ?? 9999,
+      overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      paginations: document.querySelectorAll('.ant-pagination').length,
+      agPaginations: Array.from(document.querySelectorAll<HTMLElement>('.ag-paging-panel'))
+        .filter((element) => element.getBoundingClientRect().height > 0 && getComputedStyle(element).display !== 'none').length,
+    }));
+    expect(desktopMetrics.tableTop).toBeLessThan(768);
+    expect(desktopMetrics.overflow).toBe(0);
+    expect(desktopMetrics.paginations).toBe(1);
+    expect(desktopMetrics.agPaginations).toBe(0);
+    await settleForScreenshot(page);
+    await page.screenshot({ path: resolve(process.cwd(), '..', 'qa', 'operational-ux', 'after', 'catalog-1366.png'), fullPage: true });
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    const mobileList = page.getByRole('list', { name: /servicios del catálogo en móvil/i });
+    await expect(mobileList).toBeVisible();
+    await expect(mobileList.getByRole('listitem')).toHaveCount(2);
+    await expect(mobileList.getByRole('listitem').nth(0)).toContainText(/Laboratorio.*Código CON-EXT/s);
+    await expect(mobileList.getByRole('listitem').nth(1)).toContainText(/Emergencia.*Urgencias.*Código CON-EME/s);
+    await expect(page.getByRole('grid', { name: /listado de servicios/i })).toHaveCount(0);
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
+    await settleForScreenshot(page);
+    await page.screenshot({ path: resolve(process.cwd(), '..', 'qa', 'operational-ux', 'after', 'catalog-390.png'), fullPage: true });
   });
 });
 
 async function installCatalogMocks(page: Page, options: {
   onDeleteService?: () => void;
   onPatchService?: (payload: Record<string, unknown>) => void;
+  services?: Array<typeof baseService>;
 } = {}) {
+  const sourceServices = options.services ?? [glucoseService, hemogramService];
   await installCommonMocks(page, catalogAdminUser);
-  await page.route(/\/api\/categories(?:[/?]|$)/, (route) => json(route, { data: [laboratoryCategory] }));
-  await page.route(/\/api\/areas(?:[/?]|$)/, (route) => json(route, { data: [laboratoryArea] }));
+  await page.route(/\/api\/categories(?:[/?]|$)/, (route) => json(route, { data: [laboratoryCategory, emergencyCategory] }));
+  await page.route(/\/api\/areas(?:[/?]|$)/, (route) => json(route, { data: [laboratoryArea, emergencyArea] }));
   await page.route(/\/api\/settings\/operational(?:[/?]|$)/, (route) => json(route, {
     data: {
       scanner_enabled: true,
@@ -181,8 +236,8 @@ async function installCatalogMocks(page: Page, options: {
     const url = new URL(request.url());
     const search = url.searchParams.get('search')?.toLowerCase() ?? '';
     const services = search
-      ? [glucoseService, hemogramService].filter((service) => service.name.toLowerCase().includes(search))
-      : [glucoseService, hemogramService];
+      ? sourceServices.filter((service) => service.name.toLowerCase().includes(search))
+      : sourceServices;
 
     return json(route, {
       data: services,
@@ -197,6 +252,12 @@ async function installCatalogMocks(page: Page, options: {
       },
     });
   });
+}
+
+async function settleForScreenshot(page: Page) {
+  await page.evaluate(() => new Promise<void>((resolveFrame) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolveFrame()));
+  }));
 }
 
 function serviceFixture(overrides: Partial<typeof baseService> = {}) {

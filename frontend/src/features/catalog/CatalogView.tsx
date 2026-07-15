@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { EditOutlined, PlusOutlined } from '@ant-design/icons';
-import { Alert, Button, Col, Collapse, Input, Modal, Row, Statistic, Typography } from 'antd';
+import { Alert, Button, Collapse, Input, Modal, Typography } from 'antd';
 import { type AuthUser, type Category, type Service, type ServiceFilters, apiClient, userSafeErrorMessage } from '../../lib/api';
 import { useAreas, useCategories } from '@/hooks/useCategories';
 import { useOperationalSettings } from '@/hooks/useFiscalSettings';
@@ -240,7 +240,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
   return (
     <section
       id="catalogo"
-      className="flex flex-col gap-6"
+      className="flex flex-col gap-4"
       aria-label="Catálogo institucional"
     >
       <PageHeader
@@ -261,59 +261,6 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
       </Typography.Text>
       {!canManageCatalog ? (
         <Alert type="info" title="Solo lectura" description="Esta cuenta puede consultar el catálogo, pero no modificar servicios ni categorías." />
-      ) : null}
-
-      <StatGrid
-        className="sm:grid-cols-2 xl:grid-cols-2"
-        items={[
-          {
-            label: 'Total catálogo',
-            value: meta.total,
-            helper: `${services.length} visibles en esta página`,
-            tone: meta.total > 0 ? 'success' : 'warning',
-          },
-          {
-            label: 'Categorías',
-            value: categories.length,
-            helper: 'Disponibles para filtrar servicios',
-            tone: categories.length > 0 ? 'info' : 'warning',
-          },
-        ]}
-      />
-
-      {canManageCatalog && categories.length > 0 ? (
-        <Collapse
-          className="border-y border-border bg-surface"
-          destroyOnHidden
-          expandIconPlacement="end"
-          size="small"
-          items={[{
-            key: 'editable-categories',
-            label: (
-              <div>
-                <h2 className="text-sm font-semibold text-foreground">Categorías del catálogo</h2>
-                <p className="text-xs text-muted-foreground">{categories.length} disponibles · abrir para editar</p>
-              </div>
-            ),
-            children: (
-              <ul className="flex flex-wrap gap-2" aria-label="Categorías editables">
-                {categories.map((category) => (
-                  <li key={category.id}>
-                    <Button
-                      htmlType="button"
-                      size="small"
-                      aria-label={`Editar categoría ${category.name}`}
-                      onClick={() => openEditCategory(category)}
-                    >
-                      <EditOutlined aria-hidden="true" />
-                      {category.name}
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            ),
-          }]}
-        />
       ) : null}
 
       <CatalogToolbar
@@ -352,6 +299,41 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
           servicesCount={services.length}
           onPageChange={handlePageChange}
           onPerPageChange={handlePerPageChange}
+        />
+      ) : null}
+
+      {canManageCatalog && categories.length > 0 ? (
+        <Collapse
+          className="border-y border-border bg-surface"
+          destroyOnHidden
+          expandIconPlacement="end"
+          size="small"
+          items={[{
+            key: 'editable-categories',
+            label: (
+              <div>
+                <h2 className="text-sm font-semibold text-foreground">Categorías del catálogo</h2>
+                <p className="text-xs text-muted-foreground">{categories.length} disponibles · abrir para editar</p>
+              </div>
+            ),
+            children: (
+              <ul className="flex flex-wrap gap-2" aria-label="Categorías editables">
+                {categories.map((category) => (
+                  <li key={category.id}>
+                    <Button
+                      htmlType="button"
+                      size="small"
+                      aria-label={`Editar categoría ${category.name}`}
+                      onClick={() => openEditCategory(category)}
+                    >
+                      <EditOutlined aria-hidden="true" />
+                      {category.name}
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            ),
+          }]}
         />
       ) : null}
 
@@ -450,10 +432,6 @@ function positiveUrlInteger(value: string | null, fallback: number) {
 function setOrDelete(params: URLSearchParams, key: string, value: string | null) {
   if (value) params.set(key, value);
   else params.delete(key);
-}
-
-function StatGrid({ items, className }: { className?: string; items: Array<{ label: string; value: number; helper?: string; tone?: string }> }) {
-  return <Row gutter={[16, 16]} className={className}>{items.map((item) => <Col xs={24} sm={12} key={item.label}><div className="border border-border p-3"><Statistic title={item.label} value={item.value} /><Typography.Text type="secondary">{item.helper}</Typography.Text></div></Col>)}</Row>;
 }
 
 export function ConfirmDialog({ open, title, children, confirmLabel, danger, onCancel, onConfirm, reasonHelpText, requireReasonMinLength = 0 }: {
