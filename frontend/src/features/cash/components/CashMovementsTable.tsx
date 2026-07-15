@@ -1,5 +1,7 @@
+import { type ReactNode, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Tag } from 'antd';
+import { EyeOutlined } from '@ant-design/icons';
+import { Button, Drawer, Tag } from 'antd';
 import type { InstitutionalColumn } from '@/design-system/ag-grid/InstitutionalDataGrid';
 import { InstitutionalDataGrid } from '@/design-system/ag-grid/InstitutionalDataGrid';
 import { finiteNumber, formatLempirasUI } from '@/lib/money';
@@ -13,13 +15,34 @@ export type CashMovement = {
 interface CashMovementsTableProps { canViewInvoices?: boolean; movements: CashMovement[] }
 
 export function CashMovementsTable({ canViewInvoices = false, movements }: CashMovementsTableProps) {
+  const [selectedMovement, setSelectedMovement] = useState<CashMovement | null>(null);
   const columns: InstitutionalColumn<CashMovement>[] = [
-    { field: 'occurred_at', headerName: 'Hora', valueFormatter: ({ value }) => formatMovementTime(String(value)) },
-    { field: 'type', headerName: 'Tipo', valueFormatter: ({ value }) => movementLabel(String(value)) },
-    { headerName: 'Referencia', valueGetter: ({ data }) => referenceText(data), flex: 1 },
-    { field: 'method', headerName: 'Método', valueFormatter: ({ value }) => methodLabel(value == null ? null : String(value)) },
-    { field: 'notes', headerName: 'Detalle auditado', flex: 1, valueFormatter: ({ value }) => value ? String(value) : 'Sin nota registrada' },
-    { field: 'amount', headerName: 'Monto', type: 'numericColumn', valueFormatter: ({ data }) => data ? movementAmount(data) : '' },
+    { field: 'occurred_at', headerName: 'Hora', width: 112, valueFormatter: ({ value }) => formatMovementTime(String(value)) },
+    { field: 'type', headerName: 'Tipo', width: 128, valueFormatter: ({ value }) => movementLabel(String(value)) },
+    {
+      headerName: 'Referencia',
+      valueGetter: ({ data }) => referenceText(data),
+      cellRenderer: ({ data }: { data?: CashMovement }) => data ? <MovementReference canViewInvoices={canViewInvoices} movement={data} /> : null,
+      flex: 1,
+      minWidth: 210,
+    },
+    { field: 'method', headerName: 'Método', width: 130, valueFormatter: ({ value }) => methodLabel(value == null ? null : String(value)) },
+    { field: 'amount', headerName: 'Monto', width: 138, type: 'numericColumn', valueFormatter: ({ data }) => data ? movementAmount(data) : '' },
+    {
+      headerName: 'Detalle',
+      width: 88,
+      sortable: false,
+      filter: false,
+      cellRenderer: ({ data }: { data?: CashMovement }) => data ? (
+        <Button
+          type="text"
+          size="small"
+          icon={<EyeOutlined />}
+          aria-label={`Ver detalle del movimiento ${data.id}`}
+          onClick={() => setSelectedMovement(data)}
+        />
+      ) : null,
+    },
   ];
 
   return (
@@ -39,13 +62,42 @@ export function CashMovementsTable({ canViewInvoices = false, movements }: CashM
               <strong className="tabular-nums">{movementAmount(movement)}</strong>
             </div>
             <div className="mt-2"><MovementReference canViewInvoices={canViewInvoices} movement={movement} /></div>
-            {movement.notes ? <p className="mt-2 text-xs text-muted-foreground">{movement.notes}</p> : null}
+            {movement.notes ? <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">{movement.notes}</p> : null}
+            <Button
+              type="link"
+              className="mt-1 h-auto p-0"
+              onClick={() => setSelectedMovement(movement)}
+              aria-label={`Ver detalle del movimiento ${movement.id}`}
+            >
+              Ver detalle
+            </Button>
           </li>
         ))}
       </ol>
       {movements.length === 0 ? <p className="sr-only">Entradas, salidas y ajustes aparecerán cuando la sesión tenga actividad.</p> : null}
+      <Drawer
+        open={selectedMovement !== null}
+        onClose={() => setSelectedMovement(null)}
+        title={selectedMovement ? `Detalle del movimiento ${selectedMovement.id}` : 'Detalle del movimiento'}
+        size="default"
+      >
+        {selectedMovement ? (
+          <dl className="grid grid-cols-[8rem_1fr] gap-x-4 gap-y-3 text-sm">
+            <MovementDetail label="Hora">{formatMovementTime(selectedMovement.occurred_at)}</MovementDetail>
+            <MovementDetail label="Tipo">{movementLabel(selectedMovement.type)}</MovementDetail>
+            <MovementDetail label="Método">{methodLabel(selectedMovement.method)}</MovementDetail>
+            <MovementDetail label="Monto"><strong className="tabular-nums">{movementAmount(selectedMovement)}</strong></MovementDetail>
+            <MovementDetail label="Referencia"><MovementReference canViewInvoices={canViewInvoices} movement={selectedMovement} /></MovementDetail>
+            <MovementDetail label="Detalle auditado">{selectedMovement.notes || 'Sin nota registrada'}</MovementDetail>
+          </dl>
+        ) : null}
+      </Drawer>
     </section>
   );
+}
+
+function MovementDetail({ children, label }: { children: ReactNode; label: string }) {
+  return <><dt className="text-muted-foreground">{label}</dt><dd className="min-w-0 break-words">{children}</dd></>;
 }
 
 function MovementReference({ canViewInvoices, movement }: { canViewInvoices: boolean; movement: CashMovement }) {

@@ -319,19 +319,35 @@ export function CashBoxView({
             </>
           )}
         />
-        <div className="flex flex-wrap items-center gap-3 text-sm">
-          <Tag>{isOpen ? 'Caja abierta' : 'Caja cerrada'}</Tag>
-          <p role="status" aria-live="polite">
-            {isLoading
-              ? 'Actualizando estado de caja.'
-              : isOpen && activeSession
-                ? `Abierta ${formatDateTimeEs(activeSession.opened_at)}`
-                : 'No hay una caja abierta actualmente.'}
-          </p>
-          {isOpen && cashier ? (
-            <p><strong>{cashier}</strong> · {isOwnSession ? 'Caja propia' : canCloseAnyCash ? 'Supervisión habilitada' : 'Sesión de otro cajero'}</p>
-          ) : null}
-        </div>
+        <section
+          aria-label="Estado operativo de caja"
+          className="grid gap-3 border border-border bg-background px-4 py-3 md:grid-cols-[minmax(15rem,1.3fr)_repeat(3,minmax(7rem,1fr))] md:items-center"
+        >
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <Tag color={isOpen ? 'green' : undefined}>{isOpen ? 'Caja abierta' : 'Caja cerrada'}</Tag>
+              <p role="status" aria-live="polite" className="text-sm">
+                {isLoading
+                  ? 'Actualizando estado de caja.'
+                  : isOpen && activeSession
+                    ? `Caja abierta desde ${formatDateTimeEs(activeSession.opened_at)}`
+                    : 'No hay una caja abierta actualmente.'}
+              </p>
+            </div>
+            {isOpen && cashier ? (
+              <p className="mt-1 truncate text-xs text-muted-foreground">
+                <strong className="text-foreground">{cashier}</strong> · {isOwnSession ? 'Caja propia' : canCloseAnyCash ? 'Supervisión habilitada' : 'Sesión de otro cajero'}
+              </p>
+            ) : null}
+          </div>
+          <OperationalMetric label="Apertura" value={isOpen && activeSession ? formatLempirasUI(activeSession.opening_amount) : '—'} />
+          <OperationalMetric label="Efectivo esperado" value={isOpen ? formatLempirasUI(expectedCashAmount) : '—'} />
+          <OperationalMetric
+            label="Pendiente"
+            value={isOpen ? formatLempirasUI(pendingAmount) : '—'}
+            detail={isOpen ? `${pendingInvoiceCount} factura${pendingInvoiceCount === 1 ? '' : 's'}` : undefined}
+          />
+        </section>
 
         {formAlert ? (
           <Alert type="error" showIcon title="No se pudo completar la operación" description={formAlert} />
@@ -353,11 +369,9 @@ export function CashBoxView({
           <LoadingState label="Cargando estado de caja..." />
         ) : null}
 
-        {canRenderOperationalState && isOpen && isOwnSession && canCreateInvoices ? (
-          <Alert type="success" showIcon title="Caja lista para facturar" description="La caja está abierta. La acción principal para crear y cobrar una factura está disponible en la cabecera." />
-        ) : canRenderOperationalState && isOpen && !isOwnSession ? (
+        {canRenderOperationalState && isOpen && !isOwnSession ? (
           <Alert type="warning" showIcon title="Caja abierta en supervisión" description="Esta sesión pertenece a otro cajero. Puede revisar y cerrar según sus permisos, pero no crear facturas desde esta caja." />
-        ) : canRenderOperationalState && isOpen ? (
+        ) : canRenderOperationalState && isOpen && !canCreateInvoices ? (
           <Alert type="info" showIcon title="Caja abierta en modo consulta" description="La sesión está activa, pero este usuario no tiene permiso para crear facturas." />
         ) : null}
 
@@ -425,6 +439,7 @@ export function CashBoxView({
             {activeView === 'close' ? (
               <CashClosingPanel
                 canCloseCash={canCloseCash}
+                canViewInvoices={canViewInvoices}
                 closingAmount={closingAmount}
                 closingAmountError={closingAmountError}
                 closingAmountRef={closingAmountRef}
@@ -525,5 +540,17 @@ export function CashBoxView({
         </div>
       </Modal>
     </section>
+  );
+}
+
+function OperationalMetric({ detail, label, value }: { detail?: string; label: string; value: string }) {
+  return (
+    <dl className="min-w-0 border-l-2 border-border pl-3 lg:border-l lg:pl-4">
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="flex flex-wrap items-baseline gap-x-2 font-semibold tabular-nums">
+        <span>{value}</span>
+        {detail ? <span className="text-xs font-normal text-muted-foreground">{detail}</span> : null}
+      </dd>
+    </dl>
   );
 }

@@ -1,10 +1,12 @@
-import { type FormEvent, type RefObject } from 'react';
+import { type FormEvent, type ReactNode, type RefObject } from 'react';
 import { AuditOutlined, WarningOutlined } from '@ant-design/icons';
 import { Alert, Button, Form, Input } from 'antd';
+import { Link } from 'react-router-dom';
 import { formatLempirasUI } from '@/lib/money';
 
 type CashClosingPanelProps = {
   canCloseCash: boolean;
+  canViewInvoices?: boolean;
   closingAmount: string;
   closingAmountError: string | null;
   closingAmountRef: RefObject<HTMLInputElement | null>;
@@ -23,6 +25,7 @@ type CashClosingPanelProps = {
 
 export function CashClosingPanel({
   canCloseCash,
+  canViewInvoices = false,
   closingAmount,
   closingAmountError,
   closingAmountRef,
@@ -57,9 +60,9 @@ export function CashClosingPanel({
       aria-labelledby="cash-close-guided-title"
       className="overflow-hidden border border-operational-border bg-operational-surface "
     >
-      <div className="border-b border-border bg-muted/40 px-5 pb-5 pt-6 sm:px-6">
+      <div className="border-b border-border bg-muted/40 px-4 py-4 sm:px-5">
         <div className="flex items-start gap-3">
-          <span className="flex size-11 shrink-0 items-center justify-center bg-primary text-primary-foreground ">
+          <span className="flex size-9 shrink-0 items-center justify-center bg-primary text-primary-foreground ">
             <AuditOutlined aria-hidden="true" />
           </span>
           <div className="min-w-0">
@@ -73,7 +76,7 @@ export function CashClosingPanel({
         </div>
       </div>
 
-      <form onSubmit={onSubmit} className="flex flex-col gap-5 px-5 pb-6 pt-5 sm:px-6" aria-busy={isSubmitting}>
+      <form onSubmit={onSubmit} className="flex flex-col gap-4 px-4 py-4 sm:px-5" aria-busy={isSubmitting}>
         <div className="grid gap-4 md:grid-cols-2">
           <Form.Item
             label="Monto contado (L.)"
@@ -126,17 +129,21 @@ export function CashClosingPanel({
             </div>} />
         ) : null}
 
-        {hasPendingBalance ? (
-          <Alert type="warning" showIcon icon={<WarningOutlined />} description={<div>
-              Hay <strong>{pendingInvoiceCount}</strong> factura(s) pendientes o parciales por{' '}
-              <strong>{formatLempirasUI(pendingAmount)}</strong>. Revise los cobros antes de cerrar.
-            </div>} />
-        ) : null}
-
-        {missingInstitutionalReceiptCount > 0 ? (
-          <Alert type="warning" showIcon icon={<WarningOutlined />} description={<div>
-              Hay <strong>{missingInstitutionalReceiptCount}</strong> recibo(s) institucional(es) pendiente(s). Genere los recibos antes de cerrar.
-            </div>} />
+        {hasPendingBalance || missingInstitutionalReceiptCount > 0 ? (
+          <ul aria-label="Bloqueos del cierre" className="divide-y divide-warning/25 border border-warning/35 bg-warning/5">
+            {hasPendingBalance ? (
+              <ClosingBlocker canViewInvoices={canViewInvoices}>
+                <strong>{pendingInvoiceCount}</strong> {pendingInvoiceCount === 1 ? 'factura pendiente o parcial' : 'facturas pendientes o parciales'} por{' '}
+                <strong>{formatLempirasUI(pendingAmount)}</strong>. Revise los cobros antes de cerrar.
+              </ClosingBlocker>
+            ) : null}
+            {missingInstitutionalReceiptCount > 0 ? (
+              <ClosingBlocker canViewInvoices={canViewInvoices}>
+                <strong>{missingInstitutionalReceiptCount}</strong>{' '}
+                {missingInstitutionalReceiptCount === 1 ? 'recibo institucional pendiente' : 'recibos institucionales pendientes'}.
+              </ClosingBlocker>
+            ) : null}
+          </ul>
         ) : null}
 
         <Form.Item
@@ -157,7 +164,6 @@ export function CashClosingPanel({
               onChange={(event) => onClosingNotesChange(event.target.value)}
               placeholder={hasCashDifference ? 'Obligatoria si hay diferencia (sobrante/faltante).' : 'Nota opcional...'}
               rows={2}
-              required={hasCashDifference}
               disabled={isSubmitting}
             />
         </Form.Item>
@@ -179,5 +185,23 @@ export function CashClosingPanel({
         </div>
       </form>
     </section>
+  );
+}
+
+function ClosingBlocker({ canViewInvoices, children }: { canViewInvoices: boolean; children: ReactNode }) {
+  return (
+    <li className="flex flex-col gap-2 px-3 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+      <span className="flex min-w-0 items-start gap-2">
+        <WarningOutlined aria-hidden="true" className="mt-0.5 shrink-0 text-warning-foreground" />
+        <span>{children}</span>
+      </span>
+      {canViewInvoices ? (
+        <Link className="shrink-0 font-semibold text-primary underline underline-offset-4" to="/invoices">
+          Resolver en Historial
+        </Link>
+      ) : (
+        <span className="shrink-0 text-xs text-muted-foreground">Solicite acceso al Historial</span>
+      )}
+    </li>
   );
 }

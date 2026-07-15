@@ -1,3 +1,4 @@
+import { resolve } from 'node:path';
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { assertStrictMockGuard, installStrictMockGuard } from './fixtures/strict-mock-guard';
 
@@ -11,7 +12,17 @@ const cashierUser = {
   username: 'caja.turno',
   active: true,
   roles: ['cajero'],
-  permissions: ['cash.view', 'cash.open', 'cash.close'],
+  permissions: [
+    'cash.view',
+    'cash.open',
+    'cash.close',
+    'reports.cash_session.view',
+    'invoices.view',
+    'invoices.create',
+    'catalog.view',
+    'payments.create',
+    'receipts.view',
+  ],
   must_change_password: false,
 };
 
@@ -61,13 +72,14 @@ test.describe('Cash session - critical mocked e2e', () => {
 
     await expect(page.getByRole('heading', { level: 1, name: /^caja$/i })).toBeVisible();
     await expect(page.getByText(/caja abierta desde/i)).toBeVisible();
-    await expect(page.getByText('Efectivo esperado', { exact: true })).toBeVisible();
+    await expect(page.getByRole('region', { name: /estado operativo de caja/i }).getByText('Efectivo esperado', { exact: true })).toBeVisible();
 
+    await page.getByRole('tab', { name: /^cierre$/i }).click();
     await page.getByLabel(/monto contado/i).fill('100.00');
     await expect(page.getByRole('alert').filter({ hasText: /diferencia/i })).toBeVisible();
     await page.getByRole('button', { name: /^cerrar caja$/i }).click();
 
-    const dialog = page.getByRole('alertdialog', { name: /cerrar caja/i });
+    const dialog = page.getByRole('dialog', { name: /cierre de caja/i });
     await expect(dialog).toBeVisible();
     await expect(dialog.getByText(/1\. resumen del turno/i)).toBeVisible();
     await expect(dialog.getByText(/2\. conteo de efectivo/i)).toBeVisible();
@@ -85,8 +97,8 @@ test.describe('Cash session - critical mocked e2e', () => {
       closing_amount: '100.00',
       notes: 'Faltante revisado y autorizado por administracion.',
     });
-    await expect(page.getByRole('alertdialog', { name: /cerrar caja/i })).toHaveCount(0);
-    await expect(page.getByRole('heading', { name: /^caja cerrada$/i })).toBeVisible();
+    await expect(page.getByRole('dialog', { name: /cierre de caja/i })).toHaveCount(0);
+    await expect(page.getByRole('region', { name: /estado operativo de caja/i })).toContainText('Caja cerrada');
     const confirmedSummary = page.locator('[data-cash-close-print-root]');
     await expect(confirmedSummary).toContainText('Resumen de cierre confirmado');
     await expect(confirmedSummary).toContainText('Efectivo');
@@ -107,11 +119,61 @@ test.describe('Cash session - critical mocked e2e', () => {
 
     await page.goto('/cashbox');
 
+    await page.getByRole('tab', { name: /^arqueo$/i }).click();
     await expect(page.getByRole('heading', { name: /control contable de caja/i })).toBeVisible();
     await expect(page.getByText(/1 recibo institucional pendiente/i)).toBeVisible();
     await expect(page.getByRole('link', { name: /resolver en historial/i })).toHaveAttribute('href', '/invoices');
+    await page.getByRole('tab', { name: /^cierre$/i }).click();
+    await expect(page.getByRole('list', { name: /bloqueos del cierre/i }).getByRole('link', { name: /resolver en historial/i })).toBeVisible();
     await expect(page.getByRole('button', { name: /^cerrar caja$/i })).toBeDisabled();
     await expect.poll(() => closeRequests).toBe(0);
+  });
+
+  test('keeps the operational header, movement detail and blockers usable across viewports', async ({ page }) => {
+    await installCashboxMocks(page, {
+      initialSession: {
+        ...openSession,
+        pending_invoice_count: 1,
+        pending_amount: '25.00',
+        missing_institutional_receipt_count: 1,
+      },
+    });
+
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await page.goto('/cashbox');
+    await expect(page.getByRole('region', { name: /estado operativo de caja/i })).toContainText('L 25.00');
+    await expect(page.getByText(/caja lista para facturar/i)).toHaveCount(0);
+    await expectNoPageOverflow(page);
+    await settleForScreenshot(page);
+    await page.screenshot({ path: resolve(process.cwd(), '..', 'qa', 'operational-ux', 'after', 'cashbox-1366.png'), fullPage: true });
+
+    await page.getByRole('tab', { name: /^movimientos$/i }).click();
+    await expect(page.getByRole('region', { name: /^movimientos de caja$/i }).last()).toBeVisible();
+    await settleForScreenshot(page);
+    await page.screenshot({ path: resolve(process.cwd(), '..', 'qa', 'operational-ux', 'after', 'cashbox-movements-1366.png'), fullPage: true });
+
+    await page.setViewportSize({ width: 768, height: 1024 });
+    await page.getByRole('tab', { name: /^cierre$/i }).click();
+    const blockers = page.getByRole('list', { name: /bloqueos del cierre/i });
+    await expect(blockers.getByRole('link', { name: /resolver en historial/i })).toHaveCount(2);
+    await expectNoPageOverflow(page);
+    await settleForScreenshot(page);
+    await page.screenshot({ path: resolve(process.cwd(), '..', 'qa', 'operational-ux', 'after', 'cashbox-close-768.png'), fullPage: true });
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.getByRole('tab', { name: /^movimientos$/i }).click();
+    const mobileMovements = page.getByRole('list', { name: /movimientos de caja en móvil/i });
+    await expect(mobileMovements).toBeVisible();
+    await expectNoPageOverflow(page);
+    await settleForScreenshot(page);
+    await page.screenshot({ path: resolve(process.cwd(), '..', 'qa', 'operational-ux', 'after', 'cashbox-movements-390.png'), fullPage: true });
+    await mobileMovements.getByRole('button', { name: /ver detalle del movimiento 901/i }).click();
+    const detail = page.getByRole('dialog', { name: /detalle del movimiento 901/i });
+    await expect(detail).toContainText('000-001-01-00000045');
+    await expect(detail).toContainText('Referencia completa para auditoría local');
+    await expectNoPageOverflow(page);
+    await settleForScreenshot(page);
+    await page.screenshot({ path: resolve(process.cwd(), '..', 'qa', 'operational-ux', 'after', 'cashbox-movement-detail-390.png') });
   });
 });
 
@@ -125,6 +187,7 @@ async function installCashboxMocks(
   let currentSession: typeof openSession | null = options.initialSession ?? openSession;
 
   await installCommonMocks(page, cashierUser);
+  await page.route(/\/api\/reports\/cash-sessions\/\d+(?:[/?]|$)/, (route) => json(route, { data: cashSessionReport(currentSession ?? openSession) }));
   await page.route(/\/api\/cash-sessions\/current(?:[/?]|$)/, (route) => json(route, { data: currentSession }));
   await page.route(/\/api\/cash-sessions\/\d+\/close(?:[/?]|$)/, (route) => {
     const payload = JSON.parse(route.request().postData() ?? '{}') as Record<string, unknown>;
@@ -140,6 +203,66 @@ async function installCashboxMocks(
       },
     });
   });
+}
+
+function cashSessionReport(session: typeof openSession) {
+  return {
+    cash_session: session,
+    totals_by_method: session.payments_by_method,
+    total_cash: session.payments_by_method.cash,
+    total_transfer: session.payments_by_method.transfer,
+    total_card: session.payments_by_method.card,
+    total_other: session.payments_by_method.other,
+    payments_count: 1,
+    payments_total: '25.00',
+    expected_cash_amount: session.expected_cash_amount,
+    pending_invoice_count: session.pending_invoice_count,
+    pending_amount: session.pending_amount,
+    missing_institutional_receipt_count: session.missing_institutional_receipt_count,
+    reversed_payments_count: 0,
+    reversed_payments_total: '0.00',
+    payments: [{
+      id: 301,
+      invoice_id: 45,
+      cash_session_id: session.id,
+      user_id: cashierUser.id,
+      method: 'cash',
+      amount: '25.00',
+      reference: null,
+      status: 'posted',
+      paid_at: '2026-07-02T09:15:00-06:00',
+      invoice: {
+        id: 45,
+        invoice_number: '000-001-01-00000045',
+        patient_name: 'Paciente de prueba',
+        status: 'paid',
+        total: '25.00',
+        paid_amount: '25.00',
+        balance_due: '0.00',
+      },
+    }],
+    movements: [{
+      id: 901,
+      cash_session_id: session.id,
+      payment_id: 301,
+      user_id: cashierUser.id,
+      type: 'payment',
+      method: 'cash',
+      amount: '25.00',
+      notes: 'Referencia completa para auditoría local',
+      occurred_at: '2026-07-02T09:15:00-06:00',
+    }],
+  };
+}
+
+async function expectNoPageOverflow(page: Page) {
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
+}
+
+async function settleForScreenshot(page: Page) {
+  await page.evaluate(() => new Promise<void>((resolveFrame) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolveFrame()));
+  }));
 }
 
 async function installCommonMocks(page: Page, sessionUser: typeof cashierUser) {

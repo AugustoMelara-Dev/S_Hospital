@@ -382,7 +382,7 @@ describe('CashBoxView', () => {
     render(<App />);
 
     expect((await screen.findAllByText(/efectivo esperado/i)).length).toBeGreaterThan(0);
-    expect(screen.getAllByText('L 0.00').length).toBeGreaterThanOrEqual(5);
+    await waitFor(() => expect(screen.getAllByText('L 0.00').length).toBeGreaterThanOrEqual(5));
     expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-numero/);
   });
 
@@ -421,7 +421,11 @@ describe('CashBoxView', () => {
     );
 
     expect(await screen.findByRole('link', { name: /nueva factura/i })).toHaveAttribute('href', '/billing/new');
-    expect(screen.getByText(/caja lista para facturar/i)).toBeVisible();
+    expect(screen.queryByText(/caja lista para facturar/i)).not.toBeInTheDocument();
+    const operationalHeader = screen.getByRole('region', { name: /estado operativo de caja/i });
+    expect(within(operationalHeader).getByText(/^apertura$/i)).toBeVisible();
+    expect(within(operationalHeader).getByText(/^efectivo esperado$/i)).toBeVisible();
+    expect(within(operationalHeader).getByText(/^pendiente$/i)).toBeVisible();
   });
 
   it('shows a sanitized load error with retry and does not present a closed cashbox as loaded data', async () => {

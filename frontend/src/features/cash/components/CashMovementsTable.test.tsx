@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { CashMovementsTable, type CashMovement } from './CashMovementsTable';
@@ -84,6 +84,12 @@ describe('CashMovementsTable', () => {
     expect(screen.getAllByText(/pago #81/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/cobro validado en ventanilla/i).length).toBeGreaterThan(0);
     expect(screen.getByRole('list', { name: /movimientos de caja en móvil/i })).toBeInTheDocument();
+
+    fireEvent.click(screen.getAllByRole('button', { name: /ver detalle del movimiento 30/i })[0]);
+    const detail = screen.getByRole('dialog', { name: /detalle del movimiento 30/i });
+    expect(within(detail).getByText(/factura FAC-000022/i)).toBeVisible();
+    expect(within(detail).getByText(/pago #81/i)).toBeVisible();
+    expect(within(detail).getByText(/cobro validado en ventanilla/i)).toBeVisible();
   });
 
   it('shows the invoice reference as text when invoices.view is missing', () => {
