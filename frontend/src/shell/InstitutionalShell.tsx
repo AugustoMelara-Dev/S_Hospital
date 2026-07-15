@@ -101,9 +101,9 @@ export function InstitutionalShell({ cashSession, children, logoUrl, onLogout, s
         Omitir al contenido principal
       </a>
 
-      <InstitutionalRail activeItem={activeItem} collapsed={collapsed} hospitalName={hospitalName} logoUrl={logoUrl} navigation={visibleNavigation} onToggleCollapsed={toggleCollapsed} user={user} />
+      <InstitutionalRail activeItem={activeItem} collapsed={collapsed} hospitalName={hospitalName} logoUrl={logoUrl} navigation={visibleNavigation} onToggleCollapsed={toggleCollapsed} />
 
-      <div className={cn('flex min-h-screen min-w-0 flex-col pb-16 lg:pb-0', collapsed ? 'lg:ml-20' : 'lg:ml-64')}>
+      <div className={cn('flex min-h-screen min-w-0 flex-col pb-16 lg:pb-0', collapsed ? 'lg:ml-20' : 'lg:ml-56')}>
         <ContextBar
           cashSession={cashSession}
           commandButtonRef={commandButtonRef}
@@ -112,11 +112,10 @@ export function InstitutionalShell({ cashSession, children, logoUrl, onLogout, s
           onLogout={onLogout}
           onOpenCommands={() => setCommandsOpen(true)}
           onOpenGuide={() => setGuideOpen(true)}
-          onOpenShortcuts={() => setShortcutsOpen(true)}
           status={status}
           user={user}
         />
-        <main id="main-content" tabIndex={-1} className="min-w-0 flex-1 scroll-mt-20 px-3 py-4 outline-none sm:px-5 lg:px-7 lg:py-6 xl:px-8">
+        <main id="main-content" data-audit-panel="content" tabIndex={-1} className="min-w-0 flex-1 scroll-mt-20 px-3 py-4 outline-none sm:px-5 lg:px-7 lg:py-6 xl:px-8">
           <div className="mx-auto flex max-w-screen-2xl flex-col gap-5">{children}</div>
         </main>
         <footer className="print-hidden sr-only">Sistema hospitalario local</footer>

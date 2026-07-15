@@ -1,9 +1,7 @@
 import {
   DisconnectOutlined,
-  KeyOutlined,
   QuestionCircleOutlined,
   SearchOutlined,
-  WifiOutlined,
 } from '@ant-design/icons';
 import { type RefObject } from 'react';
 import { Button, Tooltip, Tag } from 'antd';
@@ -11,7 +9,6 @@ import { useServerStatus } from '../../hooks/useServerStatus';
 import { type AuthUser, type CashSession } from '../../lib/api';
 import { roleListLabel } from '../../lib/role-labels';
 import { type AppBreadcrumb } from '../../navigation/appNavigation';
-import { AppBreadcrumbs } from '../../layout/components/AppBreadcrumbs';
 import { UserMenu } from '../../layout/components/UserMenu';
 
 type ContextBarProps = {
@@ -22,27 +19,22 @@ type ContextBarProps = {
   onLogout: () => void;
   onOpenCommands: () => void;
   onOpenGuide: () => void;
-  onOpenShortcuts: () => void;
   status: string;
   user: AuthUser;
 };
 
-export function ContextBar({ cashSession, commandButtonRef, crumbs, hospitalName, onLogout, onOpenCommands, onOpenGuide, onOpenShortcuts, status, user }: ContextBarProps) {
+export function ContextBar({ cashSession, commandButtonRef, crumbs, hospitalName, onLogout, onOpenCommands, onOpenGuide, status, user }: ContextBarProps) {
   const { isOnline } = useServerStatus();
   const currentTitle = crumbs.at(-1)?.label ?? 'Inicio';
   const cashLabel = cashSession?.status === 'open' ? `Caja #${cashSession.id}` : 'Caja cerrada';
 
   return (
-    <header className="print-hidden sticky top-0 z-20 flex min-h-16 items-center gap-2 border-b border-border bg-surface px-3 text-foreground lg:px-5">
+    <header data-audit-panel="context-bar" className="print-hidden sticky top-0 z-20 flex min-h-16 items-center gap-2 border-b border-border bg-surface px-3 text-foreground lg:px-5">
       <div className="min-w-0 flex-1 py-2">
         <p data-testid="institutional-mobile-identity" className="truncate text-xs font-semibold uppercase tracking-wider text-secondary lg:hidden">
           {hospitalName}
         </p>
-        <p className="truncate text-lg font-semibold tracking-tight">{currentTitle}</p>
-        <AppBreadcrumbs
-          crumbs={crumbs}
-          className="mt-1 hidden text-muted-foreground sm:block"
-        />
+        <p className="truncate text-lg font-semibold tracking-tight" data-current-location>{currentTitle}</p>
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
@@ -52,11 +44,9 @@ export function ContextBar({ cashSession, commandButtonRef, crumbs, hospitalName
         <span
           role="img"
           aria-label={isOnline ? 'Conexión local disponible' : 'Sin conexión al servidor local'}
-          className={isOnline ? 'hidden text-success md:inline-flex' : 'hidden items-center gap-1 text-sm font-semibold text-error md:flex'}
+          className={isOnline ? 'sr-only' : 'hidden items-center gap-1 text-sm font-semibold text-error md:flex'}
         >
-          {isOnline ? (
-            <WifiOutlined className="text-lg" />
-          ) : (
+          {isOnline ? 'Conexión local disponible' : (
             <>
               <DisconnectOutlined className="text-lg" />
               <span>Sin conexión</span>
@@ -76,16 +66,6 @@ export function ContextBar({ cashSession, commandButtonRef, crumbs, hospitalName
         Buscar
         <span className="ml-auto border border-border bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground">Ctrl K</span>
       </Button>
-
-      <Tooltip title="Atajos (?)" mouseEnterDelay={0.4}>
-        <Button
-          type="text"
-          icon={<KeyOutlined />}
-          className="hidden sm:inline-flex"
-          onClick={onOpenShortcuts}
-          aria-label="Ver atajos de teclado"
-        />
-      </Tooltip>
 
       <Tooltip title="Ayuda" mouseEnterDelay={0.4}>
         <Button

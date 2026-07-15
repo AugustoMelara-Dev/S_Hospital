@@ -64,7 +64,7 @@ vi.mock('antd', async (importOriginal) => {
 });
 
 vi.mock('../hooks/useFiscalSettings', () => ({
-  usePublicBranding: () => ({ data: { hospital_name: 'Hospital San Isidro' } }),
+  usePublicBranding: () => ({ data: { hospital_name: 'Hospital General San Isidro' } }),
 }));
 
 vi.mock('../lib/realtime/useBroadcastSync', () => ({
@@ -184,12 +184,28 @@ describe('InstitutionalShell', () => {
     expect(shellRoot).not.toHaveClass('overflow-x-hidden');
   });
 
+  it('uses a compact rail and one current-location hierarchy', () => {
+    renderShell({ initialPath: '/billing/new' });
+
+    const rail = screen.getByTestId('institutional-rail');
+    const navigation = screen.getByRole('navigation', { name: 'Navegación principal' });
+
+    expect(rail).toHaveAttribute('data-expanded-width', '224');
+    expect(rail).toHaveClass('lg:w-56');
+    expect(navigation).toHaveAttribute('data-scroll-when-needed', 'true');
+    expect(screen.getByRole('main').parentElement).toHaveClass('lg:ml-56');
+    expect(screen.getAllByText('Nueva factura', { selector: '[data-current-location]' })).toHaveLength(1);
+    expect(screen.queryByRole('navigation', { name: 'Ruta actual' })).not.toBeInTheDocument();
+    expect(within(rail).queryByText(cashier.name)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Ver atajos de teclado' })).not.toBeInTheDocument();
+  });
+
   it('muestra una sola vez caja y hospital', () => {
     renderShell({ cashSession: openCashSession });
 
     expect(screen.getAllByText(/Caja #12/)).toHaveLength(1);
     expect(screen.getByText(/Caja #12/).parentElement).not.toHaveClass('hidden');
-    const identities = screen.getAllByText('Hospital San Isidro');
+    const identities = screen.getAllByText('Hospital General San Isidro');
     const mobileIdentity = screen.getByTestId('institutional-mobile-identity');
     const desktopIdentity = screen.getByTestId('institutional-desktop-identity');
 
@@ -204,11 +220,11 @@ describe('InstitutionalShell', () => {
     renderShell();
 
     const rail = screen.getByTestId('institutional-rail');
-    const brand = within(rail).getByLabelText('Hospital San Isidro');
+    const brand = within(rail).getByLabelText('Hospital General San Isidro');
 
     expect(rail).toHaveAttribute('data-collapsed', 'true');
-    expect(brand).toHaveTextContent('HSI');
-    expect(brand).toHaveAttribute('title', 'Hospital San Isidro');
+    expect(brand).toHaveTextContent('HGSI');
+    expect(brand).toHaveAttribute('title', 'Hospital General San Isidro');
   });
 
   it('la paleta excluye rutas sin permiso', () => {
@@ -370,7 +386,7 @@ describe('InstitutionalShell', () => {
     fireEvent.click(trigger);
 
     const menu = await screen.findByRole('menu');
-    expect(within(menu).getByText('Hospital San Isidro')).toBeInTheDocument();
+    expect(within(menu).getByText('Hospital General San Isidro')).toBeInTheDocument();
   });
 
   it('explica una navegación vacía', () => {
@@ -379,10 +395,9 @@ describe('InstitutionalShell', () => {
         <InstitutionalRail
           activeItem={undefined}
           collapsed={false}
-          hospitalName="Hospital San Isidro"
+          hospitalName="Hospital General San Isidro"
           navigation={[]}
           onToggleCollapsed={vi.fn()}
-          user={cashier}
         />
       </MemoryRouter>,
     );

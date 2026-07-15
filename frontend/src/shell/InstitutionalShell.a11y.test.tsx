@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { configureAxe } from 'vitest-axe';
 import { describe, expect, it, vi } from 'vitest';
@@ -9,7 +9,7 @@ const axe = configureAxe({ rules: { 'color-contrast': { enabled: false } } });
 Element.prototype.scrollIntoView = vi.fn();
 
 vi.mock('../hooks/useFiscalSettings', () => ({
-  usePublicBranding: () => ({ data: { hospital_name: 'Hospital San Isidro' } }),
+  usePublicBranding: () => ({ data: { hospital_name: 'Hospital General San Isidro' } }),
 }));
 vi.mock('../lib/realtime/useBroadcastSync', () => ({ useBroadcastSync: vi.fn() }));
 vi.mock('../hooks/useServerStatus', () => ({
@@ -55,11 +55,11 @@ describe('InstitutionalShell accessibility', () => {
     expect(screen.getByRole('main')).toHaveAttribute('id', 'main-content');
   });
 
-  it('expone estado y breadcrumb actual accesibles', () => {
+  it('expone estado y ubicación actual accesibles sin breadcrumb duplicado', () => {
     renderShell();
     expect(screen.getByRole('status')).toHaveTextContent('Servidor local disponible');
     expect(screen.getByLabelText('Conexión local disponible')).toBeInTheDocument();
-    const breadcrumbs = screen.getByRole('navigation', { name: 'Ruta actual' });
-    expect(within(breadcrumbs).getByText('Recibos institucionales')).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByText('Recibos institucionales', { selector: '[data-current-location]' })).toBeVisible();
+    expect(screen.queryByRole('navigation', { name: 'Ruta actual' })).not.toBeInTheDocument();
   });
 });

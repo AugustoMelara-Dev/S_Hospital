@@ -33,7 +33,7 @@ export function InstitutionalIdentity({
         )}
       </div>
       <div className="min-w-0 leading-tight">
-        <strong className="block truncate text-foreground">{hospitalName}</strong>
+        <strong className={`block text-current ${compact ? 'text-xs leading-snug' : 'truncate'}`}>{hospitalName}</strong>
         {!compact ? <span className="mt-1 block text-sm text-muted-foreground">{location}</span> : null}
         {provisional ? (
           <span className="mt-1 block text-xs font-medium text-warning">Identidad provisional</span>
