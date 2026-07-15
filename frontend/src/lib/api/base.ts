@@ -444,6 +444,10 @@ export const apiClient = {
         });
       } catch (err) {
         if (err instanceof DOMException && err.name === 'AbortError') {
+          if (externalSignal?.aborted) {
+            throw err;
+          }
+
           recordApiIssue(
             new ApiError(
               `La operación '${method} ${path}' excedió ${timeoutMs / 1000}s sin respuesta del servidor local. Revise la red.`,

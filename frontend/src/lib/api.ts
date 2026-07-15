@@ -186,12 +186,15 @@ export const apiClient = {
   },
 
 
-  async getServicesPage(filters: ServiceFilters = {}): Promise<{ data: Service[]; meta: PaginatedMeta }> {
-    return catalog.getServicesPage(filters);
+  async getServicesPage(
+    filters: ServiceFilters = {},
+    options: { signal?: AbortSignal } = {},
+  ): Promise<{ data: Service[]; meta: PaginatedMeta }> {
+    return catalog.getServicesPage(filters, options);
   },
 
-  async getServices(filters: ServiceFilters = {}): Promise<Service[]> {
-    return catalog.getServices(filters);
+  async getServices(filters: ServiceFilters = {}, options: { signal?: AbortSignal } = {}): Promise<Service[]> {
+    return catalog.getServices(filters, options);
   },
 
   async saveService(payload: ServicePayload, id?: number): Promise<Service> {

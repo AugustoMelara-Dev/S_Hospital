@@ -498,6 +498,25 @@ describe('resolveApiBaseUrl', () => {
   });
 
   describe('per-request timeout via AbortController', () => {
+    it('preserves an external cancellation as AbortError instead of reporting a timeout', async () => {
+      const controller = new AbortController();
+      vi.spyOn(window, 'fetch').mockImplementation((_input, init) =>
+        new Promise<Response>((_resolve, reject) => {
+          const signal = (init as RequestInit | undefined)?.signal as AbortSignal | null;
+          signal?.addEventListener('abort', () => {
+            reject(new DOMException('aborted', 'AbortError'));
+          });
+        }),
+      );
+
+      const pending = apiClient.request('/api/services?search=glu', {
+        signal: controller.signal,
+      });
+      controller.abort();
+
+      await expect(pending).rejects.toMatchObject({ name: 'AbortError' });
+    });
+
     it('aborts the request and surfaces a timeout message when the server hangs', async () => {
       resetCsrfCache();
       resetRequestChain();

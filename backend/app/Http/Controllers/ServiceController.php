@@ -11,6 +11,7 @@ use App\Models\InvoiceItem;
 use App\Models\Service;
 use App\Models\ServicePriceHistory;
 use App\Support\ServiceSearch;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -47,8 +48,14 @@ class ServiceController extends Controller
             ->when($request->has('is_billable'), fn ($query) => $query->where('is_billable', $request->boolean('is_billable')))
             ->orderBy('name');
 
-        $services = $request->filled('search')
-            ? $this->fuzzySearch($query->get(), $request->string('search')->toString(), $request)
+        $search = trim($request->string('search')->toString());
+
+        if ($search !== '') {
+            $this->applySearchCandidates($query, $search);
+        }
+
+        $services = $search !== ''
+            ? $this->fuzzySearch($query->get(), $search, $request)
             : $query->paginate($request->perPage());
 
         return response()->json([
@@ -59,6 +66,42 @@ class ServiceController extends Controller
                 'total' => $services->total(),
             ],
         ]);
+    }
+
+    private function applySearchCandidates(Builder $query, string $search): void
+    {
+        $tokens = array_slice(array_values(array_filter(
+            explode(' ', ServiceSearch::normalize($search)),
+            fn (string $token): bool => $token !== '',
+        )), 0, 4);
+
+        foreach ($tokens as $token) {
+            $length = strlen($token);
+            $fragments = $length <= 3
+                ? [$token]
+                : array_values(array_unique([
+                    substr($token, 0, 3),
+                    substr($token, max(0, intdiv($length - 3, 2)), 3),
+                    substr($token, -3),
+                ]));
+
+            $query->where(function (Builder $candidateQuery) use ($fragments): void {
+                foreach ($fragments as $fragment) {
+                    $like = '%'.addcslashes($fragment, '\\%_').'%';
+
+                    $candidateQuery
+                        ->orWhere('name', 'like', $like)
+                        ->orWhere('slug', 'like', $like)
+                        ->orWhere('aliases', 'like', $like)
+                        ->orWhere('scan_code', 'like', $like)
+                        ->orWhere('barcode', 'like', $like)
+                        ->orWhere('qr_code', 'like', $like)
+                        ->orWhere('internal_code', 'like', $like)
+                        ->orWhereHas('category', fn (Builder $categoryQuery) => $categoryQuery->where('name', 'like', $like))
+                        ->orWhereHas('area', fn (Builder $areaQuery) => $areaQuery->where('name', 'like', $like));
+                }
+            });
+        }
     }
 
     /**

@@ -149,7 +149,7 @@ describe('NewInvoiceView critical flows', () => {
     expect(screen.getByLabelText(/buscar por nombre/i)).toBeInTheDocument();
   });
 
-  it('does not repeat the initial services request before the cashier searches', async () => {
+  it('does not request services before the cashier searches or filters', async () => {
     renderNewInvoice();
     await waitForPointOfSaleLoad();
 
@@ -157,7 +157,23 @@ describe('NewInvoiceView critical flows', () => {
 
     await new Promise((resolve) => setTimeout(resolve, 350));
 
-    expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(1);
+    expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services'))).toHaveLength(0);
+  });
+
+  it('stops showing the service loader when an in-flight search is cleared', async () => {
+    vi.spyOn(apiClient, 'getServices').mockReturnValue(new Promise<Service[]>(() => undefined));
+    renderNewInvoice();
+    await waitForPointOfSaleLoad();
+
+    const searchInput = screen.getByLabelText(/buscar por nombre/i);
+    fireEvent.change(searchInput, { target: { value: 'eritro' } });
+    expect(await screen.findByRole('status', { name: /cargando servicios/i })).toBeInTheDocument();
+
+    fireEvent.change(searchInput, { target: { value: '' } });
+
+    await waitFor(() => {
+      expect(screen.queryByRole('status', { name: /cargando servicios/i })).not.toBeInTheDocument();
+    });
   });
 
   it('deduplicates the initial point-of-sale load under React StrictMode', async () => {
@@ -187,7 +203,7 @@ describe('NewInvoiceView critical flows', () => {
     await new Promise((resolve) => setTimeout(resolve, 350));
 
     const fetchMock = globalThis.fetch as ReturnType<typeof vi.fn>;
-    expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services'))).toHaveLength(1);
+    expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services'))).toHaveLength(0);
   });
 
   it('does not show success dialog before an invoice is issued', async () => {
@@ -280,7 +296,7 @@ describe('NewInvoiceView critical flows', () => {
     }, { timeout: 3000 });
 
     await waitFor(() => {
-      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(2);
+      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(1);
     });
 
     addErythropoietinAndOpenAccount();
@@ -343,7 +359,7 @@ describe('NewInvoiceView critical flows', () => {
     fireEvent.change(screen.getByLabelText(/buscar por nombre/i), { target: { value: 'eritro' } });
     await waitFor(() => expect(screen.getByText('Eritropoyetina')).toBeInTheDocument(), { timeout: 3000 });
     await waitFor(() => {
-      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(2);
+      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(1);
     });
     addErythropoietinAndOpenAccount();
     fireEvent.click(await screen.findByRole('button', { name: /^emitir y cobrar$/i }));
@@ -398,7 +414,7 @@ describe('NewInvoiceView critical flows', () => {
     }, { timeout: 3000 });
 
     await waitFor(() => {
-      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(2);
+      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(1);
     });
 
     addErythropoietinAndOpenAccount();
@@ -510,7 +526,7 @@ describe('NewInvoiceView critical flows', () => {
     fireEvent.change(screen.getByLabelText(/buscar por nombre/i), { target: { value: 'eritro' } });
     await waitFor(() => expect(screen.getByText('Eritropoyetina')).toBeInTheDocument(), { timeout: 3000 });
     await waitFor(() => {
-      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(2);
+      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(1);
     });
     addErythropoietinAndOpenAccount();
     fireEvent.click(await screen.findByRole('button', { name: /^emitir y cobrar$/i }));
@@ -611,7 +627,7 @@ describe('NewInvoiceView critical flows', () => {
     fireEvent.change(screen.getByLabelText(/buscar por nombre/i), { target: { value: 'eritro' } });
     await waitFor(() => expect(screen.getByText('Eritropoyetina')).toBeInTheDocument(), { timeout: 3000 });
     await waitFor(() => {
-      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(2);
+      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(1);
     });
     addErythropoietinAndOpenAccount();
     fireEvent.click(await screen.findByRole('button', { name: /^emitir y cobrar$/i }));
@@ -719,7 +735,7 @@ describe('NewInvoiceView critical flows', () => {
     }, { timeout: 3000 });
 
     await waitFor(() => {
-      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(2);
+      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(1);
     });
 
     addErythropoietinAndOpenAccount();
@@ -799,7 +815,7 @@ describe('NewInvoiceView critical flows', () => {
     }, { timeout: 3000 });
 
     await waitFor(() => {
-      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(2);
+      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(1);
     });
 
     addErythropoietinAndOpenAccount();
@@ -1069,7 +1085,7 @@ describe('NewInvoiceView critical flows', () => {
     }, { timeout: 3000 });
 
     await waitFor(() => {
-      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(2);
+      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(1);
     });
 
     addErythropoietinAndOpenAccount();
@@ -1436,7 +1452,7 @@ describe('NewInvoiceView critical flows', () => {
     }, { timeout: 3000 });
 
     await waitFor(() => {
-      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(2);
+      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(1);
     });
 
     addErythropoietinAndOpenAccount();
@@ -1632,7 +1648,7 @@ describe('NewInvoiceView critical flows', () => {
       expect(screen.getByText('Eritropoyetina')).toBeInTheDocument();
     }, { timeout: 3000 });
     await waitFor(() => {
-      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(2);
+      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(1);
     });
 
     addErythropoietinAndOpenAccount();
@@ -1982,7 +1998,7 @@ describe('NewInvoiceView critical flows', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /^emitir y cobrar$/i }));
 
-    expect(await screen.findByText(/abra caja antes de emitir y cobrar una factura/i)).toBeInTheDocument();
+    expect((await screen.findAllByText(/abra caja antes de emitir y cobrar una factura/i)).length).toBeGreaterThan(0);
     expect(screen.queryByRole('dialog', { name: /confirmar emis/i })).not.toBeInTheDocument();
     expect(fetchMock.mock.calls.some(([url]) => String(url).endsWith('/api/invoices'))).toBe(false);
     expect(screen.getAllByText('Eritropoyetina').length).toBeGreaterThan(0);

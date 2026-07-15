@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
+import { StrictMode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, apiClient, type CashSession, type Invoice } from '../../lib/api';
 import { queryKeys } from '../../lib/queryKeys';
@@ -353,6 +354,24 @@ describe('DashboardView', () => {
 
     expect(await screen.findByText(/solicite a un administrador/i)).toBeVisible();
     expect(request).toHaveBeenCalledWith('/api/system/setup-status');
+  });
+
+  it('deduplica setup-status durante el montaje doble de React StrictMode', async () => {
+    const request = vi.mocked(apiClient.request);
+    const queryClient = makeQueryClient();
+
+    render(
+      <StrictMode>
+        <QueryClientProvider client={queryClient}>
+          <MemoryRouter>
+            <DashboardView {...makeBaseProps()} />
+          </MemoryRouter>
+        </QueryClientProvider>
+      </StrictMode>,
+    );
+
+    expect(await screen.findByRole('heading', { level: 2, name: 'Próxima acción' })).toBeVisible();
+    expect(request).toHaveBeenCalledTimes(1);
   });
 
   it('hace que setup domine la CTA y abre el wizard completo con permiso fiscal', async () => {

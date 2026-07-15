@@ -41,7 +41,10 @@ export const catalog = {
   },
 
 
-  async getServicesPage(filters: ServiceFilters = {}): Promise<{ data: Service[]; meta: PaginatedMeta }> {
+  async getServicesPage(
+    filters: ServiceFilters = {},
+    options: { signal?: AbortSignal } = {},
+  ): Promise<{ data: Service[]; meta: PaginatedMeta }> {
     const params = new URLSearchParams();
 
     if (filters.search) params.set('search', filters.search);
@@ -62,7 +65,10 @@ export const catalog = {
     if (filters.perPage) params.set('per_page', String(filters.perPage));
 
     const query = params.toString() ? `?${params.toString()}` : '';
-    const response = await apiClient.request<{ data: Service[]; meta?: PaginatedMeta }>(`/api/services${query}`);
+    const response = await apiClient.request<{ data: Service[]; meta?: PaginatedMeta }>(
+      `/api/services${query}`,
+      { signal: options.signal },
+    );
 
     return {
       data: response.data,
@@ -74,8 +80,8 @@ export const catalog = {
     };
   },
 
-  async getServices(filters: ServiceFilters = {}): Promise<Service[]> {
-    const response = await this.getServicesPage(filters);
+  async getServices(filters: ServiceFilters = {}, options: { signal?: AbortSignal } = {}): Promise<Service[]> {
+    const response = await this.getServicesPage(filters, options);
     return response.data;
   },
 

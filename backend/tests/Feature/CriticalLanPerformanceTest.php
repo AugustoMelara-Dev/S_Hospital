@@ -35,7 +35,7 @@ class CriticalLanPerformanceTest extends TestCase
         Service::factory()->create([
             'category_id' => $category->id,
             'name' => 'Glucosa basal',
-            'aliases' => ['glicemia basal'],
+            'aliases' => 'glicemia basal',
             'active' => true,
             'visible_in_billing' => true,
             'is_billable' => true,
@@ -58,8 +58,8 @@ class CriticalLanPerformanceTest extends TestCase
 
         $this->assertNotEmpty($serviceQueries);
         $this->assertTrue(
-            $serviceQueries->contains(fn (string $query): bool => str_contains(strtolower($query), ' like ')),
-            'La búsqueda debe reducir candidatos en SQL antes de ejecutar el ranking difuso en PHP.',
+            $serviceQueries->contains(fn (string $query): bool => preg_match('/\blike\b/i', $query) === 1),
+            "La búsqueda debe reducir candidatos en SQL antes de ejecutar el ranking difuso en PHP.\n".$serviceQueries->implode("\n"),
         );
     }
 }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FileTextOutlined, WalletOutlined } from '@ant-design/icons';
 import {
@@ -69,6 +69,7 @@ export function DashboardView({
   const [recentInvoices, setRecentInvoices] = useState<Invoice[]>([]);
   const [recentInvoicesError, setRecentInvoicesError] = useState('');
   const [loadingRecent, setLoadingRecent] = useState(false);
+  const setupStatusRequestRef = useRef<Promise<SetupStatus> | null>(null);
   const dashboardQuery = useDashboardReport(canViewManagerialReports);
   const dashboardData = dashboardQuery.data ?? null;
   const dashboardError = dashboardQuery.isError
@@ -100,13 +101,21 @@ export function DashboardView({
   const loadSetupStatus = useCallback(async () => {
     setSetupStatusState('loading');
     setSetupStatusError('');
+    const request = setupStatusRequestRef.current
+      ?? apiClient.request<SetupStatus>('/api/system/setup-status');
+    setupStatusRequestRef.current = request;
+
     try {
-      setSetupStatus(await apiClient.request<SetupStatus>('/api/system/setup-status'));
+      setSetupStatus(await request);
       setSetupStatusState('ready');
     } catch (error) {
       setSetupStatus(null);
       setSetupStatusError(userSafeErrorMessage(error, 'No se pudo confirmar la configuración operativa.'));
       setSetupStatusState('error');
+    } finally {
+      if (setupStatusRequestRef.current === request) {
+        setupStatusRequestRef.current = null;
+      }
     }
   }, []);
 

@@ -66,6 +66,7 @@ export function NewInvoiceView({
   const receiptGenerationIdempotencySignatureRef = useRef<string | null>(null);
   const receiptPdfIdempotencyKeyRef = useRef<string | null>(null);
   const scanCodeInFlightRef = useRef(false);
+  const serviceSearchAbortRef = useRef<AbortController | null>(null);
   const pointOfSaleLoadInFlightRef = useRef(false);
   const pointOfSaleDataLoadedRef = useRef(false);
   const latestPaymentResultRef = useRef<import('../../lib/api').Payment | null>(null);
@@ -84,10 +85,33 @@ export function NewInvoiceView({
     if (!canViewCatalog || !pointOfSaleDataLoadedRef.current) {
       return;
     }
+
+    const hasSearchIntent = Boolean(
+      state.search.trim()
+      || (state.selectedAreaId && state.selectedAreaId !== 'all')
+      || (state.selectedCategoryId && state.selectedCategoryId !== 'all'),
+    );
+
+    if (!hasSearchIntent) {
+      serviceSearchAbortRef.current?.abort();
+      serviceSearchAbortRef.current = null;
+      dispatch({ type: 'SEARCH_SERVICES_SUCCESS', payload: [] });
+      dispatch({ type: 'SET_LOADING_SERVICES', payload: false });
+      return;
+    }
+
+    const controller = new AbortController();
+    serviceSearchAbortRef.current = controller;
     const timeoutId = window.setTimeout(() => {
-      void searchPointOfSaleServices();
+      void searchPointOfSaleServices(controller.signal);
     }, 250);
-    return () => window.clearTimeout(timeoutId);
+    return () => {
+      window.clearTimeout(timeoutId);
+      controller.abort();
+      if (serviceSearchAbortRef.current === controller) {
+        serviceSearchAbortRef.current = null;
+      }
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canViewCatalog, state.search, state.selectedAreaId, state.selectedCategoryId]);
   useEffect(() => {
@@ -170,11 +194,10 @@ export function NewInvoiceView({
     dispatch({ type: 'SET_LOADING_SERVICES', payload: true });
     dispatch({ type: 'SET_POINT_OF_SALE_LOAD_ERROR', payload: null });
     try {
-      const [currentCashSession, nextCategories, nextServiceAreas, nextServices] = await Promise.all([
+      const [currentCashSession, nextCategories, nextServiceAreas] = await Promise.all([
         apiClient.getCurrentCashSession(),
         apiClient.getCategories(true),
         apiClient.getServiceAreas(true),
-        apiClient.getServices({ active: true, billing: true, perPage: POS_SERVICE_PAGE_SIZE }),
       ]);
       dispatch({
         type: 'LOAD_DATA_SUCCESS',
@@ -182,7 +205,7 @@ export function NewInvoiceView({
           loadedCashSession: currentCashSession,
           categories: Array.isArray(nextCategories) ? nextCategories : [],
           serviceAreas: Array.isArray(nextServiceAreas) ? nextServiceAreas : [],
-          services: Array.isArray(nextServices) ? nextServices : [],
+          services: [],
         },
       });
       pointOfSaleDataLoadedRef.current = true;
@@ -198,7 +221,7 @@ export function NewInvoiceView({
     }
   }
 
-  async function searchPointOfSaleServices() {
+  async function searchPointOfSaleServices(signal: AbortSignal) {
     dispatch({ type: 'SET_LOADING_SERVICES', payload: true });
     try {
       const nextServices = await apiClient.getServices({
@@ -208,17 +231,23 @@ export function NewInvoiceView({
         areaId: state.selectedAreaId && state.selectedAreaId !== 'all' ? state.selectedAreaId : undefined,
         categoryId: state.selectedCategoryId && state.selectedCategoryId !== 'all' ? state.selectedCategoryId : undefined,
         perPage: POS_SERVICE_PAGE_SIZE,
-      });
+      }, { signal });
       dispatch({ type: 'SEARCH_SERVICES_SUCCESS', payload: Array.isArray(nextServices) ? nextServices : [] });
       dispatch({ type: 'SET_ALERT_MESSAGE', payload: null });
     } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        return;
+      }
+
       const message = userSafeErrorMessage(error, 'No se pudo buscar servicios activos.');
       dispatch({ type: 'SEARCH_SERVICES_SUCCESS', payload: [] });
       dispatch({ type: 'SET_ALERT_MESSAGE', payload: message });
       onStatus({ message, level: 'error', key: 'billing-services-load', toast: false });
       window.setTimeout(() => searchInputRef.current?.focus(), 0);
     } finally {
-      dispatch({ type: 'SET_LOADING_SERVICES', payload: false });
+      if (!signal.aborted) {
+        dispatch({ type: 'SET_LOADING_SERVICES', payload: false });
+      }
     }
   }
 
