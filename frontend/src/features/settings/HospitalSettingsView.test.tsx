@@ -57,6 +57,10 @@ describe('HospitalSettingsView', () => {
     expect(screen.getByLabelText(/^secretar/i)).toHaveValue('');
     expect(screen.getByLabelText(/lugar del recibo/i)).toHaveValue('');
 
+    fireEvent.change(screen.getByLabelText(/direcci/i), {
+      target: { value: '  Tocoa, Colón  ' },
+    });
+
     fireEvent.click(await screen.findByRole('button', { name: /guardar datos del hospital/i }));
 
     await waitFor(() => {
@@ -161,13 +165,16 @@ describe('HospitalSettingsView', () => {
     render(<HospitalSettingsView canEdit={false} onStatus={vi.fn()} />);
 
     expect(await screen.findByLabelText(/nombre del hospital/i)).toBeDisabled();
-    expect(screen.getByRole('button', { name: /guardar datos del hospital/i })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: /guardar datos del hospital/i })).not.toBeInTheDocument();
   });
 
-  it('keeps the save action visible in a sticky action bar for long forms', async () => {
+  it('shows the sticky save action only after the long form changes', async () => {
     render(<HospitalSettingsView canEdit onStatus={vi.fn()} />);
 
-    const save = await screen.findByRole('button', { name: /guardar datos del hospital/i });
-    expect(save.closest('[data-sticky-actions="true"]')).toHaveClass('sticky', 'bottom-0');
+    const name = await screen.findByLabelText(/nombre del hospital/i);
+    expect(screen.queryByRole('button', { name: /guardar datos del hospital/i })).not.toBeInTheDocument();
+    fireEvent.change(name, { target: { value: 'Hospital General San Isidro' } });
+    const save = screen.getByRole('button', { name: /guardar datos del hospital/i });
+    expect(save.closest('[data-sticky-actions="true"]')).toHaveClass('sticky', 'bottom-20', 'lg:bottom-0');
   });
 });

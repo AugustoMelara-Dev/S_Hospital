@@ -178,16 +178,18 @@ describe('FiscalNumerationView', () => {
   it('disables the save button without edit permission', async () => {
     render(<FiscalNumerationView canEdit={false} onStatus={vi.fn()} />);
 
-    expect(
-      await screen.findByRole('button', { name: /guardar numeraci/i }),
-    ).toBeDisabled();
+    await screen.findByLabelText(/prefijo/i);
+    expect(screen.queryByRole('button', { name: /guardar numeraci/i })).not.toBeInTheDocument();
   });
 
-  it('keeps fiscal copy readable and the save action sticky on long forms', async () => {
+  it('keeps fiscal copy readable and shows the sticky save action only for changes', async () => {
     render(<FiscalNumerationView canEdit onStatus={vi.fn()} />);
 
-    const save = await screen.findByRole('button', { name: /guardar numeración/i });
-    expect(save.closest('[data-sticky-actions="true"]')).toHaveClass('sticky', 'bottom-0');
+    const prefix = await screen.findByLabelText(/prefijo/i);
+    expect(screen.queryByRole('button', { name: /guardar numeración/i })).not.toBeInTheDocument();
+    fireEvent.change(prefix, { target: { value: 'B' } });
+    const save = screen.getByRole('button', { name: /guardar numeración/i });
+    expect(save.closest('[data-sticky-actions="true"]')).toHaveClass('sticky', 'bottom-20', 'lg:bottom-0');
     expect(document.body.textContent).not.toMatch(/Ã|Â|â€œ|â€|ú\?|�/);
   });
 });

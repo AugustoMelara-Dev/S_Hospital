@@ -1,6 +1,5 @@
 import type { FiscalSequence, FiscalSettings } from '@/lib/api';
 import { displayHospitalName } from '@/lib/hospital-name';
-import { Card, Typography } from 'antd';
 
 function formatDate(dateStr: string): string {
   const date = new Date(dateStr);
@@ -24,47 +23,44 @@ export function FiscalSummary({ settings, sequence }: FiscalSummaryProps) {
     ? new Date(sequence.valid_until) < new Date()
     : false;
   const cai = isPlaceholderCai(sequence?.cai) ? '' : sequence?.cai;
+  const fields = [
+    { label: 'Hospital', value: settings ? displayHospitalName(settings.hospital_name) : '-' },
+    { label: 'RTN', value: settings?.rtn || '-', mono: true },
+    { label: 'CAI', value: cai || 'No configurado', mono: true, warning: !cai },
+    {
+      label: 'Rango autorizado',
+      value: sequence?.prefix && sequence?.min_number != null && sequence?.max_number != null && cai
+        ? `${sequence.prefix}-${String(sequence.min_number).padStart(8, '0')} a ${sequence.prefix}-${String(sequence.max_number).padStart(8, '0')}`
+        : '-',
+      mono: true,
+    },
+    {
+      label: 'Siguiente correlativo',
+      value: sequence?.prefix && sequence?.current_number != null && cai
+        ? `${sequence.prefix}-${String(sequence.current_number + 1).padStart(8, '0')}`
+        : '-',
+      mono: true,
+    },
+    {
+      label: 'Válido hasta',
+      value: sequence?.valid_until && cai ? formatDate(sequence.valid_until) : '-',
+      warning: isExpired,
+    },
+  ];
 
   return (
-    <Card title="Resumen fiscal" className="border-operational-border bg-operational-surface">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <div className="min-w-0 border border-operational-border bg-muted/40 p-4">
-            <Typography.Text type="secondary">Hospital</Typography.Text>
-            <p className="break-words font-medium">{settings ? displayHospitalName(settings.hospital_name) : '-'}</p>
+    <section aria-labelledby="fiscal-summary-title" className="border border-operational-border bg-operational-surface">
+      <h2 id="fiscal-summary-title" className="border-b border-border px-4 py-3 text-sm font-semibold">Resumen fiscal</h2>
+      <dl className="grid gap-x-6 gap-y-3 p-4 sm:grid-cols-2 lg:grid-cols-3">
+        {fields.map((field) => (
+          <div key={field.label} data-testid="fiscal-summary-field" className="min-w-0">
+            <dt className="text-xs text-muted-foreground">{field.label}</dt>
+            <dd className={`break-words text-sm font-medium tabular-nums ${field.mono ? 'font-mono' : ''} ${field.warning ? 'text-destructive' : ''}`}>
+              {field.value}
+            </dd>
           </div>
-          <div className="min-w-0 border border-operational-border bg-muted/40 p-4">
-            <Typography.Text type="secondary">RTN</Typography.Text>
-            <p className="break-words font-mono font-medium tabular-nums">{settings?.rtn || '-'}</p>
-          </div>
-          <div className="min-w-0 border border-operational-border bg-muted/40 p-4">
-            <Typography.Text type="secondary">CAI</Typography.Text>
-            <p className="break-words font-mono font-medium">
-              {cai ? cai : <span className="text-destructive">No configurado</span>}
-            </p>
-          </div>
-          <div className="min-w-0 border border-operational-border bg-muted/40 p-4">
-            <Typography.Text type="secondary">Rango Autorizado</Typography.Text>
-            <p className="break-words font-mono font-medium tabular-nums">
-              {sequence?.prefix && sequence?.min_number != null && sequence?.max_number != null && cai
-                ? `${sequence.prefix}-${String(sequence.min_number).padStart(8, '0')} a ${sequence.prefix}-${String(sequence.max_number).padStart(8, '0')}`
-                : '-'}
-            </p>
-          </div>
-          <div className="min-w-0 border border-operational-border bg-muted/40 p-4">
-            <Typography.Text type="secondary">Siguiente Correlativo</Typography.Text>
-            <p className="break-words font-mono font-medium tabular-nums">
-              {sequence?.prefix && sequence?.current_number != null && cai
-                ? `${sequence.prefix}-${String(sequence.current_number + 1).padStart(8, '0')}`
-                : '-'}
-            </p>
-          </div>
-          <div className="min-w-0 border border-operational-border bg-muted/40 p-4">
-            <Typography.Text type="secondary">Válido hasta</Typography.Text>
-            <p className={`font-medium ${isExpired ? 'text-destructive' : ''}`}>
-              {sequence?.valid_until && cai ? formatDate(sequence.valid_until) : '-'}
-            </p>
-          </div>
-        </div>
-    </Card>
+        ))}
+      </dl>
+    </section>
   );
 }

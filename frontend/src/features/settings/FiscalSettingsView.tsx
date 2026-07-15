@@ -9,7 +9,6 @@ import { HospitalSettingsView } from './HospitalSettingsView';
 import { FiscalNumerationView } from './FiscalNumerationView';
 import { OperationalRulesView } from './OperationalRulesView';
 import { BrandingView } from './BrandingView';
-import { PageHeader } from '@/design-system/components/PageHeader';
 import type { OperationalStatusReporter } from '@/app/operationalStatus';
 
 type FiscalSettingsViewProps = {
@@ -57,14 +56,15 @@ export function FiscalSettingsView({ canEdit, canEditOperationalRules, canViewFi
   }, [activeTab, canViewFiscalSettings]);
 
   return (
-    <div className="flex flex-col gap-6">
-      <PageHeader
-        title="Configuración"
-        description="Configure identidad hospitalaria, numeración fiscal, reglas operativas y presentación de documentos."
-        actions={<Tag color={canEdit || canEditOperationalRules ? 'success' : 'default'}>
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-2 border-b border-border pb-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="max-w-3xl text-sm text-muted-foreground">
+          Identidad hospitalaria, numeración fiscal, reglas operativas, marca y documentos institucionales.
+        </p>
+        <Tag className="w-fit" color={canEdit || canEditOperationalRules ? 'success' : 'default'}>
           {canEdit ? 'Edición habilitada' : canEditOperationalRules ? 'Edición operativa' : 'Solo lectura'}
-        </Tag>}
-      />
+        </Tag>
+      </div>
 
       {error ? (
         <Alert type="error" showIcon title="Error" description={error} />
@@ -76,7 +76,7 @@ export function FiscalSettingsView({ canEdit, canEditOperationalRules, canViewFi
         tabPlacement="top"
         items={[
           ...(canViewFiscalSettings ? [{ key: 'resumen', label: 'Resumen', children: (
-          <div className="min-w-0 space-y-6">
+          <div className="min-w-0 space-y-3">
             <Flex justify="space-between" align="center" wrap="wrap" className="border border-operational-border bg-operational-surface p-4">
               <div>
                 <p className="text-sm font-semibold text-foreground">Documentos institucionales</p>

@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { assertStrictMockGuard, installStrictMockGuard } from './fixtures/strict-mock-guard';
 
@@ -57,8 +58,40 @@ test.describe('Settings - critical mocked e2e', () => {
     const receiptsLink = page.getByRole('link', { name: /administrar recibos/i });
     await expect(receiptsLink).toBeVisible();
     await expect(receiptsLink).toHaveAttribute('href', '/settings/institutional-receipts');
+    const summary = page.getByRole('region', { name: /resumen fiscal/i });
+    await expect(summary.getByTestId('fiscal-summary-field')).toHaveCount(6);
+    await expect(summary.locator('.ant-card')).toHaveCount(0);
     await expect(page.getByText(/prueba de impresi.n|pdf de prueba|perfil de impresi.n|serie de recibo/i)).toHaveCount(0);
     await expect(page.getByLabel(/papel del recibo|tipo de papel|margen|escala|fuente|ancho|alto/i)).toHaveCount(0);
+
+    await waitForStablePaint(page);
+    await page.screenshot({
+      path: path.resolve(process.cwd(), '../qa/operational-ux/after/settings-summary-1366.png'),
+      fullPage: true,
+    });
+
+    await page.getByRole('tab', { name: /^hospital$/i }).click();
+    const saveHospital = page.getByRole('button', { name: /guardar datos del hospital/i });
+    await expect(saveHospital).toHaveCount(0);
+    await page.getByLabel(/nombre del hospital/i).fill('Hospital San Isidro Regional');
+    await expect(saveHospital).toBeVisible();
+    await expect(page.getByText(/hay cambios sin guardar/i)).toBeVisible();
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(page.getByRole('tab', { name: /^hospital$/i })).toBeVisible();
+    await expect(saveHospital).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+    const [saveBox, mobileNavBox] = await Promise.all([
+      saveHospital.boundingBox(),
+      page.getByRole('navigation', { name: /accesos m.viles/i }).boundingBox(),
+    ]);
+    expect(saveBox).not.toBeNull();
+    expect(mobileNavBox).not.toBeNull();
+    expect((saveBox?.y ?? 0) + (saveBox?.height ?? 0)).toBeLessThanOrEqual(mobileNavBox?.y ?? 0);
+    await waitForStablePaint(page);
+    await page.screenshot({
+      path: path.resolve(process.cwd(), '../qa/operational-ux/after/settings-hospital-dirty-390.png'),
+    });
   });
 });
 
@@ -124,4 +157,10 @@ function json(route: Route, body: unknown, status = 200) {
     contentType: 'application/json',
     body: JSON.stringify(body),
   });
+}
+
+async function waitForStablePaint(page: Page) {
+  await page.evaluate(() => new Promise<void>((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  }));
 }

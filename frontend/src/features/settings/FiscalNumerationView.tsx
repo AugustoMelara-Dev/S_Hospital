@@ -321,14 +321,17 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
           </FiscalField>
         ) : null}
 
-        <div
-          data-sticky-actions="true"
-          className="sticky bottom-0 z-10 flex justify-end border-t border-operational-border bg-operational-surface p-3"
-        >
-          <Button htmlType="submit" type="primary" icon={<Save aria-hidden="true" />} disabled={!canEdit || form.formState.isSubmitting || saving}>
-            Guardar numeración
-          </Button>
-        </div>
+        {canEdit && form.formState.isDirty ? (
+          <div
+            data-sticky-actions="true"
+            className="sticky bottom-20 z-20 flex items-center justify-between gap-3 border-t border-operational-border bg-operational-surface p-3 lg:bottom-0"
+          >
+            <span className="text-xs text-muted-foreground">Hay cambios fiscales sin guardar.</span>
+            <Button htmlType="submit" type="primary" icon={<Save aria-hidden="true" />} disabled={form.formState.isSubmitting || saving}>
+              Guardar numeración
+            </Button>
+          </div>
+        ) : null}
       </form>
 
       <Modal

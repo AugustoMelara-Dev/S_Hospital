@@ -1,5 +1,5 @@
 import { AlertOutlined as AlertCircle, CheckCircleOutlined as CheckCircle } from '@ant-design/icons';
-import { Card, Tag } from 'antd';
+import { Tag } from 'antd';
 import type { FiscalSequence, FiscalSettings } from '@/lib/api';
 
 interface FiscalStatusCardProps {
@@ -42,10 +42,12 @@ export function FiscalStatusCard({ settings, sequence }: FiscalStatusCardProps) 
   const isConfigured = blockers.length === 0;
 
   return (
-    <Card className={isConfigured ? 'border-success/30 bg-success/10 text-success-foreground' : 'border-warning/30 bg-warning/10 text-warning-foreground'}>
-      <div className="pt-6">
-        <div className="flex items-center gap-4">
-          <div className={isConfigured ? 'bg-success/10 p-3' : 'bg-warning/10 p-3'}>
+    <section
+      aria-label="Estado de configuración fiscal"
+      className={`border px-4 py-3 ${isConfigured ? 'border-success/30 bg-success/10 text-success-foreground' : 'border-warning/30 bg-warning/10 text-warning-foreground'}`}
+    >
+        <div className="flex items-center gap-3">
+          <div className={isConfigured ? 'bg-success/10 p-2' : 'bg-warning/10 p-2'}>
             {isConfigured ? (
               <CheckCircle aria-hidden="true" className="h-6 w-6 text-success" />
             ) : (
@@ -68,12 +70,11 @@ export function FiscalStatusCard({ settings, sequence }: FiscalStatusCardProps) 
             </p>
           </div>
         </div>
-        {blockers.length > 0 && (
-          <p className="mt-3 text-sm text-warning-foreground">
+        {blockers.length > 0 ? (
+          <p className="mt-2 border-t border-warning/20 pt-2 text-xs text-warning-foreground">
             Faltan o requieren revisión: {blockers.join(', ')}.
           </p>
-        )}
-      </div>
-    </Card>
+        ) : null}
+    </section>
   );
 }

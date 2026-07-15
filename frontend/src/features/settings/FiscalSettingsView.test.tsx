@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { Grid } from 'antd';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -93,15 +93,11 @@ describe('FiscalSettingsView (separated sections)', () => {
     document.documentElement.removeAttribute('data-color-theme');
   });
 
-  it('renders a single accessible h1 and keeps receipts as a dedicated route, not a fiscal tab', async () => {
+  it('leaves the page h1 to the application shell and keeps receipts as a dedicated route, not a fiscal tab', async () => {
     renderView();
 
-    expect(
-      await screen.findByRole('heading', { level: 1, name: /^configuraci[oó]n$/i }),
-    ).toBeInTheDocument();
-    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
-
-    expect(screen.getByRole('tab', { name: /hospital/i })).toBeInTheDocument();
+    expect(await screen.findByRole('tab', { name: /hospital/i })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { level: 1 })).not.toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /numeraci[oó]n/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /operativa/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /^marca$/i })).toBeInTheDocument();
@@ -117,7 +113,7 @@ describe('FiscalSettingsView (separated sections)', () => {
 
     renderView();
 
-    await screen.findByRole('heading', { level: 1 });
+    await screen.findByRole('tab', { name: /hospital/i });
     const tabList = screen.getByRole('tablist');
     expect(tabList.closest('.ant-tabs')).toHaveClass('ant-tabs-top');
     expect(tabList).toHaveAttribute('aria-orientation', 'horizontal');
@@ -138,7 +134,7 @@ describe('FiscalSettingsView (separated sections)', () => {
   it('does not render institutional receipt PDF or print-test configuration in the fiscal screen', async () => {
     renderView();
 
-    await screen.findByRole('heading', { level: 1, name: /^configuraci[oó]n$/i });
+    await screen.findByRole('tab', { name: /hospital/i });
 
     expect(
       screen.queryByText(/prueba de impresi[oó]n|pdf de prueba|perfil de impresi[oó]n|serie de recibo/i),
@@ -154,12 +150,15 @@ describe('FiscalSettingsView (separated sections)', () => {
     expect(screen.getByText('A-00000001 a A-00001000')).toBeInTheDocument();
     expect(screen.getByText('A-00000011')).toBeInTheDocument();
     expect(screen.queryByText(/CAI y prefijo fiscal/i)).not.toBeInTheDocument();
+    const summary = screen.getByRole('region', { name: /resumen fiscal/i });
+    expect(within(summary).getAllByTestId('fiscal-summary-field')).toHaveLength(6);
+    expect(summary.querySelector('.ant-card')).not.toBeInTheDocument();
   });
 
   it('allows editing only operational rules with the operational settings permission', async () => {
     renderView({ canEdit: false, canEditOperationalRules: true });
 
-    await screen.findByRole('heading', { level: 1, name: /^configuraci.n$/i });
+    await screen.findByRole('tab', { name: /operativa/i });
     const operationalTab = screen.getByRole('tab', { name: /operativa/i });
     fireEvent.mouseDown(operationalTab);
     fireEvent.click(operationalTab);
@@ -172,7 +171,7 @@ describe('FiscalSettingsView (separated sections)', () => {
   it('does not request fiscal settings when the user only edits operational rules', async () => {
     renderView({ canEdit: false, canEditOperationalRules: true, canViewFiscalSettings: false });
 
-    expect(await screen.findByRole('heading', { level: 1, name: /^configuraci.n$/i })).toBeInTheDocument();
+    expect(await screen.findByRole('tab', { name: /operativa/i })).toBeInTheDocument();
     expect(await screen.findByLabelText(/scanner/i)).not.toBeDisabled();
     expect(apiClient.getOperationalSettings).toHaveBeenCalledTimes(1);
     expect(apiClient.getFiscalSettings).not.toHaveBeenCalled();
