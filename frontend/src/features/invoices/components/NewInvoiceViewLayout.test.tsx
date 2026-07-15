@@ -137,7 +137,7 @@ describe('NewInvoiceViewLayout', () => {
     });
 
     expect(screen.getByLabelText(/nombre del paciente/i)).toHaveValue('Maria Lopez');
-    expect(screen.getByRole('list', { name: /servicios agregados/i })).toContainElement(screen.getByText('Hemograma'));
+    expect(screen.getByRole('table', { name: /cuenta actual/i })).toContainElement(screen.getByText('Hemograma'));
     expect(container.querySelectorAll('[data-billing-region]')).toHaveLength(3);
   });
 
@@ -163,7 +163,8 @@ describe('NewInvoiceViewLayout', () => {
       onConfirm,
     });
 
-    expect(screen.getAllByText(/total estimado/i).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/total estimado/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/^total$/i)).toBeInTheDocument();
     expect(screen.getAllByText('L 138.00').length).toBeGreaterThan(0);
 
     const buttons = screen.getAllByRole('button', { name: /emitir y cobrar/i, hidden: true });

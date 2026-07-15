@@ -162,22 +162,18 @@ describe('PaymentModal', () => {
     expect(onPaymentAmountChange).not.toHaveBeenCalled();
   });
 
-  it('caps non-cash amount input to the pending balance and shows an inline notice', () => {
-    const onPaymentAmountChange = vi.fn();
-
+  it('hides received amount and change for non-cash methods while requesting the real reference', () => {
     renderPaymentModal({
       invoiceNumber: '000-001-01-00000010',
       paymentMethod: 'transfer',
-      paymentAmount: '',
-      onPaymentAmountChange,
+      paymentAmount: '99.99',
+      paymentReference: 'TX-101',
     });
 
-    const amountInput = screen.getByLabelText(/monto recibido/i) as HTMLInputElement;
-
-    fireEvent.change(amountInput, { target: { value: '50.00' } });
-
-    expect(onPaymentAmountChange).toHaveBeenCalledWith('17.25');
-    expect(screen.getByText(/El pago no puede superar el saldo pendiente/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/monto recibido/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/cambio/i)).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/referencia de pago/i)).toHaveValue('TX-101');
+    expect(screen.getByRole('button', { name: /confirmar cobro/i })).toBeEnabled();
   });
 
   it('normalizes comma decimal input for cashier locale without changing payload units', async () => {
@@ -253,21 +249,25 @@ describe('PaymentModal', () => {
 
     expect(screen.getAllByRole('radio')).toHaveLength(4);
     screen.getAllByRole('radio').forEach((method) => expect(method).toBeDisabled());
-    expect(screen.getByLabelText(/monto recibido/i)).toBeDisabled();
+    expect(screen.queryByLabelText(/monto recibido/i)).not.toBeInTheDocument();
     expect(screen.getByLabelText(/referencia de pago/i)).toBeDisabled();
     expect(screen.getByText(/cobrando/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /confirmar cobro.*imprimir/i })).toBeDisabled();
   });
 
-  it('disables the Pay button when a non-cash amount exceeds the pending balance', () => {
+  it('ignores residual received cash when confirming a non-cash payment', async () => {
+    const confirmSpy = vi.fn();
     renderPaymentModal({
       invoiceNumber: '000-001-01-00000010',
       paymentMethod: 'transfer',
       paymentAmount: '99.99',
+      paymentReference: 'TX-101',
+      onConfirm: confirmSpy,
     });
 
-    const payButton = screen.getByRole('button', { name: /confirmar cobro/i });
-    expect(payButton).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro/i }));
+
+    await waitFor(() => expect(confirmSpy).toHaveBeenCalledWith('17.25'));
   });
 
   it('keeps real payment methods and their display labels only', () => {
@@ -353,6 +353,7 @@ describe('PaymentModal', () => {
 
     const summary = screen.getByRole('region', { name: /resumen del cobro/i });
     expect(summary).not.toHaveTextContent(/Cambio/);
+    expect(summary).not.toHaveTextContent(/Recibido/);
     expect(summary).toHaveAttribute('data-summary-columns', '2');
   });
 

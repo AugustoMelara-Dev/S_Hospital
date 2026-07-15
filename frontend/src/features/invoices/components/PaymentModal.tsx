@@ -3,7 +3,6 @@ import { Alert, Button, Divider, Input, Modal, Typography, type InputRef } from 
 import { type FormEvent, type KeyboardEvent, useEffect, useRef, useState } from 'react';
 import type { Payment } from '../../../lib/api';
 import { formatLempirasUIFromCents, parseCents as parseCentsNullable } from '../../../lib/moneyCents';
-import { parseCents } from '../../../lib/money';
 
 type PaymentModalProps = {
   open: boolean;
@@ -56,7 +55,6 @@ export function PaymentModal({
 }: PaymentModalProps) {
   const [error, setError] = useState<string | null>(null);
   const [referenceError, setReferenceError] = useState<string | null>(null);
-  const [capNotice, setCapNotice] = useState<string | null>(null);
   const amountInputRef = useRef<InputRef | null>(null);
   const referenceInputRef = useRef<InputRef | null>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
@@ -65,24 +63,22 @@ export function PaymentModal({
   const balanceCents = parseMoneyCents(balanceDue);
   const paymentCents = parseMoneyCents(paymentAmount);
   const cashCanReturnChange = paymentMethod === 'cash';
+  const effectivePaymentCents = cashCanReturnChange ? paymentCents : balanceCents;
   const overpaymentCents = cashCanReturnChange && paymentCents !== null && balanceCents !== null && paymentCents > balanceCents
     ? paymentCents - balanceCents
     : null;
   const changeCents = overpaymentCents;
-  const remainingBalanceCents = paymentCents !== null && balanceCents !== null && paymentCents > 0 && paymentCents < balanceCents
-    ? balanceCents - paymentCents
+  const remainingBalanceCents = effectivePaymentCents !== null && balanceCents !== null && effectivePaymentCents > 0 && effectivePaymentCents < balanceCents
+    ? balanceCents - effectivePaymentCents
     : null;
-  const appliedAmountCents = paymentCents !== null && balanceCents !== null && paymentCents >= balanceCents
+  const appliedAmountCents = effectivePaymentCents !== null && balanceCents !== null && effectivePaymentCents >= balanceCents
     ? balanceCents
-    : paymentCents;
-  const needsAmount = paymentCents === null || paymentCents <= 0;
-  const exceedsPending = !cashCanReturnChange && paymentCents !== null && balanceCents !== null && paymentCents > balanceCents;
+    : effectivePaymentCents;
+  const needsAmount = effectivePaymentCents === null || effectivePaymentCents <= 0;
   const requiresReference = paymentMethod === 'card' || paymentMethod === 'transfer';
   const summaryColumnCount = 2 + (cashCanReturnChange ? 1 : 0) + (remainingBalanceCents !== null ? 1 : 0);
-  const pendingAmountLabel = balanceCents !== null ? formatMoneyCents(balanceCents) : '0.00';
   const amountDescribedBy = [
     'payment-amount-help',
-    capNotice && !error ? 'payment-amount-cap' : null,
     error ? 'payment-amount-error' : null,
   ].filter(Boolean).join(' ');
   const patientLabel = (patientName ?? '').trim() || 'Paciente no especificado';
@@ -91,13 +87,16 @@ export function PaymentModal({
     if (open) {
       setError(null);
       setReferenceError(null);
-      setCapNotice(null);
       window.setTimeout(() => {
-        amountInputRef.current?.focus();
-        amountInputRef.current?.select();
+        if (cashCanReturnChange) {
+          amountInputRef.current?.focus();
+          amountInputRef.current?.select();
+        } else if (requiresReference) {
+          referenceInputRef.current?.focus();
+        }
       }, 0);
     }
-  }, [open, invoiceNumber]);
+  }, [cashCanReturnChange, invoiceNumber, open, requiresReference]);
 
   useEffect(() => {
     if (!submitting) {
@@ -109,7 +108,6 @@ export function PaymentModal({
     setError(null);
     const normalizedValue = value.trim().replace(',', '.');
     if (normalizedValue === '') {
-      setCapNotice(null);
       onPaymentAmountChange('');
       return;
     }
@@ -118,22 +116,11 @@ export function PaymentModal({
       return;
     }
 
-    const cents = parseCents(normalizedValue);
-    const cap = balanceCents;
-    if (!cashCanReturnChange && cap !== null && cents > cap) {
-      const capped = formatMoneyCents(cap);
-      setCapNotice(`El pago no puede superar el saldo pendiente (L. ${pendingAmountLabel}).`);
-      onPaymentAmountChange(capped);
-      return;
-    }
-
-    setCapNotice(null);
     onPaymentAmountChange(normalizedValue);
   }
 
   function applyCashPreset(cents: number) {
     setError(null);
-    setCapNotice(null);
     onPaymentAmountChange(formatMoneyCents(cents));
     window.setTimeout(() => amountInputRef.current?.focus(), 0);
   }
@@ -188,14 +175,9 @@ export function PaymentModal({
       return;
     }
 
-    const amountCents = parseMoneyCents(paymentAmount);
+    const amountCents = cashCanReturnChange ? parseMoneyCents(paymentAmount) : balanceCents;
     if (amountCents === null || amountCents <= 0) {
       setError('Ingrese un monto válido');
-      amountInputRef.current?.focus();
-      return;
-    }
-    if (!cashCanReturnChange && balanceCents !== null && amountCents > balanceCents) {
-      setError('El pago no puede superar el saldo pendiente.');
       amountInputRef.current?.focus();
       return;
     }
@@ -271,13 +253,15 @@ export function PaymentModal({
             data-summary-columns={String(summaryColumnCount)}
             className={`grid border border-border bg-muted ${summaryColumnCount === 4 ? 'grid-cols-2 sm:grid-cols-4' : summaryColumnCount === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}
           >
-            <div className={cashCanReturnChange ? 'border-r border-border p-3' : 'p-3'}>
+            <div className="border-r border-border p-3">
               <span className="block text-xs font-medium uppercase tracking-wide text-muted-foreground">Total</span>
               <strong className="mt-1 block font-mono text-lg tabular-nums text-foreground">{moneyLabel(total)}</strong>
             </div>
-            <div className="border-r border-border p-3">
-              <span className="block text-xs font-medium uppercase tracking-wide text-muted-foreground">Recibido</span>
-              <strong className="mt-1 block font-mono text-lg tabular-nums text-foreground">{moneyLabelFromCents(paymentCents ?? 0)}</strong>
+            <div className="p-3">
+              <span className="block text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                {cashCanReturnChange ? 'Recibido' : 'A cobrar'}
+              </span>
+              <strong className="mt-1 block font-mono text-lg tabular-nums text-foreground">{moneyLabelFromCents(effectivePaymentCents ?? 0)}</strong>
             </div>
             {cashCanReturnChange ? (
               <div className="p-3">
@@ -345,7 +329,7 @@ export function PaymentModal({
             </p>
           </fieldset>
 
-          <div className="grid gap-1.5">
+          {cashCanReturnChange ? <div className="grid gap-1.5">
             <label htmlFor="payment-amount">Monto recibido (L.)</label>
             <div className="relative">
               <Banknote className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-secondary" aria-hidden="true" />
@@ -364,30 +348,23 @@ export function PaymentModal({
                 className="min-h-12 pl-10 text-lg font-semibold tabular-nums"
               />
             </div>
-            {paymentMethod === 'cash' ? (
-              <div className="grid grid-cols-4 gap-2" aria-label="Montos rápidos de efectivo">
-                <Button htmlType="button" disabled={submitting} onClick={() => applyCashPreset(balanceCents ?? 0)}>Exacto</Button>
-                {[100, 200, 500].map((amount) => (
-                  <Button key={amount} htmlType="button" disabled={submitting} onClick={() => applyCashPreset(amount * 100)}>
-                    L {amount}
-                  </Button>
-                ))}
-              </div>
-            ) : null}
+            <div className="grid grid-cols-4 gap-2" aria-label="Montos rápidos de efectivo">
+              <Button htmlType="button" disabled={submitting} onClick={() => applyCashPreset(balanceCents ?? 0)}>Exacto</Button>
+              {[100, 200, 500].map((amount) => (
+                <Button key={amount} htmlType="button" disabled={submitting} onClick={() => applyCashPreset(amount * 100)}>
+                  L {amount}
+                </Button>
+              ))}
+            </div>
             <p id="payment-amount-help" className="text-xs text-muted-foreground">
               Use hasta dos decimales. Se registrara el monto aplicado a la factura.
             </p>
-            {capNotice && !error ? (
-              <p id="payment-amount-cap" className="text-sm text-warning" role="status">
-                {capNotice}
-              </p>
-            ) : null}
             {error ? (
               <p id="payment-amount-error" className="text-sm text-destructive" role="alert">
                 {error}
               </p>
             ) : null}
-          </div>
+          </div> : null}
 
           {requiresReference ? (
             <div className="grid gap-1.5">
@@ -427,7 +404,7 @@ export function PaymentModal({
             htmlType="submit"
             type="primary"
             className="min-h-11 sm:min-w-56"
-            disabled={submitting || exceedsPending || needsAmount}
+            disabled={submitting || needsAmount}
             aria-label={`Confirmar cobro de ${moneyLabel(balanceDue)} e imprimir`}
           >
             {submitting ? 'Cobrando...' : (

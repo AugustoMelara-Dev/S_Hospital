@@ -650,7 +650,7 @@ describe('NewInvoiceView critical flows', () => {
     fireEvent.change(screen.getByLabelText(/referencia de pago/i), { target: { value: 'TX-RESIDUAL' } });
     fireEvent.click(screen.getByRole('radio', { name: 'Efectivo' }));
 
-    fireEvent.keyDown(amountInput, { key: 'Enter', code: 'Enter', ctrlKey: true });
+    fireEvent.keyDown(screen.getByLabelText(/monto recibido/i), { key: 'Enter', code: 'Enter', ctrlKey: true });
 
     await waitFor(() => {
       expect(paymentPayload).toEqual(expect.objectContaining({ amount: '25.00', method: 'cash', reference: null }));

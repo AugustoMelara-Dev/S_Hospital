@@ -1,4 +1,4 @@
-import { DollarOutlined as Banknote, MinusOutlined as Minus, PlusOutlined as Plus, FileTextOutlined as ReceiptText, DeleteOutlined as Trash2 } from '@ant-design/icons';
+import { MinusOutlined as Minus, PlusOutlined as Plus, DeleteOutlined as Trash2 } from '@ant-design/icons';
 import { Alert, Button, Checkbox, Input, Tag } from 'antd';
 import { useRef } from 'react';
 import { formatLempirasUIFromCents, parseCents } from '../../../lib/moneyCents';
@@ -62,12 +62,10 @@ export function InvoiceCart({
 
   return (
     <section className="flex h-full min-w-0 flex-col" aria-labelledby="invoice-cart-title" aria-busy={submitting ? 'true' : undefined}>
-      <div className="mb-6 flex items-start gap-3 border-b border-operational-border pb-5">
+      <div className="mb-3 flex items-start gap-3 border-b border-operational-border pb-3">
         <div className="min-w-0">
           <h2 id="invoice-cart-title" className="text-xl font-semibold tracking-tight text-foreground block">Cuenta actual</h2>
-          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-            Revise servicios, cantidades y total estimado antes de emitir.
-          </p>
+          <p className="mt-1 text-sm text-muted-foreground">Revise servicios y cantidades antes de emitir.</p>
         </div>
         {items.length > 0 && (
           <Tag color="processing" className="ml-auto shrink-0 font-mono tabular-nums" aria-label={`${items.length} ${items.length === 1 ? 'línea' : 'líneas'} en la cuenta`}>
@@ -76,34 +74,42 @@ export function InvoiceCart({
         )}
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="min-h-0 flex-1">
         {isEmpty ? (
           <div className="border border-dashed border-operational-border bg-muted/30 px-4 py-10 text-center text-muted-foreground" role="status" aria-live="polite">
             <p className="text-sm font-semibold text-foreground">No hay servicios agregados</p>
             <p className="mt-1 max-w-56 text-xs">Busque por nombre, area o categoria para comenzar.</p>
           </div>
         ) : (
-          <div className="space-y-2 pr-1" role="list" aria-label="Servicios agregados a la factura">
-            {items.map((item, index) => {
+          <table className="block w-full table-fixed border border-operational-border sm:table" aria-label="Cuenta actual">
+            <thead className="sr-only sm:table-header-group">
+              <tr className="border-b border-operational-border bg-muted text-left text-xs uppercase tracking-wide text-muted-foreground">
+                <th className="p-2 font-semibold">Servicio</th>
+                <th className="w-36 p-2 font-semibold">Cantidad</th>
+                <th className="w-24 p-2 text-right font-semibold">Importe</th>
+                <th className="w-11 p-2"><span className="sr-only">Acciones</span></th>
+              </tr>
+            </thead>
+            <tbody className="block divide-y divide-operational-border sm:table-row-group sm:divide-y-0">
+              {items.map((item, index) => {
               const isErythropoietin = item.service.special_rule_code === ERYTHROPOIETIN_RULE;
               const isFree = item.dialysisPrescription && isErythropoietin;
               const estimatedLineTotal = isFree ? 0 : lineTotalCents(item.service.price, item.quantity);
               const dialysisHelpId = `dialysis-${index}-help`;
 
               return (
-                <div
+                <tr
                   key={`${item.service.id}-${index}`}
-                  role="listitem"
-                  className="grid gap-4 border border-operational-border bg-card p-4 hover:border-secondary/25 sm:grid-cols-2 sm:items-center"
+                  className="block bg-card p-3 sm:table-row sm:p-0"
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1">
+                  <td className="block min-w-0 pb-2 align-top sm:table-cell sm:p-2">
+                    <div className="min-w-0">
                       <p className="break-words text-sm font-semibold leading-tight">{item.service.name}</p>
                       <div className="mt-1 flex flex-wrap items-center gap-1.5">
                         <Tag className="m-0 px-1.5 py-0.5 text-xs">
                           {item.service.category?.name ?? 'Sin categoría'}
                         </Tag>
-                        {item.service.area?.name ? (
+                        {item.service.area?.name && item.service.area.name.trim().toLocaleLowerCase('es') !== (item.service.category?.name ?? '').trim().toLocaleLowerCase('es') ? (
                           <Tag className="m-0 px-1.5 py-0.5 text-xs">
                             {item.service.area.name}
                           </Tag>
@@ -114,97 +120,84 @@ export function InvoiceCart({
                         {isFree && <span className="font-semibold text-success">(Gratis - receta diálisis)</span>}
                       </p>
                     </div>
+                    {isErythropoietin && canMarkDialysisPrescription && (
+                      <label htmlFor={`dialysis-${index}`} className="mt-2 flex min-h-11 items-start gap-2 border-l-2 border-secondary bg-secondary/8 px-2 py-1.5 text-xs">
+                        <Checkbox
+                          id={`dialysis-${index}`}
+                          checked={item.dialysisPrescription}
+                          aria-describedby={dialysisHelpId}
+                          onChange={(e) => onUpdateDialysisPrescription(index, e.target.checked)}
+                        />
+                        <span id={dialysisHelpId} className="text-muted-foreground">
+                          Receta de diálisis: eritropoyetina L 25.00 → L 0.00
+                        </span>
+                      </label>
+                    )}
+                  </td>
+
+                  <td className="block py-2 align-top sm:table-cell sm:p-2">
+                    <span className="mb-1 block text-xs font-semibold text-muted-foreground sm:sr-only">Cantidad</span>
+                    <div className="flex items-center gap-1">
+                    <Button
+                      type="default"
+                      className="size-9 p-0"
+                      onClick={() => onUpdateQuantity(index, formatQuantity(Math.max(100, parseQuantityUnits(item.quantity) - 100)))}
+                      aria-label={`Disminuir cantidad de ${item.service.name}`}
+                      icon={<Minus className="size-3" aria-hidden="true" />}
+                    />
+                    <Input
+                      value={item.quantity}
+                      onChange={(e) => onUpdateQuantity(index, e.target.value)}
+                      className="h-9 w-14 px-1 text-center font-mono text-sm tabular-nums"
+                      inputMode="decimal"
+                      name={`quantity-${item.service.id}`}
+                      aria-label={`Cantidad de ${item.service.name}`}
+                    />
+                    <Button
+                      type="default"
+                      className="size-9 p-0"
+                      onClick={() => onUpdateQuantity(index, formatQuantity(parseQuantityUnits(item.quantity) + 100))}
+                      aria-label={`Aumentar cantidad de ${item.service.name}`}
+                      icon={<Plus className="size-3" aria-hidden="true" />}
+                    />
+                    </div>
+                  </td>
+                  <td className="block py-2 text-right align-top sm:table-cell sm:p-2">
+                    <span className="mr-2 text-xs font-semibold text-muted-foreground sm:sr-only">Importe</span>
+                    <span className="font-mono text-sm font-semibold tabular-nums">{formatLempirasUIFromCents(estimatedLineTotal)}</span>
+                  </td>
+                  <td className="block pt-1 text-right align-top sm:table-cell sm:p-2">
                     <Button
                       type="text"
                       onClick={() => onRemoveItem(index)}
-                      className="shrink-0 text-muted-foreground hover:text-destructive border-0 p-0"
+                      className="size-9 p-0 text-muted-foreground hover:text-destructive"
                       aria-label={`Quitar ${item.service.name}`}
                       icon={<Trash2 className="size-4" aria-hidden="true" />}
                     />
-                  </div>
-
-                  <div className="flex flex-wrap items-center justify-between gap-3 sm:col-span-2">
-                    <div className="flex items-center gap-2">
-                      <Button
-                        type="default"
-                        className="size-11 p-0 flex items-center justify-center"
-                        onClick={() => {
-                          onUpdateQuantity(index, formatQuantity(Math.max(100, parseQuantityUnits(item.quantity) - 100)));
-                        }}
-                        aria-label={`Disminuir cantidad de ${item.service.name}`}
-                        icon={<Minus className="size-3" aria-hidden="true" />}
-                      />
-                      <Input
-                        value={item.quantity}
-                        onChange={(e) => onUpdateQuantity(index, e.target.value)}
-                        className="h-11 w-24 text-center font-mono tabular-nums"
-                        inputMode="decimal"
-                        name={`quantity-${item.service.id}`}
-                        aria-label={`Cantidad de ${item.service.name}`}
-                      />
-                      <Button
-                        type="default"
-                        className="size-11 p-0 flex items-center justify-center"
-                        onClick={() => {
-                          onUpdateQuantity(index, formatQuantity(parseQuantityUnits(item.quantity) + 100));
-                        }}
-                        aria-label={`Aumentar cantidad de ${item.service.name}`}
-                        icon={<Plus className="size-3" aria-hidden="true" />}
-                      />
-                    </div>
-                    <div className="text-right">
-                      <span className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Importe estimado</span>
-                      <span className="font-mono text-sm font-semibold tabular-nums">
-                        {formatLempirasUIFromCents(estimatedLineTotal)}
-                      </span>
-                    </div>
-                  </div>
-
-                  {isErythropoietin && canMarkDialysisPrescription && (
-                    <label htmlFor={`dialysis-${index}`} className="flex min-h-11 items-start gap-3 border-l-2 border-secondary bg-secondary/8 px-3 py-2 text-xs">
-                      <Checkbox
-                        id={`dialysis-${index}`}
-                        checked={item.dialysisPrescription}
-                        aria-describedby={dialysisHelpId}
-                        onChange={(e) => onUpdateDialysisPrescription(index, e.target.checked)}
-                      />
-                      <span id={dialysisHelpId} className="text-muted-foreground">
-                        Receta de diálisis: eritropoyetina L 25.00 → L 0.00
-                      </span>
-                    </label>
-                  )}
-                </div>
+                  </td>
+                </tr>
               );
-            })}
-          </div>
+              })}
+            </tbody>
+          </table>
         )}
       </div>
 
-      <div data-billing-cart-action className="sticky bottom-0 z-10 mt-5 border-t border-operational-border bg-operational-surface pt-5">
-        <dl className="mb-4 border border-primary/15 bg-primary p-5 text-primary-foreground">
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <dt className="flex items-center gap-2 text-sm font-semibold text-primary-foreground">
-              <ReceiptText className="size-4 text-primary-foreground" aria-hidden="true" />
-              Resumen de factura
-            </dt>
-            <dd className="text-xs text-primary-foreground/60">{items.length} item{items.length === 1 ? '' : 's'}</dd>
-          </div>
+      <div data-billing-cart-action className="sticky bottom-0 z-10 mt-4 border-t border-operational-border bg-operational-surface pt-4">
+        <dl className="mb-3 border border-operational-border bg-muted p-3">
           <div className="flex justify-between gap-3 text-sm">
-            <dt className="text-primary-foreground/65">Subtotal:</dt>
+            <dt className="text-muted-foreground">Subtotal</dt>
             <dd className="font-mono tabular-nums">{moneyLabel(preview.subtotal)}</dd>
           </div>
           {taxRate && (
-            <div className="mt-2 flex justify-between gap-3 text-sm">
-              <dt className="text-primary-foreground/65">ISV ({taxRate}%):</dt>
+            <div className="mt-1.5 flex justify-between gap-3 text-sm">
+              <dt className="text-muted-foreground">ISV ({taxRate}%)</dt>
               <dd className="font-mono tabular-nums">{moneyLabel(preview.tax)}</dd>
             </div>
           )}
-          <div className="mt-3 flex justify-between gap-3 border-t border-primary-foreground/15 pt-4">
-            <dt className="flex items-center gap-2 text-base font-bold">
-              <Banknote className="size-4 text-primary-foreground" aria-hidden="true" />
-              Total estimado:
-            </dt>
-            <dd className="whitespace-nowrap font-mono text-2xl font-bold tracking-tight tabular-nums text-primary-foreground">{moneyLabel(preview.total)}</dd>
+          <div className="mt-2 flex justify-between gap-3 border-t border-border pt-2">
+            <dt className="font-bold">Total</dt>
+            <dd className="whitespace-nowrap font-mono text-xl font-bold tabular-nums">{moneyLabel(preview.total)}</dd>
           </div>
         </dl>
 
