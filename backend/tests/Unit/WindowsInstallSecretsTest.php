@@ -133,6 +133,37 @@ class WindowsInstallSecretsTest extends TestCase
         $this->assertStringNotContainsString('strictDepBuilds: false', $normalized);
     }
 
+    public function test_composer_allows_only_plugins_present_in_the_lockfile(): void
+    {
+        $manifest = json_decode(
+            file_get_contents(base_path('composer.json')) ?: '',
+            true,
+            flags: JSON_THROW_ON_ERROR,
+        );
+        $lock = json_decode(
+            file_get_contents(base_path('composer.lock')) ?: '',
+            true,
+            flags: JSON_THROW_ON_ERROR,
+        );
+        $allowedPlugins = array_keys(array_filter(
+            $manifest['config']['allow-plugins'] ?? [],
+            static fn (mixed $allowed): bool => $allowed === true,
+        ));
+        $lockedPlugins = [];
+
+        foreach ([...$lock['packages'], ...$lock['packages-dev']] as $package) {
+            if (($package['type'] ?? null) === 'composer-plugin') {
+                $lockedPlugins[] = $package['name'];
+            }
+        }
+
+        $this->assertSame(
+            [],
+            array_values(array_diff($allowedPlugins, $lockedPlugins)),
+            'Composer plugins may execute code during installation; every grant must match a locked plugin.',
+        );
+    }
+
     public function test_ci_gates_every_dependency_install_job_on_the_supply_chain_preflight(): void
     {
         $supplyChainJob = $this->ciJob('supply-chain', 'backend-sqlite');
