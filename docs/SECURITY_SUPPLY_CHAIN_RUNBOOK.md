@@ -7,6 +7,7 @@ This project runs offline in production, so dependency safety must be checked be
 Run from the repository root:
 
 ```powershell
+powershell.exe -ExecutionPolicy Bypass -File scripts\security\test-supply-chain-check.ps1
 powershell.exe -ExecutionPolicy Bypass -File scripts\security\run-security-checks.ps1
 ```
 
@@ -65,8 +66,9 @@ powershell.exe -ExecutionPolicy Bypass -File scripts\security\run-security-check
 
 ## Current Project Notes
 
-- `frontend/.npmrc` and `backend/.npmrc` require lockfiles and exact saves for new npm dependency changes.
 - CI installs the frontend from `frontend/pnpm-lock.yaml`; the custom guard now
   validates package names and denied versions in pnpm v9 package keys.
+- `frontend/pnpm-workspace.yaml` allows dependency build scripts only for
+  `esbuild`; do not add packages without reviewing the exact script and need.
 - `backend/package-lock.json` exists so Laravel's Vite-side JavaScript dependencies cannot float silently on future installs.
 - Composer may not be available in every Windows shell; this guard reads `composer.lock` directly and does not require Composer for the IOC checks.

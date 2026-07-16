@@ -192,15 +192,19 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: frontend/pnpm-lock.yaml
 
-      - name: Install frontend dependencies
-        working-directory: frontend
-        run: pnpm install --frozen-lockfile
-
       - name: Test supply-chain guard
         shell: pwsh
         run: ./scripts/security/test-supply-chain-check.ps1
 
-      - name: Scan supply-chain indicators
+      - name: Scan dependency locks before install
+        shell: pwsh
+        run: ./scripts/security/supply-chain-check.ps1 -ProjectRoot . -SkipTemp
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Scan installed supply-chain indicators
         shell: pwsh
         run: ./scripts/security/supply-chain-check.ps1 -ProjectRoot . -SkipTemp
 

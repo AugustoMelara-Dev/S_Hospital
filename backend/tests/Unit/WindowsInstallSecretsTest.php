@@ -101,24 +101,44 @@ class WindowsInstallSecretsTest extends TestCase
         $this->assertStringNotContainsString('--ignore-registry-errors', $frontendJob);
     }
 
-    public function test_ci_self_tests_and_runs_supply_chain_guard_before_registry_audit(): void
+    public function test_ci_scans_supply_chain_before_and_after_frontend_install(): void
     {
         $frontendJob = $this->frontendCiJob();
-        $install = strpos($frontendJob, '- name: Install frontend dependencies');
         $selfTest = strpos($frontendJob, '- name: Test supply-chain guard');
-        $guard = strpos($frontendJob, '- name: Scan supply-chain indicators');
+        $preinstallGuard = strpos($frontendJob, '- name: Scan dependency locks before install');
+        $install = strpos($frontendJob, '- name: Install frontend dependencies');
+        $postinstallGuard = strpos($frontendJob, '- name: Scan installed supply-chain indicators');
         $audit = strpos($frontendJob, '- name: Audit frontend dependencies');
 
-        $this->assertNotFalse($install);
         $this->assertNotFalse($selfTest);
-        $this->assertNotFalse($guard);
+        $this->assertNotFalse($preinstallGuard);
+        $this->assertNotFalse($install);
+        $this->assertNotFalse($postinstallGuard);
         $this->assertNotFalse($audit);
-        $this->assertGreaterThan($install, $selfTest);
-        $this->assertGreaterThan($selfTest, $guard);
-        $this->assertGreaterThan($guard, $audit);
+        $this->assertGreaterThan($selfTest, $preinstallGuard);
+        $this->assertGreaterThan($preinstallGuard, $install);
+        $this->assertGreaterThan($install, $postinstallGuard);
+        $this->assertGreaterThan($postinstallGuard, $audit);
         $this->assertStringContainsString('shell: pwsh', $frontendJob);
         $this->assertStringContainsString('./scripts/security/test-supply-chain-check.ps1', $frontendJob);
-        $this->assertStringContainsString('./scripts/security/supply-chain-check.ps1 -ProjectRoot . -SkipTemp', $frontendJob);
+        $this->assertSame(
+            2,
+            substr_count($frontendJob, './scripts/security/supply-chain-check.ps1 -ProjectRoot . -SkipTemp'),
+        );
+    }
+
+    public function test_frontend_pnpm_allows_only_the_reviewed_esbuild_dependency_build(): void
+    {
+        $configPath = base_path('../frontend/pnpm-workspace.yaml');
+
+        $this->assertFileExists($configPath);
+        $config = file_get_contents($configPath);
+
+        $this->assertIsString($config);
+        $normalized = str_replace("\r\n", "\n", trim($config));
+        $this->assertSame("allowBuilds:\n  esbuild: true", $normalized);
+        $this->assertStringNotContainsString('dangerouslyAllowAllBuilds', $normalized);
+        $this->assertStringNotContainsString('strictDepBuilds: false', $normalized);
     }
 
     private function frontendCiJob(): string
