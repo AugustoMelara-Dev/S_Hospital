@@ -7,6 +7,8 @@ import { apiClient } from './lib/api';
 import { queryClient } from './lib/query-client';
 import { resetRequestChain } from './lib/api/base';
 
+const LAZY_ROUTE_TIMEOUT_MS = 15_000;
+
 describe('App', () => {
   function mockSystemStatus() {
     return {
@@ -384,11 +386,11 @@ describe('App', () => {
 
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: /^configuraci[oó]n hospitalaria$/i })).toBeInTheDocument();
-    }, { timeout: 5000 });
+    }, { timeout: LAZY_ROUTE_TIMEOUT_MS });
 
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: /configuraci[oó]n pendiente/i })).toBeInTheDocument();
-    }, { timeout: 5000 });
+    }, { timeout: LAZY_ROUTE_TIMEOUT_MS });
     expect(screen.getByText(/complete los datos autorizados/i)).toBeInTheDocument();
     await activateTab(/^hospital$/i);
     expect(await screen.findByRole('heading', { name: /datos del hospital/i })).toBeInTheDocument();
@@ -740,6 +742,76 @@ describe('App', () => {
     expect(screen.queryByRole('button', { name: /abrir caja desde el centro de mando/i })).not.toBeInTheDocument();
   });
 
+  it('does not expose the dashboard new-invoice CTA when one route permission is missing', async () => {
+    window.history.pushState({}, '', '/dashboard');
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 7,
+              name: 'Cajero Incompleto',
+              email: 'cajero.incompleto@hospital.local',
+              username: 'cajero.incompleto',
+              active: true,
+              roles: ['cajero'],
+              permissions: ['invoices.create', 'catalog.view', 'cash.view', 'payments.create'],
+              must_change_password: false,
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/cash-sessions/current')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 14,
+              user_id: 7,
+              opening_amount: '500.00',
+              closing_amount: null,
+              expected_amount: null,
+              difference_amount: null,
+              status: 'open',
+              opening_notes: null,
+              closing_notes: null,
+              opened_at: '2026-07-15T08:00:00.000Z',
+              closed_at: null,
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/system/setup-status')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              needs_setup: false,
+              steps: {
+                fiscal_settings: true,
+                admin_exists: true,
+                catalog_has_services: true,
+                fiscal_sequence_exists: true,
+              },
+            },
+          }),
+        } as Response;
+      }
+
+      return { ok: true, json: async () => ({ data: null }) } as Response;
+    });
+
+    render(<App />);
+
+    expect(await screen.findByText(/facturaci[oó]n no disponible/i, {}, { timeout: 20_000 })).toBeVisible();
+    expect(screen.getByText(/faltan permisos: consultar recibos/i)).toBeVisible();
+    expect(screen.queryByRole('link', { name: /nueva factura/i })).not.toBeInTheDocument();
+  }, 30_000);
+
   it('creates a manual backup from the admin backups view', async () => {
     window.history.pushState({}, '', '/backups');
     const backupList: unknown[] = [];
@@ -1003,7 +1075,10 @@ describe('App', () => {
       (await screen.findAllByRole('region', { name: /historial de respaldos locales/i })).length,
     ).toBeGreaterThan(0);
     expect(screen.queryByText('hospital-backup-20260602-090000-failed.sql')).not.toBeInTheDocument();
-    expect(screen.getByText(/revise con soporte antes de confiar en respaldos/i)).toBeInTheDocument();
+    const kpis = screen.getByRole('region', { name: /indicadores principales de respaldos/i });
+    expect(within(kpis).getAllByText(/^No disponible$/i)).toHaveLength(3);
+    expect(within(kpis).getAllByText(/historial visible no resume todos los respaldos/i)).toHaveLength(3);
+    expect(screen.getByText(/no se pudo completar.*revise con soporte/i)).toBeInTheDocument();
     expect(screen.queryByText(/cree un nuevo respaldo/i)).not.toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/SQLSTATE|storage\/logs|hospital-backup-20260602-090000-failed\.sql/i);
   });

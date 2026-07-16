@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -108,7 +108,7 @@ export function UserFormDialog({
   );
   const requiresCriticalAccessConfirmation = hasSelectedCriticalPermission || hasSelectedElevatedRole;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (open) {
       setCriticalAccessConfirmed(false);
       reset(defaultValuesFor(editingUser, assignableRoles));

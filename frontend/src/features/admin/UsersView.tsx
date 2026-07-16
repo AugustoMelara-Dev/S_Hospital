@@ -26,7 +26,6 @@ import {
   visiblePermissionNames,
 } from './users-view.helpers';
 import type { OperationalStatusReporter } from '@/app/operationalStatus';
-
 type UsersViewProps = {
   onStatus: OperationalStatusReporter;
   canCreateUsers: boolean;
@@ -69,6 +68,8 @@ export function UsersView({
   const [targetToggleUser, setTargetToggleUser] = useState<AuthUser | null>(null);
   const [isTogglingUser, setIsTogglingUser] = useState(false);
   const toggleUserInFlightRef = useRef(false);
+  const onStatusRef = useRef(onStatus);
+  onStatusRef.current = onStatus;
   const defaultRoleName = useCallback(() => {
     return roles.find((role) => role.name === 'cajero')?.name
       ?? roles.find((role) => !role.protected)?.name
@@ -96,11 +97,11 @@ export function UsersView({
     } catch (err) {
       const msg = userSafeErrorMessage(err, 'No se pudieron cargar los usuarios.');
       setLoadError(msg);
-      onStatus({ key: 'admin:users:load', level: 'error', message: msg });
+      onStatusRef.current({ key: 'admin:users:load', level: 'error', message: msg });
     } finally {
       setLoading(false);
     }
-  }, [onStatus]);
+  }, []);
   useEffect(() => {
     void fetchUsers();
   }, [fetchUsers]);

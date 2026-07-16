@@ -1,5 +1,3 @@
-import { isErrorMessage } from '@/lib/api/user-error';
-
 export type OperationalStatusLevel = 'error' | 'info' | 'success' | 'warning';
 
 export type OperationalStatusEvent = {
@@ -9,24 +7,26 @@ export type OperationalStatusEvent = {
   toast?: boolean;
 };
 
-export type OperationalStatusInput = string | OperationalStatusEvent;
+export type OperationalStatusInput = OperationalStatusEvent;
 export type OperationalStatusReporter = (status: OperationalStatusInput) => void;
 
-const progressPrefixes = [
-  'Cargando', 'Consultando', 'Preparando', 'Validando', 'Actualizando',
-  'Guardando', 'Abriendo', 'Cerrando', 'Subiendo', 'Creando',
-  'Restableciendo', 'Cambiando', 'Revisando',
-];
+const OPERATIONAL_STATUS_LEVELS = new Set<OperationalStatusLevel>([
+  'error',
+  'info',
+  'success',
+  'warning',
+]);
 
 export function normalizeOperationalStatus(status: OperationalStatusInput): OperationalStatusEvent & { toast: boolean } {
-  if (typeof status !== 'string') {
-    return { ...status, toast: status.toast ?? true };
+  if (
+    typeof status !== 'object'
+    || status === null
+    || typeof status.message !== 'string'
+    || status.message.trim() === ''
+    || !OPERATIONAL_STATUS_LEVELS.has(status.level)
+  ) {
+    throw new Error('Se requiere un estado operativo con mensaje y severidad explícita.');
   }
 
-  return {
-    key: `legacy:${status}`,
-    level: isErrorMessage(status) ? 'error' : 'info',
-    message: status,
-    toast: !progressPrefixes.some((prefix) => status.startsWith(prefix)),
-  };
+  return { ...status, toast: status.toast ?? true };
 }

@@ -59,14 +59,10 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
     : '';
   const error = manualError || backupsQueryError;
   const visiblePendingCount = backupsList.filter((backup) => backup.status === 'pending').length;
-  const pendingCount = systemStatus?.backups.pending_count ?? visiblePendingCount;
-  const visibleFailedCount = backupsList.filter((backup) => backup.status === 'failed').length;
-  const failedCount = systemStatus?.backups.failed_count ?? visibleFailedCount;
-  const lastSuccessBackup = backupsList.find((backup) => backup.status === 'success');
-  const lastSuccessAt = systemStatus?.backups.last_success_at
-    ?? lastSuccessBackup?.completed_at
-    ?? lastSuccessBackup?.created_at
-    ?? null;
+  const pendingCount = systemStatus?.backups.pending_count ?? null;
+  const failedCount = systemStatus?.backups.failed_count ?? null;
+  const lastSuccessAt = systemStatus?.backups.last_success_at ?? null;
+  const unavailableGlobalMetricHelper = 'El historial visible no resume todos los respaldos';
   const operationalStatus = systemStatus ? operationalSummary(systemStatus) : null;
   const visibleReadinessBlockers = systemStatus
     ? systemStatus.readiness.blockers.filter((blocker) => (
@@ -166,7 +162,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
         actions={canCreate ? (
             <BackupPageActions
               busy={busy}
-              createDisabled={pendingCount > 0}
+              createDisabled={(pendingCount ?? visiblePendingCount) > 0}
               creatingBackup={creatingBackup}
               onCreateRequest={() => setConfirmCreateOpen(true)}
               onRefresh={refreshOperationalStatus}
@@ -186,21 +182,27 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
             {[
               {
                 label: 'Ultimo exitoso',
-                value: lastSuccessAt ? formatRelativeTime(lastSuccessAt) : 'Sin respaldo',
-                helper: lastSuccessAt ? 'Respaldo protegido mas reciente' : 'Cree un respaldo local protegido',
-                tone: lastSuccessAt ? 'success' : 'warning',
+                value: systemStatus ? (lastSuccessAt ? formatRelativeTime(lastSuccessAt) : 'Sin respaldo') : 'No disponible',
+                helper: systemStatus
+                  ? (lastSuccessAt ? 'Respaldo protegido mas reciente' : 'Cree un respaldo local protegido')
+                  : unavailableGlobalMetricHelper,
+                tone: systemStatus && lastSuccessAt ? 'success' : 'warning',
               },
               {
                 label: 'Pendientes',
-                value: pendingCount,
-                helper: pendingCount > 0 ? 'El servidor debe completar estos respaldos' : 'Sin pendientes registrados',
-                tone: pendingCount > 0 ? 'warning' : 'success',
+                value: pendingCount ?? 'No disponible',
+                helper: pendingCount === null
+                  ? unavailableGlobalMetricHelper
+                  : pendingCount > 0 ? 'El servidor debe completar estos respaldos' : 'Sin pendientes registrados',
+                tone: pendingCount !== null && pendingCount > 0 ? 'warning' : 'success',
               },
               {
                 label: 'Fallidos',
-                value: failedCount,
-                helper: failedCount > 0 ? 'Revise con soporte antes de confiar en respaldos' : 'Sin errores registrados',
-                tone: failedCount > 0 ? 'destructive' : 'success',
+                value: failedCount ?? 'No disponible',
+                helper: failedCount === null
+                  ? unavailableGlobalMetricHelper
+                  : failedCount > 0 ? 'Revise con soporte antes de confiar en respaldos' : 'Sin errores registrados',
+                tone: failedCount !== null && failedCount > 0 ? 'destructive' : 'success',
               },
             ].map((item) => <Col xs={24} sm={12} xl={8} key={item.label}><article aria-label={item.label}><Statistic title={item.label} value={item.value} /><p>{item.helper}</p></article></Col>)}
           </Row>

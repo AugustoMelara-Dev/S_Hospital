@@ -7,10 +7,11 @@ import { AlertOutlined as AlertTriangle, SaveOutlined as Save } from '@ant-desig
 import { Alert, Button, Card, Form, Input, Modal, Tag, Typography } from 'antd';
 import { type FiscalSequence, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { safeClientMessage } from '@/lib/support/clientIssueLog';
+import type { OperationalStatusReporter } from '@/app/operationalStatus';
 
 type FiscalNumerationViewProps = {
   canEdit: boolean;
-  onStatus: (message: string) => void;
+  onStatus: OperationalStatusReporter;
 };
 
 const sequenceSchema = z.object({
@@ -116,7 +117,7 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
         type: 'manual',
         message: 'Indique al menos 5 caracteres explicando el motivo del cambio fiscal.',
       });
-      onStatus('Ingrese un motivo del cambio fiscal de al menos 5 caracteres.');
+      onStatus({ key: 'settings:fiscal-sequence:validation', level: 'warning', message: 'Ingrese un motivo del cambio fiscal de al menos 5 caracteres.', toast: false });
       return;
     }
 
@@ -129,7 +130,7 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
     savingRef.current = true;
     setSaving(true);
     setError('');
-    onStatus('Guardando numeración fiscal...');
+    onStatus({ key: 'settings:fiscal-sequence:save', level: 'info', message: 'Guardando numeración fiscal...', toast: false });
     try {
       const saved = await apiClient.saveFiscalSequence({
         ...(sequence?.id ? { id: sequence.id } : {}),
@@ -153,11 +154,11 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
         valid_until: saved.valid_until,
         reason: '',
       });
-      onStatus('Numeración fiscal guardada.');
+      onStatus({ key: 'settings:fiscal-sequence:save', level: 'success', message: 'Numeración fiscal guardada.' });
     } catch (err) {
       const message = safeClientMessage(userSafeErrorMessage(err, 'No se pudo guardar la numeración.'));
       setError(message);
-      onStatus(message);
+      onStatus({ key: 'settings:fiscal-sequence:save', level: 'error', message });
     } finally {
       savingRef.current = false;
       setSaving(false);

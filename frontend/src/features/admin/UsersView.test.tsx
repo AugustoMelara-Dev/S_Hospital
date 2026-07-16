@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { UsersView } from './UsersView';
 import { ApiError, apiClient, type AuthUser, type RoleDefinition } from '@/lib/api';
@@ -440,6 +441,44 @@ describe('UsersView', () => {
     await waitFor(() => expect(createUser).toHaveBeenCalledWith(expect.objectContaining({
       password: 'Password123!',
     })));
+  });
+
+  it('keeps user creation stable when operational feedback rerenders the parent', async () => {
+    const createdUser: AuthUser = {
+      ...adminUser,
+      id: 2,
+      name: 'Caja Estable',
+      email: 'caja-estable@hospital.test',
+      username: 'caja-estable',
+      roles: ['cajero'],
+      must_change_password: true,
+    };
+    vi.spyOn(apiClient, 'createUser').mockResolvedValue(createdUser);
+
+    function StatusHarness() {
+      const [, setStatus] = useState('');
+      return (
+        <UsersView
+          onStatus={(status) => setStatus(status.message)}
+          canCreateUsers
+          canManageRoles={false}
+        />
+      );
+    }
+
+    render(<StatusHarness />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /crear usuario/i }));
+    const dialog = screen.getByRole('dialog', { name: /crear usuario/i });
+    fireEvent.change(within(dialog).getByLabelText(/nombre completo/i), { target: { value: createdUser.name } });
+    fireEvent.change(within(dialog).getByLabelText(/correo electrónico/i), { target: { value: createdUser.email } });
+    fireEvent.change(within(dialog).getByLabelText(/nombre de usuario/i), { target: { value: createdUser.username } });
+    fireEvent.change(within(dialog).getByLabelText(/contraseña inicial/i), { target: { value: 'Password123!' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: /crear usuario/i }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: /crear usuario/i })).not.toBeInTheDocument());
+    expect(await screen.findByText(createdUser.name)).toBeInTheDocument();
+    expect(apiClient.getUsers).toHaveBeenCalledTimes(1);
   });
 
   it('hides elevated roles from user creators without admin assignment permission', async () => {

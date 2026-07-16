@@ -53,6 +53,7 @@ export function useServerStatus() {
     lastCheck: lastUpdatedAt > 0 ? new Date(lastUpdatedAt) : null,
     checking: query.isFetching,
     operationalHealth: query.data ?? null,
+    refetch: query.refetch,
     summary: summarizeOperationalHealth(!query.isError || isAuthStatusError(query.error), query.data ?? null, query.error),
   };
 }

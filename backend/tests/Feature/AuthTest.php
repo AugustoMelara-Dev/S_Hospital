@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
@@ -367,6 +368,41 @@ class AuthTest extends TestCase
         $this->getJson('/api/auth/session')
             ->assertOk()
             ->assertJsonPath('data.username', 'catalog.local')
+            ->assertJsonPath('data.must_change_password', false);
+    }
+
+    public function test_required_password_change_rotates_and_rebinds_the_browser_session(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $user = User::factory()->create([
+            'username' => 'rotation.local',
+            'email' => 'rotation.local@example.test',
+            'password' => Hash::make('Password123!'),
+            'must_change_password' => true,
+        ]);
+        $user->assignRole('cajero');
+
+        $this->postJson('/api/auth/login', [
+            'login' => 'rotation.local',
+            'password' => 'Password123!',
+        ])->assertOk();
+
+        $sessionIdBefore = session()->getId();
+
+        $this->postJson('/api/auth/change-password', [
+            'current_password' => 'Password123!',
+            'password' => 'NewPassword123!',
+            'password_confirmation' => 'NewPassword123!',
+        ])->assertOk();
+
+        $this->assertNotSame($sessionIdBefore, session()->getId());
+        $this->assertSame($user->id, Auth::guard('web')->id());
+        $this->assertNotEmpty(session()->get('password_hash_web'));
+
+        $this->getJson('/api/auth/session')
+            ->assertOk()
+            ->assertJsonPath('data.username', 'rotation.local')
             ->assertJsonPath('data.must_change_password', false);
     }
 

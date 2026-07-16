@@ -41,7 +41,7 @@ export function FiscalSettingsView({ canEdit, canEditOperationalRules, canViewFi
     } catch (err) {
       const message = userSafeErrorMessage(err, 'No se pudo cargar la configuración.');
       setError(message);
-      onStatus(message);
+      onStatus({ key: 'settings:fiscal:load', level: 'error', message, toast: false });
     }
   }, [canViewFiscalSettings, onStatus]);
 

@@ -14,7 +14,8 @@ vi.mock('../../hooks/useFiscalSettings', () => ({
   usePublicBranding: vi.fn(),
 }));
 
-vi.mock('../../hooks/useServerStatus', () => ({
+vi.mock('../../hooks/useServerStatus', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../hooks/useServerStatus')>()),
   useServerStatus: vi.fn(),
   useSystemStatusSnapshot: vi.fn(),
 }));
@@ -36,7 +37,7 @@ describe('AboutView', () => {
     name: 'Admin Hospital',
     username: 'admin.hospital',
     roles: ['admin'],
-    permissions: ['backups.view'],
+    permissions: ['backups.view', 'system.status.view'],
   };
 
   beforeEach(() => {
@@ -73,6 +74,7 @@ describe('AboutView', () => {
       isOnline: true,
       lastCheck: new Date('2026-06-02T14:00:00.000Z'),
       operationalHealth: null,
+      refetch: vi.fn(),
       summary: {
         description: 'Servidor local, base de datos y respaldos responden. Mantenga el cierre diario y los respaldos protegidos.',
         label: 'Todo bien',
@@ -97,6 +99,7 @@ describe('AboutView', () => {
       isOnline: true,
       lastCheck: new Date('2026-06-02T14:00:00.000Z'),
       operationalHealth: null,
+      refetch: vi.fn(),
       summary: {
         description: 'Hay trabajos o respaldos con alerta. Revise Respaldos y pida soporte si el problema se repite.',
         label: 'Requiere revision',
@@ -121,6 +124,7 @@ describe('AboutView', () => {
       isOnline: true,
       lastCheck: null,
       operationalHealth: null,
+      refetch: vi.fn(),
       summary: {
         description: 'Servidor local, base de datos y respaldos responden.',
         label: 'Todo bien',
@@ -140,6 +144,7 @@ describe('AboutView', () => {
       isOnline: true,
       lastCheck: new Date('2026-06-02T14:00:00.000Z'),
       operationalHealth: null,
+      refetch: vi.fn(),
       summary: {
         description: 'Servidor local, base de datos y respaldos responden. Mantenga el cierre diario y los respaldos protegidos.',
         label: 'Todo bien',
@@ -165,12 +170,33 @@ describe('AboutView', () => {
     expect(useSystemStatusSnapshot).toHaveBeenCalledWith(true);
   });
 
+  it('gates administrative diagnostics by permission instead of the admin role name', () => {
+    vi.mocked(useServerStatus).mockReturnValue({
+      checking: false,
+      isOnline: true,
+      lastCheck: null,
+      operationalHealth: null,
+      refetch: vi.fn(),
+      summary: {
+        description: 'Servidor local disponible.',
+        label: 'Todo bien',
+        level: 'ok',
+      },
+    });
+
+    render(<AboutView user={{ ...adminUser, permissions: [] }} onStatus={vi.fn()} />);
+
+    expect(screen.queryByRole('heading', { name: /diagnostico administrativo/i })).not.toBeInTheDocument();
+    expect(useSystemStatusSnapshot).toHaveBeenCalledWith(false);
+  });
+
   it('labels loopback diagnostics as single-machine local mode instead of missing LAN', async () => {
     vi.mocked(useServerStatus).mockReturnValue({
       checking: false,
       isOnline: true,
       lastCheck: new Date('2026-06-02T14:00:00.000Z'),
       operationalHealth: null,
+      refetch: vi.fn(),
       summary: {
         description: 'Servidor local, base de datos y respaldos responden.',
         label: 'Todo bien',
@@ -217,6 +243,7 @@ describe('AboutView', () => {
       isOnline: true,
       lastCheck: new Date('2026-06-02T14:00:00.000Z'),
       operationalHealth: null,
+      refetch: vi.fn(),
       summary: {
         description: 'Hay trabajos o respaldos con alerta.',
         label: 'Requiere revision',
@@ -247,14 +274,31 @@ describe('AboutView', () => {
     expect(document.body.textContent).not.toMatch(/hospital-backup|checksum|sha/i);
   });
 
-  it('keeps the local diagnostic action callback without changing hooks', async () => {
-    vi.useFakeTimers();
+  it('refetches the local diagnostic and reports its explicit severity', async () => {
     const onStatus = vi.fn();
+    const refetch = vi.fn().mockResolvedValue({
+      data: {
+        database: { connected: true },
+        queue: { failed: 0, pending: 0 },
+        backups: {
+          failed_last_24h: 0,
+          pending: 0,
+          worker_recently_active: true,
+          success_last_24h: 1,
+          latest_success_file_exists: true,
+          latest_success_checksum_matches: true,
+        },
+        storage: {},
+      },
+      error: null,
+      isError: false,
+    });
     vi.mocked(useServerStatus).mockReturnValue({
       checking: false,
       isOnline: true,
       lastCheck: new Date('2026-06-02T14:00:00.000Z'),
       operationalHealth: null,
+      refetch,
       summary: {
         description: 'Servidor local, base de datos y respaldos responden.',
         label: 'Todo bien',
@@ -263,12 +307,19 @@ describe('AboutView', () => {
     });
 
     render(<AboutView user={cashierUser} onStatus={onStatus} />);
-    fireEvent.click(screen.getByRole('button', { name: /revisar conexion local/i }));
+    fireEvent.click(screen.getByRole('button', { name: /revisar conexi.n local/i }));
 
-    expect(onStatus).toHaveBeenCalledWith('Revisando conexion local...');
-    vi.advanceTimersByTime(1000);
-    expect(onStatus).toHaveBeenCalledWith('Todo bien: Servidor local, base de datos y respaldos responden.');
-    vi.useRealTimers();
+    expect(onStatus).toHaveBeenCalledWith({
+      key: 'about:health-check',
+      level: 'info',
+      message: 'Revisando conexión local...',
+      toast: false,
+    });
+    await waitFor(() => expect(refetch).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(onStatus).toHaveBeenCalledWith(expect.objectContaining({
+      key: 'about:health-check',
+      level: 'success',
+    })));
   });
 });
 

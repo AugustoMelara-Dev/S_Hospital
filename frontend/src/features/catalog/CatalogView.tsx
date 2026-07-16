@@ -20,10 +20,11 @@ import {
   STATUS_FILTER_ACTIVE,
   STATUS_FILTER_ALL,
 } from './components/catalogTypes';
+import type { OperationalStatusReporter } from '@/app/operationalStatus';
 
 type CatalogViewProps = {
   user: AuthUser;
-  onStatus: (message: string) => void;
+  onStatus: OperationalStatusReporter;
 };
 
 const DEFAULT_PER_PAGE = 15;
@@ -112,7 +113,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
 
   useEffect(() => {
     if (loadError) {
-      onStatus(loadError);
+      onStatus({ key: 'catalog:load', level: 'error', message: loadError, toast: false });
     }
   }, [loadError, onStatus]);
 
@@ -192,13 +193,13 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
   function handleServiceSuccess() {
     void invalidateCatalogQueries(queryClient);
     void refetchCatalogData();
-    onStatus('Servicio guardado exitosamente.');
+    onStatus({ key: 'catalog:service:save', level: 'success', message: 'Servicio guardado exitosamente.' });
   }
 
   function handleCategorySuccess() {
     void invalidateCatalogQueries(queryClient);
     void refetchCatalogData();
-    onStatus('Categoría guardada exitosamente.');
+    onStatus({ key: 'catalog:category:save', level: 'success', message: 'Categoría guardada exitosamente.' });
   }
 
   const toggleServiceActive = useCallback((service: Service) => {
@@ -219,9 +220,9 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
       setServicePendingStatusChange(null);
       void invalidateCatalogQueries(queryClient);
       void refetchCatalogData();
-      onStatus(nextActive ? 'Servicio activado.' : 'Servicio desactivado.');
+      onStatus({ key: 'catalog:service:status', level: 'success', message: nextActive ? 'Servicio activado.' : 'Servicio desactivado.' });
     } catch {
-      onStatus('No se pudo cambiar el estado del servicio.');
+      onStatus({ key: 'catalog:service:status', level: 'error', message: 'No se pudo cambiar el estado del servicio.' });
     }
   }, [onStatus, queryClient, refetchCatalogData, servicePendingStatusChange]);
 

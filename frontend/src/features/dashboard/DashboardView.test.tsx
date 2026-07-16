@@ -186,6 +186,18 @@ describe('DashboardView', () => {
     expect(screen.queryByRole('link', { name: /abrir caja/i })).not.toBeInTheDocument();
   });
 
+  it('explains why new invoice stays disabled when the route permission contract is incomplete', async () => {
+    renderDashboard(makeBaseProps({
+      canCreateInvoices: false,
+      cashSession: makeCashSession({ id: 3 }),
+      invoiceAccessDeniedReason: 'Faltan permisos: consultar recibos. Solicite el rol Cajero completo.',
+    }));
+
+    expect(await screen.findByText(/facturaci[oó]n no disponible/i)).toBeVisible();
+    expect(screen.getByText(/faltan permisos: consultar recibos/i)).toBeVisible();
+    expect(screen.queryByRole('link', { name: /nueva factura/i })).not.toBeInTheDocument();
+  });
+
   it('hides both quick actions when the user cannot open cash or invoice', async () => {
     renderDashboard(
       makeBaseProps({
@@ -435,7 +447,10 @@ describe('DashboardView', () => {
       canViewFiscalSettings: false,
     }));
 
-    expect(await screen.findByRole('link', { name: 'Completar catálogo' })).toHaveAttribute('href', '/catalog');
+    expect(await screen.findByRole('link', { name: 'Completar catálogo' })).toHaveAttribute(
+      'href',
+      '/catalog?panel=new-service',
+    );
     expect(screen.queryByRole('button', { name: 'Completar configuración' })).not.toBeInTheDocument();
   });
 
