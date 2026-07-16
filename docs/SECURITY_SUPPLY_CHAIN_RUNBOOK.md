@@ -36,6 +36,11 @@ including:
 
 The guard also reviews Composer packages that autoload `src/helpers.php` outside the approved package list because that pattern was used by recent Laravel supply-chain malware.
 
+In CI, the central `supply-chain` job must pass before any backend or frontend
+dependency installation starts. Composer then audits `composer.lock` with
+`--locked` before each backend install; frontend scans installed artifacts again
+after pnpm completes.
+
 ## If The Guard Fails
 
 1. Disconnect the machine from the internet and LAN share paths used for deployment.

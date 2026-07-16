@@ -101,30 +101,22 @@ class WindowsInstallSecretsTest extends TestCase
         $this->assertStringNotContainsString('--ignore-registry-errors', $frontendJob);
     }
 
-    public function test_ci_scans_supply_chain_before_and_after_frontend_install(): void
+    public function test_ci_scans_installed_frontend_dependencies_before_registry_audit(): void
     {
         $frontendJob = $this->frontendCiJob();
-        $selfTest = strpos($frontendJob, '- name: Test supply-chain guard');
-        $preinstallGuard = strpos($frontendJob, '- name: Scan dependency locks before install');
         $install = strpos($frontendJob, '- name: Install frontend dependencies');
         $postinstallGuard = strpos($frontendJob, '- name: Scan installed supply-chain indicators');
         $audit = strpos($frontendJob, '- name: Audit frontend dependencies');
 
-        $this->assertNotFalse($selfTest);
-        $this->assertNotFalse($preinstallGuard);
         $this->assertNotFalse($install);
         $this->assertNotFalse($postinstallGuard);
         $this->assertNotFalse($audit);
-        $this->assertGreaterThan($selfTest, $preinstallGuard);
-        $this->assertGreaterThan($preinstallGuard, $install);
         $this->assertGreaterThan($install, $postinstallGuard);
         $this->assertGreaterThan($postinstallGuard, $audit);
         $this->assertStringContainsString('shell: pwsh', $frontendJob);
-        $this->assertStringContainsString('./scripts/security/test-supply-chain-check.ps1', $frontendJob);
-        $this->assertSame(
-            2,
-            substr_count($frontendJob, './scripts/security/supply-chain-check.ps1 -ProjectRoot . -SkipTemp'),
-        );
+        $this->assertStringContainsString('./scripts/security/supply-chain-check.ps1 -ProjectRoot . -SkipTemp', $frontendJob);
+        $this->assertStringNotContainsString('- name: Test supply-chain guard', $frontendJob);
+        $this->assertStringNotContainsString('- name: Scan dependency locks before install', $frontendJob);
     }
 
     public function test_frontend_pnpm_allows_only_the_reviewed_esbuild_dependency_build(): void
@@ -141,12 +133,55 @@ class WindowsInstallSecretsTest extends TestCase
         $this->assertStringNotContainsString('strictDepBuilds: false', $normalized);
     }
 
+    public function test_ci_gates_every_dependency_install_job_on_the_supply_chain_preflight(): void
+    {
+        $supplyChainJob = $this->ciJob('supply-chain', 'backend-sqlite');
+        $selfTest = strpos($supplyChainJob, '- name: Test supply-chain guard');
+        $guard = strpos($supplyChainJob, '- name: Scan dependency locks before install');
+
+        $this->assertNotFalse($selfTest);
+        $this->assertNotFalse($guard);
+        $this->assertGreaterThan($selfTest, $guard);
+        $this->assertStringContainsString('./scripts/security/test-supply-chain-check.ps1', $supplyChainJob);
+        $this->assertStringContainsString('./scripts/security/supply-chain-check.ps1 -ProjectRoot . -SkipTemp', $supplyChainJob);
+
+        foreach ([
+            $this->ciJob('backend-sqlite', 'backend-mariadb'),
+            $this->ciJob('backend-mariadb', 'frontend'),
+            $this->frontendCiJob(),
+        ] as $installJob) {
+            $this->assertMatchesRegularExpression('/^    needs: supply-chain$/m', $installJob);
+        }
+    }
+
+    public function test_ci_audits_each_composer_lock_before_installing_backend_dependencies(): void
+    {
+        foreach ([
+            $this->ciJob('backend-sqlite', 'backend-mariadb'),
+            $this->ciJob('backend-mariadb', 'frontend'),
+        ] as $backendJob) {
+            $audit = strpos($backendJob, '- name: Composer audit');
+            $install = strpos($backendJob, '- name: Install backend dependencies');
+
+            $this->assertNotFalse($audit);
+            $this->assertNotFalse($install);
+            $this->assertGreaterThan($audit, $install);
+            $this->assertSame(1, substr_count($backendJob, 'composer audit --locked --no-interaction'));
+        }
+    }
+
     private function frontendCiJob(): string
+    {
+        return $this->ciJob('frontend', 'e2e-mocked');
+    }
+
+    private function ciJob(string $name, string $nextJob): string
     {
         $workflow = file_get_contents(base_path('../.github/workflows/ci.yml'));
 
         $this->assertIsString($workflow);
-        $matched = preg_match('/^  frontend:\R(?<job>.*?)(?=^  e2e-mocked:)/ms', $workflow, $matches);
+        $pattern = '/^  '.preg_quote($name, '/').':\R(?<job>.*?)(?=^  '.preg_quote($nextJob, '/').':)/ms';
+        $matched = preg_match($pattern, $workflow, $matches);
 
         $this->assertSame(1, $matched);
 

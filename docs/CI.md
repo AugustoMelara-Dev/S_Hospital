@@ -5,17 +5,19 @@ This repository currently ships with one GitHub Actions workflow under
 
 ## ci.yml — on every push and pull request
 
-Four jobs run in parallel where possible:
+Five jobs run with a short security preflight before dependency installation:
 
 | Job | What it does | Database | Timeout |
 |---|---|---|---|
+| `supply-chain` | Self-tests the local guard and scans all manifests/locks before installs | n/a | 5 min |
 | `backend-sqlite` | PHPUnit + Pint + PHPStan + PowerShell tests | SQLite in-memory | 20 min |
 | `backend-mariadb` | Full PHPUnit suite against a real MariaDB 11.4 service container | MariaDB 11.4 | 30 min |
 | `frontend` | supply-chain guard pre/post pnpm frozen install + audit, typecheck, ESLint, Vitest, Vite build + bundle budget | n/a | 20 min |
 | `e2e-mocked` | Playwright production-readiness spec (route-mocked) | n/a | 25 min |
 
-Concurrency is collapsed per ref so a push to a feature branch
-cancels any previous in-flight run for the same branch.
+The two backend jobs and frontend depend on `supply-chain`, then run in parallel.
+Concurrency is collapsed per ref so a push to a feature branch cancels any
+previous in-flight run for the same branch.
 
 PHP extensions installed in CI: `intl, mbstring, pdo_mysql,
 pdo_sqlite, zip, gd, bcmath, opcache` (bcmath was added in
@@ -63,7 +65,8 @@ The CI workflow does not hardcode production-like secrets:
   `CI_MARIADB_ROOT_PASSWORD` from GitHub Secrets or repository variables, with
   non-production fallback strings used only inside the ephemeral service
   container.
-- `composer audit --no-interaction` runs in both backend jobs before tests.
+- `composer audit --locked --no-interaction` runs from the lockfile before
+  `composer install` in both backend jobs.
 - The frontend job self-tests the repository supply-chain guard, scans npm,
   pnpm and Composer locks before installation, and scans installed artifacts
   again before consulting advisories.
