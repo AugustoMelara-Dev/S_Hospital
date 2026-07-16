@@ -77,12 +77,12 @@ describe('ReceiptPreview accessibility', () => {
     expect(await axe(container)).toHaveNoViolations();
   });
 
-  it('labels the printable institutional receipt container for assistive technologies', () => {
+  it('labels the printable historical invoice container for assistive technologies', () => {
     const { getByLabelText } = render(
       <ReceiptPreview receipt={buildReceipt()} />,
     );
 
-    expect(getByLabelText('Vista previa del recibo')).toBeInTheDocument();
-    expect(getByLabelText('Recibo institucional')).toBeInTheDocument();
+    expect(getByLabelText('Vista previa del comprobante histórico')).toBeInTheDocument();
+    expect(getByLabelText('Comprobante histórico de factura no institucional')).toBeInTheDocument();
   });
 });

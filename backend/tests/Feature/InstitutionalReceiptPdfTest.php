@@ -48,6 +48,8 @@ class InstitutionalReceiptPdfTest extends TestCase
             'CAI-TEST-RECEIPT-PDF-',
             'Rango fiscal autorizado',
             '000-001-01-00000001 a 000-001-01-99999999',
+            'Fecha límite de emisión',
+            '31/12/2027',
             'Estado',
             'Fecha recibo',
             'Paciente / enterante',
@@ -84,6 +86,24 @@ class InstitutionalReceiptPdfTest extends TestCase
 
         $this->assertStringContainsString('thead', $html);
         $this->assertStringContainsString('page-break-inside: avoid', $html);
+        $this->assertSame('2027-12-31', data_get($context['receipt']->invoice_snapshot, 'fiscal_valid_until'));
+    }
+
+    public function test_classic_receipt_omits_fiscal_authorization_when_snapshot_has_no_fiscal_data(): void
+    {
+        $context = $this->createIssuedReceiptContext();
+        $snapshot = $context['receipt']->invoice_snapshot;
+        $snapshot['fiscal_cai'] = null;
+        $snapshot['fiscal_range_from'] = null;
+        $snapshot['fiscal_range_to'] = null;
+        $snapshot['fiscal_valid_until'] = null;
+        $context['receipt']->forceFill(['invoice_snapshot' => $snapshot])->save();
+
+        $html = app(InstitutionalReceiptPdfService::class)->htmlForReceipt($context['receipt']->fresh());
+
+        $this->assertStringNotContainsString('CAI fiscal', $html);
+        $this->assertStringNotContainsString('Rango fiscal autorizado', $html);
+        $this->assertStringNotContainsString('Fecha límite de emisión', $html);
     }
 
     public function test_classic_receipt_keeps_summary_together_without_making_signatures_part_of_the_same_indivisible_block(): void
@@ -315,6 +335,96 @@ class InstitutionalReceiptPdfTest extends TestCase
             $this->assertStringContainsString('page-break-inside: avoid', $html);
             $this->assertStringNotContainsString('barcode', $html);
             $this->assertStringNotContainsString('qr_code', $html);
+        }
+    }
+
+    public function test_primary_receipt_profiles_keep_mixed_payments_in_the_compact_table(): void
+    {
+        $receipt = $this->receiptWithTwoPostedPayments();
+
+        foreach ([
+            ReceiptPrintProfile::CODE_LETTER,
+            ReceiptPrintProfile::CODE_HALF_LETTER,
+            ReceiptPrintProfile::CODE_A5,
+        ] as $code) {
+            $html = app(InstitutionalReceiptPdfService::class)
+                ->htmlForReceipt($this->receiptUsingProfile($receipt, $code));
+
+            $this->assertStringContainsString('<section class="receipt-page primary-paper">', $html, $code);
+            $this->assertStringContainsString('<table class="items-table payment-table">', $html, $code);
+            $this->assertMatchesRegularExpression(
+                '/<table class="items-table payment-table">.*Fecha.*Método.*Monto.*Referencia.*Cajero.*<\/table>/s',
+                $html,
+                $code,
+            );
+            $this->assertStringNotContainsString('<div class="thermal-payment-list">', $html, $code);
+            $this->assertStringNotContainsString('<div class="thermal-meta-list', $html, $code);
+        }
+    }
+
+    public function test_thermal_receipt_profiles_stack_mixed_payments_and_essential_metadata(): void
+    {
+        $receipt = $this->receiptWithTwoPostedPayments();
+        $qaOutputDirectory = trim((string) env('RECEIPT_THERMAL_PAYMENT_QA_OUTPUT_DIR'));
+
+        foreach ([
+            ReceiptPrintProfile::CODE_THERMAL_80,
+            ReceiptPrintProfile::CODE_THERMAL_58,
+        ] as $code) {
+            $thermalReceipt = $this->receiptUsingProfile($receipt, $code);
+            $service = app(InstitutionalReceiptPdfService::class);
+            $html = $service->htmlForReceipt($thermalReceipt);
+
+            $this->assertStringContainsString('<div class="thermal-payment-list">', $html, $code);
+            $this->assertSame(2, substr_count($html, 'class="thermal-payment-card"'), $code);
+            $this->assertStringNotContainsString('<table class="items-table payment-table">', $html, $code);
+            $this->assertMatchesRegularExpression(
+                '/Pago 1.*Fecha.*15\/07\/2026 08:30.*Método.*Efectivo.*Monto.*L\. 600\.00.*Referencia.*Sin referencia.*Cajero.*Cajera Uno/s',
+                $html,
+                $code,
+            );
+            $this->assertMatchesRegularExpression(
+                '/Pago 2.*Fecha.*15\/07\/2026 08:35.*Método.*Transferencia.*Monto.*L\. 634\.56.*Referencia.*TRX-THERMAL.*Cajero.*Cajera Dos/s',
+                $html,
+                $code,
+            );
+            $this->assertStringContainsString('<div class="thermal-meta-list thermal-document-meta">', $html, $code);
+            $this->assertStringContainsString('<div class="thermal-meta-list thermal-operation-meta">', $html, $code);
+            $this->assertStringNotContainsString('<table class="meta-table">', $html, $code);
+            foreach ([
+                'Factura',
+                'Serie',
+                'Estado',
+                'Fecha recibo',
+                'CAI fiscal',
+                'Rango fiscal autorizado',
+                'Fecha límite de emisión',
+                'Paciente / enterante',
+                'Caja',
+                'Método',
+            ] as $essentialLabel) {
+                $this->assertStringContainsString($essentialLabel, $html, "{$code}: {$essentialLabel}");
+            }
+            $this->assertMatchesRegularExpression(
+                '/\.thermal-payment-card\s*\{[^}]*page-break-inside:\s*avoid;[^}]*break-inside:\s*avoid;/s',
+                $html,
+                $code,
+            );
+
+            $pdf = $service->pdfForReceipt($thermalReceipt);
+            $pageCount = preg_match_all('/\/Type\s*\/Page\b/', $pdf);
+
+            $this->assertStringStartsWith('%PDF', $pdf, $code);
+            $this->assertGreaterThanOrEqual(1, $pageCount, $code);
+            $this->assertLessThanOrEqual(6, $pageCount, $code);
+
+            if ($qaOutputDirectory !== '') {
+                File::ensureDirectoryExists($qaOutputDirectory);
+                File::put(
+                    $qaOutputDirectory.DIRECTORY_SEPARATOR."{$code}-mixed-payments.pdf",
+                    $pdf,
+                );
+            }
         }
     }
 
@@ -807,6 +917,65 @@ class InstitutionalReceiptPdfTest extends TestCase
         ]);
     }
 
+    private function receiptWithTwoPostedPayments(): InstitutionalReceipt
+    {
+        $receipt = $this->createIssuedReceiptContext()['receipt'];
+
+        $receipt->forceFill([
+            'payment_snapshot' => [
+                ...$receipt->payment_snapshot,
+                'selected_payment' => null,
+                'posted_payments' => [
+                    [
+                        'method' => Payment::METHOD_CASH,
+                        'amount' => '600.00',
+                        'amount_cents' => 60000,
+                        'reference' => null,
+                        'paid_at' => '2026-07-15 08:30:00',
+                        'cashier_name' => 'Cajera Uno',
+                    ],
+                    [
+                        'method' => Payment::METHOD_TRANSFER,
+                        'amount' => '634.56',
+                        'amount_cents' => 63456,
+                        'reference' => 'TRX-THERMAL',
+                        'paid_at' => '2026-07-15 08:35:00',
+                        'cashier_name' => 'Cajera Dos',
+                    ],
+                ],
+            ],
+        ])->save();
+
+        return $receipt->fresh();
+    }
+
+    private function receiptUsingProfile(InstitutionalReceipt $receipt, string $code): InstitutionalReceipt
+    {
+        $profile = ReceiptPrintProfile::query()->where('code', $code)->firstOrFail();
+
+        $receipt->forceFill([
+            'print_profile_code' => $code,
+            'profile_snapshot' => [
+                ...$receipt->profile_snapshot,
+                'code' => $profile->code,
+                'name' => $profile->name,
+                'paper_kind' => $profile->paper_kind,
+                'width_mm' => (string) $profile->width_mm,
+                'height_mm' => (string) $profile->height_mm,
+                'margin_top_mm' => (string) $profile->margin_top_mm,
+                'margin_right_mm' => (string) $profile->margin_right_mm,
+                'margin_bottom_mm' => (string) $profile->margin_bottom_mm,
+                'margin_left_mm' => (string) $profile->margin_left_mm,
+                'font_family' => $profile->font_family,
+                'font_scale' => (string) $profile->font_scale,
+                'show_copy_legend' => $profile->show_copy_legend,
+                'show_physical_seal_space' => $profile->show_physical_seal_space,
+            ],
+        ])->save();
+
+        return $receipt->fresh();
+    }
+
     /**
      * @return array{user: User, receipt: InstitutionalReceipt, profile: ReceiptPrintProfile, series: InstitutionalReceiptSeries}
      */
@@ -852,7 +1021,7 @@ class InstitutionalReceiptPdfTest extends TestCase
             'max_number' => 99999999,
             'current_number' => 1,
             'cai' => 'CAI-TEST-RECEIPT-PDF-'.bin2hex(random_bytes(3)),
-            'valid_until' => now()->addYear()->toDateString(),
+            'valid_until' => '2027-12-31',
             'active' => false,
         ]);
 
@@ -870,6 +1039,7 @@ class InstitutionalReceiptPdfTest extends TestCase
             'fiscal_cai' => $sequence->cai,
             'fiscal_range_from' => '000-001-01-00000001',
             'fiscal_range_to' => '000-001-01-99999999',
+            'fiscal_valid_until' => $sequence->valid_until,
             'hospital_name' => 'Hospital San Isidro',
             'hospital_address' => 'Barrio El Centro',
             'receipt_template_mode' => 'institutional',

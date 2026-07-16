@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Actions\InstitutionalReceipts\InstitutionalReceiptPdfService;
 use App\Models\AuditLog;
 use App\Models\CashMovement;
 use App\Models\CashRegisterSession;
@@ -18,6 +19,7 @@ use Database\Seeders\ReceiptPrintProfileSeeder;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 class InstitutionalReceiptPaymentIntegrationTest extends TestCase
@@ -100,6 +102,60 @@ class InstitutionalReceiptPaymentIntegrationTest extends TestCase
             ->assertJsonPath('data.institutional_receipt.receipt_number_full', 'REC-A-00000001');
 
         $this->assertDatabaseCount('institutional_receipts', 1);
+    }
+
+    public function test_institutional_receipt_html_lists_each_mixed_payment_with_its_own_details(): void
+    {
+        Carbon::setTestNow('2026-07-15 08:00:00');
+
+        try {
+            $this->seedBillingBase(partialPayments: true);
+            $cashier = $this->cashier();
+            $sessionId = $this->openSession($cashier);
+            $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+
+            Carbon::setTestNow('2026-07-15 08:30:00');
+            $this->actingAs($cashier)
+                ->postJson("/api/invoices/{$invoiceId}/payments", [
+                    'cash_session_id' => $sessionId,
+                    'method' => Payment::METHOD_CASH,
+                    'amount' => '10.00',
+                ])
+                ->assertCreated()
+                ->assertJsonPath('data.invoice.status', Invoice::STATUS_PARTIAL);
+
+            Carbon::setTestNow('2026-07-15 08:35:00');
+            $receiptId = $this->actingAs($cashier)
+                ->postJson("/api/invoices/{$invoiceId}/payments", [
+                    'cash_session_id' => $sessionId,
+                    'method' => Payment::METHOD_TRANSFER,
+                    'amount' => '7.25',
+                    'reference' => 'TRX-FINAL',
+                ])
+                ->assertCreated()
+                ->assertJsonPath('data.invoice.status', Invoice::STATUS_PAID)
+                ->json('data.institutional_receipt.id');
+
+            $html = app(InstitutionalReceiptPdfService::class)
+                ->htmlForReceipt(InstitutionalReceipt::query()->findOrFail($receiptId));
+
+            $this->assertStringContainsString('Pagos mixtos (2)', $html);
+            $this->assertMatchesRegularExpression(
+                '/15\/07\/2026 08:30.*Efectivo.*L\. 10\.00/s',
+                $html,
+            );
+            $this->assertStringContainsString('Sin referencia', $html);
+            $this->assertMatchesRegularExpression(
+                '/15\/07\/2026 08:35.*Transferencia.*L\. 7\.25.*TRX-FINAL/s',
+                $html,
+            );
+            $this->assertDoesNotMatchRegularExpression(
+                '/<span class="label">M[eé]todo<\/span><br>Transferencia.*L\. 17\.25/s',
+                $html,
+            );
+        } finally {
+            Carbon::setTestNow();
+        }
     }
 
     public function test_institutional_receipt_snapshot_uses_cents_as_financial_source_when_decimal_columns_drift(): void

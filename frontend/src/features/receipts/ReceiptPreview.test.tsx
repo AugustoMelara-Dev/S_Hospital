@@ -153,7 +153,7 @@ describe('ReceiptPreview', () => {
       />,
     );
 
-    const actions = screen.getByRole('group', { name: 'Acciones del recibo' });
+    const actions = screen.getByRole('group', { name: 'Acciones del comprobante histórico' });
     expect(within(actions).getByRole('button', { name: 'Imprimir' })).toHaveClass('min-h-11');
     expect(within(actions).getByRole('button', { name: 'Nueva factura' })).toHaveClass('min-h-11');
     expect(within(document.querySelector('[data-receipt-print-root]') as HTMLElement).queryByRole('button')).toBeNull();
@@ -217,7 +217,7 @@ describe('ReceiptPreview', () => {
     expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-numero|undefined/);
   });
 
-  it('presents the institutional receipt as the final printable receipt', () => {
+  it('clearly labels the legacy fallback as a historical non-institutional invoice', () => {
     render(
       <ReceiptPreview
         receipt={receiptFixture()}
@@ -225,9 +225,11 @@ describe('ReceiptPreview', () => {
       />,
     );
 
-    expect(screen.getByRole('heading', { name: 'RECIBO INSTITUCIONAL' })).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: 'COMPROBANTE DE FACTURA' })).not.toBeInTheDocument();
-    expect(screen.queryByText(/comprobante de compatibilidad/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'COMPROBANTE HISTÓRICO DE FACTURA' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'RECIBO INSTITUCIONAL' })).not.toBeInTheDocument();
+    expect(screen.getByText(/documento histórico no institucional/i)).toBeInTheDocument();
+    expect(screen.getByText(/no asigna correlativo de recibo/i)).toBeInTheDocument();
+    expect(screen.getByRole('rowheader', { name: 'Factura No.' })).toBeInTheDocument();
     expect(screen.getByText('Estado')).toBeInTheDocument();
     expect(screen.getByText('RTN: 08011999123456')).toBeInTheDocument();
     expect(screen.getByText('Tel. 2444-0000')).toBeInTheDocument();
@@ -236,8 +238,55 @@ describe('ReceiptPreview', () => {
     expect(screen.getByText('DIECISIETE LEMPIRAS CON 25/100 CENTAVOS')).toBeInTheDocument();
     const printRoot = document.querySelector('[data-receipt-print-root]');
     expect(printRoot).toBeInTheDocument();
+    expect(printRoot?.textContent).toMatch(/CAI|TEST-CAI/i);
     expect(printRoot?.textContent).toMatch(/Rango autorizado|000-001-01-99999999/i);
-    expect(printRoot?.textContent).not.toMatch(/\bCAI\b|TEST-CAI/i);
+    expect(printRoot?.textContent).toMatch(/Fecha límite de emisión|31\/12\/2026/i);
+  });
+
+  it('omits the fiscal authorization block when the historical invoice has no fiscal data', () => {
+    const receipt = receiptFixture();
+    receipt.fiscal = {
+      cai: null,
+      authorized_range: null,
+      valid_until: null,
+    };
+
+    render(<ReceiptPreview receipt={receipt} onPrint={vi.fn()} />);
+
+    const printRoot = document.querySelector('[data-receipt-print-root]');
+    expect(printRoot?.textContent).not.toMatch(/\bCAI\b|Rango autorizado|Fecha límite de emisión/i);
+  });
+
+  it('keeps every mixed payment method, amount, reference and date in the historical fallback', () => {
+    const receipt = receiptFixture();
+    receipt.payments = [
+      {
+        method: 'cash',
+        amount: '10.00',
+        reference: 'EF-001',
+        paid_at: '2026-06-01T12:05:00',
+        cashier: 'Cajero Uno',
+      },
+      {
+        method: 'transfer',
+        amount: '7.25',
+        reference: 'TRX-FINAL',
+        paid_at: '2026-06-01T12:10:00',
+        cashier: 'Cajero Dos',
+      },
+    ];
+
+    render(<ReceiptPreview receipt={receipt} onPrint={vi.fn()} />);
+
+    const payments = screen.getByRole('heading', { name: 'Pagos' }).nextElementSibling;
+    expect(payments).toHaveTextContent('Efectivo');
+    expect(payments).toHaveTextContent('L. 10.00');
+    expect(payments).toHaveTextContent('EF-001');
+    expect(payments).toHaveTextContent('Transferencia');
+    expect(payments).toHaveTextContent('L. 7.25');
+    expect(payments).toHaveTextContent('TRX-FINAL');
+    expect(payments?.querySelector('time[datetime="2026-06-01T12:05:00"]')).toBeInTheDocument();
+    expect(payments?.querySelector('time[datetime="2026-06-01T12:10:00"]')).toBeInTheDocument();
   });
 
   it('renders semantic receipt tables while keeping controls outside the printable document', () => {

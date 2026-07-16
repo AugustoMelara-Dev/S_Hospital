@@ -55,11 +55,11 @@ export function ReceiptPreview({ onNewInvoice, onPrint, receipt }: ReceiptPrevie
   const taxLabel = `${receipt.invoice.tax_label ?? 'ISV'}${receipt.invoice.tax_rate ? ` ${receipt.invoice.tax_rate}%` : ''}`;
 
   return (
-    <div className="receipt-preview-panel" aria-label="Vista previa del recibo">
+    <div className="receipt-preview-panel" aria-label="Vista previa del comprobante histórico">
       {customPaper ? (
         <style data-receipt-custom-page>{customPaper.pageRule}</style>
       ) : null}
-      <div className="receipt-preview-controls no-print border border-border bg-background p-3" role="group" aria-label="Acciones del recibo">
+      <div className="receipt-preview-controls no-print border border-border bg-background p-3" role="group" aria-label="Acciones del comprobante histórico">
         <Button htmlType="button" type="primary" className="min-h-11" onClick={handlePrintClick}>
           Imprimir
         </Button>
@@ -81,7 +81,7 @@ export function ReceiptPreview({ onNewInvoice, onPrint, receipt }: ReceiptPrevie
           ref={receiptRef}
           className={`institutional-receipt ${receiptPresentation.printClass}`}
           style={customPaper?.style}
-          aria-label="Recibo institucional"
+          aria-label="Comprobante histórico de factura no institucional"
           data-receipt-print-root
         >
           <header className="receipt-header">
@@ -97,14 +97,18 @@ export function ReceiptPreview({ onNewInvoice, onPrint, receipt }: ReceiptPrevie
           <div className="receipt-rule" aria-hidden="true" />
 
           <div className="receipt-title-row">
-            <h1 className="receipt-title">RECIBO INSTITUCIONAL</h1>
-            <span>{receipt.institutional?.copy_label ?? 'Original'}</span>
+            <h1 className="receipt-title">COMPROBANTE HISTÓRICO DE FACTURA</h1>
+            <span>No institucional</span>
           </div>
+
+          <p className="receipt-historical-notice">
+            Documento histórico no institucional. No corresponde a un recibo institucional. No asigna correlativo de recibo.
+          </p>
 
           <table className="receipt-meta-table">
             <tbody>
               <tr>
-                <th scope="row">Serie / No.</th>
+                <th scope="row">Factura No.</th>
                 <td>{receipt.invoice.invoice_number}</td>
                 <th scope="row">Fecha</th>
                 <td>{formatDate(receipt.invoice.issued_at)}</td>
@@ -180,10 +184,26 @@ export function ReceiptPreview({ onNewInvoice, onPrint, receipt }: ReceiptPrevie
             ) : null}
           </div>
 
-          {receipt.fiscal.authorized_range ? (
+          {receipt.fiscal.cai || receipt.fiscal.authorized_range || receipt.fiscal.valid_until ? (
             <div className="receipt-fiscal-data">
-              <strong>Rango autorizado</strong>
-              <span>{receipt.fiscal.authorized_range}</span>
+              {receipt.fiscal.cai ? (
+                <>
+                  <strong>CAI</strong>
+                  <span>{receipt.fiscal.cai}</span>
+                </>
+              ) : null}
+              {receipt.fiscal.authorized_range ? (
+                <>
+                  <strong>Rango autorizado</strong>
+                  <span>{receipt.fiscal.authorized_range}</span>
+                </>
+              ) : null}
+              {receipt.fiscal.valid_until ? (
+                <>
+                  <strong>Fecha límite de emisión</strong>
+                  <span>{formatCalendarDate(receipt.fiscal.valid_until)}</span>
+                </>
+              ) : null}
             </div>
           ) : null}
 
@@ -198,6 +218,9 @@ export function ReceiptPreview({ onNewInvoice, onPrint, receipt }: ReceiptPrevie
                       {paymentLabel(payment.method)}
                       {payment.reference ? ` / Ref: ${payment.reference}` : ''}
                       {payment.cashier ? ` / ${payment.cashier}` : ''}
+                      {payment.paid_at ? (
+                        <><br /><time dateTime={payment.paid_at}>{formatDate(payment.paid_at)}</time></>
+                      ) : null}
                     </span>
                     <strong>{moneyLabel(payment.amount)}</strong>
                   </Row>
@@ -298,6 +321,13 @@ function formatDate(value: string): string {
   // back to local-noon to avoid the day rolling back in some timezones.
   const normalizedValue = /^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T12:00:00` : value;
   return formatLocalizedDateTime(normalizedValue);
+}
+
+function formatCalendarDate(value: string): string {
+  const calendarDate = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
+  return calendarDate
+    ? `${calendarDate[3]}/${calendarDate[2]}/${calendarDate[1]}`
+    : formatDate(value);
 }
 
 function paymentLabel(method?: ReceiptData['payments'][number]['method']): string {

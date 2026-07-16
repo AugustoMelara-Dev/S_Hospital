@@ -479,12 +479,12 @@
   }
 
   @page receipt-80mm {
-    size: 80mm auto;
+    size: auto;
     margin: 4mm;
   }
 
   @page receipt-58mm {
-    size: 58mm auto;
+    size: auto;
     margin: 3mm;
   }
 }
