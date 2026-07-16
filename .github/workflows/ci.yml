@@ -196,6 +196,14 @@ jobs:
         working-directory: frontend
         run: pnpm install --frozen-lockfile
 
+      - name: Test supply-chain guard
+        shell: pwsh
+        run: ./scripts/security/test-supply-chain-check.ps1
+
+      - name: Scan supply-chain indicators
+        shell: pwsh
+        run: ./scripts/security/supply-chain-check.ps1 -ProjectRoot . -SkipTemp
+
       - name: Audit frontend dependencies
         working-directory: frontend
         run: pnpm audit --audit-level high

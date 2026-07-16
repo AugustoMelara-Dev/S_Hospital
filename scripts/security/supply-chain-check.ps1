@@ -145,6 +145,32 @@ function Test-NpmLock([string] $Path) {
     }
 }
 
+function Test-PnpmLock([string] $Path) {
+    $content = Get-Content -LiteralPath $Path -Raw
+    $seenPackages = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+    $packageKeyPattern = "(?m)^[ ]{2}(?:'(?<quoted>[^']+)'|(?<plain>[^:\r\n]+)):[ ]*$"
+
+    foreach ($match in [regex]::Matches($content, $packageKeyPattern)) {
+        $key = if ($match.Groups["quoted"].Success) {
+            $match.Groups["quoted"].Value
+        } else {
+            $match.Groups["plain"].Value.Trim()
+        }
+        $packageMatch = [regex]::Match($key, '^(?<name>@[^/]+/[^@]+|[^@]+)@(?<version>[^( ]+)')
+        if (-not $packageMatch.Success) {
+            continue
+        }
+
+        $name = $packageMatch.Groups["name"].Value
+        $version = $packageMatch.Groups["version"].Value
+        $packageKey = "$name@$version"
+        $reason = Test-DeniedNpmVersion -Name $name -Version $version
+        if ($null -ne $reason -and $seenPackages.Add($packageKey)) {
+            Add-Finding "pnpm-lock" $Path "Denied package '$packageKey' found in lockfile. $reason"
+        }
+    }
+}
+
 function Test-ComposerLock([string] $Path) {
     $content = Get-Content -LiteralPath $Path -Raw
 
@@ -180,12 +206,12 @@ function Test-TextIndicators([string[]] $Roots) {
         $files = Get-ChildItem -LiteralPath $root -Recurse -Force -File -ErrorAction SilentlyContinue |
             Where-Object {
                 $_.Length -le 1048576 -and
-                $_.FullName -notmatch "\\.git\\" -and
-                $_.FullName -notmatch "\\frontend\\dist\\" -and
-                $_.FullName -notmatch "\\backend\\storage\\logs\\" -and
+                $_.FullName -notmatch "[\\/]\.git[\\/]" -and
+                $_.FullName -notmatch "[\\/]frontend[\\/]dist[\\/]" -and
+                $_.FullName -notmatch "[\\/]backend[\\/]storage[\\/]logs[\\/]" -and
                 (
                     $_.Name -in @("package.json", "package-lock.json", "composer.json", "composer.lock", "npm-shrinkwrap.json", "pnpm-lock.yaml", "yarn.lock") -or
-                    ($_.FullName -match "\\backend\\public\\" -and $_.Extension -in @(".php", ".js", ".json", ".vbs", ".ps1", ".cmd", ".bat"))
+                    ($_.FullName -match "[\\/]backend[\\/]public[\\/]" -and $_.Extension -in @(".php", ".js", ".json", ".vbs", ".ps1", ".cmd", ".bat"))
                 )
             }
 
@@ -228,27 +254,33 @@ function Test-SuspiciousFiles([string[]] $Roots) {
 Write-Host "Supply-chain guard: $ProjectRoot"
 
 $npmManifests = Get-ChildItem -LiteralPath $ProjectRoot -Recurse -Force -File -Filter "package.json" -ErrorAction SilentlyContinue |
-    Where-Object { $_.FullName -notmatch "\\node_modules\\" -and $_.FullName -notmatch "\\vendor\\" -and $_.FullName -notmatch "\\frontend\\dist\\" }
+    Where-Object { $_.FullName -notmatch "[\\/]node_modules[\\/]" -and $_.FullName -notmatch "[\\/]vendor[\\/]" -and $_.FullName -notmatch "[\\/]frontend[\\/]dist[\\/]" }
 foreach ($manifest in $npmManifests) {
     Test-NpmManifest $manifest.FullName
 }
 
 $npmLocks = Get-ChildItem -LiteralPath $ProjectRoot -Recurse -Force -File -Filter "package-lock.json" -ErrorAction SilentlyContinue |
-    Where-Object { $_.FullName -notmatch "\\node_modules\\" -and $_.FullName -notmatch "\\vendor\\" }
+    Where-Object { $_.FullName -notmatch "[\\/]node_modules[\\/]" -and $_.FullName -notmatch "[\\/]vendor[\\/]" }
 foreach ($lock in $npmLocks) {
     Test-NpmLock $lock.FullName
 }
 
+$pnpmLocks = Get-ChildItem -LiteralPath $ProjectRoot -Recurse -Force -File -Filter "pnpm-lock.yaml" -ErrorAction SilentlyContinue |
+    Where-Object { $_.FullName -notmatch "[\\/]node_modules[\\/]" -and $_.FullName -notmatch "[\\/]vendor[\\/]" }
+foreach ($lock in $pnpmLocks) {
+    Test-PnpmLock $lock.FullName
+}
+
 $composerLocks = Get-ChildItem -LiteralPath $ProjectRoot -Recurse -Force -File -Filter "composer.lock" -ErrorAction SilentlyContinue |
-    Where-Object { $_.FullName -notmatch "\\vendor\\" }
+    Where-Object { $_.FullName -notmatch "[\\/]vendor[\\/]" }
 foreach ($lock in $composerLocks) {
     Test-ComposerLock $lock.FullName
 }
 
 $scanRoots = @(
-    (Join-Path $ProjectRoot "frontend\node_modules"),
-    (Join-Path $ProjectRoot "backend\vendor"),
-    (Join-Path $ProjectRoot "backend\public")
+    (Join-Path (Join-Path $ProjectRoot "frontend") "node_modules"),
+    (Join-Path (Join-Path $ProjectRoot "backend") "vendor"),
+    (Join-Path (Join-Path $ProjectRoot "backend") "public")
 )
 Test-TextIndicators $scanRoots
 Test-SuspiciousFiles $scanRoots

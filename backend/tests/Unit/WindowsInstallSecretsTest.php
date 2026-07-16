@@ -81,13 +81,7 @@ class WindowsInstallSecretsTest extends TestCase
 
     public function test_ci_audits_frontend_dependencies_and_enforces_bundle_budget_in_order(): void
     {
-        $workflow = file_get_contents(base_path('../.github/workflows/ci.yml'));
-
-        $this->assertIsString($workflow);
-        $matched = preg_match('/^  frontend:\R(?<job>.*?)(?=^  e2e-mocked:)/ms', $workflow, $matches);
-
-        $this->assertSame(1, $matched);
-        $frontendJob = $matches['job'];
+        $frontendJob = $this->frontendCiJob();
         $install = strpos($frontendJob, '- name: Install frontend dependencies');
         $audit = strpos($frontendJob, '- name: Audit frontend dependencies');
         $typecheck = strpos($frontendJob, '- name: TypeScript typecheck');
@@ -105,5 +99,37 @@ class WindowsInstallSecretsTest extends TestCase
         $this->assertStringContainsString('pnpm audit --audit-level high', $frontendJob);
         $this->assertStringContainsString('pnpm run budget:bundle', $frontendJob);
         $this->assertStringNotContainsString('--ignore-registry-errors', $frontendJob);
+    }
+
+    public function test_ci_self_tests_and_runs_supply_chain_guard_before_registry_audit(): void
+    {
+        $frontendJob = $this->frontendCiJob();
+        $install = strpos($frontendJob, '- name: Install frontend dependencies');
+        $selfTest = strpos($frontendJob, '- name: Test supply-chain guard');
+        $guard = strpos($frontendJob, '- name: Scan supply-chain indicators');
+        $audit = strpos($frontendJob, '- name: Audit frontend dependencies');
+
+        $this->assertNotFalse($install);
+        $this->assertNotFalse($selfTest);
+        $this->assertNotFalse($guard);
+        $this->assertNotFalse($audit);
+        $this->assertGreaterThan($install, $selfTest);
+        $this->assertGreaterThan($selfTest, $guard);
+        $this->assertGreaterThan($guard, $audit);
+        $this->assertStringContainsString('shell: pwsh', $frontendJob);
+        $this->assertStringContainsString('./scripts/security/test-supply-chain-check.ps1', $frontendJob);
+        $this->assertStringContainsString('./scripts/security/supply-chain-check.ps1 -ProjectRoot . -SkipTemp', $frontendJob);
+    }
+
+    private function frontendCiJob(): string
+    {
+        $workflow = file_get_contents(base_path('../.github/workflows/ci.yml'));
+
+        $this->assertIsString($workflow);
+        $matched = preg_match('/^  frontend:\R(?<job>.*?)(?=^  e2e-mocked:)/ms', $workflow, $matches);
+
+        $this->assertSame(1, $matched);
+
+        return $matches['job'];
     }
 }
