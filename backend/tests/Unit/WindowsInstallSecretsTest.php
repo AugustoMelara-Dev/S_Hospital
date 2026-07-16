@@ -26,4 +26,39 @@ class WindowsInstallSecretsTest extends TestCase
         $this->assertStringContainsString("format('ci-db-{0}', github.run_id)", $workflow);
         $this->assertStringContainsString("format('ci-root-db-{0}', github.run_id)", $workflow);
     }
+
+    public function test_ci_workflow_does_not_define_empty_service_maps(): void
+    {
+        $workflow = file_get_contents(base_path('../.github/workflows/ci.yml'));
+
+        $this->assertIsString($workflow);
+        $lines = preg_split('/\R/', $workflow);
+
+        $this->assertIsArray($lines);
+        foreach ($lines as $index => $line) {
+            if (preg_match('/^(?<indent>[ ]*)services:[ ]*$/', $line, $matches) !== 1) {
+                continue;
+            }
+
+            $serviceIndent = strlen($matches['indent']);
+            $nextEntryIndent = null;
+            for ($candidate = $index + 1; $candidate < count($lines); $candidate++) {
+                $nextLine = $lines[$candidate];
+                if (trim($nextLine) === '' || str_starts_with(ltrim($nextLine), '#')) {
+                    continue;
+                }
+
+                preg_match('/^(?<indent>[ ]*)/', $nextLine, $nextMatches);
+                $nextEntryIndent = strlen($nextMatches['indent']);
+                break;
+            }
+
+            $this->assertNotNull($nextEntryIndent, 'Every services map must contain a service entry.');
+            $this->assertGreaterThan(
+                $serviceIndent,
+                $nextEntryIndent,
+                'GitHub Actions rejects jobs whose services map is empty.',
+            );
+        }
+    }
 }

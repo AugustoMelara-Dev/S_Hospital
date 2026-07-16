@@ -17,9 +17,6 @@ jobs:
     name: Backend (SQLite)
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    services:
-      # MariaDB only for the e2e health-check job below; sqlite is the
-      # default for the unit + feature suite.
     steps:
       - uses: actions/checkout@v4
         with:
