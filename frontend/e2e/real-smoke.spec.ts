@@ -130,7 +130,7 @@ test('real cashier can issue and collect an invoice against Laravel DB', async (
   await page.getByLabel(/nombre del paciente/i).fill(patientName);
   await page.getByRole('button', { name: /emitir y cobrar/i }).click();
   await page.getByRole('button', { name: /emitir y abrir cobro/i }).click();
-  await expect(page.getByRole('heading', { name: /registrar pago/i })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: /registrar pago/i })).toBeVisible();
 
   await expect(page.getByText(/ingrese el monto recibido/i)).toBeVisible();
   await page.getByLabel(/ver preview antes de imprimir/i).check();

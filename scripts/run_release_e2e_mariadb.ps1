@@ -8,6 +8,7 @@ param(
     [string] $AdminLogin = "admin.e2e",
     [string] $ServiceQuery = "Glucosa",
     [string] $PaymentAmount = "17.25",
+    [string] $ComposeProject = "",
     [switch] $SkipSeed
 )
 
@@ -48,39 +49,53 @@ function Invoke-Checked([string] $Label, [string] $FilePath, [string[]] $Argumen
     }
 }
 
-Invoke-Checked "Check Docker Compose services" "docker" @("compose", "ps", "backend", "frontend")
+function Get-ComposeArguments([string[]] $Arguments) {
+    $result = @("compose")
+    if (-not [string]::IsNullOrWhiteSpace($ComposeProject)) {
+        $result += @("-p", $ComposeProject)
+    }
+    $result += $Arguments
+    return $result
+}
+
+$runId = [guid]::NewGuid().ToString("N")
+
+Invoke-Checked "Check Docker Compose services" "docker" (Get-ComposeArguments @("ps", "backend", "frontend"))
 
 if (-not $SkipSeed) {
     Invoke-Checked `
         "Prepare non-production E2E release data" `
         "docker" `
-        @(
-            "compose", "exec", "-T", "backend", "php", "artisan", "hospital:prepare-e2e-release-data",
+        (Get-ComposeArguments @(
+            "exec", "-T", "backend", "php", "artisan", "hospital:prepare-e2e-release-data",
             "--password=$SeedPassword"
-        )
+        ))
 }
 
 Invoke-Checked `
     "Check container Chromium executable" `
     "docker" `
-    @("compose", "exec", "-T", "frontend", "test", "-x", $ChromiumExecutablePath)
+    (Get-ComposeArguments @("exec", "-T", "frontend", "test", "-x", $ChromiumExecutablePath))
 
 Invoke-Checked `
     "Run release Playwright specs against Docker/MariaDB stack" `
     "docker" `
-    @(
-        "compose", "exec", "-T",
+    (Get-ComposeArguments @(
+        "exec", "-T",
         "-e", "E2E_RELEASE_ALLOW_MUTATIONS=1",
         "-e", "E2E_RELEASE_BASE_URL=$BaseUrl",
         "-e", "E2E_RELEASE_API_BASE_URL=$ApiBaseUrl",
         "-e", "E2E_RELEASE_REPORT_PATH=$ReportPath",
+        "-e", "E2E_RELEASE_RUN_ID=$runId",
+        "-e", "E2E_RELEASE_STACK=docker-compose-mariadb",
+        "-e", "E2E_RELEASE_DATABASE_DRIVER=mysql",
         "-e", "E2E_RELEASE_LOGIN=$Login",
         "-e", "E2E_RELEASE_ADMIN_LOGIN=$AdminLogin",
         "-e", "E2E_RELEASE_PASSWORD=$SeedPassword",
         "-e", "E2E_RELEASE_SERVICE_QUERY=$ServiceQuery",
         "-e", "E2E_RELEASE_PAYMENT_AMOUNT=$PaymentAmount",
         "-e", "PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=$ChromiumExecutablePath",
-        "frontend", "npx", "playwright", "test", "--config=playwright.release.config.ts", "--reporter=list"
-    )
+        "frontend", "npx", "playwright", "test", "--config=playwright.release.config.ts"
+    ))
 
 Write-Host "[release-e2e-mariadb] PASS: release E2E specs completed against Docker/MariaDB stack." -ForegroundColor Green

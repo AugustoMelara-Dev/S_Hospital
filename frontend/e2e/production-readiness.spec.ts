@@ -1071,7 +1071,7 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await page.getByRole('button', { name: /emitir y cobrar/i }).click();
   await captureScreen(page, 'invoice-confirmation-light', 'light');
   await page.getByRole('button', { name: /emitir y abrir cobro/i }).click();
-  await expect(page.getByRole('heading', { name: /registrar pago/i })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: /registrar pago/i })).toBeVisible();
   await captureScreen(page, 'payment-modal-light', 'light');
   await expect(page.getByLabel(/monto recibido/i)).toHaveValue('25.00');
   await page.getByRole('button', { name: /confirmar cobro/i }).click();
@@ -1155,11 +1155,11 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await setVisualTheme(page, 'light');
 
   await page.goto('/admin/users');
-  await expect(page.getByRole('heading', { name: /usuarios y permisos/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /usuarios y funciones/i })).toBeVisible();
   await captureScreen(page, 'admin-users-light', 'light');
   await setVisualTheme(page, 'dark');
   await page.goto('/admin/users');
-  await expect(page.getByRole('heading', { name: /usuarios y permisos/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /usuarios y funciones/i })).toBeVisible();
   await page.keyboard.press('Escape');
   await page.waitForTimeout(150);
   await captureScreen(page, 'admin-users-dark', 'dark');

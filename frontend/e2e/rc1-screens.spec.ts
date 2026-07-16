@@ -738,7 +738,7 @@ test.describe('RC1 cashier flow screens', () => {
     const confirmIssueDialog = page.getByRole('dialog', { name: /confirmar emisi/i });
     await expect(confirmIssueDialog).toBeVisible();
     await confirmIssueDialog.getByRole('button', { name: /emitir y abrir cobro/i }).click();
-    await expect(page.getByRole('heading', { name: /registrar pago/i })).toBeVisible();
+    await expect(page.getByRole('dialog', { name: /registrar pago/i })).toBeVisible();
     await page.waitForTimeout(500);
     await captureScreen(page, 'payment-modal-light');
 
