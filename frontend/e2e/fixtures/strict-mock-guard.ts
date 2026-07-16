@@ -10,6 +10,10 @@ export async function installStrictMockGuard(page: Page): Promise<void> {
 
   page.on('console', (message) => {
     const text = message.text();
+    // Playwright init scripts are intentionally refused by the receipt preview's
+    // sandboxed srcdoc frame. This browser diagnostic confirms the security
+    // boundary; it is not an application console failure.
+    if (message.type() === 'error' && /Blocked script execution in 'about:srcdoc'.*sandboxed.*allow-scripts/i.test(text)) return;
     if (message.type() === 'error') state.issues.push(`console.error: ${text}`);
     if (message.type() === 'warning' && /\[antd:.*(?:deprecated|will be removed)/i.test(text)) {
       state.issues.push(`antd.deprecation: ${text}`);

@@ -175,6 +175,29 @@ describe('InvoiceCart', () => {
     expect(within(rows[1]).getByText('L 0.00')).toBeInTheDocument();
   });
 
+  it('normalizes a legacy mixed EPO cart to one patient-level prescription decision', () => {
+    const erythropoietin = serviceFixture({
+      name: 'Eritropoyetina',
+      price: '25.00',
+      special_rule_code: 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION',
+    });
+    renderCart({
+      items: [
+        cartItemFixture({ service: { ...erythropoietin, id: 10 }, dialysisPrescription: true }),
+        cartItemFixture({ service: { ...erythropoietin, id: 11 }, dialysisPrescription: false }),
+      ],
+      canMarkDialysisPrescription: true,
+    });
+
+    const rows = within(screen.getByRole('table', { name: /cuenta actual/i })).getAllByRole('row').slice(1);
+    expect(rows).toHaveLength(2);
+    expect(within(rows[0]).getByText('L 0.00')).toBeInTheDocument();
+    expect(within(rows[1]).getByText('L 0.00')).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /paciente con receta de di.lisis/i })).toBeChecked();
+    expect(screen.getAllByRole('checkbox')).toHaveLength(1);
+    rows.forEach((row) => expect(within(row).queryByRole('checkbox')).not.toBeInTheDocument());
+  });
+
   it('announces disabled blockers and preserves the configured action label', () => {
     renderCart({
       disabled: true,
@@ -191,6 +214,18 @@ describe('InvoiceCart', () => {
 
     expect(screen.queryByLabelText(/descuento|precio manual|precio editable/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /arrastrar|reordenar/i })).not.toBeInTheDocument();
+  });
+
+  it('keeps the fiscal preview complete with exempt amount and a fixed action zone', () => {
+    const { container } = renderCart({
+      items: [cartItemFixture({ service: serviceFixture({ taxable: false }) })],
+      preview: { subtotal: '120.00', exempt: '120.00', tax: '0.00', total: '120.00' },
+    });
+
+    expect(screen.getByText('Exento')).toBeVisible();
+    expect(screen.getAllByText('L 120.00').length).toBeGreaterThan(0);
+    expect(container.querySelector('[data-billing-cart-lines]')).toHaveClass('overflow-y-auto');
+    expect(container.querySelector('[data-billing-cart-action]')).toHaveClass('shrink-0');
   });
 });
 

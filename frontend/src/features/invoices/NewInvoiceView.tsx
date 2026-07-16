@@ -1,10 +1,10 @@
-import { useEffect, useCallback, useMemo, useRef, useReducer } from 'react';
+import { useEffect, useCallback, useMemo, useRef, useReducer, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   apiClient,
+  ApiError,
   institutionalReceipts,
   type CashSession,
-  type InstitutionalReceipt,
   type Invoice,
   type ReceiptData,
   type Service,
@@ -13,15 +13,14 @@ import {
 import { useOperationalSettings } from '../../hooks/useFiscalSettings';
 import { newInvoiceReducer } from './state/reducer';
 import { getInitialNewInvoiceState } from './state/types';
-import { computeSimpleEstimate, isZeroMoney, parseLocalCents } from './state/posMath';
+import { computeSimpleEstimate, formatCents, isZeroMoney, parseLocalCents } from './state/posMath';
 import { NewInvoiceViewLayout } from './components/NewInvoiceViewLayout';
 import { useNewInvoiceScreenGuards } from './hooks/useNewInvoiceScreenGuards';
 import { useNewInvoiceShortcuts } from './hooks/useNewInvoiceShortcuts';
 import { useNewInvoiceValidation } from './hooks/useNewInvoiceValidation';
 import { usePointOfSaleServiceSearch } from './hooks/usePointOfSaleServiceSearch';
+import { useIssuedReceiptActions } from './hooks/useIssuedReceiptActions';
 import { buildInvoicePayload } from './invoicePayload';
-import { downloadBlob, institutionalReceiptPdfFilename, openBlobInNewTab } from '@/lib/download';
-import { createClientIdempotencyKey } from '@/lib/api/base';
 import { payloadScopedIdempotencyKey, resetPayloadScopedIdempotencyKey } from '@/lib/api/idempotency';
 import { queryKeys } from '@/lib/queryKeys';
 import { interpretPaymentOutcome } from '@/modules/billing/application/paymentOutcome';
@@ -65,11 +64,12 @@ export function NewInvoiceView({
   const submitPaymentIdempotencySignatureRef = useRef<string | null>(null);
   const receiptGenerationIdempotencyKeyRef = useRef<string | null>(null);
   const receiptGenerationIdempotencySignatureRef = useRef<string | null>(null);
-  const receiptPdfIdempotencyKeyRef = useRef<string | null>(null);
   const scanCodeInFlightRef = useRef(false);
   const serviceSearchAbortRef = useRef<AbortController | null>(null);
+  const serviceSearchRequestIdRef = useRef(0);
   const pointOfSaleLoadInFlightRef = useRef(false);
   const pointOfSaleDataLoadedRef = useRef(false);
+  const [pointOfSaleDataLoaded, setPointOfSaleDataLoaded] = useState(false);
   const latestPaymentResultRef = useRef<import('../../lib/api').Payment | null>(null);
   useEffect(() => {
     void loadPointOfSaleData();
@@ -81,8 +81,8 @@ export function NewInvoiceView({
     patientName: state.patientName,
     searchInputRef,
   });
-  usePointOfSaleServiceSearch({
-    canViewCatalog, dispatch, pointOfSaleDataLoadedRef, serviceSearchAbortRef,
+  const { loadMoreServices, retryLoad } = usePointOfSaleServiceSearch({
+    canViewCatalog, dispatch, loadData: loadPointOfSaleData, pointOfSaleDataLoaded, pointOfSaleDataLoadedRef, serviceSearchAbortRef,
     searchServices: searchPointOfSaleServices, searchState: state,
   });
   useEffect(() => {
@@ -101,7 +101,7 @@ export function NewInvoiceView({
 
   const handleClearCart = useCallback(() => {
     dispatch({ type: 'CLEAR_CART_COMPLETELY' });
-    onStatus('Carrito limpiado.');
+    onStatus({ message: 'Carrito limpiado.', level: 'info', key: 'billing-draft', toast: false });
     window.setTimeout(() => patientInputRef.current?.focus(), 0);
   }, [onStatus]);
 
@@ -145,6 +145,12 @@ export function NewInvoiceView({
       showClearConfirm: state.showClearConfirm,
     },
   });
+  const {
+    printIssuedReceipt,
+    saveIssuedReceiptPdf,
+    setReceiptOpen,
+    viewIssuedReceipt,
+  } = useIssuedReceiptActions({ state, dispatch, loadHistoricalReceipt: loadReceipt, onStatus });
 
   const preview = useMemo(() => {
     const sanitizedItems = canMarkDialysisPrescription
@@ -157,6 +163,8 @@ export function NewInvoiceView({
     if (pointOfSaleLoadInFlightRef.current) return;
 
     if (!canViewCatalog) {
+      pointOfSaleDataLoadedRef.current = false;
+      setPointOfSaleDataLoaded(false);
       dispatch({ type: 'SET_ALERT_MESSAGE', payload: 'Este usuario no tiene permiso para consultar el catálogo de servicios.' });
       dispatch({ type: 'SET_LOADING_SERVICES', payload: false });
       return;
@@ -180,8 +188,12 @@ export function NewInvoiceView({
         },
       });
       pointOfSaleDataLoadedRef.current = true;
+      setPointOfSaleDataLoaded(true);
+      dispatch({ type: 'SET_ALERT_MESSAGE', payload: null });
       onCashSessionChange?.(currentCashSession);
     } catch (error) {
+      pointOfSaleDataLoadedRef.current = false;
+      setPointOfSaleDataLoaded(false);
       const message = userSafeErrorMessage(error, 'No se pudo cargar servicios y caja desde el servidor local.');
       dispatch({ type: 'SET_POINT_OF_SALE_LOAD_ERROR', payload: message });
       dispatch({ type: 'SET_ALERT_MESSAGE', payload: message });
@@ -192,8 +204,11 @@ export function NewInvoiceView({
     }
   }
 
-  async function searchPointOfSaleServices(signal: AbortSignal) {
-    dispatch({ type: 'SET_LOADING_SERVICES', payload: true });
+  async function searchPointOfSaleServices(signal: AbortSignal, page = 1) {
+    const requestId = ++serviceSearchRequestIdRef.current;
+    dispatch({ type: page === 1 ? 'SET_LOADING_SERVICES' : 'SET_LOADING_MORE_SERVICES', payload: true });
+    dispatch({ type: 'SET_POINT_OF_SALE_LOAD_ERROR', payload: null });
+    dispatch({ type: 'SET_ALERT_MESSAGE', payload: null });
     try {
       const nextServices = await apiClient.getServices({
         active: true,
@@ -202,22 +217,31 @@ export function NewInvoiceView({
         areaId: state.selectedAreaId && state.selectedAreaId !== 'all' ? state.selectedAreaId : undefined,
         categoryId: state.selectedCategoryId && state.selectedCategoryId !== 'all' ? state.selectedCategoryId : undefined,
         perPage: POS_SERVICE_PAGE_SIZE,
+        page,
       }, { signal });
-      dispatch({ type: 'SEARCH_SERVICES_SUCCESS', payload: Array.isArray(nextServices) ? nextServices : [] });
+      if (signal.aborted || requestId !== serviceSearchRequestIdRef.current) return;
+      const safeServices = Array.isArray(nextServices) ? nextServices : [];
+      if (page === 1) {
+        dispatch({ type: 'SEARCH_SERVICES_SUCCESS', payload: safeServices });
+        dispatch({ type: 'SET_SERVICE_PAGE_STATE', payload: { page: 1, hasMore: safeServices.length === POS_SERVICE_PAGE_SIZE } });
+      } else {
+        dispatch({ type: 'APPEND_SERVICES_PAGE', payload: { services: safeServices, page, hasMore: safeServices.length === POS_SERVICE_PAGE_SIZE } });
+      }
+      dispatch({ type: 'SET_POINT_OF_SALE_LOAD_ERROR', payload: null });
       dispatch({ type: 'SET_ALERT_MESSAGE', payload: null });
     } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') {
+      if (signal.aborted || requestId !== serviceSearchRequestIdRef.current || (error instanceof DOMException && error.name === 'AbortError')) {
         return;
       }
 
       const message = userSafeErrorMessage(error, 'No se pudo buscar servicios activos.');
-      dispatch({ type: 'SEARCH_SERVICES_SUCCESS', payload: [] });
+      if (page === 1) dispatch({ type: 'SET_POINT_OF_SALE_LOAD_ERROR', payload: message });
       dispatch({ type: 'SET_ALERT_MESSAGE', payload: message });
       onStatus({ message, level: 'error', key: 'billing-services-load', toast: false });
       window.setTimeout(() => searchInputRef.current?.focus(), 0);
     } finally {
       if (!signal.aborted) {
-        dispatch({ type: 'SET_LOADING_SERVICES', payload: false });
+        dispatch({ type: page === 1 ? 'SET_LOADING_SERVICES' : 'SET_LOADING_MORE_SERVICES', payload: false });
       }
     }
   }
@@ -379,12 +403,12 @@ export function NewInvoiceView({
             type: 'SET_WARNING_MESSAGE',
             payload: 'Factura emitida. Quedo pendiente de cobro; solicite a caja cobrar e imprimir el recibo.',
           });
-          onStatus(`Factura emitida ${invoice.invoice_number}. Quedo pendiente de cobro.`);
+          onStatus({ message: `Factura emitida ${invoice.invoice_number}. Quedo pendiente de cobro.`, level: 'warning', key: 'billing-invoice', toast: false });
           return;
         }
         dispatch({ type: 'SET_SHOW_SUCCESS', payload: false });
         dispatch({ type: 'SET_SHOW_PAYMENT', payload: true });
-        onStatus(`Factura emitida ${invoice.invoice_number}. Cobro abierto.`);
+        onStatus({ message: `Factura emitida ${invoice.invoice_number}. Cobro abierto.`, level: 'success', key: 'billing-invoice', toast: false });
       } else if (isZeroMoney(invoice.total) && invoice.status === 'paid') {
         if (!canViewReceipts) {
           dispatch({ type: 'SET_SHOW_SUCCESS', payload: true });
@@ -392,18 +416,25 @@ export function NewInvoiceView({
             type: 'SET_WARNING_MESSAGE',
             payload: 'Factura emitida. Esta cuenta no puede imprimir recibos; solicite apoyo a caja.',
           });
-          onStatus(`Factura emitida ${invoice.invoice_number}. Recibo pendiente por permisos.`);
+          onStatus({ message: `Factura emitida ${invoice.invoice_number}. Recibo pendiente por permisos.`, level: 'warning', key: 'billing-invoice', toast: false });
           return;
         }
         await issueInstitutionalReceiptForZeroTotalInvoice(invoice);
       } else {
         dispatch({ type: 'SET_SHOW_SUCCESS', payload: true });
-        onStatus(`Factura emitida ${invoice.invoice_number}.`);
+        onStatus({ message: `Factura emitida ${invoice.invoice_number}.`, level: 'success', key: 'billing-invoice', toast: false });
       }
     } catch (error) {
       const message = userSafeErrorMessage(error, 'No se pudo emitir la factura.');
-      dispatch({ type: 'SET_ALERT_MESSAGE', payload: message });
-      onStatus(message);
+      const patientError = error instanceof ApiError ? error.validationErrors?.patient_name?.[0] : undefined;
+      if (patientError) {
+        dispatch({ type: 'SET_PATIENT_ERROR', payload: patientError });
+        dispatch({ type: 'SET_ALERT_MESSAGE', payload: null });
+        window.setTimeout(() => patientInputRef.current?.focus(), 0);
+      } else {
+        dispatch({ type: 'SET_ALERT_MESSAGE', payload: message });
+        onStatus({ message, level: 'error', key: 'billing-invoice', toast: false });
+      }
     } finally {
       submitInvoiceInFlightRef.current = false;
       dispatch({ type: 'SET_SUBMITTING', payload: false });
@@ -421,6 +452,7 @@ export function NewInvoiceView({
     }
     dispatch({ type: 'SET_SHOW_SUCCESS', payload: false });
     dispatch({ type: 'SET_WARNING_MESSAGE', payload: null });
+    dispatch({ type: 'SET_PAYMENT_ERROR', payload: null });
     if (!state.paymentAmount || Number(state.paymentAmount) <= 0) {
       dispatch({ type: 'SET_PAYMENT_AMOUNT', payload: state.issuedInvoice.balance_due });
     }
@@ -438,7 +470,14 @@ export function NewInvoiceView({
     submitPaymentInFlightRef.current = true;
     const invoiceToPay = state.issuedInvoice;
     const sessionToUse = state.loadedCashSession;
+    const receivedAmount = state.paymentMethod === 'cash' ? state.paymentAmount : null;
+    const receivedCents = receivedAmount ? parseLocalCents(receivedAmount) : 0;
+    const appliedCents = parseLocalCents(appliedAmount);
+    const changeAmount = state.paymentMethod === 'cash'
+      ? formatCents(Math.max(0, receivedCents - appliedCents))
+      : null;
     dispatch({ type: 'SET_PAYING', payload: true });
+    dispatch({ type: 'SET_PAYMENT_ERROR', payload: null });
     try {
       const paymentPayload = {
         cash_session_id: sessionToUse.id,
@@ -461,6 +500,7 @@ export function NewInvoiceView({
         queryClient.invalidateQueries({ queryKey: queryKeys.reports.dashboard(), refetchType: 'none' }),
       ]);
       latestPaymentResultRef.current = result.payment;
+      dispatch({ type: 'SET_COMPLETED_PAYMENT_CASH', payload: { receivedAmount, changeAmount } });
       dispatch({ type: 'SET_ISSUED_INVOICE', payload: result.invoice });
       dispatch({ type: 'SET_PAYMENT_AMOUNT', payload: result.invoice.balance_due });
 
@@ -476,19 +516,12 @@ export function NewInvoiceView({
 
         dispatch({ type: 'SET_SHOW_PAYMENT', payload: false });
         dispatch({ type: 'SET_SHOW_SUCCESS', payload: true });
-        try {
-          await openInstitutionalReceiptPdf(paymentOutcome.receipt);
-          onStatus({ message: `Pago registrado. PDF institucional ${paymentOutcome.receipt.receipt_number_full} abierto.`, level: 'success', key: 'billing-payment' });
-        } catch (error) {
-          const message = userSafeErrorMessage(
-            error,
-            `Pago registrado. Recibo institucional ${paymentOutcome.receipt.receipt_number_full} emitido, pero no se pudo abrir el PDF.`,
-          );
-          const recoveryMessage = `Recibo institucional ${paymentOutcome.receipt.receipt_number_full} emitido, pero no se pudo abrir el PDF. Use Imprimir recibo institucional para intentar de nuevo o reimprima desde Historial.`;
-          dispatch({ type: 'SET_INSTITUTIONAL_RECEIPT_RECOVERY_MESSAGE', payload: recoveryMessage });
-          dispatch({ type: 'SET_WARNING_MESSAGE', payload: recoveryMessage });
-          onStatus({ message, level: 'warning', key: 'billing-payment' });
-        }
+        onStatus({
+          message: `Pago registrado. Recibo institucional ${paymentOutcome.receipt.receipt_number_full} listo para ver o imprimir.`,
+          level: 'success',
+          key: 'billing-payment',
+          toast: false,
+        });
         return;
       }
 
@@ -518,9 +551,9 @@ export function NewInvoiceView({
       onStatus({ message: paymentOutcome.message, level: 'success', key: 'billing-payment' });
     } catch (error) {
       const message = userSafeErrorMessage(error, 'No se pudo registrar el pago.');
-      dispatch({ type: 'SET_ALERT_MESSAGE', payload: message });
+      dispatch({ type: 'SET_PAYMENT_ERROR', payload: message });
+      dispatch({ type: 'SET_ALERT_MESSAGE', payload: null });
       dispatch({ type: 'SET_SHOW_PAYMENT', payload: true });
-      onStatus({ message, level: 'error', key: 'billing-payment' });
     } finally {
       submitPaymentInFlightRef.current = false;
       dispatch({ type: 'SET_PAYING', payload: false });
@@ -535,18 +568,8 @@ export function NewInvoiceView({
       dispatch({ type: 'SET_RECEIPT', payload: nextReceipt });
       dispatch({ type: 'SET_SHOW_RECEIPT', payload: true });
     } catch (error) {
-      onStatus(userSafeErrorMessage(error, 'No se pudo generar el recibo.'));
+      onStatus({ message: userSafeErrorMessage(error, 'No se pudo generar el recibo.'), level: 'error', key: 'billing-receipt', toast: false });
     }
-  }
-
-  async function openInstitutionalReceiptPdf(receipt: InstitutionalReceipt, reason?: string) {
-    const trimmedReason = reason?.trim();
-    const idempotencyKey = receiptPdfIdempotencyKeyRef.current ??= createClientIdempotencyKey();
-    await apiClient.registerInstitutionalReceiptPrintEvent(receipt.id, trimmedReason || undefined, { idempotencyKey });
-    const blob = await apiClient.getInstitutionalReceiptPdf(receipt.id);
-
-    receiptPdfIdempotencyKeyRef.current = null;
-    openBlobInNewTab(blob, institutionalReceiptPdfFilename(receipt.receipt_number_full));
   }
 
   async function issueInstitutionalReceiptForZeroTotalInvoice(invoice: Invoice) {
@@ -577,19 +600,12 @@ export function NewInvoiceView({
       dispatch({ type: 'SET_ALERT_MESSAGE', payload: null });
       dispatch({ type: 'SET_WARNING_MESSAGE', payload: null });
 
-      try {
-        await openInstitutionalReceiptPdf(receipt);
-        onStatus(`Factura emitida ${invoice.invoice_number}. PDF institucional ${receipt.receipt_number_full} abierto.`);
-      } catch (error) {
-        const message = userSafeErrorMessage(
-          error,
-          `Factura emitida. Recibo institucional ${receipt.receipt_number_full} emitido, pero no se pudo abrir el PDF.`,
-        );
-        const recoveryMessage = `Recibo institucional ${receipt.receipt_number_full} emitido, pero no se pudo abrir el PDF. Use Imprimir recibo institucional para intentar de nuevo o reimprima desde Historial.`;
-        dispatch({ type: 'SET_INSTITUTIONAL_RECEIPT_RECOVERY_MESSAGE', payload: recoveryMessage });
-        dispatch({ type: 'SET_WARNING_MESSAGE', payload: recoveryMessage });
-        onStatus(message);
-      }
+      onStatus({
+        message: `Factura emitida ${invoice.invoice_number}. Recibo institucional ${receipt.receipt_number_full} listo para ver o imprimir.`,
+        level: 'success',
+        key: 'billing-receipt',
+        toast: false,
+      });
     } catch (error) {
       const detail = userSafeErrorMessage(error, 'No se pudo emitir el recibo institucional.');
       const recoveryMessage = `Factura emitida, pero no se pudo emitir el recibo institucional: ${detail} Genere el recibo institucional desde Historial antes de entregar comprobante.`;
@@ -600,38 +616,13 @@ export function NewInvoiceView({
       dispatch({ type: 'SET_SHOW_SUCCESS', payload: true });
       dispatch({ type: 'SET_ALERT_MESSAGE', payload: null });
       dispatch({ type: 'SET_WARNING_MESSAGE', payload: recoveryMessage });
-      onStatus(recoveryMessage);
-    }
-  }
-
-  async function handlePrintIssuedReceipt() {
-    if (state.institutionalReceipt) {
-      try {
-        await openInstitutionalReceiptPdf(state.institutionalReceipt, 'Reimpresion desde venta/cobro.');
-        onStatus(`PDF institucional ${state.institutionalReceipt.receipt_number_full} abierto.`);
-      } catch (error) {
-        onStatus(userSafeErrorMessage(error, 'No se pudo abrir el PDF institucional.'));
-      }
-      return;
-    }
-
-    await loadReceipt(state.receiptWidth);
-  }
-
-  async function handleSaveIssuedReceiptPdf() {
-    if (!state.institutionalReceipt) return;
-
-    try {
-      const blob = await apiClient.getInstitutionalReceiptPdf(state.institutionalReceipt.id);
-      downloadBlob(blob, institutionalReceiptPdfFilename(state.institutionalReceipt.receipt_number_full));
-      onStatus(`PDF institucional ${state.institutionalReceipt.receipt_number_full} guardado.`);
-    } catch (error) {
-      onStatus(userSafeErrorMessage(error, 'No se pudo guardar el PDF institucional.'));
+      onStatus({ message: recoveryMessage, level: 'warning', key: 'billing-receipt', toast: false });
     }
   }
 
   function handleNuevaFactura() {
     latestPaymentResultRef.current = null;
+    resetPayloadScopedIdempotencyKey(submitPaymentIdempotencyKeyRef, submitPaymentIdempotencySignatureRef);
     dispatch({ type: 'RESET_FORM', payload: { loadedCashSession: state.loadedCashSession } });
     window.setTimeout(() => patientInputRef.current?.focus(), 0);
   }
@@ -641,7 +632,7 @@ export function NewInvoiceView({
       return;
     }
     if (!nextOpen) {
-      resetPayloadScopedIdempotencyKey(submitPaymentIdempotencyKeyRef, submitPaymentIdempotencySignatureRef);
+      dispatch({ type: 'SET_PAYMENT_ERROR', payload: null });
     }
     dispatch({ type: 'SET_SHOW_PAYMENT', payload: nextOpen });
     if (!nextOpen && state.issuedInvoice && (state.issuedInvoice.status === 'issued' || state.issuedInvoice.status === 'partial')) {
@@ -650,14 +641,7 @@ export function NewInvoiceView({
         type: 'SET_WARNING_MESSAGE',
         payload: `Factura ${state.issuedInvoice.invoice_number} emitida. Quedo pendiente de cobro; puede cobrarla desde este panel o desde Historial.`,
       });
-      onStatus(`Factura ${state.issuedInvoice.invoice_number} emitida y pendiente de cobro.`);
-    }
-  }
-
-  function handleReceiptOpenChange(nextOpen: boolean) {
-    dispatch({ type: 'SET_SHOW_RECEIPT', payload: nextOpen });
-    if (!nextOpen && (state.issuedInvoice?.status === 'paid' || state.issuedInvoice?.status === 'partial')) {
-      dispatch({ type: 'SET_SHOW_SUCCESS', payload: true });
+      onStatus({ message: `Factura ${state.issuedInvoice.invoice_number} emitida y pendiente de cobro.`, level: 'warning', key: 'billing-payment', toast: false });
     }
   }
 
@@ -666,6 +650,7 @@ export function NewInvoiceView({
       state={state}
       paymentResult={latestPaymentResultRef.current}
       preview={preview}
+      defaultTaxRate={operationalSettings?.default_tax_rate}
       emitBlockReasons={emitBlockReasons}
       canEmit={canEmit}
       canCreatePayments={canCreatePayments}
@@ -686,19 +671,30 @@ export function NewInvoiceView({
       onRemoveItem={removeItem}
       onConfirm={handleEmitClick}
       onConfirmDialogChange={(val) => dispatch({ type: 'SET_SHOW_CONFIRMATION', payload: val })}
-      onPaymentMethodChange={(val) => dispatch({ type: 'SET_PAYMENT_METHOD', payload: val })}
-      onPaymentAmountChange={(val) => dispatch({ type: 'SET_PAYMENT_AMOUNT', payload: val })}
-      onPaymentReferenceChange={(val) => dispatch({ type: 'SET_PAYMENT_REFERENCE', payload: val })}
+      onPaymentMethodChange={(val) => {
+        dispatch({ type: 'SET_PAYMENT_ERROR', payload: null });
+        dispatch({ type: 'SET_PAYMENT_METHOD', payload: val });
+      }}
+      onPaymentAmountChange={(val) => {
+        dispatch({ type: 'SET_PAYMENT_ERROR', payload: null });
+        dispatch({ type: 'SET_PAYMENT_AMOUNT', payload: val });
+      }}
+      onPaymentReferenceChange={(val) => {
+        dispatch({ type: 'SET_PAYMENT_ERROR', payload: null });
+        dispatch({ type: 'SET_PAYMENT_REFERENCE', payload: val });
+      }}
       onSubmitInvoice={() => void submitInvoice()}
       onCobrar={handleCobrarClick}
-      onRetryLoad={loadPointOfSaleData}
+      onRetryLoad={() => void retryLoad()}
+      onLoadMoreServices={() => void loadMoreServices()}
       onPaymentOpenChange={handlePaymentOpenChange}
       onSubmitPayment={(appliedAmount) => void submitPayment(appliedAmount)}
-      onPrintIssuedReceipt={() => void handlePrintIssuedReceipt()}
-      onSaveIssuedReceiptPdf={() => void handleSaveIssuedReceiptPdf()}
+      onPrintIssuedReceipt={() => void printIssuedReceipt()}
+      onViewIssuedReceipt={viewIssuedReceipt}
+      onSaveIssuedReceiptPdf={() => void saveIssuedReceiptPdf()}
       onNuevaFactura={handleNuevaFactura}
       onSuccessDialogChange={(val) => dispatch({ type: 'SET_SHOW_SUCCESS', payload: val })}
-      onReceiptOpenChange={handleReceiptOpenChange}
+      onReceiptOpenChange={setReceiptOpen}
       onClearCart={handleClearCart}
       onClearConfirmChange={(val) => dispatch({ type: 'SET_SHOW_CLEAR_CONFIRM', payload: val })}
       patientInputRef={patientInputRef}

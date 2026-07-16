@@ -39,6 +39,7 @@ function HospitalApp() {
   const session = useHospitalSession();
   const navigate = useNavigate();
   const feedback = useFeedback();
+  const setSessionStatus = session.setStatus;
   const [quickCashOpen, setQuickCashOpen] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const shouldLoadCashSession = Boolean(
@@ -54,11 +55,11 @@ function HospitalApp() {
   // errors that were previously hidden in an sr-only footer.
   const handleStatus = useCallback<OperationalStatusReporter>((input) => {
     const status = normalizeOperationalStatus(input);
-    session.setStatus(status.message);
+    setSessionStatus(status.message);
     if (status.toast && status.message && status.message !== 'Listo para iniciar sesión local.') {
       feedback.notify(status);
     }
-  }, [feedback, session]);
+  }, [feedback, setSessionStatus]);
 
   useEffect(() => {
     if (session.sessionExpired) {

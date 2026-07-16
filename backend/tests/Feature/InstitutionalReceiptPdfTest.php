@@ -44,6 +44,12 @@ class InstitutionalReceiptPdfTest extends TestCase
             'Recibo No.',
             'Serie',
             'Factura',
+            'CAI fiscal',
+            'CAI-TEST-RECEIPT-PDF-',
+            'Rango fiscal autorizado',
+            '000-001-01-00000001 a 000-001-01-99999999',
+            'Fecha límite de emisión',
+            '31/12/2027',
             'Estado',
             'Fecha recibo',
             'Paciente / enterante',
@@ -68,7 +74,6 @@ class InstitutionalReceiptPdfTest extends TestCase
         $this->assertMatchesRegularExpression('/>Caja<.*#\d+/s', $html);
 
         foreach ([
-            'CAI',
             'audit',
             'user_id',
             'barcode',
@@ -81,6 +86,24 @@ class InstitutionalReceiptPdfTest extends TestCase
 
         $this->assertStringContainsString('thead', $html);
         $this->assertStringContainsString('page-break-inside: avoid', $html);
+        $this->assertSame('2027-12-31', data_get($context['receipt']->invoice_snapshot, 'fiscal_valid_until'));
+    }
+
+    public function test_classic_receipt_omits_fiscal_authorization_when_snapshot_has_no_fiscal_data(): void
+    {
+        $context = $this->createIssuedReceiptContext();
+        $snapshot = $context['receipt']->invoice_snapshot;
+        $snapshot['fiscal_cai'] = null;
+        $snapshot['fiscal_range_from'] = null;
+        $snapshot['fiscal_range_to'] = null;
+        $snapshot['fiscal_valid_until'] = null;
+        $context['receipt']->forceFill(['invoice_snapshot' => $snapshot])->save();
+
+        $html = app(InstitutionalReceiptPdfService::class)->htmlForReceipt($context['receipt']->fresh());
+
+        $this->assertStringNotContainsString('CAI fiscal', $html);
+        $this->assertStringNotContainsString('Rango fiscal autorizado', $html);
+        $this->assertStringNotContainsString('Fecha límite de emisión', $html);
     }
 
     public function test_classic_receipt_keeps_summary_together_without_making_signatures_part_of_the_same_indivisible_block(): void
@@ -100,6 +123,33 @@ class InstitutionalReceiptPdfTest extends TestCase
             '/\.receipt-closing-block\s*\{[^}]*(?:page-break-inside|break-inside):\s*avoid;/s',
             $html,
         );
+        $this->assertMatchesRegularExpression(
+            '/\.items-table\s+tbody\s+tr\s*\{[^}]*page-break-inside:\s*avoid;[^}]*break-inside:\s*avoid;/s',
+            $html,
+        );
+        $this->assertMatchesRegularExpression(
+            '/\.items-table\s+thead\s*\{[^}]*display:\s*table-header-group;/s',
+            $html,
+        );
+    }
+
+    public function test_authorized_receipt_preview_reuses_pdf_html_without_recording_print_audit(): void
+    {
+        $context = $this->createIssuedReceiptContext();
+        $user = $context['user'];
+        $receipt = $context['receipt'];
+        $expectedHtml = app(InstitutionalReceiptPdfService::class)->htmlForReceipt($receipt);
+
+        $this->actingAs($user)
+            ->get("/api/institutional-receipts/{$receipt->id}/pdf?preview=1")
+            ->assertOk()
+            ->assertHeader('Content-Type', 'text/html; charset=UTF-8')
+            ->assertContent($expectedHtml);
+
+        $this->assertDatabaseMissing('institutional_receipt_print_events', [
+            'institutional_receipt_id' => $receipt->id,
+        ]);
+        $this->assertSame(0, $receipt->fresh()->reprint_count);
     }
 
     public function test_four_item_receipt_fits_one_page_on_primary_print_profiles(): void
@@ -288,6 +338,96 @@ class InstitutionalReceiptPdfTest extends TestCase
         }
     }
 
+    public function test_primary_receipt_profiles_keep_mixed_payments_in_the_compact_table(): void
+    {
+        $receipt = $this->receiptWithTwoPostedPayments();
+
+        foreach ([
+            ReceiptPrintProfile::CODE_LETTER,
+            ReceiptPrintProfile::CODE_HALF_LETTER,
+            ReceiptPrintProfile::CODE_A5,
+        ] as $code) {
+            $html = app(InstitutionalReceiptPdfService::class)
+                ->htmlForReceipt($this->receiptUsingProfile($receipt, $code));
+
+            $this->assertStringContainsString('<section class="receipt-page primary-paper">', $html, $code);
+            $this->assertStringContainsString('<table class="items-table payment-table">', $html, $code);
+            $this->assertMatchesRegularExpression(
+                '/<table class="items-table payment-table">.*Fecha.*Método.*Monto.*Referencia.*Cajero.*<\/table>/s',
+                $html,
+                $code,
+            );
+            $this->assertStringNotContainsString('<div class="thermal-payment-list">', $html, $code);
+            $this->assertStringNotContainsString('<div class="thermal-meta-list', $html, $code);
+        }
+    }
+
+    public function test_thermal_receipt_profiles_stack_mixed_payments_and_essential_metadata(): void
+    {
+        $receipt = $this->receiptWithTwoPostedPayments();
+        $qaOutputDirectory = trim((string) env('RECEIPT_THERMAL_PAYMENT_QA_OUTPUT_DIR'));
+
+        foreach ([
+            ReceiptPrintProfile::CODE_THERMAL_80,
+            ReceiptPrintProfile::CODE_THERMAL_58,
+        ] as $code) {
+            $thermalReceipt = $this->receiptUsingProfile($receipt, $code);
+            $service = app(InstitutionalReceiptPdfService::class);
+            $html = $service->htmlForReceipt($thermalReceipt);
+
+            $this->assertStringContainsString('<div class="thermal-payment-list">', $html, $code);
+            $this->assertSame(2, substr_count($html, 'class="thermal-payment-card"'), $code);
+            $this->assertStringNotContainsString('<table class="items-table payment-table">', $html, $code);
+            $this->assertMatchesRegularExpression(
+                '/Pago 1.*Fecha.*15\/07\/2026 08:30.*Método.*Efectivo.*Monto.*L\. 600\.00.*Referencia.*Sin referencia.*Cajero.*Cajera Uno/s',
+                $html,
+                $code,
+            );
+            $this->assertMatchesRegularExpression(
+                '/Pago 2.*Fecha.*15\/07\/2026 08:35.*Método.*Transferencia.*Monto.*L\. 634\.56.*Referencia.*TRX-THERMAL.*Cajero.*Cajera Dos/s',
+                $html,
+                $code,
+            );
+            $this->assertStringContainsString('<div class="thermal-meta-list thermal-document-meta">', $html, $code);
+            $this->assertStringContainsString('<div class="thermal-meta-list thermal-operation-meta">', $html, $code);
+            $this->assertStringNotContainsString('<table class="meta-table">', $html, $code);
+            foreach ([
+                'Factura',
+                'Serie',
+                'Estado',
+                'Fecha recibo',
+                'CAI fiscal',
+                'Rango fiscal autorizado',
+                'Fecha límite de emisión',
+                'Paciente / enterante',
+                'Caja',
+                'Método',
+            ] as $essentialLabel) {
+                $this->assertStringContainsString($essentialLabel, $html, "{$code}: {$essentialLabel}");
+            }
+            $this->assertMatchesRegularExpression(
+                '/\.thermal-payment-card\s*\{[^}]*page-break-inside:\s*avoid;[^}]*break-inside:\s*avoid;/s',
+                $html,
+                $code,
+            );
+
+            $pdf = $service->pdfForReceipt($thermalReceipt);
+            $pageCount = preg_match_all('/\/Type\s*\/Page\b/', $pdf);
+
+            $this->assertStringStartsWith('%PDF', $pdf, $code);
+            $this->assertGreaterThanOrEqual(1, $pageCount, $code);
+            $this->assertLessThanOrEqual(6, $pageCount, $code);
+
+            if ($qaOutputDirectory !== '') {
+                File::ensureDirectoryExists($qaOutputDirectory);
+                File::put(
+                    $qaOutputDirectory.DIRECTORY_SEPARATOR."{$code}-mixed-payments.pdf",
+                    $pdf,
+                );
+            }
+        }
+    }
+
     public function test_receipt_pdf_generation_supports_many_items_and_all_real_print_profiles_without_mutating_snapshots(): void
     {
         $context = $this->createIssuedReceiptContext();
@@ -344,6 +484,109 @@ class InstitutionalReceiptPdfTest extends TestCase
             $this->assertSame($originalReceiptNumber, $receipt->fresh()->receipt_number_full);
             $this->assertSame($originalSeriesSnapshot, $receipt->fresh()->series_snapshot);
             $this->assertSame($originalSeriesCurrentNumber, $context['series']->fresh()->current_number);
+        }
+    }
+
+    public function test_receipt_pdf_page_matrix_is_bounded_and_monotonic_for_supported_profiles(): void
+    {
+        $context = $this->createIssuedReceiptContext();
+        $receipt = $context['receipt'];
+        $baseItem = $receipt->items_snapshot[0];
+        $qaOutputDirectory = trim((string) env('RECEIPT_QA_MATRIX_OUTPUT_DIR'));
+        $maxPages = [
+            ReceiptPrintProfile::CODE_LETTER => 4,
+            ReceiptPrintProfile::CODE_HALF_LETTER => 7,
+            ReceiptPrintProfile::CODE_A5 => 7,
+            ReceiptPrintProfile::CODE_CUSTOM_SMALL => 12,
+            ReceiptPrintProfile::CODE_THERMAL_80 => 12,
+            ReceiptPrintProfile::CODE_THERMAL_58 => 18,
+        ];
+
+        foreach ($maxPages as $code => $maximumPageCount) {
+            $profile = ReceiptPrintProfile::query()->where('code', $code)->firstOrFail();
+            $previousPageCount = 0;
+
+            foreach ([1, 5, 15, 30, 60] as $itemCount) {
+                $receipt->forceFill([
+                    'print_profile_code' => $code,
+                    'profile_snapshot' => [
+                        ...$receipt->profile_snapshot,
+                        'code' => $code,
+                        'name' => $profile->name,
+                        'paper_kind' => $profile->paper_kind,
+                        'width_mm' => (string) $profile->width_mm,
+                        'height_mm' => (string) $profile->height_mm,
+                        'font_scale' => (string) $profile->font_scale,
+                    ],
+                    'items_snapshot' => collect(range(1, $itemCount))
+                        ->map(fn (int $index): array => [
+                            ...$baseItem,
+                            'service_name' => "Servicio hospitalario {$index}",
+                        ])
+                        ->all(),
+                ])->save();
+
+                $service = app(InstitutionalReceiptPdfService::class);
+                $freshReceipt = $receipt->fresh();
+                $html = $service->htmlForReceipt($freshReceipt);
+                $pdf = $service->pdfForReceipt($freshReceipt);
+                $pageCount = preg_match_all('/\/Type\s*\/Page\b/', $pdf);
+                $case = "{$code} with {$itemCount} items";
+
+                $this->assertStringStartsWith('%PDF', $pdf, $case);
+                foreach (range(1, $itemCount) as $index) {
+                    $this->assertSame(
+                        1,
+                        preg_match_all(
+                            '/>\s*'.preg_quote("Servicio hospitalario {$index}", '/').'\s*</u',
+                            $html,
+                        ),
+                        "{$case}: every service must be present exactly once in the shared HTML source",
+                    );
+                }
+                $this->assertMatchesRegularExpression(
+                    '/\.items-table\s+thead\s*\{[^}]*display:\s*table-header-group;/s',
+                    $html,
+                    "{$case}: table header must repeat after a page break",
+                );
+                $this->assertMatchesRegularExpression(
+                    '/\.items-table\s+tbody\s+tr\s*\{[^}]*page-break-inside:\s*avoid;[^}]*break-inside:\s*avoid;/s',
+                    $html,
+                    "{$case}: service rows must remain indivisible",
+                );
+                $this->assertMatchesRegularExpression(
+                    '/<div class="receipt-summary">.*Monto en letras.*<\/div>\s*<table class="signature-grid">/s',
+                    $html,
+                    "{$case}: summary and signatures must remain complete and ordered",
+                );
+                $this->assertGreaterThanOrEqual($previousPageCount, $pageCount, $case);
+                $this->assertLessThanOrEqual($maximumPageCount, $pageCount, $case);
+                if ($code === ReceiptPrintProfile::CODE_CUSTOM_SMALL && $itemCount === 1) {
+                    $this->assertSame(
+                        1,
+                        $pageCount,
+                        'The 180x95 mm receipt must not orphan signatures and its copy legend on a second page',
+                    );
+                }
+
+                if ($qaOutputDirectory !== '') {
+                    File::ensureDirectoryExists($qaOutputDirectory);
+                    File::put(
+                        $qaOutputDirectory.DIRECTORY_SEPARATOR."{$code}-{$itemCount}-items.pdf",
+                        $pdf,
+                    );
+                }
+
+                if (in_array($code, [
+                    ReceiptPrintProfile::CODE_LETTER,
+                    ReceiptPrintProfile::CODE_HALF_LETTER,
+                    ReceiptPrintProfile::CODE_A5,
+                ], true) && $itemCount <= 5) {
+                    $this->assertSame(1, $pageCount, $case);
+                }
+
+                $previousPageCount = $pageCount;
+            }
         }
     }
 
@@ -674,6 +917,65 @@ class InstitutionalReceiptPdfTest extends TestCase
         ]);
     }
 
+    private function receiptWithTwoPostedPayments(): InstitutionalReceipt
+    {
+        $receipt = $this->createIssuedReceiptContext()['receipt'];
+
+        $receipt->forceFill([
+            'payment_snapshot' => [
+                ...$receipt->payment_snapshot,
+                'selected_payment' => null,
+                'posted_payments' => [
+                    [
+                        'method' => Payment::METHOD_CASH,
+                        'amount' => '600.00',
+                        'amount_cents' => 60000,
+                        'reference' => null,
+                        'paid_at' => '2026-07-15 08:30:00',
+                        'cashier_name' => 'Cajera Uno',
+                    ],
+                    [
+                        'method' => Payment::METHOD_TRANSFER,
+                        'amount' => '634.56',
+                        'amount_cents' => 63456,
+                        'reference' => 'TRX-THERMAL',
+                        'paid_at' => '2026-07-15 08:35:00',
+                        'cashier_name' => 'Cajera Dos',
+                    ],
+                ],
+            ],
+        ])->save();
+
+        return $receipt->fresh();
+    }
+
+    private function receiptUsingProfile(InstitutionalReceipt $receipt, string $code): InstitutionalReceipt
+    {
+        $profile = ReceiptPrintProfile::query()->where('code', $code)->firstOrFail();
+
+        $receipt->forceFill([
+            'print_profile_code' => $code,
+            'profile_snapshot' => [
+                ...$receipt->profile_snapshot,
+                'code' => $profile->code,
+                'name' => $profile->name,
+                'paper_kind' => $profile->paper_kind,
+                'width_mm' => (string) $profile->width_mm,
+                'height_mm' => (string) $profile->height_mm,
+                'margin_top_mm' => (string) $profile->margin_top_mm,
+                'margin_right_mm' => (string) $profile->margin_right_mm,
+                'margin_bottom_mm' => (string) $profile->margin_bottom_mm,
+                'margin_left_mm' => (string) $profile->margin_left_mm,
+                'font_family' => $profile->font_family,
+                'font_scale' => (string) $profile->font_scale,
+                'show_copy_legend' => $profile->show_copy_legend,
+                'show_physical_seal_space' => $profile->show_physical_seal_space,
+            ],
+        ])->save();
+
+        return $receipt->fresh();
+    }
+
     /**
      * @return array{user: User, receipt: InstitutionalReceipt, profile: ReceiptPrintProfile, series: InstitutionalReceiptSeries}
      */
@@ -719,7 +1021,7 @@ class InstitutionalReceiptPdfTest extends TestCase
             'max_number' => 99999999,
             'current_number' => 1,
             'cai' => 'CAI-TEST-RECEIPT-PDF-'.bin2hex(random_bytes(3)),
-            'valid_until' => now()->addYear()->toDateString(),
+            'valid_until' => '2027-12-31',
             'active' => false,
         ]);
 
@@ -734,6 +1036,10 @@ class InstitutionalReceiptPdfTest extends TestCase
         $invoice = Invoice::query()->create([
             'invoice_number' => 'INV-'.str_pad((string) random_int(1, 99999999), 8, '0', STR_PAD_LEFT),
             'fiscal_sequence_id' => $sequence->id,
+            'fiscal_cai' => $sequence->cai,
+            'fiscal_range_from' => '000-001-01-00000001',
+            'fiscal_range_to' => '000-001-01-99999999',
+            'fiscal_valid_until' => $sequence->valid_until,
             'hospital_name' => 'Hospital San Isidro',
             'hospital_address' => 'Barrio El Centro',
             'receipt_template_mode' => 'institutional',

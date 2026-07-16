@@ -9,6 +9,7 @@ use App\Models\LoginAttempt;
 use App\Models\User;
 use App\Support\AuditLogger;
 use App\Support\VisiblePermissions;
+use Illuminate\Auth\SessionGuard;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -173,7 +174,30 @@ class AuthController extends Controller
         ])->save();
 
         $user->refresh();
-        $request->session()->put('password_hash_'.Auth::getDefaultDriver(), $user->getAuthPassword());
+        $guard = Auth::guard('web');
+
+        // Rotate the browser session after changing the credential and bind the
+        // freshly persisted user back to it. This is required for the real SPA
+        // request cycle: AuthenticateSession compares the next request against
+        // the password hash stored in this session.
+        $request->session()->regenerate();
+        $guard->login($user);
+
+        $sessionPasswordHash = $user->getAuthPassword();
+        try {
+            if (! $guard instanceof SessionGuard) {
+                throw new \BadMethodCallException;
+            }
+            $sessionPasswordHash = $guard->hashPasswordForCookie($sessionPasswordHash);
+        } catch (\BadMethodCallException) {
+            // Custom guards may not support the HMAC cookie format. Laravel's
+            // AuthenticateSession accepts the raw hash for compatibility.
+        }
+
+        $request->session()->put(
+            'password_hash_'.Auth::getDefaultDriver(),
+            $sessionPasswordHash,
+        );
 
         $this->auditAuth($request, 'auth.password_changed', $user);
 

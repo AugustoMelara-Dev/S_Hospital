@@ -208,6 +208,8 @@ export function CashSessionReportPanel({
 
           <AccountingControlPanel reconciliation={cashSession} />
 
+          <CashDenominationBreakdown breakdown={cashSession.cash_session.closing_breakdown} />
+
           {cashSession.cash_session.difference_amount && (parseCents(cashSession.cash_session.difference_amount) ?? 0) !== 0 ? (
             <section className="border border-destructive/30 bg-destructive/5 p-4" aria-labelledby="cash-difference-title">
                 <Typography.Title id="cash-difference-title" level={3} className="flex items-center gap-2 text-destructive">
@@ -261,6 +263,61 @@ export function CashSessionReportPanel({
         </>
       ) : null}
     </div>
+  );
+}
+
+function CashDenominationBreakdown({
+  breakdown,
+}: {
+  breakdown: CashSession['closing_breakdown'];
+}) {
+  if (!breakdown) return null;
+
+  const billEntries = Object.entries(breakdown.bills)
+    .filter(([, count]) => count > 0)
+    .sort(([left], [right]) => Number(right) - Number(left));
+  const billsTotalCents = billEntries.reduce(
+    (total, [denomination, count]) => total + (Number(denomination) * count * 100),
+    0,
+  );
+  const otherCents = parseCents(breakdown.other_amount) ?? 0;
+  const totalCents = billsTotalCents + otherCents;
+
+  return (
+    <section
+      aria-labelledby="cash-denomination-report-title"
+      className="border border-operational-border bg-operational-surface p-4"
+    >
+      <Typography.Title id="cash-denomination-report-title" level={3}>
+        Desglose del conteo físico
+      </Typography.Title>
+      <p className="mb-4 text-sm text-muted-foreground">
+        Conteo auditado al cerrar la sesión. Solo se muestran denominaciones con unidades registradas.
+      </p>
+      <dl className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+        {billEntries.map(([denomination, count]) => (
+          <div key={denomination} className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 border-b border-border py-2">
+            <dt className="font-medium">Billetes de L {denomination}</dt>
+            <dd className="text-right font-semibold tabular-nums">
+              {moneyLabel(String(Number(denomination) * count))}
+            </dd>
+            <dd className="col-span-2 text-xs text-muted-foreground">
+              {count} {count === 1 ? 'billete' : 'billetes'}
+            </dd>
+          </div>
+        ))}
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 border-b border-border py-2">
+          <dt className="font-medium">Monedas y otros</dt>
+          <dd className="text-right font-semibold tabular-nums">{moneyLabel(breakdown.other_amount)}</dd>
+        </div>
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 border-l-2 border-primary bg-muted/40 px-3 py-2 sm:col-span-2 xl:col-span-3">
+          <dt className="font-semibold">Total contado por desglose</dt>
+          <dd className="text-right text-lg font-bold tabular-nums">
+            {formatLempirasUIFromCents(totalCents)}
+          </dd>
+        </div>
+      </dl>
+    </section>
   );
 }
 

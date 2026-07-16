@@ -34,7 +34,7 @@ export function ContextBar({ cashSession, commandButtonRef, crumbs, hospitalName
         <p data-testid="institutional-mobile-identity" className="truncate text-xs font-semibold uppercase tracking-wider text-secondary lg:hidden">
           {hospitalName}
         </p>
-        <h1 className="truncate text-lg font-semibold tracking-tight" data-current-location>{currentTitle}</h1>
+        <p className="truncate text-lg font-semibold tracking-tight" data-current-location>{currentTitle}</p>
       </div>
 
       <div className="flex shrink-0 items-center gap-2">

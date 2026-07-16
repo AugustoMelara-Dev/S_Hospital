@@ -3,6 +3,7 @@ import { type RefObject, useRef, useState } from 'react';
 import { ClearOutlined as Eraser, HistoryOutlined as History } from '@ant-design/icons';
 import { Alert, Button, Modal } from 'antd';
 import { ReceiptPreview } from '../../receipts/ReceiptPreview';
+import { InstitutionalReceiptPreviewFrame } from '../../receipts/InstitutionalReceiptPreviewFrame';
 import { PatientStep } from './PatientStep';
 import { ServiceSearch } from './ServiceSearch';
 import { InvoiceCart } from './InvoiceCart';
@@ -18,7 +19,8 @@ import { BillingBottomBar } from './BillingBottomBar';
 export type NewInvoiceLayoutProps = {
   state: NewInvoiceState;
   paymentResult?: Pick<Payment, 'method' | 'paid_at'> | null;
-  preview: { subtotal: string; tax: string; total: string };
+  preview: { subtotal: string; exempt?: string; tax: string; total: string };
+  defaultTaxRate?: string;
   emitBlockReasons: string[];
   canEmit: boolean;
   canCreatePayments: boolean;
@@ -45,9 +47,11 @@ export type NewInvoiceLayoutProps = {
   onSubmitInvoice: () => void;
   onCobrar: () => void;
   onRetryLoad: () => void;
+  onLoadMoreServices?: () => void;
   onPaymentOpenChange: (val: boolean) => void;
   onSubmitPayment: (appliedAmount: string) => void;
   onPrintIssuedReceipt: () => void;
+  onViewIssuedReceipt?: () => void;
   onSaveIssuedReceiptPdf?: () => void;
   onNuevaFactura: () => void;
   onSuccessDialogChange: (val: boolean) => void;
@@ -68,11 +72,13 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
     state,
     paymentResult,
     preview,
+    defaultTaxRate,
     emitBlockReasons,
     canEmit,
     canCreatePayments,
     canOpenCash,
     canViewReceipts,
+    canMarkDialysisPrescription = false,
     onOpenCash,
     onPatientNameChange,
     onPatientSubmit,
@@ -93,9 +99,11 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
     onSubmitInvoice,
     onCobrar,
     onRetryLoad,
+    onLoadMoreServices = () => undefined,
     onPaymentOpenChange,
     onSubmitPayment,
     onPrintIssuedReceipt,
+    onViewIssuedReceipt,
     onSaveIssuedReceiptPdf,
     onNuevaFactura,
     onSuccessDialogChange,
@@ -108,9 +116,13 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
   } = props;
   const postedPayments = state.issuedInvoice?.payments?.filter((payment) => payment.status === 'posted') ?? [];
   const latestPayment = paymentResult ?? postedPayments[postedPayments.length - 1];
+  const confirmationItems = canMarkDialysisPrescription
+    ? state.cartItems
+    : state.cartItems.map((item) => ({ ...item, dialysisPrescription: false }));
   const requestConfirmation = () => {
     if (confirmLockRef.current) return;
     confirmLockRef.current = true;
+    setAccountOpen(false);
     onConfirm();
     window.setTimeout(() => {
       confirmLockRef.current = false;
@@ -122,10 +134,15 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
       document.querySelector<HTMLElement>('[data-billing-account-trigger]')?.focus();
     }, 0);
   };
+  const startNewInvoice = () => {
+    setAccountOpen(false);
+    onNuevaFactura();
+  };
   const account = (
     <InvoiceCart
       items={state.cartItems}
       preview={preview}
+      taxRate={defaultTaxRate}
       onUpdateQuantity={onUpdateQuantity}
       onUpdateDialysisPrescription={onUpdateDialysisPrescription}
       onRemoveItem={onRemoveItem}
@@ -135,12 +152,18 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
       actionLabel={canCreatePayments && canViewReceipts ? 'Emitir y cobrar' : 'Emitir factura'}
       emptyActionLabel="Agregue servicios"
       submitting={state.submitting}
-      canMarkDialysisPrescription={props.canMarkDialysisPrescription}
+      canMarkDialysisPrescription={canMarkDialysisPrescription}
     />
   );
   return (
     <section id="nueva-factura" className={`flex h-full min-w-0 flex-col gap-4 ${isDesktop ? 'pb-8' : 'pb-28'}`}>
-      <div className="flex min-h-9 flex-wrap items-center justify-end gap-2" aria-label="Acciones de facturación">
+      <div className="flex min-h-9 flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Facturación</p>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Nueva factura</h1>
+          <p className="text-sm text-muted-foreground">Identifique al paciente, agregue servicios y cobre desde una sola estación.</p>
+        </div>
+        <div className="flex flex-wrap items-center justify-end gap-2" aria-label="Acciones de facturación">
           <Button type="default" icon={<History aria-hidden="true" />} onClick={() => navigate('/invoices')}>
             Historial
           </Button>
@@ -150,6 +173,7 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
               Limpiar borrador
             </Button>
           ) : null}
+        </div>
       </div>
 
       <div role="status" aria-live="polite" aria-atomic="false" className="flex flex-col gap-3">
@@ -228,6 +252,10 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
               scannerEnabled={state.scannerEnabled}
               error={state.pointOfSaleLoadError ?? undefined}
               onRetry={onRetryLoad}
+              cartItems={state.cartItems}
+              hasMore={state.hasMoreServices}
+              loadingMore={state.loadingMoreServices}
+              onLoadMore={onLoadMoreServices}
             />
           </section>
         </div>
@@ -239,7 +267,7 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
             data-audit-panel="billing-account"
             data-billing-region="ticket"
             data-billing-cart-sticky
-            className="billing-account-desktop min-w-0 self-start border border-secondary/25 bg-accent/25 p-5 xl:sticky xl:top-20"
+            className="billing-account-desktop billing-account-viewport min-w-0 self-start overflow-hidden border border-secondary/25 bg-accent/25 p-5 xl:sticky xl:top-20"
           >
             {account}
           </aside>
@@ -257,7 +285,7 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
         open={state.showConfirmation}
         onOpenChange={onConfirmDialogChange}
         patientName={state.patientName}
-        items={state.cartItems}
+        items={confirmationItems}
         preview={preview}
         cashSessionId={state.loadedCashSession?.id}
         canOpenPayment={canCreatePayments && canViewReceipts}
@@ -277,6 +305,7 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
           paymentAmount={state.paymentAmount}
           paymentReference={state.paymentReference}
           partialPaymentsEnabled={state.partialPaymentsEnabled}
+          errorMessage={state.paymentError}
           onPaymentMethodChange={onPaymentMethodChange}
           onPaymentAmountChange={onPaymentAmountChange}
           onPaymentReferenceChange={onPaymentReferenceChange}
@@ -299,29 +328,39 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
           receiptRecoveryMessage={state.institutionalReceiptRecoveryMessage ?? undefined}
           paymentMethod={latestPayment?.method ?? (state.issuedInvoice.status === 'paid' ? state.paymentMethod : undefined)}
           paymentDate={latestPayment?.paid_at}
+          receivedAmount={state.completedPaymentReceivedAmount}
+          changeAmount={state.completedPaymentChangeAmount}
           onCobrar={onCobrar}
+          onVerRecibo={onViewIssuedReceipt}
           onImprimir={onPrintIssuedReceipt}
           onGuardarPdf={onSaveIssuedReceiptPdf}
-          onNuevaFactura={onNuevaFactura}
+          onNuevaFactura={startNewInvoice}
         />
       )}
 
       <Modal
-        open={state.showReceipt && Boolean(state.receipt)}
+        open={state.showReceipt && Boolean(state.institutionalReceipt || state.receipt)}
         onCancel={() => onReceiptOpenChange(false)}
         title="Comprobante de factura"
         footer={null}
         width={760}
         destroyOnHidden
       >
-        <p className="text-sm text-muted-foreground mb-4">
-          Formato de compatibilidad para facturas antiguas o cuando el PDF institucional no esta disponible.
-        </p>
-        {state.receipt ? (
+        {state.institutionalReceipt ? (
+          <InstitutionalReceiptPreviewFrame
+            receiptId={state.institutionalReceipt.id}
+            receiptNumber={state.institutionalReceipt.receipt_number_full}
+          />
+        ) : state.receipt ? (
+          <>
+            <p className="text-sm text-muted-foreground mb-4">
+              Formato de compatibilidad para facturas antiguas o cuando el PDF institucional no esta disponible.
+            </p>
           <ReceiptPreview
             receipt={state.receipt}
             onNewInvoice={onNuevaFactura}
           />
+          </>
         ) : null}
       </Modal>
 

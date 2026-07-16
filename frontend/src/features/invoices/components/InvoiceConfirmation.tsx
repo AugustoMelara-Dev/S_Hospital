@@ -8,6 +8,9 @@ type Props = { open: boolean; onOpenChange: (open: boolean) => void; patientName
 
 export function InvoiceConfirmation({ open, onOpenChange, patientName, items, preview, taxRate, cashSessionId, canOpenPayment = true, onConfirm, submitting }: Props) {
   const confirmButtonRef = useRef<HTMLButtonElement | null>(null);
+  const dialysisPrescription = items.some(
+    (item) => item.dialysisPrescription && item.service.special_rule_code === 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION',
+  );
   const willOpenPayment = canOpenPayment && Boolean(cashSessionId) && (parseCents(preview.total) ?? 0) > 0;
   const title = willOpenPayment ? 'Confirmar emisión y cobro' : 'Confirmar factura';
   useEffect(() => { if (open) window.setTimeout(() => confirmButtonRef.current?.focus(), 0); }, [open]);
@@ -33,7 +36,7 @@ export function InvoiceConfirmation({ open, onOpenChange, patientName, items, pr
             {items.map((item, index) => (
               <li key={`${item.service.id}-${index}`} className="flex items-center justify-between gap-4 py-3">
                 <span>{item.quantity} x {item.service.name}</span>
-                <span>{item.dialysisPrescription && item.service.special_rule_code === 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION' ? 'GRATIS' : moneyLabel(item.service.price)}</span>
+                <span>{dialysisPrescription && item.service.special_rule_code === 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION' ? 'GRATIS' : moneyLabel(item.service.price)}</span>
               </li>
             ))}
           </ul>

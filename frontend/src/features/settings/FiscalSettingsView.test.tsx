@@ -93,11 +93,11 @@ describe('FiscalSettingsView (separated sections)', () => {
     document.documentElement.removeAttribute('data-color-theme');
   });
 
-  it('leaves the page h1 to the application shell and keeps receipts as a dedicated route, not a fiscal tab', async () => {
+  it('owns one page h1 and keeps receipts as a dedicated route, not a fiscal tab', async () => {
     renderView();
 
     expect(await screen.findByRole('tab', { name: /hospital/i })).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { level: 1 })).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: /configuraci[oó]n hospitalaria/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /numeraci[oó]n/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /operativa/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /^marca$/i })).toBeInTheDocument();

@@ -103,7 +103,7 @@ export function InstitutionalShell({ cashSession, children, logoUrl, onLogout, s
 
       <InstitutionalRail activeItem={activeItem} collapsed={collapsed} hospitalName={hospitalName} logoUrl={logoUrl} navigation={visibleNavigation} onToggleCollapsed={toggleCollapsed} />
 
-      <div className={cn('flex min-h-screen min-w-0 flex-col pb-16 lg:pb-0', collapsed ? 'lg:ml-20' : 'lg:ml-56')}>
+      <div className={cn('flex min-h-screen min-w-0 flex-col pb-20 lg:pb-0', collapsed ? 'lg:ml-20' : 'lg:ml-56')}>
         <ContextBar
           cashSession={cashSession}
           commandButtonRef={commandButtonRef}

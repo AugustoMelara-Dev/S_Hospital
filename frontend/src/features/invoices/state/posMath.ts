@@ -17,6 +17,7 @@ import {
 import type { CartItem } from '../components/InvoiceCart';
 
 const QUANTITY_REGEX = /^\d+(\.\d{1,2})?$/;
+const ERYTHROPOIETIN_RULE = 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION';
 
 /**
  * @deprecated since v1.0.0-rc.4. Use `parseCents` from `lib/money.ts`
@@ -77,10 +78,10 @@ export function parseTaxRateBasisPoints(taxRate?: string): number {
  * @deprecated since v1.0.0-rc.4. The erythropoietin rule is applied
  * server-side; do not branch on it in the browser.
  */
-export function effectiveUnitPriceCents(item: CartItem): number {
+export function effectiveUnitPriceCents(item: CartItem, dialysisPrescription = item.dialysisPrescription): number {
   if (
-    item.dialysisPrescription &&
-    item.service.special_rule_code === 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION'
+    dialysisPrescription &&
+    item.service.special_rule_code === ERYTHROPOIETIN_RULE
   ) {
     return 0;
   }
@@ -92,6 +93,7 @@ export function effectiveUnitPriceCents(item: CartItem): number {
 
 export interface InvoiceEstimate {
   subtotal: string;
+  exempt?: string;
   tax: string;
   total: string;
 }
@@ -105,16 +107,22 @@ export interface InvoiceEstimate {
  */
 export function computeSimpleEstimate(items: CartItem[], taxRate?: string): InvoiceEstimate {
   const rateBasisPoints = parseTaxRateBasisPoints(taxRate);
+  const dialysisPrescription = items.some(
+    (item) => item.dialysisPrescription && item.service.special_rule_code === ERYTHROPOIETIN_RULE,
+  );
   let subtotal = 0;
   let taxableSubtotal = 0;
+  let exemptSubtotal = 0;
 
   for (const item of items) {
     const quantity = parseQuantityUnits(item.quantity);
-    const lineSubtotal = Math.trunc(((effectiveUnitPriceCents(item) * quantity) + 50) / 100);
+    const lineSubtotal = Math.trunc(((effectiveUnitPriceCents(item, dialysisPrescription) * quantity) + 50) / 100);
     subtotal += lineSubtotal;
 
     if (isTaxableForPreview(item) && rateBasisPoints > 0) {
       taxableSubtotal += lineSubtotal;
+    } else {
+      exemptSubtotal += lineSubtotal;
     }
   }
 
@@ -122,6 +130,7 @@ export function computeSimpleEstimate(items: CartItem[], taxRate?: string): Invo
 
   return {
     subtotal: formatCentsFromMoneyCents(subtotal),
+    exempt: formatCentsFromMoneyCents(exemptSubtotal),
     tax: formatCentsFromMoneyCents(tax),
     total: formatCentsFromMoneyCents(subtotal + tax),
   };
@@ -129,7 +138,7 @@ export function computeSimpleEstimate(items: CartItem[], taxRate?: string): Invo
 
 function isTaxableForPreview(item: CartItem): boolean {
   return item.service.taxable
-    && item.service.special_rule_code !== 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION';
+    && item.service.special_rule_code !== ERYTHROPOIETIN_RULE;
 }
 
 /**

@@ -4,24 +4,14 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi, afterEach } from 'vitest';
 import { InvoiceHistoryView } from './InvoiceHistoryView';
-import { apiClient, type AuthUser, type Invoice, type ReceiptData } from '../../lib/api';
-import { openBlobInNewTab } from '../../lib/download';
-
-vi.mock('../../lib/download', async () => {
-  const actual = await vi.importActual<typeof import('../../lib/download')>('../../lib/download');
-
-  return {
-    ...actual,
-    openBlobInNewTab: vi.fn(),
-  };
-});
+import { apiClient, institutionalReceipts, type AuthUser, type Invoice, type ReceiptData } from '../../lib/api';
 
 describe('InstitutionalReceiptFlow', () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  it('uses the institutional receipt PDF from history when available', async () => {
+  it('opens the exact institutional HTML preview from history without auditing a print', async () => {
     const invoice = invoiceFixture({
       id: 10,
       invoice_number: '000-001-01-00000010',
@@ -40,6 +30,8 @@ describe('InstitutionalReceiptFlow', () => {
       .mockResolvedValue({} as never);
     const getPdf = vi.spyOn(apiClient, 'getInstitutionalReceiptPdf')
       .mockResolvedValue(new Blob(['%PDF-institutional'], { type: 'application/pdf' }));
+    const previewHtml = vi.spyOn(institutionalReceipts, 'previewHtml')
+      .mockResolvedValue('<!doctype html><html><body>Recibo institucional exacto</body></html>');
 
     vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
       data: [invoice],
@@ -57,11 +49,10 @@ describe('InstitutionalReceiptFlow', () => {
     const menuItem = await screen.findByRole('menuitem', { name: /Ver recibo/i });
     fireEvent.click(menuItem);
 
-    await waitFor(() => expect(registerPrint).toHaveBeenCalledWith(501, undefined, {
-      idempotencyKey: expect.any(String),
-    }));
-    expect(getPdf).toHaveBeenCalledWith(501);
-    expect(openBlobInNewTab).toHaveBeenCalledWith(expect.any(Blob), 'recibo-institucional-REC-A-00000501.pdf');
+    expect(await screen.findByTitle(/vista previa del recibo institucional REC-A-00000501/i)).toBeInTheDocument();
+    expect(previewHtml).toHaveBeenCalledWith(501);
+    expect(registerPrint).not.toHaveBeenCalled();
+    expect(getPdf).not.toHaveBeenCalled();
     expect(getReceipt).not.toHaveBeenCalled();
   });
 

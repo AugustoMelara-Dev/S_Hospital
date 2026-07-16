@@ -107,6 +107,10 @@ class BuildInstitutionalReceiptSnapshotAction
             ],
             'invoice_snapshot' => [
                 'invoice_number' => $invoice->invoice_number,
+                'fiscal_cai' => $invoice->fiscal_cai,
+                'fiscal_range_from' => $invoice->fiscal_range_from,
+                'fiscal_range_to' => $invoice->fiscal_range_to,
+                'fiscal_valid_until' => $invoice->fiscal_valid_until?->toDateString(),
                 'patient_name' => $invoice->patient_name,
                 'issued_at' => $invoice->issued_at?->toIso8601String(),
                 'tax_label' => $invoice->tax_label,

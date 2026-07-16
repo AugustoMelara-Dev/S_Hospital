@@ -2,6 +2,7 @@ import type { Invoice } from '../../../lib/api/types';
 
 export type InvoiceActionPermissions = {
   canIssueInstitutionalReceipt: boolean;
+  canCollectPayment: boolean;
   canOperateAnyInvoice: boolean;
   canReprint: boolean;
   canReprintAny: boolean;
@@ -14,6 +15,7 @@ export type InvoiceActionPermissions = {
 export type InvoiceActionPolicy = {
   openReceipt: boolean;
   auditedOpen: boolean;
+  collectPayment: boolean;
   downloadInstitutionalReceipt: boolean;
   generateInstitutionalReceipt: boolean;
   reprint: boolean;
@@ -24,6 +26,7 @@ export type InvoiceActionPolicy = {
 const NO_ACTIONS: InvoiceActionPolicy = {
   openReceipt: false,
   auditedOpen: false,
+  collectPayment: false,
   downloadInstitutionalReceipt: false,
   generateInstitutionalReceipt: false,
   reprint: false,
@@ -40,7 +43,6 @@ export function invoiceActionPolicy(
   }
 
   const receipt = getIssuedInstitutionalReceipt(invoice);
-  const printed = receipt ? hasInstitutionalPrintEvents(receipt) : false;
   const canOperateInvoice = permissions.canOperateAnyInvoice || permissions.isOwnInvoiceFromToday;
   const canOperateReceipt = permissions.canReprintAny
     || permissions.canOperateAnyInvoice
@@ -51,8 +53,7 @@ export function invoiceActionPolicy(
     && !receipt;
   const openInstitutionalReceipt = Boolean(receipt)
     && permissions.canViewReceipt
-    && canOperateReceipt
-    && (!printed || permissions.canReprint);
+    && canOperateReceipt;
   const canUseInvoiceReceiptFallback = invoice.status === 'paid' || invoice.status === 'partial';
   const openReceiptFallback = permissions.canViewReceipt
     && canOperateReceipt
@@ -63,9 +64,12 @@ export function invoiceActionPolicy(
   const hasReprintableReceipt = Boolean(receipt) || reprintReceiptFallback;
 
   return {
+    collectPayment: permissions.canCollectPayment
+      && canOperateInvoice
+      && (invoice.status === 'issued' || invoice.status === 'partial'),
     openReceipt: openInstitutionalReceipt || openReceiptFallback,
-    auditedOpen: openInstitutionalReceipt && printed,
-    downloadInstitutionalReceipt: openInstitutionalReceipt && !printed,
+    auditedOpen: false,
+    downloadInstitutionalReceipt: openInstitutionalReceipt,
     generateInstitutionalReceipt,
     reprint: permissions.canReprint
       && (permissions.canReprintAny || permissions.isOwnInvoiceFromToday)
@@ -81,8 +85,4 @@ export function getIssuedInstitutionalReceipt(
   invoice: Invoice,
 ): NonNullable<Invoice['institutional_receipt']> | null {
   return invoice.institutional_receipt?.status === 'issued' ? invoice.institutional_receipt : null;
-}
-
-function hasInstitutionalPrintEvents(receipt: NonNullable<Invoice['institutional_receipt']>): boolean {
-  return receipt.has_print_events === true || (receipt.print_events_count ?? 0) > 0;
 }

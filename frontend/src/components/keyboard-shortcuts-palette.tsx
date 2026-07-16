@@ -101,7 +101,7 @@ export function KeyboardShortcutsPalette({ open, onOpenChange }: KeyboardShortcu
                     <li key={`${entry.scope}-${entry.key}-${entry.ctrl ? 'ctrl' : ''}`}>
                       <Flex justify="space-between" gap="middle">
                       <Typography.Text type="secondary">{entry.description}</Typography.Text>
-                      <Typography.Text keyboard aria-label={shortcutLabel(entry)}>{shortcutLabel(entry)}</Typography.Text>
+                      <Typography.Text keyboard>{shortcutLabel(entry)}</Typography.Text>
                       </Flex>
                     </li>
                   ))}

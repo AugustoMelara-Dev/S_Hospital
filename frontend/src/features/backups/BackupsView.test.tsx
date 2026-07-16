@@ -650,6 +650,32 @@ describe('BackupsView', () => {
     expect(screen.queryByText(/no se pudo cargar el estado operativo/i)).not.toBeInTheDocument();
   });
 
+  it('does not present filtered-page backup values as global KPIs without system status access', async () => {
+    const readonlyUser = {
+      ...adminUser,
+      permissions: ['backups.view'],
+    };
+    vi.mocked(apiClient.getBackups).mockResolvedValue({
+      data: [
+        backupFixture({ id: 8, status: 'pending', completed_at: null }),
+        backupFixture({ id: 9, status: 'failed', completed_at: null, error_message: 'fallo seguro' }),
+      ],
+      meta: { current_page: 2, per_page: 15, total: 38 },
+    });
+
+    renderWithQueryClient(<BackupsView user={readonlyUser} onStatus={() => undefined} />);
+
+    const kpis = await screen.findByRole('region', { name: /indicadores principales de respaldos/i });
+    for (const label of ['Ultimo exitoso', 'Pendientes', 'Fallidos']) {
+      const card = within(kpis).getByText(new RegExp(`^${label}$`, 'i')).closest('article');
+      expect(card).not.toBeNull();
+      expect(within(card as HTMLElement).getByText(/^No disponible$/i)).toBeVisible();
+    }
+    expect(within(kpis).queryByText(/^Sin respaldo$/i)).not.toBeInTheDocument();
+    expect(within(kpis).getAllByText(/historial visible no resume todos los respaldos/i)).toHaveLength(3);
+    expect(await screen.findByRole('table', { name: /historial de respaldos locales/i })).toBeVisible();
+  });
+
   it('keeps status filters controlled by the view without changing query params', async () => {
     const getBackups = vi.mocked(apiClient.getBackups);
 

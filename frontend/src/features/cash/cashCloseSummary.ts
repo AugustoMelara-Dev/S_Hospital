@@ -1,5 +1,6 @@
 import { formatDateTimeEs } from '@/lib/format/formatDate';
 import { formatLempirasUI } from '@/lib/money';
+import type { CashClosingBreakdown } from '@/lib/api/types';
 
 export type CashCloseSummaryPayload = {
   cashSessionId?: number;
@@ -12,6 +13,7 @@ export type CashCloseSummaryPayload = {
   closingAmount: string;
   difference: number;
   closingNotes: string;
+  closingBreakdown?: CashClosingBreakdown | null;
 };
 
 export function buildCloseSummaryCsv({
@@ -25,6 +27,7 @@ export function buildCloseSummaryCsv({
   closingAmount,
   difference,
   closingNotes,
+  closingBreakdown,
 }: CashCloseSummaryPayload): string {
   const rows = [
     ['Campo', 'Valor'],
@@ -39,6 +42,12 @@ export function buildCloseSummaryCsv({
     ['Facturas pendientes', String(pendingInvoiceCount)],
     ['Saldo pendiente', formatLempirasUI(pendingAmount)],
     ['Monto contado', formatLempirasUI(closingAmount || '0.00')],
+    ...(closingBreakdown
+      ? Object.entries(closingBreakdown.bills)
+        .filter(([, count]) => count > 0)
+        .map(([denomination, count]) => [`Billetes L ${denomination}`, String(count)])
+      : []),
+    ...(closingBreakdown ? [['Monedas y otros', formatLempirasUI(closingBreakdown.other_amount)]] : []),
     ['Diferencia', formatLempirasUI(difference)],
     ['Nota', closingNotes.trim() || 'Sin nota'],
   ];

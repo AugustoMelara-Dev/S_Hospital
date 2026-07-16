@@ -1,6 +1,6 @@
 import type { ReceiptPaperSize, ReceiptPrintProfile } from '../../lib/api/types';
 
-export type InstitutionalPaper = Extract<ReceiptPaperSize, 'letter' | 'half_letter' | 'a5'>;
+export type InstitutionalPaper = Extract<ReceiptPaperSize, 'letter' | 'half_letter' | 'a5' | 'custom'>;
 export type ThermalSupportPaper = Extract<ReceiptPaperSize, '80mm' | '58mm'>;
 
 export type PaperChoiceDefinition = {
@@ -40,6 +40,13 @@ export const PAPER_CHOICES = [
     group: 'institutional',
     aspectRatio: '210 / 148',
   },
+  {
+    value: 'custom',
+    label: 'Personalizado',
+    description: 'Medidas institucionales configuradas en milímetros.',
+    group: 'institutional',
+    aspectRatio: '215.9 / 139.7',
+  },
 ] as const satisfies readonly PaperChoiceDefinition[];
 
 export const THERMAL_COMPATIBILITY_CHOICES = [
@@ -63,12 +70,14 @@ const PAPER_TO_PROFILE: Record<InstitutionalPaper, ReceiptPrintProfile['code']> 
   letter: 'carta_horizontal',
   half_letter: 'media_carta_horizontal',
   a5: 'a5_horizontal',
+  custom: 'recibo_pequeno_personalizado',
 };
 
 const PROFILE_TO_PAPER: Partial<Record<ReceiptPrintProfile['code'], InstitutionalPaper>> = {
   carta_horizontal: 'letter',
   media_carta_horizontal: 'half_letter',
   a5_horizontal: 'a5',
+  recibo_pequeno_personalizado: 'custom',
 };
 
 export function normalizeInstitutionalPaper(value: unknown): InstitutionalPaper {

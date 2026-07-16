@@ -19,10 +19,13 @@ class CloseCashSessionAction
 {
     private const MIN_DIFFERENCE_NOTE_LENGTH = 5;
 
+    /** @var list<int> */
+    private const BILL_DENOMINATIONS = [500, 200, 100, 50, 20, 10, 5, 2, 1];
+
     public function __construct(private readonly BuildCashReconciliationAction $buildCashReconciliation) {}
 
     /**
-     * @param  array{closing_amount: string, notes?: ?string}  $payload
+     * @param  array{closing_amount: string, notes?: ?string, closing_breakdown?: array<string, mixed>}  $payload
      *
      * @throws AuthorizationException
      */
@@ -67,6 +70,14 @@ class CloseCashSessionAction
 
             $expectedCents = Money::parseCents($reconciliation['expected_cash_amount'], 'expected_cash_amount');
             $closingCents = Money::parseCents($payload['closing_amount'], 'closing_amount');
+            $closingBreakdown = $this->normalizeClosingBreakdown($payload['closing_breakdown'] ?? null);
+
+            if ($closingBreakdown !== null && $this->breakdownTotalCents($closingBreakdown) !== $closingCents) {
+                throw ValidationException::withMessages([
+                    'closing_breakdown' => 'El total del conteo por denominaciones debe coincidir con el monto contado.',
+                ]);
+            }
+
             $differenceCents = $closingCents - $expectedCents;
             $notes = trim((string) ($payload['notes'] ?? ''));
 
@@ -104,6 +115,7 @@ class CloseCashSessionAction
                 'open_user_id' => null,
                 'closed_by_user_id' => $user->id,
                 'closing_notes' => $notes === '' ? null : $notes,
+                'closing_breakdown' => $closingBreakdown,
                 'closed_at' => now(),
             ])->save();
 
@@ -123,6 +135,7 @@ class CloseCashSessionAction
                     'pending_invoice_count' => $pendingInvoiceCount,
                     'pending_amount' => $reconciliation['pending_amount'],
                     'closed_by_user_id' => $user->id,
+                    'closing_breakdown' => $closingBreakdown,
                 ],
                 'reason' => $notes === '' ? null : $notes,
                 'ip_address' => $request?->ip(),
@@ -159,5 +172,44 @@ class CloseCashSessionAction
 
             return $lockedSession->load(['user:id,name,username', 'closedBy:id,name,username']);
         });
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $breakdown
+     * @return array{bills: array<int, int>, other_amount: string}|null
+     */
+    private function normalizeClosingBreakdown(?array $breakdown): ?array
+    {
+        if ($breakdown === null) {
+            return null;
+        }
+
+        $providedBills = is_array($breakdown['bills'] ?? null) ? $breakdown['bills'] : [];
+        $bills = [];
+
+        foreach (self::BILL_DENOMINATIONS as $denomination) {
+            $bills[$denomination] = (int) ($providedBills[$denomination] ?? 0);
+        }
+
+        $otherCents = Money::parseCents((string) ($breakdown['other_amount'] ?? '0.00'), 'closing_breakdown.other_amount');
+
+        return [
+            'bills' => $bills,
+            'other_amount' => Money::formatCents($otherCents),
+        ];
+    }
+
+    /**
+     * @param  array{bills: array<int, int>, other_amount: string}  $breakdown
+     */
+    private function breakdownTotalCents(array $breakdown): int
+    {
+        $totalCents = Money::parseCents($breakdown['other_amount'], 'closing_breakdown.other_amount');
+
+        foreach (self::BILL_DENOMINATIONS as $denomination) {
+            $totalCents += $denomination * 100 * $breakdown['bills'][$denomination];
+        }
+
+        return $totalCents;
     }
 }

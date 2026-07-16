@@ -6,10 +6,11 @@ import { SaveOutlined as Save } from '@ant-design/icons';
 import { Alert, Button, Card, Form, Input, Modal, Typography } from 'antd';
 import { type FiscalSettings, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { safeClientMessage } from '@/lib/support/clientIssueLog';
+import type { OperationalStatusReporter } from '@/app/operationalStatus';
 
 type HospitalSettingsViewProps = {
   canEdit: boolean;
-  onStatus: (message: string) => void;
+  onStatus: OperationalStatusReporter;
 };
 
 const hospitalSchema = z.object({
@@ -124,7 +125,7 @@ export function HospitalSettingsView({ canEdit, onStatus }: HospitalSettingsView
         type: 'manual',
         message: 'Indique al menos 5 caracteres explicando el motivo del cambio fiscal.',
       });
-      onStatus('Ingrese un motivo del cambio fiscal de al menos 5 caracteres.');
+      onStatus({ key: 'settings:hospital:validation', level: 'warning', message: 'Ingrese un motivo del cambio fiscal de al menos 5 caracteres.', toast: false });
 
       return;
     }
@@ -142,7 +143,7 @@ export function HospitalSettingsView({ canEdit, onStatus }: HospitalSettingsView
     savingRef.current = true;
     setSaving(true);
     setError('');
-    onStatus('Guardando datos del hospital...');
+    onStatus({ key: 'settings:hospital:save', level: 'info', message: 'Guardando datos del hospital...', toast: false });
     try {
       const updated = await apiClient.updateFiscalSettings({
         hospital_name: data.hospital_name,
@@ -170,11 +171,11 @@ export function HospitalSettingsView({ canEdit, onStatus }: HospitalSettingsView
         receipt_footer_text: updated.receipt_footer_text ?? '',
         reason: '',
       });
-      onStatus('Datos del hospital guardados.');
+      onStatus({ key: 'settings:hospital:save', level: 'success', message: 'Datos del hospital guardados.' });
     } catch (err) {
       const message = safeClientMessage(userSafeErrorMessage(err, 'No se pudo guardar los datos del hospital.'));
       setError(message);
-      onStatus(message);
+      onStatus({ key: 'settings:hospital:save', level: 'error', message });
     } finally {
       savingRef.current = false;
       setSaving(false);

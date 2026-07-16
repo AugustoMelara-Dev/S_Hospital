@@ -9,7 +9,7 @@ import {
 
 describe('institutional receipt paper helpers', () => {
   it('offers only API-backed institutional defaults', () => {
-    expect(INSTITUTIONAL_RECEIPT_PAPER_VALUES).toEqual(['letter', 'half_letter', 'a5']);
+    expect(INSTITUTIONAL_RECEIPT_PAPER_VALUES).toEqual(['letter', 'half_letter', 'a5', 'custom']);
     expect(INSTITUTIONAL_RECEIPT_PAPER_OPTIONS.map((option) => option.value)).toEqual([
       ...INSTITUTIONAL_RECEIPT_PAPER_VALUES,
     ]);
@@ -27,6 +27,7 @@ describe('institutional receipt paper helpers', () => {
     expect(receiptPrintPaperSize('80mm')).toBe('80mm');
     expect(receiptPrintPaperSize('58mm')).toBe('58mm');
     expect(receiptPrintPaperSize('letter')).toBe('letter');
+    expect(receiptPrintPaperSize('custom')).toBe('custom');
     expect(receiptPrintPaperSize('ticket-roll')).toBe('half_letter');
   });
 });

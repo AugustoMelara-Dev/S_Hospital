@@ -143,6 +143,28 @@ describe('posMath', () => {
     expect(estimate.total).toBe('0.00');
   });
 
+  it('applies an invoice-level dialysis prescription to every erythropoietin line', () => {
+    const erythropoietinService = {
+      ...buildCartItem().service,
+      price: '25.00',
+      taxable: false,
+      special_rule_code: 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION',
+    };
+    const estimate = computeSimpleEstimate([
+      buildCartItem({
+        dialysisPrescription: true,
+        service: { ...erythropoietinService, id: 10 },
+      }),
+      buildCartItem({
+        dialysisPrescription: false,
+        service: { ...erythropoietinService, id: 11 },
+      }),
+    ]);
+
+    expect(estimate.subtotal).toBe('0.00');
+    expect(estimate.total).toBe('0.00');
+  });
+
   it('keeps erythropoietin fixed at L 25 without ISV even if stale catalog data marks it taxable', () => {
     const estimate = computeSimpleEstimate(
       [

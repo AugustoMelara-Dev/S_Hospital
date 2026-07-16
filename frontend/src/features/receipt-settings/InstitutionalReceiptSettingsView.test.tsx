@@ -1,10 +1,11 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { InstitutionalReceiptSettingsView } from './InstitutionalReceiptSettingsView';
 import type { InstitutionalReceiptSettings, ReceiptPrintProfile } from '@/lib/api';
 import type { OperationalStatusReporter } from '@/app/operationalStatus';
+import { queryKeys } from '@/lib/queryKeys';
 
 const mockData = vi.hoisted(() => {
   const profiles = [
@@ -110,7 +111,7 @@ function renderView({
     },
   });
 
-  return render(
+  const rendered = render(
     <QueryClientProvider client={queryClient}>
       <InstitutionalReceiptSettingsView
         canEdit
@@ -119,6 +120,8 @@ function renderView({
       />
     </QueryClientProvider>,
   );
+
+  return { ...rendered, queryClient };
 }
 
 async function activateTab(name: string | RegExp) {
@@ -126,6 +129,20 @@ async function activateTab(name: string | RegExp) {
   fireEvent.mouseDown(tab, { button: 0, ctrlKey: false });
   fireEvent.mouseUp(tab, { button: 0, ctrlKey: false });
   fireEvent.click(tab);
+}
+
+async function chooseCopies(label: string) {
+  const copies = screen.getByRole('combobox', { name: /copias/i });
+  fireEvent.mouseDown(copies);
+  fireEvent.click(await screen.findByText(label));
+  await waitFor(() => {
+    expect(within(copies.closest('.ant-select') as HTMLElement).getByText(label)).toBeInTheDocument();
+  });
+}
+
+function expectSelectedCopies(label: string) {
+  const copies = screen.getByRole('combobox', { name: /copias/i });
+  expect(within(copies.closest('.ant-select') as HTMLElement).getByText(label)).toBeInTheDocument();
 }
 
 describe('InstitutionalReceiptSettingsView', () => {
@@ -148,7 +165,7 @@ describe('InstitutionalReceiptSettingsView', () => {
     const institutional = await screen.findByRole('group', { name: 'Formatos institucionales' });
     const compatibility = screen.getByRole('group', { name: 'Formatos térmicos secundarios' });
 
-    expect(within(institutional).getAllByRole('radio')).toHaveLength(3);
+    expect(within(institutional).getAllByRole('radio')).toHaveLength(4);
     expect(within(compatibility).queryAllByRole('radio')).toHaveLength(0);
     expect(within(compatibility).getAllByRole('listitem')).toHaveLength(2);
   });
@@ -159,6 +176,81 @@ describe('InstitutionalReceiptSettingsView', () => {
     expect(await screen.findByRole('region', { name: 'Vista previa de recibo Media carta' })).toBeVisible();
     fireEvent.click(screen.getByRole('radio', { name: /^Carta\b/i }));
     expect(screen.getByRole('region', { name: 'Vista previa de recibo Carta' })).toBeVisible();
+  });
+
+  it('keeps unsaved print drafts isolated by paper profile', async () => {
+    renderView();
+
+    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
+    await activateTab('Papel y copias');
+
+    await chooseCopies('Original + dos copias');
+    fireEvent.click(screen.getByRole('radio', { name: /^Carta\b/i }));
+    await waitFor(() => expectSelectedCopies('Solo original'));
+    await chooseCopies('Original + primera copia');
+
+    fireEvent.click(screen.getByRole('radio', { name: /^Media carta\b/i }));
+    await waitFor(() => expectSelectedCopies('Original + dos copias'));
+
+    fireEvent.click(screen.getByRole('radio', { name: /^Carta\b/i }));
+    await waitFor(() => expectSelectedCopies('Original + primera copia'));
+  });
+
+  it('preserves local drafts and paper selection when receipt settings refresh', async () => {
+    const user = userEvent.setup();
+    const { queryClient } = renderView();
+
+    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
+    await activateTab('Papel y copias');
+    fireEvent.click(screen.getByRole('radio', { name: /^Carta\b/i }));
+    await chooseCopies('Original + dos copias');
+
+    await activateTab(/instituci/i);
+    const hospitalName = screen.getByLabelText(/nombre del hospital/i);
+    await user.clear(hospitalName);
+    await user.type(hospitalName, 'Hospital borrador local');
+
+    await act(async () => {
+      queryClient.setQueryData(queryKeys.settings.institutionalReceipts(), {
+        ...mockData.settings,
+        institution: {
+          ...mockData.settings.institution,
+          address: 'Direccion actualizada por refetch',
+        },
+        print_profiles: mockData.profiles.map((profile) => ({ ...profile })),
+        resolved_profile: { ...mockData.profiles[1] },
+      });
+    });
+
+    expect(hospitalName).toHaveValue('Hospital borrador local');
+    await waitFor(() => {
+      expect(screen.getByLabelText(/direcci.*referencia/i)).toHaveValue('Direccion actualizada por refetch');
+    });
+    await activateTab('Papel y copias');
+    expect(screen.getByRole('radio', { name: /^Carta\b/i })).toBeChecked();
+    expectSelectedCopies('Original + dos copias');
+  });
+
+  it('hydrates refreshed values into an untouched print profile', async () => {
+    const { queryClient } = renderView();
+
+    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
+    await activateTab('Papel y copias');
+    expectSelectedCopies('Solo original');
+
+    await act(async () => {
+      queryClient.setQueryData(queryKeys.settings.institutionalReceipts(), {
+        ...mockData.settings,
+        print_profiles: mockData.profiles.map((profile) =>
+          profile.id === mockData.profiles[1].id
+            ? { ...profile, copies_mode: 'original_first' as const }
+            : { ...profile },
+        ),
+        resolved_profile: { ...mockData.profiles[1], copies_mode: 'original_first' },
+      });
+    });
+
+    await waitFor(() => expectSelectedCopies('Original + primera copia'));
   });
 
   it('shows the page header and stat cards for the resolved profile', async () => {
@@ -204,6 +296,44 @@ describe('InstitutionalReceiptSettingsView', () => {
         }),
       );
     });
+  });
+
+  it('accepts later institution refreshes after a successful save clears dirty state', async () => {
+    const { apiClient } = await import('@/lib/api');
+    const user = userEvent.setup();
+    const onStatus = vi.fn();
+    const savedInstitution = {
+      ...mockData.settings.institution!,
+      hospital_name: 'Hospital guardado',
+    };
+    vi.mocked(apiClient.getInstitutionalReceiptSettings)
+      .mockResolvedValueOnce(mockData.settings)
+      .mockResolvedValueOnce({ ...mockData.settings, institution: savedInstitution });
+    vi.mocked(apiClient.updateReceiptInstitution).mockResolvedValueOnce(savedInstitution);
+    const { queryClient } = renderView({ onStatus });
+
+    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
+    await activateTab(/instituci/i);
+    const hospitalName = screen.getByLabelText(/nombre del hospital/i);
+    await user.clear(hospitalName);
+    await user.type(hospitalName, 'Hospital guardado');
+    await user.click(screen.getByRole('button', { name: /guardar instituci/i }));
+
+    await waitFor(() => {
+      expect(onStatus).toHaveBeenCalledWith(expect.objectContaining({
+        key: 'receipt-settings:institution',
+        level: 'success',
+      }));
+    });
+
+    await act(async () => {
+      queryClient.setQueryData(queryKeys.settings.institutionalReceipts(), {
+        ...mockData.settings,
+        institution: { ...savedInstitution, hospital_name: 'Hospital actualizado remotamente' },
+      });
+    });
+
+    await waitFor(() => expect(hospitalName).toHaveValue('Hospital actualizado remotamente'));
   });
 
   it('never exposes the manual paper fields in the normal flow', async () => {
@@ -375,7 +505,7 @@ describe('InstitutionalReceiptSettingsView', () => {
     expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
     await activateTab('Papel y copias');
 
-    expect(screen.getAllByRole('radio')).toHaveLength(3);
+    expect(screen.getAllByRole('radio')).toHaveLength(4);
     expect(screen.queryByText(/activar modo soporte/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/ajustes avanzados/i)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/ancho mm/i)).not.toBeInTheDocument();
@@ -408,6 +538,58 @@ describe('InstitutionalReceiptSettingsView', () => {
     const [, payload] = vi.mocked(apiClient.updateReceiptPrintProfile).mock.calls.at(-1) ?? [];
     expect(payload).not.toHaveProperty('show_copy_legend');
     expect(screen.queryByRole('checkbox', { name: /predeterminado global/i })).not.toBeInTheDocument();
+  });
+
+  it('clears only the saved profile draft so clean refreshes resume', async () => {
+    const { apiClient } = await import('@/lib/api');
+    const onStatus = vi.fn();
+    const savedProfiles = mockData.profiles.map((profile) =>
+      profile.id === mockData.profiles[3].id
+        ? { ...profile, copies_mode: 'original_first' as const, active: true, is_global_default: true }
+        : { ...profile },
+    );
+    const savedLetter = savedProfiles[3];
+    vi.mocked(apiClient.getInstitutionalReceiptSettings)
+      .mockResolvedValueOnce(mockData.settings)
+      .mockResolvedValueOnce({
+        ...mockData.settings,
+        print_profiles: savedProfiles,
+        resolved_profile: savedLetter,
+      });
+    vi.mocked(apiClient.updateReceiptPrintProfile).mockResolvedValueOnce(savedLetter);
+    const { queryClient } = renderView({ onStatus });
+
+    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
+    await activateTab('Papel y copias');
+    await chooseCopies('Original + dos copias');
+    fireEvent.click(screen.getByRole('radio', { name: /^Carta\b/i }));
+    await waitFor(() => expectSelectedCopies('Solo original'));
+    await chooseCopies('Original + primera copia');
+    fireEvent.click(screen.getByRole('button', { name: /guardar perfil/i }));
+
+    await waitFor(() => {
+      expect(onStatus).toHaveBeenCalledWith(expect.objectContaining({
+        key: 'receipt-settings:profile',
+        level: 'success',
+      }));
+    });
+
+    const refreshedProfiles = savedProfiles.map((profile) =>
+      profile.id === savedLetter.id
+        ? { ...profile, copies_mode: 'original_first_second' as const }
+        : { ...profile },
+    );
+    await act(async () => {
+      queryClient.setQueryData(queryKeys.settings.institutionalReceipts(), {
+        ...mockData.settings,
+        print_profiles: refreshedProfiles,
+        resolved_profile: refreshedProfiles[3],
+      });
+    });
+
+    await waitFor(() => expectSelectedCopies('Original + dos copias'));
+    fireEvent.click(screen.getByRole('radio', { name: /^Media carta\b/i }));
+    await waitFor(() => expectSelectedCopies('Original + dos copias'));
   });
 
   it('saves a standard paper profile as the institutional default for support users in the normal flow', async () => {

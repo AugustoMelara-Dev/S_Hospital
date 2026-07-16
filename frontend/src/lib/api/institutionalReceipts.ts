@@ -22,6 +22,11 @@ async function pdfPost(
 }
 
 export const institutionalReceipts = {
+  async previewHtml(id: number): Promise<string> {
+    const response = await apiClient.download(`/api/institutional-receipts/${id}/pdf?preview=1`);
+    return response.text();
+  },
+
   async getSettings(): Promise<InstitutionalReceiptSettings> {
     const response = await apiClient.request<{ data: InstitutionalReceiptSettings }>('/api/settings/institutional-receipts');
     return response.data;

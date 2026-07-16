@@ -12,6 +12,7 @@ use App\Http\Requests\Billing\StoreInvoiceRequest;
 use App\Http\Requests\Billing\VoidInvoiceRequest;
 use App\Models\InstitutionalReceipt;
 use App\Models\Invoice;
+use App\Models\Payment;
 use App\Models\User;
 use App\Support\InvoiceAccess;
 use Illuminate\Database\Eloquent\Builder;
@@ -27,6 +28,7 @@ class InvoiceController extends Controller
     {
         $user = $request->user();
         $validated = $request->validated();
+        $reconciliationCashSessionId = $validated['reconciliation_cash_session_id'] ?? null;
 
         $invoices = Invoice::query()
             ->with([
@@ -45,7 +47,8 @@ class InvoiceController extends Controller
             ->when(
                 $this->canAccessHistoricalInvoices($user)
                     && empty($validated['date_from'])
-                    && empty($validated['date_to']),
+                    && empty($validated['date_to'])
+                    && empty($reconciliationCashSessionId),
                 fn (Builder $query) => $query->whereBetween('issued_at', [
                     now()->startOfDay(),
                     now()->endOfDay(),
@@ -73,6 +76,44 @@ class InvoiceController extends Controller
             ->when(
                 ! empty($validated['cash_session_id']),
                 fn (Builder $query) => $query->where('cash_session_id', $validated['cash_session_id']),
+            )
+            ->when(
+                ! empty($reconciliationCashSessionId),
+                function (Builder $query) use ($reconciliationCashSessionId): void {
+                    $query->where(function (Builder $scope) use ($reconciliationCashSessionId): void {
+                        $scope
+                            ->where('cash_session_id', $reconciliationCashSessionId)
+                            ->orWhereExists(function ($paymentQuery) use ($reconciliationCashSessionId): void {
+                                $paymentQuery
+                                    ->selectRaw('1')
+                                    ->from('payments')
+                                    ->whereColumn('payments.invoice_id', 'invoices.id')
+                                    ->where('payments.cash_session_id', $reconciliationCashSessionId)
+                                    ->where('payments.status', Payment::STATUS_POSTED);
+                            });
+                    });
+                },
+            )
+            ->when(
+                ($validated['balance_state'] ?? null) === 'pending',
+                fn (Builder $query) => $query->whereIn('status', [
+                    Invoice::STATUS_ISSUED,
+                    Invoice::STATUS_PARTIAL,
+                ]),
+            )
+            ->when(
+                ($validated['receipt_state'] ?? null) === 'missing',
+                function (Builder $query): void {
+                    $query
+                        ->where('status', Invoice::STATUS_PAID)
+                        ->whereNotExists(function ($receiptQuery): void {
+                            $receiptQuery
+                                ->selectRaw('1')
+                                ->from('institutional_receipts')
+                                ->whereColumn('institutional_receipts.invoice_id', 'invoices.id')
+                                ->where('institutional_receipts.status', InstitutionalReceipt::STATUS_ISSUED);
+                        });
+                },
             )
             ->orderByDesc('issued_at')
             ->paginate($request->perPage());

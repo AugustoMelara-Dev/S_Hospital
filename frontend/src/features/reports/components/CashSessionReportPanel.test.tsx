@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 vi.mock('@/design-system/ag-grid', () => ({
   InstitutionalDataGrid: ({ ariaLabel, rows, columns, emptyMessage }: {
@@ -168,6 +168,56 @@ describe('CashSessionReportPanel', () => {
     expect(screen.getByText('Diferencia')).toBeInTheDocument();
     expect(screen.getByText('L 0.75')).toBeInTheDocument();
     expect(screen.getByText('Diferencia validada para reporte')).toBeInTheDocument();
+  });
+
+  it('shows the audited denomination breakdown for a closed cash session', () => {
+    const base = buildCashSessionReport();
+    const cashSession = buildCashSessionReport({
+      cash_session: {
+        ...base.cash_session,
+        status: 'closed',
+        closing_amount: '717.75',
+        expected_amount: '717.75',
+        difference_amount: '0.00',
+        closed_at: '2026-06-02T16:00:00.000000Z',
+        closing_breakdown: {
+          bills: {
+            '500': 1,
+            '200': 1,
+            '100': 0,
+            '50': 0,
+            '20': 0,
+            '10': 0,
+            '5': 0,
+            '2': 0,
+            '1': 0,
+          },
+          other_amount: '17.75',
+        },
+      },
+    });
+
+    render(
+      <CashSessionReportPanel
+        canExport={false}
+        cashSession={cashSession}
+        cashReportId="2"
+        loading={false}
+        error=""
+        onCashReportIdChange={() => undefined}
+        onExport={() => undefined}
+        onExportPdf={() => undefined}
+        onSubmit={() => undefined}
+      />,
+    );
+
+    const breakdown = screen.getByRole('region', { name: /desglose del conteo f.sico/i });
+    expect(within(breakdown).getByText('Billetes de L 500')).toBeInTheDocument();
+    expect(within(breakdown).getByText('Billetes de L 200')).toBeInTheDocument();
+    expect(within(breakdown).queryByText('Billetes de L 100')).not.toBeInTheDocument();
+    expect(within(breakdown).getByText('Monedas y otros')).toBeInTheDocument();
+    expect(within(breakdown).getByText('L 17.75')).toBeInTheDocument();
+    expect(within(breakdown).getByText('L 717.75')).toBeInTheDocument();
   });
 
   it('renders cash movement types and methods as human financial labels', () => {

@@ -15,11 +15,10 @@ describe('normalizeOperationalStatus', () => {
     });
   });
 
-  it('trata mensajes legacy desconocidos como información, nunca como éxito', () => {
-    expect(normalizeOperationalStatus("La operación 'GET /api/services' excedió 10s.")).toMatchObject({
-      level: 'info',
-      message: "La operación 'GET /api/services' excedió 10s.",
-    });
+  it('rechaza mensajes sin severidad explícita en vez de inferirla por su texto', () => {
+    expect(() => normalizeOperationalStatus(
+      "La operación 'GET /api/services' excedió 10s." as never,
+    )).toThrow(/severidad explícita/i);
   });
 
   it('permite mantener feedback exclusivamente contextual', () => {

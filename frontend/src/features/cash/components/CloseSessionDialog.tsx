@@ -5,6 +5,7 @@ import { finiteNumber, formatLempirasUI } from '@/lib/money';
 import { cn } from '@/lib/utils';
 import { formatDateTimeEs } from '@/lib/format/formatDate';
 import { downloadCloseSummaryCsv } from '../cashCloseSummary';
+import type { CashClosingBreakdown } from '@/lib/api/types';
 
 interface CloseSessionDialogProps {
   open: boolean;
@@ -19,6 +20,7 @@ interface CloseSessionDialogProps {
     pending_amount?: string | null;
     missing_institutional_receipt_count?: number;
     closed_at?: string | null;
+    closing_breakdown?: CashClosingBreakdown | null;
   };
   closingAmount: string;
   closingNotes: string;
@@ -69,6 +71,7 @@ export function CashCloseSummaryPanel({
       closingAmount,
       difference,
       closingNotes,
+      closingBreakdown: session.closing_breakdown,
     });
   }
 
@@ -147,6 +150,8 @@ export function CashCloseSummaryPanel({
         </div>
       </div>
 
+      <DenominationBreakdown breakdown={session.closing_breakdown} />
+
       <div className="mt-3 grid grid-cols-1 gap-2 text-xs sm:grid-cols-4">
         <div className="flex justify-between gap-2 border border-border bg-card/70 px-2 py-1">
           <span>Efectivo</span>
@@ -219,6 +224,7 @@ export function CloseSessionDialog({
       closingAmount,
       difference,
       closingNotes,
+      closingBreakdown: session.closing_breakdown,
     });
   }
 
@@ -308,6 +314,7 @@ export function CloseSessionDialog({
                   </strong>
                 </div>
               </div>
+              <DenominationBreakdown breakdown={session.closing_breakdown} />
             </div>
           </div>
         </div>
@@ -362,5 +369,29 @@ export function CloseSessionDialog({
         )}
       </div>
     </Modal>
+  );
+}
+
+function DenominationBreakdown({ breakdown }: { breakdown?: CashClosingBreakdown | null }) {
+  if (!breakdown) return null;
+
+  const billEntries = Object.entries(breakdown.bills).filter(([, count]) => count > 0);
+
+  return (
+    <section aria-label="Desglose del conteo físico" className="mt-3 border border-border bg-card/70 p-3 text-xs">
+      <h3 className="font-semibold text-foreground">Desglose del conteo físico</h3>
+      <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-4">
+        {billEntries.map(([denomination, count]) => (
+          <div key={denomination} className="flex justify-between gap-2">
+            <dt>Billetes L {denomination}</dt>
+            <dd className="font-semibold tabular-nums">{count}</dd>
+          </div>
+        ))}
+        <div className="flex justify-between gap-2">
+          <dt>Monedas y otros</dt>
+          <dd className="font-semibold tabular-nums">{formatLempirasUI(breakdown.other_amount)}</dd>
+        </div>
+      </dl>
+    </section>
   );
 }

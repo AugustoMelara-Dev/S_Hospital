@@ -38,6 +38,7 @@ describe('InvoiceDetailDrawer', () => {
         onReprint={vi.fn()}
         open
         permissions={{
+          canCollectPayment: false,
           canIssueInstitutionalReceipt: false,
           canOperateAnyInvoice: true,
           canReprint: false,

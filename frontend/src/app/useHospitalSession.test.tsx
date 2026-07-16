@@ -187,6 +187,26 @@ describe('useHospitalSession', () => {
     await waitFor(() => expect(screen.getByText('ready:reports=no:operational=no')).toBeInTheDocument());
   });
 
+  it.each([
+    'receipt_settings.view',
+    'settings.operational.update',
+  ])('treats %s as a usable operational permission', async (permission) => {
+    vi.spyOn(apiClient, 'session').mockResolvedValue({
+      id: 1,
+      name: 'Operador configuracion',
+      email: 'configuracion@hospital.local',
+      username: 'configuracion',
+      active: true,
+      roles: ['operador'],
+      permissions: [permission],
+      must_change_password: false,
+    });
+
+    render(<PermissionProbe />, { wrapper: makeWrapper() });
+
+    await waitFor(() => expect(screen.getByText('ready:reports=no:operational=yes')).toBeInTheDocument());
+  });
+
   it('treats cash.close_any as a usable close permission for supervisor rescue', async () => {
     vi.spyOn(apiClient, 'session').mockResolvedValue({
       id: 1,

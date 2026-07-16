@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { ComponentProps } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { PaymentModal } from './PaymentModal';
@@ -252,7 +252,7 @@ describe('PaymentModal', () => {
     expect(screen.queryByLabelText(/monto recibido/i)).not.toBeInTheDocument();
     expect(screen.getByLabelText(/referencia de pago/i)).toBeDisabled();
     expect(screen.getByText(/cobrando/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /confirmar cobro.*imprimir/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /confirmar cobro/i })).toBeDisabled();
   });
 
   it('ignores residual received cash when confirming a non-cash payment', async () => {
@@ -368,7 +368,7 @@ describe('PaymentModal', () => {
 
     expect(screen.getByRole('radiogroup', { name: /método de pago/i })).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: 'Efectivo' })).toHaveAttribute('aria-checked', 'true');
-    expect(screen.getByRole('button', { name: /confirmar cobro de l 17\.25 e imprimir/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /confirmar cobro de l 17\.25/i })).toBeEnabled();
   });
 
   it('uses roving tab focus and arrow, Home and End navigation for payment methods', async () => {
@@ -466,6 +466,11 @@ describe('PaymentModal', () => {
     expect(confirmSpy).not.toHaveBeenCalled();
 
     rerender(<PaymentModal {...props} paymentAmount="5.00" partialPaymentsEnabled />);
+    const partialPaymentButton = screen.getByRole('button', { name: /registrar abono de l 5\.00/i });
+    expect(partialPaymentButton).toHaveTextContent(/registrar abono l 5\.00/i);
+    const paymentSummary = screen.getByRole('region', { name: /resumen del cobro/i });
+    expect(within(paymentSummary).getByText(/abono aplicado/i)).toBeInTheDocument();
+    expect(within(paymentSummary).getByText('L 5.00')).toBeInTheDocument();
     fireEvent.submit(screen.getByLabelText(/monto recibido/i).closest('form')!);
 
     await waitFor(() => {
@@ -515,7 +520,7 @@ describe('PaymentModal', () => {
 
     expect(screen.queryByRole('checkbox', { name: /preview|vista previa/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/preview antes de imprimir/i)).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /confirmar cobro.*imprimir/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /confirmar cobro/i })).toBeInTheDocument();
   });
 
   it('keeps cancel separate from submit', () => {
@@ -562,5 +567,13 @@ describe('PaymentModal', () => {
     await waitFor(() => {
       expect(confirmSpy).toHaveBeenCalledWith('17.25');
     });
+  });
+
+  it('shows a server payment error inside the open dialog and labels the retry action', () => {
+    renderPaymentModal({ errorMessage: 'El servidor local no pudo completar el cobro.' });
+
+    const dialog = screen.getByRole('dialog', { name: /registrar pago/i });
+    expect(dialog).toHaveTextContent('El servidor local no pudo completar el cobro.');
+    expect(screen.getByRole('button', { name: /reintentar cobro/i })).toBeEnabled();
   });
 });

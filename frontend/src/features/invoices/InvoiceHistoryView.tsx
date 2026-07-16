@@ -5,6 +5,7 @@ import {
   type AuthUser,
   type Invoice,
   type InvoiceFilters,
+  type Payment,
   type PaginatedMeta,
   type ReceiptData,
   apiClient,
@@ -16,6 +17,7 @@ import { Alert, Button, Empty, Input, Modal, Pagination, Skeleton, Tag, type Pag
 import { FileTextOutlined } from '@ant-design/icons';
 import type { ReactNode } from 'react';
 import { ReceiptPreview } from '../receipts/ReceiptPreview';
+import { InstitutionalReceiptPreviewFrame } from '../receipts/InstitutionalReceiptPreviewFrame';
 import { institutionalReceiptPaperSize } from '../../lib/institutionalReceiptPaper';
 import { downloadBlob, institutionalReceiptPdfFilename, openBlobInNewTab } from '../../lib/download';
 import { formatLempirasUIFromCents, parseCents } from '../../lib/moneyCents';
@@ -35,10 +37,12 @@ import { InvoiceHistoryFilters } from './history/InvoiceHistoryFilters';
 import { InvoiceHistoryTable, issuedInstitutionalReceipt } from './history/InvoiceHistoryTable';
 import { InvoiceDetailDrawer } from './history/InvoiceDetailDrawer';
 import { PageHeader } from '@/design-system/components/PageHeader';
+import { PaymentModal } from './components/PaymentModal';
+import type { OperationalStatusReporter } from '@/app/operationalStatus';
 
 type InvoiceHistoryViewProps = {
   user: AuthUser;
-  onStatus: (message: string) => void;
+  onStatus: OperationalStatusReporter;
 };
 
 const today = localDateString();
@@ -81,6 +85,12 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   const [confirmingReverse, setConfirmingReverse] = useState(false);
   const [confirmingReprint, setConfirmingReprint] = useState(false);
   const [receiptModalOpen, setReceiptModalOpen] = useState(false);
+  const [collectionInvoice, setCollectionInvoice] = useState<Invoice | null>(null);
+  const [collectionMethod, setCollectionMethod] = useState<Payment['method']>('cash');
+  const [collectionAmount, setCollectionAmount] = useState('');
+  const [collectionReference, setCollectionReference] = useState('');
+  const [collectionError, setCollectionError] = useState<string | null>(null);
+  const [collectingPayment, setCollectingPayment] = useState(false);
   const [loadingActionInvoiceId, setLoadingActionInvoiceId] = useState<number | null>(null);
   const [voidingInvoice, setVoidingInvoice] = useState(false);
   const [reversingInvoice, setReversingInvoice] = useState(false);
@@ -95,12 +105,14 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   const reverseIdempotencySignatureRef = useRef<string | null>(null);
   const reprintIdempotencyKeyRef = useRef<string | null>(null);
   const reprintIdempotencySignatureRef = useRef<string | null>(null);
-  const downloadReceiptIdempotencyKeyRef = useRef<string | null>(null);
-  const downloadReceiptIdempotencySignatureRef = useRef<string | null>(null);
+  const previewPrintIdempotencyKeyRef = useRef<string | null>(null);
+  const previewPrintIdempotencySignatureRef = useRef<string | null>(null);
   const receiptGenerationIdempotencyKeyRef = useRef<string | null>(null);
   const receiptGenerationIdempotencySignatureRef = useRef<string | null>(null);
   const receiptGenerationPrintIdempotencyKeyRef = useRef<string | null>(null);
   const receiptGenerationPrintIdempotencySignatureRef = useRef<string | null>(null);
+  const collectionIdempotencyKeyRef = useRef<string | null>(null);
+  const collectionIdempotencySignatureRef = useRef<string | null>(null);
   const actionRequestRef = useRef(0);
   const receiptRequestRef = useRef(0);
   const detailRequestRef = useRef(0);
@@ -113,6 +125,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   const canReprintAny = user.permissions.includes('receipts.reprint_any');
   const canViewReceipt = user.permissions.includes('receipts.view');
   const canIssueInstitutionalReceipt = canViewReceipt && user.permissions.includes('payments.create');
+  const canCollectPayment = user.permissions.includes('payments.create');
   const canOperateAnyInvoice = user.permissions.includes('invoices.operate_any');
   const canVoid = user.permissions.includes('invoices.void');
   const canReverse = user.permissions.includes('invoices.reverse');
@@ -127,9 +140,13 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     ? (invoicesQuery.data!.data as Invoice[])
     : [];
   const meta: PaginatedMeta = invoicesQuery.data?.meta ?? { current_page: 1, per_page: 10, total: 0 };
-  const loading = invoicesQuery.isFetching;
-  const loadError = invoicesQuery.isError
+  const hasCachedInvoices = invoicesQuery.data !== undefined;
+  const loading = invoicesQuery.isLoading;
+  const loadError = invoicesQuery.isError && !hasCachedInvoices
     ? userSafeErrorMessage(invoicesQuery.error, 'No se pudo cargar historial.')
+    : '';
+  const refreshError = invoicesQuery.isError && hasCachedInvoices
+    ? userSafeErrorMessage(invoicesQuery.error, 'No se pudo actualizar el historial.')
     : '';
   const detailInvoiceId = positiveIntegerFromSearchParam(searchParams.get('invoice'), 0);
 
@@ -159,7 +176,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   function applyFilters(draftFilters: InvoiceFilters) {
     const nextFilters = { ...draftFilters, page: 1 };
     setFilters(nextFilters);
-    setSearchParams(searchParamsFromFilters(nextFilters));
+    setSearchParams(withPreservedDetail(searchParamsFromFilters(nextFilters), searchParams));
     // The query refetches automatically because filters is in the
     // queryKey.
   }
@@ -263,10 +280,20 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       } else {
         setConfirmingReverse(true);
       }
-      onStatus(`Factura ${invoice.invoice_number} cargada.`);
+      onStatus({
+        key: 'invoice-history:detail',
+        level: 'info',
+        message: `Factura ${invoice.invoice_number} cargada.`,
+        toast: false,
+      });
     } catch (error) {
       if (actionRequestRef.current === requestId) {
-        onStatus(userSafeErrorMessage(error, 'No se pudo cargar detalle.'));
+        onStatus({
+          key: 'invoice-history:detail',
+          level: 'error',
+          message: userSafeErrorMessage(error, 'No se pudo cargar detalle.'),
+          toast: false,
+        });
       }
     }
   }
@@ -283,22 +310,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       setSelectedInvoice(invoice);
       const institutionalReceipt = issuedInstitutionalReceipt(invoice);
       if (institutionalReceipt) {
-        if (hasInstitutionalPrintEvents(institutionalReceipt)) {
-          requestReprintInvoice(invoice);
-
-          return;
-        }
-
-        const idempotencyKey = payloadScopedIdempotencyKey(reprintIdempotencyKeyRef, reprintIdempotencySignatureRef, {
-          action: 'history-initial-print',
-          receiptId: institutionalReceipt.id,
-        });
-        await apiClient.registerInstitutionalReceiptPrintEvent(institutionalReceipt.id, undefined, { idempotencyKey });
-        await openInstitutionalReceiptPdf(institutionalReceipt);
-        resetPayloadScopedIdempotencyKey(reprintIdempotencyKeyRef, reprintIdempotencySignatureRef);
-        queryClient.invalidateQueries({ queryKey: ['audit'] });
-        onStatus(`PDF institucional ${institutionalReceipt.receipt_number_full} abierto.`);
-
+        setReceiptModalOpen(true);
         return;
       }
 
@@ -312,7 +324,12 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       setReceiptModalOpen(true);
     } catch (error) {
       if (receiptRequestRef.current === requestId) {
-        onStatus(userSafeErrorMessage(error, 'No se pudo cargar recibo.'));
+        onStatus({
+          key: 'invoice-history:receipt-load',
+          level: 'error',
+          message: userSafeErrorMessage(error, 'No se pudo cargar recibo.'),
+          toast: false,
+        });
       }
     }
   }
@@ -343,7 +360,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   async function changePage(page: number) {
     const nextFilters = { ...filters, page };
     setFilters(nextFilters);
-    setSearchParams(searchParamsFromFilters(nextFilters));
+    setSearchParams(withPreservedDetail(searchParamsFromFilters(nextFilters), searchParams));
     // Refetch is automatic via the filters key.
   }
 
@@ -376,9 +393,19 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       synchronizeDetailInvoice(invoice);
       await openInstitutionalReceiptPdf(receipt, 'Emisión manual de recibo faltante.', idempotencyKey);
       resetPayloadScopedIdempotencyKey(receiptGenerationIdempotencyKeyRef, receiptGenerationIdempotencySignatureRef);
-      onStatus(`Recibo institucional ${receipt.receipt_number_full} generado exitosamente.`);
+      onStatus({
+        key: 'invoice-history:receipt-generate',
+        level: 'success',
+        message: `Recibo institucional ${receipt.receipt_number_full} generado exitosamente.`,
+        toast: false,
+      });
     } catch (error) {
-      onStatus(userSafeErrorMessage(error, 'No se pudo generar el recibo institucional.'));
+      onStatus({
+        key: 'invoice-history:receipt-generate',
+        level: 'error',
+        message: userSafeErrorMessage(error, 'No se pudo generar el recibo institucional.'),
+        toast: false,
+      });
     } finally {
       generatingInstitutionalReceiptRef.current = false;
       setLoadingActionInvoiceId(null);
@@ -391,28 +418,118 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
 
     setLoadingActionInvoiceId(invoice.id);
     try {
-      const idempotencyKey = payloadScopedIdempotencyKey(
-        downloadReceiptIdempotencyKeyRef,
-        downloadReceiptIdempotencySignatureRef,
-        {
-          action: 'history-initial-download',
-          receiptId: institutionalReceipt.id,
-        },
-      );
-      await apiClient.registerInstitutionalReceiptPrintEvent(institutionalReceipt.id, undefined, { idempotencyKey });
       const blob = await apiClient.getInstitutionalReceiptPdf(institutionalReceipt.id);
       downloadBlob(blob, institutionalReceiptPdfFilename(institutionalReceipt.receipt_number_full));
-      resetPayloadScopedIdempotencyKey(
-        downloadReceiptIdempotencyKeyRef,
-        downloadReceiptIdempotencySignatureRef,
-      );
-      queryClient.invalidateQueries({ queryKey: ['audit'] });
-      await invalidateBillingQueries(queryClient);
-      onStatus(`PDF institucional ${institutionalReceipt.receipt_number_full} descargado.`);
+      onStatus({
+        key: 'invoice-history:receipt-download',
+        level: 'success',
+        message: `PDF institucional ${institutionalReceipt.receipt_number_full} descargado.`,
+        toast: false,
+      });
     } catch (error) {
-      onStatus(userSafeErrorMessage(error, 'No se pudo descargar el recibo institucional.'));
+      onStatus({
+        key: 'invoice-history:receipt-download',
+        level: 'error',
+        message: userSafeErrorMessage(error, 'No se pudo descargar el recibo institucional.'),
+        toast: false,
+      });
     } finally {
       setLoadingActionInvoiceId(null);
+    }
+  }
+
+  async function printInstitutionalReceiptFromPreview() {
+    if (!selectedInvoice || !selectedInstitutionalReceipt) return;
+
+    if (hasInstitutionalPrintEvents(selectedInstitutionalReceipt)) {
+      setReceiptModalOpen(false);
+      requestReprintInvoice(selectedInvoice);
+      return;
+    }
+
+    setLoadingActionInvoiceId(selectedInvoice.id);
+    try {
+      const idempotencyKey = payloadScopedIdempotencyKey(
+        previewPrintIdempotencyKeyRef,
+        previewPrintIdempotencySignatureRef,
+        { action: 'history-preview-first-print', receiptId: selectedInstitutionalReceipt.id },
+      );
+      const blob = await apiClient.getInstitutionalReceiptPdf(selectedInstitutionalReceipt.id);
+      await apiClient.registerInstitutionalReceiptPrintEvent(selectedInstitutionalReceipt.id, undefined, { idempotencyKey });
+      resetPayloadScopedIdempotencyKey(previewPrintIdempotencyKeyRef, previewPrintIdempotencySignatureRef);
+      openBlobInNewTab(blob, institutionalReceiptPdfFilename(selectedInstitutionalReceipt.receipt_number_full));
+      queryClient.invalidateQueries({ queryKey: ['audit'] });
+      await invalidateBillingQueries(queryClient);
+      setSelectedInvoice({
+        ...selectedInvoice,
+        institutional_receipt: {
+          ...selectedInstitutionalReceipt,
+          has_print_events: true,
+          print_events_count: (selectedInstitutionalReceipt.print_events_count ?? 0) + 1,
+        },
+      });
+      onStatus({
+        key: 'invoice-history:receipt-print',
+        level: 'success',
+        message: `PDF institucional ${selectedInstitutionalReceipt.receipt_number_full} abierto.`,
+        toast: false,
+      });
+    } catch (error) {
+      onStatus({
+        key: 'invoice-history:receipt-print',
+        level: 'error',
+        message: userSafeErrorMessage(error, 'No se pudo imprimir el recibo institucional.'),
+        toast: false,
+      });
+    } finally {
+      setLoadingActionInvoiceId(null);
+    }
+  }
+
+  function openPaymentCollection(invoice: Invoice) {
+    setCollectionInvoice(invoice);
+    setCollectionMethod('cash');
+    setCollectionAmount(invoice.balance_due);
+    setCollectionReference('');
+    setCollectionError(null);
+  }
+
+  async function collectInvoicePayment(appliedAmount: string) {
+    if (!collectionInvoice || collectingPayment) return;
+    setCollectingPayment(true);
+    setCollectionError(null);
+    try {
+      const cashSession = await apiClient.getCurrentCashSession();
+      if (!cashSession || cashSession.status !== 'open') {
+        setCollectionError('Abra caja antes de registrar el cobro.');
+        return;
+      }
+      const payload = {
+        cash_session_id: cashSession.id,
+        method: collectionMethod,
+        amount: appliedAmount,
+        reference: collectionReference.trim() || null,
+      };
+      await apiClient.registerPayment(collectionInvoice.id, payload, {
+        idempotencyKey: payloadScopedIdempotencyKey(
+          collectionIdempotencyKeyRef,
+          collectionIdempotencySignatureRef,
+          { invoiceId: collectionInvoice.id, payload },
+        ),
+      });
+      resetPayloadScopedIdempotencyKey(collectionIdempotencyKeyRef, collectionIdempotencySignatureRef);
+      await invalidateBillingQueries(queryClient);
+      onStatus({
+        key: 'invoice-history:payment',
+        level: 'success',
+        message: `Cobro registrado para la factura ${collectionInvoice.invoice_number}.`,
+        toast: false,
+      });
+      setCollectionInvoice(null);
+    } catch (error) {
+      setCollectionError(userSafeErrorMessage(error, 'No se pudo registrar el pago. Revise los datos e intente de nuevo.'));
+    } finally {
+      setCollectingPayment(false);
     }
   }
 
@@ -422,7 +539,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     if (!selectedInvoice || voidReason.trim().length < 5) {
       const message = 'Ingrese un motivo de anulación de al menos 5 caracteres.';
       setVoidReasonError(message);
-      onStatus(message);
+      onStatus({ key: 'invoice-history:void', level: 'warning', message, toast: false });
 
       return;
     }
@@ -445,9 +562,19 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       setVoidReason('');
       setConfirmingVoid(false);
       resetPayloadScopedIdempotencyKey(voidIdempotencyKeyRef, voidIdempotencySignatureRef);
-      onStatus(`Factura ${voided.invoice_number} anulada.`);
+      onStatus({
+        key: 'invoice-history:void',
+        level: 'success',
+        message: `Factura ${voided.invoice_number} anulada.`,
+        toast: false,
+      });
     } catch (error) {
-      onStatus(userSafeErrorMessage(error, 'No se pudo anular la factura.'));
+      onStatus({
+        key: 'invoice-history:void',
+        level: 'error',
+        message: userSafeErrorMessage(error, 'No se pudo anular la factura.'),
+        toast: false,
+      });
     } finally {
       voidingInvoiceRef.current = false;
       setVoidingInvoice(false);
@@ -460,7 +587,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     if (!selectedInvoice || reverseReason.trim().length < 5) {
       const message = 'Ingrese un motivo de reversa de al menos 5 caracteres.';
       setReverseReasonError(message);
-      onStatus(message);
+      onStatus({ key: 'invoice-history:reverse', level: 'warning', message, toast: false });
 
       return;
     }
@@ -483,9 +610,19 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       setReverseReason('');
       setConfirmingReverse(false);
       resetPayloadScopedIdempotencyKey(reverseIdempotencyKeyRef, reverseIdempotencySignatureRef);
-      onStatus(`Factura ${reversed.invoice_number} reversada.`);
+      onStatus({
+        key: 'invoice-history:reverse',
+        level: 'success',
+        message: `Factura ${reversed.invoice_number} reversada.`,
+        toast: false,
+      });
     } catch (error) {
-      onStatus(userSafeErrorMessage(error, 'No se pudo reversar la factura.'));
+      onStatus({
+        key: 'invoice-history:reverse',
+        level: 'error',
+        message: userSafeErrorMessage(error, 'No se pudo reversar la factura.'),
+        toast: false,
+      });
     } finally {
       reversingInvoiceRef.current = false;
       setReversingInvoice(false);
@@ -528,10 +665,16 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
           reason,
           receiptId: institutionalReceipt.id,
         });
+        const blob = await apiClient.getInstitutionalReceiptPdf(institutionalReceipt.id);
         await apiClient.registerInstitutionalReceiptPrintEvent(institutionalReceipt.id, reason, { idempotencyKey });
-        await openInstitutionalReceiptPdf(institutionalReceipt);
+        openBlobInNewTab(blob, institutionalReceiptPdfFilename(institutionalReceipt.receipt_number_full));
         queryClient.invalidateQueries({ queryKey: ['audit'] });
-        onStatus(`PDF institucional ${institutionalReceipt.receipt_number_full} abierto.`);
+        onStatus({
+          key: 'invoice-history:reprint',
+          level: 'success',
+          message: `PDF institucional ${institutionalReceipt.receipt_number_full} abierto.`,
+          toast: false,
+        });
         resetPayloadScopedIdempotencyKey(reprintIdempotencyKeyRef, reprintIdempotencySignatureRef);
 
         return true;
@@ -555,11 +698,21 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       setReceipt({ ...nextReceipt, width: normalizedWidth });
       setReceiptModalOpen(true);
       resetPayloadScopedIdempotencyKey(reprintIdempotencyKeyRef, reprintIdempotencySignatureRef);
-      onStatus(`Recibo ${invoice.invoice_number} listo para imprimir.`);
+      onStatus({
+        key: 'invoice-history:reprint',
+        level: 'success',
+        message: `Recibo ${invoice.invoice_number} listo para imprimir.`,
+        toast: false,
+      });
 
       return true;
     } catch (error) {
-      onStatus(userSafeErrorMessage(error, 'No se pudo reimprimir el recibo.'));
+      onStatus({
+        key: 'invoice-history:reprint',
+        level: 'error',
+        message: userSafeErrorMessage(error, 'No se pudo reimprimir el recibo.'),
+        toast: false,
+      });
 
       return false;
     } finally {
@@ -609,11 +762,17 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     filters.patient ||
     filters.invoice_number ||
     filters.status ||
+    filters.balance_state ||
+    filters.receipt_state ||
     (filters.date_from && filters.date_from !== today) ||
     (filters.date_to && filters.date_to !== today)
   );
+  const reconciliationCriterion = reconciliationCriterionFromFilters(filters);
 
   const isEmpty = invoicesList.length === 0;
+  const selectedInstitutionalReceipt = selectedInvoice
+    ? issuedInstitutionalReceipt(selectedInvoice)
+    : null;
 
   return (
     <section
@@ -637,12 +796,39 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
         onClear={clearFilters}
       />
 
+      {reconciliationCriterion ? (
+        <Alert
+          type="warning"
+          showIcon
+          title={reconciliationCriterion.kind === 'pending_balance'
+            ? `Facturas pendientes o parciales de la caja #${reconciliationCriterion.cashSessionId}`
+            : `Recibos institucionales pendientes de la caja #${reconciliationCriterion.cashSessionId}`}
+          description={reconciliationCriterion.kind === 'pending_balance'
+            ? 'Incluye facturas asociadas a esta caja y facturas con un pago vigente aplicado en ella.'
+            : 'Incluye facturas pagadas de esta caja que todavía no tienen un recibo institucional emitido.'}
+        />
+      ) : null}
+
       {loadError ? (
         <Alert
           type="error"
           showIcon
           title="No se pudo cargar el historial"
           description={loadError}
+          action={
+            <Button type="default" onClick={() => void invoicesQuery.refetch()}>
+              Reintentar
+            </Button>
+          }
+        />
+      ) : null}
+
+      {refreshError ? (
+        <Alert
+          type="warning"
+          showIcon
+          title="No se pudo actualizar el historial"
+          description={refreshError}
           action={
             <Button type="default" onClick={() => void invoicesQuery.refetch()}>
               Reintentar
@@ -684,6 +870,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
           </header>
           <div className="p-0">
             <InvoiceHistoryTable
+              canCollectPayment={canCollectPayment}
               canReprint={canReprint}
               canReprintAny={canReprintAny}
               canReverse={canReverse}
@@ -697,6 +884,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
               loadingActionInvoiceId={loadingActionInvoiceId}
               moneyLabel={moneyLabel}
               onGenerateInstitutionalReceipt={(invoiceId) => void generateInstitutionalReceipt(invoiceId)}
+              onCollectPayment={openPaymentCollection}
               onDownloadInstitutionalReceipt={(invoice) => void downloadInstitutionalReceipt(invoice)}
               onOpenReceipt={(invoiceId) => void openReceiptModal(invoiceId)}
               onOpenDetail={(invoice, trigger) => void openInvoiceDetail(invoice, true, trigger)}
@@ -739,6 +927,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
         onReprint={requestReprintInvoice}
         open={detailInvoiceId > 0}
         permissions={detailInvoice ? {
+          canCollectPayment,
           canIssueInstitutionalReceipt,
           canOperateAnyInvoice,
           canReprint,
@@ -750,34 +939,91 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
         } : null}
       />
 
+      {collectionInvoice ? (
+        <PaymentModal
+          open
+          onOpenChange={(open) => {
+            if (!open && !collectingPayment) {
+              setCollectionInvoice(null);
+              setCollectionError(null);
+            }
+          }}
+          invoiceNumber={collectionInvoice.invoice_number}
+          patientName={collectionInvoice.patient_name}
+          total={collectionInvoice.total}
+          balanceDue={collectionInvoice.balance_due}
+          paymentMethod={collectionMethod}
+          paymentAmount={collectionAmount}
+          paymentReference={collectionReference}
+          onPaymentMethodChange={(method) => { setCollectionMethod(method); setCollectionError(null); }}
+          onPaymentAmountChange={(amount) => { setCollectionAmount(amount); setCollectionError(null); }}
+          onPaymentReferenceChange={(reference) => { setCollectionReference(reference); setCollectionError(null); }}
+          onConfirm={(amount) => void collectInvoicePayment(amount)}
+          submitting={collectingPayment}
+          errorMessage={collectionError}
+        />
+      ) : null}
+
       <Modal
         open={receiptModalOpen}
         zIndex={1200}
         onCancel={() => setReceiptModalOpen(false)}
         title={`Comprobante de factura - ${selectedInvoice?.invoice_number ?? ''}`}
-        footer={null}
+        footer={selectedInstitutionalReceipt ? [
+          <Button key="close" onClick={() => setReceiptModalOpen(false)}>Cerrar</Button>,
+          <Button
+            key="save"
+            loading={loadingActionInvoiceId === selectedInvoice?.id}
+            onClick={() => selectedInvoice && void downloadInstitutionalReceipt(selectedInvoice)}
+          >
+            Guardar PDF
+          </Button>,
+          <Button
+            key="print"
+            type="primary"
+            loading={loadingActionInvoiceId === selectedInvoice?.id}
+            onClick={() => void printInstitutionalReceiptFromPreview()}
+          >
+            {hasInstitutionalPrintEvents(selectedInstitutionalReceipt) ? 'Reimprimir' : 'Imprimir recibo'}
+          </Button>,
+        ] : null}
         width={760}
         destroyOnHidden
       >
         <p className="text-sm text-muted-foreground mb-4">
           Recibo disponible para esta factura. Usa el perfil de papel configurado.
         </p>
-        {receipt && selectedInvoice && (
+        {selectedInstitutionalReceipt ? (
+          <InstitutionalReceiptPreviewFrame
+            receiptId={selectedInstitutionalReceipt.id}
+            receiptNumber={selectedInstitutionalReceipt.receipt_number_full}
+          />
+        ) : receipt && selectedInvoice ? (
           <div className="space-y-4">
             <ReceiptPreview
               receipt={receipt}
               onPrint={async () => {
                 try {
                   await auditReceiptPrint();
-                  onStatus(`Recibo ${selectedInvoice.invoice_number} enviado a impresión.`);
+                  onStatus({
+                    key: 'invoice-history:receipt-print',
+                    level: 'success',
+                    message: `Recibo ${selectedInvoice.invoice_number} enviado a impresión.`,
+                    toast: false,
+                  });
                 } catch (error) {
-                  onStatus(userSafeErrorMessage(error, 'No se pudo auditar la reimpresión.'));
+                  onStatus({
+                    key: 'invoice-history:receipt-print',
+                    level: 'error',
+                    message: userSafeErrorMessage(error, 'No se pudo auditar la reimpresión.'),
+                    toast: false,
+                  });
                   throw error;
                 }
               }}
             />
           </div>
-        )}
+        ) : null}
       </Modal>
 
       <LocalConfirmDialog
@@ -999,10 +1245,26 @@ export function localDateString(date = new Date()): string {
 }
 
 function filtersFromSearchParams(searchParams: URLSearchParams): InvoiceFilters {
+  const reconciliationCashSessionId = positiveIntegerFromSearchParam(
+    searchParams.get('reconciliation_cash_session_id'),
+    0,
+  );
+  const hasPendingBalanceCriterion = reconciliationCashSessionId > 0
+    && searchParams.get('balance_state') === 'pending';
+  const hasMissingReceiptCriterion = !hasPendingBalanceCriterion
+    && reconciliationCashSessionId > 0
+    && searchParams.get('receipt_state') === 'missing';
+  const hasReconciliationCriterion = hasPendingBalanceCriterion || hasMissingReceiptCriterion;
+
   return {
-    date_from: searchParams.get('date_from') || today,
-    date_to: searchParams.get('date_to') || today,
+    date_from: searchParams.get('date_from') || (hasReconciliationCriterion ? '' : today),
+    date_to: searchParams.get('date_to') || (hasReconciliationCriterion ? '' : today),
     status: (searchParams.get('status') ?? '') as InvoiceFilters['status'],
+    balance_state: hasPendingBalanceCriterion ? 'pending' : '',
+    receipt_state: hasMissingReceiptCriterion ? 'missing' : '',
+    reconciliation_cash_session_id: hasReconciliationCriterion
+      ? String(reconciliationCashSessionId)
+      : undefined,
     patient: searchParams.get('q') ?? searchParams.get('patient') ?? '',
     invoice_number: searchParams.get('invoice_number') ?? '',
     page: positiveIntegerFromSearchParam(searchParams.get('page'), 1),
@@ -1018,16 +1280,43 @@ function positiveIntegerFromSearchParam(value: string | null, fallback: number):
 
 function searchParamsFromFilters(filters: InvoiceFilters): Record<string, string> {
   const params: Record<string, string> = {};
+  const hasReconciliationCriterion = reconciliationCriterionFromFilters(filters) !== null;
 
-  if (filters.date_from && filters.date_from !== today) params.date_from = filters.date_from;
-  if (filters.date_to && filters.date_to !== today) params.date_to = filters.date_to;
+  if (filters.date_from && (filters.date_from !== today || hasReconciliationCriterion)) {
+    params.date_from = filters.date_from;
+  }
+  if (filters.date_to && (filters.date_to !== today || hasReconciliationCriterion)) {
+    params.date_to = filters.date_to;
+  }
   if (filters.status) params.status = filters.status;
+  if (filters.reconciliation_cash_session_id && filters.balance_state === 'pending') {
+    params.balance_state = filters.balance_state;
+    params.reconciliation_cash_session_id = filters.reconciliation_cash_session_id;
+  } else if (filters.reconciliation_cash_session_id && filters.receipt_state === 'missing') {
+    params.receipt_state = filters.receipt_state;
+    params.reconciliation_cash_session_id = filters.reconciliation_cash_session_id;
+  }
   if (filters.patient) params.q = filters.patient;
   if (filters.invoice_number) params.invoice_number = filters.invoice_number;
   if (filters.page && filters.page > 1) params.page = String(filters.page);
   if (filters.per_page && filters.per_page !== 10) params.per_page = String(filters.per_page);
 
   return params;
+}
+
+type ReconciliationCriterion = {
+  kind: 'pending_balance' | 'missing_receipt';
+  cashSessionId: string;
+};
+
+function reconciliationCriterionFromFilters(filters: InvoiceFilters): ReconciliationCriterion | null {
+  const cashSessionId = filters.reconciliation_cash_session_id?.trim();
+
+  if (!cashSessionId) return null;
+  if (filters.balance_state === 'pending') return { kind: 'pending_balance', cashSessionId };
+  if (filters.receipt_state === 'missing') return { kind: 'missing_receipt', cashSessionId };
+
+  return null;
 }
 
 function withPreservedDetail(

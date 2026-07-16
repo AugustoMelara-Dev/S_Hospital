@@ -33,6 +33,13 @@ class IndexInvoiceRequest extends FormRequest
             'invoice_number' => ['sometimes', 'string', 'max:80'],
             'user_id' => ['sometimes', 'integer', 'exists:users,id'],
             'cash_session_id' => ['sometimes', 'integer', 'exists:cash_register_sessions,id'],
+            'balance_state' => ['sometimes', Rule::in(['pending']), 'prohibits:receipt_state'],
+            'receipt_state' => ['sometimes', Rule::in(['missing']), 'prohibits:balance_state'],
+            'reconciliation_cash_session_id' => [
+                'required_with:balance_state,receipt_state',
+                'integer',
+                'exists:cash_register_sessions,id',
+            ],
         ];
     }
 

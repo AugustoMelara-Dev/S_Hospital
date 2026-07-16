@@ -4,6 +4,7 @@ import { invoiceActionPolicy } from './invoiceActionPolicy';
 
 const permissions = {
   canIssueInstitutionalReceipt: true,
+  canCollectPayment: true,
   canOperateAnyInvoice: false,
   canReprint: true,
   canReprintAny: false,
@@ -26,6 +27,7 @@ describe('invoiceActionPolicy', () => {
   it('offers receipt recovery instead of a non-institutional receipt action', () => {
     expect(invoiceActionPolicy(invoice(), permissions)).toMatchObject({
       generateInstitutionalReceipt: true,
+      collectPayment: false,
       openReceipt: false,
       reprint: false,
       reverse: true,
@@ -51,7 +53,7 @@ describe('invoiceActionPolicy', () => {
     });
   });
 
-  it('requires reprint permission after a print event exists', () => {
+  it('keeps pure view and save available after printing while guarding reprint separately', () => {
     const printed = invoice({
       institutional_receipt: {
         id: 5,
@@ -64,8 +66,9 @@ describe('invoiceActionPolicy', () => {
     });
 
     expect(invoiceActionPolicy(printed, { ...permissions, canReprint: false })).toMatchObject({
-      openReceipt: false,
-      downloadInstitutionalReceipt: false,
+      openReceipt: true,
+      auditedOpen: false,
+      downloadInstitutionalReceipt: true,
       reprint: false,
     });
   });
@@ -74,6 +77,7 @@ describe('invoiceActionPolicy', () => {
     expect(invoiceActionPolicy(invoice({ status: 'void' }), permissions)).toEqual({
       openReceipt: false,
       auditedOpen: false,
+      collectPayment: false,
       downloadInstitutionalReceipt: false,
       generateInstitutionalReceipt: false,
       reprint: false,
@@ -91,11 +95,19 @@ describe('invoiceActionPolicy', () => {
     })).toEqual({
       openReceipt: false,
       auditedOpen: false,
+      collectPayment: false,
       downloadInstitutionalReceipt: false,
       generateInstitutionalReceipt: false,
       reprint: false,
       reverse: false,
       void: false,
     });
+  });
+
+  it('offers collection only for payable invoices in the authorized scope', () => {
+    expect(invoiceActionPolicy(invoice({ status: 'issued' }), permissions).collectPayment).toBe(true);
+    expect(invoiceActionPolicy(invoice({ status: 'partial' }), permissions).collectPayment).toBe(true);
+    expect(invoiceActionPolicy(invoice({ status: 'paid' }), permissions).collectPayment).toBe(false);
+    expect(invoiceActionPolicy(invoice({ status: 'issued' }), { ...permissions, canCollectPayment: false }).collectPayment).toBe(false);
   });
 });

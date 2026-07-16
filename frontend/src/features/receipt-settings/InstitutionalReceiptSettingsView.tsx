@@ -92,6 +92,13 @@ type InstitutionFormData = z.infer<typeof institutionSchema>;
 type SeriesFormData = z.infer<typeof seriesSchema>;
 type ProfileFormData = ReceiptProfileForm;
 type AdvancedProfileFormData = z.infer<typeof advancedProfileSchema>;
+type ProfileDraft = {
+  profile: ProfileFormData;
+  advanced: AdvancedProfileFormData;
+};
+type ProfileMutationData = ProfileDraft & {
+  profileId: number;
+};
 const { TextArea } = Input;
 export function InstitutionalReceiptSettingsView({
   canEdit,
@@ -104,6 +111,9 @@ export function InstitutionalReceiptSettingsView({
   const institutionSavingRef = useRef(false);
   const seriesSavingRef = useRef(false);
   const profileSavingRef = useRef(false);
+  const paperSelectionDirtyRef = useRef(false);
+  const selectedProfileIdRef = useRef<number | null>(null);
+  const profileDraftsRef = useRef(new Map<number, ProfileDraft>());
 
   const settingsQuery = useQuery({
     queryKey: queryKeys.settings.institutionalReceipts(),
@@ -169,6 +179,10 @@ export function InstitutionalReceiptSettingsView({
       support_reason: '',
     },
   });
+  const institutionDirtyFields = institutionForm.formState.dirtyFields;
+  const seriesDirtyFields = seriesForm.formState.dirtyFields;
+  const profileIsDirty = profileForm.formState.isDirty;
+  const advancedProfileIsDirty = advancedProfileForm.formState.isDirty;
 
   useEffect(() => {
     if (!settings) return;
@@ -184,7 +198,7 @@ export function InstitutionalReceiptSettingsView({
       secretariat_line: institution?.secretariat_line ?? '',
       receipt_location: institution?.receipt_location ?? '',
       receipt_footer_text: institution?.receipt_footer_text ?? '',
-    });
+    }, { keepDirtyValues: true });
 
     if (activeSeries) {
       seriesForm.reset({
@@ -198,15 +212,27 @@ export function InstitutionalReceiptSettingsView({
         legal_text: activeSeries.legal_text ?? '',
         receipt_number_color: activeSeries.receipt_number_color,
         active: activeSeries.active,
-      });
+      }, { keepDirtyValues: true });
     }
 
-    setPaper(institutionalPaperFromProfile(settings.resolved_profile));
-  }, [settings, activeSeries, institutionForm, seriesForm]);
+    const hasLocalProfileState =
+      paperSelectionDirtyRef.current ||
+      profileIsDirty ||
+      advancedProfileIsDirty ||
+      profileDraftsRef.current.size > 0;
+    if (!hasLocalProfileState) {
+      setPaper(institutionalPaperFromProfile(settings.resolved_profile));
+    }
+  }, [settings, activeSeries, institutionForm, seriesForm, institutionDirtyFields, seriesDirtyFields, profileIsDirty, advancedProfileIsDirty]);
 
   useEffect(() => {
     if (!selectedProfile) return;
-    profileForm.reset({
+
+    const draft = profileDraftsRef.current.get(selectedProfile.id);
+    const isCurrentProfile = selectedProfileIdRef.current === selectedProfile.id;
+    if (isCurrentProfile && (draft || profileIsDirty || advancedProfileIsDirty)) return;
+
+    profileForm.reset(draft?.profile ?? {
       copies_mode: selectedProfile.copies_mode ?? PROFILE_FORM_DEFAULTS.copies_mode,
       show_copy_legend: selectedProfile.show_copy_legend ?? PROFILE_FORM_DEFAULTS.show_copy_legend,
       show_physical_seal_space: selectedProfile.show_physical_seal_space ?? PROFILE_FORM_DEFAULTS.show_physical_seal_space,
@@ -214,7 +240,7 @@ export function InstitutionalReceiptSettingsView({
       active: selectedProfile.active ?? PROFILE_FORM_DEFAULTS.active,
       is_global_default: selectedProfile.is_global_default ?? PROFILE_FORM_DEFAULTS.is_global_default,
     });
-    advancedProfileForm.reset({
+    advancedProfileForm.reset(draft?.advanced ?? {
       width_mm: Number(selectedProfile.width_mm ?? 215.9),
       height_mm: Number(selectedProfile.height_mm ?? 139.7),
       margin_top_mm: Number(selectedProfile.margin_top_mm ?? 6),
@@ -226,7 +252,19 @@ export function InstitutionalReceiptSettingsView({
       font_scale: Number(selectedProfile.font_scale ?? 1),
       support_reason: '',
     });
-  }, [selectedProfile, profileForm, advancedProfileForm]);
+    selectedProfileIdRef.current = selectedProfile.id;
+  }, [selectedProfile, profileForm, advancedProfileForm, profileIsDirty, advancedProfileIsDirty]);
+
+  const selectPaper = (nextPaper: InstitutionalPaper) => {
+    paperSelectionDirtyRef.current = true;
+    if (selectedProfile) {
+      profileDraftsRef.current.set(selectedProfile.id, {
+        profile: { ...profileForm.getValues() },
+        advanced: { ...advancedProfileForm.getValues() },
+      });
+    }
+    setPaper(nextPaper);
+  };
 
   const invalidate = () =>
     queryClient.invalidateQueries({ queryKey: queryKeys.settings.institutionalReceipts() });
@@ -239,7 +277,20 @@ export function InstitutionalReceiptSettingsView({
       message: 'Guardando datos institucionales del recibo...',
       toast: false,
     }),
-    onSuccess: async () => {
+    onSuccess: async (institution) => {
+      if (institution) {
+        institutionForm.reset({
+          hospital_name: institution.hospital_name ?? '',
+          rtn: institution.rtn ?? '',
+          address: institution.address ?? '',
+          phone: institution.phone ?? '',
+          slogan: institution.slogan ?? '',
+          government_line: institution.government_line ?? '',
+          secretariat_line: institution.secretariat_line ?? '',
+          receipt_location: institution.receipt_location ?? '',
+          receipt_footer_text: institution.receipt_footer_text ?? '',
+        });
+      }
       await invalidate();
       onStatus({ key: 'receipt-settings:institution', level: 'success', message: 'Datos institucionales del recibo guardados.' });
     },
@@ -264,7 +315,19 @@ export function InstitutionalReceiptSettingsView({
       message: 'Guardando serie y correlativo del recibo...',
       toast: false,
     }),
-    onSuccess: async () => {
+    onSuccess: async (series) => {
+      seriesForm.reset({
+        series: series.series,
+        prefix: series.prefix,
+        number_format: series.number_format,
+        min_number: series.min_number,
+        max_number: series.max_number,
+        current_number: series.current_number,
+        range_authorization: series.range_authorization ?? '',
+        legal_text: series.legal_text ?? '',
+        receipt_number_color: series.receipt_number_color,
+        active: series.active,
+      });
       await invalidate();
       onStatus({ key: 'receipt-settings:series', level: 'success', message: 'Serie y correlativo del recibo guardados.' });
     },
@@ -279,28 +342,50 @@ export function InstitutionalReceiptSettingsView({
   });
 
   const profileMutation = useMutation({
-    mutationFn: (payload: ProfileFormData) => {
-      if (!selectedProfile) throw new Error('Seleccione un perfil de impresión.');
-      return apiClient.updateReceiptPrintProfile(selectedProfile.id, {
-        copies_mode: payload.copies_mode,
-        show_physical_seal_space: payload.show_physical_seal_space,
-        use_logo: payload.use_logo,
+    mutationFn: ({ profileId, profile, advanced }: ProfileMutationData) =>
+      apiClient.updateReceiptPrintProfile(profileId, {
+        copies_mode: profile.copies_mode,
+        show_physical_seal_space: profile.show_physical_seal_space,
+        use_logo: profile.use_logo,
         active: true,
         is_global_default: true,
         template_code: 'institutional_classic',
         ...(canEditAdvanced
-          ? advancedProfilePayload(advancedProfileForm.getValues())
+          ? advancedProfilePayload(advanced)
           : {}),
-      });
-    },
+      }),
     onMutate: () => onStatus({
       key: 'receipt-settings:profile',
       level: 'info',
       message: 'Guardando perfil de impresión del recibo...',
       toast: false,
     }),
-    onSuccess: async () => {
+    onSuccess: async (savedProfile, { profileId, profile, advanced }) => {
+      profileDraftsRef.current.delete(profileId);
+      if (selectedProfileIdRef.current === profileId) {
+        profileForm.reset({
+          copies_mode: savedProfile.copies_mode ?? profile.copies_mode,
+          show_copy_legend: savedProfile.show_copy_legend ?? profile.show_copy_legend,
+          show_physical_seal_space: savedProfile.show_physical_seal_space ?? profile.show_physical_seal_space,
+          use_logo: savedProfile.use_logo ?? profile.use_logo,
+          active: savedProfile.active ?? true,
+          is_global_default: savedProfile.is_global_default ?? true,
+        });
+        advancedProfileForm.reset({
+          width_mm: Number(savedProfile.width_mm ?? advanced.width_mm),
+          height_mm: Number(savedProfile.height_mm ?? advanced.height_mm),
+          margin_top_mm: Number(savedProfile.margin_top_mm ?? advanced.margin_top_mm),
+          margin_right_mm: Number(savedProfile.margin_right_mm ?? advanced.margin_right_mm),
+          margin_bottom_mm: Number(savedProfile.margin_bottom_mm ?? advanced.margin_bottom_mm),
+          margin_left_mm: Number(savedProfile.margin_left_mm ?? advanced.margin_left_mm),
+          orientation: savedProfile.orientation ?? advanced.orientation,
+          font_family: savedProfile.font_family ?? advanced.font_family,
+          font_scale: Number(savedProfile.font_scale ?? advanced.font_scale),
+          support_reason: '',
+        });
+      }
       await invalidate();
+      paperSelectionDirtyRef.current = false;
       onStatus({ key: 'receipt-settings:profile', level: 'success', message: 'Perfil de impresión del recibo guardado.' });
     },
     onError: (err) => {
@@ -602,7 +687,7 @@ export function InstitutionalReceiptSettingsView({
                   aria-label="Formatos institucionales: tipo de papel del recibo"
                   value={paper}
                   disabled={profileControlsDisabled}
-                  onChange={(event) => setPaper(event.target.value as InstitutionalPaper)}
+                  onChange={(event) => selectPaper(event.target.value as InstitutionalPaper)}
                   className="grid gap-3 sm:grid-cols-3"
                 >
                   {PAPER_CHOICES.map((choice) => {
@@ -654,9 +739,14 @@ export function InstitutionalReceiptSettingsView({
                 className="mt-5 space-y-4"
                 onSubmit={profileForm.handleSubmit(async (data) => {
                   if (profileSavingRef.current) return;
+                  if (!selectedProfile) return;
                   if (canEditAdvanced && !(await advancedProfileForm.trigger())) return;
                   profileSavingRef.current = true;
-                  profileMutation.mutate(data);
+                  profileMutation.mutate({
+                    profileId: selectedProfile.id,
+                    profile: data,
+                    advanced: advancedProfileForm.getValues(),
+                  });
                 })}
               >
                 <div className="grid gap-4 md:grid-cols-3">
@@ -665,7 +755,7 @@ export function InstitutionalReceiptSettingsView({
                       id="copies_mode"
                       aria-label="Copias"
                       value={profileForm.watch('copies_mode')}
-                      onChange={(value) => profileForm.setValue('copies_mode', value as ProfileFormData['copies_mode'])}
+                      onChange={(value) => profileForm.setValue('copies_mode', value as ProfileFormData['copies_mode'], { shouldDirty: true })}
                       disabled={profileControlsDisabled}
                       options={[
                         { value: 'original_only', label: 'Solo original' },
@@ -679,14 +769,14 @@ export function InstitutionalReceiptSettingsView({
                     label="Espacio para sello/firma"
                     checked={Boolean(profileForm.watch('show_physical_seal_space'))}
                     disabled={profileControlsDisabled}
-                    onChange={(value) => profileForm.setValue('show_physical_seal_space', value === true)}
+                    onChange={(value) => profileForm.setValue('show_physical_seal_space', value === true, { shouldDirty: true })}
                   />
                   <CheckboxField
                     id="profile_use_logo"
                     label="Mostrar logo autorizado"
                     checked={Boolean(profileForm.watch('use_logo'))}
                     disabled={profileControlsDisabled}
-                    onChange={(value) => profileForm.setValue('use_logo', value === true)}
+                    onChange={(value) => profileForm.setValue('use_logo', value === true, { shouldDirty: true })}
                   />
                 </div>
 

@@ -73,6 +73,15 @@
     width: min(420px, 31vw);
   }
 
+  .billing-account-viewport {
+    height: calc(100dvh - 13rem);
+  }
+
+  .institutional-receipt-preview-frame {
+    min-height: 70vh;
+    background: var(--color-receipt-paper);
+  }
+
   .payment-modal-compact .ant-modal {
     top: 24px;
   }
@@ -85,7 +94,7 @@
 
   @media (min-width: 48rem) {
     .cashbox-status-grid {
-      grid-template-columns: minmax(15rem, 1.3fr) repeat(3, minmax(7rem, 1fr));
+      grid-template-columns: minmax(15rem, 1.3fr) repeat(2, minmax(7rem, 1fr));
     }
   }
 
@@ -96,6 +105,10 @@
   }
 
   @media (min-width: 80rem) {
+    .cashbox-status-grid {
+      grid-template-columns: minmax(15rem, 1.3fr) repeat(5, minmax(6rem, 1fr));
+    }
+
     .billing-workspace-grid {
       grid-template-columns: minmax(0, 1fr) minmax(360px, 420px);
     }

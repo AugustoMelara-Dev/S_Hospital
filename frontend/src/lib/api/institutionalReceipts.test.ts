@@ -18,6 +18,17 @@ describe('institutionalReceipts API', () => {
     expect(postDownload).not.toHaveBeenCalled();
   });
 
+  it('loads preview HTML from the same institutional PDF endpoint without recording a print', async () => {
+    const html = '<!doctype html><html><body>REC-A-00000042</body></html>';
+    const response = { text: vi.fn().mockResolvedValue(html) } as unknown as Blob;
+    const download = vi.spyOn(apiClient, 'download').mockResolvedValue(response);
+
+    await expect(institutionalReceipts.previewHtml(42)).resolves.toBe(html);
+
+    expect(download).toHaveBeenCalledWith('/api/institutional-receipts/42/pdf?preview=1');
+    expect(response.text).toHaveBeenCalledOnce();
+  });
+
   it('sends reprint reasons in a POST body instead of the URL', async () => {
     const blob = new Blob(['pdf'], { type: 'application/pdf' });
     const download = vi.spyOn(apiClient, 'download').mockResolvedValue(blob);

@@ -207,6 +207,11 @@ export type InvoiceInstitutionalReceipt = Pick<
   has_print_events?: boolean;
 };
 
+export type CashClosingBreakdown = {
+  bills: Record<'500' | '200' | '100' | '50' | '20' | '10' | '5' | '2' | '1', number>;
+  other_amount: string;
+};
+
 export type CashSession = {
   id: number;
   user_id: number;
@@ -220,6 +225,7 @@ export type CashSession = {
   status: 'open' | 'closed';
   opening_notes: string | null;
   closing_notes: string | null;
+  closing_breakdown?: CashClosingBreakdown | null;
   opened_at: string;
   closed_at: string | null;
   payments_count?: number;
@@ -248,7 +254,7 @@ export type Payment = {
   paid_at: string;
 };
 
-export type InstitutionalReceiptPaperSize = 'letter' | 'half_letter' | 'a5' | '80mm' | '58mm';
+export type InstitutionalReceiptPaperSize = 'letter' | 'half_letter' | 'a5' | 'custom' | '80mm' | '58mm';
 export type ReceiptPaperSize = InstitutionalReceiptPaperSize;
 
 export type ReceiptData = {
@@ -269,6 +275,12 @@ export type ReceiptData = {
     footer_text: string | null;
     copy_label: string | null;
     signature_label: string | null;
+    paper_width_mm?: string | null;
+    paper_height_mm?: string | null;
+    margin_top_mm?: string | null;
+    margin_right_mm?: string | null;
+    margin_bottom_mm?: string | null;
+    margin_left_mm?: string | null;
   };
   fiscal: {
     cai: string | null;
@@ -334,6 +346,8 @@ export type InstitutionalReceipt = {
   print_profile_code: ReceiptPrintProfile['code'];
   copy_mode: ReceiptPrintProfile['copies_mode'];
   reprint_count: number;
+  print_events_count?: number;
+  has_print_events?: boolean;
   voided_by: number | null;
   voided_at: string | null;
   void_reason: string | null;
@@ -578,6 +592,9 @@ export type InvoiceFilters = {
   date_from?: string;
   date_to?: string;
   status?: Invoice['status'] | '';
+  balance_state?: 'pending' | '';
+  receipt_state?: 'missing' | '';
+  reconciliation_cash_session_id?: string;
   patient?: string;
   invoice_number?: string;
   user_id?: string;

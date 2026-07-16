@@ -12,9 +12,10 @@ import { useExecutiveReport } from '@/hooks/useExecutiveReport';
 import { AuditSummaryPanel } from './components/AuditSummaryPanel';
 import { computePresetRange, parseReportDate } from './components/reportDateRanges';
 import { ReportScope } from './components/ReportScope';
+import type { OperationalStatusReporter } from '@/app/operationalStatus';
 
-type AuditLogEntry = { action: string; created_at: string; reason?: string | null; result?: string; user?: { name: string } | null };
-function AuditLogList({ entries }: { entries: AuditLogEntry[] }) { const columns: InstitutionalColumn<AuditLogEntry>[] = [{ field: 'created_at', headerName: 'Fecha', priority: 'secondary', valueFormatter: ({ value }) => formatLocalizedDateTime(String(value ?? '')) }, { field: 'action', headerName: 'Acción', priority: 'primary', flex: 1 }, { colId: 'user', headerName: 'Usuario', priority: 'secondary', valueGetter: ({ data }) => data?.user?.name ?? 'Sistema' }, { field: 'reason', headerName: 'Motivo', priority: 'primary', flex: 1 }, { field: 'result', headerName: 'Resultado', priority: 'tertiary' }]; return <InstitutionalDataGrid ariaLabel="Bitácora de auditoría" rows={entries} columns={columns} getRowId={(entry) => `${entry.created_at}-${entry.action}-${entry.user?.name ?? ''}`} state={entries.length ? 'ready' : 'empty'} density="compact" />; }
+type AuditLogEntry = { id: number; action: string; created_at: string; reason?: string | null; result?: string; user?: { name: string } | null };
+function AuditLogList({ entries }: { entries: AuditLogEntry[] }) { const columns: InstitutionalColumn<AuditLogEntry>[] = [{ field: 'created_at', headerName: 'Fecha', priority: 'secondary', valueFormatter: ({ value }) => formatLocalizedDateTime(String(value ?? '')) }, { field: 'action', headerName: 'Acción', priority: 'primary', flex: 1 }, { colId: 'user', headerName: 'Usuario', priority: 'secondary', valueGetter: ({ data }) => data?.user?.name ?? 'Sistema' }, { field: 'reason', headerName: 'Motivo', priority: 'primary', flex: 1 }, { field: 'result', headerName: 'Resultado', priority: 'tertiary' }]; return <InstitutionalDataGrid ariaLabel="Bitácora de auditoría" rows={entries} columns={columns} getRowId={(entry) => String(entry.id)} state={entries.length ? 'ready' : 'empty'} density="compact" />; }
 
 type AuditLogFilters = {
   action: string;
@@ -46,7 +47,7 @@ type ReportsAuditProps = {
   canExport: boolean;
   canViewExecutiveSummary: boolean;
   canViewManagerial: boolean;
-  onStatus: (message: string) => void;
+  onStatus: OperationalStatusReporter;
 };
 
 export function ReportsAudit({
@@ -113,7 +114,7 @@ export function ReportsAudit({
 
     if (error) {
       setRangeError(error);
-      onStatus(error);
+      onStatus({ key: 'reports:audit:filters', level: 'warning', message: error, toast: false });
       return;
     }
 
@@ -408,6 +409,7 @@ function auditFiltersToUrl(filters: AuditLogFilters): URLSearchParams {
 
 function toSafeAuditEntry(entry: ApiAuditLogEntry): AuditLogEntry {
   return {
+    id: entry.id,
     action: auditActionLabel(entry.action),
     created_at: entry.created_at ?? '',
     reason: typeof entry.reason === 'string' ? entry.reason : null,

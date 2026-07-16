@@ -67,6 +67,10 @@
     --receipt-preview-canvas-min-height: 33.83rem;
   }
 
+  .receipt-paper-preview--custom {
+    max-width: 48rem;
+  }
+
   .receipt-paper-preview--half-letter,
   .receipt-paper-preview--a5 {
     max-width: 48rem;
@@ -97,6 +101,11 @@
   .institutional-receipt.receipt-a5 {
     width: min(7.6in, 100%);
     min-height: 5.1in;
+  }
+
+  .institutional-receipt.receipt-custom {
+    width: min(var(--receipt-custom-width, 215.9mm), 100%);
+    min-height: var(--receipt-custom-height, 139.7mm);
   }
 
   .institutional-receipt.receipt-80mm {
@@ -410,6 +419,12 @@
     line-height: 1.2;
   }
 
+  .institutional-receipt.receipt-custom {
+    page: receipt-custom;
+    width: var(--receipt-custom-width, 215.9mm);
+    min-height: var(--receipt-custom-height, 139.7mm);
+  }
+
   .institutional-receipt.receipt-half-letter .receipt-signature-line,
   .institutional-receipt.receipt-a5 .receipt-signature-line {
     margin-top: 0.14in;
@@ -458,13 +473,18 @@
     margin: 0.3in;
   }
 
+  @page receipt-custom {
+    size: auto;
+    margin: 6mm;
+  }
+
   @page receipt-80mm {
-    size: 80mm auto;
+    size: auto;
     margin: 4mm;
   }
 
   @page receipt-58mm {
-    size: 58mm auto;
+    size: auto;
     margin: 3mm;
   }
 }

@@ -2,7 +2,25 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-vi.mock('@/design-system/ag-grid', () => ({ InstitutionalDataGrid: ({ ariaLabel, rows }: { ariaLabel: string; rows: Array<{ action?: string; reason?: string | null; result?: string }> }) => <section aria-label={ariaLabel}>{rows.length ? rows.map((row, index) => <div key={index}>{row.action} {row.reason} {row.result === 'error' ? 'Con error' : row.result}</div>) : <div role="status">Sin entradas</div>}</section> }));
+vi.mock('@/design-system/ag-grid', () => ({
+  InstitutionalDataGrid: ({
+    ariaLabel,
+    rows,
+    getRowId,
+  }: {
+    ariaLabel: string;
+    rows: Array<{ id?: number; action?: string; reason?: string | null; result?: string }>;
+    getRowId: (row: { id?: number; action?: string; reason?: string | null; result?: string }) => string;
+  }) => (
+    <section aria-label={ariaLabel}>
+      {rows.length ? rows.map((row, index) => (
+        <div key={index} data-testid={`audit-row-${index}`} data-row-id={getRowId(row)}>
+          {row.action} {row.reason} {row.result === 'error' ? 'Con error' : row.result}
+        </div>
+      )) : <div role="status">Sin entradas</div>}
+    </section>
+  ),
+}));
 import { ReportsAudit } from './ReportsAudit';
 import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom';
 import type { AuditLogPage, OperationsReport } from '@/lib/api/types';
@@ -236,6 +254,24 @@ describe('ReportsAudit', () => {
       expect(screen.getByText(/factura anulada/i)).toBeInTheDocument();
       expect(document.body.textContent).not.toMatch(/invoices\.void|Cajero Demo \(cajero\)/i);
     });
+  });
+
+  it('uses the persisted audit id when otherwise identical events are rendered', async () => {
+    const repeatedEntry = oneEntryAuditPage.data[0];
+    getAuditLogsMock.mockResolvedValue({
+      data: [
+        { ...repeatedEntry, id: 101 },
+        { ...repeatedEntry, id: 102 },
+      ],
+      meta: { current_page: 1, per_page: 25, total: 2 },
+    });
+
+    renderView();
+
+    const rows = await screen.findAllByTestId(/^audit-row-/);
+    expect(rows).toHaveLength(2);
+    expect(rows.map((row) => row.getAttribute('data-row-id'))).toEqual(['101', '102']);
+    expect(screen.getAllByText(/factura anulada/i)).toHaveLength(2);
   });
 
   it('renders a failed audit result with a human status', async () => {

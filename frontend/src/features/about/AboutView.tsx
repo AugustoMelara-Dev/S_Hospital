@@ -2,14 +2,15 @@ import { BuildOutlined as MonitorCheck, ClockCircleOutlined as Clock3, HddOutlin
 import { Button, Card, Flex, Tag, Typography } from 'antd';
 import { useBackups } from '../../hooks/useBackups';
 import { usePublicBranding } from '../../hooks/useFiscalSettings';
-import { useServerStatus, useSystemStatusSnapshot } from '../../hooks/useServerStatus';
+import { summarizeOperationalHealth, useServerStatus, useSystemStatusSnapshot } from '../../hooks/useServerStatus';
 import { type AuthUser, type SystemStatus, userSafeErrorMessage } from '../../lib/api';
 import { displayHospitalName } from '../../lib/hospital-name';
 import { PageHeader } from '@/design-system/components/PageHeader';
+import type { OperationalStatusReporter } from '@/app/operationalStatus';
 
 type AboutViewProps = {
   user: AuthUser;
-  onStatus: (message: string) => void;
+  onStatus: OperationalStatusReporter;
 };
 
 type AdminDiagnosticItem = {
@@ -20,9 +21,9 @@ type AdminDiagnosticItem = {
 
 export function AboutView({ user, onStatus }: AboutViewProps) {
   const { data: fiscal } = usePublicBranding();
-  const { checking, isOnline, lastCheck, summary } = useServerStatus();
+  const { checking, isOnline, lastCheck, refetch, summary } = useServerStatus();
   const hospitalName = displayHospitalName(fiscal?.hospital_name);
-  const canViewAdminDiagnostics = user.roles.includes('admin');
+  const canViewAdminDiagnostics = user.permissions.includes('system.status.view');
   const canViewBackups = user.permissions.includes('backups.view');
   const backupsQuery = useBackups({ page: 1, perPage: 1, enabled: canViewBackups });
   const systemStatusQuery = useSystemStatusSnapshot(canViewAdminDiagnostics);
@@ -32,11 +33,26 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
     ? userSafeErrorMessage(systemStatusQuery.error, 'No se pudo cargar el diagnóstico administrativo.')
     : '';
 
-  const triggerDiagnosticTest = () => {
-    onStatus('Revisando conexion local...');
-    window.setTimeout(() => {
-      onStatus(checking ? 'Revision local en curso.' : `${summary.label}: ${summary.description}`);
-    }, 1000);
+  const triggerDiagnosticTest = async () => {
+    if (checking) return;
+
+    onStatus({
+      key: 'about:health-check',
+      level: 'info',
+      message: 'Revisando conexión local...',
+      toast: false,
+    });
+    const refreshed = await refetch();
+    const nextSummary = summarizeOperationalHealth(
+      !refreshed.isError,
+      refreshed.data ?? null,
+      refreshed.error,
+    );
+    onStatus({
+      key: 'about:health-check',
+      level: nextSummary.level === 'ok' ? 'success' : nextSummary.level === 'review' ? 'warning' : 'error',
+      message: `${nextSummary.label}: ${nextSummary.description}`,
+    });
   };
 
   return (
@@ -79,8 +95,8 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
             </div>
 
             <Flex gap="small" wrap>
-              <Button htmlType="button" onClick={triggerDiagnosticTest} size="small">
-                Revisar conexion local
+              <Button htmlType="button" onClick={() => void triggerDiagnosticTest()} size="small" disabled={checking} loading={checking}>
+                Revisar conexión local
               </Button>
             </Flex>
           </div>

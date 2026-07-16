@@ -1,11 +1,17 @@
 import { createRef } from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NewInvoiceViewLayout } from './NewInvoiceViewLayout';
 import { getInitialNewInvoiceState } from '../state/types';
 import type { Service } from '../../../lib/api';
+
+vi.mock('../../receipts/InstitutionalReceiptPreviewFrame', () => ({
+  InstitutionalReceiptPreviewFrame: ({ receiptId, receiptNumber }: { receiptId: number; receiptNumber: string }) => (
+    <div data-testid="institutional-receipt-preview">{receiptId}:{receiptNumber}</div>
+  ),
+}));
 
 function renderLayout(overrides: Partial<React.ComponentProps<typeof NewInvoiceViewLayout>> = {}) {
   const noop = vi.fn();
@@ -197,6 +203,9 @@ describe('NewInvoiceViewLayout', () => {
     await user.click(trigger);
     await user.click(screen.getByRole('button', { name: /emitir y cobrar/i }));
     expect(onConfirm).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog', { name: /cuenta actual/i })).not.toBeInTheDocument();
+    });
   });
 
   it('keeps the mobile account trigger available while the cart is empty', () => {
@@ -204,6 +213,102 @@ describe('NewInvoiceViewLayout', () => {
     renderLayout();
 
     expect(screen.getByRole('button', { name: /ver cuenta, 0 servicios, total l 0\.00/i })).toBeVisible();
+  });
+
+  it('does not present EPO as free in confirmation when dialysis permission is absent', () => {
+    renderLayout({
+      state: {
+        ...getInitialNewInvoiceState(null),
+        loadingServices: false,
+        showConfirmation: true,
+        patientName: 'Maria Lopez',
+        cartItems: [{
+          service: serviceFixture({
+            name: 'Eritropoyetina',
+            price: '25.00',
+            taxable: false,
+            special_rule_code: 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION',
+          }),
+          quantity: '1.00',
+          dialysisPrescription: true,
+        }],
+      },
+      preview: { subtotal: '25.00', tax: '0.00', total: '25.00' },
+      canMarkDialysisPrescription: false,
+    });
+
+    const dialog = screen.getByRole('dialog', { name: /confirmar factura/i });
+    expect(within(dialog).queryByText('GRATIS')).not.toBeInTheDocument();
+    expect(within(dialog).getAllByText('L 25.00').length).toBeGreaterThan(0);
+  });
+
+  it('closes a stale mobile account drawer when starting a new invoice from success', async () => {
+    setDesktopViewport(false);
+    const user = userEvent.setup();
+    const onNuevaFactura = vi.fn();
+    renderLayout({
+      state: {
+        ...getInitialNewInvoiceState(null),
+        loadingServices: false,
+        showSuccess: true,
+        issuedInvoice: {
+          id: 31,
+          invoice_number: '000-001-01-00000031',
+          patient_name: 'Maria Lopez',
+          total: '138.00',
+          balance_due: '0.00',
+          status: 'paid',
+        } as never,
+      },
+      preview: { subtotal: '120.00', tax: '18.00', total: '138.00' },
+      onNuevaFactura,
+    });
+
+    await user.click(screen.getByRole('button', { name: /ver cuenta, 0 servicios, total l 138\.00/i }));
+    expect(screen.getByRole('button', { name: /cerrar cuenta/i })).toBeVisible();
+    await user.click(screen.getByRole('button', { name: /nueva factura/i }));
+
+    expect(onNuevaFactura).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: /cerrar cuenta/i })).not.toBeInTheDocument();
+    });
+  });
+
+  it('shows the exact institutional receipt preview when one is available', () => {
+    renderLayout({
+      state: {
+        ...getInitialNewInvoiceState(null),
+        loadingServices: false,
+        showReceipt: true,
+        institutionalReceipt: {
+          id: 71,
+          invoice_id: 4,
+          payment_id: 8,
+          cash_session_id: 2,
+          series_id: 1,
+          receipt_number: 71,
+          receipt_number_full: 'REC-000071',
+          status: 'issued',
+          amount: '138.00',
+          amount_cents: 13800,
+          issued_at: '2026-07-15T09:00:00-06:00',
+          issued_by: 3,
+          payer_name: 'Maria Lopez',
+          concept: 'Servicios hospitalarios',
+          amount_words: 'Ciento treinta y ocho lempiras exactos',
+          template_code: 'institutional_classic',
+          print_profile_code: 'carta_horizontal',
+          copy_mode: 'original_only',
+          reprint_count: 0,
+          voided_by: null,
+          voided_at: null,
+          void_reason: null,
+        },
+      },
+    });
+
+    expect(screen.getByTestId('institutional-receipt-preview')).toHaveTextContent('71:REC-000071');
+    expect(screen.queryByText(/formato de compatibilidad/i)).not.toBeInTheDocument();
   });
 });
 

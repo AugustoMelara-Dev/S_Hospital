@@ -199,4 +199,30 @@ describe('InvoiceSuccess', () => {
     expect(screen.queryByRole('button', { name: /imprimir recibo institucional/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /^ver detalle$/i })).not.toBeInTheDocument();
   });
+
+  it('keeps received cash and change visible after completing payment', () => {
+    render(
+      <MemoryRouter>
+        <InvoiceSuccess
+          open
+          onOpenChange={vi.fn()}
+          invoiceNumber="000-001-01-00000020"
+          patientName="Paciente Cambio"
+          total="17.25"
+          status="paid"
+          paymentMethod="cash"
+          receivedAmount="50.00"
+          changeAmount="32.75"
+          onCobrar={vi.fn()}
+          onImprimir={vi.fn()}
+          onNuevaFactura={vi.fn()}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText('Monto recibido')).toBeInTheDocument();
+    expect(screen.getByText('L 50.00')).toBeInTheDocument();
+    expect(screen.getByText('Cambio')).toBeInTheDocument();
+    expect(screen.getByText('L 32.75')).toBeInTheDocument();
+  });
 });

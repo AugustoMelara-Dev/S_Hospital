@@ -24,6 +24,7 @@ describe('CashBoxView', () => {
     expect(screen.queryByLabelText(/monto contado/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /control contable de caja/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /cierre guiado/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: /Conciliaci.n de caja/i })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('tab', { name: /^cierre$/i }));
 
@@ -311,6 +312,9 @@ describe('CashBoxView', () => {
 
     render(<App />);
 
+    expect(await screen.findByText(/^Ingresos$/i)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText(/^Ingresos$/i).closest('dl')).toHaveTextContent(/33\.75/));
+    expect(screen.getByText(/^Recibos pendientes$/i).closest('dl')).toHaveTextContent('0');
     expect((await screen.findAllByText(/saldo pendiente/i)).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/L 23\.75/i).length).toBeGreaterThan(0);
     await activateCashView('Cierre');
@@ -425,7 +429,7 @@ describe('CashBoxView', () => {
     const operationalHeader = screen.getByRole('region', { name: /estado operativo de caja/i });
     expect(within(operationalHeader).getByText(/^apertura$/i)).toBeVisible();
     expect(within(operationalHeader).getByText(/^efectivo esperado$/i)).toBeVisible();
-    expect(within(operationalHeader).getByText(/^pendiente$/i)).toBeVisible();
+    expect(within(operationalHeader).getByText(/^saldo pendiente$/i)).toBeVisible();
   });
 
   it('shows a sanitized load error with retry and does not present a closed cashbox as loaded data', async () => {
@@ -504,6 +508,7 @@ describe('CashBoxView', () => {
     expect(onStatus).toHaveBeenLastCalledWith(expect.objectContaining({
       level: 'error',
       message: expect.stringMatching(/Caja: Ya existe una caja abierta/i),
+      toast: false,
     }));
   });
 
@@ -767,6 +772,86 @@ describe('CashBoxView', () => {
     expect(screen.getByRole('link', { name: /resolver en historial/i })).toHaveAttribute('href', '/invoices');
     await activateCashView('Cierre');
     expect(screen.getByRole('button', { name: /^cerrar caja$/i })).toBeDisabled();
+  });
+
+  it('carries a denomination count from Arqueo into the audited close amount', async () => {
+    const closingBreakdown = {
+      bills: {
+        '500': 0,
+        '200': 0,
+        '100': 0,
+        '50': 2,
+        '20': 1,
+        '10': 0,
+        '5': 0,
+        '2': 0,
+        '1': 0,
+      },
+      other_amount: '5.50',
+    };
+    const closedSession = cashSessionFixture({
+      status: 'closed',
+      closing_amount: '125.50',
+      closing_breakdown: closingBreakdown,
+    });
+    const closeCashSession = vi.spyOn(apiClient, 'closeCashSession').mockResolvedValue(closedSession);
+    const openSession = cashSessionFixture({
+      expected_cash_amount: '125.50',
+    });
+    vi.spyOn(apiClient, 'getCurrentCashSession')
+      .mockResolvedValueOnce(openSession)
+      .mockResolvedValueOnce(openSession)
+      .mockResolvedValue(null);
+
+    renderCashBox(<CashBoxView onStatus={vi.fn()} />);
+    await activateCashView('Arqueo');
+
+    fireEvent.change(await screen.findByLabelText(/cantidad de billetes de L 50$/i), {
+      target: { value: '2' },
+    });
+    fireEvent.change(screen.getByLabelText(/cantidad de billetes de L 20$/i), {
+      target: { value: '1' },
+    });
+    fireEvent.change(screen.getByLabelText(/monedas y otros/i), {
+      target: { value: '5.50' },
+    });
+
+    expect(screen.getByRole('status', { name: /total contado por denominaciones/i }))
+      .toHaveTextContent(/L 125\.50/i);
+
+    fireEvent.click(screen.getByRole('button', { name: /continuar al cierre/i }));
+
+    expect(screen.getByRole('tab', { name: /^cierre$/i })).toHaveAttribute('aria-selected', 'true');
+    expect(await screen.findByLabelText(/monto contado/i)).toHaveValue('125.50');
+    expect(screen.getByLabelText(/monto contado/i)).toHaveAttribute('readonly');
+    expect(screen.getByText(/calculado desde el arqueo por denominaciones/i)).toBeInTheDocument();
+
+
+    await activateCashView('Arqueo');
+    expect(screen.getByLabelText(/cantidad de billetes de L 50$/i)).toHaveValue('2');
+    expect(screen.getByLabelText(/cantidad de billetes de L 20$/i)).toHaveValue('1');
+    expect(screen.getByLabelText(/monedas y otros/i)).toHaveValue('5.50');
+
+    fireEvent.click(screen.getByRole('button', { name: /continuar al cierre/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /^cerrar caja$/i }));
+    const closeDialog = await screen.findByRole('dialog', { name: /cierre de caja/i });
+    fireEvent.click(within(closeDialog).getByRole('button', { name: /^cerrar caja$/i }));
+
+    await waitFor(() => expect(closeCashSession).toHaveBeenCalledWith(
+      1,
+      {
+        closing_amount: '125.50',
+        notes: null,
+        closing_breakdown: closingBreakdown,
+      },
+      { idempotencyKey: expect.any(String) },
+    ));
+    const confirmedSummary = await screen.findByRole('region', { name: /resumen de cierre confirmado/i });
+    const confirmedBreakdown = within(confirmedSummary)
+      .getByRole('region', { name: /desglose del conteo físico/i });
+    expect(confirmedBreakdown).toHaveTextContent(/Billetes L 50\s*2/i);
+    expect(confirmedBreakdown).toHaveTextContent(/Billetes L 20\s*1/i);
+    expect(confirmedBreakdown).toHaveTextContent(/Monedas y otros\s*L 5\.50/i);
   });
 
   it('does not open close confirmation when the reconciliation refresh fails', async () => {

@@ -9,6 +9,7 @@ describe('CashClosingPanel', () => {
     render(
       <CashClosingPanel
         canCloseCash
+        cashSessionId={77}
         closingAmount="95.00"
         closingAmountError={null}
         closingAmountRef={createRef<HTMLInputElement>()}
@@ -42,6 +43,7 @@ describe('CashClosingPanel', () => {
         <CashClosingPanel
           canCloseCash
           canViewInvoices
+          cashSessionId={77}
           closingAmount="100.00"
           closingAmountError={null}
           closingAmountRef={createRef<HTMLInputElement>()}
@@ -65,5 +67,9 @@ describe('CashClosingPanel', () => {
     const blockerRows = within(blockers).getAllByRole('listitem');
     expect(blockerRows[0]).toHaveTextContent(/1 factura.*L 25\.00/i);
     expect(blockerRows[1]).toHaveTextContent(/2 recibos institucionales pendientes/i);
+    expect(within(blockerRows[0]).getByRole('link', { name: /resolver en historial/i }))
+      .toHaveAttribute('href', '/invoices?balance_state=pending&reconciliation_cash_session_id=77');
+    expect(within(blockerRows[1]).getByRole('link', { name: /resolver en historial/i }))
+      .toHaveAttribute('href', '/invoices?receipt_state=missing&reconciliation_cash_session_id=77');
   });
 });

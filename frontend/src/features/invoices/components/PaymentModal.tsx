@@ -20,6 +20,7 @@ type PaymentModalProps = {
   onConfirm: (appliedAmount: string) => void;
   submitting?: boolean;
   partialPaymentsEnabled?: boolean;
+  errorMessage?: string | null;
 };
 
 const methodHelp: Record<Payment['method'], string> = {
@@ -52,6 +53,7 @@ export function PaymentModal({
   onConfirm,
   submitting,
   partialPaymentsEnabled = false,
+  errorMessage,
 }: PaymentModalProps) {
   const [error, setError] = useState<string | null>(null);
   const [referenceError, setReferenceError] = useState<string | null>(null);
@@ -74,6 +76,18 @@ export function PaymentModal({
   const appliedAmountCents = effectivePaymentCents !== null && balanceCents !== null && effectivePaymentCents >= balanceCents
     ? balanceCents
     : effectivePaymentCents;
+  const isPartialPayment = partialPaymentsEnabled
+    && appliedAmountCents !== null
+    && appliedAmountCents > 0
+    && balanceCents !== null
+    && appliedAmountCents < balanceCents;
+  const actionAmountLabel = moneyLabelFromCents(appliedAmountCents ?? 0);
+  const actionLabel = errorMessage
+    ? isPartialPayment ? 'Reintentar abono' : 'Reintentar cobro'
+    : isPartialPayment ? 'Registrar abono' : 'Confirmar cobro';
+  const visibleActionLabel = errorMessage || isPartialPayment
+    ? `${actionLabel} ${actionAmountLabel}`
+    : `Cobrar ${actionAmountLabel}`;
   const needsAmount = effectivePaymentCents === null || effectivePaymentCents <= 0;
   const requiresReference = paymentMethod === 'card' || paymentMethod === 'transfer';
   const summaryColumnCount = 2 + (cashCanReturnChange ? 1 : 0) + (remainingBalanceCents !== null ? 1 : 0);
@@ -261,7 +275,7 @@ export function PaymentModal({
             </div>
             <div className="p-3">
               <span className="block text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                {cashCanReturnChange ? 'Recibido' : 'A cobrar'}
+                {isPartialPayment ? 'Abono aplicado' : cashCanReturnChange ? 'Recibido' : 'A cobrar'}
               </span>
               <strong className="mt-1 block font-mono text-lg tabular-nums text-foreground">{moneyLabelFromCents(effectivePaymentCents ?? 0)}</strong>
             </div>
@@ -281,6 +295,15 @@ export function PaymentModal({
         </section>
 
         <div className="grid gap-3">
+          {errorMessage ? (
+            <Alert
+              type="error"
+              showIcon
+              role="alert"
+              title="No se completó el cobro"
+              description={`${errorMessage} Revise los datos y vuelva a intentar.`}
+            />
+          ) : null}
           {needsAmount && !error ? (
             <Alert type="warning" showIcon className="py-3" title="Ingrese el monto recibido para registrar el cobro." />
           ) : null}
@@ -395,7 +418,7 @@ export function PaymentModal({
         </section>
 
         <p className="text-xs text-muted-foreground">
-          Cancelar la ventana de impresión no revierte el pago. Si necesita corregir una factura pagada, use el flujo de anulación autorizado.
+          Confirmar registra el cobro. Ver, guardar o imprimir el recibo son acciones separadas y no revierten el pago.
         </p>
 
         <div className="flex flex-col-reverse gap-3 border-t border-border pt-4 sm:flex-row sm:justify-end">
@@ -407,12 +430,12 @@ export function PaymentModal({
             type="primary"
             className="min-h-11 sm:min-w-56"
             disabled={submitting || needsAmount}
-            aria-label={`Confirmar cobro de ${moneyLabel(balanceDue)} e imprimir`}
+            aria-label={`${actionLabel} de ${actionAmountLabel}`}
           >
             {submitting ? 'Cobrando...' : (
               <span className="inline-flex items-center gap-2">
                 <Printer className="size-4" aria-hidden="true" />
-                Cobrar {moneyLabel(balanceDue)} e imprimir
+                {visibleActionLabel}
               </span>
             )}
           </Button>

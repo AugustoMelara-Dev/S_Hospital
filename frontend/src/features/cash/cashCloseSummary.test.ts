@@ -12,6 +12,10 @@ const closeSummary = {
   closingAmount: '124.00',
   difference: -1,
   closingNotes: 'Faltante "revisado"',
+  closingBreakdown: {
+    bills: { '500': 0, '200': 0, '100': 1, '50': 0, '20': 1, '10': 0, '5': 0, '2': 2, '1': 0 },
+    other_amount: '0.50',
+  },
 };
 
 describe('cashCloseSummary', () => {
@@ -21,6 +25,9 @@ describe('cashCloseSummary', () => {
     expect([...new TextEncoder().encode(csv).slice(0, 3)]).toEqual([0xef, 0xbb, 0xbf]);
     expect(csv.startsWith('\uFEFF"Campo","Valor"')).toBe(true);
     expect(csv).toContain('"Caja","Caja #12"');
+    expect(csv).toContain('"Billetes L 100","1"');
+    expect(csv).toContain('"Billetes L 2","2"');
+    expect(csv).toContain('"Monedas y otros","L 0.50"');
     expect(csv).toContain('"Nota","Faltante ""revisado"""');
   });
 

@@ -6,6 +6,24 @@ import { type AuthUser, type CashSession } from './lib/api';
 import { appRoutes, canAccessRoute } from './navigation/appNavigation';
 import type { OperationalStatusReporter } from './app/operationalStatus';
 
+const NEW_INVOICE_PERMISSION_LABELS: Record<string, string> = {
+  'invoices.create': 'crear facturas',
+  'catalog.view': 'consultar catálogo',
+  'cash.view': 'consultar caja',
+  'payments.create': 'registrar pagos',
+  'receipts.view': 'consultar recibos',
+};
+
+function newInvoiceAccessDeniedReason(permissions: string[]): string | undefined {
+  const missingPermissions = (appRoutes.newInvoice.requiredPermissions ?? [])
+    .filter((permission) => !permissions.includes(permission))
+    .map((permission) => NEW_INVOICE_PERMISSION_LABELS[permission] ?? permission);
+
+  return missingPermissions.length > 0
+    ? `Faltan permisos: ${missingPermissions.join(', ')}. Solicite el rol Cajero completo.`
+    : undefined;
+}
+
 const AboutView = lazy(() => import('./features/about/AboutView').then((module) => ({ default: module.AboutView })));
 const BackupsView = lazy(() => import('./features/backups/BackupsView').then((module) => ({ default: module.BackupsView })));
 const CatalogView = lazy(() => import('./features/catalog/CatalogView').then((module) => ({ default: module.CatalogView })));
@@ -85,6 +103,11 @@ export function AppRoutes({
   onStatus,
   user,
 }: AppRoutesProps) {
+  const canAccessNewInvoice = canAccessRoute(appRoutes.newInvoice, user.permissions);
+  const invoiceAccessDeniedReason = canCreateInvoices && !canAccessNewInvoice
+    ? newInvoiceAccessDeniedReason(user.permissions)
+    : undefined;
+
   return (
     <Routes>
       <Route path="/" element={<Navigate to={appRoutes.dashboard.path} replace />} />
@@ -94,7 +117,7 @@ export function AppRoutes({
         element={
           <Suspense fallback={<RouteState kind="loading" title="Cargando módulo..." description="Espere mientras se carga el modulo local." headingLevel={2} />}>
             <DashboardView
-              canCreateInvoices={canCreateInvoices}
+              canCreateInvoices={canAccessNewInvoice}
               canEditFiscalSettings={canEditFiscalSettings}
               canManageCatalog={canManageCatalog}
               canOpenCash={canOpenCash}
@@ -105,6 +128,7 @@ export function AppRoutes({
               canViewManagerialReports={canViewManagerialReports}
               canViewReports={canViewReports}
               cashSession={cashSession}
+              invoiceAccessDeniedReason={invoiceAccessDeniedReason}
               onStatus={onStatus}
             />
           </Suspense>
@@ -114,7 +138,7 @@ export function AppRoutes({
         path={appRoutes.newInvoice.path}
         element={
           <PermissionGate
-            allowed={canAccessRoute(appRoutes.newInvoice, user.permissions)}
+            allowed={canAccessNewInvoice}
             reason={appRoutes.newInvoice.deniedReason}
           >
             <Suspense fallback={<RouteState kind="loading" title="Cargando facturación..." description="Espere mientras se carga el módulo local." headingLevel={2} />}>

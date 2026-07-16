@@ -20,6 +20,7 @@ import { OperationalQueue, type OperationalQueueItem } from './components/Operat
 import { SetupWizardDialog } from './components/SetupWizardDialog';
 import { TodayLedger, type TodayLedgerItem } from './components/TodayLedger';
 import { type SetupStatus } from './components/dashboardTypes';
+import type { OperationalStatusReporter } from '@/app/operationalStatus';
 
 type DashboardViewProps = {
   canCreateInvoices: boolean;
@@ -33,7 +34,8 @@ type DashboardViewProps = {
   canViewManagerialReports: boolean;
   canViewReports: boolean;
   cashSession: CashSession | null;
-  onStatus: (message: string) => void;
+  invoiceAccessDeniedReason?: string;
+  onStatus: OperationalStatusReporter;
 };
 
 // Status label and color map — single source of truth for invoice status tags.
@@ -61,6 +63,7 @@ export function DashboardView({
   canViewInvoices,
   canViewManagerialReports,
   cashSession,
+  invoiceAccessDeniedReason,
 }: DashboardViewProps) {
   const [setupStatus, setSetupStatus] = useState<SetupStatus | null>(null);
   const [setupStatusState, setSetupStatusState] = useState<'loading' | 'error' | 'ready'>('loading');
@@ -201,7 +204,7 @@ export function DashboardView({
       : missingFiscalSetup && !missingCatalogSetup && canConfigureFiscal
         ? { kind: 'link' as const, label: 'Completar configuración fiscal', to: '/settings/fiscal' }
         : missingCatalogSetup && !missingFiscalSetup && canConfigureCatalog
-          ? { kind: 'link' as const, label: 'Completar catálogo', to: '/catalog' }
+          ? { kind: 'link' as const, label: 'Completar catálogo', to: '/catalog?panel=new-service' }
           : null;
   const primaryHeaderAction = setupAction?.kind === 'wizard' ? (
     <Button type="primary" onClick={() => setIsWizardOpen(true)} size="large">
@@ -262,6 +265,14 @@ export function DashboardView({
       title: 'Facturación disponible',
       description: 'La caja está lista para emitir la siguiente factura del turno.',
       priority: 'normal',
+    });
+  }
+  if (setupReady && !setupRequired && cashIsOpen && !canCreateInvoices && invoiceAccessDeniedReason) {
+    queueItems.push({
+      id: 'billing-access',
+      title: 'Facturación no disponible',
+      description: invoiceAccessDeniedReason,
+      priority: 'attention',
     });
   }
   if (queueItems.length === 0) {

@@ -26,7 +26,7 @@
             width: 100%;
         }
 
-        thead {
+        .items-table thead {
             display: table-header-group;
         }
 
@@ -34,8 +34,9 @@
             display: table-footer-group;
         }
 
-        tr {
+        .items-table tbody tr {
             page-break-inside: avoid;
+            break-inside: avoid;
         }
 
         .receipt-page {
@@ -71,6 +72,45 @@
         .thermal-80mm .section-title,
         .thermal-58mm .section-title {
             margin: 6px 0 3px;
+        }
+
+        .thermal-meta-list,
+        .thermal-payment-list {
+            width: 100%;
+        }
+
+        .thermal-meta-field,
+        .thermal-payment-field {
+            border-bottom: 1px solid #e5e7eb;
+            padding: 2px 0;
+            word-break: break-word;
+            word-wrap: break-word;
+        }
+
+        .thermal-meta-value,
+        .thermal-payment-value {
+            display: block;
+            margin-top: 1px;
+        }
+
+        .thermal-payment-card {
+            border: 1px solid #d1d5db;
+            margin-bottom: 4px;
+            padding: 3px 4px;
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        .thermal-payment-card:last-child {
+            margin-bottom: 0;
+        }
+
+        .thermal-payment-index {
+            border-bottom: 1px solid #9ca3af;
+            font-weight: 700;
+            margin-bottom: 1px;
+            padding-bottom: 2px;
+            text-transform: uppercase;
         }
 
         .draft-watermark {
@@ -258,12 +298,14 @@
         }
 
         .primary-paper .totals-table {
-            margin-top: 4px;
+            font-size: 0.9em;
+            line-height: 1.05;
+            margin-top: 3px;
         }
 
         .primary-paper .totals-table td {
-            padding-bottom: 1px;
-            padding-top: 1px;
+            padding-bottom: 0;
+            padding-top: 0;
         }
 
         .thermal .totals-table {
@@ -288,8 +330,10 @@
         }
 
         .primary-paper .amount-words {
-            margin-top: 4px;
-            padding: 4px;
+            font-size: 0.9em;
+            line-height: 1.1;
+            margin-top: 3px;
+            padding: 3px;
         }
 
         .signature-grid {
@@ -300,7 +344,7 @@
         }
 
         .primary-paper .signature-grid {
-            margin-top: 6px;
+            margin-top: 4px;
         }
 
         .signature-grid td {
@@ -324,7 +368,7 @@
         }
 
         .primary-paper .blank-area {
-            height: 18px;
+            height: 14px;
             margin-bottom: 2px;
         }
 
@@ -346,6 +390,60 @@
             margin-top: 5px;
             padding-top: 3px;
         }
+
+        .custom-small {
+            font-size: {{ 8.2 * $profile['font_scale'] }}px;
+            line-height: 1.06;
+        }
+
+        .custom-small .document-header {
+            padding-bottom: 2px;
+        }
+
+        .custom-small .hospital {
+            font-size: 1.12em;
+        }
+
+        .custom-small .document-band {
+            margin: 2px 0;
+            padding-bottom: 1px;
+        }
+
+        .custom-small .copy-label {
+            padding: 1px 4px;
+        }
+
+        .custom-small .section-title {
+            margin: 2px 0 1px;
+            padding-bottom: 1px;
+        }
+
+        .custom-small .items-table th,
+        .custom-small .items-table td {
+            padding-bottom: 1px;
+            padding-top: 1px;
+        }
+
+        .custom-small .totals-table,
+        .custom-small .amount-words,
+        .custom-small .signature-grid,
+        .custom-small .copy-legend {
+            margin-top: 2px;
+        }
+
+        .custom-small .amount-words {
+            padding: 2px;
+        }
+
+        .custom-small .blank-area {
+            height: 7px;
+            margin-bottom: 1px;
+        }
+
+        .custom-small .signature-line,
+        .custom-small .copy-legend {
+            padding-top: 1px;
+        }
     </style>
 </head>
 <body>
@@ -358,6 +456,16 @@
         return $value instanceof \Illuminate\Support\Carbon
             ? $value->format('d/m/Y H:i')
             : \Illuminate\Support\Carbon::parse($value)->format('d/m/Y H:i');
+    };
+
+    $formatDateOnly = static function (mixed $value): string {
+        if (empty($value)) {
+            return '';
+        }
+
+        return $value instanceof \Illuminate\Support\Carbon
+            ? $value->format('d/m/Y')
+            : \Illuminate\Support\Carbon::parse($value)->format('d/m/Y');
     };
 
     $statusLabel = static fn (string $status): string => match ($status) {
@@ -378,13 +486,25 @@
     @php
         $isThermal = in_array($profile['paper_kind'] ?? '', ['thermal_80mm', 'thermal_58mm'], true);
         $paperClass = $isThermal ? str_replace('_', '-', (string) $profile['paper_kind']) : 'primary-paper';
+        $isCustomSmall = ($profile['code'] ?? '') === \App\Models\ReceiptPrintProfile::CODE_CUSTOM_SMALL;
         $invoice = $page['invoice'];
         $payment = $page['payment'];
         $items = $page['items'];
         $taxLabel = trim(($invoice['tax_label'] ?? 'ISV').' '.($invoice['tax_rate_snapshot'] ? $invoice['tax_rate_snapshot'].'%' : ''));
         $cashier = $payment['selected_payment']['cashier_name'] ?? $payment['issued_by']['name'] ?? $payment['cash_context']['cashier_name'] ?? null;
+        $postedPayments = collect($payment['posted_payments'] ?? [])->filter(fn (mixed $item): bool => is_array($item))->values();
+        $displayPayments = $postedPayments->isNotEmpty()
+            ? $postedPayments
+            : collect(is_array($payment['selected_payment'] ?? null) ? [$payment['selected_payment']] : []);
+        $hasMultiplePayments = $displayPayments->count() > 1;
+        $hasMixedMethods = $displayPayments->pluck('method')->filter()->unique()->count() > 1;
+        $paymentMethodSummary = $hasMixedMethods
+            ? 'Pagos mixtos ('.$displayPayments->count().')'
+            : ($hasMultiplePayments
+                ? $displayPayments->count().' pagos de '.$paymentLabel($displayPayments->first()['method'] ?? null)
+                : $paymentLabel($displayPayments->first()['method'] ?? null));
     @endphp
-    <section class="receipt-page {{ $isThermal ? 'thermal '.$paperClass : $paperClass }}">
+    <section class="receipt-page {{ $isThermal ? 'thermal '.$paperClass : $paperClass }}{{ $isCustomSmall ? ' custom-small' : '' }}">
         @if ($page['draft'])
             <div class="draft-watermark">{{ $page['watermark'] }}</div>
         @endif
@@ -432,34 +552,193 @@
             </table>
         </div>
 
-        <table class="meta-table">
-            <tr>
-                <td><span class="label">Factura</span><br>{{ $invoice['invoice_number'] ?: 'No registrada' }}</td>
-                <td><span class="label">Serie</span><br>{{ $page['series']['series'] ?: 'No registrada' }}</td>
-                <td><span class="label">Estado</span><br>{{ $statusLabel((string) $page['status']) }}</td>
-                <td><span class="label">Fecha recibo</span><br>{{ $formatDate($page['issued_at']) }}</td>
-            </tr>
-            @if (! empty($page['series']['range_authorization']))
+        @if ($isThermal)
+            <div class="thermal-meta-list thermal-document-meta">
+                <div class="thermal-meta-field">
+                    <span class="label">Factura</span>
+                    <span class="thermal-meta-value">{{ $invoice['invoice_number'] ?: 'No registrada' }}</span>
+                </div>
+                <div class="thermal-meta-field">
+                    <span class="label">Serie</span>
+                    <span class="thermal-meta-value">{{ $page['series']['series'] ?: 'No registrada' }}</span>
+                </div>
+                <div class="thermal-meta-field">
+                    <span class="label">Estado</span>
+                    <span class="thermal-meta-value">{{ $statusLabel((string) $page['status']) }}</span>
+                </div>
+                <div class="thermal-meta-field">
+                    <span class="label">Fecha recibo</span>
+                    <span class="thermal-meta-value">{{ $formatDate($page['issued_at']) }}</span>
+                </div>
+                @if (! empty($page['series']['range_authorization']))
+                    <div class="thermal-meta-field">
+                        <span class="label">Rango autorizado</span>
+                        <span class="thermal-meta-value">{{ $page['series']['range_authorization'] }}</span>
+                    </div>
+                @endif
+                @if (! empty($invoice['fiscal_cai']))
+                    <div class="thermal-meta-field">
+                        <span class="label">CAI fiscal</span>
+                        <span class="thermal-meta-value">{{ $invoice['fiscal_cai'] }}</span>
+                    </div>
+                @endif
+                @if (! empty($invoice['fiscal_range_from']) || ! empty($invoice['fiscal_range_to']))
+                    <div class="thermal-meta-field">
+                        <span class="label">Rango fiscal autorizado</span>
+                        <span class="thermal-meta-value">
+                            @if (! empty($invoice['fiscal_range_from']) && ! empty($invoice['fiscal_range_to']))
+                                {{ $invoice['fiscal_range_from'] }} a {{ $invoice['fiscal_range_to'] }}
+                            @else
+                                {{ $invoice['fiscal_range_from'] ?: $invoice['fiscal_range_to'] }}
+                            @endif
+                        </span>
+                    </div>
+                @endif
+                @if (! empty($invoice['fiscal_valid_until']))
+                    <div class="thermal-meta-field">
+                        <span class="label">Fecha límite de emisión</span>
+                        <span class="thermal-meta-value">{{ $formatDateOnly($invoice['fiscal_valid_until']) }}</span>
+                    </div>
+                @endif
+            </div>
+        @else
+            <table class="meta-table">
                 <tr>
-                    <td colspan="4"><span class="label">Rango autorizado</span><br>{{ $page['series']['range_authorization'] }}</td>
+                    <td><span class="label">Factura</span><br>{{ $invoice['invoice_number'] ?: 'No registrada' }}</td>
+                    <td><span class="label">Serie</span><br>{{ $page['series']['series'] ?: 'No registrada' }}</td>
+                    <td><span class="label">Estado</span><br>{{ $statusLabel((string) $page['status']) }}</td>
+                    <td><span class="label">Fecha recibo</span><br>{{ $formatDate($page['issued_at']) }}</td>
                 </tr>
-            @endif
-        </table>
+                @if (! empty($page['series']['range_authorization']))
+                    <tr>
+                        <td colspan="4"><span class="label">Rango autorizado</span><br>{{ $page['series']['range_authorization'] }}</td>
+                    </tr>
+                @endif
+                @if (! empty($invoice['fiscal_cai']) || ! empty($invoice['fiscal_range_from']) || ! empty($invoice['fiscal_range_to']) || ! empty($invoice['fiscal_valid_until']))
+                    <tr>
+                        @if (! empty($invoice['fiscal_cai']))
+                            <td colspan="{{ ! empty($invoice['fiscal_range_from']) || ! empty($invoice['fiscal_range_to']) || ! empty($invoice['fiscal_valid_until']) ? 2 : 4 }}">
+                                <span class="label">CAI fiscal</span><br>{{ $invoice['fiscal_cai'] }}
+                            </td>
+                        @endif
+                        @if (! empty($invoice['fiscal_range_from']) || ! empty($invoice['fiscal_range_to']) || ! empty($invoice['fiscal_valid_until']))
+                            <td colspan="{{ ! empty($invoice['fiscal_cai']) ? 2 : 4 }}">
+                                @if (! empty($invoice['fiscal_range_from']) || ! empty($invoice['fiscal_range_to']))
+                                    <span class="label">Rango fiscal autorizado</span><br>
+                                    @if (! empty($invoice['fiscal_range_from']) && ! empty($invoice['fiscal_range_to']))
+                                        {{ $invoice['fiscal_range_from'] }} a {{ $invoice['fiscal_range_to'] }}
+                                    @else
+                                        {{ $invoice['fiscal_range_from'] ?: $invoice['fiscal_range_to'] }}
+                                    @endif
+                                @endif
+                                @if (! empty($invoice['fiscal_valid_until']))
+                                    @if (! empty($invoice['fiscal_range_from']) || ! empty($invoice['fiscal_range_to']))<br>@endif
+                                    <span class="label">Fecha límite de emisión</span><br>{{ $formatDateOnly($invoice['fiscal_valid_until']) }}
+                                @endif
+                            </td>
+                        @endif
+                    </tr>
+                @endif
+            </table>
+        @endif
 
         <div class="section-title">Paciente y operación</div>
-        <table class="meta-table">
-            <tr>
-                <td style="width: 34%;"><span class="label">Paciente / enterante</span><br>{{ $page['payer_name'] }}</td>
-                <td><span class="label">Cajero</span><br>{{ $cashier ?: 'No registrado' }}</td>
-                <td><span class="label">Caja</span><br>{{ $payment['cash_context']['cash_register_label'] ?? 'No registrada' }}</td>
-                <td><span class="label">Método</span><br>{{ $paymentLabel($payment['selected_payment']['method'] ?? ($payment['posted_payments'][0]['method'] ?? null)) }}</td>
-            </tr>
-            @if (! empty($payment['selected_payment']['reference']))
+        @if ($isThermal)
+            <div class="thermal-meta-list thermal-operation-meta">
+                <div class="thermal-meta-field">
+                    <span class="label">Paciente / enterante</span>
+                    <span class="thermal-meta-value">{{ $page['payer_name'] }}</span>
+                </div>
+                <div class="thermal-meta-field">
+                    <span class="label">Cajero</span>
+                    <span class="thermal-meta-value">{{ $cashier ?: 'No registrado' }}</span>
+                </div>
+                <div class="thermal-meta-field">
+                    <span class="label">Caja</span>
+                    <span class="thermal-meta-value">{{ $payment['cash_context']['cash_register_label'] ?? 'No registrada' }}</span>
+                </div>
+                <div class="thermal-meta-field">
+                    <span class="label">Método</span>
+                    <span class="thermal-meta-value">{{ $paymentMethodSummary }}</span>
+                </div>
+                @if (! $hasMultiplePayments && ! empty($payment['selected_payment']['reference']))
+                    <div class="thermal-meta-field">
+                        <span class="label">Referencia</span>
+                        <span class="thermal-meta-value">{{ $payment['selected_payment']['reference'] }}</span>
+                    </div>
+                @endif
+            </div>
+        @else
+            <table class="meta-table">
                 <tr>
-                    <td colspan="3"><span class="label">Referencia</span><br>{{ $payment['selected_payment']['reference'] }}</td>
+                    <td style="width: 34%;"><span class="label">Paciente / enterante</span><br>{{ $page['payer_name'] }}</td>
+                    <td><span class="label">Cajero</span><br>{{ $cashier ?: 'No registrado' }}</td>
+                    <td><span class="label">Caja</span><br>{{ $payment['cash_context']['cash_register_label'] ?? 'No registrada' }}</td>
+                    <td><span class="label">Método</span><br>{{ $paymentMethodSummary }}</td>
                 </tr>
+                @if (! $hasMultiplePayments && ! empty($payment['selected_payment']['reference']))
+                    <tr>
+                        <td colspan="3"><span class="label">Referencia</span><br>{{ $payment['selected_payment']['reference'] }}</td>
+                    </tr>
+                @endif
+            </table>
+        @endif
+
+        @if ($hasMultiplePayments)
+            <div class="section-title">Detalle de pagos</div>
+            @if ($isThermal)
+                <div class="thermal-payment-list">
+                    @foreach ($displayPayments as $paymentIndex => $postedPayment)
+                        <div class="thermal-payment-card">
+                            <div class="thermal-payment-index">Pago {{ $paymentIndex + 1 }}</div>
+                            <div class="thermal-payment-field">
+                                <span class="label">Fecha</span>
+                                <span class="thermal-payment-value">{{ $formatDate($postedPayment['paid_at'] ?? null) ?: 'No registrada' }}</span>
+                            </div>
+                            <div class="thermal-payment-field">
+                                <span class="label">Método</span>
+                                <span class="thermal-payment-value">{{ $paymentLabel($postedPayment['method'] ?? null) }}</span>
+                            </div>
+                            <div class="thermal-payment-field">
+                                <span class="label">Monto</span>
+                                <span class="thermal-payment-value">L. {{ $postedPayment['amount'] ?? '0.00' }}</span>
+                            </div>
+                            <div class="thermal-payment-field">
+                                <span class="label">Referencia</span>
+                                <span class="thermal-payment-value">{{ $postedPayment['reference'] ?? 'Sin referencia' }}</span>
+                            </div>
+                            <div class="thermal-payment-field">
+                                <span class="label">Cajero</span>
+                                <span class="thermal-payment-value">{{ $postedPayment['cashier_name'] ?? 'No registrado' }}</span>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <table class="items-table payment-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 22%;">Fecha</th>
+                            <th style="width: 18%;">Método</th>
+                            <th style="width: 15%;" class="money">Monto</th>
+                            <th style="width: 22%;">Referencia</th>
+                            <th style="width: 23%;">Cajero</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($displayPayments as $postedPayment)
+                            <tr>
+                                <td>{{ $formatDate($postedPayment['paid_at'] ?? null) ?: 'No registrada' }}</td>
+                                <td>{{ $paymentLabel($postedPayment['method'] ?? null) }}</td>
+                                <td class="money">L. {{ $postedPayment['amount'] ?? '0.00' }}</td>
+                                <td>{{ $postedPayment['reference'] ?? 'Sin referencia' }}</td>
+                                <td>{{ $postedPayment['cashier_name'] ?? 'No registrado' }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
             @endif
-        </table>
+        @endif
 
         <div class="section-title">Detalle de servicios</div>
         <table class="items-table">

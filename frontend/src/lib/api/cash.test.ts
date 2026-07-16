@@ -50,10 +50,14 @@ describe('cash api client', () => {
 
   it('allows closing cash session with a caller-managed idempotency key', async () => {
     mockedRequest.mockResolvedValueOnce({ data: { id: 7, status: 'closed' } });
+    const closingBreakdown = {
+      bills: { '500': 0, '200': 0, '100': 2, '50': 1, '20': 0, '10': 0, '5': 0, '2': 0, '1': 0 },
+      other_amount: '0.00',
+    };
 
     await expect(cash.closeCashSession(
       7,
-      { closing_amount: '250.00', notes: 'Cierre sin diferencia' },
+      { closing_amount: '250.00', notes: 'Cierre sin diferencia', closing_breakdown: closingBreakdown },
       { idempotencyKey: 'cash-close-attempt-1' },
     )).resolves.toEqual({ id: 7, status: 'closed' });
 
@@ -61,7 +65,7 @@ describe('cash api client', () => {
       method: 'POST',
       idempotencyKey: 'cash-close-attempt-1',
       headers: { 'Idempotency-Key': 'cash-close-attempt-1' },
-      body: JSON.stringify({ closing_amount: '250.00', notes: 'Cierre sin diferencia' }),
+      body: JSON.stringify({ closing_amount: '250.00', notes: 'Cierre sin diferencia', closing_breakdown: closingBreakdown }),
     });
   });
 });

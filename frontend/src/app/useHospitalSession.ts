@@ -42,6 +42,7 @@ export function useHospitalSession() {
     canViewAuditReports;
   const canViewBackups = permissions.has('backups.view');
   const canViewSystemStatus = permissions.has('system.status.view');
+  const canViewReceiptSettings = permissions.has('receipt_settings.view');
   const canViewUsers = permissions.has('users.view');
   const canCreateUsers = permissions.has('users.create');
   const canUpdateUsers = permissions.has('users.update');
@@ -217,6 +218,7 @@ export function useHospitalSession() {
     canExportReports,
     canViewReports,
     canViewBackups,
+    canViewReceiptSettings,
     canViewUsers,
     canCreateUsers,
     canUpdateUsers,
@@ -225,6 +227,7 @@ export function useHospitalSession() {
     canMarkDialysisPrescription,
     hasAnyOperationalPermission:
       canViewFiscalSettings ||
+      canEditOperationalSettings ||
       canViewCatalog ||
       canManageCatalog ||
       canCreateInvoices ||
@@ -233,7 +236,8 @@ export function useHospitalSession() {
       canViewReports ||
       canViewBackups ||
       canViewUsers ||
-      canViewSystemStatus,
+      canViewSystemStatus ||
+      canViewReceiptSettings,
     defaultAuthenticatedRoute: canViewSystemStatus && !canViewCatalog && !canCreateInvoices ? '/help' : '/dashboard',
     sessionExpired,
     handleLogin,

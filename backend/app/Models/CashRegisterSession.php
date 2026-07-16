@@ -25,6 +25,7 @@ use LogicException;
  * @property string $status
  * @property string|null $opening_notes
  * @property string|null $closing_notes
+ * @property array{bills: array<int, int>, other_amount: string}|null $closing_breakdown
  * @property Carbon|null $opened_at
  * @property Carbon|null $closed_at
  * @property Carbon|null $created_at
@@ -54,6 +55,7 @@ class CashRegisterSession extends Model
         'status',
         'opening_notes',
         'closing_notes',
+        'closing_breakdown',
         'opened_at',
         'closed_at',
     ];
@@ -70,6 +72,7 @@ class CashRegisterSession extends Model
             'method_totals_snapshot' => 'array',
             'pending_invoice_count_snapshot' => 'integer',
             'pending_amount_snapshot' => 'decimal:2',
+            'closing_breakdown' => 'array',
             'opened_at' => 'datetime',
             'closed_at' => 'datetime',
         ];
