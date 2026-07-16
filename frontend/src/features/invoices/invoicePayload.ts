@@ -7,6 +7,8 @@ type BuildInvoicePayloadInput = {
   patientName: string;
 };
 
+const ERYTHROPOIETIN_RULE = 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION';
+
 export function buildInvoicePayload({
   canMarkDialysisPrescription,
   cartItems,
@@ -14,7 +16,9 @@ export function buildInvoicePayload({
 }: BuildInvoicePayloadInput): InvoicePayload {
   return {
     patient_name: patientName.trim(),
-    dialysis_prescription: canMarkDialysisPrescription && cartItems.some((item) => item.dialysisPrescription),
+    dialysis_prescription: canMarkDialysisPrescription && cartItems.some(
+      (item) => item.dialysisPrescription && item.service.special_rule_code === ERYTHROPOIETIN_RULE,
+    ),
     items: cartItems.map((item) => ({
       service_id: item.service.id,
       quantity: item.quantity,

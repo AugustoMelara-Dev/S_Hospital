@@ -38,10 +38,11 @@ import { InvoiceHistoryTable, issuedInstitutionalReceipt } from './history/Invoi
 import { InvoiceDetailDrawer } from './history/InvoiceDetailDrawer';
 import { PageHeader } from '@/design-system/components/PageHeader';
 import { PaymentModal } from './components/PaymentModal';
+import type { OperationalStatusReporter } from '@/app/operationalStatus';
 
 type InvoiceHistoryViewProps = {
   user: AuthUser;
-  onStatus: (message: string) => void;
+  onStatus: OperationalStatusReporter;
 };
 
 const today = localDateString();
@@ -139,9 +140,13 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     ? (invoicesQuery.data!.data as Invoice[])
     : [];
   const meta: PaginatedMeta = invoicesQuery.data?.meta ?? { current_page: 1, per_page: 10, total: 0 };
-  const loading = invoicesQuery.isFetching;
-  const loadError = invoicesQuery.isError
+  const hasCachedInvoices = invoicesQuery.data !== undefined;
+  const loading = invoicesQuery.isLoading;
+  const loadError = invoicesQuery.isError && !hasCachedInvoices
     ? userSafeErrorMessage(invoicesQuery.error, 'No se pudo cargar historial.')
+    : '';
+  const refreshError = invoicesQuery.isError && hasCachedInvoices
+    ? userSafeErrorMessage(invoicesQuery.error, 'No se pudo actualizar el historial.')
     : '';
   const detailInvoiceId = positiveIntegerFromSearchParam(searchParams.get('invoice'), 0);
 
@@ -171,7 +176,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   function applyFilters(draftFilters: InvoiceFilters) {
     const nextFilters = { ...draftFilters, page: 1 };
     setFilters(nextFilters);
-    setSearchParams(searchParamsFromFilters(nextFilters));
+    setSearchParams(withPreservedDetail(searchParamsFromFilters(nextFilters), searchParams));
     // The query refetches automatically because filters is in the
     // queryKey.
   }
@@ -275,10 +280,20 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       } else {
         setConfirmingReverse(true);
       }
-      onStatus(`Factura ${invoice.invoice_number} cargada.`);
+      onStatus({
+        key: 'invoice-history:detail',
+        level: 'info',
+        message: `Factura ${invoice.invoice_number} cargada.`,
+        toast: false,
+      });
     } catch (error) {
       if (actionRequestRef.current === requestId) {
-        onStatus(userSafeErrorMessage(error, 'No se pudo cargar detalle.'));
+        onStatus({
+          key: 'invoice-history:detail',
+          level: 'error',
+          message: userSafeErrorMessage(error, 'No se pudo cargar detalle.'),
+          toast: false,
+        });
       }
     }
   }
@@ -309,7 +324,12 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       setReceiptModalOpen(true);
     } catch (error) {
       if (receiptRequestRef.current === requestId) {
-        onStatus(userSafeErrorMessage(error, 'No se pudo cargar recibo.'));
+        onStatus({
+          key: 'invoice-history:receipt-load',
+          level: 'error',
+          message: userSafeErrorMessage(error, 'No se pudo cargar recibo.'),
+          toast: false,
+        });
       }
     }
   }
@@ -340,7 +360,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   async function changePage(page: number) {
     const nextFilters = { ...filters, page };
     setFilters(nextFilters);
-    setSearchParams(searchParamsFromFilters(nextFilters));
+    setSearchParams(withPreservedDetail(searchParamsFromFilters(nextFilters), searchParams));
     // Refetch is automatic via the filters key.
   }
 
@@ -373,9 +393,19 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       synchronizeDetailInvoice(invoice);
       await openInstitutionalReceiptPdf(receipt, 'Emisión manual de recibo faltante.', idempotencyKey);
       resetPayloadScopedIdempotencyKey(receiptGenerationIdempotencyKeyRef, receiptGenerationIdempotencySignatureRef);
-      onStatus(`Recibo institucional ${receipt.receipt_number_full} generado exitosamente.`);
+      onStatus({
+        key: 'invoice-history:receipt-generate',
+        level: 'success',
+        message: `Recibo institucional ${receipt.receipt_number_full} generado exitosamente.`,
+        toast: false,
+      });
     } catch (error) {
-      onStatus(userSafeErrorMessage(error, 'No se pudo generar el recibo institucional.'));
+      onStatus({
+        key: 'invoice-history:receipt-generate',
+        level: 'error',
+        message: userSafeErrorMessage(error, 'No se pudo generar el recibo institucional.'),
+        toast: false,
+      });
     } finally {
       generatingInstitutionalReceiptRef.current = false;
       setLoadingActionInvoiceId(null);
@@ -390,9 +420,19 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     try {
       const blob = await apiClient.getInstitutionalReceiptPdf(institutionalReceipt.id);
       downloadBlob(blob, institutionalReceiptPdfFilename(institutionalReceipt.receipt_number_full));
-      onStatus(`PDF institucional ${institutionalReceipt.receipt_number_full} descargado.`);
+      onStatus({
+        key: 'invoice-history:receipt-download',
+        level: 'success',
+        message: `PDF institucional ${institutionalReceipt.receipt_number_full} descargado.`,
+        toast: false,
+      });
     } catch (error) {
-      onStatus(userSafeErrorMessage(error, 'No se pudo descargar el recibo institucional.'));
+      onStatus({
+        key: 'invoice-history:receipt-download',
+        level: 'error',
+        message: userSafeErrorMessage(error, 'No se pudo descargar el recibo institucional.'),
+        toast: false,
+      });
     } finally {
       setLoadingActionInvoiceId(null);
     }
@@ -428,9 +468,19 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
           print_events_count: (selectedInstitutionalReceipt.print_events_count ?? 0) + 1,
         },
       });
-      onStatus(`PDF institucional ${selectedInstitutionalReceipt.receipt_number_full} abierto.`);
+      onStatus({
+        key: 'invoice-history:receipt-print',
+        level: 'success',
+        message: `PDF institucional ${selectedInstitutionalReceipt.receipt_number_full} abierto.`,
+        toast: false,
+      });
     } catch (error) {
-      onStatus(userSafeErrorMessage(error, 'No se pudo imprimir el recibo institucional.'));
+      onStatus({
+        key: 'invoice-history:receipt-print',
+        level: 'error',
+        message: userSafeErrorMessage(error, 'No se pudo imprimir el recibo institucional.'),
+        toast: false,
+      });
     } finally {
       setLoadingActionInvoiceId(null);
     }
@@ -469,7 +519,12 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       });
       resetPayloadScopedIdempotencyKey(collectionIdempotencyKeyRef, collectionIdempotencySignatureRef);
       await invalidateBillingQueries(queryClient);
-      onStatus(`Cobro registrado para la factura ${collectionInvoice.invoice_number}.`);
+      onStatus({
+        key: 'invoice-history:payment',
+        level: 'success',
+        message: `Cobro registrado para la factura ${collectionInvoice.invoice_number}.`,
+        toast: false,
+      });
       setCollectionInvoice(null);
     } catch (error) {
       setCollectionError(userSafeErrorMessage(error, 'No se pudo registrar el pago. Revise los datos e intente de nuevo.'));
@@ -484,7 +539,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     if (!selectedInvoice || voidReason.trim().length < 5) {
       const message = 'Ingrese un motivo de anulación de al menos 5 caracteres.';
       setVoidReasonError(message);
-      onStatus(message);
+      onStatus({ key: 'invoice-history:void', level: 'warning', message, toast: false });
 
       return;
     }
@@ -507,9 +562,19 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       setVoidReason('');
       setConfirmingVoid(false);
       resetPayloadScopedIdempotencyKey(voidIdempotencyKeyRef, voidIdempotencySignatureRef);
-      onStatus(`Factura ${voided.invoice_number} anulada.`);
+      onStatus({
+        key: 'invoice-history:void',
+        level: 'success',
+        message: `Factura ${voided.invoice_number} anulada.`,
+        toast: false,
+      });
     } catch (error) {
-      onStatus(userSafeErrorMessage(error, 'No se pudo anular la factura.'));
+      onStatus({
+        key: 'invoice-history:void',
+        level: 'error',
+        message: userSafeErrorMessage(error, 'No se pudo anular la factura.'),
+        toast: false,
+      });
     } finally {
       voidingInvoiceRef.current = false;
       setVoidingInvoice(false);
@@ -522,7 +587,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     if (!selectedInvoice || reverseReason.trim().length < 5) {
       const message = 'Ingrese un motivo de reversa de al menos 5 caracteres.';
       setReverseReasonError(message);
-      onStatus(message);
+      onStatus({ key: 'invoice-history:reverse', level: 'warning', message, toast: false });
 
       return;
     }
@@ -545,9 +610,19 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       setReverseReason('');
       setConfirmingReverse(false);
       resetPayloadScopedIdempotencyKey(reverseIdempotencyKeyRef, reverseIdempotencySignatureRef);
-      onStatus(`Factura ${reversed.invoice_number} reversada.`);
+      onStatus({
+        key: 'invoice-history:reverse',
+        level: 'success',
+        message: `Factura ${reversed.invoice_number} reversada.`,
+        toast: false,
+      });
     } catch (error) {
-      onStatus(userSafeErrorMessage(error, 'No se pudo reversar la factura.'));
+      onStatus({
+        key: 'invoice-history:reverse',
+        level: 'error',
+        message: userSafeErrorMessage(error, 'No se pudo reversar la factura.'),
+        toast: false,
+      });
     } finally {
       reversingInvoiceRef.current = false;
       setReversingInvoice(false);
@@ -594,7 +669,12 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
         await apiClient.registerInstitutionalReceiptPrintEvent(institutionalReceipt.id, reason, { idempotencyKey });
         openBlobInNewTab(blob, institutionalReceiptPdfFilename(institutionalReceipt.receipt_number_full));
         queryClient.invalidateQueries({ queryKey: ['audit'] });
-        onStatus(`PDF institucional ${institutionalReceipt.receipt_number_full} abierto.`);
+        onStatus({
+          key: 'invoice-history:reprint',
+          level: 'success',
+          message: `PDF institucional ${institutionalReceipt.receipt_number_full} abierto.`,
+          toast: false,
+        });
         resetPayloadScopedIdempotencyKey(reprintIdempotencyKeyRef, reprintIdempotencySignatureRef);
 
         return true;
@@ -618,11 +698,21 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       setReceipt({ ...nextReceipt, width: normalizedWidth });
       setReceiptModalOpen(true);
       resetPayloadScopedIdempotencyKey(reprintIdempotencyKeyRef, reprintIdempotencySignatureRef);
-      onStatus(`Recibo ${invoice.invoice_number} listo para imprimir.`);
+      onStatus({
+        key: 'invoice-history:reprint',
+        level: 'success',
+        message: `Recibo ${invoice.invoice_number} listo para imprimir.`,
+        toast: false,
+      });
 
       return true;
     } catch (error) {
-      onStatus(userSafeErrorMessage(error, 'No se pudo reimprimir el recibo.'));
+      onStatus({
+        key: 'invoice-history:reprint',
+        level: 'error',
+        message: userSafeErrorMessage(error, 'No se pudo reimprimir el recibo.'),
+        toast: false,
+      });
 
       return false;
     } finally {
@@ -672,9 +762,12 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     filters.patient ||
     filters.invoice_number ||
     filters.status ||
+    filters.balance_state ||
+    filters.receipt_state ||
     (filters.date_from && filters.date_from !== today) ||
     (filters.date_to && filters.date_to !== today)
   );
+  const reconciliationCriterion = reconciliationCriterionFromFilters(filters);
 
   const isEmpty = invoicesList.length === 0;
   const selectedInstitutionalReceipt = selectedInvoice
@@ -703,12 +796,39 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
         onClear={clearFilters}
       />
 
+      {reconciliationCriterion ? (
+        <Alert
+          type="warning"
+          showIcon
+          title={reconciliationCriterion.kind === 'pending_balance'
+            ? `Facturas pendientes o parciales de la caja #${reconciliationCriterion.cashSessionId}`
+            : `Recibos institucionales pendientes de la caja #${reconciliationCriterion.cashSessionId}`}
+          description={reconciliationCriterion.kind === 'pending_balance'
+            ? 'Incluye facturas asociadas a esta caja y facturas con un pago vigente aplicado en ella.'
+            : 'Incluye facturas pagadas de esta caja que todavía no tienen un recibo institucional emitido.'}
+        />
+      ) : null}
+
       {loadError ? (
         <Alert
           type="error"
           showIcon
           title="No se pudo cargar el historial"
           description={loadError}
+          action={
+            <Button type="default" onClick={() => void invoicesQuery.refetch()}>
+              Reintentar
+            </Button>
+          }
+        />
+      ) : null}
+
+      {refreshError ? (
+        <Alert
+          type="warning"
+          showIcon
+          title="No se pudo actualizar el historial"
+          description={refreshError}
           action={
             <Button type="default" onClick={() => void invoicesQuery.refetch()}>
               Reintentar
@@ -824,7 +944,6 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
           open
           onOpenChange={(open) => {
             if (!open && !collectingPayment) {
-              resetPayloadScopedIdempotencyKey(collectionIdempotencyKeyRef, collectionIdempotencySignatureRef);
               setCollectionInvoice(null);
               setCollectionError(null);
             }
@@ -886,9 +1005,19 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
               onPrint={async () => {
                 try {
                   await auditReceiptPrint();
-                  onStatus(`Recibo ${selectedInvoice.invoice_number} enviado a impresión.`);
+                  onStatus({
+                    key: 'invoice-history:receipt-print',
+                    level: 'success',
+                    message: `Recibo ${selectedInvoice.invoice_number} enviado a impresión.`,
+                    toast: false,
+                  });
                 } catch (error) {
-                  onStatus(userSafeErrorMessage(error, 'No se pudo auditar la reimpresión.'));
+                  onStatus({
+                    key: 'invoice-history:receipt-print',
+                    level: 'error',
+                    message: userSafeErrorMessage(error, 'No se pudo auditar la reimpresión.'),
+                    toast: false,
+                  });
                   throw error;
                 }
               }}
@@ -1116,10 +1245,26 @@ export function localDateString(date = new Date()): string {
 }
 
 function filtersFromSearchParams(searchParams: URLSearchParams): InvoiceFilters {
+  const reconciliationCashSessionId = positiveIntegerFromSearchParam(
+    searchParams.get('reconciliation_cash_session_id'),
+    0,
+  );
+  const hasPendingBalanceCriterion = reconciliationCashSessionId > 0
+    && searchParams.get('balance_state') === 'pending';
+  const hasMissingReceiptCriterion = !hasPendingBalanceCriterion
+    && reconciliationCashSessionId > 0
+    && searchParams.get('receipt_state') === 'missing';
+  const hasReconciliationCriterion = hasPendingBalanceCriterion || hasMissingReceiptCriterion;
+
   return {
-    date_from: searchParams.get('date_from') || today,
-    date_to: searchParams.get('date_to') || today,
+    date_from: searchParams.get('date_from') || (hasReconciliationCriterion ? '' : today),
+    date_to: searchParams.get('date_to') || (hasReconciliationCriterion ? '' : today),
     status: (searchParams.get('status') ?? '') as InvoiceFilters['status'],
+    balance_state: hasPendingBalanceCriterion ? 'pending' : '',
+    receipt_state: hasMissingReceiptCriterion ? 'missing' : '',
+    reconciliation_cash_session_id: hasReconciliationCriterion
+      ? String(reconciliationCashSessionId)
+      : undefined,
     patient: searchParams.get('q') ?? searchParams.get('patient') ?? '',
     invoice_number: searchParams.get('invoice_number') ?? '',
     page: positiveIntegerFromSearchParam(searchParams.get('page'), 1),
@@ -1135,16 +1280,43 @@ function positiveIntegerFromSearchParam(value: string | null, fallback: number):
 
 function searchParamsFromFilters(filters: InvoiceFilters): Record<string, string> {
   const params: Record<string, string> = {};
+  const hasReconciliationCriterion = reconciliationCriterionFromFilters(filters) !== null;
 
-  if (filters.date_from && filters.date_from !== today) params.date_from = filters.date_from;
-  if (filters.date_to && filters.date_to !== today) params.date_to = filters.date_to;
+  if (filters.date_from && (filters.date_from !== today || hasReconciliationCriterion)) {
+    params.date_from = filters.date_from;
+  }
+  if (filters.date_to && (filters.date_to !== today || hasReconciliationCriterion)) {
+    params.date_to = filters.date_to;
+  }
   if (filters.status) params.status = filters.status;
+  if (filters.reconciliation_cash_session_id && filters.balance_state === 'pending') {
+    params.balance_state = filters.balance_state;
+    params.reconciliation_cash_session_id = filters.reconciliation_cash_session_id;
+  } else if (filters.reconciliation_cash_session_id && filters.receipt_state === 'missing') {
+    params.receipt_state = filters.receipt_state;
+    params.reconciliation_cash_session_id = filters.reconciliation_cash_session_id;
+  }
   if (filters.patient) params.q = filters.patient;
   if (filters.invoice_number) params.invoice_number = filters.invoice_number;
   if (filters.page && filters.page > 1) params.page = String(filters.page);
   if (filters.per_page && filters.per_page !== 10) params.per_page = String(filters.per_page);
 
   return params;
+}
+
+type ReconciliationCriterion = {
+  kind: 'pending_balance' | 'missing_receipt';
+  cashSessionId: string;
+};
+
+function reconciliationCriterionFromFilters(filters: InvoiceFilters): ReconciliationCriterion | null {
+  const cashSessionId = filters.reconciliation_cash_session_id?.trim();
+
+  if (!cashSessionId) return null;
+  if (filters.balance_state === 'pending') return { kind: 'pending_balance', cashSessionId };
+  if (filters.receipt_state === 'missing') return { kind: 'missing_receipt', cashSessionId };
+
+  return null;
 }
 
 function withPreservedDetail(

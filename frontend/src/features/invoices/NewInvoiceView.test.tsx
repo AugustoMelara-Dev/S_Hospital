@@ -170,6 +170,33 @@ describe('NewInvoiceView critical flows', () => {
     expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services'))).toHaveLength(0);
   });
 
+  it('runs a service search entered while the initial point-of-sale data is still loading', async () => {
+    let resolveCategories!: (categories: Awaited<ReturnType<typeof apiClient.getCategories>>) => void;
+    vi.spyOn(apiClient, 'getCategories').mockReturnValue(new Promise((resolve) => {
+      resolveCategories = resolve;
+    }));
+    const getServices = vi.spyOn(apiClient, 'getServices').mockResolvedValue([
+      makeService({ id: 12, name: 'Glucosa', slug: 'glucosa' }),
+    ]);
+
+    renderNewInvoice();
+    fireEvent.change(screen.getByLabelText(/buscar por nombre/i), { target: { value: 'Glucosa' } });
+
+    await new Promise((resolve) => setTimeout(resolve, 350));
+    expect(getServices).not.toHaveBeenCalled();
+
+    await act(async () => {
+      resolveCategories([]);
+      await Promise.resolve();
+    });
+
+    expect(await screen.findByRole('button', { name: /agregar glucosa, disponible/i })).toBeVisible();
+    expect(getServices).toHaveBeenCalledWith(
+      expect.objectContaining({ search: 'Glucosa', page: 1 }),
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
+  });
+
   it('stops showing the service loader when an in-flight search is cleared', async () => {
     vi.spyOn(apiClient, 'getServices').mockReturnValue(new Promise<Service[]>(() => undefined));
     renderNewInvoice();
@@ -186,6 +213,70 @@ describe('NewInvoiceView critical flows', () => {
     });
   });
 
+  it('keeps the last service results visible after a search timeout and retries the current query', async () => {
+    const getServices = vi.spyOn(apiClient, 'getServices')
+      .mockResolvedValueOnce([makeService()])
+      .mockRejectedValueOnce(new TypeError('Search timeout'))
+      .mockResolvedValueOnce([makeService({ id: 11, name: 'Eritropoyetina alfa', slug: 'eritropoyetina-alfa' })]);
+    renderNewInvoice();
+    await waitForPointOfSaleLoad();
+
+    const searchInput = screen.getByLabelText(/buscar por nombre/i);
+    fireEvent.change(searchInput, { target: { value: 'eri' } });
+    expect(await screen.findByRole('button', { name: /agregar eritropoyetina, disponible/i })).toBeVisible();
+
+    fireEvent.change(searchInput, { target: { value: 'eritro' } });
+    expect(await screen.findByText(/no se pudieron cargar los servicios/i)).toBeVisible();
+    expect(screen.getByRole('button', { name: /agregar eritropoyetina, disponible/i })).toBeVisible();
+    expect(screen.queryByText(/sin servicios encontrados/i)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /reintentar/i }));
+
+    expect(await screen.findByRole('button', { name: /agregar eritropoyetina alfa, disponible/i })).toBeVisible();
+    await waitFor(() => {
+      expect(screen.queryByText(/no se pudieron cargar los servicios/i)).not.toBeInTheDocument();
+      expect(getServices).toHaveBeenCalledTimes(3);
+    });
+    expect(getServices.mock.calls.at(-1)?.[0]).toMatchObject({ search: 'eritro', page: 1 });
+  });
+
+
+  it('does not load a stale next page while a changed search is debouncing', async () => {
+    const firstPage = Array.from({ length: 24 }, (_, index) => makeService({
+      id: 100 + index,
+      name: `Servicio anterior ${index + 1}`,
+      slug: `servicio-anterior-${index + 1}`,
+    }));
+    const getServices = vi.spyOn(apiClient, 'getServices').mockImplementation(async (filters) => {
+      if (filters?.search === 'servicio' && filters.page === 1) return firstPage;
+      if (filters?.search === 'servicio anterior' && filters.page === 2) {
+        return [makeService({ id: 999, name: 'Pagina dos incorrecta', slug: 'pagina-dos-incorrecta' })];
+      }
+      if (filters?.search === 'servicio anterior' && filters.page === 1) {
+        return [makeService({ id: 998, name: 'Servicio anterior filtrado', slug: 'servicio-anterior-filtrado' })];
+      }
+      return [];
+    });
+
+    renderNewInvoice();
+    await waitForPointOfSaleLoad();
+    const searchInput = screen.getByLabelText(/buscar por nombre/i);
+    fireEvent.change(searchInput, { target: { value: 'servicio' } });
+    expect(await screen.findByRole('button', { name: /agregar servicio anterior 1, disponible/i })).toBeVisible();
+
+    fireEvent.change(searchInput, { target: { value: 'servicio anterior' } });
+    const staleLoadMore = screen.queryByRole('button', { name: /cargar m.s servicios/i });
+    if (staleLoadMore) fireEvent.click(staleLoadMore);
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 350));
+    });
+    expect(getServices).toHaveBeenCalledWith(
+      expect.objectContaining({ search: 'servicio anterior', page: 1 }),
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
+    expect(getServices.mock.calls.filter(([filters]) => filters?.search === 'servicio anterior' && filters.page === 2)).toHaveLength(0);
+  });
   it('deduplicates the initial point-of-sale load under React StrictMode', async () => {
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -1049,7 +1140,7 @@ describe('NewInvoiceView critical flows', () => {
     });
 
     fireEvent.change(screen.getByLabelText(/monto recibido/i), { target: { value: '15.00' } });
-    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro/i }));
+    fireEvent.click(screen.getByRole('button', { name: /registrar abono de l 15\.00/i }));
 
     await waitFor(() => {
       expect(fetchMock.mock.calls.some(([url]) => String(url).endsWith('/api/invoices/65/payments'))).toBe(true);
@@ -1782,7 +1873,7 @@ describe('NewInvoiceView critical flows', () => {
     }));
   });
 
-  it('renews the payment idempotency key when a failed payment payload changes', async () => {
+  it('reuses the payment idempotency key after closing an ambiguous attempt and renews it when the payload changes', async () => {
     vi.spyOn(apiBase, 'createClientIdempotencyKey')
       .mockReturnValueOnce('invoice-attempt-1')
       .mockReturnValueOnce('payment-attempt-1')
@@ -1832,7 +1923,7 @@ describe('NewInvoiceView critical flows', () => {
         const headers = new Headers((init as RequestInit | undefined)?.headers);
         paymentIdempotencyKeys.push(headers.get('Idempotency-Key'));
 
-        if (paymentIdempotencyKeys.length === 1) {
+        if (paymentIdempotencyKeys.length <= 2) {
           return {
             ok: false,
             status: 500,
@@ -1906,17 +1997,32 @@ describe('NewInvoiceView critical flows', () => {
     });
 
     fireEvent.change(screen.getByLabelText(/monto recibido/i), { target: { value: '10.00' } });
-    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro/i }));
+    fireEvent.click(screen.getByRole('button', { name: /registrar abono de l 10\.00/i }));
     await waitFor(() => {
       expect(paymentIdempotencyKeys).toEqual(['payment-attempt-1']);
     });
-    expect(screen.getByRole('dialog', { name: /registrar pago/i })).toBeInTheDocument();
+    const paymentDialog = screen.getByRole('dialog', { name: /registrar pago/i });
+    expect(paymentDialog).toBeInTheDocument();
+    expect(paymentDialog).toHaveTextContent(/El servidor local no pudo completar la operaci\u00f3n\./i);
+    expect(screen.getAllByText(/El servidor local no pudo completar la operaci\u00f3n/i)).toHaveLength(1);
+    expect(screen.getByLabelText(/monto recibido/i)).toHaveValue('10.00');
 
-    fireEvent.change(screen.getByLabelText(/monto recibido/i), { target: { value: '15.00' } });
-    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro/i }));
+    fireEvent.click(screen.getByRole('button', { name: /dejar pendiente/i }));
+    expect(await screen.findByRole('dialog', { name: /factura pendiente/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /cobrar ahora/i }));
+    expect(await screen.findByRole('dialog', { name: /registrar pago/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/monto recibido/i)).toHaveValue('10.00');
+    fireEvent.click(screen.getByRole('button', { name: /registrar abono de l 10\.00/i }));
 
     await waitFor(() => {
-      expect(paymentIdempotencyKeys).toEqual(['payment-attempt-1', 'payment-attempt-2']);
+      expect(paymentIdempotencyKeys).toEqual(['payment-attempt-1', 'payment-attempt-1']);
+    });
+
+    fireEvent.change(screen.getByLabelText(/monto recibido/i), { target: { value: '15.00' } });
+    fireEvent.click(screen.getByRole('button', { name: /registrar abono de l 15\.00/i }));
+
+    await waitFor(() => {
+      expect(paymentIdempotencyKeys).toEqual(['payment-attempt-1', 'payment-attempt-1', 'payment-attempt-2']);
     });
   });
 

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { ComponentProps } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { PaymentModal } from './PaymentModal';
@@ -466,6 +466,11 @@ describe('PaymentModal', () => {
     expect(confirmSpy).not.toHaveBeenCalled();
 
     rerender(<PaymentModal {...props} paymentAmount="5.00" partialPaymentsEnabled />);
+    const partialPaymentButton = screen.getByRole('button', { name: /registrar abono de l 5\.00/i });
+    expect(partialPaymentButton).toHaveTextContent(/registrar abono l 5\.00/i);
+    const paymentSummary = screen.getByRole('region', { name: /resumen del cobro/i });
+    expect(within(paymentSummary).getByText(/abono aplicado/i)).toBeInTheDocument();
+    expect(within(paymentSummary).getByText('L 5.00')).toBeInTheDocument();
     fireEvent.submit(screen.getByLabelText(/monto recibido/i).closest('form')!);
 
     await waitFor(() => {

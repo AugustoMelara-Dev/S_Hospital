@@ -38,7 +38,7 @@ export function newInvoiceReducer(state: NewInvoiceState, action: NewInvoiceActi
     case 'SET_SELECTED_CATEGORY_ID':
       return { ...state, selectedCategoryId: action.payload };
     case 'SET_CART_ITEMS':
-      return { ...state, cartItems: action.payload };
+      return { ...state, cartItems: normalizeErythropoietinPrescription(action.payload) };
     case 'SET_ISSUED_INVOICE':
       return { ...state, issuedInvoice: action.payload };
     case 'SET_PAYMENT_METHOD':
@@ -126,13 +126,22 @@ export function newInvoiceReducer(state: NewInvoiceState, action: NewInvoiceActi
           idx === action.payload.index ? { ...item, quantity: action.payload.quantity } : item,
         ),
       };
-    case 'UPDATE_DIALYSIS':
+    case 'UPDATE_DIALYSIS': {
+      const targetService = state.cartItems[action.payload.index]?.service;
+
+      if (!isErythropoietin(targetService)) {
+        return state;
+      }
+
       return {
         ...state,
-        cartItems: state.cartItems.map((item, idx) =>
-          idx === action.payload.index ? { ...item, dialysisPrescription: action.payload.checked } : item,
+        cartItems: state.cartItems.map((item) =>
+          isErythropoietin(item.service)
+            ? { ...item, dialysisPrescription: action.payload.checked }
+            : item,
         ),
       };
+    }
     case 'REMOVE_ITEM':
       return {
         ...state,
@@ -159,25 +168,55 @@ export function newInvoiceReducer(state: NewInvoiceState, action: NewInvoiceActi
         return { ...state, successMessage: null };
       }
       return state;
-    case 'RESET_FORM':
-      return getInitialNewInvoiceState(action.payload.loadedCashSession);
+    case 'RESET_FORM': {
+      const initialState = getInitialNewInvoiceState(action.payload.loadedCashSession);
+      return {
+        ...initialState,
+        categories: state.categories,
+        serviceAreas: state.serviceAreas,
+        services: state.services,
+        servicePage: state.servicePage,
+        hasMoreServices: state.hasMoreServices,
+        scannerEnabled: state.scannerEnabled,
+        partialPaymentsEnabled: state.partialPaymentsEnabled,
+        loadingServices: false,
+      };
+    }
     default:
       return state;
   }
 }
 
 function addServiceToCart(cartItems: CartItem[], service: CartItem['service']): CartItem[] {
-  const existingIndex = cartItems.findIndex(
-    (item) => item.service.id === service.id && !item.dialysisPrescription,
-  );
+  const normalizedCartItems = normalizeErythropoietinPrescription(cartItems);
+  const existingIndex = normalizedCartItems.findIndex((item) => item.service.id === service.id);
 
   if (existingIndex === -1) {
-    return [...cartItems, { service, quantity: '1', dialysisPrescription: false }];
+    const dialysisPrescription = isErythropoietin(service)
+      && normalizedCartItems.some((item) => isErythropoietin(item.service) && item.dialysisPrescription);
+    return [...normalizedCartItems, { service, quantity: '1', dialysisPrescription }];
   }
 
-  return cartItems.map((item, idx) =>
+  return normalizedCartItems.map((item, idx) =>
     idx === existingIndex
       ? { ...item, quantity: incrementQuantityFromString(item.quantity) }
       : item,
   );
+}
+
+const ERYTHROPOIETIN_RULE = 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION';
+
+function isErythropoietin(service: CartItem['service'] | undefined): boolean {
+  return service?.special_rule_code === ERYTHROPOIETIN_RULE;
+}
+
+function normalizeErythropoietinPrescription(cartItems: CartItem[]): CartItem[] {
+  const dialysisPrescription = cartItems.some(
+    (item) => isErythropoietin(item.service) && item.dialysisPrescription,
+  );
+
+  return cartItems.map((item) => ({
+    ...item,
+    dialysisPrescription: isErythropoietin(item.service) ? dialysisPrescription : false,
+  }));
 }

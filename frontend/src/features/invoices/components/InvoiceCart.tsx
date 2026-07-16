@@ -59,6 +59,12 @@ export function InvoiceCart({
   const actionAriaLabel = disabled || isEmpty ? `${actionLabel}: ${displayActionLabel}` : actionLabel;
   const totalLabel = moneyLabel(preview.total);
   const enabledActionLabel = actionLabel.includes(totalLabel) ? actionLabel : `${actionLabel} · ${totalLabel}`;
+  const erythropoietinIndex = items.findIndex(
+    (item) => item.service.special_rule_code === ERYTHROPOIETIN_RULE,
+  );
+  const dialysisPrescription = canMarkDialysisPrescription && items.some(
+    (item) => item.dialysisPrescription && item.service.special_rule_code === ERYTHROPOIETIN_RULE,
+  );
 
   return (
     <section className="flex h-full min-h-0 min-w-0 flex-col" aria-labelledby="invoice-cart-title" aria-busy={submitting ? 'true' : undefined}>
@@ -73,6 +79,24 @@ export function InvoiceCart({
           </Tag>
         )}
       </div>
+
+      {erythropoietinIndex >= 0 && canMarkDialysisPrescription ? (
+        <div className="mb-3 border-l-2 border-secondary bg-secondary/8 px-3 py-2">
+          <Checkbox
+            id="patient-dialysis-prescription"
+            checked={dialysisPrescription}
+            aria-describedby="patient-dialysis-prescription-help"
+            onChange={(event) => onUpdateDialysisPrescription(erythropoietinIndex, event.target.checked)}
+          >
+            <span className="grid gap-0.5 text-left">
+              <strong className="text-sm text-foreground">Paciente con receta de diálisis</strong>
+              <span id="patient-dialysis-prescription-help" className="text-xs text-muted-foreground">
+                Aplica la regla institucional a toda la eritropoyetina de la cuenta: L 25.00 → L 0.00.
+              </span>
+            </span>
+          </Checkbox>
+        </div>
+      ) : null}
 
       <div data-billing-cart-lines className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
         {isEmpty ? (
@@ -93,9 +117,8 @@ export function InvoiceCart({
             <tbody className="block divide-y divide-operational-border sm:table-row-group sm:divide-y-0">
               {items.map((item, index) => {
               const isErythropoietin = item.service.special_rule_code === ERYTHROPOIETIN_RULE;
-              const isFree = item.dialysisPrescription && isErythropoietin;
+              const isFree = dialysisPrescription && isErythropoietin;
               const estimatedLineTotal = isFree ? 0 : lineTotalCents(item.service.price, item.quantity);
-              const dialysisHelpId = `dialysis-${index}-help`;
 
               return (
                 <tr
@@ -120,19 +143,6 @@ export function InvoiceCart({
                         {isFree && <span className="font-semibold text-success">(Gratis - receta diálisis)</span>}
                       </p>
                     </div>
-                    {isErythropoietin && canMarkDialysisPrescription && (
-                      <label htmlFor={`dialysis-${index}`} className="mt-2 flex min-h-11 items-start gap-2 border-l-2 border-secondary bg-secondary/8 px-2 py-1.5 text-xs">
-                        <Checkbox
-                          id={`dialysis-${index}`}
-                          checked={item.dialysisPrescription}
-                          aria-describedby={dialysisHelpId}
-                          onChange={(e) => onUpdateDialysisPrescription(index, e.target.checked)}
-                        />
-                        <span id={dialysisHelpId} className="text-muted-foreground">
-                          Receta de diálisis: eritropoyetina L 25.00 → L 0.00
-                        </span>
-                      </label>
-                    )}
                   </td>
 
                   <td className="block py-2 align-top sm:table-cell sm:p-2">

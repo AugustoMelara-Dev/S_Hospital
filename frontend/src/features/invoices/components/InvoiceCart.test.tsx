@@ -175,6 +175,29 @@ describe('InvoiceCart', () => {
     expect(within(rows[1]).getByText('L 0.00')).toBeInTheDocument();
   });
 
+  it('normalizes a legacy mixed EPO cart to one patient-level prescription decision', () => {
+    const erythropoietin = serviceFixture({
+      name: 'Eritropoyetina',
+      price: '25.00',
+      special_rule_code: 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION',
+    });
+    renderCart({
+      items: [
+        cartItemFixture({ service: { ...erythropoietin, id: 10 }, dialysisPrescription: true }),
+        cartItemFixture({ service: { ...erythropoietin, id: 11 }, dialysisPrescription: false }),
+      ],
+      canMarkDialysisPrescription: true,
+    });
+
+    const rows = within(screen.getByRole('table', { name: /cuenta actual/i })).getAllByRole('row').slice(1);
+    expect(rows).toHaveLength(2);
+    expect(within(rows[0]).getByText('L 0.00')).toBeInTheDocument();
+    expect(within(rows[1]).getByText('L 0.00')).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /paciente con receta de di.lisis/i })).toBeChecked();
+    expect(screen.getAllByRole('checkbox')).toHaveLength(1);
+    rows.forEach((row) => expect(within(row).queryByRole('checkbox')).not.toBeInTheDocument());
+  });
+
   it('announces disabled blockers and preserves the configured action label', () => {
     renderCart({
       disabled: true,

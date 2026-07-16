@@ -1,7 +1,7 @@
 import { act } from 'react';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { type ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -22,11 +22,17 @@ vi.mock('../../lib/download', async () => {
 
 function renderWithQueryClient(node: ReactNode, initialEntries = ['/']) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(
+  const result = render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter initialEntries={initialEntries}>{node}</MemoryRouter>
     </QueryClientProvider>
   );
+
+  return { ...result, queryClient };
+}
+
+function LocationSearchProbe() {
+  return <output data-testid="location-search">{useLocation().search}</output>;
 }
 
 async function openInvoiceMenu(invoiceNumber: string) {
@@ -90,6 +96,61 @@ describe('InvoiceHistoryView', () => {
     expect(screen.queryByRole('columnheader', { name: /^No\.$/i })).not.toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /saldo/i })).toHaveAttribute('data-numeric', 'true');
     expect(screen.getByRole('cell', { name: 'L 80.00' })).toHaveAttribute('data-numeric', 'true');
+  });
+
+  it('keeps the cached invoice grid visible while a background refresh is pending', async () => {
+    const cachedResponse = {
+      data: [invoiceFixture({ patient_name: 'Paciente Cache Visible' })],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    };
+    let resolveRefresh!: (response: Awaited<ReturnType<typeof apiClient.getInvoices>>) => void;
+    const getInvoices = vi.spyOn(apiClient, 'getInvoices')
+      .mockResolvedValueOnce(cachedResponse)
+      .mockReturnValueOnce(new Promise((resolve) => {
+        resolveRefresh = resolve;
+      }));
+
+    const { queryClient } = renderWithQueryClient(
+      <InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />,
+    );
+
+    expect(await screen.findByText('Paciente Cache Visible')).toBeVisible();
+
+    act(() => {
+      void queryClient.refetchQueries({ queryKey: ['invoices'] });
+    });
+    await waitFor(() => expect(getInvoices).toHaveBeenCalledTimes(2));
+
+    expect(screen.getByText('Paciente Cache Visible')).toBeVisible();
+    expect(screen.queryByText(/cargando facturas/i)).not.toBeInTheDocument();
+
+    await act(async () => {
+      resolveRefresh(cachedResponse);
+    });
+  });
+
+  it('keeps the cached invoice grid visible when a background refresh fails', async () => {
+    const cachedResponse = {
+      data: [invoiceFixture({ patient_name: 'Paciente Cache Tras Error' })],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    };
+    vi.spyOn(apiClient, 'getInvoices')
+      .mockResolvedValueOnce(cachedResponse)
+      .mockRejectedValueOnce(new Error('network refresh failed'));
+
+    const { queryClient } = renderWithQueryClient(
+      <InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />,
+    );
+
+    expect(await screen.findByText('Paciente Cache Tras Error')).toBeVisible();
+
+    await act(async () => {
+      await queryClient.refetchQueries({ queryKey: ['invoices'] });
+    });
+
+    expect(screen.getByText('Paciente Cache Tras Error')).toBeVisible();
+    expect(await screen.findByText(/no se pudo actualizar el historial/i)).toBeVisible();
+    expect(screen.queryByText(/cargando facturas/i)).not.toBeInTheDocument();
   });
 
   it('keeps invoice identity and row actions locked while optional columns can be hidden', async () => {
@@ -323,6 +384,70 @@ describe('InvoiceHistoryView', () => {
 
     expect(await screen.findByText(/no se encontraron facturas con los filtros seleccionados/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /limpiar filtros/i })).toBeInTheDocument();
+  });
+
+  it('loads the pending reconciliation criterion and preserves invoice detail while searching', async () => {
+    const getInvoices = vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [],
+      meta: { current_page: 1, per_page: 10, total: 0 },
+    });
+    vi.spyOn(apiClient, 'getInvoice').mockResolvedValue(invoiceFixture({ id: 44 }));
+
+    renderWithQueryClient(
+      <>
+        <InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />
+        <LocationSearchProbe />
+      </>,
+      ['/invoices?balance_state=pending&reconciliation_cash_session_id=77&invoice=44'],
+    );
+
+    await waitFor(() => expect(getInvoices).toHaveBeenCalledWith(expect.objectContaining({
+      balance_state: 'pending',
+      reconciliation_cash_session_id: '77',
+      page: 1,
+      per_page: 10,
+    })));
+    const firstQuery = getInvoices.mock.calls[0][0];
+    expect(firstQuery).not.toHaveProperty('date_from');
+    expect(firstQuery).not.toHaveProperty('date_to');
+    expect(await screen.findByText(/pendientes o parciales de la caja #77/i)).toBeVisible();
+    await waitFor(() => expect(apiClient.getInvoice).toHaveBeenCalledWith(44));
+
+    fireEvent.change(screen.getByLabelText(/paciente/i), { target: { value: 'Maria' } });
+    fireEvent.submit(screen.getByLabelText(/paciente/i).closest('form')!);
+
+    await waitFor(() => expect(getInvoices).toHaveBeenLastCalledWith(expect.objectContaining({
+      balance_state: 'pending',
+      reconciliation_cash_session_id: '77',
+      patient: 'Maria',
+    })));
+    const nextParams = new URLSearchParams(screen.getByTestId('location-search').textContent ?? '');
+    expect(nextParams.get('invoice')).toBe('44');
+    expect(nextParams.get('balance_state')).toBe('pending');
+    expect(nextParams.get('reconciliation_cash_session_id')).toBe('77');
+  });
+
+  it('loads the missing receipt reconciliation criterion without the default today range', async () => {
+    const getInvoices = vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [],
+      meta: { current_page: 1, per_page: 10, total: 0 },
+    });
+
+    renderWithQueryClient(
+      <InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />,
+      ['/invoices?receipt_state=missing&reconciliation_cash_session_id=91'],
+    );
+
+    await waitFor(() => expect(getInvoices).toHaveBeenCalledWith(expect.objectContaining({
+      receipt_state: 'missing',
+      reconciliation_cash_session_id: '91',
+      page: 1,
+      per_page: 10,
+    })));
+    const firstQuery = getInvoices.mock.calls[0][0];
+    expect(firstQuery).not.toHaveProperty('date_from');
+    expect(firstQuery).not.toHaveProperty('date_to');
+    expect(await screen.findByText(/recibos institucionales pendientes de la caja #91/i)).toBeVisible();
   });
 
   it('does not expose restricted history actions or invented payment actions without permissions', async () => {
@@ -763,7 +888,7 @@ describe('InvoiceHistoryView', () => {
     fireEvent.click(confirmButton);
 
     expect(voidInvoice).not.toHaveBeenCalled();
-    expect(onStatus).not.toHaveBeenCalledWith('Ingrese un motivo de anulación de al menos 5 caracteres.');
+    expect(onStatus).not.toHaveBeenCalledWith(expect.objectContaining({ key: 'invoice-history:void' }));
     expect(screen.getByText(/Anular factura 000-001-01-00000031/i)).toBeInTheDocument();
   });
 
@@ -857,7 +982,12 @@ describe('InvoiceHistoryView', () => {
     await waitFor(() => expect(voidInvoice).toHaveBeenCalledWith(43, 'Factura emitida con paciente equivocado', {
       idempotencyKey: 'history-void-attempt-1',
     }));
-    await waitFor(() => expect(onStatus).toHaveBeenCalledWith('void failed'));
+    await waitFor(() => expect(onStatus).toHaveBeenCalledWith({
+      key: 'invoice-history:void',
+      level: 'error',
+      message: 'void failed',
+      toast: false,
+    }));
 
     fireEvent.change(screen.getByLabelText(/motivo de anulaci/i), {
       target: { value: 'Factura duplicada durante cierre de caja' },
@@ -901,7 +1031,7 @@ describe('InvoiceHistoryView', () => {
     fireEvent.click(confirmButton);
 
     expect(reverseInvoice).not.toHaveBeenCalled();
-    expect(onStatus).not.toHaveBeenCalledWith('Ingrese un motivo de reversa de al menos 5 caracteres.');
+    expect(onStatus).not.toHaveBeenCalledWith(expect.objectContaining({ key: 'invoice-history:reverse' }));
     expect(screen.getByText(/Reversar factura 000-001-01-00000032/i)).toBeInTheDocument();
   });
 
@@ -943,7 +1073,12 @@ describe('InvoiceHistoryView', () => {
     await waitFor(() => expect(reverseInvoice).toHaveBeenCalledWith(44, 'Pago aplicado a factura equivocada', {
       idempotencyKey: 'history-reverse-attempt-1',
     }));
-    await waitFor(() => expect(onStatus).toHaveBeenCalledWith('reverse failed'));
+    await waitFor(() => expect(onStatus).toHaveBeenCalledWith({
+      key: 'invoice-history:reverse',
+      level: 'error',
+      message: 'reverse failed',
+      toast: false,
+    }));
 
     fireEvent.change(screen.getByLabelText(/motivo de reversa/i), {
       target: { value: 'Pago duplicado por correccion de caja' },
@@ -1043,6 +1178,50 @@ describe('InvoiceHistoryView', () => {
     }, { idempotencyKey: expect.any(String) }));
   });
 
+  it('reuses the payment idempotency key after an ambiguous failure and modal dismissal', async () => {
+    const issued = invoiceFixture({
+      id: 62,
+      invoice_number: '000-001-01-00000062',
+      patient_name: 'Paciente Reintento Seguro',
+      status: 'issued',
+      total: '125.00',
+      paid_amount: '0.00',
+      balance_due: '125.00',
+    });
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [issued],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+    vi.spyOn(apiClient, 'getCurrentCashSession').mockResolvedValue({ id: 77, status: 'open' } as never);
+    vi.spyOn(apiBase, 'createClientIdempotencyKey')
+      .mockReturnValueOnce('history-payment-attempt-1')
+      .mockReturnValueOnce('history-payment-attempt-2');
+    const registerPayment = vi.spyOn(apiClient, 'registerPayment')
+      .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+      .mockResolvedValueOnce({} as never);
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente Reintento Seguro')).toBeInTheDocument());
+    await openInvoiceMenu(issued.invoice_number);
+    fireEvent.click(await screen.findByRole('menuitem', { name: /^Cobrar$/i }));
+    let dialog = await screen.findByRole('dialog', { name: /Registrar pago/i });
+    fireEvent.click(within(dialog).getByRole('button', { name: /Confirmar cobro de L 125\.00/i }));
+    await waitFor(() => expect(registerPayment).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(within(dialog).getByRole('alert')).toBeInTheDocument());
+    fireEvent.click(within(dialog).getByRole('button', { name: /close/i }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: /Registrar pago/i })).not.toBeInTheDocument());
+
+    await openInvoiceMenu(issued.invoice_number);
+    fireEvent.click(await screen.findByRole('menuitem', { name: /^Cobrar$/i }));
+    dialog = await screen.findByRole('dialog', { name: /Registrar pago/i });
+    fireEvent.click(within(dialog).getByRole('button', { name: /Confirmar cobro de L 125\.00/i }));
+
+    await waitFor(() => expect(registerPayment).toHaveBeenCalledTimes(2));
+    expect(registerPayment.mock.calls[0][2]).toEqual({ idempotencyKey: 'history-payment-attempt-1' });
+    expect(registerPayment.mock.calls[1][2]).toEqual({ idempotencyKey: 'history-payment-attempt-1' });
+  });
+
   it('uses a safe institutional receipt pdf filename when the stored receipt number is malformed', async () => {
     const paid = invoiceFixture({
       id: 48,
@@ -1098,7 +1277,12 @@ describe('InvoiceHistoryView', () => {
     await openInvoiceMenu(paid.invoice_number);
     fireEvent.click(await screen.findByRole('menuitem', { name: /Descargar/i }));
 
-    await waitFor(() => expect(onStatus).toHaveBeenCalledWith(expect.stringMatching(/LAN timeout|no se pudo descargar/i)));
+    await waitFor(() => expect(onStatus).toHaveBeenCalledWith({
+      key: 'invoice-history:receipt-download',
+      level: 'error',
+      message: expect.stringMatching(/LAN timeout|no se pudo descargar/i),
+      toast: false,
+    }));
     expect(registerPrint).not.toHaveBeenCalled();
     expect(downloadBlob).not.toHaveBeenCalled();
   });
@@ -1364,7 +1548,12 @@ describe('InvoiceHistoryView', () => {
     await waitFor(() => expect(store).toHaveBeenCalledWith({ invoice_id: 47 }, {
       idempotencyKey: 'history-generate-receipt-attempt-1',
     }));
-    await waitFor(() => expect(onStatus).toHaveBeenCalledWith('store failed'));
+    await waitFor(() => expect(onStatus).toHaveBeenCalledWith({
+      key: 'invoice-history:receipt-generate',
+      level: 'error',
+      message: 'store failed',
+      toast: false,
+    }));
 
     await openInvoiceMenu(secondPaid.invoice_number);
     fireEvent.click(await screen.findByRole('menuitem', { name: /Generar PDF/i }));
@@ -1460,7 +1649,12 @@ describe('InvoiceHistoryView', () => {
     expect(getPdf).toHaveBeenCalledWith(94);
     expect(screen.queryByText(/Reimprimir 000-001-01-00000034/i)).not.toBeInTheDocument();
     expect(getReceipt).not.toHaveBeenCalled();
-    expect(onStatus).toHaveBeenCalledWith('PDF institucional REC-A-00000094 abierto.');
+    expect(onStatus).toHaveBeenCalledWith({
+      key: 'invoice-history:reprint',
+      level: 'success',
+      message: 'PDF institucional REC-A-00000094 abierto.',
+      toast: false,
+    });
     expect(openBlobInNewTab).toHaveBeenCalledWith(
       expect.any(Blob),
       'recibo-institucional-REC-A-00000094.pdf',
@@ -1552,7 +1746,12 @@ describe('InvoiceHistoryView', () => {
 
     expect(registerPrint).not.toHaveBeenCalled();
     expect(getPdf).toHaveBeenCalledWith(141);
-    await waitFor(() => expect(onStatus).toHaveBeenCalledWith('pdf failed'));
+    await waitFor(() => expect(onStatus).toHaveBeenCalledWith({
+      key: 'invoice-history:reprint',
+      level: 'error',
+      message: 'pdf failed',
+      toast: false,
+    }));
     fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: /cancelar/i }));
 
     await openInvoiceMenu(secondPaid.invoice_number);
@@ -1685,7 +1884,12 @@ describe('InvoiceHistoryView', () => {
     expect(getPdf).toHaveBeenCalledWith(93);
     expect(screen.queryByText(/Reimprimir 000-001-01-00000033/i)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/motivo de reimpresi/i)).not.toBeInTheDocument();
-    expect(onStatus).toHaveBeenCalledWith('PDF institucional REC-A-00000093 abierto.');
+    expect(onStatus).toHaveBeenCalledWith({
+      key: 'invoice-history:reprint',
+      level: 'success',
+      message: 'PDF institucional REC-A-00000093 abierto.',
+      toast: false,
+    });
   });
 
   it('keeps a human receipt preview message when invoice has no institutional receipt', async () => {

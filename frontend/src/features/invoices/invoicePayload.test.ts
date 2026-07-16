@@ -59,4 +59,19 @@ describe('buildInvoicePayload', () => {
       dialysis_prescription: false,
     });
   });
+
+  it('ignores stale dialysis flags attached to non-EPO services', () => {
+    const cartItems: CartItem[] = [
+      { service: service(10), quantity: '1.00', dialysisPrescription: false },
+      { service: service(11), quantity: '1.00', dialysisPrescription: true },
+    ];
+
+    expect(buildInvoicePayload({
+      canMarkDialysisPrescription: true,
+      cartItems,
+      patientName: 'Maria Lopez',
+    })).toMatchObject({
+      dialysis_prescription: false,
+    });
+  });
 });

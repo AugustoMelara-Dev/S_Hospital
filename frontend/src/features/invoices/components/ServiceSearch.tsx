@@ -390,7 +390,9 @@ export function ServiceSearch({
               ) : null}
             </div>
           } />
-        ) : loading ? (
+        ) : null}
+
+        {loading ? (
           <div className="grid grid-cols-1 divide-y divide-border border border-operational-border" role="status" aria-busy="true" aria-label="Cargando servicios">
             {Array.from({ length: 6 }).map((_, index) => (
               <Skeleton.Input key={index} active={false} block className="h-16" />
@@ -406,10 +408,12 @@ export function ServiceSearch({
             </span>
           </div>
         ) : filteredServices.length === 0 ? (
+          error ? null : (
             <div className="flex flex-col items-center justify-center gap-2 border border-dashed border-border bg-muted/35 px-4 py-10 text-center text-muted-foreground" role="status" aria-live="polite">
-            <span className="font-medium text-foreground">Sin servicios encontrados</span>
-            <span className="max-w-sm text-sm">Revise la búsqueda o quite filtros para consultar todo el catálogo activo.</span>
-          </div>
+              <span className="font-medium text-foreground">Sin servicios encontrados</span>
+              <span className="max-w-sm text-sm">Revise la búsqueda o quite filtros para consultar todo el catálogo activo.</span>
+            </div>
+          )
         ) : (
           <>
             <ul

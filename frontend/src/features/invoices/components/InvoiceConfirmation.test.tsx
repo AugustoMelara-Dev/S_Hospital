@@ -110,4 +110,29 @@ describe('InvoiceConfirmation', () => {
     expect(screen.getByText(/L 238\.05/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /emitir y abrir cobro/i })).toBeEnabled();
   });
+
+  it('shows every EPO line as free when the invoice has a dialysis prescription', () => {
+    const erythropoietin = {
+      ...service,
+      name: 'Eritropoyetina',
+      price: '25.00',
+      special_rule_code: 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION',
+    };
+    render(
+      <InvoiceConfirmation
+        open
+        onOpenChange={vi.fn()}
+        patientName="Maria Lopez"
+        items={[
+          { service: { ...erythropoietin, id: 10 }, quantity: '1.00', dialysisPrescription: true },
+          { service: { ...erythropoietin, id: 11 }, quantity: '1.00', dialysisPrescription: false },
+        ]}
+        preview={{ subtotal: '0.00', tax: '0.00', total: '0.00' }}
+        cashSessionId={7}
+        onConfirm={vi.fn()}
+      />,
+    );
+
+    expect(screen.getAllByText('GRATIS')).toHaveLength(2);
+  });
 });

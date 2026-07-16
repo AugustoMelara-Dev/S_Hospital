@@ -76,6 +76,18 @@ export function PaymentModal({
   const appliedAmountCents = effectivePaymentCents !== null && balanceCents !== null && effectivePaymentCents >= balanceCents
     ? balanceCents
     : effectivePaymentCents;
+  const isPartialPayment = partialPaymentsEnabled
+    && appliedAmountCents !== null
+    && appliedAmountCents > 0
+    && balanceCents !== null
+    && appliedAmountCents < balanceCents;
+  const actionAmountLabel = moneyLabelFromCents(appliedAmountCents ?? 0);
+  const actionLabel = errorMessage
+    ? isPartialPayment ? 'Reintentar abono' : 'Reintentar cobro'
+    : isPartialPayment ? 'Registrar abono' : 'Confirmar cobro';
+  const visibleActionLabel = errorMessage || isPartialPayment
+    ? `${actionLabel} ${actionAmountLabel}`
+    : `Cobrar ${actionAmountLabel}`;
   const needsAmount = effectivePaymentCents === null || effectivePaymentCents <= 0;
   const requiresReference = paymentMethod === 'card' || paymentMethod === 'transfer';
   const summaryColumnCount = 2 + (cashCanReturnChange ? 1 : 0) + (remainingBalanceCents !== null ? 1 : 0);
@@ -263,7 +275,7 @@ export function PaymentModal({
             </div>
             <div className="p-3">
               <span className="block text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                {cashCanReturnChange ? 'Recibido' : 'A cobrar'}
+                {isPartialPayment ? 'Abono aplicado' : cashCanReturnChange ? 'Recibido' : 'A cobrar'}
               </span>
               <strong className="mt-1 block font-mono text-lg tabular-nums text-foreground">{moneyLabelFromCents(effectivePaymentCents ?? 0)}</strong>
             </div>
@@ -418,12 +430,12 @@ export function PaymentModal({
             type="primary"
             className="min-h-11 sm:min-w-56"
             disabled={submitting || needsAmount}
-            aria-label={`${errorMessage ? 'Reintentar cobro' : 'Confirmar cobro'} de ${moneyLabel(balanceDue)}`}
+            aria-label={`${actionLabel} de ${actionAmountLabel}`}
           >
             {submitting ? 'Cobrando...' : (
               <span className="inline-flex items-center gap-2">
                 <Printer className="size-4" aria-hidden="true" />
-                {errorMessage ? 'Reintentar cobro' : `Cobrar ${moneyLabel(balanceDue)}`}
+                {visibleActionLabel}
               </span>
             )}
           </Button>

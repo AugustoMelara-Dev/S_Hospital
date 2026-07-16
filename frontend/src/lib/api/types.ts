@@ -207,6 +207,11 @@ export type InvoiceInstitutionalReceipt = Pick<
   has_print_events?: boolean;
 };
 
+export type CashClosingBreakdown = {
+  bills: Record<'500' | '200' | '100' | '50' | '20' | '10' | '5' | '2' | '1', number>;
+  other_amount: string;
+};
+
 export type CashSession = {
   id: number;
   user_id: number;
@@ -220,6 +225,7 @@ export type CashSession = {
   status: 'open' | 'closed';
   opening_notes: string | null;
   closing_notes: string | null;
+  closing_breakdown?: CashClosingBreakdown | null;
   opened_at: string;
   closed_at: string | null;
   payments_count?: number;
@@ -586,6 +592,9 @@ export type InvoiceFilters = {
   date_from?: string;
   date_to?: string;
   status?: Invoice['status'] | '';
+  balance_state?: 'pending' | '';
+  receipt_state?: 'missing' | '';
+  reconciliation_cash_session_id?: string;
   patient?: string;
   invoice_number?: string;
   user_id?: string;

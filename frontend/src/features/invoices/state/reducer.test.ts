@@ -21,17 +21,37 @@ describe('newInvoiceReducer', () => {
     });
   });
 
-  it('returns a fresh state on RESET_FORM preserving the cash session', () => {
+  it('resets the draft while preserving loaded POS settings and catalogs', () => {
+    const categories = [{ id: 10, name: 'Laboratorio' }] as never;
+    const serviceAreas = [{ id: 20, name: 'Farmacia' }] as never;
+    const services = [{ id: 30, name: 'Eritropoyetina' }] as never;
     const state: NewInvoiceState = {
       ...getInitialNewInvoiceState(cashSession),
       patientName: 'Paciente demo',
       cartItems: [{ service: { id: 1, name: 'X' } as never, quantity: '1', dialysisPrescription: false }],
       search: 'demo',
+      categories,
+      serviceAreas,
+      services,
+      scannerEnabled: true,
+      partialPaymentsEnabled: true,
+      loadingServices: true,
     };
 
     const next = newInvoiceReducer(state, { type: 'RESET_FORM', payload: { loadedCashSession: cashSession } });
 
-    expect(next).toEqual(getInitialNewInvoiceState(cashSession));
+    expect(next).toMatchObject({
+      patientName: '',
+      cartItems: [],
+      search: '',
+      categories,
+      serviceAreas,
+      services,
+      scannerEnabled: true,
+      partialPaymentsEnabled: true,
+      loadingServices: false,
+      loadedCashSession: cashSession,
+    });
   });
 
   it('keeps a success message untouched when it differs from the cleared id', () => {
@@ -69,24 +89,29 @@ describe('newInvoiceReducer', () => {
     expect(next.cartItems[0]?.quantity).toBe('1');
   });
 
-  it('preserves the cart when adding a service that already has a dialysis prescription line', () => {
+  it('increments an existing prescribed erythropoietin line instead of creating a mixed duplicate', () => {
+    const erythropoietinRule = 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION';
     const state: NewInvoiceState = {
       ...getInitialNewInvoiceState(cashSession),
-      cartItems: [{ service: { id: 3, name: 'Eritropoyetina' } as never, quantity: '1.00', dialysisPrescription: true }],
+      cartItems: [{ service: { id: 3, name: 'Eritropoyetina', special_rule_code: erythropoietinRule } as never, quantity: '1.00', dialysisPrescription: true }],
     };
 
-    const next = newInvoiceReducer(state, { type: 'ADD_TO_CART', payload: { id: 3, name: 'Eritropoyetina' } as never });
+    const next = newInvoiceReducer(state, {
+      type: 'ADD_TO_CART',
+      payload: { id: 3, name: 'Eritropoyetina', special_rule_code: erythropoietinRule } as never,
+    });
 
-    expect(next.cartItems).toHaveLength(2);
-    expect(next.cartItems[1]?.dialysisPrescription).toBe(false);
+    expect(next.cartItems).toHaveLength(1);
+    expect(next.cartItems[0]).toMatchObject({ quantity: '2.00', dialysisPrescription: true });
   });
 
-  it('updates quantity and dialysis flag on the targeted cart item', () => {
+  it('updates quantity and keeps the invoice-level dialysis decision consistent across EPO lines', () => {
+    const erythropoietinRule = 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION';
     const state: NewInvoiceState = {
       ...getInitialNewInvoiceState(cashSession),
       cartItems: [
-        { service: { id: 1 } as never, quantity: '1.00', dialysisPrescription: false },
-        { service: { id: 2 } as never, quantity: '1.00', dialysisPrescription: false },
+        { service: { id: 1, special_rule_code: erythropoietinRule } as never, quantity: '1.00', dialysisPrescription: false },
+        { service: { id: 2, special_rule_code: erythropoietinRule } as never, quantity: '1.00', dialysisPrescription: false },
       ],
     };
 
@@ -94,7 +119,46 @@ describe('newInvoiceReducer', () => {
     const withDialysis = newInvoiceReducer(next, { type: 'UPDATE_DIALYSIS', payload: { index: 1, checked: true } });
 
     expect(withDialysis.cartItems[0]?.quantity).toBe('3.00');
+    expect(withDialysis.cartItems[0]?.dialysisPrescription).toBe(true);
     expect(withDialysis.cartItems[1]?.dialysisPrescription).toBe(true);
+  });
+
+  it('clears stale dialysis flags from non-EPO lines when normalizing the cart', () => {
+    const next = newInvoiceReducer(getInitialNewInvoiceState(cashSession), {
+      type: 'SET_CART_ITEMS',
+      payload: [
+        {
+          service: { id: 1, special_rule_code: 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION' } as never,
+          quantity: '1.00',
+          dialysisPrescription: false,
+        },
+        {
+          service: { id: 2, special_rule_code: null } as never,
+          quantity: '1.00',
+          dialysisPrescription: true,
+        },
+      ],
+    });
+
+    expect(next.cartItems.map((item) => item.dialysisPrescription)).toEqual([false, false]);
+  });
+
+  it('ignores dialysis updates targeted at non-EPO lines', () => {
+    const state: NewInvoiceState = {
+      ...getInitialNewInvoiceState(cashSession),
+      cartItems: [{
+        service: { id: 1, special_rule_code: null } as never,
+        quantity: '1.00',
+        dialysisPrescription: false,
+      }],
+    };
+
+    const next = newInvoiceReducer(state, {
+      type: 'UPDATE_DIALYSIS',
+      payload: { index: 0, checked: true },
+    });
+
+    expect(next.cartItems[0]?.dialysisPrescription).toBe(false);
   });
 
   it('removes the cart item at the given index', () => {

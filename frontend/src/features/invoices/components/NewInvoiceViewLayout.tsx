@@ -78,6 +78,7 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
     canCreatePayments,
     canOpenCash,
     canViewReceipts,
+    canMarkDialysisPrescription = false,
     onOpenCash,
     onPatientNameChange,
     onPatientSubmit,
@@ -115,9 +116,13 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
   } = props;
   const postedPayments = state.issuedInvoice?.payments?.filter((payment) => payment.status === 'posted') ?? [];
   const latestPayment = paymentResult ?? postedPayments[postedPayments.length - 1];
+  const confirmationItems = canMarkDialysisPrescription
+    ? state.cartItems
+    : state.cartItems.map((item) => ({ ...item, dialysisPrescription: false }));
   const requestConfirmation = () => {
     if (confirmLockRef.current) return;
     confirmLockRef.current = true;
+    setAccountOpen(false);
     onConfirm();
     window.setTimeout(() => {
       confirmLockRef.current = false;
@@ -128,6 +133,10 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
     window.setTimeout(() => {
       document.querySelector<HTMLElement>('[data-billing-account-trigger]')?.focus();
     }, 0);
+  };
+  const startNewInvoice = () => {
+    setAccountOpen(false);
+    onNuevaFactura();
   };
   const account = (
     <InvoiceCart
@@ -143,7 +152,7 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
       actionLabel={canCreatePayments && canViewReceipts ? 'Emitir y cobrar' : 'Emitir factura'}
       emptyActionLabel="Agregue servicios"
       submitting={state.submitting}
-      canMarkDialysisPrescription={props.canMarkDialysisPrescription}
+      canMarkDialysisPrescription={canMarkDialysisPrescription}
     />
   );
   return (
@@ -276,7 +285,7 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
         open={state.showConfirmation}
         onOpenChange={onConfirmDialogChange}
         patientName={state.patientName}
-        items={state.cartItems}
+        items={confirmationItems}
         preview={preview}
         cashSessionId={state.loadedCashSession?.id}
         canOpenPayment={canCreatePayments && canViewReceipts}
@@ -325,7 +334,7 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
           onVerRecibo={onViewIssuedReceipt}
           onImprimir={onPrintIssuedReceipt}
           onGuardarPdf={onSaveIssuedReceiptPdf}
-          onNuevaFactura={onNuevaFactura}
+          onNuevaFactura={startNewInvoice}
         />
       )}
 

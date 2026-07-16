@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useMemo, useRef, useReducer } from 'react';
+import { useEffect, useCallback, useMemo, useRef, useReducer, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   apiClient,
@@ -69,6 +69,7 @@ export function NewInvoiceView({
   const serviceSearchRequestIdRef = useRef(0);
   const pointOfSaleLoadInFlightRef = useRef(false);
   const pointOfSaleDataLoadedRef = useRef(false);
+  const [pointOfSaleDataLoaded, setPointOfSaleDataLoaded] = useState(false);
   const latestPaymentResultRef = useRef<import('../../lib/api').Payment | null>(null);
   useEffect(() => {
     void loadPointOfSaleData();
@@ -80,8 +81,8 @@ export function NewInvoiceView({
     patientName: state.patientName,
     searchInputRef,
   });
-  usePointOfSaleServiceSearch({
-    canViewCatalog, dispatch, pointOfSaleDataLoadedRef, serviceSearchAbortRef,
+  const { loadMoreServices, retryLoad } = usePointOfSaleServiceSearch({
+    canViewCatalog, dispatch, loadData: loadPointOfSaleData, pointOfSaleDataLoaded, pointOfSaleDataLoadedRef, serviceSearchAbortRef,
     searchServices: searchPointOfSaleServices, searchState: state,
   });
   useEffect(() => {
@@ -162,6 +163,8 @@ export function NewInvoiceView({
     if (pointOfSaleLoadInFlightRef.current) return;
 
     if (!canViewCatalog) {
+      pointOfSaleDataLoadedRef.current = false;
+      setPointOfSaleDataLoaded(false);
       dispatch({ type: 'SET_ALERT_MESSAGE', payload: 'Este usuario no tiene permiso para consultar el catálogo de servicios.' });
       dispatch({ type: 'SET_LOADING_SERVICES', payload: false });
       return;
@@ -185,8 +188,12 @@ export function NewInvoiceView({
         },
       });
       pointOfSaleDataLoadedRef.current = true;
+      setPointOfSaleDataLoaded(true);
+      dispatch({ type: 'SET_ALERT_MESSAGE', payload: null });
       onCashSessionChange?.(currentCashSession);
     } catch (error) {
+      pointOfSaleDataLoadedRef.current = false;
+      setPointOfSaleDataLoaded(false);
       const message = userSafeErrorMessage(error, 'No se pudo cargar servicios y caja desde el servidor local.');
       dispatch({ type: 'SET_POINT_OF_SALE_LOAD_ERROR', payload: message });
       dispatch({ type: 'SET_ALERT_MESSAGE', payload: message });
@@ -200,6 +207,8 @@ export function NewInvoiceView({
   async function searchPointOfSaleServices(signal: AbortSignal, page = 1) {
     const requestId = ++serviceSearchRequestIdRef.current;
     dispatch({ type: page === 1 ? 'SET_LOADING_SERVICES' : 'SET_LOADING_MORE_SERVICES', payload: true });
+    dispatch({ type: 'SET_POINT_OF_SALE_LOAD_ERROR', payload: null });
+    dispatch({ type: 'SET_ALERT_MESSAGE', payload: null });
     try {
       const nextServices = await apiClient.getServices({
         active: true,
@@ -218,14 +227,15 @@ export function NewInvoiceView({
       } else {
         dispatch({ type: 'APPEND_SERVICES_PAGE', payload: { services: safeServices, page, hasMore: safeServices.length === POS_SERVICE_PAGE_SIZE } });
       }
+      dispatch({ type: 'SET_POINT_OF_SALE_LOAD_ERROR', payload: null });
       dispatch({ type: 'SET_ALERT_MESSAGE', payload: null });
     } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') {
+      if (signal.aborted || requestId !== serviceSearchRequestIdRef.current || (error instanceof DOMException && error.name === 'AbortError')) {
         return;
       }
 
       const message = userSafeErrorMessage(error, 'No se pudo buscar servicios activos.');
-      if (page === 1) dispatch({ type: 'SEARCH_SERVICES_SUCCESS', payload: [] });
+      if (page === 1) dispatch({ type: 'SET_POINT_OF_SALE_LOAD_ERROR', payload: message });
       dispatch({ type: 'SET_ALERT_MESSAGE', payload: message });
       onStatus({ message, level: 'error', key: 'billing-services-load', toast: false });
       window.setTimeout(() => searchInputRef.current?.focus(), 0);
@@ -233,18 +243,6 @@ export function NewInvoiceView({
       if (!signal.aborted) {
         dispatch({ type: page === 1 ? 'SET_LOADING_SERVICES' : 'SET_LOADING_MORE_SERVICES', payload: false });
       }
-    }
-  }
-
-  async function loadMorePointOfSaleServices() {
-    if (state.loadingMoreServices || !state.hasMoreServices) return;
-    serviceSearchAbortRef.current?.abort();
-    const controller = new AbortController();
-    serviceSearchAbortRef.current = controller;
-    try {
-      await searchPointOfSaleServices(controller.signal, state.servicePage + 1);
-    } finally {
-      if (serviceSearchAbortRef.current === controller) serviceSearchAbortRef.current = null;
     }
   }
 
@@ -624,6 +622,7 @@ export function NewInvoiceView({
 
   function handleNuevaFactura() {
     latestPaymentResultRef.current = null;
+    resetPayloadScopedIdempotencyKey(submitPaymentIdempotencyKeyRef, submitPaymentIdempotencySignatureRef);
     dispatch({ type: 'RESET_FORM', payload: { loadedCashSession: state.loadedCashSession } });
     window.setTimeout(() => patientInputRef.current?.focus(), 0);
   }
@@ -633,7 +632,6 @@ export function NewInvoiceView({
       return;
     }
     if (!nextOpen) {
-      resetPayloadScopedIdempotencyKey(submitPaymentIdempotencyKeyRef, submitPaymentIdempotencySignatureRef);
       dispatch({ type: 'SET_PAYMENT_ERROR', payload: null });
     }
     dispatch({ type: 'SET_SHOW_PAYMENT', payload: nextOpen });
@@ -687,8 +685,8 @@ export function NewInvoiceView({
       }}
       onSubmitInvoice={() => void submitInvoice()}
       onCobrar={handleCobrarClick}
-      onRetryLoad={loadPointOfSaleData}
-      onLoadMoreServices={() => void loadMorePointOfSaleServices()}
+      onRetryLoad={() => void retryLoad()}
+      onLoadMoreServices={() => void loadMoreServices()}
       onPaymentOpenChange={handlePaymentOpenChange}
       onSubmitPayment={(appliedAmount) => void submitPayment(appliedAmount)}
       onPrintIssuedReceipt={() => void printIssuedReceipt()}
