@@ -3,7 +3,7 @@ import { ReloadOutlined, WarningOutlined } from '@ant-design/icons';
 import { Alert, Button, Empty, Modal, Result, Spin, Tabs, Tag } from 'antd';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { type CashSession, apiClient, userSafeErrorMessage } from '@/lib/api';
+import { type CashClosingBreakdown, type CashSession, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { payloadScopedIdempotencyKey, resetPayloadScopedIdempotencyKey } from '@/lib/api/idempotency';
 import { finiteNumber, formatLempirasUI, parseCents, toFloat } from '@/lib/money';
 import { getVisibleRefetchInterval } from '@/lib/query/polling';
@@ -16,6 +16,15 @@ import { CashCloseSummaryPanel, CloseSessionDialog } from './components/CloseSes
 import { CashMovementsTable } from './components/CashMovementsTable';
 import { CashClosingPanel } from './components/CashClosingPanel';
 import { CashMethodSummary } from './components/CashMethodSummary';
+import {
+  cashCentsToDecimal,
+  cashDenominationBreakdown,
+  cashDenominationTotalCents,
+  CashDenominationCounter,
+  createEmptyDenominationCounts,
+  hasCashDenominationCount,
+  type HnlBillDenomination,
+} from './components/CashDenominationCounter';
 import { AccountingControlPanel } from '@/modules/accounting/components/AccountingControlPanel';
 import type { OperationalStatusReporter } from '@/app/operationalStatus';
 
@@ -65,6 +74,8 @@ export function CashBoxView({
   const [activeView, setActiveView] = useState<CashView>('summary');
   const [pendingOpening, setPendingOpening] = useState<{ opening_amount: string } | null>(null);
   const [closedSummarySession, setClosedSummarySession] = useState<CashSession | null>(null);
+  const [denominationCounts, setDenominationCounts] = useState(createEmptyDenominationCounts);
+  const [otherCashAmount, setOtherCashAmount] = useState('');
   const closingAmountRef = useRef<HTMLInputElement | null>(null);
   const openingSessionInFlightRef = useRef(false);
   const closingSessionInFlightRef = useRef(false);
@@ -72,6 +83,7 @@ export function CashBoxView({
   const closeSessionIdempotencyKeyRef = useRef<string | null>(null);
   const openSessionIdempotencySignatureRef = useRef<string | null>(null);
   const closeSessionIdempotencySignatureRef = useRef<string | null>(null);
+  const countedSessionIdRef = useRef<number | null | undefined>(undefined);
   const currentSessionScope = canCloseAnyCash ? 'closable' : 'own';
 
   const {
@@ -141,6 +153,8 @@ export function CashBoxView({
       await invalidateBillingQueries(queryClient);
       setClosingAmount('');
       setClosingNotes('');
+      setDenominationCounts(createEmptyDenominationCounts());
+      setOtherCashAmount('');
       setClosedSummarySession(null);
       setFormAlert(null);
       onSessionChange?.(opened);
@@ -158,7 +172,7 @@ export function CashBoxView({
   });
 
   const closeSessionMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: number; payload: { closing_amount: string; notes?: string | null } }) => {
+    mutationFn: ({ id, payload }: { id: number; payload: { closing_amount: string; notes?: string | null; closing_breakdown?: CashClosingBreakdown } }) => {
       const idempotencyKey = payloadScopedIdempotencyKey(
         closeSessionIdempotencyKeyRef,
         closeSessionIdempotencySignatureRef,
@@ -176,6 +190,8 @@ export function CashBoxView({
       setClosedSummarySession(closed);
       setClosingAmount('');
       setClosingNotes('');
+      setDenominationCounts(createEmptyDenominationCounts());
+      setOtherCashAmount('');
       setFormAlert(null);
       onSessionChange?.(null);
       setActiveView('summary');
@@ -197,6 +213,7 @@ export function CashBoxView({
   // preserved for historical server payloads, but a fresh `expected_cash_amount`
   // from the LAN server is what we trust.
   const expectedCashAmount = activeSession?.expected_cash_amount ?? activeSession?.expected_amount ?? activeSession?.opening_amount ?? '0.00';
+  const hasPhysicalCashCount = hasCashDenominationCount(denominationCounts, otherCashAmount);
   const hasValidClosingAmount = /^\d+(\.\d{1,2})?$/.test(closingAmount.trim());
   const difference = hasValidClosingAmount
     ? centsToFloat(parseCents(closingAmount) - parseCents(expectedCashAmount))
@@ -213,6 +230,23 @@ export function CashBoxView({
   const hasPendingBalance = pendingInvoiceCount > 0 || parseCents(pendingAmount) > 0;
   const canRenderOperationalState = Boolean(activeSession) || (!sessionLoadError && !isLoading);
   const isOpenSessionFormLocked = pendingOpening !== null || openSessionMutation.isPending;
+
+  useEffect(() => {
+    const nextSessionId = activeSession?.id ?? null;
+
+    if (countedSessionIdRef.current === undefined) {
+      countedSessionIdRef.current = nextSessionId;
+      return;
+    }
+
+    if (countedSessionIdRef.current !== nextSessionId) {
+      countedSessionIdRef.current = nextSessionId;
+      setDenominationCounts(createEmptyDenominationCounts());
+      setOtherCashAmount('');
+      setClosingAmount('');
+      setClosingAmountError(null);
+    }
+  }, [activeSession?.id]);
 
   useEffect(() => {
     if (isOpen && activeView === 'close') {
@@ -284,11 +318,15 @@ export function CashBoxView({
     setConfirmingClose(false);
     const trimmedClosingAmount = closingAmount.trim();
     const trimmedClosingNotes = closingNotes.trim();
+    const closingBreakdown = hasPhysicalCashCount
+      ? cashDenominationBreakdown(denominationCounts, otherCashAmount)
+      : undefined;
     closeSessionMutation.mutate({
       id: activeSession.id,
       payload: {
         closing_amount: trimmedClosingAmount,
         notes: trimmedClosingNotes === '' ? null : trimmedClosingNotes,
+        ...(closingBreakdown ? { closing_breakdown: closingBreakdown } : {}),
       },
     });
   }
@@ -296,6 +334,32 @@ export function CashBoxView({
   function handleManualRefresh() {
     onStatus({ key: 'cash:refresh', level: 'info', message: 'Actualizando caja...' });
     void refetch();
+  }
+
+  function updateCountedAmount(
+    nextCounts = denominationCounts,
+    nextOtherAmount = otherCashAmount,
+  ) {
+    setClosingAmount(cashCentsToDecimal(cashDenominationTotalCents(nextCounts, nextOtherAmount)));
+    setClosingAmountError(null);
+  }
+
+  function handleDenominationCountChange(denomination: HnlBillDenomination, value: string) {
+    const nextCounts = { ...denominationCounts, [denomination]: value };
+    setDenominationCounts(nextCounts);
+    updateCountedAmount(nextCounts, otherCashAmount);
+  }
+
+  function handleOtherCashAmountChange(value: string) {
+    setOtherCashAmount(value);
+    updateCountedAmount(denominationCounts, value);
+  }
+
+  function handleResetCashCount() {
+    setDenominationCounts(createEmptyDenominationCounts());
+    setOtherCashAmount('');
+    setClosingAmount('');
+    setClosingAmountError(null);
   }
 
   const isPOSBlocked = !isOpen;
@@ -399,6 +463,7 @@ export function CashBoxView({
               pending_invoice_count: closedSummarySession.pending_invoice_count,
               pending_amount: closedSummarySession.pending_amount,
               closed_at: closedSummarySession.closed_at,
+              closing_breakdown: closedSummarySession.closing_breakdown,
             }}
             closingAmount={closedSummarySession.closing_amount ?? '0.00'}
             closingNotes={closedSummarySession.closing_notes ?? ''}
@@ -430,17 +495,30 @@ export function CashBoxView({
             ) : null}
 
             {activeView === 'reconciliation' ? (
-              <AccountingControlPanel
-                canViewInvoices={canViewInvoices}
-                reconciliation={{ ...activeSession, difference_amount: difference }}
-              />
+              <div className="grid gap-4">
+                <CashDenominationCounter
+                  counts={denominationCounts}
+                  expectedAmount={expectedCashAmount}
+                  otherAmount={otherCashAmount}
+                  onContinue={() => setActiveView('close')}
+                  onCountChange={handleDenominationCountChange}
+                  onOtherAmountChange={handleOtherCashAmountChange}
+                  onReset={handleResetCashCount}
+                />
+                <AccountingControlPanel
+                  canViewInvoices={canViewInvoices}
+                  reconciliation={{ ...activeSession, difference_amount: difference }}
+                />
+              </div>
             ) : null}
 
             {activeView === 'close' ? (
               <CashClosingPanel
                 canCloseCash={canCloseCash}
                 canViewInvoices={canViewInvoices}
+                cashSessionId={activeSession.id}
                 closingAmount={closingAmount}
+                closingAmountReadOnly={hasPhysicalCashCount}
                 closingAmountError={closingAmountError}
                 closingAmountRef={closingAmountRef}
                 closingNotes={closingNotes}
@@ -510,6 +588,9 @@ export function CashBoxView({
           pending_invoice_count: activeSession?.pending_invoice_count,
           pending_amount: activeSession?.pending_amount,
           missing_institutional_receipt_count: activeSession?.missing_institutional_receipt_count,
+          closing_breakdown: hasCashDenominationCount(denominationCounts, otherCashAmount)
+            ? cashDenominationBreakdown(denominationCounts, otherCashAmount)
+            : undefined,
         }}
         closingAmount={closingAmount}
         closingNotes={closingNotes}

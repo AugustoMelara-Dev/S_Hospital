@@ -7,7 +7,9 @@ import { formatLempirasUI } from '@/lib/money';
 type CashClosingPanelProps = {
   canCloseCash: boolean;
   canViewInvoices?: boolean;
+  cashSessionId: number;
   closingAmount: string;
+  closingAmountReadOnly?: boolean;
   closingAmountError: string | null;
   closingAmountRef: RefObject<HTMLInputElement | null>;
   closingNotes: string;
@@ -26,7 +28,9 @@ type CashClosingPanelProps = {
 export function CashClosingPanel({
   canCloseCash,
   canViewInvoices = false,
+  cashSessionId,
   closingAmount,
+  closingAmountReadOnly = false,
   closingAmountError,
   closingAmountRef,
   closingNotes,
@@ -85,7 +89,7 @@ export function CashClosingPanel({
             validateStatus={closingAmountError ? 'error' : undefined}
             help={closingAmountError ?? (
               <span className="block bg-surface text-muted-foreground">
-                Cuente el efectivo físico en gaveta. No incluya tarjeta ni transferencia.
+                {closingAmountReadOnly ? 'Monto calculado desde el arqueo por denominaciones. Regrese a Arqueo para corregir el conteo.' : 'Cuente el efectivo físico en gaveta. No incluya tarjeta ni transferencia.'}
               </span>
             )}
           >
@@ -100,6 +104,7 @@ export function CashClosingPanel({
                 placeholder="0.00"
                 autoComplete="off"
                 disabled={isSubmitting}
+                readOnly={closingAmountReadOnly}
                 className="min-h-11 font-mono text-lg tabular-nums"
                 aria-invalid={Boolean(closingAmountError)}
               />
@@ -132,13 +137,19 @@ export function CashClosingPanel({
         {hasPendingBalance || missingInstitutionalReceiptCount > 0 ? (
           <ul aria-label="Bloqueos del cierre" className="divide-y divide-warning/25 border border-warning/35 bg-warning/5">
             {hasPendingBalance ? (
-              <ClosingBlocker canViewInvoices={canViewInvoices}>
+              <ClosingBlocker
+                canViewInvoices={canViewInvoices}
+                resolutionHref={`/invoices?balance_state=pending&reconciliation_cash_session_id=${cashSessionId}`}
+              >
                 <strong>{pendingInvoiceCount}</strong> {pendingInvoiceCount === 1 ? 'factura pendiente o parcial' : 'facturas pendientes o parciales'} por{' '}
                 <strong>{formatLempirasUI(pendingAmount)}</strong>. Revise los cobros antes de cerrar.
               </ClosingBlocker>
             ) : null}
             {missingInstitutionalReceiptCount > 0 ? (
-              <ClosingBlocker canViewInvoices={canViewInvoices}>
+              <ClosingBlocker
+                canViewInvoices={canViewInvoices}
+                resolutionHref={`/invoices?receipt_state=missing&reconciliation_cash_session_id=${cashSessionId}`}
+              >
                 <strong>{missingInstitutionalReceiptCount}</strong>{' '}
                 {missingInstitutionalReceiptCount === 1 ? 'recibo institucional pendiente' : 'recibos institucionales pendientes'}.
               </ClosingBlocker>
@@ -188,7 +199,15 @@ export function CashClosingPanel({
   );
 }
 
-function ClosingBlocker({ canViewInvoices, children }: { canViewInvoices: boolean; children: ReactNode }) {
+function ClosingBlocker({
+  canViewInvoices,
+  children,
+  resolutionHref,
+}: {
+  canViewInvoices: boolean;
+  children: ReactNode;
+  resolutionHref: string;
+}) {
   return (
     <li className="flex flex-col gap-2 px-3 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
       <span className="flex min-w-0 items-start gap-2">
@@ -196,7 +215,7 @@ function ClosingBlocker({ canViewInvoices, children }: { canViewInvoices: boolea
         <span>{children}</span>
       </span>
       {canViewInvoices ? (
-        <Link className="shrink-0 font-semibold text-primary underline underline-offset-4" to="/invoices">
+        <Link className="shrink-0 font-semibold text-primary underline underline-offset-4" to={resolutionHref}>
           Resolver en Historial
         </Link>
       ) : (

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AuditLog;
 use App\Models\CashRegisterSession;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
@@ -100,5 +101,81 @@ class CloseCashSessionDifferenceTest extends TestCase
             'entity_id' => $session->id,
             'result' => 'success',
         ]);
+    }
+
+    public function test_closing_cash_session_rejects_a_denomination_breakdown_that_does_not_match_the_counted_amount(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $cashier = User::factory()->create();
+        $cashier->assignRole('cajero');
+
+        $session = CashRegisterSession::query()->create([
+            'user_id' => $cashier->id,
+            'open_user_id' => $cashier->id,
+            'opening_amount' => '100.00',
+            'status' => CashRegisterSession::STATUS_OPEN,
+            'opened_at' => now(),
+        ]);
+
+        $this->actingAs($cashier)
+            ->postJson("/api/cash-sessions/{$session->id}/close", [
+                'closing_amount' => '100.00',
+                'closing_breakdown' => [
+                    'bills' => ['50' => 1],
+                    'other_amount' => '0.00',
+                ],
+            ])
+            ->assertStatus(422)
+            ->assertJsonPath('errors.closing_breakdown.0', fn ($message) => is_string($message) && str_contains($message, 'monto contado'));
+
+        $this->assertSame(CashRegisterSession::STATUS_OPEN, $session->fresh()->status);
+    }
+
+    public function test_closing_cash_session_persists_and_audits_the_matching_denomination_breakdown(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $cashier = User::factory()->create();
+        $cashier->assignRole('cajero');
+
+        $session = CashRegisterSession::query()->create([
+            'user_id' => $cashier->id,
+            'open_user_id' => $cashier->id,
+            'opening_amount' => '125.50',
+            'status' => CashRegisterSession::STATUS_OPEN,
+            'opened_at' => now(),
+        ]);
+
+        $breakdown = [
+            'bills' => [
+                '500' => 0,
+                '200' => 0,
+                '100' => 0,
+                '50' => 2,
+                '20' => 1,
+                '10' => 0,
+                '5' => 0,
+                '2' => 0,
+                '1' => 0,
+            ],
+            'other_amount' => '5.50',
+        ];
+
+        $this->actingAs($cashier)
+            ->postJson("/api/cash-sessions/{$session->id}/close", [
+                'closing_amount' => '125.50',
+                'closing_breakdown' => $breakdown,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.closing_breakdown', $breakdown);
+
+        $session->refresh();
+        $this->assertSame($breakdown, $session->closing_breakdown);
+
+        $audit = AuditLog::query()
+            ->where('action', 'cash_session.closed')
+            ->where('entity_id', $session->id)
+            ->firstOrFail();
+
+        $this->assertSame($breakdown, $audit->new_values['closing_breakdown'] ?? null);
     }
 }

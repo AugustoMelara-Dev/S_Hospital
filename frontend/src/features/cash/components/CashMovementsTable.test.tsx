@@ -23,6 +23,38 @@ describe('CashMovementsTable', () => {
     expect(screen.queryByText('payment_void')).not.toBeInTheDocument();
   });
 
+  it('uses human labels, search and mobile pagination for long movement lists', () => {
+    render(
+      <CashMovementsTable
+        movements={[
+          movement({ id: 1, type: 'opening', method: 'opening', amount: '100.00' }),
+          ...Array.from({ length: 11 }, (_, index) => movement({
+            id: index + 2,
+            notes: index === 10 ? 'Entrega nocturna' : null,
+          })),
+        ]}
+      />,
+    );
+
+    const mobileList = screen.getByRole('list', { name: /movimientos de caja en m.vil/i });
+    expect(within(mobileList).getAllByRole('listitem')).toHaveLength(10);
+    expect(within(mobileList).getByText('Apertura').closest('li')).toHaveTextContent(/Apertura.*Apertura/i);
+    expect(document.body.textContent).not.toMatch(/\bopening\b/);
+    expect(screen.getByText(/1.?10 de 12 movimientos/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /p.gina siguiente/i }));
+    expect(within(mobileList).getAllByRole('listitem')).toHaveLength(2);
+    expect(within(mobileList).getByText(/entrega nocturna/i)).toBeInTheDocument();
+
+    fireEvent.change(screen.getByRole('searchbox', { name: /buscar movimientos/i }), {
+      target: { value: 'apertura' },
+    });
+
+    expect(within(mobileList).getAllByRole('listitem')).toHaveLength(1);
+    expect(screen.queryByText(/1.?10 de 12 movimientos/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /p.gina siguiente/i })).not.toBeInTheDocument();
+  });
+
   it('renders the institutional operational grid and no invented actions', () => {
     render(
       <CashMovementsTable

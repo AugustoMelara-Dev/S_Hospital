@@ -1,5 +1,5 @@
 import { apiClient } from './base';
-import type { CashSession, PaginatedMeta } from './types';
+import type { CashClosingBreakdown, CashSession, PaginatedMeta } from './types';
 
 export const cash = {
   async getCashSessions(
@@ -40,7 +40,7 @@ export const cash = {
 
   async closeCashSession(
     id: number,
-    payload: { closing_amount: string; notes?: string | null },
+    payload: { closing_amount: string; notes?: string | null; closing_breakdown?: CashClosingBreakdown },
     options: { idempotencyKey?: string } = {},
   ): Promise<CashSession> {
     const response = await apiClient.request<{ data: CashSession }>(`/api/cash-sessions/${id}/close`, {

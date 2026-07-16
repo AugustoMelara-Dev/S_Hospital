@@ -63,6 +63,7 @@ class CashSessionReportService
                 'closing_amount' => $session->closing_amount === null ? null : (string) $session->closing_amount,
                 'difference_amount' => $session->difference_amount === null ? null : (string) $session->difference_amount,
                 'closing_notes' => $session->closing_notes,
+                'closing_breakdown' => $session->closing_breakdown,
                 'opened_at' => $session->opened_at,
                 'closed_at' => $session->closed_at,
             ],
