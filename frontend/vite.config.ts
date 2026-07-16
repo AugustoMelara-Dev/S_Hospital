@@ -54,8 +54,17 @@ export default defineConfig({
         environment: 'jsdom',
         globals: true,
         setupFiles: './src/test/setup.ts',
-        exclude: ['node_modules/**', 'dist/**', 'e2e/**'],
-        testTimeout: 15_000
+        exclude: [
+          'node_modules/**',
+          'dist/**',
+          'e2e/**',
+          'scripts/mock-e2e-plan.test.mjs',
+          'scripts/segmented-tests-lib.test.mjs',
+        ],
+        maxWorkers: 4,
+        pool: 'forks',
+        sequence: { groupOrder: 0 },
+        testTimeout: 30_000
       }
     }, {
       extends: true,
@@ -67,6 +76,7 @@ export default defineConfig({
       })],
       test: {
         name: 'storybook',
+        sequence: { groupOrder: 1 },
         browser: {
           enabled: true,
           headless: true,

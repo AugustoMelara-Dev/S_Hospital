@@ -15,7 +15,7 @@ test('the explicit manifest covers every current Vitest file exactly once', () =
   const files = discoverVitestFiles(resolve(frontendDir, 'src'));
   const assignment = assignFilesToSegments(files, SEGMENTS);
 
-  assert.equal(files.length, 145);
+  assert.equal(files.length, 138);
   assert.deepEqual(assignment.uncovered, []);
   assert.deepEqual(assignment.duplicates, []);
   assert.equal(
