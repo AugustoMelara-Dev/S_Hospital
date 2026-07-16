@@ -60,6 +60,14 @@ jobs:
         run: |
           vendor/bin/phpunit --testdox
 
+      - name: Assert backend tests leave worktree clean
+        run: |
+          if [ -n "$(git status --porcelain --untracked-files=all)" ]; then
+            echo "Backend tests left tracked changes or untracked files:"
+            git status --short --untracked-files=all
+            exit 1
+          fi
+
       - name: Run Pint code style
         working-directory: backend
         run: vendor/bin/pint --test

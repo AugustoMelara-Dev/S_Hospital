@@ -145,7 +145,8 @@ class SystemStatusTest extends TestCase
 
     public function test_loopback_app_url_is_treated_as_local_single_machine_mode(): void
     {
-        $proofRoot = storage_path('framework/testing-local-mode-status');
+        $proofRoot = sys_get_temp_dir().DIRECTORY_SEPARATOR.'s-hospital-testing-local-mode-status-'.bin2hex(random_bytes(8));
+        $this->beforeApplicationDestroyed(fn () => File::deleteDirectory($proofRoot));
         File::deleteDirectory($proofRoot);
         File::ensureDirectoryExists($proofRoot.'/frontend/dist/assets');
         File::put($proofRoot.'/frontend/dist/index.html', '<div id="root"></div>');

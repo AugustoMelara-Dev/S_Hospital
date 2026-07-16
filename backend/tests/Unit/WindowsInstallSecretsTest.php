@@ -61,4 +61,21 @@ class WindowsInstallSecretsTest extends TestCase
             );
         }
     }
+
+    public function test_ci_checks_backend_worktree_clean_immediately_after_phpunit(): void
+    {
+        $workflow = file_get_contents(base_path('../.github/workflows/ci.yml'));
+
+        $this->assertIsString($workflow);
+        $phpunit = strpos($workflow, '- name: Run PHPUnit');
+        $cleanGate = strpos($workflow, '- name: Assert backend tests leave worktree clean');
+        $pint = strpos($workflow, '- name: Run Pint code style');
+
+        $this->assertNotFalse($phpunit);
+        $this->assertNotFalse($cleanGate);
+        $this->assertNotFalse($pint);
+        $this->assertGreaterThan($phpunit, $cleanGate);
+        $this->assertLessThan($pint, $cleanGate);
+        $this->assertStringContainsString('git status --porcelain --untracked-files=all', $workflow);
+    }
 }
