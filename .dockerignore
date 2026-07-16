@@ -28,6 +28,7 @@ backend/.phpunit.result.cache
 
 frontend/node_modules
 frontend/dist
+frontend/package-lock.json
 frontend/test-results
 frontend/playwright-report
 frontend/debug.log

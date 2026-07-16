@@ -73,6 +73,10 @@ powershell.exe -ExecutionPolicy Bypass -File scripts\security\run-security-check
 
 - CI installs the frontend from `frontend/pnpm-lock.yaml`; the custom guard now
   validates package names and denied versions in pnpm v9 package keys.
+- The production Docker frontend stage uses the same frozen pnpm lock and pinned
+  pnpm version as CI. `frontend/package-lock.json` is excluded from the Docker
+  context so it cannot resolve a different production dependency graph or
+  invalidate the build cache.
 - `frontend/pnpm-workspace.yaml` allows dependency build scripts only for
   `esbuild`; do not add packages without reviewing the exact script and need.
 - `backend/package-lock.json` exists so Laravel's Vite-side JavaScript dependencies cannot float silently on future installs.
