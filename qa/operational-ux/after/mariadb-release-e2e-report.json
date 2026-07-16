@@ -1,0 +1,33 @@
+{
+  "generated_at": "2026-07-16T17:19:27.287Z",
+  "base_url": "http://127.0.0.1:5173",
+  "api_base_url": "http://backend:8000",
+  "run_id": "719a81c6755847419acb237f85490660",
+  "release_stack": "docker-compose-mariadb",
+  "login": "cajero.e2e",
+  "service_query": "Glucosa",
+  "allow_mutations": true,
+  "database_driver": "mysql",
+  "expected_specs": [
+    "release gate cashier can issue, collect, show receipt, surface reports and close cash",
+    "administrator creates cashier user and navigation blocks administration modules"
+  ],
+  "results": [
+    {
+      "name": "release gate cashier can issue, collect, show receipt, surface reports and close cash",
+      "status": "passed",
+      "patient_name": "E2E Release Gate 1784222307168",
+      "invoice_number": "000-001-01-00000002",
+      "cash_session_id": 2,
+      "cash_session_status": "closed",
+      "console_issues": []
+    },
+    {
+      "name": "administrator creates cashier user and navigation blocks administration modules",
+      "status": "passed",
+      "username": "cajero-release-1784222367566",
+      "protected_users_status": 403,
+      "console_issues": []
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 # Comparación visual canónica: antes y después
 
-Fecha de regeneración y revisión: 15 de julio de 2026.
+Fecha de regeneración y revisión: 16 de julio de 2026.
 
 Las doce imágenes `before/originals` son copias inalteradas de las capturas
 entregadas por el usuario. Las doce imágenes `after/canonical` fueron generadas
@@ -27,25 +27,72 @@ La revisión visual fue manual y a imagen completa, no solamente por snapshots.
 | 11 | [`11-catalog-grid.png`](before/originals/11-catalog-grid.png) | [`11-catalog-grid.png`](after/canonical/11-catalog-grid.png) | Antes, el grid tenía scroll interno y paginación separada del contenido. Después, la búsqueda “hemo” conserva filtros, devuelve una fila distinguible y mantiene una sola paginación debajo de la tabla, sin overflow horizontal de documento. |
 | 12 | [`12-settings.png`](before/originals/12-settings.png) | [`12-settings.png`](after/canonical/12-settings.png) | Antes, “Configuración” se repetía como título de shell y página, y seis valores fiscales se convertían en tarjetas grandes. Después, la ruta queda como contexto secundario, “Configuración hospitalaria” es el único H1, los tabs son compactos y los seis datos usan una definición tabular de una sola superficie. |
 
+## Evidencia complementaria posterior a las capturas
+
+Esta sección no agrega, reemplaza ni vuelve a interpretar ninguna de las doce
+parejas `before/after`.
+
+- El recibo institucional Laravel ahora desglosa cada pago mixto con fecha,
+  método, monto, referencia y cajero. La cabecera muestra `Pagos mixtos (n)` en
+  vez de asociar el total de la factura al último método.
+- La vista compatible sin recibo autorizado se identifica dentro del área
+  imprimible como `COMPROBANTE HISTÓRICO DE FACTURA` y `No institucional`, usa
+  `Factura No.` y declara que no asigna correlativo de recibo.
+- El snapshot y el HTML autorizado cubren CAI, rango y fecha límite de emisión;
+  el bloque se omite si no hay datos fiscales. Su disposición compacta conserva
+  los conteos de la matriz de seis tamaños y 30 PDF documentada en
+  [`after/receipt-matrix/manifest.md`](after/receipt-matrix/manifest.md).
+- El ciclo TDD dejó RED reproducible para pagos mixtos, vigencia fiscal,
+  etiquetado histórico, fechas de pagos y paginación de media carta. El GREEN
+  final fue **31 pruebas Laravel/1,323 aserciones** en Docker y **18 pruebas
+  Vitest**; los comandos, tiempos y fallos exactos están en
+  [`completion-matrix.md`](completion-matrix.md).
+- El contador de arqueo usa L1, L2, L5, L10, L20, L50, L100, L200 y L500,
+  conforme a la familia descrita por el
+  [Boletín No. 66/2019 del BCH](https://www.bch.hn/administrativas/RI/Enlaces%20Comunicados%20FMI%20%20ES/Bolet%C3%ADn%20de%20prensa%20no%2066%20Directorio%20del%20Banco%20Central%20de%20Honduras%20aprueba%20emisi%C3%B3n%20de%20billete%20de%20doscientos%20lempiras%20%28L200.00%29.pdf).
+  `Monedas y otros` queda separado porque esa fuente enumera billetes, no
+  monedas.
+- El cierre conserva el desglose contado y lo incluye en auditoría. El ciclo
+  backend comenzó con **2 RED** —desglose inconsistente aceptado con HTTP 200 y
+  desglose válido no persistido— y terminó con **5 pruebas/18 aserciones** en
+  `CloseCashSessionDifferenceTest`.
+- `migrate:fresh --seed --force` pasó completo sobre MariaDB 11 e incluyó
+  `2026_07_15_000001_add_closing_breakdown_to_cash_register_sessions_table.php`.
+  La captura complementaria
+  [`cashbox-denominations-1366.png`](after/cashbox-denominations-1366.png)
+  documenta el arqueo real antes del cierre, con desglose, diferencia L 0.00 y
+  conciliación lista.
+- La evidencia frontend posterior ya tiene gate global: **147 archivos y
+  1,127 pruebas Vitest**, además de **3/3** E2E de caja mock y el gate real de
+  factura, cobro, recibo, reporte y cierre sobre MariaDB. Estos resultados no
+  cambian ni reinterpretan las doce capturas canónicas.
+- El gate release también verificó RBAC: un administrador creó un cajero, el
+  usuario cambió su contraseña obligatoria y la navegación ocultó módulos sin
+  permiso. El resultado estructurado se conserva en
+  [`after/mariadb-release-e2e-report.json`](after/mariadb-release-e2e-report.json).
+
 ## Integridad de las capturas after
 
 | Archivo | Dimensiones | SHA-256 |
 |---|---:|---|
-| `01-login.png` | 1917×1018 | `0cc354e5e0b0382eadfbfd34004448d9c6385ffcb3889f9a360f50063bc991b3` |
-| `02-dashboard.png` | 1917×1027 | `cb2acf762ec2846fc8076266dd0a0a5fc83fa348f260fe47039dcfd1713c88b8` |
-| `03-billing-empty.png` | 1917×1027 | `267afbb405b3e11c146d1c47b4eb1e123110226542f2cc89295c2ceab2b0e4d5` |
-| `04-billing-results.png` | 1917×1027 | `24d39192563110dda1c5a490b02b87304f6342c83897f99705d6f68bb1a9f158` |
-| `05-billing-cart.png` | 672×921 | `af80870bf9aced9e8052f77d3627e2ccb14d173fcd74b6859295df1ef77b43d4` |
-| `06-cashbox-summary.png` | 1917×1032 | `644f6226928c8065c804ed68e551c133f3f0272a37dc64d41ae5e52abc2f40d0` |
-| `07-cashbox-movements.png` | 1917×1027 | `a6a75b647965e761a851b01cad21a64f39dcda16e5656b31be60dbc263455d7c` |
-| `08-cashbox-close.png` | 1917×1028 | `804389594f161a486984b2f16d4e23efe075fba294778fd90d43130183faadf5` |
-| `09-history.png` | 1917×1026 | `897b674ba338f3e23aa8fa302a7f979b61b0f5c0012dd85a3e30ae3d60b3b9dc` |
-| `10-catalog-intro.png` | 1917×1033 | `5cc2e5e8ce965ad27361560eb093ec2eb181460d991858f75f18ab62d80028f3` |
-| `11-catalog-grid.png` | 1917×1027 | `3411ed19fa1261f143ae577661d5dc376c8e2b072964cfeb6e19d04953d3207c` |
-| `12-settings.png` | 1917×1018 | `03deb64c62e401ccba180d87ee29f697d337d567c075c7ea35dc4c22a8a2c786` |
+| `01-login.png` | 1917×1018 | `98b0e61bd7b4e714e1696b5410c24589aa9ae7a7a3b1543bd1039632a3e6a428` |
+| `02-dashboard.png` | 1917×1027 | `26ed35173ba1c5e9098d2cedfdbbedf472e65c7112c0e2e180355b1211ef2f4c` |
+| `03-billing-empty.png` | 1917×1027 | `43eb8f63b173d34ab748612da9176a8d01a3d23d9f0963a19fa57ec084696571` |
+| `04-billing-results.png` | 1917×1027 | `7ceba542c08b1621b411f6643451f0186606b80e0a8f8d3e64d54542f324187d` |
+| `05-billing-cart.png` | 672×921 | `ed3e4e8728c2a84caeefc7d3434677451d51b4bcf460ce229eb3ac265666242a` |
+| `06-cashbox-summary.png` | 1917×1032 | `b4e35341c17a9070474d3ad32b288263e99c19eae5f71647c6bf23bc8038685f` |
+| `07-cashbox-movements.png` | 1917×1027 | `2679b2d2cb26e3101a5dfdece4e787643b592af4c1c29c981d11c828450d413a` |
+| `08-cashbox-close.png` | 1917×1028 | `5b0a763320c4a4edbf45decd67a5e8d1e42d3e0d062459f4a9d82467e8661cb5` |
+| `09-history.png` | 1917×1026 | `58219828f31542c69494573ff5ede4b69406a18ec083fa8005e1fa7b628938ae` |
+| `10-catalog-intro.png` | 1917×1033 | `009c4e13a386e3f1a21e1905519bf690a487892c5479c544093db2ab10f97cd9` |
+| `11-catalog-grid.png` | 1917×1027 | `fe96bb0bd85a6acdd84d7d1ebcd08ba2214eb0af36151964122f1a9a0030c3a8` |
+| `12-settings.png` | 1917×1018 | `bac0f8ed0ec11f00b0baa8b0738cd46f73002ff0ab2896ba272f24a6251d7c52` |
 
 ## Alcance de esta evidencia
 
-Las capturas usan API mockeada y Chromium; demuestran composición y estado
-operativo determinista, no sustituyen una prueba contra Laravel/MySQL en LAN,
-una impresora física ni una revisión de los PDF generados.
+Las doce parejas canónicas usan API mockeada y Chromium; por sí solas
+demuestran composición y estado operativo determinista. La corrida release
+separada sí valida el flujo de un cliente real contra Laravel/MariaDB local,
+pero no una prueba simultánea desde varias computadoras de la LAN ni una
+impresora física. La migración, el gate real y la revisión PDF quedan
+delimitados como evidencias independientes.
