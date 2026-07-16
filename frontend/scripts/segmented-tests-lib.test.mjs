@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { resolve } from 'node:path';
 
@@ -6,6 +7,7 @@ import {
   SEGMENTS,
   aggregateVitestReports,
   assignFilesToSegments,
+  buildVitestArgs,
   discoverVitestFiles,
 } from './segmented-tests-lib.mjs';
 
@@ -77,4 +79,32 @@ test('aggregation counts assertions and files without trusting Vitest suite tota
   assert.equal(summary.durationMs, 50);
   assert.deepEqual(summary.passedFiles, ['src/a.test.ts']);
   assert.deepEqual(summary.failedFiles, ['src/b.test.ts']);
+});
+
+test('Vitest arguments use two isolated workers with file parallelism', () => {
+  const args = buildVitestArgs(
+    'C:/repo/node_modules/vitest/vitest.mjs',
+    ['src/a.test.ts', 'src/b.test.tsx'],
+    'C:/repo/test-results/segment.json',
+  );
+
+  assert.deepEqual(args.slice(0, 4), [
+    'C:/repo/node_modules/vitest/vitest.mjs',
+    'run',
+    'src/a.test.ts',
+    'src/b.test.tsx',
+  ]);
+  assert.ok(args.includes('--reporter=json'));
+  assert.ok(args.includes('--outputFile=C:/repo/test-results/segment.json'));
+  assert.ok(args.includes('--pool=forks'));
+  assert.ok(args.includes('--maxWorkers=2'));
+  assert.ok(args.includes('--fileParallelism'));
+  assert.ok(args.includes('--testTimeout=30000'));
+  assert.ok(!args.includes('--no-file-parallelism'));
+});
+
+test('the Windows full-suite command delegates to the maintained segmented runner', () => {
+  const packageJson = JSON.parse(readFileSync(resolve(frontendDir, 'package.json'), 'utf8'));
+
+  assert.equal(packageJson.scripts['test:full:windows'], 'npm run test:segmented');
 });

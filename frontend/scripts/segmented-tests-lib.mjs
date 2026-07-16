@@ -96,6 +96,20 @@ export function aggregateVitestReports(results) {
   };
 }
 
+export function buildVitestArgs(vitestCli, files, outputPath) {
+  return [
+    vitestCli,
+    'run',
+    ...files,
+    '--reporter=json',
+    `--outputFile=${outputPath}`,
+    '--pool=forks',
+    '--maxWorkers=2',
+    '--fileParallelism',
+    '--testTimeout=30000',
+  ];
+}
+
 function walk(directory, files) {
   for (const entry of readdirSync(directory, { withFileTypes: true })) {
     const path = resolve(directory, entry.name);

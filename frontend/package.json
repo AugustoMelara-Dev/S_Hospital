@@ -21,7 +21,7 @@
     "test:coverage": "vitest run --coverage --coverage.provider=v8 --coverage.reporter=text --coverage.reporter=json-summary --coverage.reporter=html --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000",
     "test:coverage:check": "vitest run --coverage --coverage.provider=v8 --coverage.reporter=text --coverage.thresholds.lines=65 --coverage.thresholds.functions=60 --coverage.thresholds.branches=60 --coverage.thresholds.statements=65 --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000",
     "test:critical": "vitest run NewInvoiceView PaymentModal ReceiptPreview InvoiceHistoryView BackupsView ReportsView DashboardView UsersView --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000",
-    "test:full:windows": "vitest run --pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=30000",
+    "test:full:windows": "npm run test:segmented",
     "smoke:buttons": "playwright test e2e/all-buttons-smoke.spec.ts",
     "build": "tsc --noEmit && vite build",
     "e2e": "npm run test:e2e",

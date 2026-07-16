@@ -30,6 +30,28 @@ Caja abre en Resumen y sólo enfoca el cierre cuando la persona entra a esa vist
 | `npm run build` | PASS; 3,974 módulos; sin warning `@theme` |
 | `npm run analyze:bundle` | PASS; 328.6 KiB gzip inicial; 1,053.5 KiB gzip total |
 
+## Optimización del runner Windows (2026-07-16)
+
+La regresión completa conserva los 12 segmentos y el aislamiento con `forks`,
+pero procesa hasta dos archivos en paralelo dentro de cada segmento. El comando
+`test:full:windows` delega en `test:segmented`, por lo que existe una sola ruta
+mantenida para la suite completa.
+
+| Evidencia | Resultado exacto |
+|---|---|
+| prueba nativa del runner | 5/5 tests; incluye manifiesto, agregación, flags y alias |
+| RED observado | import de `buildVitestArgs` inexistente; exit 1 antes de implementar |
+| `npm run test:segmented` | 138/138 archivos; 1083/1083 tests; 12/12 segmentos; 0 omitidos; 0 duplicados; 0 sin reporte; 742.7 s |
+| comparación | 60.8 % menos tiempo que 1,896.3 s, aun con 3 archivos y 79 tests adicionales |
+| `npm run typecheck` / `npm run lint` | PASS / PASS |
+| `npm run build` | PASS; 3,979 módulos; 3.36 s |
+| `npm run budget:bundle` | PASS; 326.7 KiB gzip inicial; 1,061.8 KiB gzip total |
+
+Se descartó `threads` con un worker porque `billing` empeoró de 294.7 s a
+363.4 s (+23.3 %). También se descartaron cuatro workers: el beneficio no está
+respaldado por una medición de memoria/estabilidad y duplicaría la concurrencia
+en los equipos Windows que motivaron la segmentación.
+
 ## QA, impresión y bundle
 
 - Axe: minor 0, moderate 0, serious 0, critical 0; 191 nodos incomplete clasificados; 0 sin clasificar.

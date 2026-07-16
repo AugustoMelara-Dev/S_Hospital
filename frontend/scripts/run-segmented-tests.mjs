@@ -7,6 +7,7 @@ import {
   SEGMENTS,
   aggregateVitestReports,
   assignFilesToSegments,
+  buildVitestArgs,
   discoverVitestFiles,
 } from './segmented-tests-lib.mjs';
 
@@ -39,17 +40,7 @@ for (const segment of SEGMENTS) {
   }
 
   const outputPath = resolve(resultsDir, `${segment.name}.json`);
-  const args = [
-    vitestCli,
-    'run',
-    ...files,
-    '--reporter=json',
-    `--outputFile=${outputPath}`,
-    '--pool=forks',
-    '--maxWorkers=1',
-    '--no-file-parallelism',
-    '--testTimeout=30000',
-  ];
+  const args = buildVitestArgs(vitestCli, files, outputPath);
   const segmentStartedAt = Date.now();
   console.log(`\n[segmento ${segment.name}] ${files.length} archivos`);
   const execution = spawnSync(process.execPath, args, {
