@@ -196,6 +196,10 @@ jobs:
         working-directory: frontend
         run: pnpm install --frozen-lockfile
 
+      - name: Audit frontend dependencies
+        working-directory: frontend
+        run: pnpm audit --audit-level high
+
       - name: TypeScript typecheck
         working-directory: frontend
         run: pnpm run typecheck
@@ -211,6 +215,10 @@ jobs:
       - name: Build
         working-directory: frontend
         run: pnpm run build
+
+      - name: Enforce bundle budget
+        working-directory: frontend
+        run: pnpm run budget:bundle
 
   e2e-mocked:
     name: E2E (mocked Playwright)

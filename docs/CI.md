@@ -11,7 +11,7 @@ Four jobs run in parallel where possible:
 |---|---|---|---|
 | `backend-sqlite` | PHPUnit + Pint + PHPStan + PowerShell tests | SQLite in-memory | 20 min |
 | `backend-mariadb` | Full PHPUnit suite against a real MariaDB 11.4 service container | MariaDB 11.4 | 30 min |
-| `frontend` | `npm run typecheck`, `npm run lint`, Vitest, Vite build | n/a | 20 min |
+| `frontend` | pnpm frozen install + audit, typecheck, ESLint, Vitest, Vite build + bundle budget | n/a | 20 min |
 | `e2e-mocked` | Playwright production-readiness spec (route-mocked) | n/a | 25 min |
 
 Concurrency is collapsed per ref so a push to a feature branch
@@ -43,16 +43,18 @@ docker compose exec backend composer audit --no-interaction
 docker compose exec backend php artisan test
 docker compose exec backend vendor/bin/pint --test
 docker compose exec backend vendor/bin/phpstan analyse --memory-limit=1G
+docker compose exec frontend npm audit --audit-level=high
 docker compose exec frontend npm run typecheck
 docker compose exec frontend npm run lint
 docker compose exec frontend npm run test:critical
 docker compose exec frontend npm run build
+docker compose exec frontend npm run budget:bundle
 ```
 
 For Playwright, prefer the divided critical specs documented in
 `docs/testing-report.md` when the full historical matrix times out in Docker.
 
-## Secrets in CI
+## Secrets and dependency audits in CI
 
 The CI workflow does not hardcode production-like secrets:
 
@@ -62,6 +64,10 @@ The CI workflow does not hardcode production-like secrets:
   non-production fallback strings used only inside the ephemeral service
   container.
 - `composer audit --no-interaction` runs in both backend jobs before tests.
+- `pnpm audit --audit-level high` runs after the frozen frontend install and
+  blocks known high or critical advisories before typecheck and tests.
+- `pnpm run budget:bundle` checks the already-built production assets and
+  blocks growth beyond the versioned startup and total gzip limits.
 
 No real production credentials are referenced.
 

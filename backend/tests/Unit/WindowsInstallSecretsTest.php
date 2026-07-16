@@ -78,4 +78,32 @@ class WindowsInstallSecretsTest extends TestCase
         $this->assertLessThan($pint, $cleanGate);
         $this->assertStringContainsString('git status --porcelain --untracked-files=all', $workflow);
     }
+
+    public function test_ci_audits_frontend_dependencies_and_enforces_bundle_budget_in_order(): void
+    {
+        $workflow = file_get_contents(base_path('../.github/workflows/ci.yml'));
+
+        $this->assertIsString($workflow);
+        $matched = preg_match('/^  frontend:\R(?<job>.*?)(?=^  e2e-mocked:)/ms', $workflow, $matches);
+
+        $this->assertSame(1, $matched);
+        $frontendJob = $matches['job'];
+        $install = strpos($frontendJob, '- name: Install frontend dependencies');
+        $audit = strpos($frontendJob, '- name: Audit frontend dependencies');
+        $typecheck = strpos($frontendJob, '- name: TypeScript typecheck');
+        $build = strpos($frontendJob, '- name: Build');
+        $budget = strpos($frontendJob, '- name: Enforce bundle budget');
+
+        $this->assertNotFalse($install);
+        $this->assertNotFalse($audit);
+        $this->assertNotFalse($typecheck);
+        $this->assertNotFalse($build);
+        $this->assertNotFalse($budget);
+        $this->assertGreaterThan($install, $audit);
+        $this->assertGreaterThan($audit, $typecheck);
+        $this->assertGreaterThan($build, $budget);
+        $this->assertStringContainsString('pnpm audit --audit-level high', $frontendJob);
+        $this->assertStringContainsString('pnpm run budget:bundle', $frontendJob);
+        $this->assertStringNotContainsString('--ignore-registry-errors', $frontendJob);
+    }
 }
