@@ -1,5 +1,5 @@
 import { MinusOutlined as Minus, PlusOutlined as Plus, DeleteOutlined as Trash2 } from '@ant-design/icons';
-import { Alert, Button, Checkbox, Input, List, Tag } from 'antd';
+import { Alert, Button, Checkbox, Input, Table, Tag, type TableColumnsType } from 'antd';
 import { useRef } from 'react';
 import { formatLempirasUIFromCents, parseCents } from '../../../lib/moneyCents';
 
@@ -65,6 +65,93 @@ export function InvoiceCart({
   const dialysisPrescription = canMarkDialysisPrescription && items.some(
     (item) => item.dialysisPrescription && item.service.special_rule_code === ERYTHROPOIETIN_RULE,
   );
+  const columns: TableColumnsType<CartItem> = [
+    {
+      title: 'Servicio',
+      key: 'service',
+      rowScope: 'row',
+      render: (_value, item) => {
+        const isFree = dialysisPrescription && item.service.special_rule_code === ERYTHROPOIETIN_RULE;
+        return (
+          <div className="min-w-0">
+            <p className="break-words text-sm font-semibold leading-tight">{item.service.name}</p>
+            <div className="mt-1 flex flex-wrap items-center gap-1.5">
+              <Tag className="m-0 px-1.5 py-0.5 text-xs">{item.service.category?.name ?? 'Sin categoría'}</Tag>
+              {item.service.area?.name && item.service.area.name.trim().toLocaleLowerCase('es') !== (item.service.category?.name ?? '').trim().toLocaleLowerCase('es') ? (
+                <Tag className="m-0 px-1.5 py-0.5 text-xs">{item.service.area.name}</Tag>
+              ) : null}
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Precio registrado: <span className="font-mono tabular-nums">{moneyLabel(item.service.price)}</span>{' '}
+              {isFree ? <span className="font-semibold text-success">(Gratis - receta diálisis)</span> : null}
+            </p>
+          </div>
+        );
+      },
+    },
+    {
+      title: 'Cantidad',
+      key: 'quantity',
+      width: 176,
+      render: (_value, item, index) => (
+        <div className="flex items-center gap-1">
+          <Button
+            type="default"
+            className="size-11 p-0 sm:size-9"
+            onClick={() => onUpdateQuantity(index, formatQuantity(Math.max(100, parseQuantityUnits(item.quantity) - 100)))}
+            aria-label={`Disminuir cantidad de ${item.service.name}`}
+            icon={<Minus className="size-3" aria-hidden="true" />}
+          />
+          <Input
+            value={item.quantity}
+            onChange={(event) => onUpdateQuantity(index, event.target.value)}
+            className="h-11 min-w-16 px-1 text-center font-mono text-sm tabular-nums sm:h-9"
+            inputMode="decimal"
+            name={`quantity-${item.service.id}`}
+            aria-label={`Cantidad de ${item.service.name}`}
+          />
+          <Button
+            type="default"
+            className="size-11 p-0 sm:size-9"
+            onClick={() => onUpdateQuantity(index, formatQuantity(parseQuantityUnits(item.quantity) + 100))}
+            aria-label={`Aumentar cantidad de ${item.service.name}`}
+            icon={<Plus className="size-3" aria-hidden="true" />}
+          />
+        </div>
+      ),
+    },
+    {
+      title: 'Importe',
+      key: 'amount',
+      align: 'right',
+      width: 112,
+      render: (_value, item) => {
+        const isFree = dialysisPrescription && item.service.special_rule_code === ERYTHROPOIETIN_RULE;
+        const estimatedLineTotal = isFree ? 0 : lineTotalCents(item.service.price, item.quantity);
+        return (
+          <span>
+            <span className="mr-2 text-xs font-semibold text-muted-foreground sm:sr-only">Importe</span>
+            <span className="font-mono text-sm font-semibold tabular-nums">{formatLempirasUIFromCents(estimatedLineTotal)}</span>
+          </span>
+        );
+      },
+    },
+    {
+      title: <span className="sr-only">Acciones</span>,
+      key: 'actions',
+      align: 'right',
+      width: 64,
+      render: (_value, item, index) => (
+        <Button
+          type="text"
+          onClick={() => onRemoveItem(index)}
+          className="size-11 p-0 text-muted-foreground hover:text-destructive sm:size-9"
+          aria-label={`Quitar ${item.service.name}`}
+          icon={<Trash2 className="size-4" aria-hidden="true" />}
+        />
+      ),
+    },
+  ];
 
   return (
     <section className="flex h-full min-h-0 min-w-0 flex-col" aria-labelledby="invoice-cart-title" aria-busy={submitting ? 'true' : undefined}>
@@ -105,94 +192,16 @@ export function InvoiceCart({
             <p className="mt-1 max-w-56 text-xs">Busque por nombre, area o categoria para comenzar.</p>
           </div>
         ) : (
-          <div role="table" aria-label="Cuenta actual">
-            <List
-              className="w-full border border-operational-border"
-              dataSource={items}
-              header={(
-              <div role="row" className="sr-only grid-cols-12 bg-muted text-left text-xs uppercase tracking-wide text-muted-foreground sm:grid">
-                <span role="columnheader" className="col-span-7 p-2 font-semibold">Servicio</span>
-                <span role="columnheader" className="col-span-2 p-2 font-semibold">Cantidad</span>
-                <span role="columnheader" className="col-span-2 p-2 text-right font-semibold">Importe</span>
-                <span role="columnheader" className="col-span-1 p-2"><span className="sr-only">Acciones</span></span>
-              </div>
-              )}
-              renderItem={(item, index) => {
-              const isErythropoietin = item.service.special_rule_code === ERYTHROPOIETIN_RULE;
-              const isFree = dialysisPrescription && isErythropoietin;
-              const estimatedLineTotal = isFree ? 0 : lineTotalCents(item.service.price, item.quantity);
-
-              return (
-                <List.Item
-                  role="row"
-                  key={`${item.service.id}-${index}`}
-                  className="grid grid-cols-1 bg-card p-3 sm:grid-cols-12 sm:items-start sm:p-0"
-                >
-                  <div role="rowheader" className="min-w-0 pb-2 sm:col-span-7 sm:p-2">
-                    <div className="min-w-0">
-                      <p className="break-words text-sm font-semibold leading-tight">{item.service.name}</p>
-                      <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                        <Tag className="m-0 px-1.5 py-0.5 text-xs">
-                          {item.service.category?.name ?? 'Sin categoría'}
-                        </Tag>
-                        {item.service.area?.name && item.service.area.name.trim().toLocaleLowerCase('es') !== (item.service.category?.name ?? '').trim().toLocaleLowerCase('es') ? (
-                          <Tag className="m-0 px-1.5 py-0.5 text-xs">
-                            {item.service.area.name}
-                          </Tag>
-                        ) : null}
-                      </div>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        Precio registrado: <span className="font-mono tabular-nums">{moneyLabel(item.service.price)}</span>{' '}
-                        {isFree && <span className="font-semibold text-success">(Gratis - receta diálisis)</span>}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div role="cell" className="py-2 sm:col-span-2 sm:p-2">
-                    <span className="mb-1 block text-xs font-semibold text-muted-foreground sm:sr-only">Cantidad</span>
-                    <div className="flex items-center gap-1">
-                    <Button
-                      type="default"
-                      className="size-11 p-0 sm:size-9"
-                      onClick={() => onUpdateQuantity(index, formatQuantity(Math.max(100, parseQuantityUnits(item.quantity) - 100)))}
-                      aria-label={`Disminuir cantidad de ${item.service.name}`}
-                      icon={<Minus className="size-3" aria-hidden="true" />}
-                    />
-                    <Input
-                      value={item.quantity}
-                      onChange={(e) => onUpdateQuantity(index, e.target.value)}
-                      className="h-11 min-w-0 flex-1 px-1 text-center font-mono text-sm tabular-nums sm:h-9 sm:w-14 sm:flex-none"
-                      inputMode="decimal"
-                      name={`quantity-${item.service.id}`}
-                      aria-label={`Cantidad de ${item.service.name}`}
-                    />
-                    <Button
-                      type="default"
-                      className="size-11 p-0 sm:size-9"
-                      onClick={() => onUpdateQuantity(index, formatQuantity(parseQuantityUnits(item.quantity) + 100))}
-                      aria-label={`Aumentar cantidad de ${item.service.name}`}
-                      icon={<Plus className="size-3" aria-hidden="true" />}
-                    />
-                    </div>
-                  </div>
-                  <div role="cell" className="py-2 text-right sm:col-span-2 sm:p-2">
-                    <span className="mr-2 text-xs font-semibold text-muted-foreground sm:sr-only">Importe</span>
-                    <span className="font-mono text-sm font-semibold tabular-nums">{formatLempirasUIFromCents(estimatedLineTotal)}</span>
-                  </div>
-                  <div role="cell" className="pt-1 text-right sm:col-span-1 sm:p-2">
-                    <Button
-                      type="text"
-                      onClick={() => onRemoveItem(index)}
-                      className="size-11 p-0 text-muted-foreground hover:text-destructive sm:size-9"
-                      aria-label={`Quitar ${item.service.name}`}
-                      icon={<Trash2 className="size-4" aria-hidden="true" />}
-                    />
-                  </div>
-                </List.Item>
-              );
-              }}
-            />
-          </div>
+          <Table<CartItem>
+            aria-label="Cuenta actual"
+            className="w-full border border-operational-border"
+            columns={columns}
+            dataSource={items}
+            pagination={false}
+            rowKey={(item) => String(item.service.id)}
+            scroll={{ x: 720 }}
+            size="small"
+          />
         )}
       </div>
 
