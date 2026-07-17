@@ -19,6 +19,11 @@ The two backend jobs and frontend depend on `supply-chain`, then run in parallel
 Concurrency is collapsed per ref so a push to a feature branch cancels any
 previous in-flight run for the same branch.
 
+Every external action is pinned to its reviewed 40-character commit SHA; the
+release version remains beside it as a maintenance comment. Dependabot checks
+the `github-actions` ecosystem weekly so updates arrive as reviewable changes
+instead of silently moving the code executed by CI.
+
 PHP extensions installed in CI: `intl, mbstring, pdo_mysql,
 pdo_sqlite, zip, gd, bcmath, opcache` (bcmath was added in
 [FASE A4](#fase-a4)).

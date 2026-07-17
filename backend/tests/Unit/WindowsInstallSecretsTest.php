@@ -201,6 +201,48 @@ class WindowsInstallSecretsTest extends TestCase
         }
     }
 
+    public function test_ci_pins_every_external_action_to_a_reviewed_commit(): void
+    {
+        $workflow = file_get_contents(base_path('../.github/workflows/ci.yml'));
+
+        $this->assertIsString($workflow);
+        $matched = preg_match_all(
+            '/^\s*-?\s*uses:\s+(?<action>[^@\s]+)@(?<ref>[^\s#]+)(?:\s+#\s*(?<version>\S+))?/m',
+            $workflow,
+            $actions,
+            PREG_SET_ORDER,
+        );
+
+        $this->assertIsInt($matched);
+        $this->assertGreaterThan(0, $matched);
+
+        foreach ($actions as $action) {
+            $this->assertMatchesRegularExpression(
+                '/^[a-f0-9]{40}$/',
+                $action['ref'],
+                "{$action['action']} must be pinned to a full commit SHA.",
+            );
+            $this->assertMatchesRegularExpression(
+                '/^(?:v)?\d+(?:\.\d+){2}$/',
+                $action['version'] ?? '',
+                "{$action['action']} must retain its reviewed release in a comment.",
+            );
+        }
+    }
+
+    public function test_dependabot_reviews_pinned_github_actions_weekly(): void
+    {
+        $configPath = base_path('../.github/dependabot.yml');
+
+        $this->assertFileExists($configPath);
+        $config = file_get_contents($configPath);
+
+        $this->assertIsString($config);
+        $this->assertStringContainsString('package-ecosystem: github-actions', $config);
+        $this->assertStringContainsString('directory: "/"', $config);
+        $this->assertStringContainsString('interval: weekly', $config);
+    }
+
     private function frontendCiJob(): string
     {
         return $this->ciJob('frontend', 'e2e-mocked');
