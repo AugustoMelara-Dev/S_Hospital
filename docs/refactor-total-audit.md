@@ -10464,3 +10464,24 @@ Dos definiciones identicas del estado de instalacion podian divergir ante un cam
 ### Decision
 
 La medicion estricta encontro solo dos residuos mecanicos, por lo que activar las reglas no exige excepciones ni una migracion gradual. El beneficio principal no es el tamano del bundle, donde el tree-shaking ya retiraba esos imports, sino prevenir nueva superficie muerta durante el desarrollo.
+
+## 445. Fase PHPStan 6 - Contratos del usuario
+
+### Cambios
+
+- `User::serviceArea()` declara su retorno nativo y los modelos participantes de la relacion `BelongsTo`.
+- Las sobrescrituras `hasPermissionTo()` y `checkPermissionTo()` documentan el mismo dominio aceptado por Spatie: nombre, id, contrato de permiso o enum respaldado, con guard opcional.
+- Se conservan las firmas PHP sin estrechar parametros heredados, evitando romper compatibilidad con el trait de permisos.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 6 sobre `User` | OK: 0 errores. |
+| Pint sobre `User` | OK. |
+| Auth, roles y gestion de usuarios | OK: 77 tests, 350 assertions. |
+| Inventario PHPStan nivel 6 global | Baja de 213 a 208 hallazgos. |
+
+### Decision
+
+Los tipos agregados describen contratos reales del framework y del paquete de permisos; no son supresiones. Esto permite que el analizador siga el modelo relacionado y valide cada uso de permisos sin cambiar autorizacion ni comportamiento en ejecucion.

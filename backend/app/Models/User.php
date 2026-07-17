@@ -3,13 +3,16 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use BackedEnum;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
 use Laravel\Sanctum\HasApiTokens;
 use LogicException;
+use Spatie\Permission\Contracts\Permission;
 use Spatie\Permission\Exceptions\PermissionDoesNotExist;
 use Spatie\Permission\Traits\HasRoles;
 
@@ -86,11 +89,18 @@ class User extends Authenticatable
         ];
     }
 
-    public function serviceArea()
+    /**
+     * @return BelongsTo<ServiceArea, $this>
+     */
+    public function serviceArea(): BelongsTo
     {
         return $this->belongsTo(ServiceArea::class, 'service_area_id');
     }
 
+    /**
+     * @param  string|int|Permission|BackedEnum  $permission
+     * @param  string|null  $guardName
+     */
     public function hasPermissionTo($permission, $guardName = null): bool
     {
         if ($this->usesExactDirectPermissionMap()) {
@@ -102,6 +112,10 @@ class User extends Authenticatable
         return $this->spatieHasPermissionTo($permission, $guardName);
     }
 
+    /**
+     * @param  string|int|Permission|BackedEnum  $permission
+     * @param  string|null  $guardName
+     */
     public function checkPermissionTo($permission, $guardName = null): bool
     {
         try {
