@@ -10246,3 +10246,26 @@ El flujo de registro de pagos tambien bloquea la factura. Contar despues de adqu
 ### Decision
 
 La ausencia temporal de configuracion es un estado valido durante una instalacion nueva, pero no requiere propagar `null` como tipo de objeto. `firstOrNew()` conserva los valores ausentes y evita escrituras implicitas, mientras permite que todo el snapshot se construya sobre un contrato estable y verificable.
+
+## 435. Fase Exportes Y Licencia - Identidad institucional opcional
+
+### Cambios
+
+- Los dos generadores Excel y `LicenseHelper` representan la ausencia de configuracion fiscal con `firstOrNew()`.
+- Nombre institucional y RTN se leen desde un objeto garantizado, conservando los fallbacks `Hospital General San Isidro` y `N/A` para una instalacion aun no configurada.
+- No se crea ni modifica ninguna fila de configuracion durante exportacion o validacion local.
+- Se retiran tres excepciones `nullsafe.neverNull`; el baseline PHPStan baja de 5 a 2 errores contabilizados.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan tras retirar solo las excepciones | RED: 3 errores en el acceso nullsafe al RTN. |
+| PHPStan completo despues | OK: 0 errores fuera del baseline. |
+| Licencia local y archivo firmado | OK: 8 tests, 25 assertions. |
+| Exportacion XLSX con agregados reales | OK: 1 test, 11 assertions. |
+| Pint focalizado | OK. |
+
+### Decision
+
+Estos consumidores solo necesitan una vista de lectura de la identidad institucional. Un modelo nuevo no persistido expresa mejor la ausencia que un objeto nullable, preserva los textos de respaldo y unifica el contrato ya comprobado en la creacion de facturas.

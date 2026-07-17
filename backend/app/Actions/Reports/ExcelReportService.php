@@ -40,9 +40,9 @@ class ExcelReportService
         // Remove default sheet
         $spreadsheet->removeSheetByIndex(0);
 
-        $settings = FiscalSetting::query()->first();
-        $hospitalName = HospitalName::display($settings?->hospital_name);
-        $hospitalRtn = $settings?->rtn ?? 'N/A';
+        $settings = FiscalSetting::query()->firstOrNew();
+        $hospitalName = HospitalName::display($settings->hospital_name);
+        $hospitalRtn = $settings->rtn ?? 'N/A';
 
         // Style presets
         $headerStyle = [

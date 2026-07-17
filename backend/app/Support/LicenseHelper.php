@@ -26,9 +26,9 @@ class LicenseHelper
 
     public static function checkLicense(): array
     {
-        $settings = FiscalSetting::query()->first();
-        $hospitalName = HospitalName::display($settings?->hospital_name);
-        $rtn = $settings?->rtn ?? 'N/A';
+        $settings = FiscalSetting::query()->firstOrNew();
+        $hospitalName = HospitalName::display($settings->hospital_name);
+        $rtn = $settings->rtn ?? 'N/A';
 
         $configured = (string) (function_exists('config') ? config('app.license_salt') : '');
 

@@ -5,21 +5,3 @@ parameters:
 			identifier: nullsafe.neverNull
 			count: 2
 			path: app/Actions/Billing/CalculateInvoiceTotalsAction.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>rtn" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Actions/Reports/ExcelReportService.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>rtn" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Actions/Reports/PremiumExcelExportService.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>rtn" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Support/LicenseHelper.php
