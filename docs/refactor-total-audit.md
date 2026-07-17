@@ -9625,3 +9625,26 @@ Playwright no encontro su Chromium empaquetado (`chromium_headless_shell-1223`).
 ### Decision
 
 Esta fase cierra los hallazgos demostrados del barrido frontend y del navegador sin declarar agotado el objetivo integral. Los siguientes ciclos deben volver a buscar evidencia accionable en dependencias, contratos operativos, observabilidad, base de datos y seguridad; una propuesta sin fallo, metrica o riesgo concreto se registra como descartada en vez de introducir complejidad especulativa.
+
+## 408. Fase Dependencias - Una sola cadena JavaScript
+
+### Cambios
+
+- Se elimina la cadena Vite heredada dentro de `backend/`: manifiesto Node, configuracion, entradas CSS/JS y la vista `welcome` sin rutas consumidoras.
+- `composer.json` deja de ofrecer scripts de plantilla que ejecutaban `npm`, `npx` o creaban `database.sqlite`.
+- Laravel conserva las vistas PHP vivas para recibos y mantenimiento, y sigue sirviendo exclusivamente el build React de `frontend/dist`.
+- El runbook de cadena de suministro declara una unica fuente de dependencias JavaScript y lock congelado en `frontend/`.
+- Un contrato arquitectonico impide reintroducir una segunda toolchain o bootstrap de SQLite en produccion.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `php artisan test tests/Unit/BackendFrontendBoundaryTest.php tests/Feature/ProductionSpaRouteTest.php` | OK: 8 tests, 117 assertions. |
+| `vendor/bin/pint --test tests/Unit/BackendFrontendBoundaryTest.php` | OK. |
+| `scripts/security/supply-chain-check.ps1 -SkipTemp` | OK: 0 hallazgos, 0 advertencias. |
+| `composer validate --strict --no-check-publish` en imagen local aislada y sin red | OK: `composer.json` valido. |
+
+### Decision
+
+El backend no compila una interfaz propia: todas las rutas de aplicacion resuelven la SPA React y el Docker de produccion construye `frontend/`. Mantener seis dependencias Node adicionales, scripts de desarrollo incompatibles y una plantilla con enlaces externos ampliaba superficie de suministro y confusion operativa sin aportar una ruta viva.

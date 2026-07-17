@@ -93,5 +93,5 @@ powershell.exe -ExecutionPolicy Bypass -File scripts\security\run-security-check
   `docker-compose.prod.yml`. The release builder pulls those immutable
   references, then saves the human-readable tags expected by the offline image
   loader; update the compose, builder and release contract together.
-- `backend/package-lock.json` exists so Laravel's Vite-side JavaScript dependencies cannot float silently on future installs.
+- `backend/` has no Node manifest or Vite build. Laravel serves the single React build from `frontend/dist`; keep JavaScript dependencies and their frozen pnpm lock in `frontend/` only.
 - Composer may not be available in every Windows shell; this guard reads `composer.lock` directly and does not require Composer for the IOC checks.
