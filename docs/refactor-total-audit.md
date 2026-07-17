@@ -12273,3 +12273,25 @@ Las credenciales no deben atravesar la frontera criptografica como `mixed`. Form
 ### Decision
 
 El snapshot del catalogo es evidencia historica y merece un contrato explicito. Construirlo desde el modelo evita perder tipos, elimina duplicacion accidental y conserva comparaciones exactas de precio y disponibilidad.
+
+## 526. Fase PHPStan 9 - Administracion de usuarios tipada
+
+### Cambios
+
+- Alta y edicion normalizan atributos, rol, estado y contrasena antes de entrar a transacciones.
+- Activacion y restablecimiento usan motivos string ya validados.
+- Roles y permisos se recolectan con helpers fail-closed desde strings y modelos `Permission`.
+- Asignacion, proteccion administrativa, mapa exacto y payloads dejan de depender de colecciones mixtas.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 9 sobre el controlador | OK: 0 errores. |
+| Pint sobre el controlador | OK. |
+| Usuarios, roles, permisos, activacion y contrasenas | OK: 57 tests, 261 assertions. |
+| Inventario PHPStan nivel 9 global | Baja de 664 a 649 hallazgos. |
+
+### Decision
+
+La administracion de identidades es una frontera de seguridad. Normalizar antes de la transaccion asegura que hashes, roles y permisos reciban dominios concretos, mientras los recolectores descartan estados imposibles sin ampliar acceso.

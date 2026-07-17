@@ -43,22 +43,25 @@ class UserController extends Controller
     {
         $validated = $request->validated();
         $actor = $this->authenticatedUser($request);
-        $this->assertCanAssignRole($actor, $validated['role']);
+        $role = $request->string('role')->toString();
+        $active = $request->boolean('active', true);
+        $attributes = [
+            'name' => $request->string('name')->toString(),
+            'email' => $request->string('email')->toString(),
+            'username' => $request->string('username')->toString(),
+            'password' => Hash::make($request->string('password')->toString()),
+            'active' => $active,
+            'must_change_password' => true,
+        ];
+        $this->assertCanAssignRole($actor, $role);
         $directPermissions = $this->directPermissionsFromRequest($request, $validated);
         $this->assertCanSyncDirectPermissions($actor, null, $directPermissions);
-        $this->assertActiveExactPermissionMapHasAccess($directPermissions, $validated['active'] ?? true);
+        $this->assertActiveExactPermissionMapHasAccess($directPermissions, $active);
 
-        $user = DB::transaction(function () use ($validated, $directPermissions, $auditLogger, $request, $actor): User {
-            $user = User::create([
-                'name' => $validated['name'],
-                'email' => $validated['email'],
-                'username' => $validated['username'],
-                'password' => Hash::make($validated['password']),
-                'active' => $validated['active'] ?? true,
-                'must_change_password' => true,
-            ]);
+        $user = DB::transaction(function () use ($attributes, $role, $directPermissions, $auditLogger, $request, $actor): User {
+            $user = User::create($attributes);
 
-            $user->assignRole($validated['role']);
+            $user->assignRole($role);
             if ($directPermissions !== null) {
                 $user->syncPermissions($this->directPermissionsForExactAccess($directPermissions));
             }
@@ -85,21 +88,23 @@ class UserController extends Controller
         $validated = $request->validated();
         $actor = $this->authenticatedUser($request);
         $oldValues = $this->auditPayload($user->load(['roles', 'permissions']));
-        $this->assertCanAssignRole($actor, $validated['role'], $user);
-        $this->assertProtectedUserCanChangeToRole($user, $validated['role']);
+        $role = $request->string('role')->toString();
+        $attributes = [
+            'name' => $request->string('name')->toString(),
+            'email' => $request->string('email')->toString(),
+            'username' => $request->string('username')->toString(),
+        ];
+        $this->assertCanAssignRole($actor, $role, $user);
+        $this->assertProtectedUserCanChangeToRole($user, $role);
         $directPermissions = $this->directPermissionsFromRequest($request, $validated);
         $this->assertCanSyncDirectPermissions($actor, $user, $directPermissions);
         $this->assertActiveExactPermissionMapHasAccess($directPermissions, $user->active);
 
-        DB::transaction(function () use ($user, $validated, $directPermissions, $auditLogger, $request, $oldValues, $actor): void {
-            $user->update([
-                'name' => $validated['name'],
-                'email' => $validated['email'],
-                'username' => $validated['username'],
-            ]);
+        DB::transaction(function () use ($user, $attributes, $role, $directPermissions, $auditLogger, $request, $oldValues, $actor): void {
+            $user->update($attributes);
 
-            if (! $user->hasRole($validated['role'])) {
-                $user->syncRoles([$validated['role']]);
+            if (! $user->hasRole($role)) {
+                $user->syncRoles([$role]);
             }
 
             if ($directPermissions !== null) {
@@ -128,7 +133,7 @@ class UserController extends Controller
         $actor = $this->authenticatedUser($request);
         $oldValues = $this->auditPayload($user->loadMissing(['roles', 'permissions']));
         $newActiveState = ! $user->active;
-        $reason = trim((string) $request->input('reason', ''));
+        $reason = $request->string('reason')->trim()->toString();
         if (! $newActiveState) {
             $this->assertProtectedUserCanBeDeactivated($user);
         }
@@ -170,13 +175,14 @@ class UserController extends Controller
 
     public function resetPassword(ResetUserPasswordRequest $request, User $user, AuditLogger $auditLogger): JsonResponse
     {
-        $validated = $request->validated();
         $actor = $this->authenticatedUser($request);
         $oldValues = ['must_change_password' => $user->must_change_password];
+        $password = $request->string('password')->toString();
+        $reason = $request->string('reason')->trim()->toString();
 
-        DB::transaction(function () use ($user, $validated, $auditLogger, $request, $oldValues, $actor): void {
+        DB::transaction(function () use ($user, $password, $reason, $auditLogger, $request, $oldValues, $actor): void {
             $user->forceFill([
-                'password' => Hash::make($validated['password']),
+                'password' => Hash::make($password),
                 'must_change_password' => true,
             ])->save();
             $user->tokens()->delete();
@@ -189,7 +195,7 @@ class UserController extends Controller
                 request: $request,
                 oldValues: $oldValues,
                 newValues: ['must_change_password' => true],
-                reason: $validated['reason'],
+                reason: $reason,
             );
         });
 
@@ -222,7 +228,7 @@ class UserController extends Controller
             'email' => $user->email,
             'username' => $user->username,
             'active' => $user->active,
-            'roles' => $user->getRoleNames()->values(),
+            'roles' => $this->roleNames($user),
             'permissions' => $this->effectivePermissionNames($user),
             'direct_permissions' => $this->visibleDirectPermissionNames($user),
             'uses_exact_permission_map' => $user->usesExactDirectPermissionMap(),
@@ -309,7 +315,7 @@ class UserController extends Controller
             return false;
         }
 
-        return RoleCatalog::containsReservedPermissions($roleModel->permissions->pluck('name')->all());
+        return RoleCatalog::containsReservedPermissions($this->permissionNames($roleModel->permissions)->all());
     }
 
     private function roleContainsElevatedPermissions(string $role): bool
@@ -320,7 +326,7 @@ class UserController extends Controller
             return false;
         }
 
-        return RoleCatalog::containsElevatedPermissions($roleModel->permissions->pluck('name')->all());
+        return RoleCatalog::containsElevatedPermissions($this->permissionNames($roleModel->permissions)->all());
     }
 
     private function findRoleWithPermissions(string $role): ?Role
@@ -334,7 +340,7 @@ class UserController extends Controller
 
     private function userHasProtectedRole(User $user): bool
     {
-        return $user->getRoleNames()
+        return $this->roleNames($user)
             ->contains(fn (string $role): bool => RoleCatalog::isProtectedRoleName($role));
     }
 
@@ -425,7 +431,7 @@ class UserController extends Controller
             'email' => $user->email,
             'username' => $user->username,
             'active' => $user->active,
-            'roles' => $user->getRoleNames()->values()->all(),
+            'roles' => $this->roleNames($user)->all(),
             'direct_permissions' => $this->visibleDirectPermissionNames($user)->all(),
             'effective_permissions' => $this->effectivePermissionNames($user)->all(),
             'must_change_password' => $user->must_change_password,
@@ -439,9 +445,7 @@ class UserController extends Controller
             return $this->visibleDirectPermissionNames($user);
         }
 
-        return $user->getAllPermissions()
-            ->pluck('name')
-            ->pipe(fn (Collection $permissions): Collection => VisiblePermissions::rejectHidden($permissions))
+        return VisiblePermissions::rejectHidden($this->permissionNames($user->getAllPermissions()))
             ->sort()
             ->values();
     }
@@ -449,11 +453,38 @@ class UserController extends Controller
     /** @return Collection<int, string> */
     private function visibleDirectPermissionNames(User $user): Collection
     {
-        return $user->getDirectPermissions()
-            ->pluck('name')
-            ->pipe(fn (Collection $permissions): Collection => VisiblePermissions::rejectHidden($permissions))
+        return VisiblePermissions::rejectHidden($this->permissionNames($user->getDirectPermissions()))
             ->sort()
             ->values();
+    }
+
+    /** @return Collection<int, string> */
+    private function roleNames(User $user): Collection
+    {
+        $names = [];
+        foreach ($user->getRoleNames() as $role) {
+            if (is_string($role)) {
+                $names[] = $role;
+            }
+        }
+
+        return collect($names);
+    }
+
+    /**
+     * @param  iterable<mixed>  $permissions
+     * @return Collection<int, string>
+     */
+    private function permissionNames(iterable $permissions): Collection
+    {
+        $names = [];
+        foreach ($permissions as $permission) {
+            if ($permission instanceof Permission) {
+                $names[] = $permission->name;
+            }
+        }
+
+        return collect($names);
     }
 
     /**
