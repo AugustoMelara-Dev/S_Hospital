@@ -9580,3 +9580,48 @@ Un rol personalizado puede tener nombre operativo normal pero permisos de alto i
 ### Decision
 
 Los permisos deben administrarse por lenguaje humano en la interfaz normal. Los slugs siguen siendo el contrato interno para enviar payloads correctos, pero no deben convertirse en una forma visible de navegar la matriz diaria de roles.
+
+## 407. Fase Calidad - Cierre medido de rendimiento y navegador
+
+Fecha de verificacion: 2026-07-16 (America/Tegucigalpa).
+
+### Cambios consolidados
+
+- El centro de soporte inicia en paralelo el resumen y el diagnostico avanzado; una prueba de concurrencia evita reintroducir la cascada de red.
+- El catalogo deja de conservar un hook de detalle sin consumidores que resolvia un servicio descargando el catalogo completo.
+- Los paneles de conteo y reporte de caja eliminan cinco grids Tailwind arbitrarios; el gate UI final queda sin excepciones.
+- Las consultas de salud, estado, respaldos y mantenimiento comparten resultados, agregan contadores en SQL, cachean hashes de integridad y conservan retenciones por lotes con indices temporales.
+- El contexto Docker medido bajo de 496.23 MiB a 58.25 KiB; la capa de permisos del backend bajo de 70.1 s a 1.1 s y la construccion completa medida quedo en 130.9 s.
+- La ejecucion frontend segmentada habia reducido su referencia de 1896.3 s a 742.7 s. La corrida final tomo 832.6 s con dos pruebas adicionales; la variacion aislada no se atribuye a una regresion sin una serie comparable.
+
+### Verificacion final de esta fase
+
+| Gate | Resultado |
+| --- | --- |
+| Laravel completo | OK: 916 passed, 12 skipped justificados, 6964 assertions, 0 failures; 581.50 s. |
+| Frontend completo segmentado | OK: 138/138 archivos, 1085 tests, 0 failures, 0 skipped; 832.6 s. |
+| ESLint + TypeScript | OK: lint global y `tsc --noEmit`. |
+| Build Vite | OK: 3979 modulos; 4.35 s. |
+| Presupuesto de bundle | OK: inicio 326.7 KiB gzip (limite 488.3); total JS 1061.8 KiB gzip (limite 1074.2). |
+| Reglas UI | OK: 4 archivos institucionales conformes; gate final sobre 343 archivos con 0 violaciones. |
+| E2E mock oficial | OK: 49 tests Playwright, 0 fallas. Incluye factura, cobro, recuperacion tras fallo de recibo, catalogo, usuarios, historial, anulacion, reimpresion, reportes, respaldos, paginas de soporte e impresion. |
+| Accesibilidad navegador | OK: 0 violaciones axe minor, moderate, serious o critical; contraste medido entre 5.47 y 16.27 en los casos que axe marco como revision incompleta por solapamiento. |
+| Formatos de impresion | OK: carta, media carta, A5, 80 mm, 58 mm y personalizado; original y copias. |
+
+Playwright no encontro su Chromium empaquetado (`chromium_headless_shell-1223`). La misma suite se ejecuto con Chrome del sistema mediante `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`; no se instalaron dependencias ni se altero el lockfile del usuario.
+
+### Oportunidades revisadas y descartadas
+
+| Oportunidad | Decision basada en evidencia |
+| --- | --- |
+| Dividir AG Grid o ECharts de nuevo | Ya son chunks asincronos de rutas que los usan. No pesan en el inicio y otra fragmentacion agrega complejidad sin mejorar el presupuesto medido. |
+| Redisenar las notificaciones globales por el chunk llamado `clientIssueLog` | El contenido generado corresponde principalmente a React DOM y notificaciones de Ant Design, no al pequeno registrador de errores. Cambiar el sistema global seria de alto riesgo y no reduciria el total demostrado. |
+| Cachear la respuesta completa de salud | Podria ocultar una caida reciente de base de datos. Se comparten solo sondeos costosos y se mantienen frescas las comprobaciones criticas. |
+| Virtualizar todas las tablas | Las vistas operativas ya tienen paginacion o grids especializados. La virtualizacion general agregaria foco, medicion y accesibilidad complejos sin un cuello de botella reproducido. |
+| Partir componentes o controladores solo por numero de lineas | El tamano aislado no demuestra latencia, defecto ni riesgo. Se mantienen extracciones con una responsabilidad o prueba concreta. |
+| Optimizar busqueda del catalogo en memoria | La busqueda candidata ya ocurre en SQL y tiene cobertura con 1001 filas; no se encontro descarga completa en el flujo vivo. |
+| Tratar una sola corrida frontend mas lenta como regresion | La muestra incluye dos pruebas nuevas y variacion del entorno. Se conserva la cifra como observacion, no como causa inventada. |
+
+### Decision
+
+Esta fase cierra los hallazgos demostrados del barrido frontend y del navegador sin declarar agotado el objetivo integral. Los siguientes ciclos deben volver a buscar evidencia accionable en dependencias, contratos operativos, observabilidad, base de datos y seguridad; una propuesta sin fallo, metrica o riesgo concreto se registra como descartada en vez de introducir complejidad especulativa.
