@@ -11878,3 +11878,25 @@ Los correlativos nunca deben depender de casts desde estructuras arbitrarias. Lo
 ### Decision
 
 Una consulta financiera debe construirse desde escalares concretos, no desde un array mixto aun despues de validacion. La normalizacion unica hace visibles los contratos y conserva el uso de filtros e indices existentes.
+
+## 508. Fase PHPStan 9 - Redaccion segura de resumen operativo
+
+### Cambios
+
+- La exportacion sin permiso de auditoria solo combina `summary` cuando el valor existente es array.
+- Un resumen interno mal formado degrada a array vacio antes de imponer contadores sensibles en cero.
+- Se mantienen vacias las colecciones de anulaciones, reimpresiones, cambios, reversos y backups.
+- No cambian agregados normales, permisos, hojas, filtros ni formato de exportacion.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 9 sobre `ReportController` | OK: 0 errores. |
+| Pint sobre el controlador | OK. |
+| Reportes, exportacion y redaccion por permisos | OK: 60 tests, 872 assertions. |
+| Inventario PHPStan nivel 9 global | Baja de 744 a 743 hallazgos. |
+
+### Decision
+
+La redaccion debe fallar cerrada: si el shape interno no es el esperado, la respuesta sin `audit.view` no puede heredar el valor mixto. Normalizar a vacio y sobrescribir contadores protege confidencialidad sin afectar reportes validos.

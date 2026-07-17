@@ -324,7 +324,9 @@ class ReportController extends Controller
     private function redactAuditOperations(array $operations): array
     {
         $operations['can_view_audit'] = false;
-        $operations['summary'] = array_merge($operations['summary'] ?? [], [
+        $summary = $operations['summary'] ?? [];
+        $summary = is_array($summary) ? $summary : [];
+        $operations['summary'] = array_merge($summary, [
             'void_count' => 0,
             'reprint_count' => 0,
             'audit_event_count' => 0,
