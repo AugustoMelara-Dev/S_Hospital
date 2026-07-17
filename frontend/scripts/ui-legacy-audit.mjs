@@ -47,6 +47,13 @@ export const strictModulePrefixes = [
   'src/modules/accounting/',
 ];
 
+const semanticNativeTableFiles = new Set([
+  'src/features/receipts/ReceiptPreview.tsx',
+  'src/features/receipt-settings/components/ReceiptSettingsPreview.tsx',
+  'src/features/reports/components/PaymentMethodPanel.tsx',
+  'src/features/reports/components/TrendChart.tsx',
+]);
+
 export function classifyModule(file) {
   const feature = file.match(/^src\/features\/([^/]+)\//)?.[1];
   if (feature) return feature;
@@ -77,6 +84,30 @@ export function scanSource(file, rawSource) {
 
   source.split(/\r?\n/).forEach((line, index) => {
     const lineNumber = index + 1;
+    for (const match of line.matchAll(/<(button|input|select|textarea|dialog|details)\b/g)) {
+      violations.push(makeViolation({
+        file,
+        line: lineNumber,
+        kind: 'native-interactive-control',
+        dependency: match[1],
+        module,
+        message: `control interactivo HTML "${match[1]}" fuera de Ant Design`,
+        risk: 'high',
+      }));
+    }
+
+    if (!semanticNativeTableFiles.has(file) && /<table\b/.test(line)) {
+      violations.push(makeViolation({
+        file,
+        line: lineNumber,
+        kind: 'native-application-table',
+        dependency: 'table',
+        module,
+        message: 'tabla visual de aplicacion fuera de Ant Design o AG Grid',
+        risk: 'medium',
+      }));
+    }
+
     for (const dependency of legacyImports) {
       if (line.includes(dependency) && !line.trim().startsWith('// Allow legacy')) {
         violations.push(makeViolation({

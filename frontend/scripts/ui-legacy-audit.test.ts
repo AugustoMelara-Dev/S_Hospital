@@ -103,6 +103,33 @@ describe('ui legacy audit', () => {
     expect(scanSource('src/printing/usePrint.ts', "import { useReactToPrint } from 'react-to-print';")).toEqual([]);
   });
 
+  it('flags native interactive controls in production UI', () => {
+    const violations = scanSource(
+      'src/features/invoices/ManualControls.tsx',
+      '<><button>Guardar</button><details><summary>Detalle</summary></details></>',
+    );
+
+    expect(violations).toEqual(expect.arrayContaining([
+      expect.objectContaining({ kind: 'native-interactive-control', dependency: 'button' }),
+      expect.objectContaining({ kind: 'native-interactive-control', dependency: 'details' }),
+    ]));
+  });
+
+  it('flags application tables outside exact semantic exceptions', () => {
+    expect(scanSource('src/features/admin/PermissionMatrix.tsx', '<table />')).toEqual([
+      expect.objectContaining({ kind: 'native-application-table', dependency: 'table' }),
+    ]);
+  });
+
+  it.each([
+    'src/features/receipts/ReceiptPreview.tsx',
+    'src/features/receipt-settings/components/ReceiptSettingsPreview.tsx',
+    'src/features/reports/components/PaymentMethodPanel.tsx',
+    'src/features/reports/components/TrendChart.tsx',
+  ])('allows the documented semantic table in %s', (file) => {
+    expect(scanSource(file, '<table />')).toEqual([]);
+  });
+
   it.each(['settingsAntd.tsx', 'DialogLegacy.tsx', 'ButtonAdapter.tsx', 'OldPanel.tsx', 'V1Card.tsx', 'ServiceSheet.tsx'])(
     'flags forbidden parallel visual surface %s',
     (name) => {
