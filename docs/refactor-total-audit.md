@@ -10724,3 +10724,25 @@ La administracion de usuarios necesita distinguir listas de nombres de valores a
 ### Decision
 
 El controlador opera exclusivamente sobre servicios y siempre produce al menos un evento de auditoria por actualizacion. Explicitar ambos invariantes permite detectar consultas o retornos de modelos equivocados sin modificar la experiencia del catalogo.
+
+## 457. Fase PHPStan 6 - Consulta de series tipada
+
+### Cambios
+
+- `InstitutionalReceiptSettingsController::seriesQuery()` declara un builder de `InstitutionalReceiptSeries`.
+- El contrato queda alineado con el builder de perfiles ya tipado en el mismo controlador.
+- No cambian filtros por tipo documental, prioridad activa ni orden de series.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Medicion PHPStan nivel 6 inicial del corte | RED controlado: 1 builder generico incompleto. |
+| PHPStan nivel 6 sobre el controlador | OK: 0 errores. |
+| Pint sobre el controlador | OK. |
+| Configuracion, permisos, series y previews | OK: 13 tests, 74 assertions. |
+| Inventario PHPStan nivel 6 global | Baja de 139 a 138 hallazgos. |
+
+### Decision
+
+La consulta solo puede producir series institucionales. Declararlo elimina ambiguedad para consumidores y completa el tipado de builders administrativos sin alterar configuracion ni numeracion fiscal.

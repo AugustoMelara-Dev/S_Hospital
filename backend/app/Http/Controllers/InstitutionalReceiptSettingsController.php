@@ -527,6 +527,7 @@ class InstitutionalReceiptSettingsController extends Controller
         ];
     }
 
+    /** @return Builder<InstitutionalReceiptSeries> */
     private function seriesQuery(): Builder
     {
         return InstitutionalReceiptSeries::query()
