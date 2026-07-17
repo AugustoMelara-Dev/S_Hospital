@@ -225,7 +225,7 @@ class AuthController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function userPayload($user): array
+    private function userPayload(User $user): array
     {
         return [
             'id' => $user->id,
@@ -240,6 +240,7 @@ class AuthController extends Controller
         ];
     }
 
+    /** @return Collection<int, string> */
     private function visiblePermissionNames(User $user): Collection
     {
         $permissions = $user->usesExactDirectPermissionMap()

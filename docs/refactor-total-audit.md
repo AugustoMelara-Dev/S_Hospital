@@ -10658,3 +10658,25 @@ Estos registros sostienen recuperacion y evidencia forense. Precisar usuarios y 
 ### Decision
 
 Las descargas son una frontera HTTP publica y deben anunciar si entregan una respuesta materializada o transmitida. Los retornos concretos permiten verificar middleware y consumidores sin modificar bytes, seguridad ni memoria de las exportaciones.
+
+## 454. Fase PHPStan 6 - Payload autenticado tipado
+
+### Cambios
+
+- `AuthController::userPayload()` exige un modelo `User` en vez de aceptar un valor sin contrato.
+- `visiblePermissionNames()` declara una coleccion indexada de nombres de permiso.
+- Se conserva el filtrado de permisos internos y el shape JSON de login, sesion y cambio de clave.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Medicion PHPStan nivel 6 inicial del corte | RED controlado: 1 parametro y 1 coleccion generica incompletos. |
+| PHPStan nivel 6 sobre el controlador | OK: 0 errores. |
+| Pint sobre el controlador | OK. |
+| Login, sesion, permisos visibles y cambio de clave | OK: 20 tests, 89 assertions. |
+| Inventario PHPStan nivel 6 global | Baja de 149 a 147 hallazgos. |
+
+### Decision
+
+El payload de autenticacion solo es valido para el modelo de usuario local y sus permisos visibles son nombres de texto. Explicitar ambos contratos evita que identidades o colecciones arbitrarias entren en una respuesta de seguridad sin cambiar los campos expuestos.
