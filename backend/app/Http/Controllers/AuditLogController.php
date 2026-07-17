@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Reports\ReportDate;
 use App\Http\Requests\System\IndexAuditLogRequest;
 use App\Models\AuditLog;
 use Illuminate\Http\JsonResponse;
@@ -10,28 +11,27 @@ class AuditLogController extends Controller
 {
     public function index(IndexAuditLogRequest $request): JsonResponse
     {
-        $validated = $request->validated();
+        $validated = $request->validatedPayload();
 
         $query = AuditLog::query()->with(['user:id,name,username']);
 
-        if (! empty($validated['action'])) {
+        if ($validated['action'] !== null) {
             $query->where('action', 'like', '%'.$validated['action'].'%');
         }
 
-        if (! empty($validated['user_id'])) {
-            $query->where('user_id', (int) $validated['user_id']);
+        if ($validated['user_id'] !== null) {
+            $query->where('user_id', $validated['user_id']);
         }
 
-        if (! empty($validated['from'])) {
-            $query->where('created_at', '>=', $validated['from'].' 00:00:00');
+        if ($validated['from'] !== null) {
+            $query->where('created_at', '>=', ReportDate::day($validated['from'])->startOfDay());
         }
 
-        if (! empty($validated['to'])) {
-            $query->where('created_at', '<=', $validated['to'].' 23:59:59');
+        if ($validated['to'] !== null) {
+            $query->where('created_at', '<=', ReportDate::day($validated['to'])->endOfDay());
         }
 
-        $perPage = (int) ($validated['per_page'] ?? 25);
-        $perPage = max(1, min($perPage, 100));
+        $perPage = max(1, min($validated['per_page'], 100));
 
         $page = $query->orderByDesc('created_at')->orderByDesc('id')->paginate($perPage);
 
@@ -58,7 +58,7 @@ class AuditLogController extends Controller
             'ip' => $log->ip_address ?? $log->ip,
             'entity_type' => $log->entity_type,
             'entity_id' => $log->entity_id,
-            'created_at' => optional($log->created_at)?->toIso8601String(),
+            'created_at' => $log->created_at?->toIso8601String(),
             'user' => $log->user
                 ? [
                     'id' => $log->user->id,

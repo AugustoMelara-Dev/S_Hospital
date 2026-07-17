@@ -12207,3 +12207,25 @@ Rangos, correlativos y tasas fiscales no deben depender de casts desde estructur
 ### Decision
 
 La configuracion de broadcasting termina dentro de una politica de seguridad y no puede interpolarse por coercion. Validar host y puerto evita directivas deformadas o ampliadas accidentalmente sin introducir dependencias externas.
+
+## 523. Fase PHPStan 9 - Filtros forenses concretos
+
+### Cambios
+
+- `IndexAuditLogRequest` publica accion, usuario, fechas y paginacion con tipos concretos.
+- El controlador usa limites de dia del helper operativo en vez de concatenar horas a valores mixtos.
+- Usuario y tamano de pagina dejan de coercionarse despues de la validacion.
+- `created_at` se serializa desde el Carbon nullable declarado por el modelo.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 9 sobre request y controlador | OK: 0 errores. |
+| Pint sobre request y controlador | OK. |
+| Consulta, permisos y filtros de auditoria | OK: 8 tests, 30 assertions. |
+| Inventario PHPStan nivel 9 global | Baja de 682 a 676 hallazgos. |
+
+### Decision
+
+La busqueda forense debe construirse desde tipos validados y limites temporales consistentes. Conservar esos contratos evita consultas ambiguas y mantiene la marca de tiempo como dato temporal, no como valor opcional arbitrario.
