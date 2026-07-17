@@ -47,6 +47,41 @@ class OperationalMetricsServiceTest extends TestCase
             ->assertJsonPath('data.database.connected', true);
     }
 
+    public function test_health_endpoint_builds_data_and_score_from_one_snapshot(): void
+    {
+        $metrics = new class extends OperationalMetricsService
+        {
+            public int $snapshotCalls = 0;
+
+            public function snapshot(): array
+            {
+                $this->snapshotCalls++;
+
+                return [
+                    'generated_at' => now()->toIso8601String(),
+                    'database' => ['connected' => true],
+                    'queue' => ['failed' => 0],
+                    'backups' => [
+                        'worker_recently_active' => true,
+                        'failed_last_24h' => 0,
+                        'latest_success_file_exists' => true,
+                        'latest_success_checksum_matches' => true,
+                    ],
+                    'audit' => [
+                        'permission_audit_observer' => ['last_failure' => null],
+                    ],
+                ];
+            }
+        };
+        $this->app->instance(OperationalMetricsService::class, $metrics);
+
+        $this->getJson('/api/system/health')
+            ->assertOk()
+            ->assertJsonPath('score.healthy', true);
+
+        $this->assertSame(1, $metrics->snapshotCalls);
+    }
+
     public function test_health_endpoint_hides_internal_recent_error_details(): void
     {
         AuditLog::query()->create([

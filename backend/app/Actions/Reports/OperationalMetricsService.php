@@ -275,11 +275,12 @@ class OperationalMetricsService
      * frontend can then colour the worker badge without having to
      * re-interpret the full snapshot.
      *
+     * @param  array<string, mixed>|null  $snapshot
      * @return array{healthy: bool, issues: list<string>, snapshot_generated_at: ?string}
      */
-    public function overallHealthScore(): array
+    public function overallHealthScore(?array $snapshot = null): array
     {
-        $snapshot = $this->snapshot();
+        $snapshot ??= $this->snapshot();
         $issues = [];
 
         if (! ($snapshot['database']['connected'] ?? false)) {
