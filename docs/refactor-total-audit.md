@@ -9981,3 +9981,24 @@ El modo offline del hospital significa operar sin internet, no sin el servidor L
 ### Decision
 
 El texto local, el texto diferido y los parametros de URL son estados deliberadamente distintos durante 400 ms. Toda accion adicional del operador debe consolidarlos antes de navegar; leer la URL viva en el temporizador evita que una escritura tardia deshaga filtros ya confirmados sin eliminar el debounce que protege al servidor LAN.
+
+## 423. Fase Analisis Estatico - Lista de migraciones sin reindexado redundante
+
+### Cambios
+
+- `SystemStatusController::migrationFileNames()` devuelve directamente la lista que `array_map()` crea y `sort()` mantiene con indices consecutivos.
+- Se elimina la excepcion `arrayValues.list` asociada del baseline PHPStan.
+- El baseline estricto baja de 47 a 46 errores contabilizados, distribuidos en 43 entradas exactas.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan tras retirar solo la excepcion | RED: `arrayValues.list` en `SystemStatusController.php:435`. |
+| PHPStan estricto despues | OK: 0 errores fuera del baseline; baseline exacto de 46. |
+| `SystemStatusTest.php` | OK: 26 tests, 181 assertions. |
+| Pint focalizado | OK. |
+
+### Decision
+
+PHPStan ya conoce `$migrations` como `list<string>` y `sort()` conserva esa forma. El `array_values()` final no reparaba indices ni reforzaba el contrato; retirarlo simplifica la ruta de diagnostico y reduce una excepcion sin cambiar el JSON operativo.

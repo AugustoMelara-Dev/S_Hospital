@@ -432,7 +432,7 @@ class SystemStatusController extends Controller
         );
         sort($migrations);
 
-        return array_values($migrations);
+        return $migrations;
     }
 
     /**
