@@ -12407,3 +12407,24 @@ Un snapshot historico debe poder imprimirse aun si contiene un valor legado inva
 ### Decision
 
 El score de salud decide que alerta ve caja y soporte; una estructura inesperada no debe convertirse en un fallo ficticio ni en un estado saludable. La normalizacion conserva una politica fail-closed para conectividad y worker, mientras descarta contadores y metadatos que no tengan el tipo contractual.
+
+## 532. Fase PHPStan 9 - Fechas ejecutivas leidas por contrato
+
+### Cambios
+
+- `ExecutiveReportRequest` y `ExecutivePdfExportRequest` leen `date_from` y `date_to` con el acceso string tipado de Laravel.
+- Se elimina la conversion directa de entradas mixtas luego de validar el formato de fecha.
+- Ambos requests comparten ahora la misma frontera que `BuildsValidatedReportFilters`.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 9 sobre ambos requests | OK: 0 errores. |
+| Pint sobre ambos requests | OK. |
+| Reporte ejecutivo y exportacion PDF | OK: 22 tests, 223 assertions. |
+| Inventario PHPStan nivel 9 global | Baja de 551 a 547 hallazgos. |
+
+### Decision
+
+Una fecha validada no necesita volver a atravesar una conversion de `mixed`. Usar el lector tipado evita estructuras inesperadas y mantiene identico el contrato entre filtros, controlador y exportadores.

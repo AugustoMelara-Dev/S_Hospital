@@ -63,12 +63,12 @@ class ExecutiveReportRequest extends FormRequest
 
     public function dateFrom(): string
     {
-        return (string) $this->input('date_from');
+        return $this->string('date_from')->toString();
     }
 
     public function dateTo(): string
     {
-        return (string) $this->input('date_to');
+        return $this->string('date_to')->toString();
     }
 
     /**
