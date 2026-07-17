@@ -12592,3 +12592,27 @@ Los agregados SQL y snapshots de auditoria son fronteras externas aunque nazcan 
 ### Decision
 
 El exportador es una frontera de serializacion y debe aceptar solo valores que puedan convertirse de forma inequívoca en texto contable. Normalizar una vez por seccion mantiene el renderer simple, evita casts dispersos y conserva un documento util aun ante snapshots legados parciales.
+
+## 540. Fase PHPStan 9 - Excel ejecutivo normaliza libros y celdas
+
+### Cambios
+
+- `ExecutiveExcelExportService` normaliza configuracion fiscal, mapas, listas y filas al entrar al exportador.
+- Resumen, comparaciones, metodos, tendencia, servicios, cajas, pendientes y auditoria dejan de acceder a valores `mixed` sin validar.
+- Texto, dinero, cantidades, porcentajes y conteos rechazan estructuras y numeros no finitos con valores neutros.
+- La sanitizacion contra formulas se conserva despues de validar que la celda sea escalar.
+- Se agrega una regresion integral con secciones, filas, celdas y configuracion fiscal estructuradas.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Regresion antes del cambio | FAIL esperado: `HospitalName::display()` recibia array. |
+| PHPStan nivel 9 sobre el exportador | OK: 0 errores. |
+| Pint sobre exportador y prueba | OK. |
+| Excel ejecutivo, permisos, formulas y payload hostil | OK: 7 tests, 83 assertions. |
+| Inventario PHPStan nivel 9 global | Baja de 293 a 165 hallazgos. |
+
+### Decision
+
+Un libro Excel combina datos contables con una superficie de ejecucion de formulas. La frontera valida primero la forma y el dominio de cada dato y aplica despues el escape de formula, evitando excepciones, texto `Array` e inyeccion de celdas sin duplicar reglas fiscales.

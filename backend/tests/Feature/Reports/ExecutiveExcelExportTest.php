@@ -418,6 +418,57 @@ class ExecutiveExcelExportTest extends TestCase
         $this->assertSame(0.0, $pending->getCell('F10')->getValue());
     }
 
+    public function test_executive_excel_normalizes_structured_payload_values(): void
+    {
+        $report = [
+            'summary' => ['billed_total' => ['invalid']],
+            'comparison' => ['billed' => ['delta_percentage' => ['invalid']]],
+            'payment_methods' => [[
+                'label' => ['invalid'],
+                'amount' => ['invalid'],
+                'count' => ['invalid'],
+                'percentage' => ['invalid'],
+            ]],
+            'daily_trend' => [['date' => ['invalid']]],
+            'services' => [
+                'top_by_amount' => [['service' => ['invalid']]],
+                'top_by_quantity' => ['invalid-row'],
+                'by_category' => [['category' => ['invalid']]],
+                'by_area' => [['area' => ['invalid']]],
+            ],
+            'cashiers' => [['name' => ['invalid']]],
+            'cash_sessions' => [['cashier' => ['invalid'], 'counted_cash' => ['invalid'], 'difference' => ['invalid']]],
+            'pending_aging' => [
+                '0_7_days' => ['invalid'],
+                '8_30_days' => null,
+                '31_plus_days' => 'invalid',
+                'items' => [['invoice_number' => ['invalid']]],
+            ],
+            'voids_and_reversals' => [['amount' => ['invalid']]],
+            'audit_summary' => ['critical_events' => ['invalid']],
+        ];
+
+        $spreadsheet = app(ExecutiveExcelExportService::class)->generate(
+            $report,
+            ['hospital_name' => ['invalid'], 'rtn' => ['invalid']],
+            Carbon::create(2026, 6, 1, 0, 0, 0, 'America/Tegucigalpa'),
+            Carbon::create(2026, 6, 1, 0, 0, 0, 'America/Tegucigalpa'),
+            'Admin',
+        );
+
+        $this->assertSame('Hospital General San Isidro', $spreadsheet->getSheetByName('Resumen')->getCell('A2')->getValue());
+        $this->assertSame('RTN: N/A', $spreadsheet->getSheetByName('Resumen')->getCell('A3')->getValue());
+        $this->assertSame(0.0, $spreadsheet->getSheetByName('Resumen')->getCell('B8')->getValue());
+        $this->assertSame('', $spreadsheet->getSheetByName('Cobros por metodo')->getCell('A4')->getValue());
+        $this->assertSame('', $spreadsheet->getSheetByName('Facturado diario')->getCell('A4')->getValue());
+        $this->assertSame('', $spreadsheet->getSheetByName('Servicios')->getCell('A6')->getValue());
+        $this->assertSame('', $spreadsheet->getSheetByName('Cajeros')->getCell('A4')->getValue());
+        $this->assertSame('', $spreadsheet->getSheetByName('Caja')->getCell('A4')->getValue());
+        $this->assertSame('', $spreadsheet->getSheetByName('Pendientes')->getCell('A10')->getValue());
+        $this->assertSame(0.0, $spreadsheet->getSheetByName('Anulaciones y reversas')->getCell('D4')->getValue());
+        $this->assertSame(0, $spreadsheet->getSheetByName('Auditoria')->getCell('B4')->getValue());
+    }
+
     public function test_executive_excel_requires_reports_export_permission(): void
     {
         $this->seedBillingBase();
