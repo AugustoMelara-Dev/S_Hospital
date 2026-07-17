@@ -9648,3 +9648,26 @@ Esta fase cierra los hallazgos demostrados del barrido frontend y del navegador 
 ### Decision
 
 El backend no compila una interfaz propia: todas las rutas de aplicacion resuelven la SPA React y el Docker de produccion construye `frontend/`. Mantener seis dependencias Node adicionales, scripts de desarrollo incompatibles y una plantilla con enlaces externos ampliaba superficie de suministro y confusion operativa sin aportar una ruta viva.
+
+## 409. Fase Dependencias - Herramientas Composer de plantilla retiradas
+
+### Cambios
+
+- Se eliminan `laravel/pail` y `laravel/sail` de desarrollo: no tenian consumidores en codigo, pruebas, CI, Docker, scripts ni runbooks.
+- El lock elimina tambien `symfony/yaml`, dependencia transitiva que ninguna dependencia restante requiere para ejecucion.
+- Se conserva `laravel/tinker` porque el runbook de secretos lo usa para diagnosticar la conexion local a base de datos.
+- Un contrato del manifiesto evita que Pail o Sail vuelvan a ampliar silenciosamente el grafo de desarrollo.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `composer validate --strict --no-check-publish` | OK en imagen local Composer. |
+| `composer install --dry-run --no-scripts` sin red | OK: lock instalable; exactamente 3 remociones sobre el `vendor` anterior. |
+| `php artisan test tests/Unit/BackendDependencyManifestTest.php tests/Unit/BackendFrontendBoundaryTest.php` | OK: 3 tests, 15 assertions. |
+| Pint focalizado | OK. |
+| Guarda de cadena de suministro | OK: 0 hallazgos, 0 advertencias. |
+
+### Decision
+
+El proyecto tiene Docker Compose propio y soporte operativo dentro de la aplicacion; Sail y Pail duplicaban esas responsabilidades. La eliminacion reduce superficie de descarga y mantenimiento sin tocar paquetes productivos ni actualizar versiones ajenas.
