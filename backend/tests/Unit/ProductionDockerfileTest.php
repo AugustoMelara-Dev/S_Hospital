@@ -31,6 +31,65 @@ class ProductionDockerfileTest extends TestCase
         $this->assertStringContainsString('pnpm run build', $dockerfile);
         $this->assertStringNotContainsString('frontend/package*.json', $dockerfile);
         $this->assertStringNotContainsString('npm ci', $dockerfile);
-        $this->assertMatchesRegularExpression('/^frontend\/package-lock\.json$/m', $dockerignore);
+        $this->assertMatchesRegularExpression('/^\*$/m', $dockerignore);
+        $this->assertStringNotContainsString('!frontend/package-lock.json', $dockerignore);
+    }
+
+    public function test_docker_context_excludes_non_runtime_sources_and_artifacts(): void
+    {
+        $dockerignore = file_get_contents(base_path('../.dockerignore'));
+
+        $this->assertIsString($dockerignore);
+
+        foreach ([
+            '.github',
+            'docs',
+            'scripts',
+            'backend/tests',
+            'frontend/artifacts',
+            'frontend/e2e',
+        ] as $excludedPath) {
+            $this->assertStringNotContainsString(
+                "!{$excludedPath}",
+                $dockerignore,
+                "{$excludedPath} is not used by Dockerfile.prod and must stay out of the production context.",
+            );
+        }
+
+        $this->assertStringNotContainsString('!backend/**', $dockerignore);
+        $this->assertStringNotContainsString('!frontend/**', $dockerignore);
+
+        foreach ([
+            '!backend/app/**',
+            '!backend/bootstrap/app.php',
+            '!backend/bootstrap/providers.php',
+            '!backend/config/**',
+            '!backend/database/**',
+            '!backend/docker/**',
+            '!backend/public/**',
+            '!backend/resources/**',
+            '!backend/routes/**',
+            '!backend/artisan',
+            '!backend/composer.json',
+            '!backend/composer.lock',
+            '!frontend/public/**',
+            '!frontend/src/**',
+            '!frontend/vite-plugins/**',
+            '!frontend/.env.production',
+            '!frontend/index.html',
+            '!frontend/package.json',
+            '!frontend/pnpm-lock.yaml',
+            '!frontend/pnpm-workspace.yaml',
+            '!frontend/tsconfig.json',
+            '!frontend/tsconfig.node.json',
+            '!frontend/vite.config.ts',
+            '!frontend/vitest.shims.d.ts',
+        ] as $runtimePath) {
+            $this->assertMatchesRegularExpression(
+                '/^'.preg_quote($runtimePath, '/').'$/m',
+                $dockerignore,
+                "Production Docker context must include {$runtimePath}.",
+            );
+        }
     }
 }

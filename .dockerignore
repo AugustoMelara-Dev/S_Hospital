@@ -1,37 +1,48 @@
-.git
-.agent
-.agents
-branch
-codex-skills
-install-logs
-offline-release
-offline-release.rar
-Sistema-Caja-Hospitalaria-RC*.zip
+# Production builds are allowlisted so local QA output, worktrees, logs and
+# other untracked files can never inflate or contaminate the image context.
+*
 
-.env
-*.log
-*.sql
-*.sql.gz
-*.sqlite
-*.sqlite3
-*.db
+# Laravel application runtime.
+!backend/
+!backend/app/
+!backend/app/**
+!backend/bootstrap/
+!backend/bootstrap/app.php
+!backend/bootstrap/providers.php
+!backend/config/
+!backend/config/**
+!backend/database/
+!backend/database/**
+!backend/docker/
+!backend/docker/**
+!backend/public/
+!backend/public/**
+!backend/resources/
+!backend/resources/**
+!backend/routes/
+!backend/routes/**
+!backend/artisan
+!backend/composer.json
+!backend/composer.lock
+!backend/Dockerfile.prod
 
-backend/.env
-backend/vendor
-backend/storage/app/private/backups
-backend/storage/framework/testing-production-proofs
-backend/storage/framework/testing-production-proofs-empty
-backend/storage/framework/testing-production-proofs-missing-evidence
-backend/storage/logs
-backend/bootstrap/cache/*.php
-backend/.phpunit.result.cache
-
-frontend/node_modules
-frontend/dist
-frontend/package-lock.json
-frontend/test-results
-frontend/playwright-report
-frontend/debug.log
-
-qa
-worklogs
+# React production build inputs. Tests under src remain included because the
+# strict TypeScript build checks them; QA artifacts and browser E2E stay out.
+!frontend/
+!frontend/.storybook/
+!frontend/.storybook/**
+!frontend/public/
+!frontend/public/**
+!frontend/src/
+!frontend/src/**
+!frontend/vite-plugins/
+!frontend/vite-plugins/**
+!frontend/.env.production
+!frontend/index.html
+!frontend/package.json
+!frontend/pnpm-lock.yaml
+!frontend/pnpm-workspace.yaml
+!frontend/tsconfig.json
+!frontend/tsconfig.node.json
+!frontend/vite.config.ts
+!frontend/vitest.shims.d.ts
