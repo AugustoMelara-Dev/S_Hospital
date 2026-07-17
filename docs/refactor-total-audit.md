@@ -10314,3 +10314,26 @@ Las relaciones son opcionales en los objetos de prueba y el area tambien lo es e
 ### Decision
 
 Mantener dos implementaciones completas para el mismo artefacto ampliaba la superficie de mantenimiento y permitia que correcciones futuras llegaran al generador equivocado. Eliminar la clase inalcanzable reduce codigo de produccion sin alterar el servicio activo.
+
+## 438. Fase Soporte Frontend - Registrador duplicado eliminado
+
+### Cambios
+
+- Se eliminan `clientIssueLogger.ts` y `errorCatalog.ts`, modulos sin importaciones de produccion.
+- Se elimina el test exclusivo del catalogo inalcanzable.
+- Permanece `clientIssueLog.ts`, que es el contrato usado por el cliente API, `AppErrorBoundary`, ayuda, configuracion y respaldos.
+- El endpoint backend de errores del cliente no cambia.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Busqueda global previa | `clientIssueLogger` sin importaciones; `errorCatalog` solo era consumido por ese modulo y su test. |
+| TypeScript estricto | OK. |
+| ESLint completo | OK. |
+| Registro local y limite global de errores | OK: 2 archivos, 7 tests. |
+| Diff check | OK. |
+
+### Decision
+
+Habia dos funciones `logClientIssue` con politicas distintas de almacenamiento, mensajes y sanitizacion, pero solo una era alcanzable. Retirar la rama muerta evita que futuras correcciones de seguridad se apliquen al registrador equivocado y reduce la superficie de mantenimiento sin cambiar el flujo del operador.
