@@ -10155,3 +10155,26 @@ La conciliacion necesita modelos Eloquent para construir alcances, pero sus resu
 ### Decision
 
 Los modelos siguen construyendo los alcances temporales y de estado, pero una fila agrupada no representa una factura ni un pago individual. `toBase()` en el punto de hidratacion expresa esa diferencia sin duplicar consultas ni modificar las fechas contables.
+
+## 431. Fase Dashboard - Proyecciones agregadas como filas SQL
+
+### Cambios
+
+- Los totales diarios por metodo, servicios principales y resumen de cajeros pasan a Query Builder antes de hidratar sus resultados.
+- Las columnas calculadas `total_cents`, `payment_count` y `collected_cents`, junto con los alias de usuario, dejan de interpretarse como propiedades dinamicas de `Payment` o `InvoiceItem`.
+- Se retiran siete excepciones `property.notFound`/`argument.unresolvableType`; el baseline PHPStan baja de 17 a 10 errores contabilizados.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan tras retirar solo las excepciones | RED: 7 errores sobre propiedades agregadas y el tipo generico de la coleccion. |
+| PHPStan estricto despues | OK: 0 errores fuera del baseline. |
+| Contrato JSON del dashboard | OK: 1 test, 8 assertions sobre metodos y resumen de cajero. |
+| Presupuesto de reportes | OK: 4 tests, 10 assertions; incluye dashboard, reporte diario y consistencia financiera. |
+| Guarda monetaria SQL | OK: 9 tests, 162 assertions. |
+| Pint focalizado | OK. |
+
+### Decision
+
+El dashboard usa modelos para construir filtros y joins, pero sus agrupaciones representan proyecciones de lectura. Cambiar la hidratacion justo antes de `get()` conserva el SQL y el comportamiento, evita fabricar atributos de dominio y permite que PHPStan compruebe los callbacks sobre filas SQL reales.

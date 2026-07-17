@@ -37,48 +37,6 @@ parameters:
 			path: app/Actions/Receipts/GenerateReceiptDataAction.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\InvoiceItem\:\:\$total_cents\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Actions/Reports/DashboardReportService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Payment\:\:\$collected_cents\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Actions/Reports/DashboardReportService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Payment\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Actions/Reports/DashboardReportService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Payment\:\:\$payment_count\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Actions/Reports/DashboardReportService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Payment\:\:\$total_cents\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Actions/Reports/DashboardReportService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Payment\:\:\$username\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Actions/Reports/DashboardReportService.php
-
-		-
-			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\Payment\>\:\:map\(\) contains unresolvable type\.$#'
-			identifier: argument.unresolvableType
-			count: 1
-			path: app/Actions/Reports/DashboardReportService.php
-
-		-
 			message: '#^Using nullsafe property access "\?\-\>rtn" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
