@@ -183,6 +183,28 @@ class OperationalMetricsServiceTest extends TestCase
         $this->assertContains('backup_latest_integrity_mismatch', $score['issues']);
     }
 
+    public function test_health_integrity_probe_rejects_paths_outside_the_backup_directory(): void
+    {
+        Storage::fake('local');
+        Storage::disk('local')->put('outside.sql', 'sensitive-payload');
+
+        BackupLog::query()->create([
+            'filename' => 'outside.sql',
+            'path' => 'backups/../outside.sql',
+            'disk' => 'local',
+            'status' => BackupLog::STATUS_SUCCESS,
+            'type' => BackupLog::TYPE_MANUAL,
+            'size_bytes' => strlen('sensitive-payload'),
+            'checksum_sha256' => hash('sha256', 'sensitive-payload'),
+            'completed_at' => now(),
+        ]);
+
+        $snapshot = app(OperationalMetricsService::class)->snapshot();
+
+        $this->assertFalse($snapshot['backups']['latest_success_file_exists']);
+        $this->assertFalse($snapshot['backups']['latest_success_checksum_matches']);
+    }
+
     public function test_recent_errors_section_surfaces_failed_actions(): void
     {
         AuditLog::query()->create([

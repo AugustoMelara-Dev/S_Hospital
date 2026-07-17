@@ -164,6 +164,47 @@ class SystemStatusTest extends TestCase
             ->assertOk();
     }
 
+    public function test_system_status_reuses_the_operational_backup_integrity_result(): void
+    {
+        Storage::fake('local');
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->admin();
+        $path = 'backups/shared-integrity.sql.gz.enc';
+        $contents = 'valid-physical-payload';
+
+        Storage::disk('local')->put($path, $contents);
+        BackupLog::query()->create([
+            'filename' => 'shared-integrity.sql.gz.enc',
+            'path' => $path,
+            'disk' => 'local',
+            'status' => BackupLog::STATUS_SUCCESS,
+            'type' => BackupLog::TYPE_MANUAL,
+            'created_by' => $admin->id,
+            'size_bytes' => strlen($contents),
+            'checksum_sha256' => hash('sha256', $contents),
+            'completed_at' => now(),
+        ]);
+
+        $this->mock(OperationalMetricsService::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('snapshot')
+                ->once()
+                ->andReturn([
+                    'backups' => [
+                        'worker_recently_active' => true,
+                        'latest_success_file_exists' => true,
+                        'latest_success_checksum_matches' => false,
+                    ],
+                ]);
+        });
+
+        $this->actingAs($admin)
+            ->getJson('/api/system/status')
+            ->assertOk()
+            ->assertJsonPath('data.backups.last_success_file_exists', true)
+            ->assertJsonPath('data.backups.last_success_checksum_matches', false)
+            ->assertJsonPath('data.backups.worker_recently_active', false);
+    }
+
     public function test_loopback_app_url_is_treated_as_local_single_machine_mode(): void
     {
         $proofRoot = sys_get_temp_dir().DIRECTORY_SEPARATOR.'s-hospital-testing-local-mode-status-'.bin2hex(random_bytes(8));

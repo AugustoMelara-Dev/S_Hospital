@@ -217,7 +217,12 @@ class OperationalMetricsService
             ];
         }
 
-        if ($backupLog->path === null || $backupLog->checksum_sha256 === null) {
+        if (
+            $backupLog->disk !== 'local'
+            || $backupLog->path === null
+            || $backupLog->checksum_sha256 === null
+            || ! $this->isSafeBackupPath($backupLog->path)
+        ) {
             return [
                 'exists' => false,
                 'checksum_matches' => false,
@@ -255,6 +260,14 @@ class OperationalMetricsService
                 'checksum_matches' => false,
             ];
         }
+    }
+
+    private function isSafeBackupPath(string $path): bool
+    {
+        return str_starts_with($path, 'backups/')
+            && ! str_contains($path, '..')
+            && ! str_starts_with($path, '/')
+            && preg_match('/^[A-Za-z]:[\\\\\/]/', $path) !== 1;
     }
 
     /**

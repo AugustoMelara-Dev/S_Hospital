@@ -320,7 +320,10 @@ class SystemStatusController extends Controller
         $operationalMetrics = app(OperationalMetricsService::class)->snapshot();
         $queueStatus = $this->queueStatus();
         $workerRecentlyActive = (bool) ($operationalMetrics['backups']['worker_recently_active'] ?? false);
-        $lastSuccessFile = $this->backupFileStatus($lastSuccess);
+        $lastSuccessFile = [
+            'exists' => ($operationalMetrics['backups']['latest_success_file_exists'] ?? null) === true,
+            'checksum_matches' => ($operationalMetrics['backups']['latest_success_checksum_matches'] ?? null) === true,
+        ];
         $lastSuccessFileIsUsable = $lastSuccessFile['exists'] && $lastSuccessFile['checksum_matches'];
         $workerRecentlyActive = $workerRecentlyActive && $lastSuccessFileIsUsable;
         $lastFailureIsUnresolved = $lastFailure !== null
@@ -357,53 +360,6 @@ class SystemStatusController extends Controller
             'storage' => $this->backupStorageStatus(),
             'queue' => $queueStatus,
         ];
-    }
-
-    /**
-     * @return array{exists: bool, checksum_matches: bool}
-     */
-    private function backupFileStatus(?BackupLog $backupLog): array
-    {
-        if (! $backupLog instanceof BackupLog || ! $this->isSafeBackupPath((string) $backupLog->path)) {
-            return [
-                'exists' => false,
-                'checksum_matches' => false,
-            ];
-        }
-
-        try {
-            $disk = Storage::disk((string) ($backupLog->disk ?: 'local'));
-            $path = (string) $backupLog->path;
-
-            if (! $disk->exists($path)) {
-                return [
-                    'exists' => false,
-                    'checksum_matches' => false,
-                ];
-            }
-
-            $absolutePath = $disk->path($path);
-            $checksum = is_file($absolutePath) ? hash_file('sha256', $absolutePath) : false;
-
-            return [
-                'exists' => true,
-                'checksum_matches' => is_string($checksum)
-                    && hash_equals((string) $backupLog->checksum_sha256, $checksum),
-            ];
-        } catch (Throwable) {
-            return [
-                'exists' => false,
-                'checksum_matches' => false,
-            ];
-        }
-    }
-
-    private function isSafeBackupPath(string $path): bool
-    {
-        return str_starts_with($path, 'backups/')
-            && ! str_contains($path, '..')
-            && ! str_starts_with($path, '/')
-            && ! preg_match('/^[A-Za-z]:[\\\\\/]/', $path);
     }
 
     /**
