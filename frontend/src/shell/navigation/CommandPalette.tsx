@@ -140,12 +140,12 @@ export function CommandPalette({ navigation, onOpenChange, open, user }: Command
                   <li key={item.id}>
                     <Button
                       htmlType="button"
-                      type="text"
+                      type={isActive ? 'primary' : 'text'}
                       block
                       onClick={() => selectCommand(item.path)}
                       className={cn(
-                        'flex w-full cursor-pointer items-center justify-between border-none bg-transparent px-4 py-2.5 text-left text-sm font-normal text-foreground outline-none transition',
-                        isActive ? 'bg-primary font-semibold text-primary-foreground' : 'hover:bg-muted'
+                        'flex w-full cursor-pointer items-center justify-between border-none px-4 py-2.5 text-left text-sm font-normal outline-none transition',
+                        isActive ? 'font-semibold text-primary-foreground' : 'bg-transparent text-foreground hover:bg-muted'
                       )}
                     >
                       <span>{item.label}</span>
