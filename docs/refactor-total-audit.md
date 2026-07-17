@@ -11987,3 +11987,25 @@ Los IDs de caja son enteros positivos validados y no deben reconstruirse mediant
 ### Decision
 
 El Form Request ya impone el dominio del alcance. Sus accesores concretos mantienen ese contrato en el controlador y evitan que una asignacion operativa dependa de la coercion de valores arbitrarios.
+
+## 513. Fase PHPStan 9 - Payload concreto de roles
+
+### Cambios
+
+- `RoleController` normaliza una sola vez nombre y lista de permisos tras la validacion de Laravel.
+- Crear y actualizar roles entregan a Spatie exclusivamente una lista de nombres string.
+- La respuesta exige una clave primaria entera del rol en vez de coercionar cualquier valor del modelo.
+- Estructuras imposibles despues de validar fallan de forma explicita antes de modificar permisos.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 9 sobre el controlador | OK: 0 errores. |
+| Pint sobre el controlador | OK. |
+| Gestion, permisos y auditoria de roles | OK: 24 tests, 115 assertions. |
+| Inventario PHPStan nivel 9 global | Baja de 736 a 733 hallazgos. |
+
+### Decision
+
+La sincronizacion de autorizaciones es una frontera critica y no debe aceptar `mixed`. Un unico normalizador mantiene iguales los flujos de alta y edicion, mientras la clave entera evita representar entidades persistidas con identidades coercionadas.

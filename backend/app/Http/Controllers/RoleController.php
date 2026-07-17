@@ -9,6 +9,7 @@ use App\Support\RoleCatalog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use LogicException;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
@@ -91,7 +92,7 @@ class RoleController extends Controller
 
     public function store(StoreRoleRequest $request, AuditLogger $auditLogger): JsonResponse
     {
-        $validated = $request->validated();
+        $validated = $this->validatedRolePayload($request);
 
         $role = DB::transaction(function () use ($validated, $auditLogger, $request): Role {
             $role = Role::query()->create([
@@ -121,7 +122,7 @@ class RoleController extends Controller
 
     public function update(UpdateRoleRequest $request, Role $role, AuditLogger $auditLogger): JsonResponse
     {
-        $validated = $request->validated();
+        $validated = $this->validatedRolePayload($request);
 
         DB::transaction(function () use ($role, $validated, $auditLogger, $request): void {
             $oldValues = $this->auditPayload($role->load('permissions'));
@@ -166,7 +167,7 @@ class RoleController extends Controller
         }
 
         return [
-            'id' => (int) $role->getKey(),
+            'id' => $this->roleId($role),
             'name' => $role->name,
             'protected' => RoleCatalog::isProtectedRoleName($role->name),
             'permissions' => $permissions,
@@ -258,5 +259,40 @@ class RoleController extends Controller
             'protected' => RoleCatalog::isProtectedRoleName($role->name),
             'permissions' => $permissions,
         ];
+    }
+
+    /**
+     * @return array{name: string, permissions: list<string>}
+     */
+    private function validatedRolePayload(StoreRoleRequest|UpdateRoleRequest $request): array
+    {
+        $validated = $request->validated();
+        $name = $validated['name'] ?? null;
+        $permissions = $validated['permissions'] ?? null;
+
+        if (! is_string($name) || ! is_array($permissions)) {
+            throw new LogicException('El payload validado del rol no tiene la estructura esperada.');
+        }
+
+        $normalizedPermissions = [];
+        foreach ($permissions as $permission) {
+            if (! is_string($permission)) {
+                throw new LogicException('El payload validado del rol contiene un permiso invalido.');
+            }
+
+            $normalizedPermissions[] = $permission;
+        }
+
+        return ['name' => $name, 'permissions' => $normalizedPermissions];
+    }
+
+    private function roleId(Role $role): int
+    {
+        $id = $role->getKey();
+        if (! is_int($id)) {
+            throw new LogicException('El rol persistido no tiene un identificador entero valido.');
+        }
+
+        return $id;
     }
 }
