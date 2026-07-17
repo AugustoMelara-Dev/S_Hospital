@@ -192,7 +192,7 @@ class OpenApiExporter
     {
         $paths = [];
 
-        foreach ($router->getRoutes() as $route) {
+        foreach ($router->getRoutes()->getRoutes() as $route) {
             $path = '/'.ltrim($route->uri(), '/');
             if (! str_starts_with($path, '/api/')) {
                 continue;

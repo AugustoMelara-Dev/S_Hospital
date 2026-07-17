@@ -193,12 +193,6 @@ parameters:
 			path: app/Actions/Reports/MonthlyReportService.php
 
 		-
-			message: '#^Argument of an invalid type Illuminate\\Routing\\RouteCollectionInterface supplied for foreach, only iterables are supported\.$#'
-			identifier: foreach.nonIterable
-			count: 1
-			path: app/Actions/Reports/OpenApiExporter.php
-
-		-
 			message: '#^Using nullsafe property access "\?\-\>backup_bytes" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1

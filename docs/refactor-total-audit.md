@@ -9906,3 +9906,29 @@ Un baseline solo es util si expresa deuda actual. Permitir entradas sin correspo
 ### Decision
 
 La anulacion recalcula el saldo dentro de una transaccion y debe usar la misma fuente entera obligatoria que el alta de pagos. Eliminar la compatibilidad inalcanzable reduce bifurcaciones en un flujo auditado sin cambiar estados, redondeo, movimientos de caja ni restricciones sobre sesiones cerradas.
+
+## 420. Fase Contratos - Exportador OpenAPI sobre una coleccion iterable
+
+### Cambios
+
+- `OpenApiExporter` itera el arreglo devuelto por `RouteCollectionInterface::getRoutes()` en vez de asumir que la propia interfaz es `Traversable`.
+- Se elimina la unica supresion `foreach.nonIterable`; el baseline estricto baja de 48 a 47 errores.
+- El documento generado, autenticacion, filtros, tags y bloques de respuesta conservan su cobertura funcional.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan tras retirar la supresion | RED: `foreach.nonIterable` en la coleccion de rutas. |
+| `OpenApiExporterTest.php` | OK: 11 tests, 114 assertions. |
+| PHPStan focalizado | OK: 0 errores. |
+| PHPStan completo con baseline estricto | OK: 0 errores; 47 errores aplazados exactos. |
+| Pint focalizado | OK. |
+
+### Oportunidad descartada
+
+No se hicieron obligatorias las relaciones `Service::category` dentro del calculador puro. Aunque `services.category_id` es `NOT NULL` en base de datos, cinco pruebas unitarias ejercitan deliberadamente reglas monetarias con modelos en memoria sin relaciones. Eliminar el nullsafe rompio 5 pruebas de 17; conservar dos supresiones documenta una limitacion de inferencia sin acoplar el calculador a persistencia.
+
+### Decision
+
+La interfaz de rutas garantiza el metodo que devuelve `Route[]`, no la iterabilidad del contenedor. Consumir ese contrato explicito evita depender de detalles de la implementacion concreta de Laravel y mantiene portable el exportador sin casts, anotaciones locales ni nuevas excepciones.
