@@ -10485,3 +10485,24 @@ La medicion estricta encontro solo dos residuos mecanicos, por lo que activar la
 ### Decision
 
 Los tipos agregados describen contratos reales del framework y del paquete de permisos; no son supresiones. Esto permite que el analizador siga el modelo relacionado y valide cada uso de permisos sin cambiar autorizacion ni comportamiento en ejecucion.
+
+## 446. Fase PHPStan 6 - Relaciones de factura
+
+### Cambios
+
+- Las cuatro relaciones de coleccion de `Invoice` declaran su modelo relacionado y el modelo que las origina.
+- Las relaciones con emisor, anulador, caja y secuencia fiscal declaran los dos parametros genericos de `BelongsTo`.
+- No cambian filtros, orden, claves foraneas ni consultas SQL.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 6 sobre `Invoice` | OK: 0 errores. |
+| Pint sobre `Invoice` | OK. |
+| Creacion, cobro, recibos, historial, anulacion y reversa | OK: 112 tests, 852 assertions. |
+| Inventario PHPStan nivel 6 global | Baja de 208 a 200 hallazgos. |
+
+### Decision
+
+`Invoice` concentra relaciones usadas por casi todo el dominio financiero. Precisarlas permite detectar asociaciones equivocadas en servicios y controladores sin alterar el modelo persistido; las pruebas transaccionales confirman que el contrato agregado coincide con el comportamiento real.

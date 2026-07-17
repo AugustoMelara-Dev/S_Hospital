@@ -140,21 +140,25 @@ class Invoice extends Model
         ];
     }
 
+    /** @return HasMany<InvoiceItem, $this> */
     public function items(): HasMany
     {
         return $this->hasMany(InvoiceItem::class);
     }
 
+    /** @return HasMany<Payment, $this> */
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
     }
 
+    /** @return HasMany<InstitutionalReceipt, $this> */
     public function institutionalReceipts(): HasMany
     {
         return $this->hasMany(InstitutionalReceipt::class);
     }
 
+    /** @return HasMany<InstitutionalReceipt, $this> */
     public function issuedInstitutionalReceipts(): HasMany
     {
         return $this->hasMany(InstitutionalReceipt::class)
@@ -162,21 +166,25 @@ class Invoice extends Model
             ->orderByDesc('id');
     }
 
+    /** @return BelongsTo<User, $this> */
     public function issuer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'issued_by');
     }
 
+    /** @return BelongsTo<User, $this> */
     public function voidedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'voided_by');
     }
 
+    /** @return BelongsTo<CashRegisterSession, $this> */
     public function cashSession(): BelongsTo
     {
         return $this->belongsTo(CashRegisterSession::class, 'cash_session_id');
     }
 
+    /** @return BelongsTo<FiscalSequence, $this> */
     public function fiscalSequence(): BelongsTo
     {
         return $this->belongsTo(FiscalSequence::class);
