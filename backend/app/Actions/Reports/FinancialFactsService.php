@@ -9,13 +9,25 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * @phpstan-type FinancialFacts array{
+ *     total_billed: string,
+ *     total_pending: string,
+ *     total_partial: string,
+ *     total_voided: string,
+ *     invoice_count: int,
+ *     payment_count: int,
+ *     total_collected: string,
+ *     payments_by_method: array<string, string>
+ * }
+ */
 class FinancialFactsService
 {
     use FormatsReportMoney;
 
     /**
      * @param  array<string, mixed>  $filters
-     * @return array<string, mixed>
+     * @return FinancialFacts
      */
     public function forRange(Carbon $start, Carbon $end, array $filters = []): array
     {

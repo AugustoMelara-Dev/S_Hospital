@@ -20,6 +20,8 @@ use Illuminate\Support\Facades\DB;
  *
  * The shape remains stable for API clients and release smoke mocks
  * (see HOSPITAL FRONTEND CONTRACTS).
+ *
+ * @phpstan-import-type FinancialFacts from FinancialFactsService
  */
 class TodayReportService
 {
@@ -37,12 +39,12 @@ class TodayReportService
         $now = ($reference ?? Carbon::now(self::HOSPITAL_TIMEZONE))->copy();
         $today = $now->copy()->startOfDay();
         $end = $now->copy()->endOfDay();
-        $filters = $this->filtersForUser($user);
-        $isManagerial = empty($filters);
+        $userId = $this->userIdFilter($user);
+        $isManagerial = $userId === null;
 
         $facts = $isManagerial
             ? $this->financialFacts->forRange($today, $end)
-            : $this->financialFactsForUser($today, $end, (int) $filters['user_id']);
+            : $this->financialFactsForUser($today, $end, $userId);
 
         $methods = $this->zeroMethodTotals();
         $methodCounts = array_fill_keys(array_keys($methods), 0);
@@ -52,8 +54,8 @@ class TodayReportService
             ->where('payments.status', Payment::STATUS_POSTED)
             ->where('invoices.status', '!=', Invoice::STATUS_VOID)
             ->whereBetween('payments.paid_at', [$today, $end])
-            ->when(! empty($filters['user_id']), function ($query) use ($filters): void {
-                $query->where('payments.user_id', $filters['user_id']);
+            ->when($userId !== null, function ($query) use ($userId): void {
+                $query->where('payments.user_id', $userId);
             })
             ->groupBy('payments.method')
             ->select(
@@ -73,8 +75,8 @@ class TodayReportService
 
         $openSession = CashRegisterSession::query()
             ->where('status', CashRegisterSession::STATUS_OPEN)
-            ->when(! empty($filters['user_id']), function ($query) use ($filters): void {
-                $query->where('user_id', $filters['user_id']);
+            ->when($userId !== null, function ($query) use ($userId): void {
+                $query->where('user_id', $userId);
             })
             ->orderByDesc('id')
             ->first();
@@ -95,8 +97,8 @@ class TodayReportService
         $voidedInvoices = Invoice::query()
             ->where('status', Invoice::STATUS_VOID)
             ->whereBetween('voided_at', [$today, $end])
-            ->when(! empty($filters['user_id']), function ($query) use ($filters): void {
-                $query->where('issued_by', $filters['user_id']);
+            ->when($userId !== null, function ($query) use ($userId): void {
+                $query->where('issued_by', $userId);
             })
             ->selectRaw('COUNT(*) as cnt')
             ->selectRaw('COALESCE(SUM(total_cents), 0) as total_cents')
@@ -112,15 +114,15 @@ class TodayReportService
         $pendingInvoices = Invoice::query()
             ->whereIn('status', [Invoice::STATUS_ISSUED, Invoice::STATUS_PARTIAL])
             ->whereBetween('issued_at', [$today, $end])
-            ->when(! empty($filters['user_id']), function ($query) use ($filters): void {
-                $query->where('issued_by', $filters['user_id']);
+            ->when($userId !== null, function ($query) use ($userId): void {
+                $query->where('issued_by', $userId);
             })
             ->selectRaw('COUNT(*) as cnt')
             ->selectRaw('COALESCE(SUM(balance_due_cents), 0) as total_cents')
             ->first();
 
-        $invoicesIssued = (int) $facts['invoice_count'];
-        $invoicesCollected = (int) $facts['payment_count'];
+        $invoicesIssued = $facts['invoice_count'];
+        $invoicesCollected = $facts['payment_count'];
         $voidedCount = (int) ($voidedInvoices->cnt ?? 0);
         $pendingCount = (int) ($pendingInvoices->cnt ?? 0);
 
@@ -153,20 +155,17 @@ class TodayReportService
         ];
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    private function filtersForUser(?User $user): array
+    private function userIdFilter(?User $user): ?int
     {
         if ($user === null || $user->can('reports.managerial.view')) {
-            return [];
+            return null;
         }
 
-        return ['user_id' => $user->id];
+        return $user->id;
     }
 
     /**
-     * @return array<string, mixed>
+     * @return FinancialFacts
      */
     private function financialFactsForUser(Carbon $start, Carbon $end, int $userId): array
     {

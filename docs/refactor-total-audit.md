@@ -12031,3 +12031,25 @@ La sincronizacion de autorizaciones es una frontera critica y no debe aceptar `m
 ### Decision
 
 Los centavos calculados dentro del dominio deben permanecer enteros durante toda la distribucion. Separar la cuota fiscal del payload de salida evita coerciones y hace visible que cada renglon recibe exactamente una asignacion antes de serializarse.
+
+## 515. Fase PHPStan 9 - Hechos financieros y alcance diario tipados
+
+### Cambios
+
+- `FinancialFactsService` publica el shape estable de importes, conteos y metodos de pago.
+- `TodayReportService` importa ese contrato para sus rutas gerencial y de cajero.
+- El alcance diario se representa como `?int userId` en vez de un array mixto de un solo campo.
+- Consultas de pagos, caja, anulaciones y pendientes reutilizan el mismo ID concreto.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 9 sobre ambos servicios | OK: 0 errores. |
+| Pint sobre ambos servicios | OK. |
+| Reporte diario gerencial y por cajero | OK: 9 tests, 80 assertions. |
+| Inventario PHPStan nivel 9 global | Baja de 730 a 723 hallazgos. |
+
+### Decision
+
+Los hechos financieros son un contrato de dominio reutilizable, no un array arbitrario. Publicar su forma evita conversiones en consumidores y representar el alcance como un ID nullable elimina estado incidental sin cambiar permisos ni consultas.
