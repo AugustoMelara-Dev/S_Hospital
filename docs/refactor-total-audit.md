@@ -12494,3 +12494,28 @@ La salida de una herramienta de validacion puede alimentar personas o automatiza
 ### Decision
 
 Una herramienta de release no debe cambiar roles, catalogo o usuarios antes de validar sus secretos de entrada. La lectura explicita del input conserva la realidad de Symfony, mientras la normalizacion fiscal evita que datos historicos malformados alteren la secuencia E2E.
+
+## 536. Fase PHPStan 9 - Base golden valida configuracion y metadatos
+
+### Cambios
+
+- `PrepareGoldenTestDatabaseCommand` fija una conexion MySQL/MariaDB string antes de formar claves de configuracion.
+- Host externo invalido se representa como `[invalid]` y se rechaza sin conversion implicita ni conexion.
+- DSN valida host, puerto 1-65535, usuario y password antes de construir PDO.
+- Filas de `SHOW FULL TABLES` y `SHOW CREATE TABLE` requieren shapes string antes de formar SQL.
+- El conteo de metadata golden acepta solo enteros o strings numericos.
+- Se agrega una regresion para host estructurado que antes provocaba `Array to string conversion`.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Regresion antes del cambio | FAIL esperado: excepcion al convertir el host array. |
+| PHPStan nivel 9 sobre el comando | OK: 0 errores. |
+| Pint sobre comando y prueba | OK. |
+| Produccion, nombres, hosts y dry-run golden | OK: 7 tests, 18 assertions. |
+| Inventario PHPStan nivel 9 global | Baja de 541 a 531 hallazgos. |
+
+### Decision
+
+Crear y clonar bases exige que cada dato usado en un identificador, DSN o sentencia SQL pertenezca al dominio esperado. La validacion estricta mantiene las guardas de entorno y evita tanto errores de tipo como conexiones ambiguas antes de una operacion destructiva sobre bases descartables.

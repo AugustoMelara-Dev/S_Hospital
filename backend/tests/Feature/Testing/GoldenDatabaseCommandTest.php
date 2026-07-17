@@ -83,6 +83,20 @@ class GoldenDatabaseCommandTest extends TestCase
             ->assertFailed();
     }
 
+    public function test_command_rejects_structured_database_host_without_converting_it_to_text(): void
+    {
+        Config::set('app.env', 'testing');
+        Config::set('database.default', 'mysql');
+        Config::set('database.connections.mysql.host', ['invalid']);
+
+        $this->artisan('testing:prepare-golden-database', [
+            '--database' => 's_hospital_test_goal',
+            '--golden-database' => 's_hospital_golden_goal',
+        ])
+            ->expectsOutputToContain("Refusing database host '[invalid]' for golden tests.")
+            ->assertFailed();
+    }
+
     public function test_dry_run_reports_safe_database_and_migration_hash_without_creating_database(): void
     {
         Config::set('app.env', 'testing');

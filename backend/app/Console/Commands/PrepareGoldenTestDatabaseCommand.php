@@ -50,22 +50,23 @@ class PrepareGoldenTestDatabaseCommand extends Command
             return self::SUCCESS;
         }
 
-        if (! in_array(config('database.default'), ['mysql', 'mariadb'], true)) {
+        $connection = $this->configString('database.default');
+        if (! in_array($connection, ['mysql', 'mariadb'], true)) {
             $this->error('Golden database materialization requires DB_CONNECTION=mysql or mariadb.');
 
             return self::FAILURE;
         }
 
-        if (! $this->databaseHostIsAllowedForGoldenTests()) {
-            $host = (string) config('database.connections.'.config('database.default').'.host', '');
+        if (! $this->databaseHostIsAllowedForGoldenTests($connection)) {
+            $host = $this->configString("database.connections.{$connection}.host") ?: '[invalid]';
             $this->error("Refusing database host '{$host}' for golden tests. Use localhost/127.0.0.1, set HOSPITAL_TEST_DB_STRATEGY=golden_mysql for Docker test networks, or set HOSPITAL_CONFIRM_EXTERNAL_TEST_DB_HOST to the exact disposable test host.");
 
             return self::FAILURE;
         }
 
         try {
-            $this->prepareGoldenDatabase($goldenDatabase, $hash);
-            $this->cloneDatabase($goldenDatabase, $targetDatabase);
+            $this->prepareGoldenDatabase($goldenDatabase, $hash, $connection);
+            $this->cloneDatabase($goldenDatabase, $targetDatabase, $connection);
         } catch (Throwable $throwable) {
             $this->error('Golden database preparation failed: '.$throwable->getMessage());
 
@@ -114,9 +115,9 @@ class PrepareGoldenTestDatabaseCommand extends Command
         return substr($hash, 0, 12);
     }
 
-    private function databaseHostIsAllowedForGoldenTests(): bool
+    private function databaseHostIsAllowedForGoldenTests(string $connection): bool
     {
-        $host = strtolower(trim((string) config('database.connections.'.config('database.default').'.host', '')));
+        $host = strtolower(trim($this->configString("database.connections.{$connection}.host")));
 
         if (in_array($host, ['localhost', '127.0.0.1', '::1'], true)) {
             return true;
@@ -126,14 +127,15 @@ class PrepareGoldenTestDatabaseCommand extends Command
             return getenv('HOSPITAL_TEST_DB_STRATEGY') === 'golden_mysql';
         }
 
-        $confirmedHost = strtolower(trim((string) getenv('HOSPITAL_CONFIRM_EXTERNAL_TEST_DB_HOST')));
+        $confirmedHostValue = getenv('HOSPITAL_CONFIRM_EXTERNAL_TEST_DB_HOST');
+        $confirmedHost = is_string($confirmedHostValue) ? strtolower(trim($confirmedHostValue)) : '';
 
         return $confirmedHost !== '' && hash_equals($host, $confirmedHost);
     }
 
-    private function prepareGoldenDatabase(string $database, string $hash): void
+    private function prepareGoldenDatabase(string $database, string $hash, string $connection): void
     {
-        $pdo = $this->serverPdo();
+        $pdo = $this->serverPdo($connection);
 
         if ($this->goldenDatabaseMatchesHash($pdo, $database, $hash)) {
             $this->line('Golden database already matches migration hash.');
@@ -145,7 +147,6 @@ class PrepareGoldenTestDatabaseCommand extends Command
         $pdo->exec('DROP DATABASE IF EXISTS '.$this->quoteIdentifier($database));
         $pdo->exec('CREATE DATABASE '.$this->quoteIdentifier($database).' CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
 
-        $connection = (string) config('database.default');
         $originalDatabase = Config::get("database.connections.{$connection}.database");
 
         Config::set("database.connections.{$connection}.database", $database);
@@ -179,9 +180,9 @@ class PrepareGoldenTestDatabaseCommand extends Command
         }
     }
 
-    private function cloneDatabase(string $sourceDatabase, string $targetDatabase): void
+    private function cloneDatabase(string $sourceDatabase, string $targetDatabase, string $connection): void
     {
-        $pdo = $this->serverPdo();
+        $pdo = $this->serverPdo($connection);
 
         $this->line('Cloning golden database into disposable test database.');
         $pdo->exec('DROP DATABASE IF EXISTS '.$this->quoteIdentifier($targetDatabase));
@@ -194,10 +195,10 @@ class PrepareGoldenTestDatabaseCommand extends Command
             $pdo->exec('SET FOREIGN_KEY_CHECKS=0');
 
             foreach ($tables as $table) {
-                $tableName = (string) $table[0];
+                $tableName = $this->tableName($table);
                 $createStatement = $pdo->query('SHOW CREATE TABLE '.$this->quoteIdentifier($sourceDatabase).'.'.$this->quoteIdentifier($tableName));
                 $row = $createStatement === false ? false : $createStatement->fetch(PDO::FETCH_ASSOC);
-                $createSql = is_array($row) ? (string) ($row['Create Table'] ?? '') : '';
+                $createSql = is_array($row) && is_string($row['Create Table'] ?? null) ? $row['Create Table'] : '';
 
                 if ($createSql === '') {
                     throw new \RuntimeException("Could not read CREATE TABLE for {$tableName}.");
@@ -218,7 +219,7 @@ class PrepareGoldenTestDatabaseCommand extends Command
             }
 
             foreach ($tables as $table) {
-                $tableName = (string) $table[0];
+                $tableName = $this->tableName($table);
                 $pdo->exec(
                     'INSERT INTO '.$this->quoteIdentifier($targetDatabase).'.'.$this->quoteIdentifier($tableName)
                     .' SELECT * FROM '.$this->quoteIdentifier($sourceDatabase).'.'.$this->quoteIdentifier($tableName)
@@ -245,7 +246,8 @@ class PrepareGoldenTestDatabaseCommand extends Command
         );
         $statement->execute([$database, '_test_golden_metadata']);
 
-        if ((int) $statement->fetchColumn() !== 1) {
+        $tableCount = $statement->fetchColumn();
+        if (! (is_int($tableCount) || (is_string($tableCount) && ctype_digit($tableCount))) || (int) $tableCount !== 1) {
             return false;
         }
 
@@ -256,19 +258,19 @@ class PrepareGoldenTestDatabaseCommand extends Command
         return $statement !== false && $statement->fetchColumn() === $hash;
     }
 
-    private function serverPdo(): PDO
+    private function serverPdo(string $connection): PDO
     {
-        $connection = (string) config('database.default');
         $config = config("database.connections.{$connection}");
 
         if (! is_array($config)) {
             throw new \RuntimeException('Missing database connection configuration.');
         }
 
-        $host = (string) ($config['host'] ?? '127.0.0.1');
-        $port = (string) ($config['port'] ?? '3306');
-        $username = (string) ($config['username'] ?? '');
-        $password = (string) ($config['password'] ?? '');
+        $host = $this->requiredString($config['host'] ?? '127.0.0.1', 'database host');
+        $port = $this->portString($config['port'] ?? '3306');
+        $username = $this->requiredString($config['username'] ?? '', 'database username', allowEmpty: true);
+        $passwordValue = $config['password'] ?? '';
+        $password = $this->requiredString($passwordValue, 'database password', allowEmpty: true);
 
         return new PDO(
             "mysql:host={$host};port={$port};charset=utf8mb4",
@@ -279,6 +281,44 @@ class PrepareGoldenTestDatabaseCommand extends Command
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             ],
         );
+    }
+
+    private function configString(string $key): string
+    {
+        $value = config($key);
+
+        return is_string($value) ? $value : '';
+    }
+
+    private function requiredString(mixed $value, string $label, bool $allowEmpty = false): string
+    {
+        if (! is_string($value) || (! $allowEmpty && trim($value) === '')) {
+            throw new \RuntimeException("Invalid {$label} configuration.");
+        }
+
+        return $value;
+    }
+
+    private function portString(mixed $value): string
+    {
+        if (is_int($value) && $value >= 1 && $value <= 65535) {
+            return (string) $value;
+        }
+
+        if (is_string($value) && ctype_digit($value) && (int) $value >= 1 && (int) $value <= 65535) {
+            return $value;
+        }
+
+        throw new \RuntimeException('Invalid database port configuration.');
+    }
+
+    private function tableName(mixed $table): string
+    {
+        if (! is_array($table) || ! is_string($table[0] ?? null)) {
+            throw new \RuntimeException('Invalid table metadata returned by database server.');
+        }
+
+        return $table[0];
     }
 
     private function quoteIdentifier(string $identifier): string
