@@ -20,6 +20,27 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 
+/**
+ * @phpstan-type ServiceAuditPayload array{
+ *     category_id: int,
+ *     area_id: int|null,
+ *     name: string,
+ *     aliases: string|null,
+ *     slug: string,
+ *     scan_code: string|null,
+ *     barcode: string|null,
+ *     qr_code: string|null,
+ *     description: string|null,
+ *     internal_code: string|null,
+ *     price: string,
+ *     taxable: bool,
+ *     active: bool,
+ *     visible_in_billing: bool,
+ *     is_billable: bool,
+ *     special_rule_code: string|null,
+ *     print_on_receipt: bool
+ * }
+ */
 class ServiceController extends Controller
 {
     public function index(IndexServiceRequest $request): JsonResponse
@@ -159,20 +180,20 @@ class ServiceController extends Controller
             $oldValues = $this->auditPayload($service);
             $data = $request->validated();
             $priceChangeReason = array_key_exists('price_change_reason', $data)
-                ? trim((string) $data['price_change_reason'])
+                ? $request->string('price_change_reason')->trim()->toString()
                 : null;
             $taxChangeReason = array_key_exists('tax_change_reason', $data)
-                ? trim((string) $data['tax_change_reason'])
+                ? $request->string('tax_change_reason')->trim()->toString()
                 : null;
             $availabilityChangeReason = array_key_exists('availability_change_reason', $data)
-                ? trim((string) $data['availability_change_reason'])
+                ? $request->string('availability_change_reason')->trim()->toString()
                 : null;
             unset($data['price_change_reason']);
             unset($data['tax_change_reason']);
             unset($data['availability_change_reason']);
 
             if (array_key_exists('name', $data)) {
-                $data['slug'] = Str::slug($data['name']);
+                $data['slug'] = Str::slug($request->string('name')->toString());
             }
 
             $service->fill([
@@ -199,7 +220,7 @@ class ServiceController extends Controller
                 );
             }
 
-            if ((string) $oldValues['price'] !== (string) $service->price) {
+            if ($oldValues['price'] !== $service->price) {
                 ServicePriceHistory::query()->create([
                     'service_id' => $service->id,
                     'old_price' => $oldValues['price'],
@@ -231,7 +252,7 @@ class ServiceController extends Controller
 
         $service = DB::transaction(function () use ($request, $service, $user): Service {
             $oldValues = $this->auditPayload($service);
-            $availabilityChangeReason = trim((string) $request->validated('availability_change_reason'));
+            $availabilityChangeReason = $request->string('availability_change_reason')->trim()->toString();
 
             if ($service->active) {
                 $service->forceFill([
@@ -254,59 +275,56 @@ class ServiceController extends Controller
     }
 
     /**
-     * @return array<string, mixed>
+     * @return ServiceAuditPayload
      */
     private function auditPayload(Service $service): array
     {
-        return $service->only([
-            'category_id',
-            'area_id',
-            'name',
-            'aliases',
-            'slug',
-            'scan_code',
-            'barcode',
-            'qr_code',
-            'aliases',
-            'description',
-            'internal_code',
-            'price',
-            'taxable',
-            'active',
-            'visible_in_billing',
-            'is_billable',
-            'special_rule_code',
-            'print_on_receipt',
-            'visible_in_billing',
-            'is_billable',
-        ]);
+        return [
+            'category_id' => $service->category_id,
+            'area_id' => $service->area_id,
+            'name' => $service->name,
+            'aliases' => $service->aliases,
+            'slug' => $service->slug,
+            'scan_code' => $service->scan_code,
+            'barcode' => $service->barcode,
+            'qr_code' => $service->qr_code,
+            'description' => $service->description,
+            'internal_code' => $service->internal_code,
+            'price' => $service->price,
+            'taxable' => $service->taxable,
+            'active' => $service->active,
+            'visible_in_billing' => $service->visible_in_billing,
+            'is_billable' => $service->is_billable,
+            'special_rule_code' => $service->special_rule_code,
+            'print_on_receipt' => $service->print_on_receipt,
+        ];
     }
 
     /**
-     * @param  array<string, mixed>  $oldValues
+     * @param  ServiceAuditPayload  $oldValues
      * @return non-empty-list<string>
      */
     private function serviceActions(array $oldValues, Service $service): array
     {
         $actions = [];
 
-        if ((string) $oldValues['price'] !== (string) $service->price) {
+        if ($oldValues['price'] !== $service->price) {
             $actions[] = 'service.price_updated';
         }
 
-        if ((bool) $oldValues['active'] !== (bool) $service->active) {
+        if ($oldValues['active'] !== $service->active) {
             $actions[] = 'service.active_updated';
         }
 
-        if ((bool) $oldValues['taxable'] !== (bool) $service->taxable) {
+        if ($oldValues['taxable'] !== $service->taxable) {
             $actions[] = 'service.tax_updated';
         }
 
-        if ((bool) $oldValues['visible_in_billing'] !== (bool) $service->visible_in_billing) {
+        if ($oldValues['visible_in_billing'] !== $service->visible_in_billing) {
             $actions[] = 'service.visibility_updated';
         }
 
-        if ((bool) $oldValues['is_billable'] !== (bool) $service->is_billable) {
+        if ($oldValues['is_billable'] !== $service->is_billable) {
             $actions[] = 'service.billability_updated';
         }
 
@@ -314,7 +332,7 @@ class ServiceController extends Controller
     }
 
     /**
-     * @param  array<string, mixed>|null  $oldValues
+     * @param  ServiceAuditPayload|null  $oldValues
      * @param  array<string, mixed>  $extraNewValues
      */
     private function audit(

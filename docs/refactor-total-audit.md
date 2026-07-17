@@ -12251,3 +12251,25 @@ La busqueda forense debe construirse desde tipos validados y limites temporales 
 ### Decision
 
 Las credenciales no deben atravesar la frontera criptografica como `mixed`. Form Requests tipados aseguran ese contrato y el recorrido por modelos conserva el tipo de cada permiso antes de exponerlo al cliente.
+
+## 525. Fase PHPStan 9 - Snapshot de catalogo tipado
+
+### Cambios
+
+- `ServiceController` define el shape completo del snapshot auditable de un servicio.
+- El snapshot se construye desde propiedades tipadas y elimina campos duplicados del `only()` anterior.
+- Precio y flags de disponibilidad se comparan directamente sin casts.
+- Nombre y motivos de cambio se leen mediante accesores string ya validados.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 9 sobre el controlador | OK: 0 errores. |
+| Pint sobre el controlador | OK. |
+| Catalogo, precios, disponibilidad y auditoria | OK: 43 tests, 264 assertions. |
+| Inventario PHPStan nivel 9 global | Baja de 671 a 664 hallazgos. |
+
+### Decision
+
+El snapshot del catalogo es evidencia historica y merece un contrato explicito. Construirlo desde el modelo evita perder tipos, elimina duplicacion accidental y conserva comparaciones exactas de precio y disponibilidad.
