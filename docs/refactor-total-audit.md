@@ -12295,3 +12295,25 @@ El snapshot del catalogo es evidencia historica y merece un contrato explicito. 
 ### Decision
 
 La administracion de identidades es una frontera de seguridad. Normalizar antes de la transaccion asegura que hashes, roles y permisos reciban dominios concretos, mientras los recolectores descartan estados imposibles sin ampliar acceso.
+
+## 527. Fase PHPStan 9 - Escritor de backups validado
+
+### Cambios
+
+- `DatabaseDumpWriter` valida nombre de conexion, array de configuracion, driver, host, puerto, usuario, base y contrasena.
+- Metadatos de tablas/columnas SQLite deben ser objetos con nombres string antes de construir SQL.
+- Las filas SQLite solo serializan escalares y `null`; estructuras inesperadas abortan el dump.
+- Binario configurado se usa solo si es string y las credenciales permanecen en archivo temporal protegido.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 9 sobre el escritor | OK: 0 errores. |
+| Pint sobre el escritor | OK. |
+| Backup, streaming y restauracion SQLite | OK: 35 tests, 187 assertions; 1 simulacion MySQL omitida por binario ausente. |
+| Inventario PHPStan nivel 9 global | Baja de 649 a 636 hallazgos. |
+
+### Decision
+
+Un backup solo es util si representa fielmente la base y falla antes de producir un artefacto ambiguo. Validar configuracion, esquema y escalares protege la recuperacion offline sin exponer credenciales ni usar shell.
