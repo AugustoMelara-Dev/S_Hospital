@@ -10002,3 +10002,25 @@ El texto local, el texto diferido y los parametros de URL son estados deliberada
 ### Decision
 
 PHPStan ya conoce `$migrations` como `list<string>` y `sort()` conserva esa forma. El `array_values()` final no reparaba indices ni reforzaba el contrato; retirarlo simplifica la ruta de diagnostico y reduce una excepcion sin cambiar el JSON operativo.
+
+## 424. Fase Autorizacion - Usuario estable al consultar detalle de factura
+
+### Cambios
+
+- `ShowInvoiceRequest::authorize()` resuelve al usuario autenticado una sola vez.
+- El request exige explicitamente una instancia de `App\Models\User` antes de consultar permisos, alcance historico o propiedad de la factura.
+- Las comprobaciones posteriores reutilizan esa instancia no nullable y eliminan el ultimo acceso nullsafe del request.
+- Se retira una excepcion `nullsafe.neverNull`; el baseline PHPStan baja de 46 a 45 errores contabilizados.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan tras retirar solo la excepcion | RED: `nullsafe.neverNull` en `ShowInvoiceRequest.php:27`. |
+| PHPStan estricto despues | OK: 0 errores fuera del baseline. |
+| `InvoiceHistoryReprintVoidTest.php` | OK: 22 tests, 135 assertions. |
+| Pint focalizado | OK. |
+
+### Decision
+
+La autorizacion no necesita resolver tres veces al principal de la solicitud. Validar una sola instancia hace explicita la rama anonima, evita que permiso, alcance y propietario dependan de lecturas separadas y alinea el contrato de ejecucion con el tipo que PHPStan ya inferia despues del primer control.

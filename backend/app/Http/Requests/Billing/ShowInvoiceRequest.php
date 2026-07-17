@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Billing;
 
 use App\Models\Invoice;
+use App\Models\User;
 use App\Support\InvoiceAccess;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -10,7 +11,8 @@ class ShowInvoiceRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        if ($this->user()?->can('invoices.view') !== true) {
+        $user = $this->user();
+        if (! $user instanceof User || ! $user->can('invoices.view')) {
             return false;
         }
 
@@ -20,11 +22,11 @@ class ShowInvoiceRequest extends FormRequest
             return false;
         }
 
-        if (app(InvoiceAccess::class)->canAccessAnyInvoice($this->user())) {
+        if (app(InvoiceAccess::class)->canAccessAnyInvoice($user)) {
             return true;
         }
 
-        return $invoice->issued_by === $this->user()?->id
+        return $invoice->issued_by === $user->id
             && app(InvoiceAccess::class)->wasIssuedDuringCurrentOperationalDay($invoice);
     }
 
