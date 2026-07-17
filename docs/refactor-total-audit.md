@@ -11179,3 +11179,24 @@ Las colecciones de permisos cruzan API, auditoria y sincronizacion de acceso, po
 ### Decision
 
 `validated()` confirma reglas pero conserva un diccionario generico para el analizador y puede mantener representaciones distintas segun transporte. Los metodos `payload()` hacen explicita la frontera hacia acciones monetarias sin duplicar la validacion ni mover logica de negocio al frontend.
+
+## 477. Fase PHPStan 7 - Estados y dias del reporte mensual
+
+### Cambios
+
+- El resumen mensual mantiene acumuladores explicitos para emitidas, parciales y pagadas, y construye el shape final junto con anuladas.
+- Los totales diarios terminan con `array_values()` y garantizan una lista cronologica contigua.
+- No cambian consultas, ventanas de fecha, importes ni tratamiento de facturas anuladas.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 7 sobre `MonthlyReportService` | OK: 0 errores. |
+| Pint sobre el servicio | OK. |
+| Agregados mensuales y anulaciones fuera del mes de emision | OK: 2 tests, 43 assertions. |
+| Inventario PHPStan nivel 7 global | Baja de 11 a 9 hallazgos. |
+
+### Decision
+
+Los cuatro estados forman un conjunto cerrado consumido por la API. Construir el resultado explicitamente conserva ese contrato y evita que una clave dinamica ensanche el shape o incorpore estados no previstos.

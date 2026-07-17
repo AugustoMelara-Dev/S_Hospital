@@ -47,14 +47,9 @@ class MonthlyReportService
      */
     private function invoicesByStatus(Carbon $start, Carbon $end): array
     {
-        $statuses = collect([
-            Invoice::STATUS_ISSUED,
-            Invoice::STATUS_PARTIAL,
-            Invoice::STATUS_PAID,
-            Invoice::STATUS_VOID,
-        ])->mapWithKeys(fn (string $status): array => [
-            $status => ['count' => 0, 'total' => '0.00'],
-        ])->all();
+        $issued = ['count' => 0, 'total' => '0.00'];
+        $partial = ['count' => 0, 'total' => '0.00'];
+        $paid = ['count' => 0, 'total' => '0.00'];
 
         Invoice::query()
             ->whereBetween('issued_at', [$start, $end])
@@ -65,11 +60,18 @@ class MonthlyReportService
             ->selectRaw('COALESCE(SUM(total_cents), 0) as total_cents')
             ->toBase()
             ->get()
-            ->each(function (object $row) use (&$statuses): void {
-                $statuses[$row->status] = [
+            ->each(function (object $row) use (&$issued, &$partial, &$paid): void {
+                $summary = [
                     'count' => (int) $row->count,
                     'total' => $this->centsToMoney($row->total_cents),
                 ];
+
+                match ($row->status) {
+                    Invoice::STATUS_ISSUED => $issued = $summary,
+                    Invoice::STATUS_PARTIAL => $partial = $summary,
+                    Invoice::STATUS_PAID => $paid = $summary,
+                    default => null,
+                };
             });
 
         $voided = Invoice::query()
@@ -79,12 +81,15 @@ class MonthlyReportService
             ->selectRaw('COALESCE(SUM(total_cents), 0) as total_cents')
             ->first();
 
-        $statuses[Invoice::STATUS_VOID] = [
-            'count' => (int) ($voided->count ?? 0),
-            'total' => $this->centsToMoney($voided->total_cents ?? 0),
+        return [
+            Invoice::STATUS_ISSUED => $issued,
+            Invoice::STATUS_PARTIAL => $partial,
+            Invoice::STATUS_PAID => $paid,
+            Invoice::STATUS_VOID => [
+                'count' => (int) ($voided->count ?? 0),
+                'total' => $this->centsToMoney($voided->total_cents ?? 0),
+            ],
         ];
-
-        return $statuses;
     }
 
     /**
@@ -94,7 +99,7 @@ class MonthlyReportService
     {
         $dates = $this->activityDates($start, $end);
 
-        return $dates
+        return array_values($dates
             ->map(function (string $date): array {
                 $day = Carbon::createFromFormat('Y-m-d', $date);
                 $facts = $this->financialFacts->forRange($day->copy()->startOfDay(), $day->copy()->endOfDay());
@@ -110,8 +115,7 @@ class MonthlyReportService
                     'payment_count' => $facts['payment_count'],
                 ];
             })
-            ->values()
-            ->all();
+            ->all());
     }
 
     /** @return Collection<int, string> */
