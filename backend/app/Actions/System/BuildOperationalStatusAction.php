@@ -4,6 +4,9 @@ namespace App\Actions\System;
 
 use App\Support\System\OperationalCheck;
 
+/**
+ * @phpstan-type OperationalCheckPayload array{code: string, label: string, status: string, detail: string}
+ */
 class BuildOperationalStatusAction
 {
     /**
@@ -12,9 +15,9 @@ class BuildOperationalStatusAction
      */
     public function addSummary(array $status): array
     {
-        $checks = collect($status['preflight']['production_checks'] ?? []);
-        $proofs = collect($status['preflight']['physical_proofs'] ?? []);
-        $blockers = collect($status['readiness']['blockers'] ?? []);
+        $checks = collect($this->statusItems($status['preflight']['production_checks'] ?? null));
+        $proofs = collect($this->statusItems($status['preflight']['physical_proofs'] ?? null));
+        $blockers = collect($this->statusItems($status['readiness']['blockers'] ?? null));
 
         $problemCount = $checks
             ->merge($proofs)
@@ -67,6 +70,7 @@ class BuildOperationalStatusAction
 
     /**
      * @param  array<string, mixed>  $status
+     * @return OperationalCheckPayload
      */
     private function databaseCheck(array $status): array
     {
@@ -88,6 +92,7 @@ class BuildOperationalStatusAction
 
     /**
      * @param  array<string, mixed>  $status
+     * @return OperationalCheckPayload
      */
     private function frontendCheck(array $status): array
     {
@@ -103,6 +108,7 @@ class BuildOperationalStatusAction
 
     /**
      * @param  array<string, mixed>  $status
+     * @return OperationalCheckPayload
      */
     private function backupCheck(array $status): array
     {
@@ -121,6 +127,7 @@ class BuildOperationalStatusAction
 
     /**
      * @param  array<string, mixed>  $status
+     * @return OperationalCheckPayload
      */
     private function queueCheck(array $status): array
     {
@@ -141,6 +148,7 @@ class BuildOperationalStatusAction
 
     /**
      * @param  array<string, mixed>  $status
+     * @return OperationalCheckPayload
      */
     private function systemTimeCheck(array $status): array
     {
@@ -156,6 +164,7 @@ class BuildOperationalStatusAction
 
     /**
      * @param  array<string, mixed>  $status
+     * @return OperationalCheckPayload
      */
     private function diskSpaceCheck(array $status): array
     {
@@ -181,10 +190,11 @@ class BuildOperationalStatusAction
 
     /**
      * @param  array<string, mixed>  $status
+     * @return OperationalCheckPayload
      */
     private function lanAccessCheck(array $status): array
     {
-        $proofs = collect($status['preflight']['physical_proofs'] ?? []);
+        $proofs = collect($this->statusItems($status['preflight']['physical_proofs'] ?? null));
         $isLocalMode = ($status['network']['host_type'] ?? null) === 'loopback';
         $proof = $proofs->firstWhere('code', $isLocalMode ? 'LOCAL_SERVER_VALIDATION_PROOF' : 'LAN_CLIENT_VALIDATION_PROOF');
         $validated = ($proof['status'] ?? 'pending') === 'validated';
@@ -212,6 +222,7 @@ class BuildOperationalStatusAction
 
     /**
      * @param  array<string, mixed>  $status
+     * @return OperationalCheckPayload
      */
     private function versionCheck(array $status): array
     {
@@ -225,9 +236,7 @@ class BuildOperationalStatusAction
         );
     }
 
-    /**
-     * @return array{code: string, label: string, status: string, detail: string}
-     */
+    /** @return OperationalCheckPayload */
     private function check(string $code, string $label, string $status, string $detail): array
     {
         return (new OperationalCheck($code, $label, $status, $detail))->toArray();
@@ -272,5 +281,25 @@ class BuildOperationalStatusAction
             'error' => 'Avisar a supervisor o soporte antes de repetir acciones delicadas.',
             default => 'Revisar los puntos marcados y completar las acciones indicadas.',
         };
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function statusItems(mixed $items): array
+    {
+        if (! is_array($items)) {
+            return [];
+        }
+
+        $normalized = [];
+
+        foreach ($items as $item) {
+            if (is_array($item)) {
+                $normalized[] = $item;
+            }
+        }
+
+        return $normalized;
     }
 }

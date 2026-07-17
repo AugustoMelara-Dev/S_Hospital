@@ -10790,3 +10790,25 @@ Las hojas de calculo aceptan un unico payload ejecutivo y objetos Worksheet real
 ### Decision
 
 Todas las secciones del PDF consumen partes del mismo reporte ejecutivo. Un contrato raiz y otro para secciones eliminan arrays opacos sin inventar un segundo formato ni alterar la representacion del documento.
+
+## 460. Fase PHPStan 6 - Estado operacional tipado
+
+### Cambios
+
+- `BuildOperationalStatusAction` define el shape de cada check y lo aplica a sus nueve verificaciones.
+- Las listas de checks, pruebas y bloqueos se normalizan a arrays antes de construir colecciones y calcular severidad.
+- `SystemStatusController` define un contrato de seccion para readiness y preflight en entorno, base de datos, frontend, red, backups y runtime.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Medicion PHPStan nivel 6 inicial del corte | RED controlado: 24 contratos de arrays/templates. |
+| PHPStan nivel 6 sobre action y controlador | OK: 0 errores. |
+| Pint sobre ambos archivos | OK. |
+| Setup, salud, LAN, backups, scheduler y evidencias fisicas | OK: 26 tests, 181 assertions. |
+| Inventario PHPStan nivel 6 global | Baja de 100 a 76 hallazgos. |
+
+### Decision
+
+El estado operacional combina datos de subsistemas y evidencia manual; normalizar sus listas evita que valores no estructurados afecten la severidad. Los contratos comparten el payload existente y no cambian la politica conservadora que impide declarar produccion lista automaticamente.

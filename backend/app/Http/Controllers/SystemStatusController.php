@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Storage;
 use Symfony\Component\Process\ExecutableFinder;
 use Throwable;
 
+/** @phpstan-type StatusSection array<string, mixed> */
 class SystemStatusController extends Controller
 {
     /**
@@ -198,9 +199,7 @@ class SystemStatusController extends Controller
         ]);
     }
 
-    /**
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     private function environmentStatus(): array
     {
         return [
@@ -216,9 +215,7 @@ class SystemStatusController extends Controller
         ];
     }
 
-    /**
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     private function databaseStatus(): array
     {
         $connection = (string) Config::get('database.default');
@@ -630,6 +627,8 @@ class SystemStatusController extends Controller
     }
 
     /**
+     * @param  StatusSection  $runtime
+     * @param  StatusSection  $network
      * @return array<string, mixed>
      */
     private function readinessStatus(array $runtime, array $network): array
@@ -681,6 +680,12 @@ class SystemStatusController extends Controller
     }
 
     /**
+     * @param  StatusSection  $environment
+     * @param  StatusSection  $database
+     * @param  StatusSection  $frontend
+     * @param  StatusSection  $network
+     * @param  StatusSection  $backups
+     * @param  StatusSection  $runtime
      * @return array<string, mixed>
      */
     private function preflightStatus(
