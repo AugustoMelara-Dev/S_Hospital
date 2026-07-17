@@ -3,15 +3,17 @@
 namespace App\Http\Requests\Reports;
 
 use App\Models\CashRegisterSession;
+use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ShowCashSessionReportRequest extends FormRequest
 {
     public function authorize(): bool
     {
+        $user = $this->user();
         if (
-            $this->user()?->can('reports.cash_session.view') !== true
-            && $this->user()?->can('reports.managerial.view') !== true
+            ! $user instanceof User
+            || (! $user->can('reports.cash_session.view') && ! $user->can('reports.managerial.view'))
         ) {
             return false;
         }
@@ -22,8 +24,8 @@ class ShowCashSessionReportRequest extends FormRequest
             return false;
         }
 
-        return $this->user()?->can('reports.managerial.view') === true
-            || $cashSession->user_id === $this->user()?->id;
+        return $user->can('reports.managerial.view')
+            || $cashSession->user_id === $user->id;
     }
 
     public function rules(): array

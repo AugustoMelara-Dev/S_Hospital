@@ -10024,3 +10024,25 @@ PHPStan ya conoce `$migrations` como `list<string>` y `sort()` conserva esa form
 ### Decision
 
 La autorizacion no necesita resolver tres veces al principal de la solicitud. Validar una sola instancia hace explicita la rama anonima, evita que permiso, alcance y propietario dependan de lecturas separadas y alinea el contrato de ejecucion con el tipo que PHPStan ya inferia despues del primer control.
+
+## 425. Fase Autorizacion - Principal unico en reportes de caja y PDF
+
+### Cambios
+
+- `ShowCashSessionReportRequest` resuelve una sola vez al usuario y reutiliza la misma instancia para permisos gerenciales, permiso de caja y propiedad de la sesion.
+- `PdfExportRequest` aplica el mismo contrato tanto en `authorize()` como al restringir filtros de un reporte no gerencial.
+- `authorizedReportFilters()` rechaza explicitamente una invocacion sin usuario antes de consultar sesiones o fijar `user_id`.
+- Se retiran cinco excepciones `nullsafe.neverNull`; el baseline PHPStan baja de 45 a 40 errores contabilizados.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan tras retirar solo las excepciones | RED: 5 errores `nullsafe.neverNull`, tres en PDF y dos en reporte de caja. |
+| PHPStan estricto despues | OK: 0 errores fuera del baseline. |
+| Regresion de reportes focalizada | OK: 5 tests, 56 assertions; cubre permisos, propiedad, cierre diario y rango normalizado por sesion. |
+| Pint focalizado | OK. |
+
+### Decision
+
+Permisos y propiedad deben evaluarse sobre el mismo principal autenticado. La consolidacion elimina lecturas redundantes del resolver de usuario y hace imposible continuar hacia filtros o consultas de caja con un principal nulo, sin ampliar el alcance de cajeros ni alterar la capacidad gerencial.

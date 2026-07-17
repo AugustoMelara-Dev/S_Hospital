@@ -5,6 +5,7 @@ namespace App\Http\Requests\Reports;
 use App\Models\CashRegisterSession;
 use App\Models\Invoice;
 use App\Models\Payment;
+use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
@@ -19,16 +20,17 @@ class PdfExportRequest extends FormRequest
 
     public function authorize(): bool
     {
-        if ($this->user()?->can('reports.export') !== true) {
+        $user = $this->user();
+        if (! $user instanceof User || ! $user->can('reports.export')) {
             return false;
         }
 
         if ($this->isDailyClosure()) {
-            return $this->user()?->can('reports.managerial.view') === true;
+            return $user->can('reports.managerial.view');
         }
 
-        return $this->user()?->can('reports.managerial.view') === true
-            || $this->user()?->can('reports.cash_session.view') === true;
+        return $user->can('reports.managerial.view')
+            || $user->can('reports.cash_session.view');
     }
 
     /**
@@ -108,8 +110,12 @@ class PdfExportRequest extends FormRequest
         }
 
         $filters = $this->reportFilters();
+        $user = $this->user();
+        if (! $user instanceof User) {
+            abort(403);
+        }
 
-        if ($this->user()?->can('reports.managerial.view') === true) {
+        if ($user->can('reports.managerial.view')) {
             return $this->authorizedReportFilters = $this->normalizeCashSessionDateRange($filters);
         }
 
@@ -117,12 +123,12 @@ class PdfExportRequest extends FormRequest
 
         $ownsCashSession = CashRegisterSession::query()
             ->whereKey($filters['cash_session_id'])
-            ->where('user_id', $this->user()?->id)
+            ->where('user_id', $user->id)
             ->exists();
 
         abort_unless($ownsCashSession, 403);
 
-        $filters['user_id'] = $this->user()?->id;
+        $filters['user_id'] = $user->id;
 
         return $this->authorizedReportFilters = $this->normalizeCashSessionDateRange($filters);
     }
