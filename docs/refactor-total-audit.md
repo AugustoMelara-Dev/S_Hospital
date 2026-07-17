@@ -11856,3 +11856,25 @@ La telemetria del navegador es entrada no confiable y no debe causar errores sec
 ### Decision
 
 Los correlativos nunca deben depender de casts desde estructuras arbitrarias. Los accesores enteros mantienen estable la validacion y el chequeo explicito del maximo SQL protege la monotonicidad de recibos ya emitidos.
+
+## 507. Fase PHPStan 9 - Filtros concretos de facturas
+
+### Cambios
+
+- `InvoiceController` normaliza una sola vez fechas, estado, busquedas, usuarios, cajas y estados de conciliacion.
+- La cadena SQL deja de concatenar o escapar offsets `mixed` del array validado.
+- El resumen institucional usa la relacion tipada `issuedInstitutionalReceipts` en vez de `getRelation()` mixto.
+- No cambian alcance diario del cajero, acceso historico, LIKE escapado, conciliacion, eager loading ni paginacion.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 9 sobre el controlador | OK: 0 errores. |
+| Pint sobre el controlador | OK. |
+| Historial, permisos, anulacion y filtros de conciliacion | OK: 25 tests, 160 assertions. |
+| Inventario PHPStan nivel 9 global | Baja de 748 a 744 hallazgos. |
+
+### Decision
+
+Una consulta financiera debe construirse desde escalares concretos, no desde un array mixto aun despues de validacion. La normalizacion unica hace visibles los contratos y conserva el uso de filtros e indices existentes.

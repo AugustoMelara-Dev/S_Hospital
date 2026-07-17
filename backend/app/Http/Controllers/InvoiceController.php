@@ -27,8 +27,18 @@ class InvoiceController extends Controller
     public function index(IndexInvoiceRequest $request): JsonResponse
     {
         $user = $this->authenticatedUser($request);
-        $validated = $request->validated();
-        $reconciliationCashSessionId = $validated['reconciliation_cash_session_id'] ?? null;
+        $dateFrom = $request->filled('date_from') ? $request->string('date_from')->toString() : null;
+        $dateTo = $request->filled('date_to') ? $request->string('date_to')->toString() : null;
+        $status = $request->filled('status') ? $request->string('status')->toString() : null;
+        $patient = $request->filled('patient') ? $request->string('patient')->toString() : '';
+        $invoiceNumber = $request->filled('invoice_number') ? $request->string('invoice_number')->toString() : '';
+        $userId = $request->filled('user_id') ? $request->integer('user_id') : null;
+        $cashSessionId = $request->filled('cash_session_id') ? $request->integer('cash_session_id') : null;
+        $reconciliationCashSessionId = $request->filled('reconciliation_cash_session_id')
+            ? $request->integer('reconciliation_cash_session_id')
+            : null;
+        $balanceState = $request->filled('balance_state') ? $request->string('balance_state')->toString() : null;
+        $receiptState = $request->filled('receipt_state') ? $request->string('receipt_state')->toString() : null;
 
         $invoices = Invoice::query()
             ->with([
@@ -46,39 +56,39 @@ class InvoiceController extends Controller
             )
             ->when(
                 $this->canAccessHistoricalInvoices($user)
-                    && empty($validated['date_from'])
-                    && empty($validated['date_to'])
-                    && empty($reconciliationCashSessionId),
+                    && $dateFrom === null
+                    && $dateTo === null
+                    && $reconciliationCashSessionId === null,
                 fn (Builder $query) => $query->whereBetween('issued_at', [
                     now()->startOfDay(),
                     now()->endOfDay(),
                 ]),
             )
             ->when(
-                $this->canAccessHistoricalInvoices($user) && ! empty($validated['date_from']),
-                fn (Builder $query) => $query->where('issued_at', '>=', $validated['date_from']),
+                $this->canAccessHistoricalInvoices($user) && $dateFrom !== null,
+                fn (Builder $query) => $query->where('issued_at', '>=', $dateFrom),
             )
             ->when(
-                $this->canAccessHistoricalInvoices($user) && ! empty($validated['date_to']),
-                fn (Builder $query) => $query->where('issued_at', '<=', $validated['date_to'].' 23:59:59'),
+                $this->canAccessHistoricalInvoices($user) && $dateTo !== null,
+                fn (Builder $query) => $query->where('issued_at', '<=', $dateTo.' 23:59:59'),
             )
-            ->when(! empty($validated['status']), fn (Builder $query) => $query->where('status', $validated['status']))
-            ->when(! empty($validated['patient']), function (Builder $query) use ($validated): void {
-                $query->where('patient_name', 'like', '%'.$this->escapeLike($validated['patient']).'%');
+            ->when($status !== null, fn (Builder $query) => $query->where('status', $status))
+            ->when($patient !== '', function (Builder $query) use ($patient): void {
+                $query->where('patient_name', 'like', '%'.$this->escapeLike($patient).'%');
             })
-            ->when(! empty($validated['invoice_number']), function (Builder $query) use ($validated): void {
-                $query->where('invoice_number', 'like', '%'.$this->escapeLike($validated['invoice_number']).'%');
+            ->when($invoiceNumber !== '', function (Builder $query) use ($invoiceNumber): void {
+                $query->where('invoice_number', 'like', '%'.$this->escapeLike($invoiceNumber).'%');
             })
             ->when(
-                $this->canAccessHistoricalInvoices($user) && ! empty($validated['user_id']),
-                fn (Builder $query) => $query->where('issued_by', $validated['user_id']),
+                $this->canAccessHistoricalInvoices($user) && $userId !== null,
+                fn (Builder $query) => $query->where('issued_by', $userId),
             )
             ->when(
-                ! empty($validated['cash_session_id']),
-                fn (Builder $query) => $query->where('cash_session_id', $validated['cash_session_id']),
+                $cashSessionId !== null,
+                fn (Builder $query) => $query->where('cash_session_id', $cashSessionId),
             )
             ->when(
-                ! empty($reconciliationCashSessionId),
+                $reconciliationCashSessionId !== null,
                 function (Builder $query) use ($reconciliationCashSessionId): void {
                     $query->where(function (Builder $scope) use ($reconciliationCashSessionId): void {
                         $scope
@@ -95,14 +105,14 @@ class InvoiceController extends Controller
                 },
             )
             ->when(
-                ($validated['balance_state'] ?? null) === 'pending',
+                $balanceState === 'pending',
                 fn (Builder $query) => $query->whereIn('status', [
                     Invoice::STATUS_ISSUED,
                     Invoice::STATUS_PARTIAL,
                 ]),
             )
             ->when(
-                ($validated['receipt_state'] ?? null) === 'missing',
+                $receiptState === 'missing',
                 function (Builder $query): void {
                     $query
                         ->where('status', Invoice::STATUS_PAID)
@@ -208,7 +218,7 @@ class InvoiceController extends Controller
             ]);
         }
 
-        $receipt = $invoice->getRelation('issuedInstitutionalReceipts')->first();
+        $receipt = $invoice->issuedInstitutionalReceipts->first();
         $invoice->unsetRelation('issuedInstitutionalReceipts');
         $invoice->setAttribute('institutional_receipt', $receipt instanceof InstitutionalReceipt ? [
             'id' => $receipt->id,
