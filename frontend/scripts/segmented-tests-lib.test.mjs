@@ -108,3 +108,19 @@ test('the Windows full-suite command delegates to the maintained segmented runne
 
   assert.equal(packageJson.scripts['test:full:windows'], 'npm run test:segmented');
 });
+
+test('coverage commands isolate the unit project from Storybook browser tests', () => {
+  const packageJson = JSON.parse(readFileSync(resolve(frontendDir, 'package.json'), 'utf8'));
+
+  for (const scriptName of ['test:coverage', 'test:coverage:check']) {
+    const command = packageJson.scripts[scriptName];
+    assert.match(command, /(?:^|\s)--config vitest\.unit\.config\.ts(?:\s|$)/);
+    assert.match(command, /(?:^|\s)--maxWorkers=2(?:\s|$)/);
+    assert.match(command, /(?:^|\s)--fileParallelism(?:\s|$)/);
+    assert.doesNotMatch(command, /--no-file-parallelism/);
+  }
+
+  const unitConfig = readFileSync(resolve(frontendDir, 'vitest.unit.config.ts'), 'utf8');
+  assert.match(unitConfig, /name:\s*['"]unit['"]/);
+  assert.doesNotMatch(unitConfig, /storybookTest|@storybook/);
+});

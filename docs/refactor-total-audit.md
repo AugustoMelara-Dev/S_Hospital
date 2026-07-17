@@ -9692,3 +9692,33 @@ El proyecto tiene Docker Compose propio y soporte operativo dentro de la aplicac
 ### Decision
 
 Un volcado de worktree dentro del repositorio duplica historial, conserva texto con codificacion defectuosa y aumenta clonados y revisiones sin ser una fuente de verdad. Git y los reportes QA focalizados cubren esas responsabilidades con trazabilidad verificable.
+
+## 411. Fase Pruebas - Cobertura aislada y ejecutable
+
+### Cambios
+
+- Los comandos de cobertura usan `vitest.unit.config.ts`, configuracion sin el plugin de navegador Storybook.
+- El aislamiento evita que `@chromatic-com/storybook` interprete argumentos V8 y falle antes de ejecutar una prueba.
+- Cobertura usa dos forks con paralelismo de archivos, el mismo maximo estable demostrado por el runner segmentado.
+- Un contrato Node valida config dedicada, ausencia de imports Storybook y flags de paralelismo para ambos comandos de cobertura.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Intento inicial | Falla antes de pruebas: `CriticalPresetLoadError` de Storybook/Chromatic. |
+| Filtro `--project unit` | Insuficiente: Vitest evalua el plugin Storybook antes de filtrar proyectos. |
+| Config unitaria, 1 worker | Aislamiento correcto, pero excede 1200 s y el proceso se corta sin reporte. |
+| Config unitaria, 2 workers | OK: 144 archivos, 1115 tests, 0 fallas; 1174.15 s Vitest / 1178.6 s total. |
+| Cobertura | 83.52% lineas, 80.12% funciones, 79.09% ramas y 81.87% statements; supera 65/60/60/65. |
+| Contrato del runner | OK: 6 pruebas Node. |
+| TypeScript y ESLint focalizado | OK. |
+| Build Storybook separado | OK: 2220 modulos; 9.11 s. |
+
+### Oportunidad descartada
+
+No se sube a cuatro workers: aunque el host expone 20 procesadores logicos, al decidir solo tenia 1.4 GiB de 15.7 GiB libres por procesos externos. Dos workers terminan dentro del presupuesto sin introducir una condicion de memoria fragil.
+
+### Decision
+
+Cobertura debe medir la suite unitaria y Storybook debe conservar su gate de navegador separado. Compartir un unico config hacia que opciones legitimas de V8 rompieran un preset no relacionado; el config dedicado convierte nuevamente el umbral en un gate reproducible y deja la cobertura global por encima del baseline historico cercano a 79%.
