@@ -31,7 +31,7 @@ class ProductionDockerfileTest extends TestCase
         $this->assertStringContainsString('pnpm run build', $dockerfile);
         $this->assertStringNotContainsString('frontend/package*.json', $dockerfile);
         $this->assertStringNotContainsString('npm ci', $dockerfile);
-        $this->assertMatchesRegularExpression('/^\*$/m', $dockerignore);
+        $this->assertMatchesRegularExpression('/^\*\*$/m', $dockerignore);
         $this->assertStringNotContainsString('!frontend/package-lock.json', $dockerignore);
     }
 
@@ -58,6 +58,8 @@ class ProductionDockerfileTest extends TestCase
 
         $this->assertStringNotContainsString('!backend/**', $dockerignore);
         $this->assertStringNotContainsString('!frontend/**', $dockerignore);
+        $this->assertMatchesRegularExpression('/^backend\/\*\*$/m', $dockerignore);
+        $this->assertMatchesRegularExpression('/^frontend\/\*\*$/m', $dockerignore);
 
         foreach ([
             '!backend/app/**',

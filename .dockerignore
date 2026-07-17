@@ -1,9 +1,10 @@
 # Production builds are allowlisted so local QA output, worktrees, logs and
 # other untracked files can never inflate or contaminate the image context.
-*
+**
 
 # Laravel application runtime.
 !backend/
+backend/**
 !backend/app/
 !backend/app/**
 !backend/bootstrap/
@@ -29,6 +30,7 @@
 # React production build inputs. Tests under src remain included because the
 # strict TypeScript build checks them; QA artifacts and browser E2E stay out.
 !frontend/
+frontend/**
 !frontend/.storybook/
 !frontend/.storybook/**
 !frontend/public/

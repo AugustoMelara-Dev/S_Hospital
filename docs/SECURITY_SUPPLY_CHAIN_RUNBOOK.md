@@ -77,6 +77,10 @@ powershell.exe -ExecutionPolicy Bypass -File scripts\security\run-security-check
   pnpm version as CI. `frontend/package-lock.json` is excluded from the Docker
   context so it cannot resolve a different production dependency graph or
   invalidate the build cache.
+- `.dockerignore` uses a recursive deny plus ordered backend/frontend
+  allowlists. The verified full build context is 58.25 KiB instead of
+  496.23 MiB, and the permissions layer fell from 70.1 s to 1.1 s. Keep the
+  `**`, per-root re-exclusions, and explicit runtime exceptions in that order.
 - `frontend/pnpm-workspace.yaml` allows dependency build scripts only for
   `esbuild`; do not add packages without reviewing the exact script and need.
 - The production Composer stage runs on the same PHP 8.3 base as the final
