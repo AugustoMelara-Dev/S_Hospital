@@ -11130,3 +11130,28 @@ La frontera interna es identica para cinco servicios y ya habia una implementaci
 ### Decision
 
 Los snapshots se persisten y renderizan como listas ordenadas, por lo que la continuidad de indices es parte del contrato, no solo una anotacion. Los IDs de perfil son escalares validados y deben estrecharse antes de invocar las sobrecargas de Eloquent.
+
+## 475. Fase PHPStan 7 - Listas y bindings de administracion de acceso
+
+### Cambios
+
+- Roles exponen IDs enteros y construyen permisos/catalogos con listas contiguas y un transformador unico de metadata de riesgo.
+- Payloads de auditoria de rol se generan desde modelos `Permission` y se ordenan sin `pluck` ambiguo.
+- Usuarios preservan listas contiguas al filtrar, ordenar y agregar el marcador de acceso exacto.
+- El observer de permisos normaliza colecciones a listas y solo consulta roles/permisos cuando recibe IDs escalares.
+- `UpdateUserRequest` exige un binding `User` real antes de autorizar y construir reglas de unicidad.
+- No cambian permisos visibles, roles protegidos, metadata de riesgo ni decisiones normales de autorizacion.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 7 sobre controlador de roles, usuarios, observer y request | OK: 0 errores. |
+| Pint sobre los cuatro archivos | OK. |
+| Roles, usuarios y auditoria de permisos | OK: 67 tests, 306 assertions. |
+| Suite de roles tras el transformador compartido | OK: 14 tests, 70 assertions. |
+| Inventario PHPStan nivel 7 global | Baja de 30 a 18 hallazgos; propiedades y metodos ambiguos quedan en cero. |
+
+### Decision
+
+Las colecciones de permisos cruzan API, auditoria y sincronizacion de acceso, por lo que deben ser listas estables. Un transformador unico evita que la metadata critica difiera entre el detalle del rol y el catalogo administrativo.

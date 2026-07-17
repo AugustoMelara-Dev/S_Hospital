@@ -162,16 +162,11 @@ class RoleController extends Controller
                 continue;
             }
 
-            $permissions[] = [
-                'name' => $permission->name,
-                'module' => $this->moduleForPermission($permission->name),
-                'label' => $this->labelForPermission($permission->name),
-                ...RoleCatalog::permissionRiskMetadata($permission->name),
-            ];
+            $permissions[] = $this->transformPermission($permission);
         }
 
         return [
-            'id' => $role->id,
+            'id' => (int) $role->getKey(),
             'name' => $role->name,
             'protected' => RoleCatalog::isProtectedRoleName($role->name),
             'permissions' => $permissions,
@@ -183,27 +178,49 @@ class RoleController extends Controller
      */
     private function permissionCatalog(): array
     {
-        return Permission::query()
+        $groupedPermissions = Permission::query()
             ->where('guard_name', 'web')
             ->whereNotIn('name', RoleCatalog::hiddenPermissionNames())
             ->orderBy('name')
             ->get()
-            ->groupBy(fn (Permission $permission): string => $this->moduleForPermission($permission->name))
-            ->map(fn ($permissions, string $module): array => [
+            ->groupBy(fn (Permission $permission): string => $this->moduleForPermission($permission->name));
+
+        $catalog = [];
+        foreach ($groupedPermissions as $module => $permissions) {
+            if (! is_string($module)) {
+                continue;
+            }
+
+            $items = [];
+            foreach ($permissions as $permission) {
+                $items[] = $this->transformPermission($permission, $module);
+            }
+
+            $catalog[] = [
                 'module' => $module,
                 'label' => $this->labelForModule($module),
-                'permissions' => $permissions
-                    ->map(fn (Permission $permission): array => [
-                        'name' => $permission->name,
-                        'module' => $module,
-                        'label' => $this->labelForPermission($permission->name),
-                        ...RoleCatalog::permissionRiskMetadata($permission->name),
-                    ])
-                    ->values()
-                    ->all(),
-            ])
-            ->values()
-            ->all();
+                'permissions' => $items,
+            ];
+        }
+
+        return $catalog;
+    }
+
+    /**
+     * @return array{name: string, module: string, label: string, critical: bool, risk_level: 'critical'|'standard', risk_label: string|null}
+     */
+    private function transformPermission(Permission $permission, ?string $module = null): array
+    {
+        $risk = RoleCatalog::permissionRiskMetadata($permission->name);
+
+        return [
+            'name' => $permission->name,
+            'module' => $module ?? $this->moduleForPermission($permission->name),
+            'label' => $this->labelForPermission($permission->name),
+            'critical' => $risk['critical'],
+            'risk_level' => $risk['risk_level'],
+            'risk_label' => $risk['risk_label'],
+        ];
     }
 
     private function moduleForPermission(string $permission): string
@@ -228,10 +245,18 @@ class RoleController extends Controller
      */
     private function auditPayload(Role $role): array
     {
+        $permissions = [];
+        foreach ($role->permissions as $permission) {
+            if ($permission instanceof Permission) {
+                $permissions[] = $permission->name;
+            }
+        }
+        sort($permissions);
+
         return [
             'name' => $role->name,
             'protected' => RoleCatalog::isProtectedRoleName($role->name),
-            'permissions' => $role->permissions->pluck('name')->sort()->values()->all(),
+            'permissions' => $permissions,
         ];
     }
 }

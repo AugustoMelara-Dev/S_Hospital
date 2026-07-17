@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Models\User;
 use App\Support\VisiblePermissions;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -12,7 +13,8 @@ class UpdateUserRequest extends FormRequest
     {
         $targetUser = $this->route('user');
 
-        return $this->user()?->can('update', $targetUser) === true;
+        return $targetUser instanceof User
+            && $this->user()?->can('update', $targetUser) === true;
     }
 
     /**
@@ -20,7 +22,8 @@ class UpdateUserRequest extends FormRequest
      */
     public function rules(): array
     {
-        $userId = $this->route('user')?->id;
+        $targetUser = $this->route('user');
+        $userId = $targetUser instanceof User ? $targetUser->getKey() : null;
 
         return [
             'name' => ['required', 'string', 'max:255'],

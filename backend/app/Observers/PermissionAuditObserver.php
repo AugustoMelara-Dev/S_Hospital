@@ -73,7 +73,7 @@ class PermissionAuditObserver
     private function normalizeItems(mixed $items): array
     {
         if ($items instanceof Collection) {
-            return $items->values()->all();
+            return array_values($items->all());
         }
 
         if (is_array($items)) {
@@ -85,7 +85,9 @@ class PermissionAuditObserver
 
     private function recordRoleChange(Model $model, string $action, mixed $roleOrId): void
     {
-        $role = $roleOrId instanceof Role ? $roleOrId : Role::query()->find($roleOrId);
+        $role = $roleOrId instanceof Role
+            ? $roleOrId
+            : (is_int($roleOrId) || is_string($roleOrId) ? Role::query()->find($roleOrId) : null);
         $this->write($action, $model::class, $model->getKey(), [
             'role_id' => $role?->getKey() ?? $roleOrId,
             'role_name' => $role?->name,
@@ -94,7 +96,9 @@ class PermissionAuditObserver
 
     private function recordPermissionChange(Model $model, string $action, mixed $permissionOrId): void
     {
-        $permission = $permissionOrId instanceof Permission ? $permissionOrId : Permission::query()->find($permissionOrId);
+        $permission = $permissionOrId instanceof Permission
+            ? $permissionOrId
+            : (is_int($permissionOrId) || is_string($permissionOrId) ? Permission::query()->find($permissionOrId) : null);
         $this->write($action, $model::class, $model->getKey(), [
             'permission_id' => $permission?->getKey() ?? $permissionOrId,
             'permission_name' => $permission?->name,

@@ -133,7 +133,7 @@ class UserController extends Controller
         if ($newActiveState) {
             $this->assertActiveExactPermissionMapHasAccess(
                 $user->usesExactDirectPermissionMap()
-                    ? $this->visibleDirectPermissionNames($user)->all()
+                    ? array_values($this->visibleDirectPermissionNames($user)->all())
                     : null,
                 true,
             );
@@ -360,12 +360,11 @@ class UserController extends Controller
             $permissionNames[] = $permission;
         }
 
-        return collect($permissionNames)
+        return array_values(collect($permissionNames)
             ->map(fn (string $permission): string => $permission)
             ->pipe(fn (Collection $permissions): Collection => VisiblePermissions::rejectHidden($permissions))
             ->sort()
-            ->values()
-            ->all();
+            ->all());
     }
 
     /**
@@ -464,11 +463,10 @@ class UserController extends Controller
             'guard_name' => 'web',
         ]);
 
-        return collect($permissions)
+        return array_values(collect($permissions)
             ->push(User::EXACT_ACCESS_MARKER_PERMISSION)
             ->unique()
             ->sort()
-            ->values()
-            ->all();
+            ->all());
     }
 }
