@@ -127,48 +127,6 @@ parameters:
 			path: app/Actions/Reports/ExcelReportService.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\Payment\:\:\$collected_cents\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Actions/Reports/FinancialFactsService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Payment\:\:\$payment_count\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Actions/Reports/FinancialFactsService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Payment\:\:\$total_cents\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Actions/Reports/FinancialFactsService.php
-
-		-
-			message: '#^Offset ''collected_cents'' on array\{payment_count\: int, collected_cents\: int, payments_by_method\: array\<string, string\>\} on left side of \?\? always exists and is not nullable\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Actions/Reports/FinancialFactsService.php
-
-		-
-			message: '#^Offset ''payment_count'' on array\{payment_count\: int, collected_cents\: int, payments_by_method\: array\<string, string\>\} on left side of \?\? always exists and is not nullable\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Actions/Reports/FinancialFactsService.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>collected_cents" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Actions/Reports/FinancialFactsService.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>payment_count" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Actions/Reports/FinancialFactsService.php
-
-		-
 			message: '#^Access to an undefined property App\\Models\\Invoice\:\:\$count\.$#'
 			identifier: property.notFound
 			count: 1

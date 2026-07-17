@@ -28,8 +28,8 @@ class FinancialFactsService
             'total_partial' => $this->centsToMoney($invoiceFacts->partial_cents ?? 0),
             'total_voided' => $this->centsToMoney($this->voidedInvoiceCents($start, $end, $filters)),
             'invoice_count' => (int) ($invoiceFacts->invoice_count ?? 0),
-            'payment_count' => (int) ($paymentFacts['payment_count'] ?? 0),
-            'total_collected' => $this->centsToMoney($paymentFacts['collected_cents'] ?? 0),
+            'payment_count' => $paymentFacts['payment_count'],
+            'total_collected' => $this->centsToMoney($paymentFacts['collected_cents']),
             'payments_by_method' => $paymentFacts['payments_by_method'],
         ];
     }
@@ -216,6 +216,7 @@ class FinancialFactsService
             ->tap(fn (Builder $query) => $this->applyPaymentFilters($query, $filters, includeItemFilters: ! $hasItemFilter));
 
         $summary = (clone $base)
+            ->toBase()
             ->selectRaw('COUNT(*) as payment_count')
             ->selectRaw("COALESCE(SUM({$amountExpression}), 0) as collected_cents")
             ->first();
@@ -223,6 +224,7 @@ class FinancialFactsService
         $methodCents = array_fill_keys(array_keys($this->zeroMethodTotals()), 0);
 
         (clone $base)
+            ->toBase()
             ->groupBy('payments.method')
             ->select('payments.method', DB::raw("COALESCE(SUM({$amountExpression}), 0) as total_cents"))
             ->get()
@@ -238,8 +240,8 @@ class FinancialFactsService
         }
 
         return [
-            'payment_count' => (int) ($summary?->payment_count ?? 0),
-            'collected_cents' => (int) ($summary?->collected_cents ?? 0),
+            'payment_count' => (int) ($summary->payment_count ?? 0),
+            'collected_cents' => (int) ($summary->collected_cents ?? 0),
             'payments_by_method' => $methods,
         ];
     }

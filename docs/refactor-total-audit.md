@@ -10088,3 +10088,25 @@ Una consulta SQL sin `GROUP BY` que selecciona agregados siempre produce una fil
 ### Decision
 
 `area_id` no era una clave accidental: llega desde el Form Request, limita los snapshots historicos y se devuelve en la metadata. Corregir la forma declarada permite que PHPStan verifique ese recorrido y evita que futuras refactorizaciones eliminen silenciosamente un filtro soportado.
+
+## 428. Fase Reportes Financieros - Filas agregadas fuera de modelos Eloquent
+
+### Cambios
+
+- Las proyecciones agregadas de pagos en `FinancialFactsService` pasan a Query Builder mediante `toBase()` antes de seleccionar `payment_count`, `collected_cents` y totales por metodo.
+- Las filas SQL dejan de representarse falsamente como modelos `Payment` con propiedades dinamicas inexistentes.
+- `forRange()` consume directamente las claves obligatorias declaradas por `paymentFacts()`.
+- Se retiran siete excepciones (`property.notFound`, `nullsafe.neverNull` y `nullCoalesce.offset`); el baseline PHPStan baja de 32 a 25 errores contabilizados.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan tras retirar solo las excepciones | RED: 7 errores sobre propiedades agregadas y claves obligatorias. |
+| PHPStan estricto despues | OK: 0 errores fuera del baseline. |
+| Hechos financieros + guardas SQL de centavos | OK: 14 tests, 242 assertions. |
+| Pint focalizado | OK. |
+
+### Decision
+
+Una fila de `COUNT`/`SUM` no es una entidad `Payment` y no debe heredar su contrato de modelo. Cambiar solo la capa de hidratacion conserva joins, filtros y SQL, mejora la precision del analisis estatico y evita legitimar propiedades dinamicas en el dominio financiero.
