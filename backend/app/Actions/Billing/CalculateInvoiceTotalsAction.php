@@ -6,6 +6,7 @@ use App\Models\Service;
 use App\Models\ServiceArea;
 use App\Support\Money;
 use Illuminate\Validation\ValidationException;
+use LogicException;
 
 class CalculateInvoiceTotalsAction
 {
@@ -97,24 +98,25 @@ class CalculateInvoiceTotalsAction
     }
 
     /**
-     * @param  list<array<string, mixed>>  $items
+     * @param  list<array{_taxable: bool, line_subtotal_cents: int, ...}>  $items
      * @return list<array<string, mixed>>
      */
     private function distributeInvoiceTax(array $items, int $invoiceTaxCents, int $taxRateBasisPoints): array
     {
         $baseTaxTotal = 0;
         $remainders = [];
+        $lineTaxCentsByIndex = [];
 
         foreach ($items as $index => $item) {
-            if (($item['_taxable'] ?? false) !== true) {
-                $items[$index]['tax_amount_cents'] = 0;
+            if (! $item['_taxable']) {
+                $lineTaxCentsByIndex[$index] = 0;
 
                 continue;
             }
 
-            $exactNumerator = ((int) $item['line_subtotal_cents']) * $taxRateBasisPoints;
+            $exactNumerator = $item['line_subtotal_cents'] * $taxRateBasisPoints;
             $baseTaxCents = intdiv($exactNumerator, 10000);
-            $items[$index]['tax_amount_cents'] = $baseTaxCents;
+            $lineTaxCentsByIndex[$index] = $baseTaxCents;
             $baseTaxTotal += $baseTaxCents;
             $remainders[] = [
                 'index' => $index,
@@ -127,12 +129,13 @@ class CalculateInvoiceTotalsAction
 
         $remainingCents = $invoiceTaxCents - $baseTaxTotal;
         for ($i = 0; $i < $remainingCents && isset($remainders[$i]); $i++) {
-            $items[$remainders[$i]['index']]['tax_amount_cents']++;
+            $lineTaxCentsByIndex[$remainders[$i]['index']]++;
         }
 
         foreach ($items as $index => $item) {
-            $lineTaxCents = (int) $item['tax_amount_cents'];
-            $lineTotalCents = (int) $item['line_subtotal_cents'] + $lineTaxCents;
+            $lineTaxCents = $lineTaxCentsByIndex[$index];
+            $lineTotalCents = $item['line_subtotal_cents'] + $lineTaxCents;
+            $items[$index]['tax_amount_cents'] = $lineTaxCents;
             $items[$index]['tax_amount'] = $this->formatMoney($lineTaxCents);
             $items[$index]['line_total'] = $this->formatMoney($lineTotalCents);
             $items[$index]['line_total_cents'] = $lineTotalCents;
@@ -163,7 +166,23 @@ class CalculateInvoiceTotalsAction
             ->where('slug', $service->area->slug)
             ->value('id');
 
-        return $serviceAreaId === null ? null : (int) $serviceAreaId;
+        if ($serviceAreaId === null) {
+            return null;
+        }
+
+        if (! is_int($serviceAreaId) && ! is_string($serviceAreaId)) {
+            throw new LogicException('El area de servicio legada no tiene un identificador escalar valido.');
+        }
+
+        $normalizedId = filter_var($serviceAreaId, FILTER_VALIDATE_INT, [
+            'options' => ['min_range' => 1],
+        ]);
+
+        if (! is_int($normalizedId)) {
+            throw new LogicException('El area de servicio legada no tiene un identificador entero valido.');
+        }
+
+        return $normalizedId;
     }
 
     private function parseMoneyCents(string $value): int

@@ -12009,3 +12009,25 @@ El Form Request ya impone el dominio del alcance. Sus accesores concretos mantie
 ### Decision
 
 La sincronizacion de autorizaciones es una frontera critica y no debe aceptar `mixed`. Un unico normalizador mantiene iguales los flujos de alta y edicion, mientras la clave entera evita representar entidades persistidas con identidades coercionadas.
+
+## 514. Fase PHPStan 9 - Distribucion monetaria con enteros concretos
+
+### Cambios
+
+- La distribucion del ISV conserva subtotales y cuotas por renglon en estructuras enteras separadas.
+- El algoritmo deja de volver a leer y convertir centavos desde arrays mixtos durante sus dos pasadas.
+- El identificador del area legada acepta solo enteros positivos o su representacion decimal valida desde SQL.
+- No cambian redondeo half-up, distribucion por mayor residuo, regla de eritropoyetina ni snapshots de factura.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 9 sobre la accion | OK: 0 errores. |
+| Pint sobre la accion | OK. |
+| Totales, redondeo, ISV y eritropoyetina | OK: 17 tests, 73 assertions. |
+| Inventario PHPStan nivel 9 global | Baja de 733 a 730 hallazgos. |
+
+### Decision
+
+Los centavos calculados dentro del dominio deben permanecer enteros durante toda la distribucion. Separar la cuota fiscal del payload de salida evita coerciones y hace visible que cada renglon recibe exactamente una asignacion antes de serializarse.
