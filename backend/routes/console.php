@@ -59,7 +59,7 @@ Artisan::command('auth:create-initial-admin
 })->purpose('Crear el admin inicial de produccion offline con password temporal.');
 
 Schedule::command('hospital:backup --type=scheduled')
-    ->dailyAt((string) env('HOSPITAL_DAILY_BACKUP_TIME', '02:00'))
+    ->dailyAt((string) config('hospital.schedule.daily_backup_time', '02:00'))
     ->withoutOverlapping(120)
     ->onOneServer()
     ->runInBackground()
@@ -67,34 +67,37 @@ Schedule::command('hospital:backup --type=scheduled')
 
 Schedule::command('hospital:backup --type=scheduled')
     ->everyFifteenMinutes()
-    ->between((string) env('HOSPITAL_OPERATION_START', '06:00'), (string) env('HOSPITAL_OPERATION_END', '18:00'))
+    ->between(
+        (string) config('hospital.schedule.operation_start', '06:00'),
+        (string) config('hospital.schedule.operation_end', '18:00'),
+    )
     ->withoutOverlapping(120)
     ->onOneServer()
     ->runInBackground()
     ->description('Respaldo automatico operativo del Sistema de Caja Hospitalaria');
 
-Schedule::command('hospital:prune-audit-logs --days='.(int) env('HOSPITAL_AUDIT_RETENTION_DAYS', 365))
+Schedule::command('hospital:prune-audit-logs --days='.(int) config('hospital.schedule.audit_retention_days', 365))
     ->dailyAt('03:15')
     ->onOneServer()
     ->withoutOverlapping(60)
     ->runInBackground()
     ->description('Podar audit_logs anteriores a la retencion configurada');
 
-Schedule::command('hospital:prune-failed-jobs --days='.(int) env('HOSPITAL_FAILED_JOBS_RETENTION_DAYS', 30))
+Schedule::command('hospital:prune-failed-jobs --days='.(int) config('hospital.schedule.failed_jobs_retention_days', 30))
     ->dailyAt('03:30')
     ->onOneServer()
     ->withoutOverlapping(30)
     ->runInBackground()
     ->description('Podar failed_jobs anteriores a la retencion configurada');
 
-Schedule::command('hospital:prune-idempotency-keys --days='.(int) env('HOSPITAL_IDEMPOTENCY_RETENTION_DAYS', 30))
+Schedule::command('hospital:prune-idempotency-keys --days='.(int) config('hospital.schedule.idempotency_retention_days', 30))
     ->dailyAt('03:45')
     ->onOneServer()
     ->withoutOverlapping(30)
     ->runInBackground()
     ->description('Podar llaves de idempotencia anteriores a la retencion configurada');
 
-Schedule::command('hospital:prune-scheduler-ticks --days='.(int) env('HOSPITAL_SCHEDULER_TICK_RETENTION_DAYS', 7))
+Schedule::command('hospital:prune-scheduler-ticks --days='.(int) config('hospital.schedule.scheduler_tick_retention_days', 7))
     ->dailyAt('04:00')
     ->onOneServer()
     ->withoutOverlapping(30)
@@ -103,8 +106,8 @@ Schedule::command('hospital:prune-scheduler-ticks --days='.(int) env('HOSPITAL_S
 
 Schedule::command(
     'hospital:prune-operational-logs'
-    .' --login-days='.(int) env('HOSPITAL_LOGIN_ATTEMPT_RETENTION_DAYS', 30)
-    .' --client-error-days='.(int) env('HOSPITAL_CLIENT_ERROR_RETENTION_DAYS', 90),
+    .' --login-days='.(int) config('hospital.schedule.login_attempt_retention_days', 30)
+    .' --client-error-days='.(int) config('hospital.schedule.client_error_retention_days', 90),
 )
     ->dailyAt('04:15')
     ->onOneServer()

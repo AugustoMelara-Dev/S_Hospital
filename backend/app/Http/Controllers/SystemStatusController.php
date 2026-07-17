@@ -509,7 +509,7 @@ class SystemStatusController extends Controller
      */
     private function dumpBinaryStatus(): array
     {
-        $configured = (string) env('HOSPITAL_DUMP_BINARY', '');
+        $configured = (string) config('backups.dump_binary', '');
         $candidates = array_values(array_filter([
             $configured !== '' ? $configured : null,
             'mariadb-dump',

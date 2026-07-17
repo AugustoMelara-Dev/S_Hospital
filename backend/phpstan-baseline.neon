@@ -1,12 +1,6 @@
 parameters:
 	ignoreErrors:
 		-
-			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
-			identifier: larastan.noEnvCallsOutsideOfConfig
-			count: 1
-			path: app/Actions/Backups/DatabaseDumpWriter.php
-
-		-
 			message: '#^Called ''skip'' on Laravel collection, but could have been retrieved as a query\.$#'
 			identifier: larastan.noUnnecessaryCollectionCall
 			count: 1
@@ -589,12 +583,6 @@ parameters:
 			path: app/Actions/Reports/ServiceSalesReportService.php
 
 		-
-			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
-			identifier: larastan.noEnvCallsOutsideOfConfig
-			count: 1
-			path: app/Http/Controllers/SystemStatusController.php
-
-		-
 			message: '#^Cannot call method toJSON\(\) on string\.$#'
 			identifier: method.nonObject
 			count: 2
@@ -713,9 +701,3 @@ parameters:
 			identifier: property.notFound
 			count: 2
 			path: app/Support/ServiceSearch.php
-
-		-
-			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
-			identifier: larastan.noEnvCallsOutsideOfConfig
-			count: 5
-			path: routes/console.php

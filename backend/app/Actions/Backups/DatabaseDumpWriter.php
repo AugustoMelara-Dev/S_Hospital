@@ -195,7 +195,7 @@ class DatabaseDumpWriter
 
     private function findDumpBinary(): ?string
     {
-        $configuredBinary = (string) env('HOSPITAL_DUMP_BINARY', '');
+        $configuredBinary = (string) config('backups.dump_binary', '');
         $candidates = array_values(array_filter([
             $configuredBinary !== '' ? $configuredBinary : null,
             'mariadb-dump',

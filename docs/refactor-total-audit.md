@@ -9769,3 +9769,49 @@ El canal `invoices` se mantiene como compatibilidad del contrato backend, pero u
 ### Decision
 
 El costo de mostrar cajas abiertas debe ser constante respecto al numero de sesiones incluidas. La agregacion reduce el camino de 1 + N consultas a una consulta de sesiones y una de efectivo agrupado, sin cambiar reglas contables ni snapshots de cajas cerradas.
+
+## 414. Fase Eloquent - Carga diferida convertida en fallo temprano
+
+### Cambios
+
+- Eloquent bloquea lazy loading en desarrollo y pruebas; produccion conserva el comportamiento compatible para no convertir un hallazgo nuevo en una interrupcion operativa.
+- Un contrato unitario verifica explicitamente ambos entornos.
+- El gate completo encontro que el fixture de presupuesto de reportes cargaba servicios sin `category` ni `area`; el fixture ahora precarga ambas relaciones antes de medir consultas.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Contrato antes del cambio | RED: Eloquent permitia lazy loading fuera de produccion. |
+| Primera suite Laravel completa | 917 passed, 12 skipped; 4 fallas de presupuesto reveladas por el fixture con relaciones diferidas. |
+| Pruebas de presupuesto tras precarga | OK: 4 tests, 10 assertions. |
+| Segunda suite Laravel completa | OK: 921 passed, 12 skipped justificados, 6979 assertions; 483.26 s. |
+| Pint focalizado | OK. |
+
+### Decision
+
+El costo N+1 debe fallar cerca de su introduccion y no depender de que una prueba cuente consultas manualmente. El modo estricto queda fuera de produccion porque su funcion es detectar durante desarrollo; activarlo retroactivamente en el servidor hospitalario podria interrumpir una ruta no ejercitada antes de poder corregirla.
+
+## 415. Fase Configuracion - Scheduler y respaldos seguros con cache
+
+### Cambios
+
+- Once lecturas `env()` ubicadas en rutas, respaldos y estado del sistema pasan a claves de `config/hospital.php` y `config/backups.php`.
+- `.env.example` documenta binario de dump, ventanas operativas y las seis retenciones configurables.
+- Se eliminan tres excepciones Larastan que ocultaban siete lecturas historicas; el analisis descubrio ademas cuatro lecturas nuevas que ya excedian el baseline.
+- Un contrato recorre `app/` y `routes/` e impide reintroducir el helper `env()` fuera de `config/`.
+- Los `getenv()` de comandos administrativos se conservan: son secretos o confirmaciones efimeras que deben leerse al ejecutar el comando, no incorporarse al cache de configuracion.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| PHPStan completo antes del cambio | RED: 5 errores por desajuste del baseline de `noEnvCallsOutsideOfConfig`. |
+| Pruebas focalizadas | OK: 23 passed, 1 skipped justificado, 63 assertions. |
+| `config:clear`, `config:cache`, `schedule:list` | OK: siete tareas registradas con horarios y retenciones esperados; cache limpiado al terminar. |
+| PHPStan completo sin excepciones `env()` | OK: 0 errores. |
+| Pint focalizado | OK. |
+
+### Decision
+
+Laravel no carga `.env` despues de cachear configuracion; por eso las tareas programadas y la deteccion de `mysqldump` deben consumir valores ya materializados por `config()`. El cambio conserva defaults y contratos operativos, elimina deuda del baseline y evita que un despliegue optimizado pierda horarios o el binario configurado.
