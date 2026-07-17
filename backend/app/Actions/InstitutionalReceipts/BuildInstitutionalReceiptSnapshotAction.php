@@ -67,6 +67,7 @@ class BuildInstitutionalReceiptSnapshotAction
                 'notes' => $item->notes,
             ])
             ->all());
+        $exemptAmountCents = $this->exemptAmountCents($items);
 
         return [
             'payer_name' => $invoice->patient_name,
@@ -123,8 +124,8 @@ class BuildInstitutionalReceiptSnapshotAction
                 'tax_rate_snapshot' => (string) $invoice->tax_rate_snapshot,
                 'subtotal' => $this->moneyFromCents($invoice->subtotal_cents, $invoice->subtotal),
                 'subtotal_cents' => (int) $invoice->subtotal_cents,
-                'exempt_amount' => $this->moneyFromCents($this->exemptAmountCents($items), null),
-                'exempt_amount_cents' => $this->exemptAmountCents($items),
+                'exempt_amount' => $this->moneyFromCents($exemptAmountCents, null),
+                'exempt_amount_cents' => $exemptAmountCents,
                 'tax_amount' => $this->moneyFromCents($invoice->tax_amount_cents, $invoice->tax_amount),
                 'tax_amount_cents' => (int) $invoice->tax_amount_cents,
                 'discount_amount' => $this->moneyFromCents($invoice->discount_amount_cents, $invoice->discount_amount),
@@ -155,7 +156,7 @@ class BuildInstitutionalReceiptSnapshotAction
     }
 
     /**
-     * @param  list<array<string, mixed>>  $items
+     * @param  list<array{service_name: string}>  $items
      */
     private function conceptFromItems(array $items): string
     {
@@ -230,12 +231,18 @@ class BuildInstitutionalReceiptSnapshotAction
     }
 
     /**
-     * @param  list<array<string, mixed>>  $items
+     * @param  list<array{tax_rate: string, line_subtotal_cents: int}>  $items
      */
     private function exemptAmountCents(array $items): int
     {
-        return collect($items)
-            ->filter(fn (array $item): bool => (float) ($item['tax_rate'] ?? 0) === 0.0)
-            ->sum(fn (array $item): int => (int) ($item['line_subtotal_cents'] ?? 0));
+        $total = 0;
+
+        foreach ($items as $item) {
+            if ((float) $item['tax_rate'] === 0.0) {
+                $total += $item['line_subtotal_cents'];
+            }
+        }
+
+        return $total;
     }
 }

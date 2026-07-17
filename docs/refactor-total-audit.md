@@ -11921,3 +11921,25 @@ La redaccion debe fallar cerrada: si el shape interno no es el esperado, la resp
 ### Decision
 
 La identidad forense no debe fabricarse mediante coercion desde un valor arbitrario. Validar el dominio positivo conserva IDs legitimos y evita atribuir cambios a usuarios inexistentes cuando un guard personalizado entrega un identificador invalido.
+
+## 510. Fase PHPStan 9 - Total exento institucional tipado
+
+### Cambios
+
+- El calculo exento declara el contrato minimo de cada renglon: tasa decimal y subtotal entero en centavos.
+- La suma deja de convertir valores `mixed` con valores por defecto silenciosos.
+- El monto exento se calcula una sola vez por snapshot y se reutiliza para sus representaciones decimal y en centavos.
+- No cambian reglas de exencion, redondeo, snapshots historicos ni contenido del recibo.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 9 sobre la accion | OK: 0 errores. |
+| Pint sobre la accion | OK. |
+| Integracion financiera del recibo institucional | OK: 10 tests, 124 assertions. |
+| Inventario PHPStan nivel 9 global | Baja de 742 a 740 hallazgos. |
+
+### Decision
+
+Los renglones nacen dentro de la misma accion con centavos concretos; conservar ese contrato hasta la suma elimina coerciones y hace innecesario recorrer la factura dos veces para presentar el mismo total.
