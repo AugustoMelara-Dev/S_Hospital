@@ -285,12 +285,8 @@ class PermissionAuditTest extends TestCase
         $this->assertFalse(Gate::forUser($auditor)->allows('restore', $backup));
     }
 
-    public function test_app_permission_checks_are_seeded_or_documented_legacy_scope(): void
+    public function test_app_permission_checks_are_seeded_and_retired_area_scope_is_absent(): void
     {
-        $allowedLegacyScopes = [
-            'area_services.view',
-        ];
-
         $checkedPermissions = [];
 
         foreach ([base_path('app'), base_path('routes')] as $directory) {
@@ -322,11 +318,10 @@ class PermissionAuditTest extends TestCase
         $missing = array_values(array_diff(
             $checkedPermissions,
             RolesAndPermissionsSeeder::PERMISSIONS,
-            $allowedLegacyScopes,
         ));
 
         $this->assertSame([], $missing);
-        $this->assertContains('area_services.view', $checkedPermissions);
+        $this->assertNotContains('area_services.view', $checkedPermissions);
         $this->assertNotContains('area_services.view', RolesAndPermissionsSeeder::PERMISSIONS);
     }
 }

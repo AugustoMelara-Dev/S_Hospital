@@ -150,6 +150,9 @@ class RoleController extends Controller
         ]);
     }
 
+    /**
+     * @return array{id: int, name: string, protected: bool, permissions: list<array{name: string, module: string, label: string, critical: bool, risk_level: 'critical'|'standard', risk_label: string|null}>}
+     */
     private function transformRole(Role $role): array
     {
         $permissions = [];

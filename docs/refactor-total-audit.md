@@ -10943,3 +10943,27 @@ La accion generadora produce datos de presentacion y la accion de reimpresion lo
 ### Decision
 
 Los reportes combinan agregados heterogeneos consumidos por varias salidas institucionales. Declarar sus fronteras y los modelos de consulta permite verificar toda la cadena sin duplicar reglas fiscales ni convertir los payloads existentes.
+
+## 467. Fase PHPStan 6 - Roles y auditoria de permisos
+
+### Cambios
+
+- `RoleController::transformRole()` declara el rol administrativo y la metadata de riesgo de cada permiso.
+- `PermissionAuditObserver` declara los diccionarios opcionales enviados al registro de auditoria.
+- La prueba de inventario deja de exigir el permiso retirado `area_services.view`; ahora verifica que no exista ni en chequeos activos ni en el seeder.
+- No cambian autorizaciones, asignaciones de roles ni eventos auditados.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Reproduccion aislada de la prueba obsoleta | RED: exigia un chequeo eliminado junto con su controlador. |
+| Historial de eliminacion del controlador retirado | Causa raiz confirmada en `fed4f0b2`. |
+| PHPStan nivel 6 sobre controlador y observer | OK: 0 errores. |
+| Pint sobre controlador y observer | OK. |
+| Roles y auditoria de permisos | OK: 24 tests, 115 assertions. |
+| Inventario PHPStan nivel 6 esperado | Queda un contrato pendiente en licencias. |
+
+### Decision
+
+La respuesta de roles tiene una forma estable consumida por administracion y la auditoria acepta atributos heterogeneos por diseno. El inventario de permisos debe describir el codigo vigente, no conservar como requisito un alcance cuyo endpoint ya fue retirado.
