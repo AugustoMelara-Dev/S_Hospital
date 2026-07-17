@@ -239,16 +239,28 @@ class OperationalMetricsService
                 ];
             }
 
-            $absolutePath = $disk->path($backupLog->path);
-            $checksum = is_file($absolutePath)
-                ? hash_file('sha256', $absolutePath)
-                : hash('sha256', $disk->get($backupLog->path));
+            $fingerprint = implode('|', [
+                (string) $backupLog->id,
+                $backupLog->disk,
+                $backupLog->path,
+                $backupLog->checksum_sha256,
+                (string) $disk->size($backupLog->path),
+                (string) $disk->lastModified($backupLog->path),
+            ]);
+            $cacheKey = 'operational-metrics:backup-integrity:'.hash('sha256', $fingerprint);
 
-            return [
-                'exists' => true,
-                'checksum_matches' => is_string($checksum)
-                    && hash_equals($backupLog->checksum_sha256, $checksum),
-            ];
+            return Cache::remember($cacheKey, now()->addMinutes(5), function () use ($backupLog, $disk): array {
+                $absolutePath = $disk->path($backupLog->path);
+                $checksum = is_file($absolutePath)
+                    ? hash_file('sha256', $absolutePath)
+                    : hash('sha256', $disk->get($backupLog->path));
+
+                return [
+                    'exists' => true,
+                    'checksum_matches' => is_string($checksum)
+                        && hash_equals($backupLog->checksum_sha256, $checksum),
+                ];
+            });
         } catch (Throwable $exception) {
             Log::warning('OperationalMetricsService: backup integrity probe failed', [
                 'backup_log_id' => $backupLog->id,

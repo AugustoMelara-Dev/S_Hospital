@@ -8,6 +8,7 @@ use App\Actions\Reports\OperationalMetricsService;
 use App\Models\AuditLog;
 use App\Models\BackupLog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -203,6 +204,48 @@ class OperationalMetricsServiceTest extends TestCase
 
         $this->assertFalse($snapshot['backups']['latest_success_file_exists']);
         $this->assertFalse($snapshot['backups']['latest_success_checksum_matches']);
+    }
+
+    public function test_health_integrity_probe_caches_by_file_metadata_and_invalidates_on_change(): void
+    {
+        Storage::fake('local');
+        $path = 'backups/cached-integrity.sql.gz.enc';
+        $contents = 'stable-backup-payload';
+        Storage::disk('local')->put($path, $contents);
+
+        $backup = BackupLog::query()->create([
+            'filename' => 'cached-integrity.sql.gz.enc',
+            'path' => $path,
+            'disk' => 'local',
+            'status' => BackupLog::STATUS_SUCCESS,
+            'type' => BackupLog::TYPE_SCHEDULED,
+            'size_bytes' => strlen($contents),
+            'checksum_sha256' => hash('sha256', $contents),
+            'completed_at' => now(),
+        ]);
+
+        $firstSnapshot = app(OperationalMetricsService::class)->snapshot();
+        $disk = Storage::disk('local');
+        $fingerprint = implode('|', [
+            (string) $backup->id,
+            'local',
+            $path,
+            $backup->checksum_sha256,
+            (string) $disk->size($path),
+            (string) $disk->lastModified($path),
+        ]);
+        $cacheKey = 'operational-metrics:backup-integrity:'.hash('sha256', $fingerprint);
+
+        $this->assertTrue($firstSnapshot['backups']['latest_success_checksum_matches']);
+        $this->assertSame([
+            'exists' => true,
+            'checksum_matches' => true,
+        ], Cache::get($cacheKey));
+
+        Storage::disk('local')->put($path, 'changed-backup-payload-with-a-different-size');
+        $changedSnapshot = app(OperationalMetricsService::class)->snapshot();
+
+        $this->assertFalse($changedSnapshot['backups']['latest_success_checksum_matches']);
     }
 
     public function test_recent_errors_section_surfaces_failed_actions(): void
