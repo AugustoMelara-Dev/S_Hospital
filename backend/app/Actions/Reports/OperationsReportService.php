@@ -11,7 +11,6 @@ use App\Models\InstitutionalReceiptPrintEvent;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Service;
-use App\Support\Money;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -404,10 +403,10 @@ class OperationsReportService
                             || (int) $item->area_id === (int) $filters['area_id'];
 
                         if ($matchesCategory && $matchesArea) {
-                            $filteredTotalCents += Money::parseCents((string) $item->line_total, 'line_total');
+                            $filteredTotalCents += (int) $item->line_total_cents;
                         }
                     }
-                    $invoiceTotalCents = Money::parseCents((string) $invoice->total, 'invoice_total');
+                    $invoiceTotalCents = (int) $invoice->total_cents;
                     if ($invoiceTotalCents > 0) {
                         $collectedCents = $this->prorateCents($paymentAmountCents, $filteredTotalCents, $invoiceTotalCents);
                     } else {

@@ -9837,3 +9837,24 @@ Laravel no carga `.env` despues de cachear configuracion; por eso las tareas pro
 ### Decision
 
 La migracion de centavos ya hizo obligatorias ambas columnas y los contratos SQL prohiben recomputarlas desde decimal. Mantener una ruta alternativa imposible agregaba complejidad en facturacion y obligaba a ocultar codigo muerto; la lectura directa alinea implementacion, esquema, tipos y pruebas sin cambiar calculos ni estados.
+
+## 417. Fase Reportes - Prorrateo operativo enteramente en centavos
+
+### Cambios
+
+- El resumen de cajeros del reporte operativo suma `invoice_items.line_total_cents` y divide contra `invoices.total_cents` al filtrar por categoria o area.
+- Se eliminan dos reconstrucciones con `Money::parseCents` desde snapshots decimales.
+- La guarda monetaria incorpora explicitamente `OperationsReportService` y exige las columnas enteras en el prorrateo.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Contrato antes del cambio | RED: no encontraba `line_total_cents` y detectaba conversiones desde decimal. |
+| Reporte operativo + guarda monetaria | OK: 8 tests, 108 assertions. |
+| PHPStan focalizado | OK: 0 errores. |
+| Pint focalizado | OK. |
+
+### Decision
+
+Los filtros de categoria y area distribuyen cada pago proporcionalmente entre items. Ejecutar ese calculo con los snapshots enteros obligatorios evita volver a interpretar strings decimales en memoria y mantiene la misma regla de redondeo `intdiv` ya cubierta para pagos parciales.

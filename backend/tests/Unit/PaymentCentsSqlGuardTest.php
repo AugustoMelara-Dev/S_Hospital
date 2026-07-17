@@ -129,6 +129,16 @@ class PaymentCentsSqlGuardTest extends TestCase
         $this->assertStringNotContainsString('resolvePaidCents', $source);
     }
 
+    public function test_operations_report_prorates_filtered_payments_with_integer_cents(): void
+    {
+        $source = $this->readSource('app/Actions/Reports/OperationsReportService.php');
+
+        $this->assertStringContainsString('$item->line_total_cents', $source);
+        $this->assertStringContainsString('$invoice->total_cents', $source);
+        $this->assertStringNotContainsString('Money::parseCents((string) $item->line_total', $source);
+        $this->assertStringNotContainsString('Money::parseCents((string) $invoice->total', $source);
+    }
+
     public function test_report_services_do_not_recompute_invoice_cents_via_sql(): void
     {
         $reports = [
@@ -140,6 +150,7 @@ class PaymentCentsSqlGuardTest extends TestCase
             'app/Actions/Reports/ServiceSalesReportService.php',
             'app/Actions/Reports/CategoryReportService.php',
             'app/Actions/Reports/FinancialFactsService.php',
+            'app/Actions/Reports/OperationsReportService.php',
         ];
 
         foreach ($reports as $relativePath) {
