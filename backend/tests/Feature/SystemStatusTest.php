@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Actions\Reports\OperationalMetricsService;
 use App\Jobs\RunBackupJob;
 use App\Models\BackupLog;
 use App\Models\User;
@@ -12,6 +13,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
+use Mockery\MockInterface;
 use Tests\TestCase;
 
 class SystemStatusTest extends TestCase
@@ -141,6 +143,25 @@ class SystemStatusTest extends TestCase
             $this->assertStringNotContainsString($forbidden, json_encode($response->json(), JSON_THROW_ON_ERROR));
         }
         $this->assertIsString($response->json('data.backups.oldest_pending_at'));
+    }
+
+    public function test_system_status_builds_operational_metrics_only_once(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $this->mock(OperationalMetricsService::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('snapshot')
+                ->once()
+                ->andReturn([
+                    'backups' => [
+                        'worker_recently_active' => false,
+                    ],
+                ]);
+        });
+
+        $this->actingAs($this->admin())
+            ->getJson('/api/system/status')
+            ->assertOk();
     }
 
     public function test_loopback_app_url_is_treated_as_local_single_machine_mode(): void

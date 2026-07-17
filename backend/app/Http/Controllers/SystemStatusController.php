@@ -162,16 +162,7 @@ class SystemStatusController extends Controller
     public function show(ShowSystemStatusRequest $request): JsonResponse
     {
         return response()->json([
-            'data' => [
-                'environment' => $this->environmentStatus(),
-                'database' => $this->databaseStatus(),
-                'frontend' => $this->frontendStatus(),
-                'network' => $this->networkStatus(),
-                'backups' => $this->backupStatus(),
-                'runtime' => $this->runtimeStatus(),
-                'readiness' => $this->readinessStatus(),
-                'preflight' => $this->preflightStatus(),
-            ],
+            'data' => $this->baseStatus(),
         ]);
     }
 
@@ -685,12 +676,10 @@ class SystemStatusController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function readinessStatus(): array
+    private function readinessStatus(array $runtime, array $network): array
     {
         $appEnv = (string) Config::get('app.env');
         $appDebug = (bool) Config::get('app.debug');
-        $runtime = $this->runtimeStatus();
-        $network = $this->networkStatus();
         $localMode = ($network['host_type'] ?? null) === 'loopback';
         $proofs = $this->physicalProofStatuses($localMode);
         $lanProof = $proofs[0];
@@ -738,14 +727,14 @@ class SystemStatusController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function preflightStatus(): array
-    {
-        $environment = $this->environmentStatus();
-        $database = $this->databaseStatus();
-        $frontend = $this->frontendStatus();
-        $network = $this->networkStatus();
-        $backups = $this->backupStatus();
-        $runtime = $this->runtimeStatus();
+    private function preflightStatus(
+        array $environment,
+        array $database,
+        array $frontend,
+        array $network,
+        array $backups,
+        array $runtime,
+    ): array {
         $localMode = ($network['host_type'] ?? null) === 'loopback';
         $physicalProofs = $this->physicalProofStatuses($localMode);
 
@@ -1032,14 +1021,29 @@ class SystemStatusController extends Controller
      */
     private function baseStatus(): array
     {
+        $environment = $this->environmentStatus();
+        $database = $this->databaseStatus();
+        $frontend = $this->frontendStatus();
+        $network = $this->networkStatus();
+        $backups = $this->backupStatus();
+        $runtime = $this->runtimeStatus();
+
         return [
-            'environment' => $this->environmentStatus(),
-            'database' => $this->databaseStatus(),
-            'backups' => $this->backupStatus(),
-            'runtime' => $this->runtimeStatus(),
-            'network' => $this->networkStatus(),
-            'readiness' => $this->readinessStatus(),
-            'preflight' => $this->preflightStatus(),
+            'environment' => $environment,
+            'database' => $database,
+            'frontend' => $frontend,
+            'network' => $network,
+            'backups' => $backups,
+            'runtime' => $runtime,
+            'readiness' => $this->readinessStatus($runtime, $network),
+            'preflight' => $this->preflightStatus(
+                $environment,
+                $database,
+                $frontend,
+                $network,
+                $backups,
+                $runtime,
+            ),
         ];
     }
 }
