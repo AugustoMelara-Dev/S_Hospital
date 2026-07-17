@@ -93,7 +93,7 @@ class StoreServiceRequest extends FormRequest
             return;
         }
 
-        if (Money::parseCents((string) $this->input('price'), 'price') !== self::ERYTHROPOIETIN_PRICE_CENTS) {
+        if (Money::parseCents($this->string('price')->toString(), 'price') !== self::ERYTHROPOIETIN_PRICE_CENTS) {
             $validator->errors()->add('price', 'Eritropoyetina debe mantener precio fijo de L.25.00.');
         }
     }
@@ -112,7 +112,11 @@ class StoreServiceRequest extends FormRequest
     private function validateGlobalCodes(Validator $validator): void
     {
         $codes = collect(['scan_code', 'barcode', 'qr_code'])
-            ->mapWithKeys(fn (string $field): array => [$field => trim((string) $this->input($field, ''))])
+            ->mapWithKeys(function (string $field): array {
+                $value = $this->input($field, '');
+
+                return [$field => is_string($value) ? trim($value) : ''];
+            })
             ->filter();
 
         if ($codes->isEmpty()) {

@@ -35,9 +35,9 @@ class CategoryController extends Controller
         $category = DB::transaction(function () use ($request, $user): Category {
             $category = Category::query()->create([
                 ...$request->validated(),
-                'slug' => Str::slug($request->string('name')),
+                'slug' => Str::slug($request->string('name')->toString()),
                 'active' => $request->boolean('active', true),
-                'sort_order' => (int) $request->input('sort_order', 0),
+                'sort_order' => $request->integer('sort_order', 0),
                 'created_by' => $user->id,
                 'updated_by' => $user->id,
             ]);
@@ -61,7 +61,7 @@ class CategoryController extends Controller
             $data = $request->validated();
 
             if (array_key_exists('name', $data)) {
-                $data['slug'] = Str::slug($data['name']);
+                $data['slug'] = Str::slug($request->string('name')->toString());
             }
 
             $category->fill([

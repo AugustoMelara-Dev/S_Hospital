@@ -27,7 +27,7 @@ class ServiceAreaController extends Controller
     public function store(StoreServiceAreaRequest $request): JsonResponse
     {
         $data = $request->validated();
-        $data['slug'] = Str::slug($data['name']);
+        $data['slug'] = Str::slug($request->string('name')->toString());
 
         $area = ServiceArea::query()->create($data);
 
@@ -39,7 +39,7 @@ class ServiceAreaController extends Controller
         $data = $request->validated();
 
         if (array_key_exists('name', $data)) {
-            $data['slug'] = Str::slug($data['name']);
+            $data['slug'] = Str::slug($request->string('name')->toString());
         }
 
         $serviceArea->fill($data)->save();

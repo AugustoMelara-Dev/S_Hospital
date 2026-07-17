@@ -11788,3 +11788,26 @@ Configuracion y atributos de request son `mixed` hasta validar su tipo. Aplicar 
 ### Decision
 
 Una respuesta idempotente corrupta no debe degradarse a “sin respuesta”, porque eso puede repetir una operacion monetaria. Exigir texto antes de descifrar conserva el comportamiento seguro y hace observable la corrupcion.
+
+## 504. Fase PHPStan 9 - Escalares validados de catalogo
+
+### Cambios
+
+- Categorias usan nombre textual y orden entero desde el Form Request al crear slugs y persistir orden.
+- Areas de servicio generan slugs desde el accessor textual validado.
+- Alta de servicio valida precio de eritropoyetina desde string y solo normaliza codigos realmente textuales.
+- Arrays invalidos permanecen disponibles para respuesta 422 sin provocar warnings en callbacks posteriores.
+- No cambian unicidad, busqueda, precios, eritropoyetina, permisos ni auditoria.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 9 sobre controladores y request | OK: 0 errores. |
+| Pint sobre los tres archivos | OK. |
+| Catalogo completo, areas, codigos y reglas especiales | OK: 43 tests, 264 assertions. |
+| Inventario PHPStan nivel 9 global | Baja de 768 a 762 hallazgos. |
+
+### Decision
+
+Los slugs y codigos globales solo deben construirse desde texto validado. Usar accesores tipados tras validacion y comprobaciones estrictas dentro de callbacks evita coerciones sin relajar ninguna regla del catalogo hospitalario.
