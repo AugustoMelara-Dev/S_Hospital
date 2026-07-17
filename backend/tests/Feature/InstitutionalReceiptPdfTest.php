@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Actions\InstitutionalReceipts\AmountToSpanishWords;
+use App\Actions\InstitutionalReceipts\InstitutionalReceiptHtmlBuilder;
 use App\Actions\InstitutionalReceipts\InstitutionalReceiptPdfService;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSequence;
@@ -651,6 +652,52 @@ class InstitutionalReceiptPdfTest extends TestCase
         $this->assertStringNotContainsString('background: red', $html);
         $this->assertStringContainsString('color: #b91c1c;', $html);
         $this->assertStringContainsString('font-family: Arial, sans-serif;', $html);
+    }
+
+    public function test_draft_receipt_rejects_structured_text_and_amount_values(): void
+    {
+        $context = $this->createIssuedReceiptContext();
+        $profile = ReceiptPrintProfile::query()->where('code', ReceiptPrintProfile::CODE_HALF_LETTER)->firstOrFail();
+
+        $html = app(InstitutionalReceiptHtmlBuilder::class)->forDraft([
+            'amount' => ['invalid'],
+            'payer_name' => ['invalid'],
+            'concept' => ['invalid'],
+        ], $profile, $context['series']);
+
+        $this->assertStringContainsString('Paciente de prueba', $html);
+        $this->assertStringContainsString('Servicios hospitalarios de prueba', $html);
+        $this->assertStringContainsString('L. 0.00', $html);
+        $this->assertStringNotContainsString('Array', $html);
+    }
+
+    public function test_receipt_html_uses_safe_defaults_for_invalid_profile_snapshot_values(): void
+    {
+        $context = $this->createIssuedReceiptContext();
+        $receipt = $context['receipt'];
+        $receipt->forceFill([
+            'profile_snapshot' => [
+                ...$receipt->profile_snapshot,
+                'code' => ['invalid'],
+                'font_scale' => ['invalid'],
+                'margin_top_mm' => ['invalid'],
+                'margin_right_mm' => ['invalid'],
+                'margin_bottom_mm' => ['invalid'],
+                'margin_left_mm' => ['invalid'],
+            ],
+            'invoice_snapshot' => [
+                ...$receipt->invoice_snapshot,
+                'subtotal_cents' => null,
+                'subtotal' => ['invalid'],
+            ],
+        ])->save();
+
+        $html = app(InstitutionalReceiptPdfService::class)->htmlForReceipt($receipt->fresh());
+
+        $this->assertStringContainsString('margin: 6mm 6mm 6mm 6mm;', $html);
+        $this->assertStringContainsString('font-size: 10.5px;', $html);
+        $this->assertStringContainsString('L. 0.00', $html);
+        $this->assertStringNotContainsString('Array', $html);
     }
 
     public function test_receipt_pdf_endpoint_requires_permission_streams_pdf_without_recording_event(): void

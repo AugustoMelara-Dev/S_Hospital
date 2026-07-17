@@ -12361,3 +12361,26 @@ La configuracion publica de tiempo real debe ser util en LAN y estricta frente a
 ### Decision
 
 El diagnostico determina si el servidor LAN puede operar y por eso no debe interpretar objetos o estructuras inesperadas como texto, enteros o estados validos. Los shapes concretos mantienen coherencia entre la medicion interna, el preflight administrativo y el resumen visible sin ocultar fallos de configuracion.
+
+## 530. Fase PHPStan 9 - Recibo institucional tolerante a snapshots invalidos
+
+### Cambios
+
+- `InstitutionalReceiptHtmlBuilder` acepta texto y numeros solo cuando corresponden al dominio esperado.
+- Borradores con valores estructurados degradan a paciente, concepto y monto de prueba seguros.
+- Perfil historico invalido usa escala y margenes predeterminados sin generar CSS ambiguo.
+- Institucion y serie normalizan sus campos textuales antes de llegar a la plantilla.
+- Se agregan regresiones para datos de borrador y snapshots corruptos que antes provocaban conversiones de arrays en ejecucion.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 9 sobre el constructor HTML | OK: 0 errores. |
+| Pint sobre constructor y pruebas | OK. |
+| PDF institucional e integracion con pagos | OK: 33 tests, 1333 assertions. |
+| Inventario PHPStan nivel 9 global | Baja de 573 a 561 hallazgos. |
+
+### Decision
+
+Un snapshot historico debe poder imprimirse aun si contiene un valor legado invalido, pero nunca reinterpretar estructuras como texto o dinero. Los normalizadores conservan los centavos como fuente financiera primaria y aplican defaults visibles y deterministas cuando el fallback no pertenece al dominio esperado.

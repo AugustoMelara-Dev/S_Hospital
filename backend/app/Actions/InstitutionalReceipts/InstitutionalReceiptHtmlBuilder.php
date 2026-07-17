@@ -39,7 +39,9 @@ class InstitutionalReceiptHtmlBuilder
     public function forDraft(array $data, ReceiptPrintProfile $profile, ?InstitutionalReceiptSeries $series = null): string
     {
         $settings = FiscalSetting::query()->firstOrNew();
-        $amount = Money::formatCents(Money::parseCents((string) ($data['amount'] ?? '0.00'), 'amount'));
+        $amount = Money::formatCents(Money::parseCents($this->numericString($data['amount'] ?? null, '0.00'), 'amount'));
+        $payerName = $this->stringValue($data['payer_name'] ?? null, 'Paciente de prueba');
+        $concept = $this->stringValue($data['concept'] ?? null, 'Servicios hospitalarios de prueba');
 
         return View::make('pdf.institutional-receipts.classic', [
             'pages' => collect($this->copyLabels($profile->copies_mode))
@@ -66,10 +68,10 @@ class InstitutionalReceiptHtmlBuilder
                     ],
                     'amount' => $amount,
                     'issued_at' => now(),
-                    'payer_name' => (string) ($data['payer_name'] ?? 'Paciente de prueba'),
+                    'payer_name' => $payerName,
                     'amount_words' => 'PRUEBA - SIN VALIDEZ',
                     'amount_statement' => $this->amountStatement($series?->legal_text, 'PRUEBA - SIN VALIDEZ'),
-                    'concept' => (string) ($data['concept'] ?? 'Servicios hospitalarios de prueba'),
+                    'concept' => $concept,
                     'status' => 'issued',
                     'invoice' => [
                         'invoice_number' => 'PRUEBA-SIN-FACTURA',
@@ -77,7 +79,7 @@ class InstitutionalReceiptHtmlBuilder
                         'fiscal_range_from' => null,
                         'fiscal_range_to' => null,
                         'fiscal_valid_until' => null,
-                        'patient_name' => (string) ($data['payer_name'] ?? 'Paciente de prueba'),
+                        'patient_name' => $payerName,
                         'issued_at' => now()->toIso8601String(),
                         'tax_label' => 'ISV',
                         'tax_rate_snapshot' => null,
@@ -102,7 +104,7 @@ class InstitutionalReceiptHtmlBuilder
                         ],
                     ],
                     'items' => [[
-                        'service_name' => (string) ($data['concept'] ?? 'Servicios hospitalarios de prueba'),
+                        'service_name' => $concept,
                         'category_name' => null,
                         'area_name' => null,
                         'quantity' => '1.00',
@@ -152,14 +154,14 @@ class InstitutionalReceiptHtmlBuilder
     private function normalizedInstitution(array $snapshot): array
     {
         return [
-            'government_line' => $snapshot['government_line'] ?? '',
-            'secretariat_line' => $snapshot['secretariat_line'] ?? '',
-            'hospital_name' => $snapshot['hospital_name'] ?? 'SIN CONFIGURAR',
-            'address' => $snapshot['address'] ?? '',
-            'rtn' => $snapshot['rtn'] ?? '',
-            'phone' => $snapshot['phone'] ?? '',
-            'receipt_location' => $snapshot['receipt_location'] ?? '',
-            'receipt_footer_text' => $snapshot['receipt_footer_text'] ?? '',
+            'government_line' => $this->stringValue($snapshot['government_line'] ?? null),
+            'secretariat_line' => $this->stringValue($snapshot['secretariat_line'] ?? null),
+            'hospital_name' => $this->stringValue($snapshot['hospital_name'] ?? null, 'SIN CONFIGURAR'),
+            'address' => $this->stringValue($snapshot['address'] ?? null),
+            'rtn' => $this->stringValue($snapshot['rtn'] ?? null),
+            'phone' => $this->stringValue($snapshot['phone'] ?? null),
+            'receipt_location' => $this->stringValue($snapshot['receipt_location'] ?? null),
+            'receipt_footer_text' => $this->stringValue($snapshot['receipt_footer_text'] ?? null),
             'logo_data_uri' => $this->safeImageDataUri($snapshot['logo_data_uri'] ?? null),
         ];
     }
@@ -171,11 +173,11 @@ class InstitutionalReceiptHtmlBuilder
     private function normalizedSeries(array $snapshot, string $receiptNumberFull): array
     {
         return [
-            'series' => $snapshot['series'] ?? '',
-            'receipt_number_full' => $snapshot['receipt_number_full'] ?? $receiptNumberFull,
+            'series' => $this->stringValue($snapshot['series'] ?? null),
+            'receipt_number_full' => $this->stringValue($snapshot['receipt_number_full'] ?? null, $receiptNumberFull),
             'receipt_number_color' => $this->safeHexColor($snapshot['receipt_number_color'] ?? null),
-            'legal_text' => $snapshot['legal_text'] ?? '',
-            'range_authorization' => $snapshot['range_authorization'] ?? '',
+            'legal_text' => $this->stringValue($snapshot['legal_text'] ?? null),
+            'range_authorization' => $this->stringValue($snapshot['range_authorization'] ?? null),
         ];
     }
 
@@ -186,16 +188,16 @@ class InstitutionalReceiptHtmlBuilder
     private function normalizedProfile(array $snapshot): array
     {
         return [
-            'code' => (string) ($snapshot['code'] ?? ''),
+            'code' => $this->stringValue($snapshot['code'] ?? null),
             'font_family' => $this->safeFontFamily($snapshot['font_family'] ?? null),
-            'font_scale' => (float) ($snapshot['font_scale'] ?? 1),
-            'margin_top_mm' => (float) ($snapshot['margin_top_mm'] ?? 6),
-            'margin_right_mm' => (float) ($snapshot['margin_right_mm'] ?? 6),
-            'margin_bottom_mm' => (float) ($snapshot['margin_bottom_mm'] ?? 6),
-            'margin_left_mm' => (float) ($snapshot['margin_left_mm'] ?? 6),
-            'show_copy_legend' => (bool) ($snapshot['show_copy_legend'] ?? true),
-            'show_physical_seal_space' => (bool) ($snapshot['show_physical_seal_space'] ?? true),
-            'paper_kind' => $snapshot['paper_kind'] ?? '',
+            'font_scale' => $this->floatValue($snapshot['font_scale'] ?? null, 1.0),
+            'margin_top_mm' => $this->floatValue($snapshot['margin_top_mm'] ?? null, 6.0),
+            'margin_right_mm' => $this->floatValue($snapshot['margin_right_mm'] ?? null, 6.0),
+            'margin_bottom_mm' => $this->floatValue($snapshot['margin_bottom_mm'] ?? null, 6.0),
+            'margin_left_mm' => $this->floatValue($snapshot['margin_left_mm'] ?? null, 6.0),
+            'show_copy_legend' => $this->boolValue($snapshot['show_copy_legend'] ?? null, true),
+            'show_physical_seal_space' => $this->boolValue($snapshot['show_physical_seal_space'] ?? null, true),
+            'paper_kind' => $this->stringValue($snapshot['paper_kind'] ?? null),
         ];
     }
 
@@ -306,7 +308,7 @@ class InstitutionalReceiptHtmlBuilder
             return Money::formatCents((int) $cents);
         }
 
-        return Money::formatCents(Money::parseCents((string) $fallback, 'amount'));
+        return Money::formatCents(Money::parseCents($this->numericString($fallback, '0.00'), 'amount'));
     }
 
     private function formatDraftNumber(InstitutionalReceiptSeries $series): string
@@ -333,6 +335,36 @@ class InstitutionalReceiptHtmlBuilder
         $legal = trim(is_string($legalText) ? $legalText : '');
 
         return trim($legal.' '.$amountWords);
+    }
+
+    private function stringValue(mixed $value, string $default = ''): string
+    {
+        return is_string($value) ? $value : $default;
+    }
+
+    private function numericString(mixed $value, string $default): string
+    {
+        if (is_string($value) && is_numeric($value)) {
+            return $value;
+        }
+
+        if (is_int($value) || (is_float($value) && is_finite($value))) {
+            return (string) $value;
+        }
+
+        return $default;
+    }
+
+    private function floatValue(mixed $value, float $default): float
+    {
+        $numeric = $this->numericString($value, '');
+
+        return $numeric === '' ? $default : (float) $numeric;
+    }
+
+    private function boolValue(mixed $value, bool $default): bool
+    {
+        return is_bool($value) ? $value : $default;
     }
 
     private function logoDataUriForProfile(ReceiptPrintProfile $profile): ?string
