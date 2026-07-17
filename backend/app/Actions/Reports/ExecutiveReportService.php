@@ -9,10 +9,29 @@ use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\User;
 use App\Support\Money;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
+ * @phpstan-import-type FinancialFacts from FinancialFactsService
+ *
+ * @phpstan-type ExecutiveSummary array{
+ *     billed_total: string,
+ *     collected_total: string,
+ *     collected_total_cents: int,
+ *     pending_total: string,
+ *     voided_total: string,
+ *     reversed_total: string,
+ *     invoice_count: int,
+ *     receipt_count: int,
+ *     paid_count: int,
+ *     partial_count: int,
+ *     pending_count: int,
+ *     voided_count: int,
+ *     average_ticket: string
+ * }
+ *
  * Generates the institutional executive report consumed by the
  * /reports screen. Designed to feel like a "Power BI-like" view
  * for accounting: a single, self-contained payload that the
@@ -98,8 +117,8 @@ class ExecutiveReportService
 
     /**
      * @param  array<string, mixed>  $filters
-     * @param  array<string, mixed>  $facts
-     * @return array<string, mixed>
+     * @param  FinancialFacts  $facts
+     * @return ExecutiveSummary
      */
     private function summary(Carbon $start, Carbon $end, array $filters, array $facts): array
     {
@@ -109,7 +128,7 @@ class ExecutiveReportService
         $voidedStats = $this->voidedInvoiceStats($start, $end, $filters);
         $voidedCents = $voidedStats['total_cents'];
 
-        $invoiceCount = (int) ($facts['invoice_count'] ?? 0);
+        $invoiceCount = $facts['invoice_count'];
         $receiptCount = (int) DB::table('payments')
             ->join('invoices', 'payments.invoice_id', '=', 'invoices.id')
             ->where('payments.status', Payment::STATUS_POSTED)
@@ -124,9 +143,9 @@ class ExecutiveReportService
             ->groupBy('invoices.status')
             ->select('invoices.status', DB::raw('COUNT(*) as cnt'))
             ->pluck('cnt', 'status');
-        $paidCount = (int) ($statusCounts[Invoice::STATUS_PAID] ?? 0);
-        $partialCount = (int) ($statusCounts[Invoice::STATUS_PARTIAL] ?? 0);
-        $pendingCount = (int) ($statusCounts[Invoice::STATUS_ISSUED] ?? 0) + $partialCount;
+        $paidCount = $this->countValue($statusCounts[Invoice::STATUS_PAID] ?? null);
+        $partialCount = $this->countValue($statusCounts[Invoice::STATUS_PARTIAL] ?? null);
+        $pendingCount = $this->countValue($statusCounts[Invoice::STATUS_ISSUED] ?? null) + $partialCount;
         $voidedCount = $voidedStats['count'];
 
         $averageTicketCents = $invoiceCount > 0
@@ -152,12 +171,12 @@ class ExecutiveReportService
 
     /**
      * @param  array<string, mixed>  $filters
-     * @param  array<string, mixed>  $facts
+     * @param  FinancialFacts  $facts
      * @return array<int, array<string, mixed>>
      */
     private function paymentMethods(Carbon $start, Carbon $end, array $filters, array $facts, int $totalCollectedCents): array
     {
-        $methodTotals = $facts['payments_by_method'] ?? $this->zeroMethodTotals();
+        $methodTotals = $facts['payments_by_method'];
         $methodCount = (array) DB::table('payments')
             ->join('invoices', 'payments.invoice_id', '=', 'invoices.id')
             ->where('payments.status', Payment::STATUS_POSTED)
@@ -183,7 +202,7 @@ class ExecutiveReportService
                 'method' => $key,
                 'label' => $label,
                 'amount' => $this->centsToMoney($cents),
-                'count' => (int) ($methodCount[$key] ?? 0),
+                'count' => $this->countValue($methodCount[$key] ?? null),
                 'percentage' => $totalCollectedCents > 0
                     ? round(($cents / $totalCollectedCents) * 100, 2)
                     : 0.0,
@@ -214,7 +233,7 @@ class ExecutiveReportService
                 'collected' => $dayFacts['total_collected'],
                 'pending' => $dayFacts['total_pending'],
                 'voided_count' => $voidedDay,
-                'invoice_count' => (int) ($dayFacts['invoice_count'] ?? 0),
+                'invoice_count' => $dayFacts['invoice_count'],
             ];
             $cursor->addDay();
         }
@@ -302,10 +321,10 @@ class ExecutiveReportService
             ->groupBy('category_name')
             ->map(fn ($items, $category): array => [
                 'category' => $category,
-                'quantity' => $this->centsToMoney($items->sum('quantity_cents')),
-                'total' => $this->centsToMoney($items->sum('total_cents')),
-                'collected' => $this->centsToMoney($items->sum('collected_cents')),
-                'item_count' => (int) $items->sum('item_count'),
+                'quantity' => $this->centsToMoney($this->monetaryValue($items->sum('quantity_cents'))),
+                'total' => $this->centsToMoney($this->monetaryValue($items->sum('total_cents'))),
+                'collected' => $this->centsToMoney($this->monetaryValue($items->sum('collected_cents'))),
+                'item_count' => $this->countValue($items->sum('item_count')),
             ])
             ->values()
             ->sortByDesc(fn (array $row): int => $this->moneyToCents($row['total']))
@@ -397,7 +416,7 @@ class ExecutiveReportService
             ->pluck('diff_cents', 'user_id');
 
         return $rows->map(function (object $row) use ($start, $end, $filters, $voidedByUser, $diffByUser): array {
-            $diffCents = (int) ($diffByUser[$row->user_id] ?? 0);
+            $diffCents = $this->signedIntegerValue($diffByUser[$row->user_id] ?? null);
             $invoiceCountQuery = DB::table('invoices')
                 ->where('issued_by', $row->user_id)
                 ->whereBetween('issued_at', [$start, $end])
@@ -415,7 +434,7 @@ class ExecutiveReportService
                 'transfer' => $this->centsToMoney($row->transfer_cents),
                 'card' => $this->centsToMoney($row->card_cents),
                 'other' => $this->centsToMoney($row->other_cents),
-                'voided_count' => (int) ($voidedByUser[$row->user_id] ?? 0),
+                'voided_count' => $this->countValue($voidedByUser[$row->user_id] ?? null),
                 'difference_total' => $this->centsToMoney($diffCents),
             ];
         })->all();
@@ -598,14 +617,18 @@ class ExecutiveReportService
             )
             ->get()
             ->map(function (object $row): array {
-                $newValues = is_string($row->new_values) ? json_decode($row->new_values, true) : (array) $row->new_values;
-                $invoiceNumber = $newValues['invoice_number'] ?? ('#'.((int) $row->invoice_id));
+                $decodedValues = is_string($row->new_values) ? json_decode($row->new_values, true) : $row->new_values;
+                $newValues = is_array($decodedValues) ? $decodedValues : [];
+                $invoiceNumber = $this->stringValue(
+                    $newValues['invoice_number'] ?? null,
+                    '#'.$this->countValue($row->invoice_id),
+                );
 
                 return [
                     'kind' => 'reversal',
                     'invoice_number' => $invoiceNumber,
-                    'patient' => $newValues['patient_name'] ?? null,
-                    'amount' => isset($newValues['total']) ? (string) $newValues['total'] : '0.00',
+                    'patient' => $this->nullableString($newValues['patient_name'] ?? null),
+                    'amount' => $this->moneyString($newValues['total'] ?? null),
                     'reason' => $row->reason,
                     'user' => $row->user_name,
                     'authorized_by' => $row->user_name,
@@ -636,11 +659,11 @@ class ExecutiveReportService
                 ->all();
 
             return [
-                'critical_events' => (int) ($counts['invoice.voided'] ?? 0) + (int) ($counts['invoice.reversed'] ?? 0) + (int) ($counts['payment.voided'] ?? 0),
-                'reprints' => (int) ($counts['invoice.reprinted'] ?? 0) + $this->institutionalReceiptReprintCount($start, $end, $filters),
-                'fiscal_changes' => (int) ($counts['fiscal.settings.updated'] ?? 0) + (int) ($counts['fiscal.sequence.updated'] ?? 0),
-                'cash_differences' => (int) ($counts['cash_session.closed_with_difference'] ?? 0) + (int) ($counts['cash_session.difference'] ?? 0),
-                'backup_events' => (int) ($counts['backup.created'] ?? 0) + (int) ($counts['backup.failed'] ?? 0),
+                'critical_events' => $this->countValue($counts['invoice.voided'] ?? null) + $this->countValue($counts['invoice.reversed'] ?? null) + $this->countValue($counts['payment.voided'] ?? null),
+                'reprints' => $this->countValue($counts['invoice.reprinted'] ?? null) + $this->institutionalReceiptReprintCount($start, $end, $filters),
+                'fiscal_changes' => $this->countValue($counts['fiscal.settings.updated'] ?? null) + $this->countValue($counts['fiscal.sequence.updated'] ?? null),
+                'cash_differences' => $this->countValue($counts['cash_session.closed_with_difference'] ?? null) + $this->countValue($counts['cash_session.difference'] ?? null),
+                'backup_events' => $this->countValue($counts['backup.created'] ?? null) + $this->countValue($counts['backup.failed'] ?? null),
             ];
         }
 
@@ -687,8 +710,8 @@ class ExecutiveReportService
             ->count();
 
         return [
-            'critical_events' => (int) ($invoiceAuditCounts['invoice.voided'] ?? 0) + (int) ($invoiceAuditCounts['invoice.reversed'] ?? 0) + (int) ($paymentAuditCounts['payment.voided'] ?? 0),
-            'reprints' => (int) ($invoiceAuditCounts['invoice.reprinted'] ?? 0) + $this->institutionalReceiptReprintCount($start, $end, $filters),
+            'critical_events' => $this->countValue($invoiceAuditCounts['invoice.voided'] ?? null) + $this->countValue($invoiceAuditCounts['invoice.reversed'] ?? null) + $this->countValue($paymentAuditCounts['payment.voided'] ?? null),
+            'reprints' => $this->countValue($invoiceAuditCounts['invoice.reprinted'] ?? null) + $this->institutionalReceiptReprintCount($start, $end, $filters),
             'fiscal_changes' => 0,
             'cash_differences' => (int) $cashDifferenceCount,
             'backup_events' => 0,
@@ -798,7 +821,7 @@ class ExecutiveReportService
     /**
      * @param  array<string, mixed>  $filters
      */
-    private function applyInvoiceFilters(mixed $query, array $filters, ?Carbon $paymentStart = null, ?Carbon $paymentEnd = null): void
+    private function applyInvoiceFilters(Builder $query, array $filters, ?Carbon $paymentStart = null, ?Carbon $paymentEnd = null): void
     {
         $query
             ->when(! empty($filters['user_id']), function ($query) use ($filters): void {
@@ -846,7 +869,7 @@ class ExecutiveReportService
     /**
      * @param  array<string, mixed>  $filters
      */
-    private function applyPaymentFilters(mixed $query, array $filters): void
+    private function applyPaymentFilters(Builder $query, array $filters): void
     {
         $query
             ->when(! empty($filters['user_id']), function ($query) use ($filters): void {
@@ -883,10 +906,48 @@ class ExecutiveReportService
 
     private function signedCents(mixed $value): int
     {
-        $raw = (string) ($value ?? '0');
+        $raw = is_int($value) || is_string($value) ? (string) $value : '0';
         $sign = str_starts_with(trim($raw), '-') ? -1 : 1;
         $absolute = ltrim(trim($raw), '+-');
 
         return $sign * Money::parseCents($absolute, 'cash_session.amount');
+    }
+
+    private function countValue(mixed $value): int
+    {
+        if (is_int($value)) {
+            return max(0, $value);
+        }
+
+        return is_string($value) && ctype_digit($value) ? (int) $value : 0;
+    }
+
+    private function signedIntegerValue(mixed $value): int
+    {
+        if (is_int($value)) {
+            return $value;
+        }
+
+        return is_string($value) && preg_match('/^[+-]?\d+$/', $value) === 1 ? (int) $value : 0;
+    }
+
+    private function monetaryValue(mixed $value): int|string|null
+    {
+        return is_int($value) || (is_string($value) && is_numeric($value)) ? $value : null;
+    }
+
+    private function nullableString(mixed $value): ?string
+    {
+        return is_string($value) ? $value : null;
+    }
+
+    private function stringValue(mixed $value, string $default = ''): string
+    {
+        return $this->nullableString($value) ?? $default;
+    }
+
+    private function moneyString(mixed $value): string
+    {
+        return is_string($value) && is_numeric($value) ? $value : '0.00';
     }
 }

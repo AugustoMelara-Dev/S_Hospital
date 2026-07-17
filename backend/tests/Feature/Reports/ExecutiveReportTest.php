@@ -421,6 +421,37 @@ class ExecutiveReportTest extends TestCase
             ->assertJsonPath('data.audit_summary.backup_events', 1);
     }
 
+    public function test_executive_reversal_uses_safe_defaults_when_audit_snapshot_fields_are_structured(): void
+    {
+        $this->seedBillingBase();
+        $admin = $this->admin();
+        $invoice = $this->createInvoice($this->cashier(), 'Glucosa');
+
+        \DB::table('audit_logs')->insert([
+            'action' => 'invoice.reversed',
+            'entity_type' => Invoice::class,
+            'entity_id' => $invoice->id,
+            'user_id' => $admin->id,
+            'reason' => 'Snapshot legado invalido',
+            'new_values' => json_encode([
+                'invoice_number' => ['invalid'],
+                'patient_name' => ['invalid'],
+                'total' => ['invalid'],
+            ], JSON_THROW_ON_ERROR),
+            'created_at' => now(),
+        ]);
+
+        $today = Carbon::now('America/Tegucigalpa')->toDateString();
+
+        $this->actingAs($admin)
+            ->getJson('/api/reports/executive?date_from='.$today.'&date_to='.$today)
+            ->assertOk()
+            ->assertJsonPath('data.voids_and_reversals.0.kind', 'reversal')
+            ->assertJsonPath('data.voids_and_reversals.0.invoice_number', '#'.$invoice->id)
+            ->assertJsonPath('data.voids_and_reversals.0.patient', null)
+            ->assertJsonPath('data.voids_and_reversals.0.amount', '0.00');
+    }
+
     public function test_executive_without_audit_view_redacts_audit_details(): void
     {
         $this->seedBillingBase();

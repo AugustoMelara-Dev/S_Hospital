@@ -12543,3 +12543,28 @@ Crear y clonar bases exige que cada dato usado en un identificador, DSN o senten
 ### Decision
 
 Una retencion invalida debe degradar a un valor conservador, nunca a cero. Centralizar la validacion hace visible el contrato del scheduler offline y evita que una configuracion corrupta detenga backups o elimine evidencia operativa prematuramente.
+
+## 538. Fase PHPStan 9 - Productor ejecutivo normaliza hechos y auditoria
+
+### Cambios
+
+- `ExecutiveReportService` importa el contrato `FinancialFacts` y declara el shape exacto del resumen.
+- Conteos SQL aceptan solo enteros no negativos o strings numericos; diferencias conservan signo de forma explicita.
+- Sumas monetarias atraviesan un limite `int|string|null` antes del formateador fiscal.
+- Query builders de facturas y pagos dejan de ser `mixed`.
+- Snapshots de reverso validan JSON, numero, paciente y total antes de exponerlos.
+- Se agrega una regresion para campos estructurados que antes provocaban un 500 por `Array to string conversion`.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Regresion antes del cambio | FAIL esperado: respuesta 500 al convertir total array. |
+| PHPStan nivel 9 sobre el servicio | OK: 0 errores. |
+| Pint sobre servicio y prueba | OK. |
+| Reporte ejecutivo, filtros, caja y auditoria | OK: 16 tests, 196 assertions. |
+| Inventario PHPStan nivel 9 global | Baja de 522 a 483 hallazgos. |
+
+### Decision
+
+Los agregados SQL y snapshots de auditoria son fronteras externas aunque nazcan dentro de la base. Normalizarlos en el productor evita que cada exportador reinterprete valores mixtos y garantiza que un registro legado invalido degrade a evidencia segura en vez de romper todo el reporte.
