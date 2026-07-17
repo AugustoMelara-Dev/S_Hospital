@@ -11057,3 +11057,29 @@ El route model binding es una garantia del endpoint, pero el request tambien pue
 ### Decision
 
 Las closures de consulta no conservan el refinamiento realizado por `when()` en el contexto exterior. Normalizar una vez en la frontera evita repetir `?? null` en 31 consultas y mantiene un unico contrato para todos los eventos operativos.
+
+## 472. Fase PHPStan 7 - Contrato validado de filtros HTTP
+
+### Cambios
+
+- Un trait compartido extrae fechas, identificadores, metodo y estado desde los valores ya validados por los cuatro requests de reportes.
+- Los metodos autorizados publican el shape exacto consumido por `ReportController` y los servicios.
+- Los identificadores conservan su representacion de entrada (`int|string`): JSON numerico permanece entero y query string permanece texto.
+- La autorizacion comprueba un `User` real antes de aplicar alcance gerencial o por caja.
+- No cambian permisos, limites de fechas, ownership de caja ni contenido de exportaciones.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 7 inicial sobre `ReportController` | RED: 14 argumentos `array<string, mixed>`. |
+| Primera extraccion convirtiendo IDs a entero | RED funcional: 2 respuestas cambiaron IDs de texto a numero. |
+| Extraccion preservando `int|string` | GREEN: contrato publico sin cambios. |
+| PHPStan nivel 7 en requests, controlador y operaciones | OK: 0 errores. |
+| Pint sobre los archivos del corte | OK. |
+| Reportes generales y ejecutivos | OK: 97 tests, 1247 assertions. |
+| Inventario PHPStan nivel 7 global | Baja de 79 a 63 hallazgos. |
+
+### Decision
+
+La validacion `integer` acepta tanto enteros JSON como cadenas numericas de query y Laravel conserva esa representacion. El contrato debe reflejar ambas formas para mantener compatibilidad de respuesta, mientras los servicios de base de datos pueden consumir cualquiera de ellas de manera segura.

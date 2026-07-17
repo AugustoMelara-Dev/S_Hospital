@@ -7,7 +7,7 @@ use App\Models\CashRegisterSession;
 class ExportReportRequest extends DateRangeReportRequest
 {
     /**
-     * @var array<string, mixed>|null
+     * @var array{date_from: string, date_to: string, cash_session_id?: int|string, user_id?: int|string, category_id?: int|string, area_id?: int|string, method?: string, status?: string}|null
      */
     private ?array $authorizedFilters = null;
 
@@ -18,7 +18,7 @@ class ExportReportRequest extends DateRangeReportRequest
     }
 
     /**
-     * @return array<string, mixed>
+     * @return array{date_from: string, date_to: string, cash_session_id?: int|string, user_id?: int|string, category_id?: int|string, area_id?: int|string, method?: string, status?: string}
      */
     public function authorizedFilters(): array
     {

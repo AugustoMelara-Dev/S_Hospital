@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Reports;
 
+use App\Http\Requests\Reports\Concerns\BuildsValidatedReportFilters;
 use App\Models\CashRegisterSession;
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
@@ -10,6 +11,8 @@ use Illuminate\Validation\Rule;
 
 class ExecutivePdfExportRequest extends FormRequest
 {
+    use BuildsValidatedReportFilters;
+
     public const MAX_RANGE_DAYS = 92;
 
     public function authorize(): bool
@@ -66,13 +69,18 @@ class ExecutivePdfExportRequest extends FormRequest
     }
 
     /**
-     * @return array<string, mixed>
+     * @return array{date_from: string, date_to: string, cash_session_id?: int|string, user_id?: int|string, category_id?: int|string, area_id?: int|string, method?: string, status?: string}
      */
     public function authorizedFilters(): array
     {
-        $filters = $this->validated();
+        $filters = $this->validatedReportFilters();
+        $user = $this->user();
 
-        if ($this->user()?->can('cash.close_any') === true) {
+        if (! $user instanceof User) {
+            abort(403);
+        }
+
+        if ($user->can('cash.close_any')) {
             return $filters;
         }
 
@@ -80,13 +88,13 @@ class ExecutivePdfExportRequest extends FormRequest
             ! empty($filters['cash_session_id'])
             && CashRegisterSession::query()
                 ->whereKey($filters['cash_session_id'])
-                ->where('user_id', $this->user()?->id)
+                ->where('user_id', $user->id)
                 ->doesntExist()
         ) {
             abort(403);
         }
 
-        $filters['user_id'] = $this->user()?->id;
+        $filters['user_id'] = $user->id;
 
         return $filters;
     }

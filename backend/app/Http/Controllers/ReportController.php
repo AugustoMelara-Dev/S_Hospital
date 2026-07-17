@@ -300,7 +300,7 @@ class ReportController extends Controller
     }
 
     /**
-     * @param  array<string, mixed>  $filters
+     * @param  array{date_from: string, date_to: string, cash_session_id?: int|string, user_id?: int|string, category_id?: int|string, area_id?: int|string, method?: string, status?: string}  $filters
      * @return array<string, mixed>
      */
     private function operationsForExport(OperationsReportService $reports, array $filters, ?User $user): array

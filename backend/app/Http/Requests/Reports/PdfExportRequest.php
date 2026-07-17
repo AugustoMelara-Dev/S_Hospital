@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Reports;
 
+use App\Http\Requests\Reports\Concerns\BuildsValidatedReportFilters;
 use App\Models\CashRegisterSession;
 use App\Models\Invoice;
 use App\Models\Payment;
@@ -13,8 +14,10 @@ use Throwable;
 
 class PdfExportRequest extends FormRequest
 {
+    use BuildsValidatedReportFilters;
+
     /**
-     * @var array<string, mixed>|null
+     * @var array{date_from: string, date_to: string, cash_session_id?: int|string, user_id?: int|string, category_id?: int|string, area_id?: int|string, method?: string, status?: string}|null
      */
     private ?array $authorizedReportFilters = null;
 
@@ -33,9 +36,7 @@ class PdfExportRequest extends FormRequest
             || $user->can('reports.cash_session.view');
     }
 
-    /**
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public function rules(): array
     {
         if ($this->isDailyClosure()) {
@@ -84,24 +85,15 @@ class PdfExportRequest extends FormRequest
     }
 
     /**
-     * @return array<string, mixed>
+     * @return array{date_from: string, date_to: string, cash_session_id?: int|string, user_id?: int|string, category_id?: int|string, area_id?: int|string, method?: string, status?: string}
      */
     public function reportFilters(): array
     {
-        return [
-            'date_from' => $this->input('date_from'),
-            'date_to' => $this->input('date_to'),
-            'cash_session_id' => $this->input('cash_session_id'),
-            'user_id' => $this->input('user_id'),
-            'category_id' => $this->input('category_id'),
-            'area_id' => $this->input('area_id'),
-            'method' => $this->input('method'),
-            'status' => $this->input('status'),
-        ];
+        return $this->validatedReportFilters();
     }
 
     /**
-     * @return array<string, mixed>
+     * @return array{date_from: string, date_to: string, cash_session_id?: int|string, user_id?: int|string, category_id?: int|string, area_id?: int|string, method?: string, status?: string}
      */
     public function authorizedReportFilters(): array
     {
@@ -134,8 +126,8 @@ class PdfExportRequest extends FormRequest
     }
 
     /**
-     * @param  array<string, mixed>  $filters
-     * @return array<string, mixed>
+     * @param  array{date_from: string, date_to: string, cash_session_id?: int|string, user_id?: int|string, category_id?: int|string, area_id?: int|string, method?: string, status?: string}  $filters
+     * @return array{date_from: string, date_to: string, cash_session_id?: int|string, user_id?: int|string, category_id?: int|string, area_id?: int|string, method?: string, status?: string}
      */
     private function normalizeCashSessionDateRange(array $filters): array
     {
