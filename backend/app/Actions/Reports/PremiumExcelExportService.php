@@ -12,6 +12,7 @@ use App\Support\HospitalName;
 use App\Support\Money;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use PhpOffice\PhpSpreadsheet\Chart\Chart;
 use PhpOffice\PhpSpreadsheet\Chart\DataSeries;
 use PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues;
@@ -31,7 +32,11 @@ class PremiumExcelExportService
 {
     private function moneyFloat(mixed $value): float
     {
-        return Money::parseCents((string) ($value ?? 0), 'amount') / 100;
+        try {
+            return Money::parseCents($this->plainText($value) ?? '0', 'amount') / 100;
+        } catch (ValidationException) {
+            return 0.0;
+        }
     }
 
     /**
@@ -60,6 +65,14 @@ class PremiumExcelExportService
         $settings = FiscalSetting::query()->firstOrNew();
         $hospitalName = HospitalName::display($settings->hospital_name);
         $hospitalRtn = $settings->rtn ?? 'N/A';
+        $paymentMethods = $this->section($income['payments_by_method'] ?? null);
+        $categoryRows = $this->rows($categories['categories'] ?? null);
+        $areaRows = $this->rows($areas['areas'] ?? null);
+        $serviceRows = $this->rows($services['services'] ?? null);
+        $cashierRows = $this->rows($operations['cashiers'] ?? null);
+        $voidRows = $this->rows($operations['voids'] ?? null);
+        $reprintRows = $this->rows($operations['reprints'] ?? null);
+        $paymentVoidRows = $this->rows($operations['payment_voids'] ?? null);
 
         // Style presets
         $headerStyle = [
@@ -174,7 +187,7 @@ class PremiumExcelExportService
         $sheet0->setCellValue('C12', ExcelSafe::value($currentUser instanceof User ? $currentUser->name : 'Sistema'));
 
         $row = 13;
-        foreach ($this->appliedFilterRows($income['filters'] ?? []) as [$label, $value]) {
+        foreach ($this->appliedFilterRows($this->section($income['filters'] ?? null)) as [$label, $value]) {
             $sheet0->setCellValue('B'.$row, $label);
             $sheet0->setCellValue('C'.$row, ExcelSafe::value($value));
             $row++;
@@ -271,7 +284,7 @@ class PremiumExcelExportService
         $sheet1->mergeCells('B6:C6');
         $sheet1->setCellValue('B6', 'TOTAL FACTURADO');
         $sheet1->getStyle('B6:C6')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        $sheet1->setCellValue('B7', $this->moneyFloat($income['total_billed']));
+        $sheet1->setCellValue('B7', $this->moneyFloat($income['total_billed'] ?? 0));
         $sheet1->getStyle('B7')->getNumberFormat()->setFormatCode('\"L. \"#,##0.00;\"- L. \"#,##0.00');
         $sheet1->getStyle('B6:C7')->applyFromArray($kpiCardStyle);
         $sheet1->getStyle('B7')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
@@ -279,7 +292,7 @@ class PremiumExcelExportService
         $sheet1->mergeCells('E6:F6');
         $sheet1->setCellValue('E6', 'TOTAL COBRADO');
         $sheet1->getStyle('E6:F6')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        $sheet1->setCellValue('E7', $this->moneyFloat($income['total_collected']));
+        $sheet1->setCellValue('E7', $this->moneyFloat($income['total_collected'] ?? 0));
         $sheet1->getStyle('E7')->getNumberFormat()->setFormatCode('\"L. \"#,##0.00;\"- L. \"#,##0.00');
         $sheet1->getStyle('E6:F7')->applyFromArray($kpiCardStyle);
         $sheet1->getStyle('E7')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
@@ -288,7 +301,7 @@ class PremiumExcelExportService
         $sheet1->mergeCells('H6:I6');
         $sheet1->setCellValue('H6', 'FACTURAS EMITIDAS');
         $sheet1->getStyle('H6:I6')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        $sheet1->setCellValue('H7', (int) $income['invoice_count']);
+        $sheet1->setCellValue('H7', $this->safeCount($income['invoice_count'] ?? 0));
         $sheet1->getStyle('H7')->getNumberFormat()->setFormatCode('#,##0');
         $sheet1->getStyle('H6:I7')->applyFromArray($kpiCardStyle);
         $sheet1->getStyle('H7')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
@@ -306,7 +319,7 @@ class PremiumExcelExportService
             'other' => 'Otro',
         ];
 
-        foreach ($income['payments_by_method'] as $method => $total) {
+        foreach ($paymentMethods as $method => $total) {
             $sheet1->setCellValue('B'.$row, ExcelSafe::value($methodLabels[$method] ?? ucfirst($method)));
             $sheet1->setCellValue('C'.$row, $this->moneyFloat($total));
             $sheet1->getStyle('C'.$row)->getNumberFormat()->setFormatCode('\"L. \"#,##0.00;\"- L. \"#,##0.00');
@@ -324,7 +337,7 @@ class PremiumExcelExportService
         $sheet1->freezePane('A11');
 
         // Dynamic Interactive Excel Pie Chart for Payment Methods
-        $methodCount = count($income['payments_by_method']);
+        $methodCount = count($paymentMethods);
         if ($methodCount > 0) {
             $lastMethodRow = 11 + $methodCount - 1;
             $dataSeriesLabels1 = [
@@ -414,9 +427,9 @@ class PremiumExcelExportService
             $financialSheet->getColumnDimension($col)->setAutoSize(true);
         }
 
-        $categoryAmountBasis = $categories['amount_basis'] ?? ReportAmountBasis::BILLED;
-        $areaAmountBasis = $areas['amount_basis'] ?? ReportAmountBasis::BILLED;
-        $serviceAmountBasis = $services['amount_basis'] ?? ReportAmountBasis::BILLED;
+        $categoryAmountBasis = $this->plainText($categories['amount_basis'] ?? null) ?? ReportAmountBasis::BILLED;
+        $areaAmountBasis = $this->plainText($areas['amount_basis'] ?? null) ?? ReportAmountBasis::BILLED;
+        $serviceAmountBasis = $this->plainText($services['amount_basis'] ?? null) ?? ReportAmountBasis::BILLED;
         $categoryAmountLabel = $categoryAmountBasis === ReportAmountBasis::COLLECTED_PRORATED
             ? 'Cobrado asignado proporcionalmente'
             : 'Monto Facturado';
@@ -438,7 +451,7 @@ class PremiumExcelExportService
         $sheet2->getStyle('B2')->applyFromArray($titleStyle);
         $sheet2->setCellValue('B3', "Rango de fechas: {$from->format('d/m/Y')} al {$to->format('d/m/Y')}");
         $sheet2->getStyle('B3')->applyFromArray($subtitleStyle);
-        $sheet2->setCellValue('B4', $categories['amount_source'] ?? '');
+        $sheet2->setCellValue('B4', $this->safeText($categories['amount_source'] ?? ''));
         $sheet2->getStyle('B4')->applyFromArray($subtitleStyle);
 
         $sheet2->setCellValue('B5', 'Categoría');
@@ -447,10 +460,10 @@ class PremiumExcelExportService
         $sheet2->getStyle('B5:D5')->applyFromArray($headerStyle);
 
         $row = 6;
-        foreach ($categories['categories'] as $cat) {
-            $sheet2->setCellValue('B'.$row, ExcelSafe::value($cat['category']));
-            $sheet2->setCellValue('C'.$row, (int) $cat['quantity']);
-            $sheet2->setCellValue('D'.$row, $this->moneyFloat($cat['total']));
+        foreach ($categoryRows as $cat) {
+            $sheet2->setCellValue('B'.$row, $this->safeText($cat['category'] ?? ''));
+            $sheet2->setCellValue('C'.$row, $this->safeCount($cat['quantity'] ?? 0));
+            $sheet2->setCellValue('D'.$row, $this->moneyFloat($cat['total'] ?? 0));
 
             $sheet2->getStyle('C'.$row)->getNumberFormat()->setFormatCode('#,##0');
             $sheet2->getStyle('D'.$row)->getNumberFormat()->setFormatCode('\"L. \"#,##0.00;\"- L. \"#,##0.00');
@@ -472,7 +485,7 @@ class PremiumExcelExportService
         $sheet2->setAutoFilter('B5:D'.($row - 1));
 
         // Dynamic Interactive Excel Column Chart for Service Categories
-        $categoryCount = count($categories['categories']);
+        $categoryCount = count($categoryRows);
         if ($categoryCount > 0) {
             $dataSeriesLabels2 = [
                 new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, "'Categorías'!\$D\$5", null, 1),
@@ -528,7 +541,7 @@ class PremiumExcelExportService
         $sheetArea->getStyle('B2')->applyFromArray($titleStyle);
         $sheetArea->setCellValue('B3', "Rango de fechas: {$from->format('d/m/Y')} al {$to->format('d/m/Y')}");
         $sheetArea->getStyle('B3')->applyFromArray($subtitleStyle);
-        $sheetArea->setCellValue('B4', $areas['amount_source'] ?? '');
+        $sheetArea->setCellValue('B4', $this->safeText($areas['amount_source'] ?? ''));
         $sheetArea->getStyle('B4')->applyFromArray($subtitleStyle);
 
         $sheetArea->setCellValue('B5', 'Area');
@@ -538,16 +551,16 @@ class PremiumExcelExportService
         $sheetArea->getStyle('B5:E5')->applyFromArray($headerStyle);
 
         $row = 6;
-        if (empty($areas['areas'])) {
+        if ($areaRows === []) {
             $sheetArea->setCellValue('B'.$row, 'Sin facturación por área en el rango');
             $sheetArea->mergeCells('B'.$row.':E'.$row);
             $row++;
         } else {
-            foreach ($areas['areas'] as $area) {
-                $sheetArea->setCellValue('B'.$row, ExcelSafe::value($area['area']));
-                $sheetArea->setCellValue('C'.$row, (int) $area['item_count']);
-                $sheetArea->setCellValue('D'.$row, $this->moneyFloat($area['quantity']));
-                $sheetArea->setCellValue('E'.$row, $this->moneyFloat($area['total']));
+            foreach ($areaRows as $area) {
+                $sheetArea->setCellValue('B'.$row, $this->safeText($area['area'] ?? ''));
+                $sheetArea->setCellValue('C'.$row, $this->safeCount($area['item_count'] ?? 0));
+                $sheetArea->setCellValue('D'.$row, $this->moneyFloat($area['quantity'] ?? 0));
+                $sheetArea->setCellValue('E'.$row, $this->moneyFloat($area['total'] ?? 0));
 
                 $sheetArea->getStyle('C'.$row)->getNumberFormat()->setFormatCode('#,##0');
                 $sheetArea->getStyle('D'.$row)->getNumberFormat()->setFormatCode('#,##0.00');
@@ -558,9 +571,9 @@ class PremiumExcelExportService
 
         $lastAreaRow = $row - 1;
         $sheetArea->setCellValue('B'.$row, 'Total');
-        $sheetArea->setCellValue('C'.$row, empty($areas['areas']) ? 0 : '=SUM(C6:C'.($row - 1).')');
-        $sheetArea->setCellValue('D'.$row, empty($areas['areas']) ? 0 : '=SUM(D6:D'.($row - 1).')');
-        $sheetArea->setCellValue('E'.$row, empty($areas['areas']) ? 0 : '=SUM(E6:E'.($row - 1).')');
+        $sheetArea->setCellValue('C'.$row, $areaRows === [] ? 0 : '=SUM(C6:C'.($row - 1).')');
+        $sheetArea->setCellValue('D'.$row, $areaRows === [] ? 0 : '=SUM(D6:D'.($row - 1).')');
+        $sheetArea->setCellValue('E'.$row, $areaRows === [] ? 0 : '=SUM(E6:E'.($row - 1).')');
 
         $sheetArea->getStyle('C'.$row)->getNumberFormat()->setFormatCode('#,##0');
         $sheetArea->getStyle('D'.$row)->getNumberFormat()->setFormatCode('#,##0.00');
@@ -568,9 +581,7 @@ class PremiumExcelExportService
         $sheetArea->getStyle('B'.$row.':E'.$row)->applyFromArray($boldRowStyle);
         $sheetArea->getStyle('B'.$row.':E'.$row)->getBorders()->getTop()->setBorderStyle(Border::BORDER_DOUBLE);
         $sheetArea->freezePane('A6');
-        if ($lastAreaRow >= 6) {
-            $sheetArea->setAutoFilter('B5:E'.$lastAreaRow);
-        }
+        $sheetArea->setAutoFilter('B5:E'.$lastAreaRow);
 
         foreach (['B', 'C', 'D', 'E'] as $col) {
             $sheetArea->getColumnDimension($col)->setAutoSize(true);
@@ -587,7 +598,7 @@ class PremiumExcelExportService
         $sheet3->getStyle('B2')->applyFromArray($titleStyle);
         $sheet3->setCellValue('B3', "Rango de fechas: {$from->format('d/m/Y')} al {$to->format('d/m/Y')}");
         $sheet3->getStyle('B3')->applyFromArray($subtitleStyle);
-        $sheet3->setCellValue('B4', $services['amount_source'] ?? '');
+        $sheet3->setCellValue('B4', $this->safeText($services['amount_source'] ?? ''));
         $sheet3->getStyle('B4')->applyFromArray($subtitleStyle);
 
         $sheet3->setCellValue('B5', 'Servicio');
@@ -597,11 +608,11 @@ class PremiumExcelExportService
         $sheet3->getStyle('B5:E5')->applyFromArray($headerStyle);
 
         $row = 6;
-        foreach ($services['services'] as $svc) {
-            $sheet3->setCellValue('B'.$row, ExcelSafe::value($svc['service']));
-            $sheet3->setCellValue('C'.$row, ExcelSafe::value($svc['category']));
-            $sheet3->setCellValue('D'.$row, (int) $svc['quantity']);
-            $sheet3->setCellValue('E'.$row, $this->moneyFloat($svc['total']));
+        foreach ($serviceRows as $svc) {
+            $sheet3->setCellValue('B'.$row, $this->safeText($svc['service'] ?? ''));
+            $sheet3->setCellValue('C'.$row, $this->safeText($svc['category'] ?? ''));
+            $sheet3->setCellValue('D'.$row, $this->safeCount($svc['quantity'] ?? 0));
+            $sheet3->setCellValue('E'.$row, $this->moneyFloat($svc['total'] ?? 0));
 
             $sheet3->getStyle('D'.$row)->getNumberFormat()->setFormatCode('#,##0');
             $sheet3->getStyle('E'.$row)->getNumberFormat()->setFormatCode('\"L. \"#,##0.00;\"- L. \"#,##0.00');
@@ -625,7 +636,7 @@ class PremiumExcelExportService
         $sheet3->setAutoFilter('B5:E'.$lastServiceRow);
 
         // Premium Highlight: Top 5 Services Horizontal Bar Chart
-        $topServices = array_slice($services['services'], 0, 5);
+        $topServices = array_slice($serviceRows, 0, 5);
         $topCount = count($topServices);
 
         if ($topCount > 0) {
@@ -637,8 +648,8 @@ class PremiumExcelExportService
 
             $calcRow = 11;
             foreach ($topServices as $svc) {
-                $sheet3->setCellValue('G'.$calcRow, ExcelSafe::value($svc['service']));
-                $sheet3->setCellValue('H'.$calcRow, $this->moneyFloat($svc['total']));
+                $sheet3->setCellValue('G'.$calcRow, $this->safeText($svc['service'] ?? ''));
+                $sheet3->setCellValue('H'.$calcRow, $this->moneyFloat($svc['total'] ?? 0));
                 $sheet3->getStyle('H'.$calcRow)->getNumberFormat()->setFormatCode('\"L. \"#,##0.00;\"- L. \"#,##0.00');
                 $calcRow++;
             }
@@ -704,12 +715,12 @@ class PremiumExcelExportService
         $sheet4->getStyle('B5:E5')->applyFromArray($headerStyle);
 
         $row = 6;
-        foreach ($operations['cashiers'] as $cashier) {
-            $sheet4->setCellValue('B'.$row, ExcelSafe::value($cashier['name']));
-            $username = (string) ($cashier['username'] ?? '');
-            $sheet4->setCellValue('C'.$row, ExcelSafe::value($username === '' ? '' : '@'.$username));
-            $sheet4->setCellValue('D'.$row, (int) $cashier['payment_count']);
-            $sheet4->setCellValue('E'.$row, $this->moneyFloat($cashier['total_collected']));
+        foreach ($cashierRows as $cashier) {
+            $sheet4->setCellValue('B'.$row, $this->safeText($cashier['name'] ?? ''));
+            $username = $this->plainText($cashier['username'] ?? null) ?? '';
+            $sheet4->setCellValue('C'.$row, $this->safeText($username === '' ? '' : '@'.$username));
+            $sheet4->setCellValue('D'.$row, $this->safeCount($cashier['payment_count'] ?? 0));
+            $sheet4->setCellValue('E'.$row, $this->moneyFloat($cashier['total_collected'] ?? 0));
 
             $sheet4->getStyle('D'.$row)->getNumberFormat()->setFormatCode('#,##0');
             $sheet4->getStyle('E'.$row)->getNumberFormat()->setFormatCode('\"L. \"#,##0.00;\"- L. \"#,##0.00');
@@ -731,7 +742,7 @@ class PremiumExcelExportService
         $sheet4->setAutoFilter('B5:E'.($row - 1));
 
         // Add Bar Chart for Cashiers (only if there are more than 1 cashier)
-        $cashierCount = count($operations['cashiers']);
+        $cashierCount = count($cashierRows);
         if ($cashierCount > 1) {
             $dataSeriesLabels4 = [
                 new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, "'Cajeros'!\$E\$5", null, 1),
@@ -795,12 +806,12 @@ class PremiumExcelExportService
             $sheet5->getStyle('B4:F4')->getFill()->setStartColor(new Color('BE123C')); // Premium Crimson/Red for Voids
 
             $row = 5;
-            foreach ($operations['voids'] as $void) {
-                $sheet5->setCellValue('B'.$row, ExcelSafe::value($void['invoice_number']));
-                $sheet5->setCellValue('C'.$row, ExcelSafe::value($void['patient_name'] ?? 'N/A'));
-                $sheet5->setCellValue('D'.$row, $this->moneyFloat($void['total']));
-                $sheet5->setCellValue('E'.$row, ExcelSafe::value($void['reason'] ?? $void['void_reason'] ?? 'Sin motivo'));
-                $sheet5->setCellValue('F'.$row, ExcelSafe::value($void['user'] ?? $void['voided_by_name'] ?? 'N/A'));
+            foreach ($voidRows as $void) {
+                $sheet5->setCellValue('B'.$row, $this->safeText($void['invoice_number'] ?? ''));
+                $sheet5->setCellValue('C'.$row, $this->safeText($void['patient_name'] ?? 'N/A'));
+                $sheet5->setCellValue('D'.$row, $this->moneyFloat($void['total'] ?? 0));
+                $sheet5->setCellValue('E'.$row, $this->safeText($void['reason'] ?? $void['void_reason'] ?? 'Sin motivo'));
+                $sheet5->setCellValue('F'.$row, $this->safeText($void['user'] ?? $void['voided_by_name'] ?? 'N/A'));
 
                 $sheet5->getStyle('D'.$row)->getNumberFormat()->setFormatCode('\"L. \"#,##0.00;\"- L. \"#,##0.00');
                 $row++;
@@ -828,12 +839,12 @@ class PremiumExcelExportService
             $sheet5->getStyle("B{$row}:F{$row}")->getFill()->setStartColor(new Color('B45309')); // Premium Amber/Bronze for reprints
 
             $row++;
-            foreach ($operations['reprints'] as $reprint) {
-                $sheet5->setCellValue('B'.$row, ExcelSafe::value($reprint['invoice_number']));
-                $sheet5->setCellValue('C'.$row, ExcelSafe::value($reprint['patient_name'] ?? 'N/A'));
-                $sheet5->setCellValue('D'.$row, $this->receiptWidthLabel($reprint['width'] ?? null));
-                $sheet5->setCellValue('E'.$row, ExcelSafe::value($reprint['reason'] ?? 'Sin motivo'));
-                $sheet5->setCellValue('F'.$row, ExcelSafe::value($reprint['user'] ?? $reprint['username'] ?? 'N/A'));
+            foreach ($reprintRows as $reprint) {
+                $sheet5->setCellValue('B'.$row, $this->safeText($reprint['invoice_number'] ?? ''));
+                $sheet5->setCellValue('C'.$row, $this->safeText($reprint['patient_name'] ?? 'N/A'));
+                $sheet5->setCellValue('D'.$row, $this->receiptWidthLabel($this->plainText($reprint['width'] ?? null)));
+                $sheet5->setCellValue('E'.$row, $this->safeText($reprint['reason'] ?? 'Sin motivo'));
+                $sheet5->setCellValue('F'.$row, $this->safeText($reprint['user'] ?? $reprint['username'] ?? 'N/A'));
                 $row++;
             }
 
@@ -854,16 +865,14 @@ class PremiumExcelExportService
             $sheet5->getStyle("B{$row}:H{$row}")->getFill()->setStartColor(new Color('6D28D9'));
 
             $row++;
-            foreach ($operations['payment_voids'] ?? [] as $paymentVoid) {
-                $sheet5->setCellValue('B'.$row, ExcelSafe::value($paymentVoid['invoice_number'] ?? 'N/A'));
-                $sheet5->setCellValue('C'.$row, ExcelSafe::value($paymentVoid['patient_name'] ?? 'N/A'));
-                $sheet5->setCellValue('D'.$row, ExcelSafe::value($this->paymentMethodLabel($paymentVoid['method'] ?? '')));
+            foreach ($paymentVoidRows as $paymentVoid) {
+                $sheet5->setCellValue('B'.$row, $this->safeText($paymentVoid['invoice_number'] ?? 'N/A'));
+                $sheet5->setCellValue('C'.$row, $this->safeText($paymentVoid['patient_name'] ?? 'N/A'));
+                $sheet5->setCellValue('D'.$row, $this->safeText($this->paymentMethodLabel($this->plainText($paymentVoid['method'] ?? null) ?? '')));
                 $sheet5->setCellValue('E'.$row, $this->moneyFloat($paymentVoid['amount'] ?? 0));
-                $sheet5->setCellValue('F'.$row, ExcelSafe::value($paymentVoid['reason'] ?? 'Sin motivo'));
-                $sheet5->setCellValue('G'.$row, ExcelSafe::value($paymentVoid['voided_by'] ?? 'N/A'));
-                $sheet5->setCellValue('H'.$row, isset($paymentVoid['voided_at'])
-                    ? Carbon::parse($paymentVoid['voided_at'])->format('d/m/Y H:i')
-                    : 'N/A');
+                $sheet5->setCellValue('F'.$row, $this->safeText($paymentVoid['reason'] ?? 'Sin motivo'));
+                $sheet5->setCellValue('G'.$row, $this->safeText($paymentVoid['voided_by'] ?? 'N/A'));
+                $sheet5->setCellValue('H'.$row, $this->dateTimeLabel($paymentVoid['voided_at'] ?? null));
                 $sheet5->getStyle('E'.$row)->getNumberFormat()->setFormatCode('\"L. \"#,##0.00;\"- L. \"#,##0.00');
                 $row++;
             }
@@ -900,13 +909,13 @@ class PremiumExcelExportService
         $sheet->setTitle('Cierre de Caja');
         $sheet->setShowGridlines(true);
 
-        $cashSession = $report['cash_session'] ?? [];
+        $cashSession = $this->section($report['cash_session'] ?? null);
         $totalsByMethod = array_merge([
             'cash' => '0.00',
             'transfer' => '0.00',
             'card' => '0.00',
             'other' => '0.00',
-        ], is_array($report['totals_by_method'] ?? null) ? $report['totals_by_method'] : []);
+        ], $this->section($report['totals_by_method'] ?? null));
 
         $sheet->mergeCells('B2:D2');
         $sheet->setCellValue('B2', 'CIERRE DE CAJA');
@@ -915,11 +924,11 @@ class PremiumExcelExportService
         $sheet->getStyle('B3')->applyFromArray($subtitleStyle);
 
         $sheet->setCellValue('B5', 'Caja');
-        $sheet->setCellValue('C5', (int) ($cashSession['id'] ?? 0));
+        $sheet->setCellValue('C5', $this->safeCount($cashSession['id'] ?? 0));
         $sheet->setCellValue('B6', 'Estado');
-        $sheet->setCellValue('C6', ExcelSafe::value((string) ($cashSession['status'] ?? '')));
+        $sheet->setCellValue('C6', $this->safeText($cashSession['status'] ?? ''));
         $sheet->setCellValue('B7', 'Cajero');
-        $sheet->setCellValue('C7', ExcelSafe::value((string) data_get($cashSession, 'user.name', 'Sin asignar')));
+        $sheet->setCellValue('C7', $this->safeText(data_get($cashSession, 'user.name', 'Sin asignar')));
         $sheet->setCellValue('B8', 'Abierta');
         $sheet->setCellValue('C8', $this->dateTimeLabel($cashSession['opened_at'] ?? null));
         $sheet->setCellValue('B9', 'Cerrada');
@@ -931,7 +940,7 @@ class PremiumExcelExportService
         $sheet->setCellValue('B12', 'Diferencia');
         $sheet->setCellValue('C12', $this->moneyFloat($cashSession['difference_amount'] ?? 0));
         $sheet->setCellValue('B13', 'Motivo / nota');
-        $sheet->setCellValue('C13', ExcelSafe::value((string) ($cashSession['closing_notes'] ?? 'Sin diferencia')));
+        $sheet->setCellValue('C13', $this->safeText($cashSession['closing_notes'] ?? 'Sin diferencia'));
 
         $sheet->getStyle('B5:C13')->applyFromArray($borderStyle);
         $sheet->getStyle('B5:B13')->applyFromArray($boldRowStyle);
@@ -958,9 +967,9 @@ class PremiumExcelExportService
         $sheet->setCellValue('B21', 'Total cobrado');
         $sheet->setCellValue('C21', $this->moneyFloat($report['payments_total'] ?? 0));
         $sheet->setCellValue('B22', 'Pagos');
-        $sheet->setCellValue('C22', (int) ($report['payments_count'] ?? 0));
+        $sheet->setCellValue('C22', $this->safeCount($report['payments_count'] ?? 0));
         $sheet->setCellValue('B23', 'Pendientes al cierre');
-        $sheet->setCellValue('C23', (int) ($report['pending_invoice_count'] ?? 0));
+        $sheet->setCellValue('C23', $this->safeCount($report['pending_invoice_count'] ?? 0));
         $sheet->setCellValue('B24', 'Monto pendiente');
         $sheet->setCellValue('C24', $this->moneyFloat($report['pending_amount'] ?? 0));
         $sheet->getStyle('B21:C24')->applyFromArray($borderStyle);
@@ -977,11 +986,16 @@ class PremiumExcelExportService
 
     private function dateTimeLabel(mixed $value): string
     {
-        if ($value === null || $value === '') {
+        $text = $this->plainText($value);
+        if ($text === null || $text === '') {
             return 'N/A';
         }
 
-        return Carbon::parse((string) $value)->format('d/m/Y H:i');
+        try {
+            return Carbon::parse($text)->format('d/m/Y H:i');
+        } catch (\Throwable) {
+            return 'N/A';
+        }
     }
 
     /**
@@ -992,36 +1006,42 @@ class PremiumExcelExportService
     {
         $rows = [];
 
-        if (! empty($filters['cash_session_id'])) {
-            $rows[] = ['Caja', $this->cashSessionLabel((int) $filters['cash_session_id'])];
+        $cashSessionId = $this->positiveInt($filters['cash_session_id'] ?? null);
+        if ($cashSessionId !== null) {
+            $rows[] = ['Caja', $this->cashSessionLabel($cashSessionId)];
         }
 
-        if (! empty($filters['method'])) {
-            $rows[] = ['Método de pago', $this->paymentMethodLabel((string) $filters['method'])];
+        $method = $this->nonEmptyText($filters['method'] ?? null);
+        if ($method !== null) {
+            $rows[] = ['Método de pago', $this->paymentMethodLabel($method)];
         }
 
-        if (! empty($filters['status'])) {
-            $rows[] = ['Estado de factura', $this->invoiceStatusLabel((string) $filters['status'])];
+        $status = $this->nonEmptyText($filters['status'] ?? null);
+        if ($status !== null) {
+            $rows[] = ['Estado de factura', $this->invoiceStatusLabel($status)];
         }
 
-        if (! empty($filters['user_id'])) {
+        $userId = $this->positiveInt($filters['user_id'] ?? null);
+        if ($userId !== null) {
             $rows[] = [
                 'Cajero',
-                User::query()->whereKey($filters['user_id'])->value('name') ?? 'Usuario no disponible',
+                $this->plainText(User::query()->whereKey($userId)->value('name')) ?? 'Usuario no disponible',
             ];
         }
 
-        if (! empty($filters['area_id'])) {
+        $areaId = $this->positiveInt($filters['area_id'] ?? null);
+        if ($areaId !== null) {
             $rows[] = [
                 'Área',
-                Area::query()->whereKey($filters['area_id'])->value('name') ?? 'Área no disponible',
+                $this->plainText(Area::query()->whereKey($areaId)->value('name')) ?? 'Área no disponible',
             ];
         }
 
-        if (! empty($filters['category_id'])) {
+        $categoryId = $this->positiveInt($filters['category_id'] ?? null);
+        if ($categoryId !== null) {
             $rows[] = [
                 'Categoría',
-                Category::query()->whereKey($filters['category_id'])->value('name') ?? 'Categoría no disponible',
+                $this->plainText(Category::query()->whereKey($categoryId)->value('name')) ?? 'Categoría no disponible',
             ];
         }
 
@@ -1060,10 +1080,11 @@ class PremiumExcelExportService
 
         $cashier = $cashSession->user->name ?? 'Cajero no disponible';
         $openedAt = $cashSession->opened_at?->format('d/m/Y H:i') ?? 'fecha no disponible';
+        $statusValue = $this->plainText($cashSession->status) ?? '';
         $status = [
             CashRegisterSession::STATUS_OPEN => 'Abierta',
             CashRegisterSession::STATUS_CLOSED => 'Cerrada',
-        ][$cashSession->status] ?? ucfirst((string) $cashSession->status);
+        ][$statusValue] ?? ucfirst($statusValue);
 
         return "{$cashier} - Apertura {$openedAt} - {$status}";
     }
@@ -1079,5 +1100,87 @@ class PremiumExcelExportService
             'half_letter' => 'Media carta',
             'letter' => 'Carta',
         ][$width ?? ''] ?? 'N/A';
+    }
+
+    /** @return array<string, mixed> */
+    private function section(mixed $value): array
+    {
+        if (! is_array($value)) {
+            return [];
+        }
+
+        $section = [];
+        foreach ($value as $key => $item) {
+            if (is_string($key)) {
+                $section[$key] = $item;
+            }
+        }
+
+        return $section;
+    }
+
+    /** @return list<array<string, mixed>> */
+    private function rows(mixed $value): array
+    {
+        if (! is_array($value)) {
+            return [];
+        }
+
+        $rows = [];
+        foreach ($value as $item) {
+            if (is_array($item)) {
+                $rows[] = $this->section($item);
+            }
+        }
+
+        return $rows;
+    }
+
+    private function safeText(mixed $value): string
+    {
+        $safe = ExcelSafe::value($this->plainText($value) ?? '');
+
+        return is_string($safe) ? $safe : '';
+    }
+
+    private function plainText(mixed $value): ?string
+    {
+        return is_string($value) || is_int($value) || is_float($value) || is_bool($value)
+            ? (string) $value
+            : null;
+    }
+
+    private function nonEmptyText(mixed $value): ?string
+    {
+        $text = trim($this->plainText($value) ?? '');
+
+        return $text === '' ? null : $text;
+    }
+
+    private function safeCount(mixed $value): int
+    {
+        if (is_int($value)) {
+            return max(0, $value);
+        }
+
+        if (is_float($value)) {
+            return is_finite($value) ? max(0, (int) $value) : 0;
+        }
+
+        $text = trim($this->plainText($value) ?? '');
+        if ($text === '' || preg_match('/^[0-9]+$/', $text) !== 1) {
+            return 0;
+        }
+
+        $parsed = filter_var($text, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
+
+        return is_int($parsed) ? $parsed : 0;
+    }
+
+    private function positiveInt(mixed $value): ?int
+    {
+        $parsed = $this->safeCount($value);
+
+        return $parsed > 0 ? $parsed : null;
     }
 }

@@ -12640,3 +12640,28 @@ Un libro Excel combina datos contables con una superficie de ejecucion de formul
 ### Decision
 
 Los reportes PDF son documentos institucionales y deben seguir siendo generables ante datos legados parciales. Validar cada frontera antes del render evita errores 500 y contenido ambiguo, mantiene el escape HTML y no altera los calculos financieros que siguen perteneciendo al backend.
+
+## 542. Fase PHPStan 9 - Excel premium y gate global estricto
+
+### Cambios
+
+- `PremiumExcelExportService` normaliza mapas, listas, filas, celdas, dinero, conteos, fechas y filtros antes de construir el workbook.
+- Categorias, areas, servicios, cajeros, anulaciones, reimpresiones, reversos y cierre de caja dejan de castear valores `mixed` directamente.
+- Los datos externos mantienen escape anti-formula; las formulas internas de totales y los graficos permanecen intactos.
+- Fechas invalidas degradan a `N/A`, valores monetarios invalidos a cero e identificadores de filtros no validos se omiten.
+- `phpstan.neon` eleva el nivel obligatorio de 8 a 9 para `app` y `routes`, sin baseline ni supresiones.
+- Se agrega una regresion integral con payload estructurado para todas las hojas criticas.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Regresion antes del cambio | FAIL esperado: conversion de filtro array a string. |
+| PHPStan nivel 9 sobre el exportador | OK: 0 errores. |
+| Suite completa de reportes | OK: 61 tests, 880 assertions. |
+| PHPStan nivel 9 global | OK: 0 errores; inventario reducido de 811 a 0. |
+| Pint sobre exportador y prueba | OK. |
+
+### Decision
+
+Al quedar todo el backend limpio en nivel 9, mantener nivel 8 permitiria regresiones que la auditoria ya demostro relevantes en fronteras de datos. Promover el nivel en la configuracion convierte la mejora puntual en una garantia permanente para desarrollo local y CI.

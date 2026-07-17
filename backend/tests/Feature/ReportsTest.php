@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Actions\Billing\CreateInvoiceAction;
 use App\Actions\Cash\OpenCashSessionAction;
 use App\Actions\Payments\RegisterPaymentAction;
+use App\Actions\Reports\PremiumExcelExportService;
 use App\Models\Area;
 use App\Models\AuditLog;
 use App\Models\BackupLog;
@@ -999,6 +1000,48 @@ class ReportsTest extends TestCase
         $xlsx = $response->streamedContent();
 
         $this->assertStringStartsWith("PK\x03\x04", $xlsx);
+    }
+
+    public function test_premium_excel_normalizes_structured_report_payload_values(): void
+    {
+        $spreadsheet = app(PremiumExcelExportService::class)->generate(
+            [
+                'total_billed' => ['invalid'],
+                'total_collected' => ['invalid'],
+                'invoice_count' => ['invalid'],
+                'payments_by_method' => ['cash' => ['invalid'], 0 => 'invalid-key'],
+                'filters' => ['cash_session_id' => ['invalid'], 'method' => ['invalid']],
+            ],
+            [
+                'amount_basis' => ['invalid'],
+                'amount_source' => ['invalid'],
+                'categories' => [['category' => ['invalid'], 'quantity' => ['invalid'], 'total' => ['invalid']]],
+            ],
+            ['amount_source' => ['invalid'], 'areas' => ['invalid-row']],
+            ['services' => [['service' => ['invalid'], 'category' => ['invalid']]]],
+            [
+                'cashiers' => [['name' => ['invalid'], 'username' => ['invalid']]],
+                'voids' => [['invoice_number' => ['invalid']]],
+                'reprints' => [['width' => ['invalid']]],
+                'payment_voids' => [['method' => ['invalid'], 'voided_at' => ['invalid']]],
+            ],
+            now(),
+            now(),
+            [
+                'cash_session' => ['id' => ['invalid'], 'status' => ['invalid'], 'opened_at' => ['invalid']],
+                'totals_by_method' => ['cash' => ['invalid']],
+                'payments_count' => ['invalid'],
+            ],
+        );
+
+        $this->assertSame(0.0, $spreadsheet->getSheetByName('Resumen General')->getCell('B7')->getValue());
+        $this->assertSame(0, $spreadsheet->getSheetByName('Resumen General')->getCell('H7')->getValue());
+        $this->assertSame('', $spreadsheet->getSheetByName('Categorías')->getCell('B6')->getValue());
+        $this->assertSame('', $spreadsheet->getSheetByName('Servicios')->getCell('B6')->getValue());
+        $this->assertSame('', $spreadsheet->getSheetByName('Cajeros')->getCell('B6')->getValue());
+        $this->assertSame('', $spreadsheet->getSheetByName('Auditoría')->getCell('B5')->getValue());
+        $this->assertSame(0, $spreadsheet->getSheetByName('Cierre de Caja')->getCell('C5')->getValue());
+        $this->assertSame('N/A', $spreadsheet->getSheetByName('Cierre de Caja')->getCell('C8')->getValue());
     }
 
     public function test_report_export_includes_financial_reading_sheet_with_sources(): void
