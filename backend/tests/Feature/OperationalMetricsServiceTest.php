@@ -8,12 +8,22 @@ use App\Actions\Reports\OperationalMetricsService;
 use App\Models\AuditLog;
 use App\Models\BackupLog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class OperationalMetricsServiceTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_backup_health_queries_have_a_status_completed_at_index(): void
+    {
+        $index = collect(Schema::getIndexes('backup_logs'))
+            ->firstWhere('name', 'backup_logs_status_completed_at_id_index');
+
+        $this->assertIsArray($index);
+        $this->assertSame(['status', 'completed_at', 'id'], $index['columns']);
+    }
 
     public function test_snapshot_returns_all_sections(): void
     {
