@@ -52,7 +52,15 @@ class CreateInvoiceAction
                 $sequence = $fiscal['sequence'];
                 $isZeroTotal = $this->isZeroAmount($totals['total']);
 
-                $sumItems = array_reduce($totals['items'], fn (int $carry, array $item) => $carry + $item['line_total_cents'], 0);
+                $sumItems = array_reduce($totals['items'], function (int $carry, array $item): int {
+                    $lineTotalCents = $item['line_total_cents'] ?? null;
+
+                    if (! is_int($lineTotalCents)) {
+                        throw new \RuntimeException('Invariante fallido: una linea no tiene total entero en centavos.');
+                    }
+
+                    return $carry + $lineTotalCents;
+                }, 0);
                 if ($sumItems !== $totals['total_cents']) {
                     throw new \RuntimeException('Invariante fallido: la suma de las lineas no coincide con el total de la factura.');
                 }

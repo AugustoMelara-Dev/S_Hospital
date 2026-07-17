@@ -11628,3 +11628,25 @@ La entrada HTTP es `mixed` hasta que la validacion demuestra lo contrario. Evita
 ### Decision
 
 El modelo ya declara el contrato nullable de `updated_at`; usar esa propiedad conserva informacion de tipo y evita llamadas sobre `mixed` sin modificar el formato del evento.
+
+## 497. Fase PHPStan 9 - Invariante de centavos por linea
+
+### Cambios
+
+- Creacion de factura comprueba que cada `line_total_cents` calculado sea un entero antes de sumarlo.
+- Una salida interna corrupta detiene la transaccion con un error de invariancia en vez de provocar `TypeError` o conversion silenciosa.
+- No cambian redondeo, ISV, eritropoyetina, snapshots, totales ni respuestas exitosas.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Documentacion oficial de `binaryOp.invalid` | Revisada antes de corregir el identificador nuevo. |
+| PHPStan nivel 9 sobre `CreateInvoiceAction` | OK: 0 errores. |
+| Pint sobre la accion | OK. |
+| Totales unitarios y creacion de factura | OK: 49 tests, 205 assertions. |
+| Inventario PHPStan nivel 9 global | Baja de 792 a 791 hallazgos. |
+
+### Decision
+
+La suma de lineas es una comprobacion critica de consistencia fiscal. Validar el tipo entero antes de operar convierte un supuesto implicito en una invariancia observable y evita que datos internos mal formados alcancen la persistencia.
