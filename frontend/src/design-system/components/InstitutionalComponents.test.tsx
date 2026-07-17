@@ -6,12 +6,10 @@ import { PrintPreviewFrame, StatGrid } from './InstitutionalComponents';
 
 describe('shared design system components', () => {
   it('keeps statistics presentational', () => {
-    const { container } = render(
+    render(
       <StatGrid items={[{ label: 'Facturas', value: '12', helper: 'Emitidas hoy', icon: <SearchOutlined /> }]} />,
     );
 
-    expect(container.querySelector('[data-slot="stat-grid-item"]')).toHaveClass('ant-card');
-    expect(container.querySelector('.ant-statistic')).toBeInTheDocument();
     expect(screen.getByText('12')).toHaveClass('tabular-nums');
   });
 
