@@ -98,6 +98,10 @@ foreach ($file in $stagedFiles) {
         $errors.Add("Do not commit private TLS material from nginx/ssl: $path")
     }
 
+    if ($path -match "(?i)(^|/)(worktree[_-]backup)\.(diff|patch)$") {
+        $errors.Add("Do not commit generated worktree backup patches; Git is the source of truth: $path")
+    }
+
     if (Is-BlockedEnvFile -Path $path) {
         $errors.Add("Do not commit real environment files: $path")
     }

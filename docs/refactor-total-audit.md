@@ -9671,3 +9671,24 @@ El backend no compila una interfaz propia: todas las rutas de aplicacion resuelv
 ### Decision
 
 El proyecto tiene Docker Compose propio y soporte operativo dentro de la aplicacion; Sail y Pail duplicaban esas responsabilidades. La eliminacion reduce superficie de descarga y mantenimiento sin tocar paquetes productivos ni actualizar versiones ajenas.
+
+## 410. Fase Repositorio - Parche historico redundante eliminado
+
+### Cambios
+
+- Se elimina `qa/production-audit/worktree_backup.diff`, objeto rastreado de 3,535,558 bytes con 233 diffs ya representados por Git, sin referencias ni uso en gates.
+- La guarda pre-commit rechaza nuevos archivos `worktree_backup.diff`, `worktree-backup.diff` y sus equivalentes `.patch` en cualquier directorio.
+- La prueba de la guarda crea un repositorio temporal y demuestra que el artefacto queda bloqueado con un mensaje explicativo.
+- Se conservan capturas y reportes QA que si aportan evidencia visual o estructurada; esta fase no aplica una purga indiscriminada de artefactos.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| `scripts/test_pre_commit_guard.ps1` | RED inicial al aceptar el parche; luego OK. |
+| `git diff --check` | OK. |
+| Busqueda de referencias a `worktree_backup.diff` | Sin consumidores fuera del propio archivo eliminado. |
+
+### Decision
+
+Un volcado de worktree dentro del repositorio duplica historial, conserva texto con codificacion defectuosa y aumenta clonados y revisiones sin ser una fuente de verdad. Git y los reportes QA focalizados cubren esas responsabilidades con trazabilidad verificable.

@@ -84,6 +84,14 @@ $sslResult = Invoke-Guard -RepoRoot $sslRepo
 Assert-True ($sslResult.ExitCode -ne 0) "nginx ssl material is blocked"
 Assert-True ($sslResult.Output -match "nginx/ssl") "nginx/ssl failure is explained"
 
+$worktreeBackupRepo = New-TestRepo
+New-Item -ItemType Directory -Path (Join-Path $worktreeBackupRepo "qa/production-audit") -Force | Out-Null
+Set-Content -LiteralPath (Join-Path $worktreeBackupRepo "qa/production-audit/worktree_backup.diff") -Value "diff --git a/old b/old" -Encoding UTF8
+git -C $worktreeBackupRepo add qa/production-audit/worktree_backup.diff
+$worktreeBackupResult = Invoke-Guard -RepoRoot $worktreeBackupRepo
+Assert-True ($worktreeBackupResult.ExitCode -ne 0) "generated worktree backup patches are blocked"
+Assert-True ($worktreeBackupResult.Output -match "worktree backup") "worktree backup failure is explained"
+
 $dumpRepo = New-TestRepo
 $dumpBinary = "HOSPITAL_DUMP_" + "BINARY=C:\Program Files\MariaDB\bin\mysqldump.exe"
 Set-Content -LiteralPath (Join-Path $dumpRepo "config.txt") -Value $dumpBinary -Encoding UTF8
