@@ -37,19 +37,19 @@ class PruneBackupsAction
             $query->where('type', $type);
         }
 
-        $successfulBackups = $query
+        $prunableBackups = $query
             ->orderByDesc('completed_at')
             ->orderByDesc('id')
-            ->get();
+            ->offset($keepSuccessful)
+            ->limit(PHP_INT_MAX)
+            ->cursor();
 
-        $protectedLatestId = $successfulBackups->first()?->id;
         $cutoff = now()->subDays($keepDays);
-        $prunableBackups = $successfulBackups->skip($keepSuccessful);
 
         $pruned = 0;
 
         foreach ($prunableBackups as $backupLog) {
-            if ($backupLog->id === $protectedLatestId || ! $this->isOldEnough($backupLog, $cutoff)) {
+            if (! $this->isOldEnough($backupLog, $cutoff)) {
                 continue;
             }
 

@@ -15,6 +15,7 @@ use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 use Tests\TestCase;
@@ -353,6 +354,28 @@ class BackupWorkflowTest extends TestCase
             'entity_type' => BackupLog::class,
             'entity_id' => $oldest->id,
         ]);
+    }
+
+    public function test_backup_prune_skips_retained_rows_in_the_database_query(): void
+    {
+        $oldest = $this->successfulBackupLog(filename: 'oldest.sql', path: 'backups/oldest.sql');
+        $middle = $this->successfulBackupLog(filename: 'middle.sql', path: 'backups/middle.sql');
+        $newest = $this->successfulBackupLog(filename: 'newest.sql', path: 'backups/newest.sql');
+
+        $oldest->forceFill(['completed_at' => now()->subDays(3)])->save();
+        $middle->forceFill(['completed_at' => now()->subDays(2)])->save();
+        $newest->forceFill(['completed_at' => now()->subDay()])->save();
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        app(PruneBackupsAction::class)->execute(2);
+
+        $selectionQuery = collect(DB::getQueryLog())
+            ->first(fn (array $entry): bool => preg_match('/^select .* from [`"]backup_logs[`"]/i', $entry['query']) === 1);
+
+        $this->assertIsArray($selectionQuery);
+        $this->assertMatchesRegularExpression('/\boffset\s+2\b/i', $selectionQuery['query']);
     }
 
     public function test_backup_prune_preserves_unsafe_successful_records_for_review(): void
