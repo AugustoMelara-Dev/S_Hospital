@@ -10636,3 +10636,25 @@ El historial preserva quien cambio cada precio y a que servicio pertenece. Tipar
 ### Decision
 
 Estos registros sostienen recuperacion y evidencia forense. Precisar usuarios y el tipo del payload descifrado mejora la comprobacion estatica de operaciones sensibles sin ensanchar la informacion expuesta ni alterar el formato persistido.
+
+## 453. Fase PHPStan 6 - Respuestas de exportacion tipadas
+
+### Cambios
+
+- `ReportController::pdfExport()` y `executivePdf()` declaran `Illuminate\Http\Response`.
+- `executiveExcel()` declara `Symfony\Component\HttpFoundation\StreamedResponse`, igual que la exportacion XLSX general.
+- No cambian contenido, cabeceras, filenames ni estrategia de streaming.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Medicion PHPStan nivel 6 inicial del corte | RED controlado: 3 retornos ausentes. |
+| PHPStan nivel 6 sobre el controlador | OK: 0 errores. |
+| Pint sobre el controlador | OK. |
+| Reportes, permisos, PDF y XLSX | OK: 73 tests, 976 assertions. |
+| Inventario PHPStan nivel 6 global | Baja de 152 a 149 hallazgos. |
+
+### Decision
+
+Las descargas son una frontera HTTP publica y deben anunciar si entregan una respuesta materializada o transmitida. Los retornos concretos permiten verificar middleware y consumidores sin modificar bytes, seguridad ni memoria de las exportaciones.

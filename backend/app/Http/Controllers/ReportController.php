@@ -31,6 +31,7 @@ use App\Models\CashRegisterSession;
 use App\Models\FiscalSetting;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -169,7 +170,7 @@ class ReportController extends Controller
         OperationsReportService $operationsReports,
         CashSessionReportService $cashSessionReports,
         PdfExportService $pdfService
-    ) {
+    ): Response {
         $fiscal = FiscalSetting::first() ?? new FiscalSetting([
             'hospital_name' => 'Hospital Local',
             'rtn' => 'N/A',
@@ -233,7 +234,7 @@ class ReportController extends Controller
         ExecutivePdfExportRequest $request,
         ExecutiveReportService $reports,
         ExecutivePdfExportService $pdfService,
-    ) {
+    ): Response {
         $report = $reports->report($request->authorizedFilters(), $request->user());
 
         $fiscal = FiscalSetting::first() ?? new FiscalSetting([
@@ -265,7 +266,7 @@ class ReportController extends Controller
         ExecutivePdfExportRequest $request,
         ExecutiveReportService $reports,
         ExecutiveExcelExportService $excelService,
-    ) {
+    ): StreamedResponse {
         $report = $reports->report($request->authorizedFilters(), $request->user());
 
         $fiscal = FiscalSetting::first() ?? new FiscalSetting([
