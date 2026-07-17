@@ -11083,3 +11083,27 @@ Las closures de consulta no conservan el refinamiento realizado por `when()` en 
 ### Decision
 
 La validacion `integer` acepta tanto enteros JSON como cadenas numericas de query y Laravel conserva esa representacion. El contrato debe reflejar ambas formas para mantener compatibilidad de respuesta, mientras los servicios de base de datos pueden consumir cualquiera de ellas de manera segura.
+
+## 473. Fase PHPStan 7 - Normalizacion compartida de filtros de dominio
+
+### Cambios
+
+- Un concern de reportes convierte el shape HTTP opcional en ocho claves internas estables.
+- Area contable, area operativa, categorias, servicios vendidos y operaciones reutilizan la misma normalizacion.
+- `OperationsReportService` elimina su copia local del bloque y consume el concern comun.
+- Los identificadores mantienen `int|string`; solo las claves ausentes se representan como `null` dentro de los servicios.
+- No cambian consultas, filtros, prorrateos, conteos ni payloads publicos.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 7 antes del cambio | RED: 24 offsets opcionales en cuatro servicios. |
+| PHPStan nivel 7 sobre concern y cinco consumidores | OK: 0 errores. |
+| Pint sobre concern y consumidores | OK. |
+| Suite funcional de reportes | OK: 60 tests, 872 assertions. |
+| Inventario PHPStan nivel 7 global | Baja de 63 a 39 hallazgos; `offsetAccess.notFound` queda en cero. |
+
+### Decision
+
+La frontera interna es identica para cinco servicios y ya habia una implementacion local en operaciones. Centralizarla reduce duplicacion y evita que nuevos filtros se materialicen de forma distinta entre reportes institucionales.

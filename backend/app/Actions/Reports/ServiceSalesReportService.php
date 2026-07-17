@@ -3,6 +3,7 @@
 namespace App\Actions\Reports;
 
 use App\Actions\Reports\Concerns\FormatsReportMoney;
+use App\Actions\Reports\Concerns\NormalizesReportFilters;
 use App\Models\Invoice;
 use App\Models\Payment;
 use Illuminate\Support\Carbon;
@@ -10,7 +11,7 @@ use Illuminate\Support\Facades\DB;
 
 class ServiceSalesReportService
 {
-    use FormatsReportMoney;
+    use FormatsReportMoney, NormalizesReportFilters;
 
     /**
      * @param  array{date_from: string, date_to: string, cash_session_id?: int|string, user_id?: int|string, category_id?: int|string, area_id?: int|string, method?: string, status?: string}  $filters
@@ -18,6 +19,8 @@ class ServiceSalesReportService
      */
     public function report(array $filters): array
     {
+        $filters = $this->normalizeReportFilters($filters);
+
         $start = Carbon::createFromFormat('Y-m-d', $filters['date_from'])->startOfDay();
         $end = Carbon::createFromFormat('Y-m-d', $filters['date_to'])->endOfDay();
         $amountBasis = ReportAmountBasis::fromFilters($filters);

@@ -16,7 +16,7 @@ use Illuminate\Support\Collection;
 
 class OperationsReportService
 {
-    use Concerns\FormatsReportMoney;
+    use Concerns\FormatsReportMoney, Concerns\NormalizesReportFilters;
 
     /**
      * @param  array{date_from: string, date_to: string, cash_session_id?: int|string, user_id?: int|string, category_id?: int|string, area_id?: int|string, method?: string, status?: string}  $filters
@@ -24,16 +24,7 @@ class OperationsReportService
      */
     public function report(array $filters, bool $includeBackups = true): array
     {
-        $filters = [
-            'date_from' => $filters['date_from'],
-            'date_to' => $filters['date_to'],
-            'cash_session_id' => $filters['cash_session_id'] ?? null,
-            'user_id' => $filters['user_id'] ?? null,
-            'category_id' => $filters['category_id'] ?? null,
-            'area_id' => $filters['area_id'] ?? null,
-            'method' => $filters['method'] ?? null,
-            'status' => $filters['status'] ?? null,
-        ];
+        $filters = $this->normalizeReportFilters($filters);
 
         $start = Carbon::createFromFormat('Y-m-d', $filters['date_from'])->startOfDay();
         $end = Carbon::createFromFormat('Y-m-d', $filters['date_to'])->endOfDay();
