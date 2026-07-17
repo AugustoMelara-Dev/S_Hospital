@@ -17,12 +17,13 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use Spatie\Permission\Models\Permission;
 
 class AuthController extends Controller
 {
     public function login(LoginRequest $request, AuditLogger $auditLogger): JsonResponse
     {
-        $credentials = $request->validated();
+        $credentials = $request->validatedPayload();
         $loginField = filter_var($credentials['login'], FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
         $attemptedUser = User::query()->where($loginField, $credentials['login'])->first();
 
@@ -157,7 +158,7 @@ class AuthController extends Controller
     public function changePassword(ChangePasswordRequest $request, AuditLogger $auditLogger): JsonResponse
     {
         $user = $this->authenticatedUser($request);
-        $validated = $request->validated();
+        $validated = $request->validatedPayload();
 
         if (! Hash::check($validated['current_password'], $user->password)) {
             $auditLogger->log(
@@ -253,9 +254,14 @@ class AuthController extends Controller
             ? $user->getDirectPermissions()
             : $user->getAllPermissions();
 
-        return $permissions
-            ->pluck('name')
-            ->pipe(fn (Collection $permissions): Collection => VisiblePermissions::rejectHidden($permissions))
+        $names = [];
+        foreach ($permissions as $permission) {
+            if ($permission instanceof Permission) {
+                $names[] = $permission->name;
+            }
+        }
+
+        return VisiblePermissions::rejectHidden(collect($names))
             ->sort()
             ->values();
     }

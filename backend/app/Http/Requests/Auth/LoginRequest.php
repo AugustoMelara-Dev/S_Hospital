@@ -36,4 +36,13 @@ class LoginRequest extends FormRequest
             'password' => ['required', 'string'],
         ];
     }
+
+    /** @return array{login: string, password: string} */
+    public function validatedPayload(): array
+    {
+        return [
+            'login' => $this->string('login')->toString(),
+            'password' => $this->string('password')->toString(),
+        ];
+    }
 }

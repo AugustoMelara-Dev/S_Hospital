@@ -12229,3 +12229,25 @@ La configuracion de broadcasting termina dentro de una politica de seguridad y n
 ### Decision
 
 La busqueda forense debe construirse desde tipos validados y limites temporales consistentes. Conservar esos contratos evita consultas ambiguas y mantiene la marca de tiempo como dato temporal, no como valor opcional arbitrario.
+
+## 524. Fase PHPStan 9 - Credenciales y permisos visibles tipados
+
+### Cambios
+
+- Login y cambio de contrasena publican payloads exactos de strings despues de validar.
+- `Hash::check`, `Hash::make`, `Auth::attempt` y rotacion de otros dispositivos reciben credenciales concretas.
+- Los nombres de permisos se extraen desde modelos `Permission` antes de aplicar la lista oculta.
+- No cambian mensajes, limites de contrasena, rotacion de sesion, auditoria ni mapa exacto de acceso.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 9 sobre requests y controlador | OK: 0 errores. |
+| Pint sobre requests y controlador | OK. |
+| Login, sesion, contrasena y permisos visibles | OK: 20 tests, 89 assertions. |
+| Inventario PHPStan nivel 9 global | Baja de 676 a 671 hallazgos. |
+
+### Decision
+
+Las credenciales no deben atravesar la frontera criptografica como `mixed`. Form Requests tipados aseguran ese contrato y el recorrido por modelos conserva el tipo de cada permiso antes de exponerlo al cliente.
