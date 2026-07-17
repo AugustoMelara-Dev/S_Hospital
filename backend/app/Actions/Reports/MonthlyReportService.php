@@ -143,7 +143,13 @@ class MonthlyReportService
         return $invoiceDates
             ->merge($voidedDates)
             ->merge($paymentDates)
-            ->filter()
+            ->map(function (mixed $date): string {
+                if (! is_string($date) || preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) !== 1) {
+                    throw new \RuntimeException('La consulta mensual devolvio una fecha de actividad invalida.');
+                }
+
+                return $date;
+            })
             ->unique()
             ->sort()
             ->values();

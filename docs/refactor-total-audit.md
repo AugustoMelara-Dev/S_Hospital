@@ -11650,3 +11650,24 @@ El modelo ya declara el contrato nullable de `updated_at`; usar esa propiedad co
 ### Decision
 
 La suma de lineas es una comprobacion critica de consistencia fiscal. Validar el tipo entero antes de operar convierte un supuesto implicito en una invariancia observable y evita que datos internos mal formados alcancen la persistencia.
+
+## 498. Fase PHPStan 9 - Fechas SQL del reporte mensual
+
+### Cambios
+
+- `MonthlyReportService` valida que cada fecha de actividad devuelta por SQL sea un string `Y-m-d`.
+- Un resultado inesperado del driver falla de forma observable en vez de omitirse mediante un filtro generico.
+- Se conservan union, unicidad, orden y calculo diario de facturas, anulaciones y pagos.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 9 sobre el servicio mensual | OK: 0 errores. |
+| Pint sobre el servicio | OK. |
+| Reportes generales y hechos financieros | OK: 65 tests, 952 assertions. |
+| Inventario PHPStan nivel 9 global | Baja de 791 a 790 hallazgos. |
+
+### Decision
+
+Los resultados de expresiones SQL pierden tipo en la capa ORM. Validarlos antes de construir la coleccion impide que una incompatibilidad de driver suprima silenciosamente actividad financiera del reporte mensual.
