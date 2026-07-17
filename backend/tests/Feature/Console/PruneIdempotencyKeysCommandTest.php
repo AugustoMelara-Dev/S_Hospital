@@ -11,6 +11,13 @@ class PruneIdempotencyKeysCommandTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_idempotency_pruning_is_registered_in_the_daily_scheduler(): void
+    {
+        $this->artisan('schedule:list', ['--no-ansi' => true])
+            ->expectsOutputToContain('hospital:prune-idempotency-keys --days=30')
+            ->assertSuccessful();
+    }
+
     public function test_dry_run_reports_without_deleting_idempotency_keys(): void
     {
         $user = User::factory()->create();

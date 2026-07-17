@@ -86,3 +86,10 @@ Schedule::command('hospital:prune-failed-jobs --days='.(int) env('HOSPITAL_FAILE
     ->withoutOverlapping(30)
     ->runInBackground()
     ->description('Podar failed_jobs anteriores a la retencion configurada');
+
+Schedule::command('hospital:prune-idempotency-keys --days='.(int) env('HOSPITAL_IDEMPOTENCY_RETENTION_DAYS', 30))
+    ->dailyAt('03:45')
+    ->onOneServer()
+    ->withoutOverlapping(30)
+    ->runInBackground()
+    ->description('Podar llaves de idempotencia anteriores a la retencion configurada');
