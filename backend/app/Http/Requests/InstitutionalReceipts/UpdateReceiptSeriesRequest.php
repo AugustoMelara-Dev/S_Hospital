@@ -50,9 +50,9 @@ class UpdateReceiptSeriesRequest extends FormRequest
                 /** @var InstitutionalReceiptSeries $series */
                 $series = $this->route('series');
                 $documentType = $this->input('document_type', $series->document_type);
-                $min = (int) $this->input('min_number', $series->min_number);
-                $max = (int) $this->input('max_number', $series->max_number);
-                $current = (int) $this->input('current_number', $series->current_number);
+                $min = $this->integer('min_number', $series->min_number);
+                $max = $this->integer('max_number', $series->max_number);
+                $current = $this->integer('current_number', $series->current_number);
                 $active = $this->boolean('active', $series->active);
                 $next = $current + 1;
 
@@ -64,9 +64,11 @@ class UpdateReceiptSeriesRequest extends FormRequest
                     $validator->errors()->add('current_number', 'El siguiente correlativo del recibo debe quedar dentro del rango autorizado.');
                 }
 
-                $maxIssued = (int) InstitutionalReceipt::query()
+                $maxIssuedValue = InstitutionalReceipt::query()
                     ->where('series_id', $series->id)
                     ->max('receipt_number');
+                $validatedMaxIssued = filter_var($maxIssuedValue, FILTER_VALIDATE_INT);
+                $maxIssued = is_int($validatedMaxIssued) ? $validatedMaxIssued : 0;
                 $minimumSafeCurrentNumber = max($series->current_number, $maxIssued);
 
                 if ($this->has('current_number') && $current < $minimumSafeCurrentNumber) {

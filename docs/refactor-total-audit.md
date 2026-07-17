@@ -11834,3 +11834,25 @@ Los slugs y codigos globales solo deben construirse desde texto validado. Usar a
 ### Decision
 
 La telemetria del navegador es entrada no confiable y no debe causar errores secundarios ni almacenar estructuras arbitrarias. Normalizarla tras validacion conserva observabilidad segura y trazabilidad por usuario.
+
+## 506. Fase PHPStan 9 - Correlativos fiscales enteros
+
+### Cambios
+
+- Validadores de secuencia fiscal y series institucionales usan accesores enteros para minimo, maximo y actual.
+- Actualizacion de serie valida el maximo emitido por SQL antes de compararlo con el correlativo solicitado.
+- Callbacks siguen acumulando errores de rango aun cuando otras reglas de validacion fallen.
+- No cambian limites, superposicion, serie activa, proteccion de recibos emitidos ni mensajes 422.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 9 sobre los tres requests | OK: 0 errores. |
+| Pint sobre los tres requests | OK. |
+| Secuencias fiscales, configuracion y emision institucional | OK: 36 tests, 190 assertions. |
+| Inventario PHPStan nivel 9 global | Baja de 758 a 748 hallazgos. |
+
+### Decision
+
+Los correlativos nunca deben depender de casts desde estructuras arbitrarias. Los accesores enteros mantienen estable la validacion y el chequeo explicito del maximo SQL protege la monotonicidad de recibos ya emitidos.

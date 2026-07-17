@@ -47,9 +47,9 @@ class StoreReceiptSeriesRequest extends FormRequest
         return [
             function (Validator $validator): void {
                 $documentType = $this->input('document_type', InstitutionalReceiptSeries::DOCUMENT_TYPE);
-                $min = (int) $this->input('min_number');
-                $max = (int) $this->input('max_number');
-                $current = (int) $this->input('current_number');
+                $min = $this->integer('min_number');
+                $max = $this->integer('max_number');
+                $current = $this->integer('current_number');
                 $next = $current + 1;
 
                 if ($this->boolean('active') && ($next < $min || $next > $max)) {

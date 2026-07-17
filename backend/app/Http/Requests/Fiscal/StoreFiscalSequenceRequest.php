@@ -35,9 +35,9 @@ class StoreFiscalSequenceRequest extends FormRequest
     {
         return [
             function (Validator $validator): void {
-                $min = (int) $this->input('min_number');
-                $max = (int) $this->input('max_number');
-                $current = (int) $this->input('current_number');
+                $min = $this->integer('min_number');
+                $max = $this->integer('max_number');
+                $current = $this->integer('current_number');
                 $next = $current + 1;
 
                 if ($max < $min) {
