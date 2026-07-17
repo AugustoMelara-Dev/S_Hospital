@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { DownOutlined, LogoutOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { Dropdown, type MenuProps } from 'antd';
 import { type AuthUser } from '../../lib/api';

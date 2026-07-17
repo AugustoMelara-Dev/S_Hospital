@@ -10443,3 +10443,24 @@ Los constructores Zod se ejecutaban al cargar el modulo aunque esos formularios 
 ### Decision
 
 Dos definiciones identicas del estado de instalacion podian divergir ante un campo nuevo del backend. Mantener una sola forma junto al flujo que representa reduce deuda de tipos y deja al dashboard dependiente del mismo contrato que su dialogo operativo.
+
+## 444. Fase TypeScript - Codigo no usado convertido en error
+
+### Cambios
+
+- Se habilitan `noUnusedLocals` y `noUnusedParameters` en el contrato TypeScript del frontend.
+- Se retiran los imports por defecto de React que el runtime JSX moderno ya no necesita en `UserMenu` y `CommandPalette`.
+- El quality gate permanente ahora rechaza imports, variables, parametros y declaraciones sin uso.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Medicion inicial con ambas reglas | RED controlado: 2 imports de React sin uso. |
+| TypeScript con reglas persistentes | OK: 0 errores. |
+| ESLint completo | OK. |
+| Build Vite de produccion | OK: 3979 modulos transformados. |
+
+### Decision
+
+La medicion estricta encontro solo dos residuos mecanicos, por lo que activar las reglas no exige excepciones ni una migracion gradual. El beneficio principal no es el tamano del bundle, donde el tree-shaking ya retiraba esos imports, sino prevenir nueva superficie muerta durante el desarrollo.
