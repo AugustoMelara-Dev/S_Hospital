@@ -15,9 +15,11 @@ class BuildOperationalStatusAction
      */
     public function addSummary(array $status): array
     {
-        $checks = collect($this->statusItems($status['preflight']['production_checks'] ?? null));
-        $proofs = collect($this->statusItems($status['preflight']['physical_proofs'] ?? null));
-        $blockers = collect($this->statusItems($status['readiness']['blockers'] ?? null));
+        $preflight = $this->statusSection($status['preflight'] ?? null);
+        $readiness = $this->statusSection($status['readiness'] ?? null);
+        $checks = collect($this->statusItems($preflight['production_checks'] ?? null));
+        $proofs = collect($this->statusItems($preflight['physical_proofs'] ?? null));
+        $blockers = collect($this->statusItems($readiness['blockers'] ?? null));
 
         $problemCount = $checks
             ->merge($proofs)
@@ -74,7 +76,7 @@ class BuildOperationalStatusAction
      */
     private function databaseCheck(array $status): array
     {
-        $database = $status['database'] ?? [];
+        $database = $this->statusSection($status['database'] ?? null);
         $connected = ($database['connected'] ?? false) === true;
         $isMysql = ($database['is_mysql_family'] ?? false) === true;
 
@@ -96,7 +98,9 @@ class BuildOperationalStatusAction
      */
     private function frontendCheck(array $status): array
     {
-        $available = (($status['runtime']['frontend_build']['available'] ?? false) === true);
+        $runtime = $this->statusSection($status['runtime'] ?? null);
+        $frontendBuild = $this->statusSection($runtime['frontend_build'] ?? null);
+        $available = (($frontendBuild['available'] ?? false) === true);
 
         return $this->check(
             'FRONTEND_AVAILABLE',
@@ -112,7 +116,7 @@ class BuildOperationalStatusAction
      */
     private function backupCheck(array $status): array
     {
-        $backups = $status['backups'] ?? [];
+        $backups = $this->statusSection($status['backups'] ?? null);
 
         if (($backups['last_failure_at'] ?? null) !== null && ($backups['last_success_at'] ?? null) === null) {
             return $this->check('LATEST_BACKUP', 'Ultimo respaldo', 'error', 'El ultimo intento fallo y no hay respaldo exitoso registrado.');
@@ -131,9 +135,10 @@ class BuildOperationalStatusAction
      */
     private function queueCheck(array $status): array
     {
-        $queue = $status['backups']['queue'] ?? [];
-        $failed = (int) ($queue['failed_jobs_count'] ?? 0);
-        $pending = (int) ($queue['pending_backup_jobs'] ?? 0);
+        $backups = $this->statusSection($status['backups'] ?? null);
+        $queue = $this->statusSection($backups['queue'] ?? null);
+        $failed = $this->statusCount($queue['failed_jobs_count'] ?? null);
+        $pending = $this->statusCount($queue['pending_backup_jobs'] ?? null);
 
         if ($failed > 0) {
             return $this->check('JOB_QUEUE', 'Trabajos de respaldo', 'error', 'Hay trabajos fallidos. Soporte debe revisar la bitacora avanzada.');
@@ -152,7 +157,8 @@ class BuildOperationalStatusAction
      */
     private function systemTimeCheck(array $status): array
     {
-        $time = (string) ($status['environment']['server_time'] ?? '');
+        $environment = $this->statusSection($status['environment'] ?? null);
+        $time = $this->statusString($environment['server_time'] ?? null);
 
         return $this->check(
             'SYSTEM_TIME',
@@ -168,7 +174,9 @@ class BuildOperationalStatusAction
      */
     private function diskSpaceCheck(array $status): array
     {
-        $freeBytes = $status['backups']['storage']['free_bytes'] ?? null;
+        $backups = $this->statusSection($status['backups'] ?? null);
+        $storage = $this->statusSection($backups['storage'] ?? null);
+        $freeBytes = $storage['free_bytes'] ?? null;
 
         if (! is_numeric($freeBytes)) {
             return $this->check('DISK_SPACE', 'Espacio para respaldos', 'warning', 'No se pudo calcular el espacio disponible.');
@@ -194,8 +202,10 @@ class BuildOperationalStatusAction
      */
     private function lanAccessCheck(array $status): array
     {
-        $proofs = collect($this->statusItems($status['preflight']['physical_proofs'] ?? null));
-        $isLocalMode = ($status['network']['host_type'] ?? null) === 'loopback';
+        $preflight = $this->statusSection($status['preflight'] ?? null);
+        $network = $this->statusSection($status['network'] ?? null);
+        $proofs = collect($this->statusItems($preflight['physical_proofs'] ?? null));
+        $isLocalMode = ($network['host_type'] ?? null) === 'loopback';
         $proof = $proofs->firstWhere('code', $isLocalMode ? 'LOCAL_SERVER_VALIDATION_PROOF' : 'LAN_CLIENT_VALIDATION_PROOF');
         $validated = ($proof['status'] ?? 'pending') === 'validated';
 
@@ -226,7 +236,8 @@ class BuildOperationalStatusAction
      */
     private function versionCheck(array $status): array
     {
-        $version = (string) ($status['runtime']['installed_version'] ?? '');
+        $runtime = $this->statusSection($status['runtime'] ?? null);
+        $version = $this->statusString($runtime['installed_version'] ?? null);
 
         return $this->check(
             'INSTALLED_VERSION',
@@ -301,5 +312,32 @@ class BuildOperationalStatusAction
         }
 
         return $normalized;
+    }
+
+    /** @return array<string, mixed> */
+    private function statusSection(mixed $section): array
+    {
+        if (! is_array($section)) {
+            return [];
+        }
+
+        $normalized = [];
+        foreach ($section as $key => $value) {
+            if (is_string($key)) {
+                $normalized[$key] = $value;
+            }
+        }
+
+        return $normalized;
+    }
+
+    private function statusCount(mixed $value): int
+    {
+        return is_int($value) && $value >= 0 ? $value : 0;
+    }
+
+    private function statusString(mixed $value): string
+    {
+        return is_string($value) ? $value : '';
     }
 }

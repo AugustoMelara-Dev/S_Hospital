@@ -21,7 +21,19 @@ use Illuminate\Support\Facades\Storage;
 use Symfony\Component\Process\ExecutableFinder;
 use Throwable;
 
-/** @phpstan-type StatusSection array<string, mixed> */
+/**
+ * @phpstan-type StatusSection array<string, mixed>
+ * @phpstan-type EnvironmentStatus array{app_env: string, app_debug: bool, app_url: string, queue_connection: string, filesystem_disk: string, app_version: string, php_version: string, server_time: string, timezone: string}
+ * @phpstan-type DatabaseStatus array{connection: string, driver: string, connected: bool, is_mysql_family: bool}
+ * @phpstan-type FrontendStatus array{dist_index_exists: bool, assets_present: bool, assets_count: int, entry_label: string}
+ * @phpstan-type NetworkStatus array{configured_host: string|null, host_type: string, lan_ready: bool, client_url: string|null, guidance: string}
+ * @phpstan-type DumpBinaryStatus array{configured: bool, available: bool, name: string|null}
+ * @phpstan-type BackupStorageStatus array{writable: bool, free_bytes: float|null}
+ * @phpstan-type SchedulerHeartbeatStatus array{status: string, last_tick_at: string|null, last_result: mixed, last_message: mixed, age_seconds: float|int|null, ticks_in_db: int, ticks_last_24h: int, expected: string}
+ * @phpstan-type QueueStatus array{connection: string, jobs_table_available: bool, failed_jobs_table_available: bool, failed_jobs_count: int|null, pending_backup_jobs: int|null, scheduler_heartbeat: SchedulerHeartbeatStatus}
+ * @phpstan-type BackupStatus array{pending_count: int, failed_count: int, worker_recently_active: bool, oldest_pending_at: string|null, stale_pending_count: int, stale_pending_threshold_minutes: int, last_success_at: string|null, last_success_file_exists: bool, last_success_checksum_matches: bool, last_failure_at: string|null, last_failure_message: string|null, dump_binary: DumpBinaryStatus, storage: BackupStorageStatus, queue: QueueStatus}
+ * @phpstan-type RuntimeStatus array{logs_writable: bool, cache_writable: bool, laravel_log: array{exists: bool, size_bytes: int|null, modified_at: string|null}, backup_automation_log: array{exists: bool, size_bytes: int|null, modified_at: string|null}, frontend_build: array{available: bool, modified_at: string|null}, installed_version: string, latest_migration: string|null, migration_count: int|null, pending_migration_count: int, pending_migrations: list<string>}
+ */
 class SystemStatusController extends Controller
 {
     /**
@@ -199,27 +211,27 @@ class SystemStatusController extends Controller
         ]);
     }
 
-    /** @return array<string, mixed> */
+    /** @return EnvironmentStatus */
     private function environmentStatus(): array
     {
         return [
-            'app_env' => (string) Config::get('app.env'),
+            'app_env' => $this->configString('app.env'),
             'app_debug' => (bool) Config::get('app.debug'),
-            'app_url' => OperationalMessageSanitizer::url((string) Config::get('app.url')),
-            'queue_connection' => (string) Config::get('queue.default'),
-            'filesystem_disk' => (string) Config::get('filesystems.default'),
-            'app_version' => (string) Config::get('app.version', 'local'),
+            'app_url' => OperationalMessageSanitizer::url($this->configString('app.url')),
+            'queue_connection' => $this->configString('queue.default'),
+            'filesystem_disk' => $this->configString('filesystems.default'),
+            'app_version' => $this->configString('app.version', 'local'),
             'php_version' => PHP_VERSION,
             'server_time' => now()->toJSON(),
-            'timezone' => (string) Config::get('app.timezone'),
+            'timezone' => $this->configString('app.timezone'),
         ];
     }
 
-    /** @return array<string, mixed> */
+    /** @return DatabaseStatus */
     private function databaseStatus(): array
     {
-        $connection = (string) Config::get('database.default');
-        $driver = (string) Config::get("database.connections.{$connection}.driver", $connection);
+        $connection = $this->configString('database.default');
+        $driver = $this->configString("database.connections.{$connection}.driver", $connection);
         $connected = true;
 
         try {
@@ -237,7 +249,7 @@ class SystemStatusController extends Controller
     }
 
     /**
-     * @return array<string, mixed>
+     * @return FrontendStatus
      */
     private function frontendStatus(): array
     {
@@ -256,11 +268,11 @@ class SystemStatusController extends Controller
     }
 
     /**
-     * @return array<string, mixed>
+     * @return NetworkStatus
      */
     private function networkStatus(): array
     {
-        $appUrl = (string) Config::get('app.url');
+        $appUrl = $this->configString('app.url');
         $parts = parse_url($appUrl) ?: [];
         $host = isset($parts['host']) ? (string) $parts['host'] : null;
         $scheme = isset($parts['scheme']) ? (string) $parts['scheme'] : 'http';
@@ -284,7 +296,7 @@ class SystemStatusController extends Controller
     }
 
     /**
-     * @return array<string, mixed>
+     * @return BackupStatus
      */
     private function backupStatus(): array
     {
@@ -315,11 +327,12 @@ class SystemStatusController extends Controller
             ->where('created_at', '<=', $staleBefore)
             ->count();
         $operationalMetrics = app(OperationalMetricsService::class)->snapshot();
+        $metricBackups = $this->statusSection($operationalMetrics['backups'] ?? null);
         $queueStatus = $this->queueStatus();
-        $workerRecentlyActive = (bool) ($operationalMetrics['backups']['worker_recently_active'] ?? false);
+        $workerRecentlyActive = ($metricBackups['worker_recently_active'] ?? false) === true;
         $lastSuccessFile = [
-            'exists' => ($operationalMetrics['backups']['latest_success_file_exists'] ?? null) === true,
-            'checksum_matches' => ($operationalMetrics['backups']['latest_success_checksum_matches'] ?? null) === true,
+            'exists' => ($metricBackups['latest_success_file_exists'] ?? null) === true,
+            'checksum_matches' => ($metricBackups['latest_success_checksum_matches'] ?? null) === true,
         ];
         $lastSuccessFileIsUsable = $lastSuccessFile['exists'] && $lastSuccessFile['checksum_matches'];
         $workerRecentlyActive = $workerRecentlyActive && $lastSuccessFileIsUsable;
@@ -328,15 +341,15 @@ class SystemStatusController extends Controller
         $lastFailureIsUnresolved = $lastFailureAt !== null
             && ($lastSuccessAt === null || $lastFailureAt->greaterThan($lastSuccessAt));
         if (! $workerRecentlyActive && $lastSuccess?->completed_at !== null) {
-            $schedulerHeartbeat = (string) ($queueStatus['scheduler_heartbeat']['status'] ?? 'never_run');
+            $schedulerHeartbeat = $queueStatus['scheduler_heartbeat']['status'];
             $workerRecentlyActive =
                 $lastSuccess->completed_at->greaterThanOrEqualTo(now()->subDay())
                 && $lastSuccessFileIsUsable
                 && $pendingCount === 0
                 && $stalePendingCount === 0
                 && ! $lastFailureIsUnresolved
-                && (int) ($queueStatus['pending_backup_jobs'] ?? 0) === 0
-                && (int) ($queueStatus['failed_jobs_count'] ?? 0) === 0
+                && ($queueStatus['pending_backup_jobs'] ?? 0) === 0
+                && ($queueStatus['failed_jobs_count'] ?? 0) === 0
                 && in_array($schedulerHeartbeat, ['ok', 'stale'], true);
         }
 
@@ -359,7 +372,7 @@ class SystemStatusController extends Controller
     }
 
     /**
-     * @return array<string, mixed>
+     * @return RuntimeStatus
      */
     private function runtimeStatus(): array
     {
@@ -372,7 +385,8 @@ class SystemStatusController extends Controller
         if (Schema::hasTable('migrations')) {
             $ranMigrations = DB::table('migrations')
                 ->pluck('migration')
-                ->map(fn ($migration): string => (string) $migration)
+                ->filter(fn (mixed $migration): bool => is_string($migration))
+                ->values()
                 ->all();
 
             $latestMigration = $ranMigrations === [] ? null : max($ranMigrations);
@@ -477,7 +491,7 @@ class SystemStatusController extends Controller
 
     private function installedVersion(): string
     {
-        $configured = trim((string) Config::get('hospital.installed_version', ''));
+        $configured = trim($this->configString('hospital.installed_version'));
         if ($configured !== '') {
             return $configured;
         }
@@ -497,15 +511,15 @@ class SystemStatusController extends Controller
             return '';
         }
 
-        return trim((string) ($package['version'] ?? ''));
+        return trim($this->statusString($package['version'] ?? null));
     }
 
     /**
-     * @return array<string, mixed>
+     * @return DumpBinaryStatus
      */
     private function dumpBinaryStatus(): array
     {
-        $configured = (string) config('backups.dump_binary', '');
+        $configured = $this->configString('backups.dump_binary');
         $candidates = array_values(array_filter([
             $configured !== '' ? $configured : null,
             'mariadb-dump',
@@ -544,7 +558,7 @@ class SystemStatusController extends Controller
     }
 
     /**
-     * @return array<string, mixed>
+     * @return BackupStorageStatus
      */
     private function backupStorageStatus(): array
     {
@@ -558,11 +572,11 @@ class SystemStatusController extends Controller
     }
 
     /**
-     * @return array<string, mixed>
+     * @return QueueStatus
      */
     private function queueStatus(): array
     {
-        $connection = (string) Config::get('queue.default');
+        $connection = $this->configString('queue.default');
         $pendingJobs = null;
 
         if ($connection === 'database' && Schema::hasTable('jobs')) {
@@ -582,7 +596,7 @@ class SystemStatusController extends Controller
     }
 
     /**
-     * @return array<string, mixed>
+     * @return SchedulerHeartbeatStatus
      */
     private function schedulerHeartbeat(): array
     {
@@ -626,15 +640,15 @@ class SystemStatusController extends Controller
     }
 
     /**
-     * @param  StatusSection  $runtime
-     * @param  StatusSection  $network
+     * @param  RuntimeStatus  $runtime
+     * @param  NetworkStatus  $network
      * @return array<string, mixed>
      */
     private function readinessStatus(array $runtime, array $network): array
     {
-        $appEnv = (string) Config::get('app.env');
+        $appEnv = $this->configString('app.env');
         $appDebug = (bool) Config::get('app.debug');
-        $localMode = ($network['host_type'] ?? null) === 'loopback';
+        $localMode = $network['host_type'] === 'loopback';
         $proofs = $this->physicalProofStatuses($localMode);
         $lanProof = $proofs[0];
         $printerProof = $proofs[1];
@@ -663,7 +677,7 @@ class SystemStatusController extends Controller
             ],
         ];
 
-        if (($runtime['pending_migration_count'] ?? 0) > 0) {
+        if ($runtime['pending_migration_count'] > 0) {
             $blockers[] = [
                 'code' => 'PENDING_DATABASE_MIGRATIONS',
                 'label' => 'Base de datos requiere actualizacion segura',
@@ -679,12 +693,12 @@ class SystemStatusController extends Controller
     }
 
     /**
-     * @param  StatusSection  $environment
-     * @param  StatusSection  $database
-     * @param  StatusSection  $frontend
-     * @param  StatusSection  $network
-     * @param  StatusSection  $backups
-     * @param  StatusSection  $runtime
+     * @param  EnvironmentStatus  $environment
+     * @param  DatabaseStatus  $database
+     * @param  FrontendStatus  $frontend
+     * @param  NetworkStatus  $network
+     * @param  BackupStatus  $backups
+     * @param  RuntimeStatus  $runtime
      * @return array<string, mixed>
      */
     private function preflightStatus(
@@ -695,7 +709,7 @@ class SystemStatusController extends Controller
         array $backups,
         array $runtime,
     ): array {
-        $localMode = ($network['host_type'] ?? null) === 'loopback';
+        $localMode = $network['host_type'] === 'loopback';
         $physicalProofs = $this->physicalProofStatuses($localMode);
 
         return [
@@ -751,8 +765,8 @@ class SystemStatusController extends Controller
                 [
                     'code' => 'DATABASE_MIGRATIONS_CURRENT',
                     'label' => 'Base de datos actualizada',
-                    'status' => ($runtime['pending_migration_count'] ?? 0) === 0 ? 'validated' : 'pending',
-                    'detail' => ($runtime['pending_migration_count'] ?? 0) === 0
+                    'status' => $runtime['pending_migration_count'] === 0 ? 'validated' : 'pending',
+                    'detail' => $runtime['pending_migration_count'] === 0
                         ? 'No hay actualizaciones pendientes de base de datos'
                         : 'Requiere respaldo y actualizacion segura antes de operar reportes',
                 ],
@@ -920,7 +934,7 @@ class SystemStatusController extends Controller
             return null;
         }
 
-        return trim((string) $matches['value']);
+        return trim($matches['value']);
     }
 
     private function proofHasCompletedCheckedItem(string $content, string $labelPattern): bool
@@ -931,11 +945,12 @@ class SystemStatusController extends Controller
             return false;
         }
 
-        if (preg_match('/:[ \t]*(?<value>[^\r\n]*)\r?$/', (string) $matches[0], $result) !== 1) {
+        $matchedLine = $matches[0] ?? null;
+        if (! is_string($matchedLine) || preg_match('/:[ \t]*(?<value>[^\r\n]*)\r?$/', $matchedLine, $result) !== 1) {
             return false;
         }
 
-        return ! $this->proofValueIsIncomplete((string) $result['value']);
+        return ! $this->proofValueIsIncomplete($result['value']);
     }
 
     private function proofValueIsIncomplete(?string $value): bool
@@ -949,11 +964,11 @@ class SystemStatusController extends Controller
     private function missingReferencedLocalEvidence(string $content, string $fieldLabel): ?string
     {
         $reference = $this->proofFieldValue($content, $fieldLabel);
-        if ($this->proofValueIsIncomplete($reference)) {
+        if ($reference === null || $this->proofValueIsIncomplete($reference)) {
             return null;
         }
 
-        $reference = trim((string) $reference);
+        $reference = trim($reference);
         $isRootedPath = preg_match('/^[A-Za-z]:[\/\\\\]/', $reference) === 1
             || str_starts_with($reference, '/')
             || str_starts_with($reference, '\\');
@@ -971,7 +986,7 @@ class SystemStatusController extends Controller
 
     private function projectPath(string $relativePath): string
     {
-        $projectRoot = (string) Config::get('hospital.project_root', dirname(base_path()));
+        $projectRoot = $this->configString('hospital.project_root', dirname(base_path()));
 
         return $projectRoot.DIRECTORY_SEPARATOR.str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $relativePath);
     }
@@ -1005,5 +1020,32 @@ class SystemStatusController extends Controller
                 $runtime,
             ),
         ];
+    }
+
+    /** @return array<string, mixed> */
+    private function statusSection(mixed $section): array
+    {
+        if (! is_array($section)) {
+            return [];
+        }
+
+        $normalized = [];
+        foreach ($section as $key => $value) {
+            if (is_string($key)) {
+                $normalized[$key] = $value;
+            }
+        }
+
+        return $normalized;
+    }
+
+    private function statusString(mixed $value): string
+    {
+        return is_string($value) ? $value : '';
+    }
+
+    private function configString(string $key, string $default = ''): string
+    {
+        return $this->statusString(Config::get($key, $default));
     }
 }

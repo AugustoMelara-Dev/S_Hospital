@@ -12339,3 +12339,25 @@ Un backup solo es util si representa fielmente la base y falla antes de producir
 ### Decision
 
 La configuracion publica de tiempo real debe ser util en LAN y estricta frente a configuracion corrupta. Validar cada campo conserva el fallback de servidor local sin permitir hosts, esquemas o puertos arbitrarios en el navegador.
+
+## 529. Fase PHPStan 9 - Diagnostico operativo tipado
+
+### Cambios
+
+- `SystemStatusController` declara los contratos de entorno, base de datos, frontend, red, backups, cola y runtime que alimentan el preflight LAN.
+- Configuracion y metricas externas se normalizan antes de exponerlas o tomar decisiones operativas.
+- Conteos, versiones, rutas y resultados de expresiones regulares dejan de convertir valores `mixed` silenciosamente.
+- `BuildOperationalStatusAction` atraviesa secciones normalizadas y degrada valores invalidos a estados seguros para el resumen publico.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 9 sobre controlador y constructor de resumen | OK: 0 errores. |
+| Pint sobre ambos archivos | OK. |
+| Estado, preflight, backups, evidencias y resumen publico | OK: 26 tests, 181 assertions. |
+| Inventario PHPStan nivel 9 global | Baja de 621 a 573 hallazgos. |
+
+### Decision
+
+El diagnostico determina si el servidor LAN puede operar y por eso no debe interpretar objetos o estructuras inesperadas como texto, enteros o estados validos. Los shapes concretos mantienen coherencia entre la medicion interna, el preflight administrativo y el resumen visible sin ocultar fallos de configuracion.
