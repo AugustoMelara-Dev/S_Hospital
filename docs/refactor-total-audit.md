@@ -10358,3 +10358,23 @@ Habia dos funciones `logClientIssue` con politicas distintas de almacenamiento, 
 ### Decision
 
 El propio contrato de la version final exige que este alcance no exista. Conservar un controlador completo y autorizacion a un permiso retirado solo dejaba una superficie latente que podia reactivarse por error. Su eliminacion alinea codigo y rutas con la prueba vigente.
+
+## 440. Fase Idempotencia - Modelo historico sin consumidor eliminado
+
+### Cambios
+
+- Se elimina el modelo Eloquent `OperationIdempotencyKey`, que no tenia referencias fuera de su propio archivo.
+- La tabla historica `operation_idempotency_keys`, su migracion y su poda permanecen para compatibilidad y retencion operativa.
+- El middleware vigente continua usando `idempotency_keys` con payload cifrado y reservas por usuario/ruta.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Busqueda global posterior | OK: ninguna referencia a `OperationIdempotencyKey`. |
+| PHPStan sin baseline | OK: 0 errores. |
+| Idempotencia y poda | OK: 15 tests, 118 assertions; incluye replay, cifrado, conflictos, indices y retencion. |
+
+### Decision
+
+La tabla no puede eliminarse de una instalacion existente sin una migracion de retiro y una decision de retencion, pero el modelo nunca participaba en esos flujos. Retirar solo la envoltura inalcanzable reduce superficie PHP sin alterar datos, indices ni tareas programadas.
