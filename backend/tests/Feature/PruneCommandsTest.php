@@ -7,11 +7,25 @@ use App\Support\AuditAdmin;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class PruneCommandsTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_prunable_operational_tables_have_temporal_indexes(): void
+    {
+        $auditIndex = collect(Schema::getIndexes('audit_logs'))
+            ->firstWhere('name', 'audit_logs_created_at_id_index');
+        $failedJobsIndex = collect(Schema::getIndexes('failed_jobs'))
+            ->firstWhere('name', 'failed_jobs_failed_at_id_index');
+
+        $this->assertIsArray($auditIndex);
+        $this->assertSame(['created_at', 'id'], $auditIndex['columns']);
+        $this->assertIsArray($failedJobsIndex);
+        $this->assertSame(['failed_at', 'id'], $failedJobsIndex['columns']);
+    }
 
     public function test_prune_audit_logs_deletes_rows_older_than_cutoff(): void
     {
