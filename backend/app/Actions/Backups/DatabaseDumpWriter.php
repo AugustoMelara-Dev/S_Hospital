@@ -120,37 +120,76 @@ class DatabaseDumpWriter
         $tables = collect(DB::select(
             "select name, sql from sqlite_master where type = 'table' and name not like 'sqlite_%' order by name"
         ));
-        $lines = [
-            '-- Sistema de Caja Hospitalaria local SQLite test backup',
-            'PRAGMA foreign_keys=OFF;',
-            'BEGIN TRANSACTION;',
-        ];
+        $handle = fopen($absolutePath, 'wb');
 
-        foreach ($tables as $table) {
-            $name = (string) $table->name;
-
-            if (! empty($table->sql)) {
-                $lines[] = $table->sql.';';
-            }
-
-            $columns = collect(DB::select("pragma table_info('".$name."')"))
-                ->pluck('name')
-                ->map(fn (string $column) => '"'.str_replace('"', '""', $column).'"')
-                ->implode(', ');
-
-            foreach (DB::table($name)->get() as $row) {
-                $values = collect((array) $row)
-                    ->map(fn ($value) => $value === null ? 'NULL' : $pdo->quote((string) $value))
-                    ->implode(', ');
-
-                $lines[] = 'INSERT INTO "'.str_replace('"', '""', $name).'" ('.$columns.') VALUES ('.$values.');';
-            }
+        if ($handle === false) {
+            throw new RuntimeException('No se pudo escribir el dump SQLite local de pruebas.');
         }
 
-        $lines[] = 'COMMIT;';
+        try {
+            foreach ([
+                '-- Sistema de Caja Hospitalaria local SQLite test backup',
+                'PRAGMA foreign_keys=OFF;',
+                'BEGIN TRANSACTION;',
+            ] as $line) {
+                $this->writeDumpLine($handle, $line);
+            }
 
-        if (file_put_contents($absolutePath, implode(PHP_EOL, $lines).PHP_EOL) === false) {
-            throw new RuntimeException('No se pudo escribir el dump SQLite local de pruebas.');
+            foreach ($tables as $table) {
+                $name = (string) $table->name;
+
+                if (! empty($table->sql)) {
+                    $this->writeDumpLine($handle, $table->sql.';');
+                }
+
+                $columns = collect(DB::select("pragma table_info('".$name."')"))
+                    ->pluck('name')
+                    ->map(fn (string $column) => '"'.str_replace('"', '""', $column).'"')
+                    ->implode(', ');
+
+                foreach (DB::table($name)->cursor() as $row) {
+                    $values = collect((array) $row)
+                        ->map(function ($value) use ($pdo): string {
+                            if ($value === null) {
+                                return 'NULL';
+                            }
+
+                            $quoted = $pdo->quote((string) $value);
+                            if ($quoted === false) {
+                                throw new RuntimeException('No se pudo serializar un valor del dump SQLite local.');
+                            }
+
+                            return $quoted;
+                        })
+                        ->implode(', ');
+
+                    $this->writeDumpLine(
+                        $handle,
+                        'INSERT INTO "'.str_replace('"', '""', $name).'" ('.$columns.') VALUES ('.$values.');',
+                    );
+                }
+            }
+
+            $this->writeDumpLine($handle, 'COMMIT;');
+        } finally {
+            fclose($handle);
+        }
+    }
+
+    /** @param resource $handle */
+    private function writeDumpLine($handle, string $line): void
+    {
+        $data = $line.PHP_EOL;
+        $length = strlen($data);
+        $offset = 0;
+
+        while ($offset < $length) {
+            $written = fwrite($handle, substr($data, $offset));
+            if ($written === false || $written === 0) {
+                throw new RuntimeException('No se pudo escribir el dump SQLite local de pruebas.');
+            }
+
+            $offset += $written;
         }
     }
 
