@@ -10967,3 +10967,27 @@ Los reportes combinan agregados heterogeneos consumidos por varias salidas insti
 ### Decision
 
 La respuesta de roles tiene una forma estable consumida por administracion y la auditoria acepta atributos heterogeneos por diseno. El inventario de permisos debe describir el codigo vigente, no conservar como requisito un alcance cuyo endpoint ya fue retirado.
+
+## 468. Fase PHPStan 6 - Frontera de registro local
+
+### Cambios
+
+- `LicenseHelper::checkLicense()` declara el shape estable del estado de registro LAN.
+- El RTN institucional se normaliza a texto antes de incorporarlo al estado.
+- El JSON local exige textos no vacios para titular, RTN, vencimiento y firma antes de parsear fechas o firmar datos.
+- Un archivo con arrays u otros tipos estructurados se clasifica como invalido en vez de provocar un `TypeError` no capturado.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Archivo JSON con titular no textual | RED: `TypeError` al generar la firma. |
+| Caso de tipos invalidos despues de validar la frontera | GREEN: rechazado como `Invalida`. |
+| Suite completa de registro local | OK: 9 tests, 27 assertions. |
+| PHPStan nivel 6 sobre `LicenseHelper` | OK: 0 errores. |
+| Pint sobre helper y prueba | OK. |
+| Inventario PHPStan nivel 6 global | OK: 0 errores. |
+
+### Decision
+
+El archivo de registro es una entrada local no confiable aunque opere sin internet. Validar tipos antes de usarlos convierte el contrato documentado en una garantia de ejecucion y evita que un archivo corrupto interrumpa el arranque hospitalario.

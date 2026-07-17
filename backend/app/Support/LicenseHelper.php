@@ -24,11 +24,14 @@ class LicenseHelper
         );
     }
 
+    /**
+     * @return array{valid: bool, licensee: string, rtn: string, expires_at: string|null, type: string, message: string}
+     */
     public static function checkLicense(): array
     {
         $settings = FiscalSetting::query()->firstOrNew();
         $hospitalName = HospitalName::display($settings->hospital_name);
-        $rtn = $settings->rtn ?? 'N/A';
+        $rtn = (string) ($settings->rtn ?? 'N/A');
 
         $configured = (string) (function_exists('config') ? config('app.license_salt') : '');
 
@@ -68,7 +71,17 @@ class LicenseHelper
         try {
             $licenseData = json_decode(Storage::disk('local')->get('license.json'), true, 512, JSON_THROW_ON_ERROR);
 
-            if (empty($licenseData['licensee']) || empty($licenseData['rtn']) || empty($licenseData['expires_at']) || empty($licenseData['signature'])) {
+            if (
+                ! is_array($licenseData)
+                || ! is_string($licenseData['licensee'] ?? null)
+                || ! is_string($licenseData['rtn'] ?? null)
+                || ! is_string($licenseData['expires_at'] ?? null)
+                || ! is_string($licenseData['signature'] ?? null)
+                || empty($licenseData['licensee'])
+                || empty($licenseData['rtn'])
+                || empty($licenseData['expires_at'])
+                || empty($licenseData['signature'])
+            ) {
                 return [
                     'valid' => false,
                     'licensee' => $hospitalName,

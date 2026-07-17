@@ -244,4 +244,27 @@ class LicenseHelperTest extends TestCase
         $this->assertFalse($status['valid']);
         $this->assertEquals('Firma Invalida', $status['type']);
     }
+
+    public function test_registration_file_with_non_string_fields_is_rejected_as_corrupt(): void
+    {
+        FiscalSetting::query()->create([
+            'receipt_template_mode' => 'thermal',
+            'hospital_name' => 'Hospital Central',
+            'rtn' => '08011999123456',
+            'default_tax_rate' => '15.00',
+            'receipt_width' => '80mm',
+        ]);
+
+        Storage::disk('local')->put('license.json', json_encode([
+            'licensee' => ['Hospital Central'],
+            'rtn' => '08011999123456',
+            'expires_at' => '2030-12-31',
+            'signature' => 'invalid',
+        ]));
+
+        $status = LicenseHelper::checkLicense();
+
+        $this->assertFalse($status['valid']);
+        $this->assertSame('Invalida', $status['type']);
+    }
 }
