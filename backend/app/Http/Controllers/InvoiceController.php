@@ -26,7 +26,7 @@ class InvoiceController extends Controller
 
     public function index(IndexInvoiceRequest $request): JsonResponse
     {
-        $user = $request->user();
+        $user = $this->authenticatedUser($request);
         $validated = $request->validated();
         $reconciliationCashSessionId = $validated['reconciliation_cash_session_id'] ?? null;
 
@@ -130,7 +130,7 @@ class InvoiceController extends Controller
 
     public function store(StoreInvoiceRequest $request, CreateInvoiceAction $createInvoice): JsonResponse
     {
-        $invoice = $createInvoice->execute($request->payload(), $request->user(), $request);
+        $invoice = $createInvoice->execute($request->payload(), $this->authenticatedUser($request), $request);
 
         return response()->json([
             'data' => $this->withInstitutionalReceiptSummary($invoice),
@@ -161,7 +161,7 @@ class InvoiceController extends Controller
 
         return response()->json([
             'data' => $this->withInstitutionalReceiptSummary(
-                $voidInvoice->execute($invoice, $request->user(), $request->reason())
+                $voidInvoice->execute($invoice, $this->authenticatedUser($request), $request->reason())
             ),
         ]);
     }
@@ -175,7 +175,7 @@ class InvoiceController extends Controller
 
         return response()->json([
             'data' => $this->withInstitutionalReceiptSummary(
-                $reverseInvoice->execute($invoice, $request->user(), $request->reason())
+                $reverseInvoice->execute($invoice, $this->authenticatedUser($request), $request->reason())
             ),
         ]);
     }

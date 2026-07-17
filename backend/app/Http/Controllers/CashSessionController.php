@@ -19,13 +19,14 @@ class CashSessionController extends Controller
         CurrentCashSessionRequest $request,
         BuildCashReconciliationAction $buildCashReconciliation,
     ): JsonResponse {
+        $user = $this->authenticatedUser($request);
         $scope = (string) ($request->validated()['scope'] ?? 'own');
-        $canViewClosableSession = $scope === 'closable' && $request->user()->can('cash.close_any');
+        $canViewClosableSession = $scope === 'closable' && $user->can('cash.close_any');
 
         $session = CashRegisterSession::query()
             ->with(['user:id,name,username', 'closedBy:id,name,username'])
             ->where('status', CashRegisterSession::STATUS_OPEN)
-            ->when(! $canViewClosableSession, fn ($query) => $query->where('user_id', $request->user()->id))
+            ->when(! $canViewClosableSession, fn ($query) => $query->where('user_id', $user->id))
             ->latest('opened_at')
             ->first();
 
@@ -36,12 +37,13 @@ class CashSessionController extends Controller
 
     public function index(IndexCashSessionRequest $request): JsonResponse
     {
+        $user = $this->authenticatedUser($request);
         $query = CashRegisterSession::query()
             ->with(['user:id,name,username', 'closedBy:id,name,username'])
             ->latest('opened_at');
 
-        if (! $request->user()->can('cash.close_any')) {
-            $query->where('user_id', $request->user()->id);
+        if (! $user->can('cash.close_any')) {
+            $query->where('user_id', $user->id);
         } elseif ($request->filled('user_id')) {
             $query->where('user_id', $request->integer('user_id'));
         }
@@ -64,7 +66,7 @@ class CashSessionController extends Controller
 
     public function open(OpenCashSessionRequest $request, OpenCashSessionAction $openCashSession): JsonResponse
     {
-        $session = $openCashSession->execute($request->payload(), $request->user(), $request);
+        $session = $openCashSession->execute($request->payload(), $this->authenticatedUser($request), $request);
 
         return response()->json(['data' => $session], 201);
     }
@@ -77,7 +79,7 @@ class CashSessionController extends Controller
     ): JsonResponse {
         Gate::authorize('close', $cashSession);
 
-        $session = $closeCashSession->execute($cashSession, $request->payload(), $request->user(), $request);
+        $session = $closeCashSession->execute($cashSession, $request->payload(), $this->authenticatedUser($request), $request);
 
         return response()->json([
             'data' => $this->closedSessionPayload($session, $buildCashReconciliation),

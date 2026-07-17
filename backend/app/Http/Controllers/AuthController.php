@@ -246,17 +246,6 @@ class AuthController extends Controller
         ];
     }
 
-    private function authenticatedUser(Request $request): User
-    {
-        $user = $request->user();
-
-        if (! $user instanceof User) {
-            abort(401);
-        }
-
-        return $user;
-    }
-
     /** @return Collection<int, string> */
     private function visiblePermissionNames(User $user): Collection
     {

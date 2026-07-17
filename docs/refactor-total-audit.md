@@ -11288,3 +11288,25 @@ Los 122 hallazgos iniciales de nivel 7 fueron resueltos mediante contratos y val
 ### Decision
 
 Aunque las rutas autenticadas normalmente garantizan usuario, el controlador tambien es una frontera ejecutable y no debe asumir un modelo sobre un valor nullable. Un unico helper hace explicita esa precondicion y evita doce accesos inseguros.
+
+## 482. Fase PHPStan 8 - Usuario concreto en operaciones monetarias
+
+### Cambios
+
+- La clase base de controladores ofrece `authenticatedUser()` y responde 401 si la request no contiene un `User` real.
+- Autenticacion reutiliza el helper base; caja, facturas y pagos obtienen el usuario una sola vez por operacion.
+- Los tres refrescos de factura posteriores a cobro/anulacion usan `refresh()->load()` y mantienen un modelo concreto o fallan controladamente.
+- No cambian permisos, ownership, transacciones, idempotencia, conciliacion ni respuestas exitosas.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 8 sobre base, autenticacion, caja, facturas y pagos | OK: 0 errores. |
+| Pint sobre los cinco controladores | OK. |
+| Autenticacion, caja, pagos, facturas, recibos e idempotencia | OK: 141 tests, 1046 assertions. |
+| Inventario PHPStan nivel 8 global | Baja de 125 a 103 hallazgos. |
+
+### Decision
+
+El usuario autenticado es una precondicion transversal de las operaciones monetarias y debe declararse una sola vez. `refresh()` expresa mejor que la factura debe seguir existiendo dentro de la transaccion que un `fresh()` nullable seguido de una llamada inmediata.
