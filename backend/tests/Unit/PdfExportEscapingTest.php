@@ -151,4 +151,44 @@ class PdfExportEscapingTest extends TestCase
 
         $this->assertSame('', $service->e(null));
     }
+
+    public function test_pdf_builders_normalize_structured_payload_values(): void
+    {
+        $service = new PdfExportService;
+        $fiscal = ['hospital_name' => ['invalid'], 'rtn' => ['invalid']];
+
+        $dailyHtml = $service->buildDailyClosureHtml([
+            'date' => ['invalid'],
+            'total_billed' => ['invalid'],
+            'total_collected' => ['invalid'],
+            'payments_by_method' => ['cash' => ['invalid'], 0 => 'invalid-key'],
+            'invoices_by_status' => ['issued' => ['count' => ['invalid'], 'total' => ['invalid']], 'invalid' => 'invalid-row'],
+        ], $fiscal);
+
+        $rangeHtml = $service->buildRangeClosureHtml([
+            'date_from' => ['invalid'],
+            'date_to' => ['invalid'],
+            'income' => ['payments_by_method' => ['cash' => ['invalid']]],
+            'categories' => ['categories' => [['category' => ['invalid']]], 'amount_basis' => ['invalid']],
+            'areas' => ['areas' => ['invalid-row'], 'amount_source' => ['invalid']],
+            'services' => ['services' => [['service' => ['invalid']]]],
+            'operations' => [
+                'summary' => ['void_count' => ['invalid']],
+                'voids' => [['invoice_number' => ['invalid']]],
+                'payment_voids' => [['method' => ['invalid'], 'amount' => ['invalid']]],
+            ],
+            'cash_session_report' => [
+                'cash_session' => ['opened_at' => ['invalid']],
+                'totals_by_method' => ['cash' => ['invalid']],
+            ],
+            'filters' => ['cash_session_id' => ['invalid'], 'method' => ['invalid']],
+        ], $fiscal);
+
+        $this->assertStringContainsString('Hospital General San Isidro', $dailyHtml);
+        $this->assertStringContainsString('RTN: N/A', $dailyHtml);
+        $this->assertStringNotContainsString('Array', $dailyHtml);
+        $this->assertStringContainsString('Hospital General San Isidro', $rangeHtml);
+        $this->assertStringContainsString('RTN: N/A', $rangeHtml);
+        $this->assertStringNotContainsString('Array', $rangeHtml);
+    }
 }

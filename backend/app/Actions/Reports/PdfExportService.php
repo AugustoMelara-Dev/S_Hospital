@@ -10,6 +10,7 @@ use App\Support\HospitalName;
 use App\Support\Money;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Carbon;
+use Illuminate\Validation\ValidationException;
 
 /**
  * @phpstan-type ReportPayload array<string, mixed>
@@ -19,16 +20,16 @@ class PdfExportService
 {
     public function e(mixed $value): string
     {
-        if ($value === null) {
-            return '';
-        }
-
-        return htmlspecialchars((string) $value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        return htmlspecialchars($this->plainText($value) ?? '', ENT_QUOTES | ENT_HTML5, 'UTF-8');
     }
 
     private function money(mixed $value): string
     {
-        return Money::formatLempiras(Money::parseCents((string) ($value ?? 0), 'amount'));
+        try {
+            return Money::formatLempiras(Money::parseCents($this->plainText($value) ?? '0', 'amount'));
+        } catch (ValidationException) {
+            return Money::formatLempiras(0);
+        }
     }
 
     /**
@@ -37,9 +38,11 @@ class PdfExportService
      */
     public function buildDailyClosureHtml(array $data, array $fiscal): string
     {
-        $hospitalName = HospitalName::display($fiscal['hospital_name'] ?? null);
-        $rtn = $fiscal['rtn'] ?? 'N/A';
-        $date = $data['date'];
+        $hospitalName = HospitalName::display($this->plainText($fiscal['hospital_name'] ?? null));
+        $rtn = $this->plainText($fiscal['rtn'] ?? null) ?? 'N/A';
+        $date = $this->plainText($data['date'] ?? null) ?? 'N/A';
+        $paymentsByMethod = $this->section($data['payments_by_method'] ?? null);
+        $invoicesByStatus = $this->section($data['invoices_by_status'] ?? null);
         $hospitalNameEsc = $this->e($hospitalName);
         $rtnEsc = $this->e($rtn);
         $dateEsc = $this->e($date);
@@ -196,12 +199,12 @@ class PdfExportService
     <div class='summary-cards'>
         <div class='summary-card'>
             <div class='summary-card-title'>Total Facturado</div>
-            <div class='summary-card-value'>".$this->money($data['total_billed'])."</div>
+            <div class='summary-card-value'>".$this->money($data['total_billed'] ?? 0)."</div>
             <div style='font-size: 10px; color: #64748b; margin-top: 4px;'>Facturas Emitidas: ".$this->e($data['invoice_count'] ?? 0)."</div>
         </div>
         <div class='summary-card summary-card-right'>
             <div class='summary-card-title'>Total Recaudado</div>
-            <div class='summary-card-value' style='color: #0d9488;'>".$this->money($data['total_collected'])."</div>
+            <div class='summary-card-value' style='color: #0d9488;'>".$this->money($data['total_collected'] ?? 0)."</div>
             <div style='font-size: 10px; color: #64748b; margin-top: 4px;'>Pagos Procesados: ".$this->e($data['payment_count'] ?? 0)."</div>
         </div>
         <div class='clear'></div>
@@ -254,7 +257,7 @@ class PdfExportService
             </tr>
         </thead>
         <tbody>";
-        foreach ($data['payments_by_method'] as $method => $total) {
+        foreach ($paymentsByMethod as $method => $total) {
             $methodName = $this->translateMethod($method);
             $html .= '
             <tr>
@@ -276,7 +279,8 @@ class PdfExportService
             </tr>
         </thead>
         <tbody>";
-        foreach ($data['invoices_by_status'] as $status => $statusData) {
+        foreach ($invoicesByStatus as $status => $statusValue) {
+            $statusData = $this->section($statusValue);
             $statusName = $this->translateStatus($status);
             $count = $statusData['count'] ?? 0;
             $total = $statusData['total'] ?? 0.00;
@@ -327,21 +331,24 @@ class PdfExportService
      */
     public function buildRangeClosureHtml(array $data, array $fiscal): string
     {
-        $hospitalName = HospitalName::display($fiscal['hospital_name'] ?? null);
-        $rtn = $fiscal['rtn'] ?? 'N/A';
-        $dateFrom = $data['date_from'];
-        $dateTo = $data['date_to'];
-        $income = $data['income'];
-        $categories = $data['categories']['categories'] ?? [];
-        $areas = $data['areas']['areas'] ?? [];
-        $services = $data['services']['services'] ?? [];
-        $operations = $data['operations'];
+        $hospitalName = HospitalName::display($this->plainText($fiscal['hospital_name'] ?? null));
+        $rtn = $this->plainText($fiscal['rtn'] ?? null) ?? 'N/A';
+        $dateFrom = $this->plainText($data['date_from'] ?? null) ?? 'N/A';
+        $dateTo = $this->plainText($data['date_to'] ?? null) ?? 'N/A';
+        $income = $this->section($data['income'] ?? null);
+        $categoryReport = $this->section($data['categories'] ?? null);
+        $areaReport = $this->section($data['areas'] ?? null);
+        $serviceReport = $this->section($data['services'] ?? null);
+        $categories = $this->rows($categoryReport['categories'] ?? null);
+        $areas = $this->rows($areaReport['areas'] ?? null);
+        $services = $this->rows($serviceReport['services'] ?? null);
+        $operations = $this->section($data['operations'] ?? null);
         $cashSessionReport = $data['cash_session_report'] ?? null;
-        $cashSessionClosureHtml = $this->buildCashSessionClosureHtml(is_array($cashSessionReport) ? $cashSessionReport : null);
+        $cashSessionClosureHtml = $this->buildCashSessionClosureHtml(is_array($cashSessionReport) ? $this->section($cashSessionReport) : null);
         $canViewAudit = ($operations['can_view_audit'] ?? true) === true;
-        $categoryAmountBasis = $data['categories']['amount_basis'] ?? ReportAmountBasis::BILLED;
-        $areaAmountBasis = $data['areas']['amount_basis'] ?? ReportAmountBasis::BILLED;
-        $serviceAmountBasis = $data['services']['amount_basis'] ?? ReportAmountBasis::BILLED;
+        $categoryAmountBasis = $this->plainText($categoryReport['amount_basis'] ?? null) ?? ReportAmountBasis::BILLED;
+        $areaAmountBasis = $this->plainText($areaReport['amount_basis'] ?? null) ?? ReportAmountBasis::BILLED;
+        $serviceAmountBasis = $this->plainText($serviceReport['amount_basis'] ?? null) ?? ReportAmountBasis::BILLED;
         $categoryTitle = $categoryAmountBasis === ReportAmountBasis::COLLECTED_PRORATED
             ? 'Cobros asignados por Categoria de Servicio'
             : 'Facturación por Categoría de Servicio';
@@ -360,15 +367,15 @@ class PdfExportService
         $serviceAmountHeader = $serviceAmountBasis === ReportAmountBasis::COLLECTED_PRORATED
             ? 'Cobrado asignado proporcionalmente (LPS)'
             : 'Monto Facturado (LPS)';
-        $categorySource = $data['categories']['amount_source'] ?? '';
-        $areaSource = $data['areas']['amount_source'] ?? '';
-        $serviceSource = $data['services']['amount_source'] ?? '';
+        $categorySource = $this->plainText($categoryReport['amount_source'] ?? null) ?? '';
+        $areaSource = $this->plainText($areaReport['amount_source'] ?? null) ?? '';
+        $serviceSource = $this->plainText($serviceReport['amount_source'] ?? null) ?? '';
         $hospitalNameEsc = $this->e($hospitalName);
         $rtnEsc = $this->e($rtn);
         $dateFromEsc = $this->e($dateFrom);
         $dateToEsc = $this->e($dateTo);
         $operationalSubtitle = $canViewAudit ? 'Auditoria y Desempeno' : 'Desempeno operativo';
-        $appliedFiltersHtml = $this->buildAppliedFiltersHtml($this->appliedFilterRows($data['filters'] ?? []));
+        $appliedFiltersHtml = $this->buildAppliedFiltersHtml($this->appliedFilterRows($this->section($data['filters'] ?? null)));
 
         $html = "
 <!DOCTYPE html>
@@ -511,12 +518,12 @@ class PdfExportService
     <div class='summary-cards'>
         <div class='summary-card'>
             <div class='summary-card-title'>Total Facturado</div>
-            <div class='summary-card-value'>".$this->money($income['total_billed'])."</div>
+            <div class='summary-card-value'>".$this->money($income['total_billed'] ?? 0)."</div>
             <div style='font-size: 9px; color: #64748b; margin-top: 3px;'>Facturas Emitidas: ".$this->e($income['invoice_count'] ?? 0)."</div>
         </div>
         <div class='summary-card summary-card-right'>
             <div class='summary-card-title'>Total Recaudado</div>
-            <div class='summary-card-value' style='color: #0d9488;'>".$this->money($income['total_collected'])."</div>
+            <div class='summary-card-value' style='color: #0d9488;'>".$this->money($income['total_collected'] ?? 0)."</div>
             <div style='font-size: 9px; color: #64748b; margin-top: 3px;'>Pagos Procesados: ".$this->e($income['payment_count'] ?? 0)."</div>
         </div>
         <div class='clear'></div>
@@ -594,7 +601,7 @@ class PdfExportService
                 </tr>";
             }
         }
-        $summary = $operations['summary'] ?? [];
+        $summary = $this->section($operations['summary'] ?? null);
         $voidCount = $this->e($summary['void_count'] ?? 0);
         $reprintCount = $this->e($summary['reprint_count'] ?? 0);
         $cashierCount = $this->e($summary['cashier_count'] ?? 0);
@@ -648,7 +655,7 @@ class PdfExportService
             </tr>
         </thead>
         <tbody>";
-        foreach ($income['payments_by_method'] as $method => $total) {
+        foreach ($this->section($income['payments_by_method'] ?? null) as $method => $total) {
             $methodName = $this->translateMethod($method);
             $html .= '
             <tr>
@@ -730,7 +737,8 @@ class PdfExportService
         </table>
     </div>";
 
-            if (! empty($operations['voids'])) {
+            $voids = $this->rows($operations['voids'] ?? null);
+            if ($voids !== []) {
                 $html .= "
             <div class='section-title'>Detalle de Anulaciones</div>
             <table>
@@ -743,7 +751,7 @@ class PdfExportService
                     </tr>
                 </thead>
                 <tbody>";
-                foreach (array_slice($operations['voids'], 0, 5) as $void) {
+                foreach (array_slice($voids, 0, 5) as $void) {
                     $html .= '
                     <tr>
                         <td>'.$this->e($void['invoice_number'] ?? 'N/A').'</td>
@@ -757,7 +765,8 @@ class PdfExportService
             </table>';
             }
 
-            if (! empty($operations['payment_voids'])) {
+            $paymentVoids = $this->rows($operations['payment_voids'] ?? null);
+            if ($paymentVoids !== []) {
                 $html .= "
             <div class='section-title'>Detalle de Reversos de Pago</div>
             <table>
@@ -771,11 +780,11 @@ class PdfExportService
                     </tr>
                 </thead>
                 <tbody>";
-                foreach (array_slice($operations['payment_voids'], 0, 5) as $paymentVoid) {
+                foreach (array_slice($paymentVoids, 0, 5) as $paymentVoid) {
                     $html .= '
                     <tr>
                         <td>'.$this->e($paymentVoid['invoice_number'] ?? 'N/A').'</td>
-                        <td>'.$this->e($this->translateMethod((string) ($paymentVoid['method'] ?? '')))."</td>
+                        <td>'.$this->e($this->translateMethod($this->plainText($paymentVoid['method'] ?? null) ?? ''))."</td>
                         <td class='text-right'>".$this->money($paymentVoid['amount'] ?? 0).'</td>
                         <td>'.$this->e($paymentVoid['reason'] ?? 'Sin motivo').'</td>
                         <td>'.$this->e($paymentVoid['voided_by'] ?? 'N/A').'</td>
@@ -808,19 +817,19 @@ class PdfExportService
             return '';
         }
 
-        $cashSession = $report['cash_session'] ?? [];
+        $cashSession = $this->section($report['cash_session'] ?? null);
         $totalsByMethod = array_merge([
             'cash' => '0.00',
             'transfer' => '0.00',
             'card' => '0.00',
             'other' => '0.00',
-        ], is_array($report['totals_by_method'] ?? null) ? $report['totals_by_method'] : []);
+        ], $this->section($report['totals_by_method'] ?? null));
 
         $rows = '';
         foreach ($totalsByMethod as $method => $total) {
             $rows .= '
             <tr>
-                <td><strong>'.$this->e($this->translateMethod((string) $method))."</strong></td>
+                <td><strong>'.$this->e($this->translateMethod($method))."</strong></td>
                 <td class='text-right'>L. ".$this->money($total).'</td>
             </tr>';
         }
@@ -881,11 +890,16 @@ class PdfExportService
 
     private function dateTimeLabel(mixed $value): string
     {
-        if ($value === null || $value === '') {
+        $text = $this->plainText($value);
+        if ($text === null || $text === '') {
             return 'N/A';
         }
 
-        return Carbon::parse((string) $value)->format('d/m/Y H:i');
+        try {
+            return Carbon::parse($text)->format('d/m/Y H:i');
+        } catch (\Throwable) {
+            return 'N/A';
+        }
     }
 
     /**
@@ -927,36 +941,42 @@ class PdfExportService
     {
         $rows = [];
 
-        if (! empty($filters['cash_session_id'])) {
-            $rows[] = ['Caja', $this->cashSessionLabel((int) $filters['cash_session_id'])];
+        $cashSessionId = $this->positiveInt($filters['cash_session_id'] ?? null);
+        if ($cashSessionId !== null) {
+            $rows[] = ['Caja', $this->cashSessionLabel($cashSessionId)];
         }
 
-        if (! empty($filters['method'])) {
-            $rows[] = ['Metodo de pago', $this->translateMethod((string) $filters['method'])];
+        $method = $this->nonEmptyText($filters['method'] ?? null);
+        if ($method !== null) {
+            $rows[] = ['Metodo de pago', $this->translateMethod($method)];
         }
 
-        if (! empty($filters['status'])) {
-            $rows[] = ['Estado de factura', $this->translateStatus((string) $filters['status'])];
+        $status = $this->nonEmptyText($filters['status'] ?? null);
+        if ($status !== null) {
+            $rows[] = ['Estado de factura', $this->translateStatus($status)];
         }
 
-        if (! empty($filters['user_id'])) {
+        $userId = $this->positiveInt($filters['user_id'] ?? null);
+        if ($userId !== null) {
             $rows[] = [
                 'Cajero',
-                User::query()->whereKey($filters['user_id'])->value('name') ?? 'Usuario no disponible',
+                $this->plainText(User::query()->whereKey($userId)->value('name')) ?? 'Usuario no disponible',
             ];
         }
 
-        if (! empty($filters['area_id'])) {
+        $areaId = $this->positiveInt($filters['area_id'] ?? null);
+        if ($areaId !== null) {
             $rows[] = [
                 'Area',
-                Area::query()->whereKey($filters['area_id'])->value('name') ?? 'Area no disponible',
+                $this->plainText(Area::query()->whereKey($areaId)->value('name')) ?? 'Area no disponible',
             ];
         }
 
-        if (! empty($filters['category_id'])) {
+        $categoryId = $this->positiveInt($filters['category_id'] ?? null);
+        if ($categoryId !== null) {
             $rows[] = [
                 'Categoria',
-                Category::query()->whereKey($filters['category_id'])->value('name') ?? 'Categoria no disponible',
+                $this->plainText(Category::query()->whereKey($categoryId)->value('name')) ?? 'Categoria no disponible',
             ];
         }
 
@@ -1009,5 +1029,68 @@ class PdfExportService
         };
 
         return "{$cashier} - Apertura {$openedAt} - {$status}";
+    }
+
+    /** @return array<string, mixed> */
+    private function section(mixed $value): array
+    {
+        if (! is_array($value)) {
+            return [];
+        }
+
+        $section = [];
+        foreach ($value as $key => $item) {
+            if (is_string($key)) {
+                $section[$key] = $item;
+            }
+        }
+
+        return $section;
+    }
+
+    /** @return list<array<string, mixed>> */
+    private function rows(mixed $value): array
+    {
+        if (! is_array($value)) {
+            return [];
+        }
+
+        $rows = [];
+        foreach ($value as $item) {
+            if (is_array($item)) {
+                $rows[] = $this->section($item);
+            }
+        }
+
+        return $rows;
+    }
+
+    private function plainText(mixed $value): ?string
+    {
+        return is_string($value) || is_int($value) || is_float($value) || is_bool($value)
+            ? (string) $value
+            : null;
+    }
+
+    private function nonEmptyText(mixed $value): ?string
+    {
+        $text = trim($this->plainText($value) ?? '');
+
+        return $text === '' ? null : $text;
+    }
+
+    private function positiveInt(mixed $value): ?int
+    {
+        if (is_int($value)) {
+            return $value > 0 ? $value : null;
+        }
+
+        if (! is_string($value) || preg_match('/^[1-9][0-9]*$/', $value) !== 1) {
+            return null;
+        }
+
+        $parsed = filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+
+        return is_int($parsed) ? $parsed : null;
     }
 }

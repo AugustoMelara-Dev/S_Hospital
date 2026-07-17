@@ -12616,3 +12616,27 @@ El exportador es una frontera de serializacion y debe aceptar solo valores que p
 ### Decision
 
 Un libro Excel combina datos contables con una superficie de ejecucion de formulas. La frontera valida primero la forma y el dominio de cada dato y aplica despues el escape de formula, evitando excepciones, texto `Array` e inyeccion de celdas sin duplicar reglas fiscales.
+
+## 541. Fase PHPStan 9 - PDF operativo normaliza reportes y filtros
+
+### Cambios
+
+- `PdfExportService` normaliza identidad fiscal, cierres diarios, consolidados, operaciones y snapshots de caja.
+- Mapas de metodos y estados, listas de categorias, areas, servicios, anulaciones y reversos validan su forma antes del HTML.
+- Texto estructurado ya no se convierte a `Array`; dinero invalido degrada a cero y fechas invalidas a `N/A`.
+- Los filtros aceptan solo identificadores positivos y textos escalares antes de consultar etiquetas humanas.
+- Se agrega una regresion que recorre ambos builders con payload fiscal, financiero y operativo estructurado.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Regresion antes del cambio | FAIL esperado: `HospitalName::display()` recibia array. |
+| PHPStan nivel 9 sobre el exportador | OK: 0 errores. |
+| Pint sobre exportador y prueba | OK. |
+| PDF diario, consolidado, caja, filtros, permisos y escaping | OK: 66 tests, 893 assertions. |
+| Inventario PHPStan nivel 9 global | Baja de 165 a 81 hallazgos, todos en un archivo. |
+
+### Decision
+
+Los reportes PDF son documentos institucionales y deben seguir siendo generables ante datos legados parciales. Validar cada frontera antes del render evita errores 500 y contenido ambiguo, mantiene el escape HTML y no altera los calculos financieros que siguen perteneciendo al backend.
