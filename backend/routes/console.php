@@ -21,9 +21,16 @@ Artisan::command('auth:create-initial-admin
         return 1;
     }
 
-    $username = trim((string) $this->option('username'));
-    $email = trim((string) $this->option('email'));
-    $password = (string) ($this->option('password') ?: getenv('HOSPITAL_INITIAL_ADMIN_PASSWORD') ?: '');
+    $usernameOption = $this->option('username');
+    $emailOption = $this->option('email');
+    $passwordOption = $this->option('password');
+    $environmentPassword = getenv('HOSPITAL_INITIAL_ADMIN_PASSWORD');
+
+    $username = is_string($usernameOption) ? trim($usernameOption) : '';
+    $email = is_string($emailOption) ? trim($emailOption) : '';
+    $password = is_string($passwordOption) && $passwordOption !== ''
+        ? $passwordOption
+        : (is_string($environmentPassword) ? $environmentPassword : '');
 
     if ($username === '' || $email === '' || $password === '') {
         $this->error('Debe enviar --username, --email y una contrasena por HOSPITAL_INITIAL_ADMIN_PASSWORD o --password.');
@@ -43,8 +50,9 @@ Artisan::command('auth:create-initial-admin
         return 1;
     }
 
+    $nameOption = $this->option('name');
     $user = User::query()->create([
-        'name' => (string) $this->option('name'),
+        'name' => is_string($nameOption) ? $nameOption : 'Admin Local',
         'username' => $username,
         'email' => $email,
         'password' => Hash::make($password),

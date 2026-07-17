@@ -152,7 +152,7 @@ class PrepareE2eReleaseDataCommand extends Command
         ];
 
         if ($this->option('json')) {
-            $this->line(json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+            $this->line(json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR));
         } else {
             $this->info('E2E release data ready for user cajero.e2e.');
             $this->line('Use the provided password in a non-production E2E environment only.');

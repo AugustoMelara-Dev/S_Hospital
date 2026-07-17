@@ -11200,3 +11200,26 @@ Las colecciones de permisos cruzan API, auditoria y sincronizacion de acceso, po
 ### Decision
 
 Los cuatro estados forman un conjunto cerrado consumido por la API. Construir el resultado explicitamente conserva ese contrato y evita que una clave dinamica ensanche el shape o incorpore estados no previstos.
+
+## 478. Fase PHPStan 7 - Entradas y salidas de consola operacional
+
+### Cambios
+
+- El comando de admin inicial acepta username, email, nombre y password solo cuando las opciones son texto.
+- La contrasena de entorno se usa unicamente cuando `getenv` devuelve string.
+- El usuario temporal filtra permisos no textuales y retorna una lista unica, ordenada y contigua.
+- Las salidas JSON de preparacion E2E y validacion usan `JSON_THROW_ON_ERROR`, por lo que `line()` siempre recibe string.
+- No cambian firmas de comandos, politicas de contrasena, datos generados ni programacion de respaldos.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 7 sobre rutas y dos comandos | OK: 0 errores. |
+| Pint sobre rutas y comandos | OK. |
+| Admin inicial, preparacion E2E y usuario de validacion | OK: 13 tests, 49 assertions. |
+| Inventario PHPStan nivel 7 esperado | Quedan dos fronteras HTTP. |
+
+### Decision
+
+Las APIs de consola permiten opciones con uniones amplias y `json_encode` puede retornar `false`. Validarlas en el limite evita conversiones silenciosas, mensajes `Array` y valores no textuales enviados al renderer de consola.

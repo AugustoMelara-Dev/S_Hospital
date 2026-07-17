@@ -193,15 +193,15 @@ class ManageFinalValidationUserCommand extends Command
     private function requestedPermissions(): array
     {
         $requested = collect($this->option('permission') ?: [])
-            ->map(fn (mixed $permission): string => trim((string) $permission))
+            ->filter(fn (mixed $permission): bool => is_string($permission))
+            ->map(fn (string $permission): string => trim($permission))
             ->filter()
             ->values();
 
-        return ($requested->isEmpty() ? collect(self::DEFAULT_PERMISSIONS) : $requested)
+        return array_values(($requested->isEmpty() ? collect(self::DEFAULT_PERMISSIONS) : $requested)
             ->unique()
             ->sort()
-            ->values()
-            ->all();
+            ->all());
     }
 
     private function isStrongPassword(string $password): bool
@@ -250,7 +250,7 @@ class ManageFinalValidationUserCommand extends Command
     private function writeResult(array $payload): void
     {
         if ($this->option('json')) {
-            $this->line(json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+            $this->line(json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR));
 
             return;
         }
