@@ -8,9 +8,7 @@ use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
-use Throwable;
 
 class DateRangeReportRequest extends FormRequest
 {
@@ -62,12 +60,12 @@ class DateRangeReportRequest extends FormRequest
 
     public function dateFrom(): string
     {
-        return (string) $this->date('date_from')->toDateString();
+        return $this->string('date_from')->toString();
     }
 
     public function dateTo(): string
     {
-        return (string) $this->date('date_to')->toDateString();
+        return $this->string('date_to')->toString();
     }
 
     /**
@@ -103,22 +101,6 @@ class DateRangeReportRequest extends FormRequest
 
     private function maxDateTo(): string
     {
-        $rawDateFrom = $this->input('date_from');
-
-        if (! is_string($rawDateFrom) || ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $rawDateFrom)) {
-            return Carbon::now()->addDays(self::MAX_RANGE_DAYS - 1)->toDateString();
-        }
-
-        try {
-            $dateFrom = Carbon::createFromFormat('Y-m-d', $rawDateFrom);
-        } catch (Throwable) {
-            return Carbon::now()->addDays(self::MAX_RANGE_DAYS - 1)->toDateString();
-        }
-
-        if ($dateFrom->format('Y-m-d') !== $rawDateFrom) {
-            return Carbon::now()->addDays(self::MAX_RANGE_DAYS - 1)->toDateString();
-        }
-
-        return $dateFrom->copy()->addDays(self::MAX_RANGE_DAYS - 1)->toDateString();
+        return $this->maximumDateTo($this->input('date_from'), self::MAX_RANGE_DAYS);
     }
 }

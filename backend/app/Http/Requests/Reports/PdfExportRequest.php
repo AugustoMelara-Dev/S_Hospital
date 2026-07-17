@@ -8,9 +8,7 @@ use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
-use Throwable;
 
 class PdfExportRequest extends FormRequest
 {
@@ -125,44 +123,8 @@ class PdfExportRequest extends FormRequest
         return $this->authorizedReportFilters = $this->normalizeCashSessionDateRange($filters);
     }
 
-    /**
-     * @param  array{date_from: string, date_to: string, cash_session_id?: int|string, user_id?: int|string, category_id?: int|string, area_id?: int|string, method?: string, status?: string}  $filters
-     * @return array{date_from: string, date_to: string, cash_session_id?: int|string, user_id?: int|string, category_id?: int|string, area_id?: int|string, method?: string, status?: string}
-     */
-    private function normalizeCashSessionDateRange(array $filters): array
-    {
-        if (empty($filters['cash_session_id'])) {
-            return $filters;
-        }
-
-        $cashSession = CashRegisterSession::query()->findOrFail($filters['cash_session_id']);
-        $openedDate = $cashSession->opened_at->toDateString();
-        $closedDate = $cashSession->closed_at?->toDateString();
-
-        $filters['date_from'] = $openedDate;
-        $filters['date_to'] = $closedDate ?? $openedDate;
-
-        return $filters;
-    }
-
     private function maxDateTo(): string
     {
-        $rawDateFrom = $this->input('date_from');
-
-        if (! is_string($rawDateFrom) || ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $rawDateFrom)) {
-            return Carbon::now()->addDays(DateRangeReportRequest::MAX_RANGE_DAYS - 1)->toDateString();
-        }
-
-        try {
-            $dateFrom = Carbon::createFromFormat('Y-m-d', $rawDateFrom);
-        } catch (Throwable) {
-            return Carbon::now()->addDays(DateRangeReportRequest::MAX_RANGE_DAYS - 1)->toDateString();
-        }
-
-        if ($dateFrom->format('Y-m-d') !== $rawDateFrom) {
-            return Carbon::now()->addDays(DateRangeReportRequest::MAX_RANGE_DAYS - 1)->toDateString();
-        }
-
-        return $dateFrom->copy()->addDays(DateRangeReportRequest::MAX_RANGE_DAYS - 1)->toDateString();
+        return $this->maximumDateTo($this->input('date_from'), DateRangeReportRequest::MAX_RANGE_DAYS);
     }
 }

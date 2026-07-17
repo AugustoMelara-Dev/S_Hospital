@@ -2,6 +2,10 @@
 
 namespace App\Http\Requests\Reports\Concerns;
 
+use App\Models\CashRegisterSession;
+use Illuminate\Support\Carbon;
+use Throwable;
+
 trait BuildsValidatedReportFilters
 {
     /**
@@ -45,6 +49,53 @@ trait BuildsValidatedReportFilters
         if (array_key_exists('status', $validated)) {
             $filters['status'] = $this->string('status')->toString();
         }
+
+        return $filters;
+    }
+
+    protected function maximumDateTo(mixed $rawDateFrom, int $maxRangeDays): string
+    {
+        $fallback = fn (): string => Carbon::now()->addDays($maxRangeDays - 1)->toDateString();
+
+        if (! is_string($rawDateFrom) || ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $rawDateFrom)) {
+            return $fallback();
+        }
+
+        try {
+            $dateFrom = Carbon::createFromFormat('Y-m-d', $rawDateFrom);
+        } catch (Throwable) {
+            return $fallback();
+        }
+
+        if ($dateFrom === null || $dateFrom->format('Y-m-d') !== $rawDateFrom) {
+            return $fallback();
+        }
+
+        return $dateFrom->copy()->addDays($maxRangeDays - 1)->toDateString();
+    }
+
+    /**
+     * @param  array{date_from: string, date_to: string, cash_session_id?: int|string, user_id?: int|string, category_id?: int|string, area_id?: int|string, method?: string, status?: string}  $filters
+     * @return array{date_from: string, date_to: string, cash_session_id?: int|string, user_id?: int|string, category_id?: int|string, area_id?: int|string, method?: string, status?: string}
+     */
+    protected function normalizeCashSessionDateRange(array $filters): array
+    {
+        if (empty($filters['cash_session_id'])) {
+            return $filters;
+        }
+
+        $cashSession = CashRegisterSession::query()->findOrFail($filters['cash_session_id']);
+        $openedAt = $cashSession->opened_at;
+
+        if ($openedAt === null) {
+            abort(422, 'La sesion de caja no tiene una fecha de apertura valida.');
+        }
+
+        $openedDate = $openedAt->toDateString();
+        $closedDate = $cashSession->closed_at?->toDateString();
+
+        $filters['date_from'] = $openedDate;
+        $filters['date_to'] = $closedDate ?? $openedDate;
 
         return $filters;
     }

@@ -6,7 +6,6 @@ use App\Http\Requests\Reports\Concerns\BuildsValidatedReportFilters;
 use App\Models\CashRegisterSession;
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 
 class ExecutiveReportRequest extends FormRequest
@@ -105,22 +104,6 @@ class ExecutiveReportRequest extends FormRequest
 
     private function maxDateTo(): string
     {
-        $rawDateFrom = $this->input('date_from');
-
-        if (! is_string($rawDateFrom) || ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $rawDateFrom)) {
-            return Carbon::now()->addDays(self::MAX_RANGE_DAYS - 1)->toDateString();
-        }
-
-        try {
-            $dateFrom = Carbon::createFromFormat('Y-m-d', $rawDateFrom);
-        } catch (\Throwable) {
-            return Carbon::now()->addDays(self::MAX_RANGE_DAYS - 1)->toDateString();
-        }
-
-        if ($dateFrom->format('Y-m-d') !== $rawDateFrom) {
-            return Carbon::now()->addDays(self::MAX_RANGE_DAYS - 1)->toDateString();
-        }
-
-        return $dateFrom->copy()->addDays(self::MAX_RANGE_DAYS - 1)->toDateString();
+        return $this->maximumDateTo($this->input('date_from'), self::MAX_RANGE_DAYS);
     }
 }

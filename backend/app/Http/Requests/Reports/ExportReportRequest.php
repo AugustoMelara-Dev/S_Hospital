@@ -2,8 +2,6 @@
 
 namespace App\Http\Requests\Reports;
 
-use App\Models\CashRegisterSession;
-
 class ExportReportRequest extends DateRangeReportRequest
 {
     /**
@@ -28,16 +26,7 @@ class ExportReportRequest extends DateRangeReportRequest
 
         $filters = parent::authorizedFilters();
 
-        if (! empty($filters['cash_session_id'])) {
-            $cashSession = CashRegisterSession::query()->findOrFail($filters['cash_session_id']);
-            $openedDate = $cashSession->opened_at->toDateString();
-            $closedDate = $cashSession->closed_at?->toDateString();
-
-            $filters['date_from'] = $openedDate;
-            $filters['date_to'] = $closedDate ?? $openedDate;
-        }
-
-        return $this->authorizedFilters = $filters;
+        return $this->authorizedFilters = $this->normalizeCashSessionDateRange($filters);
     }
 
     public function dateFrom(): string

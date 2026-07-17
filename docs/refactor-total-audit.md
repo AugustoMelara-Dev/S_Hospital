@@ -11400,3 +11400,26 @@ Autorizacion y auditoria deben observar la misma identidad durante toda una oper
 ### Decision
 
 Una descarga auditada no debe depender de un usuario nullable despues de autorizarse. El rechazo explicito de invitados y el paso de un modelo concreto mantienen alineadas autorizacion, integridad y trazabilidad.
+
+## 487. Fase PHPStan 8 - Fechas validadas de reportes
+
+### Cambios
+
+- El concern de filtros centraliza el limite maximo de fecha y comprueba explicitamente el resultado nullable del parser.
+- Reportes de rango, PDF y ejecutivo reutilizan el mismo calculo para ventanas de 31 o 92 dias.
+- Exportaciones Excel/PDF comparten la normalizacion de fechas de sesion de caja y rechazan una sesion historica sin apertura valida.
+- Los accesores de fechas solicitadas devuelven los strings ya validados sin un segundo parseo nullable.
+- No cambian permisos, ownership, fuentes financieras, filtros, formatos ni limites de rango.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 8 sobre todos los requests de reportes | OK: 0 errores. |
+| Pint sobre los seis archivos modificados | OK. |
+| Reportes generales, ejecutivos, PDF, Excel y hechos financieros | OK: 93 tests, 1247 assertions. |
+| Inventario PHPStan nivel 8 global | Baja de 59 a 47 hallazgos. |
+
+### Decision
+
+La validacion HTTP garantiza el formato de entrada, pero el parser y los datos historicos siguen teniendo contratos nullable. Centralizar ambas fronteras evita desreferencias, elimina tres implementaciones duplicadas y conserva una unica semantica de rango para todas las exportaciones.
