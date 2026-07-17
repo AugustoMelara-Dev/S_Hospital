@@ -2,15 +2,30 @@
 
 namespace Tests\Feature;
 
+use App\Http\Requests\Fiscal\UpdateFiscalSequenceRequest;
 use App\Models\FiscalSequence;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Validator;
 use Tests\TestCase;
 
 class UpdateFiscalSequenceReasonTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_validation_callback_rejects_a_missing_bound_sequence(): void
+    {
+        $request = UpdateFiscalSequenceRequest::create('/api/fiscal-sequences/missing', 'PATCH');
+        $validator = Validator::make([], []);
+
+        ($request->after()[0])($validator);
+
+        $this->assertSame(
+            ['No se encontro la secuencia fiscal solicitada.'],
+            $validator->errors()->get('fiscal_sequence'),
+        );
+    }
 
     public function test_changing_current_number_without_reset_permission_or_reason_returns_422(): void
     {

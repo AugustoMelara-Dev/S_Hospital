@@ -11012,3 +11012,26 @@ El archivo de registro es una entrada local no confiable aunque opere sin intern
 ### Decision
 
 El nivel 6 ya no es una medicion opcional: pasa a ser el minimo reproducible del repositorio. Mantener el gate sin baseline garantiza que nuevos arrays, iterables y genericos incompletos vuelvan a fallar de inmediato.
+
+## 470. Fase PHPStan 7 - Binding de secuencia fiscal
+
+### Cambios
+
+- El callback posterior de `UpdateFiscalSequenceRequest` verifica que el parametro enlazado sea un `FiscalSequence` antes de leer rangos o auditar cambios.
+- Cuando el request se ejecuta sin el modelo esperado, agrega un error `fiscal_sequence` y termina la validacion sin fatal.
+- No cambian las reglas de rango, correlativo, superposicion, motivo ni permisos fiscales.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Callback sin secuencia enlazada | RED: acceso a `min_number` sobre `null`. |
+| Callback con guard de binding | GREEN: error de validacion controlado. |
+| PHPStan nivel 7 sobre el request | OK: 0 errores. |
+| Pint sobre request y prueba | OK. |
+| Secuencias y motivos fiscales | OK: 16 tests, 50 assertions. |
+| Inventario PHPStan nivel 7 global | Baja de 122 a 110 hallazgos. |
+
+### Decision
+
+El route model binding es una garantia del endpoint, pero el request tambien puede ejecutarse desde pruebas o integraciones internas. Validar esa frontera evita doce inferencias ambiguas y transforma una configuracion incompleta en una respuesta controlada.

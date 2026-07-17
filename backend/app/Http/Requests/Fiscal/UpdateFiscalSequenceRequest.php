@@ -99,6 +99,12 @@ class UpdateFiscalSequenceRequest extends FormRequest
         return [
             function (Validator $validator): void {
                 $sequence = $this->route('fiscalSequence');
+                if (! $sequence instanceof FiscalSequence) {
+                    $validator->errors()->add('fiscal_sequence', 'No se encontro la secuencia fiscal solicitada.');
+
+                    return;
+                }
+
                 $min = (int) ($this->input('min_number', $sequence->min_number));
                 $max = (int) ($this->input('max_number', $sequence->max_number));
                 $current = (int) ($this->input('current_number', $sequence->current_number));
