@@ -1,4 +1,5 @@
 import { forwardRef, type HTMLAttributes, type ReactNode } from 'react';
+import { Card, Statistic } from 'antd';
 import { cn } from '@/lib/utils';
 
 type Tone = 'neutral' | 'info' | 'success' | 'warning' | 'destructive';
@@ -27,20 +28,24 @@ export function StatGrid({ children, className, items, ...props }: StatGridProps
   return (
     <div data-slot="stat-grid" className={cn('grid gap-3 sm:grid-cols-2 xl:grid-cols-4', className)} {...props}>
       {items?.map((item, index) => (
-        <div
+        <Card
           key={index}
           data-slot="stat-grid-item"
           className={cn('relative overflow-hidden border border-border bg-surface p-5 before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-secondary/70', item.tone && toneStyles[item.tone])}
+          classNames={{ body: 'p-0' }}
         >
           <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{item.label}</p>
-              <p className="mt-3 text-2xl font-semibold tracking-tight text-foreground tabular-nums">{item.value}</p>
-            </div>
+            <Statistic
+              className="min-w-0"
+              title={<span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{item.label}</span>}
+              value={0}
+              formatter={() => item.value}
+              classNames={{ content: 'mt-3 text-2xl font-semibold tracking-tight text-foreground', value: 'tabular-nums' }}
+            />
             {item.icon ? <span className="shrink-0 text-primary [&_svg]:size-4">{item.icon}</span> : null}
           </div>
           {item.helper ? <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{item.helper}</p> : null}
-        </div>
+        </Card>
       ))}
       {children}
     </div>
@@ -62,20 +67,24 @@ export function StatCard({
   ...props
 }: StatCardProps) {
   return (
-    <div
+    <Card
       data-slot="stat-card"
       className={cn(
         'relative overflow-hidden border border-border bg-surface p-5 before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-secondary/70',
         toneStyles[tone],
         className,
       )}
+      classNames={{ body: 'p-0' }}
       {...props}
     >
       <div className={cn('flex gap-3', align === 'vertical' ? 'flex-col' : 'items-start justify-between')}>
-        <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
-          <p className="mt-3 text-2xl font-semibold tracking-tight text-foreground tabular-nums">{value}</p>
-        </div>
+        <Statistic
+          className="min-w-0"
+          title={<span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</span>}
+          value={0}
+          formatter={() => value}
+          classNames={{ content: 'mt-3 text-2xl font-semibold tracking-tight text-foreground', value: 'tabular-nums' }}
+        />
         {icon ? (
           <span className={cn('shrink-0 text-primary [&_svg]:size-4', align === 'vertical' && 'self-end')}>
             {icon}
@@ -83,7 +92,7 @@ export function StatCard({
         ) : null}
       </div>
       {helper ? <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{helper}</p> : null}
-    </div>
+    </Card>
   );
 }
 
@@ -107,18 +116,22 @@ export const SectionCard = forwardRef<HTMLElement, SectionCardProps>(function Se
 }, ref) {
   const Comp = as as unknown as 'section';
   return (
-    <Comp ref={ref as never} data-slot="section-card" className={cn('border border-border bg-surface p-5', className)} {...props}>
-      {title || description || actions ? (
-        <div data-slot="section-card-header" className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between border-b border-border pb-3">
-          <div className="min-w-0">
+    <Comp ref={ref as never} className={className} {...props}>
+      <Card
+        data-slot="section-card"
+        className="border border-border bg-surface"
+        title={title || description ? (
+          <div className="min-w-0 py-1">
             {title ? <h2 className="text-base font-semibold text-foreground">{title}</h2> : null}
-            {description ? <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{description}</p> : null}
+            {description ? <p className="mt-1 text-sm font-normal leading-relaxed text-muted-foreground">{description}</p> : null}
           </div>
-          {actions ? <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div> : null}
-        </div>
-      ) : null}
-      <div data-slot="section-card-content" className="min-w-0">{children}</div>
-      {footer ? <div data-slot="section-card-footer" className="mt-4 border-t border-border pt-4">{footer}</div> : null}
+        ) : undefined}
+        extra={actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : undefined}
+        classNames={{ body: 'p-5', header: 'border-b border-border' }}
+      >
+        <div data-slot="section-card-content" className="min-w-0">{children}</div>
+        {footer ? <div data-slot="section-card-footer" className="mt-4 border-t border-border pt-4">{footer}</div> : null}
+      </Card>
     </Comp>
   );
 });
