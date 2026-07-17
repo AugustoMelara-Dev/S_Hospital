@@ -1,50 +1,18 @@
 export const legacyImports = [
-  '@radix-ui/',
-  'lucide-react',
-  'recharts',
-  'sonner',
-  'vaul',
-  'cmdk',
-  'motion/react',
-  'react-day-picker',
-  '@tanstack/react-table',
-  '@tanstack/react-virtual',
+  'antd',
+  '@ant-design/icons',
+  'ag-grid-community',
+  'ag-grid-react',
+  'echarts',
 ];
 
 export const prohibitedClasses = [
-  'rounded-sm',
-  'rounded-md',
-  'rounded-lg',
-  'rounded-xl',
-  'rounded-2xl',
-  'rounded-full',
-  'shadow-sm',
-  'shadow-md',
-  'shadow-lg',
-  'shadow-xl',
-  'shadow-2xl',
   'bg-gradient-to',
 ];
 
 export const strictModulePrefixes = [
-  'src/shell/',
-  'src/features/auth/',
-  'src/features/dashboard/',
-  'src/features/cash/',
-  'src/features/invoices/',
-  'src/features/catalog/',
-  'src/features/admin/',
-  'src/features/backups/',
-  'src/features/help/',
-  'src/features/support/',
-  'src/features/about/',
-  'src/features/receipt-settings/',
-  'src/features/receipts/',
-  'src/printing/',
-  'src/modules/receipts/',
-  'src/features/reports/',
-  'src/modules/reports/',
-  'src/modules/accounting/',
+  'src/components/ui/',
+  'src/hooks/use-mobile.ts',
 ];
 
 const semanticNativeTableFiles = new Set([
@@ -69,8 +37,9 @@ export function scanSource(file, rawSource) {
   const source = stripBlockComments(rawSource);
   const module = classifyModule(file);
   const violations = [];
+  const isUiPrimitive = file.startsWith('src/components/ui/');
 
-  if (/(?:^|\/)[^/]*(?:Compat|Legacy|Old|V1|Adapter|Antd|Sheet)[^/]*\.(?:ts|tsx)$/.test(file)
+  if (/(?:^|\/)[^/]*(?:Compat|Legacy|Old|V1|Adapter|Antd)[^/]*\.(?:ts|tsx)$/.test(file)
     || /\b\w*(?:Compat|Legacy|Old|V1)\w*\b/.test(source)) {
     violations.push(makeViolation({
       file,
@@ -84,32 +53,35 @@ export function scanSource(file, rawSource) {
 
   source.split(/\r?\n/).forEach((line, index) => {
     const lineNumber = index + 1;
-    for (const match of line.matchAll(/<(button|input|select|textarea|dialog|details)\b/g)) {
+    for (const match of isUiPrimitive ? [] : line.matchAll(/<(button|input|select|textarea|dialog|details)\b/g)) {
       violations.push(makeViolation({
         file,
         line: lineNumber,
         kind: 'native-interactive-control',
         dependency: match[1],
         module,
-        message: `control interactivo HTML "${match[1]}" fuera de Ant Design`,
+        message: `control interactivo HTML "${match[1]}" fuera de los primitivos shadcn`,
         risk: 'high',
       }));
     }
 
-    if (!semanticNativeTableFiles.has(file) && /<table\b/.test(line)) {
+    if (!isUiPrimitive && !semanticNativeTableFiles.has(file) && /<table\b/.test(line)) {
       violations.push(makeViolation({
         file,
         line: lineNumber,
         kind: 'native-application-table',
         dependency: 'table',
         module,
-        message: 'tabla visual de aplicacion fuera de Ant Design o AG Grid',
+        message: 'tabla visual de aplicacion fuera de shadcn DataTable',
         risk: 'medium',
       }));
     }
 
     for (const dependency of legacyImports) {
-      if (line.includes(dependency) && !line.trim().startsWith('// Allow legacy')) {
+      const dependencyPattern = new RegExp(
+        `(?:from\\s+|import\\s*|require\\(\\s*)['"]${escapeRegex(dependency)}(?:/|['"])`,
+      );
+      if (dependencyPattern.test(line) && !line.trim().startsWith('// Allow legacy')) {
         violations.push(makeViolation({
           file,
           line: lineNumber,
@@ -134,7 +106,7 @@ export function scanSource(file, rawSource) {
       }));
     }
 
-    for (const cssClass of prohibitedClasses) {
+    for (const cssClass of isUiPrimitive ? [] : prohibitedClasses) {
       if (new RegExp(`\\b${escapeRegex(cssClass)}\\b`).test(line)) {
         violations.push(makeViolation({
           file,
@@ -149,7 +121,7 @@ export function scanSource(file, rawSource) {
     }
 
     const isModuleDeclaration = /^\s*(?:import|export)\b/.test(line);
-    const broadVisualClasses = isModuleDeclaration
+    const broadVisualClasses = isModuleDeclaration || isUiPrimitive
       ? []
       : line.match(/\b(?:rounded|shadow|from|via|to)(?:-[\w[\].:/%-]+)+\b|\bbackdrop-blur(?:-[\w[\].:/%-]+)?\b|\bglass\b/g) ?? [];
     for (const cssClass of broadVisualClasses) {
@@ -165,7 +137,7 @@ export function scanSource(file, rawSource) {
       }));
     }
 
-    const arbitraryClasses = line.match(/\b[\w-]+-\[[^\]\r\n]+\]/g) ?? [];
+    const arbitraryClasses = isUiPrimitive ? [] : line.match(/\b[\w-]+-\[[^\]\r\n]+\]/g) ?? [];
     for (const cssClass of arbitraryClasses) {
       violations.push(makeViolation({
         file,
@@ -178,7 +150,7 @@ export function scanSource(file, rawSource) {
       }));
     }
 
-    const localPaletteClasses = isModuleDeclaration
+    const localPaletteClasses = isModuleDeclaration || isUiPrimitive
       ? []
       : line.match(/\b(?:text|bg|border|fill|stroke|ring|outline|divide)-(?:slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|white|black)(?:-\d{2,3})?(?:\/\d+)?\b/g) ?? [];
     for (const cssClass of localPaletteClasses) {
@@ -193,7 +165,7 @@ export function scanSource(file, rawSource) {
       }));
     }
 
-    if (!file.startsWith('src/design-system/')
+    if (!file.startsWith('src/design-system/') && !isUiPrimitive
       && /\b(?:function|const)\s+(?:Button|Alert|Badge|Dialog|Drawer|Sheet|Toast|Chart|Calendar|Command)\b/.test(line)) {
       violations.push(makeViolation({
         file,
@@ -205,7 +177,7 @@ export function scanSource(file, rawSource) {
       }));
     }
 
-    if (/\bstyle\s*=\s*\{\{/.test(line)) {
+    if (!isUiPrimitive && /\bstyle\s*=\s*\{\{/.test(line)) {
       violations.push(makeViolation({
         file,
         line: lineNumber,
@@ -217,7 +189,8 @@ export function scanSource(file, rawSource) {
     }
 
     const isCentralTokenFile = file.startsWith('src/design-system/themes/')
-      || file.startsWith('src/design-system/tokens/');
+      || file.startsWith('src/design-system/tokens/')
+      || isUiPrimitive;
     if (!isCentralTokenFile && /(?:#[\da-fA-F]{3,8}\b|\brgba?\s*\(|\bhsla?\s*\()/.test(line)) {
       violations.push(makeViolation({
         file,
@@ -229,17 +202,6 @@ export function scanSource(file, rawSource) {
       }));
     }
 
-    const radiusProperty = line.match(/\bborderRadius(?:LG|SM|XS|Outer)?\s*:\s*([^,}\n]+)/);
-    if (radiusProperty && !/^0(?:\s|$)/.test(radiusProperty[1].trim()) && !line.includes('// Allow inline radius')) {
-      violations.push(makeViolation({
-        file,
-        line: lineNumber,
-        kind: 'inline-radius',
-        module,
-        message: 'estilo de borderRadius distinto de cero no autorizado',
-        risk: 'medium',
-      }));
-    }
   });
 
   return violations;

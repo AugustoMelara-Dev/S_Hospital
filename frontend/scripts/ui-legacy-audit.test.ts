@@ -2,12 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { filterViolationsForMode, scanSource } from './ui-legacy-audit.mjs';
 
 describe('ui legacy audit', () => {
-  it('accepts institutional zero-radius tokens and flags non-zero radius', () => {
-    expect(scanSource('src/design-system/themes/theme.ts', 'const token = { borderRadiusLG: 0 };')).toEqual([]);
-    expect(scanSource('src/design-system/themes/theme.ts', "const primary = '#0f766e';")).toEqual([]);
-    expect(scanSource('src/example.tsx', 'const style = { borderRadius: 8 };')).toEqual([
-      expect.objectContaining({ kind: 'inline-radius', file: 'src/example.tsx', line: 1 }),
-    ]);
+  it('accepts the modern shadcn radius and shadow vocabulary', () => {
+    expect(scanSource('src/components/ui/card.tsx', '<div className="rounded-xl shadow-sm" />')).toEqual([]);
+    expect(scanSource('src/design-system/themes/theme.ts', 'const token = { borderRadiusLG: 12 };')).toEqual([]);
   });
 
   it('allows color literals only in centralized token files, including CSS', () => {
@@ -17,51 +14,62 @@ describe('ui legacy audit', () => {
     ]);
   });
 
-  it('reports imports and prohibited visual classes with structured ownership', () => {
+  it('allows the approved shadcn stack and reports every replaced dependency', () => {
+    const approved = scanSource(
+      'src/components/ui/chart.tsx',
+      [
+        "import { Slot } from 'radix-ui';",
+        "import { Check } from 'lucide-react';",
+        "import { LineChart } from 'recharts';",
+        "import { toast } from 'sonner';",
+      ].join('\n'),
+    );
+    expect(approved).toEqual([]);
+
     const violations = scanSource(
       'src/features/reports/Report.tsx',
-      "import { X } from 'lucide-react';\n<div className=\"rounded-xl shadow-md\" />",
+      [
+        "import { Button } from 'antd';",
+        "import { SaveOutlined } from '@ant-design/icons';",
+        "import { AgGridReact } from 'ag-grid-react';",
+        "import * as echarts from 'echarts';",
+      ].join('\n'),
     );
-
     expect(violations).toEqual(expect.arrayContaining([
-      expect.objectContaining({ kind: 'legacy-import', dependency: 'lucide-react', module: 'reports' }),
-      expect.objectContaining({ kind: 'prohibited-class', cssClass: 'rounded-xl', phaseOwner: 'reports' }),
-      expect.objectContaining({ kind: 'prohibited-class', cssClass: 'shadow-md', risk: 'medium' }),
+      expect.objectContaining({ kind: 'legacy-import', dependency: 'antd' }),
+      expect.objectContaining({ kind: 'legacy-import', dependency: '@ant-design/icons' }),
+      expect.objectContaining({ kind: 'legacy-import', dependency: 'ag-grid-react' }),
+      expect.objectContaining({ kind: 'legacy-import', dependency: 'echarts' }),
     ]));
   });
 
-  it('limits strict mode to declared migrated modules while final mode keeps all violations', () => {
+  it('limits strict mode to the foundation while final mode keeps all runtime violations', () => {
     const violations = [
-      ...scanSource('src/features/invoices/History.tsx', "import 'lucide-react';"),
-      ...scanSource('src/features/reports/Report.tsx', "import 'lucide-react';"),
+      ...scanSource('src/components/ui/button.tsx', "import 'antd';"),
+      ...scanSource('src/features/reports/Report.tsx', "import 'echarts';"),
     ];
 
     expect(filterViolationsForMode(violations, 'inventory')).toHaveLength(2);
-    expect(filterViolationsForMode(violations, 'strict')).toHaveLength(2);
+    expect(filterViolationsForMode(violations, 'strict')).toHaveLength(1);
     expect(filterViolationsForMode(violations, 'final')).toHaveLength(2);
   });
 
   it('keeps test fixtures out of runtime strict and final gates', () => {
-    const violations = scanSource('src/features/receipts/fixture.test.tsx', "const color = '#fff';");
+    const violations = scanSource('src/components/ui/fixture.test.tsx', "import 'antd';");
 
     expect(filterViolationsForMode(violations, 'inventory')).toHaveLength(1);
     expect(filterViolationsForMode(violations, 'strict')).toHaveLength(0);
     expect(filterViolationsForMode(violations, 'final')).toHaveLength(0);
   });
 
-  it('flags every replaced dependency and broad prohibited visual utility family', () => {
+  it('flags gradients, glass, arbitrary dimensions and local palette classes outside primitives', () => {
     const violations = scanSource(
-      'src/shared/LegacySurface.tsx',
-      [
-        "import { useVirtualizer } from '@tanstack/react-virtual';",
-        '<div className="rounded-none shadow-inner bg-gradient-to-r from-red-500 via-white to-blue-500 backdrop-blur-sm glass w-[37px]" />',
-      ].join('\n'),
+      'src/features/example/Example.tsx',
+      '<div className="bg-gradient-to-r from-red-500 via-white to-blue-500 backdrop-blur-sm glass w-[37px]" />',
     );
 
     expect(violations).toEqual(expect.arrayContaining([
-      expect.objectContaining({ kind: 'legacy-import', dependency: '@tanstack/react-virtual' }),
-      expect.objectContaining({ kind: 'prohibited-class', cssClass: 'rounded-none' }),
-      expect.objectContaining({ kind: 'prohibited-class', cssClass: 'shadow-inner' }),
+      expect.objectContaining({ kind: 'prohibited-class', cssClass: 'bg-gradient-to' }),
       expect.objectContaining({ kind: 'prohibited-class', cssClass: 'from-red-500' }),
       expect.objectContaining({ kind: 'prohibited-class', cssClass: 'via-white' }),
       expect.objectContaining({ kind: 'prohibited-class', cssClass: 'to-blue-500' }),
@@ -84,26 +92,11 @@ describe('ui legacy audit', () => {
     ]));
   });
 
-  it('flags bare backdrop blur, local palette classes and manual visual wrappers', () => {
-    const violations = scanSource(
-      'src/features/example/Example.tsx',
-      'const Button = () => <div className="backdrop-blur bg-white text-amber-200 border-slate-300" />;',
-    );
-
-    expect(violations).toEqual(expect.arrayContaining([
-      expect.objectContaining({ kind: 'prohibited-class', cssClass: 'backdrop-blur' }),
-      expect.objectContaining({ kind: 'local-palette-class', cssClass: 'bg-white' }),
-      expect.objectContaining({ kind: 'local-palette-class', cssClass: 'text-amber-200' }),
-      expect.objectContaining({ kind: 'local-palette-class', cssClass: 'border-slate-300' }),
-      expect.objectContaining({ kind: 'manual-visual-wrapper' }),
-    ]));
-  });
-
   it('does not interpret module specifiers as visual utility classes', () => {
     expect(scanSource('src/printing/usePrint.ts', "import { useReactToPrint } from 'react-to-print';")).toEqual([]);
   });
 
-  it('flags native interactive controls in production UI', () => {
+  it('flags native interactive controls in product UI but allows official primitives', () => {
     const violations = scanSource(
       'src/features/invoices/ManualControls.tsx',
       '<><button>Guardar</button><details><summary>Detalle</summary></details></>',
@@ -113,12 +106,14 @@ describe('ui legacy audit', () => {
       expect.objectContaining({ kind: 'native-interactive-control', dependency: 'button' }),
       expect.objectContaining({ kind: 'native-interactive-control', dependency: 'details' }),
     ]));
+    expect(scanSource('src/components/ui/button.tsx', '<button data-slot="button" />')).toEqual([]);
   });
 
-  it('flags application tables outside exact semantic exceptions', () => {
+  it('flags application tables outside exact semantic and primitive exceptions', () => {
     expect(scanSource('src/features/admin/PermissionMatrix.tsx', '<table />')).toEqual([
       expect.objectContaining({ kind: 'native-application-table', dependency: 'table' }),
     ]);
+    expect(scanSource('src/components/ui/table.tsx', '<table data-slot="table" />')).toEqual([]);
   });
 
   it.each([
@@ -130,7 +125,7 @@ describe('ui legacy audit', () => {
     expect(scanSource(file, '<table />')).toEqual([]);
   });
 
-  it.each(['settingsAntd.tsx', 'DialogLegacy.tsx', 'ButtonAdapter.tsx', 'OldPanel.tsx', 'V1Card.tsx', 'ServiceSheet.tsx'])(
+  it.each(['settingsAntd.tsx', 'DialogLegacy.tsx', 'ButtonAdapter.tsx', 'OldPanel.tsx', 'V1Card.tsx'])(
     'flags forbidden parallel visual surface %s',
     (name) => {
       expect(scanSource(`src/shared/${name}`, 'export const Surface = () => null;')).toEqual([
@@ -138,4 +133,8 @@ describe('ui legacy audit', () => {
       ]);
     },
   );
+
+  it('allows Sheet as the target responsive shadcn pattern', () => {
+    expect(scanSource('src/features/catalog/ServiceSheet.tsx', 'export const ServiceSheet = () => null;')).toEqual([]);
+  });
 });

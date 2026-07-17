@@ -1,38 +1,51 @@
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { readdirSync, readFileSync } from 'node:fs';
+import { extname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const root = resolve(import.meta.dirname, '..');
-const migratedFiles = [
-  'src/design-system/providers/DesignSystemProvider.tsx',
-  'src/design-system/themes/institutionalTheme.ts',
-  'src/design-system/antd/theme.ts',
-  'src/design-system/index.ts',
-];
+const uiRoot = resolve(root, 'src/components/ui');
 
-const forbidden = [
-  [/\brounded(?:-[\w[\]/.:-]+)?\b/g, 'clase rounded-*'],
-  [/\bshadow(?:-[\w[\]/.:-]+)?\b/g, 'clase shadow-*'],
-  [/\b(?:bg|from|via|to)-gradient-[\w-]+\b/g, 'gradiente'],
-  [/style\s*=\s*\{\{/g, 'estilo inline visual'],
-  [/#[\da-fA-F]{3,8}\b/g, 'color literal fuera del tema'],
-];
+export function scanUiRuleSource(relative, source) {
+  const violations = [];
+  const rules = [
+    [/\bspace-[xy]-[^\s"']+/g, 'usar gap en lugar de space-x/space-y'],
+    [/\bdark:(?:bg|text|border|ring|outline|fill|stroke)-[^\s"']+/g, 'usar tokens semánticos en lugar de colores dark:*'],
+    [/(?:@import\s+|url\(\s*)["']?https?:\/\//g, 'recurso remoto incompatible con operación offline'],
+  ];
 
-const violations = [];
-for (const relative of migratedFiles) {
-  const source = readFileSync(resolve(root, relative), 'utf8');
   source.split(/\r?\n/).forEach((line, index) => {
-    for (const [pattern, label] of forbidden) {
+    for (const [pattern, message] of rules) {
       pattern.lastIndex = 0;
-      if (pattern.test(line) && !relative.includes('/themes/')) {
-        violations.push(`${relative}:${index + 1}: ${label}`);
-      }
+      if (pattern.test(line)) violations.push(`${relative}:${index + 1}: ${message}`);
     }
+  });
+
+  return violations;
+}
+
+function collectUiFiles(directory) {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const absolute = resolve(directory, entry.name);
+    if (entry.isDirectory()) return collectUiFiles(absolute);
+    return ['.ts', '.tsx', '.css'].includes(extname(entry.name)) ? [absolute] : [];
   });
 }
 
-if (violations.length) {
-  process.stderr.write(`${violations.join('\n')}\n`);
-  process.exit(1);
+export function checkUiRules() {
+  const files = [resolve(root, 'src/styles.css'), ...collectUiFiles(uiRoot)];
+  const violations = files.flatMap((absolute) => {
+    const relative = absolute.slice(root.length + 1).replaceAll('\\', '/');
+    return scanUiRuleSource(relative, readFileSync(absolute, 'utf8'));
+  });
+
+  return { files, violations };
 }
 
-process.stdout.write(`UI rules: ${migratedFiles.length} archivos institucionales conformes.\n`);
+if (fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
+  const { files, violations } = checkUiRules();
+  if (violations.length) {
+    process.stderr.write(`${violations.join('\n')}\n`);
+    process.exit(1);
+  }
+  process.stdout.write(`UI rules: ${files.length} archivos shadcn conformes.\n`);
+}

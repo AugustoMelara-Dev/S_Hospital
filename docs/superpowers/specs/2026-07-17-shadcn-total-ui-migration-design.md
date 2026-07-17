@@ -6,8 +6,8 @@ Alcance: frontend completo, tablas operativas, gráficos y recibos institucional
 
 ## 1. Decisión
 
-S_Hospital migrará toda su interfaz a shadcn/ui con el preset oficial
-`radix-nova`, React 19 y Tailwind CSS 4. La dirección visual será la estética
+S_Hospital migrará toda su interfaz a shadcn/ui con el estilo oficial Nova y
+la base Radix (`style: radix-nova`), React 19 y Tailwind CSS 4. La dirección visual será la estética
 moderna estándar de shadcn: radios visibles, mayor espacio, jerarquía clara,
 superficies suaves y controles cómodos, adaptada a la densidad necesaria para
 caja hospitalaria.
@@ -56,7 +56,8 @@ frontend/src/
 
 ### 4.1 Fundación shadcn
 
-- Inicializar shadcn dentro de `frontend` con `radix-nova` y el alias `@/`.
+- Inicializar shadcn dentro de `frontend` con `--base radix --preset nova`, que
+  produce `style: radix-nova`, y el alias `@/`.
 - Mantener `frontend/src/styles.css` como hoja global y fuente de tokens.
 - Usar únicamente componentes del registro oficial de shadcn.
 - Guardar todo el código de los componentes en el repositorio.

@@ -4,7 +4,7 @@
 
 **Goal:** Replace Ant Design, AG Grid and ECharts with a complete offline-capable shadcn/ui interface using TanStack Table and Recharts, including saved and printed institutional receipts.
 
-**Architecture:** Migrate vertically by operational module. Establish the official `radix-nova` shadcn foundation and stable institutional patterns first, then move shell/auth, billing/receipts, cash/history, catalog/reports and administration before deleting every legacy dependency. Preserve API contracts and business behavior; each task ends with focused tests and a Conventional Commit.
+**Architecture:** Migrate vertically by operational module. Establish the official Nova style on the Radix base (`style: radix-nova`) and stable institutional patterns first, then move shell/auth, billing/receipts, cash/history, catalog/reports and administration before deleting every legacy dependency. Preserve API contracts and business behavior; each task ends with focused tests and a Conventional Commit.
 
 **Tech Stack:** React 19, TypeScript 5.9, Vite 8, Tailwind CSS 4, shadcn/ui `radix-nova`, Radix UI, TanStack Table, Recharts, React Hook Form, Zod, Sonner, Vitest, Testing Library, axe-core and Playwright.
 
@@ -30,7 +30,7 @@
 
 ### New foundation files
 
-- `frontend/components.json`: shadcn CLI configuration for Vite, Tailwind 4, `radix-nova`, CSS variables and `@/` aliases.
+- `frontend/components.json`: shadcn CLI configuration for Vite, Tailwind 4, Nova on Radix, CSS variables and `@/` aliases.
 - `frontend/src/components/ui/*.tsx`: official shadcn source files used by the application.
 - `frontend/src/design-system/patterns/DataTable.tsx`: typed TanStack Table composition.
 - `frontend/src/design-system/patterns/InstitutionalChart.tsx`: Recharts/shadcn Chart composition and accessible alternative.
@@ -153,7 +153,7 @@ Expected: the CLI reports Vite, React 19, Tailwind 4 and package manager `npm`; 
 Run inside `frontend`:
 
 ```powershell
-npx shadcn@latest init --preset radix-nova
+npx shadcn@latest init --base radix --preset nova
 npx shadcn@latest add button field input textarea select checkbox switch radio-group toggle-group dialog alert-dialog sheet drawer dropdown-menu tabs accordion collapsible card badge alert empty skeleton spinner sidebar breadcrumb command pagination table chart sonner calendar popover tooltip separator scroll-area progress avatar
 ```
 
