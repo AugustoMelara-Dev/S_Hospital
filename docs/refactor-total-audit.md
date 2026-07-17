@@ -11766,3 +11766,25 @@ Contadores de cache, callbacks administrativos e IDs originales atraviesan APIs 
 ### Decision
 
 Configuracion y atributos de request son `mixed` hasta validar su tipo. Aplicar fallbacks seguros evita warnings, interpolacion de rutas de config ambiguas y nonces invalidos sin cambiar ninguna configuracion valida de produccion LAN.
+
+## 503. Fase PHPStan 9 - Ciphertext idempotente concreto
+
+### Cambios
+
+- El accessor de respuesta idempotente exige string para ciphertext o plaintext heredado.
+- Null y string vacio conservan el significado de respuesta no persistida.
+- Un tipo corrupto falla explicitamente en vez de tratarse como ausencia y permitir una reejecucion.
+- No cambian cifrado, compatibilidad heredada, fingerprint, replay ni alcance por usuario/ruta.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 9 sobre `IdempotencyKey` | OK: 0 errores. |
+| Pint sobre el modelo | OK. |
+| Reservas, replay, cifrado y migracion heredada | OK: 16 tests, 132 assertions. |
+| Inventario PHPStan nivel 9 global | Baja de 770 a 768 hallazgos. |
+
+### Decision
+
+Una respuesta idempotente corrupta no debe degradarse a “sin respuesta”, porque eso puede repetir una operacion monetaria. Exigir texto antes de descifrar conserva el comportamiento seguro y hace observable la corrupcion.

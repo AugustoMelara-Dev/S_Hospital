@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Crypt;
+use UnexpectedValueException;
 
 /**
  * @property int $id
@@ -55,6 +56,10 @@ class IdempotencyKey extends Model
                 $value = $this->attributes['response_body'] ?? null;
                 if ($value === null || $value === '') {
                     return null;
+                }
+
+                if (! is_string($value)) {
+                    throw new UnexpectedValueException('La respuesta idempotente persistida no es texto valido.');
                 }
 
                 try {
