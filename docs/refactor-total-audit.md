@@ -10991,3 +10991,24 @@ La respuesta de roles tiene una forma estable consumida por administracion y la 
 ### Decision
 
 El archivo de registro es una entrada local no confiable aunque opere sin internet. Validar tipos antes de usarlos convierte el contrato documentado en una garantia de ejecucion y evita que un archivo corrupto interrumpa el arranque hospitalario.
+
+## 469. Promocion del quality gate a PHPStan 6
+
+### Cambios
+
+- `phpstan.neon` eleva el nivel obligatorio de 5 a 6 para `app` y `routes`.
+- La promocion queda persistida sin baseline, exclusiones nuevas ni supresiones locales.
+- No cambian dependencias, rutas ni comportamiento de produccion.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan usando `phpstan.neon`, sin nivel por CLI | OK: 0 errores. |
+| Pint global del backend | OK. |
+| Suite backend completa | OK: 927 tests, 7012 assertions. |
+| Cobertura | 12 tests omitidos porque PCOV/Xdebug no esta habilitado; sin fallos funcionales. |
+
+### Decision
+
+El nivel 6 ya no es una medicion opcional: pasa a ser el minimo reproducible del repositorio. Mantener el gate sin baseline garantiza que nuevos arrays, iterables y genericos incompletos vuelvan a fallar de inmediato.
