@@ -12317,3 +12317,25 @@ La administracion de identidades es una frontera de seguridad. Normalizar antes 
 ### Decision
 
 Un backup solo es util si representa fielmente la base y falla antes de producir un artefacto ambiguo. Validar configuracion, esquema y escalares protege la recuperacion offline sin exponer credenciales ni usar shell.
+
+## 528. Fase PHPStan 9 - Bootstrap Echo LAN validado
+
+### Cambios
+
+- `EchoConfigController` usa URL y opciones Pusher solo cuando tienen los tipos esperados.
+- Esquema se limita a HTTP/HTTPS, host a IP/dominio y puerto al rango 1-65535.
+- Loopback configurado sigue sustituyendose por el host LAN publico de `APP_URL`.
+- Clave publica, cluster y driver degradan a valores seguros sin exponer `secret` ni `app_id`.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 9 sobre el controlador | OK: 0 errores. |
+| Pint sobre controlador y pruebas | OK. |
+| Bootstrap Echo, canales privados y eventos | OK: 10 tests, 58 assertions. |
+| Inventario PHPStan nivel 9 global | Baja de 636 a 621 hallazgos. |
+
+### Decision
+
+La configuracion publica de tiempo real debe ser util en LAN y estricta frente a configuracion corrupta. Validar cada campo conserva el fallback de servidor local sin permitir hosts, esquemas o puertos arbitrarios en el navegador.

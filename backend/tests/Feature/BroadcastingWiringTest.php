@@ -51,6 +51,30 @@ class BroadcastingWiringTest extends TestCase
             ->assertJsonPath('data.channels.backups', 'backups');
     }
 
+    public function test_echo_config_endpoint_fails_closed_for_invalid_runtime_configuration(): void
+    {
+        Config::set('app.url', ['not-a-url']);
+        Config::set('broadcasting.default', ['pusher']);
+        Config::set('broadcasting.connections.pusher.key', ['client-key']);
+        Config::set('broadcasting.connections.pusher.options', 'invalid');
+        Config::set('broadcasting.connections.pusher.client_options', [
+            'host' => 'hospital.local ws://attacker.invalid',
+            'port' => 70000,
+            'scheme' => 'javascript',
+        ]);
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->getJson('/api/system/echo-config')
+            ->assertOk()
+            ->assertJsonPath('data.enabled', false)
+            ->assertJsonPath('data.key', '')
+            ->assertJsonPath('data.cluster', 'mt1')
+            ->assertJsonPath('data.host', '127.0.0.1')
+            ->assertJsonPath('data.port', 6001)
+            ->assertJsonPath('data.scheme', 'http')
+            ->assertJsonPath('data.useTLS', false);
+    }
+
     public function test_echo_config_endpoint_has_operational_smoke_safe_throttle(): void
     {
         $route = collect(Route::getRoutes())->first(
