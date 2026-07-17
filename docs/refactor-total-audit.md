@@ -10421,3 +10421,25 @@ El build no reduce su tamano porque los modulos ya eran descartados por tree-sha
 ### Decision
 
 Los constructores Zod se ejecutaban al cargar el modulo aunque esos formularios ya no existian. Retirar sus contratos muertos reduce trabajo y bytes de la ruta administrativa, y evita mantener reglas frontend paralelas a validaciones backend que no tienen interfaz activa.
+
+## 443. Fase Dashboard - Contrato de setup unificado
+
+### Cambios
+
+- `DashboardView` importa `SetupStatus` desde `SetupWizardDialog`, modulo que ya exportaba la misma forma.
+- Se elimina `dashboardTypes.ts`.
+- Desaparecen cuatro contratos visuales sin consumidor: estados/tarjeta de seccion, siguiente accion y contexto de metricas.
+- El import es solo de tipo y no agrega dependencia JavaScript en ejecucion.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Busqueda de simbolos | `SetupStatus` era el unico export consumido de `dashboardTypes.ts`; ya existia duplicado en el asistente. |
+| TypeScript estricto | OK. |
+| ESLint completo | OK. |
+| Dashboard y asistente de setup | OK: 2 archivos, 41 tests. |
+
+### Decision
+
+Dos definiciones identicas del estado de instalacion podian divergir ante un campo nuevo del backend. Mantener una sola forma junto al flujo que representa reduce deuda de tipos y deja al dashboard dependiente del mismo contrato que su dialogo operativo.

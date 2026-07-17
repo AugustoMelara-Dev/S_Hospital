@@ -17,9 +17,8 @@ import { formatDateTimeEs } from '@/lib/format/formatDate';
 import { finiteNumber } from '@/lib/money';
 import { formatLempirasUIFromCents, parseCents } from '@/lib/moneyCents';
 import { OperationalQueue, type OperationalQueueItem } from './components/OperationalQueue';
-import { SetupWizardDialog } from './components/SetupWizardDialog';
+import { SetupWizardDialog, type SetupStatus } from './components/SetupWizardDialog';
 import { TodayLedger, type TodayLedgerItem } from './components/TodayLedger';
-import { type SetupStatus } from './components/dashboardTypes';
 import type { OperationalStatusReporter } from '@/app/operationalStatus';
 
 type DashboardViewProps = {
