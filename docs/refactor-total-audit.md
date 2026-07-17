@@ -12568,3 +12568,27 @@ Una retencion invalida debe degradar a un valor conservador, nunca a cero. Centr
 ### Decision
 
 Los agregados SQL y snapshots de auditoria son fronteras externas aunque nazcan dentro de la base. Normalizarlos en el productor evita que cada exportador reinterprete valores mixtos y garantiza que un registro legado invalido degrade a evidencia segura en vez de romper todo el reporte.
+
+## 539. Fase PHPStan 9 - PDF ejecutivo normaliza su frontera
+
+### Cambios
+
+- `ExecutivePdfExportService` normaliza mapas y listas antes de renderizar cada seccion.
+- Fiscal, periodo, KPIs, comparaciones, servicios, cajas, pendientes y auditoria usan lectores escalares compartidos.
+- Dinero, porcentajes y conteos rechazan arrays, objetos y numeros no finitos con defaults visibles.
+- Filas estructuradas se descartan o degradan sin insertar `Array` ni romper el HTML.
+- Se agrega una regresion integral con payload y configuracion fiscal estructurados.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Regresion antes del cambio | FAIL esperado: `HospitalName::display()` recibia array. |
+| PHPStan nivel 9 sobre el exportador | OK: 0 errores. |
+| Pint sobre exportador y prueba | OK. |
+| PDF ejecutivo, permisos, auditoria y payload hostil | OK: 8 tests, 35 assertions. |
+| Inventario PHPStan nivel 9 global | Baja de 483 a 293 hallazgos. |
+
+### Decision
+
+El exportador es una frontera de serializacion y debe aceptar solo valores que puedan convertirse de forma inequívoca en texto contable. Normalizar una vez por seccion mantiene el renderer simple, evita casts dispersos y conserva un documento util aun ante snapshots legados parciales.

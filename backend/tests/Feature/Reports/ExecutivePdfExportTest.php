@@ -134,6 +134,33 @@ class ExecutivePdfExportTest extends TestCase
         $this->assertStringNotContainsString('Motivo ejecutivo reservado', $html);
     }
 
+    public function test_executive_pdf_builder_uses_safe_defaults_for_structured_payload_values(): void
+    {
+        $html = app(ExecutivePdfExportService::class)->buildHtml([
+            'period' => ['from' => ['invalid'], 'to' => ['invalid']],
+            'summary' => ['billed_total' => ['invalid'], 'invoice_count' => ['invalid']],
+            'comparison' => ['billed' => ['delta_percentage' => ['invalid']]],
+            'payment_methods' => [['label' => ['invalid'], 'amount' => ['invalid']]],
+            'daily_trend' => [['date' => ['invalid'], 'billed' => ['invalid']]],
+            'services' => ['top_by_amount' => [['service' => ['invalid']]]],
+            'cashiers' => [['name' => ['invalid']]],
+            'cash_sessions' => [['cashier' => ['invalid'], 'counted_cash' => ['invalid']]],
+            'pending_aging' => ['items' => [['invoice_number' => ['invalid']]]],
+            'voids_and_reversals' => [['invoice_number' => ['invalid'], 'amount' => ['invalid']]],
+            'audit_summary' => ['critical_events' => ['invalid']],
+            'accounting_policy' => ['billed_definition' => ['invalid']],
+            'can_view_audit' => true,
+        ], [
+            'hospital_name' => ['invalid'],
+            'rtn' => ['invalid'],
+            'address' => ['invalid'],
+        ]);
+
+        $this->assertStringContainsString('Reporte Ejecutivo', $html);
+        $this->assertStringContainsString('L. 0.00', $html);
+        $this->assertStringNotContainsString('Array', $html);
+    }
+
     public function test_executive_pdf_generic_reports_view_without_concrete_permission_is_forbidden(): void
     {
         $this->seedBillingBase();

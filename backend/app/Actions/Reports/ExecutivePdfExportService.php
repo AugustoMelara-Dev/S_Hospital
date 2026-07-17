@@ -14,7 +14,8 @@ use Carbon\Carbon;
  * place where that variant is allowed.
  *
  * @phpstan-type ExecutiveReport array<string, mixed>
- * @phpstan-type ReportData array<array-key, mixed>
+ * @phpstan-type ReportSection array<string, mixed>
+ * @phpstan-type ReportRows list<array<string, mixed>>
  */
 class ExecutivePdfExportService
 {
@@ -25,25 +26,25 @@ class ExecutivePdfExportService
     public function buildHtml(array $report, array $fiscal, ?string $generatedBy = null, ?Carbon $generatedAt = null): string
     {
         $now = $generatedAt ?? Carbon::now('America/Tegucigalpa');
-        $hospitalName = HospitalName::display($fiscal['hospital_name'] ?? null);
-        $rtn = (string) ($fiscal['rtn'] ?? 'N/A');
-        $address = (string) ($fiscal['address'] ?? '');
-        $governmentLine = (string) ($fiscal['receipt_government_line'] ?? 'Gobierno de Honduras');
-        $secretariatLine = (string) ($fiscal['receipt_secretariat_line'] ?? 'Secretaria de Salud');
+        $hospitalName = HospitalName::display($this->nullableString($fiscal['hospital_name'] ?? null));
+        $rtn = $this->stringValue($fiscal['rtn'] ?? null, 'N/A');
+        $address = $this->stringValue($fiscal['address'] ?? null);
+        $governmentLine = $this->stringValue($fiscal['receipt_government_line'] ?? null, 'Gobierno de Honduras');
+        $secretariatLine = $this->stringValue($fiscal['receipt_secretariat_line'] ?? null, 'Secretaria de Salud');
 
-        $period = $report['period'] ?? [];
-        $summary = $report['summary'] ?? [];
-        $paymentMethods = $report['payment_methods'] ?? [];
-        $dailyTrend = $report['daily_trend'] ?? [];
-        $services = $report['services'] ?? [];
-        $cashiers = $report['cashiers'] ?? [];
-        $cashSessions = $report['cash_sessions'] ?? [];
-        $pendingAging = $report['pending_aging'] ?? [];
+        $period = $this->section($report['period'] ?? null);
+        $summary = $this->section($report['summary'] ?? null);
+        $paymentMethods = $this->rows($report['payment_methods'] ?? null);
+        $dailyTrend = $this->rows($report['daily_trend'] ?? null);
+        $services = $this->section($report['services'] ?? null);
+        $cashiers = $this->rows($report['cashiers'] ?? null);
+        $cashSessions = $this->rows($report['cash_sessions'] ?? null);
+        $pendingAging = $this->section($report['pending_aging'] ?? null);
         $canViewAudit = ($report['can_view_audit'] ?? true) === true;
-        $voids = $report['voids_and_reversals'] ?? [];
-        $audit = $report['audit_summary'] ?? [];
-        $comparison = $report['comparison'] ?? [];
-        $accountingPolicy = $report['accounting_policy'] ?? [];
+        $voids = $this->rows($report['voids_and_reversals'] ?? null);
+        $audit = $this->section($report['audit_summary'] ?? null);
+        $comparison = $this->section($report['comparison'] ?? null);
+        $accountingPolicy = $this->section($report['accounting_policy'] ?? null);
 
         $css = $this->buildCss();
         $html = $this->wrapHtml(
@@ -86,14 +87,14 @@ class ExecutivePdfExportService
         return htmlspecialchars($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
     }
 
-    private function money(?string $value): string
+    private function money(mixed $value): string
     {
-        return Money::formatLempiras(Money::parseCents((string) ($value ?? 0), 'amount'));
+        return Money::formatLempiras(Money::parseCents($this->moneyValue($value), 'amount'));
     }
 
-    private function moneySigned(?string $value): string
+    private function moneySigned(mixed $value): string
     {
-        $raw = (string) ($value ?? '0');
+        $raw = $this->moneyValue($value);
         $cents = Money::parseCents($raw, 'amount');
         $absolute = abs($cents);
         $formatted = intdiv($absolute, 100).'.'.str_pad((string) ($absolute % 100), 2, '0', STR_PAD_LEFT);
@@ -101,31 +102,26 @@ class ExecutivePdfExportService
         return $cents < 0 ? '- L. '.$formatted : 'L. '.$formatted;
     }
 
-    private function pct(?float $value): string
+    private function pct(mixed $value): string
     {
-        if ($value === null) {
+        $percentage = $this->nullableFloat($value);
+        if ($percentage === null) {
             return 'n/d';
         }
 
-        $sign = $value > 0 ? '+' : '';
+        $sign = $percentage > 0 ? '+' : '';
 
-        return $sign.number_format($value, 2).'%';
+        return $sign.number_format($percentage, 2).'%';
     }
 
     private function percentageFloat(mixed $value): float
     {
-        $string = (string) ($value ?? '0');
-
-        if (is_numeric($string)) {
-            return $string + 0;
-        }
-
-        return 0.0;
+        return $this->nullableFloat($value) ?? 0.0;
     }
 
-    private function count(?int $value): string
+    private function count(mixed $value): string
     {
-        return number_format((int) ($value ?? 0));
+        return number_format($this->countValue($value));
     }
 
     private function sectionTitle(string $title, string $subtitle = ''): string
@@ -137,7 +133,7 @@ class ExecutivePdfExportService
         return '<div class="section-heading"><h2 class="section-title">'.$this->e($title).'</h2>'.$sub.'</div>';
     }
 
-    /** @param ReportData $period */
+    /** @param ReportSection $period */
     private function renderHeader(
         string $hospitalName,
         string $rtn,
@@ -148,8 +144,8 @@ class ExecutivePdfExportService
         Carbon $now,
         ?string $generatedBy,
     ): string {
-        $from = $period['from'] ?? '';
-        $to = $period['to'] ?? '';
+        $from = $this->stringValue($period['from'] ?? null);
+        $to = $this->stringValue($period['to'] ?? null);
 
         return <<<HTML
 <div class="page-header">
@@ -173,8 +169,8 @@ HTML;
     }
 
     /**
-     * @param  ReportData  $summary
-     * @param  ReportData  $comparison
+     * @param  ReportSection  $summary
+     * @param  ReportSection  $comparison
      */
     private function renderExecutiveSummary(array $summary, array $comparison): string
     {
@@ -184,10 +180,12 @@ HTML;
         $voided = $this->money($summary['voided_total'] ?? '0.00');
         $average = $this->money($summary['average_ticket'] ?? '0.00');
 
-        $billedDelta = $this->pct($comparison['billed']['delta_percentage'] ?? null);
-        $collectedDelta = $this->pct($comparison['collected']['delta_percentage'] ?? null);
-        $previousPeriod = $comparison['previous_period'] ?? [];
-        $prevLabel = ($previousPeriod['from'] ?? '').' - '.($previousPeriod['to'] ?? '');
+        $billedComparison = $this->section($comparison['billed'] ?? null);
+        $collectedComparison = $this->section($comparison['collected'] ?? null);
+        $billedDelta = $this->pct($billedComparison['delta_percentage'] ?? null);
+        $collectedDelta = $this->pct($collectedComparison['delta_percentage'] ?? null);
+        $previousPeriod = $this->section($comparison['previous_period'] ?? null);
+        $prevLabel = $this->stringValue($previousPeriod['from'] ?? null).' - '.$this->stringValue($previousPeriod['to'] ?? null);
 
         return $this->sectionTitle(
             'Resumen Ejecutivo',
@@ -222,9 +220,9 @@ HTML;
     }
 
     /**
-     * @param  ReportData  $summary
-     * @param  ReportData  $paymentMethods
-     * @param  ReportData  $accountingPolicy
+     * @param  ReportSection  $summary
+     * @param  ReportRows  $paymentMethods
+     * @param  ReportSection  $accountingPolicy
      */
     private function renderFinancialReading(array $summary, array $paymentMethods, array $accountingPolicy): string
     {
@@ -243,8 +241,8 @@ HTML;
 
         $rows = [
             ['Concepto', 'Monto', 'Fuente / definicion'],
-            ['Facturado', $billed, (string) ($accountingPolicy['billed_definition'] ?? 'Facturas emitidas no anuladas; anulaciones ya excluidas.')],
-            ['Cobrado', $collected, (string) ($accountingPolicy['collected_definition'] ?? 'Pagos posteados no reversados; reversos ya excluidos.')],
+            ['Facturado', $billed, $this->stringValue($accountingPolicy['billed_definition'] ?? null, 'Facturas emitidas no anuladas; anulaciones ya excluidas.')],
+            ['Cobrado', $collected, $this->stringValue($accountingPolicy['collected_definition'] ?? null, 'Pagos posteados no reversados; reversos ya excluidos.')],
             ['Efectivo recaudado', $cash, 'Pagos con metodo efectivo. Afecta efectivo esperado de caja.'],
             ['Pendiente', $pending, 'Saldo abierto de facturas emitidas o parciales.'],
             ['Anulado', $voided, 'Dato de control. Ya esta excluido del total facturado y no se resta otra vez.'],
@@ -257,13 +255,13 @@ HTML;
         ).$this->renderTable($rows, ['left', 'right', 'left']);
     }
 
-    /** @param ReportData $paymentMethods */
+    /** @param ReportRows $paymentMethods */
     private function renderPaymentMethods(array $paymentMethods): string
     {
         $rows = [['Metodo', 'Monto', 'Pagos', '% del total']];
         foreach ($paymentMethods as $method) {
             $rows[] = [
-                (string) ($method['label'] ?? $method['method'] ?? ''),
+                $this->stringValue($method['label'] ?? null, $this->stringValue($method['method'] ?? null)),
                 $this->money($method['amount'] ?? '0.00'),
                 $this->count($method['count'] ?? 0),
                 number_format($this->percentageFloat($method['percentage'] ?? '0'), 2).'%',
@@ -276,7 +274,7 @@ HTML;
         ).$this->renderTable($rows, ['left', 'right', 'right', 'right']);
     }
 
-    /** @param ReportData $dailyTrend */
+    /** @param ReportRows $dailyTrend */
     private function renderDailyTrend(array $dailyTrend): string
     {
         if ($dailyTrend === []) {
@@ -287,7 +285,7 @@ HTML;
         $rows = [['Fecha', 'Facturado', 'Cobrado', 'Pendiente', 'Anuladas', 'Facturas']];
         foreach ($dailyTrend as $row) {
             $rows[] = [
-                (string) ($row['date'] ?? ''),
+                $this->stringValue($row['date'] ?? null),
                 $this->money($row['billed'] ?? '0.00'),
                 $this->money($row['collected'] ?? '0.00'),
                 $this->money($row['pending'] ?? '0.00'),
@@ -302,13 +300,13 @@ HTML;
         ).$this->renderTable($rows, ['left', 'right', 'right', 'right', 'right', 'right']);
     }
 
-    /** @param ReportData $services */
+    /** @param ReportSection $services */
     private function renderServices(array $services): string
     {
-        $byAmount = $services['top_by_amount'] ?? [];
-        $byQuantity = $services['top_by_quantity'] ?? [];
-        $byCategory = $services['by_category'] ?? [];
-        $byArea = $services['by_area'] ?? [];
+        $byAmount = $this->rows($services['top_by_amount'] ?? null);
+        $byQuantity = $this->rows($services['top_by_quantity'] ?? null);
+        $byCategory = $this->rows($services['by_category'] ?? null);
+        $byArea = $this->rows($services['by_area'] ?? null);
 
         $html = $this->sectionTitle(
             'Servicios y Categorias',
@@ -319,9 +317,9 @@ HTML;
             $rows = [['Servicio', 'Categoria', 'Cantidad', 'Facturado', 'Cobrado']];
             foreach ($byAmount as $row) {
                 $rows[] = [
-                    (string) ($row['service'] ?? ''),
-                    (string) ($row['category'] ?? ''),
-                    (string) ($row['quantity'] ?? '0.00'),
+                    $this->stringValue($row['service'] ?? null),
+                    $this->stringValue($row['category'] ?? null),
+                    $this->moneyValue($row['quantity'] ?? null),
                     $this->money($row['total'] ?? '0.00'),
                     $this->money($row['collected'] ?? '0.00'),
                 ];
@@ -333,9 +331,9 @@ HTML;
             $rows = [['Servicio', 'Categoria', 'Cantidad', 'Facturado']];
             foreach ($byQuantity as $row) {
                 $rows[] = [
-                    (string) ($row['service'] ?? ''),
-                    (string) ($row['category'] ?? ''),
-                    (string) ($row['quantity'] ?? '0.00'),
+                    $this->stringValue($row['service'] ?? null),
+                    $this->stringValue($row['category'] ?? null),
+                    $this->moneyValue($row['quantity'] ?? null),
                     $this->money($row['total'] ?? '0.00'),
                 ];
             }
@@ -346,8 +344,8 @@ HTML;
             $rows = [['Categoria', 'Cantidad', 'Facturado', 'Cobrado', 'Items']];
             foreach ($byCategory as $row) {
                 $rows[] = [
-                    (string) ($row['category'] ?? ''),
-                    (string) ($row['quantity'] ?? '0.00'),
+                    $this->stringValue($row['category'] ?? null),
+                    $this->moneyValue($row['quantity'] ?? null),
                     $this->money($row['total'] ?? '0.00'),
                     $this->money($row['collected'] ?? '0.00'),
                     $this->count($row['item_count'] ?? 0),
@@ -360,8 +358,8 @@ HTML;
             $rows = [['Area', 'Cantidad', 'Facturado', 'Items']];
             foreach ($byArea as $row) {
                 $rows[] = [
-                    (string) ($row['area'] ?? ''),
-                    (string) ($row['quantity'] ?? '0.00'),
+                    $this->stringValue($row['area'] ?? null),
+                    $this->moneyValue($row['quantity'] ?? null),
                     $this->money($row['total'] ?? '0.00'),
                     $this->count($row['item_count'] ?? 0),
                 ];
@@ -376,7 +374,7 @@ HTML;
         return $html;
     }
 
-    /** @param ReportData $cashiers */
+    /** @param ReportRows $cashiers */
     private function renderCashiers(array $cashiers): string
     {
         if ($cashiers === []) {
@@ -387,7 +385,7 @@ HTML;
         $rows = [['Cajero', 'Cobrado', 'Efectivo', 'Transferencia', 'Tarjeta', 'Otro', 'Pagos', 'Anuladas', 'Diferencias']];
         foreach ($cashiers as $row) {
             $rows[] = [
-                (string) ($row['name'] ?? ''),
+                $this->stringValue($row['name'] ?? null),
                 $this->money($row['collected'] ?? '0.00'),
                 $this->money($row['cash'] ?? '0.00'),
                 $this->money($row['transfer'] ?? '0.00'),
@@ -405,7 +403,7 @@ HTML;
         ).$this->renderTable($rows, ['left', 'right', 'right', 'right', 'right', 'right', 'right', 'right', 'right']);
     }
 
-    /** @param ReportData $cashSessions */
+    /** @param ReportRows $cashSessions */
     private function renderCashSessions(array $cashSessions): string
     {
         if ($cashSessions === []) {
@@ -416,15 +414,15 @@ HTML;
         $rows = [['Cajero', 'Apertura', 'Cierre', 'Inicial', 'Esperado', 'Contado', 'Diferencia', 'Estado', 'Nota']];
         foreach ($cashSessions as $row) {
             $rows[] = [
-                (string) ($row['cashier'] ?? ''),
-                (string) ($row['opened_at'] ?? ''),
-                (string) ($row['closed_at'] ?? ''),
+                $this->stringValue($row['cashier'] ?? null),
+                $this->stringValue($row['opened_at'] ?? null),
+                $this->stringValue($row['closed_at'] ?? null),
                 $this->money($row['opening_amount'] ?? '0.00'),
                 $this->money($row['expected_cash'] ?? '0.00'),
-                $row['counted_cash'] !== null ? $this->money((string) $row['counted_cash']) : '-',
-                $row['difference'] !== null ? $this->moneySigned((string) $row['difference']) : '-',
-                (string) ($row['status'] ?? ''),
-                (string) ($row['closure_note'] ?? ''),
+                ($row['counted_cash'] ?? null) !== null ? $this->money($row['counted_cash']) : '-',
+                ($row['difference'] ?? null) !== null ? $this->moneySigned($row['difference']) : '-',
+                $this->stringValue($row['status'] ?? null),
+                $this->stringValue($row['closure_note'] ?? null),
             ];
         }
 
@@ -434,18 +432,21 @@ HTML;
         ).$this->renderTable($rows, ['left', 'left', 'left', 'right', 'right', 'right', 'right', 'left', 'left']);
     }
 
-    /** @param ReportData $pendingAging */
+    /** @param ReportSection $pendingAging */
     private function renderPendingAging(array $pendingAging): string
     {
-        $items = $pendingAging['items'] ?? [];
+        $items = $this->rows($pendingAging['items'] ?? null);
+        $bucket0Data = $this->section($pendingAging['0_7_days'] ?? null);
+        $bucket8Data = $this->section($pendingAging['8_30_days'] ?? null);
+        $bucket31Data = $this->section($pendingAging['31_plus_days'] ?? null);
 
-        $bucket0 = $this->money($pendingAging['0_7_days']['amount'] ?? '0.00');
-        $bucket8 = $this->money($pendingAging['8_30_days']['amount'] ?? '0.00');
-        $bucket31 = $this->money($pendingAging['31_plus_days']['amount'] ?? '0.00');
+        $bucket0 = $this->money($bucket0Data['amount'] ?? null);
+        $bucket8 = $this->money($bucket8Data['amount'] ?? null);
+        $bucket31 = $this->money($bucket31Data['amount'] ?? null);
 
-        $count0 = $this->count($pendingAging['0_7_days']['count'] ?? 0);
-        $count8 = $this->count($pendingAging['8_30_days']['count'] ?? 0);
-        $count31 = $this->count($pendingAging['31_plus_days']['count'] ?? 0);
+        $count0 = $this->count($bucket0Data['count'] ?? null);
+        $count8 = $this->count($bucket8Data['count'] ?? null);
+        $count31 = $this->count($bucket31Data['count'] ?? null);
 
         $summaryTable = $this->renderTable(
             [
@@ -466,9 +467,9 @@ HTML;
             $rows = [['# Factura', 'Paciente', 'Emitida', 'Antiguedad', 'Total', 'Saldo']];
             foreach ($items as $row) {
                 $rows[] = [
-                    (string) ($row['invoice_number'] ?? ''),
-                    (string) ($row['patient'] ?? ''),
-                    (string) ($row['issued_at'] ?? ''),
+                    $this->stringValue($row['invoice_number'] ?? null),
+                    $this->stringValue($row['patient'] ?? null),
+                    $this->stringValue($row['issued_at'] ?? null),
                     $this->count($row['age_days'] ?? 0).' d',
                     $this->money($row['total'] ?? '0.00'),
                     $this->money($row['balance_due'] ?? '0.00'),
@@ -480,7 +481,7 @@ HTML;
         return $html;
     }
 
-    /** @param ReportData $rows */
+    /** @param ReportRows $rows */
     private function renderVoidsAndReversals(array $rows): string
     {
         if ($rows === []) {
@@ -493,13 +494,13 @@ HTML;
             $kind = ($row['kind'] ?? '') === 'reversal' ? 'Reversa' : 'Anulacion';
             $tableRows[] = [
                 $kind,
-                (string) ($row['invoice_number'] ?? ''),
-                (string) ($row['patient'] ?? ''),
-                $this->money((string) ($row['amount'] ?? '0.00')),
-                (string) ($row['user'] ?? ''),
-                (string) ($row['authorized_by'] ?? ''),
-                (string) ($row['reason'] ?? ''),
-                (string) ($row['created_at'] ?? ''),
+                $this->stringValue($row['invoice_number'] ?? null),
+                $this->stringValue($row['patient'] ?? null),
+                $this->money($row['amount'] ?? null),
+                $this->stringValue($row['user'] ?? null),
+                $this->stringValue($row['authorized_by'] ?? null),
+                $this->stringValue($row['reason'] ?? null),
+                $this->stringValue($row['created_at'] ?? null),
             ];
         }
 
@@ -509,7 +510,7 @@ HTML;
         ).$this->renderTable($tableRows, ['left', 'left', 'left', 'right', 'left', 'left', 'left', 'left']);
     }
 
-    /** @param ReportData $audit */
+    /** @param ReportSection $audit */
     private function renderAudit(array $audit): string
     {
         $rows = [
@@ -525,6 +526,81 @@ HTML;
             'Resumen de Auditoria',
             'Conteos institucionales para supervision.'
         ).$this->renderTable($rows, ['left', 'right']);
+    }
+
+    /** @return ReportSection */
+    private function section(mixed $value): array
+    {
+        if (! is_array($value)) {
+            return [];
+        }
+
+        $section = [];
+        foreach ($value as $key => $item) {
+            if (is_string($key)) {
+                $section[$key] = $item;
+            }
+        }
+
+        return $section;
+    }
+
+    /** @return ReportRows */
+    private function rows(mixed $value): array
+    {
+        if (! is_array($value)) {
+            return [];
+        }
+
+        $rows = [];
+        foreach ($value as $row) {
+            if (is_array($row)) {
+                $rows[] = $this->section($row);
+            }
+        }
+
+        return $rows;
+    }
+
+    private function nullableString(mixed $value): ?string
+    {
+        return is_string($value) ? $value : null;
+    }
+
+    private function stringValue(mixed $value, string $default = ''): string
+    {
+        return $this->nullableString($value) ?? $default;
+    }
+
+    private function moneyValue(mixed $value): string
+    {
+        if (is_int($value)) {
+            return (string) $value;
+        }
+
+        return is_string($value) && is_numeric($value) ? $value : '0';
+    }
+
+    private function countValue(mixed $value): int
+    {
+        if (is_int($value)) {
+            return max(0, $value);
+        }
+
+        return is_string($value) && ctype_digit($value) ? (int) $value : 0;
+    }
+
+    private function nullableFloat(mixed $value): ?float
+    {
+        if (is_int($value) || is_float($value)) {
+            $float = (float) $value;
+
+            return is_finite($float) ? $float : null;
+        }
+
+        return is_string($value) && is_numeric($value) && is_finite((float) $value)
+            ? (float) $value
+            : null;
     }
 
     private function renderFooter(Carbon $now): string
