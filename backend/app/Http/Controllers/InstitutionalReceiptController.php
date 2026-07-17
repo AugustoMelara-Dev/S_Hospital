@@ -20,7 +20,7 @@ class InstitutionalReceiptController extends Controller
         IssueInstitutionalReceiptAction $issueReceipt,
         InvoiceAccess $invoiceAccess,
     ): JsonResponse {
-        $receipt = $issueReceipt->execute($request->payload(), $request->user(), $invoiceAccess);
+        $receipt = $issueReceipt->execute($request->payload(), $this->authenticatedUser($request), $invoiceAccess);
 
         return response()->json([
             'data' => $receipt,

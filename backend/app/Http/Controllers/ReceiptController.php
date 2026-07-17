@@ -18,12 +18,13 @@ class ReceiptController extends Controller
         GenerateReceiptDataAction $generateReceiptData,
         AuditLogger $auditLogger,
     ): JsonResponse {
+        $user = $this->authenticatedUser($request);
         $receipt = $generateReceiptData->execute($invoice, $request->width());
 
         $auditLogger->log(
             action: 'receipt.viewed',
             entity: $invoice,
-            user: $request->user(),
+            user: $user,
             request: $request,
             newValues: [
                 'invoice_number' => $invoice->invoice_number,
@@ -42,10 +43,12 @@ class ReceiptController extends Controller
         Invoice $invoice,
         ReprintReceiptAction $reprintReceipt,
     ): JsonResponse {
+        $user = $this->authenticatedUser($request);
+
         return response()->json([
             'data' => $reprintReceipt->execute(
                 $invoice,
-                $request->user(),
+                $user,
                 $request->width(),
                 $request->reason(),
                 $request,

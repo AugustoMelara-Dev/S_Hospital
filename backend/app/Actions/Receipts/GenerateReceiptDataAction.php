@@ -33,7 +33,7 @@ class GenerateReceiptDataAction
         }
 
         $cashierName = $postedPayments
-            ->sortByDesc(fn ($payment): int => $payment->paid_at->getTimestamp())
+            ->sortByDesc(fn ($payment): int => $payment->paid_at?->getTimestamp() ?? 0)
             ->first()?->user->name ?? $issuer->name;
         $fiscalCai = $this->fiscalValue($invoice->fiscal_cai);
         $hasFiscalAuthorization = $fiscalCai !== null

@@ -11,6 +11,7 @@ use App\Models\ReceiptPrintProfile;
 use App\Models\User;
 use App\Support\HospitalName;
 use Illuminate\Support\Facades\Storage;
+use LogicException;
 
 class BuildInstitutionalReceiptSnapshotAction
 {
@@ -38,6 +39,12 @@ class BuildInstitutionalReceiptSnapshotAction
         $invoice->loadMissing('items', 'payments.user:id,name,username');
         $settings = FiscalSetting::query()->firstOrNew();
         $cashSession->loadMissing('user:id,name,username');
+        $cashier = $cashSession->user;
+
+        if (! $cashier instanceof User) {
+            throw new LogicException('La sesion de caja no tiene un cajero valido para emitir el recibo.');
+        }
+
         $postedPayments = $invoice->payments
             ->where('status', Payment::STATUS_POSTED)
             ->values();
@@ -136,7 +143,7 @@ class BuildInstitutionalReceiptSnapshotAction
                     ->all(),
                 'cash_context' => [
                     'cash_register_label' => 'Caja #'.$cashSession->id,
-                    'cashier_name' => $cashSession->user->name,
+                    'cashier_name' => $cashier->name,
                     'opened_at' => $cashSession->opened_at?->toIso8601String(),
                 ],
                 'issued_by' => [
@@ -178,6 +185,14 @@ class BuildInstitutionalReceiptSnapshotAction
         }
 
         $contents = Storage::disk('public')->get('branding/logo.png');
+
+        if (! is_string($contents) || $contents === '') {
+            return [
+                'logo_data_uri' => null,
+                'logo_sha256' => null,
+            ];
+        }
+
         $mime = Storage::disk('public')->mimeType('branding/logo.png') ?: 'image/png';
 
         if (! str_starts_with($mime, 'image/')) {

@@ -11491,3 +11491,27 @@ Los reportes operativos deben degradarse con etiquetas seguras ante relaciones o
 ### Decision
 
 Facturas, pagos y cajas son registros auditables que no se borran dentro de estos flujos. `refresh()` representa esa invariancia y entrega a cada evento un modelo concreto; si el registro desapareciera por corrupcion, debe fallar de forma observable en vez de propagar `null`.
+
+## 491. Fase PHPStan 8 - Fronteras concretas de recibos
+
+### Cambios
+
+- El snapshot institucional exige que la sesion tenga un cajero valido antes de emitir el recibo.
+- Lecturas de logo ausentes o vacias degradan a recibo sin logo, tanto en snapshot como en HTML.
+- El recibo legado ordena pagos sin fecha al final en vez de desreferenciar un timestamp nullable.
+- Emision, vista y reimpresion usan el usuario autenticado concreto de la precondicion comun.
+- No cambian numeracion, contenido normal, fuentes monetarias, perfiles, permisos ni auditoria.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 8 sobre acciones y controladores de recibos | OK: 0 errores. |
+| Pint sobre los cinco archivos | OK. |
+| Recibos institucionales/legados, PDF, pagos y reimpresion | OK: 132 tests, 2089 assertions. |
+| Guard generado exclusivo de MySQL | 1 prueba omitida fuera de MySQL; sin fallo funcional. |
+| Inventario PHPStan nivel 8 global | Baja de 14 a 7 hallazgos. |
+
+### Decision
+
+Un recibo pagado necesita una identidad de cajero trazable; una relacion rota debe detener la emision. En cambio, el logo es decorativo y puede degradarse con seguridad. Separar esas dos politicas mantiene estricta la auditoria sin volver fragil la impresion.

@@ -342,6 +342,11 @@ class InstitutionalReceiptHtmlBuilder
         }
 
         $contents = Storage::disk('public')->get('branding/logo.png');
+
+        if (! is_string($contents) || $contents === '') {
+            return null;
+        }
+
         $mime = Storage::disk('public')->mimeType('branding/logo.png') ?: 'image/png';
 
         if (! str_starts_with($mime, 'image/')) {
