@@ -11811,3 +11811,26 @@ Una respuesta idempotente corrupta no debe degradarse a “sin respuesta”, por
 ### Decision
 
 Los slugs y codigos globales solo deben construirse desde texto validado. Usar accesores tipados tras validacion y comprobaciones estrictas dentro de callbacks evita coerciones sin relajar ninguna regla del catalogo hospitalario.
+
+## 505. Fase PHPStan 9 - Telemetria cliente normalizada
+
+### Cambios
+
+- El controlador de errores cliente exige usuario concreto y accesores escalares validados.
+- Contexto solo atraviesa `Arr::only` cuando es array y conserva la allow-list existente.
+- Ruta, codigo tecnico, status y timestamp se normalizan antes de persistir.
+- Sanitizacion de secretos, limites y campos permitidos se mantienen sin cambios.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 9 sobre el controlador | OK: 0 errores. |
+| Pint sobre el controlador | OK. |
+| Registro, sanitizacion y poda de errores cliente | OK: 15 tests, 40 assertions. |
+| Poda con bypass real MariaDB/MySQL | 1 prueba omitida fuera de esos drivers. |
+| Inventario PHPStan nivel 9 global | Baja de 762 a 758 hallazgos. |
+
+### Decision
+
+La telemetria del navegador es entrada no confiable y no debe causar errores secundarios ni almacenar estructuras arbitrarias. Normalizarla tras validacion conserva observabilidad segura y trazabilidad por usuario.
