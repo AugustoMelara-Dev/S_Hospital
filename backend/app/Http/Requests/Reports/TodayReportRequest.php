@@ -19,6 +19,7 @@ class TodayReportRequest extends FormRequest
         return $this->user()?->can('invoices.view') === true;
     }
 
+    /** @return array<string, mixed> */
     public function rules(): array
     {
         return [];

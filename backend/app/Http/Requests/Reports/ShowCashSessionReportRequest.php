@@ -28,6 +28,7 @@ class ShowCashSessionReportRequest extends FormRequest
             || $cashSession->user_id === $user->id;
     }
 
+    /** @return array<string, mixed> */
     public function rules(): array
     {
         return [];

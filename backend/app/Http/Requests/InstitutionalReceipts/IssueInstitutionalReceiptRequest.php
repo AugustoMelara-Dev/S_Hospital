@@ -14,6 +14,7 @@ class IssueInstitutionalReceiptRequest extends FormRequest
             && $user->can('payments.create') === true;
     }
 
+    /** @return array<string, mixed> */
     public function rules(): array
     {
         return [

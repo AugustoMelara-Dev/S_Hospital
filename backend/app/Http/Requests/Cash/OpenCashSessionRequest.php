@@ -11,6 +11,7 @@ class OpenCashSessionRequest extends FormRequest
         return $this->user()?->can('cash.open') === true;
     }
 
+    /** @return array<string, mixed> */
     public function rules(): array
     {
         return [

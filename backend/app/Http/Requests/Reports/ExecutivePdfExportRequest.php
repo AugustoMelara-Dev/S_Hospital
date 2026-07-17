@@ -28,6 +28,7 @@ class ExecutivePdfExportRequest extends FormRequest
             && $user->can('reports.cash_session.view');
     }
 
+    /** @return array<string, mixed> */
     public function rules(): array
     {
         return [

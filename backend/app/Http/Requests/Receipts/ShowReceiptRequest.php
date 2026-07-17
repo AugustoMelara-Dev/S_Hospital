@@ -27,6 +27,7 @@ class ShowReceiptRequest extends FormRequest
             && app(InvoiceAccess::class)->wasIssuedDuringCurrentOperationalDay($invoice);
     }
 
+    /** @return array<string, mixed> */
     public function rules(): array
     {
         return [

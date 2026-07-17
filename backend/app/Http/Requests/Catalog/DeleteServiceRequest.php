@@ -24,6 +24,7 @@ class DeleteServiceRequest extends FormRequest
         ];
     }
 
+    /** @return list<callable(Validator): void> */
     public function after(): array
     {
         return [

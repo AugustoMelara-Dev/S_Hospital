@@ -11,6 +11,7 @@ class RegisterReceiptPrintEventRequest extends FormRequest
         return $this->user()?->can('receipts.view') === true;
     }
 
+    /** @return array<string, mixed> */
     public function rules(): array
     {
         return [

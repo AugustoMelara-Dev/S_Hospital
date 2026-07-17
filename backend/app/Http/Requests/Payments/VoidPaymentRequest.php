@@ -11,6 +11,7 @@ class VoidPaymentRequest extends FormRequest
         return $this->user()?->can('payments.void') === true;
     }
 
+    /** @return array<string, mixed> */
     public function rules(): array
     {
         return [

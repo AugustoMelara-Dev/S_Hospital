@@ -13,6 +13,7 @@ class StorePaymentRequest extends FormRequest
         return $this->user()?->can('payments.create') === true;
     }
 
+    /** @return array<string, mixed> */
     public function rules(): array
     {
         $requiresReference = in_array($this->input('method'), [

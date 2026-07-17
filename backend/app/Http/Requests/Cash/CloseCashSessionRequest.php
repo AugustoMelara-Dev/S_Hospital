@@ -12,6 +12,7 @@ class CloseCashSessionRequest extends FormRequest
             || $this->user()?->can('cash.close_any') === true;
     }
 
+    /** @return array<string, mixed> */
     public function rules(): array
     {
         $rules = [

@@ -10878,3 +10878,24 @@ El libro consolidado recibe seis secciones del mismo contrato de reportes. Tipar
 ### Decision
 
 Los metodos de pago admitidos son un conjunto cerrado usado en todos los reportes. Declarar una sola forma en el trait evita doce contratos ambiguos y mantiene al backend como fuente unica de totales.
+
+## 464. Fase PHPStan 6 - Contratos de Form Requests
+
+### Cambios
+
+- Quince metodos `rules()` declaran diccionarios de reglas con valores conocidos por Laravel.
+- Catorce metodos `after()` declaran listas de callbacks que reciben `Validator` y no retornan valor.
+- El corte cubre administracion, caja, catalogo, fiscal, recibos institucionales, pagos, recibos y reportes sin cambiar ninguna regla.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 6 sobre todos los Form Requests | OK: 0 errores. |
+| Pint sobre todos los Form Requests | OK. |
+| Matriz funcional de validacion entre modulos | OK: 187 tests, 1746 assertions. |
+| Inventario PHPStan nivel 6 global | Baja de 50 a 21 hallazgos. |
+
+### Decision
+
+Laravel distingue reglas declarativas de validadores posteriores. Tipar ambos contratos en toda la frontera HTTP evita arrays opacos y documenta la extension correcta del framework, sin duplicar ni flexibilizar reglas de negocio.

@@ -161,6 +161,7 @@ class UpdateReceiptPrintProfileRequest extends FormRequest
         return $rules;
     }
 
+    /** @return list<callable(Validator): void> */
     public function after(): array
     {
         return [
