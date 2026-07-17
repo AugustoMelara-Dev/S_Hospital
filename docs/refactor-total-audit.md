@@ -10293,3 +10293,24 @@ Estos consumidores solo necesitan una vista de lectura de la identidad instituci
 ### Decision
 
 Las relaciones son opcionales en los objetos de prueba y el area tambien lo es en el esquema. Las comprobaciones explicitas representan esos estados sin confundir al analizador. El proyecto ya no necesita excepciones de analisis estatico: cualquier hallazgo nuevo de PHPStan volvera a ser visible de inmediato.
+
+## 437. Fase Exportes - Generador Excel legado eliminado
+
+### Cambios
+
+- Se elimina `ExcelReportService`, un generador de 507 lineas sin consumidores, registros de contenedor ni referencias en rutas.
+- `ReportController` ya usa de forma exclusiva `PremiumExcelExportService`, que contiene el flujo vigente de filtros, lectura financiera, caja y auditoria.
+- No se cambian endpoints, contratos ni dependencias de PhpSpreadsheet.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Busqueda de referencias posterior | OK: ninguna referencia a `ExcelReportService`. |
+| PHPStan sin baseline | OK: 0 errores. |
+| Exportaciones XLSX vigentes | OK: 3 tests, 51 assertions; cubre permisos, lectura financiera y ocultamiento de auditoria. |
+| Diff check | OK. |
+
+### Decision
+
+Mantener dos implementaciones completas para el mismo artefacto ampliaba la superficie de mantenimiento y permitia que correcciones futuras llegaran al generador equivocado. Eliminar la clase inalcanzable reduce codigo de produccion sin alterar el servicio activo.
