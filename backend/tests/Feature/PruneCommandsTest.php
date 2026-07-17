@@ -181,6 +181,62 @@ class PruneCommandsTest extends TestCase
             ->assertSuccessful();
     }
 
+    public function test_prune_operational_logs_keeps_recent_login_and_client_error_rows(): void
+    {
+        DB::table('login_attempts')->insert([
+            [
+                'login' => 'old-user',
+                'ip' => '192.168.1.20',
+                'success' => false,
+                'attempted_at' => now()->subDays(45),
+                'created_at' => now()->subDays(45),
+                'updated_at' => now()->subDays(45),
+            ],
+            [
+                'login' => 'recent-user',
+                'ip' => '192.168.1.21',
+                'success' => true,
+                'attempted_at' => now()->subDay(),
+                'created_at' => now()->subDay(),
+                'updated_at' => now()->subDay(),
+            ],
+        ]);
+        DB::table('client_error_logs')->insert([
+            [
+                'event_type' => 'network',
+                'severity' => 'error',
+                'safe_message' => 'old error',
+                'occurred_at' => now()->subDays(120),
+                'created_at' => now()->subDays(120),
+                'updated_at' => now()->subDays(120),
+            ],
+            [
+                'event_type' => 'network',
+                'severity' => 'warning',
+                'safe_message' => 'recent error',
+                'occurred_at' => now()->subDay(),
+                'created_at' => now()->subDay(),
+                'updated_at' => now()->subDay(),
+            ],
+        ]);
+
+        $this->artisan('hospital:prune-operational-logs', [
+            '--login-days' => 30,
+            '--client-error-days' => 90,
+            '--chunk' => 1,
+        ])->assertSuccessful();
+
+        $this->assertSame(['recent-user'], DB::table('login_attempts')->pluck('login')->all());
+        $this->assertSame(['recent error'], DB::table('client_error_logs')->pluck('safe_message')->all());
+    }
+
+    public function test_operational_log_pruning_is_registered_daily(): void
+    {
+        $this->artisan('schedule:list', ['--no-ansi' => true])
+            ->expectsOutputToContain('hospital:prune-operational-logs --login-days=30 --client-error-days=90')
+            ->assertSuccessful();
+    }
+
     public function test_audit_admin_helper_runs_callback_when_driver_is_not_mysql(): void
     {
         AuditLog::query()->create([

@@ -100,3 +100,14 @@ Schedule::command('hospital:prune-scheduler-ticks --days='.(int) env('HOSPITAL_S
     ->withoutOverlapping(30)
     ->runInBackground()
     ->description('Podar heartbeats antiguos del scheduler local');
+
+Schedule::command(
+    'hospital:prune-operational-logs'
+    .' --login-days='.(int) env('HOSPITAL_LOGIN_ATTEMPT_RETENTION_DAYS', 30)
+    .' --client-error-days='.(int) env('HOSPITAL_CLIENT_ERROR_RETENTION_DAYS', 90),
+)
+    ->dailyAt('04:15')
+    ->onOneServer()
+    ->withoutOverlapping(30)
+    ->runInBackground()
+    ->description('Podar intentos de acceso y errores de navegador antiguos');
