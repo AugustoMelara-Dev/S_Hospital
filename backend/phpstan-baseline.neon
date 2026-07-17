@@ -25,12 +25,6 @@ parameters:
 			path: app/Actions/Billing/CreateInvoiceAction.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\Invoice\:\:\$posted_payments_count\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Actions/Billing/VoidInvoiceAction.php
-
-		-
 			message: '#^Using nullsafe property access "\?\-\>rtn" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1

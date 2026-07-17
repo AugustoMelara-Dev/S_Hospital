@@ -10200,3 +10200,26 @@ El dashboard usa modelos para construir filtros y joins, pero sus agrupaciones r
 ### Decision
 
 El emisor es obligatorio para la trazabilidad de una factura. Expresar y comprobar esa invariante en el limite de generacion del recibo mejora el fallo ante datos inconsistentes y elimina la dependencia de una propiedad dinamica sin agregar consultas ni alterar el formato institucional.
+
+## 433. Fase Anulaciones - Conteo de pagos como estado transaccional
+
+### Cambios
+
+- `VoidInvoiceAction` deja de agregar `posted_payments_count` como atributo dinamico de la factura.
+- Despues de bloquear la factura, la accion cuenta los pagos publicados y conserva el resultado en un entero explicito.
+- El mismo conteo alimenta la regla que bloquea la anulacion y la evidencia del intento fallido en auditoria.
+- `hasPaymentState()` recibe el conteo como parte de su contrato, sin consultar propiedades sinteticas.
+- Se retira la ultima excepcion `property.notFound`; el baseline PHPStan baja de 9 a 8 errores contabilizados.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan tras retirar solo la excepcion | RED: 1 error al leer `posted_payments_count` como propiedad de `Invoice`. |
+| PHPStan completo despues | OK: 0 errores fuera del baseline. |
+| Anulaciones con estado de pago | OK: 3 tests, 25 assertions; bloquea pago vigente, permite tras reversa y revalida dentro de la transaccion. |
+| Pint focalizado | OK. |
+
+### Decision
+
+El flujo de registro de pagos tambien bloquea la factura. Contar despues de adquirir ese bloqueo hace explicito el momento de consistencia: un pago ya confirmado se observa y uno concurrente debe esperar, volver a cargar la factura y rechazarla si ya fue anulada. El cambio elimina un atributo Eloquent temporal y conserva la auditoria con un valor escalar estable.

@@ -40,10 +40,6 @@ class VoidInvoiceAction
         $result = DB::transaction(function () use ($invoice, $user, $reason): ?Invoice {
             $lockedInvoice = Invoice::query()
                 ->with(['cashSession'])
-                ->withCount([
-                    'payments as posted_payments_count' => fn ($query) => $query
-                        ->where('status', Payment::STATUS_POSTED),
-                ])
                 ->lockForUpdate()
                 ->findOrFail($invoice->id);
 
@@ -62,7 +58,11 @@ class VoidInvoiceAction
                 ]);
             }
 
-            if ($this->hasPaymentState($lockedInvoice)) {
+            $postedPaymentsCount = $lockedInvoice->payments()
+                ->where('status', Payment::STATUS_POSTED)
+                ->count();
+
+            if ($this->hasPaymentState($lockedInvoice, $postedPaymentsCount)) {
                 AuditLog::query()->create([
                     'user_id' => $user->id,
                     'action' => 'invoice.void_blocked_paid',
@@ -73,7 +73,7 @@ class VoidInvoiceAction
                         'status' => $lockedInvoice->status,
                         'paid_amount' => $lockedInvoice->paid_amount,
                         'balance_due' => $lockedInvoice->balance_due,
-                        'posted_payments_count' => $lockedInvoice->posted_payments_count,
+                        'posted_payments_count' => $postedPaymentsCount,
                     ],
                     'new_values' => [
                         'message' => 'No se puede anular una factura con pagos registrados sin flujo de reversión.',
@@ -141,13 +141,13 @@ class VoidInvoiceAction
         return $result;
     }
 
-    private function hasPaymentState(Invoice $invoice): bool
+    private function hasPaymentState(Invoice $invoice, int $postedPaymentsCount): bool
     {
         $paidCents = Money::parseCents((string) $invoice->paid_amount, 'paid_amount');
         $balanceCents = Money::parseCents((string) $invoice->balance_due, 'balance_due');
         $totalCents = Money::parseCents((string) $invoice->total, 'total');
 
-        return ((int) ($invoice->posted_payments_count ?? 0)) > 0
+        return $postedPaymentsCount > 0
             || $paidCents > 0
             || in_array($invoice->status, [Invoice::STATUS_PARTIAL, Invoice::STATUS_PAID], true)
             || $balanceCents !== $totalCents;
