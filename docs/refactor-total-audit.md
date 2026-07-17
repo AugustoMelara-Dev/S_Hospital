@@ -10337,3 +10337,24 @@ Mantener dos implementaciones completas para el mismo artefacto ampliaba la supe
 ### Decision
 
 Habia dos funciones `logClientIssue` con politicas distintas de almacenamiento, mensajes y sanitizacion, pero solo una era alcanzable. Retirar la rama muerta evita que futuras correcciones de seguridad se apliquen al registrador equivocado y reduce la superficie de mantenimiento sin cambiar el flujo del operador.
+
+## 439. Fase Areas - Controlador legado inalcanzable eliminado
+
+### Cambios
+
+- Se elimina `AreaPaidServiceController`, que no tenia ruta, importacion ni registro en el contenedor.
+- El permiso `area_services.view` y el rol `usuario_area` ya estaban retirados de los seeders finales.
+- El endpoint historico `/api/area-services/paid` permanece deliberadamente inexistente.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Busqueda global previa | Clase presente solo en su propio archivo; sin ruta ni consumidor frontend. |
+| PHPStan sin baseline | OK: 0 errores. |
+| Alcance legado retirado | OK: 1 test, 3 assertions; permiso y rol ausentes, endpoint 404. |
+| Inventario de rutas por `area-services` | OK: ninguna ruta coincidente. |
+
+### Decision
+
+El propio contrato de la version final exige que este alcance no exista. Conservar un controlador completo y autorizacion a un permiso retirado solo dejaba una superficie latente que podia reactivarse por error. Su eliminacion alinea codigo y rutas con la prueba vigente.
