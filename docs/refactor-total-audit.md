@@ -10920,3 +10920,26 @@ Laravel distingue reglas declarativas de validadores posteriores. Tipar ambos co
 ### Decision
 
 La accion generadora produce datos de presentacion y la accion de reimpresion los acompana con auditoria. Tipar esa envoltura hace explicita la frontera sin duplicar el shape detallado del recibo ni alterar su fuente historica.
+
+## 466. Fase PHPStan 6 - Contratos internos de reportes
+
+### Cambios
+
+- Once servicios declaran los diccionarios que entregan a controladores, exportaciones y cierres.
+- `ExecutiveReportService` tipa los filtros compartidos por resumen, auditoria y reversiones.
+- `FinancialFactsService` asocia cada builder de filtros con su modelo real: factura o pago.
+- `MonthlyReportService` declara la coleccion ordenada de fechas de actividad.
+- No cambian consultas, asignacion proporcional, importes, filtros ni formatos de salida.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 6 sobre todas las acciones de reportes | OK: 0 errores. |
+| Pint sobre todas las acciones de reportes | OK. |
+| Suite funcional de reportes | OK: 60 tests, 872 assertions. |
+| Inventario PHPStan nivel 6 global | Baja de 19 a 4 hallazgos. |
+
+### Decision
+
+Los reportes combinan agregados heterogeneos consumidos por varias salidas institucionales. Declarar sus fronteras y los modelos de consulta permite verificar toda la cadena sin duplicar reglas fiscales ni convertir los payloads existentes.

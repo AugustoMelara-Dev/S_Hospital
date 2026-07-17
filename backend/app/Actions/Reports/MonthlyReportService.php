@@ -114,6 +114,7 @@ class MonthlyReportService
             ->all();
     }
 
+    /** @return Collection<int, string> */
     private function activityDates(Carbon $start, Carbon $end): Collection
     {
         $invoiceDates = Invoice::query()

@@ -151,6 +151,7 @@ class ExecutiveReportService
     }
 
     /**
+     * @param  array<string, mixed>  $filters
      * @param  array<string, mixed>  $facts
      * @return array<int, array<string, mixed>>
      */
@@ -621,6 +622,7 @@ class ExecutiveReportService
     }
 
     /**
+     * @param  array<string, mixed>  $filters
      * @return array<string, int>
      */
     private function auditSummary(Carbon $start, Carbon $end, array $filters): array
@@ -768,6 +770,7 @@ class ExecutiveReportService
         ];
     }
 
+    /** @param array<string, mixed> $filters */
     private function reversedTotalCents(Carbon $start, Carbon $end, array $filters): int
     {
         return (int) DB::table('payments')
