@@ -29,4 +29,25 @@ class CloseCashSessionRequest extends FormRequest
 
         return $rules;
     }
+
+    /** @return array{closing_amount: string, notes?: string|null, closing_breakdown?: array<string, mixed>} */
+    public function payload(): array
+    {
+        $payload = [
+            'closing_amount' => $this->string('closing_amount')->toString(),
+        ];
+
+        if ($this->exists('notes')) {
+            $payload['notes'] = $this->input('notes') === null
+                ? null
+                : $this->string('notes')->toString();
+        }
+
+        $breakdown = $this->input('closing_breakdown');
+        if (is_array($breakdown)) {
+            $payload['closing_breakdown'] = $breakdown;
+        }
+
+        return $payload;
+    }
 }

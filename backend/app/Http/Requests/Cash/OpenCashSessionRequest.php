@@ -19,4 +19,20 @@ class OpenCashSessionRequest extends FormRequest
             'notes' => ['nullable', 'string', 'max:255'],
         ];
     }
+
+    /** @return array{opening_amount: string, notes?: string|null} */
+    public function payload(): array
+    {
+        $payload = [
+            'opening_amount' => $this->string('opening_amount')->toString(),
+        ];
+
+        if ($this->exists('notes')) {
+            $payload['notes'] = $this->input('notes') === null
+                ? null
+                : $this->string('notes')->toString();
+        }
+
+        return $payload;
+    }
 }

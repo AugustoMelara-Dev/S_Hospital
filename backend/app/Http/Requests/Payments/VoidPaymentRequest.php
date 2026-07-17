@@ -18,4 +18,12 @@ class VoidPaymentRequest extends FormRequest
             'reason' => ['required', 'string', 'min:5', 'max:255'],
         ];
     }
+
+    /** @return array{reason: string} */
+    public function payload(): array
+    {
+        return [
+            'reason' => $this->string('reason')->toString(),
+        ];
+    }
 }

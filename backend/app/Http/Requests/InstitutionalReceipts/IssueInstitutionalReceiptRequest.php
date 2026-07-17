@@ -25,4 +25,28 @@ class IssueInstitutionalReceiptRequest extends FormRequest
             'profile_code' => ['nullable', 'string', 'max:80', 'exists:receipt_print_profiles,code', 'prohibits:profile_id'],
         ];
     }
+
+    /**
+     * @return array{invoice_id: int, payment_id?: int|null, cash_session_id?: int|null, profile_id?: int|null, profile_code?: string|null}
+     */
+    public function payload(): array
+    {
+        $payload = [
+            'invoice_id' => $this->integer('invoice_id'),
+        ];
+
+        foreach (['payment_id', 'cash_session_id', 'profile_id'] as $key) {
+            if ($this->exists($key)) {
+                $payload[$key] = $this->input($key) === null ? null : $this->integer($key);
+            }
+        }
+
+        if ($this->exists('profile_code')) {
+            $payload['profile_code'] = $this->input('profile_code') === null
+                ? null
+                : $this->string('profile_code')->toString();
+        }
+
+        return $payload;
+    }
 }

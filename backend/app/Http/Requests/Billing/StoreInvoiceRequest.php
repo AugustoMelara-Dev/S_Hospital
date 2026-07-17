@@ -35,4 +35,41 @@ class StoreInvoiceRequest extends FormRequest
             'items.*.notes' => ['nullable', 'string', 'max:255'],
         ];
     }
+
+    /**
+     * @return array{patient_name: string, items: list<array{service_id: int, quantity: string, notes?: string|null}>, dialysis_prescription?: bool}
+     */
+    public function payload(): array
+    {
+        $validatedItems = $this->validated('items');
+        $items = [];
+
+        if (is_array($validatedItems)) {
+            foreach (array_keys($validatedItems) as $index) {
+                $item = [
+                    'service_id' => $this->integer("items.{$index}.service_id"),
+                    'quantity' => $this->string("items.{$index}.quantity")->toString(),
+                ];
+
+                if ($this->exists("items.{$index}.notes")) {
+                    $item['notes'] = $this->input("items.{$index}.notes") === null
+                        ? null
+                        : $this->string("items.{$index}.notes")->toString();
+                }
+
+                $items[] = $item;
+            }
+        }
+
+        $payload = [
+            'patient_name' => $this->string('patient_name')->toString(),
+            'items' => $items,
+        ];
+
+        if ($this->exists('dialysis_prescription')) {
+            $payload['dialysis_prescription'] = $this->boolean('dialysis_prescription');
+        }
+
+        return $payload;
+    }
 }

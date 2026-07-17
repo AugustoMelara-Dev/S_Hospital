@@ -11155,3 +11155,27 @@ Los snapshots se persisten y renderizan como listas ordenadas, por lo que la con
 ### Decision
 
 Las colecciones de permisos cruzan API, auditoria y sincronizacion de acceso, por lo que deben ser listas estables. Un transformador unico evita que la metadata critica difiera entre el detalle del rol y el catalogo administrativo.
+
+## 476. Fase PHPStan 7 - Payloads tipados de operaciones criticas
+
+### Cambios
+
+- Requests de apertura/cierre de caja, cobro, anulacion de pago, factura y recibo institucional exponen `payload()` con shapes exactos.
+- Dinero y texto se normalizan a string, IDs a entero, booleanos a bool y notas opcionales a `null|string` despues de validar.
+- Items de factura se reconstruyen como lista contigua conservando el orden y las claves originales usadas por la validacion.
+- Los cuatro controladores entregan los payloads tipados a sus acciones de dominio.
+- No cambian reglas, permisos, transacciones, idempotencia, calculos ni respuestas.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 7 sobre seis requests y cuatro controladores | OK: 0 errores. |
+| Pint sobre los diez archivos | OK. |
+| Caja, factura, anulacion y emision institucional | OK: 59 tests, 301 assertions. |
+| Cobros, conciliacion, diferencias y recibos posteriores al pago | OK: 54 tests, 557 assertions. |
+| Inventario PHPStan nivel 7 global | Baja de 18 a 11 hallazgos. |
+
+### Decision
+
+`validated()` confirma reglas pero conserva un diccionario generico para el analizador y puede mantener representaciones distintas segun transporte. Los metodos `payload()` hacen explicita la frontera hacia acciones monetarias sin duplicar la validacion ni mover logica de negocio al frontend.

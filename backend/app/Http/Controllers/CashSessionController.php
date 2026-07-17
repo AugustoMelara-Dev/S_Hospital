@@ -64,7 +64,7 @@ class CashSessionController extends Controller
 
     public function open(OpenCashSessionRequest $request, OpenCashSessionAction $openCashSession): JsonResponse
     {
-        $session = $openCashSession->execute($request->validated(), $request->user(), $request);
+        $session = $openCashSession->execute($request->payload(), $request->user(), $request);
 
         return response()->json(['data' => $session], 201);
     }
@@ -77,7 +77,7 @@ class CashSessionController extends Controller
     ): JsonResponse {
         Gate::authorize('close', $cashSession);
 
-        $session = $closeCashSession->execute($cashSession, $request->validated(), $request->user(), $request);
+        $session = $closeCashSession->execute($cashSession, $request->payload(), $request->user(), $request);
 
         return response()->json([
             'data' => $this->closedSessionPayload($session, $buildCashReconciliation),

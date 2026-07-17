@@ -28,4 +28,22 @@ class StorePaymentRequest extends FormRequest
             'reference' => ['nullable', Rule::requiredIf($requiresReference), 'string', 'max:120'],
         ];
     }
+
+    /** @return array{cash_session_id: int, method: string, amount: string, reference?: string|null} */
+    public function payload(): array
+    {
+        $payload = [
+            'cash_session_id' => $this->integer('cash_session_id'),
+            'method' => $this->string('method')->toString(),
+            'amount' => $this->string('amount')->toString(),
+        ];
+
+        if ($this->exists('reference')) {
+            $payload['reference'] = $this->input('reference') === null
+                ? null
+                : $this->string('reference')->toString();
+        }
+
+        return $payload;
+    }
 }
