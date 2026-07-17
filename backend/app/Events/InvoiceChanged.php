@@ -41,7 +41,7 @@ class InvoiceChanged implements ShouldBroadcast
             'id' => $this->invoice->id,
             'status' => $this->invoice->status,
             'change' => $this->change,
-            'at' => optional($this->invoice->getAttribute('updated_at'))?->toIso8601String(),
+            'at' => $this->invoice->updated_at?->toIso8601String(),
         ];
     }
 

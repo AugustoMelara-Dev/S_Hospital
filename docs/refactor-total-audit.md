@@ -11607,3 +11607,24 @@ Los casts desde `mixed` ocultaban paquetes o configuraciones estructuralmente in
 ### Decision
 
 La entrada HTTP es `mixed` hasta que la validacion demuestra lo contrario. Evitar casts anticipados impide warnings con estructuras maliciosas y permite que Laravel produzca la respuesta de validacion prevista.
+
+## 496. Fase PHPStan 9 - Timestamp tipado en eventos
+
+### Cambios
+
+- Eventos de factura y pago leen `updated_at` desde la propiedad Carbon tipada del modelo.
+- Se elimina el paso por `getAttribute()`, que degradaba el valor a `mixed`.
+- No cambian canales, aliases, payloads, serializacion ni momento de broadcast.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 9 sobre ambos eventos | OK: 0 errores. |
+| Pint sobre ambos eventos | OK. |
+| Wiring, autorizacion y dispatch realtime | OK: 9 tests, 50 assertions. |
+| Inventario PHPStan nivel 9 global | Baja de 794 a 792 hallazgos. |
+
+### Decision
+
+El modelo ya declara el contrato nullable de `updated_at`; usar esa propiedad conserva informacion de tipo y evita llamadas sobre `mixed` sin modificar el formato del evento.
