@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\ServiceFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -39,6 +40,7 @@ use LogicException;
  */
 class Service extends Model
 {
+    /** @use HasFactory<ServiceFactory> */
     use HasFactory;
 
     public const ERYTHROPOIETIN_RULE = 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION';
@@ -87,21 +89,25 @@ class Service extends Model
         });
     }
 
+    /** @return BelongsTo<Category, $this> */
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
     }
 
+    /** @return BelongsTo<Area, $this> */
     public function area(): BelongsTo
     {
         return $this->belongsTo(Area::class);
     }
 
+    /** @return HasMany<ServicePriceHistory, $this> */
     public function priceHistories(): HasMany
     {
         return $this->hasMany(ServicePriceHistory::class);
     }
 
+    /** @return HasMany<InvoiceItem, $this> */
     public function invoiceItems(): HasMany
     {
         return $this->hasMany(InvoiceItem::class);

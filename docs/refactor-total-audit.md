@@ -10527,3 +10527,25 @@ Los tipos agregados describen contratos reales del framework y del paquete de pe
 ### Decision
 
 Estas relaciones forman la trazabilidad monetaria desde una partida hasta el cobro y la caja. Tiparlas fortalece la comprobacion de consultas y servicios financieros sin tocar importes, estados, snapshots ni reglas de anulacion.
+
+## 448. Fase PHPStan 6 - Contratos del catalogo
+
+### Cambios
+
+- `Service`, `Category`, `Area` y `ServiceArea` tipan sus relaciones con servicios, categorias, areas, historiales de precio y partidas facturadas.
+- `Service` y `Category` enlazan `HasFactory` con sus factories concretas.
+- `ServiceArea` pierde `HasFactory`: no existe factory para ese modelo ni habia consumidores de `ServiceArea::factory()`.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Medicion PHPStan nivel 6 inicial del corte | RED controlado: 10 contratos genericos incompletos. |
+| PHPStan nivel 6 sobre los cuatro modelos | OK: 0 errores. |
+| Pint sobre los cuatro modelos | OK. |
+| Catalogo, cambios de precio y retiro del alcance legado | OK: 51 tests, 293 assertions. |
+| Inventario PHPStan nivel 6 global | Baja de 193 a 183 hallazgos. |
+
+### Decision
+
+El tipado conserva las relaciones que usa facturacion y permite seguir el historial de precios con modelos concretos. Retirar el trait inoperante de `ServiceArea` evita anunciar una API de factories que Laravel no podia resolver porque nunca tuvo implementacion.

@@ -20,6 +20,7 @@ class Area extends Model
         ];
     }
 
+    /** @return HasMany<Service, $this> */
     public function services(): HasMany
     {
         return $this->hasMany(Service::class);
