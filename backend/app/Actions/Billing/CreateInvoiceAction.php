@@ -45,8 +45,8 @@ class CreateInvoiceAction
 
                 $dialysisPrescription = $this->resolveDialysisPrescription($payload, $issuer);
                 $preparedItems = $this->prepareItems($payload['items']);
-                $settings = FiscalSetting::query()->first();
-                $taxRate = $settings?->default_tax_rate ?? '15.00';
+                $settings = FiscalSetting::query()->firstOrNew();
+                $taxRate = $settings->default_tax_rate ?? '15.00';
                 $totals = $this->calculateInvoiceTotals->execute($preparedItems, (string) $taxRate, $dialysisPrescription);
                 $fiscal = $this->generateFiscalNumber->execute();
                 $sequence = $fiscal['sequence'];
@@ -62,7 +62,7 @@ class CreateInvoiceAction
                     $printProfile = app(ResolveReceiptPrintProfileAction::class)->execute($issuer, $cashSession);
                     $paperSize = ReceiptPaperSize::fromProfilePaperKind($printProfile->paper_kind);
                 } catch (\Exception $e) {
-                    if ($settings?->receipt_paper_size) {
+                    if ($settings->receipt_paper_size) {
                         $paperSize = $settings->receipt_paper_size;
                     }
                 }
@@ -75,17 +75,17 @@ class CreateInvoiceAction
                     'fiscal_range_to' => $sequence->prefix.'-'.str_pad((string) $sequence->max_number, 8, '0', STR_PAD_LEFT),
                     'fiscal_valid_until' => $sequence->valid_until,
                     'fiscal_prefix' => $sequence->prefix,
-                    'hospital_name' => $settings?->hospital_name,
-                    'hospital_rtn' => $settings?->rtn,
-                    'hospital_address' => $settings?->address,
-                    'hospital_phone' => $settings?->phone,
-                    'hospital_slogan' => $settings?->slogan,
-                    'receipt_template_mode' => $settings?->receipt_template_mode ?? 'institutional',
+                    'hospital_name' => $settings->hospital_name,
+                    'hospital_rtn' => $settings->rtn,
+                    'hospital_address' => $settings->address,
+                    'hospital_phone' => $settings->phone,
+                    'hospital_slogan' => $settings->slogan,
+                    'receipt_template_mode' => $settings->receipt_template_mode ?? 'institutional',
                     'receipt_paper_size' => ReceiptPaperSize::normalize($paperSize),
-                    'receipt_government_line' => $settings?->government_line,
-                    'receipt_secretariat_line' => $settings?->secretariat_line,
-                    'receipt_location' => $settings?->receipt_location ?? $settings?->address,
-                    'receipt_footer_text' => $settings?->receipt_footer_text,
+                    'receipt_government_line' => $settings->government_line,
+                    'receipt_secretariat_line' => $settings->secretariat_line,
+                    'receipt_location' => $settings->receipt_location ?? $settings->address,
+                    'receipt_footer_text' => $settings->receipt_footer_text,
                     'tax_label' => 'ISV',
                     'tax_rate_snapshot' => $taxRate,
                     'patient_name' => trim($payload['patient_name']),

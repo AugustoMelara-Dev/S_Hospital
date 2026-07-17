@@ -10223,3 +10223,26 @@ El emisor es obligatorio para la trazabilidad de una factura. Expresar y comprob
 ### Decision
 
 El flujo de registro de pagos tambien bloquea la factura. Contar despues de adquirir ese bloqueo hace explicito el momento de consistencia: un pago ya confirmado se observa y uno concurrente debe esperar, volver a cargar la factura y rechazarla si ya fue anulada. El cambio elimina un atributo Eloquent temporal y conserva la auditoria con un valor escalar estable.
+
+## 434. Fase Facturacion - Configuracion fiscal opcional explicita
+
+### Cambios
+
+- `CreateInvoiceAction` usa `firstOrNew()` para representar una configuracion fiscal ausente con un modelo en memoria no persistido.
+- Los snapshots hospitalarios leen el objeto garantizado y conservan `null` cuando los campos no fueron configurados.
+- Permanecen los defaults operativos: ISV 15%, plantilla institucional y papel media carta cuando tampoco se resuelve un perfil de impresion.
+- Se agrega una regresion que crea una factura sin fila de configuracion y comprueba que el fallback no inserta una automaticamente.
+- Se retiran tres excepciones `nullsafe.neverNull`; el baseline PHPStan baja de 8 a 5 errores contabilizados.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan tras retirar solo las excepciones | RED: 3 errores en tasa, plantilla y ubicacion con acceso nullsafe. |
+| PHPStan completo despues | OK: 0 errores fuera del baseline. |
+| Creacion y defaults de factura | OK: 3 tests, 21 assertions; cubre configuracion normal, ausente y perfil de impresion. |
+| Pint focalizado | OK. |
+
+### Decision
+
+La ausencia temporal de configuracion es un estado valido durante una instalacion nueva, pero no requiere propagar `null` como tipo de objeto. `firstOrNew()` conserva los valores ausentes y evita escrituras implicitas, mientras permite que todo el snapshot se construya sobre un contrato estable y verificable.

@@ -80,6 +80,31 @@ class InvoiceCreationTest extends TestCase
         $this->assertSame(1, FiscalSequence::query()->where('document_type', 'invoice')->firstOrFail()->current_number);
     }
 
+    public function test_invoice_uses_safe_defaults_when_fiscal_settings_are_missing(): void
+    {
+        $this->seedBillingBase();
+        FiscalSetting::query()->delete();
+        $cashier = $this->cashier();
+
+        $invoiceId = $this->actingAs($cashier)
+            ->postJson('/api/invoices', [
+                'patient_name' => 'Paciente Sin Configuracion',
+                'items' => [$this->invoiceItem('Glucosa')],
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.total', '17.25')
+            ->json('data.id');
+
+        $this->assertDatabaseHas('invoices', [
+            'id' => $invoiceId,
+            'receipt_template_mode' => 'institutional',
+            'receipt_paper_size' => 'half_letter',
+            'tax_rate_snapshot' => '15.00',
+            'hospital_name' => null,
+        ]);
+        $this->assertSame(0, FiscalSetting::query()->count());
+    }
+
     public function test_invoice_receipt_paper_size_uses_resolved_print_profile(): void
     {
         $this->seedBillingBase();
