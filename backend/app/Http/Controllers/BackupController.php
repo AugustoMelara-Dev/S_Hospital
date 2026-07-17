@@ -9,6 +9,7 @@ use App\Http\Requests\Backups\StoreBackupRequest;
 use App\Jobs\RunBackupJob;
 use App\Models\AuditLog;
 use App\Models\BackupLog;
+use App\Models\User;
 use App\Support\OperationalMessageSanitizer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
@@ -41,7 +42,7 @@ class BackupController extends Controller
 
     public function store(StoreBackupRequest $request, CreateBackupAction $createBackup): JsonResponse
     {
-        $backupLog = $createBackup->createPending($request->user(), BackupLog::TYPE_MANUAL);
+        $backupLog = $createBackup->createPending($this->authenticatedUser($request), BackupLog::TYPE_MANUAL);
         RunBackupJob::dispatch($backupLog->id);
 
         return response()->json([
@@ -51,34 +52,36 @@ class BackupController extends Controller
 
     public function download(DownloadBackupRequest $request, BackupLog $backupLog): BinaryFileResponse
     {
+        $user = $this->authenticatedUser($request);
+
         if ($backupLog->status !== BackupLog::STATUS_SUCCESS) {
-            $this->denyDownload($request, $backupLog, 'status_not_success');
+            $this->denyDownload($user, $backupLog, 'status_not_success');
         }
 
         if ($backupLog->disk !== 'local') {
-            $this->denyDownload($request, $backupLog, 'unsupported_disk');
+            $this->denyDownload($user, $backupLog, 'unsupported_disk');
         }
 
         if ($backupLog->path === null || ! $this->isSafeRelativeBackupPath($backupLog->path)) {
-            $this->denyDownload($request, $backupLog, 'unsafe_path');
+            $this->denyDownload($user, $backupLog, 'unsafe_path');
         }
 
         if (! Storage::disk('local')->exists($backupLog->path)) {
-            $this->denyDownload($request, $backupLog, 'missing_file');
+            $this->denyDownload($user, $backupLog, 'missing_file');
         }
 
         $absolutePath = Storage::disk('local')->path($backupLog->path);
         $backupRoot = Storage::disk('local')->path('backups');
         if (! $this->isInsideBackupRoot($absolutePath, $backupRoot)) {
-            $this->denyDownload($request, $backupLog, 'outside_backup_root');
+            $this->denyDownload($user, $backupLog, 'outside_backup_root');
         }
 
         if (! $this->matchesRecordedIntegrity($backupLog, $absolutePath)) {
-            $this->denyDownload($request, $backupLog, 'integrity_mismatch');
+            $this->denyDownload($user, $backupLog, 'integrity_mismatch');
         }
 
         AuditLog::query()->create([
-            'user_id' => $request->user()->id,
+            'user_id' => $user->id,
             'action' => 'backup.downloaded',
             'entity_type' => BackupLog::class,
             'entity_id' => $backupLog->id,
@@ -97,10 +100,10 @@ class BackupController extends Controller
         ]);
     }
 
-    private function denyDownload(DownloadBackupRequest $request, BackupLog $backupLog, string $reason): never
+    private function denyDownload(User $user, BackupLog $backupLog, string $reason): never
     {
         AuditLog::query()->create([
-            'user_id' => $request->user()->id,
+            'user_id' => $user->id,
             'action' => 'backup.download_denied',
             'entity_type' => BackupLog::class,
             'entity_id' => $backupLog->id,

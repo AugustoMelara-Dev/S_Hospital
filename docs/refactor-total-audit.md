@@ -11377,3 +11377,26 @@ Autoria e historial deben referirse a la misma identidad que inicio la operacion
 ### Decision
 
 Autorizacion y auditoria deben observar la misma identidad durante toda una operacion administrativa. Resolverla antes de entrar a la transaccion elimina contratos nullable y evita que cada llamada vuelva a interpretar el guard de forma independiente.
+
+## 486. Fase PHPStan 8 - Identidad concreta en backups
+
+### Cambios
+
+- La autorizacion de descarga rechaza explicitamente requests sin usuario antes de evaluar permisos.
+- Creacion y descarga de backups resuelven un usuario concreto mediante la precondicion comun.
+- Auditorias de descarga exitosa o denegada reciben la misma identidad verificada.
+- No cambian cifrado, checksums, rutas permitidas, retencion, colas ni nombres seguros de descarga.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 8 sobre controlador y request de descarga | OK: 0 errores. |
+| Pint sobre ambos archivos | OK. |
+| Flujo de backup, integridad, seguridad y roundtrip | OK: 34 tests, 181 assertions. |
+| Simulacion MySQL dependiente de `mysqldump` | 1 omitida por binario no disponible; sin fallo funcional. |
+| Inventario PHPStan nivel 8 global | Baja de 63 a 59 hallazgos. |
+
+### Decision
+
+Una descarga auditada no debe depender de un usuario nullable despues de autorizarse. El rechazo explicito de invitados y el paso de un modelo concreto mantienen alineadas autorizacion, integridad y trazabilidad.

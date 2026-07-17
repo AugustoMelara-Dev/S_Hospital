@@ -10,7 +10,8 @@ class DownloadBackupRequest extends FormRequest
     {
         $user = $this->user();
 
-        return $user->can('backups.view') === true
+        return $user !== null
+            && $user->can('backups.view') === true
             && $user->can('backups.download') === true;
     }
 
