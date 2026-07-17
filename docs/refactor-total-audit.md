@@ -11561,3 +11561,27 @@ Las APIs de cifrado, storage y parseo declaran resultados que pueden fallar incl
 ### Decision
 
 Los 137 hallazgos iniciales de nivel 8 fueron resueltos con precondiciones, parseo exacto y fallos operativos explicitos. Convertir el nivel en minimo del repositorio impide reintroducir desreferencias nullable o argumentos inseguros en las fronteras auditadas.
+
+## 494. Fase PHPStan 9 - Payload y configuracion de cifrado
+
+### Cambios
+
+- `BackupFileCipher` exige strings reales para IV, tag y ciphertext del paquete JSON antes de Base64.
+- Clave y algoritmo configurados se validan por tipo antes de normalizarlos.
+- Se conserva la distincion operativa entre clave ausente y clave de tipo invalido.
+- No cambian formato versionado, compatibilidad heredada, algoritmo permitido ni mensajes normales.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| TDD/regresion de clave ausente | La primera matriz detecto mensaje incorrecto; corregido y repetido en verde. |
+| PHPStan nivel 9 sobre `BackupFileCipher` | OK: 0 errores. |
+| Pint sobre el archivo | OK. |
+| Flujo de backup, cifrado y roundtrip | OK: 34 tests, 181 assertions. |
+| Simulacion MySQL dependiente de `mysqldump` | 1 prueba omitida por binario no disponible. |
+| Inventario PHPStan nivel 9 global | Baja de 811 a 806 hallazgos. |
+
+### Decision
+
+Los casts desde `mixed` ocultaban paquetes o configuraciones estructuralmente invalidos. Validar el tipo antes de decodificar evita warnings, mantiene mensajes operativos precisos y mejora una frontera de seguridad sin imponer nivel 9 global prematuramente.

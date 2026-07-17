@@ -49,9 +49,17 @@ class BackupFileCipher
             return Crypt::decryptString($payload);
         }
 
-        $iv = base64_decode((string) ($decodedPayload['iv'] ?? ''), true);
-        $tag = base64_decode((string) ($decodedPayload['tag'] ?? ''), true);
-        $cipherText = base64_decode((string) ($decodedPayload['data'] ?? ''), true);
+        $encodedIv = $decodedPayload['iv'] ?? null;
+        $encodedTag = $decodedPayload['tag'] ?? null;
+        $encodedCipherText = $decodedPayload['data'] ?? null;
+
+        if (! is_string($encodedIv) || ! is_string($encodedTag) || ! is_string($encodedCipherText)) {
+            throw new RuntimeException('El paquete cifrado de respaldo es invalido.');
+        }
+
+        $iv = base64_decode($encodedIv, true);
+        $tag = base64_decode($encodedTag, true);
+        $cipherText = base64_decode($encodedCipherText, true);
 
         if ($iv === false || $tag === false || $cipherText === false) {
             throw new RuntimeException('El paquete cifrado de respaldo es invalido.');
@@ -75,7 +83,17 @@ class BackupFileCipher
 
     private function key(): string
     {
-        $configuredKey = trim((string) config('backups.encryption.key', ''));
+        $configuredKey = config('backups.encryption.key', '');
+
+        if ($configuredKey === null || $configuredKey === '') {
+            throw new RuntimeException('Clave de cifrado de respaldos no configurada.');
+        }
+
+        if (! is_string($configuredKey)) {
+            throw new RuntimeException('Clave de cifrado de respaldos invalida.');
+        }
+
+        $configuredKey = trim($configuredKey);
 
         if ($configuredKey === '') {
             throw new RuntimeException('Clave de cifrado de respaldos no configurada.');
@@ -95,7 +113,13 @@ class BackupFileCipher
 
     private function cipher(): string
     {
-        $cipher = strtolower((string) config('backups.encryption.cipher', 'aes-256-gcm'));
+        $configuredCipher = config('backups.encryption.cipher', 'aes-256-gcm');
+
+        if (! is_string($configuredCipher)) {
+            throw new RuntimeException('Cifrado de respaldos no soportado.');
+        }
+
+        $cipher = strtolower($configuredCipher);
 
         if ($cipher !== 'aes-256-gcm') {
             throw new RuntimeException('Cifrado de respaldos no soportado.');
