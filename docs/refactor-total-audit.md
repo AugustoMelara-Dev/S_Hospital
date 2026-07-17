@@ -12519,3 +12519,27 @@ Una herramienta de release no debe cambiar roles, catalogo o usuarios antes de v
 ### Decision
 
 Crear y clonar bases exige que cada dato usado en un identificador, DSN o sentencia SQL pertenezca al dominio esperado. La validacion estricta mantiene las guardas de entorno y evita tanto errores de tipo como conexiones ambiguas antes de una operacion destructiva sobre bases descartables.
+
+## 537. Fase PHPStan 9 - Scheduler con retenciones fail-safe
+
+### Cambios
+
+- Se agrega `OperationalScheduleConfig` como frontera unica para horas y dias configurables.
+- Horas requieren formato real `HH:MM`; valores invalidos vuelven al horario seguro de cada tarea.
+- Retenciones aceptan solo enteros o strings numericos entre 1 y 3650 dias.
+- Configuracion cero, negativa, excesiva o estructurada ya no puede programar una poda agresiva.
+- Backup diario, ventana operativa y cinco tareas de limpieza consumen valores normalizados.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Pruebas antes del cambio | FAIL esperado: clase de normalizacion inexistente. |
+| PHPStan nivel 9 sobre rutas y normalizador | OK: 0 errores. |
+| Pint sobre rutas, clase y pruebas | OK. |
+| Normalizador, scheduler, podas y backup diario | OK: 7 tests, 19 assertions. |
+| Inventario PHPStan nivel 9 global | Baja de 531 a 522 hallazgos. |
+
+### Decision
+
+Una retencion invalida debe degradar a un valor conservador, nunca a cero. Centralizar la validacion hace visible el contrato del scheduler offline y evita que una configuracion corrupta detenga backups o elimine evidencia operativa prematuramente.
