@@ -10399,3 +10399,25 @@ La tabla no puede eliminarse de una instalacion existente sin una migracion de r
 ### Decision
 
 El build no reduce su tamano porque los modulos ya eran descartados por tree-shaking. La mejora es de claridad: desaparecen APIs visuales alternativas que podian recibir trabajo futuro sin llegar nunca a la interfaz real.
+
+## 442. Fase Recibos Frontend - Esquemas no consumidos retirados
+
+### Cambios
+
+- `receiptSettings.schema.ts` conserva solo `receiptProfileSchema` y `ReceiptProfileForm`, los contratos usados por la pantalla activa.
+- Se eliminan los esquemas y tipos institucionales/de serie que no tenian imports, formularios ni tests consumidores.
+- No cambia la validacion del perfil normal de papel, copias, logo y sello.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Busqueda de simbolos | Solo `receiptProfileSchema` y `ReceiptProfileForm` tenian consumidores. |
+| TypeScript estricto | OK. |
+| ESLint completo | OK. |
+| Pantalla de configuracion de recibos | OK: 1 archivo, 33 tests. |
+| Build Vite | OK; chunk baja de 42.43 a 41.10 kB raw y de 12.16 a 11.87 kB gzip. |
+
+### Decision
+
+Los constructores Zod se ejecutaban al cargar el modulo aunque esos formularios ya no existian. Retirar sus contratos muertos reduce trabajo y bytes de la ruta administrativa, y evita mantener reglas frontend paralelas a validaciones backend que no tienen interfaz activa.
