@@ -10746,3 +10746,25 @@ El controlador opera exclusivamente sobre servicios y siempre produce al menos u
 ### Decision
 
 La consulta solo puede producir series institucionales. Declararlo elimina ambiguedad para consumidores y completa el tipado de builders administrativos sin alterar configuracion ni numeracion fiscal.
+
+## 458. Fase PHPStan 6 - Contratos XLSX y probe de conexion
+
+### Cambios
+
+- `ExecutiveExcelExportService` define un alias para el payload ejecutivo y lo aplica a todas las hojas.
+- Helpers de estilo reciben `Worksheet`; encabezados y anchos declaran sus valores concretos.
+- `OperationalMetricsService::isConnected()` recibe `Connection` y elimina la comparacion imposible de `PDO` contra `null`: obtener el PDO confirma conexion y una excepcion confirma fallo.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Medicion PHPStan nivel 6 inicial del corte | RED controlado: 20 contratos incompletos. |
+| PHPStan nivel 6 sobre ambos servicios | OK: 0 errores. |
+| Pint sobre ambos servicios | OK. |
+| XLSX ejecutivo y metricas operativas | OK: 23 tests, 144 assertions. |
+| Inventario PHPStan nivel 6 global | Baja de 138 a 118 hallazgos. |
+
+### Decision
+
+Las hojas de calculo aceptan un unico payload ejecutivo y objetos Worksheet reales. En salud operativa, `getPdo()` ya devuelve un PDO o falla; eliminar una condicion siempre verdadera hace que el probe exprese la semantica efectiva sin cambiar su degradacion segura.

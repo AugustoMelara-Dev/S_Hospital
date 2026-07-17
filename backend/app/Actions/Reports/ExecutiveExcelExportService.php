@@ -27,9 +27,15 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
  *  8. Anulaciones y reversas
  *  9. Auditoria
  * 10. Glosario
+ *
+ * @phpstan-type ExecutiveReport array<string, mixed>
  */
 class ExecutiveExcelExportService
 {
+    /**
+     * @param  ExecutiveReport  $report
+     * @param  array<string, mixed>  $fiscal
+     */
     public function generate(array $report, array $fiscal, Carbon $from, Carbon $to, ?string $generatedBy = null): Spreadsheet
     {
         $spreadsheet = new Spreadsheet;
@@ -54,6 +60,7 @@ class ExecutiveExcelExportService
         return $spreadsheet;
     }
 
+    /** @param ExecutiveReport $report */
     private function buildSummarySheet(
         Spreadsheet $spreadsheet,
         array $report,
@@ -126,6 +133,7 @@ class ExecutiveExcelExportService
         $sheet->freezePane('A6');
     }
 
+    /** @param ExecutiveReport $report */
     private function buildPaymentMethodsSheet(Spreadsheet $spreadsheet, array $report, string $hospital, string $rtn): void
     {
         $sheet = $spreadsheet->createSheet();
@@ -163,6 +171,7 @@ class ExecutiveExcelExportService
         $sheet->freezePane('A5');
     }
 
+    /** @param ExecutiveReport $report */
     private function buildDailyTrendSheet(Spreadsheet $spreadsheet, array $report, string $hospital, string $rtn): void
     {
         $sheet = $spreadsheet->createSheet();
@@ -193,6 +202,7 @@ class ExecutiveExcelExportService
         $sheet->freezePane('A5');
     }
 
+    /** @param ExecutiveReport $report */
     private function buildServicesSheet(Spreadsheet $spreadsheet, array $report, string $hospital, string $rtn): void
     {
         $sheet = $spreadsheet->createSheet();
@@ -290,6 +300,7 @@ class ExecutiveExcelExportService
         $this->autoSizeColumns($sheet, ['A' => 40, 'B' => 24, 'C' => 14, 'D' => 16, 'E' => 16]);
     }
 
+    /** @param ExecutiveReport $report */
     private function buildCashiersSheet(Spreadsheet $spreadsheet, array $report, string $hospital, string $rtn): void
     {
         $sheet = $spreadsheet->createSheet();
@@ -325,6 +336,7 @@ class ExecutiveExcelExportService
         $sheet->freezePane('A5');
     }
 
+    /** @param ExecutiveReport $report */
     private function buildCashSessionsSheet(Spreadsheet $spreadsheet, array $report, string $hospital, string $rtn): void
     {
         $sheet = $spreadsheet->createSheet();
@@ -356,6 +368,7 @@ class ExecutiveExcelExportService
         $sheet->freezePane('A5');
     }
 
+    /** @param ExecutiveReport $report */
     private function buildPendingSheet(Spreadsheet $spreadsheet, array $report, string $hospital, string $rtn): void
     {
         $sheet = $spreadsheet->createSheet();
@@ -410,6 +423,7 @@ class ExecutiveExcelExportService
         $this->autoSizeColumns($sheet, ['A' => 18, 'B' => 28, 'C' => 16, 'D' => 14, 'E' => 14, 'F' => 14]);
     }
 
+    /** @param ExecutiveReport $report */
     private function buildVoidsSheet(Spreadsheet $spreadsheet, array $report, string $hospital, string $rtn): void
     {
         $sheet = $spreadsheet->createSheet();
@@ -438,6 +452,7 @@ class ExecutiveExcelExportService
         $sheet->freezePane('A5');
     }
 
+    /** @param ExecutiveReport $report */
     private function buildAuditSheet(Spreadsheet $spreadsheet, array $report, string $hospital, string $rtn): void
     {
         $sheet = $spreadsheet->createSheet();
@@ -503,6 +518,7 @@ class ExecutiveExcelExportService
         $sheet->getStyle('B5:B'.$row)->getAlignment()->setWrapText(true);
     }
 
+    /** @param list<string> $headers */
     private function writeSheetHeader(
         Worksheet $sheet,
         string $title,
@@ -524,7 +540,7 @@ class ExecutiveExcelExportService
         return $row + 1;
     }
 
-    private function applyTitleStyle($sheet, string $range): void
+    private function applyTitleStyle(Worksheet $sheet, string $range): void
     {
         $sheet->getStyle($range)->applyFromArray([
             'font' => [
@@ -539,7 +555,7 @@ class ExecutiveExcelExportService
         ]);
     }
 
-    private function applySubtitleStyle($sheet, string $range): void
+    private function applySubtitleStyle(Worksheet $sheet, string $range): void
     {
         $sheet->getStyle($range)->applyFromArray([
             'font' => [
@@ -554,7 +570,7 @@ class ExecutiveExcelExportService
         ]);
     }
 
-    private function applyTableHeaderStyle($sheet, string $range): void
+    private function applyTableHeaderStyle(Worksheet $sheet, string $range): void
     {
         $sheet->getStyle($range)->applyFromArray([
             'font' => [
@@ -579,7 +595,7 @@ class ExecutiveExcelExportService
         ]);
     }
 
-    private function applyBoldRow($sheet, string $range): void
+    private function applyBoldRow(Worksheet $sheet, string $range): void
     {
         $sheet->getStyle($range)->applyFromArray([
             'font' => [
@@ -592,7 +608,7 @@ class ExecutiveExcelExportService
         ]);
     }
 
-    private function applyDataRowStyle($sheet, string $range, string $numberFormat): void
+    private function applyDataRowStyle(Worksheet $sheet, string $range, string $numberFormat): void
     {
         $sheet->getStyle($range)->applyFromArray([
             'borders' => [
@@ -607,7 +623,8 @@ class ExecutiveExcelExportService
         ]);
     }
 
-    private function autoSizeColumns($sheet, array $columns): void
+    /** @param array<string, int|float> $columns */
+    private function autoSizeColumns(Worksheet $sheet, array $columns): void
     {
         foreach ($columns as $letter => $width) {
             $sheet->getColumnDimension($letter)->setWidth($width);
