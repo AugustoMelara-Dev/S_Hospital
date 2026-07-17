@@ -16,6 +16,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use LogicException;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -195,6 +196,19 @@ class UserController extends Controller
 
     /**
      * Helper to transform user and its roles/permissions to simple payload
+     *
+     * @return array{
+     *     id: int,
+     *     name: string,
+     *     email: string,
+     *     username: string,
+     *     active: bool,
+     *     roles: Collection<int, string>,
+     *     permissions: Collection<int, string>,
+     *     direct_permissions: Collection<int, string>,
+     *     uses_exact_permission_map: bool,
+     *     must_change_password: bool
+     * }
      */
     private function transformUser(User $user): array
     {
@@ -330,7 +344,23 @@ class UserController extends Controller
             return null;
         }
 
-        return collect($validated['permissions'] ?? [])
+        $permissions = $validated['permissions'] ?? [];
+
+        if (! is_array($permissions)) {
+            throw new LogicException('Los permisos validados deben ser una lista.');
+        }
+
+        $permissionNames = [];
+
+        foreach ($permissions as $permission) {
+            if (! is_string($permission)) {
+                throw new LogicException('Cada permiso validado debe ser texto.');
+            }
+
+            $permissionNames[] = $permission;
+        }
+
+        return collect($permissionNames)
             ->map(fn (string $permission): string => $permission)
             ->pipe(fn (Collection $permissions): Collection => VisiblePermissions::rejectHidden($permissions))
             ->sort()
@@ -399,6 +429,7 @@ class UserController extends Controller
         ];
     }
 
+    /** @return Collection<int, string> */
     private function effectivePermissionNames(User $user): Collection
     {
         if ($user->usesExactDirectPermissionMap()) {
@@ -412,6 +443,7 @@ class UserController extends Controller
             ->values();
     }
 
+    /** @return Collection<int, string> */
     private function visibleDirectPermissionNames(User $user): Collection
     {
         return $user->getDirectPermissions()

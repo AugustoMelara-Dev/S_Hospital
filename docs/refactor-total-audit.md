@@ -10680,3 +10680,25 @@ Las descargas son una frontera HTTP publica y deben anunciar si entregan una res
 ### Decision
 
 El payload de autenticacion solo es valido para el modelo de usuario local y sus permisos visibles son nombres de texto. Explicitar ambos contratos evita que identidades o colecciones arbitrarias entren en una respuesta de seguridad sin cambiar los campos expuestos.
+
+## 455. Fase PHPStan 6 - Payload administrativo de usuarios
+
+### Cambios
+
+- `transformUser()` declara el shape completo del usuario administrativo y las colecciones de roles/permisos.
+- Las colecciones de permisos efectivos y directos declaran claves numericas y nombres de texto.
+- `directPermissionsFromRequest()` comprueba que los datos ya validados sigan siendo una lista de strings antes de construir el mapa exacto.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Medicion PHPStan nivel 6 inicial del corte | RED controlado: 1 iterable, 2 templates y 2 colecciones genericas. |
+| PHPStan nivel 6 sobre el controlador | OK: 0 errores. |
+| Pint sobre el controlador | OK. |
+| Gestion, permisos directos y proteccion administrativa | OK: 43 tests, 191 assertions. |
+| Inventario PHPStan nivel 6 global | Baja de 147 a 142 hallazgos. |
+
+### Decision
+
+La administracion de usuarios necesita distinguir listas de nombres de valores arbitrarios, especialmente al aplicar permisos exactos. Los contratos y comprobaciones agregados hacen explicita esa frontera sin cambiar campos, roles ni reglas de autorizacion.
