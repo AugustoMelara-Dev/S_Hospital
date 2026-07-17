@@ -10378,3 +10378,24 @@ El propio contrato de la version final exige que este alcance no exista. Conserv
 ### Decision
 
 La tabla no puede eliminarse de una instalacion existente sin una migracion de retiro y una decision de retencion, pero el modelo nunca participaba en esos flujos. Retirar solo la envoltura inalcanzable reduce superficie PHP sin alterar datos, indices ni tareas programadas.
+
+## 441. Fase Componentes Frontend - Piezas inalcanzables eliminadas
+
+### Cambios
+
+- Se eliminan `AppBreadcrumbs` e `InstitutionalStatus`, componentes sin importaciones, reexportaciones ni pruebas.
+- Se conserva `BackupExplanationCard.tsx`: su nombre de archivo parecia candidato, pero su export `BackupEmptyState` si es consumido por `BackupsView`.
+- No se cambia navegacion, shell, estados visibles ni contratos del design system activo.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Inventario de simbolos | Solo los dos componentes eliminados carecian de consumidores; el falso positivo de respaldos fue descartado. |
+| TypeScript estricto | OK. |
+| ESLint completo | OK. |
+| Build Vite de produccion | OK: 3979 modulos transformados. |
+
+### Decision
+
+El build no reduce su tamano porque los modulos ya eran descartados por tree-shaking. La mejora es de claridad: desaparecen APIs visuales alternativas que podian recibir trabajo futuro sin llegar nunca a la interfaz real.
