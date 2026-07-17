@@ -169,8 +169,22 @@ class PermissionAuditObserver
     {
         try {
             $user = auth()->user();
+            if ($user === null) {
+                return null;
+            }
 
-            return $user !== null ? (int) $user->getAuthIdentifier() : null;
+            $identifier = $user->getAuthIdentifier();
+            if (! is_int($identifier) && ! is_string($identifier)) {
+                return null;
+            }
+
+            $normalizedIdentifier = filter_var(
+                $identifier,
+                FILTER_VALIDATE_INT,
+                ['options' => ['min_range' => 1]],
+            );
+
+            return is_int($normalizedIdentifier) ? $normalizedIdentifier : null;
         } catch (Throwable) {
             return null;
         }

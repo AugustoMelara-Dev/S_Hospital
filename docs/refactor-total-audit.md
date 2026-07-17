@@ -11900,3 +11900,24 @@ Una consulta financiera debe construirse desde escalares concretos, no desde un 
 ### Decision
 
 La redaccion debe fallar cerrada: si el shape interno no es el esperado, la respuesta sin `audit.view` no puede heredar el valor mixto. Normalizar a vacio y sobrescribir contadores protege confidencialidad sin afectar reportes validos.
+
+## 509. Fase PHPStan 9 - Identidad concreta en auditoria de permisos
+
+### Cambios
+
+- `PermissionAuditObserver` acepta como usuario actual solo identificadores enteros positivos o su representacion decimal valida.
+- Identificadores ausentes, compuestos, fuera de rango o de tipos inesperados se registran como usuario desconocido en vez de coercionarse.
+- No cambian eventos auditados, contenido de cambios, tolerancia a fallos ni autorizaciones.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 9 sobre el observador | OK: 0 errores. |
+| Pint sobre el observador | OK. |
+| Auditoria de permisos y gestion de roles | OK: 24 tests, 115 assertions. |
+| Inventario PHPStan nivel 9 global | Baja de 743 a 742 hallazgos. |
+
+### Decision
+
+La identidad forense no debe fabricarse mediante coercion desde un valor arbitrario. Validar el dominio positivo conserva IDs legitimos y evita atribuir cambios a usuarios inexistentes cuando un guard personalizado entrega un identificador invalido.
