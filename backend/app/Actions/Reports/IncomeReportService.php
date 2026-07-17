@@ -16,7 +16,7 @@ class IncomeReportService
     public function __construct(private readonly FinancialFactsService $financialFacts) {}
 
     /**
-     * @param  array<string, mixed>  $filters
+     * @param  array{date_from: string, date_to: string, cash_session_id?: int|string|null, user_id?: int|string|null, category_id?: int|string|null, area_id?: int|string|null, method?: string|null, status?: string|null}  $filters
      * @return array<string, mixed>
      */
     public function report(array $filters): array
@@ -46,10 +46,10 @@ class IncomeReportService
             'total_voided' => $facts['total_voided'],
             'payments_by_method' => $facts['payments_by_method'],
             'invoices_by_status' => $this->invoicesByStatus($start, $end, $filters),
-            'payment_count' => (int) ($facts['payment_count'] ?? 0),
+            'payment_count' => $facts['payment_count'],
             'invoice_count' => $this->usesPaymentScope($filters)
                 ? $this->paymentScopedInvoiceCount($start, $end, $filters)
-                : (int) ($facts['invoice_count'] ?? 0),
+                : $facts['invoice_count'],
         ];
     }
 

@@ -12075,3 +12075,25 @@ Los hechos financieros son un contrato de dominio reutilizable, no un array arbi
 ### Decision
 
 Un reporte de auditoria debe ordenar y etiquetar solo valores con dominio valido. La normalizacion comun evita coerciones diferentes entre categorias y areas y mantiene el fallo contenido en la capa de presentacion.
+
+## 517. Fase PHPStan 9 - Contrato concreto del reporte de ingresos
+
+### Cambios
+
+- `IncomeReportService` declara fechas obligatorias string y filtros opcionales con sus dominios reales.
+- El servicio consume directamente los conteos enteros garantizados por `FinancialFactsService`.
+- Se eliminan fallbacks y casts redundantes sobre claves obligatorias del contrato financiero.
+- No cambian filtros, alcance por pagos, estados ni agregados monetarios.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 9 sobre el servicio | OK: 0 errores. |
+| Pint sobre el servicio | OK. |
+| Reportes de ingresos, filtros y exportaciones | OK: 17 tests, 202 assertions, incluidos 4 baselines de rendimiento. |
+| Inventario PHPStan nivel 9 global | Baja de 720 a 716 hallazgos. |
+
+### Decision
+
+Fechas y conteos son entradas obligatorias en este flujo; tratarlas como mixtas u opcionales oculta errores de integracion. El shape explicito conecta validacion, consulta y respuesta sin defensas redundantes.
