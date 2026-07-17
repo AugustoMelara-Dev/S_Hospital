@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
+/** @phpstan-type ValidationUserResult array{status: string, username: string, active: bool, role?: string, permissions?: list<string>} */
 class ManageFinalValidationUserCommand extends Command
 {
     private const DEFAULT_PERMISSIONS = [
@@ -245,7 +246,7 @@ class ManageFinalValidationUserCommand extends Command
     }
 
     /**
-     * @param  array<string, mixed>  $payload
+     * @param  ValidationUserResult  $payload
      */
     private function writeResult(array $payload): void
     {

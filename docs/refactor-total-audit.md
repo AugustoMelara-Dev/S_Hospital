@@ -12449,3 +12449,24 @@ Una fecha validada no necesita volver a atravesar una conversion de `mixed`. Usa
 ### Decision
 
 La excepcion de unicidad debe referirse a una entidad autenticada por el route binding, no a texto interpolado. El objeto de regla conserva el contrato del modelo y evita que un valor de ruta inesperado llegue a la consulta como string implicito.
+
+## 534. Fase PHPStan 9 - Resultado de usuario temporal tipado
+
+### Cambios
+
+- `ManageFinalValidationUserCommand` declara el payload exacto de creacion, ausencia y desactivacion.
+- Username y estado llegan tipados a la salida humana y JSON.
+- Campos opcionales de rol y permisos conservan su contrato sin ampliar el payload a valores mixtos.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 9 sobre el comando | OK: 0 errores. |
+| Pint sobre el comando | OK. |
+| Creacion, guardas, secreto y desactivacion | OK: 5 tests, 21 assertions. |
+| Inventario PHPStan nivel 9 global | Baja de 545 a 543 hallazgos. |
+
+### Decision
+
+La salida de una herramienta de validacion puede alimentar personas o automatizacion y no debe interpolar estructuras arbitrarias. El shape explicito mantiene estable el contrato sin revelar la contrasena temporal.
