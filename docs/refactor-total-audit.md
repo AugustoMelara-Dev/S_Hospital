@@ -9858,3 +9858,28 @@ La migracion de centavos ya hizo obligatorias ambas columnas y los contratos SQL
 ### Decision
 
 Los filtros de categoria y area distribuyen cada pago proporcionalmente entre items. Ejecutar ese calculo con los snapshots enteros obligatorios evita volver a interpretar strings decimales en memoria y mantiene la misma regla de redondeo `intdiv` ya cubierta para pagos parciales.
+
+## 418. Fase Analisis Estatico - Baseline exacto y relaciones obligatorias
+
+### Cambios
+
+- `Invoice::voidedBy` y las relaciones de `Payment` declaran sus tipos reales; `invoice`, `cashSession` y `user` son obligatorias, mientras `voidedBy` permanece nullable.
+- Reportes y recibos dejan de aplicar nullsafe a relaciones respaldadas por claves foraneas no nulas.
+- `OperationsReportService` pasa de cinco errores actuales sin baseline a cero mediante tipos de modelo y eliminacion de condiciones imposibles.
+- El baseline PHPStan se regenera desde cero: baja de 105 supresiones rastreadas a 51 errores reales y elimina 404 lineas residuales.
+- `reportUnmatchedIgnoredErrors` queda activo para que una supresion obsoleta falle el gate en el mismo cambio que la vuelve innecesaria.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan de `OperationsReportService` sin baseline, antes | 5 errores: relaciones genericas y nullsafe incorrecto. |
+| PHPStan del servicio sin baseline, despues | OK: 0 errores. |
+| Baseline temporal completo desde cero | 51 errores actuales frente a 105 supresiones rastreadas. |
+| PHPStan completo con baseline exacto y coincidencia estricta | OK: 0 errores. |
+| Reportes operativos, recibos institucionales y caja | OK: 47 tests, 474 assertions. |
+| Pint focalizado | OK. |
+
+### Decision
+
+Un baseline solo es util si expresa deuda actual. Permitir entradas sin correspondencia habia conservado mensajes de versiones y tipos antiguos, ocultando progreso y haciendo costoso revisar el archivo mas concentrado. Las relaciones se tipan en los modelos, fuente comun para todos los consumidores, y el gate estricto evita que esta deriva reaparezca.

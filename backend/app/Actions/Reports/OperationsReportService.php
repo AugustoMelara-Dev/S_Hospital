@@ -290,13 +290,13 @@ class OperationsReportService
             ->limit(25)
             ->get()
             ->map(fn (Payment $payment): array => [
-                'invoice_number' => $payment->invoice?->invoice_number,
+                'invoice_number' => $payment->invoice->invoice_number,
                 'method' => $payment->method,
                 'amount' => $this->centsToMoney((int) $payment->amount_cents),
                 'reason' => $payment->void_reason,
                 'voided_at' => $payment->voided_at?->toISOString(),
                 'voided_by' => $payment->voidedBy?->name,
-                'cashier' => $payment->user?->name,
+                'cashier' => $payment->user->name,
             ])
             ->values()
             ->all();
@@ -379,7 +379,7 @@ class OperationsReportService
             if (! isset($grouped[$userId])) {
                 $grouped[$userId] = [
                     'user_id' => $userId,
-                    'name' => $payment->user?->name ?? 'Desconocido',
+                    'name' => $payment->user->name,
                     'payment_count' => 0,
                     'cash_sessions' => [],
                     'invoices' => [],
@@ -395,23 +395,19 @@ class OperationsReportService
             if (! empty($filters['category_id']) || ! empty($filters['area_id'])) {
                 $filteredTotalCents = 0;
                 $invoice = $payment->invoice;
-                if ($invoice) {
-                    foreach ($invoice->items as $item) {
-                        $matchesCategory = empty($filters['category_id'])
-                            || (int) $item->category_id === (int) $filters['category_id'];
-                        $matchesArea = empty($filters['area_id'])
-                            || (int) $item->area_id === (int) $filters['area_id'];
+                foreach ($invoice->items as $item) {
+                    $matchesCategory = empty($filters['category_id'])
+                        || (int) $item->category_id === (int) $filters['category_id'];
+                    $matchesArea = empty($filters['area_id'])
+                        || (int) $item->area_id === (int) $filters['area_id'];
 
-                        if ($matchesCategory && $matchesArea) {
-                            $filteredTotalCents += (int) $item->line_total_cents;
-                        }
+                    if ($matchesCategory && $matchesArea) {
+                        $filteredTotalCents += (int) $item->line_total_cents;
                     }
-                    $invoiceTotalCents = (int) $invoice->total_cents;
-                    if ($invoiceTotalCents > 0) {
-                        $collectedCents = $this->prorateCents($paymentAmountCents, $filteredTotalCents, $invoiceTotalCents);
-                    } else {
-                        $collectedCents = 0;
-                    }
+                }
+                $invoiceTotalCents = (int) $invoice->total_cents;
+                if ($invoiceTotalCents > 0) {
+                    $collectedCents = $this->prorateCents($paymentAmountCents, $filteredTotalCents, $invoiceTotalCents);
                 } else {
                     $collectedCents = 0;
                 }

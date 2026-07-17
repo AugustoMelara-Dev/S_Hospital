@@ -26,7 +26,7 @@ class GenerateReceiptDataAction
             ->values();
         $cashierName = $postedPayments
             ->sortByDesc(fn ($payment): int => $payment->paid_at->getTimestamp())
-            ->first()?->user?->name ?? $invoice->issuer?->name;
+            ->first()?->user->name ?? $invoice->issuer->name;
         $fiscalCai = $this->fiscalValue($invoice->fiscal_cai);
         $hasFiscalAuthorization = $fiscalCai !== null
             && $invoice->fiscal_range_from
@@ -98,7 +98,7 @@ class GenerateReceiptDataAction
                 'amount' => $this->moneyFromCents($payment->amount_cents, $payment->amount),
                 'reference' => $payment->reference,
                 'paid_at' => $payment->paid_at?->toISOString(),
-                'cashier' => $payment->user?->name,
+                'cashier' => $payment->user->name,
             ])->values(),
         ];
     }

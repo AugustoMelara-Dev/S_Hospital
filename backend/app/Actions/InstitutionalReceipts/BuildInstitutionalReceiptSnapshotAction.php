@@ -202,7 +202,7 @@ class BuildInstitutionalReceiptSnapshotAction
             'amount_cents' => (int) $payment->amount_cents,
             'reference' => $payment->reference,
             'paid_at' => $payment->paid_at?->toIso8601String(),
-            'cashier_name' => $payment->user?->name,
+            'cashier_name' => $payment->user->name,
         ];
     }
 

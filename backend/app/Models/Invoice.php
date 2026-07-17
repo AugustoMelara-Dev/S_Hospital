@@ -56,6 +56,7 @@ use LogicException;
  * @property-read Collection<int, InvoiceItem> $items
  * @property-read Collection<int, Payment> $payments
  * @property-read Collection<int, InstitutionalReceipt> $issuedInstitutionalReceipts
+ * @property-read User|null $voidedBy
  */
 class Invoice extends Model
 {

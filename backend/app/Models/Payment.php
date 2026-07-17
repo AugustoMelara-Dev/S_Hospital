@@ -22,9 +22,10 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $paid_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read Invoice|null $invoice
- * @property-read CashRegisterSession|null $cashSession
- * @property-read User|null $user
+ * @property-read Invoice $invoice
+ * @property-read CashRegisterSession $cashSession
+ * @property-read User $user
+ * @property-read User|null $voidedBy
  */
 class Payment extends Model
 {

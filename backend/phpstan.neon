@@ -15,4 +15,4 @@ parameters:
         analyse:
             - bootstrap/cache/*
 
-    reportUnmatchedIgnoredErrors: false
+    reportUnmatchedIgnoredErrors: true
