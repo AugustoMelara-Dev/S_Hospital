@@ -63,4 +63,18 @@ class PrepareE2eReleaseDataCommandTest extends TestCase
             ->assertFailed()
             ->expectsOutput('The E2E seed password must be provided via --password or E2E_SEED_PASSWORD.');
     }
+
+    public function test_command_rejects_non_string_password_before_seeding_or_creating_users(): void
+    {
+        $this->artisan('hospital:prepare-e2e-release-data', [
+            '--json' => true,
+            '--password' => true,
+        ])
+            ->assertFailed()
+            ->expectsOutput('The E2E seed password must be a non-empty string.');
+
+        $this->assertDatabaseMissing('users', ['username' => 'admin.e2e']);
+        $this->assertDatabaseMissing('users', ['username' => 'supervisor.e2e']);
+        $this->assertDatabaseMissing('users', ['username' => 'cajero.e2e']);
+    }
 }

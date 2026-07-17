@@ -12470,3 +12470,27 @@ La excepcion de unicidad debe referirse a una entidad autenticada por el route b
 ### Decision
 
 La salida de una herramienta de validacion puede alimentar personas o automatizacion y no debe interpolar estructuras arbitrarias. El shape explicito mantiene estable el contrato sin revelar la contrasena temporal.
+
+## 535. Fase PHPStan 9 - Preparacion E2E falla antes de mutar
+
+### Cambios
+
+- `PrepareE2eReleaseDataCommand` valida la contrasena externa antes de ejecutar seeders.
+- Opciones booleanas o estructuradas ya no se convierten implicitamente en contrasenas como `1`.
+- Numeros fiscales emitidos se procesan solo desde strings y segmentos numericos.
+- El contador actual de secuencia acepta exclusivamente enteros no negativos.
+- Se agrega una regresion que demuestra fallo temprano y ausencia de usuarios E2E ante una opcion no string.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Regresion antes del cambio | FAIL esperado: el comando terminaba con codigo 0. |
+| PHPStan nivel 9 sobre el comando | OK: 0 errores. |
+| Pint sobre comando y prueba | OK. |
+| Preparacion idempotente, password ausente e invalido | OK: 3 tests, 19 assertions. |
+| Inventario PHPStan nivel 9 global | Baja de 543 a 541 hallazgos. |
+
+### Decision
+
+Una herramienta de release no debe cambiar roles, catalogo o usuarios antes de validar sus secretos de entrada. La lectura explicita del input conserva la realidad de Symfony, mientras la normalizacion fiscal evita que datos historicos malformados alteren la secuencia E2E.

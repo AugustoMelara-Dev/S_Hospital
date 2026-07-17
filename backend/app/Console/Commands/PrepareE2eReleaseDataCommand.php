@@ -30,6 +30,23 @@ class PrepareE2eReleaseDataCommand extends Command
             return self::FAILURE;
         }
 
+        $passwordOption = $this->rawOption('password');
+        $password = $passwordOption !== null && $passwordOption !== ''
+            ? $passwordOption
+            : getenv('E2E_SEED_PASSWORD');
+
+        if ($password === false || $password === '') {
+            $this->error('The E2E seed password must be provided via --password or E2E_SEED_PASSWORD.');
+
+            return self::FAILURE;
+        }
+
+        if (! is_string($password)) {
+            $this->error('The E2E seed password must be a non-empty string.');
+
+            return self::FAILURE;
+        }
+
         $this->callSilent('db:seed', [
             '--class' => RolesAndPermissionsSeeder::class,
             '--force' => true,
@@ -39,17 +56,9 @@ class PrepareE2eReleaseDataCommand extends Command
             '--force' => true,
         ]);
 
-        $password = $this->option('password') ?: getenv('E2E_SEED_PASSWORD');
-
-        if (empty($password)) {
-            $this->error('The E2E seed password must be provided via --password or E2E_SEED_PASSWORD.');
-
-            return self::FAILURE;
-        }
-
-        $admin = $this->upsertUser('admin.e2e', 'Administrador E2E', 'admin', (string) $password);
-        $supervisor = $this->upsertUser('supervisor.e2e', 'Supervisor E2E', 'supervisor', (string) $password);
-        $cashier = $this->upsertUser('cajero.e2e', 'Cajero E2E', 'cajero', (string) $password);
+        $admin = $this->upsertUser('admin.e2e', 'Administrador E2E', 'admin', $password);
+        $supervisor = $this->upsertUser('supervisor.e2e', 'Supervisor E2E', 'supervisor', $password);
+        $cashier = $this->upsertUser('cajero.e2e', 'Cajero E2E', 'cajero', $password);
 
         FiscalSetting::query()->updateOrCreate(
             ['id' => 1],
@@ -84,10 +93,12 @@ class PrepareE2eReleaseDataCommand extends Command
         $maxIssuedNumber = Invoice::query()
             ->where('fiscal_prefix', $sequence->prefix)
             ->pluck('invoice_number')
+            ->filter(fn (mixed $invoiceNumber): bool => is_string($invoiceNumber))
             ->map(function (string $invoiceNumber): int {
                 $parts = explode('-', $invoiceNumber);
+                $number = end($parts);
 
-                return (int) end($parts);
+                return ctype_digit($number) ? (int) $number : 0;
             })
             ->max();
 
@@ -98,7 +109,10 @@ class PrepareE2eReleaseDataCommand extends Command
             'cai' => $sequence->cai ?: 'E2E-RELEASE-CAI',
             'min_number' => 1,
             'max_number' => 99999999,
-            'current_number' => max((int) $sequence->current_number, (int) $maxIssuedNumber),
+            'current_number' => max(
+                $this->nonNegativeInt($sequence->current_number),
+                $this->nonNegativeInt($maxIssuedNumber),
+            ),
             'valid_until' => now()->addYear()->toDateString(),
             'active' => true,
             'created_by' => $sequence->created_by ?? $admin->id,
@@ -177,6 +191,16 @@ class PrepareE2eReleaseDataCommand extends Command
         $user->syncRoles([$role]);
 
         return $user;
+    }
+
+    private function rawOption(string $name): mixed
+    {
+        return $this->input->getOption($name);
+    }
+
+    private function nonNegativeInt(mixed $value): int
+    {
+        return is_int($value) && $value >= 0 ? $value : 0;
     }
 
     private function ensureBillableService(string $name): Service
