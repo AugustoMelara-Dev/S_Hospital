@@ -12732,6 +12732,8 @@ La auditoria no deja optimizaciones accionables de impacto positivo que sean seg
 
 ## 545. Convergencia UI sobre Ant Design y aislamiento E2E
 
+> Decision historica sustituida por la fase 546: el usuario aprobo explicitamente la convergencia pesada sobre primitivas Ant Design y el nuevo presupuesto medido.
+
 ### Cambios
 
 - Ant Design 6.5.0 queda como biblioteca unica para controles interactivos: botones, entradas, selects, modales, drawers, menus, estados plegables y acciones operativas.
@@ -12771,3 +12773,37 @@ La ejecucion monolitica de Vitest se atasco dos veces en Windows sin producir un
 ### Resultado
 
 La UI converge en una sola biblioteca de interaccion con una frontera automatizada que evita reintroducir controles legados. La solucion final mantiene accesibilidad, operacion offline LAN, reglas hospitalarias y presupuesto de rendimiento, y documenta las excepciones por semantica o coste medido.
+
+## 546. Convergencia pesada completa sobre Ant Design
+
+### Decision
+
+El usuario sustituyo explicitamente la decision de mantener grids y paneles ligeros. La interfaz de aplicacion debe priorizar una biblioteca UI fuerte y consistente aun cuando aumente el bundle asincrono. Los documentos internos de recibos conservan HTML semantico porque forman el contenido PDF/papel, no controles de la aplicacion.
+
+### Cambios
+
+- La matriz de permisos usa `Table` con columnas por rol, filas expandibles, estados accesibles y `Tag` para permisos criticos.
+- La cuenta de facturacion usa `Table` para servicios, cantidades, importes y acciones; preserva controles Ant, regla de eritropoyetina, centavos enteros y callbacks exactos.
+- `SectionCard`, `StatCard`, `StatGrid` y `PrintPreviewFrame` se basan en `Card` y `Statistic`.
+- Se intento `List` en la cuenta, pero Ant Design 6.5.0 emitio una deprecacion que el E2E detecto como `console.error`. Se sustituyo por `Table`; no se suprimio el warning ni se mantuvo una API obsoleta.
+- El presupuesto total pasa de 1,100,000 a 1,150,000 bytes gzip como decision explicita. El limite de arranque permanece sin cambios en 500,000 bytes.
+- Se agregan contratos DOM que exigen `.ant-table`, `.ant-card` y `.ant-statistic`, y que prohiben `.ant-list` en el carrito.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Ciclo TDD inicial | 5 fallos esperados por ausencia de primitivas Ant. |
+| Contratos focales | OK: 5 archivos, 28 tests. |
+| Consumidores principales | OK: 11 archivos, 147 tests. |
+| TypeScript estricto y ESLint | OK. |
+| Build Vite | OK: 3979 modulos transformados. |
+| Gate UI | OK: 340 archivos, 0 violaciones. |
+| E2E mock completo | OK: 49/49 pruebas. |
+| Evidencia QA | 0 cambios SHA-256. |
+| Bundle de inicio | 326.4 KiB gzip; limite 488.3 KiB. |
+| Bundle total | 1105.0 KiB gzip; limite aprobado 1123.0 KiB. |
+
+### Resultado
+
+Ant Design queda como base de controles, tablas operativas, paneles, estadisticas y marcos de vista previa. AG Grid permanece para data grids especializados, ECharts para graficos y Tailwind para layout/tokens. El coste adicional queda aislado en rutas asincronas y el arranque no se degrada.

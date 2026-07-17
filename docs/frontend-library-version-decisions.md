@@ -78,11 +78,11 @@ La investigacion inicial de este documento quedo superada por la implementacion 
 
 - `antd` 6.5.0 y `@ant-design/icons` 6.3.2 ya estan alineados y en uso productivo; no se agrego ninguna dependencia para la convergencia UI.
 - AG Grid 36.0.0 y ECharts 6.1.0 tienen adaptadores institucionales y uso real. Ambos permanecen en chunks asincronos; no deben reemplazarse por componentes Ant menos especializados.
-- Ant Design es la frontera obligatoria para interaccion. Tailwind conserva layout y tokens; HTML semantico se mantiene para documentos, impresion y grids compactos sin comportamiento avanzado.
+- Ant Design es la frontera obligatoria para interaccion, tablas operativas, paneles, estadisticas y marcos de vista previa. Tailwind conserva layout y tokens; HTML semantico se mantiene dentro de documentos PDF/papel.
 - El gate final audita 340 archivos y reporta 0 controles o tablas de aplicacion fuera de la politica.
-- La medicion de produccion final es 326.6 KiB gzip de inicio y 1061.5 KiB gzip total, bajo limites de 488.3 y 1074.2 KiB respectivamente.
-- Ant `Table`/`List` se descarto para la matriz de permisos y la cuenta actual: una implementacion equivalente elevo el total a 1107.3 KiB gzip. Los grids ARIA ligeros preservan accesibilidad y reducen 45.8 KiB gzip.
-- `Card`/`Statistic` tampoco se fuerzan sobre wrappers puramente presentacionales. La convergencia busca consistencia funcional y accesible, no aumentar dependencias de runtime donde HTML semantico es mas simple.
+- La decision final del usuario aprueba 326.4 KiB gzip de inicio y 1105.0 KiB gzip total, bajo limites de 488.3 y 1123.0 KiB respectivamente.
+- La matriz de permisos y la cuenta actual usan Ant `Table`. `List` no se usa porque Ant Design 6.5.0 lo marca deprecado y el E2E prohibe warnings de consola.
+- `SectionCard`, `StatCard`, `StatGrid` y `PrintPreviewFrame` usan `Card`/`Statistic`; sus contratos automatizados impiden volver a wrappers ad hoc.
 
 Esta adenda reemplaza las recomendaciones condicionales anteriores sobre adopcion o retiro de AG Grid, ECharts y Day.js cuando contradigan el codigo y las mediciones actuales. La fuente de verdad sigue siendo `package.json`, los imports, los adaptadores, los tests y el reporte de bundle vigentes.
 
