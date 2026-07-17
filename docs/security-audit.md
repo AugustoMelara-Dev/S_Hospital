@@ -377,3 +377,21 @@ Pruebas relevantes:
 
 - `ExecutiveReportTest`, `ExecutivePdfExportTest` y `ExecutiveExcelExportTest` cubren redaccion sin `audit.view` y regresion completa con admin.
 - `pint --test` y `phpstan analyse --memory-limit=512M` pasan.
+
+## 22. Actualizacion 2026-07-17 - Service worker no conserva datos autenticados
+
+### SW-CACHE-001
+
+- Severidad: alta en localhost o despliegues HTTPS donde el navegador habilita service workers.
+- Ubicacion: `frontend/public/sw.js`, listener `fetch` y estrategia anterior `networkFirst`.
+- Evidencia anterior: toda respuesta exitosa `GET /api/*` se guardaba con `cache.put` y se devolvia ante timeout; la rama generica tambien podia interceptar `/sanctum/csrf-cookie`.
+- Impacto: Cache Storage persiste fuera del ciclo de sesion y podia mostrar JSON de pacientes, pagos o reportes al siguiente usuario del mismo navegador, ademas de reutilizar una respuesta CSRF sin ejecutar la entrega de cookie de red.
+- Correccion: API y Sanctum salen del listener sin `respondWith`; navegaciones solo usan el shell publico como fallback y la cache queda limitada a `/assets/`, `/icons/` y `manifest.webmanifest`.
+- Mitigacion adicional: el backend ya entrega respuestas API con `Cache-Control: no-store, no-cache, must-revalidate, private`; el contrato frontend impide que una futura estrategia manual ignore ese control.
+- Nota de alcance: en una estacion LAN servida por HTTP sobre IP, los navegadores modernos normalmente no habilitan service workers; el control sigue siendo necesario para localhost, pruebas y futuras instalaciones HTTPS.
+
+Pruebas relevantes:
+
+- `serviceWorkerSecurity.test.ts` falla con la politica anterior y exige exclusion de `/api/` y `/sanctum/`, navegacion separada y allowlist de assets.
+- `pwa.spec.ts` verifica el artefacto servido y ausencia de `networkFirst` para API.
+- Build Vite confirma que `dist/sw.js` contiene la politica endurecida.

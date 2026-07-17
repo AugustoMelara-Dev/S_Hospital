@@ -9932,3 +9932,28 @@ No se hicieron obligatorias las relaciones `Service::category` dentro del calcul
 ### Decision
 
 La interfaz de rutas garantiza el metodo que devuelve `Route[]`, no la iterabilidad del contenedor. Consumir ese contrato explicito evita depender de detalles de la implementacion concreta de Laravel y mantiene portable el exportador sin casts, anotaciones locales ni nuevas excepciones.
+
+## 421. Fase Seguridad Frontend - Cache publica sin datos de sesion
+
+### Cambios
+
+- El service worker deja pasar sin intercepcion cualquier ruta `/api/` o `/sanctum/`; no puede guardar ni reproducir respuestas autenticadas.
+- La cache se limita a assets publicos explicitamente permitidos: chunks bajo `/assets/`, iconos y manifiesto.
+- Las navegaciones usan red con timeout y solo caen al shell publico `/`; la respuesta HTML obtenida durante la sesion no se persiste.
+- La version de cache sube de `s-hospital-v1` a `s-hospital-v2`, eliminando almacenes anteriores durante `activate`.
+- El precache deja de solicitar `/login` y `/dashboard`; ambas rutas devolvian el mismo shell y ampliaban trabajo sin aportar un fallback distinto.
+- El manifiesto segmentado reconoce 140 archivos Vitest, uno mas por el contrato de seguridad.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Contrato de seguridad antes del cambio | RED: 2/2 fallas; faltaba exclusion Sanctum y API usaba `networkFirst`. |
+| Contrato unitario despues | OK: 2 tests. |
+| ESLint focalizado + contrato segmentado | OK: 6 pruebas Node; 140 archivos cubiertos exactamente una vez. |
+| Build de produccion | OK: TypeScript + Vite, 3979 modulos; `dist/sw.js` contiene la politica endurecida. |
+| E2E PWA focalizado con Chrome del sistema | OK: 2 tests de manifiesto y artefacto service worker; 6.0 s. |
+
+### Decision
+
+El modo offline del hospital significa operar sin internet, no sin el servidor LAN ni con datos financieros historicos en el navegador. El backend ya prohibe cachear JSON con PII; una Cache API manual puede ignorar esa intencion. Limitar el worker al shell y assets publicos conserva una pantalla de fallback sin cruzar datos entre cajeros, sesiones o pacientes.

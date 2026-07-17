@@ -2,18 +2,16 @@
 
 // Minimal service worker for S_Hospital LAN operation.
 // Strategy:
-//   - /api/* -> NetworkFirst with 2s timeout; falls back to cached JSON.
-//   - other GETs -> CacheFirst; populate cache on first response.
-//   - other methods -> pass through.
+//   - API and Sanctum requests are never intercepted or cached.
+//   - navigations -> network with a 2s timeout; fall back to the public shell.
+//   - explicit public assets -> CacheFirst.
+//   - every other request -> pass through to the browser.
 
-const CACHE_VERSION = 's-hospital-v1';
+const CACHE_VERSION = 's-hospital-v2';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
-const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
 const PRECACHE_PATHS = [
   '/',
-  '/login',
-  '/dashboard',
   '/manifest.webmanifest',
   '/icons/icon.svg',
   '/icons/maskable-icon.svg',
@@ -51,8 +49,14 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-function isApiRequest(url) {
-  return url.pathname.startsWith('/api/');
+function isSensitiveRequest(url) {
+  return url.pathname.startsWith('/api/') || url.pathname.startsWith('/sanctum/');
+}
+
+function isStaticAsset(url) {
+  return url.pathname.startsWith('/assets/')
+    || url.pathname.startsWith('/icons/')
+    || url.pathname === '/manifest.webmanifest';
 }
 
 self.addEventListener('fetch', (event) => {
@@ -66,40 +70,33 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (isApiRequest(url)) {
-    event.respondWith(networkFirst(request));
+  if (isSensitiveRequest(url)) {
     return;
   }
 
-  event.respondWith(cacheFirst(request));
+  if (request.mode === 'navigate') {
+    event.respondWith(navigationWithOfflineShell(request));
+    return;
+  }
+
+  if (isStaticAsset(url)) {
+    event.respondWith(cacheFirst(request));
+  }
 });
 
-async function networkFirst(request) {
-  const cache = await caches.open(RUNTIME_CACHE);
+async function navigationWithOfflineShell(request) {
   try {
-    const response = await fetchWithTimeout(request, 2000);
-    if (response && response.ok) {
-      cache.put(request, response.clone());
-    }
-    return response;
+    return await fetchWithTimeout(request, 2000);
   } catch {
-    const cached = await cache.match(request);
-    if (cached) {
-      return cached;
-    }
-    return new Response(
-      JSON.stringify({ offline: true, message: 'Sin conexion LAN al servidor.' }),
-      {
-        status: 503,
-        statusText: 'Service Unavailable',
-        headers: { 'Content-Type': 'application/json' },
-      },
-    );
+    const cache = await caches.open(STATIC_CACHE);
+    const fallback = await cache.match('/');
+
+    return fallback || new Response('', { status: 504, statusText: 'Gateway Timeout' });
   }
 }
 
 async function cacheFirst(request) {
-  const cache = await caches.open(RUNTIME_CACHE);
+  const cache = await caches.open(STATIC_CACHE);
   const cached = await cache.match(request);
   if (cached) {
     return cached;
@@ -111,10 +108,6 @@ async function cacheFirst(request) {
     }
     return response;
   } catch {
-    const fallback = await caches.match(STATIC_CACHE).then((cacheMatch) => cacheMatch && cacheMatch.match('/'));
-    if (fallback) {
-      return fallback;
-    }
     return new Response('', { status: 504, statusText: 'Gateway Timeout' });
   }
 }

@@ -17,8 +17,9 @@ test.describe('PWA - manifest, service worker and offline behaviour', () => {
     const text = await response.text();
     expect(text).toContain('CACHE_VERSION');
     expect(text).toContain('addEventListener');
-    expect(text).toContain('/api/* -> NetworkFirst');
-    expect(text).toContain('Sin conexion LAN al servidor.');
+    expect(text).toContain('API and Sanctum requests are never intercepted or cached');
+    expect(text).toContain("url.pathname.startsWith('/sanctum/')");
+    expect(text).not.toContain('networkFirst');
     expect(text).not.toMatch(/[Ââ]/);
   });
 
