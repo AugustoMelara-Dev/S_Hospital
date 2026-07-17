@@ -12428,3 +12428,24 @@ El score de salud decide que alerta ve caja y soporte; una estructura inesperada
 ### Decision
 
 Una fecha validada no necesita volver a atravesar una conversion de `mixed`. Usar el lector tipado evita estructuras inesperadas y mantiene identico el contrato entre filtros, controlador y exportadores.
+
+## 533. Fase PHPStan 9 - Unicidad de usuarios ligada al modelo
+
+### Cambios
+
+- `UpdateUserRequest` reemplaza reglas `unique` interpoladas por objetos `Rule::unique`.
+- Email y username ignoran exclusivamente al modelo `User` resuelto por route binding.
+- Una ruta sin usuario valido ya no intenta convertir un identificador mixto dentro de la regla.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 9 sobre el request | OK: 0 errores. |
+| Pint sobre el request | OK. |
+| Usuarios, ultimo admin y auditoria | OK: 49 tests, 209 assertions. |
+| Inventario PHPStan nivel 9 global | Baja de 547 a 545 hallazgos. |
+
+### Decision
+
+La excepcion de unicidad debe referirse a una entidad autenticada por el route binding, no a texto interpolado. El objeto de regla conserva el contrato del modelo y evita que un valor de ruta inesperado llegue a la consulta como string implicito.
