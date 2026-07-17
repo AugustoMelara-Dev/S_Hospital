@@ -25,17 +25,19 @@ class FiscalSequenceController extends Controller
 
     public function store(StoreFiscalSequenceRequest $request): JsonResponse
     {
-        $sequence = DB::transaction(function () use ($request): FiscalSequence {
+        $user = $this->authenticatedUser($request);
+
+        $sequence = DB::transaction(function () use ($request, $user): FiscalSequence {
             $sequence = FiscalSequence::query()->create([
                 ...$request->validated(),
-                'created_by' => $request->user()->id,
-                'updated_by' => $request->user()->id,
+                'created_by' => $user->id,
+                'updated_by' => $user->id,
             ]);
 
             app(AuditLogger::class)->log(
                 action: 'fiscal_sequence.created',
                 entity: $sequence,
-                user: $request->user(),
+                user: $user,
                 request: $request,
                 oldValues: null,
                 newValues: $this->auditPayload($sequence),
@@ -51,17 +53,19 @@ class FiscalSequenceController extends Controller
 
     public function update(UpdateFiscalSequenceRequest $request, FiscalSequence $fiscalSequence): JsonResponse
     {
-        $fiscalSequence = DB::transaction(function () use ($request, $fiscalSequence): FiscalSequence {
+        $user = $this->authenticatedUser($request);
+
+        $fiscalSequence = DB::transaction(function () use ($request, $fiscalSequence, $user): FiscalSequence {
             $oldValues = $this->auditPayload($fiscalSequence);
 
             $fiscalSequence->fill($request->validated());
-            $fiscalSequence->updated_by = $request->user()->id;
+            $fiscalSequence->updated_by = $user->id;
             $fiscalSequence->save();
 
             app(AuditLogger::class)->log(
                 action: 'fiscal_sequence.updated',
                 entity: $fiscalSequence,
-                user: $request->user(),
+                user: $user,
                 request: $request,
                 oldValues: $oldValues,
                 newValues: $this->auditPayload($fiscalSequence->refresh()),

@@ -11355,3 +11355,25 @@ La configuracion de impresion es una frontera autenticada con efectos auditables
 ### Decision
 
 Autoria e historial deben referirse a la misma identidad que inicio la operacion. Capturar el usuario antes de la transaccion hace explicita esa invariancia y elimina seis accesos inseguros sin relajar tipos ni validaciones.
+
+## 485. Fase PHPStan 8 - Actor concreto en administracion
+
+### Cambios
+
+- Usuarios, categorias, configuracion fiscal y secuencias fiscales resuelven un actor autenticado antes de autorizar o mutar.
+- Cada transaccion conserva ese actor para autoria y auditoria, incluidas altas, ediciones, activacion, reset de contrasena y cambios fiscales.
+- La auditoria de categorias recibe explicitamente el usuario concreto junto con la request validada.
+- No cambian permisos, proteccion del ultimo administrador, reglas de catalogo, CAI, rangos, razones ni payloads.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 8 sobre los cuatro controladores | OK: 0 errores. |
+| Pint sobre los cuatro controladores | OK. |
+| Usuarios, permisos, categorias y configuracion/secuencias fiscales | OK: 131 tests, 667 assertions. |
+| Inventario PHPStan nivel 8 global | Baja de 76 a 63 hallazgos. |
+
+### Decision
+
+Autorizacion y auditoria deben observar la misma identidad durante toda una operacion administrativa. Resolverla antes de entrar a la transaccion elimina contratos nullable y evita que cada llamada vuelva a interpretar el guard de forma independiente.

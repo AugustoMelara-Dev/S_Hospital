@@ -42,12 +42,13 @@ class UserController extends Controller
     public function store(StoreUserRequest $request, AuditLogger $auditLogger): JsonResponse
     {
         $validated = $request->validated();
-        $this->assertCanAssignRole($request->user(), $validated['role']);
+        $actor = $this->authenticatedUser($request);
+        $this->assertCanAssignRole($actor, $validated['role']);
         $directPermissions = $this->directPermissionsFromRequest($request, $validated);
-        $this->assertCanSyncDirectPermissions($request->user(), null, $directPermissions);
+        $this->assertCanSyncDirectPermissions($actor, null, $directPermissions);
         $this->assertActiveExactPermissionMapHasAccess($directPermissions, $validated['active'] ?? true);
 
-        $user = DB::transaction(function () use ($validated, $directPermissions, $auditLogger, $request): User {
+        $user = DB::transaction(function () use ($validated, $directPermissions, $auditLogger, $request, $actor): User {
             $user = User::create([
                 'name' => $validated['name'],
                 'email' => $validated['email'],
@@ -66,7 +67,7 @@ class UserController extends Controller
             $auditLogger->log(
                 action: 'user.created',
                 entity: $user,
-                user: $request->user(),
+                user: $actor,
                 request: $request,
                 newValues: $this->auditPayload($user),
             );
@@ -82,14 +83,15 @@ class UserController extends Controller
     public function update(UpdateUserRequest $request, User $user, AuditLogger $auditLogger): JsonResponse
     {
         $validated = $request->validated();
+        $actor = $this->authenticatedUser($request);
         $oldValues = $this->auditPayload($user->load(['roles', 'permissions']));
-        $this->assertCanAssignRole($request->user(), $validated['role'], $user);
+        $this->assertCanAssignRole($actor, $validated['role'], $user);
         $this->assertProtectedUserCanChangeToRole($user, $validated['role']);
         $directPermissions = $this->directPermissionsFromRequest($request, $validated);
-        $this->assertCanSyncDirectPermissions($request->user(), $user, $directPermissions);
+        $this->assertCanSyncDirectPermissions($actor, $user, $directPermissions);
         $this->assertActiveExactPermissionMapHasAccess($directPermissions, $user->active);
 
-        DB::transaction(function () use ($user, $validated, $directPermissions, $auditLogger, $request, $oldValues): void {
+        DB::transaction(function () use ($user, $validated, $directPermissions, $auditLogger, $request, $oldValues, $actor): void {
             $user->update([
                 'name' => $validated['name'],
                 'email' => $validated['email'],
@@ -109,7 +111,7 @@ class UserController extends Controller
             $auditLogger->log(
                 action: 'user.updated',
                 entity: $user,
-                user: $request->user(),
+                user: $actor,
                 request: $request,
                 oldValues: $oldValues,
                 newValues: $this->auditPayload($user),
@@ -123,6 +125,7 @@ class UserController extends Controller
 
     public function toggleActive(ToggleUserActiveRequest $request, User $user, AuditLogger $auditLogger): JsonResponse
     {
+        $actor = $this->authenticatedUser($request);
         $oldValues = $this->auditPayload($user->loadMissing(['roles', 'permissions']));
         $newActiveState = ! $user->active;
         $reason = trim((string) $request->input('reason', ''));
@@ -139,7 +142,7 @@ class UserController extends Controller
             );
         }
 
-        DB::transaction(function () use ($user, $newActiveState, $auditLogger, $request, $oldValues, $reason): void {
+        DB::transaction(function () use ($user, $newActiveState, $auditLogger, $request, $oldValues, $reason, $actor): void {
             $user->update([
                 'active' => $newActiveState,
                 'deactivated_at' => $newActiveState ? null : now(),
@@ -152,7 +155,7 @@ class UserController extends Controller
             $auditLogger->log(
                 action: $user->active ? 'user.activated' : 'user.deactivated',
                 entity: $user,
-                user: $request->user(),
+                user: $actor,
                 request: $request,
                 oldValues: $oldValues,
                 newValues: $this->auditPayload($user),
@@ -168,9 +171,10 @@ class UserController extends Controller
     public function resetPassword(ResetUserPasswordRequest $request, User $user, AuditLogger $auditLogger): JsonResponse
     {
         $validated = $request->validated();
+        $actor = $this->authenticatedUser($request);
         $oldValues = ['must_change_password' => $user->must_change_password];
 
-        DB::transaction(function () use ($user, $validated, $auditLogger, $request, $oldValues): void {
+        DB::transaction(function () use ($user, $validated, $auditLogger, $request, $oldValues, $actor): void {
             $user->forceFill([
                 'password' => Hash::make($validated['password']),
                 'must_change_password' => true,
@@ -181,7 +185,7 @@ class UserController extends Controller
             $auditLogger->log(
                 action: 'user.password_reset',
                 entity: $user,
-                user: $request->user(),
+                user: $actor,
                 request: $request,
                 oldValues: $oldValues,
                 newValues: ['must_change_password' => true],

@@ -51,20 +51,21 @@ class FiscalSettingsController extends Controller
     public function updateOperational(UpdateOperationalSettingsRequest $request, AuditLogger $auditLogger): JsonResponse
     {
         $fieldsToTrack = ['scanner_enabled', 'partial_payments_enabled'];
+        $user = $this->authenticatedUser($request);
 
-        $setting = DB::transaction(function () use ($request, $auditLogger, $fieldsToTrack): FiscalSetting {
+        $setting = DB::transaction(function () use ($request, $auditLogger, $fieldsToTrack, $user): FiscalSetting {
             $setting = FiscalSetting::query()->firstOrFail();
             $oldValues = $setting->only($fieldsToTrack);
 
             $setting->fill($request->validated());
-            $setting->updated_by = $request->user()->id;
+            $setting->updated_by = $user->id;
             $setting->save();
             $setting->refresh();
 
             $auditLogger->log(
                 action: 'operational_settings.updated',
                 entity: $setting,
-                user: $request->user(),
+                user: $user,
                 request: $request,
                 oldValues: $oldValues,
                 newValues: $setting->only($fieldsToTrack),
@@ -83,11 +84,12 @@ class FiscalSettingsController extends Controller
 
     public function update(UpdateFiscalSettingsRequest $request, AuditLogger $auditLogger): JsonResponse
     {
+        $user = $this->authenticatedUser($request);
         $payload = [
             'setting' => null,
         ];
 
-        $setting = DB::transaction(function () use ($request, $auditLogger, &$payload): FiscalSetting {
+        $setting = DB::transaction(function () use ($request, $auditLogger, &$payload, $user): FiscalSetting {
             $setting = FiscalSetting::query()->first() ?? new FiscalSetting;
             $settingExisted = $setting->exists;
             $trackableFields = [
@@ -118,16 +120,16 @@ class FiscalSettingsController extends Controller
             $setting->fill($validated);
 
             if (! $settingExisted) {
-                $setting->created_by = $request->user()->id;
+                $setting->created_by = $user->id;
             }
 
-            $setting->updated_by = $request->user()->id;
+            $setting->updated_by = $user->id;
             $setting->save();
 
             $auditLogger->log(
                 action: $settingExisted ? 'fiscal_settings.updated' : 'fiscal_settings.created',
                 entity: $setting,
-                user: $request->user(),
+                user: $user,
                 request: $request,
                 oldValues: $oldValues,
                 newValues: $setting->only($fieldsToTrack),

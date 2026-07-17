@@ -6,6 +6,7 @@ use App\Http\Requests\Catalog\IndexCategoryRequest;
 use App\Http\Requests\Catalog\StoreCategoryRequest;
 use App\Http\Requests\Catalog\UpdateCategoryRequest;
 use App\Models\Category;
+use App\Models\User;
 use App\Support\AuditLogger;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\JsonResponse;
@@ -29,17 +30,19 @@ class CategoryController extends Controller
 
     public function store(StoreCategoryRequest $request): JsonResponse
     {
-        $category = DB::transaction(function () use ($request): Category {
+        $user = $this->authenticatedUser($request);
+
+        $category = DB::transaction(function () use ($request, $user): Category {
             $category = Category::query()->create([
                 ...$request->validated(),
                 'slug' => Str::slug($request->string('name')),
                 'active' => $request->boolean('active', true),
                 'sort_order' => (int) $request->input('sort_order', 0),
-                'created_by' => $request->user()->id,
-                'updated_by' => $request->user()->id,
+                'created_by' => $user->id,
+                'updated_by' => $user->id,
             ]);
 
-            $this->audit($request, 'category.created', $category, null);
+            $this->audit($request, $user, 'category.created', $category, null);
 
             return $category;
         });
@@ -51,7 +54,9 @@ class CategoryController extends Controller
 
     public function update(UpdateCategoryRequest $request, Category $category): JsonResponse
     {
-        $category = DB::transaction(function () use ($request, $category): Category {
+        $user = $this->authenticatedUser($request);
+
+        $category = DB::transaction(function () use ($request, $category, $user): Category {
             $oldValues = $this->auditPayload($category);
             $data = $request->validated();
 
@@ -61,10 +66,10 @@ class CategoryController extends Controller
 
             $category->fill([
                 ...$data,
-                'updated_by' => $request->user()->id,
+                'updated_by' => $user->id,
             ])->save();
 
-            $this->audit($request, 'category.updated', $category->refresh(), $oldValues);
+            $this->audit($request, $user, 'category.updated', $category->refresh(), $oldValues);
 
             return $category->refresh();
         });
@@ -85,12 +90,12 @@ class CategoryController extends Controller
     /**
      * @param  array<string, mixed>|null  $oldValues
      */
-    private function audit(FormRequest $request, string $action, Category $category, ?array $oldValues): void
+    private function audit(FormRequest $request, User $user, string $action, Category $category, ?array $oldValues): void
     {
         app(AuditLogger::class)->log(
             action: $action,
             entity: $category,
-            user: $request->user(),
+            user: $user,
             request: $request,
             oldValues: $oldValues,
             newValues: $this->auditPayload($category),
