@@ -11540,3 +11540,24 @@ Un recibo pagado necesita una identidad de cajero trazable; una relacion rota de
 ### Decision
 
 Las APIs de cifrado, storage y parseo declaran resultados que pueden fallar incluso tras comprobaciones previas. Validar esos resultados en la frontera evita conversiones silenciosas y completa nivel 8 sin baseline, supresiones ni relajacion de tipos.
+
+## 493. Promocion del quality gate a PHPStan 8
+
+### Cambios
+
+- `phpstan.neon` eleva el nivel obligatorio de 7 a 8 para `app` y `routes`.
+- La promocion queda persistida sin baseline, exclusiones nuevas ni supresiones.
+- No cambian dependencias ni comportamiento de produccion.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan usando `phpstan.neon`, sin nivel por CLI | OK: 0 errores. |
+| Pint global del backend | OK. |
+| Suite backend completa | OK: 930 tests, 7024 assertions. |
+| Cobertura | 12 tests omitidos porque PCOV/Xdebug no esta habilitado; sin fallos funcionales. |
+
+### Decision
+
+Los 137 hallazgos iniciales de nivel 8 fueron resueltos con precondiciones, parseo exacto y fallos operativos explicitos. Convertir el nivel en minimo del repositorio impide reintroducir desreferencias nullable o argumentos inseguros en las fronteras auditadas.
