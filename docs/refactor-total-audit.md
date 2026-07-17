@@ -12097,3 +12097,25 @@ Un reporte de auditoria debe ordenar y etiquetar solo valores con dominio valido
 ### Decision
 
 Fechas y conteos son entradas obligatorias en este flujo; tratarlas como mixtas u opcionales oculta errores de integracion. El shape explicito conecta validacion, consulta y respuesta sin defensas redundantes.
+
+## 518. Fase PHPStan 9 - Totales de cierre de caja validados
+
+### Cambios
+
+- `CashSessionReportService` valida cada monto por metodo del snapshot JSON como decimal string.
+- Los valores validos se canonicalizan mediante `Money::parseCents` y `Money::formatCents`.
+- Un snapshot historico corrupto falla explicitamente en vez de convertirse a un monto aparente.
+- No cambian precedencia del snapshot cerrado, conciliacion viva, pagos, movimientos ni permisos.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 9 sobre el servicio | OK: 0 errores. |
+| Pint sobre el servicio | OK. |
+| Reportes y snapshots de cierre de caja | OK: 11 tests, 149 assertions. |
+| Inventario PHPStan nivel 9 global | Baja de 716 a 712 hallazgos. |
+
+### Decision
+
+Los totales de un cierre son evidencia financiera inmutable. Validarlos con el parser monetario central evita que JSON mal formado se presente como cero u otro importe coercionado y conserva centavos exactos.

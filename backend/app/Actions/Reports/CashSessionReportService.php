@@ -6,6 +6,8 @@ use App\Actions\Cash\BuildCashReconciliationAction;
 use App\Models\CashRegisterSession;
 use App\Models\Invoice;
 use App\Models\Payment;
+use App\Support\Money;
+use LogicException;
 
 class CashSessionReportService
 {
@@ -119,15 +121,28 @@ class CashSessionReportService
             'payments_count' => $session->payments_count_snapshot,
             'payments_total' => (string) $session->payments_total_snapshot,
             'payments_by_method' => [
-                Payment::METHOD_CASH => (string) $methods[Payment::METHOD_CASH],
-                Payment::METHOD_TRANSFER => (string) $methods[Payment::METHOD_TRANSFER],
-                Payment::METHOD_CARD => (string) $methods[Payment::METHOD_CARD],
-                Payment::METHOD_OTHER => (string) $methods[Payment::METHOD_OTHER],
+                Payment::METHOD_CASH => $this->snapshotMethodTotal($methods, Payment::METHOD_CASH),
+                Payment::METHOD_TRANSFER => $this->snapshotMethodTotal($methods, Payment::METHOD_TRANSFER),
+                Payment::METHOD_CARD => $this->snapshotMethodTotal($methods, Payment::METHOD_CARD),
+                Payment::METHOD_OTHER => $this->snapshotMethodTotal($methods, Payment::METHOD_OTHER),
             ],
             'expected_cash_amount' => (string) $session->expected_amount,
             'pending_invoice_count' => $session->pending_invoice_count_snapshot,
             'pending_amount' => (string) $session->pending_amount_snapshot,
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $methods
+     */
+    private function snapshotMethodTotal(array $methods, string $method): string
+    {
+        $value = $methods[$method] ?? null;
+        if (! is_string($value)) {
+            throw new LogicException("El snapshot de caja contiene un total invalido para {$method}.");
+        }
+
+        return Money::formatCents(Money::parseCents($value, "method_totals_snapshot.{$method}"));
     }
 
     /**
