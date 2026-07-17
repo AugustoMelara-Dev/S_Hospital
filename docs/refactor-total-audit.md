@@ -10067,3 +10067,24 @@ Permisos y propiedad deben evaluarse sobre el mismo principal autenticado. La co
 ### Decision
 
 Una consulta SQL sin `GROUP BY` que selecciona agregados siempre produce una fila, incluso sin respaldos. `COUNT` y `COALESCE(SUM)` fijan ambos valores; la ausencia de fila no era un estado operativo posible, mientras que errores de conexion o esquema siguen cubiertos por la degradacion segura existente.
+
+## 427. Fase Contratos De Reportes - Filtro de area declarado
+
+### Cambios
+
+- Los contratos de `CategoryReportService::report()` y `ServiceSalesReportService::report()` incluyen `area_id?: int` en la forma de filtros.
+- La anotacion queda alineada con `DateRangeReportRequest`, el SQL que filtra snapshots de `invoice_items` y los otros servicios de reportes.
+- Se retiran seis excepciones de offsets inexistentes; el baseline PHPStan baja de 38 a 32 errores contabilizados.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan tras retirar solo las excepciones | RED: 6 errores (`empty.offset`, `offsetAccess.notFound` y `nullCoalesce.offset`) en los dos servicios. |
+| PHPStan estricto despues | OK: 0 errores fuera del baseline. |
+| Filtros integrados de reportes | OK: 1 test, 49 assertions sobre ingresos, categorias, servicios, areas y operaciones. |
+| Pint focalizado | OK. |
+
+### Decision
+
+`area_id` no era una clave accidental: llega desde el Form Request, limita los snapshots historicos y se devuelve en la metadata. Corregir la forma declarada permite que PHPStan verifique ese recorrido y evita que futuras refactorizaciones eliminen silenciosamente un filtro soportado.

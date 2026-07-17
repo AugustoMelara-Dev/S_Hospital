@@ -67,24 +67,6 @@ parameters:
 			path: app/Actions/Receipts/GenerateReceiptDataAction.php
 
 		-
-			message: '#^Offset ''area_id'' does not exist on array\{date_from\: string, date_to\: string, cash_session_id\?\: int, user_id\?\: int, category_id\?\: int, method\?\: string, status\?\: string\}\.$#'
-			identifier: offsetAccess.notFound
-			count: 1
-			path: app/Actions/Reports/CategoryReportService.php
-
-		-
-			message: '#^Offset ''area_id'' on array\{date_from\: string, date_to\: string, cash_session_id\?\: int, user_id\?\: int, category_id\?\: int, method\?\: string, status\?\: string\} in empty\(\) does not exist\.$#'
-			identifier: empty.offset
-			count: 1
-			path: app/Actions/Reports/CategoryReportService.php
-
-		-
-			message: '#^Offset ''area_id'' on array\{date_from\: string, date_to\: string, cash_session_id\?\: int, user_id\?\: int, category_id\?\: int, method\?\: string, status\?\: string\} on left side of \?\? does not exist\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Actions/Reports/CategoryReportService.php
-
-		-
 			message: '#^Access to an undefined property App\\Models\\Invoice\:\:\$count\.$#'
 			identifier: property.notFound
 			count: 1
@@ -197,24 +179,6 @@ parameters:
 			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Actions/Reports/PremiumExcelExportService.php
-
-		-
-			message: '#^Offset ''area_id'' does not exist on array\{date_from\: string, date_to\: string, cash_session_id\?\: int, user_id\?\: int, category_id\?\: int, method\?\: string, status\?\: string\}\.$#'
-			identifier: offsetAccess.notFound
-			count: 1
-			path: app/Actions/Reports/ServiceSalesReportService.php
-
-		-
-			message: '#^Offset ''area_id'' on array\{date_from\: string, date_to\: string, cash_session_id\?\: int, user_id\?\: int, category_id\?\: int, method\?\: string, status\?\: string\} in empty\(\) does not exist\.$#'
-			identifier: empty.offset
-			count: 1
-			path: app/Actions/Reports/ServiceSalesReportService.php
-
-		-
-			message: '#^Offset ''area_id'' on array\{date_from\: string, date_to\: string, cash_session_id\?\: int, user_id\?\: int, category_id\?\: int, method\?\: string, status\?\: string\} on left side of \?\? does not exist\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Actions/Reports/ServiceSalesReportService.php
 
 		-
 			message: '#^Using nullsafe property access "\?\-\>rtn" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
