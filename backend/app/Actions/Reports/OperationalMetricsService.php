@@ -270,9 +270,12 @@ class OperationalMetricsService
 
             return Cache::remember($cacheKey, now()->addMinutes(5), function () use ($backupLog, $disk): array {
                 $absolutePath = $disk->path($backupLog->path);
-                $checksum = is_file($absolutePath)
-                    ? hash_file('sha256', $absolutePath)
-                    : hash('sha256', $disk->get($backupLog->path));
+                if (is_file($absolutePath)) {
+                    $checksum = hash_file('sha256', $absolutePath);
+                } else {
+                    $contents = $disk->get($backupLog->path);
+                    $checksum = is_string($contents) ? hash('sha256', $contents) : false;
+                }
 
                 return [
                     'exists' => true,

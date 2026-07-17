@@ -473,7 +473,7 @@ class ExecutiveReportService
 
                 return [
                     'id' => (int) $session->id,
-                    'cashier' => $session->user->name ?: 'Sin cajero',
+                    'cashier' => $session->user?->name ?: 'Sin cajero',
                     'opened_at' => $session->opened_at?->toIso8601String(),
                     'closed_at' => $session->closed_at?->toIso8601String(),
                     'opening_amount' => $this->centsToMoney($openingCents),

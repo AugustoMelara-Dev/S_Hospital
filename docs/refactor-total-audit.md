@@ -11446,3 +11446,26 @@ La validacion HTTP garantiza el formato de entrada, pero el parser y los datos h
 ### Decision
 
 Los servicios de dominio no deben asumir que un parser nullable produjo una fecha valida, aunque normalmente reciban datos validados por HTTP. Una frontera exacta y probada protege tambien invocaciones internas y mantiene identicos los limites temporales de las consultas financieras.
+
+## 489. Fase PHPStan 8 - Fallbacks operativos de reportes
+
+### Cambios
+
+- El reporte ejecutivo muestra `Sin cajero` cuando una sesion historica no puede resolver su usuario.
+- La sonda de integridad solo calcula hash sobre contenido remoto cuando el storage devuelve un string real.
+- Etiquetas PDF y Excel muestran `fecha no disponible` si una sesion historica carece de apertura.
+- No cambian resultados normales, checksums validos, consultas, estilos de exportacion ni permisos.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Documentacion oficial de `nullsafe.neverNull` | Revisada antes de corregir el nuevo identificador. |
+| PHPStan nivel 8 sobre todas las acciones de reportes | OK: 0 errores. |
+| Pint sobre los cuatro servicios | OK. |
+| Metricas operativas y reporte ejecutivo JSON/PDF/Excel | OK: 45 tests, 367 assertions. |
+| Inventario PHPStan nivel 8 global | Baja de 28 a 24 hallazgos. |
+
+### Decision
+
+Los reportes operativos deben degradarse con etiquetas seguras ante relaciones o timestamps historicos incompletos. Para integridad, la ausencia de contenido debe producir checksum no coincidente, nunca un hash de un valor nullable.

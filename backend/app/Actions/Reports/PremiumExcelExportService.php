@@ -1059,7 +1059,7 @@ class PremiumExcelExportService
         }
 
         $cashier = $cashSession->user->name ?? 'Cajero no disponible';
-        $openedAt = $cashSession->opened_at->format('d/m/Y H:i');
+        $openedAt = $cashSession->opened_at?->format('d/m/Y H:i') ?? 'fecha no disponible';
         $status = [
             CashRegisterSession::STATUS_OPEN => 'Abierta',
             CashRegisterSession::STATUS_CLOSED => 'Cerrada',
