@@ -12690,3 +12690,42 @@ La primera suite backend completa paso 944 pruebas, pero `ReportMoneyArchitectur
 ### Decision
 
 La regla es deliberadamente mas amplia que el caso puntual porque los exportadores mezclan porcentajes y montos. Mantener una unica prohibicion verificable reduce el riesgo de que una refactorizacion futura convierta centavos mediante floats por proximidad o reutilizacion accidental.
+
+## 544. Auditoria final de optimizacion y quality gates
+
+### Gates obligatorios
+
+| Gate | Resultado final |
+| --- | --- |
+| Backend completo | OK: 945 tests, 7097 assertions, 12 skipped por entorno. |
+| PHPStan configurado en nivel 9 | OK: 0 errores. |
+| Pint global | OK. |
+| Frontend TypeScript estricto | OK. |
+| Frontend ESLint | OK. |
+| Frontend Vitest completo | OK: 148 files, 1133 tests. |
+| Frontend build de produccion | OK: 3979 modulos transformados. |
+| Reglas UI institucionales | OK: 339 archivos, 0 violaciones. |
+
+### Rendimiento y dependencias
+
+- Bundle de inicio: 326.7 KiB gzip frente a limite de 488.3 KiB.
+- Bundle total: 1061.6 KiB gzip frente a limite de 1074.2 KiB.
+- AG Grid y ECharts superan 500 KiB raw, pero permanecen en chunks asincronos fuera del arranque.
+- `npm audit`, incluyendo desarrollo, reporta 0 vulnerabilidades en 726 dependencias.
+- `composer audit` reporta 0 advisories y 0 paquetes abandonados; `composer validate --strict` pasa.
+- Actualizaciones disponibles se descartan en este cierre: majors requieren migraciones separadas; minors de runtime no corrigen advisories y pueden alterar UI o documentos; `package-lock.json` ya contiene cambios del usuario que se preservan.
+
+### Auditoria estatica y repositorio
+
+- No hay TODO/FIXME/HACK operativos; los hallazgos pertenecen a una plantilla QA y a detectores de placeholders.
+- No hay patrones de llaves privadas, tokens conocidos ni archivos de secretos rastreados.
+- `git fsck --connectivity-only` termina con codigo 0; existen objetos dangling recuperables, no referencias rotas. No se ejecuta `git gc` para preservar capacidad de recuperacion del usuario.
+- El contenedor E2E huerfano preexistente no se elimina porque es estado del entorno del usuario.
+
+### Comprobacion adicional no obligatoria
+
+`npm run test:coverage:check` agoto 20 minutos sin producir resumen ni fallos de asercion. No se considera regresion funcional porque `npm run test` completo paso 1133/1133 y el script de cobertura no forma parte del gate requerido por `AGENTS.md`; queda como limitacion operativa del runner V8 en este host, no como motivo para relajar umbrales.
+
+### Criterio de cierre
+
+La auditoria no deja optimizaciones accionables de impacto positivo que sean seguras y proporcionales dentro del alcance actual. Las oportunidades restantes son mantenimiento temporal de dependencias, validacion manual en hardware/LAN real y posibles migraciones mayores; requieren una fase propia, nueva evidencia externa o cambios del usuario, no una refactorizacion especulativa del codigo verde.
