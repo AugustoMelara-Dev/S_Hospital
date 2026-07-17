@@ -158,7 +158,10 @@ class ReportPerformanceBaselineTest extends TestCase
             'opened_at' => now()->subHour(),
         ]);
 
-        $services = Service::query()->take(3)->get();
+        $services = Service::query()
+            ->with(['category:id,name', 'area:id,name'])
+            ->take(3)
+            ->get();
         $fiscalSequence = FiscalSequence::query()->first();
         $totalCents = 0;
         $counter = 1;
