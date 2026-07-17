@@ -25,14 +25,12 @@ export function SupportCenterView({ user, onStatus }: Props) {
     setError('');
 
     try {
-      const summaryResponse = await apiClient.getSystemStatusSummary();
+      const [summaryResponse, advancedStatus] = await Promise.all([
+        apiClient.getSystemStatusSummary(),
+        canViewAdvanced ? apiClient.getSystemStatus() : Promise.resolve(null),
+      ]);
       setSummary(summaryResponse);
-
-      if (canViewAdvanced) {
-        setStatus(await apiClient.getSystemStatus());
-      } else {
-        setStatus(null);
-      }
+      setStatus(advancedStatus);
 
       onStatus({
         key: 'support:diagnostic:refresh',

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SupportCenterView } from './SupportCenterView';
 import { apiClient, type AuthUser, type SystemStatus, type SystemStatusSummary } from '../../lib/api';
@@ -61,6 +61,28 @@ describe('SupportCenterView', () => {
     expect(screen.getByText('MySQL/MariaDB')).toBeInTheDocument();
     expect(screen.getByText(/hora servidor/i)).toBeInTheDocument();
     expect(getStatus).toHaveBeenCalledTimes(1);
+  });
+
+  it('starts independent summary and advanced diagnostics concurrently', async () => {
+    let resolveSummary!: (summary: SystemStatusSummary) => void;
+    const summaryRequest = new Promise<SystemStatusSummary>((resolve) => {
+      resolveSummary = resolve;
+    });
+    const getSummary = vi.spyOn(apiClient, 'getSystemStatusSummary').mockReturnValue(summaryRequest);
+    const getStatus = vi.spyOn(apiClient, 'getSystemStatus').mockResolvedValue(systemStatus());
+
+    render(<SupportCenterView user={supportUser} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(getSummary).toHaveBeenCalledTimes(1));
+    const advancedCallsBeforeSummaryResolved = getStatus.mock.calls.length;
+
+    await act(async () => {
+      resolveSummary(systemStatusSummary());
+      await summaryRequest;
+    });
+    await screen.findByText('MySQL/MariaDB');
+
+    expect(advancedCallsBeforeSummaryResolved).toBe(1);
   });
 
   it('does not show an unconfirmed backup as protected in advanced metrics', async () => {
