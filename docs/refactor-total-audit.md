@@ -10269,3 +10269,27 @@ La ausencia temporal de configuracion es un estado valido durante una instalacio
 ### Decision
 
 Estos consumidores solo necesitan una vista de lectura de la identidad institucional. Un modelo nuevo no persistido expresa mejor la ausencia que un objeto nullable, preserva los textos de respaldo y unifica el contrato ya comprobado en la creacion de facturas.
+
+## 436. Fase Totales - Relaciones opcionales y baseline PHPStan cero
+
+### Cambios
+
+- `CalculateInvoiceTotalsAction` conserva categoria y area en variables antes de resolver sus nombres.
+- La categoria ausente mantiene snapshot vacio; el area ausente sigue heredando el nombre de categoria.
+- Se retiran las dos ultimas excepciones `nullsafe.neverNull`.
+- Al quedar en cero, se elimina `phpstan-baseline.neon` y su inclusion desde la configuracion principal.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan tras retirar solo las excepciones | RED: 2 errores en los accesos nullsafe a nombres de categoria y area. |
+| PHPStan con baseline vacio | OK: 0 errores. |
+| PHPStan despues de eliminar baseline e include | OK: 0 errores. |
+| Totales e eritropoyetina | OK: 17 tests, 73 assertions. |
+| Snapshots historicos de catalogo | OK: 2 tests, 13 assertions. |
+| Pint focalizado | OK. |
+
+### Decision
+
+Las relaciones son opcionales en los objetos de prueba y el area tambien lo es en el esquema. Las comprobaciones explicitas representan esos estados sin confundir al analizador. El proyecto ya no necesita excepciones de analisis estatico: cualquier hallazgo nuevo de PHPStan volvera a ser visible de inmediato.
