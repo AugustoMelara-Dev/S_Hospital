@@ -12729,3 +12729,45 @@ La regla es deliberadamente mas amplia que el caso puntual porque los exportador
 ### Criterio de cierre
 
 La auditoria no deja optimizaciones accionables de impacto positivo que sean seguras y proporcionales dentro del alcance actual. Las oportunidades restantes son mantenimiento temporal de dependencias, validacion manual en hardware/LAN real y posibles migraciones mayores; requieren una fase propia, nueva evidencia externa o cambios del usuario, no una refactorizacion especulativa del codigo verde.
+
+## 545. Convergencia UI sobre Ant Design y aislamiento E2E
+
+### Cambios
+
+- Ant Design 6.5.0 queda como biblioteca unica para controles interactivos: botones, entradas, selects, modales, drawers, menus, estados plegables y acciones operativas.
+- El shell migra menu de usuario, paleta de comandos, navegacion movil y estados de ruta desde controles HTML ad hoc a primitivas Ant Design.
+- Facturacion, historial, busqueda de servicios y matriz de permisos migran sus acciones a `Button`, `Input`, `Checkbox` y `Tag` institucionales sin duplicar reglas fiscales.
+- La matriz de permisos y la cuenta actual conservan grids semanticos ligeros con roles ARIA; no cargan `Table` o `List` porque no necesitan paginacion, ordenamiento, virtualizacion ni seleccion.
+- El gate de UI ahora rechaza `button`, `input`, `select`, `textarea`, `dialog`, `details` y tablas de aplicacion nativos. Solo quedan cuatro tablas HTML documentales permitidas para recibos, impresion y visualizaciones accesibles.
+- Las capturas operativas rutinarias se escriben en el directorio temporal de Playwright. Solo `E2E_UPDATE_OPERATIONAL_UX_EVIDENCE=1` permite actualizar evidencia QA versionada.
+- El comando activo de la paleta usa el estado `primary` de Ant Design, eliminando una colision CSS que axe midio inicialmente en contraste 1:1.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Inventario UI inicial | 340 archivos; 11 violaciones interactivas o de tabla. |
+| Gate UI final | 340 archivos; 0 violaciones. |
+| Regresion Vitest segmentada | 140 archivos; 1092 tests aprobados; 0 fallidos. |
+| Storybook Browser | 3 archivos; 14 tests aprobados; 0 fallidos. |
+| TypeScript estricto y ESLint | OK. |
+| Build Vite | OK: 3979 modulos transformados. |
+| E2E mock completo | OK: 49 pruebas; shell y todos los flujos operativos aprobados. |
+| Axe focal de overlays | OK; comando activo 5.47:1, sin incompletos no clasificados. |
+| Aislamiento de evidencia | 0 cambios SHA-256 en `qa/operational-ux/after`. |
+| Bundle de inicio | 326.6 KiB gzip; limite 488.3 KiB. |
+| Bundle total | 1061.5 KiB gzip; limite 1074.2 KiB. |
+
+La ejecucion monolitica de Vitest se atasco dos veces en Windows sin producir una asercion fallida. El runner segmentado genero los doce reportes; dos grupos se repitieron con un solo worker para evitar el cuelgue paralelo. El resultado agregado verificable es 1106 pruebas de frontend aprobadas y cero fallidas.
+
+### Decisiones y oportunidades descartadas
+
+- No se agrego una segunda biblioteca: Ant Design ya estaba instalada, probada y era dominante; Tailwind permanece solo para layout y tokens, AG Grid para data grids complejos y ECharts para graficos.
+- Una variante con `Table` y `List` para dos grids compactos llevo el bundle total a 1107.3 KiB gzip. Sustituirlos por grids ARIA redujo 45.8 KiB gzip y devolvio el presupuesto a verde sin perder roles ni controles Ant Design.
+- Se probo basar `SectionCard`, `StatCard` y `StatGrid` en `Card`/`Statistic`, pero se revirtio: eran envoltorios presentacionales sin comportamiento y no aportaban una mejora proporcional. Los documentos imprimibles y layouts semanticos no se fuerzan dentro de widgets Ant.
+- No se elevaron presupuestos ni se ocultaron warnings. AG Grid y ECharts siguen siendo los dos chunks raw mayores y permanecen asincronos; dividirlos mas requiere casos de uso y medicion por ruta, no cambios especulativos.
+- No se modificaron `package-lock.json` ni las capturas QA que ya estaban cambiadas por el usuario.
+
+### Resultado
+
+La UI converge en una sola biblioteca de interaccion con una frontera automatizada que evita reintroducir controles legados. La solucion final mantiene accesibilidad, operacion offline LAN, reglas hospitalarias y presupuesto de rendimiento, y documenta las excepciones por semantica o coste medido.
