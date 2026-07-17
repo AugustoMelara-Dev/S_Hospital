@@ -65,9 +65,9 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "[OK] Construcción de imágenes completada con éxito." -ForegroundColor Green
 
 $runtimeImages = @(
-    "nginx:1.25.4-alpine",
-    "mariadb:11.4.3",
-    "quay.io/soketi/soketi:1.6-16-alpine"
+    "nginx:1.25.4-alpine@sha256:31bad00311cb5eeb8a6648beadcf67277a175da89989f14727420a80e2e76742",
+    "mariadb:11.4.3@sha256:e3432369d4d432ec2a3d777ff84ffca11ec8c2188cf1b6a0551a393ae5d833bb",
+    "quay.io/soketi/soketi:1.6-16-alpine@sha256:5e45fe1adbf2d4ef8022d0126a3c7e4371b7b08f35784b76a2dc353954ee885c"
 )
 foreach ($runtimeImage in $runtimeImages) {
     Write-Host "[*] Descargando imagen runtime $runtimeImage..." -ForegroundColor Yellow

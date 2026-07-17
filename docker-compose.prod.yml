@@ -76,7 +76,7 @@ services:
         condition: service_healthy
 
   nginx:
-    image: nginx:1.25.4-alpine
+    image: nginx:1.25.4-alpine@sha256:31bad00311cb5eeb8a6648beadcf67277a175da89989f14727420a80e2e76742
     restart: unless-stopped
     ports:
       - "${APP_PORT:-8000}:80"
@@ -103,7 +103,7 @@ services:
         condition: service_healthy
 
   mysql:
-    image: mariadb:11.4.3
+    image: mariadb:11.4.3@sha256:e3432369d4d432ec2a3d777ff84ffca11ec8c2188cf1b6a0551a393ae5d833bb
     restart: unless-stopped
     command:
       - "--max_connections=200"
@@ -269,7 +269,7 @@ services:
   # PC and keeps every open invoice list, dashboard, and cash session
   # in sync within ~1.5s.
   soketi:
-    image: quay.io/soketi/soketi:1.6-16-alpine
+    image: quay.io/soketi/soketi:1.6-16-alpine@sha256:5e45fe1adbf2d4ef8022d0126a3c7e4371b7b08f35784b76a2dc353954ee885c
     restart: unless-stopped
     command: >
       sh -c "

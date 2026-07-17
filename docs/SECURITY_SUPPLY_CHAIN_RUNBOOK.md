@@ -85,5 +85,9 @@ powershell.exe -ExecutionPolicy Bypass -File scripts\security\run-security-check
 - Every base image in `backend/Dockerfile.prod` is pinned to a manifest digest.
   Dependabot reviews Docker references in `/` and `/backend` weekly; digest
   updates must pass the production-stage contracts and isolated Docker builds.
+- Nginx, MariaDB and Soketi are also pinned by digest in
+  `docker-compose.prod.yml`. The release builder pulls those immutable
+  references, then saves the human-readable tags expected by the offline image
+  loader; update the compose, builder and release contract together.
 - `backend/package-lock.json` exists so Laravel's Vite-side JavaScript dependencies cannot float silently on future installs.
 - Composer may not be available in every Windows shell; this guard reads `composer.lock` directly and does not require Composer for the IOC checks.
