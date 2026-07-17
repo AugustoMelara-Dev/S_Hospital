@@ -27,6 +27,20 @@ class WindowsInstallSecretsTest extends TestCase
         $this->assertStringContainsString("format('ci-root-db-{0}', github.run_id)", $workflow);
     }
 
+    public function test_ci_uses_the_same_immutable_mariadb_image_as_production(): void
+    {
+        $workflow = file_get_contents(base_path('../.github/workflows/ci.yml'));
+        $compose = file_get_contents(base_path('../docker-compose.prod.yml'));
+
+        $this->assertIsString($workflow);
+        $this->assertIsString($compose);
+        $image = 'mariadb:11.4.3@sha256:e3432369d4d432ec2a3d777ff84ffca11ec8c2188cf1b6a0551a393ae5d833bb';
+
+        $this->assertStringContainsString("image: {$image}", $workflow);
+        $this->assertStringContainsString("image: {$image}", $compose);
+        $this->assertStringNotContainsString('image: mariadb:11.4\n', str_replace("\r\n", "\n", $workflow));
+    }
+
     public function test_ci_workflow_does_not_define_empty_service_maps(): void
     {
         $workflow = file_get_contents(base_path('../.github/workflows/ci.yml'));
