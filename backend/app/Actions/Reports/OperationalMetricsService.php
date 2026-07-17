@@ -69,7 +69,7 @@ class OperationalMetricsService
     private function queue(): array
     {
         $stats = [
-            'connection' => (string) config('queue.default'),
+            'connection' => $this->stringValue(config('queue.default')),
         ];
 
         try {
@@ -325,38 +325,75 @@ class OperationalMetricsService
     public function overallHealthScore(?array $snapshot = null): array
     {
         $snapshot ??= $this->snapshot();
+        $database = $this->section($snapshot['database'] ?? null);
+        $queue = $this->section($snapshot['queue'] ?? null);
+        $backups = $this->section($snapshot['backups'] ?? null);
+        $audit = $this->section($snapshot['audit'] ?? null);
+        $permissionObserver = $this->section($audit['permission_audit_observer'] ?? null);
         $issues = [];
 
-        if (! ($snapshot['database']['connected'] ?? false)) {
+        if (($database['connected'] ?? false) !== true) {
             $issues[] = 'database_disconnected';
         }
 
-        if (($snapshot['queue']['failed'] ?? 0) > 0) {
+        if ($this->countValue($queue['failed'] ?? null) > 0) {
             $issues[] = 'queue_has_failures';
         }
 
-        if (! ($snapshot['backups']['worker_recently_active'] ?? false)) {
+        if (($backups['worker_recently_active'] ?? false) !== true) {
             $issues[] = 'backup_worker_idle';
         }
 
-        if (($snapshot['backups']['failed_last_24h'] ?? 0) > 0) {
+        if ($this->countValue($backups['failed_last_24h'] ?? null) > 0) {
             $issues[] = 'backup_failures_in_24h';
         }
 
-        if (($snapshot['backups']['latest_success_file_exists'] ?? null) === false) {
+        if (($backups['latest_success_file_exists'] ?? null) === false) {
             $issues[] = 'backup_latest_file_missing';
-        } elseif (($snapshot['backups']['latest_success_checksum_matches'] ?? null) === false) {
+        } elseif (($backups['latest_success_checksum_matches'] ?? null) === false) {
             $issues[] = 'backup_latest_integrity_mismatch';
         }
 
-        if (($snapshot['audit']['permission_audit_observer']['last_failure'] ?? null) !== null) {
+        if (($permissionObserver['last_failure'] ?? null) !== null) {
             $issues[] = 'permission_audit_observer_failed';
         }
 
         return [
             'healthy' => $issues === [],
             'issues' => $issues,
-            'snapshot_generated_at' => $snapshot['generated_at'] ?? null,
+            'snapshot_generated_at' => $this->nullableString($snapshot['generated_at'] ?? null),
         ];
+    }
+
+    /** @return array<string, mixed> */
+    private function section(mixed $value): array
+    {
+        if (! is_array($value)) {
+            return [];
+        }
+
+        $section = [];
+        foreach ($value as $key => $item) {
+            if (is_string($key)) {
+                $section[$key] = $item;
+            }
+        }
+
+        return $section;
+    }
+
+    private function countValue(mixed $value): int
+    {
+        return is_int($value) && $value >= 0 ? $value : 0;
+    }
+
+    private function nullableString(mixed $value): ?string
+    {
+        return is_string($value) ? $value : null;
+    }
+
+    private function stringValue(mixed $value): string
+    {
+        return $this->nullableString($value) ?? '';
     }
 }

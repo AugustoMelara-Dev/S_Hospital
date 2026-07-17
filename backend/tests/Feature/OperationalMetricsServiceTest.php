@@ -356,6 +356,25 @@ class OperationalMetricsServiceTest extends TestCase
         $this->assertNotEmpty($score['snapshot_generated_at']);
     }
 
+    public function test_overall_health_score_normalizes_malformed_snapshot_sections(): void
+    {
+        $score = app(OperationalMetricsService::class)->overallHealthScore([
+            'generated_at' => ['invalid'],
+            'database' => ['connected' => ['invalid']],
+            'queue' => ['failed' => ['invalid']],
+            'backups' => [
+                'worker_recently_active' => ['invalid'],
+                'failed_last_24h' => ['invalid'],
+                'latest_success_file_exists' => ['invalid'],
+            ],
+            'audit' => ['permission_audit_observer' => ['last_failure' => null]],
+        ]);
+
+        $this->assertFalse($score['healthy']);
+        $this->assertSame(['database_disconnected', 'backup_worker_idle'], $score['issues']);
+        $this->assertNull($score['snapshot_generated_at']);
+    }
+
     public function test_health_endpoint_returns_the_score_alongside_the_snapshot(): void
     {
         $response = $this->getJson('/api/system/health');

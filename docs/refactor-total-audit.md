@@ -12384,3 +12384,26 @@ El diagnostico determina si el servidor LAN puede operar y por eso no debe inter
 ### Decision
 
 Un snapshot historico debe poder imprimirse aun si contiene un valor legado invalido, pero nunca reinterpretar estructuras como texto o dinero. Los normalizadores conservan los centavos como fuente financiera primaria y aplican defaults visibles y deterministas cuando el fallback no pertenece al dominio esperado.
+
+## 531. Fase PHPStan 9 - Score de salud operativa normalizado
+
+### Cambios
+
+- `OperationalMetricsService` valida la conexion de cola antes de publicarla.
+- `overallHealthScore()` normaliza las secciones de base, cola, backups y auditoria antes de evaluarlas.
+- Contadores aceptan solo enteros no negativos y los estados booleanos requieren valores booleanos exactos.
+- La marca temporal del snapshot se expone solo cuando es string.
+- Se agrega una regresion para snapshots malformados que antes producian falsos positivos por reglas de comparacion de PHP.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 9 sobre el servicio | OK: 0 errores. |
+| Pint sobre servicio y pruebas | OK. |
+| Metricas, salud, auditoria y permisos | OK: 36 tests, 150 assertions. |
+| Inventario PHPStan nivel 9 global | Baja de 561 a 551 hallazgos. |
+
+### Decision
+
+El score de salud decide que alerta ve caja y soporte; una estructura inesperada no debe convertirse en un fallo ficticio ni en un estado saludable. La normalizacion conserva una politica fail-closed para conectividad y worker, mientras descarta contadores y metadatos que no tengan el tipo contractual.
