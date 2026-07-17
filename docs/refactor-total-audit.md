@@ -11223,3 +11223,25 @@ Los cuatro estados forman un conjunto cerrado consumido por la API. Construir el
 ### Decision
 
 Las APIs de consola permiten opciones con uniones amplias y `json_encode` puede retornar `false`. Validarlas en el limite evita conversiones silenciosas, mensajes `Array` y valores no textuales enviados al renderer de consola.
+
+## 479. Fase PHPStan 7 - Cache de logo y headers de throttling
+
+### Cambios
+
+- `LogoController` centraliza la fecha de modificacion y usa `time()` cuando el archivo no existe o `filemtime()` falla.
+- Archivo publico, URL cache-busted y respuesta posterior al upload comparten el mismo timestamp entero.
+- `ThrottleByUser` normaliza a entero el contador de intentos antes de calcular solicitudes restantes.
+- No cambian limites, buckets por usuario, cache HTTP, MIME ni permisos de branding.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 7 sobre logo y throttle | OK: 0 errores. |
+| Pint sobre ambos archivos | OK. |
+| Throttling LAN y configuracion fiscal/logo | OK: 26 tests, 148 assertions. |
+| PHPStan nivel 7 global | OK: 0 errores; inventario inicial de 122 resuelto. |
+
+### Decision
+
+Timestamps de archivos y contadores de cache pueden fallar o llegar con tipos mas amplios que el contrato HTTP. Normalizarlos en una sola frontera mantiene headers validos y evita URLs de cache con valores falsos.

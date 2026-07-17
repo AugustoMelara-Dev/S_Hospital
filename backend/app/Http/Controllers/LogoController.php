@@ -24,7 +24,7 @@ class LogoController extends Controller
         abort_unless(Storage::disk('public')->exists('branding/logo.png'), 404);
 
         $path = Storage::disk('public')->path('branding/logo.png');
-        $lastModified = file_exists($path) ? filemtime($path) : time();
+        $lastModified = $this->fileModificationTime($path);
 
         return response()->file($path, [
             'Cache-Control' => 'public, max-age=300, stale-while-revalidate=300',
@@ -55,7 +55,7 @@ class LogoController extends Controller
         $request->file('logo')->storeAs('branding', 'logo.png', 'public');
 
         $path = $disk->path('branding/logo.png');
-        $time = file_exists($path) ? filemtime($path) : time();
+        $time = $this->fileModificationTime($path);
 
         AuditLog::query()->create([
             'user_id' => $request->user()?->id,
@@ -78,6 +78,13 @@ class LogoController extends Controller
         ]);
     }
 
+    private function fileModificationTime(string $path): int
+    {
+        $timestamp = is_file($path) ? filemtime($path) : false;
+
+        return is_int($timestamp) ? $timestamp : time();
+    }
+
     private function cacheBustedLogoUrl(): ?string
     {
         if (! Storage::disk('public')->exists('branding/logo.png')) {
@@ -85,7 +92,7 @@ class LogoController extends Controller
         }
 
         $path = Storage::disk('public')->path('branding/logo.png');
-        $time = file_exists($path) ? filemtime($path) : time();
+        $time = $this->fileModificationTime($path);
 
         return '/api/settings/logo/file?t='.$time;
     }
