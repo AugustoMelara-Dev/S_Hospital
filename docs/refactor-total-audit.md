@@ -11741,3 +11741,28 @@ El resultado de un advisory lock y el conteo fisico de caja son datos operativos
 ### Decision
 
 Contadores de cache, callbacks administrativos e IDs originales atraviesan APIs genericas. Validarlos o preservar sus templates evita coerciones silenciosas sin debilitar el bypass forense ni las protecciones de caja cerrada.
+
+## 502. Fase PHPStan 9 - Configuracion externa segura
+
+### Cambios
+
+- Acceso operativo a facturas valida timezone textual y conserva el fallback de Tegucigalpa.
+- La ruta frontend regenera el nonce CSP si el atributo no contiene un string no vacio.
+- Licencia centraliza lectura textual de salt/entorno y normaliza RTN vacio.
+- Backups solo interpolan una conexion textual al buscar password y solo redactan secretos string.
+- Retencion valida policy array y enteros configurados antes de podar.
+- No cambian permisos, dia operativo, CSP normal, firmas, cifrado, retencion valida ni redaccion de secretos.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 9 sobre los cinco archivos | OK: 0 errores. |
+| Pint sobre los cinco archivos | OK. |
+| Acceso de factura, CSP, licencia, backup y roundtrip | OK: 59 tests, 261 assertions. |
+| Simulacion MySQL dependiente de `mysqldump` | 1 prueba omitida por binario no disponible. |
+| Inventario PHPStan nivel 9 global | Baja de 781 a 770 hallazgos. |
+
+### Decision
+
+Configuracion y atributos de request son `mixed` hasta validar su tipo. Aplicar fallbacks seguros evita warnings, interpolacion de rutas de config ambiguas y nonces invalidos sin cambiar ninguna configuracion valida de produccion LAN.

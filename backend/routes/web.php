@@ -39,10 +39,13 @@ $frontendResponse = function () {
         );
     }
 
-    $nonce = (string) request()->attributes->get(
+    $nonceValue = request()->attributes->get(
         AddSecurityHeaders::NONCE_ATTRIBUTE,
         bin2hex(random_bytes(16)),
     );
+    $nonce = is_string($nonceValue) && $nonceValue !== ''
+        ? $nonceValue
+        : bin2hex(random_bytes(16));
 
     $html = File::get($indexPath);
     $html = str_replace('__S_HOSPITAL_CSP_NONCE__', $nonce, $html);

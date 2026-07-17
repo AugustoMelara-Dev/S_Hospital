@@ -44,7 +44,10 @@ class InvoiceAccess
             return false;
         }
 
-        $timezone = (string) config('app.timezone', 'America/Tegucigalpa');
+        $configuredTimezone = config('app.timezone', 'America/Tegucigalpa');
+        $timezone = is_string($configuredTimezone) && $configuredTimezone !== ''
+            ? $configuredTimezone
+            : 'America/Tegucigalpa';
 
         return $invoice->issued_at
             ->copy()

@@ -18,15 +18,32 @@ class PruneBackupsAction
         $pruned = 0;
 
         foreach ([BackupLog::TYPE_MANUAL, BackupLog::TYPE_SCHEDULED] as $type) {
-            $policy = config("backups.retention.{$type}", []);
+            $configuredPolicy = config("backups.retention.{$type}", []);
+            $policy = is_array($configuredPolicy) ? $configuredPolicy : [];
             $pruned += $this->pruneType(
                 $type,
-                max(1, (int) ($policy['keep_successful'] ?? config('backups.retention.successful_count', 30))),
-                max(0, (int) ($policy['keep_days'] ?? 0)),
+                max(1, $this->retentionInteger(
+                    $policy['keep_successful'] ?? config('backups.retention.successful_count', 30),
+                    30,
+                )),
+                max(0, $this->retentionInteger($policy['keep_days'] ?? 0, 0)),
             );
         }
 
         return $pruned;
+    }
+
+    private function retentionInteger(mixed $value, int $default): int
+    {
+        if (is_int($value)) {
+            return $value;
+        }
+
+        if (is_string($value) && ctype_digit($value)) {
+            return (int) $value;
+        }
+
+        return $default;
     }
 
     private function pruneType(?string $type, int $keepSuccessful, int $keepDays): int

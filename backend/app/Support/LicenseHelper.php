@@ -11,7 +11,7 @@ class LicenseHelper
 {
     private static function secretSalt(): string
     {
-        $configured = (string) (function_exists('config') ? config('app.license_salt') : '');
+        $configured = self::configuredString('app.license_salt');
 
         if ($configured !== '') {
             return $configured;
@@ -31,12 +31,13 @@ class LicenseHelper
     {
         $settings = FiscalSetting::query()->firstOrNew();
         $hospitalName = HospitalName::display($settings->hospital_name);
-        $rtn = (string) ($settings->rtn ?? 'N/A');
+        $configuredRtn = $settings->rtn;
+        $rtn = $configuredRtn !== '' ? $configuredRtn : 'N/A';
 
-        $configured = (string) (function_exists('config') ? config('app.license_salt') : '');
+        $configured = self::configuredString('app.license_salt');
 
         if (! Storage::disk('local')->exists('license.json')) {
-            if ($configured === '' && (string) config('app.env', 'production') === 'production') {
+            if ($configured === '' && self::configuredString('app.env', 'production') === 'production') {
                 return [
                     'valid' => false,
                     'licensee' => $hospitalName,
@@ -162,5 +163,16 @@ class LicenseHelper
         ]);
 
         return hash_hmac('sha256', $payload, self::secretSalt());
+    }
+
+    private static function configuredString(string $key, string $default = ''): string
+    {
+        if (! function_exists('config')) {
+            return $default;
+        }
+
+        $value = config($key, $default);
+
+        return is_string($value) ? $value : $default;
     }
 }

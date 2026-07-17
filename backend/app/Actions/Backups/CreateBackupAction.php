@@ -258,9 +258,12 @@ class CreateBackupAction
     private function safeErrorMessage(\Throwable $exception): string
     {
         $message = str($exception->getMessage());
-        $password = (string) config('database.connections.'.config('database.default').'.password');
+        $defaultConnection = config('database.default');
+        $password = is_string($defaultConnection)
+            ? config("database.connections.{$defaultConnection}.password")
+            : null;
 
-        if ($password !== '') {
+        if (is_string($password) && $password !== '') {
             $message = $message->replace($password, '[redacted]');
         }
 
