@@ -11,6 +11,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
+use RuntimeException;
 use Tests\TestCase;
 
 class OperationalMetricsServiceTest extends TestCase
@@ -56,6 +57,18 @@ class OperationalMetricsServiceTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('data.database.driver', 'sqlite')
             ->assertJsonPath('data.database.connected', true);
+    }
+
+    public function test_snapshot_degrades_safely_when_the_cache_store_fails(): void
+    {
+        Cache::shouldReceive('get')
+            ->andThrow(new RuntimeException('cache unavailable'));
+
+        $snapshot = app(OperationalMetricsService::class)->snapshot();
+
+        $this->assertFalse($snapshot['backups']['worker_recently_active']);
+        $this->assertNull($snapshot['audit']['permission_audit_observer']['last_failure']);
+        $this->assertTrue($snapshot['database']['connected']);
     }
 
     public function test_health_endpoint_builds_data_and_score_from_one_snapshot(): void

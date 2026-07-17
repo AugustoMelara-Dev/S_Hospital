@@ -154,7 +154,12 @@ class OperationalMetricsService
      */
     private function audit(): array
     {
-        $lastPermissionAuditFailure = Cache::get('permission_audit_observer:last_failure');
+        try {
+            $lastPermissionAuditFailure = Cache::get('permission_audit_observer:last_failure');
+        } catch (Throwable $exception) {
+            Log::warning('OperationalMetricsService: audit cache probe failed', ['message' => $exception->getMessage()]);
+            $lastPermissionAuditFailure = null;
+        }
 
         return [
             'permission_audit_observer' => [
@@ -196,7 +201,14 @@ class OperationalMetricsService
     private function workerRecentlyActive(): bool
     {
         $key = 'operational-metrics:worker-heartbeat';
-        $heartbeat = Cache::get($key);
+
+        try {
+            $heartbeat = Cache::get($key);
+        } catch (Throwable $exception) {
+            Log::warning('OperationalMetricsService: worker cache probe failed', ['message' => $exception->getMessage()]);
+
+            return false;
+        }
 
         if ($heartbeat === null) {
             return false;
