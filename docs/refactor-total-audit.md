@@ -10506,3 +10506,24 @@ Los tipos agregados describen contratos reales del framework y del paquete de pe
 ### Decision
 
 `Invoice` concentra relaciones usadas por casi todo el dominio financiero. Precisarlas permite detectar asociaciones equivocadas en servicios y controladores sin alterar el modelo persistido; las pruebas transaccionales confirman que el contrato agregado coincide con el comportamiento real.
+
+## 447. Fase PHPStan 6 - Trazabilidad de partidas y pagos
+
+### Cambios
+
+- `InvoiceItem` tipa sus relaciones con factura, servicio y area de catalogo.
+- `Payment` tipa sus relaciones con factura, sesion de caja, cajero y usuario anulador.
+- Los siete contratos declaran tanto el modelo relacionado como el modelo propietario de la relacion.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 6 sobre ambos modelos | OK: 0 errores. |
+| Pint sobre ambos modelos | OK. |
+| Registro/anulacion de pagos e integridad de partidas | OK: 9 tests, 38 assertions; 1 test MySQL omitido en SQLite por condicion explicita preexistente. |
+| Inventario PHPStan nivel 6 global | Baja de 200 a 193 hallazgos. |
+
+### Decision
+
+Estas relaciones forman la trazabilidad monetaria desde una partida hasta el cobro y la caja. Tiparlas fortalece la comprobacion de consultas y servicios financieros sin tocar importes, estados, snapshots ni reglas de anulacion.
