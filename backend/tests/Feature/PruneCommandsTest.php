@@ -142,6 +142,37 @@ class PruneCommandsTest extends TestCase
         $this->assertSame(0, DB::table('failed_jobs')->count());
     }
 
+    public function test_prune_scheduler_ticks_keeps_recent_heartbeat_history(): void
+    {
+        DB::table('scheduler_ticks')->insert([
+            [
+                'at' => now()->subDays(10),
+                'result' => 'ok',
+                'message' => null,
+                'created_at' => now()->subDays(10),
+            ],
+            [
+                'at' => now()->subDay(),
+                'result' => 'ok',
+                'message' => null,
+                'created_at' => now()->subDay(),
+            ],
+        ]);
+
+        $this->artisan('hospital:prune-scheduler-ticks', ['--days' => 7, '--chunk' => 1])
+            ->assertSuccessful();
+
+        $this->assertSame(1, DB::table('scheduler_ticks')->count());
+        $this->assertTrue(DB::table('scheduler_ticks')->where('at', '>=', now()->subDays(2))->exists());
+    }
+
+    public function test_scheduler_tick_pruning_is_registered_daily(): void
+    {
+        $this->artisan('schedule:list', ['--no-ansi' => true])
+            ->expectsOutputToContain('hospital:prune-scheduler-ticks --days=7')
+            ->assertSuccessful();
+    }
+
     public function test_audit_admin_helper_runs_callback_when_driver_is_not_mysql(): void
     {
         AuditLog::query()->create([

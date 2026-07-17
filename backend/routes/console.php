@@ -93,3 +93,10 @@ Schedule::command('hospital:prune-idempotency-keys --days='.(int) env('HOSPITAL_
     ->withoutOverlapping(30)
     ->runInBackground()
     ->description('Podar llaves de idempotencia anteriores a la retencion configurada');
+
+Schedule::command('hospital:prune-scheduler-ticks --days='.(int) env('HOSPITAL_SCHEDULER_TICK_RETENTION_DAYS', 7))
+    ->dailyAt('04:00')
+    ->onOneServer()
+    ->withoutOverlapping(30)
+    ->runInBackground()
+    ->description('Podar heartbeats antiguos del scheduler local');
