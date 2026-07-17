@@ -1,6 +1,6 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
-import { resolve } from 'node:path';
 import { assertStrictMockGuard, installStrictMockGuard } from './fixtures/strict-mock-guard';
+import { operationalEvidencePath } from './fixtures/operational-evidence-path';
 
 test.beforeEach(async ({ page }) => installStrictMockGuard(page));
 test.afterEach(async ({ page }) => assertStrictMockGuard(page));
@@ -71,7 +71,7 @@ const paidInvoice = invoiceFixture({
 });
 
 test.describe('Invoice history - critical mocked e2e', () => {
-  test('uses one Spanish pagination and a content-height grid at 1366px', async ({ page }) => {
+  test('uses one Spanish pagination and a content-height grid at 1366px', async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await installInvoiceHistoryMocks(page);
     await page.goto('/invoices');
@@ -95,7 +95,7 @@ test.describe('Invoice history - critical mocked e2e', () => {
       requestAnimationFrame(() => requestAnimationFrame(() => resolveFrame()));
     }));
     await page.screenshot({
-      path: resolve(process.cwd(), '..', 'qa', 'operational-ux', 'after', 'history-1366.png'),
+      path: operationalEvidencePath(testInfo, 'history-1366.png'),
       fullPage: true,
     });
   });

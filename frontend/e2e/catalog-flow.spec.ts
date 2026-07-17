@@ -1,6 +1,6 @@
-import { resolve } from 'node:path';
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { assertStrictMockGuard, installStrictMockGuard } from './fixtures/strict-mock-guard';
+import { operationalEvidencePath } from './fixtures/operational-evidence-path';
 
 test.beforeEach(async ({ page }) => installStrictMockGuard(page));
 test.afterEach(async ({ page }) => assertStrictMockGuard(page));
@@ -151,7 +151,7 @@ test.describe('Catalog - critical mocked e2e', () => {
     await page.waitForLoadState('networkidle');
   });
 
-  test('shows filters and distinguishable services first, then switches to a mobile list', async ({ page }) => {
+  test('shows filters and distinguishable services first, then switches to a mobile list', async ({ page }, testInfo) => {
     const duplicateServices = [
       serviceFixture({ id: 10, name: 'Consulta médica', slug: 'consulta-externa', scan_code: 'CON-EXT' }),
       serviceFixture({
@@ -184,7 +184,7 @@ test.describe('Catalog - critical mocked e2e', () => {
     expect(desktopMetrics.paginations).toBe(1);
     expect(desktopMetrics.agPaginations).toBe(0);
     await settleForScreenshot(page);
-    await page.screenshot({ path: resolve(process.cwd(), '..', 'qa', 'operational-ux', 'after', 'catalog-1366.png'), fullPage: true });
+    await page.screenshot({ path: operationalEvidencePath(testInfo, 'catalog-1366.png'), fullPage: true });
 
     await page.setViewportSize({ width: 390, height: 844 });
     const mobileList = page.getByRole('list', { name: /servicios del catálogo en móvil/i });
@@ -195,7 +195,7 @@ test.describe('Catalog - critical mocked e2e', () => {
     await expect(page.getByRole('grid', { name: /listado de servicios/i })).toHaveCount(0);
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
     await settleForScreenshot(page);
-    await page.screenshot({ path: resolve(process.cwd(), '..', 'qa', 'operational-ux', 'after', 'catalog-390.png'), fullPage: true });
+    await page.screenshot({ path: operationalEvidencePath(testInfo, 'catalog-390.png'), fullPage: true });
   });
 });
 

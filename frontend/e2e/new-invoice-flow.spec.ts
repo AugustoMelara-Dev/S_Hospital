@@ -1,8 +1,8 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
-import { mkdirSync, writeFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { writeFileSync } from 'node:fs';
 import { assertStrictMockGuard, installStrictMockGuard } from './fixtures/strict-mock-guard';
 import { assertNoDocumentOverflow, observeOperationalPage } from './fixtures/operational-ux-audit';
+import { operationalEvidencePath } from './fixtures/operational-evidence-path';
 
 test.beforeEach(async ({ page }) => installStrictMockGuard(page));
 test.afterEach(async ({ page }) => assertStrictMockGuard(page));
@@ -242,11 +242,12 @@ test.describe('New invoice - critical mocked e2e', () => {
         expect(quantityBounds!.y + quantityBounds!.height).toBeLessThanOrEqual(bottomBarBounds!.y);
       }
 
-      const evidenceDirectory = resolve('../qa/operational-ux/after/core');
-      mkdirSync(evidenceDirectory, { recursive: true });
-      writeFileSync(resolve(evidenceDirectory, `billing-${viewport.name}.json`), JSON.stringify(audit, null, 2));
+      writeFileSync(
+        operationalEvidencePath(testInfo, `billing-${viewport.name}.json`, 'core'),
+        JSON.stringify(audit, null, 2),
+      );
       await page.screenshot({
-        path: resolve(evidenceDirectory, `billing-${viewport.name}.png`),
+        path: operationalEvidencePath(testInfo, `billing-${viewport.name}.png`, 'core'),
         fullPage: false,
       });
 
@@ -258,7 +259,7 @@ test.describe('New invoice - critical mocked e2e', () => {
         const paymentDialog = page.getByRole('dialog', { name: /registrar pago/i });
         await expect(paymentDialog.getByLabel(/monto recibido/i)).toBeVisible();
         await paymentDialog.screenshot({
-          path: resolve(evidenceDirectory, 'payment-cash-1366x768.png'),
+          path: operationalEvidencePath(testInfo, 'payment-cash-1366x768.png', 'core'),
           animations: 'disabled',
         });
 
@@ -269,7 +270,7 @@ test.describe('New invoice - critical mocked e2e', () => {
           requestAnimationFrame(() => requestAnimationFrame(() => resolveFrame()));
         }));
         await paymentDialog.screenshot({
-          path: resolve(evidenceDirectory, 'payment-transfer-1366x768.png'),
+          path: operationalEvidencePath(testInfo, 'payment-transfer-1366x768.png', 'core'),
           animations: 'disabled',
         });
       }
