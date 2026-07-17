@@ -124,7 +124,7 @@ class InstitutionalReceiptHtmlBuilder
      */
     private function pagesForReceipt(InstitutionalReceipt $receipt, bool $draft): array
     {
-        return collect($this->copyLabels($receipt->copy_mode))
+        return array_values(collect($this->copyLabels($receipt->copy_mode))
             ->map(fn (string $copyLabel): array => [
                 'copy_label' => $copyLabel,
                 'draft' => $draft,
@@ -142,7 +142,7 @@ class InstitutionalReceiptHtmlBuilder
                 'payment' => $this->normalizedPayment($receipt->payment_snapshot ?? []),
                 'items' => $this->normalizedItems($receipt->items_snapshot ?? []),
             ])
-            ->all();
+            ->all());
     }
 
     /**
@@ -283,7 +283,7 @@ class InstitutionalReceiptHtmlBuilder
      */
     private function normalizedItems(array $snapshot): array
     {
-        return collect($snapshot)
+        return array_values(collect($snapshot)
             ->filter(fn (mixed $item): bool => is_array($item))
             ->map(fn (array $item): array => [
                 'service_name' => $item['service_name'] ?? '',
@@ -297,8 +297,7 @@ class InstitutionalReceiptHtmlBuilder
                 'line_total' => $this->moneyValue($item['line_total_cents'] ?? null, $item['line_total'] ?? '0.00'),
                 'notes' => $item['notes'] ?? null,
             ])
-            ->values()
-            ->all();
+            ->all());
     }
 
     private function moneyValue(mixed $cents, mixed $fallback): string

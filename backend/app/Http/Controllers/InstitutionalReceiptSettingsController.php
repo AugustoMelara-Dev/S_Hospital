@@ -552,8 +552,9 @@ class InstitutionalReceiptSettingsController extends Controller
      */
     private function profileFromRequest(array $values): ReceiptPrintProfile
     {
-        if (isset($values['profile_id'])) {
-            return ReceiptPrintProfile::query()->findOrFail($values['profile_id']);
+        $profileId = $values['profile_id'] ?? null;
+        if (is_int($profileId) || is_string($profileId)) {
+            return ReceiptPrintProfile::query()->findOrFail((int) $profileId);
         }
 
         return ReceiptPrintProfile::query()

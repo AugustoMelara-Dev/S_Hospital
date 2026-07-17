@@ -279,14 +279,15 @@ class IssueInstitutionalReceiptAction
     }
 
     /**
-     * @param  array<string, mixed>  $payload
+     * @param  array{invoice_id: int, payment_id?: int|null, cash_session_id?: int|null, profile_id?: int|null, profile_code?: string|null}  $payload
      */
     private function resolveProfile(array $payload, User $user, CashRegisterSession $cashSession): ReceiptPrintProfile
     {
-        if (! empty($payload['profile_id'])) {
+        $profileId = $payload['profile_id'] ?? null;
+        if ($profileId !== null) {
             return ReceiptPrintProfile::query()
                 ->where('active', true)
-                ->findOrFail($payload['profile_id']);
+                ->findOrFail($profileId);
         }
 
         if (! empty($payload['profile_code'])) {

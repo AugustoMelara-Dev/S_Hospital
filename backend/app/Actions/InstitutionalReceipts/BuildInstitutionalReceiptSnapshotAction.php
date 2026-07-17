@@ -42,7 +42,7 @@ class BuildInstitutionalReceiptSnapshotAction
             ->where('status', Payment::STATUS_POSTED)
             ->values();
 
-        $items = $invoice->items
+        $items = array_values($invoice->items
             ->map(fn ($item): array => [
                 'service_name' => $item->service_name,
                 'category_name' => $item->category_name,
@@ -59,8 +59,7 @@ class BuildInstitutionalReceiptSnapshotAction
                 'line_total_cents' => (int) $item->line_total_cents,
                 'notes' => $item->notes,
             ])
-            ->values()
-            ->all();
+            ->all());
 
         return [
             'payer_name' => $invoice->patient_name,

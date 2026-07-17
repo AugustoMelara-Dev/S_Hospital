@@ -90,7 +90,7 @@ class UpsertReceiptProfileAssignmentRequest extends FormRequest
                 }
 
                 $profile = $this->input('profile_id') !== null
-                    ? ReceiptPrintProfile::query()->find($this->input('profile_id'))
+                    ? ReceiptPrintProfile::query()->find($this->integer('profile_id'))
                     : ReceiptPrintProfile::query()->where('code', $this->input('profile_code'))->first();
 
                 if ($profile instanceof ReceiptPrintProfile && ! $profile->active) {
@@ -103,7 +103,7 @@ class UpsertReceiptProfileAssignmentRequest extends FormRequest
     private function profileFromPayload(): ?ReceiptPrintProfile
     {
         if ($this->input('profile_id') !== null) {
-            return ReceiptPrintProfile::query()->find($this->input('profile_id'));
+            return ReceiptPrintProfile::query()->find($this->integer('profile_id'));
         }
 
         if ($this->input('profile_code') !== null) {

@@ -11107,3 +11107,26 @@ La validacion `integer` acepta tanto enteros JSON como cadenas numericas de quer
 ### Decision
 
 La frontera interna es identica para cinco servicios y ya habia una implementacion local en operaciones. Centralizarla reduce duplicacion y evita que nuevos filtros se materialicen de forma distinta entre reportes institucionales.
+
+## 474. Fase PHPStan 7 - Listas y perfiles de recibos institucionales
+
+### Cambios
+
+- Los items de snapshot, paginas de copias e items normalizados terminan con `array_values()` y garantizan listas JSON contiguas.
+- La seleccion de perfil durante emision usa el ID entero declarado por el payload de la accion.
+- Configuracion y asignaciones normalizan IDs de perfil validados antes de `find`/`findOrFail`.
+- No cambian contenido, orden visual, numeracion, copias, importes ni reglas de seleccion de perfil.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 7 sobre cinco fronteras institucionales | OK: 0 errores. |
+| Pint sobre los cinco archivos | OK. |
+| Emision, pagos, PDF, configuracion, migracion, series y perfiles | OK: 73 tests, 1555 assertions. |
+| Pruebas omitidas | 1 caso condicionado por el entorno; sin fallo funcional. |
+| Inventario PHPStan nivel 7 global | Baja de 39 a 30 hallazgos. |
+
+### Decision
+
+Los snapshots se persisten y renderizan como listas ordenadas, por lo que la continuidad de indices es parte del contrato, no solo una anotacion. Los IDs de perfil son escalares validados y deben estrecharse antes de invocar las sobrecargas de Eloquent.
