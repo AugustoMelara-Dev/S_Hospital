@@ -11333,3 +11333,25 @@ El usuario autenticado es una precondicion transversal de las operaciones moneta
 ### Decision
 
 La configuracion de impresion es una frontera autenticada con efectos auditables. Exigir un `User` concreto antes de comprobar permisos o persistir autoria elimina accesos inseguros sin alterar las reglas operativas de recibos.
+
+## 484. Fase PHPStan 8 - Autoria concreta en catalogo de servicios
+
+### Cambios
+
+- `ServiceController` obtiene un `User` concreto antes de crear, actualizar o desactivar servicios.
+- La misma identidad se conserva dentro de cada transaccion para autoria, historial de precios y auditoria.
+- El helper de auditoria recibe el modelo autenticado en vez de volver a resolver un usuario nullable desde la request.
+- No cambian busqueda, precios, reglas de eritropoyetina, disponibilidad, permisos ni payloads.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 8 sobre `ServiceController` | OK: 0 errores. |
+| Pint sobre el controlador | OK. |
+| Catalogo, precios, areas y auditoria de permisos | OK: 61 tests, 338 assertions. |
+| Inventario PHPStan nivel 8 global | Baja de 82 a 76 hallazgos. |
+
+### Decision
+
+Autoria e historial deben referirse a la misma identidad que inicio la operacion. Capturar el usuario antes de la transaccion hace explicita esa invariancia y elimina seis accesos inseguros sin relajar tipos ni validaciones.

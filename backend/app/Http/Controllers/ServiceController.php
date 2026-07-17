@@ -10,11 +10,11 @@ use App\Models\AuditLog;
 use App\Models\InvoiceItem;
 use App\Models\Service;
 use App\Models\ServicePriceHistory;
+use App\Models\User;
 use App\Support\ServiceSearch;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -127,7 +127,9 @@ class ServiceController extends Controller
 
     public function store(StoreServiceRequest $request): JsonResponse
     {
-        $service = DB::transaction(function () use ($request): Service {
+        $user = $this->authenticatedUser($request);
+
+        $service = DB::transaction(function () use ($request, $user): Service {
             $service = Service::query()->create([
                 ...$request->validated(),
                 'slug' => Str::slug($request->string('name')),
@@ -135,11 +137,11 @@ class ServiceController extends Controller
                 'active' => $request->boolean('active', true),
                 'visible_in_billing' => $request->boolean('visible_in_billing', true),
                 'is_billable' => $request->boolean('is_billable', true),
-                'created_by' => $request->user()->id,
-                'updated_by' => $request->user()->id,
+                'created_by' => $user->id,
+                'updated_by' => $user->id,
             ]);
 
-            $this->audit($request, 'service.created', $service->refresh(), null);
+            $this->audit($user, 'service.created', $service->refresh(), null);
 
             return $service;
         });
@@ -151,7 +153,9 @@ class ServiceController extends Controller
 
     public function update(UpdateServiceRequest $request, Service $service): JsonResponse
     {
-        $service = DB::transaction(function () use ($request, $service): Service {
+        $user = $this->authenticatedUser($request);
+
+        $service = DB::transaction(function () use ($request, $service, $user): Service {
             $oldValues = $this->auditPayload($service);
             $data = $request->validated();
             $priceChangeReason = array_key_exists('price_change_reason', $data)
@@ -173,14 +177,14 @@ class ServiceController extends Controller
 
             $service->fill([
                 ...$data,
-                'updated_by' => $request->user()->id,
+                'updated_by' => $user->id,
             ])->save();
 
             $service->refresh();
 
             foreach ($this->serviceActions($oldValues, $service) as $action) {
                 $this->audit(
-                    $request,
+                    $user,
                     $action,
                     $service,
                     $oldValues,
@@ -200,7 +204,7 @@ class ServiceController extends Controller
                     'service_id' => $service->id,
                     'old_price' => $oldValues['price'],
                     'new_price' => $service->price,
-                    'changed_by' => $request->user()->id,
+                    'changed_by' => $user->id,
                     'changed_at' => now(),
                     'reason' => $priceChangeReason,
                 ]);
@@ -217,6 +221,7 @@ class ServiceController extends Controller
     public function destroy(DeleteServiceRequest $request, Service $service): JsonResponse
     {
         Gate::authorize('delete', $service);
+        $user = $this->authenticatedUser($request);
 
         if (InvoiceItem::query()->where('service_id', $service->id)->exists()) {
             return response()->json([
@@ -224,19 +229,19 @@ class ServiceController extends Controller
             ], 409);
         }
 
-        $service = DB::transaction(function () use ($request, $service): Service {
+        $service = DB::transaction(function () use ($request, $service, $user): Service {
             $oldValues = $this->auditPayload($service);
             $availabilityChangeReason = trim((string) $request->validated('availability_change_reason'));
 
             if ($service->active) {
                 $service->forceFill([
                     'active' => false,
-                    'updated_by' => $request->user()->id,
+                    'updated_by' => $user->id,
                 ])->save();
                 $service->refresh();
             }
 
-            $this->audit($request, 'service.deactivated', $service, $oldValues, [
+            $this->audit($user, 'service.deactivated', $service, $oldValues, [
                 'availability_change_reason' => $availabilityChangeReason,
             ]);
 
@@ -313,14 +318,14 @@ class ServiceController extends Controller
      * @param  array<string, mixed>  $extraNewValues
      */
     private function audit(
-        Request $request,
+        User $user,
         string $action,
         Service $service,
         ?array $oldValues,
         array $extraNewValues = [],
     ): void {
         AuditLog::query()->create([
-            'user_id' => $request->user()->id,
+            'user_id' => $user->id,
             'action' => $action,
             'entity_type' => Service::class,
             'entity_id' => $service->id,
