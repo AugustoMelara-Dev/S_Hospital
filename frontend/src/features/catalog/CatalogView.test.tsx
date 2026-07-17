@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { type ReactNode } from 'react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CatalogView, ConfirmDialog, serviceStatusPayload } from './CatalogView';
 import { apiClient, ApiError, type AuthUser, type Service } from '../../lib/api';
@@ -15,6 +15,10 @@ function renderWithQueryClient(node: ReactNode) {
       <MemoryRouter>{node}</MemoryRouter>
     </QueryClientProvider>,
   );
+}
+
+function LocationSearchProbe() {
+  return <output data-testid="location-search">{useLocation().search}</output>;
 }
 
 function setupBasicMocks() {
@@ -216,6 +220,46 @@ describe('CatalogView modernized structure', () => {
 
     await waitFor(() => {
       expect(search).toHaveValue('');
+    });
+  });
+
+  it('preserves a category selected while the search debounce is pending', async () => {
+    setupBasicMocks();
+    vi.spyOn(apiClient, 'getCategories').mockResolvedValue([
+      { id: 7, name: 'Laboratorio', slug: 'laboratorio', active: true, sort_order: 1 },
+    ]);
+    vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({
+      data: [],
+      meta: { current_page: 1, per_page: 15, total: 0 },
+    });
+
+    renderWithQueryClient(
+      <>
+        <CatalogView user={catalogUser()} onStatus={vi.fn()} />
+        <LocationSearchProbe />
+      </>,
+    );
+
+    const search = await screen.findByLabelText(/buscar servicio/i);
+    fireEvent.mouseDown(screen.getByLabelText(/categor/i));
+    await screen.findByRole('option', { name: 'Laboratorio' });
+    const laboratoryOption = Array.from(document.querySelectorAll<HTMLElement>('.ant-select-item-option'))
+      .find((option) => option.textContent === 'Laboratorio');
+    expect(laboratoryOption).toBeDefined();
+
+    fireEvent.change(search, { target: { value: 'glucosa' } });
+    fireEvent.mouseDown(laboratoryOption!);
+    fireEvent.click(laboratoryOption!);
+
+    await waitFor(() => {
+      const params = new URLSearchParams(screen.getByTestId('location-search').textContent ?? '');
+      expect(params.get('category')).toBe('7');
+    });
+
+    await waitFor(() => {
+      const params = new URLSearchParams(screen.getByTestId('location-search').textContent ?? '');
+      expect(params.get('q')).toBe('glucosa');
+      expect(params.get('category')).toBe('7');
     });
   });
 

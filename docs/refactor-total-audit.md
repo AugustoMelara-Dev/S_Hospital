@@ -9957,3 +9957,27 @@ La interfaz de rutas garantiza el metodo que devuelve `Route[]`, no la iterabili
 ### Decision
 
 El modo offline del hospital significa operar sin internet, no sin el servidor LAN ni con datos financieros historicos en el navegador. El backend ya prohibe cachear JSON con PII; una Cache API manual puede ignorar esa intencion. Limitar el worker al shell y assets publicos conserva una pantalla de fallback sin cruzar datos entre cajeros, sesiones o pacientes.
+
+## 422. Fase Catalogo - Filtros estables durante la busqueda diferida
+
+### Cambios
+
+- La escritura diferida de `q` deja de reconstruir la URL desde la instantanea capturada al iniciar el temporizador.
+- Una referencia sincronizada conserva los parametros mas recientes y se actualiza de forma optimista antes de cada navegacion interna del catalogo.
+- Cambiar categoria, estado, pagina o panel confirma en la misma URL el texto local pendiente; la sincronizacion inversa ya no puede vaciar la busqueda antes de completar el debounce.
+- Limpiar filtros y aplicar parches de URL parten de la referencia mas reciente, evitando que dos controles cercanos restauren valores anteriores.
+- Se elimina la supresion de `react-hooks/exhaustive-deps`; el efecto depende solo del texto porque sus colaboradores variables se leen mediante referencias estables.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Regresion antes del cambio | RED: al escribir `glucosa` y elegir `Laboratorio` durante el debounce, la URL perdia `category=7` o restablecia `q` a vacio segun el orden de confirmacion. |
+| Regresion focalizada despues | OK: conserva simultaneamente `q=glucosa` y `category=7`. |
+| Suite `CatalogView.test.tsx` | OK: 22 tests. |
+| ESLint focalizado | OK: componente y prueba sin advertencias ni supresion del hook. |
+| TypeScript estricto | OK: `tsc --noEmit`. |
+
+### Decision
+
+El texto local, el texto diferido y los parametros de URL son estados deliberadamente distintos durante 400 ms. Toda accion adicional del operador debe consolidarlos antes de navegar; leer la URL viva en el temporizador evita que una escritura tardia deshaga filtros ya confirmados sin eliminar el debounce que protege al servidor LAN.

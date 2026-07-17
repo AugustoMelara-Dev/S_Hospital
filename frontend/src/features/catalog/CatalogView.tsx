@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { EditOutlined, PlusOutlined } from '@ant-design/icons';
@@ -31,6 +31,8 @@ const DEFAULT_PER_PAGE = 15;
 
 export function CatalogView({ user, onStatus }: CatalogViewProps) {
   const [searchParams, setSearchParams] = useSearchParams();
+  const searchParamsRef = useRef(searchParams);
+  const setSearchParamsRef = useRef(setSearchParams);
   const [search, setSearch] = useState(() => searchParams.get('q') ?? '');
   const [debouncedSearch, setDebouncedSearch] = useState(() => searchParams.get('q') ?? '');
   const [categoryFilter, setCategoryFilter] = useState<string>(() => searchParams.get('category') ?? CATEGORY_FILTER_ALL);
@@ -81,19 +83,28 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
   const isEmpty = services.length === 0 && !isLoading;
 
   useEffect(() => {
+    searchParamsRef.current = searchParams;
+    setSearchParamsRef.current = setSearchParams;
+  }, [searchParams, setSearchParams]);
+
+  useEffect(() => {
     const timeoutId = setTimeout(() => {
       setDebouncedSearch(search);
       setPage(1);
       const trimmedSearch = search.trim();
-      if ((searchParams.get('q') ?? '') === trimmedSearch && !searchParams.has('page')) return;
-      const next = new URLSearchParams(searchParams);
+      const currentParams = searchParamsRef.current;
+      if ((currentParams.get('q') ?? '') === trimmedSearch && !currentParams.has('page')) {
+        return;
+      }
+
+      const next = new URLSearchParams(currentParams);
       setOrDelete(next, 'q', trimmedSearch);
       next.delete('page');
-      setSearchParams(next, { replace: true });
+      searchParamsRef.current = next;
+
+      setSearchParamsRef.current(next, { replace: true });
     }, CATALOG_DEBOUNCE_MS);
     return () => clearTimeout(timeoutId);
-  // URL writes are intentionally driven by the search value after the debounce.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
 
   useEffect(() => {
@@ -150,9 +161,11 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
     setCategoryFilter(CATEGORY_FILTER_ALL);
     setActiveFilter(STATUS_FILTER_ALL);
     setPage(1);
-    const next = new URLSearchParams(searchParams);
+    const next = new URLSearchParams(searchParamsRef.current);
     ['q', 'category', 'status', 'page', 'per_page'].forEach((key) => next.delete(key));
-    setSearchParams(next);
+    searchParamsRef.current = next;
+
+    setSearchParamsRef.current(next);
   }
 
   function openNewService() {
@@ -180,9 +193,12 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
   }
 
   function updateCatalogUrl(patch: Record<string, string | null>) {
-    const next = new URLSearchParams(searchParams);
+    const next = new URLSearchParams(searchParamsRef.current);
+    setOrDelete(next, 'q', search.trim());
     Object.entries(patch).forEach(([key, value]) => setOrDelete(next, key, value));
-    setSearchParams(next);
+    searchParamsRef.current = next;
+
+    setSearchParamsRef.current(next);
   }
 
   function handlePageChange(nextPage: number) {
