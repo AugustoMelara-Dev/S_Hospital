@@ -221,7 +221,11 @@ class OperationsReportService
         /** @var list<array<string, mixed>> $reprintRows */
         $reprintRows = array_merge($legacyReprints, $institutionalReprints);
         $reprints = collect($reprintRows)
-            ->sortByDesc(fn (array $row): string => (string) ($row['created_at'] ?? ''))
+            ->sortByDesc(function (array $row): string {
+                $createdAt = $row['created_at'] ?? null;
+
+                return is_string($createdAt) ? $createdAt : '';
+            })
             ->take(25)
             ->values()
             ->all();
@@ -503,11 +507,10 @@ class OperationsReportService
             return [];
         }
 
-        return Category::query()
+        return $this->normalizeNameMap(Category::query()
             ->whereIn('id', $ids)
             ->pluck('name', 'id')
-            ->mapWithKeys(fn (string $name, int|string $id): array => [(int) $id => $name])
-            ->all();
+            ->all());
     }
 
     /**
@@ -522,11 +525,31 @@ class OperationsReportService
             return [];
         }
 
-        return Area::query()
+        return $this->normalizeNameMap(Area::query()
             ->whereIn('id', $ids)
             ->pluck('name', 'id')
-            ->mapWithKeys(fn (string $name, int|string $id): array => [(int) $id => $name])
-            ->all();
+            ->all());
+    }
+
+    /**
+     * @param  array<int|string, mixed>  $names
+     * @return array<int, string>
+     */
+    private function normalizeNameMap(array $names): array
+    {
+        $normalized = [];
+
+        foreach ($names as $id => $name) {
+            $normalizedId = filter_var($id, FILTER_VALIDATE_INT, [
+                'options' => ['min_range' => 1],
+            ]);
+
+            if (is_int($normalizedId) && is_string($name)) {
+                $normalized[$normalizedId] = $name;
+            }
+        }
+
+        return $normalized;
     }
 
     /**

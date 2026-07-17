@@ -12053,3 +12053,25 @@ Los centavos calculados dentro del dominio deben permanecer enteros durante toda
 ### Decision
 
 Los hechos financieros son un contrato de dominio reutilizable, no un array arbitrario. Publicar su forma evita conversiones en consumidores y representar el alcance como un ID nullable elimina estado incidental sin cambiar permisos ni consultas.
+
+## 516. Fase PHPStan 9 - Etiquetas operativas normalizadas
+
+### Cambios
+
+- La ordenacion combinada de reimpresiones acepta solo timestamps string y degrada valores invalidos a vacio.
+- Los mapas de categorias y areas pasan por un normalizador comun de IDs positivos y nombres string.
+- Se eliminan callbacks de coleccion que asumian tipos mas estrechos que los devueltos por SQL.
+- No cambian filtros, conteos, prorrateo financiero ni redaccion de IDs tecnicos.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 9 sobre el servicio | OK: 0 errores. |
+| Pint sobre el servicio | OK. |
+| Reportes operativos, catalogo y prorrateo | OK: 60 tests, 872 assertions. |
+| Inventario PHPStan nivel 9 global | Baja de 723 a 720 hallazgos. |
+
+### Decision
+
+Un reporte de auditoria debe ordenar y etiquetar solo valores con dominio valido. La normalizacion comun evita coerciones diferentes entre categorias y areas y mantiene el fallo contenido en la capa de presentacion.
