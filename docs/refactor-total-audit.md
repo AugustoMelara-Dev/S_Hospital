@@ -10614,3 +10614,25 @@ La caja es el limite transaccional que enlaza usuario, pagos y movimientos. Sus 
 ### Decision
 
 El historial preserva quien cambio cada precio y a que servicio pertenece. Tipar ambos extremos permite validar esa trazabilidad sin modificar importes, motivos ni reglas de auditoria.
+
+## 452. Fase PHPStan 6 - Registros operativos tipados
+
+### Cambios
+
+- `AuditLog`, `ClientErrorLog` y `BackupLog` declaran sus relaciones con el usuario responsable.
+- El accessor cifrado de `IdempotencyKey` declara que lee y acepta `string|null`.
+- No cambian cifrado, sanitizacion, retencion, inmutabilidad ni visibilidad de datos internos.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Medicion PHPStan nivel 6 inicial del corte | RED controlado: 4 genericos incompletos. |
+| PHPStan nivel 6 sobre los cuatro modelos | OK: 0 errores. |
+| Pint sobre los cuatro modelos | OK. |
+| Auditoria, errores, idempotencia y backups | OK: 52 tests, 292 assertions. |
+| Inventario PHPStan nivel 6 global | Baja de 156 a 152 hallazgos. |
+
+### Decision
+
+Estos registros sostienen recuperacion y evidencia forense. Precisar usuarios y el tipo del payload descifrado mejora la comprobacion estatica de operaciones sensibles sin ensanchar la informacion expuesta ni alterar el formato persistido.

@@ -47,6 +47,7 @@ class IdempotencyKey extends Model
      * Writes through this attribute also encrypt: assigning a string to
      * `response_body_plain` stores the ciphertext in the underlying column.
      */
+    /** @return Attribute<string|null, string|null> */
     protected function responseBodyPlain(): Attribute
     {
         return Attribute::make(
