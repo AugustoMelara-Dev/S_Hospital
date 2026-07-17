@@ -129,6 +129,16 @@ class PaymentCentsSqlGuardTest extends TestCase
         $this->assertStringNotContainsString('resolvePaidCents', $source);
     }
 
+    public function test_void_payment_reconciles_non_nullable_cents_without_decimal_fallbacks(): void
+    {
+        $source = $this->readSource('app/Actions/Payments/VoidPaymentAction.php');
+
+        $this->assertStringContainsString('(int) $lockedInvoice->total_cents', $source);
+        $this->assertStringNotContainsString("whereNotNull('amount_cents')", $source);
+        $this->assertStringNotContainsString('Money::parseCents', $source);
+        $this->assertStringNotContainsString('resolveTotalCents', $source);
+    }
+
     public function test_operations_report_prorates_filtered_payments_with_integer_cents(): void
     {
         $source = $this->readSource('app/Actions/Reports/OperationsReportService.php');

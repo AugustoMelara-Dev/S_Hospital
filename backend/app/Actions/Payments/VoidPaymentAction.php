@@ -34,7 +34,7 @@ class VoidPaymentAction
         InvoiceAccess $invoiceAccess,
         bool $allowClosedCashSession = false,
     ): Payment {
-        $reason = trim($payload['reason'] ?? '');
+        $reason = trim($payload['reason']);
         if (empty($reason)) {
             throw ValidationException::withMessages([
                 'reason' => 'El motivo de reversión es requerido.',
@@ -124,9 +124,8 @@ class VoidPaymentAction
             $postedPaidCents = (int) Payment::query()
                 ->where('invoice_id', $lockedInvoice->id)
                 ->where('status', Payment::STATUS_POSTED)
-                ->whereNotNull('amount_cents')
                 ->sum('amount_cents');
-            $invoiceTotalCents = $this->resolveTotalCents($lockedInvoice);
+            $invoiceTotalCents = (int) $lockedInvoice->total_cents;
             $balanceCents = max(0, $invoiceTotalCents - $postedPaidCents);
 
             $lockedInvoice->forceFill([
@@ -177,14 +176,5 @@ class VoidPaymentAction
                 'cashSession:id,user_id,status,opened_at,closed_at',
             );
         });
-    }
-
-    private function resolveTotalCents(Invoice $invoice): int
-    {
-        if ($invoice->total_cents !== null) {
-            return (int) $invoice->total_cents;
-        }
-
-        return Money::parseCents((string) $invoice->total, 'total');
     }
 }

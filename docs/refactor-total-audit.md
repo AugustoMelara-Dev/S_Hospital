@@ -9883,3 +9883,26 @@ Los filtros de categoria y area distribuyen cada pago proporcionalmente entre it
 ### Decision
 
 Un baseline solo es util si expresa deuda actual. Permitir entradas sin correspondencia habia conservado mensajes de versiones y tipos antiguos, ocultando progreso y haciendo costoso revisar el archivo mas concentrado. Las relaciones se tipan en los modelos, fuente comun para todos los consumidores, y el gate estricto evita que esta deriva reaparezca.
+
+## 419. Fase Reversas - Reconciliacion directa sobre centavos obligatorios
+
+### Cambios
+
+- `VoidPaymentAction` suma `amount_cents` sin un predicado `IS NOT NULL` imposible y toma `invoices.total_cents` directamente.
+- Se elimina el resolutor decimal heredado y la coalescencia redundante del motivo ya validado por contrato.
+- La guarda monetaria exige que las anulaciones no reintroduzcan conversiones decimales ni filtros de nulabilidad.
+- El baseline estricto baja de 51 a 48 errores al retirar tres supresiones de codigo imposible.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Contrato antes del cambio | RED: detecta resolutor decimal, `whereNotNull` y ausencia de lectura directa. |
+| Guarda monetaria + doble pago | OK: 16 tests, 201 assertions. |
+| Reversas en caja y recibos | OK: 4 tests, 96 assertions. |
+| PHPStan completo estricto | OK: 0 errores. |
+| Pint focalizado | OK. |
+
+### Decision
+
+La anulacion recalcula el saldo dentro de una transaccion y debe usar la misma fuente entera obligatoria que el alta de pagos. Eliminar la compatibilidad inalcanzable reduce bifurcaciones en un flujo auditado sin cambiar estados, redondeo, movimientos de caja ni restricciones sobre sesiones cerradas.
