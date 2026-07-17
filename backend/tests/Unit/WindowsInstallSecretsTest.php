@@ -241,6 +241,8 @@ class WindowsInstallSecretsTest extends TestCase
         $this->assertStringContainsString('package-ecosystem: github-actions', $config);
         $this->assertStringContainsString('directory: "/"', $config);
         $this->assertStringContainsString('interval: weekly', $config);
+        $this->assertSame(2, substr_count($config, 'package-ecosystem: docker'));
+        $this->assertStringContainsString('directory: "/backend"', $config);
     }
 
     private function frontendCiJob(): string

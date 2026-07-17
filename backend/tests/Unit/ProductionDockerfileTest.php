@@ -98,8 +98,8 @@ class ProductionDockerfileTest extends TestCase
         $dockerfile = file_get_contents(base_path('Dockerfile.prod'));
 
         $this->assertIsString($dockerfile);
-        $this->assertStringContainsString('FROM composer:2 AS composer-cli', $dockerfile);
-        $this->assertStringContainsString('FROM php:8.3-fpm-alpine AS composer-builder', $dockerfile);
+        $this->assertMatchesRegularExpression('/^FROM composer:2@\S+ AS composer-cli$/m', $dockerfile);
+        $this->assertMatchesRegularExpression('/^FROM php:8\.3-fpm-alpine@\S+ AS composer-builder$/m', $dockerfile);
         $this->assertSame(2, substr_count($dockerfile, 'FROM php:8.3-fpm-alpine'));
         $this->assertStringContainsString(
             'COPY --from=composer-cli /usr/bin/composer /usr/bin/composer',
@@ -108,5 +108,31 @@ class ProductionDockerfileTest extends TestCase
         $this->assertStringContainsString('apk add --no-cache unzip', $dockerfile);
         $this->assertStringContainsString("--ignore-platform-req='ext-*'", $dockerfile);
         $this->assertStringNotContainsString('--ignore-platform-reqs', $dockerfile);
+    }
+
+    public function test_every_production_build_stage_pins_its_image_digest(): void
+    {
+        $dockerfile = file_get_contents(base_path('Dockerfile.prod'));
+
+        $this->assertIsString($dockerfile);
+        $matched = preg_match_all('/^FROM (?<image>\S+)/m', $dockerfile, $stages, PREG_SET_ORDER);
+
+        $this->assertSame(4, $matched);
+
+        foreach ($stages as $stage) {
+            $this->assertMatchesRegularExpression(
+                '/@sha256:[a-f0-9]{64}$/',
+                $stage['image'],
+                "Production base {$stage['image']} must be immutable.",
+            );
+        }
+
+        $phpStages = array_values(array_filter(
+            array_column($stages, 'image'),
+            static fn (string $image): bool => str_starts_with($image, 'php:8.3-fpm-alpine@'),
+        ));
+
+        $this->assertCount(2, $phpStages);
+        $this->assertSame($phpStages[0], $phpStages[1]);
     }
 }

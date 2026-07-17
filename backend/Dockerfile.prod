@@ -1,5 +1,5 @@
 # === STAGE 1: Build the frontend React SPA ===
-FROM node:22-alpine AS frontend-builder
+FROM node:22-alpine@sha256:968df39aedcea65eeb078fb336ed7191baf48f972b4479711397108be0966920 AS frontend-builder
 WORKDIR /app
 ARG PNPM_VERSION=11.7.0
 RUN corepack enable \
@@ -13,8 +13,8 @@ COPY frontend/ ./
 RUN pnpm run build
 
 # === STAGE 2: Install backend Composer dependencies on runtime PHP ===
-FROM composer:2 AS composer-cli
-FROM php:8.3-fpm-alpine AS composer-builder
+FROM composer:2@sha256:c883af18892268b3b8369c4a39c08f80b393383e79d80b75140a3ea489dbbb78 AS composer-cli
+FROM php:8.3-fpm-alpine@sha256:9fcec48321d890240d700ccdc2b475420c87d398826e68c3d8830b8fca663e5c AS composer-builder
 COPY --from=composer-cli /usr/bin/composer /usr/bin/composer
 RUN apk add --no-cache unzip
 WORKDIR /app
@@ -22,7 +22,7 @@ COPY backend/composer.json backend/composer.lock ./
 RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts --ignore-platform-req='ext-*'
 
 # === STAGE 3: Final Production Image (PHP-FPM) ===
-FROM php:8.3-fpm-alpine
+FROM php:8.3-fpm-alpine@sha256:9fcec48321d890240d700ccdc2b475420c87d398826e68c3d8830b8fca663e5c
 WORKDIR /var/www/html
 
 # Install production system dependencies

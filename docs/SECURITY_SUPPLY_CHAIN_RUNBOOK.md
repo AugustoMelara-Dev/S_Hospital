@@ -82,5 +82,8 @@ powershell.exe -ExecutionPolicy Bypass -File scripts\security\run-security-check
 - The production Composer stage runs on the same PHP 8.3 base as the final
   runtime. It may ignore only `ext-*` requirements while extensions are built
   in the final stage; never restore the global `--ignore-platform-reqs` bypass.
+- Every base image in `backend/Dockerfile.prod` is pinned to a manifest digest.
+  Dependabot reviews Docker references in `/` and `/backend` weekly; digest
+  updates must pass the production-stage contracts and isolated Docker builds.
 - `backend/package-lock.json` exists so Laravel's Vite-side JavaScript dependencies cannot float silently on future installs.
 - Composer may not be available in every Windows shell; this guard reads `composer.lock` directly and does not require Composer for the IOC checks.
