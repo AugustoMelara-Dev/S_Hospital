@@ -63,6 +63,7 @@ class MonthlyReportService
             ->select('status')
             ->selectRaw('COUNT(*) as count')
             ->selectRaw('COALESCE(SUM(total_cents), 0) as total_cents')
+            ->toBase()
             ->get()
             ->each(function (object $row) use (&$statuses): void {
                 $statuses[$row->status] = [

@@ -10133,3 +10133,25 @@ Una fila de `COUNT`/`SUM` no es una entidad `Payment` y no debe heredar su contr
 ### Decision
 
 La conciliacion necesita modelos Eloquent para construir alcances, pero sus resultados agrupados son filas SQL. Cambiar la hidratacion despues de definir filtros conserva el comportamiento y hace explicito el limite entre entidades persistidas y proyecciones financieras calculadas.
+
+## 430. Fase Reportes Diario Y Mensual - Estados agregados como filas SQL
+
+### Cambios
+
+- Los totales diarios por metodo y por estado pasan a Query Builder antes de hidratar sus agrupaciones.
+- El resumen mensual por estado aplica el mismo limite entre consulta Eloquent y proyeccion agregada.
+- `count` y `total_cents` dejan de modelarse como propiedades dinamicas de `Invoice` o `Payment`.
+- Se retiran tres excepciones `property.notFound`; el baseline PHPStan baja de 20 a 17 errores contabilizados.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan tras retirar solo las excepciones | RED: 3 errores de propiedades agregadas en reportes diario y mensual. |
+| PHPStan estricto despues | OK: 0 errores fuera del baseline. |
+| Regresion diaria/mensual | OK: 3 tests, 58 assertions; incluye metodos, estados, dias y anulacion en mes posterior. |
+| Pint focalizado | OK. |
+
+### Decision
+
+Los modelos siguen construyendo los alcances temporales y de estado, pero una fila agrupada no representa una factura ni un pago individual. `toBase()` en el punto de hidratacion expresa esa diferencia sin duplicar consultas ni modificar las fechas contables.

@@ -37,18 +37,6 @@ parameters:
 			path: app/Actions/Receipts/GenerateReceiptDataAction.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\Invoice\:\:\$count\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Actions/Reports/DailyReportService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Payment\:\:\$total_cents\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Actions/Reports/DailyReportService.php
-
-		-
 			message: '#^Access to an undefined property App\\Models\\InvoiceItem\:\:\$total_cents\.$#'
 			identifier: property.notFound
 			count: 1
@@ -95,12 +83,6 @@ parameters:
 			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Actions/Reports/ExcelReportService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Invoice\:\:\$count\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Actions/Reports/MonthlyReportService.php
 
 		-
 			message: '#^Using nullsafe property access "\?\-\>rtn" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'

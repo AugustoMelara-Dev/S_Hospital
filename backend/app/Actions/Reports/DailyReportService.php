@@ -29,6 +29,7 @@ class DailyReportService
             ->whereBetween('payments.paid_at', [$start, $end])
             ->groupBy('payments.method')
             ->select('payments.method', DB::raw('COALESCE(SUM(payments.amount_cents), 0) as total_cents'))
+            ->toBase()
             ->get()
             ->each(function (object $row) use (&$methods): void {
                 if (array_key_exists($row->method, $methods)) {
@@ -50,6 +51,7 @@ class DailyReportService
             ->where('status', '!=', Invoice::STATUS_VOID)
             ->groupBy('status')
             ->select('status', DB::raw('COUNT(*) as count'), DB::raw('COALESCE(SUM(total_cents), 0) as total_cents'))
+            ->toBase()
             ->get()
             ->each(function (object $row) use (&$statuses): void {
                 $statuses[$row->status] = [
