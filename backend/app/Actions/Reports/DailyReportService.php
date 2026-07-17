@@ -5,7 +5,6 @@ namespace App\Actions\Reports;
 use App\Actions\Reports\Concerns\FormatsReportMoney;
 use App\Models\Invoice;
 use App\Models\Payment;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class DailyReportService
@@ -17,7 +16,7 @@ class DailyReportService
     /** @return array<string, mixed> */
     public function report(string $date): array
     {
-        $day = Carbon::createFromFormat('Y-m-d', $date);
+        $day = ReportDate::day($date);
         $start = $day->copy()->startOfDay();
         $end = $day->copy()->endOfDay();
         $facts = $this->financialFacts->forRange($start, $end);

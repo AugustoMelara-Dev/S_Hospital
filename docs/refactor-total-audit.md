@@ -11423,3 +11423,26 @@ Una descarga auditada no debe depender de un usuario nullable despues de autoriz
 ### Decision
 
 La validacion HTTP garantiza el formato de entrada, pero el parser y los datos historicos siguen teniendo contratos nullable. Centralizar ambas fronteras evita desreferencias, elimina tres implementaciones duplicadas y conserva una unica semantica de rango para todas las exportaciones.
+
+## 488. Fase PHPStan 8 - Fecha exacta en agregados financieros
+
+### Cambios
+
+- `ReportDate` centraliza el parseo exacto de dias y meses y rechaza fechas inexistentes o formatos ambiguos.
+- Nueve servicios de reportes reutilizan esa frontera antes de calcular inicio y fin de dia/mes.
+- El cambio cubre reportes diarios, mensuales, ejecutivos, ingresos, areas, categorias, servicios y operaciones.
+- No cambian consultas, fuentes en centavos, snapshots historicos, prorrateos, zonas horarias ni payloads.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| TDD de `ReportDate` | Rojo por clase ausente; verde: 2 tests, 6 assertions. |
+| PHPStan nivel 8 sobre acciones de reportes | Los hallazgos de fecha bajan a 0; quedan 4 contratos de otras causas. |
+| Pint sobre servicios, helper y prueba | OK. |
+| Agregados generales, ejecutivos y hechos financieros | OK: 82 tests, 1149 assertions. |
+| Inventario PHPStan nivel 8 global | Baja de 47 a 28 hallazgos. |
+
+### Decision
+
+Los servicios de dominio no deben asumir que un parser nullable produjo una fecha valida, aunque normalmente reciban datos validados por HTTP. Una frontera exacta y probada protege tambien invocaciones internas y mantiene identicos los limites temporales de las consultas financieras.

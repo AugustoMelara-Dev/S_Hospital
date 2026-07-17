@@ -20,7 +20,7 @@ class MonthlyReportService
      */
     public function report(string $month): array
     {
-        $period = Carbon::createFromFormat('Y-m', $month)->startOfMonth();
+        $period = ReportDate::month($month);
         $start = $period->copy()->startOfMonth();
         $end = $period->copy()->endOfMonth();
         $facts = $this->financialFacts->forRange($start, $end);
@@ -101,7 +101,7 @@ class MonthlyReportService
 
         return array_values($dates
             ->map(function (string $date): array {
-                $day = Carbon::createFromFormat('Y-m-d', $date);
+                $day = ReportDate::day($date);
                 $facts = $this->financialFacts->forRange($day->copy()->startOfDay(), $day->copy()->endOfDay());
 
                 return [

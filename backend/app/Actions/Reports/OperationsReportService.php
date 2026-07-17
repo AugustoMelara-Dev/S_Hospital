@@ -11,7 +11,6 @@ use App\Models\InstitutionalReceiptPrintEvent;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Service;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 class OperationsReportService
@@ -26,8 +25,8 @@ class OperationsReportService
     {
         $filters = $this->normalizeReportFilters($filters);
 
-        $start = Carbon::createFromFormat('Y-m-d', $filters['date_from'])->startOfDay();
-        $end = Carbon::createFromFormat('Y-m-d', $filters['date_to'])->endOfDay();
+        $start = ReportDate::day($filters['date_from'])->startOfDay();
+        $end = ReportDate::day($filters['date_to'])->endOfDay();
 
         $voidQuery = Invoice::query()
             ->with('voidedBy:id,name')

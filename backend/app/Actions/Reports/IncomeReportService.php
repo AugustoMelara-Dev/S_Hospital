@@ -21,8 +21,8 @@ class IncomeReportService
      */
     public function report(array $filters): array
     {
-        $start = Carbon::createFromFormat('Y-m-d', $filters['date_from'])->startOfDay();
-        $end = Carbon::createFromFormat('Y-m-d', $filters['date_to'])->endOfDay();
+        $start = ReportDate::day($filters['date_from'])->startOfDay();
+        $end = ReportDate::day($filters['date_to'])->endOfDay();
         $facts = $this->financialFacts->forRange($start, $end, $filters);
 
         return [

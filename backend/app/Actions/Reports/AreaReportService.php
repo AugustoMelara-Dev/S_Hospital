@@ -6,7 +6,6 @@ use App\Actions\Reports\Concerns\FormatsReportMoney;
 use App\Actions\Reports\Concerns\NormalizesReportFilters;
 use App\Models\Invoice;
 use App\Models\Payment;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class AreaReportService
@@ -21,8 +20,8 @@ class AreaReportService
     {
         $filters = $this->normalizeReportFilters($filters);
 
-        $start = Carbon::createFromFormat('Y-m-d', $filters['date_from'])->startOfDay();
-        $end = Carbon::createFromFormat('Y-m-d', $filters['date_to'])->endOfDay();
+        $start = ReportDate::day($filters['date_from'])->startOfDay();
+        $end = ReportDate::day($filters['date_to'])->endOfDay();
         $usesPaymentScope = ! empty($filters['cash_session_id'])
             || ! empty($filters['user_id'])
             || ! empty($filters['method']);
