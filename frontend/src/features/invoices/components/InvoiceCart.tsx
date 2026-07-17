@@ -1,5 +1,5 @@
 import { MinusOutlined as Minus, PlusOutlined as Plus, DeleteOutlined as Trash2 } from '@ant-design/icons';
-import { Alert, Button, Checkbox, Input, Tag } from 'antd';
+import { Alert, Button, Checkbox, Input, List, Tag } from 'antd';
 import { useRef } from 'react';
 import { formatLempirasUIFromCents, parseCents } from '../../../lib/moneyCents';
 
@@ -105,27 +105,30 @@ export function InvoiceCart({
             <p className="mt-1 max-w-56 text-xs">Busque por nombre, area o categoria para comenzar.</p>
           </div>
         ) : (
-          <table className="block w-full table-fixed border border-operational-border sm:table" aria-label="Cuenta actual">
-            <thead className="sr-only sm:table-header-group">
-              <tr className="border-b border-operational-border bg-muted text-left text-xs uppercase tracking-wide text-muted-foreground">
-                <th className="p-2 font-semibold">Servicio</th>
-                <th className="w-36 p-2 font-semibold">Cantidad</th>
-                <th className="w-24 p-2 text-right font-semibold">Importe</th>
-                <th className="w-11 p-2"><span className="sr-only">Acciones</span></th>
-              </tr>
-            </thead>
-            <tbody className="block divide-y divide-operational-border sm:table-row-group sm:divide-y-0">
-              {items.map((item, index) => {
+          <div role="table" aria-label="Cuenta actual">
+            <List
+              className="w-full border border-operational-border"
+              dataSource={items}
+              header={(
+              <div role="row" className="sr-only grid-cols-12 bg-muted text-left text-xs uppercase tracking-wide text-muted-foreground sm:grid">
+                <span role="columnheader" className="col-span-7 p-2 font-semibold">Servicio</span>
+                <span role="columnheader" className="col-span-2 p-2 font-semibold">Cantidad</span>
+                <span role="columnheader" className="col-span-2 p-2 text-right font-semibold">Importe</span>
+                <span role="columnheader" className="col-span-1 p-2"><span className="sr-only">Acciones</span></span>
+              </div>
+              )}
+              renderItem={(item, index) => {
               const isErythropoietin = item.service.special_rule_code === ERYTHROPOIETIN_RULE;
               const isFree = dialysisPrescription && isErythropoietin;
               const estimatedLineTotal = isFree ? 0 : lineTotalCents(item.service.price, item.quantity);
 
               return (
-                <tr
+                <List.Item
+                  role="row"
                   key={`${item.service.id}-${index}`}
-                  className="block bg-card p-3 sm:table-row sm:p-0"
+                  className="grid grid-cols-1 bg-card p-3 sm:grid-cols-12 sm:items-start sm:p-0"
                 >
-                  <td className="block min-w-0 pb-2 align-top sm:table-cell sm:p-2">
+                  <div role="rowheader" className="min-w-0 pb-2 sm:col-span-7 sm:p-2">
                     <div className="min-w-0">
                       <p className="break-words text-sm font-semibold leading-tight">{item.service.name}</p>
                       <div className="mt-1 flex flex-wrap items-center gap-1.5">
@@ -143,9 +146,9 @@ export function InvoiceCart({
                         {isFree && <span className="font-semibold text-success">(Gratis - receta diálisis)</span>}
                       </p>
                     </div>
-                  </td>
+                  </div>
 
-                  <td className="block py-2 align-top sm:table-cell sm:p-2">
+                  <div role="cell" className="py-2 sm:col-span-2 sm:p-2">
                     <span className="mb-1 block text-xs font-semibold text-muted-foreground sm:sr-only">Cantidad</span>
                     <div className="flex items-center gap-1">
                     <Button
@@ -171,12 +174,12 @@ export function InvoiceCart({
                       icon={<Plus className="size-3" aria-hidden="true" />}
                     />
                     </div>
-                  </td>
-                  <td className="block py-2 text-right align-top sm:table-cell sm:p-2">
+                  </div>
+                  <div role="cell" className="py-2 text-right sm:col-span-2 sm:p-2">
                     <span className="mr-2 text-xs font-semibold text-muted-foreground sm:sr-only">Importe</span>
                     <span className="font-mono text-sm font-semibold tabular-nums">{formatLempirasUIFromCents(estimatedLineTotal)}</span>
-                  </td>
-                  <td className="block pt-1 text-right align-top sm:table-cell sm:p-2">
+                  </div>
+                  <div role="cell" className="pt-1 text-right sm:col-span-1 sm:p-2">
                     <Button
                       type="text"
                       onClick={() => onRemoveItem(index)}
@@ -184,12 +187,12 @@ export function InvoiceCart({
                       aria-label={`Quitar ${item.service.name}`}
                       icon={<Trash2 className="size-4" aria-hidden="true" />}
                     />
-                  </td>
-                </tr>
+                  </div>
+                </List.Item>
               );
-              })}
-            </tbody>
-          </table>
+              }}
+            />
+          </div>
         )}
       </div>
 

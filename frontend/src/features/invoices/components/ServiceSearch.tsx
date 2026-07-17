@@ -432,8 +432,10 @@ export function ServiceSearch({
 
                 return (
                   <li key={service.id} className="min-w-0 list-none">
-                    <button
-                      type="button"
+                    <Button
+                      htmlType="button"
+                      type="text"
+                      block
                       aria-label={`Agregar ${service.name}, ${accountStatus}`}
                       data-service-row="compact"
                       className="flex min-h-16 w-full min-w-0 items-center gap-3 bg-operational-surface px-3 py-2 text-left hover:bg-accent/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
@@ -474,7 +476,7 @@ export function ServiceSearch({
                         {accountItem ? null : <Plus className="size-4" aria-hidden="true" />}
                         {accountStatus}
                       </span>
-                    </button>
+                    </Button>
                   </li>
                 );
               })}
@@ -505,7 +507,9 @@ function CategoryButton({
   onClick: () => void;
 }) {
   return (
-    <button
+    <Button
+      htmlType="button"
+      type={active ? 'primary' : 'default'}
       aria-checked={active}
       className={cn(
         'min-h-11 border px-3 py-2 text-left text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
@@ -516,9 +520,8 @@ function CategoryButton({
       onClick={onClick}
       role="radio"
       tabIndex={active ? 0 : -1}
-      type="button"
     >
       <span className="line-clamp-2 leading-tight">{label}</span>
-    </button>
+    </Button>
   );
 }

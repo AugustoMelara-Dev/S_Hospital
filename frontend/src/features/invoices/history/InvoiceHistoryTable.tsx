@@ -117,15 +117,16 @@ export function InvoiceHistoryTable(props: InvoiceHistoryTableProps) {
         return (
           <div className="flex items-start gap-2">
             <ReceiptText data-icon aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-secondary" />
-            <button
-              type="button"
+            <Button
+              htmlType="button"
+              type="link"
               data-invoice-detail-trigger={data.id}
               className="min-h-11 text-left font-semibold text-foreground underline-offset-4 hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:min-h-9"
               aria-label={`Ver detalle de la factura ${data.invoice_number}`}
-              onClick={(event) => onOpenDetail(data, event.currentTarget)}
+              onClick={(event) => onOpenDetail(data, event.currentTarget as HTMLButtonElement)}
             >
               {data.invoice_number}
-            </button>
+            </Button>
           </div>
         );
       },
@@ -279,15 +280,16 @@ function InvoiceHistoryMobileList({ tableProps }: { tableProps: InvoiceHistoryTa
       {invoices.map((invoice) => (
         <li key={invoice.id} className="min-w-0 overflow-visible p-4">
           <div className="flex min-w-0 items-start justify-between gap-3">
-            <button
-              type="button"
+            <Button
+              htmlType="button"
+              type="link"
               data-invoice-detail-trigger={invoice.id}
               className="min-h-11 min-w-0 break-all text-left font-semibold text-foreground underline-offset-4 hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               aria-label={`Ver detalle de la factura ${invoice.invoice_number}`}
-              onClick={(event) => onOpenDetail(invoice, event.currentTarget)}
+              onClick={(event) => onOpenDetail(invoice, event.currentTarget as HTMLButtonElement)}
             >
               {invoice.invoice_number}
-            </button>
+            </Button>
             <InvoiceRowActions invoice={invoice} tableProps={tableProps} />
           </div>
           <p className="mt-1 break-words text-sm text-foreground">{patientNameLabel(invoice)}</p>
